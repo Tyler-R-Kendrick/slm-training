@@ -120,7 +120,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--grammar-ltr-max-tokens",
         type=int,
-        default=64,
+        default=256,
         help="Max tokens for LTR / constrained repair canvases.",
     )
     parser.add_argument(
@@ -165,6 +165,11 @@ def main(argv: list[str] | None = None) -> int:
         "--hard-curriculum",
         action="store_true",
         help="Use hard A→B→C stage cutovers instead of soft mix (can leak C into smoke).",
+    )
+    parser.add_argument(
+        "--grammar-trust-model",
+        action="store_true",
+        help="Trust-the-model decode: no structural bias or structural reordering.",
     )
     parser.add_argument(
         "--eval-suites",
@@ -309,6 +314,7 @@ def main(argv: list[str] | None = None) -> int:
             fuse_ltr_loss=fuse_ltr,
             grammar_fastpath=True,
             fastpath_aux_weight=args.fastpath_aux_weight,
+            grammar_trust_model=args.grammar_trust_model,
             noise_rate=args.noise_rate,
             eval_every=args.eval_every,
             eval_suite=args.eval_suite,

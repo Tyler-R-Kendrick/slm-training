@@ -19,7 +19,7 @@
     <main class="stage annotate-stage">
       <header class="brand">
         <p class="brand-mark">TwoTower</p>
-        <p class="brand-sub">Grade OpenUI samples · ↑ good · ↓ bad · ← → navigate</p>
+        <p class="brand-sub">Grade OpenUI samples · 👍 good · 👎 bad · ← → navigate</p>
       </header>
 
       <section class="card-stack" id="card" aria-label="Annotation sample" tabindex="0">
@@ -91,12 +91,12 @@
 
         <div class="grade-row" role="group" aria-label="Grade sample">
           <button type="button" class="grade down" id="btnDown" aria-label="Thumbs down">
-            <span aria-hidden="true">↓</span> Down
+            <span class="thumb-icon" aria-hidden="true">👎</span> Down
           </button>
           <button type="button" class="nav" id="btnPrev" aria-label="Previous">←</button>
           <button type="button" class="nav" id="btnNext" aria-label="Next">→</button>
           <button type="button" class="grade up" id="btnUp" aria-label="Thumbs up">
-            Up <span aria-hidden="true">↑</span>
+            Up <span class="thumb-icon" aria-hidden="true">👍</span>
           </button>
         </div>
         <p class="status" id="status" role="status"></p>

@@ -20,9 +20,12 @@ class StreamStatus:
             "unknown-component",
             "invalid-type",
             "unexpected-token",
-            "placeholder_required",
             "parse-error",
         }
+        # placeholder_required is a typing hint while a string arg is still open —
+        # do not treat it as fatal during incremental constrained decode.
+        if not self.incomplete and "placeholder_required" in self.error_codes:
+            return True
         return any(code in hard for code in self.error_codes)
 
     @property

@@ -39,7 +39,8 @@ class ModelBuildConfig:
     grammar_top_k: int = 16
     structural_bias: float = 1.25
     grammar_ltr_repair: bool = False
-    grammar_ltr_max_tokens: int = 64
+    # Length-safe for compositional tokenizer (fixture gold up to ~160 tokens).
+    grammar_ltr_max_tokens: int = 256
     grammar_ltr_stages: tuple[int, ...] | None = None
     grammar_ltr_primary: bool = False
     grammar_finalize_validate: bool = False
@@ -51,6 +52,7 @@ class ModelBuildConfig:
     schema_in_context: bool = False
     slot_contract_in_context: bool = False
     slot_contract_constrained_decode: bool = False
+    template_fill_decode: bool = False
     retrieval_k: int = 0
     best_of_n: int = 1
     use_curriculum: bool = False
@@ -72,12 +74,21 @@ class ModelBuildConfig:
     grad_accum_steps: int = 1
     parallel_unmask: str = "adaptive"
     parallel_workers: int = 2
+    remask_ratio: float = 0.0
+    mdlm_schedule: bool = False
+    mdlm_eps: float = 1e-3
     # Train-speed bundle (also set via --fast-train)
     cache_context: bool = True
     fuse_ltr_loss: bool = True
     grammar_fastpath: bool = True
     grammar_fastpath_mode: str = "hybrid"  # force | mask | hybrid
     fastpath_aux_weight: float = 0.0
+    grammar_prefer_structural: bool = True
+    grammar_trust_model: bool = False
+    grammar_sample_decode: bool = False
+    grammar_sample_temperature: float = 0.8
+    grammar_block_decode: bool = False
+    grammar_block_size: int = 32
     # Grammar-diffusion (block production codec)
     block_size: int = 4
     production_loss_weight: float = 1.0

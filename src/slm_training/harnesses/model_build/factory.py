@@ -41,16 +41,26 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "schema_in_context",
         "slot_contract_in_context",
         "slot_contract_constrained_decode",
+        "template_fill_decode",
         "retrieval_k",
         "best_of_n",
         "fidelity_loss_weight",
         "ltr_loss_weight",
         "parallel_unmask",
+        "remask_ratio",
+        "mdlm_schedule",
+        "mdlm_eps",
         "cache_context",
         "fuse_ltr_loss",
         "grammar_fastpath",
         "grammar_fastpath_mode",
         "fastpath_aux_weight",
+        "grammar_prefer_structural",
+        "grammar_trust_model",
+        "grammar_sample_decode",
+        "grammar_sample_temperature",
+        "grammar_block_decode",
+        "grammar_block_size",
         "use_amp",
         "use_compile",
         "compile_mode",
@@ -91,7 +101,7 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
     freeze = _resolve_freeze_context(backend, config.freeze_context)
     ltr_stages = getattr(config, "grammar_ltr_stages", None)
     if ltr_stages is None:
-        ltr_stages = (32, 48, 96)
+        ltr_stages = (64, 128, 192, 256)
     return TwoTowerConfig(
         d_model=config.d_model,
         n_heads=config.n_heads,
@@ -125,9 +135,13 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         slot_contract_constrained_decode=getattr(
             config, "slot_contract_constrained_decode", False
         ),
+        template_fill_decode=getattr(config, "template_fill_decode", False),
         retrieval_k=getattr(config, "retrieval_k", 0),
         best_of_n=getattr(config, "best_of_n", 1),
         parallel_unmask=getattr(config, "parallel_unmask", "adaptive"),
+        remask_ratio=float(getattr(config, "remask_ratio", 0.0) or 0.0),
+        mdlm_schedule=bool(getattr(config, "mdlm_schedule", False)),
+        mdlm_eps=float(getattr(config, "mdlm_eps", 1e-3) or 1e-3),
         use_compile=getattr(config, "use_compile", False),
         compile_mode=getattr(config, "compile_mode", "default"),
         use_amp=getattr(config, "use_amp", False),
@@ -136,6 +150,12 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         grammar_fastpath=getattr(config, "grammar_fastpath", True),
         grammar_fastpath_mode=getattr(config, "grammar_fastpath_mode", "hybrid"),
         fastpath_aux_weight=getattr(config, "fastpath_aux_weight", 0.0),
+        grammar_prefer_structural=getattr(config, "grammar_prefer_structural", True),
+        grammar_trust_model=getattr(config, "grammar_trust_model", False),
+        grammar_sample_decode=getattr(config, "grammar_sample_decode", False),
+        grammar_sample_temperature=getattr(config, "grammar_sample_temperature", 0.8),
+        grammar_block_decode=getattr(config, "grammar_block_decode", False),
+        grammar_block_size=getattr(config, "grammar_block_size", 32),
         seed=config.seed,
     )
 

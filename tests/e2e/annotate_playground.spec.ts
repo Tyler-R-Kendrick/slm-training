@@ -12,8 +12,17 @@ function feedbackCount(): number {
     .filter((l) => l.trim()).length;
 }
 
+async function waitForSampleReady(page: import("@playwright/test").Page) {
+  await expect(page.locator("#badge")).not.toHaveText(/loading|generating/i, {
+    timeout: 90_000,
+  });
+  await expect(page.locator("#promptText")).not.toHaveText(/Loading|…/);
+  await expect(page.locator("#badge")).toHaveText("valid");
+  await expect(page.locator("#badge")).not.toHaveText(/invalid|error/i);
+}
+
 test.describe("annotate playground", () => {
-  test("desktop: request + rendered default + dsl toggle", async ({ page }, testInfo) => {
+  test("desktop: thumbs icons + grade stays on sample", async ({ page }, testInfo) => {
     const before = feedbackCount();
     await page.goto("/");
     await page.evaluate(() => localStorage.setItem("twotower_annotate_view", "render"));
@@ -21,22 +30,64 @@ test.describe("annotate playground", () => {
 
     await expect(page.getByText("TwoTower")).toBeVisible();
     await expect(page.locator("#card")).toBeVisible();
+
+    // Thumbs up/down symbols (not arrow glyphs).
+    await expect(page.locator("#btnUp .thumb-icon")).toHaveText("👍");
+    await expect(page.locator("#btnDown .thumb-icon")).toHaveText("👎");
+    await expect(page.locator(".brand-sub")).toContainText("👍");
+    await expect(page.locator(".brand-sub")).toContainText("👎");
+    await expect(page.locator("#btnUp")).not.toContainText("↑");
+    await expect(page.locator("#btnDown")).not.toContainText("↓");
+
+    await waitForSampleReady(page);
+
+    // A valid sample is present; empty-stack "Ready" false-positive is fixed.
+    await expect(page.locator("#promptText")).not.toHaveText("…");
+    await expect(page.locator("#badge")).toHaveText("valid");
+
+    const indexBefore = (await page.locator("#indexPill").innerText()).trim();
+    const promptBefore = (await page.locator("#promptText").innerText()).trim();
+
+    await page.keyboard.type("looks structured");
+    await page.locator("#note").press("Escape");
+    await page.locator("#card").focus();
+    await page.keyboard.press("ArrowUp");
+
+    await expect(page.locator("#status")).toContainText(/Saved thumbs up|Saving 👍/i, {
+      timeout: 30_000,
+    });
+
+    // Grade must not advance to the next sample.
+    await expect(page.locator("#indexPill")).toHaveText(indexBefore);
+    await expect(page.locator("#promptText")).toHaveText(promptBefore);
+
+    await expect.poll(() => feedbackCount(), { timeout: 15_000 }).toBeGreaterThan(before);
+
+    await page.screenshot({
+      path: path.join(
+        testInfo.project.outputDir,
+        `annotate-thumbs-grade-stay-${testInfo.project.name}.png`
+      ),
+      fullPage: true,
+    });
+  });
+
+  test("desktop: request + rendered default + dsl toggle", async ({ page }, testInfo) => {
+    await page.goto("/");
+    await page.evaluate(() => localStorage.setItem("twotower_annotate_view", "render"));
+    await page.reload();
+
     await expect(page.locator("#btnViewRender")).toBeVisible();
     await expect(page.locator("#btnViewDsl")).toBeVisible();
 
-    await expect(page.locator("#badge")).not.toHaveText(/loading|generating/i, {
-      timeout: 90_000,
-    });
-    await expect(page.locator("#promptText")).not.toHaveText(/Loading|…/);
+    await waitForSampleReady(page);
 
-    // Request should be a novel compositional prompt, not a fixture one-liner.
     const prompt = (await page.locator("#promptText").innerText()).trim();
     expect(prompt.length).toBeGreaterThan(40);
     expect(prompt.toLowerCase()).not.toBe("hero card with title and body");
     expect(prompt.toLowerCase()).not.toBe("primary call to action button");
     expect(prompt.toLowerCase()).not.toBe("build primary call to action button");
 
-    // Default view is rendered.
     await expect(page.locator("#panelRender")).toBeVisible();
     await expect(page.locator("#panelDsl")).toBeHidden();
     await expect(page.locator("#preview .openui-preview-root")).toBeVisible({
@@ -51,7 +102,6 @@ test.describe("annotate playground", () => {
       fullPage: true,
     });
 
-    // Toggle to DSL and back.
     await page.locator("#btnViewDsl").click();
     await expect(page.locator("#panelDsl")).toBeVisible();
     await expect(page.locator("#panelRender")).toBeHidden();
@@ -68,7 +118,6 @@ test.describe("annotate playground", () => {
     await page.locator("#btnViewRender").click();
     await expect(page.locator("#panelRender")).toBeVisible();
 
-    // Known-good render check.
     await page.evaluate(() => {
       const src = [
         'root = Stack([hero], "column")',
@@ -81,17 +130,24 @@ test.describe("annotate playground", () => {
       api.mount(document.getElementById("preview"), { source: src });
     });
     await expect(page.locator("#preview")).toContainText(/Title|Body/i, { timeout: 10_000 });
+  });
 
-    await page.keyboard.type("looks structured");
-    await expect(page.locator("#note")).toHaveValue(/looks structured/);
-    await page.locator("#note").press("Escape");
+  test("desktop: arrow down grades without advancing", async ({ page }) => {
+    await page.goto("/");
+    await page.evaluate(() => localStorage.setItem("twotower_annotate_view", "render"));
+    await page.reload();
+
+    await waitForSampleReady(page);
+
+    const indexBefore = (await page.locator("#indexPill").innerText()).trim();
+
     await page.locator("#card").focus();
-    await page.keyboard.press("ArrowUp");
-    await expect(page.locator("#status")).toContainText(/Saved thumbs up|Saving/i, {
+    await page.keyboard.press("ArrowDown");
+
+    await expect(page.locator("#status")).toContainText(/Saved thumbs down|Saving 👎/i, {
       timeout: 30_000,
     });
-
-    await expect.poll(() => feedbackCount(), { timeout: 15_000 }).toBeGreaterThan(before);
+    await expect(page.locator("#indexPill")).toHaveText(indexBefore);
   });
 
   test("mobile: preview default + grade targets", async ({ page }, testInfo) => {
@@ -100,8 +156,10 @@ test.describe("annotate playground", () => {
     await page.reload();
     await expect(page.locator("#btnUp")).toBeVisible();
     await expect(page.locator("#btnDown")).toBeVisible();
+    await expect(page.locator("#btnUp .thumb-icon")).toHaveText("👍");
+    await expect(page.locator("#btnDown .thumb-icon")).toHaveText("👎");
     await expect(page.locator("#panelRender")).toBeVisible();
-    await expect(page.locator("#badge")).not.toHaveText(/loading/i, { timeout: 90_000 });
+    await waitForSampleReady(page);
 
     const upBox = await page.locator("#btnUp").boundingBox();
     expect(upBox).toBeTruthy();

@@ -184,6 +184,33 @@ def main(argv: list[str] | None = None) -> int:
         default="openui",
         help="Grammar backend id (openui | openui-lark | openui-langcore | toy-layout).",
     )
+    parser.add_argument(
+        "--context-backend",
+        choices=("scratch", "hf"),
+        default=None,
+        help="Override checkpoint context tower (scratch | hf). Default: preserve checkpoint.",
+    )
+    parser.add_argument(
+        "--grammar-trust-model",
+        action="store_true",
+        help="Trust-the-model decode: no structural bias or structural reordering.",
+    )
+    parser.add_argument(
+        "--grammar-sample-decode",
+        action="store_true",
+        help="Sample from renormalized legal-token distribution (DINGO-lite).",
+    )
+    parser.add_argument(
+        "--grammar-ltr-max-tokens",
+        type=int,
+        default=None,
+        help="Override LTR decode canvas cap (default: checkpoint or 256).",
+    )
+    parser.add_argument(
+        "--check-decode-feasibility",
+        action="store_true",
+        help="Exit 9 if decode canvas makes ship parse gates unreachable.",
+    )
     args = parser.parse_args(argv)
 
     if args.no_design_md_context and args.design_md_context:
@@ -202,7 +229,7 @@ def main(argv: list[str] | None = None) -> int:
         run_id=args.run_id,
         model_name=args.model,
         device=args.device,
-        context_backend="scratch",
+        context_backend=args.context_backend or "hf",
         grammar_ltr_primary=args.grammar_ltr_primary,
         grammar_ltr_repair=args.grammar_ltr_repair,
         schema_in_context=args.schema_in_context,
@@ -213,7 +240,24 @@ def main(argv: list[str] | None = None) -> int:
         design_md_in_context=design_md_override,
         rico_eval_limit=args.rico_limit,
         grammar_dsl=args.grammar_dsl,
+        grammar_trust_model=args.grammar_trust_model,
+        grammar_sample_decode=args.grammar_sample_decode,
+        grammar_ltr_max_tokens=args.grammar_ltr_max_tokens or 256,
     )
+
+    if args.check_decode_feasibility and config.test_dir is not None:
+        from slm_training.harnesses.model_build.decode_feasibility import (
+            evaluate_decode_feasibility,
+        )
+
+        feas = evaluate_decode_feasibility(
+            config.test_dir,
+            canvas_cap=config.grammar_ltr_max_tokens,
+            rico_limit=config.rico_eval_limit,
+        )
+        print(json.dumps(feas, indent=2))
+        if not feas.get("pass"):
+            return 9
 
     if args.ship_gates and not args.suites:
         args.suites = ",".join(DEFAULT_SHIP_GATES.keys())

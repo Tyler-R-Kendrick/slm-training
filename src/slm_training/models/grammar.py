@@ -234,12 +234,44 @@ def _stream_probe_ok(tokenizer: OpenUITokenizer, prefix_ids: list[int], token_id
     """Reject unknown-component / typed hard errors via streaming semantic check."""
     trial_ids = [*prefix_ids, int(token_id)]
     text = tokenizer.decode(trial_ids)
-    probe = text if text.endswith(("(", "[", ",", "=", " ", "\n")) else f"{text}("
+    token = tokenizer.id_to_token.get(int(token_id), "")
+    # Incomplete quoted strings / closing delimiters: probe as-is (no synthetic '(').
+    if (
+        token in {")", "]", '"', ",", "=", ":", ".", " "}
+        or _incomplete_quoted_string(text)
+        or text.rstrip().endswith((")", "]", '"', ":"))
+    ):
+        probe = text
+    elif text.endswith(("(", "[", ",", "=", " ", "\n")):
+        probe = text
+    else:
+        probe = f"{text}("
     try:
         status = stream_check(probe)
     except Exception:  # noqa: BLE001
         return False
     return not status.hard_error
+
+
+def _placeholder_interior_allowed_ids(
+    tokenizer: OpenUITokenizer,
+    prefix_ids: list[int],
+) -> set[int] | None:
+    """When inside a quoted `:placeholder`, allow compositional subtoken ids."""
+    prefix_text = tokenizer.decode(prefix_ids)
+    if not _incomplete_quoted_string(prefix_text):
+        return None
+    last_open = prefix_text.rfind('"')
+    built = prefix_text[last_open + 1 :]
+    if not built.startswith(":"):
+        return None
+    ids: set[int] = set()
+    for tok, tid in tokenizer.token_to_id.items():
+        if tok in {'"', ':', '.'}:
+            ids.add(tid)
+        elif tok and tok.isidentifier() and tok[0].islower():
+            ids.add(tid)
+    return ids or None
 
 
 def pick_constrained_token(
@@ -250,6 +282,9 @@ def pick_constrained_token(
     top_k: int = 16,
     forced_token_id: int | None = None,
     slot_contract: list[str] | None = None,
+    prefer_structural: bool = True,
+    sample: bool = False,
+    temperature: float = 0.8,
 ) -> int | None:
     """
     Speculative constrained pick: only tokens admitted by the grammar DFA
@@ -292,12 +327,23 @@ def pick_constrained_token(
             allowed = None
 
     if contract_allowed is not None:
+        # Slot-contract inventory is authoritative inside a quoted placeholder.
+        # Intersecting with broad Lark terminals can empty the set (e.g. '.') —
+        # prefer the inventory, then union with DFA when both agree.
         if allowed is None:
             allowed = set(contract_allowed)
         else:
-            allowed = allowed & contract_allowed
+            inter = allowed & contract_allowed
+            allowed = inter if inter else set(contract_allowed)
         if not allowed:
             return None
+
+    ph_allowed = _placeholder_interior_allowed_ids(tokenizer, prefix_ids)
+    if ph_allowed is not None:
+        if allowed is None:
+            allowed = set(ph_allowed)
+        else:
+            allowed = allowed | ph_allowed
 
     def _legal(token_id: int) -> bool:
         tid = int(token_id)
@@ -305,19 +351,35 @@ def pick_constrained_token(
             tokenizer.pad_id,
             tokenizer.mask_id,
             tokenizer.bos_id,
+            tokenizer.unk_id,
         }:
             return False
         if contract_allowed is not None and tid not in contract_allowed:
             return False
         if allowed is not None and tid not in allowed:
-            return False
-        if engine is not None and not dfa_admits_token(
+            # DFA terminal set can lag placeholder interiors — still admit when
+            # incremental parse accepts the extension.
+            if not dfa_admits_token(tokenizer, prefix_ids, tid, engine=engine):
+                return False
+        elif engine is not None and not dfa_admits_token(
             tokenizer, prefix_ids, tid, engine=engine
         ):
             return False
         return _stream_probe_ok(tokenizer, prefix_ids, tid)
 
     if forced_token_id is not None:
+        # Force-emit comes from significant-lexeme DFA and can skip whitespace
+        # tokens that our OpenUI tokenizer models explicitly. Prefer a legal
+        # whitespace argmax over a structural force that would drop spaces;
+        # otherwise honor the forced structural emit when it remains legal.
+        argmax_id = int(logits_1d.argmax().item())
+        argmax_tok = tokenizer.id_to_token.get(argmax_id, "")
+        if (
+            argmax_id != int(forced_token_id)
+            and argmax_tok in {" ", "\n", "\t"}
+            and _legal(argmax_id)
+        ):
+            return argmax_id
         if _legal(int(forced_token_id)):
             return int(forced_token_id)
         forced_token_id = None
@@ -326,10 +388,18 @@ def pick_constrained_token(
     vocab = int(logits_1d.numel())
     search_k = min(max(top_k, 1), vocab)
 
-    # When DFA/contract gave a concrete allowed set, score only those ids.
+    # Score legal candidates: expand beyond the DFA terminal set so whitespace
+    # and compositionally admitted tokens (placeholder interiors) compete with
+    # the highest model logits.
     if allowed is not None and allowed:
         scored: list[tuple[float, int]] = []
-        for tid in allowed:
+        candidate_ids = set(allowed)
+        # Always let the model vote: include top-k logits so whitespace etc.
+        # that pass `_legal` via dfa_admits aren't dropped solely because the
+        # Lark terminal set omits insignificant tokens.
+        _vals, top_idx = torch.topk(logits_1d, k=min(max(top_k, 1), vocab))
+        candidate_ids.update(int(i) for i in top_idx.tolist())
+        for tid in candidate_ids:
             if tid < 0 or tid >= vocab:
                 continue
             if not _legal(tid):
@@ -337,12 +407,23 @@ def pick_constrained_token(
             scored.append((float(logits_1d[tid].item()), tid))
         if scored:
             scored.sort(key=lambda x: x[0], reverse=True)
-            preferred_names = preferred_components()
-            struct = structural_tokens()
-            for _score, tid in scored:
-                token = tokenizer.id_to_token.get(tid, "")
-                if token in preferred_names or token in struct:
-                    return tid
+            if sample and temperature > 0:
+                scores = torch.tensor([s[0] for s in scored], dtype=logits_1d.dtype)
+                probs = torch.softmax(scores / temperature, dim=0)
+                idx = int(torch.multinomial(probs, 1).item())
+                return scored[idx][1]
+            if prefer_structural:
+                preferred_names = preferred_components()
+                struct = structural_tokens()
+                # Prefer structural tokens only when they are near the top score
+                # (within 1.0 logit) — never override a clearly better argmax.
+                best_score = scored[0][0]
+                for score, tid in scored:
+                    if best_score - score > 1.0:
+                        break
+                    token = tokenizer.id_to_token.get(tid, "")
+                    if token in preferred_names or token in struct:
+                        return tid
             return scored[0][1]
 
     # Escalate top-k search if no allowed-set hit (or allowed was broad/None).
@@ -362,25 +443,47 @@ def pick_constrained_token(
             if not _legal(token_id):
                 continue
             token = tokenizer.id_to_token.get(token_id, "")
-            text = tokenizer.decode([*prefix_ids, token_id])
-            probe = text if text.endswith(("(", "[", ",", "=", " ", "\n")) else f"{text}("
-            try:
-                status = stream_check(probe)
-            except Exception:  # noqa: BLE001
-                status = None
-            if (
-                token in preferred_names
-                or token in struct
-                or (status is not None and (status.has_root or status.incomplete or status.complete_ok))
-            ):
-                preferred.append(token_id)
+            if prefer_structural:
+                text = tokenizer.decode([*prefix_ids, token_id])
+                if token in {")", "]", '"', ",", "="} or text.rstrip().endswith(
+                    (")", "]", '"')
+                ):
+                    probe = text
+                elif text.endswith(("(", "[", ",", "=", " ", "\n")):
+                    probe = text
+                else:
+                    probe = f"{text}("
+                try:
+                    status = stream_check(probe)
+                except Exception:  # noqa: BLE001
+                    status = None
+                if (
+                    token in preferred_names
+                    or token in struct
+                    or (
+                        status is not None
+                        and (status.has_root or status.incomplete or status.complete_ok)
+                    )
+                ):
+                    preferred.append(token_id)
+                else:
+                    acceptable.append(token_id)
             else:
                 acceptable.append(token_id)
 
-        if preferred:
-            return preferred[0]
-        if acceptable:
-            return acceptable[0]
+        pool = preferred if (prefer_structural and preferred) else acceptable
+        if pool:
+            if sample and temperature > 0:
+                import torch
+
+                scores = torch.tensor(
+                    [float(logits_1d[i].item()) for i in pool],
+                    dtype=logits_1d.dtype,
+                )
+                probs = torch.softmax(scores / temperature, dim=0)
+                pick = int(torch.multinomial(probs, 1).item())
+                return pool[pick]
+            return pool[0]
         if k >= vocab:
             break
     if contract_allowed:
