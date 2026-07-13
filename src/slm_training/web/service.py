@@ -101,8 +101,8 @@ class PlaygroundService:
             cfg.grammar_ltr_repair = True
             cfg.grammar_finalize_validate = True
             cfg.grammar_fastpath = True
-            if int(cfg.grammar_ltr_max_tokens or 0) < 48:
-                cfg.grammar_ltr_max_tokens = 64
+            if int(cfg.grammar_ltr_max_tokens or 0) < 128:
+                cfg.grammar_ltr_max_tokens = 192
             return self._model
 
     def next_prompt(self, session_id: str | None = None) -> dict[str, str]:

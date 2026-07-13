@@ -49,6 +49,21 @@
 | E16 | Long train | E15 at 2000+ steps | `qx_e16_long_train` |
 | E17 | Decode sweep | Eval-only gen_steps/repair/best-of-N on E15 ckpt | `qx_e17_decode_sweep` |
 
+## V3 matrix (length-safe decode + SOTA diffusion levers)
+
+Root cause after V2: compositional tokenization lengthened programs (fixture max ~160
+tokens) while LTR decode still capped at 64–96 → **parse stayed 0 even at 2000 steps**.
+
+| ID | Approach | Primary lever | Run id |
+| --- | --- | --- | --- |
+| E18 | Length-safe LTR | `grammar_ltr_max_tokens≥192`, stages `(64,128,192,256)` | `qx_e18_length_safe` |
+| E19a | MaskGIT-primary | Train/infer match: MaskGIT decode (no LTR-primary) | `qx_e19a_maskgit_primary` |
+| E19b | LTR-matched | LTR-primary + strong `ltr_loss_weight` + length-safe | `qx_e19b_ltr_matched` |
+| E20 | Template fill | Slot-contract skeleton seed + MaskGIT refine | `qx_e20_template_fill` |
+| E21 | MDLM schedule | Continuous-time absorbing mask + `1/t` CE weights | `qx_e21_mdlm_schedule` |
+| E22 | Remasking | Confidence remask of weak committed tokens | `qx_e22_remask` |
+| E29 | Champion | E18+E20+E21+E22 + slot contract + capacity | `qx_e29_champion` |
+
 ```bash
 # Diagnostic ceiling (gold-as-prediction must score ~1.0)
 python -m scripts.diagnose_eval --train-dir outputs/train_data/v1 \
@@ -62,6 +77,10 @@ python -m scripts.run_quality_matrix --only E11,E12,E13 --steps 800
 
 # Champion combo + decode sweep (E17 needs E15 checkpoint)
 python -m scripts.run_quality_matrix --only E15,E17 --steps 1200 --gen-steps 16
+
+# V3 focused ship path (length-safe → decode match → template → champion)
+python -m scripts.run_quality_matrix --matrix v3 --only E18,E19a,E19b,E20,E29 \
+  --steps 400 --device cpu --context-backend scratch
 ```
 
 ## Success criteria (honest gates)
@@ -148,5 +167,13 @@ See [quality-matrix-results.json](quality-matrix-results.json). After F1–F5 fi
 | E17 | 0.0 | 0.38 | decode sweep on E15 ckpt |
 
 **Ship gates still not cleared** at 200–500 CPU steps; ceiling diagnostic confirms
-metrics are achievable (gold-as-prediction = 1.0). Next levers: 2000+ steps (E16),
-HF context, and slot contract on all eval suites.
+metrics are achievable (gold-as-prediction = 1.0). Next levers: **V3 length-safe
+decode (E18)** — V2 kept `grammar_ltr_max_tokens` at 64–96 while compositional
+programs need ≥160 tokens — then E19–E22 / E29 champion.
+
+## V3 notes
+
+- Default matrix is now `v3` (`--matrix v3`).
+- `scripts/diagnose_eval.py` reports `length_budget` and exits 2 when p95 exceeds LTR budget.
+- Defaults: `grammar_ltr_max_tokens=192`, stages `(64,128,192,256)`.
+- Research: MDLM schedule + remasking tagged **Adapted** in [research-lineage.md](research-lineage.md).
