@@ -7,7 +7,8 @@
 **Architecture:** Each row is an isolatable lever (plus a stacked `combo` run). All runs use scratch context on CPU by default; HF is optional when cached.
 
 **Tech stack:** TwoTower, OpenUI grammar, ship_gates, preference composite reward.
-**Research map:** [research-lineage.md](research-lineage.md) (MaskGIT, constrained diffusion, DPO/GRPO surrogates).
+**Research map:** [research-lineage.md](research-lineage.md) (MaskGIT, constrained diffusion, DPO/GRPO surrogates);
+correction / remask candidates: [research-correction-critics.md](research-correction-critics.md).
 
 ---
 
@@ -189,3 +190,34 @@ See [quality-matrix-results.json](quality-matrix-results.json).
 | **E29** | **0.67** | **0.67** | **pass** | champion stack at 40 steps |
 
 First honest `--ship-gates` clears on the fixture scoreboard. Production claim still needs full `rico_held` (1500) + HF context.
+
+## V4 matrix (critic-guided revision — candidate)
+
+Candidate work only — research background in
+[research-correction-critics.md](research-correction-critics.md);
+**Adjacent** tags in [research-lineage.md](research-lineage.md). IDs start at
+**E30** to avoid colliding with implemented V3 (E18–E29). These levers attack
+**semantic remasking beyond confidence** (critique / trust heads / visible
+corruption), after V3’s confidence remask (`remask_ratio`, E22) and template-fill
+champion. Prefer running on an E29 (or stronger) checkpoint.
+
+| ID | Approach | Primary lever | Expected gate delta | Run id |
+| --- | --- | --- | --- | --- |
+| E30 | Suffix-rollback LTR | ReMDM-style revisable window \(W\) behind LTR frontier; remask on grammar / entropy triggers; re-denoise (inference-only) | ↑ held_out / adversarial parse under LTR-primary | `qx_e30_suffix_rollback` |
+| E31 | BackPlay-lite trust head | Freeze denoiser; train unwired [`FastPathGate`](../../src/slm_training/grammar_fastpath/gate.py) on model’s own token errors; drive remask with gate scores | ↑ fidelity + smarter remask than raw confidence | `qx_e31_trust_gate` |
+| E32 | Corruption-aware train | Extend [`_mask_targets`](../../src/slm_training/models/twotower.py): small fraction of visible tokens → wrong ids (uniform / model-sampled); CE to recover gold (RemeDi/GIDD-lite) | ↑ fidelity; enables revise-visible | `qx_e32_visible_corrupt` |
+| E33 | Combined remask policy | Budgeted remask \(P_i \propto\) grammar hard-error + gate score + entropy (extends V3 `remask_ratio` / `filter_ids_by_stream`) | ↑ held_out / adv parse; ↓ over-remask | `qx_e33_remask_policy` |
+| E34 | Latent falsification MoE | Deferred: shared head + top‑2 OpenUI mechanism experts + parallel latent streams; gated on E30–E33 residual failures | Research; semantic failures DFA misses | `qx_e34_latent_critics` *(not scheduled)* |
+
+Implementation order = table order (risk ascending). **E30** touches decode only
+(`twotower.py`, `parallel_decode.py`). **E31** needs frozen-backbone error
+mining. **E32** changes the train corruption graph. **E33** composes E30+E31
+signals with existing V3 remask. **E34** waits until cheaper remask policies
+saturate.
+
+```text
+# FUTURE — no `--matrix v4` runner yet (do not copy-paste as a command).
+# Intended once E30+ is implemented:
+#   python -m scripts.run_quality_matrix --matrix v4 --only E30 --device cpu \
+#     --seed-checkpoint outputs/runs/qx_e29_champion/checkpoints/last.pt
+```

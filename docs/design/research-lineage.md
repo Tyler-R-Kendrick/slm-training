@@ -134,6 +134,66 @@ return invalid OpenUI.
 
 ---
 
+## Correction / revision (candidate work)
+
+V3 already **Adapted** confidence remasking (`remask_ratio`) and related decode
+levers — see “Confidence remasking” above. This section covers **Adjacent**
+extensions: critic-guided / trust-head remask and latent falsification. Full
+write-up: [`research-correction-critics.md`](research-correction-critics.md).
+Proposed levers: **E30–E34** (V4) in
+[`quality-experiment-matrix.md`](quality-experiment-matrix.md).
+
+### ReMDM (inference-time remasking)
+
+| | |
+| --- | --- |
+| **Paper** | *Remasking Discrete Diffusion Models with Inference-Time Scaling*, 2025. [arXiv:2503.00307](https://arxiv.org/abs/2503.00307) |
+| **Fidelity** | **Adjacent** (paper) / **Adapted** (confidence remask subset) — V3 implements bottom-`q` confidence remask; semantic / LTR-suffix / trust-gated budgets remain future (E30/E33) |
+| **Intent** | Let pretrained MaskGIT weights revise committed tokens without GIDD-style retraining |
+| **Hook** | [`select_remask_indices`](../../src/slm_training/models/parallel_decode.py); grammar [`filter_ids_by_stream`](../../src/slm_training/models/grammar.py) |
+
+### RemeDi (learned unmasking-policy stream)
+
+| | |
+| --- | --- |
+| **Paper** | *Don’t Settle Too Early: Self-Reflective Remasking for Diffusion Language Models*, 2025. [arXiv:2509.23653](https://arxiv.org/html/2509.23653v1) |
+| **Fidelity** | **Adjacent** — no UPS; nearest unused code is [`FastPathGate`](../../src/slm_training/grammar_fastpath/gate.py) (sigmoid trust on hiddens, not integrated) |
+| **Intent** | Cheap per-token reliability head that can later gate heavier critics / remask budgets (E31) |
+
+### BackPlay (frozen-model correction head)
+
+| | |
+| --- | --- |
+| **Paper** | *BackPlay: Plug-in Look-Back Self-Correction for Diffusion Language Models*, 2026. [arXiv:2601.06428](https://arxiv.org/html/2601.06428v2) |
+| **Fidelity** | **Adjacent** — template for training a plug-in head on *this* TwoTower’s own error distribution while freezing the denoiser |
+| **Intent** | Model-specific remask scores without joint generator–critic optimization (E31) |
+
+### GIDD / SCDD (revision in the training process)
+
+| | |
+| --- | --- |
+| **Papers** | *Generalized Interpolating Discrete Diffusion* [arXiv:2503.04482](https://arxiv.org/abs/2503.04482); *Generalized Discrete Diffusion with Self-Correction* [arXiv:2603.02230](https://arxiv.org/html/2603.02230v1) |
+| **Fidelity** | **Adjacent** — MDLM schedule is separate (Adapted above); a lite visible-corruption aux loss (E32) may borrow the *wrong visible token* idea without a full hybrid diffusion retrain |
+| **Intent** | Teach the denoiser that visible tokens can be wrong |
+
+### Latent falsification MoE (research design)
+
+| | |
+| --- | --- |
+| **Lineage** | Coconut continuous latent reasoning [2412.06769](https://arxiv.org/abs/2412.06769); SPC adversarial critics [2504.19162](https://arxiv.org/html/2504.19162v1); sparse MoE reward/critic specialization [2606.04284](https://arxiv.org/abs/2606.04284); LLaDA-MoE (generator experts — do not confuse) [2509.24389](https://arxiv.org/abs/2509.24389); counterfactual MoE routing [2605.07260](https://arxiv.org/abs/2605.07260); PLR parallel latent streams [2601.03153](https://arxiv.org/abs/2601.03153); MIRAGE continuous agent latent CoT [2606.04627](https://arxiv.org/abs/2606.04627) (Adjacent — not a parallel-slot recipe) |
+| **Fidelity** | **Adjacent** — long-horizon design only (E34); shared correction head + top‑k mechanism specialists over frozen \(H_t\), routing on repair utility, remask as transport |
+| **Design note** | [`research-correction-critics.md`](research-correction-critics.md) |
+
+### Related decode-order / remask priors
+
+| Idea | Paper | Status here |
+| --- | --- | --- |
+| Deferred commitment / sliding windows | [arXiv:2601.02076](https://arxiv.org/abs/2601.02076) | **Adjacent** — supports revisable LTR windows |
+| Token ordering / “visible ≠ revisable” | [arXiv:2502.06768](https://arxiv.org/html/2502.06768v1) | **Adjacent** — explains remaining permanence gap |
+| Remask, don’t replace | [arXiv:2604.18738](https://arxiv.org/abs/2604.18738) | **Adjacent** — preferred refine action |
+
+---
+
 ## Systems & data (not papers, but cited lineage)
 
 | System | Role here | Link / path |
@@ -161,6 +221,11 @@ return invalid OpenUI.
 | Template fill | `template_fill_decode` | `models/template_fill.py` |
 | Preference stage | `scripts/train_preference.py` | `preference/train.py` |
 | GRPO-lite | `scripts/train_rl.py` | `rl/` |
+| LTR suffix rollback (candidate) | E30 matrix row | `research-correction-critics.md` / `models/twotower.py` |
+| Trust head (candidate) | E31; wire `FastPathGate` | `grammar_fastpath/gate.py` |
+| Visible-token corruption (candidate) | E32 | `models/twotower.py` (`_mask_targets`) |
+| Combined remask policy (candidate) | E33 | `parallel_decode.py` + grammar remask |
+| Latent critic MoE (deferred) | E34 | `research-correction-critics.md` |
 
 ---
 
