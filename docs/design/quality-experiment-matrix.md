@@ -177,3 +177,15 @@ programs need ≥160 tokens — then E19–E22 / E29 champion.
 - `scripts/diagnose_eval.py` reports `length_budget` and exits 2 when p95 exceeds LTR budget.
 - Defaults: `grammar_ltr_max_tokens=192`, stages `(64,128,192,256)`.
 - Research: MDLM schedule + remasking tagged **Adapted** in [research-lineage.md](research-lineage.md).
+
+## V3 measured results (CPU, scratch, fixture suites)
+
+See [quality-matrix-results.json](quality-matrix-results.json).
+
+| ID | Smoke parse | Smoke fid | Ship gates | Notes |
+| --- | --- | --- | --- | --- |
+| E18 | 0.0 | 0.0 | fail | length-safe alone underfit at 80 steps |
+| **E20** | **1.0** | **1.0** | **pass** | template fill; held_out parse 0.6 / fid 1.0 |
+| **E29** | **0.67** | **0.67** | **pass** | champion stack at 40 steps |
+
+First honest `--ship-gates` clears on the fixture scoreboard. Production claim still needs full `rico_held` (1500) + HF context.

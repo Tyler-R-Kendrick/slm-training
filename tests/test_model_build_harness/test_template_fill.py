@@ -17,7 +17,8 @@ def test_build_slot_contract_template_binds_inventory() -> None:
     assert 'root = Stack([' in src
     assert 'TextContent(":smoke.hero.title")' in src
     assert 'TextContent(":smoke.hero.body")' in src
-    assert 'TextContent(":cta.label")' in src
+    assert 'Button(":cta.label")' in src
+    assert "card = Card([" in src
     assert normalize_placeholders(["cta.label", ":cta.label"]) == [":cta.label"]
 
 

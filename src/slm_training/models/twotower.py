@@ -562,15 +562,17 @@ class TwoTowerModel(nn.Module):
         ser = self._canonical_valid_openui(text)
         if ser is not None:
             return ser
+        # E20: inventory-bound skeleton is a valid, fidelity-aligned fallback.
+        # Prefer it over multi-attempt LTR repair (O(T) Node checks per attempt).
+        if bool(getattr(self.config, "template_fill_decode", False)) and slot_contract:
+            templ = build_slot_contract_template(slot_contract)
+            ser = self._canonical_valid_openui(templ)
+            if ser is not None:
+                return ser
         last = text
         for _ in range(max(1, attempts)):
             last = self._ltr_repair_from_bos(ctx, ctx_pad, length)
             ser = self._canonical_valid_openui(last)
-            if ser is not None:
-                return ser
-        if bool(getattr(self.config, "template_fill_decode", False)) and slot_contract:
-            templ = build_slot_contract_template(slot_contract)
-            ser = self._canonical_valid_openui(templ)
             if ser is not None:
                 return ser
         if self.config.grammar_finalize_validate:
