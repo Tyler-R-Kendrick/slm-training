@@ -99,7 +99,7 @@ python -m scripts.serve_playground --port 8765
 # open http://127.0.0.1:8765
 ```
 
-Annotate mode (default UI): auto-generated prompts, prefetch 1–2 samples ahead.
+Annotate mode (default UI): auto-generated prompts, prefetch 1–2 samples ahead, and a live **OpenUI visual preview** (same `@openuidev/react-lang` `Renderer` path as [openui.com/demo](https://www.openui.com/demo/github)).
 
 | Input | Action |
 |-------|--------|
@@ -114,6 +114,14 @@ Annotations append to `outputs/annotations/feedback.jsonl`. Thumbs-up rows promo
 ```bash
 python -m scripts.export_annotations status
 python -m scripts.export_annotations export
+```
+
+### Rebuild the OpenUI preview bundle
+
+```bash
+npm run preview:install
+npm run preview:build
+# writes src/slm_training/web/static/preview/{preview.js,preview.css}
 ```
 
 ### Playwright visual / e2e

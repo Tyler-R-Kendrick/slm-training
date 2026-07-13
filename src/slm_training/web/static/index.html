@@ -10,6 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap"
       rel="stylesheet"
     />
+    <link rel="stylesheet" href="/static/preview/preview.css" />
     <link rel="stylesheet" href="/static/styles.css" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%231f4d3a'/%3E%3C/svg%3E" />
   </head>
@@ -27,7 +28,16 @@
           <span class="badge" id="badge">loading</span>
         </div>
         <p class="prompt-text" id="promptText">Loading prompt…</p>
-        <pre class="output" id="output"><code>// generating…</code></pre>
+
+        <div class="preview-panel" aria-label="Rendered OpenUI">
+          <div class="preview-label">Preview</div>
+          <div id="preview" class="preview-mount"></div>
+        </div>
+
+        <details class="source-panel">
+          <summary>OpenUI source</summary>
+          <pre class="output" id="output"><code>// generating…</code></pre>
+        </details>
         <p class="error" id="error" hidden></p>
 
         <label class="note-label" for="note">Note (optional)</label>
@@ -66,8 +76,13 @@
           <input type="checkbox" id="grammar" checked />
           Grammar guard
         </label>
+        <label class="toggle">
+          <input type="checkbox" id="keepPlaceholders" />
+          Keep :placeholders in preview
+        </label>
       </details>
     </main>
+    <script src="/static/preview/preview.js" type="module"></script>
     <script src="/static/app.js" type="module"></script>
   </body>
 </html>

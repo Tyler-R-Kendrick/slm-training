@@ -14,8 +14,7 @@ Build a small, on-device-friendly specialist that generates **placeholder-augmen
 ## Non-goals (still deferred)
 
 - Consistency distillation
-- Full React `@openuidev/react-lang` visual playground
-- Custom Cactus NEON kernel authorship in this repo
+- Full chat-shell AgentInterface / OpenUIChat (annotate uses a focused `Renderer` island instead)- Custom Cactus NEON kernel authorship in this repo
 - Production copy SLM
 
 ## Official OpenUI Lang (source of truth)

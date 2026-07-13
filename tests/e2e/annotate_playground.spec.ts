@@ -13,17 +13,45 @@ function feedbackCount(): number {
 }
 
 test.describe("annotate playground", () => {
-  test("desktop: load, note, grade, navigate", async ({ page }, testInfo) => {
+  test("desktop: render preview, note, grade, navigate", async ({ page }, testInfo) => {
     const before = feedbackCount();
     await page.goto("/");
     await expect(page.getByText("TwoTower")).toBeVisible();
     await expect(page.locator("#card")).toBeVisible();
+    await expect(page.locator("#preview")).toBeVisible();
 
-    // Wait until a real sample is ready (not generating forever).
     await expect(page.locator("#badge")).not.toHaveText(/loading|generating/i, {
       timeout: 90_000,
     });
     await expect(page.locator("#promptText")).not.toHaveText(/Loading|…/);
+
+    // Renderer island mounted (valid samples show UI; invalid show status text).
+    await expect(page.locator("#preview .openui-preview-root")).toBeVisible({
+      timeout: 30_000,
+    });
+    await expect
+      .poll(async () => {
+        const root = page.locator("#preview .openui-preview-root");
+        if ((await root.count()) === 0) return "";
+        const text = (await page.locator("#preview").innerText()).trim();
+        const kids = await page.locator("#preview .openui-preview-root *").count();
+        return text || (kids > 0 ? "rendered" : "");
+      }, { timeout: 30_000 })
+      .not.toEqual("");
+
+    // Force a known-good OpenUI render to assert demo-like visual output.
+    await page.evaluate(() => {
+      const src = [
+        'root = Stack([hero], "column")',
+        'hero_title = TextContent(":hero.title")',
+        'hero_body = TextContent(":hero.body")',
+        "hero = Card([hero_title, hero_body])",
+      ].join("\n");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const api = (window as any).OpenUIPreview;
+      api.mount(document.getElementById("preview"), { source: src });
+    });
+    await expect(page.locator("#preview")).toContainText(/Title|Body/i, { timeout: 10_000 });
 
     await page.screenshot({
       path: path.join(
@@ -33,7 +61,6 @@ test.describe("annotate playground", () => {
       fullPage: true,
     });
 
-    // Type to focus note
     await page.keyboard.type("looks structured");
     await expect(page.locator("#note")).toHaveValue(/looks structured/);
 
@@ -45,7 +72,6 @@ test.describe("annotate playground", () => {
       timeout: 30_000,
     });
 
-    // Navigate
     await page.keyboard.press("ArrowRight");
     await page.keyboard.press("ArrowLeft");
 
@@ -57,14 +83,14 @@ test.describe("annotate playground", () => {
       fullPage: true,
     });
 
-    // Prefer asserting feedback grew; generation may be slow but grade should persist.
     await expect.poll(() => feedbackCount(), { timeout: 15_000 }).toBeGreaterThan(before);
   });
 
-  test("mobile: large grade targets visible", async ({ page }, testInfo) => {
+  test("mobile: preview + large grade targets visible", async ({ page }, testInfo) => {
     await page.goto("/");
     await expect(page.locator("#btnUp")).toBeVisible();
     await expect(page.locator("#btnDown")).toBeVisible();
+    await expect(page.locator("#preview")).toBeVisible();
     await expect(page.locator("#badge")).not.toHaveText(/loading/i, { timeout: 90_000 });
 
     const upBox = await page.locator("#btnUp").boundingBox();

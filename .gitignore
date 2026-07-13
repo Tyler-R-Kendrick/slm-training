@@ -27,3 +27,5 @@ outputs/preferences/human_pairs.jsonl
 test-results/
 playwright-report/
 blob-report/
+src/slm_training/web/static/preview/*.map
+tools/openui_preview/node_modules/

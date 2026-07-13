@@ -7,6 +7,8 @@ const statusEl = document.getElementById("status");
 const noteEl = document.getElementById("note");
 const designMdEl = document.getElementById("design_md");
 const grammarEl = document.getElementById("grammar");
+const keepPlaceholdersEl = document.getElementById("keepPlaceholders");
+const previewEl = document.getElementById("preview");
 const indexPillEl = document.getElementById("indexPill");
 const btnUp = document.getElementById("btnUp");
 const btnDown = document.getElementById("btnDown");
@@ -43,6 +45,50 @@ function setOutput(text) {
   outputEl.style.animation = "";
 }
 
+function waitForPreviewApi(timeoutMs = 15000) {
+  if (window.OpenUIPreview?.mount) return Promise.resolve(window.OpenUIPreview);
+  return new Promise((resolve, reject) => {
+    const t0 = performance.now();
+    const tick = () => {
+      if (window.OpenUIPreview?.mount) {
+        resolve(window.OpenUIPreview);
+        return;
+      }
+      if (performance.now() - t0 > timeoutMs) {
+        reject(new Error("OpenUI preview bundle failed to load"));
+        return;
+      }
+      requestAnimationFrame(tick);
+    };
+    tick();
+  });
+}
+
+function updatePreview(item) {
+  if (!previewEl) return;
+  const api = window.OpenUIPreview;
+  if (!api?.mount) {
+    previewEl.innerHTML =
+      '<p class="openui-preview-empty">Loading renderer…</p>';
+    return;
+  }
+  if (!item || item.status === "loading") {
+    api.mount(previewEl, { source: null });
+    return;
+  }
+  const source = item.serialized || item.openui || "";
+  try {
+    api.mount(previewEl, {
+      source,
+      keepPlaceholders: !!keepPlaceholdersEl?.checked,
+    });
+  } catch (err) {
+    previewEl.innerHTML = `<p class="openui-preview-empty">Render error: ${
+      err?.message || err
+    }</p>`;
+  }
+}
+
 function render() {
   const item = current();
   indexPillEl.textContent = `${Math.min(index + 1, Math.max(stack.length, 1))} / ${Math.max(stack.length, 1)}`;
@@ -52,11 +98,13 @@ function render() {
     badgeEl.textContent = "loading";
     badgeEl.className = "badge";
     errorEl.hidden = true;
+    updatePreview(null);
     return;
   }
   promptTextEl.textContent = item.prompt;
   setOutput(item.serialized || item.openui || "// empty");
   noteEl.value = item.note || "";
+  updatePreview(item);
   if (item.status === "loading") {
     badgeEl.textContent = "generating";
     badgeEl.className = "badge";
@@ -281,11 +329,19 @@ noteEl.addEventListener("input", () => {
 });
 
 async function boot() {
+  statusEl.textContent = "Loading renderer…";
+  try {
+    await waitForPreviewApi();
+  } catch (err) {
+    statusEl.textContent = err.message || String(err);
+  }
   statusEl.textContent = "Prefetching samples…";
   render();
   await ensurePrefetch();
   statusEl.textContent = "Ready · ↑/↓ grade · ←/→ navigate · type to note";
   cardEl.focus();
 }
+
+keepPlaceholdersEl?.addEventListener("change", () => render());
 
 boot();

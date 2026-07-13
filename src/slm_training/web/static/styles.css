@@ -164,6 +164,54 @@ body {
   letter-spacing: -0.02em;
 }
 
+.preview-panel {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.preview-label {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--moss);
+}
+
+.preview-mount {
+  min-height: 12rem;
+  max-height: min(52vh, 28rem);
+  overflow: auto;
+  padding: 1rem 1.05rem;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.82);
+  animation: fadeIn 420ms ease both;
+}
+
+.preview-mount .openui-preview-root {
+  min-height: 4rem;
+}
+
+.preview-mount .openui-preview-empty {
+  margin: 0;
+  color: var(--moss);
+  font-size: 0.9rem;
+}
+
+.source-panel {
+  border-top: 1px solid var(--line);
+  padding-top: 0.35rem;
+}
+
+.source-panel summary {
+  cursor: pointer;
+  font-family: var(--display);
+  font-weight: 700;
+  color: var(--moss);
+  font-size: 0.9rem;
+  margin-bottom: 0.45rem;
+}
+
 .prompt-label,
 .note-label,
 .result-head h2 {
@@ -352,7 +400,13 @@ textarea:focus,
   }
 
   .output {
-    min-height: 8rem;
-    max-height: 38vh;
+    min-height: 5rem;
+    max-height: 28vh;
+  }
+
+  .preview-mount {
+    min-height: 10rem;
+    max-height: 42vh;
+    padding: 0.85rem;
   }
 }
