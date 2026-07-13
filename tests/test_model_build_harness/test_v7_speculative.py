@@ -420,19 +420,23 @@ def test_generate_with_v7_overlap_thread() -> None:
 
 
 def test_v7_defaults_leave_decode_unchanged() -> None:
-    """With all V7 knobs at defaults the canvas path is byte-identical."""
-    base = _tiny_model()
-    v7_off = _tiny_model(
-        stability_min_persistence=0,
-        unmask_mode="positions",
-        cluster_verify=False,
-        survival_gate=False,
-        speculative_successor=False,
-    )
+    """With all V7 knobs at defaults the canvas path is byte-identical.
+
+    Compare two generates on the *same* weights (not two independently
+    constructed models) so tokenizer/RNG init cannot spuriously diverge.
+    """
+    model = _tiny_model()
+    model.eval()
+    # Snapshot defaults, then explicitly re-apply V7-off knobs and regenerate.
     torch.manual_seed(0)
-    a = base.generate("Hero")
+    a = model.generate("Hero")
+    model.config.stability_min_persistence = 0
+    model.config.unmask_mode = "positions"
+    model.config.cluster_verify = False
+    model.config.survival_gate = False
+    model.config.speculative_successor = False
     torch.manual_seed(0)
-    b = v7_off.generate("Hero")
+    b = model.generate("Hero")
     assert a == b
 
 
