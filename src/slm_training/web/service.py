@@ -8,14 +8,18 @@ from pathlib import Path
 from typing import Any
 
 from slm_training.annotations import (
+    DEFAULT_BAD_OUTPUTS_PATH,
     DEFAULT_FEEDBACK_PATH,
     DEFAULT_HUMAN_PAIRS_PATH,
     DEFAULT_HUMAN_TRAIN_PATH,
     AnnotationRecord,
+    BadOutputRecord,
     append_annotation,
+    append_bad_output,
     load_annotations,
     maybe_append_preference_pair,
     new_annotation_id,
+    new_bad_output_id,
     recent_annotations,
     upsert_human_train_seed,
     utc_now_iso,
@@ -48,12 +52,14 @@ class PlaygroundService:
         annotations_path: Path | None = None,
         human_train_path: Path | None = None,
         human_pairs_path: Path | None = None,
+        bad_outputs_path: Path | None = None,
     ) -> None:
         self.checkpoint = Path(checkpoint or DEFAULT_CHECKPOINT)
         self.device = device
         self.annotations_path = Path(annotations_path or DEFAULT_FEEDBACK_PATH)
         self.human_train_path = Path(human_train_path or DEFAULT_HUMAN_TRAIN_PATH)
         self.human_pairs_path = Path(human_pairs_path or DEFAULT_HUMAN_PAIRS_PATH)
+        self.bad_outputs_path = Path(bad_outputs_path or DEFAULT_BAD_OUTPUTS_PATH)
         self._model: TwoTowerModel | None = None
         self._lock = threading.Lock()
         self._prompt_bank = load_prompt_bank()
@@ -78,6 +84,7 @@ class PlaygroundService:
             "examples": EXAMPLE_PROMPTS,
             "prompt_bank_size": len(self._prompt_bank),
             "annotations_path": str(self.annotations_path),
+            "bad_outputs_path": str(self.bad_outputs_path),
             "meta": meta,
         }
 
@@ -116,6 +123,35 @@ class PlaygroundService:
             prompt = cursor.next()
         return {"prompt": prompt, "session_id": sid}
 
+    def _quarantine_bad_output(
+        self,
+        *,
+        prompt: str,
+        openui: str,
+        error: str,
+        attempt: int,
+        session_id: str | None = None,
+        meta: dict[str, Any] | None = None,
+    ) -> BadOutputRecord:
+        record = BadOutputRecord(
+            id=new_bad_output_id(),
+            ts=utc_now_iso(),
+            prompt=prompt.strip(),
+            openui=openui.strip(),
+            error=error,
+            checkpoint=str(self.checkpoint),
+            session_id=session_id,
+            attempt=attempt,
+            meta={
+                "source": "playground_generate",
+                "usable_for_training": True,
+                "label": "invalid_openui",
+                **dict(meta or {}),
+            },
+        )
+        append_bad_output(self.bad_outputs_path, record)
+        return record
+
     def generate(
         self,
         prompt: str,
@@ -123,6 +159,7 @@ class PlaygroundService:
         grammar_constrained: bool = True,
         design_md: str | None = None,
         max_attempts: int = 3,
+        session_id: str | None = None,
     ) -> GenerateResult:
         prompt = (prompt or "").strip()
         if not prompt:
@@ -142,7 +179,7 @@ class PlaygroundService:
         valid = False
         with self._lock:
             attempts = max(1, int(max_attempts)) if grammar_constrained else 1
-            for _ in range(attempts):
+            for attempt_no in range(1, attempts + 1):
                 try:
                     openui = model.generate(
                         prompt,
@@ -153,6 +190,15 @@ class PlaygroundService:
                     valid = False
                     serialized = None
                     last_error = str(exc)
+                    if grammar_constrained:
+                        self._quarantine_bad_output(
+                            prompt=prompt,
+                            openui=openui or "",
+                            error=last_error,
+                            attempt=attempt_no,
+                            session_id=session_id,
+                            meta={"failure": "generate_exception"},
+                        )
                     if not grammar_constrained:
                         raise
                     continue
@@ -166,6 +212,15 @@ class PlaygroundService:
                     valid = False
                     serialized = None
                     last_error = str(exc)
+                    if grammar_constrained:
+                        self._quarantine_bad_output(
+                            prompt=prompt,
+                            openui=openui,
+                            error=last_error,
+                            attempt=attempt_no,
+                            session_id=session_id,
+                            meta={"failure": "parse_error"},
+                        )
                     if not grammar_constrained:
                         break
             if grammar_constrained and not valid:
@@ -189,6 +244,59 @@ class PlaygroundService:
                 "unresolved": stream.get("unresolved") or [],
             },
             serialized=serialized,
+        )
+
+    def sample(
+        self,
+        *,
+        prompt: str | None = None,
+        session_id: str | None = None,
+        grammar_constrained: bool = True,
+        design_md: str | None = None,
+        auto_prompt: bool = True,
+        max_rounds: int = 8,
+    ) -> dict[str, Any]:
+        """Generate a sample guaranteed valid when grammar_constrained is True."""
+        sid = (session_id or "default").strip() or "default"
+        rounds = max(1, int(max_rounds)) if grammar_constrained else 1
+        last_error: str | None = None
+        for _ in range(rounds):
+            current_prompt = (prompt or "").strip()
+            if not current_prompt:
+                if not auto_prompt:
+                    raise ValueError("prompt must be non-empty (or enable auto_prompt)")
+                nxt = self.next_prompt(sid)
+                current_prompt = nxt["prompt"]
+                sid = nxt["session_id"]
+            try:
+                result = self.generate(
+                    current_prompt,
+                    grammar_constrained=grammar_constrained,
+                    design_md=design_md,
+                    session_id=sid,
+                )
+            except Exception as exc:  # noqa: BLE001
+                last_error = str(exc)
+                if not grammar_constrained:
+                    raise
+                prompt = None
+                continue
+            if grammar_constrained and not result.valid:
+                last_error = result.error or "invalid OpenUI"
+                prompt = None
+                continue
+            return {
+                "prompt": result.prompt,
+                "openui": result.openui,
+                "valid": result.valid,
+                "error": result.error,
+                "stream": result.stream,
+                "serialized": result.serialized,
+                "session_id": sid,
+            }
+        raise RuntimeError(
+            last_error
+            or "failed to produce a valid grammar-constrained sample"
         )
 
     def annotate(

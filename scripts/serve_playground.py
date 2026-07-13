@@ -37,6 +37,12 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=Path("outputs/preferences/human_pairs.jsonl"),
     )
+    parser.add_argument(
+        "--bad-outputs-path",
+        type=Path,
+        default=Path("outputs/annotations/bad_outputs.jsonl"),
+        help="Append-only JSONL for invalid model outputs (negative training)",
+    )
     args = parser.parse_args(argv)
 
     import uvicorn
@@ -49,6 +55,7 @@ def main(argv: list[str] | None = None) -> int:
         annotations_path=args.annotations_path,
         human_train_path=args.human_train_path,
         human_pairs_path=args.human_pairs_path,
+        bad_outputs_path=args.bad_outputs_path,
     )
     # Eager-load so the first request is fast
     try:
