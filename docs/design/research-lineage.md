@@ -75,6 +75,33 @@ return invalid OpenUI.
 | **Code** | [`models/parallel_decode.py`](../../src/slm_training/models/parallel_decode.py) |
 | **Notes** | [`accel-parallel.md`](accel-parallel.md), [`runtime-performance.md`](runtime-performance.md) |
 
+### MDLM continuous-time absorbing mask (training)
+
+| | |
+| --- | --- |
+| **Paper** | Sahoo et al., *Simple and Effective Masked Diffusion Language Models*, NeurIPS 2024. [arXiv:2406.07524](https://arxiv.org/abs/2406.07524). Related: LLaDA (Nie et al., 2025) |
+| **Fidelity** | **Adapted** — log-linear `α(t)=1-t` ⇒ per-row mask rate `t` and CE weight `1/t`; not a full continuous-time ELBO stack |
+| **Code** | `_mask_targets` + weighted CE in [`models/twotower.py`](../../src/slm_training/models/twotower.py) |
+| **Config** | `mdlm_schedule`, `mdlm_eps` |
+
+### Confidence remasking (self-correction)
+
+| | |
+| --- | --- |
+| **Lineage** | GIDD / ReMDM / LLaDA remasking — revise low-confidence committed tokens mid-diffusion |
+| **Fidelity** | **Adapted** — remask bottom-`q` confidence known tokens each MaskGIT step (`remask_ratio`) |
+| **Code** | `select_remask_indices` in [`models/parallel_decode.py`](../../src/slm_training/models/parallel_decode.py); loop in `_generate_maskgit_one` |
+| **Config** | `remask_ratio` |
+
+### Slot-contract template fill (DSL-native)
+
+| | |
+| --- | --- |
+| **Lineage** | Spec/inventory-conditioned structured generation (adjacent to schema-constrained decode) |
+| **Fidelity** | **Adapted** — build a valid OpenUI skeleton from `record.placeholders`, seed MaskGIT, remask binder/content positions |
+| **Code** | [`models/template_fill.py`](../../src/slm_training/models/template_fill.py); `_generate_maskgit_one` / `_ensure_valid_openui` |
+| **Config** | `template_fill_decode` (+ slot contract flags) |
+
 ---
 
 ## Training stack
@@ -109,19 +136,21 @@ return invalid OpenUI.
 
 ## Correction / revision (candidate work)
 
-Nothing in this section is implemented yet. All rows are **Adjacent**. Full
-write-up, paper inventory, and recommended progression live in
-[`research-correction-critics.md`](research-correction-critics.md). Proposed
-levers: **E18–E22** in [`quality-experiment-matrix.md`](quality-experiment-matrix.md).
+V3 already **Adapted** confidence remasking (`remask_ratio`) and related decode
+levers — see “Confidence remasking” above. This section covers **Adjacent**
+extensions: critic-guided / trust-head remask and latent falsification. Full
+write-up: [`research-correction-critics.md`](research-correction-critics.md).
+Proposed levers: **E30–E34** (V4) in
+[`quality-experiment-matrix.md`](quality-experiment-matrix.md).
 
 ### ReMDM (inference-time remasking)
 
 | | |
 | --- | --- |
 | **Paper** | *Remasking Discrete Diffusion Models with Inference-Time Scaling*, 2025. [arXiv:2503.00307](https://arxiv.org/abs/2503.00307) |
-| **Fidelity** | **Adjacent** — not wired; would sit above grammar remask as a windowed `token → [MASK]` rollback sampler |
+| **Fidelity** | **Adjacent** (paper) / **Adapted** (confidence remask subset) — V3 implements bottom-`q` confidence remask; semantic / LTR-suffix / trust-gated budgets remain future (E30/E33) |
 | **Intent** | Let pretrained MaskGIT weights revise committed tokens without GIDD-style retraining |
-| **Hook** | Decode path in [`twotower.py`](../../src/slm_training/models/twotower.py); today only [`filter_ids_by_stream`](../../src/slm_training/models/grammar.py) remasks |
+| **Hook** | [`select_remask_indices`](../../src/slm_training/models/parallel_decode.py); grammar [`filter_ids_by_stream`](../../src/slm_training/models/grammar.py) |
 
 ### RemeDi (learned unmasking-policy stream)
 
@@ -129,7 +158,7 @@ levers: **E18–E22** in [`quality-experiment-matrix.md`](quality-experiment-mat
 | --- | --- |
 | **Paper** | *Don’t Settle Too Early: Self-Reflective Remasking for Diffusion Language Models*, 2025. [arXiv:2509.23653](https://arxiv.org/html/2509.23653v1) |
 | **Fidelity** | **Adjacent** — no UPS; nearest unused code is [`FastPathGate`](../../src/slm_training/grammar_fastpath/gate.py) (sigmoid trust on hiddens, not integrated) |
-| **Intent** | Cheap per-token reliability head that can later gate heavier critics / remask budgets |
+| **Intent** | Cheap per-token reliability head that can later gate heavier critics / remask budgets (E31) |
 
 ### BackPlay (frozen-model correction head)
 
@@ -137,22 +166,22 @@ levers: **E18–E22** in [`quality-experiment-matrix.md`](quality-experiment-mat
 | --- | --- |
 | **Paper** | *BackPlay: Plug-in Look-Back Self-Correction for Diffusion Language Models*, 2026. [arXiv:2601.06428](https://arxiv.org/html/2601.06428v2) |
 | **Fidelity** | **Adjacent** — template for training a plug-in head on *this* TwoTower’s own error distribution while freezing the denoiser |
-| **Intent** | Model-specific remask scores without joint generator–critic optimization |
+| **Intent** | Model-specific remask scores without joint generator–critic optimization (E31) |
 
 ### GIDD / SCDD (revision in the training process)
 
 | | |
 | --- | --- |
 | **Papers** | *Generalized Interpolating Discrete Diffusion* [arXiv:2503.04482](https://arxiv.org/abs/2503.04482); *Generalized Discrete Diffusion with Self-Correction* [arXiv:2603.02230](https://arxiv.org/html/2603.02230v1) |
-| **Fidelity** | **Adjacent** — we stay on MaskGIT random masking; a lite visible-corruption aux loss (E20) may borrow the *idea* without a full hybrid diffusion retrain |
+| **Fidelity** | **Adjacent** — MDLM schedule is separate (Adapted above); a lite visible-corruption aux loss (E32) may borrow the *wrong visible token* idea without a full hybrid diffusion retrain |
 | **Intent** | Teach the denoiser that visible tokens can be wrong |
 
 ### Latent falsification MoE (research design)
 
 | | |
 | --- | --- |
-| **Lineage** | Coconut continuous latent reasoning [2412.06769](https://arxiv.org/abs/2412.06769); SPC adversarial critics [2504.19162](https://arxiv.org/html/2504.19162v1); sparse MoE reward/critic specialization [2606.04284](https://arxiv.org/abs/2606.04284); LLaDA-MoE (generator experts — do not confuse) [2509.24389](https://arxiv.org/abs/2509.24389); counterfactual MoE routing [2605.07260](https://arxiv.org/abs/2605.07260); parallel latent slot refinement [2606.04627](https://arxiv.org/html/2606.04627v2) |
-| **Fidelity** | **Adjacent** — long-horizon design only (E22); shared correction head + top‑k mechanism specialists over frozen \(H_t\), routing on repair utility, ReMDM as transport |
+| **Lineage** | Coconut continuous latent reasoning [2412.06769](https://arxiv.org/abs/2412.06769); SPC adversarial critics [2504.19162](https://arxiv.org/html/2504.19162v1); sparse MoE reward/critic specialization [2606.04284](https://arxiv.org/abs/2606.04284); LLaDA-MoE (generator experts — do not confuse) [2509.24389](https://arxiv.org/abs/2509.24389); counterfactual MoE routing [2605.07260](https://arxiv.org/abs/2605.07260); PLR parallel latent streams [2601.03153](https://arxiv.org/abs/2601.03153); MIRAGE continuous agent latent CoT [2606.04627](https://arxiv.org/abs/2606.04627) (Adjacent — not a parallel-slot recipe) |
+| **Fidelity** | **Adjacent** — long-horizon design only (E34); shared correction head + top‑k mechanism specialists over frozen \(H_t\), routing on repair utility, remask as transport |
 | **Design note** | [`research-correction-critics.md`](research-correction-critics.md) |
 
 ### Related decode-order / remask priors
@@ -160,7 +189,7 @@ levers: **E18–E22** in [`quality-experiment-matrix.md`](quality-experiment-mat
 | Idea | Paper | Status here |
 | --- | --- | --- |
 | Deferred commitment / sliding windows | [arXiv:2601.02076](https://arxiv.org/abs/2601.02076) | **Adjacent** — supports revisable LTR windows |
-| Token ordering / “visible ≠ revisable” | [arXiv:2502.06768](https://arxiv.org/html/2502.06768v1) | **Adjacent** — explains our permanence gap |
+| Token ordering / “visible ≠ revisable” | [arXiv:2502.06768](https://arxiv.org/html/2502.06768v1) | **Adjacent** — explains remaining permanence gap |
 | Remask, don’t replace | [arXiv:2604.18738](https://arxiv.org/abs/2604.18738) | **Adjacent** — preferred refine action |
 
 ---
@@ -186,11 +215,17 @@ levers: **E18–E22** in [`quality-experiment-matrix.md`](quality-experiment-mat
 | CFG hole admit | `--grammar-fastpath-mode mask\|hybrid` | `grammar_fastpath/maskgit_constrain.py` |
 | DFA force-emit | `--grammar-fastpath` / mode `force\|hybrid` | `grammar_fastpath/force_emit.py` |
 | Valid-only certify | `--grammar-ltr-primary` + repair + finalize | `models/twotower.py` (`_ensure_valid_openui`) |
+| Length-safe LTR | `grammar_ltr_max_tokens` / stages | `models/twotower.py` |
+| MDLM schedule | `mdlm_schedule` | `models/twotower.py` (`_mask_targets`) |
+| Remasking | `remask_ratio` | `models/parallel_decode.py` |
+| Template fill | `template_fill_decode` | `models/template_fill.py` |
 | Preference stage | `scripts/train_preference.py` | `preference/train.py` |
 | GRPO-lite | `scripts/train_rl.py` | `rl/` |
-| ReMDM-style rollback (candidate) | E18 matrix row | `research-correction-critics.md` |
-| Trust / remask head (candidate) | E19–E21; wire `FastPathGate` | `grammar_fastpath/gate.py` |
-| Latent critic MoE (deferred) | E22 | `research-correction-critics.md` |
+| LTR suffix rollback (candidate) | E30 matrix row | `research-correction-critics.md` / `models/twotower.py` |
+| Trust head (candidate) | E31; wire `FastPathGate` | `grammar_fastpath/gate.py` |
+| Visible-token corruption (candidate) | E32 | `models/twotower.py` (`_mask_targets`) |
+| Combined remask policy (candidate) | E33 | `parallel_decode.py` + grammar remask |
+| Latent critic MoE (deferred) | E34 | `research-correction-critics.md` |
 
 ---
 

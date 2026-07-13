@@ -50,7 +50,7 @@ class Experiment:
     n_heads: int = 4
     context_layers: int = 2
     denoiser_layers: int = 4
-    grammar_ltr_max_tokens: int = 64
+    grammar_ltr_max_tokens: int = 192
     # Eval-only overlay on a prior run (skip train if set)
     eval_from_run: str | None = None
     design_md_in_context: bool = True
@@ -66,7 +66,12 @@ class Experiment:
     # Eval-only overlay: decode sweep presets (E17)
     decode_sweep: str | None = None
     eval_from_checkpoint: str | None = None
-
+    # V3 levers
+    grammar_ltr_primary: bool = True
+    template_fill_decode: bool = False
+    mdlm_schedule: bool = False
+    remask_ratio: float = 0.0
+    gen_steps_override: int | None = None
 
 def _base_experiments(
     train_v1: Path,
@@ -311,6 +316,122 @@ def _v2_experiments(
     ]
 
 
+def _v3_experiments(
+    train_v1: Path,
+    train_cur: Path,
+    *,
+    design_md_in_context: bool = True,
+) -> list[Experiment]:
+    """E18–E29: length-safe decode, train/infer match, template fill, MDLM, remask."""
+    length_safe = 192
+    capacity = dict(
+        d_model=192,
+        n_heads=6,
+        context_layers=3,
+        denoiser_layers=6,
+        grammar_ltr_max_tokens=256,
+    )
+    return [
+        Experiment(
+            "E18",
+            "qx_e18_length_safe",
+            "Length-safe LTR budgets for compositional tokenizer",
+            train_v1,
+            grammar_ltr_repair=True,
+            grammar_ltr_max_tokens=length_safe,
+            grammar_ltr_primary=True,
+            ltr_loss_weight=2.0,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E19a",
+            "qx_e19a_maskgit_primary",
+            "MaskGIT-primary decode matched to MaskGIT train (no LTR-primary)",
+            train_v1,
+            grammar_ltr_repair=True,
+            grammar_ltr_max_tokens=length_safe,
+            grammar_ltr_primary=False,
+            ltr_loss_weight=0.5,
+            gen_steps_override=16,
+            remask_ratio=0.0,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E19b",
+            "qx_e19b_ltr_matched",
+            "LTR-primary decode with strong LTR loss + length-safe budget",
+            train_v1,
+            grammar_ltr_repair=True,
+            grammar_ltr_max_tokens=length_safe,
+            grammar_ltr_primary=True,
+            ltr_loss_weight=2.5,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E20",
+            "qx_e20_template_fill",
+            "Slot-contract template-fill decode (inventory-bound skeleton)",
+            train_v1,
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            template_fill_decode=True,
+            grammar_ltr_repair=True,
+            grammar_ltr_max_tokens=length_safe,
+            grammar_ltr_primary=False,
+            fidelity_loss_weight=1.0,
+            gen_steps_override=12,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E21",
+            "qx_e21_mdlm_schedule",
+            "MDLM-faithful continuous-time mask ELBO + length-safe LTR",
+            train_v1,
+            grammar_ltr_repair=True,
+            grammar_ltr_max_tokens=length_safe,
+            grammar_ltr_primary=True,
+            ltr_loss_weight=2.0,
+            mdlm_schedule=True,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E22",
+            "qx_e22_remask",
+            "MaskGIT + confidence remasking (GIDD/ReMDM-lite)",
+            train_v1,
+            grammar_ltr_repair=True,
+            grammar_ltr_max_tokens=length_safe,
+            grammar_ltr_primary=False,
+            remask_ratio=0.15,
+            gen_steps_override=16,
+            mdlm_schedule=True,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E29",
+            "qx_e29_champion",
+            "Champion: length-safe + slot contract + template + MDLM + remask + capacity",
+            train_cur,
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            template_fill_decode=True,
+            fidelity_loss_weight=1.5,
+            schema_in_context=True,
+            use_curriculum=True,
+            mix_curriculum=True,
+            grammar_ltr_repair=True,
+            grammar_ltr_primary=False,
+            ltr_loss_weight=2.0,
+            mdlm_schedule=True,
+            remask_ratio=0.12,
+            gen_steps_override=16,
+            best_of_n=4,
+            design_md_in_context=design_md_in_context,
+            **capacity,
+        ),
+    ]
+
+
 def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
     return ModelBuildConfig(
         train_dir=exp.train_dir,
@@ -331,7 +452,7 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         context_backend=args.context_backend,
         local_files_only=args.local_files_only,
         grammar_constrained=True,
-        grammar_ltr_primary=True,
+        grammar_ltr_primary=bool(getattr(exp, "grammar_ltr_primary", True)),
         grammar_ltr_repair=exp.grammar_ltr_repair,
         grammar_ltr_max_tokens=exp.grammar_ltr_max_tokens,
         design_md_in_context=exp.design_md_in_context,
@@ -342,25 +463,52 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         slot_contract_constrained_decode=getattr(
             exp, "slot_contract_constrained_decode", False
         ),
+        template_fill_decode=bool(getattr(exp, "template_fill_decode", False)),
         retrieval_k=exp.retrieval_k,
         best_of_n=1,  # train without BoN cost; apply at eval
         use_curriculum=exp.use_curriculum,
         mix_curriculum=getattr(exp, "mix_curriculum", True),
         use_compile=bool(getattr(args, "compile", False)),
         parallel_unmask=str(getattr(args, "parallel_unmask", "adaptive") or "adaptive"),
+        remask_ratio=float(getattr(exp, "remask_ratio", 0.0) or 0.0),
+        mdlm_schedule=bool(getattr(exp, "mdlm_schedule", False)),
         grad_accum_steps=max(1, int(getattr(args, "grad_accum", 1) or 1)),
         eval_every=args.eval_every,
         eval_suite="smoke",
         eval_suites="smoke,held_out" if args.eval_every else "",
         structural_bias=2.5,
         telemetry=True,
+        gen_steps=int(
+            getattr(exp, "gen_steps_override", None) or getattr(args, "gen_steps", 8) or 8
+        ),
     )
 
 
 def _eval_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
     cfg = _train_cfg(exp, args)
-    gen_steps = args.gen_steps
-    repair = exp.grammar_ltr_repair or exp.eid in {"E1", "E8", "E9b", "E10", "E11", "E12", "E13", "E14", "E15", "E16", "E17"}
+    gen_steps = int(
+        getattr(exp, "gen_steps_override", None) or args.gen_steps or 8
+    )
+    repair = exp.grammar_ltr_repair or exp.eid in {
+        "E1",
+        "E8",
+        "E9b",
+        "E10",
+        "E11",
+        "E12",
+        "E13",
+        "E14",
+        "E15",
+        "E16",
+        "E17",
+        "E18",
+        "E19a",
+        "E19b",
+        "E20",
+        "E21",
+        "E22",
+        "E29",
+    }
     bon = exp.best_of_n
     if exp.decode_sweep == "gen16_repair_bon4":
         gen_steps = 16
@@ -377,6 +525,10 @@ def _eval_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         best_of_n=bon,
         gen_steps=gen_steps,
         grammar_ltr_repair=repair,
+        grammar_ltr_primary=bool(getattr(exp, "grammar_ltr_primary", True)),
+        template_fill_decode=bool(getattr(exp, "template_fill_decode", False)),
+        remask_ratio=float(getattr(exp, "remask_ratio", 0.0) or 0.0),
+        mdlm_schedule=bool(getattr(exp, "mdlm_schedule", False)),
         rico_eval_limit=args.rico_limit,
         run_id=exp.run_id,
     )
@@ -585,16 +737,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--matrix",
-        choices=("legacy", "v2", "all"),
-        default="v2",
-        help="Experiment set: legacy (E0–E10), v2 (E11–E17), or all.",
+        choices=("legacy", "v2", "v3", "all"),
+        default="v3",
+        help="Experiment set: legacy (E0–E10), v2 (E11–E17), v3 (E18–E29), or all.",
     )
     parser.add_argument("--gen-steps", type=int, default=8)
     args = parser.parse_args(argv)
 
     needs_curriculum = args.only is None or any(
         x in (args.only or "")
-        for x in ("E2", "E8", "E9b", "E10", "E15", "E16", "E17")
+        for x in ("E2", "E8", "E9b", "E10", "E15", "E16", "E29")
     )
     if args.build_curriculum or (not args.curriculum_dir.exists() and needs_curriculum):
         from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
@@ -642,6 +794,14 @@ def main(argv: list[str] | None = None) -> int:
                 args.train_dir,
                 args.curriculum_dir,
                 args.namespace_dir,
+                design_md_in_context=design_md,
+            )
+        )
+    if args.matrix in {"v3", "all"}:
+        experiments.extend(
+            _v3_experiments(
+                args.train_dir,
+                args.curriculum_dir,
                 design_md_in_context=design_md,
             )
         )

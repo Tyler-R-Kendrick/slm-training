@@ -41,6 +41,10 @@ test.describe("annotate playground", () => {
 
     await waitForSampleReady(page);
 
+    // A valid sample is present; empty-stack "Ready" false-positive is fixed.
+    await expect(page.locator("#promptText")).not.toHaveText("…");
+    await expect(page.locator("#badge")).toHaveText("valid");
+
     const indexBefore = (await page.locator("#indexPill").innerText()).trim();
     const promptBefore = (await page.locator("#promptText").innerText()).trim();
 
