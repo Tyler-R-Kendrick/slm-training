@@ -182,7 +182,7 @@ class DenoiserTower(nn.Module):
         self.register_buffer(
             "kind_lookup",
             torch.zeros(vocab_size, dtype=torch.long),
-            persistent=True,
+            persistent=False,
         )
         if kind_ids is not None and n_kinds > 0:
             self.kind = nn.Embedding(n_kinds, d_model)
