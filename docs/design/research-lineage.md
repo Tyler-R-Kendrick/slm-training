@@ -75,6 +75,33 @@ return invalid OpenUI.
 | **Code** | [`models/parallel_decode.py`](../../src/slm_training/models/parallel_decode.py) |
 | **Notes** | [`accel-parallel.md`](accel-parallel.md), [`runtime-performance.md`](runtime-performance.md) |
 
+### MDLM continuous-time absorbing mask (training)
+
+| | |
+| --- | --- |
+| **Paper** | Sahoo et al., *Simple and Effective Masked Diffusion Language Models*, NeurIPS 2024. [arXiv:2406.07524](https://arxiv.org/abs/2406.07524). Related: LLaDA (Nie et al., 2025) |
+| **Fidelity** | **Adapted** — log-linear `α(t)=1-t` ⇒ per-row mask rate `t` and CE weight `1/t`; not a full continuous-time ELBO stack |
+| **Code** | `_mask_targets` + weighted CE in [`models/twotower.py`](../../src/slm_training/models/twotower.py) |
+| **Config** | `mdlm_schedule`, `mdlm_eps` |
+
+### Confidence remasking (self-correction)
+
+| | |
+| --- | --- |
+| **Lineage** | GIDD / ReMDM / LLaDA remasking — revise low-confidence committed tokens mid-diffusion |
+| **Fidelity** | **Adapted** — remask bottom-`q` confidence known tokens each MaskGIT step (`remask_ratio`) |
+| **Code** | `select_remask_indices` in [`models/parallel_decode.py`](../../src/slm_training/models/parallel_decode.py); loop in `_generate_maskgit_one` |
+| **Config** | `remask_ratio` |
+
+### Slot-contract template fill (DSL-native)
+
+| | |
+| --- | --- |
+| **Lineage** | Spec/inventory-conditioned structured generation (adjacent to schema-constrained decode) |
+| **Fidelity** | **Adapted** — build a valid OpenUI skeleton from `record.placeholders`, seed MaskGIT, remask binder/content positions |
+| **Code** | [`models/template_fill.py`](../../src/slm_training/models/template_fill.py); `_generate_maskgit_one` / `_ensure_valid_openui` |
+| **Config** | `template_fill_decode` (+ slot contract flags) |
+
 ---
 
 ## Training stack
@@ -128,6 +155,10 @@ return invalid OpenUI.
 | CFG hole admit | `--grammar-fastpath-mode mask\|hybrid` | `grammar_fastpath/maskgit_constrain.py` |
 | DFA force-emit | `--grammar-fastpath` / mode `force\|hybrid` | `grammar_fastpath/force_emit.py` |
 | Valid-only certify | `--grammar-ltr-primary` + repair + finalize | `models/twotower.py` (`_ensure_valid_openui`) |
+| Length-safe LTR | `grammar_ltr_max_tokens` / stages | `models/twotower.py` |
+| MDLM schedule | `mdlm_schedule` | `models/twotower.py` (`_mask_targets`) |
+| Remasking | `remask_ratio` | `models/parallel_decode.py` |
+| Template fill | `template_fill_decode` | `models/template_fill.py` |
 | Preference stage | `scripts/train_preference.py` | `preference/train.py` |
 | GRPO-lite | `scripts/train_rl.py` | `rl/` |
 

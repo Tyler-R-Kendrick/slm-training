@@ -95,3 +95,65 @@ def test_ceiling_report_fixture_suites(tmp_path: Path) -> None:
     board = ceiling_report(tmp_path, suites=("smoke",))
     assert board["smoke"]["parse_rate"] == 1.0
     assert board["smoke"]["placeholder_fidelity"] == 1.0
+
+
+def test_length_budget_flags_truncation() -> None:
+    from slm_training.harnesses.model_build.diagnostic import length_budget_report
+
+    long = ExampleRecord(
+        id="long",
+        prompt="dashboard",
+        openui=(
+            'root = Stack([a, b, c, d], "column")\n'
+            'a = TextContent(":smoke.a")\n'
+            'b = TextContent(":smoke.b")\n'
+            'c = TextContent(":smoke.c")\n'
+            'd = Card([e, f])\n'
+            'e = TextContent(":smoke.e")\n'
+            'f = TextContent(":smoke.f")\n'
+        ),
+        placeholders=[
+            ":smoke.a",
+            ":smoke.b",
+            ":smoke.c",
+            ":smoke.e",
+            ":smoke.f",
+        ],
+    )
+    # Legacy 64-token budget must fail on compositional lengths.
+    bad = length_budget_report(
+        records=[long],
+        grammar_ltr_max_tokens=64,
+        grammar_ltr_stages=(32, 48, 64),
+    )
+    assert bad["ok"] is False
+    assert bad["sections"]["records"]["p95"] > 64
+
+    # Length-safe E18 budget must cover the same program.
+    good = length_budget_report(
+        records=[long],
+        grammar_ltr_max_tokens=192,
+        grammar_ltr_stages=(64, 128, 192, 256),
+    )
+    assert good["ok"] is True
+    assert good["effective_budget"] >= good["sections"]["records"]["p95"]
+
+
+def test_fixture_seeds_fit_e18_budget() -> None:
+    from pathlib import Path
+
+    from slm_training.dsl.schema import load_jsonl
+    from slm_training.harnesses.model_build.diagnostic import length_budget_report
+
+    root = Path(__file__).resolve().parents[2]
+    train = load_jsonl(root / "fixtures" / "train_seeds.jsonl")
+    test = load_jsonl(root / "fixtures" / "test_seeds.jsonl")
+    report = length_budget_report(
+        records=list(train) + list(test),
+        grammar_ltr_max_tokens=192,
+        grammar_ltr_stages=(64, 128, 192, 256),
+    )
+    assert report["ok"] is True, report["failures"]
+    assert report["sections"]["records"]["max"] <= 192 or report[
+        "sections"
+    ]["records"]["max"] <= 256

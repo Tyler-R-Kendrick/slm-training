@@ -81,3 +81,36 @@ def select_unmask_indices(
     if not chosen:
         return flat_conf.topk(min(topk_n, remaining)).indices.tolist()
     return chosen
+
+
+def select_remask_indices(
+    conf: torch.Tensor,
+    known: torch.Tensor,
+    *,
+    remask_ratio: float = 0.15,
+    protect_bos: bool = True,
+) -> list[int]:
+    """
+    Remask lowest-confidence already-unmasked tokens (GIDD / ReMDM-lite).
+
+    conf: [B, T] confidence of current committed tokens (higher = keep).
+    known: [B, T] True where token is currently unmasked / committed.
+    """
+    if remask_ratio <= 0.0:
+        return []
+    flat_conf = conf.view(-1)
+    flat_known = known.view(-1).clone()
+    if protect_bos and flat_known.numel() > 0:
+        # Position 0 is BOS on the single-sequence MaskGIT path.
+        length = conf.size(-1)
+        for b in range(conf.size(0)):
+            flat_known[b * length] = False
+    eligible = int(flat_known.sum().item())
+    if eligible <= 0:
+        return []
+    k = max(1, int(math.ceil(eligible * float(remask_ratio))))
+    k = min(k, eligible)
+    # Lowest confidence among known positions.
+    scores = flat_conf.clone()
+    scores = scores.masked_fill(~flat_known, float("inf"))
+    return scores.topk(k, largest=False).indices.tolist()

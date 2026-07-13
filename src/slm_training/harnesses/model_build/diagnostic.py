@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable, Sequence
 
 from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.schema import ExampleRecord, load_jsonl
@@ -17,6 +17,11 @@ from slm_training.harnesses.model_build.eval_runner import (
     structural_similarity,
 )
 from slm_training.models.tokenizer import OpenUITokenizer, tokenize_text
+
+
+# Defaults must stay in sync with TwoTowerConfig length-safe LTR budgets (E18).
+DEFAULT_LTR_MAX_TOKENS = 192
+DEFAULT_LTR_STAGES: tuple[int, ...] = (64, 128, 192, 256)
 
 
 @dataclass
@@ -128,11 +133,135 @@ def ceiling_report(
     return out
 
 
+def _percentile(sorted_vals: Sequence[int], p: float) -> int:
+    if not sorted_vals:
+        return 0
+    if len(sorted_vals) == 1:
+        return int(sorted_vals[0])
+    idx = int(round((p / 100.0) * (len(sorted_vals) - 1)))
+    idx = max(0, min(len(sorted_vals) - 1, idx))
+    return int(sorted_vals[idx])
+
+
+def _length_stats(lengths: Sequence[int]) -> dict[str, Any]:
+    if not lengths:
+        return {
+            "n": 0,
+            "min": 0,
+            "max": 0,
+            "mean": 0.0,
+            "p50": 0,
+            "p90": 0,
+            "p95": 0,
+            "p99": 0,
+        }
+    ordered = sorted(int(x) for x in lengths)
+    return {
+        "n": len(ordered),
+        "min": ordered[0],
+        "max": ordered[-1],
+        "mean": sum(ordered) / len(ordered),
+        "p50": _percentile(ordered, 50),
+        "p90": _percentile(ordered, 90),
+        "p95": _percentile(ordered, 95),
+        "p99": _percentile(ordered, 99),
+    }
+
+
+def openui_token_lengths(
+    records: Iterable[ExampleRecord],
+    tokenizer: OpenUITokenizer | None = None,
+) -> list[int]:
+    """Return compositional token lengths for each record's OpenUI program."""
+    out: list[int] = []
+    for record in records:
+        if tokenizer is None:
+            out.append(len(tokenize_text(record.openui)))
+        else:
+            out.append(len(tokenizer.encode(record.openui, add_special=False)))
+    return out
+
+
+def length_budget_report(
+    *,
+    train_dir: Path | None = None,
+    test_dir: Path | None = None,
+    records: Sequence[ExampleRecord] | None = None,
+    suites: tuple[str, ...] = ("smoke", "held_out", "adversarial", "ood", "rico_held"),
+    grammar_ltr_max_tokens: int = DEFAULT_LTR_MAX_TOKENS,
+    grammar_ltr_stages: Sequence[int] = DEFAULT_LTR_STAGES,
+    tokenizer: OpenUITokenizer | None = None,
+) -> dict[str, Any]:
+    """
+    Compare tokenized OpenUI lengths to LTR decode budgets.
+
+    Fails loudly (``ok=False``) when any suite/train p95 exceeds
+    ``grammar_ltr_max_tokens`` or the max progressive stage.
+    """
+    if tokenizer is None and train_dir is not None and (train_dir / "records.jsonl").is_file():
+        tokenizer = build_train_tokenizer(train_dir)
+
+    max_stage = max(int(s) for s in grammar_ltr_stages) if grammar_ltr_stages else 0
+    effective_budget = min(int(grammar_ltr_max_tokens), max_stage or int(grammar_ltr_max_tokens))
+    sections: dict[str, Any] = {}
+    failures: list[str] = []
+
+    def _check(name: str, recs: Sequence[ExampleRecord]) -> None:
+        lengths = openui_token_lengths(recs, tokenizer)
+        stats = _length_stats(lengths)
+        over_budget = sum(1 for n in lengths if n > effective_budget)
+        ok = stats["p95"] <= effective_budget
+        sections[name] = {
+            **stats,
+            "over_budget": over_budget,
+            "ok": ok,
+            "samples_over_budget": [
+                {"id": r.id, "tokens": n}
+                for r, n in zip(recs, lengths)
+                if n > effective_budget
+            ][:12],
+        }
+        if not ok:
+            failures.append(
+                f"{name}:p95={stats['p95']} exceeds effective_budget={effective_budget}"
+            )
+
+    if records is not None:
+        _check("records", list(records))
+    if train_dir is not None and (train_dir / "records.jsonl").is_file():
+        _check("train", load_jsonl(train_dir / "records.jsonl"))
+    if test_dir is not None:
+        for suite in suites:
+            try:
+                suite_recs = load_suite_records(test_dir, suite)
+            except FileNotFoundError:
+                continue
+            _check(suite, suite_recs)
+
+    return {
+        "grammar_ltr_max_tokens": int(grammar_ltr_max_tokens),
+        "grammar_ltr_stages": list(grammar_ltr_stages),
+        "effective_budget": effective_budget,
+        "sections": sections,
+        "failures": failures,
+        "ok": not failures,
+    }
+
+
 def run_full_diagnostic(
     train_dir: Path,
     test_dir: Path,
+    *,
+    grammar_ltr_max_tokens: int = DEFAULT_LTR_MAX_TOKENS,
+    grammar_ltr_stages: Sequence[int] = DEFAULT_LTR_STAGES,
 ) -> dict[str, Any]:
     return {
         "vocab_coverage": vocab_coverage_report(train_dir, test_dir).to_dict(),
         "ceiling": ceiling_report(test_dir),
+        "length_budget": length_budget_report(
+            train_dir=train_dir,
+            test_dir=test_dir,
+            grammar_ltr_max_tokens=grammar_ltr_max_tokens,
+            grammar_ltr_stages=grammar_ltr_stages,
+        ),
     }
