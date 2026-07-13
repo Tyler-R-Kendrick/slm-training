@@ -1,14 +1,26 @@
-"""Shared OpenUI subset DSL: grammar, parse/validate, placeholders, record schema."""
+"""slm-training: OpenUI harnesses and adapters."""
 
-from slm_training.dsl.placeholders import extract_placeholders, is_placeholder
-from slm_training.dsl.parser import ParseError, parse, serialize, validate
-from slm_training.dsl.schema import ExampleRecord, load_jsonl, write_jsonl
+from slm_training.dsl import (
+    ExampleRecord,
+    bridge_available,
+    extract_placeholders,
+    generate_system_prompt,
+    is_placeholder,
+    library_schema,
+    load_jsonl,
+    parse,
+    serialize,
+    validate,
+    write_jsonl,
+)
 
 __all__ = [
     "ExampleRecord",
-    "ParseError",
+    "bridge_available",
     "extract_placeholders",
+    "generate_system_prompt",
     "is_placeholder",
+    "library_schema",
     "load_jsonl",
     "parse",
     "serialize",

@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from slm_training.dsl import bridge_available
 from slm_training.dsl.schema import ExampleRecord, write_jsonl
 from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
 
@@ -20,8 +21,8 @@ def _seed_file(tmp_path: Path) -> Path:
                 id="t1",
                 prompt="Hero card",
                 openui=(
-                    'root = Stack(direction="vertical", children=hero)\n'
-                    "hero = Card(title=:hero.title, body=:hero.body)"
+                    'root = Stack([hero], "vertical")\n'
+                    'hero = Card(":hero.title", ":hero.body")'
                 ),
                 placeholders=[":hero.title", ":hero.body"],
                 split="train",
@@ -29,7 +30,7 @@ def _seed_file(tmp_path: Path) -> Path:
             ExampleRecord(
                 id="t2",
                 prompt="Button only",
-                openui="root = Button(label=:cta.label)",
+                openui='root = Stack([cta])\ncta = Button(":cta.label")',
                 placeholders=[":cta.label"],
                 split="train",
             ),
@@ -38,6 +39,10 @@ def _seed_file(tmp_path: Path) -> Path:
     return path
 
 
+@pytest.mark.skipif(
+    not bridge_available(),
+    reason="OpenUI bridge deps missing; run: cd tools/openui_bridge && npm ci",
+)
 def test_build_train_data_writes_artifacts(tmp_path: Path) -> None:
     seeds = _seed_file(tmp_path)
     out_root = tmp_path / "train_data"
@@ -62,6 +67,10 @@ def test_build_train_data_writes_artifacts(tmp_path: Path) -> None:
     assert len(manifest["ids"]) == stats["record_count"]
 
 
+@pytest.mark.skipif(
+    not bridge_available(),
+    reason="OpenUI bridge deps missing; run: cd tools/openui_bridge && npm ci",
+)
 def test_build_train_data_rejects_invalid_openui(tmp_path: Path) -> None:
     path = tmp_path / "bad.jsonl"
     write_jsonl(
@@ -70,7 +79,7 @@ def test_build_train_data_rejects_invalid_openui(tmp_path: Path) -> None:
             ExampleRecord(
                 id="bad1",
                 prompt="Bad",
-                openui='root = Button(label="nope")',
+                openui='root = Stack([cta])\ncta = Button("nope")',
                 split="train",
             )
         ],

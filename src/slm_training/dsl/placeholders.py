@@ -1,4 +1,4 @@
-"""Placeholder helpers for the OpenUI subset."""
+"""Placeholder helpers for placeholder-augmented OpenUI Lang."""
 
 from __future__ import annotations
 
@@ -6,12 +6,12 @@ import re
 
 PLACEHOLDER_RE = re.compile(r":[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*")
 
-# Props that must be placeholders (content-bearing).
-CONTENT_PROPS = frozenset({"text", "label", "title", "body"})
+# Content-bearing props in our @openuidev/lang-core library (library.mjs).
+CONTENT_PROPS = frozenset({"title", "body", "content", "label"})
 
 
 def is_placeholder(value: str) -> bool:
-    return bool(PLACEHOLDER_RE.fullmatch(value.strip()))
+    return bool(PLACEHOLDER_RE.fullmatch(value.strip().strip('"')))
 
 
 def extract_placeholders(source: str) -> list[str]:

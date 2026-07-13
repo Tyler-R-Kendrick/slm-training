@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
+import pytest
+
+from slm_training.dsl import bridge_available
 from slm_training.dsl.schema import ExampleRecord, write_jsonl
 from slm_training.harnesses.model_build import (
     ModelBuildConfig,
@@ -15,27 +17,22 @@ from slm_training.harnesses.model_build import (
 from slm_training.harnesses.test_data import TestDataConfig, build_test_data
 from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
 
+pytestmark = pytest.mark.skipif(
+    not bridge_available(),
+    reason="OpenUI bridge deps missing; run: cd tools/openui_bridge && npm ci",
+)
+
+HERO = 'root = Stack([hero], "vertical")\nhero = Card(":hero.title", ":hero.body")'
+CTA = 'root = Stack([cta])\ncta = Button(":cta.label")'
+
 
 def _prepare_artifacts(tmp_path: Path) -> tuple[Path, Path]:
     train_seeds = tmp_path / "train.jsonl"
     write_jsonl(
         train_seeds,
         [
-            ExampleRecord(
-                id="tr1",
-                prompt="Hero",
-                openui=(
-                    'root = Stack(direction="vertical", children=hero)\n'
-                    "hero = Card(title=:hero.title, body=:hero.body)"
-                ),
-                split="train",
-            ),
-            ExampleRecord(
-                id="tr2",
-                prompt="CTA",
-                openui="root = Button(label=:cta.label)",
-                split="train",
-            ),
+            ExampleRecord(id="tr1", prompt="Hero", openui=HERO, split="train"),
+            ExampleRecord(id="tr2", prompt="CTA", openui=CTA, split="train"),
         ],
     )
     train_result = build_train_data(
@@ -55,17 +52,14 @@ def _prepare_artifacts(tmp_path: Path) -> tuple[Path, Path]:
             ExampleRecord(
                 id="sm1",
                 prompt="Hero",
-                openui=(
-                    'root = Stack(direction="vertical", children=hero)\n'
-                    "hero = Card(title=:hero.title, body=:hero.body)"
-                ),
+                openui=HERO,
                 split="smoke",
                 meta={"suite": "smoke"},
             ),
             ExampleRecord(
                 id="sm2",
                 prompt="CTA",
-                openui="root = Button(label=:cta.label)",
+                openui=CTA,
                 split="smoke",
                 meta={"suite": "smoke"},
             ),
@@ -109,9 +103,9 @@ def test_train_and_eval_stub(tmp_path: Path) -> None:
 
 def test_stub_save_load(tmp_path: Path) -> None:
     model = StubModel(seed=1)
-    model.memory["p"] = "root = Button(label=:cta.label)"
+    model.memory["p"] = CTA
     path = tmp_path / "stub.json"
     model.save(path)
     loaded = StubModel()
     loaded.load(path)
-    assert loaded.generate("p") == "root = Button(label=:cta.label)"
+    assert loaded.generate("p") == CTA

@@ -7,9 +7,15 @@ from pathlib import Path
 
 import pytest
 
+from slm_training.dsl import bridge_available
 from slm_training.dsl.schema import ExampleRecord, write_jsonl
 from slm_training.harnesses.test_data import TestDataConfig, build_test_data
 from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
+
+pytestmark = pytest.mark.skipif(
+    not bridge_available(),
+    reason="OpenUI bridge deps missing; run: cd tools/openui_bridge && npm ci",
+)
 
 
 def test_build_test_data_suites(tmp_path: Path) -> None:
@@ -20,7 +26,7 @@ def test_build_test_data_suites(tmp_path: Path) -> None:
             ExampleRecord(
                 id="smoke_1",
                 prompt="Smoke",
-                openui="root = Button(label=:cta.label)",
+                openui='root = Stack([cta])\ncta = Button(":cta.label")',
                 placeholders=[":cta.label"],
                 split="smoke",
                 meta={"suite": "smoke"},
@@ -28,7 +34,7 @@ def test_build_test_data_suites(tmp_path: Path) -> None:
             ExampleRecord(
                 id="held_1",
                 prompt="Held",
-                openui="root = Text(text=:page.blurb)",
+                openui='root = Stack([blurb])\nblurb = Text(":page.blurb")',
                 placeholders=[":page.blurb"],
                 split="held_out",
                 meta={"suite": "held_out"},
@@ -36,7 +42,7 @@ def test_build_test_data_suites(tmp_path: Path) -> None:
             ExampleRecord(
                 id="adv_1",
                 prompt="x",
-                openui="root = Text(text=:fallback.text)",
+                openui='root = Stack([fallback])\nfallback = Text(":fallback.text")',
                 placeholders=[":fallback.text"],
                 split="adversarial",
                 meta={"suite": "adversarial"},
@@ -65,7 +71,7 @@ def test_leakage_detection(tmp_path: Path) -> None:
             ExampleRecord(
                 id="shared_id",
                 prompt="Train",
-                openui="root = Button(label=:cta.label)",
+                openui='root = Stack([cta])\ncta = Button(":cta.label")',
                 split="train",
             )
         ],
@@ -87,7 +93,7 @@ def test_leakage_detection(tmp_path: Path) -> None:
             ExampleRecord(
                 id="shared_id",
                 prompt="Test",
-                openui="root = Button(label=:cta.label)",
+                openui='root = Stack([cta])\ncta = Button(":cta.label")',
                 split="smoke",
                 meta={"suite": "smoke"},
             )

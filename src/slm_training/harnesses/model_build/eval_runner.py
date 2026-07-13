@@ -23,8 +23,19 @@ def _placeholder_fidelity(pred: str, gold: ExampleRecord) -> float:
 
 
 def _tree_match(pred: str, gold_openui: str) -> float:
-    """Exact normalized match as a simple tree proxy for v1."""
-    return 1.0 if pred.strip() == gold_openui.strip() else 0.0
+    """Canonical OpenUI match via official serializer when possible."""
+    if pred.strip() == gold_openui.strip():
+        return 1.0
+    try:
+        from slm_training.dsl import validate
+
+        pred_p = validate(pred)
+        gold_p = validate(gold_openui)
+        if pred_p.serialized and gold_p.serialized:
+            return 1.0 if pred_p.serialized.strip() == gold_p.serialized.strip() else 0.0
+    except Exception:  # noqa: BLE001 — fall back to exact string miss
+        return 0.0
+    return 0.0
 
 
 def evaluate(

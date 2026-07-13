@@ -1,0 +1,14 @@
+{
+  "name": "openui-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Node sidecar wrapping @openuidev/lang-core for the Python harnesses",
+  "scripts": {
+    "cli": "node cli.mjs"
+  },
+  "dependencies": {
+    "@openuidev/lang-core": "0.2.9",
+    "zod": "^4.4.3"
+  }
+}

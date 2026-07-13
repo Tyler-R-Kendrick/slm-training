@@ -34,15 +34,16 @@ def _fingerprint(openui: str, prompt: str) -> str:
 
 def _normalize_record(record: ExampleRecord) -> ExampleRecord:
     program = validate(record.openui)
-    placeholders = extract_placeholders(record.openui) or list(program.placeholders)
+    placeholders = list(program.placeholders) or extract_placeholders(record.openui)
+    openui = program.serialized or record.openui.strip()
     return ExampleRecord(
         id=record.id,
         prompt=record.prompt.strip(),
-        openui=record.openui.strip(),
+        openui=openui,
         placeholders=placeholders,
         split=record.split,
         source=record.source,
-        meta=dict(record.meta),
+        meta={**dict(record.meta), "parser": "openuidev/lang-core"},
     )
 
 

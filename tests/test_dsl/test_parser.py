@@ -1,4 +1,4 @@
-"""DSL parser and schema tests."""
+"""DSL tests against official @openuidev/lang-core bridge."""
 
 from __future__ import annotations
 
@@ -7,26 +7,34 @@ import pytest
 from slm_training.dsl import (
     ExampleRecord,
     ParseError,
+    bridge_available,
     extract_placeholders,
+    generate_system_prompt,
     parse,
     serialize,
     validate,
 )
 
+pytestmark = pytest.mark.skipif(
+    not bridge_available(),
+    reason="OpenUI bridge deps missing; run: cd tools/openui_bridge && npm ci",
+)
+
 
 def test_parse_and_roundtrip() -> None:
     src = (
-        'root = Stack(direction="vertical", children=hero)\n'
-        "hero = Card(title=:hero.title, body=:hero.body)"
+        'root = Stack([hero], "vertical")\n'
+        'hero = Card(":hero.title", ":hero.body")'
     )
     program = validate(src)
-    assert program.placeholders == [":hero.title", ":hero.body"]
+    assert ":hero.title" in program.placeholders
+    assert ":hero.body" in program.placeholders
     again = serialize(program)
     assert validate(again).placeholders == program.placeholders
 
 
 def test_reject_literal_content_prop() -> None:
-    src = 'root = Button(label="Click me")'
+    src = 'root = Stack([cta])\ncta = Button("Click me")'
     with pytest.raises(ParseError, match="placeholder"):
         validate(src)
 
@@ -38,7 +46,7 @@ def test_reject_unknown_component() -> None:
 
 
 def test_extract_placeholders_order() -> None:
-    src = "a = Text(text=:b.x)\nc = Button(label=:a.y)\nd = Text(text=:b.x)"
+    src = 'a = Text(":b.x")\nc = Button(":a.y")\nd = Text(":b.x")'
     assert extract_placeholders(src) == [":b.x", ":a.y"]
 
 
@@ -47,12 +55,22 @@ def test_example_record_split_validation() -> None:
         ExampleRecord(
             id="x",
             prompt="p",
-            openui="root = Text(text=:t)",
+            openui='root = Stack([t])\nt = Text(":t")',
             split="nope",
         )
 
 
 def test_parse_bool_and_number() -> None:
-    src = "root = Stack(direction=\"horizontal\", gap=12, children=x)\nx = Text(text=:t)"
+    src = (
+        'root = Stack([x], "horizontal", 12)\n'
+        'x = Text(":t")'
+    )
     program = parse(src)
-    assert len(program.statements) == 2
+    assert program.root is not None
+    assert program.root["typeName"] == "Stack"
+
+
+def test_official_system_prompt() -> None:
+    prompt = generate_system_prompt()
+    assert "openui-lang" in prompt.lower() or "OpenUI" in prompt or "Stack" in prompt
+    assert "placeholder" in prompt.lower() or ":hero.title" in prompt
