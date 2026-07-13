@@ -51,7 +51,7 @@ def migrate_twotower_checkpoint(
     output_checkpoint = Path(output_checkpoint)
     train_records_path = Path(train_records_path)
 
-    payload = torch.load(source_checkpoint, map_location=device, weights_only=False)
+    payload = torch.load(source_checkpoint, map_location=device, weights_only=True)
     if payload.get("kind") != "twotower":
         raise ValueError(f"checkpoint kind {payload.get('kind')!r} is not twotower")
 

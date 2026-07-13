@@ -90,6 +90,20 @@ def test_checkpoint_rejects_missing_trainable_weights(tmp_path: Path) -> None:
         TwoTowerModel.from_checkpoint(path, device="cpu")
 
 
+def test_surface_syntax_repair_preserves_string_literals() -> None:
+    damaged = (
+        'root===Stack([cta, card, =])\n'
+        'cta==Button(":cta=a==b")\n'
+        'card==Card([cta, =])'
+    )
+    expected = (
+        'root = Stack([cta, card])\n'
+        'cta = Button(":cta=a==b")\n'
+        'card = Card([cta])'
+    )
+    assert TwoTowerModel._repair_surface_syntax(damaged) == expected
+
+
 def test_migrate_checkpoint_rebuilds_v2_vocab(tmp_path: Path) -> None:
     from slm_training.models.checkpoint_migrate import migrate_twotower_checkpoint
 

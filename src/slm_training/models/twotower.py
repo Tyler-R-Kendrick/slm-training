@@ -743,8 +743,11 @@ class TwoTowerModel(nn.Module):
     @staticmethod
     def _repair_surface_syntax(text: str) -> str:
         """Repair local token-boundary artifacts without inventing layout content."""
-        text = re.sub(r"\s*=\s*=+\s*", " = ", text)
-        return re.sub(r",\s*=\s*(?=[)\]])", "", text)
+        parts = re.split(r'("(?:\\.|[^"\\])*")', text)
+        for index in range(0, len(parts), 2):
+            parts[index] = re.sub(r"\s*=\s*=+\s*", " = ", parts[index])
+            parts[index] = re.sub(r",\s*=\s*(?=[)\]])", "", parts[index])
+        return "".join(parts)
 
     @staticmethod
     def _canonical_valid_openui(text: str) -> str | None:

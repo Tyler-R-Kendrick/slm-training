@@ -10,12 +10,13 @@ import atexit
 import hashlib
 import json
 import os
-import queue
 import shutil
 import subprocess
 import threading
 from pathlib import Path
 from typing import Any
+
+from slm_training.bridge_utils import readline_with_timeout
 
 _BRIDGE_DIR = Path(__file__).resolve().parents[3] / "tools" / "design_md_bridge"
 _CLI = _BRIDGE_DIR / "cli.mjs"
@@ -103,23 +104,9 @@ def _invoke_once(payload: dict[str, Any], *, timeout: float = 30.0) -> dict[str,
 
 
 def _readline_with_timeout(proc: subprocess.Popen[str], timeout: float) -> str:
-    assert proc.stdout is not None
-    result: queue.Queue[str | BaseException] = queue.Queue(maxsize=1)
-
-    def _read() -> None:
-        try:
-            result.put(proc.stdout.readline())
-        except BaseException as exc:  # pragma: no cover - defensive pipe failure
-            result.put(exc)
-
-    threading.Thread(target=_read, daemon=True).start()
-    try:
-        value = result.get(timeout=max(0.001, timeout))
-    except queue.Empty as exc:
-        raise subprocess.TimeoutExpired(proc.args, timeout) from exc
-    if isinstance(value, BaseException):
-        raise RuntimeError("DESIGN.md bridge REPL read failed") from value
-    return value
+    return readline_with_timeout(
+        proc, timeout, error_message="DESIGN.md bridge REPL read failed"
+    )
 
 
 def _invoke_repl(payload: dict[str, Any], *, timeout: float = 30.0) -> dict[str, Any]:

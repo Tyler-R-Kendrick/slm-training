@@ -236,7 +236,7 @@ def build_train_data(
 
     deduped: list[ExampleRecord] = []
     seen_pairs: set[str] = set()
-    def _accept_record(record: ExampleRecord, *, structure_fp: str) -> bool:
+    def _accept_record(record: ExampleRecord) -> bool:
         pair = fingerprint_pair(record.prompt, record.openui)
         if pair in seen_pairs:
             return False
@@ -255,7 +255,7 @@ def build_train_data(
                 }
             )
             continue
-        _accept_record(record, structure_fp=structure_fp)
+        _accept_record(record)
 
     # Final stable order.
     deduped.sort(key=lambda r: r.id)
@@ -281,7 +281,7 @@ def build_train_data(
                     }
                 )
                 continue
-            _accept_record(normalized, structure_fp=structure_fp)
+            _accept_record(normalized)
         deduped.sort(key=lambda r: r.id)
 
     # Fingerprint final records after every train-only transformation so the

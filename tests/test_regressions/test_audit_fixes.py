@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from gpu_multi_farm.models import FarmListResult
+from gpu_multi_farm.models import FarmListResult, Offer
 from gpu_multi_farm.registry import list_across_farms
 from scripts import remote_train
 from slm_training.annotations import (
@@ -168,6 +168,14 @@ def test_annotation_token_is_enforced(tmp_path: Path) -> None:
         ).status_code
         == 200
     )
+    assert client.get("/api/annotations/recent").status_code == 401
+    assert (
+        client.get(
+            "/api/annotations/recent",
+            headers={"Authorization": "Bearer secret"},
+        ).status_code
+        == 200
+    )
 
 
 def test_evaluation_requires_a_real_checkpoint(tmp_path: Path) -> None:
@@ -293,6 +301,49 @@ async def test_vast_search_uses_current_flat_post_contract(
     assert calls[0][1]["type"] == "ondemand"
     assert "q" not in calls[0][1]
     assert "gpu_name" not in calls[0][1]
+
+
+@pytest.mark.asyncio
+async def test_vast_launch_uses_put_contract(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from gpu_multi_farm.farms import vast
+
+    async def list_offers(_self, **_kwargs) -> FarmListResult:
+        return FarmListResult(
+            farm="vast",
+            offers=[Offer("vast", "42", "RTX 4090", 0.4)],
+        )
+
+    calls: list[tuple[str, dict]] = []
+
+    class Response:
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict:
+            return {"new_contract": 99}
+
+    class Client:
+        def __init__(self, **_kwargs) -> None:
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args) -> None:
+            return None
+
+        async def put(self, url: str, **kwargs):
+            calls.append((url, kwargs["json"]))
+            return Response()
+
+    monkeypatch.setattr(vast.VastClient, "list_offers", list_offers)
+    monkeypatch.setattr(vast.httpx, "AsyncClient", Client)
+    result = await vast.VastClient("key").launch({"gpu_type": "4090"})
+    assert result.pod_id == "99"
+    assert calls[0][0] == f"{vast.VAST_BASE}/asks/42/"
+    assert calls[0][1]["runtype"] == "ssh"
 
 
 @pytest.mark.asyncio

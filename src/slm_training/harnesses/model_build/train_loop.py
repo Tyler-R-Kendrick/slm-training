@@ -139,7 +139,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         with timed("eval_suites"):
             if len(suites) == 1:
                 eval_cfg = replace(config, suite=suites[0])
-                metrics = evaluate(eval_cfg, model=plugin, checkpoint=mid_ckpt)
+                metrics = evaluate(eval_cfg, model=plugin)
                 row = {
                     "step": step,
                     "suite": suites[0],
@@ -153,7 +153,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 board: dict[str, dict] = {}
                 for suite in suites:
                     eval_cfg = replace(config, suite=suite)
-                    metrics = evaluate(eval_cfg, model=plugin, checkpoint=mid_ckpt)
+                    metrics = evaluate(eval_cfg, model=plugin)
                     board[suite] = {
                         "parse_rate": metrics.get("parse_rate"),
                         "placeholder_fidelity": metrics.get("placeholder_fidelity"),

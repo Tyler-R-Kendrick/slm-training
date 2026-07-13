@@ -146,7 +146,11 @@ def create_app(
             raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     @app.get("/api/annotations/recent")
-    def annotations_recent(limit: int = Query(default=20, ge=1, le=200)) -> dict:
+    def annotations_recent(
+        limit: int = Query(default=20, ge=1, le=200),
+        authorization: str | None = Header(default=None),
+    ) -> dict:
+        _require_annotation_token(authorization)
         return {
             "annotations": service.list_recent(limit=limit),
             "count": service.annotation_count(),

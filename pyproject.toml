@@ -11,7 +11,7 @@ requires-python = ">=3.11,<3.13"
 license = { text = "MIT" }
 authors = [{ name = "Tyler Kendrick" }]
 dependencies = [
-  "lark>=1.1",
+  "lark>=1.1,<2",
 ]
 
 [project.optional-dependencies]

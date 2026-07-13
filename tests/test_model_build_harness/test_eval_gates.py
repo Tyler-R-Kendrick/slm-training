@@ -169,6 +169,18 @@ def test_evaluate_suites_scoreboard(tmp_path: Path) -> None:
 
     board = evaluate_suites(config, ["smoke"], model=model)
     assert "suites" in board
+    assert board["checkpoint"] is None
+    assert board["checkpoint_sha256"] is None
+    assert board["checkpoint_source"] == "preloaded_model"
+    assert board["suites"]["smoke"]["checkpoint_source"] == "preloaded_model"
+
+    checkpoint = config.checkpoint_dir / "last.pt"
+    model.save(checkpoint)
+    loaded = evaluate_suites(config, ["smoke"], checkpoint=checkpoint)
+    assert loaded["checkpoint"] == str(checkpoint)
+    assert loaded["checkpoint_sha256"]
+    assert loaded["checkpoint_source"] == "checkpoint"
+    assert loaded["suites"]["smoke"]["checkpoint_sha256"] == loaded["checkpoint_sha256"]
     assert (tmp_path / "runs" / "gates" / "scoreboard.json").exists()
 
 

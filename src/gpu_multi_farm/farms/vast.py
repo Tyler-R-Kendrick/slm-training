@@ -162,7 +162,7 @@ class VastClient:
         }
         try:
             async with httpx.AsyncClient(timeout=self.timeout_s) as client:
-                resp = await client.post(
+                resp = await client.put(
                     f"{VAST_BASE}/asks/{offer.offer_id}/",
                     headers=self._headers(),
                     json=body,

@@ -868,7 +868,7 @@ def main(argv: list[str] | None = None) -> int:
         "--workers",
         type=int,
         default=1,
-        help="Parallel experiment workers (process pool; 1 = sequential).",
+        help="Parallel experiment workers (thread pool; 1 = sequential).",
     )
     parser.add_argument(
         "--compile",

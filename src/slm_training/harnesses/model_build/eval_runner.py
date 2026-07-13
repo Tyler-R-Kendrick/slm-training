@@ -526,6 +526,9 @@ def evaluate_suites(
             else str(checkpoint or (config.checkpoint_dir / "last.pt"))
         ),
         "checkpoint_source": "preloaded_model" if model is not None else "checkpoint",
+        "checkpoint_sha256": next(iter(board.values()), {}).get(
+            "checkpoint_sha256"
+        ),
         "suites": board,
         "evaluated_at": datetime.now(timezone.utc).isoformat(),
     }
