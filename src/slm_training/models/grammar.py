@@ -151,6 +151,58 @@ def force_emit_token_id(
     return force_next_token_id(engine, tokenizer, prefix_text)
 
 
+def _incomplete_quoted_string(prefix_text: str) -> bool:
+    """True when the prefix ends inside an unclosed double-quoted string."""
+    return prefix_text.count('"') % 2 == 1
+
+
+def contract_allowed_token_ids(
+    tokenizer: OpenUITokenizer,
+    prefix_ids: list[int],
+    slot_contract: list[str] | None,
+) -> set[int] | None:
+    """
+    When building a quoted placeholder, return allowed next token ids from the
+    slot contract inventory. None means no contract filter applies.
+    """
+    if not slot_contract:
+        return None
+    prefix_text = tokenizer.decode(prefix_ids)
+    if not _incomplete_quoted_string(prefix_text):
+        return None
+
+    from slm_training.models.tokenizer import tokenize_text
+
+    last_open = prefix_text.rfind('"')
+    built = prefix_text[last_open + 1 :]
+    # Ordinary string literals ("column", "row") must not use placeholder contract.
+    if not built.startswith(":"):
+        return None
+
+    built_seq = tokenize_text(f'"{built}')
+    allowed: set[int] = set()
+    for ph in slot_contract:
+        target = ph if ph.startswith(":") else f":{ph}"
+        target_seq = tokenize_text(f'"{target}"')
+        if len(built_seq) > len(target_seq):
+            continue
+        if target_seq[: len(built_seq)] != built_seq:
+            continue
+        if len(built_seq) < len(target_seq):
+            tok = target_seq[len(built_seq)]
+            tid = tokenizer.token_to_id.get(tok)
+            if tid is not None:
+                allowed.add(tid)
+        else:
+            # Complete placeholder — allow closing quote if present in target
+            if len(target_seq) > len(built_seq):
+                tok = target_seq[len(built_seq)]
+                tid = tokenizer.token_to_id.get(tok)
+                if tid is not None:
+                    allowed.add(tid)
+    return allowed or None
+
+
 def _dfa_engine(grammar_dsl: str | None = None):
     try:
         from slm_training.grammar_fastpath import engine_for_dsl
@@ -197,6 +249,7 @@ def pick_constrained_token(
     *,
     top_k: int = 16,
     forced_token_id: int | None = None,
+    slot_contract: list[str] | None = None,
 ) -> int | None:
     """
     Speculative constrained pick: only tokens admitted by the grammar DFA
@@ -208,10 +261,17 @@ def pick_constrained_token(
     When ``forced_token_id`` is set (singleton DFA structural emit), that id is
     returned only if the DFA still admits it.
 
+    When ``slot_contract`` is set and the prefix is inside a quoted placeholder,
+    candidates are further restricted to the inventory continuation.
+
     Returns ``None`` when no legal candidate exists (never returns a DFA-illegal
     or hard-error token).
     """
     import torch
+
+    contract_allowed = contract_allowed_token_ids(
+        tokenizer, prefix_ids, slot_contract
+    )
 
     engine = _dfa_engine()
     allowed: set[int] | None = None
@@ -231,6 +291,14 @@ def pick_constrained_token(
         except Exception:  # noqa: BLE001
             allowed = None
 
+    if contract_allowed is not None:
+        if allowed is None:
+            allowed = set(contract_allowed)
+        else:
+            allowed = allowed & contract_allowed
+        if not allowed:
+            return None
+
     def _legal(token_id: int) -> bool:
         tid = int(token_id)
         if tid in {
@@ -238,6 +306,8 @@ def pick_constrained_token(
             tokenizer.mask_id,
             tokenizer.bos_id,
         }:
+            return False
+        if contract_allowed is not None and tid not in contract_allowed:
             return False
         if allowed is not None and tid not in allowed:
             return False
@@ -256,7 +326,7 @@ def pick_constrained_token(
     vocab = int(logits_1d.numel())
     search_k = min(max(top_k, 1), vocab)
 
-    # When DFA gave a concrete allowed set, score only those ids (true mask).
+    # When DFA/contract gave a concrete allowed set, score only those ids.
     if allowed is not None and allowed:
         scored: list[tuple[float, int]] = []
         for tid in allowed:
@@ -313,6 +383,12 @@ def pick_constrained_token(
             return acceptable[0]
         if k >= vocab:
             break
+    if contract_allowed:
+        # Last resort under an active placeholder contract: any inventory id
+        # that still passes DFA/stream probes.
+        for tid in contract_allowed:
+            if _legal(tid):
+                return tid
     return None
 
 
@@ -349,6 +425,7 @@ __all__ = [
     "StreamStatus",
     "active_dsl",
     "apply_structural_bias",
+    "contract_allowed_token_ids",
     "dfa_admits_token",
     "filter_ids_by_stream",
     "force_emit_token_id",

@@ -142,6 +142,16 @@ def main(argv: list[str] | None = None) -> int:
         help="Override: inject compact schema into context.",
     )
     parser.add_argument(
+        "--slot-contract-in-context",
+        action="store_true",
+        help="Override: inject placeholder inventory (SLOT_CONTRACT) into context.",
+    )
+    parser.add_argument(
+        "--slot-contract-constrained-decode",
+        action="store_true",
+        help="Override: constrain placeholder decode to slot contract.",
+    )
+    parser.add_argument(
         "--retrieval-k",
         type=int,
         default=0,
@@ -196,6 +206,8 @@ def main(argv: list[str] | None = None) -> int:
         grammar_ltr_primary=args.grammar_ltr_primary,
         grammar_ltr_repair=args.grammar_ltr_repair,
         schema_in_context=args.schema_in_context,
+        slot_contract_in_context=args.slot_contract_in_context,
+        slot_contract_constrained_decode=args.slot_contract_constrained_decode,
         retrieval_k=args.retrieval_k,
         best_of_n=args.best_of_n,
         design_md_in_context=design_md_override,

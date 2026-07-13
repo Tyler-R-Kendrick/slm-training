@@ -43,6 +43,19 @@ def test_stream_check_complete_and_partial() -> None:
 
 
 @pytestmark_bridge
+def test_contract_allowed_skips_direction_literals() -> None:
+    tok = OpenUITokenizer.build([HERO, CTA])
+    from slm_training.models.grammar import contract_allowed_token_ids
+
+    # Inside an ordinary "column" literal — contract must not activate.
+    prefix = tok.encode('root = Stack([hero], "', add_special=False)
+    allowed = contract_allowed_token_ids(
+        tok, prefix, [":hero.title", ":hero.body"]
+    )
+    assert allowed is None
+
+
+@pytestmark_bridge
 def test_pick_constrained_token_avoids_unknown_component() -> None:
     torch = pytest.importorskip("torch")
     tok = OpenUITokenizer.build([HERO, CTA, "Broken"])
@@ -81,6 +94,10 @@ def test_generate_with_grammar_constrained_overfit(tmp_path: Path) -> None:
             denoiser_layers=2,
             gen_steps=6,
             grammar_constrained=True,
+            grammar_ltr_primary=True,
+            grammar_ltr_repair=True,
+            grammar_finalize_validate=True,
+            grammar_ltr_max_tokens=48,
             seed=0,
         ),
         device="cpu",

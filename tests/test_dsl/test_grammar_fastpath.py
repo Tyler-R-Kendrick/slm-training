@@ -72,10 +72,13 @@ def test_admit_fill_accepts_partial_with_holes() -> None:
     tok = _tok()
     eng = OpenUIIncrementalEngine()
     ids = tok.encode(SAMPLE, add_special=True)
-    # Mask the string literal — left span `root = Card(` is a valid incomplete prefix.
-    str_id = tok.token_to_id['":t.x"']
-    pos = ids.index(str_id)
-    ids[pos] = tok.mask_id
+    # Mask the quoted placeholder span (tokenizer v2 splits ":t.x" into pieces).
+    # Left span `root = Card(` must remain a valid incomplete prefix.
+    quote_id = tok.token_to_id['"']
+    first = ids.index(quote_id)
+    second = ids.index(quote_id, first + 1)
+    for pos in range(first, second + 1):
+        ids[pos] = tok.mask_id
     assert admit_fill(eng, tok, ids) is True
 
 

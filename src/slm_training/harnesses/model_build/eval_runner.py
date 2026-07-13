@@ -19,6 +19,17 @@ from slm_training.harnesses.model_build.factory import build_model
 _COMPONENT_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s*\(")
 
 
+def _placeholder_fidelity_normalized(pred: str, gold: ExampleRecord) -> float:
+    """Namespace-stripped placeholder overlap (diagnostic / ablation metric)."""
+    pred_set = set(extract_placeholders(pred))
+    gold_set = set(gold.placeholders) or set(extract_placeholders(gold.openui))
+    if not gold_set:
+        return 1.0 if not pred_set else 0.0
+    pred_n = {_normalize_placeholder(p) for p in pred_set}
+    gold_n = {_normalize_placeholder(p) for p in gold_set}
+    return len(pred_n & gold_n) / len(gold_n)
+
+
 def _placeholder_fidelity(pred: str, gold: ExampleRecord) -> float:
     """Exact placeholder overlap with gold (strict)."""
     pred_set = set(extract_placeholders(pred))
@@ -227,6 +238,7 @@ def evaluate(
     n = len(records)
     parse_ok = 0
     fidelity_sum = 0.0
+    fidelity_norm_sum = 0.0
     validity_sum = 0.0
     exact_sum = 0.0
     struct_sum = 0.0
@@ -245,13 +257,14 @@ def evaluate(
         )
 
     def _score_one(record: ExampleRecord, pred: str, latency_ms: float) -> None:
-        nonlocal parse_ok, fidelity_sum, validity_sum, exact_sum, struct_sum
+        nonlocal parse_ok, fidelity_sum, fidelity_norm_sum, validity_sum, exact_sum, struct_sum
         nonlocal reward_sum, recall_sum
         ok, error, serialized = _is_meaningful_program(pred, gold=record)
         scored_pred = serialized or pred
         if ok:
             parse_ok += 1
         fid = _placeholder_fidelity(scored_pred, record)
+        fid_norm = _placeholder_fidelity_normalized(scored_pred, record)
         ph_valid = _placeholder_validity(scored_pred, record)
         exact = _tree_match(scored_pred, record.openui)
         struct = structural_similarity(scored_pred, record.openui)
@@ -259,6 +272,7 @@ def evaluate(
         reward = _reward_for_prediction(scored_pred, record)
         gold_dscore = _gold_design_lint_score(record)
         fidelity_sum += fid
+        fidelity_norm_sum += fid_norm
         validity_sum += ph_valid
         exact_sum += exact
         struct_sum += struct
@@ -272,6 +286,7 @@ def evaluate(
                 "parse_ok": ok,
                 "error": error,
                 "placeholder_fidelity": fid,
+                "placeholder_fidelity_normalized": fid_norm,
                 "placeholder_validity": ph_valid,
                 "exact_match": exact,
                 "structural_similarity": struct,
@@ -325,6 +340,7 @@ def evaluate(
         "n": n,
         "parse_rate": (parse_ok / n) if n else 0.0,
         "placeholder_fidelity": (fidelity_sum / n) if n else 0.0,
+        "placeholder_fidelity_normalized": (fidelity_norm_sum / n) if n else 0.0,
         "placeholder_validity": (validity_sum / n) if n else 0.0,
         "exact_match": (exact_sum / n) if n else 0.0,
         "structural_similarity": (struct_sum / n) if n else 0.0,

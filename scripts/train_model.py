@@ -135,6 +135,16 @@ def main(argv: list[str] | None = None) -> int:
         help="Inject compact OpenUI component schema into the context tower.",
     )
     parser.add_argument(
+        "--slot-contract-in-context",
+        action="store_true",
+        help="Inject record placeholder inventory (SLOT_CONTRACT) into context.",
+    )
+    parser.add_argument(
+        "--slot-contract-constrained-decode",
+        action="store_true",
+        help="Restrict placeholder decode to the slot contract inventory.",
+    )
+    parser.add_argument(
         "--retrieval-k",
         type=int,
         default=0,
@@ -284,6 +294,8 @@ def main(argv: list[str] | None = None) -> int:
             grammar_ltr_repair=args.grammar_ltr_repair,
             grammar_ltr_max_tokens=args.grammar_ltr_max_tokens,
             schema_in_context=args.schema_in_context,
+            slot_contract_in_context=args.slot_contract_in_context,
+            slot_contract_constrained_decode=args.slot_contract_constrained_decode,
             retrieval_k=args.retrieval_k,
             best_of_n=args.best_of_n,
             use_curriculum=args.curriculum,
