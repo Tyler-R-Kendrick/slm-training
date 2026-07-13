@@ -578,6 +578,7 @@ class GrammarDiffusionModel(nn.Module):
         prompts = [
             self._format_context(
                 req.prompt,
+                design_md=req.design_md,
                 slot_contract=list(req.slot_contract) if req.slot_contract else None,
                 schema=req.schema,
             )

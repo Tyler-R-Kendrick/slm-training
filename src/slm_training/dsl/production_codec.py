@@ -620,8 +620,11 @@ class ProductionCodec:
                 slot_ids.append(self.slot_none_id)
         prod_ids.append(self.eos_id)
         slot_ids.append(self.slot_none_id)
-        prod_ids = prod_ids[:max_len]
-        slot_ids = slot_ids[: len(prod_ids)]
+        if max_len > 0 and len(prod_ids) > max_len:
+            prod_ids = prod_ids[:max_len]
+            prod_ids[-1] = self.eos_id
+            slot_ids = slot_ids[:max_len]
+            slot_ids[-1] = self.slot_none_id
         if len(slot_ids) < len(prod_ids):
             slot_ids.extend([self.slot_none_id] * (len(prod_ids) - len(slot_ids)))
         return prod_ids, slot_ids

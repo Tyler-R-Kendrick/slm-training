@@ -118,10 +118,9 @@ def _x_experiments(
         GrammarExperiment(
             "X2",
             "gx_x2_codec",
-            "Production codec: grammar_diffusion + fastpath hybrid aux",
+            "Production codec: grammar_diffusion over production+slot heads",
             **base,
             model_name="grammar_diffusion",
-            fastpath_aux_weight=0.15,
         ),
         GrammarExperiment(
             "X3",
@@ -463,9 +462,13 @@ def successive_halving(
                     checkpoint=ckpt,
                     write_gates=False,
                 )
+                summary = _summarize_board(board)
+                prev_suites = dict(trained[key].get("suites") or {})
+                merged_suites = {**prev_suites, **(summary.get("suites") or {})}
                 trained[key] = {
                     **trained[key],
-                    **_summarize_board(board),
+                    **summary,
+                    "suites": merged_suites,
                 }
             score = _halving_score(trained[key].get("suites") or {}, suite)
             round_results.append(((exp, seed), score))

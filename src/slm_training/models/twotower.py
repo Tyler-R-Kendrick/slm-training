@@ -1067,6 +1067,7 @@ class TwoTowerModel(nn.Module):
             list(r.slot_contract) if r.slot_contract else None for r in requests
         ]
         schemas = [r.schema for r in requests]
+        design_mds = [r.design_md for r in requests]
         n_samples = max(1, int(getattr(self.config, "best_of_n", 1) or 1))
         if n_samples > 1:
             pools: list[list[str]] = [[] for _ in requests]
@@ -1079,6 +1080,7 @@ class TwoTowerModel(nn.Module):
                         golds=None,
                         max_len=max_len,
                         grammar_constrained=grammar_constrained,
+                        design_mds=design_mds,
                         slot_contracts=slot_contracts,
                         schemas=schemas,
                     )
@@ -1095,6 +1097,7 @@ class TwoTowerModel(nn.Module):
             golds=None,
             max_len=max_len,
             grammar_constrained=grammar_constrained,
+            design_mds=design_mds,
             slot_contracts=slot_contracts,
             schemas=schemas,
         )

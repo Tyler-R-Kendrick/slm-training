@@ -54,6 +54,15 @@ def test_production_codec_stop_at_mask() -> None:
     assert "<mask>" in partial
 
 
+def test_production_codec_preserves_eos_on_truncate() -> None:
+    codec = ProductionCodec.build([HERO])
+    inventory = [":hero.title", ":hero.body"]
+    prod, slot = codec.encode(HERO, inventory, max_len=8)
+    assert len(prod) == 8
+    assert prod[-1] == codec.eos_id
+    assert len(slot) == len(prod)
+
+
 def test_encode_uses_slot_indices_not_namespaces() -> None:
     program = encode_openui(HERO)
     assert program.slot_contract == (":hero.title", ":hero.body")

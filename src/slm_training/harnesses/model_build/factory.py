@@ -46,6 +46,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "best_of_n",
         "fidelity_loss_weight",
         "ltr_loss_weight",
+        "gen_steps",
         "parallel_unmask",
         "remask_ratio",
         "mdlm_schedule",

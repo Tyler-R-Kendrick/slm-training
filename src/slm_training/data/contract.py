@@ -22,6 +22,7 @@ class GenerationRequest:
     prompt: str
     slot_contract: tuple[str, ...] = ()
     schema: str | None = None
+    design_md: str | None = None
 
     def __post_init__(self) -> None:
         if not self.prompt.strip():
@@ -37,9 +38,13 @@ class GenerationRequest:
         *,
         schema: str | None = None,
         normalize: bool = True,
+        include_design_md: bool = True,
     ) -> GenerationRequest:
         if normalize:
             record = normalize_example_record(record)
+        design_md = None
+        if include_design_md and record.design_md and str(record.design_md).strip():
+            design_md = str(record.design_md).strip()
         return cls(
             prompt=record.prompt.strip(),
             slot_contract=canonical_slot_contract(
@@ -47,6 +52,7 @@ class GenerationRequest:
                 declared=record.placeholders,
             ),
             schema=schema,
+            design_md=design_md,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -56,6 +62,8 @@ class GenerationRequest:
         }
         if self.schema is not None:
             data["schema"] = self.schema
+        if self.design_md is not None:
+            data["design_md"] = self.design_md
         return data
 
     @classmethod
@@ -64,6 +72,7 @@ class GenerationRequest:
             prompt=str(data["prompt"]),
             slot_contract=tuple(data.get("slot_contract") or ()),
             schema=None if data.get("schema") is None else str(data["schema"]),
+            design_md=None if data.get("design_md") is None else str(data["design_md"]),
         )
 
 

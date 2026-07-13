@@ -238,7 +238,7 @@ multi-suite eval on survivors.
 | --- | --- | --- | --- | --- |
 | X0 | Corrected baseline | twotower + honest DESIGN.md eval | twotower | `gx_x0_baseline` |
 | X1 | Data/contract | slot contract in context + inventory decode | twotower | `gx_x1_contract` |
-| X2 | Production codec | grammar_diffusion + fastpath hybrid aux | grammar_diffusion | `gx_x2_codec` |
+| X2 | Production codec | grammar_diffusion over production+slot heads | grammar_diffusion | `gx_x2_codec` |
 | X3 | Block objective | grammar_diffusion block noise schedule | grammar_diffusion | `gx_x3_block_obj` |
 | X4 | Confidence schedule | `parallel_unmask=confidence` + calib loss | grammar_diffusion | `gx_x4_confidence` |
 | X5 | Extendability decode | ExtendabilityChecker in constrained posterior | grammar_diffusion | `gx_x5_extend` |
