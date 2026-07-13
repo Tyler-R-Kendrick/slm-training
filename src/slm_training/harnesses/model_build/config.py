@@ -84,6 +84,8 @@ class ModelBuildConfig:
     slot_loss_weight: float = 0.5
     confidence_loss_weight: float = 0.25
     extendability_decode: bool = True
+    # Cycle telemetry (train/infer span JSON)
+    telemetry: bool = True
 
     @property
     def run_dir(self) -> Path:

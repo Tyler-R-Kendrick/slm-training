@@ -156,35 +156,108 @@ def _collect_bindings(source: str) -> dict[str, Any]:
     return {name: None for name in names}
 
 
+def _split_top_level_args(inner: str) -> list[str]:
+    """Split a comma-separated arg list respecting brackets, parens, and quotes."""
+    parts: list[str] = []
+    buf: list[str] = []
+    depth_paren = 0
+    depth_brack = 0
+    in_string = False
+    escape = False
+    i = 0
+    while i < len(inner):
+        ch = inner[i]
+        if in_string:
+            buf.append(ch)
+            if escape:
+                escape = False
+            elif ch == "\\":
+                escape = True
+            elif ch == '"':
+                in_string = False
+            i += 1
+            continue
+        if ch == '"':
+            in_string = True
+            buf.append(ch)
+            i += 1
+            continue
+        if ch == "(":
+            depth_paren += 1
+            buf.append(ch)
+            i += 1
+            continue
+        if ch == ")":
+            depth_paren = max(0, depth_paren - 1)
+            buf.append(ch)
+            i += 1
+            continue
+        if ch == "[":
+            depth_brack += 1
+            buf.append(ch)
+            i += 1
+            continue
+        if ch == "]":
+            depth_brack = max(0, depth_brack - 1)
+            buf.append(ch)
+            i += 1
+            continue
+        if ch == "," and depth_paren == 0 and depth_brack == 0:
+            part = "".join(buf).strip()
+            if part:
+                parts.append(part)
+            buf = []
+            i += 1
+            continue
+        buf.append(ch)
+        i += 1
+    tail = "".join(buf).strip()
+    if tail:
+        parts.append(tail)
+    return parts
+
+
+def _parse_rhs_value(token: str) -> Any:
+    token = token.strip()
+    if not token:
+        raise ParseError("empty RHS value")
+    if token.startswith("[") and token.endswith("]"):
+        inner = token[1:-1].strip()
+        if not inner:
+            return []
+        return [_parse_rhs_value(part) for part in _split_top_level_args(inner)]
+    if token.startswith('"') and token.endswith('"'):
+        try:
+            return json.loads(token)
+        except json.JSONDecodeError as exc:
+            raise ParseError(f"invalid string literal: {token}") from exc
+    if token in {"true", "false"}:
+        return token == "true"
+    if token == "null":
+        return None
+    if re.fullmatch(r"-?\d+(?:\.\d+)?", token):
+        return float(token) if "." in token else int(token)
+    if re.fullmatch(r"[a-z_][A-Za-z0-9_]*", token):
+        return {"type": "ref", "name": token}
+    match = re.match(r"^([A-Z][A-Za-z0-9_]*)\s*\((.*)\)\s*$", token, re.DOTALL)
+    if match:
+        type_name = match.group(1)
+        args = [_parse_rhs_value(part) for part in _split_top_level_args(match.group(2))]
+        props = map_positional_props(type_name, args, _prop_order())
+        return {"type": "element", "typeName": type_name, "props": props}
+    raise ParseError(f"unsupported RHS value: {token!r}")
+
+
 def _parse_bindings(source: str) -> dict[str, Any]:
-    """Return resolved element AST nodes keyed by binder name."""
-    from slm_training.grammar_backends import get_backend
-
-    backend = get_backend("openui")
-    program = backend.validate(source)
+    """Return statement-level AST nodes keyed by binder name (refs preserved)."""
+    _parse_program(source)
     bindings: dict[str, Any] = {}
-
     for match in _STMT_RE.finditer(source):
         name = match.group(1)
         rhs = match.group(2).strip()
-        probe = f"__probe_{name}__"
-        mini = f"{probe} = {rhs}\nroot = {probe}\n"
-        mini_program = backend.validate(mini)
-        root = mini_program.root
-        if isinstance(root, dict) and root.get("type") == "element":
-            bindings[name] = root
-            continue
-        if isinstance(root, dict) and root.get("type") == "ref":
-            target = str(root["name"])
-            if target in bindings:
-                bindings[name] = bindings[target]
-            else:
-                raise ParseError(f"unresolved binding {name!r}")
-            continue
-        bindings[name] = root
-
-    if "root" not in bindings and program.root is not None:
-        bindings["root"] = program.root
+        bindings[name] = _parse_rhs_value(rhs)
+    if "root" not in bindings:
+        raise ParseError("missing root binding")
     return bindings
 
 
@@ -482,6 +555,117 @@ def _decode_literal(payload: str) -> str:
     return json.dumps(json.loads(payload))
 
 
+@dataclass
+class ProductionCodec:
+    """Grammar-native production codec with parallel slot pointers for diffusion."""
+
+    production_to_id: dict[str, int] = field(default_factory=dict)
+    id_to_production: dict[int, str] = field(default_factory=dict)
+    pad_id: int = 0
+    bos_id: int = 1
+    eos_id: int = 2
+    mask_id: int = 3
+    unk_id: int = 4
+    slot_none_id: int = 0
+
+    _SPECIALS: tuple[str, ...] = ("<pad>", "<bos>", "<eos>", "<mask>", "<unk>")
+
+    @classmethod
+    def build(cls, texts: list[str]) -> ProductionCodec:
+        vocab: dict[str, int] = {tok: i for i, tok in enumerate(cls._SPECIALS)}
+        for text in texts:
+            program = encode_openui(text)
+            for tok in program.tokens:
+                if tok not in vocab:
+                    vocab[tok] = len(vocab)
+        inv = {i: t for t, i in vocab.items()}
+        return cls(
+            production_to_id=vocab,
+            id_to_production=inv,
+            pad_id=vocab["<pad>"],
+            bos_id=vocab["<bos>"],
+            eos_id=vocab["<eos>"],
+            mask_id=vocab["<mask>"],
+            unk_id=vocab["<unk>"],
+        )
+
+    @property
+    def vocab_size(self) -> int:
+        return len(self.production_to_id)
+
+    def encode(
+        self,
+        openui: str,
+        slot_inventory: list[str] | None = None,
+        *,
+        max_len: int = 256,
+    ) -> tuple[list[int], list[int]]:
+        contract = list(
+            canonical_slot_contract(openui, declared=slot_inventory)
+            if slot_inventory is not None
+            else canonical_slot_contract(openui)
+        )
+        program = encode_openui(openui, slot_contract=contract)
+        prod_ids = [self.bos_id]
+        slot_ids = [self.slot_none_id]
+        for tok in program.tokens:
+            pid = self.production_to_id.get(tok)
+            if pid is None:
+                pid = self.production_to_id.setdefault(tok, len(self.production_to_id))
+                self.id_to_production[pid] = tok
+            prod_ids.append(pid)
+            if tok.startswith(SLOT_PREFIX):
+                slot_ids.append(int(tok[len(SLOT_PREFIX) :]) + 1)
+            else:
+                slot_ids.append(self.slot_none_id)
+        prod_ids.append(self.eos_id)
+        slot_ids.append(self.slot_none_id)
+        prod_ids = prod_ids[:max_len]
+        slot_ids = slot_ids[: len(prod_ids)]
+        if len(slot_ids) < len(prod_ids):
+            slot_ids.extend([self.slot_none_id] * (len(prod_ids) - len(slot_ids)))
+        return prod_ids, slot_ids
+
+    def decode(
+        self,
+        production_ids: list[int],
+        slot_ids: list[int],
+        slot_inventory: list[str],
+        *,
+        stop_at_mask: bool = False,
+    ) -> str:
+        inventory = [
+            ph if ph.startswith(":") else f":{ph}" for ph in slot_inventory
+        ]
+        tokens: list[str] = []
+        hit_mask = False
+        for pid, sid in zip(production_ids, slot_ids):
+            if pid in {self.pad_id, self.bos_id}:
+                continue
+            if pid == self.eos_id:
+                break
+            if pid == self.mask_id:
+                hit_mask = True
+                if stop_at_mask:
+                    break
+                continue
+            tok = self.id_to_production.get(pid, self._SPECIALS[-1])
+            if tok.startswith(SLOT_PREFIX) and int(sid) > 0:
+                tok = f"{SLOT_PREFIX}{int(sid) - 1}"
+            tokens.append(tok)
+        text = ""
+        if tokens:
+            try:
+                text = decode_productions(tokens, inventory)
+            except ParseError:
+                text = ""
+        if hit_mask and stop_at_mask:
+            return f"{text}<mask>" if text else "<mask>"
+        if text and not text.endswith("\n"):
+            return text + "\n"
+        return text
+
+
 __all__ = [
     "CLOSE",
     "DIR_PREFIX",
@@ -492,6 +676,7 @@ __all__ = [
     "REF_PREFIX",
     "SLOT_PREFIX",
     "STMT",
+    "ProductionCodec",
     "ProductionProgram",
     "ProductionVocab",
     "build_vocab_from_corpus",

@@ -13,6 +13,7 @@ from slm_training.dsl.lang_core import (
 )
 from slm_training.dsl.placeholders import extract_placeholders, is_placeholder
 from slm_training.dsl.production_codec import (
+    ProductionCodec,
     ProductionProgram,
     ProductionVocab,
     build_vocab_from_corpus,
@@ -26,6 +27,7 @@ __all__ = [
     "ExampleRecord",
     "ParseError",
     "Program",
+    "ProductionCodec",
     "ProductionProgram",
     "ProductionVocab",
     "bridge_available",

@@ -16,6 +16,7 @@ from slm_training.dsl.production_codec import (
     CLOSE,
     OPEN_PREFIX,
     SLOT_PREFIX,
+    ProductionCodec,
     ProductionVocab,
     build_vocab_from_corpus,
     decode_productions,
@@ -30,6 +31,27 @@ HERO = (
     'hero_body = TextContent(":hero.body")\n'
     'hero = Card([hero_title, hero_body])'
 )
+
+
+def test_production_codec_parallel_slot_pointers() -> None:
+    codec = ProductionCodec.build([HERO])
+    inventory = [":hero.title", ":hero.body"]
+    prod, slot = codec.encode(HERO, inventory)
+    assert prod[0] == codec.bos_id
+    assert prod[-1] == codec.eos_id
+    assert any(s > 0 for s in slot)
+    decoded = codec.decode(prod, slot, inventory)
+    assert normalize_openui_structure(decoded) == normalize_openui_structure(HERO)
+
+
+def test_production_codec_stop_at_mask() -> None:
+    codec = ProductionCodec.build([HERO])
+    inventory = [":hero.title", ":hero.body"]
+    prod, slot = codec.encode(HERO, inventory)
+    masked = list(prod)
+    masked[len(masked) // 2] = codec.mask_id
+    partial = codec.decode(masked, slot, inventory, stop_at_mask=True)
+    assert "<mask>" in partial
 
 
 def test_encode_uses_slot_indices_not_namespaces() -> None:

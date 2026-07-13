@@ -15,6 +15,7 @@ from slm_training.dsl.schema import ExampleRecord
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.harnesses.model_build.data import load_suite_records, load_train_records
 from slm_training.harnesses.model_build.factory import build_model
+from slm_training.harnesses.model_build.plugin import GenerationRequest
 
 _COMPONENT_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s*\(")
 
@@ -107,6 +108,38 @@ def structural_similarity(pred: str, gold_openui: str) -> float:
     depth_g = gold_s.count("[") + gold_s.count("(")
     depth_sim = 1.0 - min(1.0, abs(depth_p - depth_g) / max(1, depth_g))
     return round(0.7 * jaccard + 0.3 * depth_sim, 4)
+
+
+def _raw_syntax_valid(pred: str) -> bool:
+    """True when ``validate()`` accepts the prediction (syntax only)."""
+    try:
+        validate(pred)
+        return True
+    except ParseError:
+        return False
+
+
+def _contract_precision(pred: str, record: ExampleRecord) -> float:
+    """Fraction of predicted placeholders that appear in the record contract."""
+    pred_set = set(extract_placeholders(pred))
+    gold_set = set(record.placeholders or ())
+    if not pred_set:
+        return 1.0 if not gold_set else 0.0
+    return len(pred_set & gold_set) / len(pred_set)
+
+
+def _contract_recall(pred: str, record: ExampleRecord) -> float:
+    """Fraction of record contract placeholders present in the prediction."""
+    pred_set = set(extract_placeholders(pred))
+    gold_set = set(record.placeholders or ())
+    if not gold_set:
+        return 1.0 if not pred_set else 0.0
+    return len(pred_set & gold_set) / len(gold_set)
+
+
+def tree_edit_similarity(pred: str, gold_openui: str) -> float:
+    """Structural similarity proxy until a dedicated tree-edit metric lands."""
+    return structural_similarity(pred, gold_openui)
 
 
 def component_type_recall(pred: str, gold_openui: str) -> float:
@@ -237,38 +270,82 @@ def evaluate(
 
     n = len(records)
     parse_ok = 0
+    raw_syntax_ok = 0
     fidelity_sum = 0.0
     fidelity_norm_sum = 0.0
     validity_sum = 0.0
     exact_sum = 0.0
     struct_sum = 0.0
+    tree_edit_sum = 0.0
     reward_sum = 0.0
     recall_sum = 0.0
+    contract_precision_sum = 0.0
+    contract_recall_sum = 0.0
     gold_design_scores: list[float] = []
     latencies: list[float] = []
     details: list[dict] = []
 
     batch_size = 1
+    generate_batch_requests = getattr(plugin, "generate_batch_requests", None)
     generate_batch = getattr(plugin, "generate_batch", None)
-    if callable(generate_batch):
+    if callable(generate_batch_requests) or callable(generate_batch):
         batch_size = max(
             1,
             int(getattr(getattr(plugin, "config", None), "generate_batch_size", 8) or 8),
         )
 
+    def _eval_schema() -> str | None:
+        if not getattr(config, "schema_in_context", False):
+            return None
+        from slm_training.quality import compact_schema_snippet
+
+        budget = min(600, int(getattr(config, "design_md_budget", 1800) or 1800))
+        return compact_schema_snippet(budget=budget)
+
+    def _requests_for(chunk: list[ExampleRecord]) -> list[GenerationRequest]:
+        schema = _eval_schema()
+        return [GenerationRequest.from_record(r, schema=schema) for r in chunk]
+
+    def _generate_chunk(chunk: list[ExampleRecord]) -> list[str]:
+        """Generate without passing gold ExampleRecord to the model."""
+        if callable(generate_batch_requests):
+            return generate_batch_requests(_requests_for(chunk))
+        prompts = [r.prompt for r in chunk]
+        if callable(generate_batch):
+            try:
+                return generate_batch(prompts)
+            except TypeError:
+                try:
+                    return generate_batch(prompts, golds=None)
+                except TypeError:
+                    pass
+        out: list[str] = []
+        for prompt in prompts:
+            try:
+                out.append(plugin.generate(prompt))
+            except TypeError:
+                out.append(plugin.generate(prompt, gold=None))
+        return out
+
     def _score_one(record: ExampleRecord, pred: str, latency_ms: float) -> None:
-        nonlocal parse_ok, fidelity_sum, fidelity_norm_sum, validity_sum, exact_sum, struct_sum
-        nonlocal reward_sum, recall_sum
+        nonlocal parse_ok, raw_syntax_ok, fidelity_sum, fidelity_norm_sum, validity_sum
+        nonlocal exact_sum, struct_sum, tree_edit_sum, reward_sum, recall_sum
+        nonlocal contract_precision_sum, contract_recall_sum
         ok, error, serialized = _is_meaningful_program(pred, gold=record)
         scored_pred = serialized or pred
         if ok:
             parse_ok += 1
+        if _raw_syntax_valid(scored_pred):
+            raw_syntax_ok += 1
         fid = _placeholder_fidelity(scored_pred, record)
         fid_norm = _placeholder_fidelity_normalized(scored_pred, record)
         ph_valid = _placeholder_validity(scored_pred, record)
         exact = _tree_match(scored_pred, record.openui)
         struct = structural_similarity(scored_pred, record.openui)
+        tree_edit = tree_edit_similarity(scored_pred, record.openui)
         recall = component_type_recall(scored_pred, record.openui)
+        contract_prec = _contract_precision(scored_pred, record)
+        contract_rec = _contract_recall(scored_pred, record)
         reward = _reward_for_prediction(scored_pred, record)
         gold_dscore = _gold_design_lint_score(record)
         fidelity_sum += fid
@@ -276,7 +353,10 @@ def evaluate(
         validity_sum += ph_valid
         exact_sum += exact
         struct_sum += struct
+        tree_edit_sum += tree_edit
         recall_sum += recall
+        contract_precision_sum += contract_prec
+        contract_recall_sum += contract_rec
         reward_sum += reward
         if gold_dscore is not None:
             gold_design_scores.append(gold_dscore)
@@ -284,12 +364,16 @@ def evaluate(
             {
                 "id": record.id,
                 "parse_ok": ok,
+                "raw_syntax_valid": _raw_syntax_valid(scored_pred),
                 "error": error,
                 "placeholder_fidelity": fid,
                 "placeholder_fidelity_normalized": fid_norm,
                 "placeholder_validity": ph_valid,
+                "contract_precision": contract_prec,
+                "contract_recall": contract_rec,
                 "exact_match": exact,
                 "structural_similarity": struct,
+                "tree_edit_similarity": tree_edit,
                 "component_type_recall": recall,
                 "reward_score": reward,
                 "gold_design_lint_score": gold_dscore,
@@ -300,19 +384,13 @@ def evaluate(
             }
         )
 
-    if batch_size > 1 and callable(generate_batch):
+    if batch_size > 1 and (
+        callable(generate_batch_requests) or callable(generate_batch)
+    ):
         for start in range(0, n, batch_size):
             chunk = records[start : start + batch_size]
             t0 = time.perf_counter()
-            try:
-                preds = generate_batch(
-                    [r.prompt for r in chunk],
-                    golds=chunk,
-                )
-            except TypeError:
-                preds = [
-                    plugin.generate(r.prompt, gold=r) for r in chunk
-                ]
+            preds = _generate_chunk(chunk)
             elapsed = (time.perf_counter() - t0) * 1000.0
             per = elapsed / max(1, len(chunk))
             for record, pred in zip(chunk, preds):
@@ -321,10 +399,7 @@ def evaluate(
     else:
         for record in records:
             t0 = time.perf_counter()
-            try:
-                pred = plugin.generate(record.prompt, gold=record)
-            except TypeError:
-                pred = plugin.generate(record.prompt, gold=None)
+            pred = _generate_chunk([record])[0]
             latencies.append((time.perf_counter() - t0) * 1000.0)
             _score_one(record, pred, latencies[-1])
 
@@ -339,11 +414,18 @@ def evaluate(
         "suite": config.suite,
         "n": n,
         "parse_rate": (parse_ok / n) if n else 0.0,
+        "raw_syntax_validity": (raw_syntax_ok / n) if n else 0.0,
+        "contract_precision": (contract_precision_sum / n) if n else 0.0,
+        "contract_recall": (contract_recall_sum / n) if n else 0.0,
+        "residual_mask_rate": 0.0,
+        "oov_rate": 0.0,
+        "fallback_count": 0,
         "placeholder_fidelity": (fidelity_sum / n) if n else 0.0,
         "placeholder_fidelity_normalized": (fidelity_norm_sum / n) if n else 0.0,
         "placeholder_validity": (validity_sum / n) if n else 0.0,
         "exact_match": (exact_sum / n) if n else 0.0,
         "structural_similarity": (struct_sum / n) if n else 0.0,
+        "tree_edit_similarity": (tree_edit_sum / n) if n else 0.0,
         "component_type_recall": (recall_sum / n) if n else 0.0,
         "reward_score": (reward_sum / n) if n else 0.0,
         "gold_design_lint_score": gold_design_mean,
