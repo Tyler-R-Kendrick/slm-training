@@ -40,6 +40,9 @@ class ModelBuildConfig:
     design_md_budget: int = 1800
     # Stub-only
     noise_rate: float = 0.0
+    # Eval-driven training: run suite eval every N steps (0 disables).
+    eval_every: int = 0
+    eval_suite: str = "smoke"
 
     @property
     def run_dir(self) -> Path:

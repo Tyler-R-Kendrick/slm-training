@@ -357,6 +357,29 @@ class TwoTowerModel(nn.Module):
                     return status.serialized
             except Exception:  # noqa: BLE001
                 pass
+            # Fallback: full left-to-right constrained decode when MaskGIT
+            # left an invalid program (common early in training).
+            try:
+                from slm_training.dsl.parser import validate
+
+                validate(text)
+                return text
+            except Exception:  # noqa: BLE001
+                repaired = torch.full(
+                    (1, length), self.tokenizer.mask_id, dtype=torch.long, device=device
+                )
+                repaired[0, 0] = self.tokenizer.bos_id
+                unknown_r = repaired.eq(self.tokenizer.mask_id)
+                repaired = self._constrained_ltr_repair(
+                    repaired, unknown_r, ctx, ctx_pad
+                )
+                text = self._decode_ids(repaired[0])
+                try:
+                    status = stream_check(text)
+                    if status.serialized and status.complete_ok:
+                        return status.serialized
+                except Exception:  # noqa: BLE001
+                    pass
         return text
 
     def _state_dict_for_checkpoint(self) -> dict:

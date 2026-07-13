@@ -70,6 +70,8 @@ def assess_record(
     min_components: int = 2,
     require_design_md: bool = True,
     min_design_lint: float = 0.7,
+    max_openui_chars: int | None = None,
+    max_components: int | None = None,
 ) -> QualityReport:
     """
     Score a record for training usefulness.
@@ -124,6 +126,18 @@ def assess_record(
     if diversity >= 4:
         score += 0.05
 
+    if max_openui_chars is not None and len(openui) > max_openui_chars:
+        reasons.append("openui_too_long")
+        score -= 0.4
+    if max_components is not None and n_comp > max_components:
+        reasons.append("too_many_components")
+        score -= 0.35
+    # Soft preference for compact layouts (easier for small models).
+    if len(openui) > 900:
+        score -= 0.05
+    if n_comp > 14:
+        score -= 0.05
+
     design_score = None
     if require_design_md:
         if not record.design_md:
@@ -146,6 +160,8 @@ def assess_record(
         "too_few_components",
         "missing_design_md",
         "non_placeholder_string",
+        "openui_too_long",
+        "too_many_components",
     }
     ok = score >= 0.55 and not hard.intersection(reasons)
     return QualityReport(
@@ -156,6 +172,7 @@ def assess_record(
             "n_components": n_comp,
             "n_placeholders": len(placeholders),
             "component_diversity": diversity,
+            "openui_chars": len(openui),
             "design_lint_score": design_score,
             "components": counts,
         },
@@ -167,12 +184,19 @@ def filter_quality(
     *,
     min_score: float = 0.55,
     require_design_md: bool = True,
+    max_openui_chars: int | None = None,
+    max_components: int | None = None,
 ) -> tuple[list[ExampleRecord], list[dict[str, Any]]]:
     """Keep high-quality records; return (kept, rejection reports)."""
     kept: list[ExampleRecord] = []
     rejected: list[dict[str, Any]] = []
     for record in records:
-        report = assess_record(record, require_design_md=require_design_md)
+        report = assess_record(
+            record,
+            require_design_md=require_design_md,
+            max_openui_chars=max_openui_chars,
+            max_components=max_components,
+        )
         if report.ok and report.score >= min_score:
             meta = dict(record.meta or {})
             meta["quality"] = report.to_dict()

@@ -15,10 +15,23 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--train-dir",
         type=Path,
-        default=Path("outputs/train_data/v0"),
+        default=Path("outputs/train_data/v1"),
     )
     parser.add_argument("--run-root", type=Path, default=Path("outputs/runs"))
     parser.add_argument("--run-id", default="latest")
+    parser.add_argument(
+        "--test-dir",
+        type=Path,
+        default=None,
+        help="Optional test dir for periodic eval (--eval-every).",
+    )
+    parser.add_argument(
+        "--eval-every",
+        type=int,
+        default=0,
+        help="Run smoke eval every N steps (0 disables).",
+    )
+    parser.add_argument("--eval-suite", default="smoke")
     parser.add_argument(
         "--model",
         choices=("twotower", "stub"),
@@ -87,6 +100,8 @@ def main(argv: list[str] | None = None) -> int:
     summary = train(
         ModelBuildConfig(
             train_dir=args.train_dir,
+            test_dir=args.test_dir,
+            suite=args.eval_suite,
             run_root=args.run_root,
             run_id=args.run_id,
             steps=args.steps,
@@ -110,6 +125,8 @@ def main(argv: list[str] | None = None) -> int:
             grammar_top_k=args.grammar_top_k,
             structural_bias=args.structural_bias,
             noise_rate=args.noise_rate,
+            eval_every=args.eval_every,
+            eval_suite=args.eval_suite,
         )
     )
     print(json.dumps(summary, indent=2))

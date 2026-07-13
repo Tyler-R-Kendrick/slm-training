@@ -48,7 +48,7 @@ class StubModel:
             return "root = Broken("
         if prompt in self.memory:
             return self.memory[prompt]
-        return 'root = Stack([missing])\nmissing = Text(":stub.missing")'
+        return 'root = Stack([missing])\nmissing = TextContent(":stub.missing")'
 
     def save(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)

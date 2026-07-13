@@ -60,6 +60,18 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Do not require DESIGN.md on every kept record.",
     )
+    parser.add_argument(
+        "--max-openui-chars",
+        type=int,
+        default=None,
+        help="Drop layouts longer than this many characters (compact core sets).",
+    )
+    parser.add_argument(
+        "--max-components",
+        type=int,
+        default=None,
+        help="Drop layouts with more than this many component calls.",
+    )
     args = parser.parse_args(argv)
 
     result = build_train_data(
@@ -77,6 +89,8 @@ def main(argv: list[str] | None = None) -> int:
             max_children=args.max_children,
             min_quality_score=args.min_quality_score,
             require_design_md=not args.allow_missing_design_md,
+            max_openui_chars=args.max_openui_chars,
+            max_components=args.max_components,
         )
     )
     print(json.dumps(result["stats"], indent=2))

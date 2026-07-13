@@ -26,6 +26,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     ckpt_dir = config.checkpoint_dir
     ckpt_dir.mkdir(parents=True, exist_ok=True)
     metrics_path = run_dir / "metrics.jsonl"
+    eval_history: list[dict] = []
 
     batches = batched(records, config.batch_size)
     if not batches:
@@ -40,6 +41,35 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             plugin.trainable_parameters(),
             lr=config.lr,
         )
+
+    def _maybe_eval(step: int, force: bool = False) -> dict | None:
+        if config.test_dir is None:
+            return None
+        if not force and (config.eval_every <= 0 or step <= 0 or step % config.eval_every != 0):
+            return None
+        from dataclasses import replace
+
+        from slm_training.harnesses.model_build.eval_runner import evaluate
+
+        # Persist mid-run checkpoint so evaluate can reload if needed.
+        mid_ckpt = ckpt_dir / "last.pt"
+        plugin.save(mid_ckpt)
+        eval_cfg = replace(config, suite=config.eval_suite)
+        metrics = evaluate(eval_cfg, model=plugin, checkpoint=mid_ckpt)
+        row = {
+            "step": step,
+            "parse_rate": metrics.get("parse_rate"),
+            "placeholder_fidelity": metrics.get("placeholder_fidelity"),
+            "structural_similarity": metrics.get("structural_similarity"),
+            "reward_score": metrics.get("reward_score"),
+            "ts": datetime.now(timezone.utc).isoformat(),
+        }
+        eval_history.append(row)
+        (run_dir / "eval_history.jsonl").write_text(
+            "".join(json.dumps(r) + "\n" for r in eval_history),
+            encoding="utf-8",
+        )
+        return row
 
     step = 0
     last_loss = 0.0
@@ -71,10 +101,13 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                     "ts": datetime.now(timezone.utc).isoformat(),
                 }
                 metrics_file.write(json.dumps(row) + "\n")
+                metrics_file.flush()
                 step += 1
+                _maybe_eval(step)
 
     ckpt_path = ckpt_dir / "last.pt"
     plugin.save(ckpt_path)
+    final_eval = _maybe_eval(step, force=bool(config.test_dir and config.eval_every > 0))
 
     summary = {
         "run_id": config.run_id,
@@ -84,6 +117,8 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         "train_dir": str(config.train_dir),
         "record_count": len(records),
         "model": config.model_name,
+        "eval_history": eval_history,
+        "final_eval": final_eval,
         "finished_at": datetime.now(timezone.utc).isoformat(),
     }
     (run_dir / "train_summary.json").write_text(

@@ -35,6 +35,9 @@ class TrainDataConfig:
     max_children: int = 6
     min_quality_score: float = 0.55
     require_design_md: bool = True
+    # Compact layouts train more reliably on small TwoTower models.
+    max_openui_chars: int | None = None
+    max_components: int | None = None
 
     @property
     def output_dir(self) -> Path:
@@ -178,6 +181,8 @@ def build_train_data(
         collected,
         min_score=config.min_quality_score,
         require_design_md=config.require_design_md,
+        max_openui_chars=config.max_openui_chars,
+        max_components=config.max_components,
     )
 
     deduped: list[ExampleRecord] = []
@@ -223,6 +228,8 @@ def build_train_data(
         "errors": errors[:50],
         "synthesizer": config.synthesizer,
         "min_quality_score": config.min_quality_score,
+        "max_openui_chars": config.max_openui_chars,
+        "max_components": config.max_components,
         "mean_quality_score": (
             round(sum(quality_scores) / len(quality_scores), 4) if quality_scores else None
         ),

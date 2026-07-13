@@ -67,6 +67,7 @@ def structural_similarity(pred: str, gold_openui: str) -> float:
 
 
 def _design_lint_for_record(record: ExampleRecord) -> float | None:
+    """Lint the record's DESIGN.md context (taste prior), not the prediction."""
     if not record.design_md:
         return None
     try:
@@ -77,6 +78,18 @@ def _design_lint_for_record(record: ExampleRecord) -> float | None:
         return float(lint(record.design_md).get("score") or 0.0)
     except Exception:  # noqa: BLE001
         return None
+
+
+def _reward_for_prediction(pred: str, record: ExampleRecord) -> float:
+    """Composite preference reward on the *generated* layout."""
+    try:
+        from slm_training.preference import composite_reward
+
+        return float(
+            composite_reward(pred, gold=record, design_md=record.design_md)
+        )
+    except Exception:  # noqa: BLE001
+        return 0.0
 
 
 def evaluate(
@@ -115,6 +128,7 @@ def evaluate(
     fidelity_sum = 0.0
     exact_sum = 0.0
     struct_sum = 0.0
+    reward_sum = 0.0
     design_scores: list[float] = []
     latencies: list[float] = []
     details: list[dict] = []
@@ -138,10 +152,12 @@ def evaluate(
         fid = _placeholder_fidelity(pred, record)
         exact = _tree_match(pred, record.openui)
         struct = structural_similarity(pred, record.openui)
+        reward = _reward_for_prediction(pred, record)
         dscore = _design_lint_for_record(record)
         fidelity_sum += fid
         exact_sum += exact
         struct_sum += struct
+        reward_sum += reward
         if dscore is not None:
             design_scores.append(dscore)
         details.append(
@@ -152,6 +168,7 @@ def evaluate(
                 "placeholder_fidelity": fid,
                 "exact_match": exact,
                 "structural_similarity": struct,
+                "reward_score": reward,
                 "design_lint_score": dscore,
                 "latency_ms": round(latencies[-1], 2),
                 "prediction": pred[:500],
@@ -169,6 +186,7 @@ def evaluate(
         "placeholder_fidelity": (fidelity_sum / n) if n else 0.0,
         "exact_match": (exact_sum / n) if n else 0.0,
         "structural_similarity": (struct_sum / n) if n else 0.0,
+        "reward_score": (reward_sum / n) if n else 0.0,
         "design_lint_score": (
             sum(design_scores) / len(design_scores) if design_scores else None
         ),
@@ -183,6 +201,40 @@ def evaluate(
     run_dir = config.run_dir
     run_dir.mkdir(parents=True, exist_ok=True)
     out_path = run_dir / "eval.json"
-    out_path.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
-    metrics["output"] = str(out_path)
+    suite_path = run_dir / f"eval_{config.suite}.json"
+    payload = json.dumps(metrics, indent=2) + "\n"
+    out_path.write_text(payload, encoding="utf-8")
+    if suite_path != out_path:
+        suite_path.write_text(payload, encoding="utf-8")
+    metrics["output"] = str(suite_path if config.suite != "smoke" else out_path)
     return metrics
+
+
+def evaluate_suites(
+    config: ModelBuildConfig,
+    suites: list[str],
+    *,
+    checkpoint: Path | None = None,
+) -> dict[str, dict]:
+    """Run eval across multiple suites; write scoreboard.json."""
+    from dataclasses import replace
+
+    board: dict[str, dict] = {}
+    for suite in suites:
+        suite_config = replace(config, suite=suite)
+        metrics = evaluate(suite_config, checkpoint=checkpoint)
+        board[suite] = {k: v for k, v in metrics.items() if k != "details"}
+    scoreboard = {
+        "run_id": config.run_id,
+        "checkpoint": str(
+            checkpoint or (config.checkpoint_dir / "last.pt")
+        ),
+        "suites": board,
+        "evaluated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    run_dir = config.run_dir
+    run_dir.mkdir(parents=True, exist_ok=True)
+    path = run_dir / "scoreboard.json"
+    path.write_text(json.dumps(scoreboard, indent=2) + "\n", encoding="utf-8")
+    scoreboard["output"] = str(path)
+    return scoreboard

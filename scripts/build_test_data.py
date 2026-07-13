@@ -40,11 +40,11 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=Path("outputs/test_data"),
     )
-    parser.add_argument("--version", default="v0")
+    parser.add_argument("--version", default="v1")
     parser.add_argument(
         "--train-manifest",
         type=Path,
-        default=Path("outputs/train_data/v0/manifest.json"),
+        default=Path("outputs/train_data/v1/manifest.json"),
         help="Train manifest used for leakage checks (required).",
     )
     parser.add_argument(
