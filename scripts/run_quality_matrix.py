@@ -194,6 +194,9 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         retrieval_k=exp.retrieval_k,
         best_of_n=1,  # train without BoN cost; apply at eval
         use_curriculum=exp.use_curriculum,
+        use_compile=bool(getattr(args, "compile", False)),
+        parallel_unmask=str(getattr(args, "parallel_unmask", "adaptive") or "adaptive"),
+        grad_accum_steps=max(1, int(getattr(args, "grad_accum", 1) or 1)),
         eval_every=args.eval_every,
         eval_suite="smoke",
         structural_bias=2.5,
@@ -331,6 +334,27 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--pref-steps", type=int, default=30)
     parser.add_argument("--pref-limit", type=int, default=40)
     parser.add_argument(
+        "--workers",
+        type=int,
+        default=1,
+        help="Parallel experiment workers (process pool; 1 = sequential).",
+    )
+    parser.add_argument(
+        "--compile",
+        action="store_true",
+        help="Enable torch.compile on train experiments.",
+    )
+    parser.add_argument(
+        "--parallel-unmask",
+        default="adaptive",
+        choices=("topk", "confidence", "adaptive"),
+    )
+    parser.add_argument(
+        "--grad-accum",
+        type=int,
+        default=1,
+    )
+    parser.add_argument(
         "--only",
         default=None,
         help="Comma-separated experiment ids (e.g. E0,E1,E8).",
@@ -390,10 +414,38 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     results: list[dict[str, Any]] = []
-    for exp in experiments:
+    workers = max(1, int(args.workers))
+    # Seed/decode overlays that depend on another run stay sequential first.
+    dependent = [e for e in experiments if e.eval_from_run or e.seed_checkpoint]
+    independent = [e for e in experiments if e not in dependent]
+
+    def _run(exp: Experiment) -> dict[str, Any]:
         print(json.dumps({"status": "start", "id": exp.eid, "run_id": exp.run_id}))
-        results.append(run_one(exp, args))
-        print(json.dumps({"status": "done", "id": exp.eid, "pass": results[-1]["pass"]}))
+        result = run_one(exp, args)
+        print(json.dumps({"status": "done", "id": exp.eid, "pass": result["pass"]}))
+        return result
+
+    # Run independent train experiments possibly in parallel.
+    if workers > 1 and len(independent) > 1:
+        from concurrent.futures import ProcessPoolExecutor, as_completed
+
+        # Process pool can't pickle complex args cleanly — fall back to threads
+        # for shared-memory CPU parallelism without re-importing CUDA contexts.
+        from concurrent.futures import ThreadPoolExecutor
+
+        with ThreadPoolExecutor(max_workers=min(workers, len(independent))) as pool:
+            futs = {pool.submit(_run, exp): exp for exp in independent}
+            for fut in as_completed(futs):
+                results.append(fut.result())
+    else:
+        for exp in independent:
+            results.append(_run(exp))
+
+    for exp in dependent:
+        results.append(_run(exp))
+
+    # Stable order by experiment id.
+    results.sort(key=lambda r: r.get("id") or "")
 
     out = {
         "matrix": "quality-experiment-matrix",

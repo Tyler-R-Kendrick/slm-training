@@ -13,6 +13,19 @@ from slm_training.harnesses.model_build.factory import build_model
 
 
 def train(config: ModelBuildConfig, model=None) -> dict:
+    from slm_training.accel import (
+        autocast_context,
+        detect_device,
+        grad_scaler,
+        maybe_compile,
+        sync_device,
+    )
+
+    accel = detect_device(config.device)
+    # Honor explicit device but adopt accel threading / amp defaults.
+    if config.device in {"auto", "best"}:
+        config.device = accel.device
+
     records = load_train_records(config.train_dir)
     if not records:
         raise ValueError("train records empty")
@@ -30,6 +43,14 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         from slm_training.retrieval import build_skeleton_bank
 
         plugin.skeleton_bank = build_skeleton_bank(records)
+
+    use_compile = bool(getattr(config, "use_compile", False))
+    if use_compile and hasattr(plugin, "denoiser"):
+        plugin.denoiser = maybe_compile(
+            plugin.denoiser,
+            enabled=True,
+            mode=str(getattr(config, "compile_mode", "default") or "default"),
+        )
 
     run_dir = config.run_dir
     ckpt_dir = config.checkpoint_dir
@@ -60,6 +81,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
 
     optimizer = None
     is_twotower = hasattr(plugin, "training_loss")
+    scaler = None
+    use_amp = bool(getattr(config, "use_amp", False)) and accel.amp
+    grad_accum = max(1, int(getattr(config, "grad_accum_steps", 1) or 1))
     if is_twotower:
         import torch
 
@@ -67,6 +91,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             plugin.trainable_parameters(),
             lr=config.lr,
         )
+        scaler = grad_scaler(config.device, enabled=use_amp)
 
     def _maybe_eval(step: int, force: bool = False) -> dict | None:
         if config.test_dir is None:
@@ -99,6 +124,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
 
     step = 0
     last_loss = 0.0
+    micro = 0
     with metrics_path.open("w", encoding="utf-8") as metrics_file:
         while step < config.steps:
             batches = _batches_for_step(step)
@@ -109,29 +135,60 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                     import torch
 
                     plugin.train()
-                    optimizer.zero_grad(set_to_none=True)
-                    loss_t = plugin.training_loss(batch)
-                    loss_t.backward()
-                    torch.nn.utils.clip_grad_norm_(
-                        list(plugin.trainable_parameters()), 1.0
-                    )
-                    optimizer.step()
-                    last_loss = float(loss_t.detach().cpu())
+                    if micro == 0:
+                        optimizer.zero_grad(set_to_none=True)
+                    with autocast_context(config.device, enabled=use_amp):
+                        loss_t = plugin.training_loss(batch) / grad_accum
+                    scaler.scale(loss_t).backward()
+                    micro += 1
+                    if micro >= grad_accum:
+                        scaler.unscale_(optimizer)
+                        torch.nn.utils.clip_grad_norm_(
+                            list(plugin.trainable_parameters()), 1.0
+                        )
+                        scaler.step(optimizer)
+                        scaler.update()
+                        micro = 0
+                        last_loss = float(loss_t.detach().cpu()) * grad_accum
+                        step += 1
+                        row = {
+                            "step": step,
+                            "loss": last_loss,
+                            "batch_size": len(batch) * grad_accum,
+                            "model": config.model_name,
+                            "device": config.device,
+                            "amp": use_amp,
+                            "compile": use_compile,
+                            "grad_accum": grad_accum,
+                            "ts": datetime.now(timezone.utc).isoformat(),
+                        }
+                        metrics_file.write(json.dumps(row) + "\n")
+                        metrics_file.flush()
+                        _maybe_eval(step)
                 else:
                     last_loss = float(plugin.forward(batch))
+                    row = {
+                        "step": step,
+                        "loss": last_loss,
+                        "batch_size": len(batch),
+                        "model": config.model_name,
+                        "ts": datetime.now(timezone.utc).isoformat(),
+                    }
+                    metrics_file.write(json.dumps(row) + "\n")
+                    metrics_file.flush()
+                    step += 1
+                    _maybe_eval(step)
 
-                row = {
-                    "step": step,
-                    "loss": last_loss,
-                    "batch_size": len(batch),
-                    "model": config.model_name,
-                    "ts": datetime.now(timezone.utc).isoformat(),
-                }
-                metrics_file.write(json.dumps(row) + "\n")
-                metrics_file.flush()
-                step += 1
-                _maybe_eval(step)
+    # Flush partial accum.
+    if is_twotower and optimizer is not None and micro > 0:
+        import torch
 
+        scaler.unscale_(optimizer)
+        torch.nn.utils.clip_grad_norm_(list(plugin.trainable_parameters()), 1.0)
+        scaler.step(optimizer)
+        scaler.update()
+
+    sync_device(config.device)
     ckpt_path = ckpt_dir / "last.pt"
     plugin.save(ckpt_path)
     final_eval = _maybe_eval(step, force=bool(config.test_dir and config.eval_every > 0))
@@ -144,6 +201,15 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         "train_dir": str(config.train_dir),
         "record_count": len(records),
         "model": config.model_name,
+        "device": config.device,
+        "accel": {
+            "backend": accel.backend,
+            "amp": use_amp,
+            "compile": use_compile,
+            "grad_accum": grad_accum,
+            "num_threads": accel.num_threads,
+            "note": accel.note,
+        },
         "eval_history": eval_history,
         "final_eval": final_eval,
         "finished_at": datetime.now(timezone.utc).isoformat(),

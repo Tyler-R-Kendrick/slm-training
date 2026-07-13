@@ -30,6 +30,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "best_of_n",
         "fidelity_loss_weight",
         "ltr_loss_weight",
+        "parallel_unmask",
     ):
         if hasattr(config, key) and hasattr(cfg, key):
             setattr(cfg, key, getattr(config, key))
@@ -95,6 +96,10 @@ def build_model(
             schema_in_context=getattr(config, "schema_in_context", False),
             retrieval_k=getattr(config, "retrieval_k", 0),
             best_of_n=getattr(config, "best_of_n", 1),
+            parallel_unmask=getattr(config, "parallel_unmask", "adaptive"),
+            use_compile=getattr(config, "use_compile", False),
+            compile_mode=getattr(config, "compile_mode", "default"),
+            use_amp=getattr(config, "use_amp", False),
             seed=config.seed,
         )
         model = TwoTowerModel.from_records(records, config=tt_cfg, device=config.device)

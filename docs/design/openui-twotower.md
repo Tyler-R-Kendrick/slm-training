@@ -77,6 +77,7 @@ Leakage checks use exact + **structural** OpenUI fingerprints (placeholder/binde
 8. Adversarial review remediations — see [adversarial-review.md](adversarial-review.md)
 9. Runtime simplify/optimize (PyTorch path); Cactus/NEON kernel stays separate — [runtime-performance.md](runtime-performance.md)
 10. Quality experiment matrix (all levers) — [quality-experiment-matrix.md](quality-experiment-matrix.md)
+11. Accelerator / parallel decode — [accel-parallel.md](accel-parallel.md)
 
 ### Eval-driven ship gates (honest policy)
 

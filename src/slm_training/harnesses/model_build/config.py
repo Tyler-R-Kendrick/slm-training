@@ -55,6 +55,13 @@ class ModelBuildConfig:
     eval_suite: str = "smoke"
     # Cap rico_held size during matrix / CPU evals (None = full suite).
     rico_eval_limit: int | None = None
+    # Accelerator / throughput
+    use_amp: bool = False
+    use_compile: bool = False
+    compile_mode: str = "default"
+    grad_accum_steps: int = 1
+    parallel_unmask: str = "adaptive"
+    parallel_workers: int = 2
 
     @property
     def run_dir(self) -> Path:

@@ -42,7 +42,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument("--lr", type=float, default=3e-4)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--device", type=str, default="cpu")
+    parser.add_argument(
+        "--device",
+        type=str,
+        default="auto",
+        help="Device: auto|cpu|cuda|npu:0 (auto picks cuda→npu→cpu).",
+    )
     parser.add_argument("--d-model", type=int, default=128)
     parser.add_argument("--n-heads", type=int, default=4)
     parser.add_argument("--context-layers", type=int, default=2)
@@ -139,12 +144,45 @@ def main(argv: list[str] | None = None) -> int:
         help="Sample train batches by curriculum stage A→B→C.",
     )
     parser.add_argument(
+        "--amp",
+        action="store_true",
+        help="Enable autocast AMP on cuda/npu.",
+    )
+    parser.add_argument(
+        "--compile",
+        action="store_true",
+        help="torch.compile the denoiser (Inductor / CUDA graphs when available).",
+    )
+    parser.add_argument(
+        "--compile-mode",
+        default="default",
+        choices=("default", "reduce-overhead", "max-autotune"),
+        help="torch.compile mode (reduce-overhead uses CUDA graphs on GPU).",
+    )
+    parser.add_argument(
+        "--grad-accum",
+        type=int,
+        default=1,
+        help="Gradient accumulation steps (larger effective batch).",
+    )
+    parser.add_argument(
+        "--parallel-unmask",
+        default="adaptive",
+        choices=("topk", "confidence", "adaptive"),
+        help="MaskGIT parallel unmask policy (adaptive = mean-field-lite spacing).",
+    )
+    parser.add_argument(
         "--noise-rate",
         type=float,
         default=0.0,
         help="Stub-only: rate of intentional broken generations.",
     )
     args = parser.parse_args(argv)
+
+    from slm_training.accel import detect_device
+
+    accel = detect_device(args.device)
+    device = accel.device if args.device in {"auto", "best"} else args.device
 
     freeze = args.freeze_context
     if args.context_backend == "hf" and not args.no_freeze_context:
@@ -163,7 +201,7 @@ def main(argv: list[str] | None = None) -> int:
             batch_size=args.batch_size,
             lr=args.lr,
             seed=args.seed,
-            device=args.device,
+            device=device,
             model_name=args.model,
             d_model=args.d_model,
             n_heads=args.n_heads,
@@ -189,6 +227,11 @@ def main(argv: list[str] | None = None) -> int:
             retrieval_k=args.retrieval_k,
             best_of_n=args.best_of_n,
             use_curriculum=args.curriculum,
+            use_amp=args.amp,
+            use_compile=args.compile,
+            compile_mode=args.compile_mode,
+            grad_accum_steps=args.grad_accum,
+            parallel_unmask=args.parallel_unmask,
             noise_rate=args.noise_rate,
             eval_every=args.eval_every,
             eval_suite=args.eval_suite,

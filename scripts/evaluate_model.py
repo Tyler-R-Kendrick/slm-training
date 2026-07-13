@@ -148,6 +148,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Override: best-of-N decode by composite reward.",
     )
     parser.add_argument(
+        "--rico-limit",
+        type=int,
+        default=None,
+        help="Cap rico_held eval size (CPU/matrix).",
+    )
+    parser.add_argument(
         "--no-design-md-context",
         action="store_true",
         help="Override: do not concatenate DESIGN.md into context.",
@@ -169,6 +175,7 @@ def main(argv: list[str] | None = None) -> int:
         retrieval_k=args.retrieval_k,
         best_of_n=args.best_of_n,
         design_md_in_context=not args.no_design_md_context,
+        rico_eval_limit=args.rico_limit,
     )
 
     if args.ship_gates and not args.suites:

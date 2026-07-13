@@ -1,7 +1,7 @@
 {
   "matrix": "quality-experiment-matrix",
   "reference": "docs/design/quality-experiment-matrix.md",
-  "evaluated_at": "2026-07-13T13:01:30.507417+00:00",
+  "evaluated_at": "2026-07-13T13:22:00.555502+00:00",
   "settings": {
     "steps": 800,
     "context_backend": "scratch",
@@ -40,7 +40,10 @@
     "E2 curriculum: adversarial parse 0.75 (best stress parse); held_out 0.2",
     "E7 capacity: rico_held parse 0.875 / struct 0.366 (best RICO); smoke still 0 at 800 steps",
     "E4 schema: rico parse 0.219",
-    "No run clears honest ship gates \u2014 fidelity remains the hard blocker on seed; fresh trains need more steps/HF for smoke"
+    "No run clears honest ship gates \u2014 fidelity remains the hard blocker on seed; fresh trains need more steps/HF for smoke",
+    "E9 accel combo: adversarial parse 0.75 / fidelity 0.875 / struct 0.895 \u2014 first real fidelity win",
+    "E9 overfit curriculum-C adversarial into smoke (adv.* placeholders) \u2014 need stage mixing / anti-leakage",
+    "CPU accel: 3 threads, grad_accum=2, adaptive unmask; torch.compile deferred (no Python.h for inductor)"
   ],
   "ship_reference": {
     "id": "SHIP",
@@ -626,6 +629,66 @@
           "reward_score": 0.0,
           "n": 32
         }
+      }
+    },
+    {
+      "id": "E9",
+      "run_id": "qx_e9_accel_combo",
+      "description": "Accel combo: capacity+curriculum+fidelity+schema+retrieval+adaptive unmask+LTR repair (1000 steps, grad_accum=2)",
+      "pass": false,
+      "failures": [
+        "smoke:parse_rate actual=0.0 need>=0.66",
+        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:parse_rate actual=0.2 need>=0.4",
+        "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+        "rico_held:parse_rate actual=0.021333333333333333 need>=0.1",
+        "rico_held:structural_similarity actual=0.1394049999999982 need>=0.2"
+      ],
+      "suites": {
+        "smoke": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.4497,
+          "reward_score": 0.0,
+          "n": 3
+        },
+        "held_out": {
+          "parse_rate": 0.2,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.3581,
+          "reward_score": 0.5256000000000001,
+          "n": 5
+        },
+        "adversarial": {
+          "parse_rate": 0.75,
+          "placeholder_fidelity": 0.875,
+          "structural_similarity": 0.895,
+          "reward_score": 0.61375,
+          "n": 4
+        },
+        "ood": {
+          "parse_rate": 0.25,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.40507499999999996,
+          "reward_score": 0.49275,
+          "n": 4
+        },
+        "rico_held": {
+          "parse_rate": 0.021333333333333333,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.1394049999999982,
+          "reward_score": 0.14699733333333342,
+          "n": 1500
+        }
+      },
+      "accel": {
+        "backend": "cpu",
+        "amp": false,
+        "compile": false,
+        "grad_accum": 2,
+        "num_threads": 3,
+        "note": "user-preferred"
       }
     }
   ]

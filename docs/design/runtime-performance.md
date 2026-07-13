@@ -64,8 +64,25 @@ stats file is the packed fusible bit budget (what a fused engine would keep in
 VRAM). Compression is storage/VRAM-oriented; it does not change the generate hot
 path until an external fused engine consumes the narrow form.
 
-## Re-bench
+## Accelerator utilization
+
+`slm_training.accel` auto-selects **cuda → Ascend NPU → CPU**, configures thread pools,
+and exposes AMP + `torch.compile` for train/decode.
+
+| Knob | Flag | Notes |
+| --- | --- | --- |
+| Device | `--device auto` | CUDA/NPU when present |
+| AMP | `--amp` | bf16/fp16 autocast on accelerators |
+| Compile | `--compile` | Inductor; `reduce-overhead` → CUDA graphs on GPU |
+| Grad accum | `--grad-accum N` | Larger effective batch without OOM |
+| Parallel unmask | `--parallel-unmask adaptive` | Mean-field-lite MaskGIT (2026 dLLM decode) |
+| Matrix workers | `--workers 2` | Parallel independent train experiments |
 
 ```bash
-python -m scripts.bench_cactus --checkpoint outputs/runs/twotower_v1_ship/checkpoints/last.pt
+python -m scripts.bench_accel --device auto
+python -m scripts.train_model --device auto --compile --amp --grad-accum 2 \
+  --parallel-unmask adaptive --grammar-ltr-primary --steps 800
 ```
+
+This environment's measured accel bench is recorded under `outputs/runs/accel_bench.json`.
+Fused NEON/Cactus kernels remain external (`slm_training.cactus`).

@@ -26,6 +26,7 @@ from slm_training.models.grammar import (
     pick_constrained_token,
     stream_check,
 )
+from slm_training.models.parallel_decode import select_unmask_indices
 from slm_training.models.tokenizer import OpenUITokenizer
 
 
@@ -100,6 +101,12 @@ class TwoTowerConfig:
     retrieval_k: int = 0
     best_of_n: int = 1
     seed: int = 0
+    # Accelerator / SOTA decode knobs
+    use_compile: bool = False
+    compile_mode: str = "default"
+    use_amp: bool = False
+    # MaskGIT parallel unmask: topk | confidence | adaptive (mean-field-lite)
+    parallel_unmask: str = "adaptive"
 
 
 def _pad_batch(seqs: list[list[int]], pad_id: int) -> torch.Tensor:
@@ -472,18 +479,30 @@ class TwoTowerModel(nn.Module):
         length: int,
     ) -> list[str]:
         """Re-decode rows that fail stream_check using constrained LTR."""
-        repaired: list[str] = []
-        for i, text in enumerate(texts):
+        from concurrent.futures import ThreadPoolExecutor
+
+        def _check(text: str) -> tuple[bool, str]:
             try:
                 status = stream_check(text)
                 if status.serialized and status.complete_ok:
                     ser = status.serialized.strip()
                     compact = ser.replace(" ", "")
                     if "Stack([])" not in compact and "Card([])" not in compact:
-                        repaired.append(ser)
-                        continue
+                        return True, ser
             except Exception:  # noqa: BLE001
                 pass
+            return False, text
+
+        # Parallel Node stream_check — grammar bridge is process-bound, so threads
+        # overlap Python wait when the Node CLI is the bottleneck.
+        with ThreadPoolExecutor(max_workers=min(8, max(1, len(texts)))) as pool:
+            checked = list(pool.map(_check, texts))
+
+        repaired: list[str] = []
+        for i, (ok, text) in enumerate(checked):
+            if ok:
+                repaired.append(text)
+                continue
             row_ids = torch.full(
                 (1, length),
                 self.tokenizer.mask_id,
@@ -656,10 +675,16 @@ class TwoTowerModel(nn.Module):
             conf, pred = probs.max(dim=-1)
             conf = conf.masked_fill(~unknown, -1.0)
             remaining = int(unknown.sum().item())
-            n_unmask = max(1, math.ceil(remaining / (steps - step)))
-            flat_idx = conf.view(-1).topk(min(n_unmask, remaining)).indices
+            mode = str(getattr(self.config, "parallel_unmask", "adaptive") or "topk")
+            flat_idx = select_unmask_indices(
+                conf,
+                unknown,
+                step=step,
+                steps=steps,
+                mode=mode,
+            )
             newly: list[int] = []
-            for idx in flat_idx.tolist():
+            for idx in flat_idx:
                 b = idx // length
                 t = idx % length
                 if unknown[b, t]:
@@ -667,6 +692,7 @@ class TwoTowerModel(nn.Module):
                     unknown[b, t] = False
                     if b == 0:
                         newly.append(t)
+            _ = remaining  # kept for readability / future logging
 
             for b in range(ids.size(0)):
                 eos_positions = (ids[b] == self.tokenizer.eos_id).nonzero(

@@ -69,5 +69,8 @@ See [quality-matrix-results.json](quality-matrix-results.json). Headline deltas 
 | E4 schema | 0.0 | 0.0 | 0.22 | mild RICO lift |
 | E7 capacity | 0.0 | 0.0 | **0.88** | best RICO; struct 0.37 |
 | E8 combo | 0.0 | 0.0 | 0.0 | underfit at 800 steps on stacked levers |
+| **E9 accel combo** | 0.0* | **0.75** | 0.02 | *smoke poisoned by curriculum-C; **adv fidelity 0.875** |
+
+\*E9 emits `:adv.*` placeholders on smoke prompts — curriculum overfit. Still the first strong fidelity signal.
 
 **None clear honest `--ship-gates`.** Next: longer HF+DESIGN.md train (E0/E8), fidelity-targeted objectives, and keep E1 repair on for quality evals.
