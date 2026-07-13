@@ -5,12 +5,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import shlex
 import subprocess
 from pathlib import Path
 
 
-def _ssh_base(host: str, user: str | None, identity: Path | None, port: int) -> list[str]:
+def _ssh_base(
+    host: str, user: str | None, identity: Path | None, port: int
+) -> list[str]:
     cmd = ["ssh", "-o", "StrictHostKeyChecking=accept-new", "-p", str(port)]
     if identity:
         cmd.extend(["-i", str(identity)])
@@ -51,6 +54,10 @@ def main(argv: list[str] | None = None) -> int:
         help="Local directory to scp checkpoints into after training.",
     )
     args = parser.parse_args(argv)
+    if re.fullmatch(r"[A-Za-z0-9._-]+", args.run_id) is None or args.run_id in {".", ".."}:
+        parser.error(
+            "--run-id may contain only letters, digits, dot, underscore, and dash"
+        )
 
     remote_dir = _shell_path(args.remote_dir)
     run_id = shlex.quote(args.run_id)
@@ -93,25 +100,60 @@ python -m scripts.bench_cactus --checkpoint {ckpt_q} --with-design-md
         return int(proc.returncode)
 
     args.pull_dir.mkdir(parents=True, exist_ok=True)
-    # Expand ~ on the remote via bash for scp source.
-    remote_ckpt = f"{args.remote_dir}/outputs/runs/{args.run_id}/checkpoints/"
-    if remote_ckpt.startswith("~/"):
-        # scp does not expand ~; ask remote for absolute path first.
-        home_proc = subprocess.run(
-            ssh + ["bash", "-lc", "printf %s \"$HOME\""],
-            check=False,
-            capture_output=True,
-            text=True,
+    resolve_proc = subprocess.run(
+        ssh + ["bash", "-lc", f"cd {remote_dir} && pwd -P"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    resolved_dir = (resolve_proc.stdout or "").strip()
+    if resolve_proc.returncode != 0 or not resolved_dir:
+        print(
+            json.dumps(
+                {
+                    "ok": False,
+                    "error": "failed to resolve remote training directory",
+                    "stderr": (resolve_proc.stderr or "").strip(),
+                },
+                indent=2,
+            )
         )
-        home = (home_proc.stdout or "").strip() or "~"
-        remote_ckpt = f"{home}/slm-training/outputs/runs/{args.run_id}/checkpoints/"
+        return int(resolve_proc.returncode or 1)
+
+    remote_ckpt = f"{resolved_dir}/outputs/runs/{args.run_id}/checkpoints/"
     scp = ["scp", "-r", "-P", str(args.port)]
     if args.identity:
         scp.extend(["-i", str(args.identity)])
     target = f"{args.user}@{args.host}" if args.user else args.host
-    scp.extend([f"{target}:{remote_ckpt}", str(args.pull_dir)])
-    subprocess.run(scp, check=False)
-    print(json.dumps({"ok": True, "pulled_to": str(args.pull_dir)}, indent=2))
+    scp.extend([f"{target}:{shlex.quote(remote_ckpt)}", str(args.pull_dir)])
+    copy_proc = subprocess.run(scp, check=False)
+    if copy_proc.returncode != 0:
+        print(
+            json.dumps(
+                {
+                    "ok": False,
+                    "error": "checkpoint copy failed",
+                    "returncode": copy_proc.returncode,
+                },
+                indent=2,
+            )
+        )
+        return int(copy_proc.returncode)
+    pulled = list(args.pull_dir.rglob("last.pt"))
+    if not pulled:
+        print(
+            json.dumps(
+                {"ok": False, "error": "copy completed but last.pt was not found"},
+                indent=2,
+            )
+        )
+        return 1
+    print(
+        json.dumps(
+            {"ok": True, "pulled_to": str(args.pull_dir), "checkpoint": str(pulled[0])},
+            indent=2,
+        )
+    )
     return 0
 
 

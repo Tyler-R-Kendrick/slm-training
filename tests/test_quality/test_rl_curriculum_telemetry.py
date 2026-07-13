@@ -22,7 +22,7 @@ from slm_training.quality import (
     soft_corrupt_openui,
     strip_adv_placeholders,
 )
-from slm_training.rl import grpo_loss_for_group, structure_reward, train_grpo
+from slm_training.rl import structure_reward, train_grpo
 from slm_training.rl import GRPOConfig
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 from slm_training.telemetry import CycleTelemetry, bind_telemetry, timed

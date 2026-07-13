@@ -11,7 +11,10 @@
     "preview:build": "npm --prefix tools/openui_preview run build"
   },
   "devDependencies": {
-    "@playwright/mcp": "latest",
-    "@playwright/test": "^1.52.0"
+    "@playwright/mcp": "0.0.78",
+    "@playwright/test": "1.61.1"
+  },
+  "engines": {
+    "node": ">=20 <23"
   }
 }

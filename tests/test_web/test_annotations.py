@@ -32,7 +32,7 @@ BAD = 'root = TextContent(":broken.x")\n'
 
 
 def test_vary_prompt_keeps_substance() -> None:
-    from slm_training.web.prompts import compose_prompt, PromptCursor
+    from slm_training.web.prompts import PromptCursor
 
     import random
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import time
@@ -13,11 +14,22 @@ from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.parser import ParseError, validate
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.harnesses.model_build.config import ModelBuildConfig
-from slm_training.harnesses.model_build.data import load_suite_records, load_train_records
+from slm_training.harnesses.model_build.data import (
+    load_suite_records,
+    load_train_records,
+)
 from slm_training.harnesses.model_build.factory import build_model
 from slm_training.harnesses.model_build.plugin import GenerationRequest
 
 _COMPONENT_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s*\(")
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def _placeholder_fidelity_normalized(pred: str, gold: ExampleRecord) -> float:
@@ -60,7 +72,9 @@ def _placeholder_validity(pred: str, gold: ExampleRecord) -> float:
         return 1.0 if not pred_set else 0.5
     if not pred_set:
         return 0.0
-    well_formed = sum(1 for p in pred_set if p.startswith(":") and "." in p) / len(pred_set)
+    well_formed = sum(1 for p in pred_set if p.startswith(":") and "." in p) / len(
+        pred_set
+    )
     pred_n = {_normalize_placeholder(p) for p in pred_set}
     gold_n = {_normalize_placeholder(p) for p in gold_set}
     overlap = len(pred_n & gold_n) / len(gold_n) if gold_n else 0.0
@@ -258,13 +272,16 @@ def evaluate(
     ckpt = checkpoint or (config.checkpoint_dir / "last.pt")
 
     if model is not None:
+        if checkpoint is not None:
+            raise ValueError(
+                "provide either a preloaded model or a checkpoint, not both"
+            )
         plugin = model
-        if ckpt.exists() and hasattr(plugin, "load"):
-            try:
-                plugin.load(ckpt)
-            except Exception:  # noqa: BLE001 — model may already be loaded
-                pass
+        loaded_checkpoint: Path | None = None
+        checkpoint_sha256: str | None = None
     else:
+        if not ckpt.exists():
+            raise FileNotFoundError(f"evaluation checkpoint not found: {ckpt}")
         train_records = []
         if config.train_dir.exists():
             try:
@@ -274,8 +291,10 @@ def evaluate(
         plugin = build_model(
             config,
             train_records or records,
-            checkpoint=ckpt if ckpt.exists() else None,
+            checkpoint=ckpt,
         )
+        loaded_checkpoint = ckpt
+        checkpoint_sha256 = _sha256_file(ckpt)
 
     n = len(records)
     parse_ok = 0
@@ -302,7 +321,9 @@ def evaluate(
     if callable(generate_batch_requests) or callable(generate_batch):
         batch_size = max(
             1,
-            int(getattr(getattr(plugin, "config", None), "generate_batch_size", 8) or 8),
+            int(
+                getattr(getattr(plugin, "config", None), "generate_batch_size", 8) or 8
+            ),
         )
 
     def _eval_schema() -> str | None:
@@ -430,7 +451,9 @@ def evaluate(
     p50 = lat_sorted[len(lat_sorted) // 2] if lat_sorted else None
     p95 = lat_sorted[int(0.95 * (len(lat_sorted) - 1))] if lat_sorted else None
     gold_design_mean = (
-        sum(gold_design_scores) / len(gold_design_scores) if gold_design_scores else None
+        sum(gold_design_scores) / len(gold_design_scores)
+        if gold_design_scores
+        else None
     )
 
     metrics = {
@@ -456,7 +479,9 @@ def evaluate(
         "design_lint_score": gold_design_mean,
         "latency_ms_p50": round(p50, 2) if p50 is not None else None,
         "latency_ms_p95": round(p95, 2) if p95 is not None else None,
-        "checkpoint": str(ckpt),
+        "checkpoint": str(loaded_checkpoint) if loaded_checkpoint else None,
+        "checkpoint_sha256": checkpoint_sha256,
+        "checkpoint_source": ("checkpoint" if loaded_checkpoint else "preloaded_model"),
         "model": config.model_name,
         "evaluated_at": datetime.now(timezone.utc).isoformat(),
         "failure_breakdown": failure_breakdown,
@@ -480,6 +505,7 @@ def evaluate_suites(
     suites: list[str],
     *,
     checkpoint: Path | None = None,
+    model=None,
     write_gates: bool = False,
 ) -> dict[str, dict]:
     """Run eval across multiple suites; write scoreboard.json (and optional gates)."""
@@ -490,12 +516,18 @@ def evaluate_suites(
     board: dict[str, dict] = {}
     for suite in suites:
         suite_config = replace(config, suite=suite)
-        metrics = evaluate(suite_config, checkpoint=checkpoint)
+        metrics = evaluate(suite_config, model=model, checkpoint=checkpoint)
         board[suite] = {k: v for k, v in metrics.items() if k != "details"}
     scoreboard = {
         "run_id": config.run_id,
-        "checkpoint": str(
-            checkpoint or (config.checkpoint_dir / "last.pt")
+        "checkpoint": (
+            None
+            if model is not None
+            else str(checkpoint or (config.checkpoint_dir / "last.pt"))
+        ),
+        "checkpoint_source": "preloaded_model" if model is not None else "checkpoint",
+        "checkpoint_sha256": next(iter(board.values()), {}).get(
+            "checkpoint_sha256"
         ),
         "suites": board,
         "evaluated_at": datetime.now(timezone.utc).isoformat(),

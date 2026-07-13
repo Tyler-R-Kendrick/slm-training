@@ -17,7 +17,6 @@ from slm_training.dsl.production_codec import (
     OPEN_PREFIX,
     SLOT_PREFIX,
     ProductionCodec,
-    ProductionVocab,
     build_vocab_from_corpus,
     decode_productions,
     encode_openui,

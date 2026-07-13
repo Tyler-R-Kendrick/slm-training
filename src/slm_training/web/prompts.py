@@ -124,7 +124,11 @@ def load_prompt_bank(seed_path: Path | str | None = DEFAULT_SEED_PATH) -> list[s
 
 def vary_prompt(prompt: str, *, salt: int = 0) -> str:
     """Backward-compatible helper — compositional prompts are preferred."""
-    rng = random.Random((hash(prompt) ^ int(salt)) & 0xFFFFFFFF)
+    seed = int.from_bytes(
+        hashlib.sha256((str(int(salt)) + "\0" + prompt).encode("utf-8")).digest()[:8],
+        "big",
+    )
+    rng = random.Random(seed)
     return compose_prompt(rng)
 
 

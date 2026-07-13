@@ -93,9 +93,12 @@ def test_train_and_eval_stub(tmp_path: Path) -> None:
         steps=2,
         batch_size=2,
         model_name="stub",
+        eval_every=1,
     )
     summary = train(config)
     assert summary["steps"] == 2
+    assert summary["eval_history"]
+    assert (config.run_dir / "eval_history.jsonl").exists()
     ckpt = Path(summary["checkpoint"])
     assert ckpt.exists()
 

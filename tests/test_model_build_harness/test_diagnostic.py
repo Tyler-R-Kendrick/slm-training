@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
 
 from slm_training.dsl.schema import ExampleRecord, write_jsonl
 from slm_training.harnesses.model_build.diagnostic import (

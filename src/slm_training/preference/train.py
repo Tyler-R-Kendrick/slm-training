@@ -8,12 +8,13 @@ from pathlib import Path
 import torch
 import torch.nn.functional as F
 
-from slm_training.dsl.schema import load_jsonl
 from slm_training.models.twotower import TwoTowerModel, format_context_text
 from slm_training.preference import PreferencePair, load_pairs
 
 
-def _logprob_of_target(model: TwoTowerModel, prompt: str, target: str, design_md: str | None) -> torch.Tensor:
+def _logprob_of_target(
+    model: TwoTowerModel, prompt: str, target: str, design_md: str | None
+) -> torch.Tensor:
     """Teacher-forced mean log-prob of target tokens under one-step denoiser."""
     ctx_text = format_context_text(
         prompt,
@@ -28,7 +29,9 @@ def _logprob_of_target(model: TwoTowerModel, prompt: str, target: str, design_md
     mask[:, 0] = False  # keep BOS
     noisy = ids.clone()
     noisy[mask] = model.tokenizer.mask_id
-    logits = model.denoiser(noisy, ctx, pad_id=model.tokenizer.pad_id, ctx_pad_mask=ctx_pad)
+    logits = model.denoiser(
+        noisy, ctx, pad_id=model.tokenizer.pad_id, ctx_pad_mask=ctx_pad
+    )
     log_probs = F.log_softmax(logits, dim=-1)
     token_lp = log_probs.gather(-1, ids.unsqueeze(-1)).squeeze(-1)
     # Score masked positions (where preference signal is applied).

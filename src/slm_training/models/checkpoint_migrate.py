@@ -7,7 +7,7 @@ from pathlib import Path
 
 import torch
 
-from slm_training.dsl.schema import ExampleRecord, load_jsonl
+from slm_training.dsl.schema import load_jsonl
 from slm_training.models.tokenizer import OpenUITokenizer, TOKENIZER_VERSION
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 
@@ -51,7 +51,7 @@ def migrate_twotower_checkpoint(
     output_checkpoint = Path(output_checkpoint)
     train_records_path = Path(train_records_path)
 
-    payload = torch.load(source_checkpoint, map_location=device, weights_only=False)
+    payload = torch.load(source_checkpoint, map_location=device, weights_only=True)
     if payload.get("kind") != "twotower":
         raise ValueError(f"checkpoint kind {payload.get('kind')!r} is not twotower")
 
@@ -96,7 +96,6 @@ def migrate_twotower_checkpoint(
             skipped_keys.append(key)
             continue
         if key.endswith(".tok.weight"):
-            module = key.split(".tok.weight")[0]
             copied = _copy_shared_embedding_rows(
                 old_weight=old_tensor,
                 old_token_to_id=old_tokenizer.token_to_id,

@@ -15,6 +15,7 @@ import json
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from slm_training.harnesses.model_build import ModelBuildConfig, train
 from slm_training.harnesses.model_build.eval_runner import evaluate_suites
@@ -108,10 +109,18 @@ def main(argv: list[str] | None = None) -> int:
     # --- Phase A: SFT ---
     sft_ckpt = ckpt_dir / "sft.pt"
     if args.skip_sft and sft_ckpt.is_file():
-        phases["A"] = {"skipped": True, "checkpoint": str(sft_ckpt), "note": "reused existing sft.pt"}
+        phases["A"] = {
+            "skipped": True,
+            "checkpoint": str(sft_ckpt),
+            "note": "reused existing sft.pt",
+        }
     elif args.skip_sft and (ckpt_dir / "last.pt").is_file() and not sft_ckpt.is_file():
         sft_ckpt = _copy_ckpt(ckpt_dir / "last.pt", sft_ckpt)
-        phases["A"] = {"skipped": True, "checkpoint": str(sft_ckpt), "note": "bootstrapped sft.pt from last.pt"}
+        phases["A"] = {
+            "skipped": True,
+            "checkpoint": str(sft_ckpt),
+            "note": "bootstrapped sft.pt from last.pt",
+        }
     else:
         if args.seed_checkpoint and args.seed_checkpoint.is_file():
             _copy_ckpt(args.seed_checkpoint, ckpt_dir / "last.pt")
@@ -308,7 +317,11 @@ def main(argv: list[str] | None = None) -> int:
     suites = board.get("suites") or {}
     gates = evaluate_ship_gates(suites)
     phases["phase_boards"] = phase_boards
-    phases["champion"] = {"phase": best_name, "score": best_score, "checkpoint": str(final_ckpt)}
+    phases["champion"] = {
+        "phase": best_name,
+        "score": best_score,
+        "checkpoint": str(final_ckpt),
+    }
     phases["eval"] = {
         "pass": gates.get("pass"),
         "failures": gates.get("failures"),

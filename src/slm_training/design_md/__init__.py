@@ -16,6 +16,8 @@ import threading
 from pathlib import Path
 from typing import Any
 
+from slm_training.bridge_utils import readline_with_timeout
+
 _BRIDGE_DIR = Path(__file__).resolve().parents[3] / "tools" / "design_md_bridge"
 _CLI = _BRIDGE_DIR / "cli.mjs"
 
@@ -23,6 +25,7 @@ _REPL_LOCK = threading.Lock()
 _REPL_PROC: subprocess.Popen[str] | None = None
 _LINT_CACHE: dict[str, dict[str, Any]] = {}
 _LINT_CACHE_MAX = 256
+_CACHE_LOCK = threading.Lock()
 _BASE_LINT_CACHE: dict[str, Any] | None = None
 
 
@@ -100,7 +103,13 @@ def _invoke_once(payload: dict[str, Any], *, timeout: float = 30.0) -> dict[str,
         raise RuntimeError(f"design_md bridge invalid JSON: {raw[:200]}") from exc
 
 
-def _invoke_repl(payload: dict[str, Any]) -> dict[str, Any]:
+def _readline_with_timeout(proc: subprocess.Popen[str], timeout: float) -> str:
+    return readline_with_timeout(
+        proc, timeout, error_message="DESIGN.md bridge REPL read failed"
+    )
+
+
+def _invoke_repl(payload: dict[str, Any], *, timeout: float = 30.0) -> dict[str, Any]:
     with _REPL_LOCK:
         proc = _ensure_repl()
         assert proc.stdin is not None and proc.stdout is not None
@@ -113,7 +122,7 @@ def _invoke_repl(payload: dict[str, Any]) -> dict[str, Any]:
             assert proc.stdin is not None and proc.stdout is not None
             proc.stdin.write(json.dumps(payload) + "\n")
             proc.stdin.flush()
-        line = proc.stdout.readline()
+        line = _readline_with_timeout(proc, timeout)
         if not line:
             _close_repl()
             raise RuntimeError("design_md bridge REPL died")
@@ -128,7 +137,12 @@ def _run(payload: dict[str, Any], *, timeout: float = 30.0) -> dict[str, Any]:
     }
     if use_repl:
         try:
-            return _invoke_repl(payload)
+            return _invoke_repl(payload, timeout=timeout)
+        except subprocess.TimeoutExpired as exc:
+            _close_repl()
+            raise RuntimeError(
+                f"DESIGN.md bridge timed out after {timeout:.3f}s"
+            ) from exc
         except Exception:  # noqa: BLE001
             _close_repl()
             return _invoke_once(payload, timeout=timeout)
@@ -142,14 +156,15 @@ def _cache_key(source: str) -> str:
 def lint(source: str) -> dict[str, Any]:
     """Lint a DESIGN.md string. Returns ok/score/summary/findings."""
     key = _cache_key(source)
-    cached = _LINT_CACHE.get(key)
+    with _CACHE_LOCK:
+        cached = _LINT_CACHE.get(key)
     if cached is not None:
         return dict(cached)
     result = _run({"op": "lint", "source": source})
-    if len(_LINT_CACHE) >= _LINT_CACHE_MAX:
-        # Drop an arbitrary old entry (insertion order).
-        _LINT_CACHE.pop(next(iter(_LINT_CACHE)))
-    _LINT_CACHE[key] = result
+    with _CACHE_LOCK:
+        if len(_LINT_CACHE) >= _LINT_CACHE_MAX:
+            _LINT_CACHE.pop(next(iter(_LINT_CACHE)))
+        _LINT_CACHE[key] = result
     return dict(result)
 
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import math
 import random
+import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -144,7 +145,7 @@ class TwoTowerConfig:
     # Mix teacher-forced next-token CE into training (helps LTR generate).
     ltr_loss_weight: float = 0.5
     # Extra CE weight on gold placeholder token positions (fidelity signal).
-    fidelity_loss_weight: float = 0.0
+    fidelity_loss_weight: float = 0.5
     design_md_in_context: bool = True
     design_md_budget: int = 1800
     schema_in_context: bool = False
@@ -204,7 +205,9 @@ class TwoTowerConfig:
     teacher_init_embeddings: bool = False
 
 
-def _pad_batch(seqs: list[list[int]], pad_id: int, device: str | torch.device | None = None) -> torch.Tensor:
+def _pad_batch(
+    seqs: list[list[int]], pad_id: int, device: str | torch.device | None = None
+) -> torch.Tensor:
     max_len = max((len(s) for s in seqs), default=1)
     out = torch.full((len(seqs), max_len), pad_id, dtype=torch.long)
     for i, s in enumerate(seqs):
@@ -274,6 +277,10 @@ class TwoTowerModel(nn.Module):
         self.context_tokenizer = context_tokenizer or tokenizer
         self.config = config or TwoTowerConfig()
         self.device_name = str(device)
+        # Seed before module construction so a configured run is reproducible.
+        torch.manual_seed(self.config.seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(self.config.seed)
         backend = (self.config.context_backend or "scratch").lower()
         freeze = self.config.freeze_context
         if backend in {"hf", "huggingface", "transformers"} and not freeze:
@@ -358,7 +365,9 @@ class TwoTowerModel(nn.Module):
     def clear_train_caches(self) -> None:
         self._context_text_cache.clear()
         self._target_ids_cache.clear()
-        if is_hf_context(self.context) and hasattr(self.context, "clear_backbone_cache"):
+        if is_hf_context(self.context) and hasattr(
+            self.context, "clear_backbone_cache"
+        ):
             self.context.clear_backbone_cache()  # type: ignore[union-attr]
 
     def trainable_parameters(self):
@@ -639,9 +648,7 @@ class TwoTowerModel(nn.Module):
                     self._target_ids_cache[key] = ids
                 targets.append(ids)
 
-        target_ids = _pad_batch(
-            targets, self.tokenizer.pad_id, device=self.device_name
-        )
+        target_ids = _pad_batch(targets, self.tokenizer.pad_id, device=self.device_name)
         ctx, ctx_pad = self._encode_context(prompts, cache_keys=cache_keys)
         noisy, predict_mask, mdlm_row_w = self._mask_targets(target_ids)
 
@@ -766,15 +773,18 @@ class TwoTowerModel(nn.Module):
         if schema is None and getattr(self.config, "schema_in_context", False):
             from slm_training.quality import compact_schema_snippet
 
-            schema = compact_schema_snippet(budget=min(600, self.config.design_md_budget))
+            schema = compact_schema_snippet(
+                budget=min(600, self.config.design_md_budget)
+            )
         skeleton = None
         k = int(getattr(self.config, "retrieval_k", 0) or 0)
         if k > 0 and self.skeleton_bank:
-            from slm_training.retrieval import format_retrieved_skeleton, nearest_skeletons
-
-            hits = nearest_skeletons(
-                self.skeleton_bank, query_prompt or prompt, k=k
+            from slm_training.retrieval import (
+                format_retrieved_skeleton,
+                nearest_skeletons,
             )
+
+            hits = nearest_skeletons(self.skeleton_bank, query_prompt or prompt, k=k)
             if hits:
                 skeleton = format_retrieved_skeleton(hits[0].openui)
         dm = design_md if self.config.design_md_in_context else None
@@ -791,6 +801,7 @@ class TwoTowerModel(nn.Module):
             retrieved_skeleton=skeleton,
             slot_contract=contract,
         )
+
     def _decode_ids(self, ids_1d: torch.Tensor) -> str:
         placeholders = None
         if self._slot_contracts:
@@ -800,6 +811,15 @@ class TwoTowerModel(nn.Module):
                     placeholders = list(c)
                     break
         return self._decode_openui(ids_1d, placeholders=placeholders)
+
+    @staticmethod
+    def _repair_surface_syntax(text: str) -> str:
+        """Repair local token-boundary artifacts without inventing layout content."""
+        parts = re.split(r'("(?:\\.|[^"\\])*")', text)
+        for index in range(0, len(parts), 2):
+            parts[index] = re.sub(r"\s*=\s*=+\s*", " = ", parts[index])
+            parts[index] = re.sub(r",\s*=\s*(?=[)\]])", "", parts[index])
+        return "".join(parts)
 
     @staticmethod
     def _canonical_valid_openui(text: str) -> str | None:
@@ -892,6 +912,11 @@ class TwoTowerModel(nn.Module):
             ser = self._canonical_valid_openui(templ)
             if ser is not None:
                 return ser
+        if (
+            not self.config.grammar_ltr_repair
+            and not self.config.grammar_finalize_validate
+        ):
+            return text
         last = text
         for _ in range(max(1, attempts)):
             last = self._ltr_repair_from_bos(ctx, ctx_pad, length)
@@ -1051,9 +1076,7 @@ class TwoTowerModel(nn.Module):
                 forced_map: dict[int, int] = {}
                 if use_fast:
                     for bi in active_idx.tolist():
-                        forced = force_emit_token_id(
-                            tok, ids[bi, :t].tolist()
-                        )
+                        forced = force_emit_token_id(tok, ids[bi, :t].tolist())
                         if forced is not None:
                             forced_map[bi] = forced
                 # Always run the denoiser for active rows — force-emit is a hint
@@ -1062,17 +1085,13 @@ class TwoTowerModel(nn.Module):
 
                 pred = ids[:, t].clone()
                 if need_model:
-                    need_t = torch.tensor(
-                        need_model, device=device, dtype=torch.long
-                    )
+                    need_t = torch.tensor(need_model, device=device, dtype=torch.long)
                     if need_t.numel() == bsz:
                         logits = self.denoiser(
                             ids, ctx, pad_id=tok.pad_id, ctx_pad_mask=ctx_pad
                         )
                         if bias:
-                            logits = apply_structural_bias(
-                                logits, tok, bias=bias
-                            )
+                            logits = apply_structural_bias(logits, tok, bias=bias)
                         row = logits[:, t, :].clone()
                     else:
                         sub_ids = ids.index_select(0, need_t)
@@ -1085,9 +1104,7 @@ class TwoTowerModel(nn.Module):
                             ctx_pad_mask=sub_pad,
                         )
                         if bias:
-                            logits = apply_structural_bias(
-                                logits, tok, bias=bias
-                            )
+                            logits = apply_structural_bias(logits, tok, bias=bias)
                         row = torch.full(
                             (bsz, logits.size(-1)),
                             -1e9,
@@ -1719,9 +1736,7 @@ class TwoTowerModel(nn.Module):
                     unknown[b, end + 1 :] = False
 
             if use_grammar and newly:
-                remask = filter_ids_by_stream(
-                    self.tokenizer, ids[0].tolist(), newly
-                )
+                remask = filter_ids_by_stream(self.tokenizer, ids[0].tolist(), newly)
                 for t in remask:
                     ids[0, t] = self.tokenizer.mask_id
                     unknown[0, t] = True
@@ -1831,6 +1846,24 @@ class TwoTowerModel(nn.Module):
 
         text = self._decode_ids(ids[0])
         if use_grammar:
+            repaired = self._repair_surface_syntax(text)
+            canonical = self._canonical_valid_openui(repaired)
+            if canonical is not None:
+                return canonical
+            # Grammar filtering can occasionally strand a well-trained MaskGIT
+            # decode on a partial prefix. Retry once without token filtering,
+            # then accept it only after deterministic syntax repair + validation.
+            unconstrained = self._generate_maskgit_one(
+                ctx,
+                ctx_pad,
+                length,
+                use_grammar=False,
+                slot_contract=slot_contract,
+            )
+            repaired = self._repair_surface_syntax(unconstrained)
+            canonical = self._canonical_valid_openui(repaired)
+            if canonical is not None:
+                return canonical
             return self._ensure_valid_openui(
                 text, ctx, ctx_pad, length, slot_contract=slot_contract
             )
@@ -1859,9 +1892,7 @@ class TwoTowerModel(nn.Module):
         # Keep checkpoints small: reload frozen HF backbone from hub/cache on load.
         if is_hf_context(self.context) and self.config.freeze_context:
             state = {
-                k: v
-                for k, v in state.items()
-                if not k.startswith("context.backbone.")
+                k: v for k, v in state.items() if not k.startswith("context.backbone.")
             }
         return state
 
@@ -1906,7 +1937,7 @@ class TwoTowerModel(nn.Module):
 
     def load(self, path: Path | str) -> None:
         path = Path(path)
-        payload = torch.load(path, map_location=self.device_name, weights_only=False)
+        payload = torch.load(path, map_location=self.device_name, weights_only=True)
         if payload.get("kind") != "twotower":
             raise ValueError(f"checkpoint kind {payload.get('kind')!r} is not twotower")
         _load_checkpoint_state(self, payload["state_dict"])
@@ -1928,7 +1959,14 @@ class TwoTowerModel(nn.Module):
         device: str | torch.device = "cpu",
     ) -> TwoTowerModel:
         path = Path(path)
-        payload = torch.load(path, map_location=device, weights_only=False)
+        payload = torch.load(path, map_location=device, weights_only=True)
+        if not isinstance(payload, dict) or payload.get("kind") != "twotower":
+            kind = (
+                payload.get("kind")
+                if isinstance(payload, dict)
+                else type(payload).__name__
+            )
+            raise ValueError(f"checkpoint kind {kind!r} is not twotower")
         tok_path = path.with_suffix(".tokenizer.json")
         if not tok_path.exists():
             raise FileNotFoundError(f"missing tokenizer next to checkpoint: {tok_path}")

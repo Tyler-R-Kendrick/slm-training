@@ -63,11 +63,7 @@ class LambdaClient:
                 itype = info.get("instance_type") if "instance_type" in info else info
                 if not isinstance(itype, dict):
                     itype = info
-                name = str(
-                    itype.get("name")
-                    or itype.get("description")
-                    or type_name
-                )
+                name = str(itype.get("name") or itype.get("description") or type_name)
                 price_cents = itype.get("price_cents_per_hour")
                 if price_cents is not None:
                     price = float(price_cents) / 100.0
@@ -77,8 +73,18 @@ class LambdaClient:
                     )
                 regions = info.get("regions_with_capacity_available") or []
                 available = "available" if regions else "unavailable"
-                specs = itype.get("specs") if isinstance(itype.get("specs"), dict) else {}
-                gpus = itype.get("gpus") or specs.get("gpus")
+                specs = (
+                    itype.get("specs") if isinstance(itype.get("specs"), dict) else {}
+                )
+                gpu_count = itype.get("gpus") or specs.get("gpus")
+                raw_vram = (
+                    itype.get("gpu_memory_gib")
+                    or itype.get("gpu_memory_gb")
+                    or itype.get("vram_gb")
+                    or specs.get("gpu_memory_gib")
+                    or specs.get("gpu_memory_gb")
+                    or specs.get("vram_gb")
+                )
                 offers.append(
                     Offer(
                         farm=self.name,
@@ -86,15 +92,29 @@ class LambdaClient:
                         gpu_type=name,
                         price_per_hr=price,
                         spot=False,
-                        vram_gb=float(gpus) if isinstance(gpus, (int, float)) else None,
+                        vram_gb=(
+                            float(raw_vram)
+                            if isinstance(raw_vram, (int, float))
+                            else None
+                        ),
                         availability=available,
-                        raw_ref={"regions": regions, "name": itype.get("name") or type_name},
+                        raw_ref={
+                            "regions": regions,
+                            "name": itype.get("name") or type_name,
+                            "gpu_count": (
+                                int(gpu_count)
+                                if isinstance(gpu_count, (int, float))
+                                else None
+                            ),
+                        },
                     )
                 )
         except Exception as exc:  # noqa: BLE001
             return FarmListResult(farm=self.name, offers=[], error=str(exc))
 
-        offers = filter_offers(offers, gpu_type=gpu_type, max_price_per_hr=max_price_per_hr)
+        offers = filter_offers(
+            offers, gpu_type=gpu_type, max_price_per_hr=max_price_per_hr
+        )
         return FarmListResult(farm=self.name, offers=offers)
 
     async def launch(self, config: dict[str, Any]) -> LaunchResult:
@@ -117,7 +137,9 @@ class LambdaClient:
                 error=listed.error,
             )
         # Prefer available regions
-        candidates = [o for o in listed.offers if o.availability == "available"] or listed.offers
+        candidates = [
+            o for o in listed.offers if o.availability == "available"
+        ] or listed.offers
         offer = None
         offer_id = config.get("offer_id")
         if offer_id:
