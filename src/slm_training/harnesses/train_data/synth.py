@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
 from typing import Protocol
 
@@ -11,6 +12,7 @@ _ROOT_STACK_RE = re.compile(
     r'^root\s*=\s*Stack\(\[(?P<children>[^\]]*)\](?P<rest>(?:,\s*"[^"]*")*)\)\s*$',
     re.M,
 )
+_PLACEHOLDER_RE = re.compile(r'":([A-Za-z_][A-Za-z0-9_]*)\.([A-Za-z0-9_.]+)"')
 
 
 class PromptSynthesizer(Protocol):
@@ -147,6 +149,57 @@ class LayoutAugmentSynthesizer:
         )
 
 
+class NamespaceAugmentSynthesizer:
+    """Re-prefix placeholders with a deterministic namespace (:acme.hero.title)."""
+
+    PREFIXES = ("acme", "beta", "gamma", "delta", "omega", "nova")
+
+    def _pick_prefix(self, record_id: str) -> str:
+        digest = hashlib.sha256(record_id.encode("utf-8")).hexdigest()
+        return self.PREFIXES[int(digest[:8], 16) % len(self.PREFIXES)]
+
+    def _reprefix(self, token: str, prefix: str) -> str:
+        if not token.startswith(":"):
+            return token
+        body = token[1:]
+        if "." not in body:
+            return f":{prefix}.{body}"
+        return f":{prefix}.{body}"
+
+    def expand(self, record: ExampleRecord) -> list[ExampleRecord]:
+        prefix = self._pick_prefix(record.id)
+        openui = record.openui
+
+        def _sub(match: re.Match[str]) -> str:
+            first = match.group(1)
+            rest = match.group(2)
+            return f'":{prefix}.{first}.{rest}"'
+
+        new_openui = _PLACEHOLDER_RE.sub(_sub, openui)
+        if new_openui == openui:
+            return []
+        new_placeholders = [
+            self._reprefix(ph, prefix) for ph in (record.placeholders or [])
+        ]
+        return [
+            ExampleRecord(
+                id=f"{record.id}_ns_{prefix}",
+                prompt=record.prompt,
+                openui=new_openui,
+                placeholders=new_placeholders,
+                split=record.split,
+                source=f"{record.source}+namespace",
+                meta={
+                    **record.meta,
+                    "synth": "namespace_augment",
+                    "namespace_prefix": prefix,
+                    "parent_id": record.id,
+                },
+                design_md=record.design_md,
+            )
+        ]
+
+
 class QualitySynthesizer:
     """Compose template paraphrases + layout augments (deterministic, ordered)."""
 
@@ -166,6 +219,8 @@ def get_synthesizer(name: str) -> PromptSynthesizer:
         return TemplateSynthesizer()
     if name in {"layout", "layout_augment", "aug"}:
         return LayoutAugmentSynthesizer()
+    if name in {"namespace", "namespace_augment", "ns"}:
+        return NamespaceAugmentSynthesizer()
     if name in {"quality", "full", "default"}:
         return QualitySynthesizer()
     raise ValueError(f"unknown synthesizer {name!r}")

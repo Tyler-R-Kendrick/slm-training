@@ -40,6 +40,7 @@ class TrainDataConfig:
     max_openui_chars: int | None = None
     max_components: int | None = None
     curriculum: bool = False
+    namespace_augment: bool = False
 
     @property
     def output_dir(self) -> Path:
@@ -174,6 +175,14 @@ def build_train_data(
     collected: list[ExampleRecord] = []
     for seed in seeds:
         candidates = [seed, *synth.expand(seed)]
+        if config.namespace_augment:
+            from slm_training.harnesses.train_data.synth import NamespaceAugmentSynthesizer
+
+            ns = NamespaceAugmentSynthesizer()
+            extra: list[ExampleRecord] = []
+            for candidate in list(candidates):
+                extra.extend(ns.expand(candidate))
+            candidates.extend(extra)
         for candidate in candidates:
             try:
                 collected.append(_normalize_record(candidate))
@@ -215,21 +224,14 @@ def build_train_data(
         from slm_training.quality import apply_curriculum_tags
 
         deduped = apply_curriculum_tags(deduped)
-        # Inject a few adversarial fixtures as stage-C when available.
-        adv_path = Path("fixtures/test_seeds.jsonl")
-        if adv_path.is_file():
-            for seed in load_jsonl(adv_path):
-                if seed.split != "adversarial":
-                    continue
-                try:
-                    tagged = apply_curriculum_tags([_normalize_record(seed)])[0]
-                    tagged.meta["curriculum"] = "C"
-                    tagged.split = "train"
-                    tagged.id = f"curriculum_c_{tagged.id}"
-                    deduped.append(tagged)
-                except (ParseError, ValueError) as exc:
-                    errors.append({"id": seed.id, "error": str(exc)})
-            deduped.sort(key=lambda r: r.id)
+        from slm_training.quality import synthesize_stress_adversarial_records
+
+        for stress in synthesize_stress_adversarial_records():
+            try:
+                deduped.append(_normalize_record(stress))
+            except (ParseError, ValueError) as exc:
+                errors.append({"id": stress.id, "error": str(exc)})
+        deduped.sort(key=lambda r: r.id)
 
     out_dir = config.output_dir
     out_dir.mkdir(parents=True, exist_ok=True)

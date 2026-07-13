@@ -59,6 +59,13 @@ class Experiment:
     preference: bool = False
     mix_curriculum: bool = True
     rl: bool = False
+    slot_contract_in_context: bool = False
+    slot_contract_constrained_decode: bool = False
+    namespace_augment: bool = False
+    ltr_loss_weight: float = 1.0
+    # Eval-only overlay: decode sweep presets (E17)
+    decode_sweep: str | None = None
+    eval_from_checkpoint: str | None = None
 
 
 def _base_experiments(
@@ -202,6 +209,108 @@ def _base_experiments(
     ]
 
 
+def _v2_experiments(
+    train_v1: Path,
+    train_cur: Path,
+    train_ns: Path,
+    *,
+    design_md_in_context: bool = True,
+) -> list[Experiment]:
+    """E11–E17: fixes for compositional placeholders + slot contract + LTR."""
+    return [
+        Experiment(
+            "E11",
+            "qx_e11_compositional_tok",
+            "Compositional placeholder tokenizer (F1) baseline",
+            train_v1,
+            grammar_ltr_repair=True,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E12",
+            "qx_e12_slot_contract",
+            "F1 + slot contract conditioning + inventory decode (F2)",
+            train_v1,
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            grammar_ltr_repair=True,
+            fidelity_loss_weight=1.0,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E13",
+            "qx_e13_ltr_aligned",
+            "F1 + true weighted LTR loss + LTR-primary decode (F4)",
+            train_v1,
+            grammar_ltr_repair=True,
+            ltr_loss_weight=2.0,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E14",
+            "qx_e14_namespace_aug",
+            "F1 + namespace augmentation, no slot contract (F5)",
+            train_ns,
+            grammar_ltr_repair=True,
+            namespace_augment=True,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E15",
+            "qx_e15_combo",
+            "Combo: slot contract + LTR + leak-free curriculum + capacity",
+            train_cur,
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            fidelity_loss_weight=1.5,
+            schema_in_context=True,
+            use_curriculum=True,
+            mix_curriculum=True,
+            grammar_ltr_repair=True,
+            ltr_loss_weight=2.0,
+            d_model=192,
+            n_heads=6,
+            context_layers=3,
+            denoiser_layers=6,
+            grammar_ltr_max_tokens=96,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E16",
+            "qx_e16_long_train",
+            "E15 recipe at extended step budget (use --steps 2000+)",
+            train_cur,
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            fidelity_loss_weight=1.5,
+            schema_in_context=True,
+            use_curriculum=True,
+            mix_curriculum=True,
+            grammar_ltr_repair=True,
+            ltr_loss_weight=2.0,
+            d_model=192,
+            n_heads=6,
+            context_layers=3,
+            denoiser_layers=6,
+            grammar_ltr_max_tokens=96,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E17",
+            "qx_e17_decode_sweep",
+            "Decode-budget sweep on E15 checkpoint (eval-only)",
+            train_cur,
+            eval_from_checkpoint="outputs/runs/qx_e15_combo/checkpoints/last.pt",
+            decode_sweep="gen16_repair_bon4",
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            grammar_ltr_repair=True,
+            best_of_n=4,
+            design_md_in_context=design_md_in_context,
+        ),
+    ]
+
+
 def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
     return ModelBuildConfig(
         train_dir=exp.train_dir,
@@ -226,9 +335,13 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         grammar_ltr_repair=exp.grammar_ltr_repair,
         grammar_ltr_max_tokens=exp.grammar_ltr_max_tokens,
         design_md_in_context=exp.design_md_in_context,
-        ltr_loss_weight=1.0,
+        ltr_loss_weight=getattr(exp, "ltr_loss_weight", 1.0),
         fidelity_loss_weight=exp.fidelity_loss_weight,
         schema_in_context=exp.schema_in_context,
+        slot_contract_in_context=getattr(exp, "slot_contract_in_context", False),
+        slot_contract_constrained_decode=getattr(
+            exp, "slot_contract_constrained_decode", False
+        ),
         retrieval_k=exp.retrieval_k,
         best_of_n=1,  # train without BoN cost; apply at eval
         use_curriculum=exp.use_curriculum,
@@ -246,10 +359,24 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
 
 def _eval_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
     cfg = _train_cfg(exp, args)
+    gen_steps = args.gen_steps
+    repair = exp.grammar_ltr_repair or exp.eid in {"E1", "E8", "E9b", "E10", "E11", "E12", "E13", "E14", "E15", "E16", "E17"}
+    bon = exp.best_of_n
+    if exp.decode_sweep == "gen16_repair_bon4":
+        gen_steps = 16
+        repair = True
+        bon = 4
+    elif exp.decode_sweep == "gen24_repair":
+        gen_steps = 24
+        repair = True
+    elif exp.decode_sweep == "gen8_norepair":
+        gen_steps = 8
+        repair = False
     return replace(
         cfg,
-        best_of_n=exp.best_of_n,
-        grammar_ltr_repair=exp.grammar_ltr_repair or exp.eid in {"E1", "E8", "E9b", "E10"},
+        best_of_n=bon,
+        gen_steps=gen_steps,
+        grammar_ltr_repair=repair,
         rico_eval_limit=args.rico_limit,
         run_id=exp.run_id,
     )
@@ -340,6 +467,12 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
         dest = run_dir / "checkpoints" / "last.pt"
         if not src.is_file():
             raise FileNotFoundError(f"{exp.eid} needs seed checkpoint {src}")
+        ckpt = _copy_checkpoint(src, dest)
+    elif exp.eval_from_checkpoint:
+        src = Path(exp.eval_from_checkpoint)
+        dest = run_dir / "checkpoints" / "last.pt"
+        if not src.is_file():
+            raise FileNotFoundError(f"{exp.eid} needs checkpoint {src}")
         ckpt = _copy_checkpoint(src, dest)
     elif exp.eval_from_run and not exp.preference:
         src = args.run_root / exp.eval_from_run / "checkpoints" / "last.pt"
@@ -445,15 +578,25 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Build curriculum train corpus before running.",
     )
+    parser.add_argument(
+        "--namespace-dir",
+        type=Path,
+        default=Path("outputs/train_data/v1_namespace"),
+    )
+    parser.add_argument(
+        "--matrix",
+        choices=("legacy", "v2", "all"),
+        default="v2",
+        help="Experiment set: legacy (E0–E10), v2 (E11–E17), or all.",
+    )
+    parser.add_argument("--gen-steps", type=int, default=8)
     args = parser.parse_args(argv)
 
-    if args.build_curriculum or (
-        not args.curriculum_dir.exists()
-        and (
-            args.only is None
-            or any(x in (args.only or "") for x in ("E2", "E8", "E9b", "E10"))
-        )
-    ):
+    needs_curriculum = args.only is None or any(
+        x in (args.only or "")
+        for x in ("E2", "E8", "E9b", "E10", "E15", "E16", "E17")
+    )
+    if args.build_curriculum or (not args.curriculum_dir.exists() and needs_curriculum):
         from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
 
         build_train_data(
@@ -466,12 +609,42 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
 
-    experiments = _base_experiments(
-        args.train_dir,
-        args.curriculum_dir,
-        seed_checkpoint=args.seed_checkpoint,
-        design_md_in_context=not args.no_design_md_context,
+    needs_namespace = args.only is None or any(
+        x in (args.only or "") for x in ("E14",)
     )
+    if needs_namespace and not args.namespace_dir.exists():
+        from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
+
+        build_train_data(
+            TrainDataConfig(
+                source="all",
+                output_root=args.namespace_dir.parent,
+                version=args.namespace_dir.name,
+                synthesizer="quality",
+                namespace_augment=True,
+            )
+        )
+
+    design_md = not args.no_design_md_context
+    experiments: list[Experiment] = []
+    if args.matrix in {"legacy", "all"}:
+        experiments.extend(
+            _base_experiments(
+                args.train_dir,
+                args.curriculum_dir,
+                seed_checkpoint=args.seed_checkpoint,
+                design_md_in_context=design_md,
+            )
+        )
+    if args.matrix in {"v2", "all"}:
+        experiments.extend(
+            _v2_experiments(
+                args.train_dir,
+                args.curriculum_dir,
+                args.namespace_dir,
+                design_md_in_context=design_md,
+            )
+        )
     if args.only:
         wanted = {x.strip().upper() for x in args.only.split(",") if x.strip()}
         experiments = [e for e in experiments if e.eid in wanted]
@@ -489,7 +662,11 @@ def main(argv: list[str] | None = None) -> int:
     results: list[dict[str, Any]] = []
     workers = max(1, int(args.workers))
     # Seed/decode overlays that depend on another run stay sequential first.
-    dependent = [e for e in experiments if e.eval_from_run or e.seed_checkpoint]
+    dependent = [
+        e
+        for e in experiments
+        if e.eval_from_run or e.seed_checkpoint or e.eval_from_checkpoint
+    ]
     independent = [e for e in experiments if e not in dependent]
 
     def _run(exp: Experiment) -> dict[str, Any]:
@@ -521,12 +698,14 @@ def main(argv: list[str] | None = None) -> int:
     results.sort(key=lambda r: r.get("id") or "")
 
     out = {
-        "matrix": "quality-experiment-matrix",
+        "matrix": "quality-experiment-matrix-v2",
         "reference": "docs/design/quality-experiment-matrix.md",
         "gate_policy": {k: v for k, v in DEFAULT_SHIP_GATES.items()},
         "rico_eval_limit": args.rico_limit,
         "steps": args.steps,
+        "gen_steps": args.gen_steps,
         "context_backend": args.context_backend,
+        "matrix_set": args.matrix,
         "results": results,
     }
     out_path = args.run_root / "quality_matrix_summary.json"

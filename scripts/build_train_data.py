@@ -75,7 +75,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--curriculum",
         action="store_true",
-        help="Tag records with curriculum stages A/B/C and inject adversarial hard examples.",
+        help="Tag records with curriculum stages A/B/C and inject stress adversarial examples.",
+    )
+    parser.add_argument(
+        "--namespace-augment",
+        action="store_true",
+        help="Emit namespace-augmented train variants (:acme.* re-prefix).",
     )
     args = parser.parse_args(argv)
 
@@ -97,6 +102,7 @@ def main(argv: list[str] | None = None) -> int:
             max_openui_chars=args.max_openui_chars,
             max_components=args.max_components,
             curriculum=args.curriculum,
+            namespace_augment=args.namespace_augment,
         )
     )
     print(json.dumps(result["stats"], indent=2))

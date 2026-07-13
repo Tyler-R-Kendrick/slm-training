@@ -28,9 +28,10 @@ CTA = 'root = Stack([cta])\ncta = Button(":cta.label")'
 def test_tokenize_preserves_placeholders_and_whitespace() -> None:
     text = 'hero = Card(":hero.title", ":hero.body")\n'
     tokens = tokenize_text(text)
-    # Placeholders appear as quoted OpenUI string literals
-    assert '":hero.title"' in tokens
-    assert '":hero.body"' in tokens
+    assert ":" in tokens
+    assert "hero" in tokens
+    assert "title" in tokens
+    assert "body" in tokens
     assert "\n" in tokens
     assert "Card" in tokens
 
@@ -110,8 +111,20 @@ def test_twotower_train_eval_overfit(tmp_path: Path) -> None:
     write_jsonl(
         train_seeds,
         [
-            ExampleRecord(id="tr1", prompt="Hero", openui=HERO, split="train"),
-            ExampleRecord(id="tr2", prompt="CTA", openui=CTA, split="train"),
+            ExampleRecord(
+                id="tr1",
+                prompt="Hero",
+                openui=HERO,
+                split="train",
+                placeholders=[":hero.title", ":hero.body"],
+            ),
+            ExampleRecord(
+                id="tr2",
+                prompt="CTA",
+                openui=CTA,
+                split="train",
+                placeholders=[":cta.label"],
+            ),
         ],
     )
     train_result = build_train_data(
@@ -136,6 +149,7 @@ def test_twotower_train_eval_overfit(tmp_path: Path) -> None:
                 openui=HERO,
                 split="smoke",
                 meta={"suite": "smoke"},
+                placeholders=[":hero.title", ":hero.body"],
             ),
             ExampleRecord(
                 id="sm2",
@@ -143,6 +157,7 @@ def test_twotower_train_eval_overfit(tmp_path: Path) -> None:
                 openui=CTA,
                 split="smoke",
                 meta={"suite": "smoke"},
+                placeholders=[":cta.label"],
             ),
         ],
     )
@@ -178,6 +193,8 @@ def test_twotower_train_eval_overfit(tmp_path: Path) -> None:
         gen_steps=6,
         context_backend="scratch",
         freeze_context=False,
+        slot_contract_in_context=True,
+        slot_contract_constrained_decode=True,
     )
     summary = train(config)
     assert summary["steps"] == 120

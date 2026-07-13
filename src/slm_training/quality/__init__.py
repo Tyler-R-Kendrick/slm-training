@@ -147,6 +147,87 @@ def sanitize_curriculum_record(record: ExampleRecord, *, stage: str | None = Non
     )
 
 
+def synthesize_stress_adversarial_records(
+    *,
+    limit: int = 4,
+) -> list[ExampleRecord]:
+    """
+    Leak-free stage-C stress examples with fresh :stress.* namespaces.
+
+    Mirrors adversarial fixture shapes without importing test_seeds.jsonl.
+    """
+    templates = [
+        (
+            "stress_empty_01",
+            "Layout for an empty prompt edge case.",
+            'root = Stack([fallback])\nfallback = TextContent(":stress.fallback.text")',
+            [":stress.fallback.text"],
+        ),
+        (
+            "stress_dual_card_01",
+            "Two rare cards side by side with distinct placeholders.",
+            (
+                'root = Stack([left, right], "row")\n'
+                'left_title = TextContent(":stress.rare.a.title")\n'
+                'left_body = TextContent(":stress.rare.a.body")\n'
+                'left = Card([left_title, left_body])\n'
+                'right_title = TextContent(":stress.rare.b.title")\n'
+                'right_body = TextContent(":stress.rare.b.body")\n'
+                'right = Card([right_title, right_body])'
+            ),
+            [
+                ":stress.rare.a.title",
+                ":stress.rare.a.body",
+                ":stress.rare.b.title",
+                ":stress.rare.b.body",
+            ],
+        ),
+        (
+            "stress_deep_nest_01",
+            "Deeply nested stack with inner card placeholders.",
+            (
+                'root = Stack([outer])\n'
+                'outer_title = TextContent(":stress.nest.outer.title")\n'
+                'inner_title = TextContent(":stress.nest.inner.title")\n'
+                'inner_body = TextContent(":stress.nest.inner.body")\n'
+                'inner = Card([inner_title, inner_body])\n'
+                'outer = Card([outer_title, inner])'
+            ),
+            [
+                ":stress.nest.outer.title",
+                ":stress.nest.inner.title",
+                ":stress.nest.inner.body",
+            ],
+        ),
+        (
+            "stress_many_buttons_01",
+            "Row of three buttons with distinct labels.",
+            (
+                'root = Stack([row])\n'
+                'a = Button(":stress.btns.a")\n'
+                'b = Button(":stress.btns.b")\n'
+                'c = Button(":stress.btns.c")\n'
+                'row = Buttons([a, b, c])'
+            ),
+            [":stress.btns.a", ":stress.btns.b", ":stress.btns.c"],
+        ),
+    ]
+    out: list[ExampleRecord] = []
+    for tid, prompt, openui, placeholders in templates[:limit]:
+        out.append(
+            ExampleRecord(
+                id=f"curriculum_c_{tid}",
+                prompt=prompt,
+                openui=openui,
+                placeholders=placeholders,
+                split="train",
+                source="synth+stress",
+                meta={"curriculum": "C", "suite": "stress", "synth": "stress_adv"},
+            )
+        )
+    return out
+
+
 def apply_curriculum_tags(
     records: Iterable[ExampleRecord],
     *,
