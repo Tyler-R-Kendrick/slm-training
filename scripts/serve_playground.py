@@ -18,13 +18,35 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--reload", action="store_true")
+    parser.add_argument(
+        "--annotations-path",
+        type=Path,
+        default=Path("outputs/annotations/feedback.jsonl"),
+        help="Append-only JSONL for thumbs + notes",
+    )
+    parser.add_argument(
+        "--human-train-path",
+        type=Path,
+        default=Path("fixtures/annotations/human_train.jsonl"),
+    )
+    parser.add_argument(
+        "--human-pairs-path",
+        type=Path,
+        default=Path("outputs/preferences/human_pairs.jsonl"),
+    )
     args = parser.parse_args(argv)
 
     import uvicorn
 
     from slm_training.web.app import create_app
 
-    app = create_app(checkpoint=args.checkpoint, device=args.device)
+    app = create_app(
+        checkpoint=args.checkpoint,
+        device=args.device,
+        annotations_path=args.annotations_path,
+        human_train_path=args.human_train_path,
+        human_pairs_path=args.human_pairs_path,
+    )
     # Eager-load so the first request is fast
     try:
         app.state.service.load()

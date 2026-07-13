@@ -2,8 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TwoTower · OpenUI Playground</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>TwoTower · Annotate</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -11,54 +11,62 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/static/styles.css" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%231f4d3a'/%3E%3C/svg%3E" />
   </head>
   <body>
     <div class="atmosphere" aria-hidden="true"></div>
-    <main class="stage">
+    <main class="stage annotate-stage">
       <header class="brand">
         <p class="brand-mark">TwoTower</p>
-        <p class="brand-sub">OpenUI layout playground</p>
+        <p class="brand-sub">Grade OpenUI samples · ↑ good · ↓ bad · ← → navigate</p>
       </header>
 
-      <section class="compose" aria-label="Generate OpenUI">
-        <label class="prompt-label" for="prompt">Describe the screen</label>
+      <section class="card-stack" id="card" aria-label="Annotation sample" tabindex="0">
+        <div class="card-meta">
+          <span class="index-pill" id="indexPill">1 / 1</span>
+          <span class="badge" id="badge">loading</span>
+        </div>
+        <p class="prompt-text" id="promptText">Loading prompt…</p>
+        <pre class="output" id="output"><code>// generating…</code></pre>
+        <p class="error" id="error" hidden></p>
+
+        <label class="note-label" for="note">Note (optional)</label>
         <textarea
-          id="prompt"
-          name="prompt"
-          rows="3"
-          placeholder="Hero card with title and body"
+          id="note"
+          name="note"
+          rows="2"
+          placeholder="Type to annotate… Enter stays in note; Esc to blur"
           spellcheck="true"
         ></textarea>
 
+        <div class="grade-row" role="group" aria-label="Grade sample">
+          <button type="button" class="grade down" id="btnDown" aria-label="Thumbs down">
+            <span aria-hidden="true">↓</span> Down
+          </button>
+          <button type="button" class="nav" id="btnPrev" aria-label="Previous">←</button>
+          <button type="button" class="nav" id="btnNext" aria-label="Next">→</button>
+          <button type="button" class="grade up" id="btnUp" aria-label="Thumbs up">
+            Up <span aria-hidden="true">↑</span>
+          </button>
+        </div>
+        <p class="status" id="status" role="status"></p>
+      </section>
+
+      <details class="advanced">
+        <summary>Advanced</summary>
         <label class="prompt-label" for="design_md">DESIGN.md (optional)</label>
         <textarea
           id="design_md"
           name="design_md"
-          rows="4"
-          placeholder="Paste a DESIGN.md to condition generation (optional)"
+          rows="3"
+          placeholder="Paste DESIGN.md to condition generation"
           spellcheck="false"
         ></textarea>
-
-        <div class="examples" id="examples" aria-label="Example prompts"></div>
-
-        <div class="actions">
-          <button type="button" id="generate" class="cta">Generate</button>
-          <label class="toggle">
-            <input type="checkbox" id="grammar" checked />
-            Grammar guard
-          </label>
-          <p class="status" id="status" role="status"></p>
-        </div>
-      </section>
-
-      <section class="result" aria-live="polite">
-        <div class="result-head">
-          <h2>OpenUI</h2>
-          <span class="badge" id="badge">idle</span>
-        </div>
-        <pre id="output" class="output"><code>// output appears here</code></pre>
-        <p class="error" id="error" hidden></p>
-      </section>
+        <label class="toggle">
+          <input type="checkbox" id="grammar" checked />
+          Grammar guard
+        </label>
+      </details>
     </main>
     <script src="/static/app.js" type="module"></script>
   </body>

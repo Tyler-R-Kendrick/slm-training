@@ -21,3 +21,9 @@ node_modules/
 .env
 .env.local
 .env.*.local
+fixtures/annotations/human_train.jsonl
+outputs/preferences/human_pairs.jsonl
+.playwright-cli/
+test-results/
+playwright-report/
+blob-report/
