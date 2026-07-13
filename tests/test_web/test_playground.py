@@ -9,12 +9,18 @@ import pytest
 pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient
 
+from slm_training.models.paths import PLAYGROUND_DEMO_CHECKPOINT
 from slm_training.web.app import create_app
 
-CKPT = Path("outputs/runs/playground_demo/checkpoints/last.pt")
+CKPT = PLAYGROUND_DEMO_CHECKPOINT
 
 
-@pytest.mark.skipif(not CKPT.exists(), reason="playground demo checkpoint missing")
+def test_playground_demo_checkpoint_committed() -> None:
+    assert CKPT.is_file(), "playground demo checkpoint must be committed under fixtures/checkpoints/"
+    assert CKPT.with_suffix(".tokenizer.json").is_file()
+    assert CKPT.with_suffix(".meta.json").is_file()
+
+
 def test_playground_health_and_generate() -> None:
     app = create_app(checkpoint=CKPT, device="cpu")
     client = TestClient(app)
@@ -44,7 +50,6 @@ def test_playground_health_and_generate() -> None:
         assert again.json()["valid"] is True
 
 
-@pytest.mark.skipif(not CKPT.exists(), reason="playground demo checkpoint missing")
 def test_annotate_static_has_tab_toggle() -> None:
     app = create_app(checkpoint=CKPT, device="cpu")
     client = TestClient(app)

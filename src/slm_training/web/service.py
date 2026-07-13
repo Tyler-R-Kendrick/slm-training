@@ -21,10 +21,11 @@ from slm_training.annotations import (
     utc_now_iso,
 )
 from slm_training.dsl.lang_core import ParseError, stream_check, validate
+from slm_training.models.paths import PLAYGROUND_DEMO_CHECKPOINT
 from slm_training.models.twotower import TwoTowerModel
 from slm_training.web.prompts import EXAMPLE_PROMPTS, PromptCursor, load_prompt_bank
 
-DEFAULT_CHECKPOINT = Path("outputs/runs/playground_demo/checkpoints/last.pt")
+DEFAULT_CHECKPOINT = PLAYGROUND_DEMO_CHECKPOINT
 
 
 @dataclass
