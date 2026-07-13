@@ -1,16 +1,19 @@
 # Promotion pipeline: mixture search, scaling ladders, self-distillation, trajectory RL
 
-Status: **design** (P1–P3). The P0 primitives this design builds on are
-implemented:
+Status: **implemented** (P0–P3). P0 primitives remain the climbing substrate;
+P1–P3 modules below are wired and covered by unit tests. Large-scale mixture /
+ladder sweeps are CLI-driven and intentionally cheap in CI (`--dry-fit`,
+`--limit-probes`).
 
-| P0 primitive | Where |
+| Stage | Where |
 | --- | --- |
-| Deterministic denoising-NLL suites (raw vs grammar legal-support, constraint-rescue gap) | `src/slm_training/evals/`, `scripts/evaluate_loss_suites.py`, `loss_eval_every` in `ModelBuildConfig` |
-| Token accounting + `target_token_budget` stop + scratch/HF track block | `harnesses/model_build/train_loop.py` (`seen_target_tokens`, `summary["track"]`) |
-| Bit-exact full-state resume (optimizer, scaler, all RNG streams, pending batches, manifest sha) | `harnesses/model_build/full_state.py`, `resume_from` |
-| Source families, parent lineage, exposure stats, `max_records_per_parent` cap | `harnesses/train_data/catalog.py`, manifest `source_families` |
-| Gold-correction vs self-distilled preference corpora | `preference.collect_pairs_with_generator(include_gold=…)`, `pair_corpus` tags |
-| Append-only decode trajectory store (canvases, commit log-probs, remask reasons, NFE, policy sha, decode-config hash) | `src/slm_training/distill/trace_store.py`, `scripts/collect_trajectories.py` |
+| P0 denoising-NLL / token budget / full-state resume / catalog / preference / traces | `evals/`, `train_loop.py`, `full_state.py`, `catalog.py`, `preference/`, `distill/trace_store.py` |
+| P1a fuzzy + semantic dedup | `src/slm_training/data/dedup.py` (`--fuzzy-dedup`, `--semantic-cluster-cap`) |
+| P1b mixture search + online sampling | `src/slm_training/data/mixture.py`, `scripts/run_mixture_search.py`, `ModelBuildConfig.mixture_manifest` |
+| P1c scaling ladders + EG + promotion protocol | `src/slm_training/experiments/`, `scripts/run_scaling_ladder.py` |
+| P1d midtraining anchor | `register_promoted` → `promoted.pt` / `promoted.json` |
+| P2 self-distillation | `distill/select.py`, `distill/sft.py`, `distill/repair.py`, `scripts/self_distill.py` |
+| P3 trajectory RL (E64) | `rl/trajectory.py`, `scripts/resume_climb.py`, `--record-support` on collect |
 
 The target loop:
 

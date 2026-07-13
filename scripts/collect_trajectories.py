@@ -42,6 +42,11 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Skip per-step canvas snapshots (events only; smaller traces).",
     )
+    parser.add_argument(
+        "--record-support",
+        action="store_true",
+        help="Persist grammar allowed_id_set on each commit (E64 support match).",
+    )
     args = parser.parse_args(argv)
 
     import torch
@@ -88,7 +93,8 @@ def main(argv: list[str] | None = None) -> int:
     for record in records:
         for sample_index in range(max(1, int(args.samples_per_prompt))):
             recorder = DecodeTraceRecorder(
-                record_canvases=not bool(args.no_canvases)
+                record_canvases=not bool(args.no_canvases),
+                record_support=bool(args.record_support),
             )
             model.trace_recorder = recorder
             try:

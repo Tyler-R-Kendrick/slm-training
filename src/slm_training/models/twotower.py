@@ -1851,20 +1851,38 @@ class TwoTowerModel(nn.Module):
                 if b == 0:
                     newly.append(t)
                     if rec is not None:
-                        step_commits.append(
-                            {
-                                "t": t,
-                                "id": int(candidate),
-                                "lp": float(
-                                    torch.log(
-                                        probs[b, t, int(candidate)].clamp(min=1e-9)
-                                    ).item()
-                                ),
-                                "forced": forced is not None,
-                                "constrained": bool(use_grammar or forced is not None),
-                                "phase": "maskgit",
-                            }
-                        )
+                        commit: dict = {
+                            "t": t,
+                            "id": int(candidate),
+                            "lp": float(
+                                torch.log(
+                                    probs[b, t, int(candidate)].clamp(min=1e-9)
+                                ).item()
+                            ),
+                            "forced": forced is not None,
+                            "constrained": bool(use_grammar or forced is not None),
+                            "phase": "maskgit",
+                        }
+                        if (
+                            getattr(rec, "record_support", False)
+                            and use_grammar
+                            and engine is not None
+                        ):
+                            try:
+                                from slm_training.grammar_fastpath.token_map import (
+                                    allowed_id_set,
+                                )
+
+                                prefix_text = self.tokenizer.decode(ids[0, :t].tolist())
+                                engine.set_prefix(prefix_text)
+                                allowed = allowed_id_set(
+                                    self.tokenizer, engine.next_terminals()
+                                )
+                                if allowed:
+                                    commit["allowed_id_set"] = sorted(int(x) for x in allowed)
+                            except Exception:  # noqa: BLE001
+                                pass
+                        step_commits.append(commit)
             _ = remaining  # kept for readability / future logging
 
             for b in range(ids.size(0)):

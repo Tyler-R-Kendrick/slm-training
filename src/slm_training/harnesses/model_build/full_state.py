@@ -86,6 +86,7 @@ def save_full_state(
     manifest_sha: str | None,
     best_weighted_nll: float | None = None,
     best_ship_score: float | None = None,
+    mixture_hash: str | None = None,
 ) -> Path:
     """Atomically write a resumable training-state checkpoint."""
     import torch
@@ -126,6 +127,7 @@ def save_full_state(
             [r.id for r in batch] for batch in (pending_batches or [])
         ],
         "data_manifest_sha": manifest_sha,
+        "mixture_hash": mixture_hash,
         "code_git_sha": _git_sha(),
         "config": _jsonable_config(config),
         "best_weighted_nll": best_weighted_nll,

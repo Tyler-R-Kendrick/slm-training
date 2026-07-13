@@ -48,6 +48,10 @@ class TrainDataConfig:
     # Exposure control: cap records per root parent (None = uncapped). One
     # parent otherwise receives up to 6+ rows (original + synth variants).
     max_records_per_parent: int | None = None
+    # P1a: fuzzy MinHash + semantic cluster caps (after exact pair dedup).
+    fuzzy_dedup: bool = False
+    fuzzy_jaccard: float = 0.92
+    semantic_cluster_cap: int | None = None
 
     @property
     def output_dir(self) -> Path:
@@ -305,11 +309,30 @@ def build_train_data(
     )
 
     deduped = annotate_lineage(deduped, lineage_index)
+
+    fuzzy_dropped: list[dict] = []
+    semantic_dropped: list[dict] = []
+    if config.fuzzy_dedup:
+        from slm_training.data.dedup import apply_fuzzy_dedup
+
+        deduped, fuzzy_dropped = apply_fuzzy_dedup(
+            deduped, threshold=float(config.fuzzy_jaccard)
+        )
+    if config.semantic_cluster_cap:
+        from slm_training.data.dedup import apply_semantic_cluster_cap
+
+        deduped, semantic_dropped = apply_semantic_cluster_cap(
+            deduped, max_per_cluster=int(config.semantic_cluster_cap)
+        )
+
     deduped, parent_cap_dropped = apply_parent_cap(
         deduped, config.max_records_per_parent
     )
     deduped.sort(key=lambda r: r.id)
     source_families = family_stats(deduped)
+    from slm_training.data.dedup import cluster_exposure_stats
+
+    source_families["cluster_exposure"] = cluster_exposure_stats(deduped)
 
     # Fingerprint final records after every train-only transformation so the
     # leakage manifest describes the exact bytes written to records.jsonl.
@@ -352,6 +375,12 @@ def build_train_data(
         "max_records_per_parent": config.max_records_per_parent,
         "parent_cap_dropped": len(parent_cap_dropped),
         "parent_cap_dropped_samples": parent_cap_dropped[:20],
+        "fuzzy_dedup": bool(config.fuzzy_dedup),
+        "fuzzy_dropped": len(fuzzy_dropped),
+        "fuzzy_dropped_samples": fuzzy_dropped[:20],
+        "semantic_cluster_cap": config.semantic_cluster_cap,
+        "semantic_dropped": len(semantic_dropped),
+        "semantic_dropped_samples": semantic_dropped[:20],
         "mean_quality_score": (
             round(sum(quality_scores) / len(quality_scores), 4)
             if quality_scores

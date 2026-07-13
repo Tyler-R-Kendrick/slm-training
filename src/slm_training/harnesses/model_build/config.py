@@ -58,6 +58,10 @@ class ModelBuildConfig:
     use_curriculum: bool = False
     # Soft A/B/C mix (anti-leak); False restores hard stage cutovers.
     mix_curriculum: bool = True
+    # P1b: optional mixture manifest (JSON) for online family-weighted sampling.
+    mixture_manifest: Path | None = None
+    # P1d: after base training, write promoted.pt from best_weighted_nll / last.
+    register_promoted: bool = False
     # Stub-only
     noise_rate: float = 0.0
     # Eval-driven training: run suite eval every N steps (0 disables).

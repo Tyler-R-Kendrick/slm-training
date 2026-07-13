@@ -95,8 +95,11 @@ class DecodeTraceRecorder:
     same trajectory with phase markers rather than resetting it.
     """
 
-    def __init__(self, *, record_canvases: bool = True) -> None:
+    def __init__(
+        self, *, record_canvases: bool = True, record_support: bool = False
+    ) -> None:
         self.record_canvases = bool(record_canvases)
+        self.record_support = bool(record_support)
         self.meta: dict[str, Any] = {}
         self.steps: list[dict[str, Any]] = []
         self.events: list[dict[str, Any]] = []

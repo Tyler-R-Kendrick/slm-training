@@ -116,7 +116,40 @@ def train(config: ModelBuildConfig, model=None) -> dict:
 
         curriculum_pools = index_curriculum_stages(records)
 
+    mixture_weights: dict[str, float] | None = None
+    mixture_meta: dict | None = None
+    family_pools = None
+    mixture_path = getattr(config, "mixture_manifest", None)
+    if mixture_path:
+        from slm_training.data.mixture import (
+            index_family_pools,
+            load_mixture_manifest,
+            mixture_hash,
+        )
+
+        manifest = load_mixture_manifest(mixture_path)
+        mixture_weights = dict(manifest.weights)
+        mixture_meta = {
+            "mixture_id": manifest.mixture_id,
+            "weights": mixture_weights,
+            "hash": mixture_hash(manifest),
+            "path": str(mixture_path),
+        }
+        family_pools = index_family_pools(records)
+
     def _batches_for_step(step: int) -> list[list]:
+        if mixture_weights is not None:
+            from slm_training.data.mixture import sample_mixture_batch
+
+            target = config.batch_size * 8
+            drawn = sample_mixture_batch(
+                records,
+                weights=mixture_weights,
+                batch_size=target,
+                rng=rng,
+                pools=family_pools,
+            )
+            return batched(drawn, config.batch_size)
         if getattr(config, "use_curriculum", False):
             from slm_training.quality import sample_curriculum_batch
 
@@ -243,6 +276,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 best_ship_score=(
                     None if math.isinf(best_ship_score) else best_ship_score
                 ),
+                mixture_hash=(mixture_meta or {}).get("hash") if mixture_meta else None,
             )
 
     def _maybe_eval(step: int, force: bool = False) -> dict | None:
@@ -476,6 +510,29 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         )
         _save_full_state_now()
 
+    if bool(getattr(config, "register_promoted", False)):
+        from slm_training.experiments.promotion import register_promoted_checkpoint
+
+        source = ckpt_dir / "best_weighted_nll.pt"
+        if not source.exists():
+            source = ckpt_dir / "best_ship_score.pt"
+        if not source.exists():
+            source = ckpt_path
+        register_promoted_checkpoint(
+            ckpt_dir,
+            source=source,
+            meta={
+                "step": step,
+                "best_weighted_nll": (
+                    None if math.isinf(best_weighted_nll) else best_weighted_nll
+                ),
+                "best_ship_score": (
+                    None if math.isinf(best_ship_score) else best_ship_score
+                ),
+                "mixture": mixture_meta,
+            },
+        )
+
     trainable_params: int | None = None
     frozen_params: int | None = None
     if hasattr(plugin, "parameters"):
@@ -537,6 +594,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "enabled": bool(getattr(config, "use_curriculum", False)),
             "mix": mix_curriculum,
         },
+        "mixture": mixture_meta,
         "eval_history": eval_history,
         "final_eval": final_eval,
         "nll_history": nll_history,
