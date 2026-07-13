@@ -30,12 +30,24 @@ from slm_training.models.grammar import (
     stream_check,
 )
 from slm_training.models.parallel_decode import (
+    StabilityTracker,
     core_instability_scores,
     perturb_known_neighbors,
     select_remask_core_indices,
     select_remask_indices,
     select_remask_policy_indices,
+    select_remask_stability_indices,
     select_unmask_indices,
+)
+from slm_training.models.speculative_denoise import (
+    SpeculativeStats,
+    SuccessorCache,
+    build_dependency_clusters,
+    enumerate_outcome_canvases,
+    filter_by_cumulative_survival,
+    order_clusters,
+    survival_commit_budget,
+    verify_clusters_ordered,
 )
 from slm_training.models.template_fill import (
     build_slot_contract_template,
@@ -214,6 +226,25 @@ class TwoTowerConfig:
     remask_span: str = "token"
     # Optional teacher-init of symbol embeddings from HF context (E45).
     teacher_init_embeddings: bool = False
+    # --- V7 speculative denoising (docs/design/speculative-denoising.md) ---
+    # E70 LESS-lite: require argmax persistence before committing (0=off);
+    # remask_policy="stability" ranks remasks by persistence + inter-step JSD.
+    stability_min_persistence: int = 0
+    stability_jsd_weight: float = 1.0
+    # E71 DAPD/DAWN-lite: positions (classic) | cluster (attention clusters).
+    unmask_mode: str = "positions"
+    cluster_attn_threshold: float = 0.08
+    cluster_max_size: int = 4
+    # E72: verify clusters in anchor order; outcome (j, repair).
+    cluster_verify: bool = False
+    # E73 DSpark-lite: survival head at decode + cumulative commit budget.
+    survival_gate: bool = False
+    survival_gate_train: bool = False
+    survival_commit_threshold: float = 0.3
+    # E74 SSD-lite: batched successor-state cache over top-K verifier outcomes.
+    speculative_successor: bool = False
+    speculative_fanout: int = 2
+    speculative_overlap: bool = False
 
 
 def _pad_batch(
@@ -254,6 +285,8 @@ def _load_checkpoint_state(model: nn.Module, state_dict: dict[str, torch.Tensor]
     # V4 FastPathGate is a plug-in head: older checkpoints omit it and keep the
     # randomly initialized gate until BackPlay-lite training (E31) runs.
     allowed_missing |= {key for key in missing if key.startswith("trust_gate.")}
+    # V7 survival head is likewise a plug-in (trained via survival_train, E73).
+    allowed_missing |= {key for key in missing if key.startswith("survival_head.")}
     bad_missing = sorted(set(missing) - allowed_missing)
     # V5 may have checkpointed a zero kind_lookup even when unused; the
     # non-factorized path now uses a non-persistent stub, so treat that legacy
@@ -344,6 +377,10 @@ class TwoTowerModel(nn.Module):
         )
         # E31 BackPlay-lite: plug-in trust head over denoiser hiddens.
         self.trust_gate = FastPathGate(self.config.d_model)
+        # E73 DSpark-lite: plug-in trajectory-survival head (V7).
+        self.survival_head = FastPathGate(self.config.d_model)
+        # V7 decode telemetry (MaskGIT path): forwards, successor hits/misses.
+        self.speculative_stats = SpeculativeStats()
         self._rng = random.Random(self.config.seed)
         self.gen_len = self.config.max_target_len
         # Optional retrieval bank: list[(norm_prompt, openui, id)]
@@ -1655,13 +1692,77 @@ class TwoTowerModel(nn.Module):
 
         steps = max(1, self.config.gen_steps)
         remask_ratio = float(getattr(self.config, "remask_ratio", 0.0) or 0.0)
+        # --- V7 speculative denoising state (all opt-in; defaults = V6 path) ---
+        remask_policy_cfg = str(
+            getattr(self.config, "remask_policy", "confidence") or "confidence"
+        ).lower()
+        stability_min_persistence = int(
+            getattr(self.config, "stability_min_persistence", 0) or 0
+        )
+        cluster_mode = (
+            str(getattr(self.config, "unmask_mode", "positions") or "positions").lower()
+            == "cluster"
+        )
+        cluster_verify = cluster_mode and bool(
+            getattr(self.config, "cluster_verify", False)
+        )
+        use_survival = bool(getattr(self.config, "survival_gate", False))
+        survival_threshold = float(
+            getattr(self.config, "survival_commit_threshold", 0.3) or 0.3
+        )
+        speculate = (
+            cluster_verify
+            and bool(getattr(self.config, "speculative_successor", False))
+            and int(getattr(self.config, "speculative_fanout", 2) or 2) > 0
+        )
+        tracker: StabilityTracker | None = None
+        if stability_min_persistence > 0 or remask_policy_cfg == "stability":
+            tracker = StabilityTracker(
+                jsd_weight=float(
+                    getattr(self.config, "stability_jsd_weight", 1.0) or 1.0
+                )
+            )
+        stats = self.speculative_stats
+        stats.generates += 1
+        successor_cache: SuccessorCache | None = None
         for step in range(steps):
             if not unknown.any():
                 if remask_ratio <= 0.0 or step >= steps - 1:
                     break
-            logits = self.denoiser(
-                ids, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
-            )
+            need_hidden = use_survival
+            need_attn = cluster_mode
+            hidden: torch.Tensor | None = None
+            attn: torch.Tensor | None = None
+            cached = successor_cache.get(ids) if successor_cache is not None else None
+            if cached is not None:
+                logits, hidden, attn = cached
+                logits = logits.clone()
+                stats.successor_hits += 1
+            else:
+                if successor_cache is not None and len(successor_cache):
+                    stats.successor_misses += 1
+                if need_attn:
+                    logits, hidden, attn = self.denoiser(
+                        ids,
+                        ctx,
+                        pad_id=self.tokenizer.pad_id,
+                        ctx_pad_mask=ctx_pad,
+                        return_attn=True,
+                    )
+                elif need_hidden:
+                    logits, hidden = self.denoiser(
+                        ids,
+                        ctx,
+                        pad_id=self.tokenizer.pad_id,
+                        ctx_pad_mask=ctx_pad,
+                        return_hidden=True,
+                    )
+                else:
+                    logits = self.denoiser(
+                        ids, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
+                    )
+                stats.denoiser_forwards += 1
+            successor_cache = None
             if use_grammar and self._effective_structural_bias():
                 logits = apply_structural_bias(
                     logits,
@@ -1670,6 +1771,14 @@ class TwoTowerModel(nn.Module):
                 )
             probs = F.softmax(logits, dim=-1)
             conf, pred = probs.max(dim=-1)
+            if tracker is not None:
+                tracker.update(probs)
+            survival_scores: torch.Tensor | None = None
+            if use_survival and hidden is not None:
+                try:
+                    survival_scores = self.survival_head(hidden)
+                except Exception:  # noqa: BLE001
+                    survival_scores = None
             conf_for_unmask = conf.masked_fill(~unknown, -1.0)
             remaining = int(unknown.sum().item())
             mode = str(getattr(self.config, "parallel_unmask", "adaptive") or "topk")
@@ -1684,6 +1793,25 @@ class TwoTowerModel(nn.Module):
                 if remaining > 0
                 else []
             )
+            # E70: only commit predictions whose argmax has persisted.
+            if tracker is not None and stability_min_persistence > 0 and flat_idx:
+                flat_idx = tracker.filter_commit_indices(
+                    flat_idx,
+                    length=length,
+                    min_persistence=stability_min_persistence,
+                )
+            # E73 (non-cluster path): cumulative-survival commit budget.
+            if (
+                not cluster_mode
+                and use_survival
+                and survival_scores is not None
+                and flat_idx
+            ):
+                flat_idx = filter_by_cumulative_survival(
+                    flat_idx,
+                    survival_scores,
+                    threshold=survival_threshold,
+                )
             newly: list[int] = []
             use_fast = bool(getattr(self.config, "grammar_fastpath", True))
             mode = str(
@@ -1703,11 +1831,8 @@ class TwoTowerModel(nn.Module):
                     engine = None
                     admit_on = False
 
-            for idx in flat_idx:
-                b = idx // length
-                t = idx % length
-                if not unknown[b, t]:
-                    continue
+            def _propose(b: int, t: int) -> int | None:
+                """Constrained token proposal for one position (no commit)."""
                 prefix = ids[b, :t].tolist()
                 forced = (
                     force_emit_token_id(self.tokenizer, prefix)
@@ -1716,9 +1841,8 @@ class TwoTowerModel(nn.Module):
                 )
                 if forced is not None or use_grammar:
                     # Speculative / constrained pick — never commit illegal tokens.
-                    logits_t = logits[b, t]
                     choice = pick_constrained_token(
-                        logits_t,
+                        logits[b, t],
                         self.tokenizer,
                         prefix,
                         top_k=self.config.grammar_top_k,
@@ -1728,23 +1852,187 @@ class TwoTowerModel(nn.Module):
                         else None,
                         **self._pick_kwargs(),
                     )
-                    if choice is None:
-                        continue  # leave masked for LTR repair
-                    candidate = choice
+                    return choice  # None → leave masked for LTR repair
+                return int(pred[b, t].item())
+
+            if not cluster_mode:
+                for idx in flat_idx:
+                    b = idx // length
+                    t = idx % length
+                    if not unknown[b, t]:
+                        continue
+                    candidate = _propose(b, t)
+                    if candidate is None:
+                        continue
+                    if admit_on and engine is not None and b == 0:
+                        trial = ids[0].tolist()
+                        trial[t] = candidate
+                        try:
+                            if not admit_fill(engine, self.tokenizer, trial):
+                                continue  # leave masked; try later / repair
+                        except Exception:  # noqa: BLE001
+                            continue  # reject on admit probe failure
+                    ids[b, t] = candidate
+                    unknown[b, t] = False
+                    if b == 0:
+                        newly.append(t)
+            else:
+                # --- V7 cluster path (E71/E72/E73/E74); single-sequence B=1 ---
+                proposals: dict[int, int] = {}
+                for idx in flat_idx:
+                    t = idx % length
+                    if not unknown[0, t] or t in proposals:
+                        continue
+                    choice = _propose(0, t)
+                    if choice is not None:
+                        proposals[t] = int(choice)
+                candidates = sorted(proposals)
+                ordered: list = []
+                if candidates and attn is not None:
+                    clusters = build_dependency_clusters(
+                        attn[0],
+                        candidates,
+                        threshold=float(
+                            getattr(self.config, "cluster_attn_threshold", 0.08)
+                            or 0.08
+                        ),
+                        max_size=max(
+                            1, int(getattr(self.config, "cluster_max_size", 4) or 4)
+                        ),
+                        conf=conf[0],
+                    )
+                    ordered = order_clusters(
+                        clusters,
+                        conf=conf[0],
+                        attn=attn[0],
+                        survival=survival_scores[0]
+                        if survival_scores is not None
+                        else None,
+                    )
+                    if use_survival and survival_scores is not None:
+                        ordered = survival_commit_budget(
+                            ordered, threshold=survival_threshold
+                        )
+                stats.clusters_proposed += len(ordered)
+                admit_fn = None
+                if admit_on and engine is not None:
+                    from slm_training.grammar_fastpath import admit_fill as _admit
+
+                    def admit_fn(trial: list[int]) -> bool:  # noqa: ANN001
+                        return _admit(engine, self.tokenizer, trial)
+
+                stream_fn = None
+                if use_grammar:
+
+                    def stream_fn(
+                        trial: list[int], newly_pos: list[int]
+                    ) -> list[int]:
+                        return filter_ids_by_stream(self.tokenizer, trial, newly_pos)
+
+                if cluster_verify and ordered:
+                    # E74: prepare successor states for likely outcomes while
+                    # (or before) the grammar verifies the current transition.
+                    def _speculate() -> SuccessorCache | None:
+                        if not speculate or step >= steps - 1:
+                            return None
+                        outcome_canvases = enumerate_outcome_canvases(
+                            ids,
+                            ordered,
+                            proposals,
+                            fanout=max(
+                                1,
+                                int(
+                                    getattr(self.config, "speculative_fanout", 2)
+                                    or 2
+                                ),
+                            ),
+                        )
+                        if not outcome_canvases:
+                            return None
+                        batch = torch.cat([c for _, c in outcome_canvases], dim=0)
+                        k = batch.size(0)
+                        logits_k, hidden_k, attn_k = self.denoiser(
+                            batch,
+                            ctx.expand(k, -1, -1),
+                            pad_id=self.tokenizer.pad_id,
+                            ctx_pad_mask=ctx_pad.expand(k, -1)
+                            if ctx_pad is not None
+                            else None,
+                            return_attn=True,
+                        )
+                        stats.denoiser_forwards += 1
+                        stats.speculative_batches += 1
+                        stats.speculative_canvases += k
+                        cache = SuccessorCache()
+                        for i, (_j, canvas) in enumerate(outcome_canvases):
+                            cache.put(
+                                canvas,
+                                (
+                                    logits_k[i : i + 1],
+                                    hidden_k[i : i + 1],
+                                    attn_k[i : i + 1],
+                                ),
+                            )
+                        return cache
+
+                    if bool(getattr(self.config, "speculative_overlap", False)):
+                        from concurrent.futures import ThreadPoolExecutor
+
+                        with ThreadPoolExecutor(max_workers=1) as pool:
+                            fut = pool.submit(
+                                verify_clusters_ordered,
+                                ids,
+                                ordered,
+                                proposals,
+                                admit=admit_fn,
+                                stream_filter=stream_fn,
+                            )
+                            successor_cache = _speculate()
+                            outcome = fut.result()
+                    else:
+                        successor_cache = _speculate()
+                        outcome = verify_clusters_ordered(
+                            ids,
+                            ordered,
+                            proposals,
+                            admit=admit_fn,
+                            stream_filter=stream_fn,
+                        )
+                    stats.clusters_accepted += outcome.accepted_clusters
+                    if not outcome.all_accepted:
+                        stats.clusters_rejected += 1
+                    for t in outcome.accepted_positions:
+                        ids[0, t] = proposals[t]
+                        unknown[0, t] = False
+                        newly.append(t)
+                    # Rejected cluster stays masked (T2M); deferred clusters
+                    # wait for the next pass conditioned on the new canvas.
                 else:
-                    candidate = int(pred[b, t].item())
-                if admit_on and engine is not None and b == 0:
-                    trial = ids[0].tolist()
-                    trial[t] = candidate
-                    try:
-                        if not admit_fill(engine, self.tokenizer, trial):
-                            continue  # leave masked; try later / repair
-                    except Exception:  # noqa: BLE001
-                        continue  # reject on admit probe failure
-                ids[b, t] = candidate
-                unknown[b, t] = False
-                if b == 0:
-                    newly.append(t)
+                    # E71 without verify: commit only each cluster's anchor
+                    # (highest-confidence member); coupled members wait.
+                    for cluster in ordered:
+                        anchors = sorted(
+                            cluster.positions,
+                            key=lambda t: float(conf[0, t].item()),
+                            reverse=True,
+                        )
+                        t = anchors[0]
+                        if not unknown[0, t]:
+                            continue
+                        candidate = proposals.get(t)
+                        if candidate is None:
+                            continue
+                        if admit_fn is not None:
+                            trial = ids[0].tolist()
+                            trial[t] = candidate
+                            try:
+                                if not admit_fn(trial):
+                                    continue
+                            except Exception:  # noqa: BLE001
+                                continue
+                        ids[0, t] = candidate
+                        unknown[0, t] = False
+                        newly.append(t)
             _ = remaining  # kept for readability / future logging
 
             for b in range(ids.size(0)):
@@ -1776,7 +2064,7 @@ class TwoTowerModel(nn.Module):
                     getattr(self.config, "remask_use_gate", False)
                     or getattr(self.config, "remask_use_entropy", False)
                     or remask
-                    or remask_policy in {"core", "combined"}
+                    or remask_policy in {"core", "combined", "stability"}
                 )
                 gate_trust = None
                 entropy = None
@@ -1793,6 +2081,7 @@ class TwoTowerModel(nn.Module):
                                 ctx_pad_mask=ctx_pad,
                                 return_hidden=True,
                             )
+                            stats.denoiser_forwards += 1
                             gate_trust = self.trust_gate(hidden)
                         except Exception:  # noqa: BLE001
                             gate_trust = None
@@ -1814,13 +2103,38 @@ class TwoTowerModel(nn.Module):
                                 pad_id=self.tokenizer.pad_id,
                                 ctx_pad_mask=ctx_pad,
                             )
+                            stats.denoiser_forwards += 1
                             probs_pert = F.softmax(logits_pert, dim=-1)
                             instability = core_instability_scores(
                                 probs, probs_pert, ids, known
                             )
                         except Exception:  # noqa: BLE001
                             instability = None
-                    if remask_policy in {"core", "combined"}:
+                    if remask_policy == "stability":
+                        # E70: rank remasks by low persistence + high JSD.
+                        remask_flat = select_remask_stability_indices(
+                            conf,
+                            known,
+                            remask_ratio=remask_ratio,
+                            protect_bos=True,
+                            instability=tracker.instability_scores()
+                            if tracker is not None
+                            else None,
+                            grammar_positions=remask,
+                            gate_trust=gate_trust,
+                            entropy=entropy
+                            if bool(getattr(self.config, "remask_use_entropy", False))
+                            else None,
+                            gate_threshold=float(
+                                getattr(self.config, "fastpath_gate_threshold", 0.5)
+                                or 0.5
+                            ),
+                            combine_policy=bool(
+                                getattr(self.config, "remask_use_gate", False)
+                                or getattr(self.config, "remask_use_entropy", False)
+                            ),
+                        )
+                    elif remask_policy in {"core", "combined"}:
                         remask_flat = select_remask_core_indices(
                             conf,
                             known,
@@ -1897,6 +2211,7 @@ class TwoTowerModel(nn.Module):
                         # Defensive: even if misconfigured, never token-edit.
                         ids[b, t] = self.tokenizer.mask_id
                         unknown[b, t] = True
+                stats.remasked_positions += len(expand_positions)
 
         if unknown.any():
             if use_grammar:
@@ -1911,6 +2226,7 @@ class TwoTowerModel(nn.Module):
                 logits = self.denoiser(
                     ids, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
                 )
+                stats.denoiser_forwards += 1
                 pred = logits.argmax(dim=-1)
                 ids[unknown] = pred[unknown]
                 for b in range(ids.size(0)):

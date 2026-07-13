@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 
 import torch
 import torch.nn as nn
@@ -37,11 +38,15 @@ class MultiheadAttention(nn.Module):
         x: torch.Tensor,
         ctx: torch.Tensor | None = None,
         key_padding_mask: torch.Tensor | None = None,
-    ) -> torch.Tensor:
+        *,
+        return_weights: bool = False,
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         """
         x: [B, T, D] queries
         ctx: optional [B, S, D] for cross-attn (defaults to self-attn)
         key_padding_mask: [B, S] True where PAD (ignored)
+        return_weights: also return head-averaged attention [B, T, S]
+        (explicit softmax path; the SDPA fast path is used otherwise).
         """
         context = ctx if ctx is not None else x
         bsz, tlen, _ = x.shape
@@ -65,6 +70,18 @@ class MultiheadAttention(nn.Module):
             pad = key_padding_mask
             attn_mask = torch.zeros(bsz, 1, 1, slen, device=x.device, dtype=q.dtype)
             attn_mask = attn_mask.masked_fill(pad[:, None, None, :], float("-inf"))
+
+        if return_weights:
+            # E71: explicit attention for dependency-cluster construction.
+            scores = q @ k.transpose(-2, -1) / math.sqrt(self.head_dim)
+            if attn_mask is not None:
+                scores = scores + attn_mask
+            weights = F.softmax(scores, dim=-1)
+            if self.dropout and self.training:
+                weights = F.dropout(weights, p=self.dropout)
+            out = weights @ v
+            out = out.transpose(1, 2).contiguous().view(bsz, tlen, -1)
+            return self.out_proj(out), weights.mean(dim=1)
 
         out = F.scaled_dot_product_attention(
             q,
@@ -108,10 +125,17 @@ class TransformerBlock(nn.Module):
         self_pad_mask: torch.Tensor | None = None,
         ctx: torch.Tensor | None = None,
         ctx_pad_mask: torch.Tensor | None = None,
-    ) -> torch.Tensor:
-        x = x + self.dropout(
-            self.self_attn(self.norm1(x), key_padding_mask=self_pad_mask)
-        )
+        *,
+        return_self_attn: bool = False,
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
+        attn_weights: torch.Tensor | None = None
+        if return_self_attn:
+            attn_out, attn_weights = self.self_attn(
+                self.norm1(x), key_padding_mask=self_pad_mask, return_weights=True
+            )
+        else:
+            attn_out = self.self_attn(self.norm1(x), key_padding_mask=self_pad_mask)
+        x = x + self.dropout(attn_out)
         if self.cross_attn is not None and ctx is not None:
             assert self.norm_cross is not None
             x = x + self.dropout(
@@ -120,6 +144,9 @@ class TransformerBlock(nn.Module):
                 )
             )
         x = x + self.dropout(self.mlp(self.norm2(x)))
+        if return_self_attn:
+            assert attn_weights is not None
+            return x, attn_weights
         return x
 
 
@@ -215,7 +242,17 @@ class DenoiserTower(nn.Module):
         ctx_pad_mask: torch.Tensor | None = None,
         *,
         return_hidden: bool = False,
-    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
+        return_attn: bool = False,
+    ) -> (
+        torch.Tensor
+        | tuple[torch.Tensor, torch.Tensor]
+        | tuple[torch.Tensor, torch.Tensor, torch.Tensor]
+    ):
+        """
+        Returns logits; with ``return_hidden`` → (logits, hidden); with
+        ``return_attn`` (E71) → (logits, hidden, attn) where attn is the last
+        layer's head-averaged self-attention [B, T, T].
+        """
         bsz, seq = noisy_ids.shape
         if seq > self.max_len:
             noisy_ids = noisy_ids[:, : self.max_len]
@@ -227,10 +264,26 @@ class DenoiserTower(nn.Module):
             safe = noisy_ids.clamp(min=0, max=self.kind_lookup.numel() - 1)
             x = x + self.kind(self.kind_lookup[safe])
         self_pad = noisy_ids.eq(pad_id)
-        for layer in self.layers:
-            x = layer(x, self_pad_mask=self_pad, ctx=context, ctx_pad_mask=ctx_pad_mask)
+        attn: torch.Tensor | None = None
+        last = len(self.layers) - 1
+        for i, layer in enumerate(self.layers):
+            if return_attn and i == last:
+                x, attn = layer(
+                    x,
+                    self_pad_mask=self_pad,
+                    ctx=context,
+                    ctx_pad_mask=ctx_pad_mask,
+                    return_self_attn=True,
+                )
+            else:
+                x = layer(
+                    x, self_pad_mask=self_pad, ctx=context, ctx_pad_mask=ctx_pad_mask
+                )
         hidden = self.norm(x)
         logits = self.lm_head(hidden)
+        if return_attn:
+            assert attn is not None
+            return logits, hidden, attn
         if return_hidden:
             return logits, hidden
         return logits
