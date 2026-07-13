@@ -7,6 +7,7 @@ import json
 import re
 from pathlib import Path
 
+from slm_training.data.structure import strip_style_literals
 from slm_training.dsl.schema import ExampleRecord, load_jsonl
 
 _PLACEHOLDER_RE = re.compile(r":[A-Za-z0-9_.]+")
@@ -29,13 +30,14 @@ def fingerprint_openui(openui: str) -> str:
 
 def normalize_openui_structure(openui: str) -> str:
     """
-    Collapse placeholder namespaces and binder/var names so isomorphic trees
-    (e.g. :hero.title vs :smoke.hero.title) share one structural fingerprint.
+    Collapse placeholder namespaces, binder/var names, and style literals so
+    isomorphic *layout* trees share one structural fingerprint.
 
-    Quoted string literals (direction, gaps, enums) are preserved so
-    `"column"` ≠ `"row"` and `"m"` ≠ `"2xl"`.
+    Style (gaps, typography sizes, color-role variants) is stripped.
+    Direction (``"column"`` / ``"row"``) is preserved as structure.
     """
-    text = _PLACEHOLDER_RE.sub(":ph", openui or "")
+    text = strip_style_literals(openui or "")
+    text = _PLACEHOLDER_RE.sub(":ph", text)
     text = _BINDER_RE.sub(r"v\2", text)
 
     def _var_sub(match: re.Match[str]) -> str:
@@ -60,11 +62,17 @@ def fingerprint_openui_structure(openui: str) -> str:
 
 
 def fingerprint_pair(prompt: str, openui: str) -> str:
-    payload = norm_text(prompt) + "\n" + norm_text(openui)
+    payload = norm_text(prompt) + "\n" + norm_text(strip_style_literals(openui))
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def fingerprint_design_md(design_md: str | None) -> str | None:
+    """
+    Fingerprint DESIGN.md for diagnostics only.
+
+    Shared default design systems intentionally collide across records; callers
+    must not treat design_md-only overlap as hard train/test leakage.
+    """
     if not design_md:
         return None
     return hashlib.sha256(norm_text(design_md).encode("utf-8")).hexdigest()
@@ -130,7 +138,11 @@ def find_leakage(
     record: ExampleRecord,
     train_fps: dict[str, set[str]],
 ) -> list[str]:
-    """Return human-readable leakage reasons (empty if clean)."""
+    """Return human-readable leakage reasons (empty if clean).
+
+    ``design_md`` overlap is never reported — shared system DESIGN.md is expected
+    and is not scaffold leakage.
+    """
     reasons: list[str] = []
     if record.id in train_fps["ids"]:
         reasons.append("id")
@@ -142,7 +154,4 @@ def find_leakage(
         reasons.append("openui_structure")
     if fingerprint_pair(record.prompt, record.openui) in train_fps["pairs"]:
         reasons.append("pair")
-    dm = fingerprint_design_md(record.design_md)
-    if dm and dm in train_fps.get("design_mds", set()):
-        reasons.append("design_md")
     return reasons

@@ -11,11 +11,6 @@ from slm_training.dsl.schema import ExampleRecord
 
 _SLUG_RE = re.compile(r"[^a-zA-Z0-9]+")
 
-_GAP_BY_DIRECTION = {
-    "column": "m",
-    "row": "s",
-}
-
 
 @dataclass
 class RicoElement:
@@ -191,8 +186,8 @@ def screen_to_openui(
             placeholders.append(ph)
             lines.append(f'{name} = TextContent("{ph}")')
 
-    gap = _GAP_BY_DIRECTION[direction]
-    root = f'root = Stack([{", ".join(child_ids)}], "{direction}", "{gap}")'
+    # Structure-only scaffold: direction is layout; omit style gap tokens.
+    root = f'root = Stack([{", ".join(child_ids)}], "{direction}")'
     openui = "\n".join([root, *lines])
     meta = {
         "direction": direction,

@@ -60,7 +60,7 @@ def _heuristic_openui(site: dict[str, Any]) -> tuple[str, list[str]]:
     children.append("hero")
     lines.extend(
         [
-            'hero_title = TextContent(":hero.title", "large-heavy")',
+            'hero_title = TextContent(":hero.title")',
             'hero_body = TextContent(":hero.body")',
             "hero = Card([hero_title, hero_body])",
         ]
@@ -82,7 +82,7 @@ def _heuristic_openui(site: dict[str, Any]) -> tuple[str, list[str]]:
                 'm2_title = TextContent(":metrics.two.title")',
                 'm2_body = TextContent(":metrics.two.body")',
                 "m2 = Card([m2_title, m2_body])",
-                'metrics = Stack([m1, m2], "row", "m")',
+                'metrics = Stack([m1, m2], "row")',
             ]
         )
         placeholders.extend(
@@ -133,7 +133,7 @@ def _heuristic_openui(site: dict[str, Any]) -> tuple[str, list[str]]:
             [":settings.notify.label", ":settings.notify.description"]
         )
 
-    root = f'root = Stack([{", ".join(children)}], "column", "m")'
+    root = f'root = Stack([{", ".join(children)}], "column")'
     return "\n".join([root, *lines]), placeholders
 
 

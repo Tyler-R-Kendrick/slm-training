@@ -33,7 +33,10 @@ def _check_fail_unders(metrics: dict, args: argparse.Namespace) -> int:
         if float(metrics.get("reward_score") or 0) < args.fail_under_reward_score:
             return 6
     if args.fail_under_design_lint is not None:
-        # Gold-context diagnostic only; prefer --ship-gates for readiness.
+        # Gold DESIGN.md diagnostic only — never a ship-gate / style eval.
+        # Ignored when --ship-gates is set so unused-color warnings cannot fail readiness.
+        if getattr(args, "ship_gates", False):
+            return 0
         score = metrics.get("gold_design_lint_score")
         if score is None:
             score = metrics.get("design_lint_score")
@@ -118,7 +121,10 @@ def main(argv: list[str] | None = None) -> int:
         "--fail-under-design-lint",
         type=float,
         default=None,
-        help="Gold DESIGN.md context lint only — not model skill.",
+        help=(
+            "Gold DESIGN.md context lint only — not model skill / not style eval. "
+            "Ignored when --ship-gates is set (warnings must not fail readiness)."
+        ),
     )
     parser.add_argument(
         "--grammar-ltr-primary",

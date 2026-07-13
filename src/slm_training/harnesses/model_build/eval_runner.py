@@ -8,6 +8,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+from slm_training.data.structure import strip_style_literals
 from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.parser import ParseError, validate
 from slm_training.dsl.schema import ExampleRecord
@@ -55,17 +56,18 @@ def _placeholder_validity(pred: str, gold: ExampleRecord) -> float:
 
 
 def _tree_match(pred: str, gold_openui: str) -> float:
-    if pred.strip() == gold_openui.strip():
+    """Exact match on structure-normalized programs (style args ignored)."""
+    pred_s = strip_style_literals(pred).strip()
+    gold_s = strip_style_literals(gold_openui).strip()
+    if pred_s == gold_s:
         return 1.0
     try:
-        pred_p = validate(pred)
-        gold_p = validate(gold_openui)
+        pred_p = validate(pred_s)
+        gold_p = validate(gold_s)
         if pred_p.serialized and gold_p.serialized:
-            return (
-                1.0
-                if pred_p.serialized.strip() == gold_p.serialized.strip()
-                else 0.0
-            )
+            ps = strip_style_literals(pred_p.serialized).strip()
+            gs = strip_style_literals(gold_p.serialized).strip()
+            return 1.0 if ps == gs else 0.0
     except Exception:  # noqa: BLE001
         return 0.0
     return 0.0
@@ -73,23 +75,25 @@ def _tree_match(pred: str, gold_openui: str) -> float:
 
 def _component_multiset(source: str) -> dict[str, int]:
     counts: dict[str, int] = {}
-    for name in _COMPONENT_RE.findall(source):
+    for name in _COMPONENT_RE.findall(strip_style_literals(source)):
         counts[name] = counts.get(name, 0) + 1
     return counts
 
 
 def structural_similarity(pred: str, gold_openui: str) -> float:
-    """Jaccard-like similarity over component multisets + depth proxy."""
-    pred_c = _component_multiset(pred)
-    gold_c = _component_multiset(gold_openui)
+    """Jaccard-like similarity over component multisets + depth (style-agnostic)."""
+    pred_s = strip_style_literals(pred)
+    gold_s = strip_style_literals(gold_openui)
+    pred_c = _component_multiset(pred_s)
+    gold_c = _component_multiset(gold_s)
     keys = set(pred_c) | set(gold_c)
     if not keys:
         return 0.0
     inter = sum(min(pred_c.get(k, 0), gold_c.get(k, 0)) for k in keys)
     union = sum(max(pred_c.get(k, 0), gold_c.get(k, 0)) for k in keys)
     jaccard = inter / union if union else 0.0
-    depth_p = pred.count("[") + pred.count("(")
-    depth_g = gold_openui.count("[") + gold_openui.count("(")
+    depth_p = pred_s.count("[") + pred_s.count("(")
+    depth_g = gold_s.count("[") + gold_s.count("(")
     depth_sim = 1.0 - min(1.0, abs(depth_p - depth_g) / max(1, depth_g))
     return round(0.7 * jaccard + 0.3 * depth_sim, 4)
 
@@ -105,10 +109,11 @@ def component_type_recall(pred: str, gold_openui: str) -> float:
 
 def _gold_design_lint_score(record: ExampleRecord) -> float | None:
     """
-    Gold DESIGN.md context quality — not model skill.
+    Gold DESIGN.md context quality — diagnostic only, never model skill.
 
     Prefer the score already attached at corpus build time (meta.design_lint)
     so eval does not spawn a Node lint per record (~75ms each).
+    Style tokens in DESIGN.md must not affect ship gates or reward_score.
     """
     meta = (record.meta or {}).get("design_lint") or {}
     if meta.get("score") is not None:
@@ -130,15 +135,21 @@ def _gold_design_lint_score(record: ExampleRecord) -> float | None:
 
 def _reward_for_prediction(pred: str, record: ExampleRecord) -> float:
     """
-    Composite preference reward on the generated layout.
+    Structure-only composite reward on the generated layout.
 
-    Intentionally does **not** pass gold DESIGN.md — linting gold context was
-    inflating reward when design_md_in_context was false.
+    Never passes gold DESIGN.md — style/color lint must not affect eval or
+    ship ``reward_score`` gates.
     """
     try:
         from slm_training.preference import composite_reward
 
-        return float(composite_reward(pred, gold=record, design_md=None))
+        return float(
+            composite_reward(
+                strip_style_literals(pred),
+                gold=record,
+                design_md=None,
+            )
+        )
     except Exception:  # noqa: BLE001
         return 0.0
 

@@ -82,6 +82,13 @@ def placeholder_score(openui: str, gold: ExampleRecord | None = None) -> float:
 
 
 def design_lint_score(design_md: str | None) -> float:
+    """
+    Score a DESIGN.md document.
+
+    Warnings (e.g. unused color tokens) must not tank the score — only errors
+    drive hard failures. Used for preference training when design_md is passed
+    explicitly; eval never calls this with gold DESIGN.md.
+    """
     if not design_md:
         return 0.5
     try:
@@ -90,7 +97,12 @@ def design_lint_score(design_md: str | None) -> float:
         if not bridge_available():
             return 0.8
         report = lint(design_md)
-        return float(report.get("score") or 0.0)
+        summary = report.get("summary") or {}
+        errors = int(summary.get("errors") or 0)
+        if errors:
+            return float(report.get("score") or 0.0)
+        # Warnings/infos only → treat as clean enough for structure training.
+        return max(float(report.get("score") or 0.0), 0.9)
     except Exception:  # noqa: BLE001
         return 0.5
 
@@ -102,23 +114,28 @@ def composite_reward(
     design_md: str | None = None,
 ) -> float:
     """
-    Ordered composite:
-    grammar (hard) * (0.45 grammar + 0.2 placeholders + 0.25 design lint + 0.1 layout)
+    Ordered composite on *structure* (grammar + placeholders + layout).
 
-    `design_md` is only credited when passed explicitly as a non-None string.
-    Eval must pass design_md=None so gold DESIGN.md lint cannot inflate scores
-    when the model was not conditioned on it.
+    When ``design_md`` is ``None`` (eval / ship reward_score), DESIGN.md style
+    lint is excluded entirely — colors/typography cannot move the score.
+
+    Preference training may pass an explicit ``design_md`` to optionally blend
+    a small lint term; warnings-only docs still score high.
     """
+    from slm_training.data.structure import strip_style_literals
+
+    openui = strip_style_literals(openui)
     g = grammar_score(openui)
     if g <= 0.0:
         return 0.0
-    lint = design_lint_score(design_md) if design_md is not None else 0.5
-    score = (
-        0.45 * g
-        + 0.20 * placeholder_score(openui, gold)
-        + 0.25 * lint
-        + 0.10 * layout_metrics(openui)
-    )
+    ph = placeholder_score(openui, gold)
+    layout = layout_metrics(openui)
+    if design_md is None:
+        # Structure-only (eval path).
+        score = 0.55 * g + 0.30 * ph + 0.15 * layout
+    else:
+        lint = design_lint_score(design_md)
+        score = 0.45 * g + 0.25 * ph + 0.20 * lint + 0.10 * layout
     return round(float(score), 4)
 
 

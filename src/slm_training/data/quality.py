@@ -146,10 +146,13 @@ def assess_record(
         else:
             lint_meta = (record.meta or {}).get("design_lint") or {}
             design_score = lint_meta.get("score")
+            errors = int((lint_meta.get("summary") or {}).get("errors") or 0)
             if design_score is None:
                 # Offline / not linted yet — small penalty, not a hard fail.
                 score -= 0.05
-            elif float(design_score) < min_design_lint:
+            elif errors > 0 and float(design_score) < min_design_lint:
+                # Only error-level DESIGN.md issues can soft-penalize.
+                # Style warnings must not reject structure-only records.
                 reasons.append("low_design_lint")
                 score -= 0.25
 

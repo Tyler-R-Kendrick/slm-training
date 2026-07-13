@@ -83,8 +83,10 @@ def evaluate_ship_gates(
         "failures": failures,
         "pass": all(checks.values()) if checks else False,
         "note": (
-            "Honest ship gates require all policy suites. "
-            "See docs/design/adversarial-review.md."
+            "Honest ship gates require all policy suites and score structure only "
+            "(parse / structural_similarity / placeholder_fidelity / reward_score). "
+            "DESIGN.md style lint is never a ship gate. "
+            "See docs/design/adversarial-review.md and docs/design/structure-only-eval.md."
         ),
     }
 

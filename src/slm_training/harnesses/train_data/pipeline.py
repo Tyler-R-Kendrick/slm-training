@@ -47,9 +47,12 @@ class TrainDataConfig:
 
 
 def _normalize_record(record: ExampleRecord) -> ExampleRecord:
-    program = validate(record.openui)
-    placeholders = list(program.placeholders) or extract_placeholders(record.openui)
-    openui = program.serialized or record.openui.strip()
+    from slm_training.data.structure import strip_style_literals
+
+    scrubbed = strip_style_literals(record.openui)
+    program = validate(scrubbed)
+    placeholders = list(program.placeholders) or extract_placeholders(scrubbed)
+    openui = strip_style_literals(program.serialized or scrubbed.strip())
     out = ExampleRecord(
         id=record.id,
         prompt=record.prompt.strip(),
@@ -57,7 +60,7 @@ def _normalize_record(record: ExampleRecord) -> ExampleRecord:
         placeholders=placeholders,
         split=record.split,
         source=record.source,
-        meta={**dict(record.meta), "parser": "openuidev/lang-core"},
+        meta={**dict(record.meta), "parser": "openuidev/lang-core", "structure_only": True},
         design_md=record.design_md,
     )
     try:

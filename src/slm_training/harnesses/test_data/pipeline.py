@@ -47,9 +47,14 @@ class TestDataConfig:
 
 
 def _normalize(record: ExampleRecord) -> ExampleRecord:
-    program = validate(record.openui)
-    placeholders = list(program.placeholders) or extract_placeholders(record.openui)
-    openui = program.serialized or record.openui.strip()
+    from slm_training.data.structure import strip_style_literals
+
+    # Scaffold gold is structure-only — strip gaps / typography / color-role args.
+    scrubbed = strip_style_literals(record.openui)
+    program = validate(scrubbed)
+    placeholders = list(program.placeholders) or extract_placeholders(scrubbed)
+    openui = program.serialized or scrubbed.strip()
+    openui = strip_style_literals(openui)
     out = ExampleRecord(
         id=record.id,
         prompt=record.prompt.strip(),
@@ -57,7 +62,7 @@ def _normalize(record: ExampleRecord) -> ExampleRecord:
         placeholders=placeholders,
         split=record.split,
         source=record.source,
-        meta={**dict(record.meta), "parser": "openuidev/lang-core"},
+        meta={**dict(record.meta), "parser": "openuidev/lang-core", "structure_only": True},
         design_md=record.design_md,
     )
     try:
@@ -160,12 +165,10 @@ def build_test_data(config: TestDataConfig) -> dict:
         if reasons:
             item = {"id": normalized.id, "reasons": reasons, "source": normalized.source}
             leakage.append(item)
-            # Hand-authored fixtures must never leak on id/prompt/openui/pair.
-            # design_md-only collisions (shared system text) are skipped like RICO
-            # structural openui collisions — they are not content leakage.
-            hard_reasons = [r for r in reasons if r != "design_md"]
-            if normalized.source != "rico" and hard_reasons:
-                fixture_leaks.append({**item, "reasons": hard_reasons})
+            # Hand-authored fixtures must never leak on id/prompt/openui/pair/structure.
+            # Shared DESIGN.md is never reported by find_leakage.
+            if normalized.source != "rico":
+                fixture_leaks.append(item)
             continue
 
         seen_ids.add(normalized.id)
