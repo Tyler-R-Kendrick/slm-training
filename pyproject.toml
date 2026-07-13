@@ -72,5 +72,11 @@ include = ["slm_training*", "gpu_multi_farm*", "scripts*"]
 testpaths = ["tests"]
 pythonpath = ["src", "."]
 asyncio_mode = "auto"
+
+[tool.vercel]
+# Playground FastAPI instance (see api/index.py). Required for Git-triggered
+# Vercel builds; without this the project fails with FASTAPI_ENTRYPOINT_NOT_FOUND.
+entrypoint = "api.index:app"
+
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["E402"]
