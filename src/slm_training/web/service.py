@@ -6,7 +6,7 @@ import threading
 from collections import OrderedDict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from slm_training.annotations import (
     DEFAULT_BAD_OUTPUTS_PATH,
@@ -25,8 +25,10 @@ from slm_training.annotations import (
 )
 from slm_training.dsl.lang_core import ParseError, stream_check, validate
 from slm_training.models.paths import PLAYGROUND_DEMO_CHECKPOINT
-from slm_training.models.twotower import TwoTowerModel
 from slm_training.web.prompts import EXAMPLE_PROMPTS, PromptCursor, load_prompt_bank
+
+if TYPE_CHECKING:
+    from slm_training.models.twotower import TwoTowerModel
 
 DEFAULT_CHECKPOINT = PLAYGROUND_DEMO_CHECKPOINT
 
@@ -89,6 +91,10 @@ class PlaygroundService:
         }
 
     def load(self) -> TwoTowerModel:
+        # Lazy import keeps the FastAPI entrypoint importable on Vercel without
+        # pulling torch into the cold-start dependency graph.
+        from slm_training.models.twotower import TwoTowerModel
+
         with self._lock:
             if self._model is not None:
                 return self._model

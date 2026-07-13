@@ -1,0 +1,96 @@
+{
+  "matrix": "grammar-experiment-matrix-x",
+  "reference": "docs/design/quality-experiment-matrix.md",
+  "steps": 40,
+  "seeds": [
+    0
+  ],
+  "note": "Partial X matrix: X0 twotower baseline (40 steps, partial suites) and X2/E54 grammar_diffusion honest contract (80 steps). Full 3-seed successive-halving still recommended offline.",
+  "results": [
+    {
+      "id": "X0",
+      "run_id": "gx_x0_baseline",
+      "seed": 0,
+      "model": "twotower",
+      "honest_slot_contract": true,
+      "suites": {
+        "smoke": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.057499999999999996,
+          "reward_score": 0.0,
+          "n": 3
+        },
+        "held_out": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.050280000000000005,
+          "reward_score": 0.0,
+          "n": 5
+        }
+      },
+      "notes": "Corrected baseline without V5 template stack; underfit at 40 steps (partial eval)."
+    },
+    {
+      "id": "X2",
+      "run_id": "qx_e54_grammar_honest",
+      "model": "grammar_diffusion",
+      "honest_slot_contract": true,
+      "pass": false,
+      "failures": [
+        "smoke:parse_rate actual=0.0 need>=0.66",
+        "smoke:structural_similarity actual=0.0 need>=0.35",
+        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:parse_rate actual=0.0 need>=0.4",
+        "held_out:structural_similarity actual=0.0 need>=0.3",
+        "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+        "adversarial:parse_rate actual=0.0 need>=0.25",
+        "adversarial:structural_similarity actual=0.0 need>=0.25",
+        "ood:parse_rate actual=0.0 need>=0.25",
+        "ood:structural_similarity actual=0.0 need>=0.25",
+        "rico_held:parse_rate actual=0.0 need>=0.1",
+        "rico_held:structural_similarity actual=0.0 need>=0.2"
+      ],
+      "suites": {
+        "smoke": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.0,
+          "reward_score": 0.0,
+          "n": 3
+        },
+        "held_out": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.0,
+          "reward_score": 0.0,
+          "n": 5
+        },
+        "adversarial": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.0,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "ood": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.0,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "rico_held": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.0,
+          "reward_score": 0.0,
+          "n": 20
+        }
+      },
+      "notes": "Aliased from E54 grammar_diffusion honest contract run (80 steps)."
+    }
+  ],
+  "built_at": "2026-07-13T20:29:21.008135+00:00"
+}

@@ -90,6 +90,12 @@ class Experiment:
     mask_pattern: str = "random"
     remask_span: str = "token"
     teacher_init_embeddings: bool = False
+    # V6 levers: CoRe remask, T2M, slot-aware trust, grammar_diffusion
+    remask_policy: str = "confidence"
+    core_perturb_frac: float = 0.25
+    remask_to_mask: bool = True
+    slot_aware_trust_gate: bool = False
+    model_name: str = "twotower"
 
 def _base_experiments(
     train_v1: Path,
@@ -736,6 +742,146 @@ def _v5_experiments(
     ]
 
 
+def _v6_experiments(
+    train_v1: Path,
+    train_cur: Path,
+    *,
+    design_md_in_context: bool = True,
+    seed_checkpoint: Path | str | None = None,
+) -> list[Experiment]:
+    """E50–E55: CoRe remask, T2M, slot-aware trust, stacked honest V5 champion."""
+    capacity = dict(
+        d_model=192,
+        n_heads=6,
+        context_layers=3,
+        denoiser_layers=6,
+        grammar_ltr_max_tokens=256,
+    )
+    seed = str(seed_checkpoint) if seed_checkpoint else None
+    v5_base = dict(
+        slot_contract_in_context=True,
+        slot_contract_constrained_decode=True,
+        fidelity_loss_weight=1.5,
+        schema_in_context=True,
+        grammar_ltr_repair=True,
+        grammar_ltr_primary=False,
+        ltr_loss_weight=2.0,
+        mdlm_schedule=True,
+        remask_ratio=0.12,
+        gen_steps_override=16,
+        output_tokenizer="lexer",
+        use_symbol_table=True,
+        factorized_embeddings=True,
+        mask_pattern="mixed",
+        remask_span="statement",
+        remask_to_mask=True,
+        design_md_in_context=design_md_in_context,
+        **capacity,
+    )
+    return [
+        Experiment(
+            "E50",
+            "qx_e50_core_remask",
+            "CoRe-lite context-robust remask (training-free) on V5 alphabet",
+            train_v1,
+            template_fill_decode=True,
+            honest_slot_contract=True,
+            remask_policy="core",
+            core_perturb_frac=0.25,
+            best_of_n=1,
+            seed_checkpoint=seed,
+            **v5_base,
+        ),
+        Experiment(
+            "E51",
+            "qx_e51_t2m_statement",
+            "T2M remask-to-mask + statement-span remask discipline",
+            train_v1,
+            template_fill_decode=True,
+            honest_slot_contract=True,
+            remask_policy="confidence",
+            best_of_n=1,
+            seed_checkpoint=seed,
+            **{**v5_base, "remask_ratio": 0.15, "remask_span": "statement", "remask_to_mask": True},
+        ),
+        Experiment(
+            "E52",
+            "qx_e52_slot_trust",
+            "Slot-aware FastPathGate trust head (placeholder binding errors)",
+            train_v1,
+            template_fill_decode=True,
+            honest_slot_contract=True,
+            remask_use_gate=True,
+            remask_use_entropy=True,
+            remask_policy="combined",
+            trust_gate=True,
+            slot_aware_trust_gate=True,
+            best_of_n=1,
+            seed_checkpoint=seed,
+            **v5_base,
+        ),
+        Experiment(
+            "E53",
+            "qx_e53_honest_v5_champion",
+            "Stacked honest V5 champion: E46+E35+E33+E50 CoRe remask",
+            train_cur,
+            template_fill_decode=True,
+            honest_slot_contract=True,
+            use_curriculum=True,
+            mix_curriculum=True,
+            remask_policy="combined",
+            remask_use_gate=True,
+            remask_use_entropy=True,
+            core_perturb_frac=0.25,
+            best_of_n=4,
+            trust_gate=True,
+            slot_aware_trust_gate=True,
+            **v5_base,
+        ),
+        Experiment(
+            "E54",
+            "qx_e54_grammar_honest",
+            "Grammar-diffusion with honest inventory-in-prompt (no gold channel)",
+            train_v1,
+            model_name="grammar_diffusion",
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            honest_slot_contract=True,
+            fidelity_loss_weight=1.5,
+            grammar_ltr_repair=True,
+            grammar_ltr_primary=True,
+            gen_steps_override=16,
+            design_md_in_context=design_md_in_context,
+            d_model=128,
+            n_heads=4,
+            context_layers=2,
+            denoiser_layers=4,
+            grammar_ltr_max_tokens=128,
+        ),
+        Experiment(
+            "E55",
+            "qx_e55_process",
+            "Process stage on E53: preference + GRPO-lite (skip RL if no variance)",
+            train_cur,
+            template_fill_decode=True,
+            honest_slot_contract=True,
+            use_curriculum=True,
+            mix_curriculum=True,
+            remask_policy="combined",
+            remask_use_gate=True,
+            remask_use_entropy=True,
+            core_perturb_frac=0.25,
+            best_of_n=4,
+            trust_gate=True,
+            slot_aware_trust_gate=True,
+            preference=True,
+            rl=True,
+            eval_from_run="qx_e53_honest_v5_champion",
+            **v5_base,
+        ),
+    ]
+
+
 def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
     return ModelBuildConfig(
         train_dir=exp.train_dir,
@@ -748,7 +894,7 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         lr=args.lr,
         seed=args.seed,
         device=args.device,
-        model_name="twotower",
+        model_name=str(getattr(exp, "model_name", "twotower") or "twotower"),
         d_model=exp.d_model,
         n_heads=exp.n_heads,
         context_layers=exp.context_layers,
@@ -778,6 +924,10 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         remask_ratio=float(getattr(exp, "remask_ratio", 0.0) or 0.0),
         remask_use_gate=bool(getattr(exp, "remask_use_gate", False)),
         remask_use_entropy=bool(getattr(exp, "remask_use_entropy", False)),
+        remask_policy=str(getattr(exp, "remask_policy", "confidence") or "confidence"),
+        core_perturb_frac=float(getattr(exp, "core_perturb_frac", 0.25) or 0.25),
+        remask_to_mask=bool(getattr(exp, "remask_to_mask", True)),
+        slot_aware_trust_gate=bool(getattr(exp, "slot_aware_trust_gate", False)),
         mdlm_schedule=bool(getattr(exp, "mdlm_schedule", False)),
         visible_corrupt_rate=float(getattr(exp, "visible_corrupt_rate", 0.0) or 0.0),
         suffix_rollback_window=int(getattr(exp, "suffix_rollback_window", 0) or 0),
@@ -840,6 +990,12 @@ def _eval_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         "E44",
         "E45",
         "E46",
+        "E50",
+        "E51",
+        "E52",
+        "E53",
+        "E54",
+        "E55",
     }
     bon = exp.best_of_n
     if exp.decode_sweep == "gen16_repair_bon4":
@@ -863,6 +1019,10 @@ def _eval_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         remask_ratio=float(getattr(exp, "remask_ratio", 0.0) or 0.0),
         remask_use_gate=bool(getattr(exp, "remask_use_gate", False)),
         remask_use_entropy=bool(getattr(exp, "remask_use_entropy", False)),
+        remask_policy=str(getattr(exp, "remask_policy", "confidence") or "confidence"),
+        core_perturb_frac=float(getattr(exp, "core_perturb_frac", 0.25) or 0.25),
+        remask_to_mask=bool(getattr(exp, "remask_to_mask", True)),
+        slot_aware_trust_gate=bool(getattr(exp, "slot_aware_trust_gate", False)),
         mdlm_schedule=bool(getattr(exp, "mdlm_schedule", False)),
         suffix_rollback_window=int(getattr(exp, "suffix_rollback_window", 0) or 0),
         visible_corrupt_rate=float(getattr(exp, "visible_corrupt_rate", 0.0) or 0.0),
@@ -886,6 +1046,10 @@ def _apply_decode_overrides(model: Any, exp: Experiment) -> None:
         ("remask_ratio", "remask_ratio"),
         ("remask_use_gate", "remask_use_gate"),
         ("remask_use_entropy", "remask_use_entropy"),
+        ("remask_policy", "remask_policy"),
+        ("core_perturb_frac", "core_perturb_frac"),
+        ("remask_to_mask", "remask_to_mask"),
+        ("slot_aware_trust_gate", "slot_aware_trust_gate"),
         ("suffix_rollback_window", "suffix_rollback_window"),
         ("mdlm_schedule", "mdlm_schedule"),
     ):
@@ -991,6 +1155,7 @@ def _maybe_trust_gate(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> 
         steps=max(20, int(getattr(args, "pref_steps", 30) or 30)),
         device=args.device,
         limit=int(getattr(args, "pref_limit", 40) or 40),
+        slot_aware=bool(getattr(exp, "slot_aware_trust_gate", False)),
     )
     gate_ckpt = Path(summary.get("checkpoint") or (out_dir / "checkpoints" / "last.pt"))
     if gate_ckpt.is_file():
@@ -1044,8 +1209,15 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
         src = Path(exp.seed_checkpoint)
         dest = run_dir / "checkpoints" / "last.pt"
         if not src.is_file():
-            # Seed optional for some V4 decode overlays — train instead.
-            if exp.eid in {"E30", "E31", "E33"} and not Path(str(exp.seed_checkpoint)).is_file():
+            # Seed optional for V4/V6 decode overlays — train instead.
+            if exp.eid in {
+                "E30",
+                "E31",
+                "E33",
+                "E50",
+                "E51",
+                "E52",
+            }:
                 summary = train(_train_cfg(exp, args))
                 ckpt = Path(summary["checkpoint"])
             else:
@@ -1172,9 +1344,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--matrix",
-        choices=("legacy", "v2", "v3", "v4", "v5", "all"),
+        choices=("legacy", "v2", "v3", "v4", "v5", "v6", "all"),
         default="v3",
-        help="Experiment set: legacy (E0–E10), v2 (E11–E17), v3 (E18–E29), v4 (E30–E36), v5 (E40–E46), or all.",
+        help="Experiment set: legacy (E0–E10), v2 (E11–E17), v3 (E18–E29), v4 (E30–E36), v5 (E40–E46), v6 (E50–E55), or all.",
     )
     parser.add_argument("--gen-steps", type=int, default=8)
     parser.add_argument(
@@ -1186,7 +1358,19 @@ def main(argv: list[str] | None = None) -> int:
 
     needs_curriculum = args.only is None or any(
         x in (args.only or "")
-        for x in ("E2", "E8", "E9b", "E10", "E15", "E16", "E29", "E35", "E46")
+        for x in (
+            "E2",
+            "E8",
+            "E9b",
+            "E10",
+            "E15",
+            "E16",
+            "E29",
+            "E35",
+            "E46",
+            "E53",
+            "E55",
+        )
     )
     if args.build_curriculum or (not args.curriculum_dir.exists() and needs_curriculum):
         from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
@@ -1260,6 +1444,15 @@ def main(argv: list[str] | None = None) -> int:
                 args.train_dir,
                 args.curriculum_dir,
                 design_md_in_context=design_md,
+            )
+        )
+    if args.matrix in {"v6", "all"}:
+        experiments.extend(
+            _v6_experiments(
+                args.train_dir,
+                args.curriculum_dir,
+                design_md_in_context=design_md,
+                seed_checkpoint=args.seed_checkpoint,
             )
         )
     if args.only:

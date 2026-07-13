@@ -7,6 +7,10 @@ faithful reimplementation of a single dLLM paper — see
 
 V4 (E33): budgeted remask can mix grammar hard-errors, trust-gate scores, and
 token entropy — remask, don't replace.
+
+V6 (E50): CoRe-lite context-robust remask ranks known tokens by support drop
+under masked-context perturbations (arXiv:2602.04096). Always remask→mask
+(T2M / remask-don't-replace), never token-edit.
 """
 
 from __future__ import annotations
@@ -224,3 +228,153 @@ def select_remask_policy_indices(
                 _add(idx)
 
     return chosen
+
+
+def core_instability_scores(
+    probs: torch.Tensor,
+    probs_perturbed: torch.Tensor,
+    committed_ids: torch.Tensor,
+    known: torch.Tensor,
+) -> torch.Tensor:
+    """
+    CoRe-lite: per-position support drop under a perturbed context.
+
+    For each known position, score = p_orig[committed] - p_perturbed[committed].
+    Higher scores = more context-brittle → prefer remask.
+    """
+    # Gather probability of the currently committed token under both distributions.
+    gather_ids = committed_ids.unsqueeze(-1).clamp(min=0)
+    p0 = probs.gather(-1, gather_ids).squeeze(-1)
+    p1 = probs_perturbed.gather(-1, gather_ids).squeeze(-1)
+    drop = (p0 - p1).clamp(min=0.0)
+    return drop.masked_fill(~known, 0.0)
+
+
+def select_remask_core_indices(
+    conf: torch.Tensor,
+    known: torch.Tensor,
+    *,
+    remask_ratio: float = 0.15,
+    protect_bos: bool = True,
+    instability: torch.Tensor | None = None,
+    grammar_positions: list[int] | None = None,
+    gate_trust: torch.Tensor | None = None,
+    entropy: torch.Tensor | None = None,
+    gate_threshold: float = 0.5,
+    combine_policy: bool = False,
+) -> list[int]:
+    """
+    E50: remask highest-instability known tokens (CoRe-lite).
+
+    When ``combine_policy`` is True, grammar/gate/entropy fill first (E33),
+    then remaining budget goes to highest CoRe instability (else confidence).
+    """
+    if remask_ratio <= 0.0 and not grammar_positions:
+        return []
+    flat_known = known.view(-1).clone()
+    length = conf.size(-1)
+    if protect_bos and flat_known.numel() > 0:
+        for b in range(conf.size(0)):
+            flat_known[b * length] = False
+    eligible_idx = flat_known.nonzero(as_tuple=False).flatten().tolist()
+    if not eligible_idx and not grammar_positions:
+        return []
+
+    if combine_policy:
+        base = select_remask_policy_indices(
+            conf,
+            known,
+            remask_ratio=remask_ratio,
+            protect_bos=protect_bos,
+            grammar_positions=grammar_positions,
+            gate_trust=gate_trust,
+            entropy=entropy,
+            gate_threshold=gate_threshold,
+        )
+    else:
+        base = list(grammar_positions or [])
+
+    chosen: list[int] = []
+    seen: set[int] = set()
+
+    def _add(idx: int) -> None:
+        i = int(idx)
+        if i in seen:
+            return
+        if i < 0 or i >= flat_known.numel():
+            return
+        if protect_bos and (i % length) == 0:
+            return
+        if not bool(flat_known[i].item()) and i not in set(grammar_positions or []):
+            return
+        seen.add(i)
+        chosen.append(i)
+
+    for i in base:
+        _add(i)
+
+    eligible = max(len(eligible_idx), len(chosen))
+    budget = (
+        max(1, int(math.ceil(eligible * float(remask_ratio))))
+        if remask_ratio > 0
+        else len(chosen)
+    )
+    budget = max(budget, len(chosen))
+
+    if instability is not None and len(chosen) < budget:
+        flat_inst = instability.view(-1)
+        scored = sorted(
+            eligible_idx,
+            key=lambda i: float(flat_inst[i].item()) if i < flat_inst.numel() else 0.0,
+            reverse=True,
+        )
+        for i in scored:
+            if len(chosen) >= budget:
+                break
+            _add(i)
+    elif len(chosen) < budget:
+        # Fall back to lowest confidence when no instability tensor provided.
+        for i in select_remask_indices(
+            conf, known, remask_ratio=remask_ratio, protect_bos=protect_bos
+        ):
+            if len(chosen) >= budget:
+                break
+            _add(i)
+
+    return chosen
+
+
+def perturb_known_neighbors(
+    ids: torch.Tensor,
+    known: torch.Tensor,
+    *,
+    mask_id: int,
+    perturb_frac: float = 0.25,
+    protect_bos: bool = True,
+    generator: torch.Generator | None = None,
+) -> torch.Tensor:
+    """
+    Build a CoRe-style context perturbation: randomly remask a fraction of
+    known (non-BOS) neighbors so a second forward measures support stability.
+    """
+    out = ids.clone()
+    if perturb_frac <= 0.0:
+        return out
+    flat_known = known.view(-1).clone()
+    length = ids.size(-1)
+    if protect_bos:
+        for b in range(ids.size(0)):
+            flat_known[b * length] = False
+    eligible = flat_known.nonzero(as_tuple=False).flatten()
+    if eligible.numel() == 0:
+        return out
+    k = max(1, int(math.ceil(float(eligible.numel()) * float(perturb_frac))))
+    k = min(k, int(eligible.numel()))
+    if generator is not None:
+        perm = torch.randperm(eligible.numel(), generator=generator, device=eligible.device)
+    else:
+        perm = torch.randperm(eligible.numel(), device=eligible.device)
+    pick = eligible[perm[:k]]
+    flat_out = out.view(-1)
+    flat_out[pick] = int(mask_id)
+    return out

@@ -90,6 +90,10 @@ class ModelBuildConfig:
     suffix_rollback_window: int = 0
     remask_use_gate: bool = False
     remask_use_entropy: bool = False
+    remask_policy: str = "confidence"  # confidence | core | combined
+    core_perturb_frac: float = 0.25
+    remask_to_mask: bool = True
+    slot_aware_trust_gate: bool = False
     visible_corrupt_rate: float = 0.0
     trust_gate_train: bool = False
     grammar_prefer_structural: bool = True

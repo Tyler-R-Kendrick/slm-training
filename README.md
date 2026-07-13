@@ -10,7 +10,7 @@ Novel SLM experiments: harnesses for **placeholder OpenUI** layout generation (o
 4. **OpenUI Lang bridge** — Node sidecar over official `@openuidev/lang-core`
 5. **GPU multi-farm MCP** — list / launch / cost-project across Vast.ai, RunPod, Lambda
 
-See [docs/design/openui-twotower.md](docs/design/openui-twotower.md), [docs/design/research-lineage.md](docs/design/research-lineage.md) (papers → code), [docs/design/research-correction-critics.md](docs/design/research-correction-critics.md) (V4 remask / trust-gate / honest inventory), [docs/design/quality-experiment-matrix.md](docs/design/quality-experiment-matrix.md) (E0–E36 matrix), [docs/design/adversarial-review.md](docs/design/adversarial-review.md), [docs/design/runtime-performance.md](docs/design/runtime-performance.md), and [docs/design/gpu-multi-farm-mcp.md](docs/design/gpu-multi-farm-mcp.md).
+See [docs/design/openui-twotower.md](docs/design/openui-twotower.md), [docs/design/research-lineage.md](docs/design/research-lineage.md) (papers → code), [docs/design/research-correction-critics.md](docs/design/research-correction-critics.md) (V4 remask / trust-gate / honest inventory; V6 CoRe/T2M), [docs/design/quality-experiment-matrix.md](docs/design/quality-experiment-matrix.md) (E0–E55 + X0–X8 matrices), [docs/design/dsl-native-tokenizer.md](docs/design/dsl-native-tokenizer.md) (V5 lexer alphabet), [docs/design/adversarial-review.md](docs/design/adversarial-review.md), [docs/design/runtime-performance.md](docs/design/runtime-performance.md), and [docs/design/gpu-multi-farm-mcp.md](docs/design/gpu-multi-farm-mcp.md).
 
 ## Quick start
 
@@ -57,12 +57,17 @@ python -m scripts.evaluate_model \
   --ship-gates
 ```
 
-Honest ship path (V4 inventory-in-prompt template fill):
+Honest ship path (V4 inventory-in-prompt / V6 stacked champion):
 
 ```bash
 python -m scripts.run_quality_matrix --matrix v4 --only E35,E36 \
   --steps 40 --device cpu --context-backend scratch --no-design-md-context
+
+# V6: CoRe remask + slot-aware trust + honest V5 alphabet
+python -m scripts.run_quality_matrix --matrix v6 --only E53 \
+  --steps 80 --device cpu --context-backend scratch --no-design-md-context
 ```
+
 Train artifacts land in `outputs/train_data/<version>/` (`records.jsonl`, `manifest.json`, `stats.json`). The flush pipeline: curated seeds + RICO + Awwwards → deterministic quality synth → per-record DESIGN.md + OpenUI validate → quality gates → stable sort by `id` + content fingerprint.
 
 Eval uses **meaningful parse** (rejects empty stacks, missing placeholders, and low gold component-type recall), strict `placeholder_fidelity` for ship gates, `structural_similarity`, and composite `reward_score` (does not credit gold DESIGN.md lint). Suites: smoke/held_out (fixtures), `rico_held`, adversarial, ood. Soft `placeholder_validity` is diagnostic only.
