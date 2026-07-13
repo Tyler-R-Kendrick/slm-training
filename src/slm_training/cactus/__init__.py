@@ -43,6 +43,8 @@ def export_checkpoint_bundle(
     out_dir: Path,
     *,
     meta: dict[str, Any] | None = None,
+    compress_weights: bool = True,
+    compression_layout: str = "regroup",
 ) -> Path:
     """
     Package a TwoTower checkpoint for Cactus/on-device handoff.
@@ -50,6 +52,11 @@ def export_checkpoint_bundle(
     Full PyTorch→Cactus transpilation requires the cactus toolchain on the host.
     This MVP writes a portable bundle (weights + tokenizer + manifest) that the
     transpiler can consume offline.
+
+    When compress_weights=True, also writes a lossless BF16 exponent-codebook
+    sidecar (see https://brianbell-x.github.io/weight-compression/). The fused
+    read kernel is NOT vendored here — decompress for PyTorch, or hand the
+    narrow form to an external engine.
     """
     checkpoint = Path(checkpoint)
     out_dir = Path(out_dir)
@@ -61,16 +68,43 @@ def export_checkpoint_bundle(
     tok = checkpoint.with_suffix(".tokenizer.json")
     if tok.exists():
         shutil.copy2(tok, out_dir / "tokenizer.json")
+
+    compression_meta: dict[str, Any] | None = None
+    if compress_weights:
+        from slm_training.compression import (
+            LAYOUT_BYTESPLIT,
+            LAYOUT_REGROUP,
+            write_compressed_checkpoint,
+        )
+
+        layout = (
+            LAYOUT_BYTESPLIT
+            if compression_layout == "bytesplit"
+            else LAYOUT_REGROUP
+        )
+        wc_path = out_dir / "model.pt.wc.json"
+        compression_meta = write_compressed_checkpoint(
+            checkpoint, wc_path, layout=layout
+        )
+        compression_meta = {
+            **compression_meta,
+            "path": wc_path.name,
+            "reference": "https://brianbell-x.github.io/weight-compression/",
+        }
+
     manifest = {
         "format": "slm-training-cactus-bundle-v0",
         "checkpoint": str(target.name),
         "tokenizer": "tokenizer.json" if tok.exists() else None,
         "cactus_available": cactus_runtime_available(),
         "kernel_separate": True,
+        "weight_compression": compression_meta,
         "meta": meta or {},
         "transpile_hint": (
             "Install cactus-compute and run its PyTorch transpiler on model.pt "
-            "when targeting .cact / on-device engine. Kernel code is not vendored here."
+            "when targeting .cact / on-device engine. Kernel code is not vendored here. "
+            "Optional model.pt.wc.json is a lossless BF16 exponent-codebook sidecar "
+            "for storage / future fused engines."
         ),
     }
     (out_dir / "manifest.json").write_text(

@@ -27,9 +27,42 @@ Measured on `twotower_v1_ship` (CPU, scratch context, LTR primary).
 prompt → TwoTower (PyTorch) → OpenUI text
                 ↓ export_checkpoint_bundle
          portable .pt + tokenizer  →  (offline) cactus-compute → .cact / NEON
+                              ↘ optional model.pt.wc.json (BF16 codebook)
 ```
 
 Do not vendor Cactus NEON kernels into `slm_training.models`.
+
+## Lossless weight compression
+
+Reference: [brianbell-x weight-compression](https://brianbell-x.github.io/weight-compression/)
+(candidate 0009 fusible exponent codebook).
+
+| Piece | Choice |
+| --- | --- |
+| View | FP32 checkpoint → BF16 bits (lossless vs BF16, not raw FP32) |
+| Layout | `regroup` (~11.3 b/w headline) or `bytesplit` (GPU-validated) |
+| Index | Top-K=15 sign+exponent symbols → 4-bit code + escape |
+| Payload | 7-bit mantissa (regroup) / low byte (bytesplit) + in-order escapes |
+| Runtime | PyTorch path **decompresses to float32**; fused read/matmul kernels stay external |
+
+```bash
+python -m scripts.compress_weights \
+  --checkpoint outputs/runs/twotower_v1_ship/checkpoints/last.pt \
+  --layout regroup --verify-load
+```
+
+`export_checkpoint_bundle(..., compress_weights=True)` writes `model.pt.wc.json` +
+stats sidecar. On a TwoTower-scale synthetic FP32 state (~1.9M weights):
+
+| Layout | bits/weight | vs BF16 | bit-exact BF16 |
+| --- | --- | --- | --- |
+| `regroup_k15` | ~11.17 | **~30.2%** | yes |
+| `bytesplit_k15` | ~12.01 | ~25.0% | yes |
+
+The JSON sidecar stores hex streams for portability; `compressed_bytes` in the
+stats file is the packed fusible bit budget (what a fused engine would keep in
+VRAM). Compression is storage/VRAM-oriented; it does not change the generate hot
+path until an external fused engine consumes the narrow form.
 
 ## Re-bench
 
