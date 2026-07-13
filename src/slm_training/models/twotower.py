@@ -263,10 +263,10 @@ class TwoTowerModel(nn.Module):
             for j in range(cut, seq):
                 if int(target_ids[i, j]) == self.tokenizer.pad_id:
                     break
+                ltr_suffix[i, j] = True
                 if not bool(predict_mask[i, j].item()):
-                    ltr_suffix[i, j] = True
-                predict_mask[i, j] = True
-                noisy[i, j] = self.tokenizer.mask_id
+                    predict_mask[i, j] = True
+                    noisy[i, j] = self.tokenizer.mask_id
         return noisy, predict_mask, ltr_suffix
 
     def _placeholder_ids(self) -> set[int]:
@@ -699,13 +699,20 @@ class TwoTowerModel(nn.Module):
         """Re-decode rows that fail stream_check using constrained LTR."""
         from concurrent.futures import ThreadPoolExecutor
 
-        def _check(text: str) -> tuple[bool, str]:
+        def _check(text: str, contract: list[str] | None) -> tuple[bool, str]:
             try:
                 status = stream_check(text)
                 if status.serialized and status.complete_ok:
                     ser = status.serialized.strip()
                     compact = ser.replace(" ", "")
                     if "Stack([])" not in compact and "Card([])" not in compact:
+                        if contract:
+                            from slm_training.dsl.placeholders import extract_placeholders
+
+                            preds = set(extract_placeholders(ser))
+                            allowed = {p if p.startswith(":") else f":{p}" for p in contract}
+                            if preds and not preds.issubset(allowed):
+                                return False, text
                         return True, ser
             except Exception:  # noqa: BLE001
                 pass
@@ -714,7 +721,20 @@ class TwoTowerModel(nn.Module):
         # Parallel Node stream_check — grammar bridge is process-bound, so threads
         # overlap Python wait when the Node CLI is the bottleneck.
         with ThreadPoolExecutor(max_workers=min(8, max(1, len(texts)))) as pool:
-            checked = list(pool.map(_check, texts))
+            checked = list(
+                pool.map(
+                    lambda item: _check(item[0], item[1]),
+                    [
+                        (
+                            text,
+                            slot_contracts[i]
+                            if slot_contracts and i < len(slot_contracts)
+                            else None,
+                        )
+                        for i, text in enumerate(texts)
+                    ],
+                )
+            )
 
         repaired: list[str] = []
         for i, (ok, text) in enumerate(checked):
@@ -872,12 +892,18 @@ class TwoTowerModel(nn.Module):
         # Fall back to per-item MaskGIT for non-LTR-primary path.
         out: list[str] = []
         for i in range(len(prompts)):
+            contract = (
+                self._slot_contracts[i]
+                if self._slot_contracts and i < len(self._slot_contracts)
+                else None
+            )
             out.append(
                 self._generate_maskgit_one(
                     ctx[i : i + 1],
                     ctx_pad[i : i + 1],
                     length,
                     use_grammar=use_grammar,
+                    slot_contract=contract,
                 )
             )
         return out
@@ -889,6 +915,7 @@ class TwoTowerModel(nn.Module):
         length: int,
         *,
         use_grammar: bool,
+        slot_contract: list[str] | None = None,
     ) -> str:
         """Single-sequence MaskGIT unmasking (+ optional grammar repair)."""
         device = self.device_name
@@ -983,17 +1010,12 @@ class TwoTowerModel(nn.Module):
 
         if unknown.any():
             if use_grammar:
-                contract = (
-                    self._slot_contracts[0]
-                    if self._slot_contracts
-                    else None
-                )
                 ids = self._constrained_ltr_repair(
                     ids,
                     unknown,
                     ctx,
                     ctx_pad,
-                    slot_contract=contract,
+                    slot_contract=slot_contract,
                 )
             else:
                 logits = self.denoiser(

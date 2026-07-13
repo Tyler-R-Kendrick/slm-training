@@ -212,6 +212,16 @@ def synthesize_stress_adversarial_records(
             [":stress.btns.a", ":stress.btns.b", ":stress.btns.c"],
         ),
     ]
+    if limit > len(templates):
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "synthesize_stress_adversarial_records: limit=%s exceeds %s templates; "
+            "emitting %s records",
+            limit,
+            len(templates),
+            len(templates),
+        )
     out: list[ExampleRecord] = []
     for tid, prompt, openui, placeholders in templates[:limit]:
         out.append(

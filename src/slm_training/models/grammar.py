@@ -175,8 +175,11 @@ def contract_allowed_token_ids(
 
     last_open = prefix_text.rfind('"')
     built = prefix_text[last_open + 1 :]
-    built_seq = tokenize_text(f'"{built}') if built else ['"']
+    # Ordinary string literals ("column", "row") must not use placeholder contract.
+    if not built.startswith(":"):
+        return None
 
+    built_seq = tokenize_text(f'"{built}')
     allowed: set[int] = set()
     for ph in slot_contract:
         target = ph if ph.startswith(":") else f":{ph}"
@@ -220,24 +223,25 @@ def pick_constrained_token(
     """
     import torch
 
+    contract_allowed = contract_allowed_token_ids(
+        tokenizer, prefix_ids, slot_contract
+    )
+
     if forced_token_id is not None:
-        trial_ids = prefix_ids + [int(forced_token_id)]
-        text = tokenizer.decode(trial_ids)
-        probe = text if text.endswith(("(", "[", ",", "=", " ", "\n")) else f"{text}("
-        try:
-            status = stream_check(probe)
-            if not status.hard_error:
+        if contract_allowed is None or int(forced_token_id) in contract_allowed:
+            trial_ids = prefix_ids + [int(forced_token_id)]
+            text = tokenizer.decode(trial_ids)
+            probe = text if text.endswith(("(", "[", ",", "=", " ", "\n")) else f"{text}("
+            try:
+                status = stream_check(probe)
+                if not status.hard_error:
+                    return int(forced_token_id)
+            except Exception:  # noqa: BLE001
                 return int(forced_token_id)
-        except Exception:  # noqa: BLE001
-            return int(forced_token_id)
 
     k = min(top_k, int(logits_1d.numel()))
     _values, indices = torch.topk(logits_1d, k=k)
     fallback = int(indices[0].item())
-
-    contract_allowed = contract_allowed_token_ids(
-        tokenizer, prefix_ids, slot_contract
-    )
 
     backend = _backend()
     if not backend.available():

@@ -300,7 +300,7 @@ def _v2_experiments(
             "qx_e17_decode_sweep",
             "Decode-budget sweep on E15 checkpoint (eval-only)",
             train_cur,
-            eval_from_checkpoint="outputs/runs/qx_e15_combo/checkpoints/last.pt",
+            eval_from_run="qx_e15_combo",
             decode_sweep="gen16_repair_bon4",
             slot_contract_in_context=True,
             slot_contract_constrained_decode=True,

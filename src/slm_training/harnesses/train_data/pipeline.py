@@ -230,6 +230,21 @@ def build_train_data(
     openui_fps: set[str] = set()
     structure_fps: set[str] = set()
     design_md_fps: set[str] = set()
+
+    def _accept_record(record: ExampleRecord, *, structure_fp: str) -> bool:
+        pair = fingerprint_pair(record.prompt, record.openui)
+        if pair in seen_pairs:
+            return False
+        seen_pairs.add(pair)
+        prompt_fps.add(fingerprint_prompt(record.prompt))
+        openui_fps.add(fingerprint_openui(record.openui))
+        structure_fps.add(structure_fp)
+        dm = fingerprint_design_md(record.design_md)
+        if dm:
+            design_md_fps.add(dm)
+        deduped.append(record)
+        return True
+
     for record in quality_kept:
         structure_fp = fingerprint_openui_structure(record.openui)
         if structure_fp in reserved_test_structures:
@@ -241,17 +256,7 @@ def build_train_data(
                 }
             )
             continue
-        pair = fingerprint_pair(record.prompt, record.openui)
-        if pair in seen_pairs:
-            continue
-        seen_pairs.add(pair)
-        prompt_fps.add(fingerprint_prompt(record.prompt))
-        openui_fps.add(fingerprint_openui(record.openui))
-        structure_fps.add(structure_fp)
-        dm = fingerprint_design_md(record.design_md)
-        if dm:
-            design_md_fps.add(dm)
-        deduped.append(record)
+        _accept_record(record, structure_fp=structure_fp)
 
     # Final stable order.
     deduped.sort(key=lambda r: r.id)
@@ -277,8 +282,7 @@ def build_train_data(
                     }
                 )
                 continue
-            deduped.append(normalized)
-            structure_fps.add(structure_fp)
+            _accept_record(normalized, structure_fp=structure_fp)
         deduped.sort(key=lambda r: r.id)
 
     out_dir = config.output_dir

@@ -79,7 +79,8 @@
           "reward_score": 0.0,
           "n": 8
         }
-      }
+      },
+      "steps": 200
     },
     {
       "id": "E12",
@@ -135,7 +136,8 @@
           "reward_score": 0.0,
           "n": 8
         }
-      }
+      },
+      "steps": 200
     },
     {
       "id": "E13",
@@ -189,7 +191,8 @@
           "reward_score": 0.0,
           "n": 8
         }
-      }
+      },
+      "steps": 200
     },
     {
       "id": "E14",
@@ -244,7 +247,8 @@
           "reward_score": 0.0,
           "n": 8
         }
-      }
+      },
+      "steps": 200
     },
     {
       "id": "E15",
@@ -299,7 +303,8 @@
           "reward_score": 0.0,
           "n": 8
         }
-      }
+      },
+      "steps": 200
     },
     {
       "id": "E16",
@@ -353,7 +358,9 @@
           "reward_score": 0.0,
           "n": 7
         }
-      }
+      },
+      "steps": 2000,
+      "gen_steps": 16
     },
     {
       "id": "E17",
@@ -411,7 +418,8 @@
           "reward_score": 0.0,
           "n": 8
         }
-      }
+      },
+      "steps": 200
     }
   ],
   "ship_gates_cleared": false,
@@ -423,5 +431,7 @@
     "test_data_total_records": 23,
     "checkpoint_migration": "scripts/migrate_checkpoint.py",
     "e16_2000_steps": "parse still 0; rico_held fidelity ~0.57; struct_sim smoke ~0.45"
-  }
+  },
+  "default_steps": 200,
+  "note": "Per-result steps field is authoritative; top-level steps is the last long-run budget."
 }

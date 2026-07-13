@@ -96,7 +96,7 @@ def load_reserved_test_structure_fingerprints(
     fps: set[str] = set()
     for record in load_jsonl(path):
         try:
-            scrubbed = strip_style_literals(record.openui)
+            scrubbed = strip_style_literals(record.openui or "")
             program = validate(scrubbed)
             openui = strip_style_literals(program.serialized or scrubbed.strip())
         except (ParseError, ValueError):
