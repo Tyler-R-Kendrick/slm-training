@@ -22,10 +22,11 @@ from slm_training.annotations import (
     utc_now_iso,
 )
 from slm_training.dsl.schema import load_jsonl
+from slm_training.models.paths import PLAYGROUND_DEMO_CHECKPOINT
 from slm_training.web.app import create_app
 from slm_training.web.prompts import compose_prompt
 
-CKPT = Path("outputs/runs/playground_demo/checkpoints/last.pt")
+CKPT = PLAYGROUND_DEMO_CHECKPOINT
 HERO = 'root = Stack([hero], "column")\nhero_title = TextContent(":hero.title")\nhero = Card([hero_title])\n'
 BAD = 'root = TextContent(":broken.x")\n'
 
@@ -156,7 +157,6 @@ def test_annotate_api_persists(tmp_path: Path) -> None:
     assert recent.json()["count"] >= 2
 
 
-@pytest.mark.skipif(not CKPT.exists(), reason="playground demo checkpoint missing")
 def test_sample_api_generates() -> None:
     app = create_app(checkpoint=CKPT, device="cpu")
     client = TestClient(app)

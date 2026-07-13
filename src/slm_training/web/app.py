@@ -46,6 +46,7 @@ def create_app(
     annotations_path: Path | None = None,
     human_train_path: Path | None = None,
     human_pairs_path: Path | None = None,
+    bad_outputs_path: Path | None = None,
 ) -> FastAPI:
     service = PlaygroundService(
         checkpoint=checkpoint,
@@ -53,6 +54,7 @@ def create_app(
         annotations_path=annotations_path,
         human_train_path=human_train_path,
         human_pairs_path=human_pairs_path,
+        bad_outputs_path=bad_outputs_path,
     )
     app = FastAPI(title="TwoTower OpenUI Playground", version="0.2.0")
 
@@ -94,18 +96,12 @@ def create_app(
     @app.post("/api/sample")
     def sample(payload: SampleRequest) -> dict:
         try:
-            prompt = (payload.prompt or "").strip()
-            session_id = payload.session_id
-            if not prompt and payload.auto_prompt:
-                nxt = service.next_prompt(session_id)
-                prompt = nxt["prompt"]
-                session_id = nxt["session_id"]
-            if not prompt:
-                raise ValueError("prompt must be non-empty (or enable auto_prompt)")
-            result = service.generate(
-                prompt,
+            return service.sample(
+                prompt=(payload.prompt or "").strip() or None,
+                session_id=payload.session_id,
                 grammar_constrained=payload.grammar_constrained,
                 design_md=payload.design_md,
+                auto_prompt=payload.auto_prompt,
             )
         except FileNotFoundError as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -113,15 +109,6 @@ def create_app(
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         except Exception as exc:  # noqa: BLE001
             raise HTTPException(status_code=500, detail=str(exc)) from exc
-        return {
-            "prompt": result.prompt,
-            "openui": result.openui,
-            "valid": result.valid,
-            "error": result.error,
-            "stream": result.stream,
-            "serialized": result.serialized,
-            "session_id": session_id,
-        }
 
     @app.post("/api/annotate")
     def annotate(payload: AnnotateRequest) -> dict:

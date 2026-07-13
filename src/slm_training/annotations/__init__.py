@@ -19,6 +19,7 @@ Rating = Literal["up", "down"]
 DEFAULT_FEEDBACK_PATH = Path("outputs/annotations/feedback.jsonl")
 DEFAULT_HUMAN_TRAIN_PATH = Path("fixtures/annotations/human_train.jsonl")
 DEFAULT_HUMAN_PAIRS_PATH = Path("outputs/preferences/human_pairs.jsonl")
+DEFAULT_BAD_OUTPUTS_PATH = Path("outputs/annotations/bad_outputs.jsonl")
 
 _WRITE_LOCK = threading.Lock()
 
@@ -73,6 +74,74 @@ def new_annotation_id() -> str:
 
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+@dataclass
+class BadOutputRecord:
+    """Invalid model output quarantined for negative training examples."""
+
+    id: str
+    ts: str
+    prompt: str
+    openui: str
+    error: str
+    checkpoint: str | None = None
+    session_id: str | None = None
+    attempt: int | None = None
+    meta: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        data = asdict(self)
+        if data.get("session_id") is None:
+            data.pop("session_id", None)
+        if data.get("attempt") is None:
+            data.pop("attempt", None)
+        return data
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> BadOutputRecord:
+        return cls(
+            id=str(data["id"]),
+            ts=str(data.get("ts") or ""),
+            prompt=str(data["prompt"]),
+            openui=str(data["openui"]),
+            error=str(data.get("error") or ""),
+            checkpoint=None if data.get("checkpoint") is None else str(data["checkpoint"]),
+            session_id=None if data.get("session_id") is None else str(data["session_id"]),
+            attempt=None if data.get("attempt") is None else int(data["attempt"]),
+            meta=dict(data.get("meta") or {}),
+        )
+
+
+def new_bad_output_id() -> str:
+    return f"bad_{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S')}_{uuid.uuid4().hex[:8]}"
+
+
+def append_bad_output(path: Path | str, record: BadOutputRecord) -> Path:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    line = json.dumps(record.to_dict(), ensure_ascii=False) + "\n"
+    with _WRITE_LOCK:
+        with path.open("a", encoding="utf-8") as handle:
+            handle.write(line)
+    return path
+
+
+def load_bad_outputs(path: Path | str) -> list[BadOutputRecord]:
+    path = Path(path)
+    if not path.exists():
+        return []
+    out: list[BadOutputRecord] = []
+    with path.open(encoding="utf-8") as handle:
+        for line_no, line in enumerate(handle, start=1):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                out.append(BadOutputRecord.from_dict(json.loads(line)))
+            except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+                raise ValueError(f"{path}:{line_no}: {exc}") from exc
+    return out
 
 
 def append_annotation(path: Path | str, record: AnnotationRecord) -> Path:

@@ -94,22 +94,27 @@ DESIGN.md conditioning + linter: [`tools/design_md_bridge/`](tools/design_md_bri
 
 ```bash
 pip install -e ".[dev,torch,web]"
-python -m scripts.bootstrap_playground   # trains a tiny demo checkpoint
 python -m scripts.serve_playground --port 8765
 # open http://127.0.0.1:8765
+```
+
+The demo checkpoint lives in `fixtures/checkpoints/playground_demo/` (committed). To regenerate it:
+
+```bash
+python -m scripts.bootstrap_playground --force
 ```
 
 Annotate mode (default UI): auto-generated prompts, prefetch 1–2 samples ahead, and a live **OpenUI visual preview** (same `@openuidev/react-lang` `Renderer` path as [openui.com/demo](https://www.openui.com/demo/github)).
 
 | Input | Action |
 |-------|--------|
-| `↑` | Thumbs up (persist + advance) |
-| `↓` | Thumbs down (persist + advance) |
+| `↑` | Thumbs up (persist, stay on sample) |
+| `↓` | Thumbs down (persist, stay on sample) |
 | `←` / `→` | Previous / next sample |
 | typing | Focus optional note |
 | swipe | Mobile: horizontal navigate, vertical grade |
 
-Annotations append to `outputs/annotations/feedback.jsonl`. Thumbs-up rows promote into `fixtures/annotations/human_train.jsonl` (merged by `build_train_data`). Opposite ratings on the same prompt also write `outputs/preferences/human_pairs.jsonl`.
+Annotations append to `outputs/annotations/feedback.jsonl`. Invalid model outputs are quarantined to `outputs/annotations/bad_outputs.jsonl` (never shown in the app). Thumbs-up rows promote into `fixtures/annotations/human_train.jsonl` (merged by `build_train_data`). Opposite ratings on the same prompt also write `outputs/preferences/human_pairs.jsonl`.
 
 ```bash
 python -m scripts.export_annotations status
