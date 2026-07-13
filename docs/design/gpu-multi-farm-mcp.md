@@ -32,7 +32,9 @@ See [`.env.example`](../../.env.example).
 
 ## Cactus overhead
 
-`CACTUS_OVERHEAD` (default `1.08`) scales projected compute cost to account for runtime / KV / orchestration overhead. It is a placeholder multiplier, not a Tensorfeed price feed.
+`CACTUS_OVERHEAD` (default `1.08`) scales projected compute cost. When
+`outputs/cactus/bench.json` exists (from `scripts/bench_cactus.py`), its measured
+`overhead` field is preferred over the env default.
 
 ## Cursor MCP config
 

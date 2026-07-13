@@ -11,6 +11,11 @@ from slm_training.dsl.schema import ExampleRecord
 
 _SLUG_RE = re.compile(r"[^a-zA-Z0-9]+")
 
+_GAP_BY_DIRECTION = {
+    "column": "m",
+    "row": "s",
+}
+
 
 @dataclass
 class RicoElement:
@@ -54,8 +59,9 @@ def _sort_key(el: RicoElement) -> tuple[int, int]:
 
 
 def _infer_direction(elements: list[RicoElement]) -> str:
+    """Return official Stack direction: column | row."""
     if len(elements) < 2:
-        return "vertical"
+        return "column"
     xs: list[float] = []
     ys: list[float] = []
     for el in elements:
@@ -64,20 +70,34 @@ def _infer_direction(elements: list[RicoElement]) -> str:
             xs.append((x1 + x2) / 2)
             ys.append((y1 + y2) / 2)
     if len(xs) < 2:
-        return "vertical"
+        return "column"
     dx = max(xs) - min(xs)
     dy = max(ys) - min(ys)
-    return "horizontal" if dx > dy * 1.2 else "vertical"
+    return "row" if dx > dy * 1.2 else "column"
 
 
 def _role_for_label(label: str) -> str:
-    if label in {"Text Button", "Radio Button", "Checkbox", "On/Off Switch"}:
+    if label in {"Text Button", "Button Bar"}:
         return "button"
-    if label in {"Button Bar", "Multi-Tab", "Bottom Navigation"}:
+    if label in {"Radio Button"}:
+        return "radio"
+    if label in {"Checkbox"}:
+        return "checkbox"
+    if label in {"On/Off Switch"}:
+        return "switch"
+    if label in {"Multi-Tab", "Bottom Navigation"}:
         return "nav"
     if label in {"Card", "List Item", "Modal"}:
         return "card"
-    if label in {"Text", "Input", "Toolbar"}:
+    if label in {"Input"}:
+        return "input"
+    if label in {"Slider"}:
+        return "slider"
+    if label in {"Date Picker"}:
+        return "datepicker"
+    if label in {"Image", "Icon", "Background Image"}:
+        return "image"
+    if label in {"Text", "Toolbar"}:
         return "text"
     return "widget"
 
@@ -88,7 +108,7 @@ def screen_to_openui(
     max_children: int = 6,
     namespace: str | None = None,
 ) -> tuple[str, list[str], dict[str, Any]]:
-    """Map semantic elements to a placeholder OpenUI program."""
+    """Map semantic elements to a placeholder OpenUI program (openuiLibrary)."""
     usable = [el for el in elements if el.component_label in MAPPABLE_LABELS]
     usable.sort(key=_sort_key)
     seen: set[str] = set()
@@ -129,15 +149,49 @@ def screen_to_openui(
         elif role == "card":
             title = f":{name}.title"
             body = f":{name}.body"
+            title_id = f"{name}_title"
+            body_id = f"{name}_body"
             placeholders.extend([title, body])
-            lines.append(f'{name} = Card("{title}", "{body}")')
+            lines.append(f'{title_id} = TextContent("{title}")')
+            lines.append(f'{body_id} = TextContent("{body}")')
+            lines.append(f"{name} = Card([{title_id}, {body_id}])")
+        elif role == "input":
+            ph = f":{name}.placeholder"
+            placeholders.append(ph)
+            lines.append(f'{name} = Input("{name}", "{ph}")')
+        elif role == "slider":
+            ph = f":{name}.label"
+            placeholders.append(ph)
+            lines.append(f'{name} = Slider("{name}", "default", 0, 100, 1, 50, "{ph}")')
+        elif role == "datepicker":
+            lines.append(f'{name} = DatePicker("{name}")')
+        elif role == "checkbox":
+            ph = f":{name}.label"
+            desc = f":{name}.description"
+            placeholders.extend([ph, desc])
+            lines.append(f'{name} = CheckBoxItem("{ph}", "{desc}", "{name}")')
+        elif role == "radio":
+            ph = f":{name}.label"
+            desc = f":{name}.description"
+            placeholders.extend([ph, desc])
+            lines.append(f'{name} = RadioItem("{ph}", "{desc}", "{name}")')
+        elif role == "switch":
+            ph = f":{name}.label"
+            placeholders.append(ph)
+            lines.append(f'{name} = SwitchItem("{ph}", null, "{name}")')
+        elif role == "image":
+            alt = f":{name}.alt"
+            # ImageBlock src is an asset ref; keep placeholder-shaped path for policy.
+            src = f":assets.{name}"
+            placeholders.extend([src, alt])
+            lines.append(f'{name} = ImageBlock("{src}", "{alt}")')
         else:
             ph = f":{name}.text"
             placeholders.append(ph)
-            lines.append(f'{name} = Text("{ph}")')
+            lines.append(f'{name} = TextContent("{ph}")')
 
-    gap = 8 if direction == "vertical" else 4
-    root = f'root = Stack([{", ".join(child_ids)}], "{direction}", {gap})'
+    gap = _GAP_BY_DIRECTION[direction]
+    root = f'root = Stack([{", ".join(child_ids)}], "{direction}", "{gap}")'
     openui = "\n".join([root, *lines])
     meta = {
         "direction": direction,
@@ -145,36 +199,44 @@ def screen_to_openui(
         "component_labels": [el.component_label for el in filtered],
         "n_children": len(child_ids),
         "namespace": namespace,
+        "library": "openuiLibrary",
     }
     return openui, placeholders, meta
 
 
 def _prompt_for_screen(screen: dict[str, Any], meta: dict[str, Any]) -> str:
     labels = meta.get("component_labels") or []
-    direction = meta.get("direction") or "vertical"
+    direction = meta.get("direction") or "column"
     parts: list[str] = []
-    n_text = sum(1 for x in labels if x in {"Text", "Input", "Toolbar"})
+    n_text = sum(1 for x in labels if x in {"Text", "Toolbar"})
     n_btn = sum(
         1
         for x in labels
         if x
         in {
             "Text Button",
-            "Checkbox",
-            "Radio Button",
-            "On/Off Switch",
             "Button Bar",
             "Multi-Tab",
             "Bottom Navigation",
         }
     )
     n_card = sum(1 for x in labels if x in {"Card", "List Item", "Modal"})
+    n_form = sum(
+        1
+        for x in labels
+        if x in {"Input", "Checkbox", "Radio Button", "On/Off Switch", "Slider", "Date Picker"}
+    )
+    n_img = sum(1 for x in labels if x in {"Image", "Icon", "Background Image"})
     if n_card:
         parts.append(f"{n_card} card{'s' if n_card != 1 else ''}")
     if n_text:
         parts.append(f"{n_text} text block{'s' if n_text != 1 else ''}")
     if n_btn:
         parts.append(f"{n_btn} button{'s' if n_btn != 1 else ''}")
+    if n_form:
+        parts.append(f"{n_form} form control{'s' if n_form != 1 else ''}")
+    if n_img:
+        parts.append(f"{n_img} image{'s' if n_img != 1 else ''}")
     structure = ", ".join(parts) or "UI widgets"
     idx = screen.get("screen_index")
     split_src = screen.get("split_src") or "train"

@@ -22,7 +22,7 @@ pytestmark = pytest.mark.skipif(
     reason="OpenUI bridge deps missing; run: cd tools/openui_bridge && npm ci",
 )
 
-HERO = 'root = Stack([hero], "vertical")\nhero = Card(":hero.title", ":hero.body")'
+HERO = 'root = Stack([hero], "column")\nhero_title = TextContent(":hero.title")\nhero_body = TextContent(":hero.body")\nhero = Card([hero_title, hero_body])'
 CTA = 'root = Stack([cta])\ncta = Button(":cta.label")'
 
 

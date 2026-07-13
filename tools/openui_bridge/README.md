@@ -1,4 +1,4 @@
-# OpenUI Lang bridge (`@openuidev/lang-core`)
+# OpenUI Lang bridge (`@openuidev/lang-core` + official `openuiLibrary`)
 
 Node sidecar that wraps the official OpenUI parser / serializer / prompt generator for the Python harnesses.
 
@@ -16,8 +16,10 @@ echo '{"op":"validate","source":"root = Stack([cta])\ncta = Button(\":cta.label\
   | node cli.mjs
 ```
 
-Ops: `parse`, `validate`, `serialize`, `prompt`, `schema`.
+Ops: `parse`, `validate`, `serialize`, `prompt`, `schema`, `stream_check`.
 
 ## Library
 
-[`library.mjs`](library.mjs) defines the training subset with official `defineComponent` + `createLibrary`: `Stack`, `Card`, `Text`, `Button`. Content props must be placeholder strings (`:hero.title`).
+[`library.mjs`](library.mjs) re-exports official `openuiLibrary` from `@openuidev/react-ui/genui-lib` (~54 components, root `Stack`).
+
+User-facing string props (`text`, `label`, `title`, `placeholder`, `alt`, …) must be placeholder tokens (`:hero.title`). Layout enums use official values (`column`/`row`, gap `none`…`2xl`).

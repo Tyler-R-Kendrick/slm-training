@@ -81,12 +81,24 @@ class PlaygroundService:
         prompt: str,
         *,
         grammar_constrained: bool = True,
+        design_md: str | None = None,
     ) -> GenerateResult:
         prompt = (prompt or "").strip()
         if not prompt:
             raise ValueError("prompt must be non-empty")
         model = self.load()
-        openui = model.generate(prompt, grammar_constrained=grammar_constrained)
+        if design_md is None:
+            try:
+                from slm_training.design_md import load_default_design_md
+
+                design_md = load_default_design_md()
+            except Exception:  # noqa: BLE001
+                design_md = None
+        openui = model.generate(
+            prompt,
+            grammar_constrained=grammar_constrained,
+            design_md=design_md,
+        )
         valid = False
         error: str | None = None
         serialized: str | None = None

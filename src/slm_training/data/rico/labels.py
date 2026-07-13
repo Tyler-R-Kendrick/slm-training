@@ -31,7 +31,7 @@ COMPONENT_LABELS: dict[int, str] = {
     24: "Bottom Navigation",
 }
 
-# Labels we can express with the OpenUI training subset (Stack/Card/Text/Button).
+# Labels we can express with official openuiLibrary components.
 MAPPABLE_LABELS: frozenset[str] = frozenset(
     {
         "Text",
@@ -47,5 +47,10 @@ MAPPABLE_LABELS: frozenset[str] = frozenset(
         "Toolbar",
         "Multi-Tab",
         "Bottom Navigation",
+        "Image",
+        "Icon",
+        "Background Image",
+        "Slider",
+        "Date Picker",
     }
 )

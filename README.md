@@ -19,8 +19,9 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev,torch]"
 
-# Official OpenUI parser bridge (required for harness validate/eval)
+# Official OpenUI parser + DESIGN.md bridges
 cd tools/openui_bridge && npm ci && cd ../..
+cd tools/design_md_bridge && npm ci && cd ../..
 
 # optional MCP server deps
 pip install -e ".[mcp]"
@@ -42,6 +43,7 @@ python -m scripts.build_test_data --source both --version v0 \
 python -m scripts.train_model \
   --train-dir outputs/train_data/v0 \
   --model twotower \
+  --context-backend hf \
   --steps 200 \
   --run-id twotower_rico_v0
 
@@ -49,7 +51,8 @@ python -m scripts.evaluate_model \
   --test-dir outputs/test_data/v0 \
   --suite smoke \
   --model twotower \
-  --run-id twotower_rico_v0
+  --run-id twotower_rico_v0 \
+  --fail-under-parse-rate 0.5
 ```
 
 ```bash
@@ -58,14 +61,18 @@ pytest
 
 ## OpenUI Lang
 
-Fixtures and validation use **real OpenUI Lang** positional syntax, e.g.:
+Fixtures and validation use official **`openuiLibrary`** syntax, e.g.:
 
 ```
-root = Stack([hero], "vertical")
-hero = Card(":hero.title", ":hero.body")
+root = Stack([hero], "column")
+hero_title = TextContent(":hero.title")
+hero_body = TextContent(":hero.body")
+hero = Card([hero_title, hero_body])
 ```
 
-Content props must be placeholder strings. Parsing/serialization/prompt generation come from `@openuidev/lang-core` — see [`tools/openui_bridge/`](tools/openui_bridge/).
+Content props must be placeholder strings. Parsing/serialization/prompt generation come from `@openuidev/lang-core` + `@openuidev/react-ui` — see [`tools/openui_bridge/`](tools/openui_bridge/).
+
+DESIGN.md conditioning + linter: [`tools/design_md_bridge/`](tools/design_md_bridge/) and [`fixtures/design_md/`](fixtures/design_md/).
 
 ## Web playground
 

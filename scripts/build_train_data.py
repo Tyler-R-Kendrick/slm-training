@@ -15,7 +15,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--source",
         default="rico",
-        choices=["rico", "fixture", "both"],
+        choices=["rico", "fixture", "both", "awwwards", "rico+awwwards", "all"],
         help="Training data source (default: rico).",
     )
     parser.add_argument(
@@ -52,8 +52,8 @@ def main(argv: list[str] | None = None) -> int:
 
     result = build_train_data(
         TrainDataConfig(
-            seed_path=args.seed_path if args.source in {"fixture", "both"} else None,
-            rico_path=args.rico_path if args.source in {"rico", "both"} else None,
+            seed_path=args.seed_path if args.source in {"fixture", "both", "all"} else None,
+            rico_path=args.rico_path if args.source in {"rico", "both", "rico+awwwards", "all"} else None,
             source=args.source,
             output_root=args.output_root,
             version=args.version,

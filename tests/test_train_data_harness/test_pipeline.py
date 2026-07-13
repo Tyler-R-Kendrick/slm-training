@@ -21,8 +21,10 @@ def _seed_file(tmp_path: Path) -> Path:
                 id="t1",
                 prompt="Hero card",
                 openui=(
-                    'root = Stack([hero], "vertical")\n'
-                    'hero = Card(":hero.title", ":hero.body")'
+                    'root = Stack([hero], "column")\n'
+                    'hero_title = TextContent(":hero.title")\n'
+                    'hero_body = TextContent(":hero.body")\n'
+                    'hero = Card([hero_title, hero_body])'
                 ),
                 placeholders=[":hero.title", ":hero.body"],
                 split="train",

@@ -2,138 +2,71 @@
 
 ## Problem
 
-Build a small, on-device-friendly specialist that generates **placeholder-augmented OpenUI layout skeletons** from natural-language prompts. Literal copy is deferred to a separate copy model. The near-term goal is a **TwoTower** system (frozen AR context + trainable discrete diffusion denoiser) with grammar-constrained decoding — but **harnesses ship first**, not the model.
+Build a small, on-device-friendly specialist that generates **placeholder-augmented OpenUI layout skeletons** from natural-language prompts, conditioned on a **DESIGN.md** design system. Literal copy is deferred to a separate copy model.
 
-## Non-goals (current cycle)
+## Goals (this ship cycle)
 
-- Cactus runtime / custom kernels
-- Full React rendering stack in Python (use `@openuidev/react-lang` later for demos)
-- Awwwards scraping, RL/DPO, consistency distillation
-- Training a production copy SLM
+- Official **`openuiLibrary`** (~54 components) via `@openuidev/react-ui`
+- **DESIGN.md** context + `@google/design.md` linter as a composite preference reward
+- Harden: HF context default (CLI), larger RICO, remote train, stronger eval
+- Cactus export/bench adapter, Awwwards scraping source, DPO/preference stage
+
+## Non-goals (still deferred)
+
+- Consistency distillation
+- Full React `@openuidev/react-lang` visual playground
+- Custom Cactus NEON kernel authorship in this repo
+- Production copy SLM
 
 ## Official OpenUI Lang (source of truth)
 
-Parsing, serialization, and system-prompt generation use **`@openuidev/lang-core`** via the Node bridge in [`tools/openui_bridge/`](../../tools/openui_bridge/).
+Parsing, serialization, and system-prompt generation use **`@openuidev/lang-core`** via [`tools/openui_bridge/`](../../tools/openui_bridge/), which re-exports official **`openuiLibrary`**.
 
-| Capability | Official API |
-| --- | --- |
-| Parse | `createParser(library.toJSONSchema()).parse(source)` |
-| Serialize | `jsonToOpenUI(root, library)` |
-| System prompt | `library.prompt({...})` / `generatePrompt` |
-| Library | `defineComponent` + `createLibrary` (Zod props) |
+Root: `Stack`. Content components include `TextContent`, `Card([children])`, `Button`, `Input`, `ImageBlock`, forms, charts, etc.
 
-Python harnesses call [`src/slm_training/dsl/lang_core.py`](../../src/slm_training/dsl/lang_core.py), which shells to `tools/openui_bridge/cli.mjs`.
+### Placeholder policy
 
-### Training subset library
+User-facing string props (`text`, `label`, `title`, `placeholder`, `alt`, …) **must** be placeholders like `:hero.title`.
 
-Defined in [`tools/openui_bridge/library.mjs`](../../tools/openui_bridge/library.mjs):
+### DESIGN.md
 
-- `Stack(children, direction?, gap?)`
-- `Card(title, body?)`
-- `Text(content)`
-- `Button(label)`
+- Fixture: [`fixtures/design_md/default.DESIGN.md`](../../fixtures/design_md/default.DESIGN.md)
+- Lint bridge: [`tools/design_md_bridge/`](../../tools/design_md_bridge/) (`@google/design.md`)
+- Records may carry `design_md`; TwoTower context = `prompt + DESIGN.md`
+- Preference reward: grammar → placeholders → linter score → layout metrics
 
-Root component: `Stack`.
-
-### Placeholder policy (ours, on top of lang-core)
-
-Official OpenUI allows arbitrary strings. For this project, content props (`title`, `body`, `content`, `label`) **must** be placeholder strings:
+## Model architecture
 
 ```
-root = Stack([hero], "vertical")
-hero = Card(":hero.title", ":hero.body")
-```
-
-Enforced in the bridge after parse (`policy_errors`). Free-form copy is rejected so a separate copy model can fill placeholders later.
-
-### Example (canonical OpenUI Lang)
-
-```
-root = Stack([hero, cta], "vertical")
-hero = Card(":hero.title", ":hero.body")
-cta = Button(":cta.label")
-```
-
-Export the official teacher prompt with:
-
-```bash
-python -m scripts.export_openui_prompt
-```
-
-## Model architecture (implemented)
-
-```
-prompt → Context Tower (scratch TokenEncoder | frozen HF e.g. SmolLM2) → hidden states
+prompt + DESIGN.md → Context Tower (scratch | frozen HF) → hidden states
                                       ↓ cross-attn
-         Trainable Denoiser (MaskGIT-style masked diffusion) → OpenUI tokens
+         Trainable Denoiser (MaskGIT) → OpenUI tokens
                                       ↓
-         streaming parser grammar guard (createStreamingParser) + placeholder policy
+         streaming parser + placeholder policy
                                       ↓
                          placeholder OpenUI program
 ```
 
-- **Context tower**: `scratch` (default) or `hf` via `--context-backend hf --hf-model HuggingFaceTB/SmolLM2-135M` (frozen by default; only the projection trains).
-- **Denoiser**: bidirectional Transformer with cross-attention (`DenoiserTower`), trained with random span masking.
-- **Tokenizer**: `OpenUITokenizer` for OpenUI targets; HF models use their own prompt tokenizer.
-- **Grammar-constrained decode**: structural logit bias + remask on hard streaming errors + LTR repair filtered by official `createStreamingParser`.
-- **Copy model**: separate specialist filling placeholders (later).
+Optional preference/DPO stage ranks candidates with the composite reward.
 
-Package: [`src/slm_training/models/`](../../src/slm_training/models/).
+## Data sources
 
-## Three harnesses
-
-Shared foundation: official lang-core bridge + placeholders + `ExampleRecord` schema.
-
-### Record schema
-
-```json
-{
-  "id": "string",
-  "prompt": "string",
-  "openui": "string",
-  "placeholders": ["string"],
-  "split": "train|held_out|smoke|adversarial|ood",
-  "source": "string",
-  "meta": {}
-}
-```
-
-### 1. Training-data harness
-
-| | |
+| Source | Notes |
 | --- | --- |
-| **Inputs** | **RICO** semantic screens (default) and/or seed fixtures |
-| **Pipeline** | Load RICO → map to placeholder OpenUI → optional prompt synth → **lang-core validate** → canonicalize → dedupe → write fingerprints |
-| **Outputs** | `outputs/train_data/<version>/{manifest.json,records.jsonl,stats.json}` |
-| **CLI** | `python -m scripts.build_train_data --source rico` |
+| RICO | Semantic screens → openuiLibrary (+ default DESIGN.md) |
+| Awwwards fixtures | [`fixtures/awwwards/sites.jsonl`](../../fixtures/awwwards/sites.jsonl) |
+| Hand fixtures | [`fixtures/train_seeds.jsonl`](../../fixtures/train_seeds.jsonl) |
 
-RICO source: Hugging Face [`shunk031/Rico`](https://huggingface.co/datasets/shunk031/Rico) semantic annotations, converted into the OpenUI subset (`Stack` / `Card` / `Text` / `Button`) with placeholders. Local slices live under [`fixtures/rico/`](../../fixtures/rico/).
+## Harnesses / CLIs
 
-### 2. Testing-data harness
+- `scripts/build_train_data.py` — `--source rico|fixture|awwwards|rico+awwwards|all`
+- `scripts/train_model.py` — `--context-backend hf` (default)
+- `scripts/train_preference.py` — build-pairs / train
+- `scripts/export_cactus.py` / `scripts/bench_cactus.py`
+- `scripts/remote_train.py` — SSH pod train + pull
+- `scripts/serve_playground.py` — accepts optional `design_md`
 
-| | |
-| --- | --- |
-| **Inputs** | RICO **test** split fixtures + hand-written adversarial/ood; **required** train manifest |
-| **Suites** | `smoke`, `held_out`, `adversarial`, `ood` |
-| **Leakage** | Rejects any test record whose **id**, **prompt**, **openui**, or pair fingerprint appears in train |
-| **Outputs** | `outputs/test_data/<version>/suites/<suite>/records.jsonl` |
-| **CLI** | `python -m scripts.build_test_data --train-manifest ...` |
+## Roadmap status
 
-### 3. Model-building harness
-
-| | |
-| --- | --- |
-| **Inputs** | Train + test artifact paths |
-| **Role** | Config, loaders, `ModelPlugin`, **TwoTower** (default) + stub, train/eval loops |
-| **Eval** | `parse_rate` via lang-core validate; placeholder fidelity; canonical serialize match |
-| **CLIs** | `python -m scripts.train_model`, `python -m scripts.evaluate_model` |
-
-## Roadmap
-
-1. Official lang-core bridge + fixtures (done)
-2. Training / testing / model-build harnesses (done)
-3. GPU multi-farm MCP for cheap training pods (done)
-4. TwoTower plug-in — context + masked denoiser (done)
-5. RICO train data + strict leakage checks (done)
-6. **HF frozen context tower + streaming/grammar-constrained decode (this revision)**
-7. **Later:** richer `@openuidev` library, React demo via `@openuidev/react-lang`, larger RICO slices / GPU farms
+1–6: prior revisions (done)
+7. Full openuiLibrary + DESIGN.md + harden + Cactus/Awwwards/DPO (**this revision**)

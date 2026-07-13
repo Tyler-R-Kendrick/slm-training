@@ -39,6 +39,18 @@ def main(argv: list[str] | None = None) -> int:
         help="Must match the checkpoint kind.",
     )
     parser.add_argument("--device", type=str, default="cpu")
+    parser.add_argument(
+        "--fail-under-parse-rate",
+        type=float,
+        default=None,
+        help="Exit non-zero if parse_rate is below this threshold.",
+    )
+    parser.add_argument(
+        "--fail-under-design-lint",
+        type=float,
+        default=None,
+        help="Exit non-zero if mean design_lint_score is below this threshold.",
+    )
     args = parser.parse_args(argv)
 
     config = ModelBuildConfig(
@@ -49,10 +61,18 @@ def main(argv: list[str] | None = None) -> int:
         run_id=args.run_id,
         model_name=args.model,
         device=args.device,
+        context_backend="scratch",
     )
     metrics = evaluate(config, checkpoint=args.checkpoint)
     summary = {k: v for k, v in metrics.items() if k != "details"}
     print(json.dumps(summary, indent=2))
+    if args.fail_under_parse_rate is not None:
+        if float(metrics.get("parse_rate") or 0) < args.fail_under_parse_rate:
+            return 2
+    if args.fail_under_design_lint is not None:
+        score = metrics.get("design_lint_score")
+        if score is None or float(score) < args.fail_under_design_lint:
+            return 3
     return 0
 
 

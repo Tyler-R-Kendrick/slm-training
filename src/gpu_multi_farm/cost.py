@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from gpu_multi_farm.models import FarmCostEstimate, FarmListResult, Offer
 
 
@@ -24,7 +26,16 @@ def project_costs(
     overhead: float,
 ) -> dict:
     """Project training cost per farm and recommend the cheapest available."""
+    from pathlib import Path
+
     _ = model_size_gb  # reserved for future VRAM/disk sizing heuristics
+    bench = Path("outputs/cactus/bench.json")
+    if bench.exists():
+        try:
+            data = json.loads(bench.read_text(encoding="utf-8"))
+            overhead = float(data.get("overhead") or overhead)
+        except Exception:  # noqa: BLE001
+            pass
     estimates: list[FarmCostEstimate] = []
     per_farm: dict[str, dict] = {}
 

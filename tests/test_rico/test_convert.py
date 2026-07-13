@@ -28,7 +28,7 @@ def test_screen_to_openui_builds_stack() -> None:
     assert openui.startswith("root = Stack(")
     assert "Card(" in openui
     assert "Button(" in openui
-    assert "Text(" in openui
+    assert "TextContent(" in openui
     assert meta["n_children"] == 3
     assert placeholders
     assert all(p.startswith(":") for p in placeholders)

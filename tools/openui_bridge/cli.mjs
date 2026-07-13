@@ -78,8 +78,12 @@ function handle(req) {
         options.preamble ||
         "You generate placeholder-augmented OpenUI layout skeletons. Content props must be placeholder strings like :hero.title — never marketing copy.",
       additionalRules: options.additionalRules || [
-        "Put placeholders (e.g. :hero.title, :cta.label) in all content props (title, body, content, label).",
+        "Use official openuiLibrary components (Stack, Card, TextContent, Button, Form, Input, …).",
+        "Stack direction is \"row\"|\"column\"; gap is \"none\"|\"xs\"|\"s\"|\"m\"|\"l\"|\"xl\"|\"2xl\".",
+        "Card takes children arrays (e.g. Card([title, body])); TextContent(text, size?) for copy slots.",
+        "Put placeholders (e.g. :hero.title, :cta.label) in all user-facing string props (text, label, title, placeholder, alt, …).",
         "Do not invent literal user-facing copy; a separate model fills placeholders later.",
+        "Do not use Query(), Mutation(), Action(), or $bindings in layout skeletons.",
       ],
       examples: options.examples,
       toolCalls: false,

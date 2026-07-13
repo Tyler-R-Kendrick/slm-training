@@ -21,7 +21,7 @@ pytestmark_bridge = pytest.mark.skipif(
     reason="OpenUI bridge deps missing; run: cd tools/openui_bridge && npm ci",
 )
 
-HERO = 'root = Stack([hero], "vertical")\nhero = Card(":hero.title", ":hero.body")'
+HERO = 'root = Stack([hero], "column")\nhero_title = TextContent(":hero.title")\nhero_body = TextContent(":hero.body")\nhero = Card([hero_title, hero_body])'
 CTA = 'root = Stack([cta])\ncta = Button(":cta.label")'
 
 
@@ -176,6 +176,7 @@ def test_twotower_train_eval_overfit(tmp_path: Path) -> None:
         context_layers=1,
         denoiser_layers=2,
         gen_steps=6,
+        context_backend="scratch",
         freeze_context=False,
     )
     summary = train(config)

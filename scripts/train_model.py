@@ -40,8 +40,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--context-backend",
         choices=("scratch", "hf"),
-        default="scratch",
-        help="Context tower backend (scratch TokenEncoder or frozen HF model).",
+        default="hf",
+        help="Context tower backend (default: hf; use scratch for offline CI).",
     )
     parser.add_argument(
         "--hf-model",

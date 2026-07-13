@@ -22,7 +22,7 @@ pytestmark_bridge = pytest.mark.skipif(
     reason="OpenUI bridge deps missing; run: cd tools/openui_bridge && npm ci",
 )
 
-HERO = 'root = Stack([hero], "vertical")\nhero = Card(":hero.title", ":hero.body")'
+HERO = 'root = Stack([hero], "column")\nhero_title = TextContent(":hero.title")\nhero_body = TextContent(":hero.body")\nhero = Card([hero_title, hero_body])'
 CTA = 'root = Stack([cta])\ncta = Button(":cta.label")'
 
 
@@ -33,7 +33,7 @@ def test_stream_check_complete_and_partial() -> None:
     assert raw["has_root"] is True
     assert raw["incomplete"] is False
 
-    partial = stream_check('root = Stack([hero], "vertical")\nhero = Card(')
+    partial = stream_check('root = Stack([hero], "column")\nhero = Card([')
     assert partial["incomplete"] is True
     assert partial["has_root"] is True
 

@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from slm_training.data.leakage import (
+    fingerprint_design_md,
     fingerprint_openui,
     fingerprint_pair,
     fingerprint_prompt,
@@ -42,7 +43,7 @@ def _normalize_record(record: ExampleRecord) -> ExampleRecord:
     program = validate(record.openui)
     placeholders = list(program.placeholders) or extract_placeholders(record.openui)
     openui = program.serialized or record.openui.strip()
-    return ExampleRecord(
+    out = ExampleRecord(
         id=record.id,
         prompt=record.prompt.strip(),
         openui=openui,
@@ -50,7 +51,15 @@ def _normalize_record(record: ExampleRecord) -> ExampleRecord:
         split=record.split,
         source=record.source,
         meta={**dict(record.meta), "parser": "openuidev/lang-core"},
+        design_md=record.design_md,
     )
+    try:
+        from slm_training.design_md import attach_default_design_md
+
+        out = attach_default_design_md(out)
+    except Exception:  # noqa: BLE001
+        pass
+    return out
 
 
 def _records_from_fixtures(config: TrainDataConfig) -> tuple[list[ExampleRecord], list[dict]]:
@@ -101,24 +110,52 @@ def _records_from_rico(config: TrainDataConfig) -> tuple[list[ExampleRecord], li
     return out, errors
 
 
+def _records_from_awwwards(config: TrainDataConfig) -> tuple[list[ExampleRecord], list[dict]]:
+    from slm_training.data.awwwards import AwwwardsConfig, build_awwwards_records
+
+    try:
+        records = build_awwwards_records(
+            AwwwardsConfig(
+                fixture_path=Path("fixtures/awwwards/sites.jsonl"),
+                max_sites=config.rico_limit or 20,
+            )
+        )
+        return records, []
+    except Exception as exc:  # noqa: BLE001
+        return [], [{"error": f"awwwards: {exc}"}]
+
+
 def build_train_data(
     config: TrainDataConfig,
     synthesizer: PromptSynthesizer | None = None,
 ) -> dict:
-    """Load RICO/fixtures, synthesize, validate, dedupe, and write artifacts."""
+    """Load RICO/fixtures/awwwards, synthesize, validate, dedupe, and write artifacts."""
     source = (config.source or "rico").lower()
     seeds: list[ExampleRecord] = []
     errors: list[dict] = []
 
-    if source in {"fixture", "both", "fixtures"}:
+    if source in {"fixture", "both", "fixtures", "all"}:
         fixture_records, fixture_errors = _records_from_fixtures(config)
         seeds.extend(fixture_records)
         errors.extend(fixture_errors)
-    if source in {"rico", "both"}:
+    if source in {"rico", "both", "rico+awwwards", "all"}:
         rico_records, rico_errors = _records_from_rico(config)
         seeds.extend(rico_records)
         errors.extend(rico_errors)
-    if source not in {"rico", "fixture", "fixtures", "both"}:
+    if source in {"awwwards", "rico+awwwards", "all"}:
+        aww_records, aww_errors = _records_from_awwwards(config)
+        seeds.extend(aww_records)
+        errors.extend(aww_errors)
+    allowed = {
+        "rico",
+        "fixture",
+        "fixtures",
+        "both",
+        "awwwards",
+        "rico+awwwards",
+        "all",
+    }
+    if source not in allowed:
         raise ValueError(f"unknown train source {config.source!r}")
 
     synth = synthesizer or get_synthesizer(config.synthesizer)
@@ -135,6 +172,7 @@ def build_train_data(
     seen_pairs: set[str] = set()
     prompt_fps: set[str] = set()
     openui_fps: set[str] = set()
+    design_md_fps: set[str] = set()
     for record in collected:
         pair = fingerprint_pair(record.prompt, record.openui)
         if pair in seen_pairs:
@@ -142,6 +180,9 @@ def build_train_data(
         seen_pairs.add(pair)
         prompt_fps.add(fingerprint_prompt(record.prompt))
         openui_fps.add(fingerprint_openui(record.openui))
+        dm = fingerprint_design_md(record.design_md)
+        if dm:
+            design_md_fps.add(dm)
         deduped.append(record)
 
     out_dir = config.output_dir
@@ -164,6 +205,7 @@ def build_train_data(
         "placeholder_vocab_size": len(
             {p for r in deduped for p in r.placeholders}
         ),
+        "with_design_md": sum(1 for r in deduped if r.design_md),
         "built_at": datetime.now(timezone.utc).isoformat(),
     }
     stats_path = out_dir / "stats.json"
@@ -180,6 +222,7 @@ def build_train_data(
         "prompt_fingerprints": sorted(prompt_fps),
         "openui_fingerprints": sorted(openui_fps),
         "pair_fingerprints": sorted(seen_pairs),
+        "design_md_fingerprints": sorted(design_md_fps),
         "built_at": stats["built_at"],
     }
     manifest_path = out_dir / "manifest.json"

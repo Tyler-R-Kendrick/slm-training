@@ -26,9 +26,21 @@ def fingerprint_pair(prompt: str, openui: str) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+def fingerprint_design_md(design_md: str | None) -> str | None:
+    if not design_md:
+        return None
+    return hashlib.sha256(norm_text(design_md).encode("utf-8")).hexdigest()
+
+
 def load_train_fingerprints(manifest_path: Path | None) -> dict[str, set[str]]:
-    """Load id / prompt / openui / pair fingerprints from a train manifest."""
-    empty = {"ids": set(), "prompts": set(), "openuis": set(), "pairs": set()}
+    """Load id / prompt / openui / pair / design_md fingerprints from a train manifest."""
+    empty = {
+        "ids": set(),
+        "prompts": set(),
+        "openuis": set(),
+        "pairs": set(),
+        "design_mds": set(),
+    }
     if manifest_path is None:
         return empty
     manifest_path = Path(manifest_path)
@@ -40,17 +52,27 @@ def load_train_fingerprints(manifest_path: Path | None) -> dict[str, set[str]]:
     prompts = set(data.get("prompt_fingerprints") or [])
     openuis = set(data.get("openui_fingerprints") or [])
     pairs = set(data.get("pair_fingerprints") or [])
+    design_mds = set(data.get("design_md_fingerprints") or [])
 
     # Backfill from records when older manifests lack fingerprint fields.
     records_path = data.get("records")
-    if records_path and (not prompts or not openuis or not pairs):
+    if records_path and (not prompts or not openuis or not pairs or not design_mds):
         for record in load_jsonl(records_path):
             ids.add(record.id)
             prompts.add(fingerprint_prompt(record.prompt))
             openuis.add(fingerprint_openui(record.openui))
             pairs.add(fingerprint_pair(record.prompt, record.openui))
+            dm = fingerprint_design_md(record.design_md)
+            if dm:
+                design_mds.add(dm)
 
-    return {"ids": ids, "prompts": prompts, "openuis": openuis, "pairs": pairs}
+    return {
+        "ids": ids,
+        "prompts": prompts,
+        "openuis": openuis,
+        "pairs": pairs,
+        "design_mds": design_mds,
+    }
 
 
 def find_leakage(
@@ -67,4 +89,7 @@ def find_leakage(
         reasons.append("openui")
     if fingerprint_pair(record.prompt, record.openui) in train_fps["pairs"]:
         reasons.append("pair")
+    dm = fingerprint_design_md(record.design_md)
+    if dm and dm in train_fps.get("design_mds", set()):
+        reasons.append("design_md")
     return reasons

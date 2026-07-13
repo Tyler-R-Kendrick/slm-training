@@ -29,19 +29,36 @@ from slm_training.models.grammar import (
 from slm_training.models.tokenizer import OpenUITokenizer
 
 
+def format_context_text(
+    prompt: str,
+    design_md: str | None = None,
+    *,
+    budget: int = 1800,
+) -> str:
+    """Concatenate prompt with optional DESIGN.md for the context tower."""
+    prompt = (prompt or "").strip()
+    if not design_md or not design_md.strip():
+        return prompt
+    dm = design_md.strip()
+    if len(dm) > budget:
+        # Prefer YAML front matter + start of prose.
+        dm = dm[:budget].rsplit("\n", 1)[0]
+    return f"{prompt}\n\n---DESIGN.md---\n{dm}"
+
+
 @dataclass
 class TwoTowerConfig:
     d_model: int = 128
     n_heads: int = 4
     context_layers: int = 2
     denoiser_layers: int = 4
-    max_prompt_len: int = 128
+    max_prompt_len: int = 256
     max_target_len: int = 256
     dropout: float = 0.0
     mask_min: float = 0.15
     mask_max: float = 0.85
     gen_steps: int = 8
-    # scratch | hf
+    # scratch | hf — ModelBuildConfig / CLI default to hf for production runs.
     context_backend: str = "scratch"
     # Default production HF tower; tests may override with a tiny model.
     hf_model_name: str = "HuggingFaceTB/SmolLM2-135M"
@@ -51,6 +68,8 @@ class TwoTowerConfig:
     grammar_constrained: bool = True
     grammar_top_k: int = 16
     structural_bias: float = 1.25
+    design_md_in_context: bool = True
+    design_md_budget: int = 1800
     seed: int = 0
 
 
@@ -157,7 +176,17 @@ class TwoTowerModel(nn.Module):
 
     def training_loss(self, batch: list[ExampleRecord]) -> torch.Tensor:
         self.train()
-        prompts = [r.prompt for r in batch]
+        if self.config.design_md_in_context:
+            prompts = [
+                format_context_text(
+                    r.prompt,
+                    r.design_md,
+                    budget=self.config.design_md_budget,
+                )
+                for r in batch
+            ]
+        else:
+            prompts = [r.prompt for r in batch]
         targets = [
             self.tokenizer.encode(r.openui)[: self.config.max_target_len]
             for r in batch
@@ -223,9 +252,9 @@ class TwoTowerModel(nn.Module):
         gold: ExampleRecord | None = None,
         max_len: int | None = None,
         grammar_constrained: bool | None = None,
+        design_md: str | None = None,
     ) -> str:
         """Iterative MaskGIT-style unmasking with optional grammar constraints."""
-        _ = gold
         self.eval()
         use_grammar = (
             self.config.grammar_constrained
@@ -235,8 +264,17 @@ class TwoTowerModel(nn.Module):
         length = max_len or self.gen_len or self.config.max_target_len
         length = max(8, min(int(length), self.config.max_target_len))
 
+        ctx_prompt = prompt
+        if self.config.design_md_in_context:
+            dm = design_md
+            if dm is None and gold is not None:
+                dm = gold.design_md
+            ctx_prompt = format_context_text(
+                prompt, dm, budget=self.config.design_md_budget
+            )
+
         device = self.device_name
-        ctx, ctx_pad = self._encode_context([prompt])
+        ctx, ctx_pad = self._encode_context([ctx_prompt])
         ids = torch.full(
             (1, length), self.tokenizer.mask_id, dtype=torch.long, device=device
         )

@@ -3,11 +3,25 @@
 from __future__ import annotations
 
 import re
+from typing import Iterable
 
 PLACEHOLDER_RE = re.compile(r":[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*")
 
-# Content-bearing props in our @openuidev/lang-core library (library.mjs).
-CONTENT_PROPS = frozenset({"title", "body", "content", "label"})
+# User-facing string props in official openuiLibrary that must be placeholders.
+CONTENT_PROPS = frozenset(
+    {
+        "text",
+        "label",
+        "title",
+        "body",
+        "content",
+        "placeholder",
+        "alt",
+        "hint",
+        "description",
+        "trigger",
+    }
+)
 
 
 def is_placeholder(value: str) -> bool:
@@ -24,3 +38,14 @@ def extract_placeholders(source: str) -> list[str]:
             seen.add(token)
             ordered.append(token)
     return ordered
+
+
+def merge_placeholders(*groups: Iterable[str]) -> list[str]:
+    seen: set[str] = set()
+    out: list[str] = []
+    for group in groups:
+        for item in group:
+            if item not in seen:
+                seen.add(item)
+                out.append(item)
+    return out

@@ -7,16 +7,59 @@ from typing import Iterable
 
 from slm_training.models.tokenizer import OpenUITokenizer
 
-# Soft structural prior for MaskGIT logits (OpenUI subset).
+# Soft structural prior for MaskGIT logits (official openuiLibrary).
 STRUCTURAL_TOKENS = frozenset(
     {
         "root",
         "Stack",
         "Card",
-        "Text",
+        "CardHeader",
+        "TextContent",
         "Button",
-        "vertical",
-        "horizontal",
+        "Buttons",
+        "Input",
+        "Form",
+        "FormControl",
+        "Label",
+        "TextArea",
+        "Select",
+        "SelectItem",
+        "CheckBoxGroup",
+        "CheckBoxItem",
+        "RadioGroup",
+        "RadioItem",
+        "SwitchGroup",
+        "SwitchItem",
+        "Slider",
+        "DatePicker",
+        "Image",
+        "ImageBlock",
+        "ImageGallery",
+        "Modal",
+        "Tabs",
+        "TabItem",
+        "Callout",
+        "TextCallout",
+        "Separator",
+        "Table",
+        "Col",
+        "column",
+        "row",
+        "none",
+        "xs",
+        "s",
+        "m",
+        "l",
+        "xl",
+        "2xl",
+        "primary",
+        "secondary",
+        "tertiary",
+        "small",
+        "default",
+        "large",
+        "small-heavy",
+        "large-heavy",
         "=",
         "(",
         ")",
@@ -26,10 +69,30 @@ STRUCTURAL_TOKENS = frozenset(
         "\n",
         " ",
         '"',
+        "null",
+        "true",
+        "false",
     }
 )
 
-PREFERRED_COMPONENT_NAMES = frozenset({"Stack", "Card", "Text", "Button"})
+PREFERRED_COMPONENT_NAMES = frozenset(
+    {
+        "Stack",
+        "Card",
+        "TextContent",
+        "Button",
+        "Input",
+        "Form",
+        "ImageBlock",
+        "Modal",
+        "Tabs",
+        "Slider",
+        "CheckBoxItem",
+        "RadioItem",
+        "SwitchItem",
+        "DatePicker",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -90,6 +153,9 @@ def structural_token_ids(tokenizer: OpenUITokenizer) -> set[int]:
             ids.add(tokenizer.token_to_id[tok])
     for tok, tid in tokenizer.token_to_id.items():
         if tok.startswith(":") or (tok.startswith('"') and tok.endswith('"')):
+            ids.add(tid)
+        # Prefer any known library component name present in vocab.
+        if tok[:1].isupper() and tok.isidentifier():
             ids.add(tid)
     ids.update(
         {

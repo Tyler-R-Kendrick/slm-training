@@ -17,6 +17,7 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 class GenerateRequest(BaseModel):
     prompt: str = Field(..., min_length=1, max_length=2000)
     grammar_constrained: bool = True
+    design_md: str | None = Field(default=None, max_length=12000)
 
 
 def create_app(
@@ -38,7 +39,9 @@ def create_app(
     def generate(payload: GenerateRequest) -> dict:
         try:
             result = service.generate(
-                payload.prompt, grammar_constrained=payload.grammar_constrained
+                payload.prompt,
+                grammar_constrained=payload.grammar_constrained,
+                design_md=payload.design_md,
             )
         except FileNotFoundError as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc

@@ -38,6 +38,7 @@ class TemplateSynthesizer:
                     split=record.split,
                     source=f"{record.source}+template",
                     meta={**record.meta, "synth": "template", "parent_id": record.id},
+                    design_md=record.design_md,
                 )
             )
         return out

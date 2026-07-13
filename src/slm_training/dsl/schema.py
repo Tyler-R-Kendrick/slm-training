@@ -22,6 +22,7 @@ class ExampleRecord:
     split: str = "train"
     source: str = "fixture"
     meta: dict[str, Any] = field(default_factory=dict)
+    design_md: str | None = None
 
     def __post_init__(self) -> None:
         if self.split not in ALLOWED_SPLITS:
@@ -34,12 +35,18 @@ class ExampleRecord:
             raise ValueError("prompt must be non-empty")
         if not self.openui:
             raise ValueError("openui must be non-empty")
+        if self.design_md is not None and not isinstance(self.design_md, str):
+            raise ValueError("design_md must be a string or None")
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        data = asdict(self)
+        if data.get("design_md") is None:
+            data.pop("design_md", None)
+        return data
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ExampleRecord:
+        design_md = data.get("design_md")
         return cls(
             id=str(data["id"]),
             prompt=str(data["prompt"]),
@@ -48,6 +55,7 @@ class ExampleRecord:
             split=str(data.get("split") or "train"),
             source=str(data.get("source") or "fixture"),
             meta=dict(data.get("meta") or {}),
+            design_md=None if design_md is None else str(design_md),
         )
 
 

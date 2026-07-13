@@ -34,7 +34,7 @@ def test_build_test_data_suites(tmp_path: Path) -> None:
             ExampleRecord(
                 id="held_1",
                 prompt="Held",
-                openui='root = Stack([blurb])\nblurb = Text(":page.blurb")',
+                openui='root = Stack([blurb])\nblurb = TextContent(":page.blurb")',
                 placeholders=[":page.blurb"],
                 split="held_out",
                 meta={"suite": "held_out"},
@@ -42,7 +42,7 @@ def test_build_test_data_suites(tmp_path: Path) -> None:
             ExampleRecord(
                 id="adv_1",
                 prompt="x",
-                openui='root = Stack([fallback])\nfallback = Text(":fallback.text")',
+                openui='root = Stack([fallback])\nfallback = TextContent(":fallback.text")',
                 placeholders=[":fallback.text"],
                 split="adversarial",
                 meta={"suite": "adversarial"},
@@ -99,7 +99,7 @@ def test_leakage_detection_by_id(tmp_path: Path) -> None:
             ExampleRecord(
                 id="shared_id",
                 prompt="Test different prompt",
-                openui='root = Stack([blurb])\nblurb = Text(":page.blurb")',
+                openui='root = Stack([blurb])\nblurb = TextContent(":page.blurb")',
                 split="smoke",
                 meta={"suite": "smoke"},
             )

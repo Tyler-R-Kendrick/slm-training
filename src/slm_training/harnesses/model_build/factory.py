@@ -29,6 +29,10 @@ def build_model(
             return TwoTowerModel.from_checkpoint(checkpoint, device=config.device)
 
         backend = (config.context_backend or "scratch").lower()
+        freeze = config.freeze_context
+        if backend in {"hf", "huggingface", "transformers"} and not freeze:
+            # Match CLI: HF freezes by default unless explicitly disabled.
+            freeze = True
         tt_cfg = TwoTowerConfig(
             d_model=config.d_model,
             n_heads=config.n_heads,
@@ -39,11 +43,13 @@ def build_model(
             gen_steps=config.gen_steps,
             context_backend=backend,
             hf_model_name=config.hf_model_name,
-            freeze_context=config.freeze_context,
+            freeze_context=freeze,
             local_files_only=config.local_files_only,
             grammar_constrained=config.grammar_constrained,
             grammar_top_k=config.grammar_top_k,
             structural_bias=config.structural_bias,
+            design_md_in_context=config.design_md_in_context,
+            design_md_budget=config.design_md_budget,
             seed=config.seed,
         )
         return TwoTowerModel.from_records(records, config=tt_cfg, device=config.device)
