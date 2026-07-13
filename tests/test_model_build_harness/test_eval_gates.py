@@ -18,7 +18,7 @@ from slm_training.harnesses.model_build.eval_runner import (
     evaluate_suites,
     structural_similarity,
 )
-from slm_training.harnesses.model_build.plugin import StubModel
+from slm_training.harnesses.model_build.plugin import GenerationRequest, StubModel
 from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
     evaluate_ship_gates,
@@ -170,3 +170,44 @@ def test_evaluate_suites_scoreboard(tmp_path: Path) -> None:
     board = evaluate_suites(config, ["smoke"])
     assert "suites" in board
     assert (tmp_path / "runs" / "gates" / "scoreboard.json").exists()
+
+
+def test_evaluate_uses_production_request_not_gold_record(tmp_path: Path) -> None:
+    train_dir = tmp_path / "train"
+    test_dir = tmp_path / "test"
+    train_dir.mkdir()
+    (test_dir / "suites" / "smoke").mkdir(parents=True)
+    gold = 'root = Stack([cta])\ncta = Button(":prod.cta")'
+    record = ExampleRecord(
+        id="s1",
+        prompt="CTA",
+        openui=gold,
+        placeholders=[":prod.cta"],
+        split="smoke",
+        meta={"suite": "smoke"},
+    )
+    write_jsonl(train_dir / "records.jsonl", [ExampleRecord.from_dict({**record.to_dict(), "split": "train"})])
+    write_jsonl(test_dir / "suites" / "smoke" / "records.jsonl", [record])
+
+    class RequestOnlyModel:
+        def generate_batch_requests(self, requests: list[GenerationRequest]) -> list[str]:
+            assert len(requests) == 1
+            request = requests[0]
+            assert request.prompt == "CTA"
+            assert request.slot_contract == (":prod.cta",)
+            assert not hasattr(request, "openui")
+            return [gold]
+
+    config = ModelBuildConfig(
+        train_dir=train_dir,
+        test_dir=test_dir,
+        suite="smoke",
+        run_root=tmp_path / "runs",
+        run_id="request-only",
+        model_name="stub",
+    )
+    metrics = evaluate(config, model=RequestOnlyModel())
+    assert metrics["raw_syntax_validity"] == 1.0
+    assert metrics["contract_precision"] == 1.0
+    assert metrics["contract_recall"] == 1.0
+    assert metrics["fallback_count"] == 0

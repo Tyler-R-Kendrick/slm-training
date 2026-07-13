@@ -96,6 +96,12 @@ python -m scripts.run_quality_matrix --matrix v4 --only E35,E36 \
 
 Same policy as `docs/design/adversarial-review.md`. Matrix may evaluate `rico_held` with `--rico-limit` for CPU time; full 1500 is the ship claim.
 
+**Honesty rule (E35):** template fill / slot-contract decode must obtain inventory
+from the user-visible prompt (or DESIGN.md), not by reading `gold.placeholders`
+as a hidden eval channel. Eval may *surface* gold inventory into the prompt via
+`ensure_prompt_inventory` (inventory-in-prompt API); `_resolve_slot_contract`
+then extracts it.
+
 ## Commands
 
 ```bash
@@ -178,7 +184,8 @@ See [quality-matrix-results.json](quality-matrix-results.json). After F1–F5 fi
 **Ship gates still not cleared** at 200–500 CPU steps; ceiling diagnostic confirms
 metrics are achievable (gold-as-prediction = 1.0). Next levers: **V3 length-safe
 decode (E18)** — V2 kept `grammar_ltr_max_tokens` at 64–96 while compositional
-programs need ≥160 tokens — then E19–E22 / E29 champion.
+programs need ≥160 tokens — then E19–E22 / E29 champion; and grammar-native
+diffusion (X matrix below).
 
 ## V3 notes
 
@@ -247,12 +254,51 @@ python -m scripts.run_quality_matrix --matrix v4 \
   --context-backend scratch --no-design-md-context --rico-limit 3
 ```
 
-## Success criteria (honest gates)
+## X matrix (grammar-native diffusion ablations)
 
-Same policy as `docs/design/adversarial-review.md`. Matrix may evaluate `rico_held` with `--rico-limit` for CPU time; full 1500 is the ship claim.
+Staged ablations **X0–X8** isolate grammar-first decode levers on top of the
+corrected honest baseline. Each experiment runs **3 seeds** (0/1/2) with
+**successive halving** on `smoke` → `held_out` → `adversarial` before full
+multi-suite eval on survivors.
 
-**Honesty rule (E35):** template fill / slot-contract decode must obtain inventory
-from the user-visible prompt (or DESIGN.md), not by reading `gold.placeholders`
-as a hidden eval channel. Eval may *surface* gold inventory into the prompt via
-`ensure_prompt_inventory` (inventory-in-prompt API); `_resolve_slot_contract`
-then extracts it.
+| ID | Approach | Primary lever | Model | Run id |
+| --- | --- | --- | --- | --- |
+| X0 | Corrected baseline | twotower + honest DESIGN.md eval | twotower | `gx_x0_baseline` |
+| X1 | Data/contract | slot contract in context + inventory decode | twotower | `gx_x1_contract` |
+| X2 | Production codec | grammar_diffusion over production+slot heads | grammar_diffusion | `gx_x2_codec` |
+| X3 | Block objective | grammar_diffusion block noise schedule | grammar_diffusion | `gx_x3_block_obj` |
+| X4 | Confidence schedule | `parallel_unmask=confidence` + calib loss | grammar_diffusion | `gx_x4_confidence` |
+| X5 | Extendability decode | ExtendabilityChecker in constrained posterior | grammar_diffusion | `gx_x5_extend` |
+| X6 | Grammar curriculum | soft A/B/C mix (anti-leak) | twotower | `gx_x6_curriculum` |
+| X7 | Champion combo | X1–X6 stacked + capacity | grammar_diffusion | `gx_x7_champion` |
+| X8 | Process optimization | X7 + pref/RL (skip RL when reward variance=0) | grammar_diffusion | `gx_x8_process` |
+
+`grammar_diffusion` is the harness plug-in for
+`GrammarDiffusionModel` (production codec + block diffusion). See
+`src/slm_training/models/grammar_diffusion.py` and
+`src/slm_training/harnesses/model_build/factory.py`.
+
+### Commands
+
+```bash
+# Three-seed honest baseline reproduction (X0)
+python -m scripts.reproduce_baseline \
+  --device cpu --context-backend scratch --steps 80
+
+# Full X matrix with successive halving (default 3 seeds)
+python -m scripts.run_grammar_matrix \
+  --device cpu --context-backend scratch --steps 80
+
+# Isolated levers
+python -m scripts.run_grammar_matrix --only X0,X2,X7 --steps 200
+
+# Disable halving (run every experiment×seed to completion)
+python -m scripts.run_grammar_matrix --no-halving --only X0,X1,X2 --steps 80
+
+# Champion + process stage
+python -m scripts.run_grammar_matrix --only X7,X8 --steps 400 --gen-steps 16
+```
+
+Artifacts: `outputs/runs/grammar_matrix_summary.json`,
+`docs/design/grammar-matrix-results.json`,
+`outputs/runs/baseline_reproduction_summary.json`.
