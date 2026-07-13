@@ -28,8 +28,9 @@ CTA = 'root = Stack([cta])\ncta = Button(":cta.label")'
 def test_tokenize_preserves_placeholders_and_whitespace() -> None:
     text = 'hero = Card(":hero.title", ":hero.body")\n'
     tokens = tokenize_text(text)
-    assert ":hero.title" in tokens
-    assert ":hero.body" in tokens
+    # Placeholders appear as quoted OpenUI string literals
+    assert '":hero.title"' in tokens
+    assert '":hero.body"' in tokens
     assert "\n" in tokens
     assert "Card" in tokens
 
