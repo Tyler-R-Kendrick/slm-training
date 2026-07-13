@@ -90,7 +90,7 @@ Content props must be placeholder strings. Parsing/serialization/prompt generati
 
 DESIGN.md conditioning + linter: [`tools/design_md_bridge/`](tools/design_md_bridge/) and [`fixtures/design_md/`](fixtures/design_md/).
 
-## Web playground
+## Web playground (annotate)
 
 ```bash
 pip install -e ".[dev,torch,web]"
@@ -98,6 +98,35 @@ python -m scripts.bootstrap_playground   # trains a tiny demo checkpoint
 python -m scripts.serve_playground --port 8765
 # open http://127.0.0.1:8765
 ```
+
+Annotate mode (default UI): auto-generated prompts, prefetch 1–2 samples ahead.
+
+| Input | Action |
+|-------|--------|
+| `↑` | Thumbs up (persist + advance) |
+| `↓` | Thumbs down (persist + advance) |
+| `←` / `→` | Previous / next sample |
+| typing | Focus optional note |
+| swipe | Mobile: horizontal navigate, vertical grade |
+
+Annotations append to `outputs/annotations/feedback.jsonl`. Thumbs-up rows promote into `fixtures/annotations/human_train.jsonl` (merged by `build_train_data`). Opposite ratings on the same prompt also write `outputs/preferences/human_pairs.jsonl`.
+
+```bash
+python -m scripts.export_annotations status
+python -m scripts.export_annotations export
+```
+
+### Playwright visual / e2e
+
+```bash
+npm install
+npx playwright install chromium
+# optional agent skills (already in .agents/skills + .cursor/skills)
+playwright-cli install --skills
+npm run test:e2e
+```
+
+MCP (Cursor): [`.cursor/mcp.json`](.cursor/mcp.json) launches `@playwright/mcp`.
 
 
 - **Context tower**: scratch TokenEncoder **or** frozen HF model (`--context-backend hf`, default `HuggingFaceTB/SmolLM2-135M`)
