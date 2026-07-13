@@ -87,7 +87,41 @@ def test_visible_corrupt_marks_predict_mask() -> None:
     assert bool(predict.any())
     # Corrupted visibles differ from gold somewhere.
     assert not torch.equal(noisy, ids) or bool(predict.any())
+    special = {
+        tok.pad_id,
+        tok.bos_id,
+        tok.eos_id,
+        tok.mask_id,
+        tok.unk_id,
+    }
+    flipped = predict & noisy.ne(tok.mask_id)
+    for sid in special:
+        assert not bool((flipped & noisy.eq(sid)).any())
+    assert not bool((flipped & noisy.eq(ids)).any())
 
+
+def test_legacy_kind_lookup_checkpoint_is_ignored() -> None:
+    """Checkpoints that persisted a unused kind_lookup still load."""
+    src = 'root = Stack([t], "column")\nt = TextContent(":a.title")'
+    tok = OpenUITokenizer.build([src, "prompt"])
+    cfg = TwoTowerConfig(
+        d_model=32,
+        n_heads=4,
+        context_layers=1,
+        denoiser_layers=1,
+        max_prompt_len=32,
+        max_target_len=64,
+        factorized_embeddings=False,
+    )
+    model = TwoTowerModel(tokenizer=tok, config=cfg, device="cpu")
+    sd = model.state_dict()
+    # Simulate a pre-compat checkpoint that always wrote kind_lookup.
+    assert "denoiser.kind_lookup" not in sd
+    sd = dict(sd)
+    sd["denoiser.kind_lookup"] = torch.zeros(tok.vocab_size, dtype=torch.long)
+    from slm_training.models.twotower import _load_checkpoint_state
+
+    _load_checkpoint_state(model, sd)
 
 def test_honest_slot_contract_ignores_gold_placeholders() -> None:
     src = 'root = Stack([t], "column")\nt = TextContent(":hero.title")'

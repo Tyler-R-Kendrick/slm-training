@@ -241,10 +241,20 @@ def _load_checkpoint_state(model: nn.Module, state_dict: dict[str, torch.Tensor]
     # randomly initialized gate until BackPlay-lite training (E31) runs.
     allowed_missing |= {key for key in missing if key.startswith("trust_gate.")}
     bad_missing = sorted(set(missing) - allowed_missing)
-    if bad_missing or unexpected:
+    # V5 may have checkpointed a zero kind_lookup even when unused; the
+    # non-factorized path now uses a non-persistent stub, so treat that legacy
+    # key as ignorable when the live module does not require it.
+    allowed_unexpected = {
+        key
+        for key in unexpected
+        if key == "denoiser.kind_lookup"
+        and getattr(getattr(model, "denoiser", None), "kind", None) is None
+    }
+    bad_unexpected = sorted(set(unexpected) - allowed_unexpected)
+    if bad_missing or bad_unexpected:
         raise ValueError(
             "checkpoint state mismatch: "
-            f"missing={bad_missing!r} unexpected={sorted(unexpected)!r}"
+            f"missing={bad_missing!r} unexpected={bad_unexpected!r}"
         )
 
 
@@ -450,8 +460,7 @@ class TwoTowerModel(nn.Module):
             flip = (torch.rand(bsz, seq, device=device) < corrupt_rate) & visible
             if bool(flip.any()):
                 vocab = self.tokenizer.vocab_size
-                # Sample wrong tokens uniformly; reject pad/bos/mask/gold.
-                wrong = torch.randint(0, vocab, (bsz, seq), device=device)
+                # Sample wrong content tokens; reject pad/bos/eos/mask/unk/gold.
                 special = {
                     self.tokenizer.pad_id,
                     self.tokenizer.bos_id,
@@ -459,9 +468,22 @@ class TwoTowerModel(nn.Module):
                     self.tokenizer.mask_id,
                     self.tokenizer.unk_id,
                 }
-                for sid in special:
-                    wrong = torch.where(wrong.eq(sid), (wrong + 1) % vocab, wrong)
-                wrong = torch.where(wrong.eq(target_ids), (wrong + 1) % vocab, wrong)
+
+                def _bad(candidate: torch.Tensor) -> torch.Tensor:
+                    bad = candidate.eq(target_ids)
+                    for sid in special:
+                        bad = bad | candidate.eq(sid)
+                    return bad
+
+                wrong = torch.randint(0, vocab, (bsz, seq), device=device)
+                bad = _bad(wrong)
+                for _ in range(6):
+                    if not bool((flip & bad).any()):
+                        break
+                    resample = torch.randint(0, vocab, (bsz, seq), device=device)
+                    wrong = torch.where(bad, resample, wrong)
+                    bad = _bad(wrong)
+                flip = flip & ~bad
                 noisy = torch.where(flip, wrong, noisy)
                 noise = noise | flip
         return noisy, noise, row_weights
