@@ -13,33 +13,62 @@ function feedbackCount(): number {
 }
 
 test.describe("annotate playground", () => {
-  test("desktop: render preview, note, grade, navigate", async ({ page }, testInfo) => {
+  test("desktop: request + rendered default + dsl toggle", async ({ page }, testInfo) => {
     const before = feedbackCount();
     await page.goto("/");
+    await page.evaluate(() => localStorage.setItem("twotower_annotate_view", "render"));
+    await page.reload();
+
     await expect(page.getByText("TwoTower")).toBeVisible();
     await expect(page.locator("#card")).toBeVisible();
-    await expect(page.locator("#preview")).toBeVisible();
+    await expect(page.locator("#btnViewRender")).toBeVisible();
+    await expect(page.locator("#btnViewDsl")).toBeVisible();
 
     await expect(page.locator("#badge")).not.toHaveText(/loading|generating/i, {
       timeout: 90_000,
     });
     await expect(page.locator("#promptText")).not.toHaveText(/Loading|…/);
 
-    // Renderer island mounted (valid samples show UI; invalid show status text).
+    // Request should be a novel compositional prompt, not a fixture one-liner.
+    const prompt = (await page.locator("#promptText").innerText()).trim();
+    expect(prompt.length).toBeGreaterThan(40);
+    expect(prompt.toLowerCase()).not.toBe("hero card with title and body");
+    expect(prompt.toLowerCase()).not.toBe("primary call to action button");
+    expect(prompt.toLowerCase()).not.toBe("build primary call to action button");
+
+    // Default view is rendered.
+    await expect(page.locator("#panelRender")).toBeVisible();
+    await expect(page.locator("#panelDsl")).toBeHidden();
     await expect(page.locator("#preview .openui-preview-root")).toBeVisible({
       timeout: 30_000,
     });
-    await expect
-      .poll(async () => {
-        const root = page.locator("#preview .openui-preview-root");
-        if ((await root.count()) === 0) return "";
-        const text = (await page.locator("#preview").innerText()).trim();
-        const kids = await page.locator("#preview .openui-preview-root *").count();
-        return text || (kids > 0 ? "rendered" : "");
-      }, { timeout: 30_000 })
-      .not.toEqual("");
 
-    // Force a known-good OpenUI render to assert demo-like visual output.
+    await page.screenshot({
+      path: path.join(
+        testInfo.project.outputDir,
+        `annotate-desktop-ready-${testInfo.project.name}.png`
+      ),
+      fullPage: true,
+    });
+
+    // Toggle to DSL and back.
+    await page.locator("#btnViewDsl").click();
+    await expect(page.locator("#panelDsl")).toBeVisible();
+    await expect(page.locator("#panelRender")).toBeHidden();
+    await expect(page.locator("#output")).toContainText(/root\s*=/);
+
+    await page.screenshot({
+      path: path.join(
+        testInfo.project.outputDir,
+        `annotate-desktop-dsl-${testInfo.project.name}.png`
+      ),
+      fullPage: true,
+    });
+
+    await page.locator("#btnViewRender").click();
+    await expect(page.locator("#panelRender")).toBeVisible();
+
+    // Known-good render check.
     await page.evaluate(() => {
       const src = [
         'root = Stack([hero], "column")',
@@ -53,44 +82,25 @@ test.describe("annotate playground", () => {
     });
     await expect(page.locator("#preview")).toContainText(/Title|Body/i, { timeout: 10_000 });
 
-    await page.screenshot({
-      path: path.join(
-        testInfo.project.outputDir,
-        `annotate-desktop-ready-${testInfo.project.name}.png`
-      ),
-      fullPage: true,
-    });
-
     await page.keyboard.type("looks structured");
     await expect(page.locator("#note")).toHaveValue(/looks structured/);
-
     await page.locator("#note").press("Escape");
     await page.locator("#card").focus();
     await page.keyboard.press("ArrowUp");
-
     await expect(page.locator("#status")).toContainText(/Saved thumbs up|Saving/i, {
       timeout: 30_000,
-    });
-
-    await page.keyboard.press("ArrowRight");
-    await page.keyboard.press("ArrowLeft");
-
-    await page.screenshot({
-      path: path.join(
-        testInfo.project.outputDir,
-        `annotate-desktop-after-grade-${testInfo.project.name}.png`
-      ),
-      fullPage: true,
     });
 
     await expect.poll(() => feedbackCount(), { timeout: 15_000 }).toBeGreaterThan(before);
   });
 
-  test("mobile: preview + large grade targets visible", async ({ page }, testInfo) => {
+  test("mobile: preview default + grade targets", async ({ page }, testInfo) => {
     await page.goto("/");
+    await page.evaluate(() => localStorage.setItem("twotower_annotate_view", "render"));
+    await page.reload();
     await expect(page.locator("#btnUp")).toBeVisible();
     await expect(page.locator("#btnDown")).toBeVisible();
-    await expect(page.locator("#preview")).toBeVisible();
+    await expect(page.locator("#panelRender")).toBeVisible();
     await expect(page.locator("#badge")).not.toHaveText(/loading/i, { timeout: 90_000 });
 
     const upBox = await page.locator("#btnUp").boundingBox();

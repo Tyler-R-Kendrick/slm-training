@@ -9,6 +9,10 @@ const designMdEl = document.getElementById("design_md");
 const grammarEl = document.getElementById("grammar");
 const keepPlaceholdersEl = document.getElementById("keepPlaceholders");
 const previewEl = document.getElementById("preview");
+const panelRender = document.getElementById("panelRender");
+const panelDsl = document.getElementById("panelDsl");
+const btnViewRender = document.getElementById("btnViewRender");
+const btnViewDsl = document.getElementById("btnViewDsl");
 const indexPillEl = document.getElementById("indexPill");
 const btnUp = document.getElementById("btnUp");
 const btnDown = document.getElementById("btnDown");
@@ -17,6 +21,10 @@ const btnNext = document.getElementById("btnNext");
 
 const PREFETCH = 2;
 const SESSION_KEY = "twotower_annotate_session";
+const VIEW_KEY = "twotower_annotate_view";
+
+/** @type {"render"|"dsl"} */
+let activeView = localStorage.getItem(VIEW_KEY) === "dsl" ? "dsl" : "render";
 
 function sessionId() {
   let id = localStorage.getItem(SESSION_KEY);
@@ -45,6 +53,21 @@ function setOutput(text) {
   outputEl.style.animation = "";
 }
 
+function setView(view) {
+  activeView = view === "dsl" ? "dsl" : "render";
+  localStorage.setItem(VIEW_KEY, activeView);
+  const showRender = activeView === "render";
+  panelRender.classList.toggle("is-active", showRender);
+  panelDsl.classList.toggle("is-active", !showRender);
+  panelRender.hidden = !showRender;
+  panelDsl.hidden = showRender;
+  btnViewRender.classList.toggle("is-active", showRender);
+  btnViewDsl.classList.toggle("is-active", !showRender);
+  btnViewRender.setAttribute("aria-selected", showRender ? "true" : "false");
+  btnViewDsl.setAttribute("aria-selected", showRender ? "false" : "true");
+  if (showRender) updatePreview(current());
+}
+
 function waitForPreviewApi(timeoutMs = 15000) {
   if (window.OpenUIPreview?.mount) return Promise.resolve(window.OpenUIPreview);
   return new Promise((resolve, reject) => {
@@ -65,7 +88,7 @@ function waitForPreviewApi(timeoutMs = 15000) {
 }
 
 function updatePreview(item) {
-  if (!previewEl) return;
+  if (!previewEl || activeView !== "render") return;
   const api = window.OpenUIPreview;
   if (!api?.mount) {
     previewEl.innerHTML =
@@ -203,7 +226,6 @@ async function go(delta) {
     statusEl.textContent = "No sample ready yet";
     return;
   }
-  // Persist note on current before leaving.
   if (current()) current().note = noteEl.value;
   index = next;
   render();
@@ -230,6 +252,11 @@ async function grade(rating) {
         design_md: design_md || null,
         valid: item.valid,
         session_id: sessionId(),
+        meta: {
+          source: "annotate_playground",
+          usable_for_test_data: true,
+          view: activeView,
+        },
       }),
     });
     const data = await res.json();
@@ -280,13 +307,17 @@ function onKeyDown(event) {
   } else if (event.key === "ArrowRight") {
     event.preventDefault();
     void go(1);
+  } else if (event.key === "d" || event.key === "D") {
+    event.preventDefault();
+    setView("dsl");
+  } else if (event.key === "r" || event.key === "R") {
+    event.preventDefault();
+    setView("render");
   } else if (event.key.length === 1 && !event.metaKey && !event.ctrlKey && !event.altKey) {
-    // Typing focuses the note field.
     noteEl.focus();
   }
 }
 
-// Touch swipe
 let touchX = null;
 let touchY = null;
 cardEl.addEventListener(
@@ -322,6 +353,8 @@ btnUp.addEventListener("click", () => void grade("up"));
 btnDown.addEventListener("click", () => void grade("down"));
 btnPrev.addEventListener("click", () => void go(-1));
 btnNext.addEventListener("click", () => void go(1));
+btnViewRender.addEventListener("click", () => setView("render"));
+btnViewDsl.addEventListener("click", () => setView("dsl"));
 window.addEventListener("keydown", onKeyDown);
 
 noteEl.addEventListener("input", () => {
@@ -329,6 +362,7 @@ noteEl.addEventListener("input", () => {
 });
 
 async function boot() {
+  setView(activeView);
   statusEl.textContent = "Loading renderer…";
   try {
     await waitForPreviewApi();
@@ -338,10 +372,10 @@ async function boot() {
   statusEl.textContent = "Prefetching samples…";
   render();
   await ensurePrefetch();
-  statusEl.textContent = "Ready · ↑/↓ grade · ←/→ navigate · type to note";
+  statusEl.textContent = "Ready · ↑/↓ grade · ←/→ navigate · R/D view · type to note";
   cardEl.focus();
 }
 
-keepPlaceholdersEl?.addEventListener("change", () => render());
+keepPlaceholdersEl?.addEventListener("change", () => updatePreview(current()));
 
 boot();

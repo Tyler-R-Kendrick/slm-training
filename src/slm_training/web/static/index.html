@@ -27,17 +27,55 @@
           <span class="index-pill" id="indexPill">1 / 1</span>
           <span class="badge" id="badge">loading</span>
         </div>
-        <p class="prompt-text" id="promptText">Loading prompt…</p>
 
-        <div class="preview-panel" aria-label="Rendered OpenUI">
-          <div class="preview-label">Preview</div>
-          <div id="preview" class="preview-mount"></div>
+        <div class="request-block">
+          <p class="field-label">Request</p>
+          <p class="prompt-text" id="promptText">Loading prompt…</p>
         </div>
 
-        <details class="source-panel">
-          <summary>OpenUI source</summary>
-          <pre class="output" id="output"><code>// generating…</code></pre>
-        </details>
+        <div class="view-toggle" role="tablist" aria-label="Output view">
+          <button
+            type="button"
+            class="view-btn is-active"
+            id="btnViewRender"
+            role="tab"
+            aria-selected="true"
+            data-view="render"
+          >
+            Rendered
+          </button>
+          <button
+            type="button"
+            class="view-btn"
+            id="btnViewDsl"
+            role="tab"
+            aria-selected="false"
+            data-view="dsl"
+          >
+            DSL
+          </button>
+        </div>
+
+        <div class="view-panels">
+          <div
+            class="preview-panel view-panel is-active"
+            id="panelRender"
+            role="tabpanel"
+            aria-label="Rendered OpenUI"
+          >
+            <div id="preview" class="preview-mount"></div>
+          </div>
+          <div
+            class="source-panel view-panel"
+            id="panelDsl"
+            role="tabpanel"
+            aria-label="OpenUI DSL"
+            hidden
+          >
+            <pre class="output" id="output"><code>// generating…</code></pre>
+          </div>
+        </div>
+
         <p class="error" id="error" hidden></p>
 
         <label class="note-label" for="note">Note (optional)</label>

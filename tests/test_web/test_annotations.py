@@ -23,7 +23,7 @@ from slm_training.annotations import (
 )
 from slm_training.dsl.schema import load_jsonl
 from slm_training.web.app import create_app
-from slm_training.web.prompts import vary_prompt
+from slm_training.web.prompts import compose_prompt
 
 CKPT = Path("outputs/runs/playground_demo/checkpoints/last.pt")
 HERO = 'root = Stack([hero], "column")\nhero_title = TextContent(":hero.title")\nhero = Card([hero_title])\n'
@@ -31,9 +31,27 @@ BAD = 'root = TextContent(":broken.x")\n'
 
 
 def test_vary_prompt_keeps_substance() -> None:
-    out = vary_prompt("Hero card with title and body", salt=3)
+    from slm_training.web.prompts import compose_prompt, PromptCursor
+
+    import random
+
+    out = compose_prompt(random.Random(3))
     assert isinstance(out, str)
-    assert len(out) > 5
+    assert len(out) > 20
+    assert "OpenUI" in out or "openui" in out.lower() or "layout" in out.lower() or "generate" in out.lower() or "Compose" in out or "Write" in out or "Produce" in out or "For " in out
+
+    cursor = PromptCursor(session_id="unit-test-prompts")
+    a = cursor.next()
+    b = cursor.next()
+    assert a != b
+    # Must not recycle classic fixture wording verbatim.
+    blocked = {
+        "hero card with title and body",
+        "primary call to action button",
+        "create a vertical hero card with a title and body.",
+    }
+    assert a.strip().lower() not in blocked
+    assert b.strip().lower() not in blocked
 
 
 def test_annotation_append_and_promote(tmp_path: Path) -> None:

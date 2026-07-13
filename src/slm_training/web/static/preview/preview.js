@@ -98625,17 +98625,20 @@ function v7e({ source: e, keepPlaceholders: t }) {
         response: i,
         isStreaming: !1,
         onParseResult: (s) => {
-          const c = s && typeof s == "object" ? s.root : null;
-          r(!!c);
+          const c = s && typeof s == "object" ? s.root ?? null : null, d = c?.props?.children, f = Array.isArray(d) ? d.length > 0 : !!d;
+          r(!!c && f);
         },
         onError: (s) => {
           const c = Array.isArray(s) ? s : [];
           o(
-            c.map((d) => String(d && typeof d == "object" && d.message || d)).filter(Boolean).slice(0, 3)
+            c.map(
+              (d) => String(d && typeof d == "object" && d.message || d)
+            ).filter(Boolean).slice(0, 3)
           ), c.length && r(!1);
         }
       }
-    )
+    ),
+    n && /* @__PURE__ */ w.jsx("span", { className: "openui-preview-sr", "aria-hidden": "true", children: "rendered" })
   ] }) }) : /* @__PURE__ */ w.jsx("div", { className: "openui-preview-empty", children: "No OpenUI yet" });
 }
 const Ov = /* @__PURE__ */ new WeakMap();

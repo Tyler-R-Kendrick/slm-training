@@ -57,20 +57,34 @@ function PreviewApp({ source, keepPlaceholders }: MountOptions) {
           response={response}
           isStreaming={false}
           onParseResult={(result) => {
-            const root = result && typeof result === "object" ? (result as { root?: unknown }).root : null;
-            setParseOk(!!root);
+            const root =
+              result && typeof result === "object"
+                ? ((result as { root?: { props?: { children?: unknown } } }).root ?? null)
+                : null;
+            const kids = root?.props?.children;
+            const hasKids = Array.isArray(kids) ? kids.length > 0 : Boolean(kids);
+            setParseOk(Boolean(root) && hasKids);
           }}
           onError={(errs) => {
             const list = Array.isArray(errs) ? errs : [];
             setErrors(
               list
-                .map((e) => (e && typeof e === "object" ? String((e as { message?: string }).message || e) : String(e)))
+                .map((e) =>
+                  e && typeof e === "object"
+                    ? String((e as { message?: string }).message || e)
+                    : String(e)
+                )
                 .filter(Boolean)
                 .slice(0, 3)
             );
             if (list.length) setParseOk(false);
           }}
         />
+        {parseOk && (
+          <span className="openui-preview-sr" aria-hidden="true">
+            rendered
+          </span>
+        )}
       </div>
     </ThemeProvider>
   );
