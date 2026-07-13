@@ -39,8 +39,8 @@ class ModelBuildConfig:
     grammar_top_k: int = 16
     structural_bias: float = 1.25
     grammar_ltr_repair: bool = False
-    # E18: length-safe for compositional tokenizer.
-    grammar_ltr_max_tokens: int = 192
+    # Length-safe for compositional tokenizer (fixture gold up to ~160 tokens).
+    grammar_ltr_max_tokens: int = 256
     grammar_ltr_primary: bool = False
     grammar_finalize_validate: bool = False
     ltr_loss_weight: float = 0.5
@@ -81,6 +81,12 @@ class ModelBuildConfig:
     fuse_ltr_loss: bool = True
     grammar_fastpath: bool = True
     fastpath_aux_weight: float = 0.0
+    grammar_prefer_structural: bool = True
+    grammar_trust_model: bool = False
+    grammar_sample_decode: bool = False
+    grammar_sample_temperature: float = 0.8
+    grammar_block_decode: bool = False
+    grammar_block_size: int = 32
     # Cycle telemetry (train/infer span JSON)
     telemetry: bool = True
 

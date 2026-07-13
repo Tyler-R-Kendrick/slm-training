@@ -55,6 +55,10 @@ correction / remask candidates: [research-correction-critics.md](research-correc
 Root cause after V2: compositional tokenization lengthened programs (fixture max ~160
 tokens) while LTR decode still capped at 64–96 → **parse stayed 0 even at 2000 steps**.
 
+Constrained-decode follow-ups (this branch): force-emit must run over real logits (never
+zero stand-ins), `placeholder_required` is not a hard error mid-string, and slot-contract
+intersections must not drop `.` / whitespace inside quoted placeholders.
+
 | ID | Approach | Primary lever | Run id |
 | --- | --- | --- | --- |
 | E18 | Length-safe LTR | `grammar_ltr_max_tokens≥192`, stages `(64,128,192,256)` | `qx_e18_length_safe` |

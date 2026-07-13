@@ -165,6 +165,15 @@ def _reward_for_prediction(pred: str, record: ExampleRecord) -> float:
         return 0.0
 
 
+def _decode_canvas_cap(plugin: object) -> int | None:
+    """Best-effort LTR canvas cap from a loaded model plugin."""
+    cfg = getattr(plugin, "config", None)
+    if cfg is None:
+        return None
+    cap = int(getattr(cfg, "grammar_ltr_max_tokens", 0) or 0)
+    return cap if cap > 0 else None
+
+
 def _is_meaningful_program(
     pred: str,
     *,
@@ -247,6 +256,8 @@ def evaluate(
     gold_design_scores: list[float] = []
     latencies: list[float] = []
     details: list[dict] = []
+    failure_breakdown: dict[str, int] = {}
+    canvas_cap = _decode_canvas_cap(plugin)
 
     batch_size = 1
     generate_batch = getattr(plugin, "generate_batch", None)
@@ -261,6 +272,18 @@ def evaluate(
         nonlocal reward_sum, recall_sum
         ok, error, serialized = _is_meaningful_program(pred, gold=record)
         scored_pred = serialized or pred
+        if not ok:
+            from slm_training.harnesses.model_build.decode_feasibility import (
+                classify_parse_failure,
+            )
+
+            bucket = classify_parse_failure(
+                pred,
+                error=error,
+                gold=record,
+                canvas_cap=canvas_cap,
+            )
+            failure_breakdown[bucket] = failure_breakdown.get(bucket, 0) + 1
         if ok:
             parse_ok += 1
         fid = _placeholder_fidelity(scored_pred, record)
@@ -354,6 +377,8 @@ def evaluate(
         "checkpoint": str(ckpt),
         "model": config.model_name,
         "evaluated_at": datetime.now(timezone.utc).isoformat(),
+        "failure_breakdown": failure_breakdown,
+        "decode_canvas_cap": canvas_cap,
         "details": details,
     }
 

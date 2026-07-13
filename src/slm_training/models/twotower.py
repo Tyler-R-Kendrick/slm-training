@@ -92,13 +92,24 @@ class TwoTowerConfig:
     # Full LTR constrained repair is accurate but slow (Node stream_check per token).
     # Off by default; enable for final quality evals.
     grammar_ltr_repair: bool = False
-    # E18: length-safe for compositional tokenizer (fixture p95 ≈ 160).
-    grammar_ltr_max_tokens: int = 192
+    # Length-safe for compositional tokenizer (fixture gold up to ~160).
+    grammar_ltr_max_tokens: int = 256
     # Progressive LTR canvases (short first). Cap must cover gold programs.
     grammar_ltr_stages: tuple[int, ...] = (64, 128, 192, 256)
     # Finalize LTR text with Node validate (adds ~1–2ms). Off by default —
     # eval already validates via meaningful-parse.
     grammar_finalize_validate: bool = False
+    # When False, pick highest-scoring legal token (DINGO-style); when True,
+    # prefer structural/component tokens among legal candidates (legacy).
+    grammar_prefer_structural: bool = True
+    # Trust-the-model decode: disable structural logit bias and structural reorder.
+    grammar_trust_model: bool = False
+    # Sample from renormalized legal distribution instead of greedy argmax.
+    grammar_sample_decode: bool = False
+    grammar_sample_temperature: float = 0.8
+    # Semi-AR block decode: fill contiguous spans left-to-right (block diffusion).
+    grammar_block_decode: bool = False
+    grammar_block_size: int = 32
     # Eval / throughput: batch size for generate_batch.
     generate_batch_size: int = 16
     # When True and grammar_constrained, skip MaskGIT and decode LTR only.
@@ -200,6 +211,22 @@ class TwoTowerModel(nn.Module):
         self._placeholder_token_ids: set[int] | None = None
         self._slot_contracts: list[list[str] | None] | None = None
         self.to(device)
+
+    def _effective_structural_bias(self) -> float:
+        if getattr(self.config, "grammar_trust_model", False):
+            return 0.0
+        return float(self.config.structural_bias or 0.0)
+
+    def _pick_kwargs(self) -> dict[str, object]:
+        trust = bool(getattr(self.config, "grammar_trust_model", False))
+        prefer = bool(getattr(self.config, "grammar_prefer_structural", True))
+        return {
+            "prefer_structural": False if trust else prefer,
+            "sample": bool(getattr(self.config, "grammar_sample_decode", False)),
+            "temperature": float(
+                getattr(self.config, "grammar_sample_temperature", 0.8) or 0.8
+            ),
+        }
 
     def clear_train_caches(self) -> None:
         self._context_text_cache.clear()
@@ -609,36 +636,24 @@ class TwoTowerModel(nn.Module):
                 if use_fast
                 else None
             )
-            if forced is None:
-                logits = self.denoiser(
-                    ids, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
-                )
-                if self.config.structural_bias:
-                    logits = apply_structural_bias(
-                        logits,
-                        self.tokenizer,
-                        bias=self.config.structural_bias,
-                    )
-                choice = pick_constrained_token(
-                    logits[0, t],
+            logits = self.denoiser(
+                ids, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
+            )
+            if self._effective_structural_bias():
+                logits = apply_structural_bias(
+                    logits,
                     self.tokenizer,
-                    prefix,
-                    top_k=self.config.grammar_top_k,
-                    slot_contract=contract,
+                    bias=self._effective_structural_bias(),
                 )
-            else:
-                # Zero logits stand-in; forced id short-circuits inside picker.
-                choice = pick_constrained_token(
-                    torch.zeros(
-                        self.tokenizer.vocab_size,
-                        device=ids.device,
-                    ),
-                    self.tokenizer,
-                    prefix,
-                    top_k=self.config.grammar_top_k,
-                    forced_token_id=forced,
-                    slot_contract=contract,
-                )
+            choice = pick_constrained_token(
+                logits[0, t],
+                self.tokenizer,
+                prefix,
+                top_k=self.config.grammar_top_k,
+                forced_token_id=forced,
+                slot_contract=contract,
+                **self._pick_kwargs(),
+            )
             if choice is None:
                 # No legal continuation — pad out and stop rather than emit garbage.
                 ids[0, t:] = self.tokenizer.pad_id
@@ -654,6 +669,17 @@ class TwoTowerModel(nn.Module):
         return ids
 
     def _ltr_canvases(self, length: int) -> list[int]:
+        if getattr(self.config, "grammar_block_decode", False):
+            block = max(8, int(getattr(self.config, "grammar_block_size", 32) or 32))
+            stages: list[int] = []
+            end = min(block, length)
+            while True:
+                if end not in stages:
+                    stages.append(end)
+                if end >= length:
+                    break
+                end = min(end + block, length)
+            return stages if stages else [length]
         stages = [s for s in self.config.grammar_ltr_stages if 1 < s <= length]
         if not stages or stages[-1] != length:
             stages = [*stages, length] if stages else [length]
@@ -689,7 +715,7 @@ class TwoTowerModel(nn.Module):
         bsz = int(ctx.size(0))
         device = self.device_name
         tok = self.tokenizer
-        bias = float(self.config.structural_bias or 0.0)
+        bias = self._effective_structural_bias()
         canvases = self._ltr_canvases(length)
 
         ids: torch.Tensor | None = None
@@ -726,7 +752,6 @@ class TwoTowerModel(nn.Module):
                     break
                 active_idx = active.nonzero(as_tuple=False).flatten()
                 forced_map: dict[int, int] = {}
-                need_model: list[int] = []
                 if use_fast:
                     for bi in active_idx.tolist():
                         forced = force_emit_token_id(
@@ -734,33 +759,11 @@ class TwoTowerModel(nn.Module):
                         )
                         if forced is not None:
                             forced_map[bi] = forced
-                        else:
-                            need_model.append(bi)
-                else:
-                    need_model = active_idx.tolist()
+                # Always run the denoiser for active rows — force-emit is a hint
+                # only. Passing zero logits previously made force skip whitespace.
+                need_model = active_idx.tolist()
 
                 pred = ids[:, t].clone()
-                for bi, fid in forced_map.items():
-                    contract = (
-                        self._slot_contracts[bi]
-                        if self._slot_contracts and bi < len(self._slot_contracts)
-                        else None
-                    )
-                    if not getattr(self.config, "slot_contract_constrained_decode", False):
-                        contract = None
-                    choice = pick_constrained_token(
-                        torch.zeros(tok.vocab_size, device=device),
-                        tok,
-                        ids[bi, :t].tolist(),
-                        top_k=self.config.grammar_top_k,
-                        forced_token_id=fid,
-                        slot_contract=contract,
-                    )
-                    if choice is None:
-                        need_model.append(bi)
-                    else:
-                        pred[bi] = choice
-
                 if need_model:
                     need_t = torch.tensor(
                         need_model, device=device, dtype=torch.long
@@ -813,7 +816,9 @@ class TwoTowerModel(nn.Module):
                             tok,
                             ids[bi, :t].tolist(),
                             top_k=self.config.grammar_top_k,
+                            forced_token_id=forced_map.get(bi),
                             slot_contract=contract,
+                            **self._pick_kwargs(),
                         )
                         if choice is None:
                             # No legal token — end sequence rather than emit garbage.
@@ -1125,11 +1130,11 @@ class TwoTowerModel(nn.Module):
             logits = self.denoiser(
                 ids, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
             )
-            if use_grammar and self.config.structural_bias:
+            if use_grammar and self._effective_structural_bias():
                 logits = apply_structural_bias(
                     logits,
                     self.tokenizer,
-                    bias=self.config.structural_bias,
+                    bias=self._effective_structural_bias(),
                 )
             probs = F.softmax(logits, dim=-1)
             conf, pred = probs.max(dim=-1)
@@ -1189,6 +1194,7 @@ class TwoTowerModel(nn.Module):
                         slot_contract=slot_contract
                         if getattr(self.config, "slot_contract_constrained_decode", False)
                         else None,
+                        **self._pick_kwargs(),
                     )
                     if choice is None:
                         continue  # leave masked for LTR repair
