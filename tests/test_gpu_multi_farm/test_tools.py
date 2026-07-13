@@ -25,6 +25,29 @@ def mock_settings(monkeypatch: pytest.MonkeyPatch) -> Settings:
     return Settings.from_env()
 
 
+def test_cheapest_offer_picks_min_price() -> None:
+    from gpu_multi_farm.cost import cheapest_offer
+
+    results = {
+        "vast": FarmListResult(
+            farm="vast",
+            offers=[
+                Offer(farm="vast", offer_id="exp", gpu_type="RTX 4090", price_per_hr=0.9),
+                Offer(farm="vast", offer_id="cheap", gpu_type="RTX 4090", price_per_hr=0.2),
+            ],
+        )
+    }
+    best = cheapest_offer(results, gpu_type="4090")
+    assert best["vast"] is not None
+    assert best["vast"].offer_id == "cheap"
+
+
+def test_cactus_overhead_invalid_falls_back(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("CACTUS_OVERHEAD", "not-a-float")
+    settings = Settings.from_env()
+    assert settings.cactus_overhead == 1.08
+
+
 def test_filter_offers_by_price_and_type() -> None:
     offers = [
         Offer(farm="vast", offer_id="1", gpu_type="RTX 4090", price_per_hr=0.5),
@@ -70,7 +93,11 @@ async def test_resolve_farms_auto_uses_mock_without_keys(
 @pytest.mark.asyncio
 async def test_project_training_cost_recommends_cheapest(
     mock_settings: Settings,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Any,
 ) -> None:
+    # Isolate from workspace outputs/cactus/bench.json overhead override.
+    monkeypatch.chdir(tmp_path)
     clients = resolve_farms("all", mock_settings)
     results: dict[str, FarmListResult] = {}
     for name, client in clients.items():
@@ -106,8 +133,11 @@ async def test_tool_list_available_gpus_mock(
 @pytest.mark.asyncio
 async def test_tool_launch_and_cost(
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Any,
 ) -> None:
     monkeypatch.setenv("GPU_MULTI_FARM_MODE", "mock")
+    monkeypatch.setenv("CACTUS_OVERHEAD", "1.08")
+    monkeypatch.chdir(tmp_path)
     from gpu_multi_farm.server import launch_training_pod, project_training_cost
 
     bad = await launch_training_pod("all", {"gpu_type": "4090"})

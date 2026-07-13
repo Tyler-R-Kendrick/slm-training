@@ -42,54 +42,57 @@ class LambdaClient:
                 )
                 resp.raise_for_status()
                 payload = resp.json()
+
+            data = payload.get("data") if isinstance(payload, dict) else payload
+            offers: list[Offer] = []
+            if isinstance(data, dict):
+                items = list(data.items())
+            elif isinstance(data, list):
+                items = [
+                    (str(i.get("instance_type") or i.get("name")), i)
+                    for i in data
+                    if isinstance(i, dict)
+                ]
+            else:
+                items = []
+
+            for type_name, info in items:
+                if not isinstance(info, dict):
+                    continue
+                # Nested shape: {"instance_type": {...}, "regions_with_capacity_available": [...]}
+                itype = info.get("instance_type") if "instance_type" in info else info
+                if not isinstance(itype, dict):
+                    itype = info
+                name = str(
+                    itype.get("name")
+                    or itype.get("description")
+                    or type_name
+                )
+                price_cents = itype.get("price_cents_per_hour")
+                if price_cents is not None:
+                    price = float(price_cents) / 100.0
+                else:
+                    price = float(
+                        itype.get("price_per_hour") or info.get("price_per_hour") or 0.0
+                    )
+                regions = info.get("regions_with_capacity_available") or []
+                available = "available" if regions else "unavailable"
+                specs = itype.get("specs") if isinstance(itype.get("specs"), dict) else {}
+                gpus = itype.get("gpus") or specs.get("gpus")
+                offers.append(
+                    Offer(
+                        farm=self.name,
+                        offer_id=str(itype.get("name") or type_name),
+                        gpu_type=name,
+                        price_per_hr=price,
+                        spot=False,
+                        vram_gb=float(gpus) if isinstance(gpus, (int, float)) else None,
+                        availability=available,
+                        raw_ref={"regions": regions, "name": itype.get("name") or type_name},
+                    )
+                )
         except Exception as exc:  # noqa: BLE001
             return FarmListResult(farm=self.name, offers=[], error=str(exc))
-
-        data = payload.get("data") if isinstance(payload, dict) else payload
-        offers: list[Offer] = []
-        if isinstance(data, dict):
-            items = data.items()
-        elif isinstance(data, list):
-            items = [(str(i.get("instance_type") or i.get("name")), i) for i in data]
-        else:
-            items = []
-
-        for type_name, info in items:
-            if not isinstance(info, dict):
-                continue
-            # Nested shape: {"instance_type": {...}, "regions_with_capacity_available": [...]}
-            itype = info.get("instance_type") if "instance_type" in info else info
-            if not isinstance(itype, dict):
-                itype = info
-            name = str(
-                itype.get("name")
-                or itype.get("description")
-                or type_name
-            )
-            price_cents = itype.get("price_cents_per_hour")
-            if price_cents is not None:
-                price = float(price_cents) / 100.0
-            else:
-                price = float(itype.get("price_per_hour") or info.get("price_per_hour") or 0.0)
-            regions = info.get("regions_with_capacity_available") or []
-            available = "available" if regions else "unavailable"
-            gpus = itype.get("gpus") or itype.get("specs", {}).get("gpus")
-            vram = None
-            if isinstance(itype.get("gpu_description"), str) and "GB" in itype["gpu_description"]:
-                # best-effort parse omitted; leave None
-                vram = None
-            offers.append(
-                Offer(
-                    farm=self.name,
-                    offer_id=str(itype.get("name") or type_name),
-                    gpu_type=name,
-                    price_per_hr=price,
-                    spot=False,
-                    vram_gb=float(gpus) if isinstance(gpus, (int, float)) else vram,
-                    availability=available,
-                    raw_ref={"regions": regions, "name": itype.get("name") or type_name},
-                )
-            )
 
         offers = filter_offers(offers, gpu_type=gpu_type, max_price_per_hr=max_price_per_hr)
         return FarmListResult(farm=self.name, offers=offers)
@@ -118,9 +121,17 @@ class LambdaClient:
         offer = None
         offer_id = config.get("offer_id")
         if offer_id:
-            offer = next((o for o in candidates if o.offer_id == offer_id), None)
-        if offer is None and candidates:
-            offer = candidates[0]
+            offer = next((o for o in candidates if o.offer_id == str(offer_id)), None)
+            if offer is None:
+                return LaunchResult(
+                    pod_id="",
+                    farm=self.name,
+                    estimated_cost_per_hr=0.0,
+                    status="error",
+                    error=f"offer_id={offer_id!r} not found for gpu_type={gpu_type!r}",
+                )
+        elif candidates:
+            offer = min(candidates, key=lambda o: o.price_per_hr)
         if offer is None:
             return LaunchResult(
                 pod_id="",

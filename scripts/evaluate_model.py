@@ -165,11 +165,24 @@ def main(argv: list[str] | None = None) -> int:
         help="Override: do not concatenate DESIGN.md into context.",
     )
     parser.add_argument(
+        "--design-md-context",
+        action="store_true",
+        help="Override: force DESIGN.md into context (default: preserve checkpoint).",
+    )
+    parser.add_argument(
         "--grammar-dsl",
         default="openui",
         help="Grammar backend id (openui | openui-lark | openui-langcore | toy-layout).",
     )
     args = parser.parse_args(argv)
+
+    if args.no_design_md_context and args.design_md_context:
+        raise SystemExit("pass only one of --design-md-context / --no-design-md-context")
+    design_md_override: bool | None = None
+    if args.no_design_md_context:
+        design_md_override = False
+    elif args.design_md_context:
+        design_md_override = True
 
     config = ModelBuildConfig(
         train_dir=args.train_dir,
@@ -185,7 +198,7 @@ def main(argv: list[str] | None = None) -> int:
         schema_in_context=args.schema_in_context,
         retrieval_k=args.retrieval_k,
         best_of_n=args.best_of_n,
-        design_md_in_context=not args.no_design_md_context,
+        design_md_in_context=design_md_override,
         rico_eval_limit=args.rico_limit,
         grammar_dsl=args.grammar_dsl,
     )

@@ -30,7 +30,6 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "grammar_ltr_max_tokens",
         "grammar_ltr_primary",
         "grammar_finalize_validate",
-        "design_md_in_context",
         "design_md_budget",
         "schema_in_context",
         "retrieval_k",
@@ -49,6 +48,11 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
     ):
         if hasattr(config, key) and hasattr(cfg, key):
             setattr(cfg, key, getattr(config, key))
+    # Preserve checkpoint DESIGN.md conditioning unless caller sets an explicit bool.
+    # Eval defaults must not force-enable gold DESIGN.md on no-design-md checkpoints.
+    dm = getattr(config, "design_md_in_context", None)
+    if dm is not None and hasattr(cfg, "design_md_in_context"):
+        cfg.design_md_in_context = bool(dm)
     # Decode quality defaults often wanted at eval time.
     if getattr(config, "grammar_ltr_repair", False) and hasattr(cfg, "grammar_ltr_repair"):
         cfg.grammar_ltr_repair = True
@@ -117,7 +121,11 @@ def build_model(
             ltr_loss_weight=getattr(config, "ltr_loss_weight", 0.5),
             fidelity_loss_weight=getattr(config, "fidelity_loss_weight", 0.0),
             grammar_ltr_primary=config.grammar_ltr_primary,
-            design_md_in_context=config.design_md_in_context,
+            design_md_in_context=(
+                True
+                if config.design_md_in_context is None
+                else bool(config.design_md_in_context)
+            ),
             design_md_budget=config.design_md_budget,
             schema_in_context=getattr(config, "schema_in_context", False),
             retrieval_k=getattr(config, "retrieval_k", 0),

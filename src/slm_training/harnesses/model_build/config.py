@@ -44,7 +44,8 @@ class ModelBuildConfig:
     grammar_finalize_validate: bool = False
     ltr_loss_weight: float = 0.5
     fidelity_loss_weight: float = 0.0
-    design_md_in_context: bool = True
+    # None = preserve checkpoint on load; factory defaults new models to True.
+    design_md_in_context: bool | None = None
     design_md_budget: int = 1800
     schema_in_context: bool = False
     retrieval_k: int = 0

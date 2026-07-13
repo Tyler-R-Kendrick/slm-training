@@ -119,9 +119,17 @@ class RunPodClient:
         offer = None
         offer_id = config.get("offer_id")
         if offer_id:
-            offer = next((o for o in listed.offers if o.offer_id == offer_id), None)
-        if offer is None and listed.offers:
-            offer = listed.offers[0]
+            offer = next((o for o in listed.offers if o.offer_id == str(offer_id)), None)
+            if offer is None:
+                return LaunchResult(
+                    pod_id="",
+                    farm=self.name,
+                    estimated_cost_per_hr=0.0,
+                    status="error",
+                    error=f"offer_id={offer_id!r} not found for gpu_type={gpu_type!r}",
+                )
+        elif listed.offers:
+            offer = min(listed.offers, key=lambda o: o.price_per_hr)
         if offer is None:
             return LaunchResult(
                 pod_id="",
@@ -160,37 +168,14 @@ class RunPodClient:
         try:
             data = await self._gql(mutation, variables)
         except Exception as exc:  # noqa: BLE001
-            # Fallback to inline mutation without typed input alias (API variance)
-            inline = f"""
-            mutation {{
-              podFindAndDeployOnDemand(input: {{
-                cloudType: ALL,
-                gpuCount: 1,
-                volumeInGb: {disk_gb},
-                containerDiskInGb: {disk_gb},
-                gpuTypeId: "{offer.offer_id}",
-                name: "{name}",
-                imageName: "{image}",
-                ports: "22/tcp",
-                volumeMountPath: "/workspace"
-              }}) {{
-                id
-                imageName
-                machineId
-                desiredStatus
-              }}
-            }}
-            """
-            try:
-                data = await self._gql(inline)
-            except Exception as exc2:  # noqa: BLE001
-                return LaunchResult(
-                    pod_id="",
-                    farm=self.name,
-                    estimated_cost_per_hr=offer.price_per_hr,
-                    status="error",
-                    error=f"{exc}; fallback: {exc2}",
-                )
+            # No string-built GraphQL fallback: interpolating name/image is injectable.
+            return LaunchResult(
+                pod_id="",
+                farm=self.name,
+                estimated_cost_per_hr=offer.price_per_hr,
+                status="error",
+                error=str(exc),
+            )
 
         pod = data.get("podFindAndDeployOnDemand") or {}
         pod_id = str(pod.get("id") or "")

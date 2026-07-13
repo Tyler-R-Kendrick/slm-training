@@ -14,7 +14,7 @@ def cheapest_offer(results: dict[str, FarmListResult], gpu_type: str | None = No
         if gpu_type:
             needle = gpu_type.lower()
             offers = [o for o in offers if needle in o.gpu_type.lower()]
-        out[farm] = offers[0] if offers else None
+        out[farm] = min(offers, key=lambda o: o.price_per_hr) if offers else None
     return out
 
 
@@ -106,7 +106,7 @@ def project_costs(
             if worst.total_cost and best_est.total_cost and worst.total_cost > 0:
                 savings = round(100.0 * (1.0 - best_est.total_cost / worst.total_cost), 1)
         reason = (
-            f"{best_est.farm} (${best_est.total_cost}/ projected incl. cactus overhead "
+            f"{best_est.farm} (${best_est.total_cost} projected incl. cactus overhead "
             f"{overhead}x"
             + (f"; ~{savings}% vs highest" if savings is not None else "")
             + ")"

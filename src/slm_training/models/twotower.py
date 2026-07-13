@@ -712,40 +712,39 @@ class TwoTowerModel(nn.Module):
         self.eval()
         if not prompts:
             return []
-        with timed("generate_batch"):
-            n_samples = max(1, int(getattr(self.config, "best_of_n", 1) or 1))
-            if n_samples > 1:
-                pools: list[list[str]] = [[] for _ in prompts]
-                prev = self.config.best_of_n
-                self.config.best_of_n = 1
-                try:
+        n_samples = max(1, int(getattr(self.config, "best_of_n", 1) or 1))
+        if n_samples > 1:
+            pools: list[list[str]] = [[] for _ in prompts]
+            prev = self.config.best_of_n
+            self.config.best_of_n = 1
+            try:
+                with timed("generate_batch"):
                     for _ in range(n_samples):
-                        with timed("generate_once"):
-                            sample = self._generate_batch_once(
-                                prompts,
-                                golds,
-                                max_len=max_len,
-                                grammar_constrained=grammar_constrained,
-                                design_mds=design_mds,
-                            )
+                        sample = self._generate_batch_once(
+                            prompts,
+                            golds,
+                            max_len=max_len,
+                            grammar_constrained=grammar_constrained,
+                            design_mds=design_mds,
+                        )
                         for i, text in enumerate(sample):
                             pools[i].append(text)
-                finally:
-                    self.config.best_of_n = prev
-                out: list[str] = []
-                with timed("best_of_n_rank"):
-                    for i, cands in enumerate(pools):
-                        gold = golds[i] if golds else None
-                        out.append(self._pick_best_of_n(cands, gold))
-                return out
-            with timed("generate_once"):
-                return self._generate_batch_once(
-                    prompts,
-                    golds,
-                    max_len=max_len,
-                    grammar_constrained=grammar_constrained,
-                    design_mds=design_mds,
-                )
+            finally:
+                self.config.best_of_n = prev
+            out: list[str] = []
+            with timed("best_of_n_rank"):
+                for i, cands in enumerate(pools):
+                    gold = golds[i] if golds else None
+                    out.append(self._pick_best_of_n(cands, gold))
+            return out
+        with timed("generate_batch"):
+            return self._generate_batch_once(
+                prompts,
+                golds,
+                max_len=max_len,
+                grammar_constrained=grammar_constrained,
+                design_mds=design_mds,
+            )
 
     def _generate_batch_once(
         self,

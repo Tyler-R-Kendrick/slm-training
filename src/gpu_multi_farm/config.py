@@ -35,7 +35,10 @@ class Settings:
         mode_raw = (os.getenv("GPU_MULTI_FARM_MODE") or "auto").strip().lower()
         if mode_raw not in {"auto", "live", "mock"}:
             mode_raw = "auto"
-        overhead = float(os.getenv("CACTUS_OVERHEAD") or DEFAULT_CACTUS_OVERHEAD)
+        try:
+            overhead = float(os.getenv("CACTUS_OVERHEAD") or DEFAULT_CACTUS_OVERHEAD)
+        except (TypeError, ValueError):
+            overhead = DEFAULT_CACTUS_OVERHEAD
         return cls(
             vast_api_key=_nonempty(os.getenv("VAST_API_KEY")),
             runpod_api_key=_nonempty(os.getenv("RUNPOD_API_KEY")),

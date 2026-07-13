@@ -124,17 +124,16 @@ def train_grpo(
             step_rewards: list[float] = []
             opt.zero_grad(set_to_none=True)
             did_backward = False
+            n_loss_terms = 0
             for record in batch:
                 with timed("rollout"):
-                    prev_train = model.training
                     model.eval()
                     comps: list[str] = []
                     for _ in range(max(2, cfg.group_size)):
                         comps.append(
                             model.generate(record.prompt, gold=None, design_md=None)
                         )
-                    if prev_train:
-                        model.train()
+                    model.train()
                 with timed("reward"):
                     rewards = [
                         structure_reward(
@@ -157,16 +156,22 @@ def train_grpo(
                     skipped += 1
                     continue
                 with timed("backward"):
-                    (loss / len(batch)).backward()
+                    loss.backward()
                     did_backward = True
+                    n_loss_terms += 1
                 step_losses.append(float(loss.detach().cpu()))
             mean_r = sum(step_rewards) / max(1, len(step_rewards))
             if did_backward:
                 with timed("optim_step"):
+                    if n_loss_terms > 1:
+                        for p in model.trainable_parameters():
+                            if p.grad is not None:
+                                p.grad.div_(float(n_loss_terms))
                     torch.nn.utils.clip_grad_norm_(
                         list(model.trainable_parameters()), cfg.max_grad_norm
                     )
                     opt.step()
+            model.eval()
             if mean_r >= best_reward:
                 best_reward = mean_r
                 best_state = {
