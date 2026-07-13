@@ -412,12 +412,49 @@ Artifacts: `outputs/runs/grammar_matrix_summary.json`,
 [`docs/design/grammar-matrix-results.json`](grammar-matrix-results.json),
 `outputs/runs/baseline_reproduction_summary.json`.
 
-## V7 proposed (docs only — not in the runner yet)
+## V7 matrix (speculative denoising)
+
+Implements the speculative-denoising design in
+[speculative-denoising.md](speculative-denoising.md) (paper tags:
+[research-lineage.md](research-lineage.md) §"Speculative denoising (V7)").
+Levers adapt LESS stability signals, DAPD/DAWN attention dependency clusters,
+Self-Spec-MD ordered verification, DSpark survival scheduling, and
+Saguaro-SSD successor caching onto the honest V5/V6 TwoTower stack.
+
+| ID | Approach | Primary lever | Run id |
+| --- | --- | --- | --- |
+| E70 | Stability remask (LESS-lite) | `remask_policy=stability` + persistence commit gate | `qx_e70_stability` |
+| E71 | Attention clusters (DAPD/DAWN-lite) | `unmask_mode=cluster` + anchor-first ordering | `qx_e71_clusters` |
+| E72 | Ordered cluster verification | `cluster_verify` → outcome `(j, repair)` | `qx_e72_cluster_verify` |
+| E73 | Survival head (DSpark-lite) | `survival_gate` + cumulative commit budget | `qx_e73_survival` |
+| E74 | Successor cache (SSD-lite) | `speculative_successor` + K=2 fanout | `qx_e74_successor` |
+| E75 | V7 champion | E53 honest stack + E70–E74 | `qx_e75_v7_champion` |
+
+```bash
+# V7 focused path
+python -m scripts.run_quality_matrix --matrix v7 --only E70,E72,E74,E75 \
+  --steps 80 --device cpu --context-backend scratch --no-design-md-context
+
+# Full V7 with rico cap for CPU time
+python -m scripts.run_quality_matrix --matrix v7 --steps 80 --device cpu \
+  --context-backend scratch --no-design-md-context --rico-limit 20
+```
+
+Beyond parse/fidelity, V7 rows record decode telemetry per eval
+(`speculative_stats` in the run summary): denoiser forwards per generate,
+successor-cache hit rate, remask volume.
+
+## V7 measured results
+
+Pending first matrix run — see `quality-matrix-results.json` (`matrix_set: v7`)
+after `python -m scripts.run_quality_matrix --matrix v7`.
+
+## Verifier-guided repair proposed (docs only — not in the runner yet)
 
 Remaining verifier-guided repair gaps from
 [verifier-guided-repair.md](verifier-guided-repair.md). **Not implemented**.
-**E50–E55 are taken by shipped V6** (CoRe / T2M / slot trust / champion); do
-not reuse those IDs.
+**E50–E55 are taken by shipped V6** (CoRe / T2M / slot trust / champion) and
+**E70–E75 by V7 speculative denoising**; do not reuse those IDs.
 
 | ID | Approach | Primary lever | Status |
 | --- | --- | --- | --- |
