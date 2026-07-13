@@ -34,6 +34,10 @@ mcp = [
   "httpx>=0.27",
   "python-dotenv>=1.0",
 ]
+web = [
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.27",
+]
 
 [project.scripts]
 build-train-data = "scripts.build_train_data:main"
@@ -41,6 +45,7 @@ build-test-data = "scripts.build_test_data:main"
 train-model = "scripts.train_model:main"
 evaluate-model = "scripts.evaluate_model:main"
 multi-farm-mcp = "scripts.multi_farm_mcp:main"
+serve-playground = "scripts.serve_playground:main"
 
 [tool.setuptools.packages.find]
 where = ["src", "."]

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TwoTower · OpenUI Playground</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="atmosphere" aria-hidden="true"></div>
+    <main class="stage">
+      <header class="brand">
+        <p class="brand-mark">TwoTower</p>
+        <p class="brand-sub">OpenUI layout playground</p>
+      </header>
+
+      <section class="compose" aria-label="Generate OpenUI">
+        <label class="prompt-label" for="prompt">Describe the screen</label>
+        <textarea
+          id="prompt"
+          name="prompt"
+          rows="3"
+          placeholder="Hero card with title and body"
+          spellcheck="true"
+        ></textarea>
+
+        <div class="examples" id="examples" aria-label="Example prompts"></div>
+
+        <div class="actions">
+          <button type="button" id="generate" class="cta">Generate</button>
+          <label class="toggle">
+            <input type="checkbox" id="grammar" checked />
+            Grammar guard
+          </label>
+          <p class="status" id="status" role="status"></p>
+        </div>
+      </section>
+
+      <section class="result" aria-live="polite">
+        <div class="result-head">
+          <h2>OpenUI</h2>
+          <span class="badge" id="badge">idle</span>
+        </div>
+        <pre id="output" class="output"><code>// output appears here</code></pre>
+        <p class="error" id="error" hidden></p>
+      </section>
+    </main>
+    <script src="/static/app.js" type="module"></script>
+  </body>
+</html>

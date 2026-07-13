@@ -67,7 +67,15 @@ hero = Card(":hero.title", ":hero.body")
 
 Content props must be placeholder strings. Parsing/serialization/prompt generation come from `@openuidev/lang-core` — see [`tools/openui_bridge/`](tools/openui_bridge/).
 
-## TwoTower model
+## Web playground
+
+```bash
+pip install -e ".[dev,torch,web]"
+# uses outputs/runs/playground_demo/checkpoints/last.pt by default
+python -m scripts.serve_playground --port 8765
+# open http://127.0.0.1:8765
+```
+
 
 - **Context tower**: scratch TokenEncoder **or** frozen HF model (`--context-backend hf`, default `HuggingFaceTB/SmolLM2-135M`)
 - **Denoiser tower**: MaskGIT-style masked token prediction with cross-attention to context
