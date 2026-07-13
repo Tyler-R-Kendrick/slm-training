@@ -34,6 +34,8 @@ class ModelBuildConfig:
     freeze_context: bool = True
     local_files_only: bool = False
     grammar_constrained: bool = True
+    # Grammar / DSL backend id: openui | openui-lark | openui-langcore | toy-layout
+    grammar_dsl: str = "openui"
     grammar_top_k: int = 16
     structural_bias: float = 1.25
     grammar_ltr_repair: bool = False

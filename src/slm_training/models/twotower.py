@@ -628,16 +628,13 @@ class TwoTowerModel(nn.Module):
 
         # Fall back to per-item MaskGIT for non-LTR-primary path.
         out: list[str] = []
-        for i, prompt in enumerate(prompts):
-            gold = golds[i] if golds else None
-            dm = design_mds[i] if design_mds else None
+        for i in range(len(prompts)):
             out.append(
-                self.generate(
-                    prompt,
-                    gold=gold,
-                    max_len=length,
-                    grammar_constrained=use_grammar,
-                    design_md=dm,
+                self._generate_maskgit_one(
+                    ctx[i : i + 1],
+                    ctx_pad[i : i + 1],
+                    length,
+                    use_grammar=use_grammar,
                 )
             )
         return out

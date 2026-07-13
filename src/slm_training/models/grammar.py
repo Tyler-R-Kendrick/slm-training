@@ -1,167 +1,82 @@
-"""Grammar-constrained decode helpers using official OpenUI streaming parser.
+"""Grammar-constrained decode helpers via pluggable GrammarBackend.
 
-Stream checks go through the OpenUI Node bridge (not the Cactus kernel).
+Default backend is OpenUI hybrid (official lang-core when available, else Lark).
+Stream checks and structural priors come from the active DSL backend so other
+grammars can drive the same MaskGIT / LTR decode path.
 """
 
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass
+import os
 from typing import Iterable
 
+from slm_training.dsl.openui_tokens import (
+    PREFERRED_COMPONENT_NAMES,
+    STRUCTURAL_TOKENS,
+)
+from slm_training.dsl.stream_types import StreamStatus
 from slm_training.models.tokenizer import OpenUITokenizer
 
-# Soft structural prior for MaskGIT logits (official openuiLibrary).
-STRUCTURAL_TOKENS = frozenset(
-    {
-        "root",
-        "Stack",
-        "Card",
-        "CardHeader",
-        "TextContent",
-        "Button",
-        "Buttons",
-        "Input",
-        "Form",
-        "FormControl",
-        "Label",
-        "TextArea",
-        "Select",
-        "SelectItem",
-        "CheckBoxGroup",
-        "CheckBoxItem",
-        "RadioGroup",
-        "RadioItem",
-        "SwitchGroup",
-        "SwitchItem",
-        "Slider",
-        "DatePicker",
-        "Image",
-        "ImageBlock",
-        "ImageGallery",
-        "Modal",
-        "Tabs",
-        "TabItem",
-        "Callout",
-        "TextCallout",
-        "Separator",
-        "Table",
-        "Col",
-        "column",
-        "row",
-        "none",
-        "xs",
-        "s",
-        "m",
-        "l",
-        "xl",
-        "2xl",
-        "primary",
-        "secondary",
-        "tertiary",
-        "small",
-        "default",
-        "large",
-        "small-heavy",
-        "large-heavy",
-        "=",
-        "(",
-        ")",
-        "[",
-        "]",
-        ",",
-        "\n",
-        " ",
-        '"',
-        "null",
-        "true",
-        "false",
-    }
-)
-
-PREFERRED_COMPONENT_NAMES = frozenset(
-    {
-        "Stack",
-        "Card",
-        "TextContent",
-        "Button",
-        "Input",
-        "Form",
-        "ImageBlock",
-        "Modal",
-        "Tabs",
-        "Slider",
-        "CheckBoxItem",
-        "RadioItem",
-        "SwitchItem",
-        "DatePicker",
-    }
-)
-
-_STREAM_CACHE: dict[str, "StreamStatus"] = {}
+_STREAM_CACHE: dict[str, StreamStatus] = {}
 _STREAM_CACHE_MAX = 2048
 _STRUCT_ID_CACHE: dict[int, set[int]] = {}
 _BIAS_CACHE: dict[tuple[int, float, str, str], object] = {}
+_ACTIVE_DSL: str | None = None
 
 
-@dataclass(frozen=True)
-class StreamStatus:
-    ok: bool
-    incomplete: bool
-    has_root: bool
-    error_codes: tuple[str, ...]
-    unresolved: tuple[str, ...]
-    serialized: str | None = None
+def set_active_dsl(dsl: str | None) -> None:
+    """Select grammar backend id used by stream_check / structural priors."""
+    global _ACTIVE_DSL, _STREAM_CACHE, _STRUCT_ID_CACHE, _BIAS_CACHE
+    _ACTIVE_DSL = dsl
+    _STREAM_CACHE.clear()
+    _STRUCT_ID_CACHE.clear()
+    _BIAS_CACHE.clear()
+    if dsl:
+        from slm_training.grammar_backends import set_default_backend
 
-    @property
-    def hard_error(self) -> bool:
-        hard = {
-            "unknown-component",
-            "invalid-type",
-            "unexpected-token",
-            "placeholder_required",
-        }
-        return any(code in hard for code in self.error_codes)
+        set_default_backend(dsl)
 
-    @property
-    def complete_ok(self) -> bool:
-        return (
-            self.ok
-            and self.has_root
-            and not self.incomplete
-            and not self.error_codes
-            and not self.unresolved
-        )
+
+def active_dsl() -> str:
+    return _ACTIVE_DSL or os.getenv("SLM_GRAMMAR_DSL") or "openui"
+
+
+def _backend():
+    from slm_training.grammar_backends import get_backend
+
+    return get_backend(active_dsl())
 
 
 def stream_check(source: str) -> StreamStatus:
-    """Run official createStreamingParser over a (possibly partial) program."""
-    key = hashlib.sha256(source.encode("utf-8")).hexdigest()
+    """Run the active DSL backend's streaming / incremental check."""
+    key = hashlib.sha256(f"{active_dsl()}|{source}".encode("utf-8")).hexdigest()
     hit = _STREAM_CACHE.get(key)
     if hit is not None:
         return hit
 
-    from slm_training.dsl import lang_core
-
-    result = lang_core.stream_check(source)
-    errors = result.get("errors") or []
-    codes = tuple(
-        str(e.get("code") or e.get("message") or "error")
-        for e in errors
-        if isinstance(e, dict)
-    )
-    status = StreamStatus(
-        ok=bool(result.get("ok")),
-        incomplete=bool(result.get("incomplete")),
-        has_root=bool(result.get("has_root")),
-        error_codes=codes,
-        unresolved=tuple(result.get("unresolved") or []),
-        serialized=result.get("serialized"),
-    )
+    status = _backend().stream_check(source)
     if len(_STREAM_CACHE) >= _STREAM_CACHE_MAX:
         _STREAM_CACHE.pop(next(iter(_STREAM_CACHE)))
     _STREAM_CACHE[key] = status
     return status
+
+
+def structural_tokens() -> frozenset[str]:
+    try:
+        return _backend().structural_tokens()
+    except Exception:  # noqa: BLE001
+        return STRUCTURAL_TOKENS
+
+
+def preferred_components() -> frozenset[str]:
+    try:
+        comps = _backend().component_names()
+        if comps:
+            return frozenset(c for c in comps if c in PREFERRED_COMPONENT_NAMES) or comps
+    except Exception:  # noqa: BLE001
+        pass
+    return PREFERRED_COMPONENT_NAMES
 
 
 def structural_token_ids(tokenizer: OpenUITokenizer) -> set[int]:
@@ -171,7 +86,7 @@ def structural_token_ids(tokenizer: OpenUITokenizer) -> set[int]:
         return cached
 
     ids: set[int] = set()
-    for tok in STRUCTURAL_TOKENS:
+    for tok in structural_tokens():
         if tok in tokenizer.token_to_id:
             ids.add(tokenizer.token_to_id[tok])
     for tok, tid in tokenizer.token_to_id.items():
@@ -196,7 +111,7 @@ def apply_structural_bias(
     *,
     bias: float = 1.5,
 ):
-    """Boost known OpenUI structural tokens (returns new tensor)."""
+    """Boost known structural tokens (returns new tensor)."""
     import torch
 
     allowed = structural_token_ids(tokenizer)
@@ -228,20 +143,20 @@ def pick_constrained_token(
     Choose a next token from top-k that does not introduce a hard streaming error.
 
     Probes `prefix + token + "("` so bare identifiers are checked as component names.
-    Prefers known OpenUI components / structural tokens.
+    Prefers known components / structural tokens from the active backend.
     """
     import torch
 
     k = min(top_k, int(logits_1d.numel()))
     _values, indices = torch.topk(logits_1d, k=k)
     fallback = int(indices[0].item())
-    try:
-        from slm_training.dsl import bridge_available
-    except Exception:  # noqa: BLE001
-        return fallback
-    if not bridge_available():
+
+    backend = _backend()
+    if not backend.available():
         return fallback
 
+    preferred_names = preferred_components()
+    struct = structural_tokens()
     preferred: list[int] = []
     acceptable: list[int] = []
 
@@ -259,8 +174,8 @@ def pick_constrained_token(
         if status.hard_error:
             continue
         if (
-            token in PREFERRED_COMPONENT_NAMES
-            or token in STRUCTURAL_TOKENS
+            token in preferred_names
+            or token in struct
             or status.has_root
             or status.incomplete
             or status.complete_ok
@@ -293,3 +208,19 @@ def filter_ids_by_stream(
     if not status.hard_error:
         return []
     return list(newly_filled)
+
+
+__all__ = [
+    "PREFERRED_COMPONENT_NAMES",
+    "STRUCTURAL_TOKENS",
+    "StreamStatus",
+    "active_dsl",
+    "apply_structural_bias",
+    "filter_ids_by_stream",
+    "pick_constrained_token",
+    "preferred_components",
+    "set_active_dsl",
+    "stream_check",
+    "structural_token_ids",
+    "structural_tokens",
+]

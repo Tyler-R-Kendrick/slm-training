@@ -86,6 +86,14 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Disable streaming/grammar-constrained decode at generate time.",
     )
+    parser.add_argument(
+        "--grammar-dsl",
+        default="openui",
+        help=(
+            "Grammar backend id for parse/stream/constrained decode "
+            "(openui | openui-lark | openui-langcore | toy-layout)."
+        ),
+    )
     parser.add_argument("--grammar-top-k", type=int, default=16)
     parser.add_argument("--structural-bias", type=float, default=1.25)
     parser.add_argument(
@@ -215,6 +223,7 @@ def main(argv: list[str] | None = None) -> int:
             freeze_context=freeze,
             local_files_only=args.local_files_only,
             grammar_constrained=not args.no_grammar,
+            grammar_dsl=args.grammar_dsl,
             grammar_top_k=args.grammar_top_k,
             structural_bias=args.structural_bias,
             design_md_in_context=not args.no_design_md_context,

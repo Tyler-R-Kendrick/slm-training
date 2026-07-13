@@ -12,6 +12,13 @@ from slm_training.harnesses.model_build.plugin import ModelPlugin, StubModel
 
 def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
     """Apply eval/train decode + conditioning overrides onto a loaded plugin."""
+    # Activate the selected grammar / DSL backend for constrained decode.
+    try:
+        from slm_training.models.grammar import set_active_dsl
+
+        set_active_dsl(getattr(config, "grammar_dsl", None) or "openui")
+    except Exception:  # noqa: BLE001
+        pass
     cfg = getattr(model, "config", None)
     if cfg is None:
         return model
@@ -51,6 +58,12 @@ def build_model(
     records: list[ExampleRecord],
     checkpoint: Path | None = None,
 ) -> Any:
+    try:
+        from slm_training.models.grammar import set_active_dsl
+
+        set_active_dsl(getattr(config, "grammar_dsl", None) or "openui")
+    except Exception:  # noqa: BLE001
+        pass
     name = (config.model_name or "twotower").lower()
     if name == "stub":
         model: ModelPlugin = StubModel(noise_rate=config.noise_rate, seed=config.seed)

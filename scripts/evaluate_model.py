@@ -158,6 +158,11 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Override: do not concatenate DESIGN.md into context.",
     )
+    parser.add_argument(
+        "--grammar-dsl",
+        default="openui",
+        help="Grammar backend id (openui | openui-lark | openui-langcore | toy-layout).",
+    )
     args = parser.parse_args(argv)
 
     config = ModelBuildConfig(
@@ -176,6 +181,7 @@ def main(argv: list[str] | None = None) -> int:
         best_of_n=args.best_of_n,
         design_md_in_context=not args.no_design_md_context,
         rico_eval_limit=args.rico_limit,
+        grammar_dsl=args.grammar_dsl,
     )
 
     if args.ship_gates and not args.suites:

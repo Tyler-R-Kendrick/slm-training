@@ -1,0 +1,25 @@
+// Toy layout DSL — proves GrammarBackend is not OpenUI-specific.
+// Example:
+//   root = row(title, action)
+//   title = text(":hero.title")
+//   action = button(":cta.label")
+
+start: statement*
+
+statement: NAME "=" expr (_NL)*
+
+?expr: call
+     | list
+     | STRING
+     | NAME -> ref
+
+call: NAME "(" [arg_list] ")"
+arg_list: expr ("," expr)*
+list: "[" [expr ("," expr)*] "]"
+
+NAME: /[A-Za-z_][A-Za-z0-9_]*/
+STRING: /"(?:\\.|[^"\\])*"/
+
+_NL: /(\r?\n)+/
+%import common.WS_INLINE
+%ignore WS_INLINE
