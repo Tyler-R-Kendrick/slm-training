@@ -184,7 +184,9 @@ class DenoiserTower(nn.Module):
         context: torch.Tensor,
         pad_id: int,
         ctx_pad_mask: torch.Tensor | None = None,
-    ) -> torch.Tensor:
+        *,
+        return_hidden: bool = False,
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         bsz, seq = noisy_ids.shape
         if seq > self.max_len:
             noisy_ids = noisy_ids[:, : self.max_len]
@@ -194,4 +196,8 @@ class DenoiserTower(nn.Module):
         self_pad = noisy_ids.eq(pad_id)
         for layer in self.layers:
             x = layer(x, self_pad_mask=self_pad, ctx=context, ctx_pad_mask=ctx_pad_mask)
-        return self.lm_head(self.norm(x))
+        hidden = self.norm(x)
+        logits = self.lm_head(hidden)
+        if return_hidden:
+            return logits, hidden
+        return logits

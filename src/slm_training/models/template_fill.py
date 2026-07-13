@@ -1,14 +1,24 @@
-"""Slot-contract template fill helpers for OpenUI decode (E20).
+"""Slot-contract template fill helpers for OpenUI decode (E20 / E35).
 
 Given a placeholder inventory, build a certified-minimal OpenUI skeleton so
 decode can bind inventory slots first, then optionally diffuse structure.
+
+E35 honesty: prefer inventory extracted from the prompt/DESIGN.md text rather
+than a hidden gold ``record.placeholders`` channel.
 """
 
 from __future__ import annotations
 
+import hashlib
 import re
 
+from slm_training.dsl.placeholders import PLACEHOLDER_RE, extract_placeholders
+
 _BINDER_RE = re.compile(r"[^A-Za-z0-9_]+")
+_INVENTORY_LINE_RE = re.compile(
+    r"(?i)(?:placeholders?|slot(?:\s+inventory)?|inventory)\s*:\s*(.+)$",
+    re.MULTILINE,
+)
 
 _BUTTON_HINTS = (
     "button",
@@ -51,6 +61,109 @@ def normalize_placeholders(placeholders: list[str] | None) -> list[str]:
         seen.add(ph)
         out.append(ph)
     return out
+
+
+def ensure_prompt_inventory(prompt: str, placeholders: list[str] | None) -> str:
+    """Append a visible slot inventory section if the prompt lacks placeholders."""
+    slots = normalize_placeholders(placeholders)
+    if not slots:
+        return prompt
+    existing = inventory_from_prompt(prompt, heuristic=False)
+    if existing:
+        return prompt
+    joined = ", ".join(slots)
+    base = (prompt or "").rstrip()
+    return f"{base}\nPlaceholders: {joined}"
+
+
+def inventory_from_prompt(
+    prompt: str | None,
+    design_md: str | None = None,
+    *,
+    heuristic: bool = True,
+) -> list[str]:
+    """
+    Derive a slot inventory from user-visible text (E35).
+
+    Priority:
+      1. Explicit ``Placeholders:`` / ``Inventory:`` lines
+      2. Any ``:ns.slot`` tokens in prompt + DESIGN.md
+      3. (optional) keyword heuristic under a stable namespace from the prompt
+    """
+    text = f"{prompt or ''}\n{design_md or ''}"
+    explicit: list[str] = []
+    for match in _INVENTORY_LINE_RE.finditer(text):
+        explicit.extend(PLACEHOLDER_RE.findall(match.group(1)))
+        for raw in re.split(r"[,;\s]+", match.group(1)):
+            raw = raw.strip().strip("\"'")
+            if not raw:
+                continue
+            body = raw[1:] if raw.startswith(":") else raw
+            if "." in body and body.replace(".", "").replace("_", "").isalnum():
+                explicit.append(raw if raw.startswith(":") else f":{raw}")
+    if explicit:
+        return normalize_placeholders(explicit)
+
+    found = extract_placeholders(text)
+    if found:
+        return normalize_placeholders(found)
+
+    if not heuristic:
+        return []
+    return _heuristic_inventory_from_prompt(prompt or "")
+
+
+def _heuristic_inventory_from_prompt(prompt: str) -> list[str]:
+    """Keyword → inventory under a stable namespace derived from the prompt."""
+    low = prompt.lower()
+    digest = hashlib.sha1(prompt.encode("utf-8")).hexdigest()[:6]
+    ns = "ui"
+    for candidate in (
+        "smoke",
+        "held",
+        "adv",
+        "ood",
+        "hero",
+        "form",
+        "login",
+        "settings",
+        "pricing",
+        "gallery",
+        "auth",
+        "dash",
+        "modal",
+        "tabs",
+    ):
+        if candidate in low:
+            ns = candidate
+            break
+    else:
+        ns = f"p{digest}"
+
+    slots: list[str] = []
+    if any(w in low for w in ("title", "header", "heading", "kicker")):
+        slots.append(f":{ns}.title")
+    if any(w in low for w in ("subtitle", "subheading")):
+        slots.append(f":{ns}.subtitle")
+    if any(w in low for w in ("body", "description", "desc", "copy", "text", "blurb")):
+        slots.append(f":{ns}.body")
+    if any(w in low for w in ("button", "cta", "submit", "action", "continue")):
+        slots.append(f":{ns}.cta")
+    if any(w in low for w in ("email", "input", "field", "password", "search")):
+        slots.append(f":{ns}.input")
+    if any(w in low for w in ("image", "avatar", "photo", "banner", "icon")):
+        slots.append(f":{ns}.image")
+        slots.append(f":{ns}.alt")
+    if any(w in low for w in ("callout", "alert", "notice", "warning")):
+        slots.append(f":{ns}.callout.title")
+        slots.append(f":{ns}.callout.body")
+    if any(w in low for w in ("card", "feature")) and f":{ns}.title" not in slots:
+        slots.append(f":{ns}.title")
+        if f":{ns}.body" not in slots:
+            slots.append(f":{ns}.body")
+    if not slots:
+        slots = [f":{ns}.title", f":{ns}.body"]
+    return normalize_placeholders(slots)
 
 
 def _slot_kind(placeholder: str) -> str:

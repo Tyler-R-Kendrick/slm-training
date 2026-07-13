@@ -29,12 +29,16 @@ from slm_training.models.grammar import (
 )
 from slm_training.models.parallel_decode import (
     select_remask_indices,
+    select_remask_policy_indices,
     select_unmask_indices,
 )
 from slm_training.models.template_fill import (
     build_slot_contract_template,
+    ensure_prompt_inventory,
+    inventory_from_prompt,
     template_mask_positions,
 )
+from slm_training.grammar_fastpath.gate import FastPathGate
 from slm_training.models.tokenizer import OpenUITokenizer
 
 
@@ -125,6 +129,8 @@ class TwoTowerConfig:
     slot_contract_constrained_decode: bool = False
     # E20: seed decode from a slot-contract skeleton (inventory-bound template).
     template_fill_decode: bool = False
+    # E35: derive slot inventory from prompt/DESIGN.md (never gold.placeholders).
+    honest_slot_contract: bool = False
     retrieval_k: int = 0
     best_of_n: int = 1
     seed: int = 0
@@ -136,9 +142,16 @@ class TwoTowerConfig:
     parallel_unmask: str = "adaptive"
     # E22: remask lowest-confidence committed tokens each MaskGIT step (0=off).
     remask_ratio: float = 0.0
+    # E33: combine grammar + gate + entropy into remask budget.
+    remask_use_gate: bool = False
+    remask_use_entropy: bool = False
     # E21: MDLM-faithful continuous-time absorbing mask + 1/t CE weights.
     mdlm_schedule: bool = False
     mdlm_eps: float = 1e-3
+    # E32: flip a fraction of visible (non-masked) tokens to wrong ids.
+    visible_corrupt_rate: float = 0.0
+    # E30: revisable LTR suffix window (0=off). Remask+redo on grammar/entropy.
+    suffix_rollback_window: int = 0
     # Train-speed: cache frozen HF backbone hiddens + formatted context strings.
     cache_context: bool = True
     # Fuse LTR suffix masks into the MaskGIT canvas (one denoiser forward).
@@ -149,6 +162,8 @@ class TwoTowerConfig:
     grammar_draft_window: int = 8
     fastpath_aux_weight: float = 0.0
     fastpath_gate_threshold: float = 0.5
+    # E31: train/use FastPathGate trust head for remask.
+    trust_gate_train: bool = False
 
 
 def _pad_batch(seqs: list[list[int]], pad_id: int, device: str | torch.device | None = None) -> torch.Tensor:
@@ -201,6 +216,8 @@ class TwoTowerModel(nn.Module):
             max_len=self.config.max_target_len,
             dropout=self.config.dropout,
         )
+        # E31 BackPlay-lite: plug-in trust head over denoiser hiddens.
+        self.trust_gate = FastPathGate(self.config.d_model)
         self._rng = random.Random(self.config.seed)
         self.gen_len = self.config.max_target_len
         # Optional retrieval bank: list[(norm_prompt, openui, id)]
@@ -271,7 +288,12 @@ class TwoTowerModel(nn.Module):
     def _mask_targets(
         self, target_ids: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor | None]:
-        """Return noisy_ids, predict mask, and optional per-row MDLM weights."""
+        """Return noisy_ids, predict mask, and optional per-row MDLM weights.
+
+        When ``visible_corrupt_rate > 0`` (E32), a fraction of *visible*
+        (non-mask) tokens are replaced with wrong vocab ids while remaining in
+        the predict mask so the denoiser learns to revise wrong visibles.
+        """
         bsz, seq = target_ids.shape
         device = target_ids.device
         frozen = target_ids.eq(self.tokenizer.pad_id) | target_ids.eq(self.tokenizer.bos_id)
@@ -298,6 +320,28 @@ class TwoTowerModel(nn.Module):
                     noise[i, int(valid[self._rng.randrange(valid.numel())])] = True
         noisy = target_ids.clone()
         noisy[noise] = self.tokenizer.mask_id
+
+        # E32: corrupt a fraction of remaining visible tokens to wrong ids.
+        corrupt_rate = float(getattr(self.config, "visible_corrupt_rate", 0.0) or 0.0)
+        if corrupt_rate > 0.0:
+            visible = (~noise) & (~frozen)
+            flip = (torch.rand(bsz, seq, device=device) < corrupt_rate) & visible
+            if bool(flip.any()):
+                vocab = self.tokenizer.vocab_size
+                # Sample wrong tokens uniformly; reject pad/bos/mask/gold.
+                wrong = torch.randint(0, vocab, (bsz, seq), device=device)
+                special = {
+                    self.tokenizer.pad_id,
+                    self.tokenizer.bos_id,
+                    self.tokenizer.eos_id,
+                    self.tokenizer.mask_id,
+                    self.tokenizer.unk_id,
+                }
+                for sid in special:
+                    wrong = torch.where(wrong.eq(sid), (wrong + 1) % vocab, wrong)
+                wrong = torch.where(wrong.eq(target_ids), (wrong + 1) % vocab, wrong)
+                noisy = torch.where(flip, wrong, noisy)
+                noise = noise | flip
         return noisy, noise, row_weights
 
     def _merge_ltr_suffix_mask(
@@ -353,7 +397,9 @@ class TwoTowerModel(nn.Module):
                     r.prompt,
                     r.design_md,
                     query_prompt=r.prompt,
-                    slot_contract=list(r.placeholders or [])
+                    slot_contract=self._resolve_slot_contract(
+                        r.prompt, r, r.design_md
+                    )
                     if getattr(self.config, "slot_contract_in_context", False)
                     else None,
                 )
@@ -832,12 +878,110 @@ class TwoTowerModel(nn.Module):
                     for b in hit_eos.nonzero(as_tuple=False).flatten().tolist():
                         ids[b, t + 1 :] = tok.pad_id
                 active = active & ~pred.eq(tok.eos_id)
+
+                # E30: suffix-rollback — revisable window behind LTR frontier.
+                window = int(getattr(self.config, "suffix_rollback_window", 0) or 0)
+                if window > 0 and t >= 2 and (t % max(2, window // 2) == 0):
+                    row_logits = row if need_model else None
+                    for bi in active.nonzero(as_tuple=False).flatten().tolist():
+                        prefix_text = self._decode_ids(ids[bi, : t + 1])
+                        try:
+                            status = stream_check(prefix_text)
+                            hard = bool(status.hard_error)
+                        except Exception:  # noqa: BLE001
+                            hard = True
+                        # Entropy spike on current position as secondary trigger.
+                        ent_spike = False
+                        if row_logits is not None:
+                            try:
+                                probs_t = F.softmax(row_logits[bi], dim=-1)
+                                ent = float(
+                                    (-(probs_t * (probs_t + 1e-9).log()).sum()).item()
+                                )
+                                ent_spike = ent > math.log(max(2, tok.vocab_size)) * 0.55
+                            except Exception:  # noqa: BLE001
+                                ent_spike = False
+                        if not (hard or ent_spike):
+                            continue
+                        start = max(1, t - window + 1)
+                        # Remask suffix window and re-denoise left-to-right.
+                        ids[bi, start : t + 1] = tok.mask_id
+                        for rt in range(start, t + 1):
+                            forced = (
+                                force_emit_token_id(tok, ids[bi, :rt].tolist())
+                                if use_fast
+                                else None
+                            )
+                            logits_r = self.denoiser(
+                                ids[bi : bi + 1],
+                                ctx[bi : bi + 1],
+                                pad_id=tok.pad_id,
+                                ctx_pad_mask=ctx_pad[bi : bi + 1],
+                            )
+                            if bias:
+                                logits_r = apply_structural_bias(
+                                    logits_r, tok, bias=bias
+                                )
+                            contract = (
+                                self._slot_contracts[bi]
+                                if self._slot_contracts
+                                and bi < len(self._slot_contracts)
+                                else None
+                            )
+                            if not getattr(
+                                self.config, "slot_contract_constrained_decode", False
+                            ):
+                                contract = None
+                            choice = pick_constrained_token(
+                                logits_r[0, rt],
+                                tok,
+                                ids[bi, :rt].tolist(),
+                                top_k=self.config.grammar_top_k,
+                                forced_token_id=forced,
+                                slot_contract=contract,
+                                **self._pick_kwargs(),
+                            )
+                            if choice is None:
+                                ids[bi, rt] = tok.eos_id
+                                if rt + 1 < canvas:
+                                    ids[bi, rt + 1 :] = tok.pad_id
+                                active[bi] = False
+                                break
+                            ids[bi, rt] = choice
             start_t = canvas
             if not bool(active.any()):
                 break
 
         assert ids is not None
         return ids
+
+    def _resolve_slot_contract(
+        self,
+        prompt: str,
+        gold: ExampleRecord | None = None,
+        design_md: str | None = None,
+    ) -> list[str] | None:
+        """Return inventory for decode/context.
+
+        E35 honest mode: inventory comes from the user-visible prompt/DESIGN.md
+        only (never ``gold.placeholders``). When the prompt lacks an explicit
+        inventory, a keyword heuristic is used. Non-honest mode (legacy V3)
+        falls back to gold placeholders for template fill / conditioning.
+        """
+        dm = design_md
+        if dm is None and gold is not None:
+            dm = gold.design_md
+        honest = bool(getattr(self.config, "honest_slot_contract", False))
+        if honest:
+            inv = inventory_from_prompt(prompt, dm, heuristic=True)
+            return inv or None
+        # Prefer visible inventory when present, else gold (legacy path).
+        inv = inventory_from_prompt(prompt, dm, heuristic=False)
+        if inv:
+            return inv
+        if gold is not None and gold.placeholders:
+            return list(gold.placeholders)
+        return inventory_from_prompt(prompt, dm, heuristic=True) or None
 
     def _context_prompts(
         self,
@@ -849,13 +993,12 @@ class TwoTowerModel(nn.Module):
         use_contract = bool(getattr(self.config, "slot_contract_in_context", False))
         for i, prompt in enumerate(prompts):
             dm = design_mds[i] if design_mds else None
+            gold = golds[i] if golds else None
+            if gold is not None and dm is None:
+                dm = gold.design_md  # type: ignore[union-attr]
             contract: list[str] | None = None
-            if golds and golds[i] is not None:
-                gold = golds[i]
-                if dm is None:
-                    dm = gold.design_md  # type: ignore[union-attr]
-                if use_contract:
-                    contract = list(gold.placeholders or [])  # type: ignore[union-attr]
+            if use_contract:
+                contract = self._resolve_slot_contract(prompt, gold, dm)
             out.append(
                 self._format_one_context(
                     prompt,
@@ -1029,10 +1172,25 @@ class TwoTowerModel(nn.Module):
         use_contract_decode = bool(
             getattr(self.config, "slot_contract_constrained_decode", False)
         ) or bool(getattr(self.config, "template_fill_decode", False))
-        if use_contract_decode and golds:
-            self._slot_contracts = [
-                list(g.placeholders or []) if g else None for g in golds
+        honest = bool(getattr(self.config, "honest_slot_contract", False))
+        # E35: surface inventory in the user-visible prompt when gold provides
+        # slots but the prompt text does not (inventory-in-prompt API).
+        if honest and golds:
+            prompts = [
+                ensure_prompt_inventory(
+                    prompts[i],
+                    list(golds[i].placeholders or []) if golds[i] is not None else None,
+                )
+                for i in range(len(prompts))
             ]
+        if use_contract_decode:
+            self._slot_contracts = []
+            for i, prompt in enumerate(prompts):
+                gold = golds[i] if golds else None
+                dm = design_mds[i] if design_mds else None
+                self._slot_contracts.append(
+                    self._resolve_slot_contract(prompt, gold, dm)
+                )
         else:
             self._slot_contracts = None
         ctx_prompts = self._context_prompts(prompts, golds=golds, design_mds=design_mds)
@@ -1233,16 +1391,57 @@ class TwoTowerModel(nn.Module):
                 for t in remask:
                     ids[0, t] = self.tokenizer.mask_id
                     unknown[0, t] = True
+            else:
+                remask = []
 
-            # E22: confidence remasking of weak committed tokens (self-correction).
+            # E22 / E33: confidence remasking (+ optional gate/entropy policy).
             if remask_ratio > 0.0 and step < steps - 1:
                 known = ~unknown
-                remask_flat = select_remask_indices(
-                    conf,
-                    known,
-                    remask_ratio=remask_ratio,
-                    protect_bos=True,
+                use_policy = bool(
+                    getattr(self.config, "remask_use_gate", False)
+                    or getattr(self.config, "remask_use_entropy", False)
+                    or remask
                 )
+                gate_trust = None
+                entropy = None
+                if use_policy:
+                    # Entropy from current softmax; optional trust gate on hiddens.
+                    log_probs = torch.log(probs.clamp(min=1e-9))
+                    entropy = -(probs * log_probs).sum(dim=-1)
+                    if bool(getattr(self.config, "remask_use_gate", False)):
+                        try:
+                            _logits_h, hidden = self.denoiser(
+                                ids,
+                                ctx,
+                                pad_id=self.tokenizer.pad_id,
+                                ctx_pad_mask=ctx_pad,
+                                return_hidden=True,
+                            )
+                            gate_trust = self.trust_gate(hidden)
+                        except Exception:  # noqa: BLE001
+                            gate_trust = None
+                    remask_flat = select_remask_policy_indices(
+                        conf,
+                        known,
+                        remask_ratio=remask_ratio,
+                        protect_bos=True,
+                        grammar_positions=remask,
+                        gate_trust=gate_trust,
+                        entropy=entropy
+                        if bool(getattr(self.config, "remask_use_entropy", False))
+                        or gate_trust is not None
+                        else None,
+                        gate_threshold=float(
+                            getattr(self.config, "fastpath_gate_threshold", 0.5) or 0.5
+                        ),
+                    )
+                else:
+                    remask_flat = select_remask_indices(
+                        conf,
+                        known,
+                        remask_ratio=remask_ratio,
+                        protect_bos=True,
+                    )
                 for idx in remask_flat:
                     b = idx // length
                     t = idx % length

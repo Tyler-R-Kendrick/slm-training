@@ -370,10 +370,16 @@ def pick_constrained_token(
     if forced_token_id is not None:
         # Force-emit comes from significant-lexeme DFA and can skip whitespace
         # tokens that our OpenUI tokenizer models explicitly. Prefer a legal
-        # model argmax over a structural force that would drop spaces.
+        # whitespace / separator argmax over a structural force that would drop
+        # spaces — but never let an arbitrary high-logit illegal-for-product
+        # token (Card, etc.) beat a forced structural emit.
         argmax_id = int(logits_1d.argmax().item())
         if argmax_id != int(forced_token_id) and _legal(argmax_id):
-            return argmax_id
+            argmax_tok = tokenizer.id_to_token.get(argmax_id, "")
+            if argmax_tok in {" ", "\n", "\t"} or (
+                argmax_tok and argmax_tok.isspace()
+            ):
+                return argmax_id
         if _legal(int(forced_token_id)):
             return int(forced_token_id)
         forced_token_id = None

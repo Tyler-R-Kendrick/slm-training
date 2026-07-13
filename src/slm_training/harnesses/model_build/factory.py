@@ -35,6 +35,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "slot_contract_in_context",
         "slot_contract_constrained_decode",
         "template_fill_decode",
+        "honest_slot_contract",
         "retrieval_k",
         "best_of_n",
         "fidelity_loss_weight",
@@ -46,7 +47,15 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "cache_context",
         "fuse_ltr_loss",
         "grammar_fastpath",
+        "grammar_fastpath_mode",
+        "grammar_draft_window",
         "fastpath_aux_weight",
+        "fastpath_gate_threshold",
+        "suffix_rollback_window",
+        "remask_use_gate",
+        "remask_use_entropy",
+        "visible_corrupt_rate",
+        "trust_gate_train",
         "grammar_prefer_structural",
         "grammar_trust_model",
         "grammar_sample_decode",
@@ -57,6 +66,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "use_compile",
         "compile_mode",
         "grammar_dsl",
+        "gen_steps",
     ):
         if hasattr(config, key) and hasattr(cfg, key):
             setattr(cfg, key, getattr(config, key))
@@ -145,6 +155,7 @@ def build_model(
                 config, "slot_contract_constrained_decode", False
             ),
             template_fill_decode=getattr(config, "template_fill_decode", False),
+            honest_slot_contract=getattr(config, "honest_slot_contract", False),
             retrieval_k=getattr(config, "retrieval_k", 0),
             best_of_n=getattr(config, "best_of_n", 1),
             parallel_unmask=getattr(config, "parallel_unmask", "adaptive"),
@@ -157,7 +168,21 @@ def build_model(
             cache_context=getattr(config, "cache_context", True),
             fuse_ltr_loss=getattr(config, "fuse_ltr_loss", True),
             grammar_fastpath=getattr(config, "grammar_fastpath", True),
+            grammar_fastpath_mode=getattr(config, "grammar_fastpath_mode", "hybrid"),
+            grammar_draft_window=int(getattr(config, "grammar_draft_window", 8) or 8),
             fastpath_aux_weight=getattr(config, "fastpath_aux_weight", 0.0),
+            fastpath_gate_threshold=float(
+                getattr(config, "fastpath_gate_threshold", 0.5) or 0.5
+            ),
+            suffix_rollback_window=int(
+                getattr(config, "suffix_rollback_window", 0) or 0
+            ),
+            remask_use_gate=bool(getattr(config, "remask_use_gate", False)),
+            remask_use_entropy=bool(getattr(config, "remask_use_entropy", False)),
+            visible_corrupt_rate=float(
+                getattr(config, "visible_corrupt_rate", 0.0) or 0.0
+            ),
+            trust_gate_train=bool(getattr(config, "trust_gate_train", False)),
             grammar_prefer_structural=getattr(config, "grammar_prefer_structural", True),
             grammar_trust_model=getattr(config, "grammar_trust_model", False),
             grammar_sample_decode=getattr(config, "grammar_sample_decode", False),
