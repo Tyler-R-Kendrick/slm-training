@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol
 
+from slm_training.data.contract import GenerationRequest
 from slm_training.dsl.schema import ExampleRecord
 
 
@@ -17,6 +18,9 @@ class ModelPlugin(Protocol):
 
     def generate(self, prompt: str, gold: ExampleRecord | None = None) -> str:
         """Generate OpenUI for a prompt."""
+
+    def generate_batch_requests(self, requests: list[GenerationRequest]) -> list[str]:
+        """Generate using production-available inputs only."""
 
     def save(self, path: Path) -> None:
         ...
@@ -58,6 +62,9 @@ class StubModel:
     ) -> list[str]:
         _ = golds
         return [self.generate(p) for p in prompts]
+
+    def generate_batch_requests(self, requests: list[GenerationRequest]) -> list[str]:
+        return [self.generate(request.prompt) for request in requests]
 
     def save(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)

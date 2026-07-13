@@ -13,6 +13,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from slm_training.dsl.schema import ExampleRecord
+from slm_training.harnesses.model_build.plugin import GenerationRequest
 from slm_training.models.blocks import DenoiserTower
 from slm_training.models.context import (
     HFContextEncoder,
@@ -160,6 +161,36 @@ def _pad_batch(seqs: list[list[int]], pad_id: int, device: str | torch.device | 
     if device is not None:
         out = out.to(device)
     return out
+
+
+def _truncate_with_eos(ids: list[int], max_len: int, eos_id: int) -> list[int]:
+    """Truncate a target without dropping its termination token."""
+    if max_len <= 0:
+        return []
+    if len(ids) <= max_len:
+        return list(ids)
+    out = list(ids[:max_len])
+    out[-1] = eos_id
+    return out
+
+
+def _load_checkpoint_state(model: nn.Module, state_dict: dict[str, torch.Tensor]) -> None:
+    """Load a checkpoint while rejecting silent trainable-weight mismatches."""
+    missing, unexpected = model.load_state_dict(state_dict, strict=False)
+    config = getattr(model, "config", None)
+    allowed_missing: set[str] = set()
+    if (
+        config is not None
+        and bool(getattr(config, "freeze_context", False))
+        and is_hf_context(getattr(model, "context", None))
+    ):
+        allowed_missing = {key for key in missing if key.startswith("context.backbone.")}
+    bad_missing = sorted(set(missing) - allowed_missing)
+    if bad_missing or unexpected:
+        raise ValueError(
+            "checkpoint state mismatch: "
+            f"missing={bad_missing!r} unexpected={sorted(unexpected)!r}"
+        )
 
 
 class TwoTowerModel(nn.Module):
@@ -363,7 +394,11 @@ class TwoTowerModel(nn.Module):
             if cache_on and key in self._target_ids_cache:
                 targets.append(self._target_ids_cache[key])
             else:
-                ids = self.tokenizer.encode(r.openui)[: self.config.max_target_len]
+                ids = _truncate_with_eos(
+                    self.tokenizer.encode(r.openui),
+                    self.config.max_target_len,
+                    self.tokenizer.eos_id,
+                )
                 if cache_on:
                     self._target_ids_cache[key] = ids
                 targets.append(ids)
@@ -468,9 +503,9 @@ class TwoTowerModel(nn.Module):
         *,
         query_prompt: str | None = None,
         slot_contract: list[str] | None = None,
+        schema: str | None = None,
     ) -> str:
-        schema = None
-        if getattr(self.config, "schema_in_context", False):
+        if schema is None and getattr(self.config, "schema_in_context", False):
             from slm_training.quality import compact_schema_snippet
 
             schema = compact_schema_snippet(budget=min(600, self.config.design_md_budget))
@@ -680,7 +715,8 @@ class TwoTowerModel(nn.Module):
                     break
                 end = min(end + block, length)
             return stages if stages else [length]
-        stages = [s for s in self.config.grammar_ltr_stages if 1 < s <= length]
+        raw_stages = self.config.grammar_ltr_stages or (64, 128, 192, 256)
+        stages = [s for s in raw_stages if 1 < s <= length]
         if not stages or stages[-1] != length:
             stages = [*stages, length] if stages else [length]
         seen: set[int] = set()
@@ -844,24 +880,29 @@ class TwoTowerModel(nn.Module):
         prompts: list[str],
         golds: list[ExampleRecord | None] | None = None,
         design_mds: list[str | None] | None = None,
+        *,
+        slot_contracts: list[list[str] | None] | None = None,
+        schemas: list[str | None] | None = None,
     ) -> list[str]:
         out: list[str] = []
         use_contract = bool(getattr(self.config, "slot_contract_in_context", False))
         for i, prompt in enumerate(prompts):
             dm = design_mds[i] if design_mds else None
             contract: list[str] | None = None
-            if golds and golds[i] is not None:
-                gold = golds[i]
-                if dm is None:
-                    dm = gold.design_md  # type: ignore[union-attr]
-                if use_contract:
-                    contract = list(gold.placeholders or [])  # type: ignore[union-attr]
+            if slot_contracts and i < len(slot_contracts):
+                contract = slot_contracts[i]
+            elif golds and golds[i] is not None and use_contract:
+                contract = list(golds[i].placeholders or [])  # type: ignore[union-attr]
+            schema = schemas[i] if schemas and i < len(schemas) else None
+            if golds and golds[i] is not None and dm is None:
+                dm = golds[i].design_md  # type: ignore[union-attr]
             out.append(
                 self._format_one_context(
                     prompt,
                     dm,
                     query_prompt=prompt,
                     slot_contract=contract,
+                    schema=schema,
                 )
             )
         return out
@@ -1010,6 +1051,57 @@ class TwoTowerModel(nn.Module):
                 design_mds=design_mds,
             )
 
+    @torch.inference_mode()
+    def generate_batch_requests(
+        self,
+        requests: list[GenerationRequest],
+        *,
+        max_len: int | None = None,
+        grammar_constrained: bool | None = None,
+    ) -> list[str]:
+        """Generate using production-available inputs only (no gold records)."""
+        if not requests:
+            return []
+        prompts = [r.prompt for r in requests]
+        slot_contracts = [
+            list(r.slot_contract) if r.slot_contract else None for r in requests
+        ]
+        schemas = [r.schema for r in requests]
+        design_mds = [r.design_md for r in requests]
+        n_samples = max(1, int(getattr(self.config, "best_of_n", 1) or 1))
+        if n_samples > 1:
+            pools: list[list[str]] = [[] for _ in requests]
+            prev = self.config.best_of_n
+            self.config.best_of_n = 1
+            try:
+                for _ in range(n_samples):
+                    sample = self._generate_batch_once(
+                        prompts,
+                        golds=None,
+                        max_len=max_len,
+                        grammar_constrained=grammar_constrained,
+                        design_mds=design_mds,
+                        slot_contracts=slot_contracts,
+                        schemas=schemas,
+                    )
+                    for i, text in enumerate(sample):
+                        pools[i].append(text)
+            finally:
+                self.config.best_of_n = prev
+            out: list[str] = []
+            for cands in pools:
+                out.append(self._pick_best_of_n(cands, None))
+            return out
+        return self._generate_batch_once(
+            prompts,
+            golds=None,
+            max_len=max_len,
+            grammar_constrained=grammar_constrained,
+            design_mds=design_mds,
+            slot_contracts=slot_contracts,
+            schemas=schemas,
+        )
+
     def _generate_batch_once(
         self,
         prompts: list[str],
@@ -1018,6 +1110,8 @@ class TwoTowerModel(nn.Module):
         max_len: int | None = None,
         grammar_constrained: bool | None = None,
         design_mds: list[str | None] | None = None,
+        slot_contracts: list[list[str] | None] | None = None,
+        schemas: list[str | None] | None = None,
     ) -> list[str]:
         use_grammar = (
             self.config.grammar_constrained
@@ -1029,13 +1123,26 @@ class TwoTowerModel(nn.Module):
         use_contract_decode = bool(
             getattr(self.config, "slot_contract_constrained_decode", False)
         ) or bool(getattr(self.config, "template_fill_decode", False))
-        if use_contract_decode and golds:
-            self._slot_contracts = [
-                list(g.placeholders or []) if g else None for g in golds
-            ]
+        if use_contract_decode:
+            if slot_contracts is not None:
+                self._slot_contracts = [
+                    list(c) if c else None for c in slot_contracts
+                ]
+            elif golds:
+                self._slot_contracts = [
+                    list(g.placeholders or []) if g else None for g in golds
+                ]
+            else:
+                self._slot_contracts = None
         else:
             self._slot_contracts = None
-        ctx_prompts = self._context_prompts(prompts, golds=golds, design_mds=design_mds)
+        ctx_prompts = self._context_prompts(
+            prompts,
+            golds=golds,
+            design_mds=design_mds,
+            slot_contracts=slot_contracts,
+            schemas=schemas,
+        )
         ctx, ctx_pad = self._encode_context(ctx_prompts)
 
         if use_grammar and self.config.grammar_ltr_primary:
@@ -1349,10 +1456,7 @@ class TwoTowerModel(nn.Module):
         payload = torch.load(path, map_location=self.device_name, weights_only=False)
         if payload.get("kind") != "twotower":
             raise ValueError(f"checkpoint kind {payload.get('kind')!r} is not twotower")
-        missing, unexpected = self.load_state_dict(
-            payload["state_dict"], strict=False
-        )
-        _ = missing, unexpected
+        _load_checkpoint_state(self, payload["state_dict"])
         if "gen_len" in payload:
             self.gen_len = int(payload["gen_len"])
         tok_path = path.with_suffix(".tokenizer.json")
@@ -1374,11 +1478,13 @@ class TwoTowerModel(nn.Module):
         raw_cfg = dict(payload.get("config") or {})
         if isinstance(raw_cfg.get("grammar_ltr_stages"), list):
             raw_cfg["grammar_ltr_stages"] = tuple(raw_cfg["grammar_ltr_stages"])
+        if raw_cfg.get("grammar_ltr_stages") is None:
+            raw_cfg["grammar_ltr_stages"] = (64, 128, 192, 256)
         # Ignore unknown keys for forward/back compat
         valid = {f.name for f in TwoTowerConfig.__dataclass_fields__.values()}  # type: ignore[attr-defined]
         cfg = TwoTowerConfig(**{k: v for k, v in raw_cfg.items() if k in valid})
         model = cls(tokenizer=tokenizer, config=cfg, device=device)
-        model.load_state_dict(payload["state_dict"], strict=False)
+        _load_checkpoint_state(model, payload["state_dict"])
         if "gen_len" in payload:
             model.gen_len = int(payload["gen_len"])
         return model

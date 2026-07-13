@@ -12,19 +12,35 @@ from slm_training.dsl.lang_core import (
     validate,
 )
 from slm_training.dsl.placeholders import extract_placeholders, is_placeholder
+from slm_training.dsl.production_codec import (
+    ProductionCodec,
+    ProductionProgram,
+    ProductionVocab,
+    build_vocab_from_corpus,
+    decode_productions,
+    encode_openui,
+    roundtrip_openui,
+)
 from slm_training.dsl.schema import ExampleRecord, load_jsonl, write_jsonl
 
 __all__ = [
     "ExampleRecord",
     "ParseError",
     "Program",
+    "ProductionCodec",
+    "ProductionProgram",
+    "ProductionVocab",
     "bridge_available",
+    "build_vocab_from_corpus",
+    "decode_productions",
+    "encode_openui",
     "extract_placeholders",
     "generate_system_prompt",
     "is_placeholder",
     "library_schema",
     "load_jsonl",
     "parse",
+    "roundtrip_openui",
     "serialize",
     "stream_check",
     "validate",
