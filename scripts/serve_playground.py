@@ -8,11 +8,14 @@ from pathlib import Path
 
 
 def main(argv: list[str] | None = None) -> int:
+    from slm_training.models.paths import PLAYGROUND_DEMO_CHECKPOINT
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--checkpoint",
         type=Path,
-        default=Path("outputs/runs/playground_demo/checkpoints/last.pt"),
+        default=PLAYGROUND_DEMO_CHECKPOINT,
+        help="Checkpoint path (default: fixtures/checkpoints/playground_demo/last.pt).",
     )
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--port", type=int, default=8765)
