@@ -14,7 +14,6 @@ from slm_training.harnesses.model_build.eval_runner import evaluate_suites
 from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
     evaluate_ship_gates,
-    write_ship_gates,
 )
 
 
@@ -851,7 +850,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--test-dir", type=Path, default=Path("outputs/test_data/v1"))
     parser.add_argument("--run-root", type=Path, default=Path("outputs/runs"))
     parser.add_argument("--device", default="cpu")
-    parser.add_argument("--context-backend", choices=("scratch", "hf"), default="scratch")
+    parser.add_argument(
+        "--context-backend", choices=("scratch", "hf"), default="scratch"
+    )
     parser.add_argument("--local-files-only", action="store_true")
     parser.add_argument("--steps", type=int, default=80)
     parser.add_argument("--batch-size", type=int, default=4)
@@ -867,7 +868,7 @@ def main(argv: list[str] | None = None) -> int:
         "--workers",
         type=int,
         default=1,
-        help="Parallel experiment workers (process pool; 1 = sequential).",
+        help="Parallel experiment workers (thread pool; 1 = sequential).",
     )
     parser.add_argument(
         "--compile",
@@ -1020,7 +1021,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Run independent train experiments possibly in parallel.
     if workers > 1 and len(independent) > 1:
-        from concurrent.futures import ProcessPoolExecutor, as_completed
+        from concurrent.futures import as_completed
 
         # Process pool can't pickle complex args cleanly — fall back to threads
         # for shared-memory CPU parallelism without re-importing CUDA contexts.

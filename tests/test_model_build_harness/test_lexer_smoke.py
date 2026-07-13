@@ -7,7 +7,7 @@ from pathlib import Path
 from slm_training.dsl.schema import ExampleRecord, write_jsonl
 from slm_training.harnesses.model_build import ModelBuildConfig, train
 from slm_training.harnesses.model_build.eval_runner import evaluate_suites
-from slm_training.models.dsl_tokenizer import DSLNativeTokenizer, is_dsl_native_tokenizer
+from slm_training.models.dsl_tokenizer import is_dsl_native_tokenizer
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 
 

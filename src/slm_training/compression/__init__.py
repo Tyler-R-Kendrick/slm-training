@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import json
 import math
-import struct
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -328,7 +327,9 @@ def decompress_state_dict(payload: dict[str, Any]) -> dict[str, Any]:
             layout=item["layout"],
             codebook=np.asarray(item["codebook"], dtype=np.uint16),
             index=np.frombuffer(bytes.fromhex(item["index"]), dtype=np.uint8).copy(),
-            mantissa=np.frombuffer(bytes.fromhex(item["mantissa"]), dtype=np.uint8).copy(),
+            mantissa=np.frombuffer(
+                bytes.fromhex(item["mantissa"]), dtype=np.uint8
+            ).copy(),
             escape=np.asarray(item["escape"], dtype=np.uint16),
             source_dtype=item.get("source_dtype") or "bfloat16",
         )
@@ -380,7 +381,7 @@ def write_compressed_checkpoint(
 
     checkpoint = Path(checkpoint)
     out_path = Path(out_path)
-    payload_in = torch.load(checkpoint, map_location="cpu", weights_only=False)
+    payload_in = torch.load(checkpoint, map_location="cpu", weights_only=True)
     state = payload_in.get("state_dict") or payload_in
     compressed, stats = compress_state_dict(state, layout=layout)
     summary = summarize_stats(stats)

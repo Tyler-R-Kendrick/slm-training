@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from slm_training.bridge_utils import readline_with_timeout
 from slm_training.dsl.placeholders import extract_placeholders
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -23,12 +24,19 @@ _REPL_LOCK = threading.Lock()
 _REPL_PROC: subprocess.Popen[str] | None = None
 _RESULT_CACHE: dict[str, Any] = {}
 _RESULT_CACHE_MAX = 2048
+_CACHE_LOCK = threading.Lock()
 
 
 def _cache_put(key: str, value: Any) -> None:
-    if len(_RESULT_CACHE) >= _RESULT_CACHE_MAX:
-        _RESULT_CACHE.pop(next(iter(_RESULT_CACHE)))
-    _RESULT_CACHE[key] = value
+    with _CACHE_LOCK:
+        if len(_RESULT_CACHE) >= _RESULT_CACHE_MAX:
+            _RESULT_CACHE.pop(next(iter(_RESULT_CACHE)))
+        _RESULT_CACHE[key] = value
+
+
+def _cache_get(key: str) -> Any:
+    with _CACHE_LOCK:
+        return _RESULT_CACHE.get(key)
 
 
 class ParseError(ValueError):
@@ -59,7 +67,7 @@ def _node_bin() -> str:
 def bridge_available() -> bool:
     node = _node_bin()
     cli = Path(os.getenv("OPENUI_BRIDGE_CLI") or DEFAULT_CLI)
-    node_modules = (cli.parent / "node_modules" / "@openuidev" / "lang-core")
+    node_modules = cli.parent / "node_modules" / "@openuidev" / "lang-core"
     return bool(node) and cli.is_file() and node_modules.is_dir()
 
 
@@ -143,8 +151,13 @@ def _invoke_once(payload: dict[str, Any], timeout_s: float = 30.0) -> dict[str, 
     return result
 
 
+def _readline_with_timeout(proc: subprocess.Popen[str], timeout_s: float) -> str:
+    return readline_with_timeout(
+        proc, timeout_s, error_message="OpenUI bridge REPL read failed"
+    )
+
+
 def _invoke_repl(payload: dict[str, Any], timeout_s: float = 30.0) -> dict[str, Any]:
-    _ = timeout_s
     with _REPL_LOCK:
         proc = _ensure_repl()
         assert proc.stdin is not None and proc.stdout is not None
@@ -158,7 +171,7 @@ def _invoke_repl(payload: dict[str, Any], timeout_s: float = 30.0) -> dict[str, 
             proc.stdin.write(json.dumps(payload) + "\n")
             proc.stdin.flush()
 
-        line = proc.stdout.readline()
+        line = _readline_with_timeout(proc, timeout_s)
         if not line:
             err = ""
             if proc.stderr is not None:
@@ -176,10 +189,19 @@ def _invoke_repl(payload: dict[str, Any], timeout_s: float = 30.0) -> dict[str, 
 
 def _invoke(payload: dict[str, Any], timeout_s: float = 30.0) -> dict[str, Any]:
     """Prefer persistent REPL; fall back to one-shot subprocess."""
-    use_repl = os.getenv("OPENUI_BRIDGE_NO_REPL", "").strip() not in {"1", "true", "yes"}
+    use_repl = os.getenv("OPENUI_BRIDGE_NO_REPL", "").strip() not in {
+        "1",
+        "true",
+        "yes",
+    }
     if use_repl:
         try:
             return _invoke_repl(payload, timeout_s=timeout_s)
+        except subprocess.TimeoutExpired as exc:
+            _close_repl()
+            raise RuntimeError(
+                f"OpenUI bridge timed out after {timeout_s:.3f}s"
+            ) from exc
         except Exception:  # noqa: BLE001
             # Fall back so CI / broken REPL still works.
             _close_repl()
@@ -190,7 +212,7 @@ def _invoke(payload: dict[str, Any], timeout_s: float = 30.0) -> dict[str, Any]:
 def parse(source: str) -> Program:
     """Parse with official lang-core (does not enforce placeholder content policy)."""
     cache_key = "parse:" + hashlib.sha256(source.encode("utf-8")).hexdigest()
-    cached = _RESULT_CACHE.get(cache_key)
+    cached = _cache_get(cache_key)
     if cached is not None:
         return cached  # type: ignore[return-value]
     result = _invoke({"op": "parse", "source": source})
@@ -212,7 +234,7 @@ def parse(source: str) -> Program:
 def validate(source: str) -> Program:
     """Parse + official schema validation + placeholder content policy."""
     cache_key = "validate:" + hashlib.sha256(source.encode("utf-8")).hexdigest()
-    cached = _RESULT_CACHE.get(cache_key)
+    cached = _cache_get(cache_key)
     if cached is not None:
         return cached  # type: ignore[return-value]
     result = _invoke({"op": "validate", "source": source})

@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import json
+from functools import lru_cache
 import re
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any, Iterable
 
 from slm_training.data.contract import canonical_slot_contract
@@ -101,6 +101,7 @@ class ProductionVocab:
         return out
 
 
+@lru_cache(maxsize=1)
 def _prop_order() -> dict[str, list[str]]:
     path = GRAMMARS_DIR / "openui_prop_order.json"
     return json.loads(path.read_text(encoding="utf-8"))

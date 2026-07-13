@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+import tempfile
 import json
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -75,13 +77,31 @@ def load_jsonl(path: Path | str) -> list[ExampleRecord]:
 
 
 def write_jsonl(path: Path | str, records: Iterable[ExampleRecord]) -> int:
+    """Atomically replace a JSONL file with canonical records."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     count = 0
-    with path.open("w", encoding="utf-8") as handle:
-        for record in records:
-            handle.write(json.dumps(record.to_dict(), ensure_ascii=False) + "\n")
-            count += 1
+    tmp_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            dir=path.parent,
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            tmp_path = Path(handle.name)
+            for record in records:
+                handle.write(json.dumps(record.to_dict(), ensure_ascii=False) + "\n")
+                count += 1
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp_path, path)
+        tmp_path = None
+    finally:
+        if tmp_path is not None:
+            tmp_path.unlink(missing_ok=True)
     return count
 
 

@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import argparse
 import json
-from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -139,6 +138,7 @@ def main(argv: list[str] | None = None) -> int:
     out_path = args.run_root / "baseline_reproduction_summary.json"
     out_path.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
     docs_out = Path("docs/design/baseline-reproduction-results.json")
+    docs_out.parent.mkdir(parents=True, exist_ok=True)
     docs_out.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"summary": str(out_path), "n": len(results)}, indent=2))
     return 0

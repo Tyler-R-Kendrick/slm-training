@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import math
 
 import torch
 import torch.nn as nn
@@ -49,16 +48,22 @@ class MultiheadAttention(nn.Module):
         slen = context.size(1)
 
         q = self.q_proj(x).view(bsz, tlen, self.n_heads, self.head_dim).transpose(1, 2)
-        k = self.k_proj(context).view(bsz, slen, self.n_heads, self.head_dim).transpose(1, 2)
-        v = self.v_proj(context).view(bsz, slen, self.n_heads, self.head_dim).transpose(1, 2)
+        k = (
+            self.k_proj(context)
+            .view(bsz, slen, self.n_heads, self.head_dim)
+            .transpose(1, 2)
+        )
+        v = (
+            self.v_proj(context)
+            .view(bsz, slen, self.n_heads, self.head_dim)
+            .transpose(1, 2)
+        )
 
         attn_mask = None
         if key_padding_mask is not None:
             # key_padding_mask: [B, S] True where PAD → additive -inf mask [B,1,1,S]
             pad = key_padding_mask
-            attn_mask = torch.zeros(
-                bsz, 1, 1, slen, device=x.device, dtype=q.dtype
-            )
+            attn_mask = torch.zeros(bsz, 1, 1, slen, device=x.device, dtype=q.dtype)
             attn_mask = attn_mask.masked_fill(pad[:, None, None, :], float("-inf"))
 
         out = F.scaled_dot_product_attention(
@@ -84,7 +89,9 @@ class TransformerBlock(nn.Module):
         super().__init__()
         self.self_attn = MultiheadAttention(d_model, n_heads, dropout)
         self.norm1 = RMSNorm(d_model)
-        self.cross_attn = MultiheadAttention(d_model, n_heads, dropout) if cross_attn else None
+        self.cross_attn = (
+            MultiheadAttention(d_model, n_heads, dropout) if cross_attn else None
+        )
         self.norm_cross = RMSNorm(d_model) if cross_attn else None
         hidden = int(d_model * mlp_ratio)
         self.mlp = nn.Sequential(
@@ -108,7 +115,9 @@ class TransformerBlock(nn.Module):
         if self.cross_attn is not None and ctx is not None:
             assert self.norm_cross is not None
             x = x + self.dropout(
-                self.cross_attn(self.norm_cross(x), ctx=ctx, key_padding_mask=ctx_pad_mask)
+                self.cross_attn(
+                    self.norm_cross(x), ctx=ctx, key_padding_mask=ctx_pad_mask
+                )
             )
         x = x + self.dropout(self.mlp(self.norm2(x)))
         return x
@@ -173,7 +182,7 @@ class DenoiserTower(nn.Module):
         self.register_buffer(
             "kind_lookup",
             torch.zeros(vocab_size, dtype=torch.long),
-            persistent=True,
+            persistent=False,
         )
         if kind_ids is not None and n_kinds > 0:
             self.kind = nn.Embedding(n_kinds, d_model)

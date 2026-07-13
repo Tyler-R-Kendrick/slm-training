@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 from gpu_multi_farm.config import Settings
@@ -42,7 +43,9 @@ def resolve_farms(farm: str, settings: Settings) -> dict[str, Any]:
     elif farm in FARM_NAMES:
         names = [farm]
     else:
-        raise ValueError(f"farm must be one of all|{ '|'.join(FARM_NAMES) }, got {farm!r}")
+        raise ValueError(
+            f"farm must be one of all|{'|'.join(FARM_NAMES)}, got {farm!r}"
+        )
     return {name: _client_for_farm(name, settings) for name in names}
 
 
@@ -51,10 +54,21 @@ async def list_across_farms(
     gpu_type: str | None,
     max_price_per_hr: float | None,
 ) -> dict[str, FarmListResult]:
-    results: dict[str, FarmListResult] = {}
-    for name, client in clients.items():
-        results[name] = await client.list_offers(
-            gpu_type=gpu_type,
-            max_price_per_hr=max_price_per_hr,
-        )
-    return results
+    """Query farms concurrently while isolating provider failures."""
+    names = list(clients)
+
+    async def _list(name: str) -> FarmListResult:
+        client = clients[name]
+        timeout = max(0.1, float(getattr(client, "timeout_s", 30.0))) + 1.0
+        try:
+            return await asyncio.wait_for(
+                client.list_offers(
+                    gpu_type=gpu_type, max_price_per_hr=max_price_per_hr
+                ),
+                timeout=timeout,
+            )
+        except Exception as exc:  # noqa: BLE001 - isolate each external provider
+            return FarmListResult(farm=name, offers=[], error=str(exc))
+
+    values = await asyncio.gather(*(_list(name) for name in names))
+    return dict(zip(names, values, strict=True))

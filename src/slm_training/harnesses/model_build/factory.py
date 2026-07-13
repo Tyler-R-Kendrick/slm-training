@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.harnesses.model_build.plugin import ModelPlugin, StubModel
+
+if TYPE_CHECKING:
+    from slm_training.models.twotower import TwoTowerConfig
 
 
 def _resolve_freeze_context(backend: str, requested: bool) -> bool:

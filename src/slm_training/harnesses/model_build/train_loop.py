@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import random
 from datetime import datetime, timezone
-from pathlib import Path
 
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.harnesses.model_build.data import batched, load_train_records
@@ -48,7 +47,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     rng.shuffle(records)
 
     plugin = model or build_model(config, records)
-    if int(getattr(config, "retrieval_k", 0) or 0) > 0 and hasattr(plugin, "skeleton_bank"):
+    if int(getattr(config, "retrieval_k", 0) or 0) > 0 and hasattr(
+        plugin, "skeleton_bank"
+    ):
         from slm_training.retrieval import build_skeleton_bank
 
         plugin.skeleton_bank = build_skeleton_bank(records)
@@ -76,26 +77,28 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         },
     )
     mix_curriculum = bool(getattr(config, "mix_curriculum", True))
+    curriculum_pools = None
+    if getattr(config, "use_curriculum", False):
+        from slm_training.quality import index_curriculum_stages
+
+        curriculum_pools = index_curriculum_stages(records)
 
     def _batches_for_step(step: int) -> list[list]:
         if getattr(config, "use_curriculum", False):
             from slm_training.quality import sample_curriculum_batch
 
-            # One shuffled epoch worth of mixed batches.
-            drawn: list = []
-            target = max(config.batch_size, len(records))
-            while len(drawn) < target:
-                drawn.extend(
-                    sample_curriculum_batch(
-                        records,
-                        batch_size=config.batch_size,
-                        step=step,
-                        total_steps=config.steps,
-                        rng=rng,
-                        mix=mix_curriculum,
-                    )
-                )
-            return batched(drawn[: max(config.batch_size * 8, config.batch_size)], config.batch_size)
+            # Generate only the bounded batch window consumed before refresh.
+            target = config.batch_size * 8
+            drawn = sample_curriculum_batch(
+                records,
+                batch_size=target,
+                step=step,
+                total_steps=config.steps,
+                rng=rng,
+                mix=mix_curriculum,
+                stage_pools=curriculum_pools,
+            )
+            return batched(drawn, config.batch_size)
         shuffled = list(records)
         rng.shuffle(shuffled)
         return batched(shuffled, config.batch_size)
@@ -121,7 +124,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     def _maybe_eval(step: int, force: bool = False) -> dict | None:
         if config.test_dir is None:
             return None
-        if not force and (config.eval_every <= 0 or step <= 0 or step % config.eval_every != 0):
+        if not force and (
+            config.eval_every <= 0 or step <= 0 or step % config.eval_every != 0
+        ):
             return None
         from dataclasses import replace
 
@@ -134,7 +139,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         with timed("eval_suites"):
             if len(suites) == 1:
                 eval_cfg = replace(config, suite=suites[0])
-                metrics = evaluate(eval_cfg, model=plugin, checkpoint=mid_ckpt)
+                metrics = evaluate(eval_cfg, model=plugin)
                 row = {
                     "step": step,
                     "suite": suites[0],
@@ -148,7 +153,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 board: dict[str, dict] = {}
                 for suite in suites:
                     eval_cfg = replace(config, suite=suite)
-                    metrics = evaluate(eval_cfg, model=plugin, checkpoint=mid_ckpt)
+                    metrics = evaluate(eval_cfg, model=plugin)
                     board[suite] = {
                         "parse_rate": metrics.get("parse_rate"),
                         "placeholder_fidelity": metrics.get("placeholder_fidelity"),
@@ -245,7 +250,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         ckpt_path = ckpt_dir / "last.pt"
         with timed("final_save"):
             plugin.save(ckpt_path)
-        final_eval = _maybe_eval(step, force=bool(config.test_dir and config.eval_every > 0))
+        final_eval = _maybe_eval(
+            step, force=bool(config.test_dir and config.eval_every > 0)
+        )
 
     tel_path = tel.write(run_dir / "train_telemetry.json")
     summary = {

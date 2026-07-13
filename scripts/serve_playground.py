@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 
 
@@ -17,7 +18,17 @@ def main(argv: list[str] | None = None) -> int:
         default=PLAYGROUND_DEMO_CHECKPOINT,
         help="Checkpoint path (default: fixtures/checkpoints/playground_demo/last.pt).",
     )
-    parser.add_argument("--host", default="0.0.0.0")
+    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument(
+        "--public",
+        action="store_true",
+        help="Bind all interfaces; requires --annotation-token or SLM_ANNOTATION_TOKEN.",
+    )
+    parser.add_argument(
+        "--annotation-token",
+        default=None,
+        help="Bearer token required by the annotation endpoint.",
+    )
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--reload", action="store_true")
@@ -44,6 +55,13 @@ def main(argv: list[str] | None = None) -> int:
         help="Append-only JSONL for invalid model outputs (negative training)",
     )
     args = parser.parse_args(argv)
+    host = "0.0.0.0" if args.public else args.host
+    annotation_token = args.annotation_token or os.getenv("SLM_ANNOTATION_TOKEN")
+    if host not in {"127.0.0.1", "::1", "localhost"} and not annotation_token:
+        parser.error(
+            "public/non-loopback binding requires --annotation-token "
+            "or SLM_ANNOTATION_TOKEN"
+        )
 
     import uvicorn
 
@@ -56,6 +74,7 @@ def main(argv: list[str] | None = None) -> int:
         human_train_path=args.human_train_path,
         human_pairs_path=args.human_pairs_path,
         bad_outputs_path=args.bad_outputs_path,
+        annotation_token=annotation_token,
     )
     # Eager-load so the first request is fast
     try:
@@ -66,7 +85,7 @@ def main(argv: list[str] | None = None) -> int:
 
     uvicorn.run(
         app,
-        host=args.host,
+        host=host,
         port=args.port,
         reload=args.reload,
         log_level="info",

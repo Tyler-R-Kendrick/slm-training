@@ -13,9 +13,7 @@ from pathlib import Path
 from slm_training.compression import (
     LAYOUT_BYTESPLIT,
     LAYOUT_REGROUP,
-    compress_state_dict,
     decompress_state_dict,
-    summarize_stats,
     write_compressed_checkpoint,
 )
 
@@ -60,7 +58,7 @@ def main(argv: list[str] | None = None) -> int:
 
         from slm_training.compression import _to_bf16_u16
 
-        raw = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
+        raw = torch.load(args.checkpoint, map_location="cpu", weights_only=True)
         state = raw.get("state_dict") or raw
         payload = json.loads(out.read_text(encoding="utf-8"))
         restored = decompress_state_dict(payload["weights"])
