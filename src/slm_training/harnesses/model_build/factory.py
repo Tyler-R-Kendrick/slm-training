@@ -104,6 +104,18 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "use_dynamic_quant",
         "generate_max_attempts",
         "grammar_finalize_on_last_attempt_only",
+        "stability_min_persistence",
+        "stability_jsd_weight",
+        "unmask_mode",
+        "cluster_attn_threshold",
+        "cluster_max_size",
+        "cluster_verify",
+        "survival_gate",
+        "survival_gate_train",
+        "survival_commit_threshold",
+        "speculative_successor",
+        "speculative_fanout",
+        "speculative_overlap",
     ):
         if hasattr(config, key) and hasattr(cfg, key):
             setattr(cfg, key, getattr(config, key))
@@ -249,6 +261,26 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         grammar_finalize_on_last_attempt_only=bool(
             getattr(config, "grammar_finalize_on_last_attempt_only", False)
         ),
+        stability_min_persistence=int(
+            getattr(config, "stability_min_persistence", 0) or 0
+        ),
+        stability_jsd_weight=float(
+            getattr(config, "stability_jsd_weight", 1.0) or 1.0
+        ),
+        unmask_mode=str(getattr(config, "unmask_mode", "positions") or "positions"),
+        cluster_attn_threshold=float(
+            getattr(config, "cluster_attn_threshold", 0.08) or 0.08
+        ),
+        cluster_max_size=int(getattr(config, "cluster_max_size", 4) or 4),
+        cluster_verify=bool(getattr(config, "cluster_verify", False)),
+        survival_gate=bool(getattr(config, "survival_gate", False)),
+        survival_gate_train=bool(getattr(config, "survival_gate_train", False)),
+        survival_commit_threshold=float(
+            getattr(config, "survival_commit_threshold", 0.3) or 0.3
+        ),
+        speculative_successor=bool(getattr(config, "speculative_successor", False)),
+        speculative_fanout=int(getattr(config, "speculative_fanout", 2) or 2),
+        speculative_overlap=bool(getattr(config, "speculative_overlap", False)),
         seed=config.seed,
     )
 

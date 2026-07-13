@@ -89,7 +89,7 @@ entropy, grammar legality, and CoRe support-drop** — still not by a localized
 
 ---
 
-## 4. Real gaps → proposed levers (V7 / E60+)
+## 4. Real gaps → proposed levers (E60+)
 
 These assessment recommendations still map cleanly onto OpenUI generation and
 are **not** fully implemented. IDs **E60–E65** are reserved (docs only until
@@ -180,7 +180,8 @@ Ablation ladder for attributing gains (mirror the assessment, OpenUI-flavored):
 | **V4** | Trust gate, combined remask policy, honest inventory | Process-head analogue; closes silent-gold leakage |
 | **V5** | DSL-native / lexer tokenizer (E40–E46) | Stronger typed executable representation |
 | **V6** | CoRe remask (E50), T2M (E51), slot-aware trust (E52), honest champion (E53), grammar-honest (E54), process (E55) | Stronger revision policy; **not** differential validation or failure-cone remask |
-| **V7 (proposed)** | E60–E65 above | Remaining verifier-guided gaps from the assessment |
+| **V7** | Speculative denoising (E70–E75) | Stability signals, dependency clusters, ordered cluster verify, survival head, successor cache — see [speculative-denoising.md](speculative-denoising.md) |
+| **Proposed** | E60–E65 above | Remaining verifier-guided gaps from the assessment |
 
 E34 (latent MoE critics) remains deferred research-grade; see
 [research-correction-critics.md](research-correction-critics.md). Prefer

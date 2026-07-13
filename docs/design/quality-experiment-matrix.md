@@ -412,12 +412,70 @@ Artifacts: `outputs/runs/grammar_matrix_summary.json`,
 [`docs/design/grammar-matrix-results.json`](grammar-matrix-results.json),
 `outputs/runs/baseline_reproduction_summary.json`.
 
-## V7 proposed (docs only — not in the runner yet)
+## V7 matrix (speculative denoising)
+
+Implements the speculative-denoising design in
+[speculative-denoising.md](speculative-denoising.md) (paper tags:
+[research-lineage.md](research-lineage.md) §"Speculative denoising (V7)").
+Levers adapt LESS stability signals, DAPD/DAWN attention dependency clusters,
+Self-Spec-MD ordered verification, DSpark survival scheduling, and
+Saguaro-SSD successor caching onto the honest V5/V6 TwoTower stack.
+
+| ID | Approach | Primary lever | Run id |
+| --- | --- | --- | --- |
+| E70 | Stability remask (LESS-lite) | `remask_policy=stability` + persistence commit gate | `qx_e70_stability` |
+| E71 | Attention clusters (DAPD/DAWN-lite) | `unmask_mode=cluster` + anchor-first ordering | `qx_e71_clusters` |
+| E72 | Ordered cluster verification | `cluster_verify` → outcome `(j, repair)` | `qx_e72_cluster_verify` |
+| E73 | Survival head (DSpark-lite) | `survival_gate` + cumulative commit budget | `qx_e73_survival` |
+| E74 | Successor cache (SSD-lite) | `speculative_successor` + K=2 fanout | `qx_e74_successor` |
+| E75 | V7 champion | E53 honest stack + E70–E74 | `qx_e75_v7_champion` |
+
+```bash
+# V7 focused path
+python -m scripts.run_quality_matrix --matrix v7 --only E70,E72,E74,E75 \
+  --steps 80 --device cpu --context-backend scratch --no-design-md-context
+
+# Full V7 with rico cap for CPU time
+python -m scripts.run_quality_matrix --matrix v7 --steps 80 --device cpu \
+  --context-backend scratch --no-design-md-context --rico-limit 20
+```
+
+Beyond parse/fidelity, V7 rows record decode telemetry per eval
+(`speculative_stats` in the run summary): denoiser forwards per generate,
+successor-cache hit rate, remask volume.
+
+## V7 measured results
+
+See [quality-matrix-results.json](quality-matrix-results.json) (`matrix_set: v7`).
+CPU scratch, 80 train steps, `--no-design-md-context`, `rico_held` n=20.
+Historical V6/V5 payloads live under `prior_matrices`.
+
+| ID | Smoke parse | Smoke fid | Ship gates | Decode telemetry (smoke) | Notes |
+| --- | --- | --- | --- | --- | --- |
+| **E70** | **1.0** | **1.0** | **pass** | 16.5 fwd/gen | LESS-lite stability remask; held_out 0.6/1.0 |
+| **E71** | **1.0** | **1.0** | **pass** | 16.5 fwd/gen; clusters proposed | Attention clusters; quality matches E70 |
+| **E72** | **1.0** | **1.0** | **pass** | 16.5 fwd/gen; 0 cluster rejects | Ordered verify; grammar accepted all proposed clusters on fixtures |
+| **E73** | **1.0** | **1.0** | **pass** | 16.5 fwd/gen; fewer clusters via survival budget | Survival head reduces proposed clusters ~10× vs E71 |
+| **E74** | **1.0** | **1.0** | **pass** | 16.5 fwd/gen; **successor hit rate 1.0** | SSD-lite cache: 45 speculative batches → 45 hits (0 miss) |
+| **E75** | **1.0** | **1.0** | **pass** | 31.5 fwd/gen; speculation skipped | Champion stack; trust-gate remask needs extra forwards → speculation auto-disabled (no wasted misses) |
+
+**Headline:** every V7 row clears honest `--ship-gates` on the fixture suites
+(including rico_held n=20), matching the V6 E53 quality floor. E74 realizes
+the SSD transfer: successor-cache hit rate 1.0 with forwards/gen unchanged vs
+the non-speculative path (~16.5). E73's survival budget materially shrinks
+cluster proposals without hurting parse/fidelity. E75's higher forward count
+is the cost of the V6 trust-gate remask path (one extra forward per remask
+step), not of speculation — speculation correctly abstains when remask is
+non-deterministic.
+
+Full 1500 `rico_held` + HF context remains the production claim.
+
+## Verifier-guided repair proposed (docs only — not in the runner yet)
 
 Remaining verifier-guided repair gaps from
 [verifier-guided-repair.md](verifier-guided-repair.md). **Not implemented**.
-**E50–E55 are taken by shipped V6** (CoRe / T2M / slot trust / champion); do
-not reuse those IDs.
+**E50–E55 are taken by shipped V6** (CoRe / T2M / slot trust / champion) and
+**E70–E75 by V7 speculative denoising**; do not reuse those IDs.
 
 | ID | Approach | Primary lever | Status |
 | --- | --- | --- | --- |
