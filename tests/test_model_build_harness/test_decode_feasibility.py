@@ -9,7 +9,7 @@ from slm_training.harnesses.model_build.decode_feasibility import (
     gold_token_len,
     max_achievable_parse_rate,
 )
-from slm_training.models.tokenizer import OpenUITokenizer, tokenize_text
+from slm_training.models.tokenizer import OpenUITokenizer
 
 
 def test_gold_token_len_fixture_smoke_hero() -> None:
@@ -68,7 +68,7 @@ def test_pick_constrained_token_admits_placeholder_subtokens() -> None:
     import torch
 
     from slm_training.models.grammar import pick_constrained_token
-    from slm_training.models.tokenizer import OpenUITokenizer, quoted_placeholder_tokens
+    from slm_training.models.tokenizer import quoted_placeholder_tokens
 
     text = 'hero = TextContent(":smoke.hero.title")\n'
     tokenizer = OpenUITokenizer.build([text])
@@ -96,7 +96,6 @@ def test_pick_constrained_token_admits_placeholder_subtokens() -> None:
 
 def test_stream_probe_accepts_closing_bracket() -> None:
     from slm_training.models.grammar import _stream_probe_ok
-    from slm_training.models.tokenizer import OpenUITokenizer
 
     src = 'root = Stack([cta], "column")\ncta = Button(":cta")\n'
     tokenizer = OpenUITokenizer.build([src])

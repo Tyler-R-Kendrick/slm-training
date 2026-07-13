@@ -1608,6 +1608,24 @@ class TwoTowerModel(nn.Module):
 
         text = self._decode_ids(ids[0])
         if use_grammar:
+            repaired = self._repair_surface_syntax(text)
+            canonical = self._canonical_valid_openui(repaired)
+            if canonical is not None:
+                return canonical
+            # Grammar filtering can occasionally strand a well-trained MaskGIT
+            # decode on a partial prefix. Retry once without token filtering,
+            # then accept it only after deterministic syntax repair + validation.
+            unconstrained = self._generate_maskgit_one(
+                ctx,
+                ctx_pad,
+                length,
+                use_grammar=False,
+                slot_contract=slot_contract,
+            )
+            repaired = self._repair_surface_syntax(unconstrained)
+            canonical = self._canonical_valid_openui(repaired)
+            if canonical is not None:
+                return canonical
             return self._ensure_valid_openui(
                 text, ctx, ctx_pad, length, slot_contract=slot_contract
             )

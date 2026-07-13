@@ -147,9 +147,11 @@ def append_bad_output(path: Path | str, record: BadOutputRecord) -> Path:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     line = json.dumps(record.to_dict(), ensure_ascii=False) + "\n"
-    with _WRITE_LOCK:
+    with _annotation_transaction(path):
         with path.open("a", encoding="utf-8") as handle:
             handle.write(line)
+            handle.flush()
+            os.fsync(handle.fileno())
     return path
 
 
@@ -204,7 +206,6 @@ def recent_annotations(path: Path | str, limit: int = 20) -> list[AnnotationReco
         return load_annotations(path)
     rows: deque[AnnotationRecord] = deque(maxlen=limit)
     rows.extend(iter_annotations(path))
-    return list(rows)
     return list(rows)
 
 
