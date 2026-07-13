@@ -54,8 +54,9 @@ class OpenUIIncrementalEngine:
 
     Deterministic force-emit when ``accepts()`` is a singleton structural
     terminal (e.g. NAME → EQUAL, COMPONENT → LPAR). Hole-admissibility for
-    MaskGIT follows constrained-diffusion.ai: CFG ∩ completion language
-    non-empty, specialized to OpenUI via benign hole substitution + reparse.
+    MaskGIT is adapted from Mündler et al. 2025 (arXiv:2508.10111 /
+    constrained-diffusion.ai): CFG ∩ completion language non-empty,
+    specialized to OpenUI via benign hole substitution + reparse.
     """
 
     def __init__(self, grammar_path: Path | None = None) -> None:

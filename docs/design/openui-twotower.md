@@ -42,13 +42,17 @@ prompt + DESIGN.md → Context Tower (scratch | frozen HF) → hidden states
                                       ↓ cross-attn
          Trainable Denoiser (MaskGIT) → OpenUI tokens
                                       ↓
-         streaming parser + placeholder policy
+         DFA force-emit / admit + streaming parser + placeholder policy
                                       ↓
                          placeholder OpenUI program
 ```
 
 Optional preference stage ranks candidates with the composite reward.
 **Note:** current “DPO” training is reference-free (surrogate on masked log-probs) — not textbook DPO.
+
+**Papers / techniques → code:** see [research-lineage.md](research-lineage.md)
+(MaskGIT, constrained diffusion LLMs, speculative/force-emit, DPO/GRPO surrogates).
+Grammar decode details: [grammar-fastpath.md](grammar-fastpath.md).
 
 ## Data sources
 

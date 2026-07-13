@@ -1,7 +1,9 @@
 """Training-free parallel unmasking policies for MaskGIT / discrete diffusion.
 
-Inspired by 2025–2026 dLLM decode research (confidence-threshold schedules,
-mean-field conflict suppression). No auxiliary model — drops into MaskGIT.
+Adapted from MaskGIT schedules (Chang et al., 2022) plus confidence-threshold /
+neighbor-spacing heuristics used in discrete diffusion LLM decode. Not a
+faithful reimplementation of a single dLLM paper — see
+``docs/design/research-lineage.md``. No auxiliary model — drops into MaskGIT.
 """
 
 from __future__ import annotations

@@ -10,7 +10,7 @@ Novel SLM experiments: harnesses for **placeholder OpenUI** layout generation (o
 4. **OpenUI Lang bridge** — Node sidecar over official `@openuidev/lang-core`
 5. **GPU multi-farm MCP** — list / launch / cost-project across Vast.ai, RunPod, Lambda
 
-See [docs/design/openui-twotower.md](docs/design/openui-twotower.md), [docs/design/adversarial-review.md](docs/design/adversarial-review.md), [docs/design/runtime-performance.md](docs/design/runtime-performance.md), and [docs/design/gpu-multi-farm-mcp.md](docs/design/gpu-multi-farm-mcp.md).
+See [docs/design/openui-twotower.md](docs/design/openui-twotower.md), [docs/design/research-lineage.md](docs/design/research-lineage.md) (papers → code), [docs/design/adversarial-review.md](docs/design/adversarial-review.md), [docs/design/runtime-performance.md](docs/design/runtime-performance.md), and [docs/design/gpu-multi-farm-mcp.md](docs/design/gpu-multi-farm-mcp.md).
 
 ## Quick start
 
@@ -138,8 +138,8 @@ MCP (Cursor): [`.cursor/mcp.json`](.cursor/mcp.json) launches `@playwright/mcp`.
 
 
 - **Context tower**: scratch TokenEncoder **or** frozen HF model (`--context-backend hf`, default `HuggingFaceTB/SmolLM2-135M`)
-- **Denoiser tower**: MaskGIT-style masked token prediction with cross-attention to context
-- **Grammar decode**: official `createStreamingParser` guards unmasking / LTR repair (`--no-grammar` to disable)
+- **Denoiser tower**: MaskGIT-style masked token prediction with cross-attention to context ([Chang et al. 2022](https://arxiv.org/abs/2202.04200); adapted)
+- **Grammar decode**: DFA force-emit + MaskGIT hole-admit + LTR certify so constrained samples stay valid OpenUI ([research lineage](docs/design/research-lineage.md); `--no-grammar` to disable)
 - **Tokenizer**: OpenUI-aware whitespace/placeholder tokenizer built from train artifacts
 - **Eval**: `parse_rate` via lang-core, placeholder fidelity, canonical tree match — no gold oracle at generate time
 
@@ -168,5 +168,5 @@ src/gpu_multi_farm/             # FastMCP server + farm adapters
 tools/openui_bridge/            # @openuidev/lang-core Node sidecar
 scripts/                        # CLIs
 fixtures/                       # seed pairs + RICO semantic slices
-docs/design/                    # architecture + contracts
+docs/design/                    # architecture + research lineage + contracts
 ```

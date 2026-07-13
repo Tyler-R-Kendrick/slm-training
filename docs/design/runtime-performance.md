@@ -84,7 +84,7 @@ and exposes AMP + `torch.compile` for train/decode.
 | AMP | `--amp` | bf16/fp16 autocast on accelerators |
 | Compile | `--compile` | Inductor; `reduce-overhead` → CUDA graphs on GPU |
 | Grad accum | `--grad-accum N` | Larger effective batch without OOM |
-| Parallel unmask | `--parallel-unmask adaptive` | Mean-field-lite MaskGIT (2026 dLLM decode) |
+| Parallel unmask | `--parallel-unmask adaptive` | MaskGIT + confidence/spacing (**Adapted**; [research-lineage](research-lineage.md)) |
 | Matrix workers | `--workers 2` | Parallel independent train experiments |
 
 ```bash

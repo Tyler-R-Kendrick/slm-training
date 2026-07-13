@@ -5,18 +5,21 @@
 This cloud agent run: **CPU-only** (no CUDA / Ascend NPU). The accel layer still
 auto-selects `cuda → npu → cpu` so the same CLI works on GPU/NPU hosts.
 
-## SOTA techniques applied
+## Techniques applied
+
+Canonical citations and fidelity tags: [research-lineage.md](research-lineage.md).
 
 | Technique | Source | Integration |
 | --- | --- | --- |
-| SDPA attention | PyTorch scaled_dot_product_attention | Already in `blocks.MultiheadAttention` |
-| Adaptive parallel unmask | 2026 dLLM mean-field / confidence schedules | `models/parallel_decode.py` → MaskGIT |
-| torch.compile + CUDA graphs | PyTorch 2.x / 2026 serving guides | `accel.maybe_compile` (GPU); CPU skipped without Python.h |
+| SDPA attention | PyTorch `scaled_dot_product_attention` | Already in `blocks.MultiheadAttention` |
+| Adaptive parallel unmask | MaskGIT + dLLM-style confidence / spacing (**Adapted**) | `models/parallel_decode.py` → MaskGIT |
+| Grammar force-emit / admit | Mündler et al. 2025 + Leviathan-adjacent (**Adapted**) | `grammar_fastpath/` · [grammar-fastpath.md](grammar-fastpath.md) |
+| torch.compile + CUDA graphs | PyTorch 2.x serving guides | `accel.maybe_compile` (GPU); CPU skipped without Python.h |
 | AMP bf16/fp16 | Standard accelerator train | `accel.autocast_context` + `--amp` |
 | Grad accumulation | Effective batch without OOM | `--grad-accum` |
 | Threaded grammar checks | Overlap Node bridge latency | `_repair_ltr_texts` ThreadPool |
 | Matrix workers | Parallel independent experiments | `run_quality_matrix --workers N` |
-| BF16 exponent codebook | brianbell-x weight-compression | Storage sidecar; fused kernel external |
+| BF16 exponent codebook | [brianbell-x weight-compression](https://brianbell-x.github.io/weight-compression/) | Storage sidecar; fused kernel external |
 
 ## Bench (this host)
 

@@ -7,6 +7,7 @@
 **Architecture:** Each row is an isolatable lever (plus a stacked `combo` run). All runs use scratch context on CPU by default; HF is optional when cached.
 
 **Tech stack:** TwoTower, OpenUI grammar, ship_gates, preference composite reward.
+**Research map:** [research-lineage.md](research-lineage.md) (MaskGIT, constrained diffusion, DPO/GRPO surrogates).
 
 ---
 

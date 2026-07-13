@@ -202,6 +202,9 @@ def pick_constrained_token(
     Speculative constrained pick: only tokens admitted by the grammar DFA
     (and not rejected by stream hard-errors) may be selected.
 
+    This is *pseudo* speculative decoding (verify against the OpenUI acceptor),
+    not draft-model speculative decoding — see docs/design/research-lineage.md.
+
     When ``forced_token_id`` is set (singleton DFA structural emit), that id is
     returned only if the DFA still admits it.
 

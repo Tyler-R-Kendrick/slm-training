@@ -17,9 +17,10 @@ def admit_fill(
     Return True if the canvas (with remaining masks as holes) can still complete.
 
     Cheap OpenUI specialization of CFG ∩ completion emptiness
-    (https://constrained-diffusion.ai/): require the contiguous unmasked
-    left-span to be a valid incomplete InteractiveParser prefix. Tokens after
-    the first hole are ignored (holes can rewrite the suffix).
+    (Mündler et al. 2025, arXiv:2508.10111 / constrained-diffusion.ai):
+    require the contiguous unmasked left-span to be a valid incomplete
+    InteractiveParser prefix. Tokens after the first hole are ignored
+    (holes can rewrite the suffix).
     """
     mask_id = tokenizer.mask_id if mask_id is None else mask_id
     pieces: list[str] = []
