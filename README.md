@@ -10,7 +10,7 @@ Novel SLM experiments: harnesses for **placeholder OpenUI** layout generation (o
 4. **OpenUI Lang bridge** — Node sidecar over official `@openuidev/lang-core`
 5. **GPU multi-farm MCP** — list / launch / cost-project across Vast.ai, RunPod, Lambda
 
-See [docs/design/openui-twotower.md](docs/design/openui-twotower.md), [docs/design/research-lineage.md](docs/design/research-lineage.md) (papers → code), [docs/design/research-correction-critics.md](docs/design/research-correction-critics.md) (remask / latent-critic candidates), [docs/design/adversarial-review.md](docs/design/adversarial-review.md), [docs/design/runtime-performance.md](docs/design/runtime-performance.md), and [docs/design/gpu-multi-farm-mcp.md](docs/design/gpu-multi-farm-mcp.md).
+See [docs/design/openui-twotower.md](docs/design/openui-twotower.md), [docs/design/research-lineage.md](docs/design/research-lineage.md) (papers → code), [docs/design/research-correction-critics.md](docs/design/research-correction-critics.md) (V4 remask / trust-gate / honest inventory), [docs/design/quality-experiment-matrix.md](docs/design/quality-experiment-matrix.md) (E0–E36 matrix), [docs/design/adversarial-review.md](docs/design/adversarial-review.md), [docs/design/runtime-performance.md](docs/design/runtime-performance.md), and [docs/design/gpu-multi-farm-mcp.md](docs/design/gpu-multi-farm-mcp.md).
 
 ## Quick start
 
@@ -56,6 +56,12 @@ python -m scripts.evaluate_model \
   --ship-gates
 ```
 
+Honest ship path (V4 inventory-in-prompt template fill):
+
+```bash
+python -m scripts.run_quality_matrix --matrix v4 --only E35,E36 \
+  --steps 40 --device cpu --context-backend scratch --no-design-md-context
+```
 Train artifacts land in `outputs/train_data/<version>/` (`records.jsonl`, `manifest.json`, `stats.json`). The flush pipeline: curated seeds + RICO + Awwwards → deterministic quality synth → per-record DESIGN.md + OpenUI validate → quality gates → stable sort by `id` + content fingerprint.
 
 Eval uses **meaningful parse** (rejects empty stacks, missing placeholders, and low gold component-type recall), strict `placeholder_fidelity` for ship gates, `structural_similarity`, and composite `reward_score` (does not credit gold DESIGN.md lint). Suites: smoke/held_out (fixtures), `rico_held`, adversarial, ood. Soft `placeholder_validity` is diagnostic only.
@@ -98,12 +104,15 @@ python -m scripts.serve_playground --port 8765
 # open http://127.0.0.1:8765
 ```
 
-The demo checkpoint lives in `fixtures/checkpoints/playground_demo/` (committed). To regenerate it:
+The demo checkpoint lives in `fixtures/checkpoints/playground_demo/` (committed
+`last.pt` + tokenizer + meta). To regenerate it:
 
 ```bash
 python -m scripts.bootstrap_playground --force
 ```
 
+If `last.pt` is missing after a sparse checkout, run the bootstrap command above
+before starting the playground.
 Annotate mode (default UI): auto-generated prompts, prefetch 1–2 samples ahead, and a live **OpenUI visual preview** (same `@openuidev/react-lang` `Renderer` path as [openui.com/demo](https://www.openui.com/demo/github)).
 
 | Input | Action |
