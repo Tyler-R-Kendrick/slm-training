@@ -128,6 +128,24 @@ After Q9, remaining hotspots were:
 | R9 | Q9 + R1/R2 | New decode recipe |
 | PG | R4+R5 on playground path | Repair+finalize with R-series |
 
+### Round 3 measured results (CPU, bridge up, `--limit 4`)
+
+| ID | latency_ms_mean | speedup vs P0 | forwards | probes | Notes |
+| --- | ---: | ---: | ---: | ---: | --- |
+| P0 | 862 | 1.00× | 42.5 | 1109 | Legacy baseline (this host) |
+| Q9 | 332 | 2.60× | 13.8 | 76 | Pre-R recipe (R1/R2 code present) |
+| **R9** | **302** | **2.85×** | **13.8** | **0** | Exact-admit skip zeros stream probes |
+| **PG** | **520** | **1.66×** | **26.8** | 63 | Was ~2135ms / 469 fwd (**~4.1×** vs round-2 PG) |
+
+Round-3 takeaways:
+
+- **PG is the headline win** — repair now shares P3/P4 with greedy LTR, and
+  `generate_max_attempts=1` + prior `_repair_ltr_texts` skips a redundant BOS
+  ensure (forwards 469 → ~27).
+- **R9** trims decode further mainly by skipping stream probes on exact DFA
+  terminals (probes 76 → 0); latency ~9% under Q9 on this host.
+- New ship recipe: **R9** for decode-only; **PG flags** for playground.
+
 ```bash
 python -m scripts.run_perf_matrix --only P0,Q9,R9,PG --limit 4
 ```

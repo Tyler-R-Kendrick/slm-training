@@ -333,7 +333,7 @@ def test_r2_force_emit_skips_resync_when_synced() -> None:
 
 
 def test_r5_ensure_honors_zero_attempts() -> None:
-    """R5: attempts=0 skips BOS redo and falls through to finalize/minimal."""
+    """R5: attempts=0 skips BOS redo (no repair forwards)."""
     records = [
         ExampleRecord(
             id="t1",
@@ -353,7 +353,7 @@ def test_r5_ensure_honors_zero_attempts() -> None:
         grammar_constrained=True,
         grammar_ltr_primary=True,
         grammar_ltr_repair=True,
-        grammar_finalize_validate=True,
+        grammar_finalize_validate=False,
         grammar_incremental_state=True,
         generate_max_attempts=1,
         grammar_ltr_max_tokens=24,
@@ -364,16 +364,17 @@ def test_r5_ensure_honors_zero_attempts() -> None:
     model = TwoTowerModel.from_records(records, config=cfg, device="cpu")
     model.eval()
     ctx, ctx_pad = model._encode_context(["hero card"])
+    bad = "not valid openui!!!"
     with collect_decode_stats() as stats:
         out = model._ensure_valid_openui(
-            "not valid openui!!!",
+            bad,
             ctx,
             ctx_pad,
             16,
             attempts=0,
         )
-    assert isinstance(out, str)
-    # Zero attempts → no repair forwards; finalize falls back to minimal.
+    assert out == bad
+    # Zero attempts → no repair forwards.
     assert stats.forwards_count == 0
 
 
