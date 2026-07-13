@@ -93,6 +93,16 @@ class PlaygroundService:
                 self.checkpoint, device=self.device
             )
             self._model.eval()
+            # Playground contract: grammar-constrained samples must be valid OpenUI.
+            # Enable the deterministic DFA / LTR speculative layer + finalize gate.
+            cfg = self._model.config
+            cfg.grammar_constrained = True
+            cfg.grammar_ltr_primary = True
+            cfg.grammar_ltr_repair = True
+            cfg.grammar_finalize_validate = True
+            cfg.grammar_fastpath = True
+            if int(cfg.grammar_ltr_max_tokens or 0) < 48:
+                cfg.grammar_ltr_max_tokens = 64
             return self._model
 
     def next_prompt(self, session_id: str | None = None) -> dict[str, str]:
@@ -111,6 +121,7 @@ class PlaygroundService:
         *,
         grammar_constrained: bool = True,
         design_md: str | None = None,
+        max_attempts: int = 3,
     ) -> GenerateResult:
         prompt = (prompt or "").strip()
         if not prompt:
@@ -123,27 +134,44 @@ class PlaygroundService:
                 design_md = load_default_design_md()
             except Exception:  # noqa: BLE001
                 design_md = None
-        with self._lock:
-            openui = model.generate(
-                prompt,
-                grammar_constrained=grammar_constrained,
-                design_md=design_md,
-            )
-        valid = False
-        error: str | None = None
+
+        last_error: str | None = None
+        openui = ""
         serialized: str | None = None
-        try:
-            program = validate(openui)
-            valid = True
-            serialized = program.serialized or openui
-        except ParseError as exc:
-            error = str(exc)
+        valid = False
+        with self._lock:
+            attempts = max(1, int(max_attempts)) if grammar_constrained else 1
+            for _ in range(attempts):
+                openui = model.generate(
+                    prompt,
+                    grammar_constrained=grammar_constrained,
+                    design_md=design_md,
+                )
+                try:
+                    program = validate(openui)
+                    valid = True
+                    serialized = program.serialized or openui
+                    last_error = None
+                    break
+                except ParseError as exc:
+                    valid = False
+                    serialized = None
+                    last_error = str(exc)
+                    if not grammar_constrained:
+                        break
+            if grammar_constrained and not valid:
+                # Absolute contract: never hand the UI an invalid grammar-constrained sample.
+                raise RuntimeError(
+                    last_error
+                    or "grammar-constrained generate failed to produce valid OpenUI"
+                )
+
         stream = stream_check(openui)
         return GenerateResult(
             prompt=prompt,
             openui=openui,
             valid=valid,
-            error=error,
+            error=last_error,
             stream={
                 "ok": stream.get("ok"),
                 "incomplete": stream.get("incomplete"),

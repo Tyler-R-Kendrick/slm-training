@@ -254,7 +254,7 @@ async function grade(rating) {
         session_id: sessionId(),
         meta: {
           source: "annotate_playground",
-          usable_for_test_data: true,
+          usable_for_test_data: rating === "up" && !!item.valid,
           view: activeView,
         },
       }),
@@ -307,6 +307,9 @@ function onKeyDown(event) {
   } else if (event.key === "ArrowRight") {
     event.preventDefault();
     void go(1);
+  } else if (event.key === "Tab") {
+    event.preventDefault();
+    setView(activeView === "render" ? "dsl" : "render");
   } else if (event.key === "d" || event.key === "D") {
     event.preventDefault();
     setView("dsl");
@@ -372,7 +375,7 @@ async function boot() {
   statusEl.textContent = "Prefetching samples…";
   render();
   await ensurePrefetch();
-  statusEl.textContent = "Ready · ↑/↓ grade · ←/→ navigate · R/D view · type to note";
+  statusEl.textContent = "Ready · ↑/↓ grade · ←/→ navigate · Tab view · type to note";
   cardEl.focus();
 }
 

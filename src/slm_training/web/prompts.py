@@ -154,12 +154,26 @@ class PromptCursor:
         self._n += 1
         # Mix session RNG with step so successive prompts diverge.
         step_rng = random.Random(self._rng.randrange(1 << 30) ^ (self._n * 0x9E3779B9))
-        for _ in range(24):
-            candidate = compose_prompt(step_rng)
+        for attempt in range(48):
+            candidate = compose_prompt(
+                random.Random(step_rng.randrange(1 << 30) ^ (attempt * 0x85EBCA6B))
+            )
             key = candidate.strip().lower()
             if key in self._blocked or key in self._seen:
                 continue
             self._seen.add(key)
             return candidate
-        # Fallback: still return a composed prompt even if collision-prone.
-        return compose_prompt(step_rng)
+        # Fallback must still avoid the fixture-blocked set.
+        for attempt in range(64):
+            candidate = (
+                f"{compose_prompt(step_rng)} (novel {self._n}.{attempt})"
+            )
+            key = candidate.strip().lower()
+            if key in self._blocked or key in self._seen:
+                continue
+            self._seen.add(key)
+            return candidate
+        # Extremely unlikely: return a unique synthetic prompt.
+        unique = f"Compose a novel interface layout #{self.session_id}:{self._n}"
+        self._seen.add(unique.lower())
+        return unique

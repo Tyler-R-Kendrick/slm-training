@@ -30,6 +30,7 @@ def allowed_id_set(
     """
     if not terminals:
         return None
+    ignore = {"$END", "COMMENT"}
     forced_map = {
         "EQUAL": "=",
         "LPAR": "(",
@@ -37,7 +38,7 @@ def allowed_id_set(
         "LSQB": "[",
         "RSQB": "]",
         "COMMA": ",",
-        "NAME": None,  # any name — too broad; leave unconstrained
+        "NAME": None,  # any name — expand to lowercase identifiers in vocab
         "COMPONENT": None,
         "STRING": None,
         "NUMBER": None,
@@ -48,28 +49,27 @@ def allowed_id_set(
     ids: set[int] = set()
     broad = False
     for term in terminals:
+        if term in ignore:
+            continue
         mapped = forced_map.get(term, term)
         if mapped is None:
+            # Broad content terminals: expand to matching vocab ids when possible.
             broad = True
+            if term == "COMPONENT":
+                for tok, tid in tokenizer.token_to_id.items():
+                    if tok[:1].isupper() and tok.isidentifier():
+                        ids.add(tid)
+            elif term == "NAME":
+                for tok, tid in tokenizer.token_to_id.items():
+                    if tok[:1].islower() and tok.isidentifier():
+                        ids.add(tid)
+            elif term == "STRING":
+                for tok, tid in tokenizer.token_to_id.items():
+                    if tok.startswith('"') or tok.startswith(":"):
+                        ids.add(tid)
             continue
         for tid in string_to_token_ids(tokenizer, mapped):
             ids.add(tid)
-        # Also allow PascalCase components already in vocab when COMPONENT accepted.
-        if term == "COMPONENT":
-            for tok, tid in tokenizer.token_to_id.items():
-                if tok[:1].isupper() and tok.isidentifier():
-                    ids.add(tid)
-            broad = True
-        if term == "NAME":
-            for tok, tid in tokenizer.token_to_id.items():
-                if tok[:1].islower() and tok.isidentifier():
-                    ids.add(tid)
-            broad = True
-        if term == "STRING":
-            for tok, tid in tokenizer.token_to_id.items():
-                if tok.startswith('"') or tok.startswith(":"):
-                    ids.add(tid)
-            broad = True
     if not ids and broad:
         return None
     return ids or None

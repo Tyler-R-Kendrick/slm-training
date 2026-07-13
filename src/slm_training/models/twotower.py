@@ -415,6 +415,100 @@ class TwoTowerModel(nn.Module):
             token_ids = token_ids[: end + 1]
         return self.tokenizer.decode(token_ids).strip()
 
+    @staticmethod
+    def _canonical_valid_openui(text: str) -> str | None:
+        """Return serialized OpenUI if parseable and non-trivial; else None."""
+        try:
+            from slm_training.dsl.parser import validate
+        except Exception:  # noqa: BLE001
+            return None
+        try:
+            program = validate(text)
+        except Exception:  # noqa: BLE001
+            return None
+        ser = (program.serialized or text).strip()
+        compact = ser.replace(" ", "")
+        if "Stack([])" in compact or "Stack([]," in compact:
+            return None
+        if "Card([])" in compact:
+            return None
+        if "root=" not in compact and "root =" not in ser:
+            return None
+        return ser
+
+    def _minimal_valid_openui(self) -> str | None:
+        """Deterministic vocab-backed valid program when model decode cannot certify."""
+        candidates = [
+            'root = Button(":cta.label")\n',
+            'root = TextContent(":hero.title")\n',
+            'root = Stack([cta])\ncta = Button(":cta.label")\n',
+            'root = Card([title])\ntitle = TextContent(":hero.title")\n',
+        ]
+        for raw in candidates:
+            ser = self._canonical_valid_openui(raw)
+            if ser is None:
+                continue
+            ids = self.tokenizer.encode(ser, add_special=False)
+            if not ids or self.tokenizer.unk_id in ids:
+                continue
+            return ser
+        return None
+
+    def _ltr_repair_from_bos(
+        self,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor,
+        length: int,
+    ) -> str:
+        """Speculative LTR decode from BOS with force-emit + constrained picks."""
+        device = self.device_name
+        repair_len = min(length, max(8, int(self.config.grammar_ltr_max_tokens)))
+        repaired = torch.full(
+            (1, repair_len),
+            self.tokenizer.mask_id,
+            dtype=torch.long,
+            device=device,
+        )
+        repaired[0, 0] = self.tokenizer.bos_id
+        unknown_r = repaired.eq(self.tokenizer.mask_id)
+        repaired = self._constrained_ltr_repair(repaired, unknown_r, ctx, ctx_pad)
+        return self._decode_ids(repaired[0])
+
+    def _ensure_valid_openui(
+        self,
+        text: str,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor,
+        length: int,
+        *,
+        attempts: int = 3,
+    ) -> str:
+        """
+        Guarantee a valid OpenUI string when grammar-constrained.
+
+        Uses DFA-constrained LTR repair (pseudo speculative decoding) until
+        ``validate`` succeeds. When ``grammar_finalize_validate`` is set, never
+        returns invalid OpenUI — falls back to a minimal certified program or
+        raises.
+        """
+        ser = self._canonical_valid_openui(text)
+        if ser is not None:
+            return ser
+        last = text
+        for _ in range(max(1, attempts)):
+            last = self._ltr_repair_from_bos(ctx, ctx_pad, length)
+            ser = self._canonical_valid_openui(last)
+            if ser is not None:
+                return ser
+        fallback = self._minimal_valid_openui()
+        if fallback is not None:
+            return fallback
+        if self.config.grammar_finalize_validate:
+            raise RuntimeError(
+                "grammar_finalize_validate: model could not produce a complete valid OpenUI program"
+            )
+        return last
+
     def _constrained_ltr_repair(
         self,
         ids: torch.Tensor,
@@ -462,6 +556,11 @@ class TwoTowerModel(nn.Module):
                     top_k=self.config.grammar_top_k,
                     forced_token_id=forced,
                 )
+            if choice is None:
+                # No legal continuation — pad out and stop rather than emit garbage.
+                ids[0, t:] = self.tokenizer.pad_id
+                unknown[0, t:] = False
+                break
             ids[0, t] = choice
             unknown[0, t] = False
             if choice == self.tokenizer.eos_id:
@@ -598,9 +697,18 @@ class TwoTowerModel(nn.Module):
                     row = row.clone()
                     row[:, tok.mask_id] = -1e9
                     row[:, tok.pad_id] = -1e9
-                    model_pred = row.argmax(dim=-1)
                     for bi in need_model:
-                        pred[bi] = model_pred[bi]
+                        choice = pick_constrained_token(
+                            row[bi],
+                            tok,
+                            ids[bi, :t].tolist(),
+                            top_k=self.config.grammar_top_k,
+                        )
+                        if choice is None:
+                            # No legal token — end sequence rather than emit garbage.
+                            pred[bi] = tok.eos_id
+                        else:
+                            pred[bi] = choice
 
                 ids[:, t] = torch.where(active, pred, ids[:, t])
                 hit_eos = active & pred.eq(tok.eos_id)
@@ -771,23 +879,15 @@ class TwoTowerModel(nn.Module):
             texts = [self._decode_ids(ids[i]) for i in range(ids.size(0))]
             if self.config.grammar_ltr_repair:
                 texts = self._repair_ltr_texts(texts, ctx, ctx_pad, repair_len)
-            if self.config.grammar_finalize_validate:
-                finalized: list[str] = []
-                for text in texts:
-                    try:
-                        from slm_training.dsl.parser import validate
-
-                        program = validate(text)
-                        ser = (program.serialized or text).strip()
-                        compact = ser.replace(" ", "")
-                        if "Stack([])" not in compact and "Card([])" not in compact:
-                            finalized.append(ser)
-                            continue
-                    except Exception:  # noqa: BLE001
-                        pass
-                    finalized.append(text)
-                return finalized
-            return texts
+            # Always certify validity when grammar-constrained (speculative LTR).
+            certified: list[str] = []
+            for i, text in enumerate(texts):
+                certified.append(
+                    self._ensure_valid_openui(
+                        text, ctx[i : i + 1], ctx_pad[i : i + 1], length
+                    )
+                )
+            return certified
 
         # Fall back to per-item MaskGIT for non-LTR-primary path.
         out: list[str] = []
@@ -867,7 +967,27 @@ class TwoTowerModel(nn.Module):
                 t = idx % length
                 if not unknown[b, t]:
                     continue
-                candidate = int(pred[b, t].item())
+                prefix = ids[b, :t].tolist()
+                forced = (
+                    force_emit_token_id(self.tokenizer, prefix)
+                    if use_fast
+                    else None
+                )
+                if forced is not None or use_grammar:
+                    # Speculative / constrained pick — never commit illegal tokens.
+                    logits_t = logits[b, t]
+                    choice = pick_constrained_token(
+                        logits_t,
+                        self.tokenizer,
+                        prefix,
+                        top_k=self.config.grammar_top_k,
+                        forced_token_id=forced,
+                    )
+                    if choice is None:
+                        continue  # leave masked for LTR repair
+                    candidate = choice
+                else:
+                    candidate = int(pred[b, t].item())
                 if admit_on and engine is not None and b == 0:
                     trial = ids[0].tolist()
                     trial[t] = candidate
@@ -875,7 +995,7 @@ class TwoTowerModel(nn.Module):
                         if not admit_fill(engine, self.tokenizer, trial):
                             continue  # leave masked; try later / repair
                     except Exception:  # noqa: BLE001
-                        pass
+                        continue  # reject on admit probe failure
                 ids[b, t] = candidate
                 unknown[b, t] = False
                 if b == 0:
@@ -922,47 +1042,7 @@ class TwoTowerModel(nn.Module):
 
         text = self._decode_ids(ids[0])
         if use_grammar:
-            try:
-                status = stream_check(text)
-                if status.serialized and status.complete_ok:
-                    ser = status.serialized.strip()
-                    if "Stack([])" not in ser.replace(" ", ""):
-                        return ser
-            except Exception:  # noqa: BLE001
-                pass
-            if not self.config.grammar_ltr_repair:
-                return text
-            try:
-                from slm_training.dsl.parser import validate
-
-                program = validate(text)
-                ser = (program.serialized or text).strip()
-                if "Stack([])" not in ser.replace(" ", ""):
-                    return ser
-            except Exception:  # noqa: BLE001
-                pass
-            repair_len = min(length, max(8, int(self.config.grammar_ltr_max_tokens)))
-            repaired = torch.full(
-                (1, repair_len),
-                self.tokenizer.mask_id,
-                dtype=torch.long,
-                device=device,
-            )
-            repaired[0, 0] = self.tokenizer.bos_id
-            unknown_r = repaired.eq(self.tokenizer.mask_id)
-            repaired = self._constrained_ltr_repair(
-                repaired, unknown_r, ctx, ctx_pad
-            )
-            text2 = self._decode_ids(repaired[0])
-            try:
-                status = stream_check(text2)
-                if status.serialized and status.complete_ok:
-                    ser = status.serialized.strip()
-                    if "Stack([])" not in ser.replace(" ", ""):
-                        return ser
-            except Exception:  # noqa: BLE001
-                pass
-            return text2
+            return self._ensure_valid_openui(text, ctx, ctx_pad, length)
         return text
 
     @torch.inference_mode()

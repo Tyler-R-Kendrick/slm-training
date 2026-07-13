@@ -79,6 +79,34 @@ def test_admit_fill_accepts_partial_with_holes() -> None:
     assert admit_fill(eng, tok, ids) is True
 
 
+def test_allowed_id_set_expands_components() -> None:
+    from slm_training.grammar_fastpath.token_map import allowed_id_set
+
+    tok = _tok()
+    eng = OpenUIIncrementalEngine()
+    assert eng.set_prefix("root=")
+    allowed = allowed_id_set(tok, eng.next_terminals())
+    assert allowed is not None
+    assert tok.token_to_id["Stack"] in allowed
+    assert tok.token_to_id["Card"] in allowed
+    assert tok.token_to_id["="] not in allowed
+
+
+def test_pick_constrained_rejects_double_equal() -> None:
+    import torch
+
+    from slm_training.models.grammar import dfa_admits_token, pick_constrained_token
+
+    tok = _tok()
+    prefix = tok.encode("root=", add_special=False)
+    assert dfa_admits_token(tok, prefix, tok.token_to_id["="]) is False
+    logits = torch.full((tok.vocab_size,), -20.0)
+    logits[tok.token_to_id["="]] = 50.0
+    logits[tok.token_to_id["Stack"]] = 1.0
+    choice = pick_constrained_token(logits, tok, prefix, top_k=4)
+    assert choice == tok.token_to_id["Stack"]
+
+
 def test_admit_fill_rejects_hard_prefix() -> None:
     tok = _tok()
     eng = OpenUIIncrementalEngine()

@@ -39,6 +39,12 @@ function PreviewApp({ source, keepPlaceholders }: MountOptions) {
     return keepPlaceholders ? raw : fillPlaceholders(raw);
   }, [source, keepPlaceholders]);
 
+  // Reset stale parse state whenever the OpenUI source changes.
+  React.useEffect(() => {
+    setParseOk(true);
+    setErrors([]);
+  }, [response]);
+
   if (!response) {
     return <div className="openui-preview-empty">No OpenUI yet</div>;
   }

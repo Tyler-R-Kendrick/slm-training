@@ -98613,7 +98613,9 @@ function v7e({ source: e, keepPlaceholders: t }) {
     const s = (e || "").trim();
     return s ? t ? s : sae(s) : null;
   }, [e, t]);
-  return i ? /* @__PURE__ */ w.jsx(A6e, { mode: "light", children: /* @__PURE__ */ w.jsxs("div", { className: "openui-preview-root", "data-parse-ok": n ? "1" : "0", children: [
+  return $.useEffect(() => {
+    r(!0), o([]);
+  }, [i]), i ? /* @__PURE__ */ w.jsx(A6e, { mode: "light", children: /* @__PURE__ */ w.jsxs("div", { className: "openui-preview-root", "data-parse-ok": n ? "1" : "0", children: [
     !n && /* @__PURE__ */ w.jsxs("div", { className: "openui-preview-empty", role: "status", children: [
       "Could not render this OpenUI",
       a[0] ? `: ${a[0]}` : ""

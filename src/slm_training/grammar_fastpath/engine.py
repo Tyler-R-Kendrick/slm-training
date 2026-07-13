@@ -88,6 +88,7 @@ class OpenUIIncrementalEngine:
             for tok in tokens:
                 ip.feed_token(tok)
         except UnexpectedToken:
+            self._accepts = frozenset()
             return False
         except UnexpectedEOF:
             pass
