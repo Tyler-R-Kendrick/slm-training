@@ -7,7 +7,8 @@
 **Architecture:** Each row is an isolatable lever (plus a stacked `combo` run). All runs use scratch context on CPU by default; HF is optional when cached.
 
 **Tech stack:** TwoTower, OpenUI grammar, ship_gates, preference composite reward.
-**Research map:** [research-lineage.md](research-lineage.md) (MaskGIT, constrained diffusion, DPO/GRPO surrogates).
+**Research map:** [research-lineage.md](research-lineage.md) (MaskGIT, constrained diffusion, DPO/GRPO surrogates);
+correction / remask candidates: [research-correction-critics.md](research-correction-critics.md).
 
 ---
 
@@ -49,29 +50,24 @@
 | E16 | Long train | E15 at 2000+ steps | `qx_e16_long_train` |
 | E17 | Decode sweep | Eval-only gen_steps/repair/best-of-N on E15 ckpt | `qx_e17_decode_sweep` |
 
-## V3 matrix (decode-cap fix + SOTA levers)
+## V3 matrix (length-safe decode + SOTA diffusion levers)
 
-Root cause: `grammar_ltr_max_tokens=64/96` truncated gold programs (up to 160 tokens), making parse gates unreachable. V3 raises canvas to 256, disables structural reorder (`grammar_trust_model`), and adds block/sample decode.
+Root cause after V2: compositional tokenization lengthened programs (fixture max ~160
+tokens) while LTR decode still capped at 64–96 → **parse stayed 0 even at 2000 steps**.
+
+Constrained-decode follow-ups (this branch): force-emit must run over real logits (never
+zero stand-ins), `placeholder_required` is not a hard error mid-string, and slot-contract
+intersections must not drop `.` / whitespace inside quoted placeholders.
 
 | ID | Approach | Primary lever | Run id |
 | --- | --- | --- | --- |
-| E18 | Decode rescue | Eval-only E16 ckpt + canvas 256 + trust-model | `qx_e18_decode_rescue` |
-| E19 | HF retrain | E15 recipe + HF context + fixed decode | `qx_e19_hf_retrain` |
-| E20 | Block decode | Semi-AR 32-token spans (block diffusion) | `qx_e20_block_decode` |
-| E21 | DINGO-lite | Legal-token sampling + best-of-N | `qx_e21_dingo_sample` |
-| E22 | Namespace+contract | F5 + F2 + curriculum combined | `qx_e22_curriculum_namespace` |
-| E23 | Self-training | Preference pairs from valid rollouts | `qx_e23_self_train` |
-| E24 | Capacity scale | d256 / 8 layers / long budget | `qx_e24_capacity_scale` |
-| E25 | AR-init | HF warm-start denoiser (SmolLM2 recipe) | `qx_e25_ar_init` |
-
-```bash
-# V3 matrix (default)
-python -m scripts.run_quality_matrix --matrix v3 --only E18,E19 --steps 400
-
-# Preflight decode feasibility before ship eval
-python -m scripts.evaluate_model --check-decode-feasibility \
-  --grammar-ltr-max-tokens 256 --ship-gates
-```
+| E18 | Length-safe LTR | `grammar_ltr_max_tokens≥192`, stages `(64,128,192,256)` | `qx_e18_length_safe` |
+| E19a | MaskGIT-primary | Train/infer match: MaskGIT decode (no LTR-primary) | `qx_e19a_maskgit_primary` |
+| E19b | LTR-matched | LTR-primary + strong `ltr_loss_weight` + length-safe | `qx_e19b_ltr_matched` |
+| E20 | Template fill | Slot-contract skeleton seed + MaskGIT refine | `qx_e20_template_fill` |
+| E21 | MDLM schedule | Continuous-time absorbing mask + `1/t` CE weights | `qx_e21_mdlm_schedule` |
+| E22 | Remasking | Confidence remask of weak committed tokens | `qx_e22_remask` |
+| E29 | Champion | E18+E20+E21+E22 + slot contract + capacity | `qx_e29_champion` |
 
 ```bash
 # Diagnostic ceiling (gold-as-prediction must score ~1.0)
@@ -86,6 +82,10 @@ python -m scripts.run_quality_matrix --only E11,E12,E13 --steps 800
 
 # Champion combo + decode sweep (E17 needs E15 checkpoint)
 python -m scripts.run_quality_matrix --only E15,E17 --steps 1200 --gen-steps 16
+
+# V3 focused ship path (length-safe → decode match → template → champion)
+python -m scripts.run_quality_matrix --matrix v3 --only E18,E19a,E19b,E20,E29 \
+  --steps 400 --device cpu --context-backend scratch
 ```
 
 ## Success criteria (honest gates)
@@ -172,5 +172,56 @@ See [quality-matrix-results.json](quality-matrix-results.json). After F1–F5 fi
 | E17 | 0.0 | 0.38 | decode sweep on E15 ckpt |
 
 **Ship gates still not cleared** at 200–500 CPU steps; ceiling diagnostic confirms
-metrics are achievable (gold-as-prediction = 1.0). Next levers: 2000+ steps (E16),
-HF context, and slot contract on all eval suites.
+metrics are achievable (gold-as-prediction = 1.0). Next levers: **V3 length-safe
+decode (E18)** — V2 kept `grammar_ltr_max_tokens` at 64–96 while compositional
+programs need ≥160 tokens — then E19–E22 / E29 champion.
+
+## V3 notes
+
+- Default matrix is now `v3` (`--matrix v3`).
+- `scripts/diagnose_eval.py` reports `length_budget` and exits 2 when p95 exceeds LTR budget.
+- Defaults: `grammar_ltr_max_tokens=192`, stages `(64,128,192,256)`.
+- Research: MDLM schedule + remasking tagged **Adapted** in [research-lineage.md](research-lineage.md).
+
+## V3 measured results (CPU, scratch, fixture suites)
+
+See [quality-matrix-results.json](quality-matrix-results.json).
+
+| ID | Smoke parse | Smoke fid | Ship gates | Notes |
+| --- | --- | --- | --- | --- |
+| E18 | 0.0 | 0.0 | fail | length-safe alone underfit at 80 steps |
+| **E20** | **1.0** | **1.0** | **pass** | template fill; held_out parse 0.6 / fid 1.0 |
+| **E29** | **0.67** | **0.67** | **pass** | champion stack at 40 steps |
+
+First honest `--ship-gates` clears on the fixture scoreboard. Production claim still needs full `rico_held` (1500) + HF context.
+
+## V4 matrix (critic-guided revision — candidate)
+
+Candidate work only — research background in
+[research-correction-critics.md](research-correction-critics.md);
+**Adjacent** tags in [research-lineage.md](research-lineage.md). IDs start at
+**E30** to avoid colliding with implemented V3 (E18–E29). These levers attack
+**semantic remasking beyond confidence** (critique / trust heads / visible
+corruption), after V3’s confidence remask (`remask_ratio`, E22) and template-fill
+champion. Prefer running on an E29 (or stronger) checkpoint.
+
+| ID | Approach | Primary lever | Expected gate delta | Run id |
+| --- | --- | --- | --- | --- |
+| E30 | Suffix-rollback LTR | ReMDM-style revisable window \(W\) behind LTR frontier; remask on grammar / entropy triggers; re-denoise (inference-only) | ↑ held_out / adversarial parse under LTR-primary | `qx_e30_suffix_rollback` |
+| E31 | BackPlay-lite trust head | Freeze denoiser; train unwired [`FastPathGate`](../../src/slm_training/grammar_fastpath/gate.py) on model’s own token errors; drive remask with gate scores | ↑ fidelity + smarter remask than raw confidence | `qx_e31_trust_gate` |
+| E32 | Corruption-aware train | Extend [`_mask_targets`](../../src/slm_training/models/twotower.py): small fraction of visible tokens → wrong ids (uniform / model-sampled); CE to recover gold (RemeDi/GIDD-lite) | ↑ fidelity; enables revise-visible | `qx_e32_visible_corrupt` |
+| E33 | Combined remask policy | Budgeted remask \(P_i \propto\) grammar hard-error + gate score + entropy (extends V3 `remask_ratio` / `filter_ids_by_stream`) | ↑ held_out / adv parse; ↓ over-remask | `qx_e33_remask_policy` |
+| E34 | Latent falsification MoE | Deferred: shared head + top‑2 OpenUI mechanism experts + parallel latent streams; gated on E30–E33 residual failures | Research; semantic failures DFA misses | `qx_e34_latent_critics` *(not scheduled)* |
+
+Implementation order = table order (risk ascending). **E30** touches decode only
+(`twotower.py`, `parallel_decode.py`). **E31** needs frozen-backbone error
+mining. **E32** changes the train corruption graph. **E33** composes E30+E31
+signals with existing V3 remask. **E34** waits until cheaper remask policies
+saturate.
+
+```text
+# FUTURE — no `--matrix v4` runner yet (do not copy-paste as a command).
+# Intended once E30+ is implemented:
+#   python -m scripts.run_quality_matrix --matrix v4 --only E30 --device cpu \
+#     --seed-checkpoint outputs/runs/qx_e29_champion/checkpoints/last.pt
+```

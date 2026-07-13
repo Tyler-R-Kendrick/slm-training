@@ -39,6 +39,7 @@ class ModelBuildConfig:
     grammar_top_k: int = 16
     structural_bias: float = 1.25
     grammar_ltr_repair: bool = False
+    # Length-safe for compositional tokenizer (fixture gold up to ~160 tokens).
     grammar_ltr_max_tokens: int = 256
     grammar_ltr_primary: bool = False
     grammar_finalize_validate: bool = False
@@ -50,6 +51,7 @@ class ModelBuildConfig:
     schema_in_context: bool = False
     slot_contract_in_context: bool = False
     slot_contract_constrained_decode: bool = False
+    template_fill_decode: bool = False
     retrieval_k: int = 0
     best_of_n: int = 1
     use_curriculum: bool = False
@@ -71,6 +73,9 @@ class ModelBuildConfig:
     grad_accum_steps: int = 1
     parallel_unmask: str = "adaptive"
     parallel_workers: int = 2
+    remask_ratio: float = 0.0
+    mdlm_schedule: bool = False
+    mdlm_eps: float = 1e-3
     # Train-speed bundle (also set via --fast-train)
     cache_context: bool = True
     fuse_ltr_loss: bool = True

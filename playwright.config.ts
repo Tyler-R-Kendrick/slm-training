@@ -17,7 +17,7 @@ export default defineConfig({
     { name: "mobile-chrome", use: { ...devices["Pixel 7"] } },
   ],
   webServer: {
-    command: "python -m scripts.serve_playground --host 127.0.0.1 --port 8765",
+    command: "python3 -m scripts.serve_playground --host 127.0.0.1 --port 8765",
     url: "http://127.0.0.1:8765/api/health",
     reuseExistingServer: true,
     timeout: 180_000,

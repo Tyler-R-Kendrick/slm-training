@@ -173,7 +173,7 @@ async function fetchSample(prompt = null) {
     serialized: data.serialized,
     valid: !!data.valid,
     error: data.error || null,
-    status: "ready",
+    status: data.valid ? "ready" : "error",
     note: "",
   };
 }
@@ -193,18 +193,33 @@ async function ensurePrefetch() {
       stack.push(placeholder);
       const slot = stack.length - 1;
       render();
-      try {
-        const sample = await fetchSample(null);
+      let sample = null;
+      let lastErr = null;
+      const maxTries = 6;
+      for (let tryNo = 0; tryNo < maxTries; tryNo += 1) {
+        try {
+          const fetched = await fetchSample(null);
+          if (fetched.valid && fetched.status === "ready") {
+            sample = fetched;
+            break;
+          }
+          lastErr = fetched.error || "Invalid OpenUI (discarded)";
+        } catch (err) {
+          lastErr = err.message || String(err);
+        }
+      }
+      if (sample) {
         stack[slot] = sample;
-      } catch (err) {
-        stack[slot] = {
-          prompt: "(generation error)",
-          openui: "",
-          valid: false,
-          error: err.message || String(err),
-          status: "error",
-          note: "",
-        };
+      } else {
+        // Drop the placeholder — never surface invalid/bad samples in the stack.
+        stack.pop();
+        if (index >= stack.length && stack.length > 0) {
+          index = stack.length - 1;
+        }
+        statusEl.textContent = lastErr
+          ? `Waiting for valid sample (${lastErr})`
+          : "Waiting for valid sample…";
+        break;
       }
       render();
     }
@@ -236,7 +251,7 @@ async function grade(rating) {
   const item = current();
   if (!item || item.status !== "ready" || busyGrade) return;
   busyGrade = true;
-  statusEl.textContent = rating === "up" ? "Saving ↑…" : "Saving ↓…";
+  statusEl.textContent = rating === "up" ? "Saving 👍…" : "Saving 👎…";
   btnUp.disabled = true;
   btnDown.disabled = true;
   try {
@@ -270,7 +285,6 @@ async function grade(rating) {
     cardEl.classList.add(rating === "up" ? "flash-up" : "flash-down");
     noteEl.value = "";
     if (current()) current().note = "";
-    await go(1);
   } catch (err) {
     statusEl.textContent = "";
     errorEl.hidden = false;
@@ -392,7 +406,24 @@ async function boot() {
   statusEl.textContent = "Prefetching samples…";
   render();
   await ensurePrefetch();
-  statusEl.textContent = "Ready · ↑/↓ grade · ←/→ navigate · Tab view · type to note";
+  const ready = current()?.status === "ready" && current()?.valid;
+  if (ready) {
+    statusEl.textContent = "Ready · 👍/👎 grade · ←/→ navigate · Tab view · type to note";
+  } else if (!statusEl.textContent || statusEl.textContent.startsWith("Prefetching")) {
+    statusEl.textContent = "Waiting for valid sample…";
+  }
+  // Keep trying until we have at least one gradable sample.
+  if (!ready) {
+    window.setTimeout(() => {
+      void ensurePrefetch().then(() => {
+        if (current()?.status === "ready" && current()?.valid) {
+          statusEl.textContent =
+            "Ready · 👍/👎 grade · ←/→ navigate · Tab view · type to note";
+          render();
+        }
+      });
+    }, 1500);
+  }
   cardEl.focus();
 }
 

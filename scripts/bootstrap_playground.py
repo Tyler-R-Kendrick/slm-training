@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Train a small demo checkpoint for the web playground (if missing)."""
+"""Train the web playground demo checkpoint and persist it under fixtures/checkpoints/."""
 
 from __future__ import annotations
 
@@ -53,11 +53,13 @@ DEMO_RECORDS = [
 
 
 def main(argv: list[str] | None = None) -> int:
+    from slm_training.models.paths import PLAYGROUND_DEMO_CHECKPOINT
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("outputs/runs/playground_demo/checkpoints/last.pt"),
+        default=PLAYGROUND_DEMO_CHECKPOINT,
     )
     parser.add_argument("--steps", type=int, default=200)
     parser.add_argument("--force", action="store_true")
@@ -97,7 +99,7 @@ def main(argv: list[str] | None = None) -> int:
             grammar_ltr_primary=True,
             grammar_ltr_repair=True,
             grammar_finalize_validate=True,
-            grammar_ltr_max_tokens=64,
+            grammar_ltr_max_tokens=192,
             context_backend="scratch",
             design_md_in_context=True,
             seed=0,
