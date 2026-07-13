@@ -285,3 +285,145 @@ def test_early_exit_pick_returns_legal_argmax() -> None:
         top_k=8,
     )
     assert choice == equal_id
+
+
+def test_r1_exact_allowed_skips_admit_probe() -> None:
+    """R1: exact DFA terminals should not call dfa_admits for tid in allowed."""
+    tok = _tok()
+    equal_id = tok.token_to_id["="]
+    logits = torch.zeros(tok.vocab_size)
+    logits[equal_id] = 10.0
+    prefix = tok.encode("root", add_special=False)
+    state = make_grammar_state(
+        verify_chosen_only=True,
+        skip_exact_stream_probe=True,
+        use_copy_probes=True,
+    )
+    state.sync_ids(tok, prefix)
+    assert state.engine is not None
+    state.engine.set_prefix(state.prefix_text)
+    assert state.engine.terminals_are_exact()
+    with collect_decode_stats() as stats:
+        choice = pick_constrained_token(
+            logits,
+            tok,
+            prefix,
+            state=state,
+            verify_chosen_only=True,
+            prefer_structural=False,
+            top_k=4,
+        )
+    assert choice == equal_id
+    # Exact '=' should not need admit probes (memo stays empty for this pick).
+    assert equal_id not in state.admit_memo
+
+
+def test_r2_force_emit_skips_resync_when_synced() -> None:
+    """R2: force_emit on an already-synced engine should not full-sync again."""
+    tok = _tok()
+    state = make_grammar_state()
+    ids = tok.encode("root", add_special=False)
+    state.sync_ids(tok, ids)
+    assert state.engine is not None
+    assert state.engine.set_prefix(state.prefix_text)
+    before = state.engine._full_syncs
+    forced = force_emit_token_id(tok, ids, state=state)
+    assert forced == tok.token_to_id["="]
+    assert state.engine._full_syncs == before
+
+
+def test_r5_ensure_honors_zero_attempts() -> None:
+    """R5: attempts=0 skips BOS redo and falls through to finalize/minimal."""
+    records = [
+        ExampleRecord(
+            id="t1",
+            prompt="hero card",
+            openui=SAMPLE,
+            design_md="# Design\n",
+            split="train",
+            source="fixture",
+        )
+    ]
+    cfg = TwoTowerConfig(
+        context_backend="scratch",
+        d_model=64,
+        n_heads=2,
+        context_layers=1,
+        denoiser_layers=2,
+        grammar_constrained=True,
+        grammar_ltr_primary=True,
+        grammar_ltr_repair=True,
+        grammar_finalize_validate=True,
+        grammar_incremental_state=True,
+        generate_max_attempts=1,
+        grammar_ltr_max_tokens=24,
+        max_target_len=32,
+        max_prompt_len=32,
+        seed=0,
+    )
+    model = TwoTowerModel.from_records(records, config=cfg, device="cpu")
+    model.eval()
+    ctx, ctx_pad = model._encode_context(["hero card"])
+    with collect_decode_stats() as stats:
+        out = model._ensure_valid_openui(
+            "not valid openui!!!",
+            ctx,
+            ctx_pad,
+            16,
+            attempts=0,
+        )
+    assert isinstance(out, str)
+    # Zero attempts → no repair forwards; finalize falls back to minimal.
+    assert stats.forwards_count == 0
+
+
+def test_r4_repair_uses_multitoken_fewer_forwards() -> None:
+    """R4: multitoken repair should emit accepted_run_tokens and fewer forwards."""
+    records = [
+        ExampleRecord(
+            id="t1",
+            prompt="hero card",
+            openui=SAMPLE,
+            design_md="# Design\n",
+            split="train",
+            source="fixture",
+            placeholders=[":t.x"],
+        )
+    ]
+    cfg = TwoTowerConfig(
+        context_backend="scratch",
+        d_model=64,
+        n_heads=2,
+        context_layers=1,
+        denoiser_layers=2,
+        grammar_constrained=True,
+        grammar_ltr_primary=True,
+        grammar_ltr_repair=True,
+        grammar_finalize_validate=False,
+        grammar_incremental_state=True,
+        grammar_verify_chosen_only=True,
+        grammar_multitoken_accept=True,
+        grammar_multitoken_max=8,
+        grammar_canvas_lookahead=16,
+        grammar_ltr_max_tokens=24,
+        max_target_len=32,
+        max_prompt_len=32,
+        generate_max_attempts=1,
+        seed=0,
+    )
+    model = TwoTowerModel.from_records(records, config=cfg, device="cpu")
+    model.eval()
+    device = model.device_name
+    length = 24
+    ids = torch.full(
+        (1, length), model.tokenizer.mask_id, dtype=torch.long, device=device
+    )
+    ids[0, 0] = model.tokenizer.bos_id
+    unknown = ids.eq(model.tokenizer.mask_id)
+    ctx, ctx_pad = model._encode_context(["hero card"])
+    with collect_decode_stats() as stats:
+        filled = model._constrained_ltr_repair(ids, unknown, ctx, ctx_pad)
+    assert filled.shape == (1, length)
+    # Multitoken should keep forwards well below one-per-position.
+    assert stats.forwards_count < length
+    assert stats.forwards_count >= 1

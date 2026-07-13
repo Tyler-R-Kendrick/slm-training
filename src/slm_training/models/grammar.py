@@ -292,10 +292,14 @@ def force_emit_token_id(
         if stats is not None:
             stats.detok_ms += (time.perf_counter() - t0) * 1000.0
     stats = get_active_stats()
+    already = (
+        getattr(engine, "_prefix", None) == prefix_text
+        and getattr(engine, "_ip", None) is not None
+    )
     t0 = time.perf_counter()
     tid = force_next_token_id(engine, tokenizer, prefix_text)
-    if stats is not None:
-        # force_next_token_id calls set_prefix; count the sync.
+    if stats is not None and not already:
+        # R2: only charge a sync when force_emit actually re-lexed.
         stats.dfa_sync_ms += (time.perf_counter() - t0) * 1000.0
         stats.dfa_sync_count += 1
     return tid
@@ -435,12 +439,17 @@ def dfa_admits_token(
     eng = (state.engine if state is not None else None) or engine
     use_copy = bool(state is not None and state.use_copy_probes and eng is not None)
     if use_copy and getattr(eng, "_ip", None) is not None:
-        # Ensure the shared engine is synced to prefix_text first.
+        # R2: only re-sync when the shared engine drifted from prefix_text.
         if getattr(eng, "_prefix", None) != prefix_text:
+            stats = get_active_stats()
+            t0 = time.perf_counter()
             try:
                 eng.set_prefix(prefix_text)  # type: ignore[union-attr]
             except Exception:  # noqa: BLE001
                 pass
+            if stats is not None:
+                stats.dfa_sync_ms += (time.perf_counter() - t0) * 1000.0
+                stats.dfa_sync_count += 1
         stats = get_active_stats()
         t0 = time.perf_counter()
         try:
@@ -609,10 +618,19 @@ def pick_constrained_token(
     if engine is not None:
         t0 = time.perf_counter()
         try:
-            synced = bool(engine.set_prefix(prefix_text))
+            # R2: skip re-sync when P1 advance_token already left the engine
+            # at this prefix_text.
+            already = getattr(engine, "_prefix", None) == prefix_text and getattr(
+                engine, "_ip", None
+            ) is not None
+            if already:
+                synced = True
+            else:
+                synced = bool(engine.set_prefix(prefix_text))
         except Exception:  # noqa: BLE001
             synced = False
-        if stats is not None:
+            already = False
+        if stats is not None and not already:
             stats.dfa_sync_ms += (time.perf_counter() - t0) * 1000.0
             stats.dfa_sync_count += 1
         if not synced and prefix_text.strip():
@@ -666,7 +684,13 @@ def pick_constrained_token(
             return False
         if contract_allowed is not None and tid not in contract_allowed:
             return False
-        if allowed is not None and tid not in allowed:
+        # R1: when the DFA already lists this id in an exact (non-broad) accept
+        # set, skip the redundant copy-probe admit — set_prefix + allowed_id_set
+        # already certified it.
+        in_allowed = allowed is not None and tid in allowed
+        if in_allowed and exact_terminals:
+            pass
+        elif allowed is not None and tid not in allowed:
             # DFA terminal set can lag placeholder interiors — still admit when
             # incremental parse accepts the extension.
             if not dfa_admits_token(
@@ -678,15 +702,35 @@ def pick_constrained_token(
                 state=state,
             ):
                 return False
-        elif engine is not None and not dfa_admits_token(
-            tokenizer,
-            prefix_ids,
-            tid,
-            engine=engine,
-            prefix_text=prefix_text,
-            state=state,
-        ):
-            return False
+        elif engine is not None and not in_allowed:
+            # tid not covered by allowed (allowed was None) — must probe.
+            if not dfa_admits_token(
+                tokenizer,
+                prefix_ids,
+                tid,
+                engine=engine,
+                prefix_text=prefix_text,
+                state=state,
+            ):
+                return False
+        elif in_allowed and engine is not None:
+            # Broad terminals (NAME/COMPONENT/…): only probe when the chunk
+            # could glue onto / change an incomplete lexeme at the frontier.
+            chunk = tokenizer.id_to_token.get(tid, "")
+            if chunk == "":
+                chunk = tokenizer.decode([tid])
+            needs_probe = bool(chunk) and (
+                chunk[:1].isalnum() or chunk[:1] in {":", ".", "_", '"'}
+            )
+            if needs_probe and not dfa_admits_token(
+                tokenizer,
+                prefix_ids,
+                tid,
+                engine=engine,
+                prefix_text=prefix_text,
+                state=state,
+            ):
+                return False
         if not stream:
             return True
         if exact_terminals:

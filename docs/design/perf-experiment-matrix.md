@@ -1,4 +1,4 @@
-# Inference-speed experiment matrix (P/Q-series)
+# Inference-speed experiment matrix (P/Q/R-series)
 
 Decode-only optimizations for TwoTower LTR grammar-constrained generate.
 No retraining — each row overlays flags on an existing checkpoint (default:
@@ -33,8 +33,13 @@ The demo denoiser is tiny; the cost is structural:
 | **P8** | Combo P1+P2+P3+P4 | Pre-Q recipe |
 | **Q1** | `InteractiveParser.copy()` admit probes + memo (`grammar_copy_probes`) | Cheaper per-candidate DFA |
 | **Q2** | Whitespace fast-admit + early-exit pick (`grammar_early_exit_pick`) | Fewer candidates scored |
-| **Q9** | P8 + Q1 + Q2 | Shippable recipe |
-| **PG** | Q9 levers + repair/finalize | Real playground path |
+| **Q9** | P8 + Q1 + Q2 | Pre-R shippable recipe |
+| **R1** | Skip `dfa_admits` when tid already in exact DFA `allowed` | Fewer copy/throwaway probes |
+| **R2** | Skip redundant `set_prefix` when engine already synced | Fewer no-op re-lexes |
+| **R4** | Repair/BOS fill uses multitoken + lookahead | Repair forwards ≈ greedy LTR |
+| **R5** | Wire `generate_max_attempts`; skip redundant BOS ensure | Caps playground repair×N |
+| **R9** | Q9 + R1/R2 (decode recipe) | New shippable decode path |
+| **PG** | R9 levers + repair/finalize (R4+R5) | Real playground path |
 
 ## How to run
 
@@ -46,7 +51,7 @@ python -m scripts.profile_generate --rounds 2 --out outputs/runs/profile_generat
 python -m scripts.run_perf_matrix --limit 8 --out-dir outputs/runs/perf_matrix
 
 # Subset
-python -m scripts.run_perf_matrix --only P0,P8,Q9,PG --limit 4
+python -m scripts.run_perf_matrix --only P0,Q9,R9,PG --limit 4
 ```
 
 Results land in `outputs/runs/perf_matrix/scoreboard.json` and
@@ -92,7 +97,7 @@ Round-1 takeaway: after P8, **`dfa_sync_ms` was 75% of remaining latency**
 
 Round-2 takeaways:
 
-- **Q9 is the new ship recipe** (~3.2× vs P0; ~2× vs P8).
+- **Q9 is the pre-R ship recipe** (~3.2× vs P0; ~2× vs P8).
 - **Q2 early-exit** is the main remaining probe reducer; Q1 copy probes pay off
   once candidate count is already low (combo, not alone).
 - **Playground repair path** dropped from ~4.8s → ~2.1s with Q9 levers
@@ -100,6 +105,32 @@ Round-2 takeaways:
 - Playground service now enables Q9 flags by default
   (`grammar_verify_chosen_only`, `grammar_multitoken_accept`,
   `grammar_copy_probes`, `grammar_early_exit_pick`, `grammar_canvas_lookahead=32`).
+
+## Round 3 — R-series (admit skip + repair budget)
+
+After Q9, remaining hotspots were:
+
+1. **Redundant `dfa_admits`** even when `tid` was already in the exact DFA
+   `allowed` set (copy-probe / throwaway re-lex).
+2. **Redundant `set_prefix`** in pick/force-emit when P1 `advance_token` already
+   left the engine synced.
+3. **Repair ignored P3/P4** — `_constrained_ltr_repair` did 1 forward/token
+   (~114) while greedy LTR did ~13.
+4. **`generate_max_attempts` unused** by `_ensure_valid_openui` (defaulted to 3
+   BOS redos on top of `_repair_ltr_texts`) → PG ~469 forwards.
+
+| ID | Lever | Notes |
+| --- | --- | --- |
+| R1 | Skip admit when exact-allowed | Always-on in `pick_constrained_token` |
+| R2 | Skip synced `set_prefix` | pick / force_emit / admit |
+| R4 | Repair uses multitoken+lookahead | Same forward budget as greedy LTR |
+| R5 | Wire attempt budget; skip redundant ensure | PG with attempts=1 → 0 extra BOS |
+| R9 | Q9 + R1/R2 | New decode recipe |
+| PG | R4+R5 on playground path | Repair+finalize with R-series |
+
+```bash
+python -m scripts.run_perf_matrix --only P0,Q9,R9,PG --limit 4
+```
 
 ## Config flags (`TwoTowerConfig`)
 
@@ -110,11 +141,11 @@ Round-2 takeaways:
 | `grammar_skip_exact_stream_probe` | `True` | Skip Node probes when DFA terminals are exact |
 | `grammar_copy_probes` | `True` | Q1 |
 | `grammar_early_exit_pick` | `True` | Q2 |
-| `grammar_multitoken_accept` | `False` | P3 (playground forces True) |
+| `grammar_multitoken_accept` | `False` | P3 (playground forces True; also used by repair/R4) |
 | `grammar_multitoken_max` | `8` | Max run length per forward |
-| `grammar_canvas_lookahead` | `0` | P4; playground forces 32 |
+| `grammar_canvas_lookahead` | `0` | P4; playground forces 32; also used by repair/R4 |
 | `use_dynamic_quant` | `False` | P5 |
-| `generate_max_attempts` | `3` | P7 playground budget |
+| `generate_max_attempts` | `3` | P7/R5 playground budget (honored by `_ensure_valid_openui`) |
 | `grammar_finalize_on_last_attempt_only` | `False` | P7 |
 
 ## Instrumentation

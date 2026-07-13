@@ -12,8 +12,16 @@ def force_next_token_id(
     tokenizer: OpenUITokenizer,
     prefix_text: str,
 ) -> int | None:
-    """If DFA says the next lexeme is fully determined, return its token id."""
-    if not engine.set_prefix(prefix_text):
+    """If DFA says the next lexeme is fully determined, return its token id.
+
+    R2: skip ``set_prefix`` when the engine is already synced to ``prefix_text``
+    (common after P1 ``advance_token`` / pick).
+    """
+    already = (
+        getattr(engine, "_prefix", None) == prefix_text
+        and getattr(engine, "_ip", None) is not None
+    )
+    if not already and not engine.set_prefix(prefix_text):
         return None
     forced = engine.is_deterministic_next()
     if forced is None:

@@ -52,9 +52,19 @@ admits per candidate). Round 5:
 3. **Q9** = P8+Q1+Q2 shippable recipe (~3.2× vs P0 on CPU demo ckpt).
 4. Playground defaults now enable Q9 levers; repair path ~2.3× vs pre-Q P7.
 
+## Round 6 — R-series (exact-admit skip + repair budget)
+
+1. **R1** skip `dfa_admits` when tid is already in an exact DFA allowed set.
+2. **R2** skip redundant `set_prefix` when the engine is already synced
+   (pick / force-emit / admit).
+3. **R4** `_constrained_ltr_repair` honors multitoken + canvas lookahead.
+4. **R5** `_ensure_valid_openui` honors `generate_max_attempts`; with
+   `grammar_ltr_repair` + attempts=1, skip a redundant BOS ensure redo.
+5. **R9** = Q9 + R1/R2 decode recipe; **PG** = playground with R4+R5.
+
 ```bash
 python -m scripts.profile_generate --rounds 2
-python -m scripts.run_perf_matrix --only P0,P8,Q9,PG --limit 4
+python -m scripts.run_perf_matrix --only P0,Q9,R9,PG --limit 4
 ```
 
 ## Kernel boundary (unchanged)

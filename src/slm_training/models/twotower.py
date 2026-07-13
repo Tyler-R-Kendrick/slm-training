@@ -967,7 +967,7 @@ class TwoTowerModel(nn.Module):
         ctx_pad: torch.Tensor,
         length: int,
         *,
-        attempts: int = 3,
+        attempts: int | None = None,
         slot_contract: list[str] | None = None,
     ) -> str:
         """
@@ -981,7 +981,13 @@ class TwoTowerModel(nn.Module):
 
         E20: when ``template_fill_decode`` and a slot contract are set, prefer the
         inventory-bound skeleton over a broken model sample.
+
+        R5: ``attempts`` defaults to ``generate_max_attempts``; callers that
+        already ran a BOS LTR repair may pass ``attempts=0`` to skip a redundant
+        redo and fall through to finalize/minimal.
         """
+        if attempts is None:
+            attempts = int(getattr(self.config, "generate_max_attempts", 3) or 3)
         ser = self._canonical_valid_openui(text)
         if ser is not None:
             return ser
@@ -998,7 +1004,7 @@ class TwoTowerModel(nn.Module):
         ):
             return text
         last = text
-        for _ in range(max(1, attempts)):
+        for _ in range(max(0, int(attempts))):
             last = self._ltr_repair_from_bos(ctx, ctx_pad, length)
             ser = self._canonical_valid_openui(last)
             if ser is not None:
@@ -1021,7 +1027,11 @@ class TwoTowerModel(nn.Module):
         *,
         slot_contract: list[str] | None = None,
     ) -> torch.Tensor:
-        """Fill remaining masks left-to-right with streaming-parser filtering."""
+        """Fill remaining masks left-to-right with streaming-parser filtering.
+
+        R4: honor ``grammar_multitoken_accept`` + ``grammar_canvas_lookahead``
+        so repair/BOS certify share the same forward budget as greedy LTR.
+        """
         use_contract = bool(
             getattr(self.config, "slot_contract_constrained_decode", False)
         )
@@ -1031,29 +1041,43 @@ class TwoTowerModel(nn.Module):
         states = self._new_grammar_states(1)
         st = states[0] if states is not None else None
         pick_kw = self._pick_kwargs()
-        for t in range(length):
+        multitoken = bool(getattr(self.config, "grammar_multitoken_accept", False))
+        multitoken_max = max(1, int(getattr(self.config, "grammar_multitoken_max", 8) or 8))
+        lookahead = int(getattr(self.config, "grammar_canvas_lookahead", 0) or 0)
+        bias = self._effective_structural_bias()
+        tok = self.tokenizer
+        stats = get_active_stats()
+
+        t = 0
+        while t < length:
             if not bool(unknown[0, t].item()):
                 if st is not None and len(st.prefix_ids) == t:
-                    st.advance_token(self.tokenizer, int(ids[0, t].item()))
+                    st.advance_token(tok, int(ids[0, t].item()))
+                t += 1
                 continue
             prefix = ids[0, :t].tolist()
             if st is not None:
-                st.sync_ids(self.tokenizer, prefix)
+                st.sync_ids(tok, prefix)
             forced = (
-                force_emit_token_id(self.tokenizer, prefix, state=st)
-                if use_fast
-                else None
+                force_emit_token_id(tok, prefix, state=st) if use_fast else None
             )
-            logits = self._denoiser_forward(ids, ctx, ctx_pad)
-            if self._effective_structural_bias():
-                logits = apply_structural_bias(
-                    logits,
-                    self.tokenizer,
-                    bias=self._effective_structural_bias(),
-                )
+            # P4: truncate canvas to prefix + lookahead for the forward.
+            if lookahead > 0:
+                end = min(length, t + lookahead)
+                fwd_ids = ids[:, :end]
+            else:
+                end = length
+                fwd_ids = ids
+            logits = self._denoiser_forward(fwd_ids, ctx, ctx_pad)
+            if bias:
+                logits = apply_structural_bias(logits, tok, bias=bias)
+            local_t = min(t, end - 1)
+            row = logits[0, local_t].clone()
+            row[tok.mask_id] = -1e9
+            row[tok.pad_id] = -1e9
             choice = pick_constrained_token(
-                logits[0, t],
-                self.tokenizer,
+                row,
+                tok,
                 prefix,
                 top_k=self.config.grammar_top_k,
                 forced_token_id=forced,
@@ -1063,18 +1087,58 @@ class TwoTowerModel(nn.Module):
             )
             if choice is None:
                 # No legal continuation — pad out and stop rather than emit garbage.
-                ids[0, t:] = self.tokenizer.pad_id
+                ids[0, t:] = tok.pad_id
                 unknown[0, t:] = False
                 break
             ids[0, t] = choice
             unknown[0, t] = False
             if st is not None:
-                st.advance_token(self.tokenizer, int(choice))
-            if choice == self.tokenizer.eos_id:
+                st.advance_token(tok, int(choice))
+            if stats is not None:
+                stats.tokens_emitted += 1
+            if choice == tok.eos_id:
                 if t + 1 < length:
-                    ids[0, t + 1 :] = self.tokenizer.pad_id
+                    ids[0, t + 1 :] = tok.pad_id
                     unknown[0, t + 1 :] = False
                 break
+
+            advance = 1
+            # P3: greedily accept consecutive unknown positions from the same
+            # forward without re-running the denoiser.
+            if multitoken:
+                max_run = min(multitoken_max, end - t - 1)
+                for step in range(1, max_run + 1):
+                    pos = t + step
+                    if pos >= logits.size(1) or not bool(unknown[0, pos].item()):
+                        break
+                    logits_pos = logits[0, pos].clone()
+                    logits_pos[tok.mask_id] = -1e9
+                    logits_pos[tok.pad_id] = -1e9
+                    nxt = pick_constrained_token(
+                        logits_pos,
+                        tok,
+                        ids[0, :pos].tolist(),
+                        top_k=self.config.grammar_top_k,
+                        slot_contract=contract,
+                        state=st,
+                        **pick_kw,
+                    )
+                    if nxt is None:
+                        break
+                    ids[0, pos] = nxt
+                    unknown[0, pos] = False
+                    if st is not None:
+                        st.advance_token(tok, int(nxt))
+                    if stats is not None:
+                        stats.tokens_emitted += 1
+                        stats.accepted_run_tokens += 1
+                    advance = step + 1
+                    if nxt == tok.eos_id:
+                        if pos + 1 < length:
+                            ids[0, pos + 1 :] = tok.pad_id
+                            unknown[0, pos + 1 :] = False
+                        break
+            t += advance
         return ids
 
     def _ltr_canvases(self, length: int) -> list[int]:
@@ -1827,6 +1891,16 @@ class TwoTowerModel(nn.Module):
                     slot_contracts=self._slot_contracts,
                 )
             # Certify when grammar-constrained (finalize controls canned fallback).
+            # R5: honor generate_max_attempts; when grammar_ltr_repair already ran
+            # a BOS fill and the budget is 1, skip a redundant identical redo.
+            max_attempts = max(
+                1, int(getattr(self.config, "generate_max_attempts", 3) or 3)
+            )
+            ensure_attempts = (
+                0
+                if (bool(self.config.grammar_ltr_repair) and max_attempts <= 1)
+                else max_attempts
+            )
             certified: list[str] = []
             for i, text in enumerate(texts):
                 contract = (
@@ -1840,6 +1914,7 @@ class TwoTowerModel(nn.Module):
                         ctx[i : i + 1],
                         ctx_pad[i : i + 1],
                         length,
+                        attempts=ensure_attempts,
                         slot_contract=contract,
                     )
                 )
@@ -2190,7 +2265,14 @@ class TwoTowerModel(nn.Module):
             if canonical is not None:
                 return canonical
             return self._ensure_valid_openui(
-                text, ctx, ctx_pad, length, slot_contract=slot_contract
+                text,
+                ctx,
+                ctx_pad,
+                length,
+                attempts=max(
+                    1, int(getattr(self.config, "generate_max_attempts", 3) or 3)
+                ),
+                slot_contract=slot_contract,
             )
         return text
 

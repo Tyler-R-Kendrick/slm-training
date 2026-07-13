@@ -51,7 +51,7 @@ class PerfExperiment:
 
 
 def experiments() -> list[PerfExperiment]:
-    """P0–P8 + Q1/Q2/Q9 + playground rows."""
+    """P0–P8 + Q1/Q2/Q9 + R1/R2/R4/R5/R9 + playground rows."""
     return [
         PerfExperiment(
             "P0",
@@ -170,9 +170,67 @@ def experiments() -> list[PerfExperiment]:
             grammar_canvas_lookahead=32,
         ),
         PerfExperiment(
+            "R1",
+            "perf_r1_skip_exact_admit",
+            "Skip dfa_admits when tid already in exact DFA allowed set (on Q9)",
+            grammar_incremental_state=True,
+            grammar_verify_chosen_only=True,
+            grammar_multitoken_accept=True,
+            grammar_multitoken_max=8,
+            grammar_canvas_lookahead=32,
+        ),
+        PerfExperiment(
+            "R2",
+            "perf_r2_synced_fastpath",
+            "Skip redundant set_prefix when engine already at prefix (on Q9)",
+            grammar_incremental_state=True,
+            grammar_verify_chosen_only=True,
+            grammar_multitoken_accept=True,
+            grammar_multitoken_max=8,
+            grammar_canvas_lookahead=32,
+        ),
+        PerfExperiment(
+            "R4",
+            "perf_r4_repair_p3p4",
+            "Repair path uses multitoken+lookahead (PG + R4)",
+            grammar_incremental_state=True,
+            grammar_verify_chosen_only=True,
+            grammar_multitoken_accept=True,
+            grammar_multitoken_max=8,
+            grammar_canvas_lookahead=32,
+            grammar_ltr_repair=True,
+            grammar_finalize_validate=True,
+            generate_max_attempts=1,
+            grammar_finalize_on_last_attempt_only=True,
+        ),
+        PerfExperiment(
+            "R5",
+            "perf_r5_attempt_budget",
+            "Wire generate_max_attempts; skip redundant BOS ensure (PG)",
+            grammar_incremental_state=True,
+            grammar_verify_chosen_only=True,
+            grammar_multitoken_accept=True,
+            grammar_multitoken_max=8,
+            grammar_canvas_lookahead=32,
+            grammar_ltr_repair=True,
+            grammar_finalize_validate=True,
+            generate_max_attempts=1,
+            grammar_finalize_on_last_attempt_only=True,
+        ),
+        PerfExperiment(
+            "R9",
+            "perf_r9_combo",
+            "Shippable recipe: Q9 + R1/R2/R4/R5 (decode + repair)",
+            grammar_incremental_state=True,
+            grammar_verify_chosen_only=True,
+            grammar_multitoken_accept=True,
+            grammar_multitoken_max=8,
+            grammar_canvas_lookahead=32,
+        ),
+        PerfExperiment(
             "PG",
             "perf_pg_playground",
-            "Playground path with Q9 levers (repair+finalize)",
+            "Playground path with R9 levers (repair+finalize)",
             grammar_incremental_state=True,
             grammar_verify_chosen_only=True,
             grammar_multitoken_accept=True,
