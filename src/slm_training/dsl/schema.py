@@ -9,7 +9,7 @@ from typing import Any, Iterable, Iterator
 
 
 ALLOWED_SPLITS = frozenset(
-    {"train", "held_out", "smoke", "adversarial", "ood"}
+    {"train", "held_out", "smoke", "adversarial", "ood", "rico_held"}
 )
 
 

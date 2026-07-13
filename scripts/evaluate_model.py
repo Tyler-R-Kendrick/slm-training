@@ -58,6 +58,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Exit non-zero if placeholder_fidelity is below this threshold.",
     )
     parser.add_argument(
+        "--fail-under-placeholder-validity",
+        type=float,
+        default=None,
+        help="Exit non-zero if placeholder_validity is below this threshold.",
+    )
+    parser.add_argument(
         "--fail-under-structural-similarity",
         type=float,
         default=None,
@@ -106,6 +112,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.fail_under_placeholder_fidelity is not None:
         if float(metrics.get("placeholder_fidelity") or 0) < args.fail_under_placeholder_fidelity:
             return 4
+    if args.fail_under_placeholder_validity is not None:
+        if float(metrics.get("placeholder_validity") or 0) < args.fail_under_placeholder_validity:
+            return 7
     if args.fail_under_structural_similarity is not None:
         if float(metrics.get("structural_similarity") or 0) < args.fail_under_structural_similarity:
             return 5

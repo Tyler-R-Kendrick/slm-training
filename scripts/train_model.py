@@ -84,6 +84,22 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--grammar-top-k", type=int, default=16)
     parser.add_argument("--structural-bias", type=float, default=1.25)
     parser.add_argument(
+        "--ltr-loss-weight",
+        type=float,
+        default=0.5,
+        help="Auxiliary prefix-LM loss weight (helps LTR generate).",
+    )
+    parser.add_argument(
+        "--no-design-md-context",
+        action="store_true",
+        help="Do not concatenate DESIGN.md into the context tower prompt.",
+    )
+    parser.add_argument(
+        "--grammar-ltr-primary",
+        action="store_true",
+        help="Prefer greedy LTR decode at generate time.",
+    )
+    parser.add_argument(
         "--noise-rate",
         type=float,
         default=0.0,
@@ -124,6 +140,9 @@ def main(argv: list[str] | None = None) -> int:
             grammar_constrained=not args.no_grammar,
             grammar_top_k=args.grammar_top_k,
             structural_bias=args.structural_bias,
+            design_md_in_context=not args.no_design_md_context,
+            ltr_loss_weight=args.ltr_loss_weight,
+            grammar_ltr_primary=args.grammar_ltr_primary,
             noise_rate=args.noise_rate,
             eval_every=args.eval_every,
             eval_suite=args.eval_suite,

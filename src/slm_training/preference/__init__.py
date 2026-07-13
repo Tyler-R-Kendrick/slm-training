@@ -52,7 +52,20 @@ def grammar_score(openui: str) -> float:
     try:
         from slm_training.dsl import validate
 
-        validate(openui)
+        program = validate(openui)
+        serialized = (program.serialized or openui).strip()
+        compact = serialized.replace(" ", "")
+        if "Stack([])" in compact or "Stack([]," in compact:
+            return 0.0
+        # Require at least one non-Stack component + a placeholder.
+        from slm_training.dsl.placeholders import extract_placeholders
+        import re
+
+        comps = re.findall(r"\b([A-Z][A-Za-z0-9]*)\s*\(", serialized)
+        if not any(c != "Stack" for c in comps):
+            return 0.0
+        if not extract_placeholders(serialized):
+            return 0.0
         return 1.0
     except Exception:  # noqa: BLE001
         return 0.0

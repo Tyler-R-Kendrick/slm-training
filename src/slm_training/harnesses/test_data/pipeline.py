@@ -13,7 +13,7 @@ from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.parser import ParseError, validate
 from slm_training.dsl.schema import ExampleRecord, load_jsonl, write_jsonl
 
-DEFAULT_SUITES = ("smoke", "held_out", "adversarial", "ood")
+DEFAULT_SUITES = ("smoke", "held_out", "adversarial", "ood", "rico_held")
 
 
 @dataclass
@@ -30,8 +30,9 @@ class TestDataConfig:
     rico_hf_split: str | None = None
     rico_limit: int | None = None
     max_children: int = 6
-    # Map RICO screens into these suites (round-robin)
-    rico_suites: tuple[str, ...] = ("smoke", "held_out")
+    # Map RICO screens into these suites (round-robin).
+    # Smoke/held_out stay fixture-curated; RICO uses rico_held.
+    rico_suites: tuple[str, ...] = ("rico_held",)
 
     # Prevent pytest from collecting this dataclass as a test class.
     __test__ = False

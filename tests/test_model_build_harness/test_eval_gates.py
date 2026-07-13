@@ -42,7 +42,7 @@ def test_evaluate_suites_scoreboard(tmp_path: Path) -> None:
     train_dir = tmp_path / "train"
     test_dir = tmp_path / "test"
     train_dir.mkdir()
-    (test_dir / "suites").mkdir(parents=True)
+    (test_dir / "suites" / "smoke").mkdir(parents=True)
     hero = (
         'root = Stack([hero], "column")\n'
         'hero_title = TextContent(":hero.title")\n'
@@ -54,7 +54,7 @@ def test_evaluate_suites_scoreboard(tmp_path: Path) -> None:
     ]
     write_jsonl(train_dir / "records.jsonl", records)
     write_jsonl(
-        test_dir / "suites" / "smoke.jsonl",
+        test_dir / "suites" / "smoke" / "records.jsonl",
         [
             ExampleRecord(
                 id="s1",

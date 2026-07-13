@@ -19,11 +19,41 @@ _COMPONENT_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s*\(")
 
 
 def _placeholder_fidelity(pred: str, gold: ExampleRecord) -> float:
+    """Exact placeholder overlap with gold (strict)."""
     pred_set = set(extract_placeholders(pred))
     gold_set = set(gold.placeholders) or set(extract_placeholders(gold.openui))
     if not gold_set:
         return 1.0 if not pred_set else 0.0
     return len(pred_set & gold_set) / len(gold_set)
+
+
+def _normalize_placeholder(token: str) -> str:
+    """Drop leading namespace segment so :smoke.hero.title ~= :hero.title."""
+    body = token[1:] if token.startswith(":") else token
+    parts = body.split(".")
+    if len(parts) >= 3:
+        return ".".join(parts[1:])
+    return body
+
+
+def _placeholder_validity(pred: str, gold: ExampleRecord) -> float:
+    """
+    Soft placeholder quality for cross-namespace generalization:
+    - All extracted placeholders must look like :a.b
+    - Normalized overlap with gold (ignore suite/id prefix)
+    - Presence bonus when gold expects placeholders
+    """
+    pred_set = set(extract_placeholders(pred))
+    gold_set = set(gold.placeholders) or set(extract_placeholders(gold.openui))
+    if not gold_set:
+        return 1.0 if not pred_set else 0.5
+    if not pred_set:
+        return 0.0
+    well_formed = sum(1 for p in pred_set if p.startswith(":") and "." in p) / len(pred_set)
+    pred_n = {_normalize_placeholder(p) for p in pred_set}
+    gold_n = {_normalize_placeholder(p) for p in gold_set}
+    overlap = len(pred_n & gold_n) / len(gold_n) if gold_n else 0.0
+    return round(0.4 * well_formed + 0.6 * overlap, 4)
 
 
 def _tree_match(pred: str, gold_openui: str) -> float:
@@ -92,6 +122,31 @@ def _reward_for_prediction(pred: str, record: ExampleRecord) -> float:
         return 0.0
 
 
+def _is_meaningful_program(pred: str) -> tuple[bool, str | None, str | None]:
+    """
+    Validate and reject trivial empties (e.g. `root = Stack([])`) that lang-core
+    still marks ok — those inflate parse_rate without being useful layouts.
+    Returns (ok, error, serialized).
+    """
+    try:
+        program = validate(pred)
+    except ParseError as exc:
+        return False, str(exc), None
+    serialized = (program.serialized or pred).strip()
+    compact = serialized.replace(" ", "")
+    if "Stack([])" in compact or "Stack([]," in compact:
+        return False, "empty_root_stack", serialized
+    if "Card([])" in compact:
+        return False, "empty_card", serialized
+    comps = _component_multiset(serialized)
+    non_stack = {k: v for k, v in comps.items() if k != "Stack"}
+    if not non_stack:
+        return False, "no_content_components", serialized
+    if not extract_placeholders(serialized):
+        return False, "no_placeholders", serialized
+    return True, None, serialized
+
+
 def evaluate(
     config: ModelBuildConfig,
     model=None,
@@ -126,6 +181,7 @@ def evaluate(
     n = len(records)
     parse_ok = 0
     fidelity_sum = 0.0
+    validity_sum = 0.0
     exact_sum = 0.0
     struct_sum = 0.0
     reward_sum = 0.0
@@ -141,20 +197,18 @@ def evaluate(
         except TypeError:
             pred = plugin.generate(record.prompt, gold=None)
         latencies.append((time.perf_counter() - t0) * 1000.0)
-        ok = False
-        error = None
-        try:
-            validate(pred)
-            ok = True
+        ok, error, serialized = _is_meaningful_program(pred)
+        scored_pred = serialized or pred
+        if ok:
             parse_ok += 1
-        except ParseError as exc:
-            error = str(exc)
-        fid = _placeholder_fidelity(pred, record)
-        exact = _tree_match(pred, record.openui)
-        struct = structural_similarity(pred, record.openui)
-        reward = _reward_for_prediction(pred, record)
+        fid = _placeholder_fidelity(scored_pred, record)
+        ph_valid = _placeholder_validity(scored_pred, record)
+        exact = _tree_match(scored_pred, record.openui)
+        struct = structural_similarity(scored_pred, record.openui)
+        reward = _reward_for_prediction(scored_pred, record)
         dscore = _design_lint_for_record(record)
         fidelity_sum += fid
+        validity_sum += ph_valid
         exact_sum += exact
         struct_sum += struct
         reward_sum += reward
@@ -166,12 +220,14 @@ def evaluate(
                 "parse_ok": ok,
                 "error": error,
                 "placeholder_fidelity": fid,
+                "placeholder_validity": ph_valid,
                 "exact_match": exact,
                 "structural_similarity": struct,
                 "reward_score": reward,
                 "design_lint_score": dscore,
                 "latency_ms": round(latencies[-1], 2),
                 "prediction": pred[:500],
+                "serialized": (serialized or "")[:500] if serialized else None,
             }
         )
 
@@ -184,6 +240,7 @@ def evaluate(
         "n": n,
         "parse_rate": (parse_ok / n) if n else 0.0,
         "placeholder_fidelity": (fidelity_sum / n) if n else 0.0,
+        "placeholder_validity": (validity_sum / n) if n else 0.0,
         "exact_match": (exact_sum / n) if n else 0.0,
         "structural_similarity": (struct_sum / n) if n else 0.0,
         "reward_score": (reward_sum / n) if n else 0.0,
@@ -200,13 +257,12 @@ def evaluate(
 
     run_dir = config.run_dir
     run_dir.mkdir(parents=True, exist_ok=True)
-    out_path = run_dir / "eval.json"
     suite_path = run_dir / f"eval_{config.suite}.json"
     payload = json.dumps(metrics, indent=2) + "\n"
-    out_path.write_text(payload, encoding="utf-8")
-    if suite_path != out_path:
-        suite_path.write_text(payload, encoding="utf-8")
-    metrics["output"] = str(suite_path if config.suite != "smoke" else out_path)
+    suite_path.write_text(payload, encoding="utf-8")
+    if config.suite == "smoke":
+        (run_dir / "eval.json").write_text(payload, encoding="utf-8")
+    metrics["output"] = str(suite_path)
     return metrics
 
 

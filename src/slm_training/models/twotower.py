@@ -68,6 +68,14 @@ class TwoTowerConfig:
     grammar_constrained: bool = True
     grammar_top_k: int = 16
     structural_bias: float = 1.25
+    # Full LTR constrained repair is accurate but slow (Node stream_check per token).
+    # Off by default; enable for final quality evals.
+    grammar_ltr_repair: bool = False
+    grammar_ltr_max_tokens: int = 64
+    # When True and grammar_constrained, skip MaskGIT and decode LTR only.
+    grammar_ltr_primary: bool = False
+    # Mix teacher-forced next-token CE into training (helps LTR generate).
+    ltr_loss_weight: float = 0.5
     design_md_in_context: bool = True
     design_md_budget: int = 1800
     seed: int = 0
@@ -197,9 +205,34 @@ class TwoTowerModel(nn.Module):
         logits = self.denoiser(
             noisy, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
         )
-        if not predict_mask.any():
-            return logits.sum() * 0.0
-        return F.cross_entropy(logits[predict_mask], target_ids[predict_mask])
+        if predict_mask.any():
+            mask_loss = F.cross_entropy(logits[predict_mask], target_ids[predict_mask])
+        else:
+            mask_loss = logits.sum() * 0.0
+
+        ltr_w = float(self.config.ltr_loss_weight or 0.0)
+        if ltr_w <= 0.0 or target_ids.size(1) < 2:
+            return mask_loss
+
+        # Prefix-LM style: mask a random suffix and predict those tokens.
+        bsz, seq = target_ids.shape
+        ltr_noisy = target_ids.clone()
+        ltr_mask = torch.zeros_like(target_ids, dtype=torch.bool)
+        for i in range(bsz):
+            cut = self._rng.randint(1, max(1, seq - 1))
+            ltr_noisy[i, cut:] = self.tokenizer.mask_id
+            for j in range(cut, seq):
+                if int(target_ids[i, j]) == self.tokenizer.pad_id:
+                    break
+                ltr_mask[i, j] = True
+        ltr_logits = self.denoiser(
+            ltr_noisy, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
+        )
+        if ltr_mask.any():
+            ltr_loss = F.cross_entropy(ltr_logits[ltr_mask], target_ids[ltr_mask])
+        else:
+            ltr_loss = mask_loss * 0.0
+        return mask_loss + ltr_w * ltr_loss
 
     def _decode_ids(self, ids_1d: torch.Tensor) -> str:
         token_ids = ids_1d.tolist()
@@ -245,6 +278,41 @@ class TwoTowerModel(nn.Module):
                 break
         return ids
 
+    def _greedy_ltr_decode(
+        self,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor,
+        length: int,
+    ) -> torch.Tensor:
+        """Left-to-right argmax decode with structural bias (no stream probes)."""
+        ids = torch.full(
+            (1, length),
+            self.tokenizer.mask_id,
+            dtype=torch.long,
+            device=self.device_name,
+        )
+        ids[0, 0] = self.tokenizer.bos_id
+        for t in range(1, length):
+            logits = self.denoiser(
+                ids, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
+            )
+            if self.config.structural_bias:
+                logits = apply_structural_bias(
+                    logits,
+                    self.tokenizer,
+                    bias=self.config.structural_bias,
+                )
+            logits = logits.clone()
+            logits[0, t, self.tokenizer.mask_id] = -1e9
+            logits[0, t, self.tokenizer.pad_id] = -1e9
+            tok = int(logits[0, t].argmax().item())
+            ids[0, t] = tok
+            if tok == self.tokenizer.eos_id:
+                if t + 1 < length:
+                    ids[0, t + 1 :] = self.tokenizer.pad_id
+                break
+        return ids
+
     @torch.no_grad()
     def generate(
         self,
@@ -275,6 +343,24 @@ class TwoTowerModel(nn.Module):
 
         device = self.device_name
         ctx, ctx_pad = self._encode_context([ctx_prompt])
+
+        # Primary LTR decode path (better parse_rate on small models).
+        if use_grammar and self.config.grammar_ltr_primary:
+            repair_len = min(length, max(8, int(self.config.grammar_ltr_max_tokens)))
+            ids = self._greedy_ltr_decode(ctx, ctx_pad, repair_len)
+            text = self._decode_ids(ids[0])
+            try:
+                from slm_training.dsl.parser import validate
+
+                program = validate(text)
+                ser = (program.serialized or text).strip()
+                compact = ser.replace(" ", "")
+                if "Stack([])" not in compact and "Card([])" not in compact:
+                    return ser
+            except Exception:  # noqa: BLE001
+                pass
+            return text
+
         ids = torch.full(
             (1, length), self.tokenizer.mask_id, dtype=torch.long, device=device
         )
@@ -354,32 +440,46 @@ class TwoTowerModel(nn.Module):
             try:
                 status = stream_check(text)
                 if status.serialized and status.complete_ok:
-                    return status.serialized
+                    ser = status.serialized.strip()
+                    if "Stack([])" not in ser.replace(" ", ""):
+                        return ser
             except Exception:  # noqa: BLE001
                 pass
-            # Fallback: full left-to-right constrained decode when MaskGIT
-            # left an invalid program (common early in training).
+            if not self.config.grammar_ltr_repair:
+                return text
+            # Fallback: capped left-to-right constrained decode when MaskGIT
+            # left an invalid program (expensive: Node stream_check per step).
             try:
                 from slm_training.dsl.parser import validate
 
-                validate(text)
-                return text
+                program = validate(text)
+                ser = (program.serialized or text).strip()
+                if "Stack([])" not in ser.replace(" ", ""):
+                    return ser
             except Exception:  # noqa: BLE001
-                repaired = torch.full(
-                    (1, length), self.tokenizer.mask_id, dtype=torch.long, device=device
-                )
-                repaired[0, 0] = self.tokenizer.bos_id
-                unknown_r = repaired.eq(self.tokenizer.mask_id)
-                repaired = self._constrained_ltr_repair(
-                    repaired, unknown_r, ctx, ctx_pad
-                )
-                text = self._decode_ids(repaired[0])
-                try:
-                    status = stream_check(text)
-                    if status.serialized and status.complete_ok:
-                        return status.serialized
-                except Exception:  # noqa: BLE001
-                    pass
+                pass
+            repair_len = min(length, max(8, int(self.config.grammar_ltr_max_tokens)))
+            repaired = torch.full(
+                (1, repair_len),
+                self.tokenizer.mask_id,
+                dtype=torch.long,
+                device=device,
+            )
+            repaired[0, 0] = self.tokenizer.bos_id
+            unknown_r = repaired.eq(self.tokenizer.mask_id)
+            repaired = self._constrained_ltr_repair(
+                repaired, unknown_r, ctx, ctx_pad
+            )
+            text2 = self._decode_ids(repaired[0])
+            try:
+                status = stream_check(text2)
+                if status.serialized and status.complete_ok:
+                    ser = status.serialized.strip()
+                    if "Stack([])" not in ser.replace(" ", ""):
+                        return ser
+            except Exception:  # noqa: BLE001
+                pass
+            return text2
         return text
 
     def _state_dict_for_checkpoint(self) -> dict:

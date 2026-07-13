@@ -54,7 +54,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--suites",
-        default="smoke,held_out,adversarial,ood",
+        default="smoke,held_out,adversarial,ood,rico_held",
         help="Comma-separated suite names",
     )
     args = parser.parse_args(argv)

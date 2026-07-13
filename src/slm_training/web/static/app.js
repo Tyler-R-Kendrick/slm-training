@@ -1,4 +1,5 @@
 const promptEl = document.getElementById("prompt");
+const designMdEl = document.getElementById("design_md");
 const generateBtn = document.getElementById("generate");
 const grammarEl = document.getElementById("grammar");
 const statusEl = document.getElementById("status");
@@ -60,12 +61,14 @@ async function generate() {
   badgeEl.className = "badge";
 
   try {
+    const design_md = (designMdEl?.value || "").trim();
     const res = await fetch("/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         prompt,
         grammar_constrained: grammarEl.checked,
+        design_md: design_md || null,
       }),
     });
     const data = await res.json();

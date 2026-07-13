@@ -9,7 +9,6 @@ from pathlib import Path
 
 from slm_training.dsl.schema import load_jsonl
 from slm_training.preference import (
-    build_pairs_from_candidates,
     collect_pairs_with_generator,
     write_pairs,
 )
@@ -28,6 +27,14 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Synthesize a rejected candidate by breaking the gold OpenUI.",
     )
+    build.add_argument(
+        "--from-checkpoint",
+        type=Path,
+        default=None,
+        help="Generate rejected candidates from a TwoTower checkpoint (model samples).",
+    )
+    build.add_argument("--limit", type=int, default=None, help="Optional record cap.")
+    build.add_argument("--device", default="cpu")
 
     train = sub.add_parser("train", help="Run preference training from a checkpoint")
     train.add_argument("--checkpoint", type=Path, required=True)
@@ -40,12 +47,35 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "build-pairs":
         records = load_jsonl(args.train_records)
+        if args.limit is not None:
+            records = records[: max(0, int(args.limit))]
 
-        def gen(record):
-            bad = record.openui.replace("TextContent", "BrokenText", 1)
-            if bad == record.openui:
-                bad = "root = Broken()"
-            return [record.openui, bad]
+        if args.from_checkpoint is not None:
+            from slm_training.models.twotower import TwoTowerModel
+
+            model = TwoTowerModel.from_checkpoint(
+                args.from_checkpoint, device=args.device
+            )
+            model.config.grammar_ltr_primary = True
+            model.config.design_md_in_context = False
+
+            def gen(record):
+                pred = model.generate(record.prompt, gold=None)
+                # Gold + model sample (+ optional corruption) as candidates.
+                cands = [record.openui, pred]
+                if args.corrupt:
+                    bad = record.openui.replace("TextContent", "BrokenText", 1)
+                    if bad == record.openui:
+                        bad = "root = Broken()"
+                    cands.append(bad)
+                return cands
+        else:
+
+            def gen(record):
+                bad = record.openui.replace("TextContent", "BrokenText", 1)
+                if bad == record.openui:
+                    bad = "root = Broken()"
+                return [record.openui, bad]
 
         pairs = collect_pairs_with_generator(records, gen)
         n = write_pairs(args.out, pairs)

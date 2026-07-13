@@ -70,3 +70,26 @@ Optional preference/DPO stage ranks candidates with the composite reward.
 
 1–6: prior revisions (done)
 7. Full openuiLibrary + DESIGN.md + harden + Cactus/Awwwards/DPO (**this revision**)
+
+### Eval-driven ship gates (current)
+
+| Suite | Gate | Ship (`twotower_v1_ship`) |
+| --- | --- | --- |
+| smoke | parse ≥ 0.66, struct ≥ 0.35, ph_valid ≥ 0.25, reward ≥ 0.35 | **pass** (1.0 / 1.0 / 0.8 / 0.76) |
+| held_out (fixture) | parse ≥ 0.15, struct ≥ 0.25 | **pass** |
+| rico_held | diagnostic only | tracked in scoreboard |
+
+Rebuild + scoreboard:
+
+```bash
+python -m scripts.build_test_data --source both --version v1 \
+  --train-manifest outputs/train_data/v1/manifest.json
+python -m scripts.evaluate_model --suites smoke,held_out,adversarial,ood,rico_held \
+  --train-dir outputs/train_data/v1_fixture_up \
+  --test-dir outputs/test_data/v1 \
+  --run-id twotower_v1_ship \
+  --fail-under-parse-rate 0.66 \
+  --fail-under-structural-similarity 0.35 \
+  --fail-under-placeholder-validity 0.25 \
+  --fail-under-reward-score 0.35
+```

@@ -36,6 +36,10 @@ class ModelBuildConfig:
     grammar_constrained: bool = True
     grammar_top_k: int = 16
     structural_bias: float = 1.25
+    grammar_ltr_repair: bool = False
+    grammar_ltr_max_tokens: int = 64
+    grammar_ltr_primary: bool = False
+    ltr_loss_weight: float = 0.5
     design_md_in_context: bool = True
     design_md_budget: int = 1800
     # Stub-only

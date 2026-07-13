@@ -162,10 +162,14 @@ function handle(req) {
   throw new Error(`unknown op: ${op}`);
 }
 
-async function main() {
+async function readStdin() {
   const chunks = [];
   for await (const chunk of process.stdin) chunks.push(chunk);
-  const raw = Buffer.concat(chunks).toString("utf8").trim();
+  return Buffer.concat(chunks).toString("utf8").trim();
+}
+
+async function runOnce() {
+  const raw = await readStdin();
   let req;
   try {
     req = JSON.parse(raw || "{}");
@@ -184,6 +188,56 @@ async function main() {
       JSON.stringify({ ok: false, error: e.message || String(e) }) + "\n",
     );
     process.exit(1);
+  }
+}
+
+async function runRepl() {
+  const readline = await import("node:readline");
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    terminal: false,
+  });
+  for await (const line of rl) {
+    const raw = String(line || "").trim();
+    if (!raw) continue;
+    let req;
+    try {
+      req = JSON.parse(raw);
+    } catch (e) {
+      process.stdout.write(
+        JSON.stringify({ ok: false, error: `invalid JSON: ${e.message}` }) + "\n",
+      );
+      continue;
+    }
+    if (req.op === "ping") {
+      process.stdout.write(JSON.stringify({ ok: true, pong: true }) + "\n");
+      continue;
+    }
+    if (req.op === "quit") {
+      process.stdout.write(JSON.stringify({ ok: true, bye: true }) + "\n");
+      break;
+    }
+    try {
+      const result = handle(req);
+      process.stdout.write(JSON.stringify(result) + "\n");
+    } catch (e) {
+      process.stdout.write(
+        JSON.stringify({ ok: false, error: e.message || String(e) }) + "\n",
+      );
+    }
+  }
+  process.exit(0);
+}
+
+async function main() {
+  const repl =
+    process.argv.includes("--repl") ||
+    process.env.OPENUI_BRIDGE_REPL === "1";
+  if (repl) {
+    await runRepl();
+  } else {
+    await runOnce();
   }
 }
 

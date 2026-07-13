@@ -53,11 +53,16 @@ python -m scripts.evaluate_model \
   --test-dir outputs/test_data/v1 \
   --suite smoke \
   --model twotower \
-  --run-id twotower_v1 \
-  --fail-under-parse-rate 0.5
+  --run-id twotower_v1_ship \
+  --fail-under-parse-rate 0.66 \
+  --fail-under-structural-similarity 0.35 \
+  --fail-under-placeholder-validity 0.25 \
+  --fail-under-reward-score 0.35
 ```
 
-Train artifacts land in `outputs/train_data/<version>/` (`train.jsonl`, `val.jsonl`, `test.jsonl`, `manifest.json`, `stats.json`). The flush pipeline: curated seeds + RICO + Awwwards → deterministic quality synth (layout augment + prompt paraphrase) → per-record DESIGN.md + OpenUI validate → quality gates → stable sort by `id` + content fingerprint.
+Train artifacts land in `outputs/train_data/<version>/` (`records.jsonl`, `manifest.json`, `stats.json`). The flush pipeline: curated seeds + RICO + Awwwards → deterministic quality synth → per-record DESIGN.md + OpenUI validate → quality gates → stable sort by `id` + content fingerprint.
+
+Eval uses **meaningful parse** (rejects empty `Stack([])` / `Card([])`), `placeholder_validity` (namespace-normalized), `structural_similarity`, and composite `reward_score`. Suites: smoke/held_out (fixtures), `rico_held` (RICO diagnostic), adversarial, ood.
 
 ```bash
 pytest

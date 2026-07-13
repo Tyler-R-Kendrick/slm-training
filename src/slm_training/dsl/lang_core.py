@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import atexit
 import json
 import os
 import shutil
 import subprocess
+import threading
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -15,6 +17,9 @@ from slm_training.dsl.placeholders import extract_placeholders
 REPO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_BRIDGE_DIR = REPO_ROOT / "tools" / "openui_bridge"
 DEFAULT_CLI = DEFAULT_BRIDGE_DIR / "cli.mjs"
+
+_REPL_LOCK = threading.Lock()
+_REPL_PROC: subprocess.Popen[str] | None = None
 
 
 class ParseError(ValueError):
@@ -49,7 +54,53 @@ def bridge_available() -> bool:
     return bool(node) and cli.is_file() and node_modules.is_dir()
 
 
-def _invoke(payload: dict[str, Any], timeout_s: float = 30.0) -> dict[str, Any]:
+def _close_repl() -> None:
+    global _REPL_PROC
+    proc = _REPL_PROC
+    _REPL_PROC = None
+    if proc is None:
+        return
+    try:
+        if proc.stdin and proc.poll() is None:
+            proc.stdin.write(json.dumps({"op": "quit"}) + "\n")
+            proc.stdin.flush()
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        proc.kill()
+    except Exception:  # noqa: BLE001
+        pass
+
+
+atexit.register(_close_repl)
+
+
+def _ensure_repl() -> subprocess.Popen[str]:
+    global _REPL_PROC
+    if _REPL_PROC is not None and _REPL_PROC.poll() is None:
+        return _REPL_PROC
+    node = _node_bin()
+    cli = Path(os.getenv("OPENUI_BRIDGE_CLI") or DEFAULT_CLI)
+    if not node:
+        raise RuntimeError(
+            "Node.js is required for @openuidev/lang-core bridge. Install Node 20+."
+        )
+    if not cli.is_file():
+        raise RuntimeError(f"OpenUI bridge CLI not found at {cli}")
+    if not (cli.parent / "node_modules" / "@openuidev" / "lang-core").is_dir():
+        raise RuntimeError(f"Install bridge deps: cd {cli.parent} && npm ci")
+    _REPL_PROC = subprocess.Popen(
+        [node, str(cli), "--repl"],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        bufsize=1,
+    )
+    return _REPL_PROC
+
+
+def _invoke_once(payload: dict[str, Any], timeout_s: float = 30.0) -> dict[str, Any]:
     node = _node_bin()
     if not node:
         raise RuntimeError(
@@ -59,9 +110,7 @@ def _invoke(payload: dict[str, Any], timeout_s: float = 30.0) -> dict[str, Any]:
     if not cli.is_file():
         raise RuntimeError(f"OpenUI bridge CLI not found at {cli}")
     if not (cli.parent / "node_modules" / "@openuidev" / "lang-core").is_dir():
-        raise RuntimeError(
-            f"Install bridge deps: cd {cli.parent} && npm ci"
-        )
+        raise RuntimeError(f"Install bridge deps: cd {cli.parent} && npm ci")
 
     proc = subprocess.run(
         [node, str(cli)],
@@ -83,6 +132,50 @@ def _invoke(payload: dict[str, Any], timeout_s: float = 30.0) -> dict[str, Any]:
     if proc.returncode not in (0, 2) and not result.get("ok", False):
         raise RuntimeError(result.get("error") or proc.stderr or "bridge failed")
     return result
+
+
+def _invoke_repl(payload: dict[str, Any], timeout_s: float = 30.0) -> dict[str, Any]:
+    _ = timeout_s
+    with _REPL_LOCK:
+        proc = _ensure_repl()
+        assert proc.stdin is not None and proc.stdout is not None
+        try:
+            proc.stdin.write(json.dumps(payload) + "\n")
+            proc.stdin.flush()
+        except BrokenPipeError:
+            _close_repl()
+            proc = _ensure_repl()
+            assert proc.stdin is not None and proc.stdout is not None
+            proc.stdin.write(json.dumps(payload) + "\n")
+            proc.stdin.flush()
+
+        line = proc.stdout.readline()
+        if not line:
+            err = ""
+            if proc.stderr is not None:
+                try:
+                    err = proc.stderr.read()
+                except Exception:  # noqa: BLE001
+                    err = ""
+            _close_repl()
+            raise RuntimeError(f"OpenUI bridge REPL died: {err}")
+        try:
+            return json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(f"OpenUI bridge non-JSON output: {line[:500]}") from exc
+
+
+def _invoke(payload: dict[str, Any], timeout_s: float = 30.0) -> dict[str, Any]:
+    """Prefer persistent REPL; fall back to one-shot subprocess."""
+    use_repl = os.getenv("OPENUI_BRIDGE_NO_REPL", "").strip() not in {"1", "true", "yes"}
+    if use_repl:
+        try:
+            return _invoke_repl(payload, timeout_s=timeout_s)
+        except Exception:  # noqa: BLE001
+            # Fall back so CI / broken REPL still works.
+            _close_repl()
+            return _invoke_once(payload, timeout_s=timeout_s)
+    return _invoke_once(payload, timeout_s=timeout_s)
 
 
 def parse(source: str) -> Program:
