@@ -180,6 +180,11 @@ class PlaygroundService:
         with self._lock:
             attempts = max(1, int(max_attempts)) if grammar_constrained else 1
             for attempt_no in range(1, attempts + 1):
+                # Reset per attempt so a generate_exception never reuses the
+                # previous attempt's OpenUI in the bad-output quarantine.
+                openui = ""
+                serialized = None
+                valid = False
                 try:
                     openui = model.generate(
                         prompt,
@@ -187,13 +192,11 @@ class PlaygroundService:
                         design_md=design_md,
                     )
                 except Exception as exc:  # noqa: BLE001
-                    valid = False
-                    serialized = None
                     last_error = str(exc)
                     if grammar_constrained:
                         self._quarantine_bad_output(
                             prompt=prompt,
-                            openui=openui or "",
+                            openui="",
                             error=last_error,
                             attempt=attempt_no,
                             session_id=session_id,
@@ -209,8 +212,6 @@ class PlaygroundService:
                     last_error = None
                     break
                 except ParseError as exc:
-                    valid = False
-                    serialized = None
                     last_error = str(exc)
                     if grammar_constrained:
                         self._quarantine_bad_output(
@@ -221,6 +222,7 @@ class PlaygroundService:
                             session_id=session_id,
                             meta={"failure": "parse_error"},
                         )
+                    openui = ""
                     if not grammar_constrained:
                         break
             if grammar_constrained and not valid:

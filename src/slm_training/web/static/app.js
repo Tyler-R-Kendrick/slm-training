@@ -406,7 +406,24 @@ async function boot() {
   statusEl.textContent = "Prefetching samples…";
   render();
   await ensurePrefetch();
-  statusEl.textContent = "Ready · 👍/👎 grade · ←/→ navigate · Tab view · type to note";
+  const ready = current()?.status === "ready" && current()?.valid;
+  if (ready) {
+    statusEl.textContent = "Ready · 👍/👎 grade · ←/→ navigate · Tab view · type to note";
+  } else if (!statusEl.textContent || statusEl.textContent.startsWith("Prefetching")) {
+    statusEl.textContent = "Waiting for valid sample…";
+  }
+  // Keep trying until we have at least one gradable sample.
+  if (!ready) {
+    window.setTimeout(() => {
+      void ensurePrefetch().then(() => {
+        if (current()?.status === "ready" && current()?.valid) {
+          statusEl.textContent =
+            "Ready · 👍/👎 grade · ←/→ navigate · Tab view · type to note";
+          render();
+        }
+      });
+    }, 1500);
+  }
   cardEl.focus();
 }
 
