@@ -3,12 +3,13 @@
  * JSON-over-stdio CLI for @openuidev/lang-core.
  *
  * Input (stdin, one JSON object):
- *   { "op": "parse"|"validate"|"serialize"|"prompt"|"schema", "source"?: string, "options"?: object }
+ *   { "op": "parse"|"validate"|"serialize"|"prompt"|"schema"|"stream_check", ... }
  *
  * Output (stdout): JSON result object.
  */
 import {
   createParser,
+  createStreamingParser,
   jsonToOpenUI,
 } from "@openuidev/lang-core";
 import { library, CONTENT_PROPS, PLACEHOLDER_RE } from "./library.mjs";
@@ -85,6 +86,34 @@ function handle(req) {
       bindings: false,
     });
     return { ok: true, prompt: text };
+  }
+
+  if (op === "stream_check") {
+    const source = req.source;
+    if (typeof source !== "string") throw new Error("source must be a string");
+    const streaming = createStreamingParser(schema);
+    const result = streaming.push(source);
+    const policyErrors = result.root ? contentPolicyErrors(result.root) : [];
+    const errors = [...(result.meta.errors || []), ...policyErrors];
+    const ok =
+      Boolean(result.root) &&
+      !result.meta.incomplete &&
+      errors.length === 0 &&
+      (result.meta.unresolved || []).length === 0;
+    return {
+      ok,
+      incomplete: Boolean(result.meta.incomplete),
+      has_root: Boolean(result.root),
+      errors,
+      unresolved: result.meta.unresolved || [],
+      placeholders: result.root ? collectPlaceholders(result.root) : [],
+      serialized:
+        result.root != null && !result.meta.incomplete
+          ? jsonToOpenUI(result.root, library).trim()
+          : null,
+      root: result.root,
+      meta: result.meta,
+    };
   }
 
   if (op === "parse" || op === "validate") {

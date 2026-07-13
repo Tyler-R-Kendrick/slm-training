@@ -21,6 +21,10 @@ dev = [
 torch = [
   "torch>=2.2",
 ]
+hf = [
+  "transformers>=4.40",
+  "accelerate>=0.30",
+]
 rico = [
   "datasets>=2.18",
   "pillow>=10.0",

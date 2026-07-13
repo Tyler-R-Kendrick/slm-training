@@ -28,6 +28,7 @@ def build_model(
         if checkpoint and checkpoint.exists():
             return TwoTowerModel.from_checkpoint(checkpoint, device=config.device)
 
+        backend = (config.context_backend or "scratch").lower()
         tt_cfg = TwoTowerConfig(
             d_model=config.d_model,
             n_heads=config.n_heads,
@@ -36,7 +37,13 @@ def build_model(
             mask_min=config.mask_min,
             mask_max=config.mask_max,
             gen_steps=config.gen_steps,
+            context_backend=backend,
+            hf_model_name=config.hf_model_name,
             freeze_context=config.freeze_context,
+            local_files_only=config.local_files_only,
+            grammar_constrained=config.grammar_constrained,
+            grammar_top_k=config.grammar_top_k,
+            structural_bias=config.structural_bias,
             seed=config.seed,
         )
         return TwoTowerModel.from_records(records, config=tt_cfg, device=config.device)

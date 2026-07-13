@@ -38,10 +38,38 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--mask-max", type=float, default=0.85)
     parser.add_argument("--gen-steps", type=int, default=8)
     parser.add_argument(
+        "--context-backend",
+        choices=("scratch", "hf"),
+        default="scratch",
+        help="Context tower backend (scratch TokenEncoder or frozen HF model).",
+    )
+    parser.add_argument(
+        "--hf-model",
+        default="HuggingFaceTB/SmolLM2-135M",
+        help="HF model id when --context-backend hf.",
+    )
+    parser.add_argument(
         "--freeze-context",
         action="store_true",
-        help="Freeze context tower (for pretrained encoders). Default: train both towers.",
+        help="Freeze context tower weights.",
     )
+    parser.add_argument(
+        "--no-freeze-context",
+        action="store_true",
+        help="Allow context tower gradients (overrides HF default freeze).",
+    )
+    parser.add_argument(
+        "--local-files-only",
+        action="store_true",
+        help="Load HF weights only from local cache.",
+    )
+    parser.add_argument(
+        "--no-grammar",
+        action="store_true",
+        help="Disable streaming/grammar-constrained decode at generate time.",
+    )
+    parser.add_argument("--grammar-top-k", type=int, default=16)
+    parser.add_argument("--structural-bias", type=float, default=1.25)
     parser.add_argument(
         "--noise-rate",
         type=float,
@@ -49,6 +77,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Stub-only: rate of intentional broken generations.",
     )
     args = parser.parse_args(argv)
+
+    freeze = args.freeze_context
+    if args.context_backend == "hf" and not args.no_freeze_context:
+        freeze = True
+    if args.no_freeze_context:
+        freeze = False
 
     summary = train(
         ModelBuildConfig(
@@ -68,7 +102,13 @@ def main(argv: list[str] | None = None) -> int:
             mask_min=args.mask_min,
             mask_max=args.mask_max,
             gen_steps=args.gen_steps,
-            freeze_context=args.freeze_context,
+            context_backend=args.context_backend,
+            hf_model_name=args.hf_model,
+            freeze_context=freeze,
+            local_files_only=args.local_files_only,
+            grammar_constrained=not args.no_grammar,
+            grammar_top_k=args.grammar_top_k,
+            structural_bias=args.structural_bias,
             noise_rate=args.noise_rate,
         )
     )

@@ -69,10 +69,17 @@ Content props must be placeholder strings. Parsing/serialization/prompt generati
 
 ## TwoTower model
 
-- **Context tower**: small bidirectional Transformer over prompt tokens (from-scratch POC; HF freeze later)
+- **Context tower**: scratch TokenEncoder **or** frozen HF model (`--context-backend hf`, default `HuggingFaceTB/SmolLM2-135M`)
 - **Denoiser tower**: MaskGIT-style masked token prediction with cross-attention to context
+- **Grammar decode**: official `createStreamingParser` guards unmasking / LTR repair (`--no-grammar` to disable)
 - **Tokenizer**: OpenUI-aware whitespace/placeholder tokenizer built from train artifacts
 - **Eval**: `parse_rate` via lang-core, placeholder fidelity, canonical tree match — no gold oracle at generate time
+
+```bash
+# Optional HF context (requires: pip install -e ".[hf]")
+python -m scripts.train_model --model twotower --context-backend hf \
+  --hf-model HuggingFaceTB/SmolLM2-135M --steps 200 --run-id twotower_hf
+```
 
 ## GPU multi-farm MCP
 

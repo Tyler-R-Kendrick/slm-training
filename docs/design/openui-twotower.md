@@ -10,7 +10,6 @@ Build a small, on-device-friendly specialist that generates **placeholder-augmen
 - Full React rendering stack in Python (use `@openuidev/react-lang` later for demos)
 - Awwwards scraping, RL/DPO, consistency distillation
 - Training a production copy SLM
-- Grammar-constrained / streaming decode via `createStreamingParser` (next)
 
 ## Official OpenUI Lang (source of truth)
 
@@ -61,23 +60,23 @@ Export the official teacher prompt with:
 python -m scripts.export_openui_prompt
 ```
 
-## Model architecture (implemented POC)
+## Model architecture (implemented)
 
 ```
-prompt → Context Tower (bidirectional Transformer) → hidden states
+prompt → Context Tower (scratch TokenEncoder | frozen HF e.g. SmolLM2) → hidden states
                                       ↓ cross-attn
          Trainable Denoiser (MaskGIT-style masked diffusion) → OpenUI tokens
                                       ↓
-                   official parser + placeholder policy
+         streaming parser grammar guard (createStreamingParser) + placeholder policy
                                       ↓
                          placeholder OpenUI program
 ```
 
-- **Context tower**: from-scratch small Transformer (`TokenEncoder`). Trains by default; pass `--freeze-context` once a pretrained HF encoder is swapped in.
+- **Context tower**: `scratch` (default) or `hf` via `--context-backend hf --hf-model HuggingFaceTB/SmolLM2-135M` (frozen by default; only the projection trains).
 - **Denoiser**: bidirectional Transformer with cross-attention (`DenoiserTower`), trained with random span masking.
-- **Tokenizer**: `OpenUITokenizer` — placeholder-aware regex tokenizer built from train prompts + OpenUI.
+- **Tokenizer**: `OpenUITokenizer` for OpenUI targets; HF models use their own prompt tokenizer.
+- **Grammar-constrained decode**: structural logit bias + remask on hard streaming errors + LTR repair filtered by official `createStreamingParser`.
 - **Copy model**: separate specialist filling placeholders (later).
-- Prefer official `createStreamingParser` when wiring diffusion unmask streams.
 
 Package: [`src/slm_training/models/`](../../src/slm_training/models/).
 
@@ -134,5 +133,7 @@ RICO source: Hugging Face [`shunk031/Rico`](https://huggingface.co/datasets/shun
 1. Official lang-core bridge + fixtures (done)
 2. Training / testing / model-build harnesses (done)
 3. GPU multi-farm MCP for cheap training pods (done)
-4. **TwoTower plug-in** — context + masked denoiser, CPU overfit path (this revision)
-5. **Later:** HF context tower, streaming parser / grammar constraints, richer `@openuidev` library, React demo via `@openuidev/react-lang`
+4. TwoTower plug-in — context + masked denoiser (done)
+5. RICO train data + strict leakage checks (done)
+6. **HF frozen context tower + streaming/grammar-constrained decode (this revision)**
+7. **Later:** richer `@openuidev` library, React demo via `@openuidev/react-lang`, larger RICO slices / GPU farms

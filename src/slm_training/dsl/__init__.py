@@ -8,6 +8,7 @@ from slm_training.dsl.lang_core import (
     library_schema,
     parse,
     serialize,
+    stream_check,
     validate,
 )
 from slm_training.dsl.placeholders import extract_placeholders, is_placeholder
@@ -25,6 +26,7 @@ __all__ = [
     "load_jsonl",
     "parse",
     "serialize",
+    "stream_check",
     "validate",
     "write_jsonl",
 ]

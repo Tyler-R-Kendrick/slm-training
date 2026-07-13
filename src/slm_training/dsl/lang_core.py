@@ -142,6 +142,11 @@ def generate_system_prompt(**options: Any) -> str:
     return str(result["prompt"])
 
 
+def stream_check(source: str) -> dict[str, Any]:
+    """Incremental/partial parse via official createStreamingParser."""
+    return _invoke({"op": "stream_check", "source": source})
+
+
 def library_schema() -> dict[str, Any]:
     result = _invoke({"op": "schema"})
     if not result.get("ok"):

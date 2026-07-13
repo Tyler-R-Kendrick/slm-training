@@ -27,8 +27,14 @@ class ModelBuildConfig:
     mask_min: float = 0.15
     mask_max: float = 0.85
     gen_steps: int = 8
-    # False for from-scratch POC; set True when swapping in a pretrained context tower
+    context_backend: str = "scratch"  # scratch | hf
+    hf_model_name: str = "HuggingFaceTB/SmolLM2-135M"
+    # False for scratch POC; True by default when context_backend=hf (see factory)
     freeze_context: bool = False
+    local_files_only: bool = False
+    grammar_constrained: bool = True
+    grammar_top_k: int = 16
+    structural_bias: float = 1.25
     # Stub-only
     noise_rate: float = 0.0
 
