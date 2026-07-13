@@ -56,6 +56,7 @@ bench-cactus = "scripts.bench_cactus:main"
 remote-train = "scripts.remote_train:main"
 multi-farm-mcp = "scripts.multi_farm_mcp:main"
 serve-playground = "scripts.serve_playground:main"
+bootstrap-playground = "scripts.bootstrap_playground:main"
 export-annotations = "scripts.export_annotations:main"
 
 [tool.setuptools.packages.find]
