@@ -54,3 +54,8 @@ def test_annotate_static_has_tab_toggle() -> None:
     assert 'activeView === "render" ? "dsl" : "render"' in js.text
     # Tab must not steal focus from buttons / view tabs.
     assert "focus === cardEl" in js.text
+    # Grade must not auto-advance after thumbs up/down.
+    assert "await go(1)" not in js.text
+    html = client.get("/")
+    assert "👍" in html.text
+    assert "👎" in html.text

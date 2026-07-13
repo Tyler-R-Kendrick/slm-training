@@ -361,6 +361,11 @@ textarea:focus,
   border-color: rgba(163, 59, 43, 0.3);
 }
 
+.thumb-icon {
+  font-size: 1.15em;
+  line-height: 1;
+}
+
 .grade:disabled,
 .nav:disabled {
   opacity: 0.55;

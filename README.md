@@ -103,13 +103,13 @@ Annotate mode (default UI): auto-generated prompts, prefetch 1–2 samples ahead
 
 | Input | Action |
 |-------|--------|
-| `↑` | Thumbs up (persist + advance) |
-| `↓` | Thumbs down (persist + advance) |
+| `↑` | Thumbs up (persist, stay on sample) |
+| `↓` | Thumbs down (persist, stay on sample) |
 | `←` / `→` | Previous / next sample |
 | typing | Focus optional note |
 | swipe | Mobile: horizontal navigate, vertical grade |
 
-Annotations append to `outputs/annotations/feedback.jsonl`. Thumbs-up rows promote into `fixtures/annotations/human_train.jsonl` (merged by `build_train_data`). Opposite ratings on the same prompt also write `outputs/preferences/human_pairs.jsonl`.
+Annotations append to `outputs/annotations/feedback.jsonl`. Invalid model outputs are quarantined to `outputs/annotations/bad_outputs.jsonl` (never shown in the app). Thumbs-up rows promote into `fixtures/annotations/human_train.jsonl` (merged by `build_train_data`). Opposite ratings on the same prompt also write `outputs/preferences/human_pairs.jsonl`.
 
 ```bash
 python -m scripts.export_annotations status
