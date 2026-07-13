@@ -179,11 +179,6 @@ class DenoiserTower(nn.Module):
         self.tok = nn.Embedding(vocab_size, d_model)
         self.pos = nn.Embedding(max_len, d_model)
         self.kind: nn.Embedding | None = None
-        self.register_buffer(
-            "kind_lookup",
-            torch.zeros(vocab_size, dtype=torch.long),
-            persistent=False,
-        )
         if kind_ids is not None and n_kinds > 0:
             self.kind = nn.Embedding(n_kinds, d_model)
             lookup = torch.tensor(
@@ -191,7 +186,15 @@ class DenoiserTower(nn.Module):
                 + [0] * max(0, vocab_size - len(kind_ids)),
                 dtype=torch.long,
             )
-            self.kind_lookup = lookup
+            self.register_buffer("kind_lookup", lookup, persistent=True)
+        else:
+            # Non-persistent stub: unused unless factorized embeddings are on.
+            # Keeps older (non-V5) checkpoints loadable without kind_lookup.
+            self.register_buffer(
+                "kind_lookup",
+                torch.zeros(max(vocab_size, 1), dtype=torch.long),
+                persistent=False,
+            )
         self.layers = nn.ModuleList(
             [
                 TransformerBlock(d_model, n_heads, dropout=dropout, cross_attn=True)
@@ -210,7 +213,9 @@ class DenoiserTower(nn.Module):
         context: torch.Tensor,
         pad_id: int,
         ctx_pad_mask: torch.Tensor | None = None,
-    ) -> torch.Tensor:
+        *,
+        return_hidden: bool = False,
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         bsz, seq = noisy_ids.shape
         if seq > self.max_len:
             noisy_ids = noisy_ids[:, : self.max_len]
@@ -224,4 +229,8 @@ class DenoiserTower(nn.Module):
         self_pad = noisy_ids.eq(pad_id)
         for layer in self.layers:
             x = layer(x, self_pad_mask=self_pad, ctx=context, ctx_pad_mask=ctx_pad_mask)
-        return self.lm_head(self.norm(x))
+        hidden = self.norm(x)
+        logits = self.lm_head(hidden)
+        if return_hidden:
+            return logits, hidden
+        return logits

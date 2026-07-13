@@ -362,5 +362,228 @@
         }
       }
     }
-  ]
+  ],
+  "prior_matrices": {
+    "v4": {
+      "matrix": "quality-experiment-matrix-v4",
+      "reference": "docs/design/quality-experiment-matrix.md",
+      "evaluated_at": "2026-07-13T18:15:00+00:00",
+      "settings": {
+        "steps": 40,
+        "context_backend": "scratch",
+        "design_md_in_context": false,
+        "rico_eval_limit": 3,
+        "device": "cpu",
+        "fixes": [
+          "E30 suffix-rollback LTR (revisable window)",
+          "E31 BackPlay-lite FastPathGate trust head",
+          "E32 visible-token corruption aux",
+          "E33 combined remask (grammar + gate + entropy)",
+          "E35 honest inventory-in-prompt slot contract",
+          "E36 decode-time BoN + remask scaling",
+          "E7/E8/E9b/E15/E16 length-safe LTR budgets (192)",
+          "force-emit prefers whitespace only (not arbitrary argmax)"
+        ]
+      },
+      "highlights": [
+        "E35 honest inventory-in-prompt: first ship-gates pass without silent gold.placeholders leakage (inventory surfaced into prompt, then extracted)",
+        "E36 decode scaling on E35 ckpt also clears ship gates; ood parse lifts 0.5 \u2192 0.75 via BoN+remask",
+        "E31/E33 trust-gate path improves adversarial parse (0.75) but fidelity stays 0 without honest inventory / template fill",
+        "E30/E32 alone underfit at 40 CPU steps without template fill (parse=0) \u2014 same pattern as V3 E18",
+        "E34 latent MoE remains deferred (skipped by runner)",
+        "Prior V3 E20/E29 passes used gold.placeholders at eval; E35 is the honest successor"
+      ],
+      "v3_baseline_note": "See prior commit / history for E18\u2013E29 fixture clears. Those used gold placeholder inventory for template fill.",
+      "results": [
+        {
+          "id": "E30",
+          "run_id": "qx_e30_suffix_rollback",
+          "description": "ReMDM-style LTR suffix rollback (inference-only revisable window)",
+          "pass": false,
+          "steps": 40,
+          "suites": {
+            "smoke": {
+              "parse_rate": 0.0,
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.0,
+              "reward_score": 0.0,
+              "n": 3
+            }
+          },
+          "notes": "Underfit without template fill at 40 steps; rollback path exercised but no useful programs yet"
+        },
+        {
+          "id": "E31",
+          "run_id": "qx_e31_trust_gate",
+          "description": "BackPlay-lite FastPathGate on frozen denoiser errors",
+          "pass": false,
+          "steps": 40,
+          "suites": {
+            "smoke": {
+              "parse_rate": 0.333,
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.464,
+              "reward_score": 0.649,
+              "n": 3
+            },
+            "adversarial": {
+              "parse_rate": 0.75,
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.486,
+              "reward_score": 0.649,
+              "n": 4
+            },
+            "rico_held": {
+              "parse_rate": 1.0,
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.149,
+              "reward_score": 0.649,
+              "n": 3
+            }
+          },
+          "notes": "Gate trains; parse lifts on adv/rico but fidelity needs honest inventory (E35)"
+        },
+        {
+          "id": "E32",
+          "run_id": "qx_e32_visible_corrupt",
+          "description": "GIDD/RemeDi-lite visible-token corruption aux",
+          "pass": false,
+          "steps": 40,
+          "suites": {
+            "smoke": {
+              "parse_rate": 0.0,
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.0,
+              "reward_score": 0.0,
+              "n": 3
+            }
+          },
+          "notes": "Training-process lever alone insufficient at 40 steps"
+        },
+        {
+          "id": "E33",
+          "run_id": "qx_e33_remask_policy",
+          "description": "Combined remask: grammar + gate + entropy budget",
+          "pass": false,
+          "steps": 40,
+          "suites": {
+            "smoke": {
+              "parse_rate": 0.333,
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.464,
+              "reward_score": 0.649,
+              "n": 3
+            },
+            "adversarial": {
+              "parse_rate": 0.75,
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.486,
+              "reward_score": 0.649,
+              "n": 4
+            }
+          },
+          "notes": "Matches E31 headline; policy wired and exercised"
+        },
+        {
+          "id": "E35",
+          "run_id": "qx_e35_honest_contract",
+          "description": "Honest inventory-in-prompt slot contract (no silent gold leakage)",
+          "pass": true,
+          "steps": 40,
+          "suites": {
+            "smoke": {
+              "parse_rate": 0.667,
+              "placeholder_fidelity": 0.667,
+              "structural_similarity": 0.56,
+              "reward_score": 0.649,
+              "n": 3
+            },
+            "held_out": {
+              "parse_rate": 0.4,
+              "placeholder_fidelity": 0.8,
+              "structural_similarity": 0.514,
+              "reward_score": 0.789,
+              "n": 5
+            },
+            "adversarial": {
+              "parse_rate": 1.0,
+              "placeholder_fidelity": 1.0,
+              "structural_similarity": 0.914,
+              "reward_score": 0.976,
+              "n": 4
+            },
+            "ood": {
+              "parse_rate": 0.5,
+              "placeholder_fidelity": 0.5,
+              "structural_similarity": 0.567,
+              "reward_score": 0.493,
+              "n": 4
+            },
+            "rico_held": {
+              "parse_rate": 1.0,
+              "placeholder_fidelity": 1.0,
+              "structural_similarity": 0.723,
+              "reward_score": 1.0,
+              "n": 3
+            }
+          },
+          "notes": "Honest ship-gates clear on fixture suites (rico n=3 proxy)"
+        },
+        {
+          "id": "E36",
+          "run_id": "qx_e36_decode_scaling",
+          "description": "Decode-time BoN + remask scaling sweep on E35 recipe",
+          "pass": true,
+          "steps": 40,
+          "suites": {
+            "smoke": {
+              "parse_rate": 0.667,
+              "placeholder_fidelity": 0.667,
+              "structural_similarity": 0.56,
+              "reward_score": 0.649,
+              "n": 3
+            },
+            "held_out": {
+              "parse_rate": 0.4,
+              "placeholder_fidelity": 0.8,
+              "structural_similarity": 0.514,
+              "reward_score": 0.789,
+              "n": 5
+            },
+            "adversarial": {
+              "parse_rate": 1.0,
+              "placeholder_fidelity": 1.0,
+              "structural_similarity": 0.914,
+              "reward_score": 0.976,
+              "n": 4
+            },
+            "ood": {
+              "parse_rate": 0.75,
+              "placeholder_fidelity": 0.75,
+              "structural_similarity": 0.584,
+              "reward_score": 0.743,
+              "n": 4
+            },
+            "rico_held": {
+              "parse_rate": 1.0,
+              "placeholder_fidelity": 1.0,
+              "structural_similarity": 0.723,
+              "reward_score": 1.0,
+              "n": 3
+            }
+          },
+          "notes": "BoN+remask improves ood vs E35; ship gates remain clear"
+        }
+      ],
+      "ship_gates_cleared": true,
+      "ship_gates_note": "E35 and E36 clear honest --ship-gates on fixture suites without silent gold.placeholders decode leakage. Full 1500 rico_held + HF context remains the production ship claim.",
+      "followups": {
+        "full_rico_held": "Rebuild test with --rico-limit 2600 --target-records 1500 and re-score E35/E36",
+        "hf_context": "Run E35 with --context-backend hf when SmolLM2 cache available",
+        "e30_e32_longer": "Longer train or seed from E35 for suffix-rollback / visible-corrupt ablations",
+        "e34": "Latent falsification MoE still deferred until residual semantic failures after E33+E35"
+      }
+    }
+  },
+  "note_merge": "Contains V5 (#18) results as primary; V4 (#17) honest-contract results under prior_matrices.v4."
 }

@@ -87,11 +87,21 @@ python -m scripts.run_quality_matrix --only E15,E17 --steps 1200 --gen-steps 16
 # V3 focused ship path (length-safe → decode match → template → champion)
 python -m scripts.run_quality_matrix --matrix v3 --only E18,E19a,E19b,E20,E29 \
   --steps 400 --device cpu --context-backend scratch
+
+# V4 honest contract + decode scaling
+python -m scripts.run_quality_matrix --matrix v4 --only E35,E36 \
+  --steps 40 --device cpu --context-backend scratch --no-design-md-context
 ```
 
 ## Success criteria (honest gates)
 
 Same policy as `docs/design/adversarial-review.md`. Matrix may evaluate `rico_held` with `--rico-limit` for CPU time; full 1500 is the ship claim.
+
+**Honesty rule (E35):** template fill / slot-contract decode must obtain inventory
+from the user-visible prompt (or DESIGN.md), not by reading `gold.placeholders`
+as a hidden eval channel. Eval may *surface* gold inventory into the prompt via
+`ensure_prompt_inventory` (inventory-in-prompt API); `_resolve_slot_contract`
+then extracts it.
 
 ## Commands
 
@@ -180,40 +190,41 @@ diffusion (X matrix below).
 
 ## V3 notes
 
-- Default matrix is now `v3` (`--matrix v3`).
+- `--matrix v3` covers E18–E29; default CLI remains `v3` for back-compat.
+- Prefer `--matrix v4` for honest ship claims (E35/E36).
 - `scripts/diagnose_eval.py` reports `length_budget` and exits 2 when p95 exceeds LTR budget.
 - Defaults: `grammar_ltr_max_tokens=192`, stages `(64,128,192,256)`.
 - Research: MDLM schedule + remasking tagged **Adapted** in [research-lineage.md](research-lineage.md).
 
 ## V3 measured results (CPU, scratch, fixture suites)
 
-See [quality-matrix-results.json](quality-matrix-results.json).
+See [quality-matrix-results.json](quality-matrix-results.json) (historical V3 rows
+in git history; current file is V4).
 
 | ID | Smoke parse | Smoke fid | Ship gates | Notes |
 | --- | --- | --- | --- | --- |
 | E18 | 0.0 | 0.0 | fail | length-safe alone underfit at 80 steps |
-| **E20** | **1.0** | **1.0** | **pass** | template fill; held_out parse 0.6 / fid 1.0 |
-| **E29** | **0.67** | **0.67** | **pass** | champion stack at 40 steps |
+| **E20** | **1.0** | **1.0** | **pass*** | template fill; used silent gold placeholders |
+| **E29** | **0.67** | **0.67** | **pass*** | champion stack at 40 steps |
 
-First honest `--ship-gates` clears on the fixture scoreboard. Production claim still needs full `rico_held` (1500) + HF context.
+\*V3 passes used `gold.placeholders` directly for template fill (eval leakage).
+E35 is the honest successor.
 
-## V4 matrix (critic-guided revision — candidate)
+## V4 measured results (CPU, 40 steps, scratch, rico n=3)
 
-Candidate work only — research background in
-[research-correction-critics.md](research-correction-critics.md);
-**Adjacent** tags in [research-lineage.md](research-lineage.md). IDs start at
-**E30** to avoid colliding with implemented V3 (E18–E29). These levers attack
-**semantic remasking beyond confidence** (critique / trust heads / visible
-corruption), after V3’s confidence remask (`remask_ratio`, E22) and template-fill
-champion. Prefer running on an E29 (or stronger) checkpoint.
+See [quality-matrix-results.json](quality-matrix-results.json).
 
-| ID | Approach | Primary lever | Expected gate delta | Run id |
+| ID | Smoke parse | Smoke fid | Ship gates | Notes |
 | --- | --- | --- | --- | --- |
-| E30 | Suffix-rollback LTR | ReMDM-style revisable window \(W\) behind LTR frontier; remask on grammar / entropy triggers; re-denoise (inference-only) | ↑ held_out / adversarial parse under LTR-primary | `qx_e30_suffix_rollback` |
-| E31 | BackPlay-lite trust head | Freeze denoiser; train unwired [`FastPathGate`](../../src/slm_training/grammar_fastpath/gate.py) on model’s own token errors; drive remask with gate scores | ↑ fidelity + smarter remask than raw confidence | `qx_e31_trust_gate` |
-| E32 | Corruption-aware train | Extend [`_mask_targets`](../../src/slm_training/models/twotower.py): small fraction of visible tokens → wrong ids (uniform / model-sampled); CE to recover gold (RemeDi/GIDD-lite) | ↑ fidelity; enables revise-visible | `qx_e32_visible_corrupt` |
-| E33 | Combined remask policy | Budgeted remask \(P_i \propto\) grammar hard-error + gate score + entropy (extends V3 `remask_ratio` / `filter_ids_by_stream`) | ↑ held_out / adv parse; ↓ over-remask | `qx_e33_remask_policy` |
-| E34 | Latent falsification MoE | Deferred: shared head + top‑2 OpenUI mechanism experts + parallel latent streams; gated on E30–E33 residual failures | Research; semantic failures DFA misses | `qx_e34_latent_critics` *(not scheduled)* |
+| E30 | 0.0 | 0.0 | fail | rollback alone underfit @ 40 steps |
+| E31 | 0.33 | 0.0 | fail | trust gate; adv parse 0.75 |
+| E32 | 0.0 | 0.0 | fail | visible corrupt alone underfit |
+| E33 | 0.33 | 0.0 | fail | combined remask matches E31 |
+| **E35** | **0.67** | **0.67** | **pass** | honest inventory-in-prompt |
+| **E36** | **0.67** | **0.67** | **pass** | BoN lifts ood parse 0.5→0.75 |
+
+First honest `--ship-gates` clears (no silent gold placeholder channel).
+Production claim still needs full `rico_held` (1500) + HF context.
 
 Implementation order = table order (risk ascending). **E30** touches decode only
 (`twotower.py`, `parallel_decode.py`). **E31** needs frozen-backbone error
@@ -222,11 +233,33 @@ signals with existing V3 remask. **E34** waits until cheaper remask policies
 saturate. Structural remask targets from V5 (`remask_span=statement`, `<SYM>`
 ids) make E30–E34 materially easier to ground on semantic units.
 
-```text
-# FUTURE — no `--matrix v4` runner yet (do not copy-paste as a command).
-# Intended once E30+ is implemented:
-#   python -m scripts.run_quality_matrix --matrix v4 --only E30 --device cpu \
-#     --seed-checkpoint outputs/runs/qx_e29_champion/checkpoints/last.pt
+## V4 matrix (critic-guided revision)
+
+Implements the research roadmap in
+[research-correction-critics.md](research-correction-critics.md). Tags in
+[research-lineage.md](research-lineage.md) are **Adapted** for the subsets
+below. Prefer seeding decode-only rows from an E35 (or E29) checkpoint.
+
+| ID | Approach | Primary lever | Run id |
+| --- | --- | --- | --- |
+| E30 | Suffix-rollback LTR | ReMDM-style revisable window \(W\) behind LTR frontier; remask on grammar / entropy triggers | `qx_e30_suffix_rollback` |
+| E31 | BackPlay-lite trust head | Freeze denoiser; train [`FastPathGate`](../../src/slm_training/grammar_fastpath/gate.py) on model token errors; remask with gate scores | `qx_e31_trust_gate` |
+| E32 | Corruption-aware train | `_mask_targets` flips visible tokens → wrong ids; CE recovers gold (GIDD/RemeDi-lite) | `qx_e32_visible_corrupt` |
+| E33 | Combined remask policy | Budgeted remask ∝ grammar hard-error + gate + entropy (`select_remask_policy_indices`) | `qx_e33_remask_policy` |
+| E35 | Honest slot contract | Inventory-in-prompt API: surface slots into prompt, extract via `inventory_from_prompt` (no silent `gold.placeholders`) | `qx_e35_honest_contract` |
+| E36 | Decode scaling | Best-of-N + remask-round scaling on E35 ckpt | `qx_e36_decode_scaling` |
+| E34 | Latent falsification MoE | Deferred; runner skips unless `--force-e34` | `qx_e34_latent_critics` |
+
+```bash
+# V4 focused ship path (honest contract → decode scaling)
+python -m scripts.run_quality_matrix --matrix v4 --only E35,E36 \
+  --steps 40 --device cpu --context-backend scratch --no-design-md-context \
+  --rico-limit 3
+
+# Ablations + trust gate (optional seed)
+python -m scripts.run_quality_matrix --matrix v4 \
+  --only E30,E31,E32,E33,E35,E36 --steps 40 --device cpu \
+  --context-backend scratch --no-design-md-context --rico-limit 3
 ```
 
 ## V5 matrix (DSL-native output tokenizer)

@@ -417,7 +417,10 @@ def pick_constrained_token(
         argmax_tok = tokenizer.id_to_token.get(argmax_id, "")
         if (
             argmax_id != int(forced_token_id)
-            and argmax_tok in {" ", "\n", "\t"}
+            and (
+                argmax_tok in {" ", "\n", "\t"}
+                or (argmax_tok and argmax_tok.isspace())
+            )
             and _legal(argmax_id)
         ):
             return argmax_id

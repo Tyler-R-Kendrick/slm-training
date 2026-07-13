@@ -75,6 +75,14 @@ class Experiment:
     mdlm_schedule: bool = False
     remask_ratio: float = 0.0
     gen_steps_override: int | None = None
+    # V4 levers
+    honest_slot_contract: bool = False
+    suffix_rollback_window: int = 0
+    remask_use_gate: bool = False
+    remask_use_entropy: bool = False
+    visible_corrupt_rate: float = 0.0
+    trust_gate: bool = False
+    grammar_fastpath_mode: str = "hybrid"
     # V5 levers: lexer-native output representation
     output_tokenizer: str = "compositional"
     use_symbol_table: bool = True
@@ -164,7 +172,7 @@ def _base_experiments(
             n_heads=6,
             context_layers=3,
             denoiser_layers=6,
-            grammar_ltr_max_tokens=96,
+            grammar_ltr_max_tokens=192,
             design_md_in_context=design_md_in_context,
         ),
         Experiment(
@@ -183,7 +191,7 @@ def _base_experiments(
             n_heads=6,
             context_layers=3,
             denoiser_layers=6,
-            grammar_ltr_max_tokens=96,
+            grammar_ltr_max_tokens=192,
             preference=True,
             design_md_in_context=design_md_in_context,
         ),
@@ -202,7 +210,7 @@ def _base_experiments(
             n_heads=6,
             context_layers=3,
             denoiser_layers=6,
-            grammar_ltr_max_tokens=96,
+            grammar_ltr_max_tokens=192,
             design_md_in_context=design_md_in_context,
         ),
         Experiment(
@@ -287,7 +295,7 @@ def _v2_experiments(
             n_heads=6,
             context_layers=3,
             denoiser_layers=6,
-            grammar_ltr_max_tokens=96,
+            grammar_ltr_max_tokens=192,
             design_md_in_context=design_md_in_context,
         ),
         Experiment(
@@ -307,7 +315,7 @@ def _v2_experiments(
             n_heads=6,
             context_layers=3,
             denoiser_layers=6,
-            grammar_ltr_max_tokens=96,
+            grammar_ltr_max_tokens=192,
             design_md_in_context=design_md_in_context,
         ),
         Experiment(
@@ -438,6 +446,141 @@ def _v3_experiments(
             best_of_n=4,
             design_md_in_context=design_md_in_context,
             **capacity,
+        ),
+    ]
+
+
+def _v4_experiments(
+    train_v1: Path,
+    train_cur: Path,
+    *,
+    design_md_in_context: bool = True,
+    seed_checkpoint: Path | None = None,
+) -> list[Experiment]:
+    """E30–E36: critic-guided revision + honest slot contract."""
+    length_safe = 192
+    capacity = dict(
+        d_model=192,
+        n_heads=6,
+        context_layers=3,
+        denoiser_layers=6,
+        grammar_ltr_max_tokens=256,
+    )
+    seed = str(seed_checkpoint) if seed_checkpoint else None
+    champion_base = dict(
+        slot_contract_in_context=True,
+        slot_contract_constrained_decode=True,
+        template_fill_decode=True,
+        fidelity_loss_weight=1.5,
+        schema_in_context=True,
+        grammar_ltr_repair=True,
+        grammar_ltr_primary=False,
+        ltr_loss_weight=2.0,
+        mdlm_schedule=True,
+        remask_ratio=0.12,
+        gen_steps_override=16,
+        design_md_in_context=design_md_in_context,
+        **capacity,
+    )
+    return [
+        Experiment(
+            "E30",
+            "qx_e30_suffix_rollback",
+            "ReMDM-style LTR suffix rollback (inference-only revisable window)",
+            train_v1,
+            grammar_ltr_repair=True,
+            grammar_ltr_max_tokens=length_safe,
+            grammar_ltr_primary=True,
+            ltr_loss_weight=2.0,
+            suffix_rollback_window=8,
+            seed_checkpoint=seed,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E31",
+            "qx_e31_trust_gate",
+            "BackPlay-lite FastPathGate on frozen denoiser errors",
+            train_v1,
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            template_fill_decode=True,
+            grammar_ltr_primary=False,
+            remask_ratio=0.15,
+            remask_use_gate=True,
+            trust_gate=True,
+            gen_steps_override=16,
+            seed_checkpoint=seed,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E32",
+            "qx_e32_visible_corrupt",
+            "GIDD/RemeDi-lite visible-token corruption aux",
+            train_v1,
+            grammar_ltr_repair=True,
+            grammar_ltr_max_tokens=length_safe,
+            grammar_ltr_primary=False,
+            mdlm_schedule=True,
+            visible_corrupt_rate=0.08,
+            remask_ratio=0.12,
+            gen_steps_override=16,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E33",
+            "qx_e33_remask_policy",
+            "Combined remask: grammar + gate + entropy budget",
+            train_v1,
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            template_fill_decode=True,
+            grammar_ltr_primary=False,
+            remask_ratio=0.15,
+            remask_use_gate=True,
+            remask_use_entropy=True,
+            trust_gate=True,
+            gen_steps_override=16,
+            seed_checkpoint=seed,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E35",
+            "qx_e35_honest_contract",
+            "Honest inventory-in-prompt slot contract (no silent gold leakage)",
+            train_cur if train_cur.exists() else train_v1,
+            honest_slot_contract=True,
+            use_curriculum=train_cur.exists(),
+            mix_curriculum=True,
+            best_of_n=4,
+            **champion_base,
+        ),
+        Experiment(
+            "E36",
+            "qx_e36_decode_scaling",
+            "Decode-time BoN + remask scaling sweep on E35/E29 recipe",
+            train_v1,
+            eval_from_run="qx_e35_honest_contract",
+            decode_sweep="gen16_repair_bon4",
+            honest_slot_contract=True,
+            remask_ratio=0.2,
+            remask_use_entropy=True,
+            best_of_n=4,
+            gen_steps_override=16,
+            design_md_in_context=design_md_in_context,
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            template_fill_decode=True,
+            grammar_ltr_primary=False,
+            grammar_ltr_repair=True,
+        ),
+        Experiment(
+            "E34",
+            "qx_e34_latent_critics",
+            "Deferred latent falsification MoE (placeholder row — skipped)",
+            train_v1,
+            design_md_in_context=design_md_in_context,
+            # Marked via run_id; runner skips unless forced.
+            seed_checkpoint=seed,
         ),
     ]
 
@@ -625,6 +768,7 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
             exp, "slot_contract_constrained_decode", False
         ),
         template_fill_decode=bool(getattr(exp, "template_fill_decode", False)),
+        honest_slot_contract=bool(getattr(exp, "honest_slot_contract", False)),
         retrieval_k=exp.retrieval_k,
         best_of_n=1,  # train without BoN cost; apply at eval
         use_curriculum=exp.use_curriculum,
@@ -632,7 +776,15 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         use_compile=bool(getattr(args, "compile", False)),
         parallel_unmask=str(getattr(args, "parallel_unmask", "adaptive") or "adaptive"),
         remask_ratio=float(getattr(exp, "remask_ratio", 0.0) or 0.0),
+        remask_use_gate=bool(getattr(exp, "remask_use_gate", False)),
+        remask_use_entropy=bool(getattr(exp, "remask_use_entropy", False)),
         mdlm_schedule=bool(getattr(exp, "mdlm_schedule", False)),
+        visible_corrupt_rate=float(getattr(exp, "visible_corrupt_rate", 0.0) or 0.0),
+        suffix_rollback_window=int(getattr(exp, "suffix_rollback_window", 0) or 0),
+        grammar_fastpath_mode=str(
+            getattr(exp, "grammar_fastpath_mode", "hybrid") or "hybrid"
+        ),
+        trust_gate_train=bool(getattr(exp, "trust_gate", False)),
         grad_accum_steps=max(1, int(getattr(args, "grad_accum", 1) or 1)),
         eval_every=args.eval_every,
         eval_suite="smoke",
@@ -675,6 +827,12 @@ def _eval_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         "E21",
         "E22",
         "E29",
+        "E30",
+        "E31",
+        "E32",
+        "E33",
+        "E35",
+        "E36",
         "E40",
         "E41",
         "E42",
@@ -701,29 +859,73 @@ def _eval_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         grammar_ltr_repair=repair,
         grammar_ltr_primary=bool(getattr(exp, "grammar_ltr_primary", True)),
         template_fill_decode=bool(getattr(exp, "template_fill_decode", False)),
+        honest_slot_contract=bool(getattr(exp, "honest_slot_contract", False)),
         remask_ratio=float(getattr(exp, "remask_ratio", 0.0) or 0.0),
+        remask_use_gate=bool(getattr(exp, "remask_use_gate", False)),
+        remask_use_entropy=bool(getattr(exp, "remask_use_entropy", False)),
         mdlm_schedule=bool(getattr(exp, "mdlm_schedule", False)),
+        suffix_rollback_window=int(getattr(exp, "suffix_rollback_window", 0) or 0),
+        visible_corrupt_rate=float(getattr(exp, "visible_corrupt_rate", 0.0) or 0.0),
         rico_eval_limit=args.rico_limit,
         run_id=exp.run_id,
     )
+
+
+def _apply_decode_overrides(model: Any, exp: Experiment) -> None:
+    """Align preference/RL rollout decode with the experiment recipe."""
+    cfg = getattr(model, "config", None)
+    if cfg is None:
+        return
+    for key, attr in (
+        ("grammar_ltr_primary", "grammar_ltr_primary"),
+        ("grammar_ltr_repair", "grammar_ltr_repair"),
+        ("template_fill_decode", "template_fill_decode"),
+        ("honest_slot_contract", "honest_slot_contract"),
+        ("slot_contract_in_context", "slot_contract_in_context"),
+        ("slot_contract_constrained_decode", "slot_contract_constrained_decode"),
+        ("remask_ratio", "remask_ratio"),
+        ("remask_use_gate", "remask_use_gate"),
+        ("remask_use_entropy", "remask_use_entropy"),
+        ("suffix_rollback_window", "suffix_rollback_window"),
+        ("mdlm_schedule", "mdlm_schedule"),
+    ):
+        if hasattr(cfg, key):
+            setattr(cfg, key, getattr(exp, attr, getattr(cfg, key)))
 
 
 def _maybe_preference(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> Path:
     if not exp.preference:
         return ckpt
     from slm_training.dsl.schema import load_jsonl
+    from slm_training.models.twotower import TwoTowerModel
     from slm_training.preference import collect_pairs_with_generator, write_pairs
     from slm_training.preference.train import train_preference_from_paths
     from slm_training.quality import soft_corrupt_openui
 
     pairs_path = args.run_root / exp.run_id / "pairs.jsonl"
     records = load_jsonl(exp.train_dir / "records.jsonl")[: args.pref_limit]
-    pairs = collect_pairs_with_generator(
-        records,
-        lambda r: [r.openui, soft_corrupt_openui(r.openui)],
-        prefer_valid_rejects=True,
-        structure_only=True,
-    )
+    # Prefer soft-corrupt pairs (stable); optional live generator uses experiment decode.
+    try:
+        gen_model = TwoTowerModel.from_checkpoint(ckpt, device=args.device)
+        _apply_decode_overrides(gen_model, exp)
+
+        def _gen(r):  # noqa: ANN001
+            pred = gen_model.generate(r.prompt, gold=r, design_md=r.design_md)
+            return [r.openui, soft_corrupt_openui(r.openui), pred]
+
+        pairs = collect_pairs_with_generator(
+            records,
+            _gen,
+            prefer_valid_rejects=True,
+            structure_only=True,
+        )
+    except Exception:  # noqa: BLE001
+        pairs = collect_pairs_with_generator(
+            records,
+            lambda r: [r.openui, soft_corrupt_openui(r.openui)],
+            prefer_valid_rejects=True,
+            structure_only=True,
+        )
     write_pairs(pairs_path, pairs)
     out_dir = args.run_root / exp.run_id / "pref"
     summary = train_preference_from_paths(
@@ -743,11 +945,23 @@ def _maybe_preference(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> 
 def _maybe_rl(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> Path:
     if not getattr(exp, "rl", False):
         return ckpt
+    from slm_training.models.twotower import TwoTowerModel
     from slm_training.rl import train_grpo_from_paths
+
+    # Prefetch decode overrides onto a temp copy the RL trainer will reload.
+    try:
+        model = TwoTowerModel.from_checkpoint(ckpt, device=args.device)
+        _apply_decode_overrides(model, exp)
+        tuned = args.run_root / exp.run_id / "rl_seed" / "last.pt"
+        tuned.parent.mkdir(parents=True, exist_ok=True)
+        model.save(tuned)
+        ckpt_for_rl = tuned
+    except Exception:  # noqa: BLE001
+        ckpt_for_rl = ckpt
 
     out_dir = args.run_root / exp.run_id / "rl"
     summary = train_grpo_from_paths(
-        ckpt,
+        ckpt_for_rl,
         exp.train_dir / "records.jsonl",
         out_dir=out_dir,
         steps=max(10, int(getattr(args, "rl_steps", 30) or 30)),
@@ -761,6 +975,27 @@ def _maybe_rl(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> Path:
     if rl_ckpt.is_file():
         dest = args.run_root / exp.run_id / "checkpoints" / "last.pt"
         return _copy_checkpoint(rl_ckpt, dest)
+    return ckpt
+
+
+def _maybe_trust_gate(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> Path:
+    if not getattr(exp, "trust_gate", False):
+        return ckpt
+    from slm_training.grammar_fastpath.trust_train import train_trust_gate_from_paths
+
+    out_dir = args.run_root / exp.run_id / "trust_gate"
+    summary = train_trust_gate_from_paths(
+        ckpt,
+        exp.train_dir / "records.jsonl",
+        out_dir=out_dir,
+        steps=max(20, int(getattr(args, "pref_steps", 30) or 30)),
+        device=args.device,
+        limit=int(getattr(args, "pref_limit", 40) or 40),
+    )
+    gate_ckpt = Path(summary.get("checkpoint") or (out_dir / "checkpoints" / "last.pt"))
+    if gate_ckpt.is_file():
+        dest = args.run_root / exp.run_id / "checkpoints" / "last.pt"
+        return _copy_checkpoint(gate_ckpt, dest)
     return ckpt
 
 
@@ -788,12 +1023,35 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
     run_dir = args.run_root / exp.run_id
     run_dir.mkdir(parents=True, exist_ok=True)
 
+    # E34 is deferred research — record a skipped result unless forced via env.
+    if exp.eid == "E34" and not bool(getattr(args, "force_e34", False)):
+        result = {
+            "id": exp.eid,
+            "run_id": exp.run_id,
+            "description": exp.description,
+            "checkpoint": None,
+            "pass": None,
+            "failures": ["deferred_latent_moe"],
+            "suites": {},
+            "skipped": True,
+        }
+        (run_dir / "matrix_result.json").write_text(
+            json.dumps(result, indent=2) + "\n", encoding="utf-8"
+        )
+        return result
+
     if exp.seed_checkpoint:
         src = Path(exp.seed_checkpoint)
         dest = run_dir / "checkpoints" / "last.pt"
         if not src.is_file():
-            raise FileNotFoundError(f"{exp.eid} needs seed checkpoint {src}")
-        ckpt = _copy_checkpoint(src, dest)
+            # Seed optional for some V4 decode overlays — train instead.
+            if exp.eid in {"E30", "E31", "E33"} and not Path(str(exp.seed_checkpoint)).is_file():
+                summary = train(_train_cfg(exp, args))
+                ckpt = Path(summary["checkpoint"])
+            else:
+                raise FileNotFoundError(f"{exp.eid} needs seed checkpoint {src}")
+        else:
+            ckpt = _copy_checkpoint(src, dest)
     elif exp.eval_from_checkpoint:
         src = Path(exp.eval_from_checkpoint)
         dest = run_dir / "checkpoints" / "last.pt"
@@ -819,6 +1077,7 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
 
     ckpt = _maybe_preference(exp, ckpt, args)
     ckpt = _maybe_rl(exp, ckpt, args)
+    ckpt = _maybe_trust_gate(exp, ckpt, args)
     eval_cfg = _eval_cfg(exp, args)
     board = evaluate_suites(
         eval_cfg,
@@ -913,16 +1172,21 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--matrix",
-        choices=("legacy", "v2", "v3", "v5", "all"),
+        choices=("legacy", "v2", "v3", "v4", "v5", "all"),
         default="v3",
-        help="Experiment set: legacy (E0–E10), v2 (E11–E17), v3 (E18–E29), v5 (E40–E46), or all.",
+        help="Experiment set: legacy (E0–E10), v2 (E11–E17), v3 (E18–E29), v4 (E30–E36), v5 (E40–E46), or all.",
     )
     parser.add_argument("--gen-steps", type=int, default=8)
+    parser.add_argument(
+        "--force-e34",
+        action="store_true",
+        help="Run deferred E34 latent MoE placeholder (normally skipped).",
+    )
     args = parser.parse_args(argv)
 
     needs_curriculum = args.only is None or any(
         x in (args.only or "")
-        for x in ("E2", "E8", "E9b", "E10", "E15", "E16", "E29", "E46")
+        for x in ("E2", "E8", "E9b", "E10", "E15", "E16", "E29", "E35", "E46")
     )
     if args.build_curriculum or (not args.curriculum_dir.exists() and needs_curriculum):
         from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
@@ -979,6 +1243,15 @@ def main(argv: list[str] | None = None) -> int:
                 args.train_dir,
                 args.curriculum_dir,
                 design_md_in_context=design_md,
+            )
+        )
+    if args.matrix in {"v4", "all"}:
+        experiments.extend(
+            _v4_experiments(
+                args.train_dir,
+                args.curriculum_dir,
+                design_md_in_context=design_md,
+                seed_checkpoint=args.seed_checkpoint,
             )
         )
     if args.matrix in {"v5", "all"}:
@@ -1042,7 +1315,7 @@ def main(argv: list[str] | None = None) -> int:
     results.sort(key=lambda r: r.get("id") or "")
 
     out = {
-        "matrix": "quality-experiment-matrix-v2",
+        "matrix": f"quality-experiment-matrix-{args.matrix}",
         "reference": "docs/design/quality-experiment-matrix.md",
         "gate_policy": {k: v for k, v in DEFAULT_SHIP_GATES.items()},
         "rico_eval_limit": args.rico_limit,

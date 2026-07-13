@@ -82,7 +82,16 @@ class ModelBuildConfig:
     fuse_ltr_loss: bool = True
     grammar_fastpath: bool = True
     grammar_fastpath_mode: str = "hybrid"  # force | mask | hybrid
+    grammar_draft_window: int = 8
     fastpath_aux_weight: float = 0.0
+    fastpath_gate_threshold: float = 0.5
+    # V4 critic / remask levers
+    honest_slot_contract: bool = False
+    suffix_rollback_window: int = 0
+    remask_use_gate: bool = False
+    remask_use_entropy: bool = False
+    visible_corrupt_rate: float = 0.0
+    trust_gate_train: bool = False
     grammar_prefer_structural: bool = True
     grammar_trust_model: bool = False
     grammar_sample_decode: bool = False
