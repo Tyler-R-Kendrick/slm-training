@@ -226,6 +226,13 @@ async def test_multi_farm_listing_is_concurrent() -> None:
     assert time.monotonic() - started < 0.25
 
 
+@pytest.mark.parametrize("run_id", [".", ".."])
+def test_remote_train_rejects_dot_segments(run_id: str) -> None:
+    with pytest.raises(SystemExit) as exc_info:
+        remote_train.main(["--host", "example", "--run-id", run_id, "--dry-run"])
+    assert exc_info.value.code == 2
+
+
 def test_remote_train_fails_when_checkpoint_copy_fails(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

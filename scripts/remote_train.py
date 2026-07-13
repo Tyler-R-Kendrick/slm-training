@@ -54,7 +54,7 @@ def main(argv: list[str] | None = None) -> int:
         help="Local directory to scp checkpoints into after training.",
     )
     args = parser.parse_args(argv)
-    if re.fullmatch(r"[A-Za-z0-9._-]+", args.run_id) is None:
+    if re.fullmatch(r"[A-Za-z0-9._-]+", args.run_id) is None or args.run_id in {".", ".."}:
         parser.error(
             "--run-id may contain only letters, digits, dot, underscore, and dash"
         )

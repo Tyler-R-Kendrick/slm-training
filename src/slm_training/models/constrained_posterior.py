@@ -20,6 +20,7 @@ class ProductionCodecLike(Protocol):
     mask_id: int
     pad_id: int
     eos_id: int
+    id_to_production: dict[int, str]
 
     def decode(
         self,
@@ -132,11 +133,7 @@ def pick_constrained_production(
         }:
             continue
         slot_id = slot_none_id
-        prod_name = ""
-        try:
-            prod_name = codec.id_to_production[int(prod_id)]  # type: ignore[attr-defined]
-        except Exception:  # noqa: BLE001
-            prod_name = ""
+        prod_name = codec.id_to_production[int(prod_id)]
         if prod_name == "SLOT" or prod_name.startswith("@"):
             slot_id = int(slot_scores.argmax(dim=-1).item())
             if slot_id == slot_none_id and slot_inventory:

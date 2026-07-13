@@ -14,7 +14,6 @@ from slm_training.models.tokenizer import OpenUITokenizer
 
 def test_gold_token_len_fixture_smoke_hero() -> None:
     import json
-    from pathlib import Path
 
     for line in Path("fixtures/test_seeds.jsonl").read_text().splitlines():
         if not line.strip():

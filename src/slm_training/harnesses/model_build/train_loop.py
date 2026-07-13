@@ -88,7 +88,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             from slm_training.quality import sample_curriculum_batch
 
             # Generate only the bounded batch window consumed before refresh.
-            target = max(config.batch_size, config.batch_size * 8)
+            target = config.batch_size * 8
             drawn = sample_curriculum_batch(
                 records,
                 batch_size=target,
