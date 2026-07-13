@@ -391,6 +391,7 @@ class TwoTowerModel(nn.Module):
         # Train-time caches (formatted context string keyed by record id).
         self._context_text_cache: dict[str, str] = {}
         self._target_ids_cache: dict[str, list[int]] = {}
+        self._context_token_count_cache: dict[str, int] = {}
         self._placeholder_token_ids: set[int] | None = None
         self._slot_contracts: list[list[str] | None] | None = None
         # Per-example symbol tables for lexer-native encode/decode.
@@ -416,6 +417,7 @@ class TwoTowerModel(nn.Module):
     def clear_train_caches(self) -> None:
         self._context_text_cache.clear()
         self._target_ids_cache.clear()
+        self._context_token_count_cache.clear()
         if is_hf_context(self.context) and hasattr(
             self.context, "clear_backbone_cache"
         ):
@@ -423,6 +425,69 @@ class TwoTowerModel(nn.Module):
 
     def trainable_parameters(self):
         return (p for p in self.parameters() if p.requires_grad)
+
+    def _count_context_tokens(self, text: str) -> int:
+        """Context token count under the active backend (capped at max_prompt_len)."""
+        if is_hf_context(self.context):
+            try:
+                encoded = self.context.tokenizer(  # type: ignore[union-attr]
+                    text,
+                    truncation=True,
+                    max_length=self.config.max_prompt_len,
+                )
+                return len(encoded["input_ids"])
+            except Exception:  # noqa: BLE001
+                return 0
+        ids = self.context_tokenizer.encode(text)
+        return min(len(ids), self.config.max_prompt_len)
+
+    def count_batch_tokens(self, batch: list[ExampleRecord]) -> tuple[int, int]:
+        """Exact (prompt/context, target) token counts for token-budget accounting.
+
+        Reuses the train-time caches populated by ``training_loss`` so the
+        common path is cheap; counts reflect the tokens the model actually
+        consumes (post truncation / context formatting).
+        """
+        cache_on = bool(getattr(self.config, "cache_context", True))
+        prompt_tokens = 0
+        target_tokens = 0
+        for r in batch:
+            key = r.id or r.prompt
+            ids = self._target_ids_cache.get(key) if cache_on else None
+            if ids is None:
+                ids = _truncate_with_eos(
+                    self._encode_openui(
+                        r.openui,
+                        placeholders=list(r.placeholders or []),
+                        cache_key=key,
+                    ),
+                    self.config.max_target_len,
+                    self.tokenizer.eos_id,
+                )
+                if cache_on:
+                    self._target_ids_cache[key] = ids
+            target_tokens += len(ids)
+            count = self._context_token_count_cache.get(key) if cache_on else None
+            if count is None:
+                text = self._context_text_cache.get(key) if cache_on else None
+                if text is None:
+                    text = self._format_one_context(
+                        r.prompt,
+                        r.design_md,
+                        query_prompt=r.prompt,
+                        slot_contract=self._resolve_slot_contract(
+                            r.prompt, r, r.design_md
+                        )
+                        if getattr(self.config, "slot_contract_in_context", False)
+                        else None,
+                    )
+                    if cache_on:
+                        self._context_text_cache[key] = text
+                count = self._count_context_tokens(text)
+                if cache_on:
+                    self._context_token_count_cache[key] = count
+            prompt_tokens += count
+        return prompt_tokens, target_tokens
 
     def _encode_context(
         self,
