@@ -70,9 +70,18 @@ Same policy as `docs/design/adversarial-review.md`. Matrix may evaluate `rico_he
 ## Commands
 
 ```bash
-# Build curriculum corpus (once)
+# Build curriculum corpus (once) — train excludes test fixture structures automatically
 python -m scripts.build_train_data --source all --version v1_curriculum \
   --synthesizer quality --curriculum
+
+python -m scripts.build_test_data --source both --version v1 \
+  --train-manifest outputs/train_data/v1/manifest.json
+
+# Migrate legacy v1 tokenizer checkpoints (optional; fresh train preferred)
+python -m scripts.migrate_checkpoint \
+  --checkpoint outputs/runs/legacy/checkpoints/last.pt \
+  --train-records outputs/train_data/v1/records.jsonl \
+  --output outputs/runs/legacy_v2/checkpoints/last.pt
 
 # Run full matrix (scratch CPU). Use --no-design-md-context when seeding from
 # the fixture-demo ship checkpoint (it was trained without DESIGN.md in context).

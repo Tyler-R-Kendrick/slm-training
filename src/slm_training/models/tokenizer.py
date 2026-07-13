@@ -161,12 +161,12 @@ class OpenUITokenizer:
         )
 
     @classmethod
-    def load(cls, path: Path | str) -> OpenUITokenizer:
+    def load(cls, path: Path | str, *, allow_legacy: bool = False) -> OpenUITokenizer:
         data = json.loads(Path(path).read_text(encoding="utf-8"))
         token_to_id = {str(k): int(v) for k, v in data["token_to_id"].items()}
         id_to_token = {i: t for t, i in token_to_id.items()}
         version = int(data.get("version") or 1)
-        if version != TOKENIZER_VERSION:
+        if version != TOKENIZER_VERSION and not allow_legacy:
             raise ValueError(
                 f"tokenizer version mismatch: file has v{version}, "
                 f"expected v{TOKENIZER_VERSION} — retrain or rebuild checkpoint"

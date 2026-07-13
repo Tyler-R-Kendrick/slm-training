@@ -53,6 +53,42 @@ def test_tokenizer_save_load(tmp_path: Path) -> None:
     assert loaded.encode(HERO) == tok.encode(HERO)
 
 
+def test_migrate_checkpoint_rebuilds_v2_vocab(tmp_path: Path) -> None:
+    from slm_training.models.checkpoint_migrate import migrate_twotower_checkpoint
+
+    records = [
+        ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train"),
+        ExampleRecord(id="b", prompt="CTA", openui=CTA, split="train"),
+    ]
+    records_path = tmp_path / "records.jsonl"
+    write_jsonl(records_path, records)
+
+    model = TwoTowerModel.from_records(records, config=TwoTowerConfig(d_model=32, n_heads=4))
+    src = tmp_path / "legacy.pt"
+    model.save(src)
+
+    # Simulate a v1 tokenizer sidecar (same token table, older version tag).
+    tok_path = src.with_suffix(".tokenizer.json")
+    import json
+
+    data = json.loads(tok_path.read_text(encoding="utf-8"))
+    data["version"] = 1
+    tok_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+    out = tmp_path / "migrated.pt"
+    report = migrate_twotower_checkpoint(
+        source_checkpoint=src,
+        train_records_path=records_path,
+        output_checkpoint=out,
+        device="cpu",
+    )
+    assert report["new_tokenizer_version"] == 2
+    assert out.exists()
+    loaded = TwoTowerModel.from_checkpoint(out, device="cpu")
+    assert loaded.tokenizer.version == 2
+    assert loaded.tokenizer.vocab_size == report["new_vocab_size"]
+
+
 def test_twotower_training_loss_decreases() -> None:
     records = [
         ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train"),

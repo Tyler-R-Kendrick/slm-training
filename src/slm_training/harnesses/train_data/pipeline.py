@@ -41,6 +41,8 @@ class TrainDataConfig:
     max_components: int | None = None
     curriculum: bool = False
     namespace_augment: bool = False
+    # Exclude train records whose layout tree matches hand-authored test fixtures.
+    test_seed_path: Path | None = Path("fixtures/test_seeds.jsonl")
 
     @property
     def output_dir(self) -> Path:
@@ -199,6 +201,13 @@ def build_train_data(
         max_components=config.max_components,
     )
 
+    from slm_training.data.leakage import load_reserved_test_structure_fingerprints
+
+    reserved_test_structures = load_reserved_test_structure_fingerprints(
+        config.test_seed_path
+    )
+    structure_reserved_rejected: list[dict] = []
+
     deduped: list[ExampleRecord] = []
     seen_pairs: set[str] = set()
     prompt_fps: set[str] = set()
@@ -206,13 +215,23 @@ def build_train_data(
     structure_fps: set[str] = set()
     design_md_fps: set[str] = set()
     for record in quality_kept:
+        structure_fp = fingerprint_openui_structure(record.openui)
+        if structure_fp in reserved_test_structures:
+            structure_reserved_rejected.append(
+                {
+                    "id": record.id,
+                    "source": record.source,
+                    "reason": "test_fixture_structure",
+                }
+            )
+            continue
         pair = fingerprint_pair(record.prompt, record.openui)
         if pair in seen_pairs:
             continue
         seen_pairs.add(pair)
         prompt_fps.add(fingerprint_prompt(record.prompt))
         openui_fps.add(fingerprint_openui(record.openui))
-        structure_fps.add(fingerprint_openui_structure(record.openui))
+        structure_fps.add(structure_fp)
         dm = fingerprint_design_md(record.design_md)
         if dm:
             design_md_fps.add(dm)
@@ -228,9 +247,22 @@ def build_train_data(
 
         for stress in synthesize_stress_adversarial_records():
             try:
-                deduped.append(_normalize_record(stress))
+                normalized = _normalize_record(stress)
             except (ParseError, ValueError) as exc:
                 errors.append({"id": stress.id, "error": str(exc)})
+                continue
+            structure_fp = fingerprint_openui_structure(normalized.openui)
+            if structure_fp in reserved_test_structures:
+                structure_reserved_rejected.append(
+                    {
+                        "id": normalized.id,
+                        "source": normalized.source,
+                        "reason": "test_fixture_structure",
+                    }
+                )
+                continue
+            deduped.append(normalized)
+            structure_fps.add(structure_fp)
         deduped.sort(key=lambda r: r.id)
 
     out_dir = config.output_dir
@@ -259,6 +291,8 @@ def build_train_data(
         "max_openui_chars": config.max_openui_chars,
         "max_components": config.max_components,
         "curriculum": bool(config.curriculum),
+        "structure_reserved_rejected": len(structure_reserved_rejected),
+        "structure_reserved_rejected_samples": structure_reserved_rejected[:20],
         "mean_quality_score": (
             round(sum(quality_scores) / len(quality_scores), 4) if quality_scores else None
         ),

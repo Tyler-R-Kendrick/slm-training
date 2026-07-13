@@ -309,51 +309,49 @@
       "pass": false,
       "failures": [
         "smoke:parse_rate actual=0.0 need>=0.66",
-        "smoke:structural_similarity actual=0.30943333333333334 need>=0.35",
         "smoke:placeholder_fidelity actual=0.0 need>=0.25",
         "smoke:reward_score actual=0.0 need>=0.3",
         "held_out:parse_rate actual=0.0 need>=0.4",
         "held_out:placeholder_fidelity actual=0.0 need>=0.15",
         "adversarial:parse_rate actual=0.0 need>=0.25",
         "ood:parse_rate actual=0.0 need>=0.25",
-        "rico_held:parse_rate actual=0.0 need>=0.1",
-        "rico_held:structural_similarity actual=0.18551250000000002 need>=0.2"
+        "rico_held:parse_rate actual=0.0 need>=0.1"
       ],
       "suites": {
         "smoke": {
           "parse_rate": 0.0,
           "placeholder_fidelity": 0.0,
-          "structural_similarity": 0.30943333333333334,
+          "structural_similarity": 0.4553,
           "reward_score": 0.0,
           "n": 3
         },
         "held_out": {
           "parse_rate": 0.0,
           "placeholder_fidelity": 0.0,
-          "structural_similarity": 0.3679,
+          "structural_similarity": 0.45664,
           "reward_score": 0.0,
           "n": 5
         },
         "adversarial": {
           "parse_rate": 0.0,
           "placeholder_fidelity": 0.0,
-          "structural_similarity": 0.3616750000000001,
+          "structural_similarity": 0.41835000000000006,
           "reward_score": 0.0,
           "n": 4
         },
         "ood": {
           "parse_rate": 0.0,
           "placeholder_fidelity": 0.0,
-          "structural_similarity": 0.45247499999999996,
+          "structural_similarity": 0.39045,
           "reward_score": 0.0,
           "n": 4
         },
         "rico_held": {
           "parse_rate": 0.0,
-          "placeholder_fidelity": 0.4147727272727273,
-          "structural_similarity": 0.18551250000000002,
+          "placeholder_fidelity": 0.5714285714285714,
+          "structural_similarity": 0.3650428571428571,
           "reward_score": 0.0,
-          "n": 8
+          "n": 7
         }
       }
     },
@@ -416,5 +414,14 @@
       }
     }
   ],
-  "ship_gates_cleared": false
+  "ship_gates_cleared": false,
+  "steps": 2000,
+  "gen_steps": 16,
+  "followups": {
+    "build_test_data_fixed": true,
+    "structure_reserved_rejected_train_v1": 16,
+    "test_data_total_records": 23,
+    "checkpoint_migration": "scripts/migrate_checkpoint.py",
+    "e16_2000_steps": "parse still 0; rico_held fidelity ~0.57; struct_sim smoke ~0.45"
+  }
 }

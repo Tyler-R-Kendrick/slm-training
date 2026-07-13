@@ -78,6 +78,33 @@ def fingerprint_design_md(design_md: str | None) -> str | None:
     return hashlib.sha256(norm_text(design_md).encode("utf-8")).hexdigest()
 
 
+def load_reserved_test_structure_fingerprints(
+    test_seed_path: Path | str | None = Path("fixtures/test_seeds.jsonl"),
+) -> set[str]:
+    """
+    Structural fingerprints reserved for hand-authored test fixtures.
+
+    Train synthesis must not emit layouts isomorphic to these patterns so
+    ``build_test_data`` can keep strict structure-only disjointness checks.
+    """
+    path = Path(test_seed_path) if test_seed_path is not None else None
+    if path is None or not path.exists():
+        return set()
+    from slm_training.data.structure import strip_style_literals
+    from slm_training.dsl.parser import ParseError, validate
+
+    fps: set[str] = set()
+    for record in load_jsonl(path):
+        try:
+            scrubbed = strip_style_literals(record.openui)
+            program = validate(scrubbed)
+            openui = strip_style_literals(program.serialized or scrubbed.strip())
+        except (ParseError, ValueError):
+            openui = strip_style_literals(record.openui or "")
+        fps.add(fingerprint_openui_structure(openui))
+    return fps
+
+
 def load_train_fingerprints(manifest_path: Path | None) -> dict[str, set[str]]:
     """Load id / prompt / openui / structure / pair / design_md fingerprints."""
     empty = {

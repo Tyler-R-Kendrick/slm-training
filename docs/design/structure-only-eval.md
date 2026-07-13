@@ -44,6 +44,37 @@ Ship gates still use strict `placeholder_fidelity` (exact overlap). The contract
 makes that objective well-posed: without it, eval namespaces (`:smoke.*`) are
 unknowable from the prompt alone even with compositional tokenization.
 
+## Train/test structural disjointness
+
+`build_test_data` rejects fixture records whose **layout tree** (style-stripped,
+placeholder-normalized) appears in the train manifest. Train synthesis can
+accidentally recreate test fixture structures (e.g. dual-card column, tabs panel).
+
+`build_train_data` loads reserved structure fingerprints from
+`fixtures/test_seeds.jsonl` and drops any train record (including synthesizer
+variants) that collides. Stats report `structure_reserved_rejected`.
+
+```bash
+python -m scripts.build_train_data --source all --version v1
+python -m scripts.build_test_data --source both --version v1 \
+  --train-manifest outputs/train_data/v1/manifest.json
+```
+
+## Tokenizer v2 checkpoint migration
+
+Compositional placeholder tokenization (tokenizer v2) invalidates v1 checkpoints.
+To salvage transformer weights (not placeholder embeddings), rebuild vocabulary
+from train records and remap shared token rows:
+
+```bash
+python -m scripts.migrate_checkpoint \
+  --checkpoint outputs/runs/legacy_run/checkpoints/last.pt \
+  --train-records outputs/train_data/v1/records.jsonl \
+  --output outputs/runs/legacy_run_v2/checkpoints/last.pt
+```
+
+Fresh training from scratch is still preferred for ship gates.
+
 ## Fixtures
 
 `fixtures/test_seeds.jsonl` and `fixtures/train_seeds.jsonl` are structure-scrubbed.

@@ -47,6 +47,7 @@ web = [
 [project.scripts]
 build-train-data = "scripts.build_train_data:main"
 build-test-data = "scripts.build_test_data:main"
+migrate-checkpoint = "scripts.migrate_checkpoint:main"
 train-model = "scripts.train_model:main"
 evaluate-model = "scripts.evaluate_model:main"
 train-preference = "scripts.train_preference:main"
