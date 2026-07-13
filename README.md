@@ -12,7 +12,7 @@ Novel SLM experiments: harnesses for **placeholder OpenUI** layout generation (o
 
 See [docs/design/openui-twotower.md](docs/design/openui-twotower.md) and [docs/design/gpu-multi-farm-mcp.md](docs/design/gpu-multi-farm-mcp.md).
 
-## Setup
+## Quick start
 
 ```bash
 python -m venv .venv
@@ -24,33 +24,32 @@ cd tools/openui_bridge && npm ci && cd ../..
 
 # optional MCP server deps
 pip install -e ".[mcp]"
+# optional live RICO download
+pip install -e ".[rico]"
 ```
 
-## Quick start
+## Quick start (RICO train / disjoint test)
 
 ```bash
-python -m scripts.build_train_data --version v0
-python -m scripts.build_test_data --version v0 \
+# Train corpus from RICO semantic annotations (local fixture slice by default)
+python -m scripts.build_train_data --source rico --version v0
+
+# Test suites from RICO HF test split fixtures + hand adversarial/ood,
+# with strict leakage checks against the train manifest
+python -m scripts.build_test_data --source both --version v0 \
   --train-manifest outputs/train_data/v0/manifest.json
 
-# Train TwoTower (CPU-friendly POC defaults)
 python -m scripts.train_model \
   --train-dir outputs/train_data/v0 \
   --model twotower \
   --steps 200 \
-  --run-id twotower_v0
+  --run-id twotower_rico_v0
 
 python -m scripts.evaluate_model \
   --test-dir outputs/test_data/v0 \
   --suite smoke \
   --model twotower \
-  --run-id twotower_v0
-
-# Stub ablation (no torch required for the plug-in itself)
-python -m scripts.train_model --model stub --steps 2 --run-id stub_v0
-
-# Official teacher system prompt (for synth / distillation)
-python -m scripts.export_openui_prompt
+  --run-id twotower_rico_v0
 ```
 
 ```bash
@@ -87,11 +86,12 @@ GPU_MULTI_FARM_MODE=mock python -m scripts.multi_farm_mcp
 
 ```
 src/slm_training/dsl/           # Python adapter + record schema
+src/slm_training/data/          # RICO adapters + leakage fingerprints
 src/slm_training/models/        # TwoTower + OpenUI tokenizer
 src/slm_training/harnesses/     # train_data, test_data, model_build
 src/gpu_multi_farm/             # FastMCP server + farm adapters
 tools/openui_bridge/            # @openuidev/lang-core Node sidecar
 scripts/                        # CLIs
-fixtures/                       # seed pairs (OpenUI Lang)
+fixtures/                       # seed pairs + RICO semantic slices
 docs/design/                    # architecture + contracts
 ```

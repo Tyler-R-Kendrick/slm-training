@@ -117,6 +117,8 @@ def test_twotower_train_eval_overfit(tmp_path: Path) -> None:
     train_result = build_train_data(
         TrainDataConfig(
             seed_path=train_seeds,
+            rico_path=None,
+            source="fixture",
             output_root=tmp_path / "train_data",
             version="v0",
             synthesizer="none",
@@ -147,10 +149,13 @@ def test_twotower_train_eval_overfit(tmp_path: Path) -> None:
     test_result = build_test_data(
         TestDataConfig(
             seed_path=test_seeds,
+            rico_path=None,
+            source="fixture",
             output_root=tmp_path / "test_data",
             version="v0",
             suites=("smoke",),
-            train_manifest=train_dir / "manifest.json",
+            train_manifest=None,
+            require_train_manifest=False,
         )
     )
     test_dir = Path(test_result["output_dir"])

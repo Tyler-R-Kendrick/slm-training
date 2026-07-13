@@ -103,19 +103,22 @@ Shared foundation: official lang-core bridge + placeholders + `ExampleRecord` sc
 
 | | |
 | --- | --- |
-| **Inputs** | Seed fixtures; optional external path config |
-| **Pipeline** | Load → optional prompt synth → **lang-core validate** → canonicalize via `jsonToOpenUI` → dedupe → write |
+| **Inputs** | **RICO** semantic screens (default) and/or seed fixtures |
+| **Pipeline** | Load RICO → map to placeholder OpenUI → optional prompt synth → **lang-core validate** → canonicalize → dedupe → write fingerprints |
 | **Outputs** | `outputs/train_data/<version>/{manifest.json,records.jsonl,stats.json}` |
-| **CLI** | `python -m scripts.build_train_data` |
+| **CLI** | `python -m scripts.build_train_data --source rico` |
+
+RICO source: Hugging Face [`shunk031/Rico`](https://huggingface.co/datasets/shunk031/Rico) semantic annotations, converted into the OpenUI subset (`Stack` / `Card` / `Text` / `Button`) with placeholders. Local slices live under [`fixtures/rico/`](../../fixtures/rico/).
 
 ### 2. Testing-data harness
 
 | | |
 | --- | --- |
-| **Inputs** | Eval fixtures; optional train manifest for leakage checks |
+| **Inputs** | RICO **test** split fixtures + hand-written adversarial/ood; **required** train manifest |
 | **Suites** | `smoke`, `held_out`, `adversarial`, `ood` |
+| **Leakage** | Rejects any test record whose **id**, **prompt**, **openui**, or pair fingerprint appears in train |
 | **Outputs** | `outputs/test_data/<version>/suites/<suite>/records.jsonl` |
-| **CLI** | `python -m scripts.build_test_data` |
+| **CLI** | `python -m scripts.build_test_data --train-manifest ...` |
 
 ### 3. Model-building harness
 

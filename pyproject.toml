@@ -21,6 +21,10 @@ dev = [
 torch = [
   "torch>=2.2",
 ]
+rico = [
+  "datasets>=2.18",
+  "pillow>=10.0",
+]
 mcp = [
   "fastmcp>=2.0",
   "httpx>=0.27",

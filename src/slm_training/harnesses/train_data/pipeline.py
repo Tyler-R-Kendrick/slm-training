@@ -1,13 +1,18 @@
-"""Training-data build pipeline."""
+"""Training-data build pipeline (RICO-first)."""
 
 from __future__ import annotations
 
-import hashlib
 import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from slm_training.data.leakage import (
+    fingerprint_openui,
+    fingerprint_pair,
+    fingerprint_prompt,
+)
+from slm_training.data.rico import load_rico_screens, screen_to_record
 from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.parser import ParseError, validate
 from slm_training.dsl.schema import ExampleRecord, load_jsonl, write_jsonl
@@ -16,20 +21,21 @@ from slm_training.harnesses.train_data.synth import PromptSynthesizer, get_synth
 
 @dataclass
 class TrainDataConfig:
-    seed_path: Path
+    seed_path: Path | None = None
+    rico_path: Path | None = Path("fixtures/rico/semantic_train.jsonl")
+    # rico | fixture | both
+    source: str = "rico"
     output_root: Path = Path("outputs/train_data")
     version: str = "v0"
     synthesizer: str = "template"
     require_split: str = "train"
+    rico_hf_split: str | None = None
+    rico_limit: int | None = None
+    max_children: int = 6
 
     @property
     def output_dir(self) -> Path:
         return self.output_root / self.version
-
-
-def _fingerprint(openui: str, prompt: str) -> str:
-    payload = (prompt.strip() + "\n" + openui.strip()).encode("utf-8")
-    return hashlib.sha256(payload).hexdigest()
 
 
 def _normalize_record(record: ExampleRecord) -> ExampleRecord:
@@ -47,17 +53,12 @@ def _normalize_record(record: ExampleRecord) -> ExampleRecord:
     )
 
 
-def build_train_data(
-    config: TrainDataConfig,
-    synthesizer: PromptSynthesizer | None = None,
-) -> dict:
-    """Load seeds, synthesize, validate, dedupe, and write versioned artifacts."""
+def _records_from_fixtures(config: TrainDataConfig) -> tuple[list[ExampleRecord], list[dict]]:
+    if config.seed_path is None:
+        return [], []
     seeds = load_jsonl(config.seed_path)
-    synth = synthesizer or get_synthesizer(config.synthesizer)
-
-    collected: list[ExampleRecord] = []
     errors: list[dict] = []
-
+    out: list[ExampleRecord] = []
     for seed in seeds:
         if seed.split != config.require_split:
             errors.append(
@@ -67,6 +68,62 @@ def build_train_data(
                 }
             )
             continue
+        out.append(seed)
+    return out, errors
+
+
+def _records_from_rico(config: TrainDataConfig) -> tuple[list[ExampleRecord], list[dict]]:
+    if config.rico_path is None and config.rico_hf_split is None:
+        return [], [{"error": "rico source selected but no rico_path / rico_hf_split"}]
+    screens = load_rico_screens(
+        path=config.rico_path,
+        hf_split=config.rico_hf_split,
+        limit=config.rico_limit,
+    )
+    out: list[ExampleRecord] = []
+    errors: list[dict] = []
+    for screen in screens:
+        try:
+            out.append(
+                screen_to_record(
+                    screen,
+                    split="train",
+                    max_children=config.max_children,
+                )
+            )
+        except (ValueError, KeyError, TypeError) as exc:
+            errors.append(
+                {
+                    "id": f"rico_{screen.get('split_src')}_{screen.get('screen_index')}",
+                    "error": str(exc),
+                }
+            )
+    return out, errors
+
+
+def build_train_data(
+    config: TrainDataConfig,
+    synthesizer: PromptSynthesizer | None = None,
+) -> dict:
+    """Load RICO/fixtures, synthesize, validate, dedupe, and write artifacts."""
+    source = (config.source or "rico").lower()
+    seeds: list[ExampleRecord] = []
+    errors: list[dict] = []
+
+    if source in {"fixture", "both", "fixtures"}:
+        fixture_records, fixture_errors = _records_from_fixtures(config)
+        seeds.extend(fixture_records)
+        errors.extend(fixture_errors)
+    if source in {"rico", "both"}:
+        rico_records, rico_errors = _records_from_rico(config)
+        seeds.extend(rico_records)
+        errors.extend(rico_errors)
+    if source not in {"rico", "fixture", "fixtures", "both"}:
+        raise ValueError(f"unknown train source {config.source!r}")
+
+    synth = synthesizer or get_synthesizer(config.synthesizer)
+    collected: list[ExampleRecord] = []
+    for seed in seeds:
         candidates = [seed, *synth.expand(seed)]
         for candidate in candidates:
             try:
@@ -74,14 +131,17 @@ def build_train_data(
             except (ParseError, ValueError) as exc:
                 errors.append({"id": candidate.id, "error": str(exc)})
 
-    # Dedupe by (prompt, openui) fingerprint; keep first id.
     deduped: list[ExampleRecord] = []
-    seen: set[str] = set()
+    seen_pairs: set[str] = set()
+    prompt_fps: set[str] = set()
+    openui_fps: set[str] = set()
     for record in collected:
-        fp = _fingerprint(record.openui, record.prompt)
-        if fp in seen:
+        pair = fingerprint_pair(record.prompt, record.openui)
+        if pair in seen_pairs:
             continue
-        seen.add(fp)
+        seen_pairs.add(pair)
+        prompt_fps.add(fingerprint_prompt(record.prompt))
+        openui_fps.add(fingerprint_openui(record.openui))
         deduped.append(record)
 
     out_dir = config.output_dir
@@ -91,12 +151,15 @@ def build_train_data(
 
     stats = {
         "version": config.version,
-        "seed_path": str(config.seed_path),
+        "source": source,
+        "seed_path": str(config.seed_path) if config.seed_path else None,
+        "rico_path": str(config.rico_path) if config.rico_path else None,
+        "rico_hf_split": config.rico_hf_split,
         "seed_count": len(seeds),
         "collected_count": len(collected),
         "record_count": len(deduped),
         "error_count": len(errors),
-        "errors": errors,
+        "errors": errors[:50],
         "synthesizer": config.synthesizer,
         "placeholder_vocab_size": len(
             {p for r in deduped for p in r.placeholders}
@@ -109,10 +172,14 @@ def build_train_data(
     manifest = {
         "version": config.version,
         "kind": "train_data",
+        "source": source,
         "records": str(records_path.as_posix()),
         "stats": str(stats_path.as_posix()),
         "record_count": len(deduped),
         "ids": [r.id for r in deduped],
+        "prompt_fingerprints": sorted(prompt_fps),
+        "openui_fingerprints": sorted(openui_fps),
+        "pair_fingerprints": sorted(seen_pairs),
         "built_at": stats["built_at"],
     }
     manifest_path = out_dir / "manifest.json"

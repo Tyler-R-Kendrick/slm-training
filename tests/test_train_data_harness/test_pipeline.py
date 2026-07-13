@@ -49,6 +49,8 @@ def test_build_train_data_writes_artifacts(tmp_path: Path) -> None:
     result = build_train_data(
         TrainDataConfig(
             seed_path=seeds,
+            rico_path=None,
+            source="fixture",
             output_root=out_root,
             version="vtest",
             synthesizer="template",
@@ -59,11 +61,12 @@ def test_build_train_data_writes_artifacts(tmp_path: Path) -> None:
     assert (out_dir / "records.jsonl").exists()
     assert (out_dir / "stats.json").exists()
     stats = json.loads((out_dir / "stats.json").read_text(encoding="utf-8"))
-    # 2 seeds * (1 original + 3 templates) = 8 if all unique prompts
     assert stats["record_count"] >= 2
     assert stats["error_count"] == 0
     manifest = json.loads((out_dir / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["kind"] == "train_data"
+    assert "prompt_fingerprints" in manifest
+    assert "openui_fingerprints" in manifest
     assert len(manifest["ids"]) == stats["record_count"]
 
 
@@ -87,6 +90,8 @@ def test_build_train_data_rejects_invalid_openui(tmp_path: Path) -> None:
     result = build_train_data(
         TrainDataConfig(
             seed_path=path,
+            rico_path=None,
+            source="fixture",
             output_root=tmp_path / "out",
             version="vbad",
             synthesizer="none",
@@ -94,3 +99,27 @@ def test_build_train_data_rejects_invalid_openui(tmp_path: Path) -> None:
     )
     assert result["stats"]["record_count"] == 0
     assert result["stats"]["error_count"] >= 1
+
+
+@pytest.mark.skipif(
+    not bridge_available(),
+    reason="OpenUI bridge deps missing; run: cd tools/openui_bridge && npm ci",
+)
+def test_build_train_data_from_rico_fixtures(tmp_path: Path) -> None:
+    rico = Path("fixtures/rico/semantic_train.jsonl")
+    if not rico.exists():
+        pytest.skip("RICO fixtures missing")
+    result = build_train_data(
+        TrainDataConfig(
+            seed_path=None,
+            rico_path=rico,
+            source="rico",
+            output_root=tmp_path / "train_data",
+            version="vrico",
+            synthesizer="none",
+            rico_limit=10,
+        )
+    )
+    assert result["stats"]["record_count"] >= 5
+    assert result["stats"]["error_count"] == 0
+    assert result["manifest"]["source"] == "rico"
