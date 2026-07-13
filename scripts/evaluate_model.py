@@ -9,6 +9,37 @@ from pathlib import Path
 
 from slm_training.harnesses.model_build import ModelBuildConfig, evaluate
 from slm_training.harnesses.model_build.eval_runner import evaluate_suites
+from slm_training.harnesses.model_build.ship_gates import (
+    DEFAULT_SHIP_GATES,
+    evaluate_ship_gates,
+    write_ship_gates,
+)
+
+
+def _check_fail_unders(metrics: dict, args: argparse.Namespace) -> int:
+    if args.fail_under_parse_rate is not None:
+        if float(metrics.get("parse_rate") or 0) < args.fail_under_parse_rate:
+            return 2
+    if args.fail_under_placeholder_fidelity is not None:
+        if float(metrics.get("placeholder_fidelity") or 0) < args.fail_under_placeholder_fidelity:
+            return 4
+    if args.fail_under_placeholder_validity is not None:
+        if float(metrics.get("placeholder_validity") or 0) < args.fail_under_placeholder_validity:
+            return 7
+    if args.fail_under_structural_similarity is not None:
+        if float(metrics.get("structural_similarity") or 0) < args.fail_under_structural_similarity:
+            return 5
+    if args.fail_under_reward_score is not None:
+        if float(metrics.get("reward_score") or 0) < args.fail_under_reward_score:
+            return 6
+    if args.fail_under_design_lint is not None:
+        # Gold-context diagnostic only; prefer --ship-gates for readiness.
+        score = metrics.get("gold_design_lint_score")
+        if score is None:
+            score = metrics.get("design_lint_score")
+        if score is None or float(score) < args.fail_under_design_lint:
+            return 3
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -46,10 +77,18 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--device", type=str, default="cpu")
     parser.add_argument(
+        "--ship-gates",
+        action="store_true",
+        help=(
+            "Apply honest multi-suite ship gates (see docs/design/adversarial-review.md) "
+            "and write gates.json. Implies checking every suite in the policy."
+        ),
+    )
+    parser.add_argument(
         "--fail-under-parse-rate",
         type=float,
         default=None,
-        help="Exit non-zero if parse_rate is below this threshold.",
+        help="Exit non-zero if parse_rate is below this threshold (single/primary suite).",
     )
     parser.add_argument(
         "--fail-under-placeholder-fidelity",
@@ -61,7 +100,7 @@ def main(argv: list[str] | None = None) -> int:
         "--fail-under-placeholder-validity",
         type=float,
         default=None,
-        help="Exit non-zero if placeholder_validity is below this threshold.",
+        help="Diagnostic soft metric; prefer fidelity + --ship-gates for readiness.",
     )
     parser.add_argument(
         "--fail-under-structural-similarity",
@@ -79,7 +118,7 @@ def main(argv: list[str] | None = None) -> int:
         "--fail-under-design-lint",
         type=float,
         default=None,
-        help="Exit non-zero if mean design_lint_score (context) is below this threshold.",
+        help="Gold DESIGN.md context lint only — not model skill.",
     )
     args = parser.parse_args(argv)
 
@@ -94,38 +133,39 @@ def main(argv: list[str] | None = None) -> int:
         context_backend="scratch",
     )
 
+    if args.ship_gates and not args.suites:
+        args.suites = ",".join(DEFAULT_SHIP_GATES.keys())
+
     if args.suites:
         suites = [s.strip() for s in args.suites.split(",") if s.strip()]
-        scoreboard = evaluate_suites(config, suites, checkpoint=args.checkpoint)
+        scoreboard = evaluate_suites(
+            config,
+            suites,
+            checkpoint=args.checkpoint,
+            write_gates=args.ship_gates,
+        )
         print(json.dumps({k: v for k, v in scoreboard.items()}, indent=2))
-        # Gate on the first / primary suite (smoke preferred).
-        primary = "smoke" if "smoke" in scoreboard["suites"] else suites[0]
-        metrics = scoreboard["suites"][primary]
-    else:
-        metrics = evaluate(config, checkpoint=args.checkpoint)
-        summary = {k: v for k, v in metrics.items() if k != "details"}
-        print(json.dumps(summary, indent=2))
+        if args.ship_gates:
+            gates = scoreboard.get("gates") or write_ship_gates(
+                config.run_dir, scoreboard["suites"]
+            )
+            # Re-read full payload when only summary was embedded.
+            if "pass" not in gates or "failures" not in gates:
+                gates = evaluate_ship_gates(scoreboard["suites"])
+                write_ship_gates(config.run_dir, scoreboard["suites"])
+            return 0 if gates.get("pass") else 8
+        # Legacy: fail-under applies to every listed suite (not smoke-only).
+        for suite_name in suites:
+            metrics = scoreboard["suites"][suite_name]
+            code = _check_fail_unders(metrics, args)
+            if code:
+                return code
+        return 0
 
-    if args.fail_under_parse_rate is not None:
-        if float(metrics.get("parse_rate") or 0) < args.fail_under_parse_rate:
-            return 2
-    if args.fail_under_placeholder_fidelity is not None:
-        if float(metrics.get("placeholder_fidelity") or 0) < args.fail_under_placeholder_fidelity:
-            return 4
-    if args.fail_under_placeholder_validity is not None:
-        if float(metrics.get("placeholder_validity") or 0) < args.fail_under_placeholder_validity:
-            return 7
-    if args.fail_under_structural_similarity is not None:
-        if float(metrics.get("structural_similarity") or 0) < args.fail_under_structural_similarity:
-            return 5
-    if args.fail_under_reward_score is not None:
-        if float(metrics.get("reward_score") or 0) < args.fail_under_reward_score:
-            return 6
-    if args.fail_under_design_lint is not None:
-        score = metrics.get("design_lint_score")
-        if score is None or float(score) < args.fail_under_design_lint:
-            return 3
-    return 0
+    metrics = evaluate(config, checkpoint=args.checkpoint)
+    summary = {k: v for k, v in metrics.items() if k != "details"}
+    print(json.dumps(summary, indent=2))
+    return _check_fail_unders(metrics, args)
 
 
 if __name__ == "__main__":

@@ -71,8 +71,8 @@ python -m pip install -e '.[torch,hf,rico,dev]'
 (cd tools/design_md_bridge && npm ci)
 python -m scripts.build_train_data --source all --version v1 --synthesizer quality --max-openui-chars 600 --max-components 10
 python -m scripts.build_test_data --source both --version v1 --train-manifest outputs/train_data/v1/manifest.json
-python -m scripts.train_model --train-dir outputs/train_data/v1_fixture_up --run-id {run_id} --steps {int(args.steps)} --context-backend scratch --no-freeze-context --no-design-md-context --ltr-loss-weight 1.0 --grammar-ltr-primary
-python -m scripts.evaluate_model --train-dir outputs/train_data/v1_fixture_up --test-dir outputs/test_data/v1 --run-id {run_id} --suite smoke --fail-under-parse-rate 0.66 --fail-under-structural-similarity 0.35 --fail-under-placeholder-validity 0.25 --fail-under-reward-score 0.35
+python -m scripts.train_model --train-dir outputs/train_data/v1 --run-id {run_id} --steps {int(args.steps)} --context-backend {shlex.quote(args.context_backend)} --ltr-loss-weight 1.0 --grammar-ltr-primary
+python -m scripts.evaluate_model --train-dir outputs/train_data/v1 --test-dir outputs/test_data/v1 --run-id {run_id} --ship-gates
 python -m scripts.export_cactus --checkpoint {ckpt_q} --out-dir outputs/cactus/bundle
 python -m scripts.bench_cactus --checkpoint {ckpt_q} --with-design-md
 """.strip()

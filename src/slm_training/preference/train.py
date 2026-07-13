@@ -74,6 +74,11 @@ def train_preference(
         "last_loss": history[-1] if history else None,
         "mean_loss": sum(history) / max(1, len(history)),
         "n_pairs": len(pairs),
+        "reference_free": True,
+        "note": (
+            "Surrogate preference loss on masked-token log-probs; "
+            "no frozen reference model (not textbook DPO)."
+        ),
     }
 
 

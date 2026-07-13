@@ -104,15 +104,19 @@ def composite_reward(
     """
     Ordered composite:
     grammar (hard) * (0.45 grammar + 0.2 placeholders + 0.25 design lint + 0.1 layout)
+
+    `design_md` is only credited when passed explicitly as a non-None string.
+    Eval must pass design_md=None so gold DESIGN.md lint cannot inflate scores
+    when the model was not conditioned on it.
     """
     g = grammar_score(openui)
     if g <= 0.0:
         return 0.0
-    dm = design_md if design_md is not None else (gold.design_md if gold else None)
+    lint = design_lint_score(design_md) if design_md is not None else 0.5
     score = (
         0.45 * g
         + 0.20 * placeholder_score(openui, gold)
-        + 0.25 * design_lint_score(dm)
+        + 0.25 * lint
         + 0.10 * layout_metrics(openui)
     )
     return round(float(score), 4)

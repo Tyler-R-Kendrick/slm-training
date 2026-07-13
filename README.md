@@ -10,7 +10,7 @@ Novel SLM experiments: harnesses for **placeholder OpenUI** layout generation (o
 4. **OpenUI Lang bridge** — Node sidecar over official `@openuidev/lang-core`
 5. **GPU multi-farm MCP** — list / launch / cost-project across Vast.ai, RunPod, Lambda
 
-See [docs/design/openui-twotower.md](docs/design/openui-twotower.md) and [docs/design/gpu-multi-farm-mcp.md](docs/design/gpu-multi-farm-mcp.md).
+See [docs/design/openui-twotower.md](docs/design/openui-twotower.md), [docs/design/adversarial-review.md](docs/design/adversarial-review.md), and [docs/design/gpu-multi-farm-mcp.md](docs/design/gpu-multi-farm-mcp.md).
 
 ## Quick start
 
@@ -51,18 +51,16 @@ python -m scripts.train_model \
 
 python -m scripts.evaluate_model \
   --test-dir outputs/test_data/v1 \
-  --suite smoke \
   --model twotower \
-  --run-id twotower_v1_ship \
-  --fail-under-parse-rate 0.66 \
-  --fail-under-structural-similarity 0.35 \
-  --fail-under-placeholder-validity 0.25 \
-  --fail-under-reward-score 0.35
+  --run-id twotower_v1 \
+  --ship-gates
 ```
 
 Train artifacts land in `outputs/train_data/<version>/` (`records.jsonl`, `manifest.json`, `stats.json`). The flush pipeline: curated seeds + RICO + Awwwards → deterministic quality synth → per-record DESIGN.md + OpenUI validate → quality gates → stable sort by `id` + content fingerprint.
 
-Eval uses **meaningful parse** (rejects empty `Stack([])` / `Card([])`), `placeholder_validity` (namespace-normalized), `structural_similarity`, and composite `reward_score`. Suites: smoke/held_out (fixtures), `rico_held` (RICO diagnostic), adversarial, ood.
+Eval uses **meaningful parse** (rejects empty stacks, missing placeholders, and low gold component-type recall), strict `placeholder_fidelity` for ship gates, `structural_similarity`, and composite `reward_score` (does not credit gold DESIGN.md lint). Suites: smoke/held_out (fixtures), `rico_held`, adversarial, ood. Soft `placeholder_validity` is diagnostic only.
+
+**Fixture demo vs ship:** a tiny upsample + scratch + smoke-only fail-under is wiring only. Readiness requires `--ship-gates` on the full scoreboard (see adversarial review).
 
 Expand `rico_held` with 1500 additional HF RICO screens (cached under `fixtures/rico/hf_test_cache.jsonl`):
 

@@ -10,6 +10,7 @@ from pathlib import Path
 from slm_training.data.leakage import (
     fingerprint_design_md,
     fingerprint_openui,
+    fingerprint_openui_structure,
     fingerprint_pair,
     fingerprint_prompt,
 )
@@ -189,6 +190,7 @@ def build_train_data(
     seen_pairs: set[str] = set()
     prompt_fps: set[str] = set()
     openui_fps: set[str] = set()
+    structure_fps: set[str] = set()
     design_md_fps: set[str] = set()
     for record in quality_kept:
         pair = fingerprint_pair(record.prompt, record.openui)
@@ -197,6 +199,7 @@ def build_train_data(
         seen_pairs.add(pair)
         prompt_fps.add(fingerprint_prompt(record.prompt))
         openui_fps.add(fingerprint_openui(record.openui))
+        structure_fps.add(fingerprint_openui_structure(record.openui))
         dm = fingerprint_design_md(record.design_md)
         if dm:
             design_md_fps.add(dm)
@@ -253,6 +256,7 @@ def build_train_data(
         "ids": [r.id for r in deduped],
         "prompt_fingerprints": sorted(prompt_fps),
         "openui_fingerprints": sorted(openui_fps),
+        "structure_fingerprints": sorted(structure_fps),
         "pair_fingerprints": sorted(seen_pairs),
         "design_md_fingerprints": sorted(design_md_fps),
         "content_fingerprint": _content_fingerprint(deduped),

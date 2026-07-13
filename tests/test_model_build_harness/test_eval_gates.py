@@ -4,14 +4,25 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from slm_training.data.leakage import (
+    fingerprint_openui,
+    fingerprint_openui_structure,
+    normalize_openui_structure,
+)
 from slm_training.dsl.schema import ExampleRecord, write_jsonl
 from slm_training.harnesses.model_build import ModelBuildConfig
 from slm_training.harnesses.model_build.eval_runner import (
+    _is_meaningful_program,
+    component_type_recall,
     evaluate,
     evaluate_suites,
     structural_similarity,
 )
 from slm_training.harnesses.model_build.plugin import StubModel
+from slm_training.harnesses.model_build.ship_gates import (
+    DEFAULT_SHIP_GATES,
+    evaluate_ship_gates,
+)
 from slm_training.preference import composite_reward
 
 
@@ -27,6 +38,24 @@ def test_structural_similarity_partial() -> None:
     assert 0.0 < score < 1.0
 
 
+def test_structural_fingerprint_ignores_placeholder_namespace() -> None:
+    train = (
+        'root = Stack([hero], "column")\n'
+        'hero_title = TextContent(":hero.title")\n'
+        'hero_body = TextContent(":hero.body")\n'
+        "hero = Card([hero_title, hero_body])"
+    )
+    smoke = (
+        'root = Stack([hero], "column")\n'
+        'hero_title = TextContent(":smoke.hero.title")\n'
+        'hero_body = TextContent(":smoke.hero.body")\n'
+        "hero = Card([hero_title, hero_body])"
+    )
+    assert fingerprint_openui(train) != fingerprint_openui(smoke)
+    assert fingerprint_openui_structure(train) == fingerprint_openui_structure(smoke)
+    assert normalize_openui_structure(train) == normalize_openui_structure(smoke)
+
+
 def test_reward_score_on_valid_pred() -> None:
     gold = ExampleRecord(
         id="t",
@@ -34,8 +63,64 @@ def test_reward_score_on_valid_pred() -> None:
         openui='root = Stack([cta])\ncta = Button(":cta")',
         placeholders=[":cta"],
     )
-    score = composite_reward(gold.openui, gold=gold)
+    score = composite_reward(gold.openui, gold=gold, design_md=None)
     assert score > 0.5
+
+
+def test_reward_does_not_credit_gold_design_md_when_none() -> None:
+    openui = 'root = Stack([cta])\ncta = Button(":cta")'
+    gold = ExampleRecord(
+        id="t",
+        prompt="button",
+        openui=openui,
+        placeholders=[":cta"],
+        design_md="# Fancy\n" + ("x" * 200),
+    )
+    assert composite_reward(openui, gold=gold, design_md=None) == composite_reward(
+        openui, gold=gold
+    )
+
+
+def test_meaningful_parse_requires_component_recall() -> None:
+    gold = ExampleRecord(
+        id="settings",
+        prompt="settings",
+        openui=(
+            'root = Stack([title, notify, volume], "column")\n'
+            'title = TextContent(":t")\n'
+            'notify = SwitchItem(":n", ":d", "x")\n'
+            'volume = Slider("volume", "default", 0, 100, 1, 40, ":v")'
+        ),
+        placeholders=[":t", ":n", ":d", ":v"],
+    )
+    weak = 'root = Stack([title], "column")\ntitle = TextContent(":t")'
+    ok, err, _ = _is_meaningful_program(weak, gold=gold)
+    assert ok is False
+    assert err and err.startswith("low_component_recall")
+    assert component_type_recall(weak, gold.openui) < 0.5
+
+
+def test_ship_gates_fail_when_hard_suites_miss() -> None:
+    suites = {
+        "smoke": {
+            "n": 3,
+            "parse_rate": 1.0,
+            "structural_similarity": 1.0,
+            "placeholder_fidelity": 0.8,
+            "reward_score": 0.7,
+        },
+        "held_out": {
+            "n": 5,
+            "parse_rate": 0.2,
+            "structural_similarity": 0.4,
+            "placeholder_fidelity": 0.0,
+        },
+        # adversarial / ood / rico_held missing → fail
+    }
+    result = evaluate_ship_gates(suites)
+    assert result["pass"] is False
+    assert any("missing_suite" in f for f in result["failures"])
+    assert set(DEFAULT_SHIP_GATES) >= {"smoke", "rico_held"}
 
 
 def test_evaluate_suites_scoreboard(tmp_path: Path) -> None:

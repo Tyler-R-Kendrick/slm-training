@@ -34,6 +34,7 @@ User-facing string props (`text`, `label`, `title`, `placeholder`, `alt`, …) *
 - Lint bridge: [`tools/design_md_bridge/`](../../tools/design_md_bridge/) (`@google/design.md`)
 - Records may carry `design_md`; TwoTower context = `prompt + DESIGN.md`
 - Preference reward: grammar → placeholders → linter score → layout metrics
+- Eval must not credit gold DESIGN.md lint when `design_md_in_context=false`
 
 ## Model architecture
 
@@ -47,7 +48,8 @@ prompt + DESIGN.md → Context Tower (scratch | frozen HF) → hidden states
                          placeholder OpenUI program
 ```
 
-Optional preference/DPO stage ranks candidates with the composite reward.
+Optional preference stage ranks candidates with the composite reward.
+**Note:** current “DPO” training is reference-free (surrogate on masked log-probs) — not textbook DPO.
 
 ## Data sources
 
@@ -57,39 +59,42 @@ Optional preference/DPO stage ranks candidates with the composite reward.
 | Awwwards fixtures | [`fixtures/awwwards/sites.jsonl`](../../fixtures/awwwards/sites.jsonl) |
 | Hand fixtures | [`fixtures/train_seeds.jsonl`](../../fixtures/train_seeds.jsonl) |
 
+Leakage checks use exact + **structural** OpenUI fingerprints (placeholder/binder normalized).
+
 ## Harnesses / CLIs
 
 - `scripts/build_train_data.py` — `--source rico|fixture|awwwards|rico+awwwards|all`
 - `scripts/train_model.py` — `--context-backend hf` (default)
-- `scripts/train_preference.py` — build-pairs / train
+- `scripts/train_preference.py` — build-pairs / train (reference-free)
 - `scripts/export_cactus.py` / `scripts/bench_cactus.py`
-- `scripts/remote_train.py` — SSH pod train + pull
+- `scripts/remote_train.py` — SSH pod train + pull (trains the `v1` corpus it builds)
 - `scripts/serve_playground.py` — accepts optional `design_md`
 
 ## Roadmap status
 
 1–6: prior revisions (done)
-7. Full openuiLibrary + DESIGN.md + harden + Cactus/Awwwards/DPO (**this revision**)
+7. Full openuiLibrary + DESIGN.md + harden + Cactus/Awwwards/preference (**this revision**)
+8. Adversarial review remediations — see [adversarial-review.md](adversarial-review.md)
 
-### Eval-driven ship gates (current)
+### Eval-driven ship gates (honest policy)
 
-| Suite | Gate | Ship (`twotower_v1_ship`) |
+Prior soft gates that declared `twotower_v1_ship` a pass (smoke-only / weak held_out) are **invalid**.
+
+| Suite | Gate | Role |
 | --- | --- | --- |
-| smoke | parse ≥ 0.66, struct ≥ 0.35, ph_valid ≥ 0.25, reward ≥ 0.35 | **pass** (1.0 / 1.0 / 0.8 / 0.76) |
-| held_out (fixture) | parse ≥ 0.15, struct ≥ 0.25 | **pass** |
-| rico_held | diagnostic only | tracked in scoreboard |
-
-Rebuild + scoreboard:
+| smoke | parse ≥ 0.66, struct ≥ 0.35, **fidelity** ≥ 0.25, reward ≥ 0.30 | Canary only |
+| held_out | parse ≥ 0.40, struct ≥ 0.30, fidelity ≥ 0.15 | Fixture generalization |
+| adversarial / ood | parse ≥ 0.25, struct ≥ 0.25 | Stress |
+| rico_held | parse ≥ 0.10, struct ≥ 0.20 | Distribution shift (full suite size) |
 
 ```bash
 python -m scripts.build_test_data --source both --version v1 \
   --train-manifest outputs/train_data/v1/manifest.json
-python -m scripts.evaluate_model --suites smoke,held_out,adversarial,ood,rico_held \
-  --train-dir outputs/train_data/v1_fixture_up \
+python -m scripts.evaluate_model --ship-gates \
+  --train-dir outputs/train_data/v1 \
   --test-dir outputs/test_data/v1 \
-  --run-id twotower_v1_ship \
-  --fail-under-parse-rate 0.66 \
-  --fail-under-structural-similarity 0.35 \
-  --fail-under-placeholder-validity 0.25 \
-  --fail-under-reward-score 0.35
+  --run-id <run>
 ```
+
+**Fixture demo** (wiring only): tiny upsample + scratch + smoke fail-unders — not a ship claim.
+**Ship candidate**: train `v1`, HF + DESIGN.md when claimed, `--ship-gates` on the full scoreboard.

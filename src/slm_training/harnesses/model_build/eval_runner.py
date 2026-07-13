@@ -38,10 +38,8 @@ def _normalize_placeholder(token: str) -> str:
 
 def _placeholder_validity(pred: str, gold: ExampleRecord) -> float:
     """
-    Soft placeholder quality for cross-namespace generalization:
-    - All extracted placeholders must look like :a.b
-    - Normalized overlap with gold (ignore suite/id prefix)
-    - Presence bonus when gold expects placeholders
+    Soft placeholder quality for diagnostics only (not a ship gate alone).
+    Prefer placeholder_fidelity for readiness claims.
     """
     pred_set = set(extract_placeholders(pred))
     gold_set = set(gold.placeholders) or set(extract_placeholders(gold.openui))
@@ -96,8 +94,20 @@ def structural_similarity(pred: str, gold_openui: str) -> float:
     return round(0.7 * jaccard + 0.3 * depth_sim, 4)
 
 
-def _design_lint_for_record(record: ExampleRecord) -> float | None:
-    """Lint the record's DESIGN.md context (taste prior), not the prediction."""
+def component_type_recall(pred: str, gold_openui: str) -> float:
+    """Recall of non-Stack gold component types present in the prediction."""
+    gold_types = {k for k in _component_multiset(gold_openui) if k != "Stack"}
+    if not gold_types:
+        return 1.0
+    pred_types = {k for k in _component_multiset(pred) if k != "Stack"}
+    return len(pred_types & gold_types) / len(gold_types)
+
+
+def _gold_design_lint_score(record: ExampleRecord) -> float | None:
+    """
+    Lint the *gold* DESIGN.md context quality — not the prediction.
+    Kept for dataset diagnostics; must not be treated as model skill.
+    """
     if not record.design_md:
         return None
     try:
@@ -111,22 +121,30 @@ def _design_lint_for_record(record: ExampleRecord) -> float | None:
 
 
 def _reward_for_prediction(pred: str, record: ExampleRecord) -> float:
-    """Composite preference reward on the *generated* layout."""
+    """
+    Composite preference reward on the generated layout.
+
+    Intentionally does **not** pass gold DESIGN.md — linting gold context was
+    inflating reward when design_md_in_context was false.
+    """
     try:
         from slm_training.preference import composite_reward
 
-        return float(
-            composite_reward(pred, gold=record, design_md=record.design_md)
-        )
+        return float(composite_reward(pred, gold=record, design_md=None))
     except Exception:  # noqa: BLE001
         return 0.0
 
 
-def _is_meaningful_program(pred: str) -> tuple[bool, str | None, str | None]:
+def _is_meaningful_program(
+    pred: str,
+    *,
+    gold: ExampleRecord | None = None,
+    min_component_recall: float = 0.5,
+) -> tuple[bool, str | None, str | None]:
     """
-    Validate and reject trivial empties (e.g. `root = Stack([])`) that lang-core
-    still marks ok — those inflate parse_rate without being useful layouts.
-    Returns (ok, error, serialized).
+    Validate and reject trivial / off-task programs.
+    Empty Stack/Card, no content components, no placeholders, and (when gold
+    is provided) low component-type recall vs the gold layout.
     """
     try:
         program = validate(pred)
@@ -144,6 +162,10 @@ def _is_meaningful_program(pred: str) -> tuple[bool, str | None, str | None]:
         return False, "no_content_components", serialized
     if not extract_placeholders(serialized):
         return False, "no_placeholders", serialized
+    if gold is not None and min_component_recall > 0:
+        recall = component_type_recall(serialized, gold.openui)
+        if recall < min_component_recall:
+            return False, f"low_component_recall:{recall:.2f}", serialized
     return True, None, serialized
 
 
@@ -185,7 +207,8 @@ def evaluate(
     exact_sum = 0.0
     struct_sum = 0.0
     reward_sum = 0.0
-    design_scores: list[float] = []
+    recall_sum = 0.0
+    gold_design_scores: list[float] = []
     latencies: list[float] = []
     details: list[dict] = []
 
@@ -197,7 +220,7 @@ def evaluate(
         except TypeError:
             pred = plugin.generate(record.prompt, gold=None)
         latencies.append((time.perf_counter() - t0) * 1000.0)
-        ok, error, serialized = _is_meaningful_program(pred)
+        ok, error, serialized = _is_meaningful_program(pred, gold=record)
         scored_pred = serialized or pred
         if ok:
             parse_ok += 1
@@ -205,15 +228,17 @@ def evaluate(
         ph_valid = _placeholder_validity(scored_pred, record)
         exact = _tree_match(scored_pred, record.openui)
         struct = structural_similarity(scored_pred, record.openui)
+        recall = component_type_recall(scored_pred, record.openui)
         reward = _reward_for_prediction(scored_pred, record)
-        dscore = _design_lint_for_record(record)
+        gold_dscore = _gold_design_lint_score(record)
         fidelity_sum += fid
         validity_sum += ph_valid
         exact_sum += exact
         struct_sum += struct
+        recall_sum += recall
         reward_sum += reward
-        if dscore is not None:
-            design_scores.append(dscore)
+        if gold_dscore is not None:
+            gold_design_scores.append(gold_dscore)
         details.append(
             {
                 "id": record.id,
@@ -223,8 +248,11 @@ def evaluate(
                 "placeholder_validity": ph_valid,
                 "exact_match": exact,
                 "structural_similarity": struct,
+                "component_type_recall": recall,
                 "reward_score": reward,
-                "design_lint_score": dscore,
+                "gold_design_lint_score": gold_dscore,
+                # Back-compat alias — gold context only, not model skill.
+                "design_lint_score": gold_dscore,
                 "latency_ms": round(latencies[-1], 2),
                 "prediction": pred[:500],
                 "serialized": (serialized or "")[:500] if serialized else None,
@@ -234,6 +262,9 @@ def evaluate(
     lat_sorted = sorted(latencies)
     p50 = lat_sorted[len(lat_sorted) // 2] if lat_sorted else None
     p95 = lat_sorted[int(0.95 * (len(lat_sorted) - 1))] if lat_sorted else None
+    gold_design_mean = (
+        sum(gold_design_scores) / len(gold_design_scores) if gold_design_scores else None
+    )
 
     metrics = {
         "suite": config.suite,
@@ -243,10 +274,11 @@ def evaluate(
         "placeholder_validity": (validity_sum / n) if n else 0.0,
         "exact_match": (exact_sum / n) if n else 0.0,
         "structural_similarity": (struct_sum / n) if n else 0.0,
+        "component_type_recall": (recall_sum / n) if n else 0.0,
         "reward_score": (reward_sum / n) if n else 0.0,
-        "design_lint_score": (
-            sum(design_scores) / len(design_scores) if design_scores else None
-        ),
+        "gold_design_lint_score": gold_design_mean,
+        # Alias kept for older dashboards; do not gate ship on this.
+        "design_lint_score": gold_design_mean,
         "latency_ms_p50": round(p50, 2) if p50 is not None else None,
         "latency_ms_p95": round(p95, 2) if p95 is not None else None,
         "checkpoint": str(ckpt),
@@ -271,9 +303,12 @@ def evaluate_suites(
     suites: list[str],
     *,
     checkpoint: Path | None = None,
+    write_gates: bool = False,
 ) -> dict[str, dict]:
-    """Run eval across multiple suites; write scoreboard.json."""
+    """Run eval across multiple suites; write scoreboard.json (and optional gates)."""
     from dataclasses import replace
+
+    from slm_training.harnesses.model_build.ship_gates import write_ship_gates
 
     board: dict[str, dict] = {}
     for suite in suites:
@@ -293,4 +328,7 @@ def evaluate_suites(
     path = run_dir / "scoreboard.json"
     path.write_text(json.dumps(scoreboard, indent=2) + "\n", encoding="utf-8")
     scoreboard["output"] = str(path)
+    if write_gates:
+        gates = write_ship_gates(run_dir, board)
+        scoreboard["gates"] = {k: gates[k] for k in ("pass", "failures", "output")}
     return scoreboard
