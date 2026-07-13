@@ -33,6 +33,8 @@
 | E6 | Retrieval skeletons | `retrieval_k=1` | ↑ rico parse/struct | `qx_e6_retrieve` |
 | E7 | Capacity upgrade | larger d_model / layers / gen_len | ↑ rico struct | `qx_e7_capacity` |
 | E8 | Combo (all) | E1–E7 stacked | best chance at ship | `qx_e8_combo` |
+| E9b | Fidelity anti-leak | Soft curriculum mix + fidelity aux + schema + repair | ↑ fidelity without `:adv.*` smoke leak | `qx_e9b_fidelity_antileak` |
+| E10 | GRPO-lite RL | Online group rollouts + structure-only reward | ↑ reward / parse after SFT | `qx_e10_grpo` |
 
 ## Success criteria (honest gates)
 
@@ -52,9 +54,17 @@ python -m scripts.run_quality_matrix \
   --no-design-md-context \
   --seed-checkpoint outputs/runs/twotower_v1_ship/checkpoints/last.pt
 
-# Single experiment
-python -m scripts.run_quality_matrix --only E1,E7 --steps 800 --no-design-md-context \
-  --seed-checkpoint outputs/runs/twotower_v1_ship/checkpoints/last.pt
+# Fidelity-focused + RL stages
+python -m scripts.run_quality_matrix --only E9b,E10 --steps 200 --context-backend scratch
+
+# Online RL alone (after an SFT checkpoint)
+python -m scripts.train_rl \
+  --checkpoint outputs/runs/qx_e9b_fidelity_antileak/checkpoints/last.pt \
+  --train-records outputs/train_data/v1/records.jsonl \
+  --out-dir outputs/runs/grpo --steps 50 --group-size 4
+
+# Cycle telemetry (train + generate spans)
+python -m scripts.bench_telemetry --train-steps 8 --gen-prompts 8
 ```
 
 ## Measured results (CPU, 800 steps, scratch, no DESIGN.md in context)
@@ -73,4 +83,9 @@ See [quality-matrix-results.json](quality-matrix-results.json). Headline deltas 
 
 \*E9 emits `:adv.*` placeholders on smoke prompts — curriculum overfit. Still the first strong fidelity signal.
 
-**None clear honest `--ship-gates`.** Next: longer HF+DESIGN.md train (E0/E8), fidelity-targeted objectives, and keep E1 repair on for quality evals.
+**None clear honest `--ship-gates`.** Next levers implemented in-repo:
+
+1. **E9b** — soft curriculum mix (always ≥30% B), strip `:adv.*` on non-C records, fidelity aux + schema + LTR repair.
+2. **E10** — GRPO-lite online RL (`scripts/train_rl.py`) with structure-only `composite_reward`.
+3. **Telemetry** — `train_telemetry.json` / `scripts/bench_telemetry.py` span rankings for train/infer bottlenecks.
+4. Longer **HF + DESIGN.md** trains with `--fast-train` and `--eval-suites smoke,held_out`.

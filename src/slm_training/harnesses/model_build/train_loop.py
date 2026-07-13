@@ -10,6 +10,15 @@ from pathlib import Path
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.harnesses.model_build.data import batched, load_train_records
 from slm_training.harnesses.model_build.factory import build_model
+from slm_training.telemetry import CycleTelemetry, bind_telemetry, timed
+
+
+def _parse_eval_suites(config: ModelBuildConfig) -> list[str]:
+    raw = str(getattr(config, "eval_suites", "") or "").strip()
+    if raw:
+        return [s.strip() for s in raw.split(",") if s.strip()]
+    suite = str(getattr(config, "eval_suite", "smoke") or "smoke")
+    return [suite]
 
 
 def train(config: ModelBuildConfig, model=None) -> dict:
@@ -35,7 +44,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     if getattr(config, "use_curriculum", False):
         from slm_training.quality import apply_curriculum_tags
 
-        records = apply_curriculum_tags(records)
+        records = apply_curriculum_tags(records, sanitize=True)
     rng.shuffle(records)
 
     plugin = model or build_model(config, records)
@@ -57,21 +66,37 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     ckpt_dir.mkdir(parents=True, exist_ok=True)
     metrics_path = run_dir / "metrics.jsonl"
     eval_history: list[dict] = []
+    tel = CycleTelemetry(
+        enabled=bool(getattr(config, "telemetry", True)),
+        meta={
+            "run_id": config.run_id,
+            "device": config.device,
+            "model": config.model_name,
+            "context_backend": getattr(config, "context_backend", None),
+        },
+    )
+    mix_curriculum = bool(getattr(config, "mix_curriculum", True))
 
     def _batches_for_step(step: int) -> list[list]:
-        pool = records
         if getattr(config, "use_curriculum", False):
-            from slm_training.quality import curriculum_schedule
+            from slm_training.quality import sample_curriculum_batch
 
-            stage = curriculum_schedule(step, config.steps)
-            staged = [
-                r
-                for r in records
-                if (r.meta or {}).get("curriculum") == stage
-            ]
-            if staged:
-                pool = staged
-        shuffled = list(pool)
+            # One shuffled epoch worth of mixed batches.
+            drawn: list = []
+            target = max(config.batch_size, len(records))
+            while len(drawn) < target:
+                drawn.extend(
+                    sample_curriculum_batch(
+                        records,
+                        batch_size=config.batch_size,
+                        step=step,
+                        total_steps=config.steps,
+                        rng=rng,
+                        mix=mix_curriculum,
+                    )
+                )
+            return batched(drawn[: max(config.batch_size * 8, config.batch_size)], config.batch_size)
+        shuffled = list(records)
         rng.shuffle(shuffled)
         return batched(shuffled, config.batch_size)
 
@@ -102,19 +127,40 @@ def train(config: ModelBuildConfig, model=None) -> dict:
 
         from slm_training.harnesses.model_build.eval_runner import evaluate
 
-        # Persist mid-run checkpoint so evaluate can reload if needed.
         mid_ckpt = ckpt_dir / "last.pt"
-        plugin.save(mid_ckpt)
-        eval_cfg = replace(config, suite=config.eval_suite)
-        metrics = evaluate(eval_cfg, model=plugin, checkpoint=mid_ckpt)
-        row = {
-            "step": step,
-            "parse_rate": metrics.get("parse_rate"),
-            "placeholder_fidelity": metrics.get("placeholder_fidelity"),
-            "structural_similarity": metrics.get("structural_similarity"),
-            "reward_score": metrics.get("reward_score"),
-            "ts": datetime.now(timezone.utc).isoformat(),
-        }
+        with timed("eval_save_ckpt"):
+            plugin.save(mid_ckpt)
+        suites = _parse_eval_suites(config)
+        with timed("eval_suites"):
+            if len(suites) == 1:
+                eval_cfg = replace(config, suite=suites[0])
+                metrics = evaluate(eval_cfg, model=plugin, checkpoint=mid_ckpt)
+                row = {
+                    "step": step,
+                    "suite": suites[0],
+                    "parse_rate": metrics.get("parse_rate"),
+                    "placeholder_fidelity": metrics.get("placeholder_fidelity"),
+                    "structural_similarity": metrics.get("structural_similarity"),
+                    "reward_score": metrics.get("reward_score"),
+                    "ts": datetime.now(timezone.utc).isoformat(),
+                }
+            else:
+                board: dict[str, dict] = {}
+                for suite in suites:
+                    eval_cfg = replace(config, suite=suite)
+                    metrics = evaluate(eval_cfg, model=plugin, checkpoint=mid_ckpt)
+                    board[suite] = {
+                        "parse_rate": metrics.get("parse_rate"),
+                        "placeholder_fidelity": metrics.get("placeholder_fidelity"),
+                        "structural_similarity": metrics.get("structural_similarity"),
+                        "reward_score": metrics.get("reward_score"),
+                    }
+                row = {
+                    "step": step,
+                    "suites": suites,
+                    "board": board,
+                    "ts": datetime.now(timezone.utc).isoformat(),
+                }
         eval_history.append(row)
         (run_dir / "eval_history.jsonl").write_text(
             "".join(json.dumps(r) + "\n" for r in eval_history),
@@ -125,9 +171,10 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     step = 0
     last_loss = 0.0
     micro = 0
-    with metrics_path.open("w", encoding="utf-8") as metrics_file:
+    with bind_telemetry(tel), metrics_path.open("w", encoding="utf-8") as metrics_file:
         while step < config.steps:
-            batches = _batches_for_step(step)
+            with timed("batch_build"):
+                batches = _batches_for_step(step)
             for batch in batches:
                 if step >= config.steps:
                     break
@@ -137,17 +184,20 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                     plugin.train()
                     if micro == 0:
                         optimizer.zero_grad(set_to_none=True)
-                    with autocast_context(config.device, enabled=use_amp):
-                        loss_t = plugin.training_loss(batch) / grad_accum
-                    scaler.scale(loss_t).backward()
+                    with timed("forward"):
+                        with autocast_context(config.device, enabled=use_amp):
+                            loss_t = plugin.training_loss(batch) / grad_accum
+                    with timed("backward"):
+                        scaler.scale(loss_t).backward()
                     micro += 1
                     if micro >= grad_accum:
-                        scaler.unscale_(optimizer)
-                        torch.nn.utils.clip_grad_norm_(
-                            list(plugin.trainable_parameters()), 1.0
-                        )
-                        scaler.step(optimizer)
-                        scaler.update()
+                        with timed("optim_step"):
+                            scaler.unscale_(optimizer)
+                            torch.nn.utils.clip_grad_norm_(
+                                list(plugin.trainable_parameters()), 1.0
+                            )
+                            scaler.step(optimizer)
+                            scaler.update()
                         micro = 0
                         last_loss = float(loss_t.detach().cpu()) * grad_accum
                         step += 1
@@ -166,7 +216,8 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                         metrics_file.flush()
                         _maybe_eval(step)
                 else:
-                    last_loss = float(plugin.forward(batch))
+                    with timed("forward"):
+                        last_loss = float(plugin.forward(batch))
                     row = {
                         "step": step,
                         "loss": last_loss,
@@ -179,20 +230,24 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                     step += 1
                     _maybe_eval(step)
 
-    # Flush partial accum.
-    if is_twotower and optimizer is not None and micro > 0:
-        import torch
+        # Flush partial accum.
+        if is_twotower and optimizer is not None and micro > 0:
+            import torch
 
-        scaler.unscale_(optimizer)
-        torch.nn.utils.clip_grad_norm_(list(plugin.trainable_parameters()), 1.0)
-        scaler.step(optimizer)
-        scaler.update()
+            with timed("optim_step"):
+                scaler.unscale_(optimizer)
+                torch.nn.utils.clip_grad_norm_(list(plugin.trainable_parameters()), 1.0)
+                scaler.step(optimizer)
+                scaler.update()
 
-    sync_device(config.device)
-    ckpt_path = ckpt_dir / "last.pt"
-    plugin.save(ckpt_path)
-    final_eval = _maybe_eval(step, force=bool(config.test_dir and config.eval_every > 0))
+        with timed("device_sync"):
+            sync_device(config.device)
+        ckpt_path = ckpt_dir / "last.pt"
+        with timed("final_save"):
+            plugin.save(ckpt_path)
+        final_eval = _maybe_eval(step, force=bool(config.test_dir and config.eval_every > 0))
 
+    tel_path = tel.write(run_dir / "train_telemetry.json")
     summary = {
         "run_id": config.run_id,
         "steps": step,
@@ -210,8 +265,14 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "num_threads": accel.num_threads,
             "note": accel.note,
         },
+        "curriculum": {
+            "enabled": bool(getattr(config, "use_curriculum", False)),
+            "mix": mix_curriculum,
+        },
         "eval_history": eval_history,
         "final_eval": final_eval,
+        "telemetry": tel.summary(),
+        "telemetry_path": str(tel_path.as_posix()),
         "finished_at": datetime.now(timezone.utc).isoformat(),
     }
     (run_dir / "train_summary.json").write_text(

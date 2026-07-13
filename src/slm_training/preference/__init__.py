@@ -202,17 +202,22 @@ def load_pairs(path: Path | str) -> list[PreferencePair]:
 def collect_pairs_with_generator(
     records: list[ExampleRecord],
     generate_fn: Callable[[ExampleRecord], list[str]],
+    *,
+    prefer_valid_rejects: bool = True,
+    structure_only: bool = True,
 ) -> list[PreferencePair]:
     pairs: list[PreferencePair] = []
     for record in records:
         cands = generate_fn(record)
         if record.openui not in cands:
             cands = [record.openui, *cands]
+        design = None if structure_only else record.design_md
         pair = build_pairs_from_candidates(
             record.prompt,
             cands,
             gold=record,
-            design_md=record.design_md,
+            design_md=design,
+            prefer_valid_rejects=prefer_valid_rejects,
         )
         if pair:
             pairs.append(pair)

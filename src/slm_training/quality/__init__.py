@@ -85,28 +85,12 @@ def tag_curriculum_stage(record: ExampleRecord) -> str:
     return "B"
 
 
-def apply_curriculum_tags(records: Iterable[ExampleRecord]) -> list[ExampleRecord]:
-    out: list[ExampleRecord] = []
-    for record in records:
-        stage = tag_curriculum_stage(record)
-        meta = {**dict(record.meta or {}), "curriculum": stage}
-        out.append(
-            ExampleRecord(
-                id=record.id,
-                prompt=record.prompt,
-                openui=record.openui,
-                placeholders=record.placeholders,
-                split=record.split,
-                source=record.source,
-                meta=meta,
-                design_md=record.design_md,
-            )
-        )
-    return out
-
-
 def curriculum_schedule(step: int, total_steps: int) -> str:
-    """Early shape (A), mid binding (B), late hard (C)."""
+    """
+    Primary stage for a step (used when mix_curriculum=False).
+
+    Early shape (A), mid binding (B), late hard (C).
+    """
     if total_steps <= 0:
         return "B"
     frac = step / max(1, total_steps)
@@ -115,3 +99,122 @@ def curriculum_schedule(step: int, total_steps: int) -> str:
     if frac < 0.75:
         return "B"
     return "C"
+
+
+def curriculum_mix_weights(step: int, total_steps: int) -> dict[str, float]:
+    """
+    Soft stage mixture — always keep ≥30% binding (B) to prevent C leakage.
+
+    Late training emphasizes C but never goes C-only (E9 smoke `:adv.*` failure).
+    """
+    if total_steps <= 0:
+        return {"A": 0.2, "B": 0.6, "C": 0.2}
+    frac = step / max(1, total_steps)
+    if frac < 0.35:
+        return {"A": 0.50, "B": 0.40, "C": 0.10}
+    if frac < 0.75:
+        return {"A": 0.25, "B": 0.55, "C": 0.20}
+    # Late: still ≥30% B.
+    return {"A": 0.15, "B": 0.35, "C": 0.50}
+
+
+_ADV_PLACEHOLDER = re.compile(r'":adv\.')
+
+
+def strip_adv_placeholders(openui: str) -> str:
+    """Remap adversarial placeholder namespaces so they cannot leak into smoke."""
+    return _ADV_PLACEHOLDER.sub('":item.', openui)
+
+
+def sanitize_curriculum_record(record: ExampleRecord, *, stage: str | None = None) -> ExampleRecord:
+    """Tag stage and strip `:adv.*` placeholders from non-C records."""
+    stage = stage or tag_curriculum_stage(record)
+    openui = record.openui
+    placeholders = list(record.placeholders or [])
+    if stage != "C":
+        openui = strip_adv_placeholders(openui)
+        placeholders = [
+            p.replace(":adv.", ":item.") if p.startswith(":adv.") else p
+            for p in placeholders
+        ]
+    meta = {**dict(record.meta or {}), "curriculum": stage}
+    return ExampleRecord(
+        id=record.id,
+        prompt=record.prompt,
+        openui=openui,
+        placeholders=placeholders,
+        split=record.split,
+        source=record.source,
+        meta=meta,
+        design_md=record.design_md,
+    )
+
+
+def apply_curriculum_tags(
+    records: Iterable[ExampleRecord],
+    *,
+    sanitize: bool = True,
+) -> list[ExampleRecord]:
+    out: list[ExampleRecord] = []
+    for record in records:
+        stage = tag_curriculum_stage(record)
+        if sanitize:
+            out.append(sanitize_curriculum_record(record, stage=stage))
+        else:
+            meta = {**dict(record.meta or {}), "curriculum": stage}
+            out.append(
+                ExampleRecord(
+                    id=record.id,
+                    prompt=record.prompt,
+                    openui=record.openui,
+                    placeholders=record.placeholders,
+                    split=record.split,
+                    source=record.source,
+                    meta=meta,
+                    design_md=record.design_md,
+                )
+            )
+    return out
+
+
+def sample_curriculum_batch(
+    records: list[ExampleRecord],
+    *,
+    batch_size: int,
+    step: int,
+    total_steps: int,
+    rng,
+    mix: bool = True,
+) -> list[ExampleRecord]:
+    """Draw a batch using soft mix weights (or hard stage when mix=False)."""
+    if not records:
+        return []
+    by_stage: dict[str, list[ExampleRecord]] = {"A": [], "B": [], "C": []}
+    for r in records:
+        stage = str((r.meta or {}).get("curriculum") or "B")
+        by_stage.setdefault(stage, []).append(r)
+    if not mix:
+        primary = curriculum_schedule(step, total_steps)
+        pool = by_stage.get(primary) or records
+        shuffled = list(pool)
+        rng.shuffle(shuffled)
+        return shuffled[:batch_size]
+
+    weights = curriculum_mix_weights(step, total_steps)
+    # Fallback empty stages into B then any.
+    def _pool(stage: str) -> list[ExampleRecord]:
+        return by_stage.get(stage) or by_stage.get("B") or records
+
+    out: list[ExampleRecord] = []
+    for _ in range(batch_size):
+        roll = rng.random()
+        cum = 0.0
+        chosen = "B"
+        for stage, w in weights.items():
+            cum += w
+            if roll <= cum:
+                chosen = stage
+                break
+        pool = _pool(chosen)
+        out.append(pool[rng.randrange(len(pool))])
+    return out

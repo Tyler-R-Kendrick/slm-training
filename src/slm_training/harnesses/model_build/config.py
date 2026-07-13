@@ -50,11 +50,15 @@ class ModelBuildConfig:
     retrieval_k: int = 0
     best_of_n: int = 1
     use_curriculum: bool = False
+    # Soft A/B/C mix (anti-leak); False restores hard stage cutovers.
+    mix_curriculum: bool = True
     # Stub-only
     noise_rate: float = 0.0
     # Eval-driven training: run suite eval every N steps (0 disables).
     eval_every: int = 0
     eval_suite: str = "smoke"
+    # Comma-separated suites for mid-train scoreboard (overrides single eval_suite when set).
+    eval_suites: str = ""
     # Cap rico_held size during matrix / CPU evals (None = full suite).
     rico_eval_limit: int | None = None
     # Accelerator / throughput
@@ -69,6 +73,8 @@ class ModelBuildConfig:
     fuse_ltr_loss: bool = True
     grammar_fastpath: bool = True
     fastpath_aux_weight: float = 0.0
+    # Cycle telemetry (train/infer span JSON)
+    telemetry: bool = True
 
     @property
     def run_dir(self) -> Path:

@@ -195,27 +195,30 @@ class TwoTowerModel(nn.Module):
         *,
         cache_keys: list[str] | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        if is_hf_context(self.context):
-            assert isinstance(self.context, HFContextEncoder)
-            self.context.cache_backbone = bool(
-                getattr(self.config, "cache_context", True)
-            )
-            return self.context.forward_prompts(
-                prompts,
-                max_len=self.config.max_prompt_len,
-                device=self.device_name,
-                cache_keys=cache_keys if self.config.cache_context else None,
-            )
-        assert isinstance(self.context, ScratchContextEncoder)
-        enable_grad = (not self.config.freeze_context) and self.training
-        with torch.set_grad_enabled(enable_grad):
-            return self.context.forward_prompts(
-                prompts,
-                encode_fn=self.tokenizer.encode,
-                max_len=self.config.max_prompt_len,
-                pad_id=self.tokenizer.pad_id,
-                device=self.device_name,
-            )
+        from slm_training.telemetry import timed
+
+        with timed("context_encode"):
+            if is_hf_context(self.context):
+                assert isinstance(self.context, HFContextEncoder)
+                self.context.cache_backbone = bool(
+                    getattr(self.config, "cache_context", True)
+                )
+                return self.context.forward_prompts(
+                    prompts,
+                    max_len=self.config.max_prompt_len,
+                    device=self.device_name,
+                    cache_keys=cache_keys if self.config.cache_context else None,
+                )
+            assert isinstance(self.context, ScratchContextEncoder)
+            enable_grad = (not self.config.freeze_context) and self.training
+            with torch.set_grad_enabled(enable_grad):
+                return self.context.forward_prompts(
+                    prompts,
+                    encode_fn=self.tokenizer.encode,
+                    max_len=self.config.max_prompt_len,
+                    pad_id=self.tokenizer.pad_id,
+                    device=self.device_name,
+                )
 
     def _mask_targets(
         self, target_ids: torch.Tensor
@@ -311,9 +314,12 @@ class TwoTowerModel(nn.Module):
                 target_ids, noisy, predict_mask
             )
 
-        logits = self.denoiser(
-            noisy, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
-        )
+        from slm_training.telemetry import timed
+
+        with timed("denoiser_forward"):
+            logits = self.denoiser(
+                noisy, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
+            )
         if predict_mask.any():
             mask_loss = F.cross_entropy(logits[predict_mask], target_ids[predict_mask])
         else:
@@ -701,39 +707,45 @@ class TwoTowerModel(nn.Module):
         design_mds: list[str | None] | None = None,
     ) -> list[str]:
         """Batched generate — preferred for eval throughput."""
+        from slm_training.telemetry import timed
+
         self.eval()
         if not prompts:
             return []
-        n_samples = max(1, int(getattr(self.config, "best_of_n", 1) or 1))
-        if n_samples > 1:
-            pools: list[list[str]] = [[] for _ in prompts]
-            prev = self.config.best_of_n
-            self.config.best_of_n = 1
-            try:
-                for _ in range(n_samples):
-                    sample = self._generate_batch_once(
-                        prompts,
-                        golds,
-                        max_len=max_len,
-                        grammar_constrained=grammar_constrained,
-                        design_mds=design_mds,
-                    )
-                    for i, text in enumerate(sample):
-                        pools[i].append(text)
-            finally:
-                self.config.best_of_n = prev
-            out: list[str] = []
-            for i, cands in enumerate(pools):
-                gold = golds[i] if golds else None
-                out.append(self._pick_best_of_n(cands, gold))
-            return out
-        return self._generate_batch_once(
-            prompts,
-            golds,
-            max_len=max_len,
-            grammar_constrained=grammar_constrained,
-            design_mds=design_mds,
-        )
+        with timed("generate_batch"):
+            n_samples = max(1, int(getattr(self.config, "best_of_n", 1) or 1))
+            if n_samples > 1:
+                pools: list[list[str]] = [[] for _ in prompts]
+                prev = self.config.best_of_n
+                self.config.best_of_n = 1
+                try:
+                    for _ in range(n_samples):
+                        with timed("generate_once"):
+                            sample = self._generate_batch_once(
+                                prompts,
+                                golds,
+                                max_len=max_len,
+                                grammar_constrained=grammar_constrained,
+                                design_mds=design_mds,
+                            )
+                        for i, text in enumerate(sample):
+                            pools[i].append(text)
+                finally:
+                    self.config.best_of_n = prev
+                out: list[str] = []
+                with timed("best_of_n_rank"):
+                    for i, cands in enumerate(pools):
+                        gold = golds[i] if golds else None
+                        out.append(self._pick_best_of_n(cands, gold))
+                return out
+            with timed("generate_once"):
+                return self._generate_batch_once(
+                    prompts,
+                    golds,
+                    max_len=max_len,
+                    grammar_constrained=grammar_constrained,
+                    design_mds=design_mds,
+                )
 
     def _generate_batch_once(
         self,

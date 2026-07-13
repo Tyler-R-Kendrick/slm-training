@@ -149,7 +149,22 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--curriculum",
         action="store_true",
-        help="Sample train batches by curriculum stage A→B→C.",
+        help="Sample train batches by curriculum stage A→B→C (soft mix by default).",
+    )
+    parser.add_argument(
+        "--hard-curriculum",
+        action="store_true",
+        help="Use hard A→B→C stage cutovers instead of soft mix (can leak C into smoke).",
+    )
+    parser.add_argument(
+        "--eval-suites",
+        default="",
+        help="Comma-separated mid-train eval suites (e.g. smoke,held_out,adversarial).",
+    )
+    parser.add_argument(
+        "--no-telemetry",
+        action="store_true",
+        help="Disable train cycle telemetry JSON.",
     )
     parser.add_argument(
         "--amp",
@@ -272,6 +287,7 @@ def main(argv: list[str] | None = None) -> int:
             retrieval_k=args.retrieval_k,
             best_of_n=args.best_of_n,
             use_curriculum=args.curriculum,
+            mix_curriculum=not bool(args.hard_curriculum),
             use_amp=use_amp,
             use_compile=use_compile,
             compile_mode=args.compile_mode,
@@ -284,6 +300,8 @@ def main(argv: list[str] | None = None) -> int:
             noise_rate=args.noise_rate,
             eval_every=args.eval_every,
             eval_suite=args.eval_suite,
+            eval_suites=args.eval_suites,
+            telemetry=not bool(args.no_telemetry),
         )
     )
     print(json.dumps(summary, indent=2))

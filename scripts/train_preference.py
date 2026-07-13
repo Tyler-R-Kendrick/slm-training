@@ -25,26 +25,37 @@ def main(argv: list[str] | None = None) -> int:
     build.add_argument(
         "--soft-corrupt",
         action="store_true",
-        help="Synthesize valid-but-worse rejects (prefer over BrokenText).",
+        default=True,
+        help="Synthesize valid-but-worse rejects (default on; prefer over BrokenText).",
+    )
+    build.add_argument(
+        "--no-soft-corrupt",
+        action="store_true",
+        help="Disable soft-corrupt rejects.",
     )
     build.add_argument(
         "--corrupt",
         action="store_true",
-        help="Synthesize a rejected candidate by breaking the gold OpenUI.",
+        help="Also synthesize BrokenText-style rejects (discouraged).",
     )
     build.add_argument(
         "--from-checkpoint",
         type=Path,
         default=None,
-        help="Generate rejected candidates from a TwoTower checkpoint (model samples).",
+        help="Generate candidates from a TwoTower checkpoint (model samples).",
     )
     build.add_argument("--limit", type=int, default=None, help="Optional record cap.")
     build.add_argument("--device", default="cpu")
     build.add_argument(
         "--samples-per-prompt",
         type=int,
-        default=1,
+        default=2,
         help="When using --from-checkpoint, generate this many samples per prompt.",
+    )
+    build.add_argument(
+        "--allow-invalid-rejects",
+        action="store_true",
+        help="Allow grammar-invalid rejects when ranking pairs (default: prefer valid).",
     )
 
     train = sub.add_parser("train", help="Run preference training from a checkpoint")
@@ -63,6 +74,9 @@ def main(argv: list[str] | None = None) -> int:
 
         from slm_training.quality import soft_corrupt_openui
 
+        use_soft = bool(args.soft_corrupt) and not bool(args.no_soft_corrupt)
+        prefer_valid = not bool(args.allow_invalid_rejects)
+
         if args.from_checkpoint is not None:
             from slm_training.models.twotower import TwoTowerModel
 
@@ -77,7 +91,7 @@ def main(argv: list[str] | None = None) -> int:
                 cands = [record.openui]
                 for _ in range(n_samp):
                     cands.append(model.generate(record.prompt, gold=None))
-                if args.soft_corrupt:
+                if use_soft:
                     cands.append(soft_corrupt_openui(record.openui))
                 if args.corrupt:
                     bad = record.openui.replace("TextContent", "BrokenText", 1)
@@ -88,16 +102,35 @@ def main(argv: list[str] | None = None) -> int:
         else:
 
             def gen(record):
-                if args.soft_corrupt:
-                    return [record.openui, soft_corrupt_openui(record.openui)]
-                bad = record.openui.replace("TextContent", "BrokenText", 1)
-                if bad == record.openui:
-                    bad = "root = Broken()"
-                return [record.openui, bad]
+                cands = [record.openui]
+                if use_soft:
+                    cands.append(soft_corrupt_openui(record.openui))
+                if args.corrupt or not use_soft:
+                    bad = record.openui.replace("TextContent", "BrokenText", 1)
+                    if bad == record.openui:
+                        bad = "root = Broken()"
+                    cands.append(bad)
+                return cands
 
-        pairs = collect_pairs_with_generator(records, gen)
+        pairs = collect_pairs_with_generator(
+            records,
+            gen,
+            prefer_valid_rejects=prefer_valid,
+            structure_only=True,
+        )
         n = write_pairs(args.out, pairs)
-        print(json.dumps({"pairs": n, "out": str(args.out)}, indent=2))
+        print(
+            json.dumps(
+                {
+                    "pairs": n,
+                    "out": str(args.out),
+                    "soft_corrupt": use_soft,
+                    "prefer_valid_rejects": prefer_valid,
+                    "structure_only": True,
+                },
+                indent=2,
+            )
+        )
         return 0
 
     summary = train_preference_from_paths(

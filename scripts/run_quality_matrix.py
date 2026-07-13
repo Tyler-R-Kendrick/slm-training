@@ -57,6 +57,8 @@ class Experiment:
     # Absolute checkpoint seed (preferred over eval_from_run when set)
     seed_checkpoint: str | None = None
     preference: bool = False
+    mix_curriculum: bool = True
+    rl: bool = False
 
 
 def _base_experiments(
@@ -90,9 +92,10 @@ def _base_experiments(
         Experiment(
             "E2",
             "qx_e2_curriculum",
-            "Curriculum A→B→C sampling",
+            "Curriculum soft-mix A/B/C sampling",
             train_cur,
             use_curriculum=True,
+            mix_curriculum=True,
             design_md_in_context=design_md_in_context,
         ),
         Experiment(
@@ -152,6 +155,7 @@ def _base_experiments(
             retrieval_k=1,
             best_of_n=4,
             use_curriculum=True,
+            mix_curriculum=True,
             grammar_ltr_repair=True,
             d_model=192,
             n_heads=6,
@@ -159,6 +163,38 @@ def _base_experiments(
             denoiser_layers=6,
             grammar_ltr_max_tokens=96,
             preference=True,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E9b",
+            "qx_e9b_fidelity_antileak",
+            "Fidelity + soft curriculum mix + schema + LTR repair (anti-leak)",
+            train_cur,
+            fidelity_loss_weight=1.5,
+            schema_in_context=True,
+            use_curriculum=True,
+            mix_curriculum=True,
+            grammar_ltr_repair=True,
+            best_of_n=4,
+            d_model=192,
+            n_heads=6,
+            context_layers=3,
+            denoiser_layers=6,
+            grammar_ltr_max_tokens=96,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E10",
+            "qx_e10_grpo",
+            "GRPO-lite RL on structure-only reward after E9b-style SFT",
+            train_cur,
+            fidelity_loss_weight=1.0,
+            schema_in_context=True,
+            use_curriculum=True,
+            mix_curriculum=True,
+            grammar_ltr_repair=True,
+            best_of_n=4,
+            rl=True,
             design_md_in_context=design_md_in_context,
         ),
     ]
@@ -194,12 +230,15 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         retrieval_k=exp.retrieval_k,
         best_of_n=1,  # train without BoN cost; apply at eval
         use_curriculum=exp.use_curriculum,
+        mix_curriculum=getattr(exp, "mix_curriculum", True),
         use_compile=bool(getattr(args, "compile", False)),
         parallel_unmask=str(getattr(args, "parallel_unmask", "adaptive") or "adaptive"),
         grad_accum_steps=max(1, int(getattr(args, "grad_accum", 1) or 1)),
         eval_every=args.eval_every,
         eval_suite="smoke",
+        eval_suites="smoke,held_out" if args.eval_every else "",
         structural_bias=2.5,
+        telemetry=True,
     )
 
 
@@ -208,7 +247,7 @@ def _eval_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
     return replace(
         cfg,
         best_of_n=exp.best_of_n,
-        grammar_ltr_repair=exp.grammar_ltr_repair or exp.eid in {"E1", "E8"},
+        grammar_ltr_repair=exp.grammar_ltr_repair or exp.eid in {"E1", "E8", "E9b", "E10"},
         rico_eval_limit=args.rico_limit,
         run_id=exp.run_id,
     )
@@ -227,6 +266,8 @@ def _maybe_preference(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> 
     pairs = collect_pairs_with_generator(
         records,
         lambda r: [r.openui, soft_corrupt_openui(r.openui)],
+        prefer_valid_rejects=True,
+        structure_only=True,
     )
     write_pairs(pairs_path, pairs)
     out_dir = args.run_root / exp.run_id / "pref"
@@ -241,6 +282,30 @@ def _maybe_preference(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> 
     if pref_ckpt.is_file():
         dest = args.run_root / exp.run_id / "checkpoints" / "last.pt"
         return _copy_checkpoint(pref_ckpt, dest)
+    return ckpt
+
+
+def _maybe_rl(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> Path:
+    if not getattr(exp, "rl", False):
+        return ckpt
+    from slm_training.rl import train_grpo_from_paths
+
+    out_dir = args.run_root / exp.run_id / "rl"
+    summary = train_grpo_from_paths(
+        ckpt,
+        exp.train_dir / "records.jsonl",
+        out_dir=out_dir,
+        steps=max(10, int(getattr(args, "rl_steps", 30) or 30)),
+        group_size=max(2, int(getattr(args, "rl_group_size", 4) or 4)),
+        device=args.device,
+        ref_checkpoint=ckpt,
+        limit=int(getattr(args, "pref_limit", 32) or 32),
+        kl_beta=0.05,
+    )
+    rl_ckpt = Path(summary.get("checkpoint") or (out_dir / "model.pt"))
+    if rl_ckpt.is_file():
+        dest = args.run_root / exp.run_id / "checkpoints" / "last.pt"
+        return _copy_checkpoint(rl_ckpt, dest)
     return ckpt
 
 
@@ -292,6 +357,7 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
             ckpt = Path(summary["checkpoint"])
 
     ckpt = _maybe_preference(exp, ckpt, args)
+    ckpt = _maybe_rl(exp, ckpt, args)
     eval_cfg = _eval_cfg(exp, args)
     board = evaluate_suites(
         eval_cfg,
@@ -333,6 +399,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--rico-limit", type=int, default=32)
     parser.add_argument("--pref-steps", type=int, default=30)
     parser.add_argument("--pref-limit", type=int, default=40)
+    parser.add_argument("--rl-steps", type=int, default=30)
+    parser.add_argument("--rl-group-size", type=int, default=4)
     parser.add_argument(
         "--workers",
         type=int,
@@ -379,7 +447,10 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.build_curriculum or (
         not args.curriculum_dir.exists()
-        and (args.only is None or any(x in (args.only or "") for x in ("E2", "E8")))
+        and (
+            args.only is None
+            or any(x in (args.only or "") for x in ("E2", "E8", "E9b", "E10"))
+        )
     ):
         from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
 
