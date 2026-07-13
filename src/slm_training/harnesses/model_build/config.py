@@ -97,6 +97,14 @@ class ModelBuildConfig:
     extendability_decode: bool = True
     # Cycle telemetry (train/infer span JSON)
     telemetry: bool = True
+    # V5: lexer-native output tokenizer + Stage-2 levers
+    output_tokenizer: str = "compositional"  # compositional | lexer
+    use_symbol_table: bool = True
+    factorized_embeddings: bool = False
+    mask_pattern: str = "random"  # random | mixed
+    statement_mask_prob: float = 0.35
+    remask_span: str = "token"  # token | statement
+    teacher_init_embeddings: bool = False
 
     @property
     def run_dir(self) -> Path:

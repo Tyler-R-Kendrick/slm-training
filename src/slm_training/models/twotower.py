@@ -39,6 +39,28 @@ from slm_training.models.template_fill import (
 from slm_training.models.tokenizer import OpenUITokenizer
 
 
+def _is_lexer_output(config: "TwoTowerConfig | None") -> bool:
+    if config is None:
+        return False
+    return str(getattr(config, "output_tokenizer", "compositional") or "").lower() in {
+        "lexer",
+        "dsl",
+        "dsl_native",
+        "native",
+    }
+
+
+def _load_any_tokenizer(path: Path | str):
+    """Load compositional or lexer-native tokenizer from JSON sidecar."""
+    path = Path(path)
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    if raw.get("kind") == "dsl_native" or "id_to_kind" in raw:
+        from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+        return DSLNativeTokenizer.load(path)
+    return OpenUITokenizer.load(path)
+
+
 def format_context_text(
     prompt: str,
     design_md: str | None = None,
@@ -150,6 +172,21 @@ class TwoTowerConfig:
     grammar_draft_window: int = 8
     fastpath_aux_weight: float = 0.0
     fastpath_gate_threshold: float = 0.5
+    # V5: output-side representation
+    # compositional = legacy OpenUITokenizer v2; lexer = DSLNativeTokenizer
+    output_tokenizer: str = "compositional"
+    # When output_tokenizer=lexer: map placeholders to <SYM_i> (E41+).
+    use_symbol_table: bool = True
+    # Stage-2: kind-factorized embeddings (E_tok + E_kind).
+    factorized_embeddings: bool = False
+    # Stage-2 training mask: random | mixed (statement spans ∪ random).
+    mask_pattern: str = "random"
+    # Probability of statement-span masking when mask_pattern=mixed.
+    statement_mask_prob: float = 0.35
+    # Remask expansion: token | statement
+    remask_span: str = "token"
+    # Optional teacher-init of symbol embeddings from HF context (E45).
+    teacher_init_embeddings: bool = False
 
 
 def _pad_batch(seqs: list[list[int]], pad_id: int, device: str | torch.device | None = None) -> torch.Tensor:
@@ -201,9 +238,12 @@ class TwoTowerModel(nn.Module):
         tokenizer: OpenUITokenizer,
         config: TwoTowerConfig | None = None,
         device: str | torch.device = "cpu",
+        *,
+        context_tokenizer: OpenUITokenizer | None = None,
     ) -> None:
         super().__init__()
         self.tokenizer = tokenizer
+        self.context_tokenizer = context_tokenizer or tokenizer
         self.config = config or TwoTowerConfig()
         self.device_name = str(device)
         backend = (self.config.context_backend or "scratch").lower()
@@ -214,7 +254,7 @@ class TwoTowerModel(nn.Module):
 
         self.context = build_context_encoder(
             backend=backend,
-            vocab_size=tokenizer.vocab_size,
+            vocab_size=self.context_tokenizer.vocab_size,
             d_model=self.config.d_model,
             n_layers=self.config.context_layers,
             n_heads=self.config.n_heads,
@@ -224,6 +264,28 @@ class TwoTowerModel(nn.Module):
             hf_model_name=self.config.hf_model_name,
             local_files_only=self.config.local_files_only,
         )
+        kind_ids = None
+        if bool(getattr(self.config, "factorized_embeddings", False)):
+            try:
+                from slm_training.models.dsl_tokenizer import is_dsl_native_tokenizer
+
+                if is_dsl_native_tokenizer(tokenizer):
+                    # Map TokenKind -> small int for embedding table.
+                    kind_name_to_idx = {
+                        "special": 0,
+                        "struct": 1,
+                        "component": 2,
+                        "sym": 3,
+                        "bind": 4,
+                        "lit": 5,
+                        "byte": 6,
+                    }
+                    kind_ids = [
+                        kind_name_to_idx.get(tokenizer.id_to_kind.get(i, "special"), 0)
+                        for i in range(tokenizer.vocab_size)
+                    ]
+            except Exception:  # noqa: BLE001
+                kind_ids = None
         self.denoiser = DenoiserTower(
             vocab_size=tokenizer.vocab_size,
             d_model=self.config.d_model,
@@ -231,6 +293,8 @@ class TwoTowerModel(nn.Module):
             n_heads=self.config.n_heads,
             max_len=self.config.max_target_len,
             dropout=self.config.dropout,
+            kind_ids=kind_ids,
+            n_kinds=7 if kind_ids is not None else 0,
         )
         self._rng = random.Random(self.config.seed)
         self.gen_len = self.config.max_target_len
@@ -241,6 +305,8 @@ class TwoTowerModel(nn.Module):
         self._target_ids_cache: dict[str, list[int]] = {}
         self._placeholder_token_ids: set[int] | None = None
         self._slot_contracts: list[list[str] | None] | None = None
+        # Per-example symbol tables for lexer-native encode/decode.
+        self._symbol_tables: dict[str, object] = {}
         self.to(device)
 
     def _effective_structural_bias(self) -> float:
@@ -293,9 +359,9 @@ class TwoTowerModel(nn.Module):
             with torch.set_grad_enabled(enable_grad):
                 return self.context.forward_prompts(
                     prompts,
-                    encode_fn=self.tokenizer.encode,
+                    encode_fn=self.context_tokenizer.encode,
                     max_len=self.config.max_prompt_len,
-                    pad_id=self.tokenizer.pad_id,
+                    pad_id=self.context_tokenizer.pad_id,
                     device=self.device_name,
                 )
 
@@ -319,6 +385,28 @@ class TwoTowerModel(nn.Module):
             )
         rand = torch.rand(bsz, seq, device=device)
         noise = (rand < rates) & (~frozen)
+
+        # Stage-2: mixed statement-span masking (M_random ∪ M_subtree).
+        pattern = str(getattr(self.config, "mask_pattern", "random") or "random")
+        stmt_p = float(getattr(self.config, "statement_mask_prob", 0.35) or 0.0)
+        if pattern == "mixed" and stmt_p > 0.0:
+            try:
+                from slm_training.models.dsl_tokenizer import is_dsl_native_tokenizer
+
+                if is_dsl_native_tokenizer(self.tokenizer):
+                    for i in range(bsz):
+                        if self._rng.random() > stmt_p:
+                            continue
+                        spans = self.tokenizer.statement_spans(target_ids[i].tolist())
+                        if not spans:
+                            continue
+                        lo, hi = spans[self._rng.randrange(len(spans))]
+                        for j in range(lo, hi):
+                            if not bool(frozen[i, j]):
+                                noise[i, j] = True
+            except Exception:  # noqa: BLE001
+                pass
+
         # Ensure at least one predictable token per non-empty row.
         for i in range(bsz):
             if frozen[i].all():
@@ -351,6 +439,18 @@ class TwoTowerModel(nn.Module):
     def _placeholder_ids(self) -> set[int]:
         if self._placeholder_token_ids is None:
             ids: set[int] = set()
+            try:
+                from slm_training.models.dsl_tokenizer import (
+                    TokenKind,
+                    is_dsl_native_tokenizer,
+                )
+
+                if is_dsl_native_tokenizer(self.tokenizer):
+                    ids |= self.tokenizer.kind_ids(TokenKind.SYM)
+                    self._placeholder_token_ids = ids
+                    return ids
+            except Exception:  # noqa: BLE001
+                pass
             for tok, tid in self.tokenizer.token_to_id.items():
                 if tok in {":", "."}:
                     ids.add(tid)
@@ -362,6 +462,67 @@ class TwoTowerModel(nn.Module):
                     ids.add(tid)
             self._placeholder_token_ids = ids
         return self._placeholder_token_ids
+
+    def _encode_openui(
+        self,
+        openui: str,
+        *,
+        placeholders: list[str] | None = None,
+        cache_key: str | None = None,
+    ) -> list[int]:
+        """Encode target OpenUI, optionally via lexer-native symbol table."""
+        try:
+            from slm_training.models.dsl_tokenizer import (
+                SymbolTable,
+                is_dsl_native_tokenizer,
+            )
+
+            if is_dsl_native_tokenizer(self.tokenizer):
+                use_sym = bool(getattr(self.config, "use_symbol_table", True))
+                table = SymbolTable.from_placeholders(
+                    placeholders, max_slots=self.tokenizer.sym_slots
+                )
+                if cache_key is not None:
+                    self._symbol_tables[cache_key] = table
+                return self.tokenizer.encode(
+                    openui,
+                    table=table,
+                    use_symbol_table=use_sym,
+                    placeholders=placeholders,
+                )
+        except Exception:  # noqa: BLE001
+            pass
+        return self.tokenizer.encode(openui)
+
+    def _decode_openui(
+        self,
+        ids_1d: torch.Tensor | list[int],
+        *,
+        placeholders: list[str] | None = None,
+        cache_key: str | None = None,
+    ) -> str:
+        token_ids = ids_1d.tolist() if isinstance(ids_1d, torch.Tensor) else list(ids_1d)
+        if self.tokenizer.eos_id in token_ids[1:]:
+            end = token_ids.index(self.tokenizer.eos_id, 1)
+            token_ids = token_ids[: end + 1]
+        try:
+            from slm_training.models.dsl_tokenizer import (
+                SymbolTable,
+                is_dsl_native_tokenizer,
+            )
+
+            if is_dsl_native_tokenizer(self.tokenizer):
+                table = None
+                if cache_key and cache_key in self._symbol_tables:
+                    table = self._symbol_tables[cache_key]  # type: ignore[assignment]
+                if table is None:
+                    table = SymbolTable.from_placeholders(
+                        placeholders, max_slots=self.tokenizer.sym_slots
+                    )
+                return self.tokenizer.decode(token_ids, table=table).strip()
+        except Exception:  # noqa: BLE001
+            pass
+        return self.tokenizer.decode(token_ids).strip()
 
     def forward(self, batch: list[ExampleRecord]) -> float:
         self.train()
@@ -395,7 +556,11 @@ class TwoTowerModel(nn.Module):
                 targets.append(self._target_ids_cache[key])
             else:
                 ids = _truncate_with_eos(
-                    self.tokenizer.encode(r.openui),
+                    self._encode_openui(
+                        r.openui,
+                        placeholders=list(r.placeholders or []),
+                        cache_key=key,
+                    ),
                     self.config.max_target_len,
                     self.tokenizer.eos_id,
                 )
@@ -444,10 +609,32 @@ class TwoTowerModel(nn.Module):
         fid_w = float(getattr(self.config, "fidelity_loss_weight", 0.0) or 0.0)
         if fid_w > 0.0 and predict_mask.any():
             ph_ids: set[int] = set()
-            for r in batch:
-                for ph in r.placeholders or []:
-                    for tid in self.tokenizer.encode(f'"{ph}"', add_special=False):
-                        ph_ids.add(tid)
+            try:
+                from slm_training.models.dsl_tokenizer import (
+                    SymbolTable,
+                    TokenKind,
+                    is_dsl_native_tokenizer,
+                )
+
+                if is_dsl_native_tokenizer(self.tokenizer):
+                    if bool(getattr(self.config, "use_symbol_table", True)):
+                        for r in batch:
+                            table = SymbolTable.from_placeholders(
+                                list(r.placeholders or []),
+                                max_slots=self.tokenizer.sym_slots,
+                            )
+                            for i, _ph in enumerate(table.placeholders):
+                                ph_ids.add(self.tokenizer.sym_id(i))
+                    else:
+                        ph_ids |= self.tokenizer.kind_ids(TokenKind.BYTE)
+                        ph_ids |= self.tokenizer.kind_ids(TokenKind.LIT)
+            except Exception:  # noqa: BLE001
+                pass
+            if not ph_ids:
+                for r in batch:
+                    for ph in r.placeholders or []:
+                        for tid in self.tokenizer.encode(f'"{ph}"', add_special=False):
+                            ph_ids.add(tid)
             if not ph_ids:
                 ph_ids = self._placeholder_ids()
             if ph_ids:
@@ -534,11 +721,14 @@ class TwoTowerModel(nn.Module):
             slot_contract=contract,
         )
     def _decode_ids(self, ids_1d: torch.Tensor) -> str:
-        token_ids = ids_1d.tolist()
-        if self.tokenizer.eos_id in token_ids[1:]:
-            end = token_ids.index(self.tokenizer.eos_id, 1)
-            token_ids = token_ids[: end + 1]
-        return self.tokenizer.decode(token_ids).strip()
+        placeholders = None
+        if self._slot_contracts:
+            # Best-effort: use first non-empty contract in the active batch.
+            for c in self._slot_contracts:
+                if c:
+                    placeholders = list(c)
+                    break
+        return self._decode_openui(ids_1d, placeholders=placeholders)
 
     @staticmethod
     def _canonical_valid_openui(text: str) -> str | None:
@@ -1215,7 +1405,9 @@ class TwoTowerModel(nn.Module):
         # E20: seed from slot-contract skeleton, remask binder/content positions.
         if bool(getattr(self.config, "template_fill_decode", False)) and slot_contract:
             template = build_slot_contract_template(slot_contract)
-            seed = self.tokenizer.encode(template)[:length]
+            seed = self._encode_openui(template, placeholders=list(slot_contract))[
+                :length
+            ]
             for i, tid in enumerate(seed):
                 ids[0, i] = int(tid)
             unknown[0, :] = False
@@ -1350,11 +1542,31 @@ class TwoTowerModel(nn.Module):
                     remask_ratio=remask_ratio,
                     protect_bos=True,
                 )
+                remask_span = str(getattr(self.config, "remask_span", "token") or "token")
+                expand_positions: set[tuple[int, int]] = set()
                 for idx in remask_flat:
                     b = idx // length
                     t = idx % length
                     if t == 0:
                         continue
+                    expand_positions.add((b, t))
+                    if remask_span == "statement":
+                        try:
+                            from slm_training.models.dsl_tokenizer import (
+                                is_dsl_native_tokenizer,
+                            )
+
+                            if is_dsl_native_tokenizer(self.tokenizer):
+                                span = self.tokenizer.spanning_statement(
+                                    ids[b].tolist(), t
+                                )
+                                if span is not None:
+                                    for tt in range(span[0], span[1]):
+                                        if tt != 0:
+                                            expand_positions.add((b, tt))
+                        except Exception:  # noqa: BLE001
+                            pass
+                for b, t in expand_positions:
                     ids[b, t] = self.tokenizer.mask_id
                     unknown[b, t] = True
 
@@ -1430,6 +1642,11 @@ class TwoTowerModel(nn.Module):
         }
         tok_path = path.with_suffix(".tokenizer.json")
         self.tokenizer.save(tok_path)
+        ctx_tok_name = None
+        if self.context_tokenizer is not self.tokenizer:
+            ctx_tok_path = path.with_name(path.stem + ".context.tokenizer.json")
+            self.context_tokenizer.save(ctx_tok_path)
+            ctx_tok_name = ctx_tok_path.name
         meta_path = path.with_suffix(".meta.json")
         meta_path.write_text(
             json.dumps(
@@ -1438,7 +1655,9 @@ class TwoTowerModel(nn.Module):
                     "config": asdict(self.config),
                     "gen_len": self.gen_len,
                     "tokenizer": str(tok_path.name),
+                    "context_tokenizer": ctx_tok_name,
                     "vocab_size": self.tokenizer.vocab_size,
+                    "context_vocab_size": self.context_tokenizer.vocab_size,
                     "context_backend": self.config.context_backend,
                     "hf_model_name": self.config.hf_model_name
                     if is_hf_context(self.context)
@@ -1461,7 +1680,12 @@ class TwoTowerModel(nn.Module):
             self.gen_len = int(payload["gen_len"])
         tok_path = path.with_suffix(".tokenizer.json")
         if tok_path.exists():
-            self.tokenizer = OpenUITokenizer.load(tok_path)
+            self.tokenizer = _load_any_tokenizer(tok_path)
+        ctx_tok_path = path.with_name(path.stem + ".context.tokenizer.json")
+        if ctx_tok_path.exists():
+            self.context_tokenizer = _load_any_tokenizer(ctx_tok_path)
+        else:
+            self.context_tokenizer = self.tokenizer
 
     @classmethod
     def from_checkpoint(
@@ -1474,7 +1698,11 @@ class TwoTowerModel(nn.Module):
         tok_path = path.with_suffix(".tokenizer.json")
         if not tok_path.exists():
             raise FileNotFoundError(f"missing tokenizer next to checkpoint: {tok_path}")
-        tokenizer = OpenUITokenizer.load(tok_path)
+        tokenizer = _load_any_tokenizer(tok_path)
+        ctx_tok_path = path.with_name(path.stem + ".context.tokenizer.json")
+        context_tokenizer = (
+            _load_any_tokenizer(ctx_tok_path) if ctx_tok_path.exists() else tokenizer
+        )
         raw_cfg = dict(payload.get("config") or {})
         if isinstance(raw_cfg.get("grammar_ltr_stages"), list):
             raw_cfg["grammar_ltr_stages"] = tuple(raw_cfg["grammar_ltr_stages"])
@@ -1483,7 +1711,12 @@ class TwoTowerModel(nn.Module):
         # Ignore unknown keys for forward/back compat
         valid = {f.name for f in TwoTowerConfig.__dataclass_fields__.values()}  # type: ignore[attr-defined]
         cfg = TwoTowerConfig(**{k: v for k, v in raw_cfg.items() if k in valid})
-        model = cls(tokenizer=tokenizer, config=cfg, device=device)
+        model = cls(
+            tokenizer=tokenizer,
+            config=cfg,
+            device=device,
+            context_tokenizer=context_tokenizer,
+        )
         _load_checkpoint_state(model, payload["state_dict"])
         if "gen_len" in payload:
             model.gen_len = int(payload["gen_len"])
@@ -1496,17 +1729,96 @@ class TwoTowerModel(nn.Module):
         config: TwoTowerConfig | None = None,
         device: str | torch.device = "cpu",
     ) -> TwoTowerModel:
-        texts = [r.prompt for r in records] + [r.openui for r in records]
-        tokenizer = OpenUITokenizer.build(texts)
         cfg = config or TwoTowerConfig()
-        max_prompt = max(
-            (len(tokenizer.encode(r.prompt)) for r in records), default=16
-        )
-        max_target = max(
-            (len(tokenizer.encode(r.openui)) for r in records), default=32
-        )
+        if _is_lexer_output(cfg):
+            from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+            tokenizer = DSLNativeTokenizer.build()
+            # Scratch context keeps a prompt-word tokenizer (decoupled).
+            ctx_texts = [r.prompt for r in records]
+            context_tokenizer = OpenUITokenizer.build(ctx_texts)
+            use_sym = bool(getattr(cfg, "use_symbol_table", True))
+            max_target = max(
+                (
+                    len(
+                        tokenizer.encode(
+                            r.openui,
+                            add_special=True,
+                            use_symbol_table=use_sym,
+                            placeholders=list(r.placeholders or []),
+                        )
+                    )
+                    for r in records
+                ),
+                default=32,
+            )
+            max_prompt = max(
+                (len(context_tokenizer.encode(r.prompt)) for r in records),
+                default=16,
+            )
+        else:
+            texts = [r.prompt for r in records] + [r.openui for r in records]
+            tokenizer = OpenUITokenizer.build(texts)
+            context_tokenizer = tokenizer
+            max_prompt = max(
+                (len(tokenizer.encode(r.prompt)) for r in records), default=16
+            )
+            max_target = max(
+                (len(tokenizer.encode(r.openui)) for r in records), default=32
+            )
         cfg.max_prompt_len = max(cfg.max_prompt_len, max_prompt + 4)
         cfg.max_target_len = max(cfg.max_target_len, max_target + 8)
-        model = cls(tokenizer=tokenizer, config=cfg, device=device)
+        model = cls(
+            tokenizer=tokenizer,
+            config=cfg,
+            device=device,
+            context_tokenizer=context_tokenizer,
+        )
         model.gen_len = max(max_target + 2, 16)
+        if bool(getattr(cfg, "teacher_init_embeddings", False)):
+            model._try_teacher_init_embeddings(records)
         return model
+
+    def _try_teacher_init_embeddings(self, records: list[ExampleRecord]) -> None:
+        """Initialize DSL symbol rows from a frozen HF teacher when available."""
+        try:
+            from slm_training.models.dsl_tokenizer import (
+                TokenKind,
+                is_dsl_native_tokenizer,
+            )
+
+            if not is_dsl_native_tokenizer(self.tokenizer):
+                return
+            if not is_hf_context(self.context):
+                return
+            assert isinstance(self.context, HFContextEncoder)
+            # Map component / fixed-string tokens to short textual glosses.
+            glosses: dict[int, str] = {}
+            for tid, tok in self.tokenizer.id_to_token.items():
+                kind = self.tokenizer.kind_of(tid)
+                if kind == TokenKind.COMPONENT:
+                    glosses[tid] = f"{tok} UI component"
+                elif kind == TokenKind.LIT and tok.startswith("STR:"):
+                    glosses[tid] = tok[4:]
+                elif kind == TokenKind.STRUCT and tok not in {"NL"}:
+                    glosses[tid] = f"punctuation {tok}"
+            if not glosses:
+                return
+            prompts = [glosses[i] for i in sorted(glosses)]
+            ids = sorted(glosses)
+            with torch.no_grad():
+                hidden, _ = self.context.forward_prompts(
+                    prompts,
+                    max_len=min(32, self.config.max_prompt_len),
+                    device=self.device_name,
+                )
+                # Mean-pool over sequence.
+                pooled = hidden.mean(dim=1)
+                if pooled.size(-1) != self.config.d_model:
+                    # Project if HF hidden size differs (should match d_model via adapter).
+                    return
+                weight = self.denoiser.tok.weight.data
+                for row, vec in zip(ids, pooled):
+                    weight[row].copy_(vec)
+        except Exception:  # noqa: BLE001
+            return

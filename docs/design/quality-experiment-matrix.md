@@ -218,7 +218,8 @@ Implementation order = table order (risk ascending). **E30** touches decode only
 (`twotower.py`, `parallel_decode.py`). **E31** needs frozen-backbone error
 mining. **E32** changes the train corruption graph. **E33** composes E30+E31
 signals with existing V3 remask. **E34** waits until cheaper remask policies
-saturate.
+saturate. Structural remask targets from V5 (`remask_span=statement`, `<SYM>`
+ids) make E30–E34 materially easier to ground on semantic units.
 
 ```text
 # FUTURE — no `--matrix v4` runner yet (do not copy-paste as a command).
@@ -226,6 +227,54 @@ saturate.
 #   python -m scripts.run_quality_matrix --matrix v4 --only E30 --device cpu \
 #     --seed-checkpoint outputs/runs/qx_e29_champion/checkpoints/last.pt
 ```
+
+## V5 matrix (DSL-native output tokenizer)
+
+Design: [dsl-native-tokenizer.md](dsl-native-tokenizer.md). Replaces the
+output-side string-piece tokenizer with a compiler-derived alphabet while
+keeping MaskGIT / remask architecture on **TwoTower**. Stages 3–4 (tree canvas /
+full production diffusion) are covered by the parallel **X matrix**
+`grammar_diffusion` plug-in below — not by swapping TwoTower encoding alone.
+
+| ID | Approach | Primary lever | Run id |
+| --- | --- | --- | --- |
+| E40 | Lexer-native only | Fixed terminals + literal channel (no `<SYM>`) | `qx_e40_lexnative` |
+| E41 | Symbol table | E40 + `<SYM_i>` / `<BIND_j>` + slot contract | `qx_e41_symtable` |
+| E42 | Factorized embeddings | E41 + `E_tok + E_kind` | `qx_e42_factorized` |
+| E43 | Exact grammar masks | Eval-only overlay on E41 (kind-authored `allowed_id_set`) | `qx_e43_exact_masks` |
+| E44 | Structural mask/remask | E41 + `mask_pattern=mixed` + `remask_span=statement` | `qx_e44_structmask` |
+| E45 | Teacher init | E41 + HF teacher-initialized symbol rows (skip without cache) | `qx_e45_teacher_init` |
+| E46 | V5 champion | E40+E41+E42+E44 + template fill + MDLM + remask + capacity | `qx_e46_champion` |
+
+```bash
+# Length diagnostic (compositional vs lexer)
+python -m scripts.diagnose_tokenizer --fixtures
+
+# V5 focused path
+python -m scripts.run_quality_matrix --matrix v5 --only E40,E41,E44,E46 \
+  --steps 80 --device cpu --context-backend scratch --no-design-md-context
+```
+
+## V5 measured results (CPU, scratch, 80 steps, fixture suites)
+
+See [quality-matrix-results.json](quality-matrix-results.json) (`matrix_set: v5`).
+Tokenizer diagnostic on `fixtures/train_seeds.jsonl`: compositional mean 72.6
+tokens → lexer+symtable **46.3** (ratio **0.64**); fixed output vocab **296**.
+
+| ID | Smoke parse | Smoke fid | Smoke reward | Notes |
+| --- | --- | --- | --- | --- |
+| E40 | 0.0 | 0.0 | 0.0 | literal-channel alone underfit at 80 steps |
+| E41 | 0.0 | 0.0 | 0.0 | struct≈0.47 — first structural lift without template |
+| E42 | 0.0 | 0.0 | 0.0 | factorized alone underfit at 80 steps |
+| E43 | 0.0 | 0.0 | 0.0 | matches E41 (eval overlay) |
+| E44 | 0.0 | 0.0 | 0.0 | **adv parse 0.25 / fid 0.25** — structural remask signal |
+| **E46** | **1.0** | **1.0** | **0.97** | fixture parse/fid/struct clear (held_out 0.6/1.0; adv/ood 1.0/1.0); fails only empty `rico_held` |
+
+**Headline:** the V5 champion (lexer-native + symbol table + factorized +
+structural remask + template fill) matches V3 E20/E29 fixture quality while
+shrinking target sequences ~36% and fixing the output alphabet. Isolating
+levers at 80 steps still underfits without template fill; E44’s adversarial
+lift supports statement-span remask before longer trains.
 
 ## X matrix (grammar-native diffusion ablations)
 

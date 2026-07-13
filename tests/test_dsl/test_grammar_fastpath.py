@@ -58,8 +58,9 @@ def test_pick_constrained_honors_forced_id() -> None:
     tok = _tok()
     equal_id = tok.token_to_id["="]
     logits = torch.zeros(tok.vocab_size)
-    # Make a wrong token look best so force must win.
-    wrong = tok.token_to_id.get("Card", equal_id)
+    # Prefer an illegal punctuation token as argmax so force must win.
+    # (NAME gluing like "root"+"Card"→"rootCard" is DFA-legal as a longer NAME.)
+    wrong = tok.token_to_id.get("]", equal_id)
     logits[wrong] = 10.0
     prefix = tok.encode("root", add_special=False)
     choice = pick_constrained_token(
