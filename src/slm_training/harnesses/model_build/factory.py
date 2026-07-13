@@ -45,9 +45,15 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "use_amp",
         "use_compile",
         "compile_mode",
+        "grammar_dsl",
     ):
         if hasattr(config, key) and hasattr(cfg, key):
             setattr(cfg, key, getattr(config, key))
+    # Decode quality defaults often wanted at eval time.
+    if getattr(config, "grammar_ltr_repair", False) and hasattr(cfg, "grammar_ltr_repair"):
+        cfg.grammar_ltr_repair = True
+    if int(getattr(config, "best_of_n", 1) or 1) > 1 and hasattr(cfg, "best_of_n"):
+        cfg.best_of_n = int(config.best_of_n)
     if int(getattr(config, "retrieval_k", 0) or 0) > 0 and hasattr(model, "skeleton_bank"):
         try:
             from slm_training.harnesses.model_build.data import load_train_records

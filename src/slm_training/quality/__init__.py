@@ -127,16 +127,13 @@ def strip_adv_placeholders(openui: str) -> str:
 
 
 def sanitize_curriculum_record(record: ExampleRecord, *, stage: str | None = None) -> ExampleRecord:
-    """Tag stage and strip `:adv.*` placeholders from non-C records."""
+    """Tag stage and always strip `:adv.*` namespaces to prevent smoke leakage."""
     stage = stage or tag_curriculum_stage(record)
-    openui = record.openui
-    placeholders = list(record.placeholders or [])
-    if stage != "C":
-        openui = strip_adv_placeholders(openui)
-        placeholders = [
-            p.replace(":adv.", ":item.") if p.startswith(":adv.") else p
-            for p in placeholders
-        ]
+    openui = strip_adv_placeholders(record.openui)
+    placeholders = [
+        p.replace(":adv.", ":item.") if p.startswith(":adv.") else p
+        for p in list(record.placeholders or [])
+    ]
     meta = {**dict(record.meta or {}), "curriculum": stage}
     return ExampleRecord(
         id=record.id,

@@ -83,9 +83,14 @@ See [quality-matrix-results.json](quality-matrix-results.json). Headline deltas 
 
 \*E9 emits `:adv.*` placeholders on smoke prompts — curriculum overfit. Still the first strong fidelity signal.
 
-**None clear honest `--ship-gates`.** Next levers implemented in-repo:
+**None clear honest `--ship-gates`.** Implemented follow-ups (see [phase-abc-results.json](phase-abc-results.json)):
 
-1. **E9b** — soft curriculum mix (always ≥30% B), strip `:adv.*` on non-C records, fidelity aux + schema + LTR repair.
-2. **E10** — GRPO-lite online RL (`scripts/train_rl.py`) with structure-only `composite_reward`.
-3. **Telemetry** — `train_telemetry.json` / `scripts/bench_telemetry.py` span rankings for train/infer bottlenecks.
-4. Longer **HF + DESIGN.md** trains with `--fast-train` and `--eval-suites smoke,held_out`.
+| Stage | Result |
+| --- | --- |
+| **E9b / Phase A** | Soft mix + fidelity aux: **adv parse 0.50 / fid 0.65 / struct 0.48** (adversarial gates met). Smoke still parse/fid 0. |
+| **Phase B** | Soft-corrupt preference: adv fid up to **0.77**, parse down to 0.25 — did not beat SFT champion score. |
+| **Phase C** | Stable GRPO-lite (skip zero-reward groups, restore best-reward weights) matched SFT champion; did not clear ship. |
+| **HF long-train** | Deferred offline — no SmolLM2 hub cache in this environment. |
+
+Pipeline: `python -m scripts.run_phase_pipeline --seed-checkpoint outputs/runs/qx_e9_accel_combo/checkpoints/last.pt`  
+Telemetry: train/eval spans show generate/eval dominating wall time; use `scripts/bench_telemetry.py`.

@@ -186,7 +186,7 @@ def _base_experiments(
         Experiment(
             "E10",
             "qx_e10_grpo",
-            "GRPO-lite RL on structure-only reward after E9b-style SFT",
+            "Preference soft-pairs then GRPO-lite RL (seeds from E9b when present)",
             train_cur,
             fidelity_loss_weight=1.0,
             schema_in_context=True,
@@ -194,7 +194,9 @@ def _base_experiments(
             mix_curriculum=True,
             grammar_ltr_repair=True,
             best_of_n=4,
+            preference=True,
             rl=True,
+            eval_from_run="qx_e9b_fidelity_antileak",
             design_md_in_context=design_md_in_context,
         ),
     ]

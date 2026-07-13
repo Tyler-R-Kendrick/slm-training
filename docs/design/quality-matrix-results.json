@@ -1,7 +1,7 @@
 {
   "matrix": "quality-experiment-matrix",
   "reference": "docs/design/quality-experiment-matrix.md",
-  "evaluated_at": "2026-07-13T13:22:00.555502+00:00",
+  "evaluated_at": "2026-07-13T14:40:07.094690+00:00",
   "settings": {
     "steps": 800,
     "context_backend": "scratch",
@@ -43,7 +43,11 @@
     "No run clears honest ship gates \u2014 fidelity remains the hard blocker on seed; fresh trains need more steps/HF for smoke",
     "E9 accel combo: adversarial parse 0.75 / fidelity 0.875 / struct 0.895 \u2014 first real fidelity win",
     "E9 overfit curriculum-C adversarial into smoke (adv.* placeholders) \u2014 need stage mixing / anti-leakage",
-    "CPU accel: 3 threads, grad_accum=2, adaptive unmask; torch.compile deferred (no Python.h for inductor)"
+    "CPU accel: 3 threads, grad_accum=2, adaptive unmask; torch.compile deferred (no Python.h for inductor)",
+    "E9b/Phase A anti-leak soft-mix: adversarial parse 0.5 / fidelity 0.65 / struct 0.48 (meets adversarial gates); smoke still parse/fid 0",
+    "Phase B soft-pref: higher adv fidelity (0.77) but lower parse (0.25); did not beat SFT champion score",
+    "Phase C GRPO-lite: best-reward restore matched SFT champion; rollout dominates telemetry (~32%)",
+    "HF long-train still blocked offline (no SmolLM2 cache); scratch path completed via scripts/run_phase_pipeline.py"
   ],
   "ship_reference": {
     "id": "SHIP",
@@ -691,5 +695,24 @@
         "note": "user-preferred"
       }
     }
-  ]
+  ],
+  "phase_abc": {
+    "reference": "docs/design/phase-abc-results.json",
+    "champion_run": "outputs/runs/phase_abc_complete",
+    "adversarial": {
+      "parse_rate": 0.5,
+      "placeholder_fidelity": 0.6458333333333334,
+      "structural_similarity": 0.47875,
+      "reward_score": 0.33225000000000005,
+      "n": 4
+    },
+    "smoke": {
+      "parse_rate": 0.0,
+      "placeholder_fidelity": 0.0,
+      "structural_similarity": 0.6430666666666667,
+      "reward_score": 0.0,
+      "n": 3
+    },
+    "pass": false
+  }
 }

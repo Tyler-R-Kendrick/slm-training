@@ -20,11 +20,13 @@ from slm_training.telemetry import CycleTelemetry, bind_telemetry, timed
 class GRPOConfig:
     group_size: int = 4
     steps: int = 50
-    lr: float = 1e-4
-    kl_beta: float = 0.05
+    lr: float = 1e-5
+    kl_beta: float = 0.02
     parse_bonus: float = 0.1
     batch_prompts: int = 2
     seed: int = 0
+    min_reward_std: float = 1e-3
+    max_grad_norm: float = 0.5
 
 
 def structure_reward(
@@ -48,32 +50,35 @@ def grpo_loss_for_group(
     *,
     design_md: str | None = None,
     ref_model: TwoTowerModel | None = None,
-    kl_beta: float = 0.05,
-) -> torch.Tensor:
+    kl_beta: float = 0.02,
+) -> torch.Tensor | None:
     """
     Group-relative policy gradient on teacher-forced log-probs.
 
-    advantage_i = r_i - mean(r); loss = mean(-adv * logp(y_i)) + optional KL to ref.
+    Returns None when the group has no usable reward signal (skip update).
     """
     if len(completions) < 2:
-        raise ValueError("GRPO group needs ≥2 completions")
+        return None
     mean_r = sum(rewards) / len(rewards)
     advantages = [float(r) - mean_r for r in rewards]
-    # Normalize by std when non-degenerate.
-    var = sum((a - 0.0) ** 2 for a in advantages) / len(advantages)
+    var = sum(a * a for a in advantages) / len(advantages)
     std = var**0.5
-    if std > 1e-6:
-        advantages = [a / std for a in advantages]
+    if std < 1e-6 or mean_r <= 0.0:
+        return None
+    advantages = [a / std for a in advantages]
 
     losses: list[torch.Tensor] = []
     for comp, adv in zip(completions, advantages):
+        if abs(adv) < 1e-6:
+            continue
         lp = _logprob_of_target(model, prompt, comp, design_md)
         losses.append(-float(adv) * lp)
         if ref_model is not None and kl_beta > 0.0:
             with torch.no_grad():
                 ref_lp = _logprob_of_target(ref_model, prompt, comp, design_md)
-            # Approximate token-mean KL via logp gap.
             losses.append(kl_beta * (lp - ref_lp).pow(2))
+    if not losses:
+        return None
     return torch.stack(losses).mean()
 
 
@@ -94,17 +99,20 @@ def train_grpo(
 
     tel = CycleTelemetry(
         enabled=True,
-        meta={"algo": "grpo-lite", "group_size": cfg.group_size},
+        meta={"algo": "grpo-lite", "group_size": cfg.group_size, "lr": cfg.lr},
     )
     opt = torch.optim.AdamW(model.trainable_parameters(), lr=cfg.lr)
     history: list[dict[str, Any]] = []
-    # Prefer LTR for fast on-policy rollouts.
     model.config.grammar_ltr_primary = True
     model.config.best_of_n = 1
+    model.config.grammar_ltr_repair = True
 
     import random
 
     rng = random.Random(cfg.seed)
+    best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+    best_reward = -1.0
+    skipped = 0
 
     with bind_telemetry(tel):
         for step in range(cfg.steps):
@@ -115,6 +123,7 @@ def train_grpo(
             step_losses: list[float] = []
             step_rewards: list[float] = []
             opt.zero_grad(set_to_none=True)
+            did_backward = False
             for record in batch:
                 with timed("rollout"):
                     prev_train = model.training
@@ -144,20 +153,39 @@ def train_grpo(
                         ref_model=ref_model,
                         kl_beta=cfg.kl_beta if ref_model is not None else 0.0,
                     )
+                if loss is None:
+                    skipped += 1
+                    continue
                 with timed("backward"):
                     (loss / len(batch)).backward()
+                    did_backward = True
                 step_losses.append(float(loss.detach().cpu()))
-            with timed("optim_step"):
-                torch.nn.utils.clip_grad_norm_(list(model.trainable_parameters()), 1.0)
-                opt.step()
-            row = {
-                "step": step + 1,
-                "loss": sum(step_losses) / max(1, len(step_losses)),
-                "reward_mean": sum(step_rewards) / max(1, len(step_rewards)),
-                "reward_max": max(step_rewards) if step_rewards else 0.0,
-            }
-            history.append(row)
+            mean_r = sum(step_rewards) / max(1, len(step_rewards))
+            if did_backward:
+                with timed("optim_step"):
+                    torch.nn.utils.clip_grad_norm_(
+                        list(model.trainable_parameters()), cfg.max_grad_norm
+                    )
+                    opt.step()
+            if mean_r >= best_reward:
+                best_reward = mean_r
+                best_state = {
+                    k: v.detach().cpu().clone() for k, v in model.state_dict().items()
+                }
+            history.append(
+                {
+                    "step": step + 1,
+                    "loss": (
+                        sum(step_losses) / max(1, len(step_losses)) if step_losses else None
+                    ),
+                    "reward_mean": mean_r,
+                    "reward_max": max(step_rewards) if step_rewards else 0.0,
+                    "updated": did_backward,
+                }
+            )
 
+    # Restore best-on-reward weights (protect against collapse).
+    model.load_state_dict(best_state)
     ckpt = out_dir / "model.pt"
     model.save(ckpt)
     tel_path = tel.write(out_dir / "rl_telemetry.json")
@@ -165,8 +193,11 @@ def train_grpo(
         "algo": "grpo-lite",
         "steps": cfg.steps,
         "group_size": cfg.group_size,
+        "lr": cfg.lr,
         "kl_beta": cfg.kl_beta if ref_model is not None else 0.0,
         "reference_free": ref_model is None,
+        "skipped_groups": skipped,
+        "best_reward_mean": best_reward,
         "last_loss": history[-1]["loss"] if history else None,
         "last_reward_mean": history[-1]["reward_mean"] if history else None,
         "history": history,
@@ -174,8 +205,8 @@ def train_grpo(
         "telemetry": tel.summary(),
         "telemetry_path": str(tel_path),
         "note": (
-            "On-policy group-relative updates on teacher-forced log-probs; "
-            "structure-only composite_reward; no value head."
+            "On-policy group-relative updates; skips zero-variance / zero-reward "
+            "groups; restores best-reward weights at end."
         ),
     }
     (out_dir / "rl_summary.json").write_text(
@@ -194,8 +225,8 @@ def train_grpo_from_paths(
     device: str = "cpu",
     ref_checkpoint: Path | None = None,
     limit: int | None = 64,
-    kl_beta: float = 0.05,
-    lr: float = 1e-4,
+    kl_beta: float = 0.02,
+    lr: float = 1e-5,
 ) -> dict[str, Any]:
     model = TwoTowerModel.from_checkpoint(checkpoint, device=device)
     records = load_jsonl(train_records)

@@ -54,7 +54,7 @@ def train_preference(
     pairs: list[PreferencePair],
     *,
     steps: int = 50,
-    lr: float = 1e-4,
+    lr: float = 5e-5,
     beta: float = 0.1,
 ) -> dict:
     if not pairs:
