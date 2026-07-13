@@ -10,6 +10,12 @@ from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.harnesses.model_build.plugin import ModelPlugin, StubModel
 
 
+def _resolve_freeze_context(backend: str, requested: bool) -> bool:
+    """Honor the caller's freeze choice for every context backend."""
+    _ = backend
+    return bool(requested)
+
+
 def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
     """Apply eval/train decode + conditioning overrides onto a loaded plugin."""
     # Activate the selected grammar / DSL backend for constrained decode.
@@ -28,6 +34,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "structural_bias",
         "grammar_ltr_repair",
         "grammar_ltr_max_tokens",
+        "grammar_ltr_stages",
         "grammar_ltr_primary",
         "grammar_finalize_validate",
         "design_md_budget",
@@ -39,6 +46,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "best_of_n",
         "fidelity_loss_weight",
         "ltr_loss_weight",
+        "gen_steps",
         "parallel_unmask",
         "remask_ratio",
         "mdlm_schedule",
@@ -46,6 +54,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "cache_context",
         "fuse_ltr_loss",
         "grammar_fastpath",
+        "grammar_fastpath_mode",
         "fastpath_aux_weight",
         "grammar_prefer_structural",
         "grammar_trust_model",
@@ -64,6 +73,10 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "statement_mask_prob",
         "remask_span",
         "teacher_init_embeddings",
+        "block_size",
+        "production_loss_weight",
+        "slot_loss_weight",
+        "confidence_loss_weight",
     ):
         if hasattr(config, key) and hasattr(cfg, key):
             setattr(cfg, key, getattr(config, key))
@@ -89,6 +102,82 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
     return model
 
 
+def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
+    from slm_training.models.twotower import TwoTowerConfig
+
+    backend = (config.context_backend or "scratch").lower()
+    freeze = _resolve_freeze_context(backend, config.freeze_context)
+    ltr_stages = getattr(config, "grammar_ltr_stages", None)
+    if ltr_stages is None:
+        ltr_stages = (64, 128, 192, 256)
+    return TwoTowerConfig(
+        d_model=config.d_model,
+        n_heads=config.n_heads,
+        context_layers=config.context_layers,
+        denoiser_layers=config.denoiser_layers,
+        mask_min=config.mask_min,
+        mask_max=config.mask_max,
+        gen_steps=config.gen_steps,
+        context_backend=backend,
+        hf_model_name=config.hf_model_name,
+        freeze_context=freeze,
+        local_files_only=config.local_files_only,
+        grammar_constrained=config.grammar_constrained,
+        grammar_top_k=config.grammar_top_k,
+        structural_bias=config.structural_bias,
+        grammar_ltr_repair=config.grammar_ltr_repair,
+        grammar_ltr_max_tokens=config.grammar_ltr_max_tokens,
+        grammar_ltr_stages=tuple(ltr_stages),
+        grammar_finalize_validate=getattr(config, "grammar_finalize_validate", False),
+        ltr_loss_weight=getattr(config, "ltr_loss_weight", 0.5),
+        fidelity_loss_weight=getattr(config, "fidelity_loss_weight", 0.0),
+        grammar_ltr_primary=config.grammar_ltr_primary,
+        design_md_in_context=(
+            True
+            if config.design_md_in_context is None
+            else bool(config.design_md_in_context)
+        ),
+        design_md_budget=config.design_md_budget,
+        schema_in_context=getattr(config, "schema_in_context", False),
+        slot_contract_in_context=getattr(config, "slot_contract_in_context", False),
+        slot_contract_constrained_decode=getattr(
+            config, "slot_contract_constrained_decode", False
+        ),
+        template_fill_decode=getattr(config, "template_fill_decode", False),
+        retrieval_k=getattr(config, "retrieval_k", 0),
+        best_of_n=getattr(config, "best_of_n", 1),
+        parallel_unmask=getattr(config, "parallel_unmask", "adaptive"),
+        remask_ratio=float(getattr(config, "remask_ratio", 0.0) or 0.0),
+        mdlm_schedule=bool(getattr(config, "mdlm_schedule", False)),
+        mdlm_eps=float(getattr(config, "mdlm_eps", 1e-3) or 1e-3),
+        use_compile=getattr(config, "use_compile", False),
+        compile_mode=getattr(config, "compile_mode", "default"),
+        use_amp=getattr(config, "use_amp", False),
+        cache_context=getattr(config, "cache_context", True),
+        fuse_ltr_loss=getattr(config, "fuse_ltr_loss", True),
+        grammar_fastpath=getattr(config, "grammar_fastpath", True),
+        grammar_fastpath_mode=getattr(config, "grammar_fastpath_mode", "hybrid"),
+        fastpath_aux_weight=getattr(config, "fastpath_aux_weight", 0.0),
+        grammar_prefer_structural=getattr(config, "grammar_prefer_structural", True),
+        grammar_trust_model=getattr(config, "grammar_trust_model", False),
+        grammar_sample_decode=getattr(config, "grammar_sample_decode", False),
+        grammar_sample_temperature=getattr(config, "grammar_sample_temperature", 0.8),
+        grammar_block_decode=getattr(config, "grammar_block_decode", False),
+        grammar_block_size=getattr(config, "grammar_block_size", 32),
+        output_tokenizer=getattr(config, "output_tokenizer", "compositional"),
+        use_symbol_table=getattr(config, "use_symbol_table", True),
+        factorized_embeddings=getattr(config, "factorized_embeddings", False),
+        mask_pattern=getattr(config, "mask_pattern", "random"),
+        statement_mask_prob=float(
+            getattr(config, "statement_mask_prob", 0.35) or 0.35
+        ),
+        remask_span=getattr(config, "remask_span", "token"),
+        teacher_init_embeddings=getattr(config, "teacher_init_embeddings", False),
+        seed=config.seed,
+    )
+
+
+
 def build_model(
     config: ModelBuildConfig,
     records: list[ExampleRecord],
@@ -107,23 +196,24 @@ def build_model(
             model.load(checkpoint)
         return model
 
-    if name in {"twotower", "two_tower", "two-tower"}:
-        from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
+    if name in {"grammar_diffusion", "grammar-diffusion", "grammardiffusion"}:
+        from slm_training.models.grammar_diffusion import (
+            GrammarDiffusionConfig,
+            GrammarDiffusionModel,
+        )
 
         if checkpoint and checkpoint.exists():
-            loaded = TwoTowerModel.from_checkpoint(checkpoint, device=config.device)
+            loaded = GrammarDiffusionModel.from_checkpoint(checkpoint, device=config.device)
             return apply_runtime_overrides(loaded, config)
 
         backend = (config.context_backend or "scratch").lower()
-        freeze = config.freeze_context
-        if backend in {"hf", "huggingface", "transformers"} and not freeze:
-            # Match CLI: HF freezes by default unless explicitly disabled.
-            freeze = True
-        tt_cfg = TwoTowerConfig(
+        freeze = _resolve_freeze_context(backend, config.freeze_context)
+        gd_cfg = GrammarDiffusionConfig(
             d_model=config.d_model,
             n_heads=config.n_heads,
             context_layers=config.context_layers,
             denoiser_layers=config.denoiser_layers,
+            block_size=getattr(config, "block_size", 4),
             mask_min=config.mask_min,
             mask_max=config.mask_max,
             gen_steps=config.gen_steps,
@@ -131,59 +221,34 @@ def build_model(
             hf_model_name=config.hf_model_name,
             freeze_context=freeze,
             local_files_only=config.local_files_only,
-            grammar_constrained=config.grammar_constrained,
-            grammar_top_k=config.grammar_top_k,
-            structural_bias=config.structural_bias,
-            grammar_ltr_repair=config.grammar_ltr_repair,
-            grammar_ltr_max_tokens=config.grammar_ltr_max_tokens,
-            grammar_finalize_validate=getattr(config, "grammar_finalize_validate", False),
-            ltr_loss_weight=getattr(config, "ltr_loss_weight", 0.5),
-            fidelity_loss_weight=getattr(config, "fidelity_loss_weight", 0.0),
-            grammar_ltr_primary=config.grammar_ltr_primary,
+            grammar_dsl=getattr(config, "grammar_dsl", "openui"),
+            parallel_unmask=getattr(config, "parallel_unmask", "adaptive"),
+            production_loss_weight=getattr(config, "production_loss_weight", 1.0),
+            slot_loss_weight=getattr(config, "slot_loss_weight", 0.5),
+            confidence_loss_weight=getattr(config, "confidence_loss_weight", 0.25),
             design_md_in_context=(
-                True
+                False
                 if config.design_md_in_context is None
                 else bool(config.design_md_in_context)
             ),
             design_md_budget=config.design_md_budget,
             schema_in_context=getattr(config, "schema_in_context", False),
-            slot_contract_in_context=getattr(config, "slot_contract_in_context", False),
+            slot_contract_in_context=getattr(config, "slot_contract_in_context", True),
             slot_contract_constrained_decode=getattr(
-                config, "slot_contract_constrained_decode", False
+                config, "slot_contract_constrained_decode", True
             ),
-            template_fill_decode=getattr(config, "template_fill_decode", False),
-            retrieval_k=getattr(config, "retrieval_k", 0),
-            best_of_n=getattr(config, "best_of_n", 1),
-            parallel_unmask=getattr(config, "parallel_unmask", "adaptive"),
-            remask_ratio=float(getattr(config, "remask_ratio", 0.0) or 0.0),
-            mdlm_schedule=bool(getattr(config, "mdlm_schedule", False)),
-            mdlm_eps=float(getattr(config, "mdlm_eps", 1e-3) or 1e-3),
-            use_compile=getattr(config, "use_compile", False),
-            compile_mode=getattr(config, "compile_mode", "default"),
-            use_amp=getattr(config, "use_amp", False),
-            cache_context=getattr(config, "cache_context", True),
-            fuse_ltr_loss=getattr(config, "fuse_ltr_loss", True),
-            grammar_fastpath=getattr(config, "grammar_fastpath", True),
-            fastpath_aux_weight=getattr(config, "fastpath_aux_weight", 0.0),
-            grammar_prefer_structural=getattr(config, "grammar_prefer_structural", True),
-            grammar_trust_model=getattr(config, "grammar_trust_model", False),
-            grammar_sample_decode=getattr(config, "grammar_sample_decode", False),
-            grammar_sample_temperature=getattr(
-                config, "grammar_sample_temperature", 0.8
-            ),
-            grammar_block_decode=getattr(config, "grammar_block_decode", False),
-            grammar_block_size=getattr(config, "grammar_block_size", 32),
-            output_tokenizer=getattr(config, "output_tokenizer", "compositional"),
-            use_symbol_table=getattr(config, "use_symbol_table", True),
-            factorized_embeddings=getattr(config, "factorized_embeddings", False),
-            mask_pattern=getattr(config, "mask_pattern", "random"),
-            statement_mask_prob=float(
-                getattr(config, "statement_mask_prob", 0.35) or 0.35
-            ),
-            remask_span=getattr(config, "remask_span", "token"),
-            teacher_init_embeddings=getattr(config, "teacher_init_embeddings", False),
             seed=config.seed,
         )
+        return GrammarDiffusionModel.from_records(records, config=gd_cfg, device=config.device)
+
+    if name in {"twotower", "two_tower", "two-tower"}:
+        from slm_training.models.twotower import TwoTowerModel
+
+        if checkpoint and checkpoint.exists():
+            loaded = TwoTowerModel.from_checkpoint(checkpoint, device=config.device)
+            return apply_runtime_overrides(loaded, config)
+
+        tt_cfg = _twotower_config_from_build(config)
         model = TwoTowerModel.from_records(records, config=tt_cfg, device=config.device)
         if int(getattr(config, "retrieval_k", 0) or 0) > 0:
             from slm_training.retrieval import build_skeleton_bank
