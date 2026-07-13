@@ -220,14 +220,17 @@ def evaluate(
     latencies: list[float] = []
     details: list[dict] = []
 
-    for record in records:
-        t0 = time.perf_counter()
-        # Pass gold for DESIGN.md context when the model supports it.
-        try:
-            pred = plugin.generate(record.prompt, gold=record)
-        except TypeError:
-            pred = plugin.generate(record.prompt, gold=None)
-        latencies.append((time.perf_counter() - t0) * 1000.0)
+    batch_size = 1
+    generate_batch = getattr(plugin, "generate_batch", None)
+    if callable(generate_batch):
+        batch_size = max(
+            1,
+            int(getattr(getattr(plugin, "config", None), "generate_batch_size", 8) or 8),
+        )
+
+    def _score_one(record: ExampleRecord, pred: str, latency_ms: float) -> None:
+        nonlocal parse_ok, fidelity_sum, validity_sum, exact_sum, struct_sum
+        nonlocal reward_sum, recall_sum
         ok, error, serialized = _is_meaningful_program(pred, gold=record)
         scored_pred = serialized or pred
         if ok:
@@ -259,13 +262,40 @@ def evaluate(
                 "component_type_recall": recall,
                 "reward_score": reward,
                 "gold_design_lint_score": gold_dscore,
-                # Back-compat alias — gold context only, not model skill.
                 "design_lint_score": gold_dscore,
-                "latency_ms": round(latencies[-1], 2),
+                "latency_ms": round(latency_ms, 2),
                 "prediction": pred[:500],
                 "serialized": (serialized or "")[:500] if serialized else None,
             }
         )
+
+    if batch_size > 1 and callable(generate_batch):
+        for start in range(0, n, batch_size):
+            chunk = records[start : start + batch_size]
+            t0 = time.perf_counter()
+            try:
+                preds = generate_batch(
+                    [r.prompt for r in chunk],
+                    golds=chunk,
+                )
+            except TypeError:
+                preds = [
+                    plugin.generate(r.prompt, gold=r) for r in chunk
+                ]
+            elapsed = (time.perf_counter() - t0) * 1000.0
+            per = elapsed / max(1, len(chunk))
+            for record, pred in zip(chunk, preds):
+                latencies.append(per)
+                _score_one(record, pred, per)
+    else:
+        for record in records:
+            t0 = time.perf_counter()
+            try:
+                pred = plugin.generate(record.prompt, gold=record)
+            except TypeError:
+                pred = plugin.generate(record.prompt, gold=None)
+            latencies.append((time.perf_counter() - t0) * 1000.0)
+            _score_one(record, pred, latencies[-1])
 
     lat_sorted = sorted(latencies)
     p50 = lat_sorted[len(lat_sorted) // 2] if lat_sorted else None

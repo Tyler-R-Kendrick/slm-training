@@ -50,6 +50,15 @@ class StubModel:
             return self.memory[prompt]
         return 'root = Stack([missing])\nmissing = TextContent(":stub.missing")'
 
+    def generate_batch(
+        self,
+        prompts: list[str],
+        golds: list[ExampleRecord | None] | None = None,
+        **_kwargs: object,
+    ) -> list[str]:
+        _ = golds
+        return [self.generate(p) for p in prompts]
+
     def save(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         payload = {

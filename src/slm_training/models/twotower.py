@@ -74,7 +74,12 @@ class TwoTowerConfig:
     grammar_ltr_max_tokens: int = 64
     # Progressive LTR canvases (short first). Typical programs finish in the
     # first stage so we avoid O(T²) cost of a full max-length canvas.
-    grammar_ltr_stages: tuple[int, ...] = (48, 96)
+    grammar_ltr_stages: tuple[int, ...] = (32, 48, 96)
+    # Finalize LTR text with Node validate (adds ~1–2ms). Off by default —
+    # eval already validates via meaningful-parse.
+    grammar_finalize_validate: bool = False
+    # Eval / throughput: batch size for generate_batch.
+    generate_batch_size: int = 16
     # When True and grammar_constrained, skip MaskGIT and decode LTR only.
     grammar_ltr_primary: bool = False
     # Mix teacher-forced next-token CE into training (helps LTR generate).
@@ -281,91 +286,150 @@ class TwoTowerModel(nn.Module):
                 break
         return ids
 
-    def _greedy_ltr_decode(
-        self,
-        ctx: torch.Tensor,
-        ctx_pad: torch.Tensor,
-        length: int,
-    ) -> torch.Tensor:
-        """
-        Left-to-right argmax decode with structural bias (no stream probes).
-
-        Uses progressive canvas sizes so short programs do not pay the full
-        max-length transformer cost on every step.
-        """
-        stages = [
-            s
-            for s in self.config.grammar_ltr_stages
-            if 1 < s <= length
-        ]
+    def _ltr_canvases(self, length: int) -> list[int]:
+        stages = [s for s in self.config.grammar_ltr_stages if 1 < s <= length]
         if not stages or stages[-1] != length:
             stages = [*stages, length] if stages else [length]
-        # Dedupe while preserving order.
         seen: set[int] = set()
         canvases: list[int] = []
         for s in stages:
             if s not in seen:
                 seen.add(s)
                 canvases.append(s)
+        return canvases
+
+    def _greedy_ltr_decode(
+        self,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor,
+        length: int,
+    ) -> torch.Tensor:
+        """Left-to-right argmax decode (batch size 1 wrapper)."""
+        return self._greedy_ltr_decode_batch(ctx, ctx_pad, length)
+
+    def _greedy_ltr_decode_batch(
+        self,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor,
+        length: int,
+    ) -> torch.Tensor:
+        """
+        Batched LTR argmax decode with progressive canvases.
+
+        Finished sequences (EOS) are padded and skipped; remaining rows share
+        transformer forwards — large win for eval throughput.
+        """
+        bsz = int(ctx.size(0))
+        device = self.device_name
+        tok = self.tokenizer
+        bias = float(self.config.structural_bias or 0.0)
+        canvases = self._ltr_canvases(length)
 
         ids: torch.Tensor | None = None
+        active = torch.ones(bsz, dtype=torch.bool, device=device)
         start_t = 1
-        bias = float(self.config.structural_bias or 0.0)
 
         for canvas in canvases:
             if ids is None:
                 ids = torch.full(
-                    (1, canvas),
-                    self.tokenizer.mask_id,
+                    (bsz, canvas),
+                    tok.mask_id,
                     dtype=torch.long,
-                    device=self.device_name,
+                    device=device,
                 )
-                ids[0, 0] = self.tokenizer.bos_id
+                ids[:, 0] = tok.bos_id
             else:
                 extra = canvas - ids.size(1)
                 if extra > 0:
                     pad = torch.full(
-                        (1, extra),
-                        self.tokenizer.mask_id,
+                        (bsz, extra),
+                        tok.mask_id,
                         dtype=torch.long,
-                        device=self.device_name,
+                        device=device,
                     )
+                    # Finished sequences should stay padded, not re-masked.
+                    if (~active).any():
+                        pad = pad.clone()
+                        pad[~active] = tok.pad_id
                     ids = torch.cat([ids, pad], dim=1)
 
             for t in range(start_t, canvas):
-                logits = self.denoiser(
-                    ids, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
-                )
-                if bias:
-                    logits = apply_structural_bias(
-                        logits,
-                        self.tokenizer,
-                        bias=bias,
+                if not bool(active.any()):
+                    break
+                active_idx = active.nonzero(as_tuple=False).flatten()
+                if active_idx.numel() == bsz:
+                    logits = self.denoiser(
+                        ids, ctx, pad_id=tok.pad_id, ctx_pad_mask=ctx_pad
                     )
-                logits = logits.clone()
-                logits[0, t, self.tokenizer.mask_id] = -1e9
-                logits[0, t, self.tokenizer.pad_id] = -1e9
-                tok = int(logits[0, t].argmax().item())
-                ids[0, t] = tok
-                if tok == self.tokenizer.eos_id:
-                    if t + 1 < canvas:
-                        ids[0, t + 1 :] = self.tokenizer.pad_id
-                    return ids
+                    if bias:
+                        logits = apply_structural_bias(logits, tok, bias=bias)
+                    row = logits[:, t, :].clone()
+                else:
+                    sub_ids = ids.index_select(0, active_idx)
+                    sub_ctx = ctx.index_select(0, active_idx)
+                    sub_pad = ctx_pad.index_select(0, active_idx)
+                    logits = self.denoiser(
+                        sub_ids, sub_ctx, pad_id=tok.pad_id, ctx_pad_mask=sub_pad
+                    )
+                    if bias:
+                        logits = apply_structural_bias(logits, tok, bias=bias)
+                    row = torch.full(
+                        (bsz, logits.size(-1)),
+                        -1e9,
+                        device=device,
+                        dtype=logits.dtype,
+                    )
+                    row.index_copy_(0, active_idx, logits[:, t, :])
+                row = row.clone()
+                row[:, tok.mask_id] = -1e9
+                row[:, tok.pad_id] = -1e9
+                pred = row.argmax(dim=-1)
+                ids[:, t] = torch.where(active, pred, ids[:, t])
+                hit_eos = active & pred.eq(tok.eos_id)
+                if bool(hit_eos.any()) and t + 1 < canvas:
+                    for b in hit_eos.nonzero(as_tuple=False).flatten().tolist():
+                        ids[b, t + 1 :] = tok.pad_id
+                active = active & ~pred.eq(tok.eos_id)
             start_t = canvas
+            if not bool(active.any()):
+                break
+
         assert ids is not None
         return ids
 
-    @torch.inference_mode()
-    def generate(
+    def _context_prompts(
         self,
-        prompt: str,
-        gold: ExampleRecord | None = None,
+        prompts: list[str],
+        golds: list[ExampleRecord | None] | None = None,
+        design_mds: list[str | None] | None = None,
+    ) -> list[str]:
+        out: list[str] = []
+        for i, prompt in enumerate(prompts):
+            if not self.config.design_md_in_context:
+                out.append(prompt)
+                continue
+            dm = design_mds[i] if design_mds else None
+            if dm is None and golds and golds[i] is not None:
+                dm = golds[i].design_md  # type: ignore[union-attr]
+            out.append(
+                format_context_text(prompt, dm, budget=self.config.design_md_budget)
+            )
+        return out
+
+    @torch.inference_mode()
+    def generate_batch(
+        self,
+        prompts: list[str],
+        golds: list[ExampleRecord | None] | None = None,
+        *,
         max_len: int | None = None,
         grammar_constrained: bool | None = None,
-        design_md: str | None = None,
-    ) -> str:
-        """Iterative MaskGIT-style unmasking with optional grammar constraints."""
+        design_mds: list[str | None] | None = None,
+    ) -> list[str]:
+        """Batched generate — preferred for eval throughput."""
         self.eval()
+        if not prompts:
+            return []
         use_grammar = (
             self.config.grammar_constrained
             if grammar_constrained is None
@@ -373,36 +437,52 @@ class TwoTowerModel(nn.Module):
         )
         length = max_len or self.gen_len or self.config.max_target_len
         length = max(8, min(int(length), self.config.max_target_len))
+        ctx_prompts = self._context_prompts(prompts, golds=golds, design_mds=design_mds)
+        ctx, ctx_pad = self._encode_context(ctx_prompts)
 
-        ctx_prompt = prompt
-        if self.config.design_md_in_context:
-            dm = design_md
-            if dm is None and gold is not None:
-                dm = gold.design_md
-            ctx_prompt = format_context_text(
-                prompt, dm, budget=self.config.design_md_budget
-            )
-
-        device = self.device_name
-        ctx, ctx_pad = self._encode_context([ctx_prompt])
-
-        # Primary LTR decode path (better parse_rate on small models).
         if use_grammar and self.config.grammar_ltr_primary:
             repair_len = min(length, max(8, int(self.config.grammar_ltr_max_tokens)))
-            ids = self._greedy_ltr_decode(ctx, ctx_pad, repair_len)
-            text = self._decode_ids(ids[0])
-            try:
-                from slm_training.dsl.parser import validate
+            ids = self._greedy_ltr_decode_batch(ctx, ctx_pad, repair_len)
+            texts = [self._decode_ids(ids[i]) for i in range(ids.size(0))]
+            if self.config.grammar_finalize_validate:
+                finalized: list[str] = []
+                for text in texts:
+                    try:
+                        from slm_training.dsl.parser import validate
 
-                program = validate(text)
-                ser = (program.serialized or text).strip()
-                compact = ser.replace(" ", "")
-                if "Stack([])" not in compact and "Card([])" not in compact:
-                    return ser
-            except Exception:  # noqa: BLE001
-                pass
-            return text
+                        program = validate(text)
+                        ser = (program.serialized or text).strip()
+                        compact = ser.replace(" ", "")
+                        if "Stack([])" not in compact and "Card([])" not in compact:
+                            finalized.append(ser)
+                            continue
+                    except Exception:  # noqa: BLE001
+                        pass
+                    finalized.append(text)
+                return finalized
+            return texts
 
+        # MaskGIT path is per-sequence (rare when LTR primary is on).
+        return [
+            self._generate_maskgit_one(
+                ctx[i : i + 1],
+                ctx_pad[i : i + 1],
+                length,
+                use_grammar=use_grammar,
+            )
+            for i in range(len(prompts))
+        ]
+
+    def _generate_maskgit_one(
+        self,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor,
+        length: int,
+        *,
+        use_grammar: bool,
+    ) -> str:
+        """Single-sequence MaskGIT unmasking (+ optional grammar repair)."""
+        device = self.device_name
         ids = torch.full(
             (1, length), self.tokenizer.mask_id, dtype=torch.long, device=device
         )
@@ -438,7 +518,6 @@ class TwoTowerModel(nn.Module):
                     if b == 0:
                         newly.append(t)
 
-            # Freeze suffix after EOS.
             for b in range(ids.size(0)):
                 eos_positions = (ids[b] == self.tokenizer.eos_id).nonzero(
                     as_tuple=False
@@ -489,8 +568,6 @@ class TwoTowerModel(nn.Module):
                 pass
             if not self.config.grammar_ltr_repair:
                 return text
-            # Fallback: capped left-to-right constrained decode when MaskGIT
-            # left an invalid program (expensive: Node stream_check per step).
             try:
                 from slm_training.dsl.parser import validate
 
@@ -523,6 +600,24 @@ class TwoTowerModel(nn.Module):
                 pass
             return text2
         return text
+
+    @torch.inference_mode()
+    def generate(
+        self,
+        prompt: str,
+        gold: ExampleRecord | None = None,
+        max_len: int | None = None,
+        grammar_constrained: bool | None = None,
+        design_md: str | None = None,
+    ) -> str:
+        """Generate OpenUI for one prompt (batched LTR when enabled)."""
+        return self.generate_batch(
+            [prompt],
+            golds=[gold],
+            max_len=max_len,
+            grammar_constrained=grammar_constrained,
+            design_mds=[design_md],
+        )[0]
 
     def _state_dict_for_checkpoint(self) -> dict:
         state = {k: v.cpu() for k, v in self.state_dict().items()}

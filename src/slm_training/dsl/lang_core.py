@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import atexit
+import hashlib
 import json
 import os
 import shutil
@@ -20,6 +21,14 @@ DEFAULT_CLI = DEFAULT_BRIDGE_DIR / "cli.mjs"
 
 _REPL_LOCK = threading.Lock()
 _REPL_PROC: subprocess.Popen[str] | None = None
+_RESULT_CACHE: dict[str, Any] = {}
+_RESULT_CACHE_MAX = 2048
+
+
+def _cache_put(key: str, value: Any) -> None:
+    if len(_RESULT_CACHE) >= _RESULT_CACHE_MAX:
+        _RESULT_CACHE.pop(next(iter(_RESULT_CACHE)))
+    _RESULT_CACHE[key] = value
 
 
 class ParseError(ValueError):
@@ -180,11 +189,15 @@ def _invoke(payload: dict[str, Any], timeout_s: float = 30.0) -> dict[str, Any]:
 
 def parse(source: str) -> Program:
     """Parse with official lang-core (does not enforce placeholder content policy)."""
+    cache_key = "parse:" + hashlib.sha256(source.encode("utf-8")).hexdigest()
+    cached = _RESULT_CACHE.get(cache_key)
+    if cached is not None:
+        return cached  # type: ignore[return-value]
     result = _invoke({"op": "parse", "source": source})
     if result.get("error"):
         raise ParseError(result["error"])
     placeholders = list(result.get("placeholders") or extract_placeholders(source))
-    return Program(
+    program = Program(
         source=source,
         root=result.get("root"),
         placeholders=placeholders,
@@ -192,10 +205,16 @@ def parse(source: str) -> Program:
         serialized=result.get("serialized"),
         policy_errors=list(result.get("policy_errors") or []),
     )
+    _cache_put(cache_key, program)
+    return program
 
 
 def validate(source: str) -> Program:
     """Parse + official schema validation + placeholder content policy."""
+    cache_key = "validate:" + hashlib.sha256(source.encode("utf-8")).hexdigest()
+    cached = _RESULT_CACHE.get(cache_key)
+    if cached is not None:
+        return cached  # type: ignore[return-value]
     result = _invoke({"op": "validate", "source": source})
     if result.get("error"):
         raise ParseError(result["error"])
@@ -206,7 +225,7 @@ def validate(source: str) -> Program:
         messages += [str(e) for e in meta_errors]
         raise ParseError("; ".join(messages) or "OpenUI validation failed")
     placeholders = list(result.get("placeholders") or extract_placeholders(source))
-    return Program(
+    program = Program(
         source=source,
         root=result.get("root"),
         placeholders=placeholders,
@@ -214,6 +233,8 @@ def validate(source: str) -> Program:
         serialized=result.get("serialized"),
         policy_errors=policy,
     )
+    _cache_put(cache_key, program)
+    return program
 
 
 def serialize(program: Program) -> str:
