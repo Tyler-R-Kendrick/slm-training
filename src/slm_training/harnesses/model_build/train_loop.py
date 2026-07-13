@@ -19,16 +19,42 @@ def train(config: ModelBuildConfig, model=None) -> dict:
 
     rng = random.Random(config.seed)
     records = list(records)
+    if getattr(config, "use_curriculum", False):
+        from slm_training.quality import apply_curriculum_tags
+
+        records = apply_curriculum_tags(records)
     rng.shuffle(records)
 
     plugin = model or build_model(config, records)
+    if int(getattr(config, "retrieval_k", 0) or 0) > 0 and hasattr(plugin, "skeleton_bank"):
+        from slm_training.retrieval import build_skeleton_bank
+
+        plugin.skeleton_bank = build_skeleton_bank(records)
+
     run_dir = config.run_dir
     ckpt_dir = config.checkpoint_dir
     ckpt_dir.mkdir(parents=True, exist_ok=True)
     metrics_path = run_dir / "metrics.jsonl"
     eval_history: list[dict] = []
 
-    batches = batched(records, config.batch_size)
+    def _batches_for_step(step: int) -> list[list]:
+        pool = records
+        if getattr(config, "use_curriculum", False):
+            from slm_training.quality import curriculum_schedule
+
+            stage = curriculum_schedule(step, config.steps)
+            staged = [
+                r
+                for r in records
+                if (r.meta or {}).get("curriculum") == stage
+            ]
+            if staged:
+                pool = staged
+        shuffled = list(pool)
+        rng.shuffle(shuffled)
+        return batched(shuffled, config.batch_size)
+
+    batches = _batches_for_step(0)
     if not batches:
         raise ValueError("no batches")
 
@@ -75,6 +101,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     last_loss = 0.0
     with metrics_path.open("w", encoding="utf-8") as metrics_file:
         while step < config.steps:
+            batches = _batches_for_step(step)
             for batch in batches:
                 if step >= config.steps:
                     break

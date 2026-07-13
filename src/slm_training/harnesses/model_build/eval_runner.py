@@ -186,6 +186,11 @@ def evaluate(
         raise ValueError("test_dir is required for evaluation")
 
     records = load_suite_records(config.test_dir, config.suite)
+    if (
+        config.suite == "rico_held"
+        and getattr(config, "rico_eval_limit", None) is not None
+    ):
+        records = records[: max(0, int(config.rico_eval_limit))]
     ckpt = checkpoint or (config.checkpoint_dir / "last.pt")
 
     if model is not None:

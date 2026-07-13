@@ -128,10 +128,15 @@ def build_pairs_from_candidates(
     *,
     gold: ExampleRecord | None = None,
     design_md: str | None = None,
+    prefer_valid_rejects: bool = True,
 ) -> PreferencePair | None:
     scored = [
         (composite_reward(c, gold=gold, design_md=design_md), c) for c in candidates
     ]
+    if prefer_valid_rejects:
+        valid = [(s, c) for s, c in scored if grammar_score(c) > 0.0]
+        if len(valid) >= 2:
+            scored = valid
     scored.sort(key=lambda x: x[0], reverse=True)
     if len(scored) < 2:
         return None

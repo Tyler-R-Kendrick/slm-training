@@ -39,6 +39,7 @@ class TrainDataConfig:
     # Compact layouts train more reliably on small TwoTower models.
     max_openui_chars: int | None = None
     max_components: int | None = None
+    curriculum: bool = False
 
     @property
     def output_dir(self) -> Path:
@@ -207,6 +208,25 @@ def build_train_data(
 
     # Final stable order.
     deduped.sort(key=lambda r: r.id)
+    if config.curriculum:
+        from slm_training.quality import apply_curriculum_tags
+
+        deduped = apply_curriculum_tags(deduped)
+        # Inject a few adversarial fixtures as stage-C when available.
+        adv_path = Path("fixtures/test_seeds.jsonl")
+        if adv_path.is_file():
+            for seed in load_jsonl(adv_path):
+                if seed.split != "adversarial":
+                    continue
+                try:
+                    tagged = apply_curriculum_tags([_normalize_record(seed)])[0]
+                    tagged.meta["curriculum"] = "C"
+                    tagged.split = "train"
+                    tagged.id = f"curriculum_c_{tagged.id}"
+                    deduped.append(tagged)
+                except (ParseError, ValueError) as exc:
+                    errors.append({"id": seed.id, "error": str(exc)})
+            deduped.sort(key=lambda r: r.id)
 
     out_dir = config.output_dir
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -233,6 +253,7 @@ def build_train_data(
         "min_quality_score": config.min_quality_score,
         "max_openui_chars": config.max_openui_chars,
         "max_components": config.max_components,
+        "curriculum": bool(config.curriculum),
         "mean_quality_score": (
             round(sum(quality_scores) / len(quality_scores), 4) if quality_scores else None
         ),

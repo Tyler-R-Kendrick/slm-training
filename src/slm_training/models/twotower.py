@@ -34,16 +34,24 @@ def format_context_text(
     design_md: str | None = None,
     *,
     budget: int = 1800,
+    schema: str | None = None,
+    retrieved_skeleton: str | None = None,
 ) -> str:
-    """Concatenate prompt with optional DESIGN.md for the context tower."""
+    """Concatenate prompt with optional schema / skeleton / DESIGN.md."""
     prompt = (prompt or "").strip()
-    if not design_md or not design_md.strip():
-        return prompt
-    dm = design_md.strip()
-    if len(dm) > budget:
-        # Prefer YAML front matter + start of prose.
-        dm = dm[:budget].rsplit("\n", 1)[0]
-    return f"{prompt}\n\n---DESIGN.md---\n{dm}"
+    parts = [prompt] if prompt else []
+    if schema and schema.strip():
+        parts.append(f"---SCHEMA---\n{schema.strip()[: min(600, budget)]}")
+    if retrieved_skeleton and retrieved_skeleton.strip():
+        parts.append(
+            f"---RETRIEVED_SKELETON---\n{retrieved_skeleton.strip()[: min(400, budget)]}"
+        )
+    if design_md and design_md.strip():
+        dm = design_md.strip()
+        if len(dm) > budget:
+            dm = dm[:budget].rsplit("\n", 1)[0]
+        parts.append(f"---DESIGN.md---\n{dm}")
+    return "\n\n".join(parts) if parts else prompt
 
 
 @dataclass
@@ -84,8 +92,13 @@ class TwoTowerConfig:
     grammar_ltr_primary: bool = False
     # Mix teacher-forced next-token CE into training (helps LTR generate).
     ltr_loss_weight: float = 0.5
+    # Extra CE weight on gold placeholder token positions (fidelity signal).
+    fidelity_loss_weight: float = 0.0
     design_md_in_context: bool = True
     design_md_budget: int = 1800
+    schema_in_context: bool = False
+    retrieval_k: int = 0
+    best_of_n: int = 1
     seed: int = 0
 
 
@@ -138,6 +151,8 @@ class TwoTowerModel(nn.Module):
         )
         self._rng = random.Random(self.config.seed)
         self.gen_len = self.config.max_target_len
+        # Optional retrieval bank: list[(norm_prompt, openui, id)]
+        self.skeleton_bank: list[tuple[str, str, str]] = []
         self.to(device)
 
     def trainable_parameters(self):
@@ -192,17 +207,10 @@ class TwoTowerModel(nn.Module):
 
     def training_loss(self, batch: list[ExampleRecord]) -> torch.Tensor:
         self.train()
-        if self.config.design_md_in_context:
-            prompts = [
-                format_context_text(
-                    r.prompt,
-                    r.design_md,
-                    budget=self.config.design_md_budget,
-                )
-                for r in batch
-            ]
-        else:
-            prompts = [r.prompt for r in batch]
+        prompts = [
+            self._format_one_context(r.prompt, r.design_md, query_prompt=r.prompt)
+            for r in batch
+        ]
         targets = [
             self.tokenizer.encode(r.openui)[: self.config.max_target_len]
             for r in batch
@@ -217,6 +225,21 @@ class TwoTowerModel(nn.Module):
             mask_loss = F.cross_entropy(logits[predict_mask], target_ids[predict_mask])
         else:
             mask_loss = logits.sum() * 0.0
+
+        fid_w = float(getattr(self.config, "fidelity_loss_weight", 0.0) or 0.0)
+        if fid_w > 0.0 and predict_mask.any():
+            # Upweight CE on gold placeholder string tokens (":ns.slot").
+            ph_mask = torch.zeros_like(predict_mask)
+            for i in range(target_ids.size(0)):
+                for j in range(target_ids.size(1)):
+                    if not bool(predict_mask[i, j].item()):
+                        continue
+                    tok = self.tokenizer.id_to_token.get(int(target_ids[i, j]), "")
+                    if '":' in tok or (tok.startswith(":") and "." in tok):
+                        ph_mask[i, j] = True
+            if ph_mask.any():
+                fid_loss = F.cross_entropy(logits[ph_mask], target_ids[ph_mask])
+                mask_loss = mask_loss + fid_w * fid_loss
 
         ltr_w = float(self.config.ltr_loss_weight or 0.0)
         if ltr_w <= 0.0 or target_ids.size(1) < 2:
@@ -242,6 +265,36 @@ class TwoTowerModel(nn.Module):
             ltr_loss = mask_loss * 0.0
         return mask_loss + ltr_w * ltr_loss
 
+    def _format_one_context(
+        self,
+        prompt: str,
+        design_md: str | None,
+        *,
+        query_prompt: str | None = None,
+    ) -> str:
+        schema = None
+        if getattr(self.config, "schema_in_context", False):
+            from slm_training.quality import compact_schema_snippet
+
+            schema = compact_schema_snippet(budget=min(600, self.config.design_md_budget))
+        skeleton = None
+        k = int(getattr(self.config, "retrieval_k", 0) or 0)
+        if k > 0 and self.skeleton_bank:
+            from slm_training.retrieval import format_retrieved_skeleton, nearest_skeletons
+
+            hits = nearest_skeletons(
+                self.skeleton_bank, query_prompt or prompt, k=k
+            )
+            if hits:
+                skeleton = format_retrieved_skeleton(hits[0].openui)
+        dm = design_md if self.config.design_md_in_context else None
+        return format_context_text(
+            prompt,
+            dm,
+            budget=self.config.design_md_budget,
+            schema=schema,
+            retrieved_skeleton=skeleton,
+        )
     def _decode_ids(self, ids_1d: torch.Tensor) -> str:
         token_ids = ids_1d.tolist()
         if self.tokenizer.eos_id in token_ids[1:]:
@@ -405,16 +458,66 @@ class TwoTowerModel(nn.Module):
     ) -> list[str]:
         out: list[str] = []
         for i, prompt in enumerate(prompts):
-            if not self.config.design_md_in_context:
-                out.append(prompt)
-                continue
             dm = design_mds[i] if design_mds else None
             if dm is None and golds and golds[i] is not None:
                 dm = golds[i].design_md  # type: ignore[union-attr]
-            out.append(
-                format_context_text(prompt, dm, budget=self.config.design_md_budget)
-            )
+            out.append(self._format_one_context(prompt, dm, query_prompt=prompt))
         return out
+
+    def _repair_ltr_texts(
+        self,
+        texts: list[str],
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor,
+        length: int,
+    ) -> list[str]:
+        """Re-decode rows that fail stream_check using constrained LTR."""
+        repaired: list[str] = []
+        for i, text in enumerate(texts):
+            try:
+                status = stream_check(text)
+                if status.serialized and status.complete_ok:
+                    ser = status.serialized.strip()
+                    compact = ser.replace(" ", "")
+                    if "Stack([])" not in compact and "Card([])" not in compact:
+                        repaired.append(ser)
+                        continue
+            except Exception:  # noqa: BLE001
+                pass
+            row_ids = torch.full(
+                (1, length),
+                self.tokenizer.mask_id,
+                dtype=torch.long,
+                device=self.device_name,
+            )
+            row_ids[0, 0] = self.tokenizer.bos_id
+            unknown = row_ids.eq(self.tokenizer.mask_id)
+            filled = self._constrained_ltr_repair(
+                row_ids,
+                unknown,
+                ctx[i : i + 1],
+                ctx_pad[i : i + 1],
+            )
+            repaired.append(self._decode_ids(filled[0]))
+        return repaired
+
+    def _pick_best_of_n(
+        self,
+        candidates: list[str],
+        gold: ExampleRecord | None,
+    ) -> str:
+        if len(candidates) == 1:
+            return candidates[0]
+        from slm_training.preference import composite_reward
+
+        best = candidates[0]
+        best_score = -1.0
+        for cand in candidates:
+            score = float(composite_reward(cand, gold=gold, design_md=None))
+            if score > best_score:
+                best_score = score
+                best = cand
+        return best
 
     @torch.inference_mode()
     def generate_batch(
@@ -430,6 +533,46 @@ class TwoTowerModel(nn.Module):
         self.eval()
         if not prompts:
             return []
+        n_samples = max(1, int(getattr(self.config, "best_of_n", 1) or 1))
+        if n_samples > 1:
+            pools: list[list[str]] = [[] for _ in prompts]
+            prev = self.config.best_of_n
+            self.config.best_of_n = 1
+            try:
+                for _ in range(n_samples):
+                    sample = self._generate_batch_once(
+                        prompts,
+                        golds,
+                        max_len=max_len,
+                        grammar_constrained=grammar_constrained,
+                        design_mds=design_mds,
+                    )
+                    for i, text in enumerate(sample):
+                        pools[i].append(text)
+            finally:
+                self.config.best_of_n = prev
+            out: list[str] = []
+            for i, cands in enumerate(pools):
+                gold = golds[i] if golds else None
+                out.append(self._pick_best_of_n(cands, gold))
+            return out
+        return self._generate_batch_once(
+            prompts,
+            golds,
+            max_len=max_len,
+            grammar_constrained=grammar_constrained,
+            design_mds=design_mds,
+        )
+
+    def _generate_batch_once(
+        self,
+        prompts: list[str],
+        golds: list[ExampleRecord | None] | None = None,
+        *,
+        max_len: int | None = None,
+        grammar_constrained: bool | None = None,
+        design_mds: list[str | None] | None = None,
+    ) -> list[str]:
         use_grammar = (
             self.config.grammar_constrained
             if grammar_constrained is None
@@ -444,6 +587,8 @@ class TwoTowerModel(nn.Module):
             repair_len = min(length, max(8, int(self.config.grammar_ltr_max_tokens)))
             ids = self._greedy_ltr_decode_batch(ctx, ctx_pad, repair_len)
             texts = [self._decode_ids(ids[i]) for i in range(ids.size(0))]
+            if self.config.grammar_ltr_repair:
+                texts = self._repair_ltr_texts(texts, ctx, ctx_pad, repair_len)
             if self.config.grammar_finalize_validate:
                 finalized: list[str] = []
                 for text in texts:
@@ -462,16 +607,21 @@ class TwoTowerModel(nn.Module):
                 return finalized
             return texts
 
-        # MaskGIT path is per-sequence (rare when LTR primary is on).
-        return [
-            self._generate_maskgit_one(
-                ctx[i : i + 1],
-                ctx_pad[i : i + 1],
-                length,
-                use_grammar=use_grammar,
+        # Fall back to per-item MaskGIT for non-LTR-primary path.
+        out: list[str] = []
+        for i, prompt in enumerate(prompts):
+            gold = golds[i] if golds else None
+            dm = design_mds[i] if design_mds else None
+            out.append(
+                self.generate(
+                    prompt,
+                    gold=gold,
+                    max_len=length,
+                    grammar_constrained=use_grammar,
+                    design_md=dm,
+                )
             )
-            for i in range(len(prompts))
-        ]
+        return out
 
     def _generate_maskgit_one(
         self,

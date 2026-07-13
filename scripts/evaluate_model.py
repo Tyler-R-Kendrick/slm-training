@@ -120,6 +120,38 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Gold DESIGN.md context lint only — not model skill.",
     )
+    parser.add_argument(
+        "--grammar-ltr-primary",
+        action="store_true",
+        help="Override checkpoint: prefer greedy LTR decode.",
+    )
+    parser.add_argument(
+        "--grammar-ltr-repair",
+        action="store_true",
+        help="Override checkpoint: constrained LTR repair on failed parses.",
+    )
+    parser.add_argument(
+        "--schema-in-context",
+        action="store_true",
+        help="Override: inject compact schema into context.",
+    )
+    parser.add_argument(
+        "--retrieval-k",
+        type=int,
+        default=0,
+        help="Override: retrieve K train skeletons into context.",
+    )
+    parser.add_argument(
+        "--best-of-n",
+        type=int,
+        default=1,
+        help="Override: best-of-N decode by composite reward.",
+    )
+    parser.add_argument(
+        "--no-design-md-context",
+        action="store_true",
+        help="Override: do not concatenate DESIGN.md into context.",
+    )
     args = parser.parse_args(argv)
 
     config = ModelBuildConfig(
@@ -131,6 +163,12 @@ def main(argv: list[str] | None = None) -> int:
         model_name=args.model,
         device=args.device,
         context_backend="scratch",
+        grammar_ltr_primary=args.grammar_ltr_primary,
+        grammar_ltr_repair=args.grammar_ltr_repair,
+        schema_in_context=args.schema_in_context,
+        retrieval_k=args.retrieval_k,
+        best_of_n=args.best_of_n,
+        design_md_in_context=not args.no_design_md_context,
     )
 
     if args.ship_gates and not args.suites:

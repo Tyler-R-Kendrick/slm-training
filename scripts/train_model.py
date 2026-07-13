@@ -100,6 +100,45 @@ def main(argv: list[str] | None = None) -> int:
         help="Prefer greedy LTR decode at generate time.",
     )
     parser.add_argument(
+        "--grammar-ltr-repair",
+        action="store_true",
+        help="Re-decode failing LTR outputs with streaming grammar constraints.",
+    )
+    parser.add_argument(
+        "--grammar-ltr-max-tokens",
+        type=int,
+        default=64,
+        help="Max tokens for LTR / constrained repair canvases.",
+    )
+    parser.add_argument(
+        "--fidelity-loss-weight",
+        type=float,
+        default=0.0,
+        help="Extra CE weight on gold placeholder tokens during training.",
+    )
+    parser.add_argument(
+        "--schema-in-context",
+        action="store_true",
+        help="Inject compact OpenUI component schema into the context tower.",
+    )
+    parser.add_argument(
+        "--retrieval-k",
+        type=int,
+        default=0,
+        help="Retrieve K nearest train OpenUI skeletons into context (0 disables).",
+    )
+    parser.add_argument(
+        "--best-of-n",
+        type=int,
+        default=1,
+        help="Generate N candidates and pick by composite reward.",
+    )
+    parser.add_argument(
+        "--curriculum",
+        action="store_true",
+        help="Sample train batches by curriculum stage A→B→C.",
+    )
+    parser.add_argument(
         "--noise-rate",
         type=float,
         default=0.0,
@@ -142,7 +181,14 @@ def main(argv: list[str] | None = None) -> int:
             structural_bias=args.structural_bias,
             design_md_in_context=not args.no_design_md_context,
             ltr_loss_weight=args.ltr_loss_weight,
+            fidelity_loss_weight=args.fidelity_loss_weight,
             grammar_ltr_primary=args.grammar_ltr_primary,
+            grammar_ltr_repair=args.grammar_ltr_repair,
+            grammar_ltr_max_tokens=args.grammar_ltr_max_tokens,
+            schema_in_context=args.schema_in_context,
+            retrieval_k=args.retrieval_k,
+            best_of_n=args.best_of_n,
+            use_curriculum=args.curriculum,
             noise_rate=args.noise_rate,
             eval_every=args.eval_every,
             eval_suite=args.eval_suite,

@@ -72,6 +72,11 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Drop layouts with more than this many component calls.",
     )
+    parser.add_argument(
+        "--curriculum",
+        action="store_true",
+        help="Tag records with curriculum stages A/B/C and inject adversarial hard examples.",
+    )
     args = parser.parse_args(argv)
 
     result = build_train_data(
@@ -91,6 +96,7 @@ def main(argv: list[str] | None = None) -> int:
             require_design_md=not args.allow_missing_design_md,
             max_openui_chars=args.max_openui_chars,
             max_components=args.max_components,
+            curriculum=args.curriculum,
         )
     )
     print(json.dumps(result["stats"], indent=2))

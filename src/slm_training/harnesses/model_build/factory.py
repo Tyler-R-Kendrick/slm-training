@@ -10,6 +10,41 @@ from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.harnesses.model_build.plugin import ModelPlugin, StubModel
 
 
+def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
+    """Apply eval/train decode + conditioning overrides onto a loaded plugin."""
+    cfg = getattr(model, "config", None)
+    if cfg is None:
+        return model
+    for key in (
+        "grammar_constrained",
+        "grammar_top_k",
+        "structural_bias",
+        "grammar_ltr_repair",
+        "grammar_ltr_max_tokens",
+        "grammar_ltr_primary",
+        "grammar_finalize_validate",
+        "design_md_in_context",
+        "design_md_budget",
+        "schema_in_context",
+        "retrieval_k",
+        "best_of_n",
+        "fidelity_loss_weight",
+        "ltr_loss_weight",
+    ):
+        if hasattr(config, key) and hasattr(cfg, key):
+            setattr(cfg, key, getattr(config, key))
+    if int(getattr(config, "retrieval_k", 0) or 0) > 0 and hasattr(model, "skeleton_bank"):
+        try:
+            from slm_training.harnesses.model_build.data import load_train_records
+            from slm_training.retrieval import build_skeleton_bank
+
+            if config.train_dir.exists():
+                model.skeleton_bank = build_skeleton_bank(load_train_records(config.train_dir))
+        except Exception:  # noqa: BLE001
+            pass
+    return model
+
+
 def build_model(
     config: ModelBuildConfig,
     records: list[ExampleRecord],
@@ -26,7 +61,8 @@ def build_model(
         from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 
         if checkpoint and checkpoint.exists():
-            return TwoTowerModel.from_checkpoint(checkpoint, device=config.device)
+            loaded = TwoTowerModel.from_checkpoint(checkpoint, device=config.device)
+            return apply_runtime_overrides(loaded, config)
 
         backend = (config.context_backend or "scratch").lower()
         freeze = config.freeze_context
@@ -50,12 +86,22 @@ def build_model(
             structural_bias=config.structural_bias,
             grammar_ltr_repair=config.grammar_ltr_repair,
             grammar_ltr_max_tokens=config.grammar_ltr_max_tokens,
+            grammar_finalize_validate=getattr(config, "grammar_finalize_validate", False),
             ltr_loss_weight=getattr(config, "ltr_loss_weight", 0.5),
+            fidelity_loss_weight=getattr(config, "fidelity_loss_weight", 0.0),
             grammar_ltr_primary=config.grammar_ltr_primary,
             design_md_in_context=config.design_md_in_context,
             design_md_budget=config.design_md_budget,
+            schema_in_context=getattr(config, "schema_in_context", False),
+            retrieval_k=getattr(config, "retrieval_k", 0),
+            best_of_n=getattr(config, "best_of_n", 1),
             seed=config.seed,
         )
-        return TwoTowerModel.from_records(records, config=tt_cfg, device=config.device)
+        model = TwoTowerModel.from_records(records, config=tt_cfg, device=config.device)
+        if int(getattr(config, "retrieval_k", 0) or 0) > 0:
+            from slm_training.retrieval import build_skeleton_bank
+
+            model.skeleton_bank = build_skeleton_bank(records)
+        return model
 
     raise ValueError(f"unknown model_name {config.model_name!r}")

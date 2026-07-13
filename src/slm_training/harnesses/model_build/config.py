@@ -39,14 +39,22 @@ class ModelBuildConfig:
     grammar_ltr_repair: bool = False
     grammar_ltr_max_tokens: int = 64
     grammar_ltr_primary: bool = False
+    grammar_finalize_validate: bool = False
     ltr_loss_weight: float = 0.5
+    fidelity_loss_weight: float = 0.0
     design_md_in_context: bool = True
     design_md_budget: int = 1800
+    schema_in_context: bool = False
+    retrieval_k: int = 0
+    best_of_n: int = 1
+    use_curriculum: bool = False
     # Stub-only
     noise_rate: float = 0.0
     # Eval-driven training: run suite eval every N steps (0 disables).
     eval_every: int = 0
     eval_suite: str = "smoke"
+    # Cap rico_held size during matrix / CPU evals (None = full suite).
+    rico_eval_limit: int | None = None
 
     @property
     def run_dir(self) -> Path:

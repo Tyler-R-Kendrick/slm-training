@@ -23,6 +23,11 @@ def main(argv: list[str] | None = None) -> int:
     build.add_argument("--train-records", type=Path, required=True)
     build.add_argument("--out", type=Path, default=Path("outputs/preferences/pairs.jsonl"))
     build.add_argument(
+        "--soft-corrupt",
+        action="store_true",
+        help="Synthesize valid-but-worse rejects (prefer over BrokenText).",
+    )
+    build.add_argument(
         "--corrupt",
         action="store_true",
         help="Synthesize a rejected candidate by breaking the gold OpenUI.",
@@ -35,6 +40,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     build.add_argument("--limit", type=int, default=None, help="Optional record cap.")
     build.add_argument("--device", default="cpu")
+    build.add_argument(
+        "--samples-per-prompt",
+        type=int,
+        default=1,
+        help="When using --from-checkpoint, generate this many samples per prompt.",
+    )
 
     train = sub.add_parser("train", help="Run preference training from a checkpoint")
     train.add_argument("--checkpoint", type=Path, required=True)
@@ -50,6 +61,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.limit is not None:
             records = records[: max(0, int(args.limit))]
 
+        from slm_training.quality import soft_corrupt_openui
+
         if args.from_checkpoint is not None:
             from slm_training.models.twotower import TwoTowerModel
 
@@ -58,11 +71,14 @@ def main(argv: list[str] | None = None) -> int:
             )
             model.config.grammar_ltr_primary = True
             model.config.design_md_in_context = False
+            n_samp = max(1, int(args.samples_per_prompt))
 
             def gen(record):
-                pred = model.generate(record.prompt, gold=None)
-                # Gold + model sample (+ optional corruption) as candidates.
-                cands = [record.openui, pred]
+                cands = [record.openui]
+                for _ in range(n_samp):
+                    cands.append(model.generate(record.prompt, gold=None))
+                if args.soft_corrupt:
+                    cands.append(soft_corrupt_openui(record.openui))
                 if args.corrupt:
                     bad = record.openui.replace("TextContent", "BrokenText", 1)
                     if bad == record.openui:
@@ -72,6 +88,8 @@ def main(argv: list[str] | None = None) -> int:
         else:
 
             def gen(record):
+                if args.soft_corrupt:
+                    return [record.openui, soft_corrupt_openui(record.openui)]
                 bad = record.openui.replace("TextContent", "BrokenText", 1)
                 if bad == record.openui:
                     bad = "root = Broken()"
