@@ -10,8 +10,8 @@ from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.parser import ParseError, validate
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.harnesses.model_build.config import ModelBuildConfig
-from slm_training.harnesses.model_build.data import load_suite_records
-from slm_training.harnesses.model_build.plugin import ModelPlugin, StubModel
+from slm_training.harnesses.model_build.data import load_suite_records, load_train_records
+from slm_training.harnesses.model_build.factory import build_model
 
 
 def _placeholder_fidelity(pred: str, gold: ExampleRecord) -> float:
@@ -23,37 +23,53 @@ def _placeholder_fidelity(pred: str, gold: ExampleRecord) -> float:
 
 
 def _tree_match(pred: str, gold_openui: str) -> float:
-    """Canonical OpenUI match via official serializer when possible."""
     if pred.strip() == gold_openui.strip():
         return 1.0
     try:
-        from slm_training.dsl import validate
-
         pred_p = validate(pred)
         gold_p = validate(gold_openui)
         if pred_p.serialized and gold_p.serialized:
-            return 1.0 if pred_p.serialized.strip() == gold_p.serialized.strip() else 0.0
-    except Exception:  # noqa: BLE001 — fall back to exact string miss
+            return (
+                1.0
+                if pred_p.serialized.strip() == gold_p.serialized.strip()
+                else 0.0
+            )
+    except Exception:  # noqa: BLE001
         return 0.0
     return 0.0
 
 
 def evaluate(
     config: ModelBuildConfig,
-    model: ModelPlugin | None = None,
+    model=None,
     checkpoint: Path | None = None,
 ) -> dict:
     if config.test_dir is None:
         raise ValueError("test_dir is required for evaluation")
 
     records = load_suite_records(config.test_dir, config.suite)
-    plugin: ModelPlugin = model or StubModel(
-        noise_rate=config.noise_rate,
-        seed=config.seed,
-    )
     ckpt = checkpoint or (config.checkpoint_dir / "last.pt")
-    if ckpt.exists():
-        plugin.load(ckpt)
+
+    if model is not None:
+        plugin = model
+        if ckpt.exists() and hasattr(plugin, "load"):
+            try:
+                plugin.load(ckpt)
+            except Exception:  # noqa: BLE001 — model may already be loaded
+                pass
+    else:
+        # Build from train records for vocab when needed, then load weights
+        train_records = []
+        if config.train_dir.exists():
+            try:
+                train_records = load_train_records(config.train_dir)
+            except FileNotFoundError:
+                train_records = []
+        plugin = build_model(
+            config,
+            train_records or records,
+            checkpoint=ckpt if ckpt.exists() else None,
+        )
 
     n = len(records)
     parse_ok = 0
@@ -62,7 +78,8 @@ def evaluate(
     details: list[dict] = []
 
     for record in records:
-        pred = plugin.generate(record.prompt, gold=record)
+        # No gold oracle — prompt only
+        pred = plugin.generate(record.prompt, gold=None)
         ok = False
         error = None
         try:
@@ -82,6 +99,7 @@ def evaluate(
                 "error": error,
                 "placeholder_fidelity": fid,
                 "exact_match": exact,
+                "prediction": pred[:500],
             }
         )
 
@@ -92,6 +110,7 @@ def evaluate(
         "placeholder_fidelity": (fidelity_sum / n) if n else 0.0,
         "exact_match": (exact_sum / n) if n else 0.0,
         "checkpoint": str(ckpt),
+        "model": config.model_name,
         "evaluated_at": datetime.now(timezone.utc).isoformat(),
         "details": details,
     }

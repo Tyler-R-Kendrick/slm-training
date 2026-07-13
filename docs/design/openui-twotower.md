@@ -6,11 +6,11 @@ Build a small, on-device-friendly specialist that generates **placeholder-augmen
 
 ## Non-goals (current cycle)
 
-- Implementing context tower, denoiser, cross-attention, or diffusion training
 - Cactus runtime / custom kernels
 - Full React rendering stack in Python (use `@openuidev/react-lang` later for demos)
 - Awwwards scraping, RL/DPO, consistency distillation
 - Training a production copy SLM
+- Grammar-constrained / streaming decode via `createStreamingParser` (next)
 
 ## Official OpenUI Lang (source of truth)
 
@@ -61,22 +61,25 @@ Export the official teacher prompt with:
 python -m scripts.export_openui_prompt
 ```
 
-## Future model architecture (spec only)
+## Model architecture (implemented POC)
 
 ```
-prompt → Frozen Context Tower (AR) → hidden states
+prompt → Context Tower (bidirectional Transformer) → hidden states
                                       ↓ cross-attn
-         Trainable Denoiser (masked/block diffusion) → OpenUI tokens
+         Trainable Denoiser (MaskGIT-style masked diffusion) → OpenUI tokens
                                       ↓
-                   official parser + placeholder policy / CFG
+                   official parser + placeholder policy
                                       ↓
                          placeholder OpenUI program
 ```
 
-- Context tower: small pretrained HF model, frozen (e.g. SmolLM2-135M).
-- Denoiser: compact bidirectional Transformer over OpenUI token ids.
-- Copy model: separate specialist filling placeholders (later).
+- **Context tower**: from-scratch small Transformer (`TokenEncoder`). Trains by default; pass `--freeze-context` once a pretrained HF encoder is swapped in.
+- **Denoiser**: bidirectional Transformer with cross-attention (`DenoiserTower`), trained with random span masking.
+- **Tokenizer**: `OpenUITokenizer` — placeholder-aware regex tokenizer built from train prompts + OpenUI.
+- **Copy model**: separate specialist filling placeholders (later).
 - Prefer official `createStreamingParser` when wiring diffusion unmask streams.
+
+Package: [`src/slm_training/models/`](../../src/slm_training/models/).
 
 ## Three harnesses
 
@@ -119,13 +122,14 @@ Shared foundation: official lang-core bridge + placeholders + `ExampleRecord` sc
 | | |
 | --- | --- |
 | **Inputs** | Train + test artifact paths |
-| **Role** | Config, loaders, `ModelPlugin`, stub model, train/eval loops |
+| **Role** | Config, loaders, `ModelPlugin`, **TwoTower** (default) + stub, train/eval loops |
 | **Eval** | `parse_rate` via lang-core validate; placeholder fidelity; canonical serialize match |
 | **CLIs** | `python -m scripts.train_model`, `python -m scripts.evaluate_model` |
 
 ## Roadmap
 
-1. Official lang-core bridge + fixtures (this revision)
+1. Official lang-core bridge + fixtures (done)
 2. Training / testing / model-build harnesses (done)
 3. GPU multi-farm MCP for cheap training pods (done)
-4. **Later:** real TwoTower plug-in, richer library (more `@openuidev` components), streaming parser for diffusion, React demo via `@openuidev/react-lang`
+4. **TwoTower plug-in** — context + masked denoiser, CPU overfit path (this revision)
+5. **Later:** HF context tower, streaming parser / grammar constraints, richer `@openuidev` library, React demo via `@openuidev/react-lang`

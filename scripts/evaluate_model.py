@@ -30,8 +30,15 @@ def main(argv: list[str] | None = None) -> int:
         "--train-dir",
         type=Path,
         default=Path("outputs/train_data/v0"),
-        help="Unused for stub eval but kept for config symmetry",
+        help="Used to rebuild vocab when loading TwoTower without sidecar tokenizer.",
     )
+    parser.add_argument(
+        "--model",
+        choices=("twotower", "stub"),
+        default="twotower",
+        help="Must match the checkpoint kind.",
+    )
+    parser.add_argument("--device", type=str, default="cpu")
     args = parser.parse_args(argv)
 
     config = ModelBuildConfig(
@@ -40,9 +47,10 @@ def main(argv: list[str] | None = None) -> int:
         suite=args.suite,
         run_root=args.run_root,
         run_id=args.run_id,
+        model_name=args.model,
+        device=args.device,
     )
     metrics = evaluate(config, checkpoint=args.checkpoint)
-    # Print summary without full details spam
     summary = {k: v for k, v in metrics.items() if k != "details"}
     print(json.dumps(summary, indent=2))
     return 0

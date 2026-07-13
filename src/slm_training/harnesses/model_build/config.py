@@ -13,12 +13,24 @@ class ModelBuildConfig:
     suite: str = "smoke"
     run_root: Path = Path("outputs/runs")
     run_id: str = "latest"
-    steps: int = 2
-    batch_size: int = 2
-    lr: float = 1e-3
+    steps: int = 200
+    batch_size: int = 4
+    lr: float = 3e-4
     seed: int = 0
     device: str = "cpu"
-    noise_rate: float = 0.0  # StubModel: chance to emit invalid OpenUI
+    model_name: str = "twotower"  # twotower | stub
+    # TwoTower hyperparams
+    d_model: int = 128
+    n_heads: int = 4
+    context_layers: int = 2
+    denoiser_layers: int = 4
+    mask_min: float = 0.15
+    mask_max: float = 0.85
+    gen_steps: int = 8
+    # False for from-scratch POC; set True when swapping in a pretrained context tower
+    freeze_context: bool = False
+    # Stub-only
+    noise_rate: float = 0.0
 
     @property
     def run_dir(self) -> Path:

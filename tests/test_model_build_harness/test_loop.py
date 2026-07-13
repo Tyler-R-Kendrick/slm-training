@@ -87,6 +87,7 @@ def test_train_and_eval_stub(tmp_path: Path) -> None:
         run_id="test_run",
         steps=2,
         batch_size=2,
+        model_name="stub",
     )
     summary = train(config)
     assert summary["steps"] == 2

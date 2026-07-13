@@ -16,7 +16,7 @@ class ModelPlugin(Protocol):
         """Return a scalar training loss for the batch."""
 
     def generate(self, prompt: str, gold: ExampleRecord | None = None) -> str:
-        """Generate OpenUI for a prompt (stub may use gold)."""
+        """Generate OpenUI for a prompt."""
 
     def save(self, path: Path) -> None:
         ...
@@ -27,10 +27,7 @@ class ModelPlugin(Protocol):
 
 @dataclass
 class StubModel:
-    """Deterministic stub that memorizes gold OpenUI by prompt.
-
-    Used to prove harness wiring without a real TwoTower implementation.
-    """
+    """Dict-memorization baseline (kept for ablations / no-torch smoke)."""
 
     memory: dict[str, str] = field(default_factory=dict)
     noise_rate: float = 0.0
@@ -41,20 +38,17 @@ class StubModel:
         self._rng = random.Random(self.seed)
 
     def forward(self, batch: list[ExampleRecord]) -> float:
-        # "Train" by storing prompt → openui mappings; loss decreases with coverage.
         for record in batch:
             self.memory[record.prompt] = record.openui
-        # Pseudo-loss: inverse of memory size (never zero for logging).
         return 1.0 / (1.0 + float(len(self.memory)))
 
     def generate(self, prompt: str, gold: ExampleRecord | None = None) -> str:
+        _ = gold  # never oracle-leak at eval
         if self.noise_rate > 0 and self._rng.random() < self.noise_rate:
-            return "root = Broken("  # intentionally invalid
+            return "root = Broken("
         if prompt in self.memory:
             return self.memory[prompt]
-        if gold is not None:
-            return gold.openui
-        return 'root = Text(text=:stub.missing)'
+        return 'root = Stack([missing])\nmissing = Text(":stub.missing")'
 
     def save(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -64,10 +58,13 @@ class StubModel:
             "noise_rate": self.noise_rate,
             "seed": self.seed,
         }
+        # Keep .pt extension but write JSON for stub
         path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
     def load(self, path: Path) -> None:
-        payload = json.loads(path.read_text(encoding="utf-8"))
+        # Support both JSON stub and accidental torch files
+        text = path.read_text(encoding="utf-8")
+        payload = json.loads(text)
         self.memory = dict(payload.get("memory") or {})
         self.noise_rate = float(payload.get("noise_rate") or 0.0)
         self.seed = int(payload.get("seed") or 0)

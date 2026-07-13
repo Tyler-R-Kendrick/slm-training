@@ -17,7 +17,7 @@ dev = [
   "pytest>=8.0",
   "pytest-asyncio>=0.23",
 ]
-# Optional; required only when a real model plug-in is added later.
+# Required for TwoTower training / generation
 torch = [
   "torch>=2.2",
 ]
