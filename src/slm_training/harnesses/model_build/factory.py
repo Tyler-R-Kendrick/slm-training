@@ -75,6 +75,13 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "compile_mode",
         "grammar_dsl",
         "gen_steps",
+        "output_tokenizer",
+        "use_symbol_table",
+        "factorized_embeddings",
+        "mask_pattern",
+        "statement_mask_prob",
+        "remask_span",
+        "teacher_init_embeddings",
         "block_size",
         "production_loss_weight",
         "slot_loss_weight",
@@ -176,6 +183,15 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         grammar_sample_temperature=getattr(config, "grammar_sample_temperature", 0.8),
         grammar_block_decode=getattr(config, "grammar_block_decode", False),
         grammar_block_size=getattr(config, "grammar_block_size", 32),
+        output_tokenizer=getattr(config, "output_tokenizer", "compositional"),
+        use_symbol_table=getattr(config, "use_symbol_table", True),
+        factorized_embeddings=getattr(config, "factorized_embeddings", False),
+        mask_pattern=getattr(config, "mask_pattern", "random"),
+        statement_mask_prob=float(
+            getattr(config, "statement_mask_prob", 0.35) or 0.35
+        ),
+        remask_span=getattr(config, "remask_span", "token"),
+        teacher_init_embeddings=getattr(config, "teacher_init_embeddings", False),
         seed=config.seed,
     )
 

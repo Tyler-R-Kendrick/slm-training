@@ -162,10 +162,30 @@ class DenoiserTower(nn.Module):
         n_heads: int = 4,
         max_len: int = 512,
         dropout: float = 0.0,
+        *,
+        kind_ids: list[int] | None = None,
+        n_kinds: int = 0,
     ) -> None:
         super().__init__()
         self.tok = nn.Embedding(vocab_size, d_model)
         self.pos = nn.Embedding(max_len, d_model)
+        self.kind: nn.Embedding | None = None
+        if kind_ids is not None and n_kinds > 0:
+            self.kind = nn.Embedding(n_kinds, d_model)
+            lookup = torch.tensor(
+                [int(k) for k in kind_ids[:vocab_size]]
+                + [0] * max(0, vocab_size - len(kind_ids)),
+                dtype=torch.long,
+            )
+            self.register_buffer("kind_lookup", lookup, persistent=True)
+        else:
+            # Non-persistent stub: unused unless factorized embeddings are on.
+            # Keeps older (non-V5) checkpoints loadable without kind_lookup.
+            self.register_buffer(
+                "kind_lookup",
+                torch.zeros(max(vocab_size, 1), dtype=torch.long),
+                persistent=False,
+            )
         self.layers = nn.ModuleList(
             [
                 TransformerBlock(d_model, n_heads, dropout=dropout, cross_attn=True)
@@ -193,6 +213,10 @@ class DenoiserTower(nn.Module):
             seq = self.max_len
         pos = torch.arange(seq, device=noisy_ids.device).unsqueeze(0).expand(bsz, -1)
         x = self.tok(noisy_ids) + self.pos(pos)
+        if self.kind is not None:
+            # Clamp ids into lookup range for safety with pad overflows.
+            safe = noisy_ids.clamp(min=0, max=self.kind_lookup.numel() - 1)
+            x = x + self.kind(self.kind_lookup[safe])
         self_pad = noisy_ids.eq(pad_id)
         for layer in self.layers:
             x = layer(x, self_pad_mask=self_pad, ctx=context, ctx_pad_mask=ctx_pad_mask)

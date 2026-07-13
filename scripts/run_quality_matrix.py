@@ -27,7 +27,11 @@ def _copy_checkpoint(src: Path, dest: Path) -> Path:
 
     dest.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(src, dest)
-    for side in (src.with_suffix(".tokenizer.json"), src.with_suffix(".meta.json")):
+    for side in (
+        src.with_suffix(".tokenizer.json"),
+        src.with_suffix(".meta.json"),
+        src.with_name(src.stem + ".context.tokenizer.json"),
+    ):
         if side.is_file():
             shutil.copy2(side, dest.parent / side.name)
     return dest
@@ -80,6 +84,13 @@ class Experiment:
     visible_corrupt_rate: float = 0.0
     trust_gate: bool = False
     grammar_fastpath_mode: str = "hybrid"
+    # V5 levers: lexer-native output representation
+    output_tokenizer: str = "compositional"
+    use_symbol_table: bool = True
+    factorized_embeddings: bool = False
+    mask_pattern: str = "random"
+    remask_span: str = "token"
+    teacher_init_embeddings: bool = False
 
 def _base_experiments(
     train_v1: Path,
@@ -575,6 +586,157 @@ def _v4_experiments(
     ]
 
 
+def _v5_experiments(
+    train_v1: Path,
+    train_cur: Path,
+    *,
+    design_md_in_context: bool = True,
+) -> list[Experiment]:
+    """E40–E46: lexer-native output vocabulary + Stage-2 structural levers."""
+    length_safe = 192
+    capacity = dict(
+        d_model=192,
+        n_heads=6,
+        context_layers=3,
+        denoiser_layers=6,
+        grammar_ltr_max_tokens=256,
+    )
+    return [
+        Experiment(
+            "E40",
+            "qx_e40_lexnative",
+            "Lexer-native tokenizer without symbol table (literal channel)",
+            train_v1,
+            grammar_ltr_repair=True,
+            grammar_ltr_max_tokens=length_safe,
+            grammar_ltr_primary=False,
+            ltr_loss_weight=0.5,
+            gen_steps_override=16,
+            remask_ratio=0.0,
+            output_tokenizer="lexer",
+            use_symbol_table=False,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E41",
+            "qx_e41_symtable",
+            "Lexer-native + dynamic symbol table for placeholders",
+            train_v1,
+            grammar_ltr_repair=True,
+            grammar_ltr_max_tokens=length_safe,
+            grammar_ltr_primary=False,
+            ltr_loss_weight=0.5,
+            fidelity_loss_weight=1.0,
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            gen_steps_override=16,
+            output_tokenizer="lexer",
+            use_symbol_table=True,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E42",
+            "qx_e42_factorized",
+            "E41 + kind-factorized embeddings",
+            train_v1,
+            grammar_ltr_repair=True,
+            grammar_ltr_max_tokens=length_safe,
+            grammar_ltr_primary=False,
+            ltr_loss_weight=0.5,
+            fidelity_loss_weight=1.0,
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            gen_steps_override=16,
+            output_tokenizer="lexer",
+            use_symbol_table=True,
+            factorized_embeddings=True,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E43",
+            "qx_e43_exact_masks",
+            "Eval-only exact terminal→id masks on E41 checkpoint",
+            train_v1,
+            eval_from_run="qx_e41_symtable",
+            grammar_ltr_repair=True,
+            grammar_ltr_max_tokens=length_safe,
+            grammar_ltr_primary=False,
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            gen_steps_override=16,
+            output_tokenizer="lexer",
+            use_symbol_table=True,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E44",
+            "qx_e44_structmask",
+            "E41 + mixed statement masking + statement-span remask",
+            train_v1,
+            grammar_ltr_repair=True,
+            grammar_ltr_max_tokens=length_safe,
+            grammar_ltr_primary=False,
+            ltr_loss_weight=0.5,
+            fidelity_loss_weight=1.0,
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            remask_ratio=0.15,
+            gen_steps_override=16,
+            mdlm_schedule=True,
+            output_tokenizer="lexer",
+            use_symbol_table=True,
+            mask_pattern="mixed",
+            remask_span="statement",
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E45",
+            "qx_e45_teacher_init",
+            "E41 + teacher-initialized symbol embeddings (HF-cache gated)",
+            train_v1,
+            grammar_ltr_repair=True,
+            grammar_ltr_max_tokens=length_safe,
+            grammar_ltr_primary=False,
+            ltr_loss_weight=0.5,
+            fidelity_loss_weight=1.0,
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            gen_steps_override=16,
+            output_tokenizer="lexer",
+            use_symbol_table=True,
+            teacher_init_embeddings=True,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E46",
+            "qx_e46_champion",
+            "V5 champion: lexer+symtable+factorized+structmask+template+MDLM",
+            train_cur,
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            template_fill_decode=True,
+            fidelity_loss_weight=1.5,
+            schema_in_context=True,
+            use_curriculum=True,
+            mix_curriculum=True,
+            grammar_ltr_repair=True,
+            grammar_ltr_primary=False,
+            ltr_loss_weight=2.0,
+            mdlm_schedule=True,
+            remask_ratio=0.12,
+            gen_steps_override=16,
+            best_of_n=4,
+            output_tokenizer="lexer",
+            use_symbol_table=True,
+            factorized_embeddings=True,
+            mask_pattern="mixed",
+            remask_span="statement",
+            design_md_in_context=design_md_in_context,
+            **capacity,
+        ),
+    ]
+
+
 def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
     return ModelBuildConfig(
         train_dir=exp.train_dir,
@@ -633,6 +795,12 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         gen_steps=int(
             getattr(exp, "gen_steps_override", None) or getattr(args, "gen_steps", 8) or 8
         ),
+        output_tokenizer=str(getattr(exp, "output_tokenizer", "compositional") or "compositional"),
+        use_symbol_table=bool(getattr(exp, "use_symbol_table", True)),
+        factorized_embeddings=bool(getattr(exp, "factorized_embeddings", False)),
+        mask_pattern=str(getattr(exp, "mask_pattern", "random") or "random"),
+        remask_span=str(getattr(exp, "remask_span", "token") or "token"),
+        teacher_init_embeddings=bool(getattr(exp, "teacher_init_embeddings", False)),
     )
 
 
@@ -666,6 +834,13 @@ def _eval_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         "E33",
         "E35",
         "E36",
+        "E40",
+        "E41",
+        "E42",
+        "E43",
+        "E44",
+        "E45",
+        "E46",
     }
     bon = exp.best_of_n
     if exp.decode_sweep == "gen16_repair_bon4":
@@ -996,9 +1171,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--matrix",
-        choices=("legacy", "v2", "v3", "v4", "all"),
+        choices=("legacy", "v2", "v3", "v4", "v5", "all"),
         default="v3",
-        help="Experiment set: legacy (E0–E10), v2 (E11–E17), v3 (E18–E29), v4 (E30–E36), or all.",
+        help="Experiment set: legacy (E0–E10), v2 (E11–E17), v3 (E18–E29), v4 (E30–E36), v5 (E40–E46), or all.",
     )
     parser.add_argument("--gen-steps", type=int, default=8)
     parser.add_argument(
@@ -1010,7 +1185,7 @@ def main(argv: list[str] | None = None) -> int:
 
     needs_curriculum = args.only is None or any(
         x in (args.only or "")
-        for x in ("E2", "E8", "E9b", "E10", "E15", "E16", "E29", "E35")
+        for x in ("E2", "E8", "E9b", "E10", "E15", "E16", "E29", "E35", "E46")
     )
     if args.build_curriculum or (not args.curriculum_dir.exists() and needs_curriculum):
         from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
@@ -1076,6 +1251,14 @@ def main(argv: list[str] | None = None) -> int:
                 args.curriculum_dir,
                 design_md_in_context=design_md,
                 seed_checkpoint=args.seed_checkpoint,
+            )
+        )
+    if args.matrix in {"v5", "all"}:
+        experiments.extend(
+            _v5_experiments(
+                args.train_dir,
+                args.curriculum_dir,
+                design_md_in_context=design_md,
             )
         )
     if args.only:

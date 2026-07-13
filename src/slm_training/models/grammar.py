@@ -86,6 +86,26 @@ def structural_token_ids(tokenizer: OpenUITokenizer) -> set[int]:
         return cached
 
     ids: set[int] = set()
+    try:
+        from slm_training.models.dsl_tokenizer import TokenKind, is_dsl_native_tokenizer
+
+        if is_dsl_native_tokenizer(tokenizer):
+            ids |= tokenizer.kind_ids(TokenKind.STRUCT)
+            ids |= tokenizer.kind_ids(TokenKind.COMPONENT)
+            ids |= tokenizer.kind_ids(TokenKind.SYM)
+            ids |= tokenizer.kind_ids(TokenKind.LIT)
+            ids.update(
+                {
+                    tokenizer.bos_id,
+                    tokenizer.eos_id,
+                    tokenizer.mask_id,
+                }
+            )
+            _STRUCT_ID_CACHE[cache_key] = ids
+            return ids
+    except Exception:  # noqa: BLE001
+        pass
+
     for tok in structural_tokens():
         if tok in tokenizer.token_to_id:
             ids.add(tokenizer.token_to_id[tok])
@@ -164,9 +184,30 @@ def contract_allowed_token_ids(
     """
     When building a quoted placeholder, return allowed next token ids from the
     slot contract inventory. None means no contract filter applies.
+
+    For lexer-native tokenizers with a symbol table, this returns the set of
+    ``<SYM_i>`` ids corresponding to the inventory (prefix-independent).
     """
     if not slot_contract:
         return None
+
+    try:
+        from slm_training.models.dsl_tokenizer import (
+            SymbolTable,
+            is_dsl_native_tokenizer,
+        )
+
+        if is_dsl_native_tokenizer(tokenizer):
+            table = SymbolTable.from_placeholders(
+                slot_contract, max_slots=tokenizer.sym_slots
+            )
+            allowed: set[int] = set()
+            for i, _ph in enumerate(table.placeholders):
+                allowed.add(tokenizer.sym_id(i))
+            return allowed or None
+    except Exception:  # noqa: BLE001
+        pass
+
     prefix_text = tokenizer.decode(prefix_ids)
     if not _incomplete_quoted_string(prefix_text):
         return None
@@ -180,7 +221,7 @@ def contract_allowed_token_ids(
         return None
 
     built_seq = tokenize_text(f'"{built}')
-    allowed: set[int] = set()
+    allowed = set()
     for ph in slot_contract:
         target = ph if ph.startswith(":") else f":{ph}"
         target_seq = tokenize_text(f'"{target}"')
