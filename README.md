@@ -1,14 +1,15 @@
 # slm-training
 
-Novel SLM experiments: harnesses for **placeholder OpenUI** layout generation.
+Novel SLM experiments: harnesses for **placeholder OpenUI** layout generation, plus a **GPU multi-farm MCP** for cheap training pods.
 
-This cycle ships **three harnesses only** (no TwoTower model yet):
+## What's included
 
-1. **Training-data** — build/validate versioned train corpora
-2. **Testing-data** — build held-out / adversarial / OOD eval suites
-3. **Model-building** — train/eval shell with a stub plug-in
+1. **Training-data harness** — build/validate versioned train corpora
+2. **Testing-data harness** — held-out / adversarial / OOD eval suites
+3. **Model-building harness** — train/eval shell with a stub plug-in (no TwoTower yet)
+4. **GPU multi-farm MCP** — list / launch / cost-project across Vast.ai, RunPod, Lambda
 
-See [docs/design/openui-twotower.md](docs/design/openui-twotower.md).
+See [docs/design/openui-twotower.md](docs/design/openui-twotower.md) and [docs/design/gpu-multi-farm-mcp.md](docs/design/gpu-multi-farm-mcp.md).
 
 ## Setup
 
@@ -16,24 +17,17 @@ See [docs/design/openui-twotower.md](docs/design/openui-twotower.md).
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
+# optional MCP server deps
+pip install -e ".[mcp]"
 ```
 
-## Quick start (offline)
+## Quick start (offline harnesses)
 
 ```bash
-# 1. Build train artifacts from fixtures
 python -m scripts.build_train_data --version v0
-
-# 2. Build test suites (leakage check vs train)
 python -m scripts.build_test_data --version v0 \
   --train-manifest outputs/train_data/v0/manifest.json
-
-# 3. Train stub model
-python -m scripts.train_model \
-  --train-dir outputs/train_data/v0 \
-  --steps 2
-
-# 4. Evaluate stub on smoke suite
+python -m scripts.train_model --train-dir outputs/train_data/v0 --steps 2
 python -m scripts.evaluate_model \
   --test-dir outputs/test_data/v0 \
   --suite smoke \
@@ -44,12 +38,38 @@ python -m scripts.evaluate_model \
 pytest
 ```
 
+## GPU multi-farm MCP
+
+```bash
+cp .env.example .env   # set VAST_API_KEY / RUNPOD_API_KEY / LAMBDA_API_KEY as needed
+pip install -e ".[mcp]"
+GPU_MULTI_FARM_MODE=mock python -m scripts.multi_farm_mcp
+```
+
+Tools: `list_available_gpus`, `launch_training_pod`, `project_training_cost`.
+
+Cursor MCP config example:
+
+```json
+{
+  "mcpServers": {
+    "gpu-multi-farm": {
+      "command": "python",
+      "args": ["-m", "scripts.multi_farm_mcp"],
+      "cwd": "/absolute/path/to/slm-training",
+      "env": { "GPU_MULTI_FARM_MODE": "auto" }
+    }
+  }
+}
+```
+
 ## Layout
 
 ```
 src/slm_training/dsl/           # shared grammar / schema
 src/slm_training/harnesses/     # train_data, test_data, model_build
-scripts/                        # CLIs
+src/gpu_multi_farm/             # FastMCP server + farm adapters
+scripts/                        # CLIs + multi_farm_mcp entrypoint
 fixtures/                       # seed pairs for offline CI
 docs/design/                    # architecture + contracts
 ```
