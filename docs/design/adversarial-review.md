@@ -67,6 +67,20 @@ Smoke is a **canary**, not proof of generalization. Ship pass requires held_out 
 - **Fixture demo:** tiny upsample (`v1_fixture_up`), scratch context, smoke-only soft thresholds — useful for CI wiring, **not** a product claim.
 - **Ship candidate:** train `v1` (all sources + quality synth), HF context + DESIGN.md in context when claimed, full scoreboard + `--ship-gates`, rico_held at full test size.
 
+## Honest re-eval (`twotower_v1_ship`, post-remediation metrics)
+
+Checkpoint remains the pre-remediation fixture-upsample scratch run (not retrained). After fixture reshape + honest metrics:
+
+| Suite | n | parse | fidelity | struct | reward |
+| --- | --- | --- | --- | --- | --- |
+| smoke | 3 | 1.0 | **0.0** | 0.68 | 0.65 |
+| held_out | 5 | **0.0** | 0.0 | 0.48 | 0.13 |
+| adversarial | 4 | **0.0** | 0.0 | 0.45 | 0.0 |
+| ood | 4 | 0.25 | 0.0 | 0.45 | 0.16 |
+| rico_held | **1500** | **0.0** | ~0 | 0.17 | 0.0 |
+
+`--ship-gates` → **fail** (fidelity / held_out / adversarial / rico_held). Prior `"pass": true` remains invalidated.
+
 ## Re-eval commands
 
 ```bash
