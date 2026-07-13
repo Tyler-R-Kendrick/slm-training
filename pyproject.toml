@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "slm-training"
+version = "0.1.0"
+description = "Harnesses for placeholder OpenUI SLM experiments"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Tyler Kendrick" }]
+dependencies = [
+  "lark>=1.1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "pytest-asyncio>=0.23",
+]
+grammar = [
+  "lark>=1.1",
+]
+# Required for TwoTower training / generation
+torch = [
+  "torch>=2.2",
+]
+hf = [
+  "transformers>=4.40",
+  "accelerate>=0.30",
+]
+rico = [
+  "datasets>=2.18",
+  "pillow>=10.0",
+]
+mcp = [
+  "fastmcp>=2.0",
+  "httpx>=0.27",
+  "python-dotenv>=1.0",
+]
+web = [
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.27",
+]
+
+[project.scripts]
+build-train-data = "scripts.build_train_data:main"
+build-test-data = "scripts.build_test_data:main"
+train-model = "scripts.train_model:main"
+evaluate-model = "scripts.evaluate_model:main"
+train-preference = "scripts.train_preference:main"
+export-cactus = "scripts.export_cactus:main"
+bench-cactus = "scripts.bench_cactus:main"
+remote-train = "scripts.remote_train:main"
+multi-farm-mcp = "scripts.multi_farm_mcp:main"
+serve-playground = "scripts.serve_playground:main"
+
+[tool.setuptools.packages.find]
+where = ["src", "."]
+include = ["slm_training*", "gpu_multi_farm*", "scripts*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "."]
+asyncio_mode = "auto"

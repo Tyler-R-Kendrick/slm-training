@@ -1,0 +1,13 @@
+{
+  "name": "design-md-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Node sidecar wrapping @google/design.md linter for Python harnesses",
+  "scripts": {
+    "cli": "node cli.mjs"
+  },
+  "dependencies": {
+    "@google/design.md": "0.3.0"
+  }
+}
