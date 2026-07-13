@@ -71,7 +71,7 @@ Content props must be placeholder strings. Parsing/serialization/prompt generati
 
 ```bash
 pip install -e ".[dev,torch,web]"
-# uses outputs/runs/playground_demo/checkpoints/last.pt by default
+python -m scripts.bootstrap_playground   # trains a tiny demo checkpoint
 python -m scripts.serve_playground --port 8765
 # open http://127.0.0.1:8765
 ```
