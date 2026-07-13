@@ -7,11 +7,13 @@ name = "slm-training"
 version = "0.1.0"
 description = "Harnesses for placeholder OpenUI SLM experiments"
 readme = "README.md"
-requires-python = ">=3.11,<3.13"
+requires-python = ">=3.12,<3.13"
 license = { text = "MIT" }
 authors = [{ name = "Tyler Kendrick" }]
 dependencies = [
   "lark>=1.1,<2",
+  # Required for Vercel / playground FastAPI entrypoint (api/index.py).
+  "fastapi>=0.110,<1",
 ]
 
 [project.optional-dependencies]
