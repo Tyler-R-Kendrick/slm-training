@@ -57,6 +57,8 @@ build-test-data = "scripts.build_test_data:main"
 migrate-checkpoint = "scripts.migrate_checkpoint:main"
 train-model = "scripts.train_model:main"
 evaluate-model = "scripts.evaluate_model:main"
+evaluate-loss-suites = "scripts.evaluate_loss_suites:main"
+collect-trajectories = "scripts.collect_trajectories:main"
 train-preference = "scripts.train_preference:main"
 export-cactus = "scripts.export_cactus:main"
 bench-cactus = "scripts.bench_cactus:main"
@@ -69,6 +71,9 @@ export-annotations = "scripts.export_annotations:main"
 [tool.setuptools.packages.find]
 where = ["src", "."]
 include = ["slm_training*", "gpu_multi_farm*", "scripts*"]
+
+[tool.setuptools.package-data]
+slm_training = ["evals/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

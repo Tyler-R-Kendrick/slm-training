@@ -85,6 +85,7 @@ def save_full_state(
     config: Any,
     manifest_sha: str | None,
     best_weighted_nll: float | None = None,
+    best_ship_score: float | None = None,
 ) -> Path:
     """Atomically write a resumable training-state checkpoint."""
     import torch
@@ -128,6 +129,7 @@ def save_full_state(
         "code_git_sha": _git_sha(),
         "config": _jsonable_config(config),
         "best_weighted_nll": best_weighted_nll,
+        "best_ship_score": best_ship_score,
         "saved_at": datetime.now(timezone.utc).isoformat(),
     }
     tmp_path: Path | None = None

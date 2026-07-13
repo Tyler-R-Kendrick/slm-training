@@ -22,6 +22,29 @@ def _parse_eval_suites(config: ModelBuildConfig) -> list[str]:
     return [suite]
 
 
+def _ship_score(metrics: dict) -> float | None:
+    """Composite generated-eval score used for best_ship_score.pt selection.
+
+    Matches the grammar-matrix successive-halving weights so NLL-best and
+    ship-best checkpoints remain independently trackable.
+    """
+    keys = (
+        ("parse_rate", 2.0),
+        ("placeholder_fidelity", 2.0),
+        ("structural_similarity", 1.0),
+        ("reward_score", 0.5),
+    )
+    total = 0.0
+    weight = 0.0
+    for key, w in keys:
+        value = metrics.get(key)
+        if value is None:
+            continue
+        total += w * float(value)
+        weight += w
+    return total / weight if weight else None
+
+
 def train(config: ModelBuildConfig, model=None) -> dict:
     from slm_training.accel import (
         autocast_context,
@@ -134,6 +157,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     seen_prompt_tokens = 0
     seen_target_tokens = 0
     best_weighted_nll = math.inf
+    best_ship_score = -math.inf
     pending: list[list] = []
     manifest_sha = data_manifest_sha(config.train_dir)
     resumed_from: str | None = None
@@ -170,6 +194,8 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         seen_target_tokens = int(payload.get("seen_target_tokens") or 0)
         if payload.get("best_weighted_nll") is not None:
             best_weighted_nll = float(payload["best_weighted_nll"])
+        if payload.get("best_ship_score") is not None:
+            best_ship_score = float(payload["best_ship_score"])
         pending = []
         for batch_ids in payload.get("pending_batch_ids") or []:
             batch = []
@@ -214,9 +240,13 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 best_weighted_nll=(
                     None if math.isinf(best_weighted_nll) else best_weighted_nll
                 ),
+                best_ship_score=(
+                    None if math.isinf(best_ship_score) else best_ship_score
+                ),
             )
 
     def _maybe_eval(step: int, force: bool = False) -> dict | None:
+        nonlocal best_ship_score
         if config.test_dir is None:
             return None
         if not force and (
@@ -231,10 +261,12 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         with timed("eval_save_ckpt"):
             plugin.save(mid_ckpt)
         suites = _parse_eval_suites(config)
+        ship: float | None = None
         with timed("eval_suites"):
             if len(suites) == 1:
                 eval_cfg = replace(config, suite=suites[0])
                 metrics = evaluate(eval_cfg, model=plugin)
+                ship = _ship_score(metrics)
                 row = {
                     "step": step,
                     "suite": suites[0],
@@ -255,12 +287,28 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                         "structural_similarity": metrics.get("structural_similarity"),
                         "reward_score": metrics.get("reward_score"),
                     }
+                # Mean of per-suite ship scores keeps multi-suite boards comparable.
+                scores = [
+                    s
+                    for s in (_ship_score(m) for m in board.values())
+                    if s is not None
+                ]
+                ship = sum(scores) / len(scores) if scores else None
                 row = {
                     "step": step,
                     "suites": suites,
                     "board": board,
                     "ts": datetime.now(timezone.utc).isoformat(),
                 }
+        if ship is not None and ship > best_ship_score:
+            best_ship_score = float(ship)
+            with timed("ship_best_ckpt"):
+                plugin.save(ckpt_dir / "best_ship_score.pt")
+            row["ship_score"] = best_ship_score
+            row["ship_best"] = True
+        elif ship is not None:
+            row["ship_score"] = float(ship)
+            row["ship_best"] = False
         eval_history.append(row)
         (run_dir / "eval_history.jsonl").write_text(
             "".join(json.dumps(r) + "\n" for r in eval_history),
@@ -495,6 +543,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         "final_loss_eval": final_loss_eval,
         "best_weighted_nll": (
             None if math.isinf(best_weighted_nll) else best_weighted_nll
+        ),
+        "best_ship_score": (
+            None if math.isinf(best_ship_score) else best_ship_score
         ),
         "telemetry": tel.summary(),
         "telemetry_path": str(tel_path.as_posix()),

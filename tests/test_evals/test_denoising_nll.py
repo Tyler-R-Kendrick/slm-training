@@ -16,9 +16,11 @@ from slm_training.evals.denoising_nll import (
 )
 from slm_training.evals.loss_suites import (
     CATEGORY_WEIGHTS,
+    LOSS_SUITE_VERSION,
     binding_positions,
     evaluate_loss_suites,
     evaluate_repair_nll,
+    load_suite_spec,
     structural_positions,
 )
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
@@ -150,6 +152,13 @@ def _write_suite(test_dir: Path, suite: str, records: list[ExampleRecord]) -> No
     suite_dir = test_dir / "suites" / suite
     suite_dir.mkdir(parents=True, exist_ok=True)
     write_jsonl(suite_dir / "records.jsonl", records)
+
+
+def test_frozen_suite_spec_matches_weights() -> None:
+    spec = load_suite_spec(LOSS_SUITE_VERSION)
+    assert spec["loss_suite_version"] == LOSS_SUITE_VERSION
+    assert {k: float(v) for k, v in spec["weights"].items()} == CATEGORY_WEIGHTS
+    assert len(spec["mask_rates"]) == 5
 
 
 def test_loss_suites_full_report(tmp_path: Path) -> None:

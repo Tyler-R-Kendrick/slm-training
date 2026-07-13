@@ -38,13 +38,24 @@ from slm_training.evals.denoising_nll import (
 
 LOSS_SUITE_VERSION = "v1"
 
+# Frozen, versioned objective — load from the committed JSON artifact so
+# cross-run comparisons cannot silently drift when Python constants change.
+
+
+def load_suite_spec(version: str = LOSS_SUITE_VERSION) -> dict[str, Any]:
+    path = Path(__file__).with_name(f"loss_suite_{version}.json")
+    if not path.exists():
+        raise FileNotFoundError(f"frozen loss-suite spec missing: {path}")
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+_SUITE_SPEC = load_suite_spec(LOSS_SUITE_VERSION)
 CATEGORY_WEIGHTS: dict[str, float] = {
-    "binding": 0.30,
-    "structural": 0.25,
-    "repair": 0.20,
-    "schema_ood": 0.15,
-    "broad": 0.10,
+    str(k): float(v) for k, v in (_SUITE_SPEC.get("weights") or {}).items()
 }
+DEFAULT_MASK_RATES_FROM_SPEC: tuple[float, ...] = tuple(
+    float(r) for r in (_SUITE_SPEC.get("mask_rates") or [])
+)
 
 _STRUCT_CHARS = {"(", ")", "[", "]", ",", "=", "\n"}
 _BINDING_CHARS = {":", ".", '"'}
@@ -234,19 +245,38 @@ def loss_suite_definition(
     nll_config: DenoisingNLLConfig,
     repair_config: RepairNLLConfig,
 ) -> dict[str, Any]:
-    """Frozen, versioned description of exactly what was evaluated."""
-    return {
-        "loss_suite_version": LOSS_SUITE_VERSION,
-        "weights": dict(CATEGORY_WEIGHTS),
-        "mask_rates": list(nll_config.mask_rates),
-        "mask_seed": nll_config.mask_seed,
-        "repair_seed": repair_config.seed,
-        "repair_edits_per_record": repair_config.edits_per_record,
-        "base_suite": base_suite,
-        "ood_suite": ood_suite,
-        "base_record_ids": sorted(r.id for r in base_records) if base_records else None,
-        "ood_record_ids": sorted(r.id for r in ood_records) if ood_records else None,
-    }
+    """Frozen, versioned description of exactly what was evaluated.
+
+    Starts from the committed ``loss_suite_<version>.json`` artifact and fills
+    in the concrete record ids / rates used for this run so results stay
+    comparable across machines.
+    """
+    try:
+        definition = dict(load_suite_spec(nll_config.suite_version))
+    except FileNotFoundError:
+        definition = {
+            "loss_suite_version": nll_config.suite_version,
+            "weights": dict(CATEGORY_WEIGHTS),
+        }
+    definition.update(
+        {
+            "loss_suite_version": nll_config.suite_version,
+            "weights": dict(CATEGORY_WEIGHTS),
+            "mask_rates": list(nll_config.mask_rates),
+            "mask_seed": nll_config.mask_seed,
+            "repair_seed": repair_config.seed,
+            "repair_edits_per_record": repair_config.edits_per_record,
+            "base_suite": base_suite,
+            "ood_suite": ood_suite,
+            "base_record_ids": (
+                sorted(r.id for r in base_records) if base_records else None
+            ),
+            "ood_record_ids": (
+                sorted(r.id for r in ood_records) if ood_records else None
+            ),
+        }
+    )
+    return definition
 
 
 def _load_suite(test_dir: Path, suite: str) -> list[ExampleRecord] | None:
@@ -264,8 +294,8 @@ def evaluate_loss_suites(
     *,
     nll_config: DenoisingNLLConfig | None = None,
     repair_config: RepairNLLConfig | None = None,
-    base_suite: str = "held_out",
-    ood_suite: str = "ood",
+    base_suite: str | None = None,
+    ood_suite: str | None = None,
     limit: int | None = None,
 ) -> dict[str, Any]:
     """Run all five categories; missing suites yield ``null`` categories.
@@ -274,9 +304,24 @@ def evaluate_loss_suites(
     ``complete=False`` when anything was missing — a partial aggregate is
     never silently presented as the full objective.
     """
-    nll_cfg = nll_config or DenoisingNLLConfig(suite_version=LOSS_SUITE_VERSION)
-    repair_cfg = repair_config or RepairNLLConfig(suite_version=LOSS_SUITE_VERSION)
+    try:
+        spec = load_suite_spec(LOSS_SUITE_VERSION)
+    except FileNotFoundError:
+        spec = {}
+    rates = DEFAULT_MASK_RATES_FROM_SPEC or (0.15, 0.30, 0.50, 0.70, 0.85)
+    nll_cfg = nll_config or DenoisingNLLConfig(
+        suite_version=LOSS_SUITE_VERSION,
+        mask_rates=rates,
+        mask_seed=int(spec.get("mask_seed", 0) or 0),
+    )
+    repair_cfg = repair_config or RepairNLLConfig(
+        suite_version=LOSS_SUITE_VERSION,
+        seed=int(spec.get("repair_seed", 0) or 0),
+        edits_per_record=int(spec.get("repair_edits_per_record", 3) or 3),
+    )
     test_dir = Path(test_dir)
+    base_suite = base_suite or str(spec.get("base_suite") or "held_out")
+    ood_suite = ood_suite or str(spec.get("ood_suite") or "ood")
 
     base_records = _load_suite(test_dir, base_suite)
     ood_records = _load_suite(test_dir, ood_suite)
