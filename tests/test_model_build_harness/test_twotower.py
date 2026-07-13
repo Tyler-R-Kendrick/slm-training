@@ -28,9 +28,10 @@ CTA = 'root = Stack([cta])\ncta = Button(":cta.label")'
 def test_tokenize_preserves_placeholders_and_whitespace() -> None:
     text = 'hero = Card(":hero.title", ":hero.body")\n'
     tokens = tokenize_text(text)
-    # Placeholders appear as quoted OpenUI string literals
-    assert '":hero.title"' in tokens
-    assert '":hero.body"' in tokens
+    assert ":" in tokens
+    assert "hero" in tokens
+    assert "title" in tokens
+    assert "body" in tokens
     assert "\n" in tokens
     assert "Card" in tokens
 
@@ -50,6 +51,42 @@ def test_tokenizer_save_load(tmp_path: Path) -> None:
     tok.save(path)
     loaded = OpenUITokenizer.load(path)
     assert loaded.encode(HERO) == tok.encode(HERO)
+
+
+def test_migrate_checkpoint_rebuilds_v2_vocab(tmp_path: Path) -> None:
+    from slm_training.models.checkpoint_migrate import migrate_twotower_checkpoint
+
+    records = [
+        ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train"),
+        ExampleRecord(id="b", prompt="CTA", openui=CTA, split="train"),
+    ]
+    records_path = tmp_path / "records.jsonl"
+    write_jsonl(records_path, records)
+
+    model = TwoTowerModel.from_records(records, config=TwoTowerConfig(d_model=32, n_heads=4))
+    src = tmp_path / "legacy.pt"
+    model.save(src)
+
+    # Simulate a v1 tokenizer sidecar (same token table, older version tag).
+    tok_path = src.with_suffix(".tokenizer.json")
+    import json
+
+    data = json.loads(tok_path.read_text(encoding="utf-8"))
+    data["version"] = 1
+    tok_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+    out = tmp_path / "migrated.pt"
+    report = migrate_twotower_checkpoint(
+        source_checkpoint=src,
+        train_records_path=records_path,
+        output_checkpoint=out,
+        device="cpu",
+    )
+    assert report["new_tokenizer_version"] == 2
+    assert out.exists()
+    loaded = TwoTowerModel.from_checkpoint(out, device="cpu")
+    assert loaded.tokenizer.version == 2
+    assert loaded.tokenizer.vocab_size == report["new_vocab_size"]
 
 
 def test_twotower_training_loss_decreases() -> None:
@@ -110,8 +147,20 @@ def test_twotower_train_eval_overfit(tmp_path: Path) -> None:
     write_jsonl(
         train_seeds,
         [
-            ExampleRecord(id="tr1", prompt="Hero", openui=HERO, split="train"),
-            ExampleRecord(id="tr2", prompt="CTA", openui=CTA, split="train"),
+            ExampleRecord(
+                id="tr1",
+                prompt="Hero",
+                openui=HERO,
+                split="train",
+                placeholders=[":hero.title", ":hero.body"],
+            ),
+            ExampleRecord(
+                id="tr2",
+                prompt="CTA",
+                openui=CTA,
+                split="train",
+                placeholders=[":cta.label"],
+            ),
         ],
     )
     train_result = build_train_data(
@@ -136,6 +185,7 @@ def test_twotower_train_eval_overfit(tmp_path: Path) -> None:
                 openui=HERO,
                 split="smoke",
                 meta={"suite": "smoke"},
+                placeholders=[":hero.title", ":hero.body"],
             ),
             ExampleRecord(
                 id="sm2",
@@ -143,6 +193,7 @@ def test_twotower_train_eval_overfit(tmp_path: Path) -> None:
                 openui=CTA,
                 split="smoke",
                 meta={"suite": "smoke"},
+                placeholders=[":cta.label"],
             ),
         ],
     )
@@ -178,6 +229,8 @@ def test_twotower_train_eval_overfit(tmp_path: Path) -> None:
         gen_steps=6,
         context_backend="scratch",
         freeze_context=False,
+        slot_contract_in_context=True,
+        slot_contract_constrained_decode=True,
     )
     summary = train(config)
     assert summary["steps"] == 120

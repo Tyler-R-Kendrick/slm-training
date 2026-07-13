@@ -38,8 +38,9 @@ def format_context_text(
     budget: int = 1800,
     schema: str | None = None,
     retrieved_skeleton: str | None = None,
+    slot_contract: list[str] | None = None,
 ) -> str:
-    """Concatenate prompt with optional schema / skeleton / DESIGN.md."""
+    """Concatenate prompt with optional schema / skeleton / slot contract / DESIGN.md."""
     prompt = (prompt or "").strip()
     parts = [prompt] if prompt else []
     if schema and schema.strip():
@@ -48,6 +49,9 @@ def format_context_text(
         parts.append(
             f"---RETRIEVED_SKELETON---\n{retrieved_skeleton.strip()[: min(400, budget)]}"
         )
+    if slot_contract:
+        slots = ", ".join(slot_contract)
+        parts.append(f"---SLOT_CONTRACT---\n{slots[: min(800, budget)]}")
     if design_md and design_md.strip():
         dm = design_md.strip()
         if len(dm) > budget:
@@ -99,6 +103,8 @@ class TwoTowerConfig:
     design_md_in_context: bool = True
     design_md_budget: int = 1800
     schema_in_context: bool = False
+    slot_contract_in_context: bool = False
+    slot_contract_constrained_decode: bool = False
     retrieval_k: int = 0
     best_of_n: int = 1
     seed: int = 0
@@ -178,6 +184,7 @@ class TwoTowerModel(nn.Module):
         self._context_text_cache: dict[str, str] = {}
         self._target_ids_cache: dict[str, list[int]] = {}
         self._placeholder_token_ids: set[int] | None = None
+        self._slot_contracts: list[list[str] | None] | None = None
         self.to(device)
 
     def clear_train_caches(self) -> None:
@@ -247,25 +254,32 @@ class TwoTowerModel(nn.Module):
 
     def _merge_ltr_suffix_mask(
         self, target_ids: torch.Tensor, noisy: torch.Tensor, predict_mask: torch.Tensor
-    ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Force-mask a random suffix into the same canvas (single-forward LTR)."""
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Force-mask a random suffix; return ltr-only positions for loss weighting."""
         bsz, seq = target_ids.shape
+        ltr_suffix = torch.zeros_like(predict_mask)
         for i in range(bsz):
             cut = self._rng.randint(1, max(1, seq - 1))
             for j in range(cut, seq):
                 if int(target_ids[i, j]) == self.tokenizer.pad_id:
                     break
-                predict_mask[i, j] = True
-                noisy[i, j] = self.tokenizer.mask_id
-        return noisy, predict_mask
+                ltr_suffix[i, j] = True
+                if not bool(predict_mask[i, j].item()):
+                    predict_mask[i, j] = True
+                    noisy[i, j] = self.tokenizer.mask_id
+        return noisy, predict_mask, ltr_suffix
 
     def _placeholder_ids(self) -> set[int]:
         if self._placeholder_token_ids is None:
             ids: set[int] = set()
             for tok, tid in self.tokenizer.token_to_id.items():
-                if tok.startswith(":") and "." in tok:
+                if tok in {":", "."}:
                     ids.add(tid)
-                elif tok.startswith('":') or (tok.startswith('"') and ":" in tok):
+                elif tok and tok[0].islower() and tok.isidentifier():
+                    ids.add(tid)
+                elif tok.startswith('":') or (
+                    tok.startswith('"') and ":" in tok
+                ):
                     ids.add(tid)
             self._placeholder_token_ids = ids
         return self._placeholder_token_ids
@@ -288,7 +302,12 @@ class TwoTowerModel(nn.Module):
                 prompts.append(self._context_text_cache[key])
             else:
                 text = self._format_one_context(
-                    r.prompt, r.design_md, query_prompt=r.prompt
+                    r.prompt,
+                    r.design_md,
+                    query_prompt=r.prompt,
+                    slot_contract=list(r.placeholders or [])
+                    if getattr(self.config, "slot_contract_in_context", False)
+                    else None,
                 )
                 if cache_on:
                     self._context_text_cache[key] = text
@@ -309,8 +328,9 @@ class TwoTowerModel(nn.Module):
 
         ltr_w = float(self.config.ltr_loss_weight or 0.0)
         fuse = bool(getattr(self.config, "fuse_ltr_loss", True))
+        ltr_suffix = torch.zeros_like(predict_mask)
         if ltr_w > 0.0 and target_ids.size(1) >= 2 and fuse:
-            noisy, predict_mask = self._merge_ltr_suffix_mask(
+            noisy, predict_mask, ltr_suffix = self._merge_ltr_suffix_mask(
                 target_ids, noisy, predict_mask
             )
 
@@ -321,13 +341,27 @@ class TwoTowerModel(nn.Module):
                 noisy, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
             )
         if predict_mask.any():
-            mask_loss = F.cross_entropy(logits[predict_mask], target_ids[predict_mask])
+            flat_logits = logits.reshape(-1, logits.size(-1))
+            flat_targets = target_ids.reshape(-1)
+            ce = F.cross_entropy(flat_logits, flat_targets, reduction="none")
+            weights = torch.ones_like(ce)
+            if ltr_w > 0.0 and fuse and ltr_suffix.any():
+                suffix_flat = ltr_suffix.reshape(-1)
+                weights = weights + (ltr_w * suffix_flat.float())
+            mask_flat = predict_mask.reshape(-1)
+            mask_loss = (ce * weights)[mask_flat].mean()
         else:
             mask_loss = logits.sum() * 0.0
 
         fid_w = float(getattr(self.config, "fidelity_loss_weight", 0.0) or 0.0)
         if fid_w > 0.0 and predict_mask.any():
-            ph_ids = self._placeholder_ids()
+            ph_ids: set[int] = set()
+            for r in batch:
+                for ph in r.placeholders or []:
+                    for tid in self.tokenizer.encode(f'"{ph}"', add_special=False):
+                        ph_ids.add(tid)
+            if not ph_ids:
+                ph_ids = self._placeholder_ids()
             if ph_ids:
                 ph_mask = predict_mask.clone()
                 # Vectorized membership via isin.
@@ -359,10 +393,6 @@ class TwoTowerModel(nn.Module):
             else:
                 ltr_loss = mask_loss * 0.0
             mask_loss = mask_loss + ltr_w * ltr_loss
-        elif ltr_w > 0.0 and fuse:
-            # Fused path already includes suffix masks; scale total lightly by ltr_w
-            # so turning LTR up still emphasizes suffix learning without 2× FLOPs.
-            mask_loss = mask_loss * (1.0 + 0.25 * ltr_w)
 
         aux_w = float(getattr(self.config, "fastpath_aux_weight", 0.0) or 0.0)
         if aux_w > 0.0 and getattr(self.config, "grammar_fastpath", False):
@@ -384,6 +414,7 @@ class TwoTowerModel(nn.Module):
         design_md: str | None,
         *,
         query_prompt: str | None = None,
+        slot_contract: list[str] | None = None,
     ) -> str:
         schema = None
         if getattr(self.config, "schema_in_context", False):
@@ -401,12 +432,18 @@ class TwoTowerModel(nn.Module):
             if hits:
                 skeleton = format_retrieved_skeleton(hits[0].openui)
         dm = design_md if self.config.design_md_in_context else None
+        contract = (
+            slot_contract
+            if getattr(self.config, "slot_contract_in_context", False)
+            else None
+        )
         return format_context_text(
             prompt,
             dm,
             budget=self.config.design_md_budget,
             schema=schema,
             retrieved_skeleton=skeleton,
+            slot_contract=contract,
         )
     def _decode_ids(self, ids_1d: torch.Tensor) -> str:
         token_ids = ids_1d.tolist()
@@ -421,8 +458,14 @@ class TwoTowerModel(nn.Module):
         unknown: torch.Tensor,
         ctx: torch.Tensor,
         ctx_pad: torch.Tensor,
+        *,
+        slot_contract: list[str] | None = None,
     ) -> torch.Tensor:
         """Fill remaining masks left-to-right with streaming-parser filtering."""
+        use_contract = bool(
+            getattr(self.config, "slot_contract_constrained_decode", False)
+        )
+        contract = slot_contract if use_contract else None
         length = ids.size(1)
         use_fast = bool(getattr(self.config, "grammar_fastpath", True))
         for t in range(length):
@@ -449,6 +492,7 @@ class TwoTowerModel(nn.Module):
                     self.tokenizer,
                     prefix,
                     top_k=self.config.grammar_top_k,
+                    slot_contract=contract,
                 )
             else:
                 # Zero logits stand-in; forced id short-circuits inside picker.
@@ -461,6 +505,7 @@ class TwoTowerModel(nn.Module):
                     prefix,
                     top_k=self.config.grammar_top_k,
                     forced_token_id=forced,
+                    slot_contract=contract,
                 )
             ids[0, t] = choice
             unknown[0, t] = False
@@ -622,11 +667,24 @@ class TwoTowerModel(nn.Module):
         design_mds: list[str | None] | None = None,
     ) -> list[str]:
         out: list[str] = []
+        use_contract = bool(getattr(self.config, "slot_contract_in_context", False))
         for i, prompt in enumerate(prompts):
             dm = design_mds[i] if design_mds else None
-            if dm is None and golds and golds[i] is not None:
-                dm = golds[i].design_md  # type: ignore[union-attr]
-            out.append(self._format_one_context(prompt, dm, query_prompt=prompt))
+            contract: list[str] | None = None
+            if golds and golds[i] is not None:
+                gold = golds[i]
+                if dm is None:
+                    dm = gold.design_md  # type: ignore[union-attr]
+                if use_contract:
+                    contract = list(gold.placeholders or [])  # type: ignore[union-attr]
+            out.append(
+                self._format_one_context(
+                    prompt,
+                    dm,
+                    query_prompt=prompt,
+                    slot_contract=contract,
+                )
+            )
         return out
 
     def _repair_ltr_texts(
@@ -635,17 +693,26 @@ class TwoTowerModel(nn.Module):
         ctx: torch.Tensor,
         ctx_pad: torch.Tensor,
         length: int,
+        *,
+        slot_contracts: list[list[str] | None] | None = None,
     ) -> list[str]:
         """Re-decode rows that fail stream_check using constrained LTR."""
         from concurrent.futures import ThreadPoolExecutor
 
-        def _check(text: str) -> tuple[bool, str]:
+        def _check(text: str, contract: list[str] | None) -> tuple[bool, str]:
             try:
                 status = stream_check(text)
                 if status.serialized and status.complete_ok:
                     ser = status.serialized.strip()
                     compact = ser.replace(" ", "")
                     if "Stack([])" not in compact and "Card([])" not in compact:
+                        if contract:
+                            from slm_training.dsl.placeholders import extract_placeholders
+
+                            preds = set(extract_placeholders(ser))
+                            allowed = {p if p.startswith(":") else f":{p}" for p in contract}
+                            if preds and not preds.issubset(allowed):
+                                return False, text
                         return True, ser
             except Exception:  # noqa: BLE001
                 pass
@@ -654,7 +721,20 @@ class TwoTowerModel(nn.Module):
         # Parallel Node stream_check — grammar bridge is process-bound, so threads
         # overlap Python wait when the Node CLI is the bottleneck.
         with ThreadPoolExecutor(max_workers=min(8, max(1, len(texts)))) as pool:
-            checked = list(pool.map(_check, texts))
+            checked = list(
+                pool.map(
+                    lambda item: _check(item[0], item[1]),
+                    [
+                        (
+                            text,
+                            slot_contracts[i]
+                            if slot_contracts and i < len(slot_contracts)
+                            else None,
+                        )
+                        for i, text in enumerate(texts)
+                    ],
+                )
+            )
 
         repaired: list[str] = []
         for i, (ok, text) in enumerate(checked):
@@ -674,6 +754,11 @@ class TwoTowerModel(nn.Module):
                 unknown,
                 ctx[i : i + 1],
                 ctx_pad[i : i + 1],
+                slot_contract=(
+                    slot_contracts[i]
+                    if slot_contracts and i < len(slot_contracts)
+                    else None
+                ),
             )
             repaired.append(self._decode_ids(filled[0]))
         return repaired
@@ -762,6 +847,15 @@ class TwoTowerModel(nn.Module):
         )
         length = max_len or self.gen_len or self.config.max_target_len
         length = max(8, min(int(length), self.config.max_target_len))
+        use_contract_decode = bool(
+            getattr(self.config, "slot_contract_constrained_decode", False)
+        )
+        if use_contract_decode and golds:
+            self._slot_contracts = [
+                list(g.placeholders or []) if g else None for g in golds
+            ]
+        else:
+            self._slot_contracts = None
         ctx_prompts = self._context_prompts(prompts, golds=golds, design_mds=design_mds)
         ctx, ctx_pad = self._encode_context(ctx_prompts)
 
@@ -770,7 +864,13 @@ class TwoTowerModel(nn.Module):
             ids = self._greedy_ltr_decode_batch(ctx, ctx_pad, repair_len)
             texts = [self._decode_ids(ids[i]) for i in range(ids.size(0))]
             if self.config.grammar_ltr_repair:
-                texts = self._repair_ltr_texts(texts, ctx, ctx_pad, repair_len)
+                texts = self._repair_ltr_texts(
+                    texts,
+                    ctx,
+                    ctx_pad,
+                    repair_len,
+                    slot_contracts=self._slot_contracts,
+                )
             if self.config.grammar_finalize_validate:
                 finalized: list[str] = []
                 for text in texts:
@@ -792,12 +892,18 @@ class TwoTowerModel(nn.Module):
         # Fall back to per-item MaskGIT for non-LTR-primary path.
         out: list[str] = []
         for i in range(len(prompts)):
+            contract = (
+                self._slot_contracts[i]
+                if self._slot_contracts and i < len(self._slot_contracts)
+                else None
+            )
             out.append(
                 self._generate_maskgit_one(
                     ctx[i : i + 1],
                     ctx_pad[i : i + 1],
                     length,
                     use_grammar=use_grammar,
+                    slot_contract=contract,
                 )
             )
         return out
@@ -809,6 +915,7 @@ class TwoTowerModel(nn.Module):
         length: int,
         *,
         use_grammar: bool,
+        slot_contract: list[str] | None = None,
     ) -> str:
         """Single-sequence MaskGIT unmasking (+ optional grammar repair)."""
         device = self.device_name
@@ -903,7 +1010,13 @@ class TwoTowerModel(nn.Module):
 
         if unknown.any():
             if use_grammar:
-                ids = self._constrained_ltr_repair(ids, unknown, ctx, ctx_pad)
+                ids = self._constrained_ltr_repair(
+                    ids,
+                    unknown,
+                    ctx,
+                    ctx_pad,
+                    slot_contract=slot_contract,
+                )
             else:
                 logits = self.denoiser(
                     ids, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad

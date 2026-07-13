@@ -151,6 +151,58 @@ def force_emit_token_id(
     return force_next_token_id(engine, tokenizer, prefix_text)
 
 
+def _incomplete_quoted_string(prefix_text: str) -> bool:
+    """True when the prefix ends inside an unclosed double-quoted string."""
+    return prefix_text.count('"') % 2 == 1
+
+
+def contract_allowed_token_ids(
+    tokenizer: OpenUITokenizer,
+    prefix_ids: list[int],
+    slot_contract: list[str] | None,
+) -> set[int] | None:
+    """
+    When building a quoted placeholder, return allowed next token ids from the
+    slot contract inventory. None means no contract filter applies.
+    """
+    if not slot_contract:
+        return None
+    prefix_text = tokenizer.decode(prefix_ids)
+    if not _incomplete_quoted_string(prefix_text):
+        return None
+
+    from slm_training.models.tokenizer import tokenize_text
+
+    last_open = prefix_text.rfind('"')
+    built = prefix_text[last_open + 1 :]
+    # Ordinary string literals ("column", "row") must not use placeholder contract.
+    if not built.startswith(":"):
+        return None
+
+    built_seq = tokenize_text(f'"{built}')
+    allowed: set[int] = set()
+    for ph in slot_contract:
+        target = ph if ph.startswith(":") else f":{ph}"
+        target_seq = tokenize_text(f'"{target}"')
+        if len(built_seq) > len(target_seq):
+            continue
+        if target_seq[: len(built_seq)] != built_seq:
+            continue
+        if len(built_seq) < len(target_seq):
+            tok = target_seq[len(built_seq)]
+            tid = tokenizer.token_to_id.get(tok)
+            if tid is not None:
+                allowed.add(tid)
+        else:
+            # Complete placeholder — allow closing quote if present in target
+            if len(target_seq) > len(built_seq):
+                tok = target_seq[len(built_seq)]
+                tid = tokenizer.token_to_id.get(tok)
+                if tid is not None:
+                    allowed.add(tid)
+    return allowed or None
+
+
 def pick_constrained_token(
     logits_1d,
     tokenizer: OpenUITokenizer,
@@ -158,6 +210,7 @@ def pick_constrained_token(
     *,
     top_k: int = 16,
     forced_token_id: int | None = None,
+    slot_contract: list[str] | None = None,
 ) -> int:
     """
     Choose a next token from top-k that does not introduce a hard streaming error.
@@ -170,16 +223,21 @@ def pick_constrained_token(
     """
     import torch
 
+    contract_allowed = contract_allowed_token_ids(
+        tokenizer, prefix_ids, slot_contract
+    )
+
     if forced_token_id is not None:
-        trial_ids = prefix_ids + [int(forced_token_id)]
-        text = tokenizer.decode(trial_ids)
-        probe = text if text.endswith(("(", "[", ",", "=", " ", "\n")) else f"{text}("
-        try:
-            status = stream_check(probe)
-            if not status.hard_error:
+        if contract_allowed is None or int(forced_token_id) in contract_allowed:
+            trial_ids = prefix_ids + [int(forced_token_id)]
+            text = tokenizer.decode(trial_ids)
+            probe = text if text.endswith(("(", "[", ",", "=", " ", "\n")) else f"{text}("
+            try:
+                status = stream_check(probe)
+                if not status.hard_error:
+                    return int(forced_token_id)
+            except Exception:  # noqa: BLE001
                 return int(forced_token_id)
-        except Exception:  # noqa: BLE001
-            return int(forced_token_id)
 
     k = min(top_k, int(logits_1d.numel()))
     _values, indices = torch.topk(logits_1d, k=k)
@@ -196,6 +254,8 @@ def pick_constrained_token(
 
     for idx in indices.tolist():
         token_id = int(idx)
+        if contract_allowed is not None and token_id not in contract_allowed:
+            continue
         token = tokenizer.id_to_token.get(token_id, "")
         trial_ids = prefix_ids + [token_id]
         text = tokenizer.decode(trial_ids)
@@ -222,6 +282,8 @@ def pick_constrained_token(
         return preferred[0]
     if acceptable:
         return acceptable[0]
+    if contract_allowed:
+        return next(iter(contract_allowed))
     return fallback
 
 
@@ -250,6 +312,7 @@ __all__ = [
     "StreamStatus",
     "active_dsl",
     "apply_structural_bias",
+    "contract_allowed_token_ids",
     "filter_ids_by_stream",
     "force_emit_token_id",
     "pick_constrained_token",

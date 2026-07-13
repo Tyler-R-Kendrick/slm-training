@@ -48,6 +48,8 @@ class ModelBuildConfig:
     design_md_in_context: bool | None = None
     design_md_budget: int = 1800
     schema_in_context: bool = False
+    slot_contract_in_context: bool = False
+    slot_contract_constrained_decode: bool = False
     retrieval_k: int = 0
     best_of_n: int = 1
     use_curriculum: bool = False

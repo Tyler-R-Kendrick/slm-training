@@ -42,6 +42,9 @@ class TrainDataConfig:
     max_openui_chars: int | None = None
     max_components: int | None = None
     curriculum: bool = False
+    namespace_augment: bool = False
+    # Exclude train records whose layout tree matches hand-authored test fixtures.
+    test_seed_path: Path | None = Path("fixtures/test_seeds.jsonl")
 
     @property
     def output_dir(self) -> Path:
@@ -190,6 +193,14 @@ def build_train_data(
     collected: list[ExampleRecord] = []
     for seed in seeds:
         candidates = [seed, *synth.expand(seed)]
+        if config.namespace_augment:
+            from slm_training.harnesses.train_data.synth import NamespaceAugmentSynthesizer
+
+            ns = NamespaceAugmentSynthesizer()
+            extra: list[ExampleRecord] = []
+            for candidate in list(candidates):
+                extra.extend(ns.expand(candidate))
+            candidates.extend(extra)
         for candidate in candidates:
             try:
                 collected.append(_normalize_record(candidate))
@@ -206,24 +217,46 @@ def build_train_data(
         max_components=config.max_components,
     )
 
+    from slm_training.data.leakage import load_reserved_test_structure_fingerprints
+
+    reserved_test_structures = load_reserved_test_structure_fingerprints(
+        config.test_seed_path
+    )
+    structure_reserved_rejected: list[dict] = []
+
     deduped: list[ExampleRecord] = []
     seen_pairs: set[str] = set()
     prompt_fps: set[str] = set()
     openui_fps: set[str] = set()
     structure_fps: set[str] = set()
     design_md_fps: set[str] = set()
-    for record in quality_kept:
+
+    def _accept_record(record: ExampleRecord, *, structure_fp: str) -> bool:
         pair = fingerprint_pair(record.prompt, record.openui)
         if pair in seen_pairs:
-            continue
+            return False
         seen_pairs.add(pair)
         prompt_fps.add(fingerprint_prompt(record.prompt))
         openui_fps.add(fingerprint_openui(record.openui))
-        structure_fps.add(fingerprint_openui_structure(record.openui))
+        structure_fps.add(structure_fp)
         dm = fingerprint_design_md(record.design_md)
         if dm:
             design_md_fps.add(dm)
         deduped.append(record)
+        return True
+
+    for record in quality_kept:
+        structure_fp = fingerprint_openui_structure(record.openui)
+        if structure_fp in reserved_test_structures:
+            structure_reserved_rejected.append(
+                {
+                    "id": record.id,
+                    "source": record.source,
+                    "reason": "test_fixture_structure",
+                }
+            )
+            continue
+        _accept_record(record, structure_fp=structure_fp)
 
     # Final stable order.
     deduped.sort(key=lambda r: r.id)
@@ -231,21 +264,26 @@ def build_train_data(
         from slm_training.quality import apply_curriculum_tags
 
         deduped = apply_curriculum_tags(deduped)
-        # Inject a few adversarial fixtures as stage-C when available.
-        adv_path = Path("fixtures/test_seeds.jsonl")
-        if adv_path.is_file():
-            for seed in load_jsonl(adv_path):
-                if seed.split != "adversarial":
-                    continue
-                try:
-                    tagged = apply_curriculum_tags([_normalize_record(seed)])[0]
-                    tagged.meta["curriculum"] = "C"
-                    tagged.split = "train"
-                    tagged.id = f"curriculum_c_{tagged.id}"
-                    deduped.append(tagged)
-                except (ParseError, ValueError) as exc:
-                    errors.append({"id": seed.id, "error": str(exc)})
-            deduped.sort(key=lambda r: r.id)
+        from slm_training.quality import synthesize_stress_adversarial_records
+
+        for stress in synthesize_stress_adversarial_records():
+            try:
+                normalized = _normalize_record(stress)
+            except (ParseError, ValueError) as exc:
+                errors.append({"id": stress.id, "error": str(exc)})
+                continue
+            structure_fp = fingerprint_openui_structure(normalized.openui)
+            if structure_fp in reserved_test_structures:
+                structure_reserved_rejected.append(
+                    {
+                        "id": normalized.id,
+                        "source": normalized.source,
+                        "reason": "test_fixture_structure",
+                    }
+                )
+                continue
+            _accept_record(normalized, structure_fp=structure_fp)
+        deduped.sort(key=lambda r: r.id)
 
     out_dir = config.output_dir
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -273,6 +311,8 @@ def build_train_data(
         "max_openui_chars": config.max_openui_chars,
         "max_components": config.max_components,
         "curriculum": bool(config.curriculum),
+        "structure_reserved_rejected": len(structure_reserved_rejected),
+        "structure_reserved_rejected_samples": structure_reserved_rejected[:20],
         "mean_quality_score": (
             round(sum(quality_scores) / len(quality_scores), 4) if quality_scores else None
         ),

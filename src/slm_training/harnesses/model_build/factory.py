@@ -32,6 +32,8 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "grammar_finalize_validate",
         "design_md_budget",
         "schema_in_context",
+        "slot_contract_in_context",
+        "slot_contract_constrained_decode",
         "retrieval_k",
         "best_of_n",
         "fidelity_loss_weight",
@@ -128,6 +130,10 @@ def build_model(
             ),
             design_md_budget=config.design_md_budget,
             schema_in_context=getattr(config, "schema_in_context", False),
+            slot_contract_in_context=getattr(config, "slot_contract_in_context", False),
+            slot_contract_constrained_decode=getattr(
+                config, "slot_contract_constrained_decode", False
+            ),
             retrieval_k=getattr(config, "retrieval_k", 0),
             best_of_n=getattr(config, "best_of_n", 1),
             parallel_unmask=getattr(config, "parallel_unmask", "adaptive"),
