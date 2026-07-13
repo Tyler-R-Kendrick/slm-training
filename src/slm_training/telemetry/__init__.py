@@ -6,7 +6,7 @@ import json
 import time
 from collections import defaultdict
 from contextlib import contextmanager
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterator
 
@@ -75,9 +75,7 @@ class CycleTelemetry:
             "meta": dict(self.meta),
             "total_ms": round(sum(s.total_ms for s in self.spans.values()), 3),
             "spans": by_name,
-            "bottlenecks": [
-                {"name": n, "pct": round(p, 2)} for n, p in ranked[:8]
-            ],
+            "bottlenecks": [{"name": n, "pct": round(p, 2)} for n, p in ranked[:8]],
         }
 
     def write(self, path: Path | str) -> Path:

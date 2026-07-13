@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import secrets
 from pathlib import Path
 from typing import Any, Literal
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, Header, HTTPException, Query
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -47,6 +48,7 @@ def create_app(
     human_train_path: Path | None = None,
     human_pairs_path: Path | None = None,
     bad_outputs_path: Path | None = None,
+    annotation_token: str | None = None,
 ) -> FastAPI:
     service = PlaygroundService(
         checkpoint=checkpoint,
@@ -57,6 +59,17 @@ def create_app(
         bad_outputs_path=bad_outputs_path,
     )
     app = FastAPI(title="TwoTower OpenUI Playground", version="0.2.0")
+
+    def _require_annotation_token(authorization: str | None) -> None:
+        if annotation_token is None:
+            return
+        scheme, _, supplied = (authorization or "").partition(" ")
+        if (
+            scheme.lower() != "bearer"
+            or not supplied
+            or not secrets.compare_digest(supplied, annotation_token)
+        ):
+            raise HTTPException(status_code=401, detail="valid bearer token required")
 
     @app.get("/api/health")
     def health() -> dict:
@@ -111,7 +124,11 @@ def create_app(
             raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     @app.post("/api/annotate")
-    def annotate(payload: AnnotateRequest) -> dict:
+    def annotate(
+        payload: AnnotateRequest,
+        authorization: str | None = Header(default=None),
+    ) -> dict:
+        _require_annotation_token(authorization)
         try:
             return service.annotate(
                 prompt=payload.prompt,

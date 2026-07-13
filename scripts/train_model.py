@@ -126,7 +126,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--fidelity-loss-weight",
         type=float,
-        default=0.0,
+        default=0.5,
         help="Extra CE weight on gold placeholder tokens during training.",
     )
     parser.add_argument(

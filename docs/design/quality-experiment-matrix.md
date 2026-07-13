@@ -1,5 +1,6 @@
 # Quality experiment matrix — TwoTower OpenUI
 
+> **Validity notice:** Historical scores below predate strict train/eval isolation. Curriculum runs imported adversarial fixtures and are invalid for model selection; regenerate every result with the repaired harness before comparing models.
 > Agentic workers: implement levers below, then run `python -m scripts.run_quality_matrix`.
 
 **Goal:** Clear honest `--ship-gates` by attacking fidelity=0 / parse≈0 with every approach from the quality brief.

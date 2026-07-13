@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import threading
+from collections import OrderedDict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -14,14 +15,12 @@ from slm_training.annotations import (
     DEFAULT_HUMAN_TRAIN_PATH,
     AnnotationRecord,
     BadOutputRecord,
-    append_annotation,
     append_bad_output,
-    load_annotations,
-    maybe_append_preference_pair,
+    count_annotations,
+    persist_annotation,
     new_annotation_id,
     new_bad_output_id,
     recent_annotations,
-    upsert_human_train_seed,
     utc_now_iso,
 )
 from slm_training.dsl.lang_core import ParseError, stream_check, validate
@@ -63,7 +62,8 @@ class PlaygroundService:
         self._model: TwoTowerModel | None = None
         self._lock = threading.Lock()
         self._prompt_bank = load_prompt_bank()
-        self._cursors: dict[str, PromptCursor] = {}
+        self._cursors: OrderedDict[str, PromptCursor] = OrderedDict()
+        self._max_sessions = 1024
 
     @property
     def ready(self) -> bool:
@@ -120,6 +120,10 @@ class PlaygroundService:
             if cursor is None:
                 cursor = PromptCursor(self._prompt_bank, session_id=sid, vary=True)
                 self._cursors[sid] = cursor
+                while len(self._cursors) > self._max_sessions:
+                    self._cursors.popitem(last=False)
+            else:
+                self._cursors.move_to_end(sid)
             prompt = cursor.next()
         return {"prompt": prompt, "session_id": sid}
 
@@ -333,11 +337,10 @@ class PlaygroundService:
             session_id=session_id,
             meta=dict(meta or {}),
         )
-        path = append_annotation(self.annotations_path, record)
-        human_path = upsert_human_train_seed(record, self.human_train_path)
-        pair = maybe_append_preference_pair(
+        path, human_path, pair = persist_annotation(
             record,
             feedback_path=self.annotations_path,
+            human_train_path=self.human_train_path,
             pairs_path=self.human_pairs_path,
         )
         return {
@@ -350,7 +353,9 @@ class PlaygroundService:
         }
 
     def list_recent(self, limit: int = 20) -> list[dict[str, Any]]:
-        return [r.to_dict() for r in recent_annotations(self.annotations_path, limit=limit)]
+        return [
+            r.to_dict() for r in recent_annotations(self.annotations_path, limit=limit)
+        ]
 
     def annotation_count(self) -> int:
-        return len(load_annotations(self.annotations_path))
+        return count_annotations(self.annotations_path)

@@ -167,7 +167,7 @@ def test_evaluate_suites_scoreboard(tmp_path: Path) -> None:
     assert metrics["n"] == 1
     assert metrics["parse_rate"] == 1.0
 
-    board = evaluate_suites(config, ["smoke"])
+    board = evaluate_suites(config, ["smoke"], model=model)
     assert "suites" in board
     assert (tmp_path / "runs" / "gates" / "scoreboard.json").exists()
 

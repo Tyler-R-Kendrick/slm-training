@@ -25,7 +25,9 @@ def compact_schema_snippet(*, budget: int = 600) -> str:
         "ImageBlock",
         "Separator",
     ]
-    ordered = [n for n in priority if n in names] + [n for n in names if n not in priority]
+    ordered = [n for n in priority if n in names] + [
+        n for n in names if n not in priority
+    ]
     body = ", ".join(ordered[:40])
     text = f"components: {body}"
     return text[:budget]
@@ -82,6 +84,11 @@ def tag_curriculum_stage(record: ExampleRecord) -> str:
         return "C"
     if source.startswith("rico") or rid.startswith("rico"):
         return "A"
+    if (
+        len(_COMPONENT_CALL.findall(record.openui)) >= 8
+        or record.openui.count("[") >= 5
+    ):
+        return "C"
     return "B"
 
 
@@ -126,7 +133,9 @@ def strip_adv_placeholders(openui: str) -> str:
     return _ADV_PLACEHOLDER.sub('":item.', openui)
 
 
-def sanitize_curriculum_record(record: ExampleRecord, *, stage: str | None = None) -> ExampleRecord:
+def sanitize_curriculum_record(
+    record: ExampleRecord, *, stage: str | None = None
+) -> ExampleRecord:
     """Tag stage and always strip `:adv.*` namespaces to prevent smoke leakage."""
     stage = stage or tag_curriculum_stage(record)
     openui = strip_adv_placeholders(record.openui)
@@ -265,6 +274,17 @@ def apply_curriculum_tags(
     return out
 
 
+def index_curriculum_stages(
+    records: Iterable[ExampleRecord],
+) -> dict[str, list[ExampleRecord]]:
+    """Index curriculum stages once for repeated batch sampling."""
+    pools: dict[str, list[ExampleRecord]] = {"A": [], "B": [], "C": []}
+    for record in records:
+        stage = str((record.meta or {}).get("curriculum") or "B")
+        pools.setdefault(stage, []).append(record)
+    return pools
+
+
 def sample_curriculum_batch(
     records: list[ExampleRecord],
     *,
@@ -273,14 +293,12 @@ def sample_curriculum_batch(
     total_steps: int,
     rng,
     mix: bool = True,
+    stage_pools: dict[str, list[ExampleRecord]] | None = None,
 ) -> list[ExampleRecord]:
     """Draw a batch using soft mix weights (or hard stage when mix=False)."""
     if not records:
         return []
-    by_stage: dict[str, list[ExampleRecord]] = {"A": [], "B": [], "C": []}
-    for r in records:
-        stage = str((r.meta or {}).get("curriculum") or "B")
-        by_stage.setdefault(stage, []).append(r)
+    by_stage = stage_pools or index_curriculum_stages(records)
     if not mix:
         primary = curriculum_schedule(step, total_steps)
         pool = by_stage.get(primary) or records
@@ -289,6 +307,7 @@ def sample_curriculum_batch(
         return shuffled[:batch_size]
 
     weights = curriculum_mix_weights(step, total_steps)
+
     # Fallback empty stages into B then any.
     def _pool(stage: str) -> list[ExampleRecord]:
         return by_stage.get(stage) or by_stage.get("B") or records

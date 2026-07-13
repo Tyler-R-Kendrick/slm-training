@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+import tempfile
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -163,18 +165,38 @@ def build_pairs_from_candidates(
         prompt=prompt,
         chosen=scored[0][1],
         rejected=scored[-1][1],
-        design_md=design_md if design_md is not None else (gold.design_md if gold else None),
+        design_md=design_md
+        if design_md is not None
+        else (gold.design_md if gold else None),
         chosen_score=scored[0][0],
         rejected_score=scored[-1][0],
     )
 
 
 def write_pairs(path: Path | str, pairs: list[PreferencePair]) -> int:
+    """Atomically replace a preference-pair JSONL file."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as handle:
-        for pair in pairs:
-            handle.write(json.dumps(pair.to_dict(), ensure_ascii=False) + "\n")
+    tmp_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            dir=path.parent,
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            tmp_path = Path(handle.name)
+            for pair in pairs:
+                handle.write(json.dumps(pair.to_dict(), ensure_ascii=False) + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp_path, path)
+        tmp_path = None
+    finally:
+        if tmp_path is not None:
+            tmp_path.unlink(missing_ok=True)
     return len(pairs)
 
 

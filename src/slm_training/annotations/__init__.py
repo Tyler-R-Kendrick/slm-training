@@ -2,17 +2,20 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
+from collections import deque
+import os
 import json
 import threading
 import uuid
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable, Literal
+from typing import Any, Iterator, Literal
 
 from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.schema import ExampleRecord, load_jsonl, write_jsonl
-from slm_training.preference import PreferencePair, load_pairs, write_pairs
+from slm_training.preference import PreferencePair, write_pairs
 
 Rating = Literal["up", "down"]
 
@@ -21,7 +24,26 @@ DEFAULT_HUMAN_TRAIN_PATH = Path("fixtures/annotations/human_train.jsonl")
 DEFAULT_HUMAN_PAIRS_PATH = Path("outputs/preferences/human_pairs.jsonl")
 DEFAULT_BAD_OUTPUTS_PATH = Path("outputs/annotations/bad_outputs.jsonl")
 
-_WRITE_LOCK = threading.Lock()
+_WRITE_LOCK = threading.RLock()
+
+
+@contextmanager
+def _annotation_transaction(path: Path | str) -> Iterator[None]:
+    lock_path = Path(str(Path(path)) + ".lock")
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with _WRITE_LOCK:
+        with lock_path.open("a+", encoding="utf-8") as handle:
+            try:
+                import fcntl
+            except ImportError:  # pragma: no cover - WSL/Linux is the supported host
+                fcntl = None  # type: ignore[assignment]
+            if fcntl is not None:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                if fcntl is not None:
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
 @dataclass
@@ -62,8 +84,12 @@ class AnnotationRecord:
             description=None if desc in (None, "") else str(desc),
             design_md=None if design_md in (None, "") else str(design_md),
             valid=data.get("valid"),
-            checkpoint=None if data.get("checkpoint") is None else str(data["checkpoint"]),
-            session_id=None if data.get("session_id") is None else str(data["session_id"]),
+            checkpoint=None
+            if data.get("checkpoint") is None
+            else str(data["checkpoint"]),
+            session_id=None
+            if data.get("session_id") is None
+            else str(data["session_id"]),
             meta=dict(data.get("meta") or {}),
         )
 
@@ -154,28 +180,41 @@ def append_annotation(path: Path | str, record: AnnotationRecord) -> Path:
     return path
 
 
-def load_annotations(path: Path | str) -> list[AnnotationRecord]:
+def iter_annotations(path: Path | str) -> Iterator[AnnotationRecord]:
+    """Stream annotation rows with line-aware validation."""
     path = Path(path)
     if not path.exists():
-        return []
-    out: list[AnnotationRecord] = []
+        return
     with path.open(encoding="utf-8") as handle:
         for line_no, line in enumerate(handle, start=1):
-            line = line.strip()
-            if not line:
+            if not line.strip():
                 continue
             try:
-                out.append(AnnotationRecord.from_dict(json.loads(line)))
+                yield AnnotationRecord.from_dict(json.loads(line))
             except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
                 raise ValueError(f"{path}:{line_no}: {exc}") from exc
-    return out
+
+
+def load_annotations(path: Path | str) -> list[AnnotationRecord]:
+    return list(iter_annotations(path))
 
 
 def recent_annotations(path: Path | str, limit: int = 20) -> list[AnnotationRecord]:
-    rows = load_annotations(path)
     if limit <= 0:
-        return rows
-    return rows[-limit:]
+        return load_annotations(path)
+    rows: deque[AnnotationRecord] = deque(maxlen=limit)
+    rows.extend(iter_annotations(path))
+    return list(rows)
+    return list(rows)
+
+
+def count_annotations(path: Path | str) -> int:
+    """Count non-empty annotation rows without materializing the file."""
+    path = Path(path)
+    if not path.exists():
+        return 0
+    with path.open(encoding="utf-8") as handle:
+        return sum(1 for line in handle if line.strip())
 
 
 def annotation_to_example(record: AnnotationRecord) -> ExampleRecord:
@@ -216,7 +255,9 @@ def upsert_human_train_seed(
     kept = [
         r
         for r in kept
-        if not (r.prompt.strip() == example.prompt and r.openui.strip() == example.openui)
+        if not (
+            r.prompt.strip() == example.prompt and r.openui.strip() == example.openui
+        )
     ]
     kept.append(example)
     write_jsonl(path, kept)
@@ -253,7 +294,6 @@ def export_to_preference_pairs(
         downs = [r for r in group if r.rating == "down"]
         if not ups or not downs:
             continue
-        # Pair latest up with latest down that has different openui.
         chosen = ups[-1]
         rejected = next(
             (d for d in reversed(downs) if d.openui.strip() != chosen.openui.strip()),
@@ -286,19 +326,16 @@ def maybe_append_preference_pair(
     feedback_path: Path | str = DEFAULT_FEEDBACK_PATH,
     pairs_path: Path | str = DEFAULT_HUMAN_PAIRS_PATH,
 ) -> PreferencePair | None:
-    """If opposite rating exists for the same prompt, append one preference pair."""
-    rows = load_annotations(feedback_path)
+    """Append a preference pair using streaming scans and an atomic transaction."""
     opposite: Rating = "down" if record.rating == "up" else "up"
-    match = next(
-        (
-            r
-            for r in reversed(rows)
-            if r.prompt.strip() == record.prompt.strip()
-            and r.rating == opposite
-            and r.openui.strip() != record.openui.strip()
-        ),
-        None,
-    )
+    match: AnnotationRecord | None = None
+    for candidate in iter_annotations(feedback_path):
+        if (
+            candidate.prompt.strip() == record.prompt.strip()
+            and candidate.rating == opposite
+            and candidate.openui.strip() != record.openui.strip()
+        ):
+            match = candidate
     if match is None:
         return None
     chosen = record if record.rating == "up" else match
@@ -318,18 +355,43 @@ def maybe_append_preference_pair(
         },
     )
     pairs_path = Path(pairs_path)
-    existing = load_pairs(pairs_path) if pairs_path.exists() else []
-    # Skip duplicate chosen/rejected for same prompt.
-    for prev in existing:
-        if (
-            prev.prompt == pair.prompt
-            and prev.chosen.strip() == pair.chosen.strip()
-            and prev.rejected.strip() == pair.rejected.strip()
-        ):
-            return pair
-    existing.append(pair)
-    write_pairs(pairs_path, existing)
+    pairs_path.parent.mkdir(parents=True, exist_ok=True)
+    if pairs_path.exists():
+        with pairs_path.open(encoding="utf-8") as handle:
+            for line in handle:
+                if not line.strip():
+                    continue
+                previous = json.loads(line)
+                if (
+                    previous.get("prompt") == pair.prompt
+                    and str(previous.get("chosen") or "").strip() == pair.chosen.strip()
+                    and str(previous.get("rejected") or "").strip()
+                    == pair.rejected.strip()
+                ):
+                    return pair
+    with _WRITE_LOCK:
+        with pairs_path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(pair.to_dict(), ensure_ascii=False) + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())
     return pair
+
+
+def persist_annotation(
+    record: AnnotationRecord,
+    *,
+    feedback_path: Path | str = DEFAULT_FEEDBACK_PATH,
+    human_train_path: Path | str = DEFAULT_HUMAN_TRAIN_PATH,
+    pairs_path: Path | str = DEFAULT_HUMAN_PAIRS_PATH,
+) -> tuple[Path, Path | None, PreferencePair | None]:
+    """Persist feedback and derived training artifacts as one transaction."""
+    with _annotation_transaction(feedback_path):
+        feedback = append_annotation(feedback_path, record)
+        human = upsert_human_train_seed(record, human_train_path)
+        pair = maybe_append_preference_pair(
+            record, feedback_path=feedback_path, pairs_path=pairs_path
+        )
+    return feedback, human, pair
 
 
 def export_all(

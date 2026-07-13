@@ -36,18 +36,16 @@ class VastClient:
             "rentable": {"eq": True},
             "num_gpus": {"eq": 1},
         }
-        if gpu_type:
-            query["gpu_name"] = {"eq": gpu_type}
         if max_price_per_hr is not None:
             query["dph_total"] = {"lte": max_price_per_hr}
 
         try:
             async with httpx.AsyncClient(timeout=self.timeout_s) as client:
-                # Vast search uses PUT on bundles with JSON query body.
-                resp = await client.put(
+                # Current Vast search contract uses POST with flat filters.
+                resp = await client.post(
                     f"{VAST_BASE}/bundles/",
                     headers=self._headers(),
-                    json={"q": query, "order": [["dph_total", "asc"]], "type": "ask"},
+                    json={**query, "order": [["dph_total", "asc"]], "type": "ondemand"},
                 )
                 resp.raise_for_status()
                 payload = resp.json()
@@ -63,16 +61,22 @@ class VastClient:
                 search_price = None
                 if isinstance(search, dict):
                     search_price = search.get("dph_total") or search.get("dph_base")
-                raw_price = item.get("dph_total") or item.get("dph_base") or search_price or 0.0
+                raw_price = (
+                    item.get("dph_total") or item.get("dph_base") or search_price or 0.0
+                )
                 try:
                     price = float(raw_price)
                 except (TypeError, ValueError):
                     price = 0.0
-                gpu_name = str(item.get("gpu_name") or item.get("gpu_name_full") or "unknown")
+                gpu_name = str(
+                    item.get("gpu_name") or item.get("gpu_name_full") or "unknown"
+                )
                 vram = item.get("gpu_ram")
                 if vram is not None:
                     try:
-                        vram = float(vram) / 1024.0 if float(vram) > 256 else float(vram)
+                        vram = (
+                            float(vram) / 1024.0 if float(vram) > 256 else float(vram)
+                        )
                     except (TypeError, ValueError):
                         vram = None
                 offers.append(
@@ -86,15 +90,22 @@ class VastClient:
                             or (item.get("external") is False and item.get("min_bid"))
                         ),
                         vram_gb=vram,
-                        availability="available" if item.get("rentable", True) else "unavailable",
-                        raw_ref={"id": item.get("id"), "machine_id": item.get("machine_id")},
+                        availability="available"
+                        if item.get("rentable", True)
+                        else "unavailable",
+                        raw_ref={
+                            "id": item.get("id"),
+                            "machine_id": item.get("machine_id"),
+                        },
                     )
                 )
         except Exception as exc:  # noqa: BLE001
             return FarmListResult(farm=self.name, offers=[], error=str(exc))
 
         # Client-side filter if Vast ignored substring match
-        offers = filter_offers(offers, gpu_type=gpu_type, max_price_per_hr=max_price_per_hr)
+        offers = filter_offers(
+            offers, gpu_type=gpu_type, max_price_per_hr=max_price_per_hr
+        )
         return FarmListResult(farm=self.name, offers=offers)
 
     async def launch(self, config: dict[str, Any]) -> LaunchResult:
@@ -119,7 +130,9 @@ class VastClient:
         offer = None
         offer_id = config.get("offer_id")
         if offer_id:
-            offer = next((o for o in listed.offers if o.offer_id == str(offer_id)), None)
+            offer = next(
+                (o for o in listed.offers if o.offer_id == str(offer_id)), None
+            )
             if offer is None:
                 return LaunchResult(
                     pod_id="",
@@ -149,7 +162,7 @@ class VastClient:
         }
         try:
             async with httpx.AsyncClient(timeout=self.timeout_s) as client:
-                resp = await client.put(
+                resp = await client.post(
                     f"{VAST_BASE}/asks/{offer.offer_id}/",
                     headers=self._headers(),
                     json=body,

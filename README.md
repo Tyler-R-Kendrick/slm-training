@@ -15,9 +15,10 @@ See [docs/design/openui-twotower.md](docs/design/openui-twotower.md), [docs/desi
 ## Quick start
 
 ```bash
+# Node.js 20-22 is required for the locked bridge and browser dependencies.
 python -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev,torch]"
+pip install -e ".[dev,hf]"
 
 # Official OpenUI parser + DESIGN.md bridges
 cd tools/openui_bridge && npm ci && cd ../..
@@ -95,6 +96,7 @@ DESIGN.md conditioning + linter: [`tools/design_md_bridge/`](tools/design_md_bri
 ```bash
 pip install -e ".[dev,torch,web]"
 python -m scripts.serve_playground --port 8765
+# For network exposure, set SLM_ANNOTATION_TOKEN and add --public.
 # open http://127.0.0.1:8765
 ```
 
@@ -132,7 +134,7 @@ npm run preview:build
 ### Playwright visual / e2e
 
 ```bash
-npm install
+npm ci
 npx playwright install chromium
 # optional agent skills (already in .agents/skills + .cursor/skills)
 playwright-cli install --skills

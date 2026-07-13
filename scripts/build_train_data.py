@@ -75,7 +75,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--curriculum",
         action="store_true",
-        help="Tag records with curriculum stages A/B/C and inject stress adversarial examples.",
+        help=(
+            "Tag train records with curriculum stages A/B/C and inject stress "
+            "adversarial examples without importing eval fixtures."
+        ),
     )
     parser.add_argument(
         "--namespace-augment",
@@ -86,7 +89,9 @@ def main(argv: list[str] | None = None) -> int:
 
     result = build_train_data(
         TrainDataConfig(
-            seed_path=args.seed_path if args.source in {"fixture", "both", "all"} else None,
+            seed_path=args.seed_path
+            if args.source in {"fixture", "both", "all"}
+            else None,
             rico_path=args.rico_path
             if args.source in {"rico", "both", "rico+awwwards", "all"}
             else None,

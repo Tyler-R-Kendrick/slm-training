@@ -65,7 +65,11 @@ def _normalize_record(record: ExampleRecord) -> ExampleRecord:
         placeholders=placeholders,
         split=record.split,
         source=record.source,
-        meta={**dict(record.meta), "parser": "openuidev/lang-core", "structure_only": True},
+        meta={
+            **dict(record.meta),
+            "parser": "openuidev/lang-core",
+            "structure_only": True,
+        },
         design_md=record.design_md,
     )
     try:
@@ -100,7 +104,9 @@ def _records_from_seed_file(
     return out, errors
 
 
-def _records_from_fixtures(config: TrainDataConfig) -> tuple[list[ExampleRecord], list[dict]]:
+def _records_from_fixtures(
+    config: TrainDataConfig,
+) -> tuple[list[ExampleRecord], list[dict]]:
     fixture_records, fixture_errors = _records_from_seed_file(
         config.seed_path, require_split=config.require_split
     )
@@ -110,7 +116,9 @@ def _records_from_fixtures(config: TrainDataConfig) -> tuple[list[ExampleRecord]
     return fixture_records + human_records, fixture_errors + human_errors
 
 
-def _records_from_rico(config: TrainDataConfig) -> tuple[list[ExampleRecord], list[dict]]:
+def _records_from_rico(
+    config: TrainDataConfig,
+) -> tuple[list[ExampleRecord], list[dict]]:
     if config.rico_path is None and config.rico_hf_split is None:
         return [], [{"error": "rico source selected but no rico_path / rico_hf_split"}]
     screens = load_rico_screens(
@@ -139,7 +147,9 @@ def _records_from_rico(config: TrainDataConfig) -> tuple[list[ExampleRecord], li
     return out, errors
 
 
-def _records_from_awwwards(config: TrainDataConfig) -> tuple[list[ExampleRecord], list[dict]]:
+def _records_from_awwwards(
+    config: TrainDataConfig,
+) -> tuple[list[ExampleRecord], list[dict]]:
     from slm_training.data.awwwards import AwwwardsConfig, build_awwwards_records
 
     try:
@@ -226,22 +236,11 @@ def build_train_data(
 
     deduped: list[ExampleRecord] = []
     seen_pairs: set[str] = set()
-    prompt_fps: set[str] = set()
-    openui_fps: set[str] = set()
-    structure_fps: set[str] = set()
-    design_md_fps: set[str] = set()
-
     def _accept_record(record: ExampleRecord, *, structure_fp: str) -> bool:
         pair = fingerprint_pair(record.prompt, record.openui)
         if pair in seen_pairs:
             return False
         seen_pairs.add(pair)
-        prompt_fps.add(fingerprint_prompt(record.prompt))
-        openui_fps.add(fingerprint_openui(record.openui))
-        structure_fps.add(structure_fp)
-        dm = fingerprint_design_md(record.design_md)
-        if dm:
-            design_md_fps.add(dm)
         deduped.append(record)
         return True
 
@@ -285,6 +284,16 @@ def build_train_data(
             _accept_record(normalized, structure_fp=structure_fp)
         deduped.sort(key=lambda r: r.id)
 
+    # Fingerprint final records after every train-only transformation so the
+    # leakage manifest describes the exact bytes written to records.jsonl.
+    prompt_fps = {fingerprint_prompt(r.prompt) for r in deduped}
+    openui_fps = {fingerprint_openui(r.openui) for r in deduped}
+    structure_fps = {fingerprint_openui_structure(r.openui) for r in deduped}
+    seen_pairs = {fingerprint_pair(r.prompt, r.openui) for r in deduped}
+    design_md_fps = {
+        fp for r in deduped if (fp := fingerprint_design_md(r.design_md)) is not None
+    }
+
     out_dir = config.output_dir
     out_dir.mkdir(parents=True, exist_ok=True)
     records_path = out_dir / "records.jsonl"
@@ -314,11 +323,11 @@ def build_train_data(
         "structure_reserved_rejected": len(structure_reserved_rejected),
         "structure_reserved_rejected_samples": structure_reserved_rejected[:20],
         "mean_quality_score": (
-            round(sum(quality_scores) / len(quality_scores), 4) if quality_scores else None
+            round(sum(quality_scores) / len(quality_scores), 4)
+            if quality_scores
+            else None
         ),
-        "placeholder_vocab_size": len(
-            {p for r in deduped for p in r.placeholders}
-        ),
+        "placeholder_vocab_size": len({p for r in deduped for p in r.placeholders}),
         "with_design_md": sum(1 for r in deduped if r.design_md),
         "component_histogram": _component_histogram(deduped),
         "built_at": datetime.now(timezone.utc).isoformat(),

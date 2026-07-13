@@ -51,7 +51,9 @@ class ScratchContextEncoder(nn.Module):
         batch = torch.full((len(ids), max_t), pad_id, dtype=torch.long, device=device)
         for i, seq in enumerate(ids):
             if seq:
-                batch[i, : len(seq)] = torch.tensor(seq, dtype=torch.long, device=device)
+                batch[i, : len(seq)] = torch.tensor(
+                    seq, dtype=torch.long, device=device
+                )
         pad_mask = batch.eq(pad_id)
         ctx = self.encoder(batch, pad_id=pad_id)
         return ctx, pad_mask
@@ -84,7 +86,9 @@ class HFContextEncoder(nn.Module):
         )
         if self.tokenizer.pad_token is None:
             # GPT-style models often lack pad; reuse eos.
-            self.tokenizer.pad_token = self.tokenizer.eos_token or self.tokenizer.unk_token
+            self.tokenizer.pad_token = (
+                self.tokenizer.eos_token or self.tokenizer.unk_token
+            )
         self.backbone = AutoModel.from_pretrained(
             model_name, local_files_only=local_files_only
         )
@@ -121,14 +125,12 @@ class HFContextEncoder(nn.Module):
         )
         if use_cache:
             assert cache_keys is not None
-            hiddens: list[torch.Tensor] = []
-            pads: list[torch.Tensor] = []
             missing_idx: list[int] = []
             missing_prompts: list[str] = []
             missing_keys: list[str] = []
-            placeholders: list[tuple[torch.Tensor, torch.Tensor] | None] = [
-                None
-            ] * len(prompts)
+            placeholders: list[tuple[torch.Tensor, torch.Tensor] | None] = [None] * len(
+                prompts
+            )
             for i, (key, prompt) in enumerate(zip(cache_keys, prompts)):
                 hit = self._backbone_cache.get(key)
                 if hit is not None:
@@ -164,11 +166,13 @@ class HFContextEncoder(nn.Module):
             max_s = max(int(p[0].size(0)) for p in placeholders)  # type: ignore[index]
             hidden_dim = int(placeholders[0][0].size(-1))  # type: ignore[index]
             hidden = torch.zeros(
-                len(prompts), max_s, hidden_dim, device=device, dtype=self.proj.weight.dtype
+                len(prompts),
+                max_s,
+                hidden_dim,
+                device=device,
+                dtype=self.proj.weight.dtype,
             )
-            pad_mask = torch.ones(
-                len(prompts), max_s, dtype=torch.bool, device=device
-            )
+            pad_mask = torch.ones(len(prompts), max_s, dtype=torch.bool, device=device)
             for i, packed in enumerate(placeholders):
                 assert packed is not None
                 row_h, row_p = packed
