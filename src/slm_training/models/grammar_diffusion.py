@@ -22,6 +22,7 @@ from slm_training.models.constrained_posterior import (
     adaptive_should_stop,
     apply_commits,
     parallel_commit_selection,
+    pick_constrained_production,
 )
 from slm_training.models.context import ScratchContextEncoder, build_context_encoder, is_hf_context
 from slm_training.models.tokenizer import OpenUITokenizer, tokenize_text
@@ -619,6 +620,7 @@ class GrammarDiffusionModel(nn.Module):
 
         prod_list = prod[0].tolist()
         slot_list = slot[0].tolist()
+        ltr_fill = type(self.codec).__name__ == "ProductionCodec"
 
         for step in range(self.config.gen_steps):
             if not bool(unknown.any()):
@@ -626,37 +628,16 @@ class GrammarDiffusionModel(nn.Module):
             prod_logits, slot_logits, confidence = self.denoiser(
                 prod, ctx, ctx_pad_mask=ctx_pad
             )
-            commits = parallel_commit_selection(
-                prod_logits,
-                slot_logits,
-                confidence,
-                unknown,
-                production_ids=prod_list,
-                slot_ids=slot_list,
-                slot_inventory=slot_inventory,
-                codec=self.codec,
-                checker=self._extend,
-                schedule=self.config.block_schedule,
-                step=step,
-                mode=self.config.parallel_unmask,
-                top_k=self.config.grammar_top_k,
-            )
-            if not commits:
-                break
-            apply_commits(prod, slot, unknown, commits)
-            prod_list = prod[0].tolist()
-            slot_list = slot[0].tolist()
-            if adaptive_should_stop(unknown, confidence, step=step, schedule=self.config.block_schedule):
-                break
-
-        # Fill any remaining masks with best extendable pick (still constrained).
-        if bool(unknown.any()):
-            prod_logits, slot_logits, confidence = self.denoiser(
-                prod, ctx, ctx_pad_mask=ctx_pad
-            )
-            for pos in range(length):
-                if not bool(unknown[0, pos].item()):
-                    continue
+            if ltr_fill:
+                commits = self._ltr_commits(
+                    prod_logits,
+                    slot_logits,
+                    unknown,
+                    prod_list=prod_list,
+                    slot_list=slot_list,
+                    slot_inventory=slot_inventory,
+                )
+            else:
                 commits = parallel_commit_selection(
                     prod_logits,
                     slot_logits,
@@ -667,26 +648,118 @@ class GrammarDiffusionModel(nn.Module):
                     slot_inventory=slot_inventory,
                     codec=self.codec,
                     checker=self._extend,
-                    schedule=BlockNoiseSchedule(
-                        block_size=1,
-                        mask_min=1.0,
-                        mask_max=1.0,
-                        gen_steps=1,
-                    ),
-                    step=0,
-                    mode="topk",
+                    schedule=self.config.block_schedule,
+                    step=step,
+                    mode=self.config.parallel_unmask,
                     top_k=self.config.grammar_top_k,
                 )
-                pos_commits = [c for c in commits if c[0] == pos]
-                if pos_commits:
-                    apply_commits(prod, slot, unknown, pos_commits)
+            if not commits:
+                break
+            apply_commits(prod, slot, unknown, commits)
+            prod_list = prod[0].tolist()
+            slot_list = slot[0].tolist()
+            if adaptive_should_stop(unknown, confidence, step=step, schedule=self.config.block_schedule):
+                break
+
+        if bool(unknown.any()):
+            prod_logits, slot_logits, confidence = self.denoiser(
+                prod, ctx, ctx_pad_mask=ctx_pad
+            )
+            if ltr_fill:
+                for _ in range(length):
+                    if not bool(unknown.any()):
+                        break
+                    commits = self._ltr_commits(
+                        prod_logits,
+                        slot_logits,
+                        unknown,
+                        prod_list=prod_list,
+                        slot_list=slot_list,
+                        slot_inventory=slot_inventory,
+                        block_size=1,
+                    )
+                    if not commits:
+                        break
+                    apply_commits(prod, slot, unknown, commits)
                     prod_list = prod[0].tolist()
                     slot_list = slot[0].tolist()
+            else:
+                for pos in range(length):
+                    if not bool(unknown[0, pos].item()):
+                        continue
+                    commits = parallel_commit_selection(
+                        prod_logits,
+                        slot_logits,
+                        confidence,
+                        unknown,
+                        production_ids=prod_list,
+                        slot_ids=slot_list,
+                        slot_inventory=slot_inventory,
+                        codec=self.codec,
+                        checker=self._extend,
+                        schedule=BlockNoiseSchedule(
+                            block_size=1,
+                            mask_min=1.0,
+                            mask_max=1.0,
+                            gen_steps=1,
+                        ),
+                        step=0,
+                        mode="topk",
+                        top_k=self.config.grammar_top_k,
+                    )
+                    pos_commits = [c for c in commits if c[0] == pos]
+                    if pos_commits:
+                        apply_commits(prod, slot, unknown, pos_commits)
+                        prod_list = prod[0].tolist()
+                        slot_list = slot[0].tolist()
 
         decoded = self.codec.decode(prod_list, slot_list, slot_inventory)
         if self.config.eval_mode_no_fallback:
             return decoded.strip()
         return decoded.strip()
+
+    def _ltr_commits(
+        self,
+        prod_logits: torch.Tensor,
+        slot_logits: torch.Tensor,
+        unknown: torch.Tensor,
+        *,
+        prod_list: list[int],
+        slot_list: list[int],
+        slot_inventory: list[str],
+        block_size: int | None = None,
+    ) -> list[tuple[int, int, int, float]]:
+        """Left-to-right commits for grammar-native production streams (no holes)."""
+        if not bool(unknown.any()):
+            return []
+        width = block_size or self.config.block_schedule.block_size
+        leftmost = int(torch.where(unknown[0])[0][0].item())
+        end = min(unknown.size(-1), leftmost + max(1, width))
+        commits: list[tuple[int, int, int, float]] = []
+        prod_canvas = list(prod_list)
+        slot_canvas = list(slot_list)
+        for pos in range(leftmost, end):
+            if pos >= unknown.size(-1) or not bool(unknown[0, pos].item()):
+                continue
+            picked = pick_constrained_production(
+                prod_logits,
+                slot_logits,
+                position=pos,
+                production_ids=prod_canvas,
+                slot_ids=slot_canvas,
+                slot_inventory=slot_inventory,
+                codec=self.codec,
+                checker=self._extend,
+                top_k=self.config.grammar_top_k,
+                slot_none_id=self.codec.slot_none_id,
+            )
+            if picked is None:
+                break
+            prod_id, slot_id, conf = picked
+            commits.append((pos, prod_id, slot_id, conf))
+            prod_canvas[pos] = prod_id
+            slot_canvas[pos] = slot_id
+        return commits
 
     def save(self, path: Path | str) -> None:
         path = Path(path)

@@ -137,7 +137,7 @@ def pick_constrained_production(
             prod_name = codec.id_to_production[int(prod_id)]  # type: ignore[attr-defined]
         except Exception:  # noqa: BLE001
             prod_name = ""
-        if prod_name == "SLOT":
+        if prod_name == "SLOT" or prod_name.startswith("@"):
             slot_id = int(slot_scores.argmax(dim=-1).item())
             if slot_id == slot_none_id and slot_inventory:
                 slot_id = 1

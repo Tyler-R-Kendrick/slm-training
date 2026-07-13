@@ -646,9 +646,7 @@ class ProductionCodec:
                 break
             if pid == self.mask_id:
                 hit_mask = True
-                if stop_at_mask:
-                    break
-                continue
+                break
             tok = self.id_to_production.get(pid, self._SPECIALS[-1])
             if tok.startswith(SLOT_PREFIX) and int(sid) > 0:
                 tok = f"{SLOT_PREFIX}{int(sid) - 1}"

@@ -25,6 +25,12 @@ FULL_SUITES = ["smoke", "held_out", "adversarial", "ood", "rico_held"]
 DEFAULT_SEEDS = [0, 1, 2]
 
 
+def _args_with_seed(args: argparse.Namespace, seed: int) -> argparse.Namespace:
+    ns = argparse.Namespace(**vars(args))
+    ns.seed = seed
+    return ns
+
+
 def _copy_checkpoint(src: Path, dest: Path) -> Path:
     import shutil
 
@@ -444,7 +450,7 @@ def successive_halving(
         round_results: list[tuple[tuple[GrammarExperiment, int], float]] = []
         for exp, seed in survivors:
             key = (exp.xid, seed)
-            ns = replace(args, seed=seed)
+            ns = _args_with_seed(args, seed)
             if key not in trained:
                 trained[key] = run_one(exp, ns, suites=[suite])
             else:
@@ -484,7 +490,7 @@ def successive_halving(
     for exp, seed in survivors:
         key = (exp.xid, seed)
         if key in trained:
-            ns = replace(args, seed=seed)
+            ns = _args_with_seed(args, seed)
             eval_cfg = _eval_cfg(exp, ns)
             eval_cfg = replace(eval_cfg, run_id=f"{exp.run_id}_s{seed}")
             ckpt = Path(trained[key]["checkpoint"])
@@ -605,7 +611,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.no_halving:
         results: list[dict[str, Any]] = []
         for exp, seed in candidates:
-            ns = replace(args, seed=seed)
+            ns = _args_with_seed(args, seed)
             print(json.dumps({"status": "start", "id": exp.xid, "seed": seed}))
             result = run_one(exp, ns)
             print(
