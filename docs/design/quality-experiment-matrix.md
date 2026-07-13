@@ -416,6 +416,11 @@ Artifacts: `outputs/runs/grammar_matrix_summary.json`,
 
 Remaining verifier-guided repair gaps from
 [verifier-guided-repair.md](verifier-guided-repair.md). **Not implemented**.
+The inner-loop prerequisites (deterministic denoising-NLL suites, token
+budgets, full-state resume, source-family manifests, decode trajectory
+store) are implemented; the staged plan connecting them to E60–E65 —
+mixture search, scaling ladders, self-distillation, trajectory RL — is in
+[promotion-pipeline.md](promotion-pipeline.md).
 **E50–E55 are taken by shipped V6** (CoRe / T2M / slot trust / champion); do
 not reuse those IDs.
 
