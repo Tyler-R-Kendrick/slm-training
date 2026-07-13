@@ -83,11 +83,12 @@ Leakage checks use exact + **structural** OpenUI fingerprints (placeholder/binde
 7. Full openuiLibrary + DESIGN.md + harden + Cactus/Awwwards/preference (**done**)
 8. Adversarial review remediations — see [adversarial-review.md](adversarial-review.md) (**done**)
 9. Runtime simplify/optimize (PyTorch path); Cactus/NEON kernel stays separate — [runtime-performance.md](runtime-performance.md) (**done**)
-10. Quality experiment matrix (all levers) — [quality-experiment-matrix.md](quality-experiment-matrix.md) (**done**; E0–E46 + X0–X8)
+10. Quality experiment matrix (all levers) — [quality-experiment-matrix.md](quality-experiment-matrix.md) (**done**; E0–E55 + X0–X8)
 11. Accelerator / parallel decode — [accel-parallel.md](accel-parallel.md) (**done**)
 12. V4 critic remask / trust gate / honest inventory (E30–E36; E34 deferred) — [research-correction-critics.md](research-correction-critics.md) (**done**; E35/E36 fixture ship)
 13. V5 DSL-native / lexer tokenizer (E40–E46) — [dsl-native-tokenizer.md](dsl-native-tokenizer.md) (**done**)
-14. Verifier-guided repair levers (proposed E50–E55: differential validation, failure-cone remask, minimal hard negatives, calibration, trajectory-aligned RL, schema generalization) — [verifier-guided-repair.md](verifier-guided-repair.md) (**proposed**; docs only)
+14. V6 CoRe remask / T2M / slot-aware trust / honest champion (E50–E55) — [quality-experiment-matrix.md](quality-experiment-matrix.md) (**done**; E53/E55 fixture ship)
+15. Remaining verifier-guided repair gaps (proposed E60–E65: differential validation, failure-cone remask, minimal hard negatives, calibration, trajectory-aligned RL, schema generalization) — [verifier-guided-repair.md](verifier-guided-repair.md) (**proposed**; docs only)
 
 ### Eval-driven ship gates (honest policy)
 

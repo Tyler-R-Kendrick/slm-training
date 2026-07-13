@@ -81,6 +81,16 @@ Checkpoint remains the pre-remediation fixture-upsample scratch run (not retrain
 
 `--ship-gates` → **fail** (fidelity / held_out / adversarial / rico_held). Prior `"pass": true` remains invalidated.
 
+## V6 honesty follow-ups
+
+- `GrammarDiffusionModel.generate` no longer reads `gold.placeholders` when
+  `honest_slot_contract=True` (default).
+- TwoTower `generate_batch_requests` surfaces `GenerationRequest.slot_contract`
+  into the prompt (`ensure_prompt_inventory`) under honest mode — restores the
+  E35 inventory-in-prompt API for the production eval path.
+- Prefer `--matrix v6 --only E53` (or E35/E36) for honest fixture ship claims;
+  production still requires full `rico_held` (1500) + HF context.
+
 ## Re-eval commands
 
 ```bash

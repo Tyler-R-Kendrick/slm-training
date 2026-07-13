@@ -65,6 +65,10 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "suffix_rollback_window",
         "remask_use_gate",
         "remask_use_entropy",
+        "remask_policy",
+        "core_perturb_frac",
+        "remask_to_mask",
+        "slot_aware_trust_gate",
         "visible_corrupt_rate",
         "trust_gate_train",
         "grammar_prefer_structural",
@@ -163,6 +167,10 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         remask_ratio=float(getattr(config, "remask_ratio", 0.0) or 0.0),
         remask_use_gate=bool(getattr(config, "remask_use_gate", False)),
         remask_use_entropy=bool(getattr(config, "remask_use_entropy", False)),
+        remask_policy=str(getattr(config, "remask_policy", "confidence") or "confidence"),
+        core_perturb_frac=float(getattr(config, "core_perturb_frac", 0.25) or 0.25),
+        remask_to_mask=bool(getattr(config, "remask_to_mask", True)),
+        slot_aware_trust_gate=bool(getattr(config, "slot_aware_trust_gate", False)),
         mdlm_schedule=bool(getattr(config, "mdlm_schedule", False)),
         mdlm_eps=float(getattr(config, "mdlm_eps", 1e-3) or 1e-3),
         visible_corrupt_rate=float(getattr(config, "visible_corrupt_rate", 0.0) or 0.0),
@@ -259,6 +267,7 @@ def build_model(
             slot_contract_constrained_decode=getattr(
                 config, "slot_contract_constrained_decode", True
             ),
+            honest_slot_contract=bool(getattr(config, "honest_slot_contract", True)),
             seed=config.seed,
         )
         return GrammarDiffusionModel.from_records(records, config=gd_cfg, device=config.device)

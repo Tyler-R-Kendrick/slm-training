@@ -1,7 +1,10 @@
-"""BackPlay-lite training for FastPathGate (E31).
+"""BackPlay-lite training for FastPathGate (E31 / E52).
 
 Freeze the TwoTower denoiser, mine its own token errors, and train the
 plug-in trust head with BCE so remask can prefer low-trust positions.
+
+E52: when ``slot_aware_trust_gate`` is set, also mark placeholder / slot-binding
+positions as untrusted when the greedy prediction does not match gold.
 """
 
 from __future__ import annotations
@@ -13,8 +16,33 @@ from typing import Any
 import torch
 import torch.nn.functional as F
 
+from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.schema import ExampleRecord, load_jsonl
 from slm_training.models.twotower import TwoTowerModel
+
+
+def _placeholder_token_mask(
+    model: TwoTowerModel,
+    target_ids: torch.Tensor,
+) -> torch.Tensor:
+    """Boolean mask of positions whose decoded piece looks like a placeholder."""
+    mask = torch.zeros_like(target_ids, dtype=torch.bool)
+    tok = model.tokenizer
+    for b in range(target_ids.size(0)):
+        for t in range(target_ids.size(1)):
+            tid = int(target_ids[b, t].item())
+            if tid in (tok.pad_id, tok.bos_id, tok.eos_id, tok.mask_id):
+                continue
+            try:
+                piece = tok.id_to_token.get(tid, "") if hasattr(tok, "id_to_token") else ""
+                if not piece and hasattr(tok, "decode"):
+                    piece = tok.decode([tid])
+            except Exception:  # noqa: BLE001
+                piece = ""
+            text = str(piece)
+            if ":" in text or text.startswith("<SYM") or text.startswith("<BIND"):
+                mask[b, t] = True
+    return mask
 
 
 def mine_gate_batch(
@@ -28,6 +56,9 @@ def mine_gate_batch(
 
     Label = 1.0 where the model's greedy prediction matches gold on masked
     positions (trusted); 0.0 where it errs (should remask later).
+
+    E52 slot-aware mode additionally forces label=0 on placeholder positions
+    whose predicted token differs from gold (binding / namespace errors).
     """
     model.eval()
     device = model.device_name
@@ -75,6 +106,27 @@ def mine_gate_batch(
     # Trust labels: 1 on correct visible or correctly filled masks; 0 on errors.
     labels = correct.float()
     labels = labels.masked_fill(frozen, 1.0)
+
+    if bool(getattr(model.config, "slot_aware_trust_gate", False)):
+        ph_mask = _placeholder_token_mask(model, target_ids)
+        # Any wrong placeholder prediction is untrusted.
+        labels = torch.where(ph_mask & (~correct), torch.zeros_like(labels), labels)
+        # Also untrust if decoded placeholders diverge from gold inventory set.
+        for i, r in enumerate(records):
+            gold_set = set(r.placeholders or extract_placeholders(r.openui))
+            if not gold_set:
+                continue
+            try:
+                pred_text = model.tokenizer.decode(
+                    [int(x) for x in pred[i].tolist() if int(x) != model.tokenizer.pad_id]
+                )
+                pred_set = set(extract_placeholders(pred_text))
+            except Exception:  # noqa: BLE001
+                continue
+            if pred_set and pred_set != gold_set:
+                # Soft: mark all placeholder positions in this row as untrusted.
+                labels[i] = torch.where(ph_mask[i], torch.zeros_like(labels[i]), labels[i])
+
     return hidden.detach(), labels.detach()
 
 
@@ -132,11 +184,14 @@ def train_trust_gate_from_paths(
     batch_size: int = 4,
     device: str = "cpu",
     limit: int = 64,
+    slot_aware: bool = False,
 ) -> dict[str, Any]:
     ckpt = Path(checkpoint)
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     model = TwoTowerModel.from_checkpoint(ckpt, device=device)
+    if slot_aware:
+        model.config.slot_aware_trust_gate = True
     records = load_jsonl(Path(train_records))[: max(1, limit)]
     summary = train_trust_gate(
         model, records, steps=steps, batch_size=batch_size, device=device
@@ -145,6 +200,9 @@ def train_trust_gate_from_paths(
     dest.parent.mkdir(parents=True, exist_ok=True)
     model.save(dest)
     summary["checkpoint"] = str(dest)
+    summary["slot_aware_trust_gate"] = bool(
+        getattr(model.config, "slot_aware_trust_gate", False)
+    )
     (out / "trust_gate_summary.json").write_text(
         __import__("json").dumps(summary, indent=2) + "\n", encoding="utf-8"
     )

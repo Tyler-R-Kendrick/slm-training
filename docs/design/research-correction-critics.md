@@ -6,7 +6,7 @@ the confidence remask wired in V3. Concrete levers **E30–E36** live in
 [quality-experiment-matrix.md](quality-experiment-matrix.md); implementation
 status and fidelity tags are in [research-lineage.md](research-lineage.md).
 For how PDDL-Instruct / verifier-guided diffusion-repair ideas map onto this
-stack (and proposed **E50–E55**), see
+stack (remaining gaps reserved as **E60–E65**; **E50–E55** are shipped V6), see
 [verifier-guided-repair.md](verifier-guided-repair.md).
 
 V3 **Adapted** confidence remasking (`remask_ratio` / `select_remask_indices`)
@@ -21,9 +21,11 @@ and template fill; those cleared fixture `--ship-gates` but used a silent
 | --- | --- | --- |
 | Training | MaskGIT / optional MDLM + **E32** `visible_corrupt_rate` | Wrong-visible recovery is learnable |
 | Decode order | Length-safe LTR + MaskGIT + template fill + **E30** suffix rollback | LTR-primary can remask a revisable window |
-| Remasking | V3 confidence remask + **E33** grammar/gate/entropy policy | `select_remask_policy_indices` |
-| Trust head | **E31** `FastPathGate` via `grammar_fastpath/trust_train.py` | Freezes denoiser; BCE on own errors |
+| Remasking | V3 confidence remask + **E33** grammar/gate/entropy policy + **E50** CoRe-lite | `select_remask_policy_indices` / `select_remask_core_indices` |
+| T2M discipline | **E51** `remask_to_mask` (always remask→mask) | Never token-edit committed ids |
+| Trust head | **E31** `FastPathGate` via `grammar_fastpath/trust_train.py`; **E52** slot-aware | Freezes denoiser; BCE on own errors (+ placeholder binding) |
 | Slot inventory | **E35** inventory-in-prompt (`honest_slot_contract`) | No silent gold channel; clears ship gates |
+| V5 alphabet | Lexer-native + symbol table (E40–E46) | Stacked honest champion **E53** |
 | Latent MoE | **E34** deferred | Runner skips unless `--force-e34` |
 
 Grammar/DFA verification still catches illegal OpenUI. Learned correction
@@ -58,9 +60,11 @@ replace ReMDM/GIDD or the existing LTR/MaskGIT construction order. Prefer
 | Paper | arXiv | Core idea | Status here |
 | --- | --- | --- | --- |
 | **Coconut** | [2412.06769](https://arxiv.org/abs/2412.06769) | Recurrent continuous latent reasoning | Adjacent — E34 only |
-| **BackPlay** | [2601.06428](https://arxiv.org/html/2601.06428v2) | Plug-in correction head on frozen DLM | **Adapted** — E31 |
-| **RemeDi** | [2509.23653](https://arxiv.org/html/2509.23653v1) | Learned token quality / remask UPS | **Adapted** (lite) — E31/E33 |
+| **BackPlay** | [2601.06428](https://arxiv.org/html/2601.06428v2) | Plug-in correction head on frozen DLM | **Adapted** — E31/E52 |
+| **RemeDi** | [2509.23653](https://arxiv.org/html/2509.23653v1) | Learned token quality / remask UPS | **Adapted** (lite) — E31/E33/E52 |
 | **ReMDM** | [2503.00307](https://arxiv.org/abs/2503.00307) | Inference remask without retrain | **Adapted** — V3 remask + E30/E33 |
+| **CoRe** | [2602.04096](https://arxiv.org/abs/2602.04096) | Context-robust remask via perturbations | **Adapted** (lite) — E50 |
+| **T2M** | [2605.26436](https://arxiv.org/html/2605.26436v1) | Remask→mask, not token-edit | **Adapted** — E51 |
 | **GIDD** | [2503.04482](https://arxiv.org/abs/2503.04482) | Wrong visible tokens in training | **Adapted** (lite) — E32 |
 | **SCDD** | [2603.02230](https://arxiv.org/html/2603.02230v1) | Explicit self-correction transitions | Adjacent alternative to full GIDD |
 | **SPC** | [2504.19162](https://arxiv.org/html/2504.19162v1) | Self-play hard errors for critics | Adjacent — E34 curricula |
@@ -89,11 +93,12 @@ replace ReMDM/GIDD or the existing LTR/MaskGIT construction order. Prefer
 ```text
 1. LTR (or blockwise LTR) within a sliding active window
 2. Revisable suffix / block behind the frontier (E30)
-3. Cheap token-quality head every MaskGIT step (E31 FastPathGate)
-4. Combine critic + entropy + grammar into a remask distribution (E33)
-5. Remask implicated spans; re-denoise (remask, don't replace)
+3. Cheap token-quality head every MaskGIT step (E31 FastPathGate; E52 slot-aware)
+4. Combine critic + entropy + grammar + CoRe instability into remask distribution (E33/E50)
+5. Remask implicated spans → mask; re-denoise (T2M / remask, don't replace — E51)
 6. Template fill seeded from prompt-visible inventory (E35)
 7. Optional best-of-N ranking (E36)
+8. Prefer V5 lexer/symbol alphabet + stacked honest champion (E53)
 ```
 
 ---
@@ -101,13 +106,16 @@ replace ReMDM/GIDD or the existing LTR/MaskGIT construction order. Prefer
 ## What moves the needle *now*
 
 1. **Ship baseline:** E35 / E36 clear fixture `--ship-gates` **without** silent
-   gold placeholder leakage. Prioritize full `rico_held` + HF context next.
+   gold placeholder leakage. Prefer **E53** (honest V5 + CoRe + slot trust) next;
+   prioritize full `rico_held` + HF context for production claims.
 2. **LTR-primary paths:** E30 suffix rollback is wired; needs longer train or an
    E35 seed to show gate deltas alone.
-3. **Trust remask:** E31/E33 lift adversarial parse but need E35 inventory for
-   fidelity.
-4. **Deterministic stack stays primary** for verifiable legality.
-5. **E34** remains research-grade until residual semantic failures after E33+E35.
+3. **Trust remask:** E31/E33 lift adversarial parse; E52 targets fidelity via
+   placeholder-aware gate labels; still need E35 inventory.
+4. **CoRe remask (E50):** training-free context-brittleness scores complement
+   stale confidence; best stacked in E53 (`remask_policy=combined`).
+5. **Deterministic stack stays primary** for verifiable legality.
+6. **E34** remains research-grade until residual semantic failures after E53.
 
 Bottom line for this codebase:
 

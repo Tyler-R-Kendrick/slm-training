@@ -10,11 +10,15 @@ Companion pages:
 
 - Papers → code fidelity tags: [research-lineage.md](research-lineage.md)
 - V4 remask / trust gate: [research-correction-critics.md](research-correction-critics.md)
-- Experiment matrix (E0–E46, X0–X8): [quality-experiment-matrix.md](quality-experiment-matrix.md)
+- Experiment matrix (E0–E55, X0–X8): [quality-experiment-matrix.md](quality-experiment-matrix.md)
 - Grammar backends: [grammar-backends.md](grammar-backends.md)
 
-**Scope of this document:** design mapping and proposed levers only.
-No PDDL planner, VAL, or Fast Downward integration is planned for this repo.
+**Scope of this document:** design mapping. No PDDL planner, VAL, or Fast
+Downward integration is planned for this repo.
+
+**ID collision note:** Matrix IDs **E50–E55** are taken by the shipped **V6**
+CoRe / T2M / slot-trust / honest-champion levers. Remaining assessment gaps
+are reserved as **E60–E65** (proposed). Do not reuse E50–E55 for new meanings.
 
 ---
 
@@ -72,39 +76,37 @@ not Faithful reimplementations of PDDL-Instruct.
 | Typed executable trace (not prose CoT) | OpenUI DSL + compositional / lexer-native tokenization | [`dsl/`](../../src/slm_training/dsl/), [`models/dsl_tokenizer.py`](../../src/slm_training/models/dsl_tokenizer.py), [`models/tokenizer.py`](../../src/slm_training/models/tokenizer.py) |
 | Inference-time verification | `_ensure_valid_openui` certify / repair / finalize | [`models/twotower.py`](../../src/slm_training/models/twotower.py) |
 | Constrained decoding during denoising | DFA force-emit + MaskGIT hole admit (`force` / `mask` / `hybrid`) | [`grammar_fastpath/`](../../src/slm_training/grammar_fastpath/), [`models/grammar.py`](../../src/slm_training/models/grammar.py) |
-| Process / value head | `FastPathGate` trust scores; BackPlay-lite mining of own errors | [`grammar_fastpath/gate.py`](../../src/slm_training/grammar_fastpath/gate.py), [`trust_train.py`](../../src/slm_training/grammar_fastpath/trust_train.py) |
-| Remasking low-confidence commitments | V3 confidence remask + V4 E33 gate/entropy/grammar policy | [`models/parallel_decode.py`](../../src/slm_training/models/parallel_decode.py) (`select_remask_indices`, `select_remask_policy_indices`) |
+| Process / value head | `FastPathGate` trust scores; BackPlay-lite + slot-aware mining (E31/E52) | [`grammar_fastpath/gate.py`](../../src/slm_training/grammar_fastpath/gate.py), [`trust_train.py`](../../src/slm_training/grammar_fastpath/trust_train.py) |
+| Remasking low-confidence commitments | V3 confidence remask + V4 E33 + **V6 CoRe (E50)** + **T2M (E51)** | [`models/parallel_decode.py`](../../src/slm_training/models/parallel_decode.py) |
 | Skeleton / landmarks before fill | Template fill from prompt-visible slot inventory | [`models/template_fill.py`](../../src/slm_training/models/template_fill.py) |
-| Valid-over-invalid preference | Structure-first `composite_reward` + human preference pairs | [`preference/`](../../src/slm_training/preference/), `outputs/preferences/human_pairs.jsonl` |
-| Training-time process signal | Masked CE / MDLM, fidelity aux, visible corruption (E32), GRPO-lite | [`models/twotower.py`](../../src/slm_training/models/twotower.py), [`rl/`](../../src/slm_training/rl/) |
+| Valid-over-invalid preference | Structure-first `composite_reward` + human preference pairs + E55 process stage | [`preference/`](../../src/slm_training/preference/), [`rl/`](../../src/slm_training/rl/) |
+| Training-time process signal | Masked CE / MDLM, fidelity aux, visible corruption (E32), GRPO-lite | [`models/twotower.py`](../../src/slm_training/models/twotower.py) |
 
-**Important honesty note:** our remask policy is driven by **confidence,
-trust-gate scores, entropy, and grammar legality** — not by a localized
-“first invalid transition + causal dependents” cone from a symbolic
-state executor. That gap is called out in §4.
+**Important honesty note:** remask is driven by **confidence, trust-gate,
+entropy, grammar legality, and CoRe support-drop** — still not by a localized
+“first hard parse error + structural dependents” cone. That remaining gap is
+**E61** below.
 
 ---
 
-## 4. Real gaps → proposed levers (V6 / E50+)
+## 4. Real gaps → proposed levers (V7 / E60+)
 
-These recommendations from the assessment map cleanly onto OpenUI generation
-and are **not** implemented yet. Treat IDs below as **proposed** matrix
-levers (documentation only in this revision). Implementation should land
-rows in [quality-experiment-matrix.md](quality-experiment-matrix.md) and
-[research-lineage.md](research-lineage.md) in the same PR as the code.
+These assessment recommendations still map cleanly onto OpenUI generation and
+are **not** fully implemented. IDs **E60–E65** are reserved (docs only until
+code lands). Do **not** reuse E50–E55.
 
 | Proposed ID | Gap | Why it matters here | Suggested shape |
 | --- | --- | --- | --- |
-| **E50** | Differential validation | `OpenUIHybridBackend` **falls back** lang-core ↔ Lark; it does not dual-parse or quarantine disagreement → verifier monoculture | Parse with both backends when available; on disagreement, quarantine sample from train/eval claims; log disagreement rate as a reliability metric |
-| **E51** | Failure-cone remasking | Remask is score-based, not error-localized | On first hard parse / stream error at span `k`, remask `k` plus structural dependents (containing statement, binder refs, child list); freeze verified spans outside the cone |
-| **E52** | Minimal hard negatives | Adversarial suites exist; minimal single-edit valid→invalid pairs do not | From each gold program, produce smallest corruptions (wrong-type prop, missing placeholder, swapped child, truncated binder, illegal arity) and train repair / preference against them |
-| **E53** | Calibration / abstention | Trust gate is BCE-trained but not calibrated for selective decode | ECE / Brier on gate; selective accuracy vs coverage; abstain or escalate to best-of-N / longer remask when gate is unreliable |
-| **E54** | Trajectory-aligned diffusion RL | GRPO-lite scores final strings; schedule mismatch remains | Collect on-policy intermediate MaskGIT states; label with grammar + reward; prefer MDPO / d1-style objectives over AR PPO/GRPO imports ([research-lineage.md](research-lineage.md) Adjacent rows) |
-| **E55** | Schema-level generalization | Held-out instances ≠ held-out component schemas | Leave-one-schema-family-out; symbol rename / reordered decls; use `toy-layout` backend as a deliberately alien grammar for transfer stress |
+| **E60** | Differential validation | `OpenUIHybridBackend` **falls back** lang-core ↔ Lark; it does not dual-parse or quarantine disagreement → verifier monoculture | Parse with both backends when available; on disagreement, quarantine sample from train/eval claims; log disagreement rate as a reliability metric |
+| **E61** | Failure-cone remasking | Remask is score-/CoRe-based, not error-localized | On first hard parse / stream error at span `k`, remask `k` plus structural dependents (containing statement, binder refs, child list); freeze verified spans outside the cone |
+| **E62** | Minimal hard negatives | Adversarial suites exist; minimal single-edit valid→invalid pairs do not | From each gold program, produce smallest corruptions (wrong-type prop, missing placeholder, swapped child, truncated binder, illegal arity) and train repair / preference against them |
+| **E63** | Calibration / abstention | Trust gate is BCE-trained but not calibrated for selective decode | ECE / Brier on gate; selective accuracy vs coverage; abstain or escalate to best-of-N / longer remask when gate is unreliable |
+| **E64** | Trajectory-aligned diffusion RL | E55 / GRPO-lite still score final strings; schedule mismatch remains | Collect on-policy intermediate MaskGIT states; label with grammar + reward; prefer MDPO / d1-style objectives over AR PPO/GRPO imports |
+| **E65** | Schema-level generalization | Held-out instances ≠ held-out component schemas | Leave-one-schema-family-out; symbol rename / reordered decls; use `toy-layout` backend as a deliberately alien grammar for transfer stress |
 
-Priority intuition (not a schedule): **E50** and **E51** are the highest
-reliability leverage relative to another generic SFT round; **E52** cleans
-credit assignment; **E53–E55** harden claims before calling the system
+Priority intuition (not a schedule): **E60** and **E61** are the highest
+reliability leverage relative to another generic SFT round; **E62** cleans
+credit assignment; **E63–E65** harden claims before calling the system
 “schema-general.”
 
 ---
@@ -131,19 +133,19 @@ policy + DESIGN.md lint**, not on a planner.
 
 | Threat (assessment) | Failure mode here | Defense today / needed |
 | --- | --- | --- |
-| **Verifier monoculture** | One parser quirk poisons train labels and eval | Need **E50** differential validation; today hybrid is fallback-only |
+| **Verifier monoculture** | One parser quirk poisons train labels and eval | Need **E60** differential validation; today hybrid is fallback-only |
 | **Parser exploitation** | Model learns to pass a buggy acceptor | Fuzz OpenUI strings; keep lang-core as primary authority; quarantine on backend disagreement |
 | **Single-reference bias** | Alternate valid layouts penalized | Multi-plan positives via preference pairs / best-of-N; score with `composite_reward`, not exact string match |
 | **Locally valid wandering** | Legal but intent-irrelevant trees | Fidelity / inventory contract (E35); human thumbs; still weak on open-ended intent |
-| **High-confidence early freeze** | Wrong early tokens locked | V3/V4 remask + E30 suffix rollback; strengthen with **E51** cone remask |
+| **High-confidence early freeze** | Wrong early tokens locked | V3–V6 remask + E30 suffix rollback + CoRe/T2M; deepen with **E61** cone remask |
 | **Oscillatory repair** | Same spans flip forever | Remask budgets (E33); add repair memory / decreasing remask budget if oscillation appears |
 | **Reasoning rationalization** | Prose justifies an invalid tree | We already forbid prose as the substrate; keep explanations (if any) rendered *from* the verified program |
 | **Reward hacking** | Model exploits reward / lint quirks | Structure-only eval path ([structure-only-eval.md](structure-only-eval.md)); adversarial suites; do not credit gold DESIGN.md lint at ship time |
-| **Domain-schema memorization** | Strong on known components, collapse on new schemas | Need **E55**; `toy-layout` is the ready held-out grammar |
+| **Domain-schema memorization** | Strong on known components, collapse on new schemas | Need **E65**; `toy-layout` is the ready held-out grammar |
 
 ---
 
-## 7. Evaluation additions (when implementing E50+)
+## 7. Evaluation additions (when implementing E60+)
 
 Keep existing ship gates (`parse_rate`, `placeholder_fidelity`,
 `structural_similarity`, structure-only `reward_score`). Add when the
@@ -152,9 +154,9 @@ corresponding lever lands:
 | Metric family | Examples |
 | --- | --- |
 | Reliability | Backend disagreement rate; ECE / Brier on `FastPathGate`; selective accuracy vs coverage |
-| Repair | % slots remasked; repair cycles; oscillatory remask rate; cone size distribution (E51) |
-| Negatives | First-error-class confusion on minimal counterexamples (E52) |
-| Generalization | Unseen schema / renamed symbols / `toy-layout` transfer (E55) |
+| Repair | % slots remasked; repair cycles; oscillatory remask rate; cone size distribution (E61) |
+| Negatives | First-error-class confusion on minimal counterexamples (E62) |
+| Generalization | Unseen schema / renamed symbols / `toy-layout` transfer (E65) |
 | Efficiency | Diffusion NFEs, verifier calls, planner-fallback N/A |
 
 Ablation ladder for attributing gains (mirror the assessment, OpenUI-flavored):
@@ -165,23 +167,24 @@ Ablation ladder for attributing gains (mirror the assessment, OpenUI-flavored):
 4. + detailed verifier feedback / process heads
 5. + trajectory-aligned diffusion optimization
 6. + grammar/type constrained decoding (largely done)
-7. + inference-time verify with localized remask (partially done; deepen via E51)
+7. + inference-time verify with localized remask (partially done via V4/V6; deepen via E61)
 8. + multi-candidate / preference ranking (partially done)
 
 ---
 
-## 8. Relation to V4 / V5 work
+## 8. Relation to V4 / V5 / V6 work
 
 | Ship cycle | What it contributed | Relation to this page |
 | --- | --- | --- |
 | **V3** | Length-safe LTR, remask, template fill | Inference verify + remask skeleton |
 | **V4** | Trust gate, combined remask policy, honest inventory | Process-head analogue; closes silent-gold leakage |
 | **V5** | DSL-native / lexer tokenizer (E40–E46) | Stronger typed executable representation |
-| **V6 (proposed)** | E50–E55 above | Verifier-guided *localized* repair + differential validation + schema stress |
+| **V6** | CoRe remask (E50), T2M (E51), slot-aware trust (E52), honest champion (E53), grammar-honest (E54), process (E55) | Stronger revision policy; **not** differential validation or failure-cone remask |
+| **V7 (proposed)** | E60–E65 above | Remaining verifier-guided gaps from the assessment |
 
 E34 (latent MoE critics) remains deferred research-grade; see
 [research-correction-critics.md](research-correction-critics.md). Prefer
-landing E50–E52 before reopening E34.
+landing E60–E62 before reopening E34.
 
 ---
 
@@ -203,8 +206,9 @@ under **Verifier-guided planning & repair (Adjacent lineage)**. Headline sources
 
 1. Do not claim we “implement PDDL-Instruct” or run VAL. Tag that lineage **Adjacent**.
 2. Do not treat grammar validity as formalization or UX correctness.
-3. When implementing E50–E55, update this page’s “proposed” rows to “wired”
+3. Do not redefine **E50–E55**; those IDs belong to shipped V6 levers.
+4. When implementing E60–E65, update this page’s “proposed” rows to “wired”
    and append matching rows to `research-lineage.md` + the quality matrix **in
    the same PR**.
-4. Prefer **remask, don’t replace** and keep the deterministic grammar stack
+5. Prefer **remask, don’t replace** and keep the deterministic grammar stack
    as the legality authority.

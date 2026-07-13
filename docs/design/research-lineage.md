@@ -167,7 +167,7 @@ levers **E30–E36** in [`quality-experiment-matrix.md`](quality-experiment-matr
 | | |
 | --- | --- |
 | **Paper** | *Don’t Settle Too Early: Self-Reflective Remasking for Diffusion Language Models*, 2025. [arXiv:2509.23653](https://arxiv.org/html/2509.23653v1) |
-| **Fidelity** | **Adapted** (lite) — [`FastPathGate`](../../src/slm_training/grammar_fastpath/gate.py) trained via [`trust_train.py`](../../src/slm_training/grammar_fastpath/trust_train.py) (E31); gates E33 remask |
+| **Fidelity** | **Adapted** (lite) — [`FastPathGate`](../../src/slm_training/grammar_fastpath/gate.py) trained via [`trust_train.py`](../../src/slm_training/grammar_fastpath/trust_train.py) (E31); gates E33 remask; **E52** extends mining to placeholder/slot-binding errors (`slot_aware_trust_gate`) |
 | **Intent** | Cheap per-token reliability head for remask budgets |
 
 ### BackPlay (frozen-model correction head)
@@ -175,8 +175,25 @@ levers **E30–E36** in [`quality-experiment-matrix.md`](quality-experiment-matr
 | | |
 | --- | --- |
 | **Paper** | *BackPlay: Plug-in Look-Back Self-Correction for Diffusion Language Models*, 2026. [arXiv:2601.06428](https://arxiv.org/html/2601.06428v2) |
-| **Fidelity** | **Adapted** — freeze denoiser, mine own errors, train plug-in gate (E31) |
+| **Fidelity** | **Adapted** — freeze denoiser, mine own errors, train plug-in gate (E31/E52) |
 | **Intent** | Model-specific remask scores without joint generator–critic optimization |
+
+### CoRe (context-robust remasking)
+
+| | |
+| --- | --- |
+| **Paper** | *CoRe: Context-Robust Remasking for Diffusion Language Models*, 2026. [arXiv:2602.04096](https://arxiv.org/abs/2602.04096) |
+| **Fidelity** | **Adapted** (lite) — E50: second forward under neighbor-masked context; remask highest support-drop tokens (`select_remask_core_indices`, `core_instability_scores`) |
+| **Config** | `remask_policy` ∈ `{confidence, core, combined}`, `core_perturb_frac` |
+| **Intent** | Training-free revision targeting context-brittle commitments (not stale confidence alone) |
+
+### T2M (token-to-mask refinement)
+
+| | |
+| --- | --- |
+| **Paper** | *Targeted Remasking: Replacing Token Editing with Token-to-Mask Refinement*, 2026. [arXiv:2605.26436](https://arxiv.org/html/2605.26436v1) |
+| **Fidelity** | **Adapted** — E51: remask always resets to `<mask>` (`remask_to_mask=True`); statement-span expansion via `remask_span=statement` |
+| **Intent** | Avoid token-edit pollution; re-denoise under cleaner mask noise |
 
 ### GIDD / SCDD (revision in the training process)
 
@@ -208,7 +225,9 @@ levers **E30–E36** in [`quality-experiment-matrix.md`](quality-experiment-matr
 | --- | --- | --- |
 | Deferred commitment / sliding windows | [arXiv:2601.02076](https://arxiv.org/abs/2601.02076) | **Adapted** (lite) — E30 revisable LTR window |
 | Token ordering / “visible ≠ revisable” | [arXiv:2502.06768](https://arxiv.org/html/2502.06768v1) | **Adjacent** — motivates E32 |
-| Remask, don’t replace | [arXiv:2604.18738](https://arxiv.org/abs/2604.18738) | **Adapted** — E33 remask policy constraint |
+| Remask, don’t replace | [arXiv:2604.18738](https://arxiv.org/abs/2604.18738) | **Adapted** — E33/E51 remask→mask constraint (`remask_to_mask`) |
+| CoRe context-robust remask | [arXiv:2602.04096](https://arxiv.org/abs/2602.04096) | **Adapted** (lite) — E50 |
+| T2M token-to-mask | [arXiv:2605.26436](https://arxiv.org/html/2605.26436v1) | **Adapted** — E51 |
 
 ---
 
@@ -246,7 +265,7 @@ OpenUI TwoTower, what is a real gap, what is out of scope) lives in
 | **Paper** | *Training Step-Level Reasoning Verifiers with Formal Verification Tools*, 2025. [arXiv:2505.15960](https://arxiv.org/abs/2505.15960) |
 | **Fidelity** | **Adjacent** — motivates distilling expensive formal checks into a compact process model while retaining the formal tool as authority |
 | **Code analogue** | `FastPathGate` + BackPlay-lite mining ([`grammar_fastpath/gate.py`](../../src/slm_training/grammar_fastpath/gate.py), [`trust_train.py`](../../src/slm_training/grammar_fastpath/trust_train.py)); grammar remains legality authority |
-| **Proposed** | Calibration / abstention (**E53** in the mapping doc) |
+| **Proposed** | Calibration / abstention (**E63** in the mapping doc; E53 is the shipped V6 honest champion) |
 
 ### MDPO / d1 (trajectory-aligned masked-diffusion RL)
 
@@ -255,7 +274,7 @@ OpenUI TwoTower, what is a real gap, what is out of scope) lives in
 | **Papers** | *MDPO: Overcoming the Training-Inference Divide of Masked Diffusion Language Models*, 2025. [arXiv:2508.13148](https://arxiv.org/abs/2508.13148). Related: d1 masked-diffusion policy optimization [arXiv:2504.12216](https://arxiv.org/abs/2504.12216); PAPO / dOPSD-style dense intermediate rewards (Adjacent) |
 | **Fidelity** | **Adjacent** — candidates to replace the GRPO-lite **Surrogate** on final strings |
 | **Code today** | [`rl/`](../../src/slm_training/rl/) GRPO-lite; preference stage in [`preference/train.py`](../../src/slm_training/preference/train.py) |
-| **Proposed** | Trajectory-aligned objective on intermediate MaskGIT states (**E54**) |
+| **Proposed** | Trajectory-aligned objective on intermediate MaskGIT states (**E64**; E54/E55 are shipped V6 grammar-honest / process stages) |
 
 ### Constrained diffusion decoding (LAVE / EPIC family)
 
@@ -271,7 +290,7 @@ OpenUI TwoTower, what is a real gap, what is out of scope) lives in
 | --- | --- |
 | **Papers** | PlanBench [arXiv:2206.10498](https://arxiv.org/abs/2206.10498); *On the Generalization Gap in LLM Planning* [arXiv:2601.14456](https://arxiv.org/abs/2601.14456); Chain-of-Thoughtlessness / related CoT collapse under complexity |
 | **Fidelity** | **Adjacent** — motivates **schema-level** held-out splits (unseen component families, symbol rename), not only held-out instances |
-| **Proposed** | **E55** + `toy-layout` transfer stress; see [`verifier-guided-repair.md`](verifier-guided-repair.md) §4 |
+| **Proposed** | **E65** + `toy-layout` transfer stress; see [`verifier-guided-repair.md`](verifier-guided-repair.md) §4 |
 
 ### LLM+P (neural formalize, symbolic search)
 
@@ -305,17 +324,22 @@ OpenUI TwoTower, what is a real gap, what is out of scope) lives in
 | Valid-only certify | config `grammar_ltr_primary` + repair + finalize | `models/twotower.py` (`_ensure_valid_openui`) |
 | Length-safe LTR | `grammar_ltr_max_tokens` / `grammar_ltr_stages` | `models/twotower.py` |
 | MDLM schedule | `mdlm_schedule` | `models/twotower.py` (`_mask_targets`) |
-| Remasking | `remask_ratio` / `remask_use_gate` / `remask_use_entropy` | `models/parallel_decode.py` |
+| Remasking | `remask_ratio` / `remask_use_gate` / `remask_use_entropy` / `remask_policy` | `models/parallel_decode.py` |
 | Template fill | `template_fill_decode` | `models/template_fill.py` |
 | Honest inventory | `honest_slot_contract` | `models/template_fill.py` (`inventory_from_prompt`) |
 | Preference stage | `scripts/train_preference.py` | `preference/train.py` |
 | GRPO-lite | `scripts/train_rl.py` | `rl/` |
 | LTR suffix rollback | `suffix_rollback_window` (E30) | `models/twotower.py` |
 | Trust head | `trust_gate` / `FastPathGate` (E31) | `grammar_fastpath/gate.py`, `trust_train.py` |
+| Slot-aware trust | `slot_aware_trust_gate` (E52) | `grammar_fastpath/trust_train.py` |
 | Visible-token corruption | `visible_corrupt_rate` (E32) | `models/twotower.py` (`_mask_targets`) |
 | Combined remask policy | E33 | `parallel_decode.select_remask_policy_indices` |
+| CoRe remask | E50 `remask_policy=core\|combined` | `parallel_decode.select_remask_core_indices` |
+| T2M remask-to-mask | E51 `remask_to_mask` | `models/twotower.py` |
+| Honest V5 champion | E53 | `scripts/run_quality_matrix.py --matrix v6` |
+| Grammar-diffusion honest | E54 / X2–X7 | `models/grammar_diffusion.py` |
 | Latent critic MoE (deferred) | E34 | `research-correction-critics.md` |
-| Verifier-guided repair map | proposed E50–E55 | `verifier-guided-repair.md` |
+| Verifier-guided repair map | proposed E60–E65 | `verifier-guided-repair.md` |
 
 ---
 

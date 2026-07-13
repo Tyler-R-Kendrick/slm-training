@@ -153,6 +153,51 @@ def test_honest_slot_contract_ignores_gold_placeholders() -> None:
     assert ":LEAKED.GOLD.slot" not in contract
 
 
+def test_generate_batch_requests_surfaces_inventory_in_prompt() -> None:
+    """E35 inventory-in-prompt: request.slot_contract is surfaced into prompt text."""
+    from slm_training.harnesses.model_build.plugin import GenerationRequest
+    from slm_training.models.template_fill import inventory_from_prompt
+
+    src = 'root = Stack([t], "column")\nt = TextContent(":smoke.hero.title")'
+    tok = OpenUITokenizer.build([src, "Build a hero"])
+    cfg = TwoTowerConfig(
+        d_model=64,
+        n_heads=4,
+        context_layers=1,
+        denoiser_layers=1,
+        honest_slot_contract=True,
+        slot_contract_in_context=True,
+        template_fill_decode=True,
+        slot_contract_constrained_decode=True,
+        grammar_ltr_primary=False,
+        gen_steps=2,
+        max_target_len=96,
+    )
+    model = TwoTowerModel(tokenizer=tok, config=cfg, device="cpu")
+    # Capture prompts seen by _generate_batch_once.
+    seen: list[str] = []
+    orig = model._generate_batch_once
+
+    def _spy(prompts, *args, **kwargs):  # noqa: ANN001
+        seen.extend(prompts)
+        return orig(prompts, *args, **kwargs)
+
+    model._generate_batch_once = _spy  # type: ignore[method-assign]
+    model.generate_batch_requests(
+        [
+            GenerationRequest(
+                prompt="Build a hero card.",
+                slot_contract=(":smoke.hero.title", ":smoke.hero.body"),
+            )
+        ]
+    )
+    assert seen
+    assert "Placeholders:" in seen[0]
+    inv = inventory_from_prompt(seen[0], heuristic=False)
+    assert ":smoke.hero.title" in inv
+    assert ":smoke.hero.body" in inv
+
+
 def test_suffix_rollback_config_roundtrip() -> None:
     cfg = TwoTowerConfig(suffix_rollback_window=8, remask_use_entropy=True)
     assert cfg.suffix_rollback_window == 8

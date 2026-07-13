@@ -323,6 +323,8 @@ class GrammarDiffusionConfig:
     schema_in_context: bool = False
     slot_contract_in_context: bool = True
     slot_contract_constrained_decode: bool = True
+    # E54/E35: derive inventory from prompt/DESIGN.md only (never gold.placeholders).
+    honest_slot_contract: bool = True
     seed: int = 0
     eval_mode_no_fallback: bool = True
 
@@ -587,9 +589,15 @@ class GrammarDiffusionModel(nn.Module):
         ctx, ctx_pad = self._encode_context(prompts)
         out: list[str] = []
         for i, req in enumerate(requests):
-            inventory = [ph if ph.startswith(":") else f":{ph}" for ph in req.slot_contract]
+            inventory = [
+                ph if ph.startswith(":") else f":{ph}" for ph in (req.slot_contract or ())
+            ]
             if not inventory:
-                inventory = []
+                from slm_training.models.template_fill import inventory_from_prompt
+
+                inventory = inventory_from_prompt(
+                    req.prompt, req.design_md, heuristic=True
+                )
             text = self._decode_one(
                 ctx[i : i + 1],
                 ctx_pad[i : i + 1],
@@ -599,10 +607,38 @@ class GrammarDiffusionModel(nn.Module):
         return out
 
     def generate(self, prompt: str, gold: ExampleRecord | None = None) -> str:
-        _ = gold  # no oracle leak at eval
-        contract = tuple(gold.placeholders) if gold and gold.placeholders else ()
+        """Generate without reading ``gold.placeholders`` (E35/E54 honesty).
+
+        Inventory comes from the user-visible prompt / DESIGN.md only. ``gold``
+        may supply ``design_md`` text for conditioning, never a hidden slot list.
+        """
+        from slm_training.models.template_fill import inventory_from_prompt
+
+        design_md = gold.design_md if gold is not None else None
+        honest = bool(getattr(self.config, "honest_slot_contract", True))
+        if honest:
+            contract = tuple(
+                inventory_from_prompt(prompt, design_md, heuristic=True)
+            )
+        else:
+            # Legacy escape hatch — still prefer prompt-visible inventory first.
+            contract = tuple(
+                inventory_from_prompt(prompt, design_md, heuristic=False)
+            )
+            if not contract and gold is not None and gold.placeholders:
+                contract = tuple(gold.placeholders)
+            if not contract:
+                contract = tuple(
+                    inventory_from_prompt(prompt, design_md, heuristic=True)
+                )
         return self.generate_batch_requests(
-            [GenerationRequest(prompt=prompt, slot_contract=contract)]
+            [
+                GenerationRequest(
+                    prompt=prompt,
+                    slot_contract=contract,
+                    design_md=design_md,
+                )
+            ]
         )[0]
 
     def _decode_one(

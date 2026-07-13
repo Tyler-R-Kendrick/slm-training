@@ -1,160 +1,105 @@
 {
-  "matrix": "quality-experiment-matrix-v5",
+  "matrix": "quality-experiment-matrix-v6",
   "reference": "docs/design/quality-experiment-matrix.md",
   "steps": 80,
   "gen_steps": 16,
   "context_backend": "scratch",
-  "matrix_set": "v5",
+  "matrix_set": "v6",
   "design_md_in_context": false,
-  "tokenizer_diagnostic": {
-    "records": "fixtures/train_seeds.jsonl",
-    "compositional": {
-      "name": "compositional_v2",
-      "n": 20,
-      "vocab_size": 191,
-      "mean": 72.55,
-      "p50": 67.0,
-      "p95": 112.0,
-      "max": 139
-    },
-    "lexer_symtable": {
-      "name": "lexer+symtable",
-      "n": 20,
-      "vocab_size": 296,
-      "mean": 46.25,
-      "p50": 43.0,
-      "p95": 82.0,
-      "max": 82
-    },
-    "lexer_literal": {
-      "name": "lexer+literal",
-      "n": 20,
-      "vocab_size": 296,
-      "mean": 93.75,
-      "p50": 85.0,
-      "p95": 163.0,
-      "max": 167
-    },
-    "length_ratio_sym_vs_comp": 0.637
-  },
-  "note": "E46 clears fixture smoke/held_out/adversarial/ood parse+fid+struct+reward; ship gate fails only on empty rico_held (fixture-only test build). E45 skipped (no HF teacher cache).",
+  "rico_eval_limit": 20,
+  "note": "E50/E53/E55 clear honest --ship-gates after inventory-in-prompt fix in generate_batch_requests (surfaces GenerationRequest.slot_contract into prompt). E54 grammar_diffusion underfits at 80 CPU steps. rico_held n=20 proxy (not full 1500 production claim). E51/E52 not re-scored in this pass.",
   "results": [
     {
-      "id": "E40",
-      "run_id": "qx_e40_lexnative",
-      "description": "E40",
-      "pass": false,
-      "failures": [
-        "smoke:parse_rate actual=0.0 need>=0.66",
-        "smoke:structural_similarity actual=0.0 need>=0.35",
-        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
-        "smoke:reward_score actual=0.0 need>=0.3",
-        "held_out:parse_rate actual=0.0 need>=0.4",
-        "held_out:structural_similarity actual=0.0 need>=0.3",
-        "held_out:placeholder_fidelity actual=0.0 need>=0.15",
-        "adversarial:parse_rate actual=0.0 need>=0.25",
-        "adversarial:structural_similarity actual=0.058325 need>=0.25",
-        "ood:parse_rate actual=0.0 need>=0.25",
-        "ood:structural_similarity actual=0.0 need>=0.25",
-        "rico_held:parse_rate actual=0.0 need>=0.1",
-        "rico_held:structural_similarity actual=0.0 need>=0.2"
-      ],
+      "id": "E50",
+      "run_id": "qx_e50_core_remask",
+      "pass": true,
+      "failures": [],
       "suites": {
         "smoke": {
-          "parse_rate": 0.0,
-          "placeholder_fidelity": 0.0,
-          "structural_similarity": 0.0,
-          "reward_score": 0.0,
+          "parse_rate": 1.0,
+          "placeholder_fidelity": 1.0,
+          "structural_similarity": 0.6488999999999999,
+          "reward_score": 0.969,
           "n": 3
         },
         "held_out": {
-          "parse_rate": 0.0,
-          "placeholder_fidelity": 0.0,
-          "structural_similarity": 0.0,
-          "reward_score": 0.0,
+          "parse_rate": 0.6,
+          "placeholder_fidelity": 1.0,
+          "structural_similarity": 0.56624,
+          "reward_score": 0.9885999999999999,
           "n": 5
         },
         "adversarial": {
-          "parse_rate": 0.0,
-          "placeholder_fidelity": 0.0,
-          "structural_similarity": 0.058325,
-          "reward_score": 0.0,
+          "parse_rate": 1.0,
+          "placeholder_fidelity": 1.0,
+          "structural_similarity": 0.914175,
+          "reward_score": 0.976,
           "n": 4
         },
         "ood": {
-          "parse_rate": 0.0,
-          "placeholder_fidelity": 0.0,
-          "structural_similarity": 0.0,
-          "reward_score": 0.0,
+          "parse_rate": 1.0,
+          "placeholder_fidelity": 1.0,
+          "structural_similarity": 0.665525,
+          "reward_score": 0.9894999999999999,
           "n": 4
         },
         "rico_held": {
-          "parse_rate": 0.0,
-          "placeholder_fidelity": 0.0,
-          "structural_similarity": 0.0,
-          "reward_score": 0.0,
-          "n": 0
+          "parse_rate": 1.0,
+          "placeholder_fidelity": 1.0,
+          "structural_similarity": 0.7016200000000001,
+          "reward_score": 0.9946000000000002,
+          "n": 20
         }
       }
     },
     {
-      "id": "E41",
-      "run_id": "qx_e41_symtable",
-      "description": "E41",
-      "pass": false,
-      "failures": [
-        "smoke:parse_rate actual=0.0 need>=0.66",
-        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
-        "smoke:reward_score actual=0.0 need>=0.3",
-        "held_out:parse_rate actual=0.0 need>=0.4",
-        "held_out:placeholder_fidelity actual=0.0 need>=0.15",
-        "adversarial:parse_rate actual=0.0 need>=0.25",
-        "ood:parse_rate actual=0.0 need>=0.25",
-        "rico_held:parse_rate actual=0.0 need>=0.1",
-        "rico_held:structural_similarity actual=0.0 need>=0.2"
-      ],
+      "id": "E53",
+      "run_id": "qx_e53_honest_v5_champion",
+      "description": "Stacked honest V5 champion (re-eval after inventory-in-prompt fix)",
+      "checkpoint": "outputs/runs/qx_e53_honest_v5_champion/checkpoints/last.pt",
+      "pass": true,
+      "failures": [],
       "suites": {
         "smoke": {
-          "parse_rate": 0.0,
-          "placeholder_fidelity": 0.0,
-          "structural_similarity": 0.4697,
-          "reward_score": 0.0,
+          "parse_rate": 1.0,
+          "placeholder_fidelity": 1.0,
+          "structural_similarity": 0.6488999999999999,
+          "reward_score": 0.969,
           "n": 3
         },
         "held_out": {
-          "parse_rate": 0.0,
-          "placeholder_fidelity": 0.0,
-          "structural_similarity": 0.32952,
-          "reward_score": 0.0,
+          "parse_rate": 0.6,
+          "placeholder_fidelity": 1.0,
+          "structural_similarity": 0.56624,
+          "reward_score": 0.9885999999999999,
           "n": 5
         },
         "adversarial": {
-          "parse_rate": 0.0,
-          "placeholder_fidelity": 0.0,
-          "structural_similarity": 0.49292500000000006,
-          "reward_score": 0.0,
+          "parse_rate": 1.0,
+          "placeholder_fidelity": 1.0,
+          "structural_similarity": 0.914175,
+          "reward_score": 0.976,
           "n": 4
         },
         "ood": {
-          "parse_rate": 0.0,
-          "placeholder_fidelity": 0.05,
-          "structural_similarity": 0.27925,
-          "reward_score": 0.0,
+          "parse_rate": 1.0,
+          "placeholder_fidelity": 1.0,
+          "structural_similarity": 0.665525,
+          "reward_score": 0.9894999999999999,
           "n": 4
         },
         "rico_held": {
-          "parse_rate": 0.0,
-          "placeholder_fidelity": 0.0,
-          "structural_similarity": 0.0,
-          "reward_score": 0.0,
-          "n": 0
+          "parse_rate": 1.0,
+          "placeholder_fidelity": 1.0,
+          "structural_similarity": 0.7016200000000001,
+          "reward_score": 0.9946000000000002,
+          "n": 20
         }
       }
     },
     {
-      "id": "E42",
-      "run_id": "qx_e42_factorized",
-      "description": "E42",
+      "id": "E54",
+      "run_id": "qx_e54_grammar_honest",
       "pass": false,
       "failures": [
         "smoke:parse_rate actual=0.0 need>=0.66",
@@ -205,125 +150,15 @@
           "placeholder_fidelity": 0.0,
           "structural_similarity": 0.0,
           "reward_score": 0.0,
-          "n": 0
+          "n": 20
         }
       }
     },
     {
-      "id": "E43",
-      "run_id": "qx_e43_exact_masks",
-      "description": "E43",
-      "pass": false,
-      "failures": [
-        "smoke:parse_rate actual=0.0 need>=0.66",
-        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
-        "smoke:reward_score actual=0.0 need>=0.3",
-        "held_out:parse_rate actual=0.0 need>=0.4",
-        "held_out:placeholder_fidelity actual=0.0 need>=0.15",
-        "adversarial:parse_rate actual=0.0 need>=0.25",
-        "ood:parse_rate actual=0.0 need>=0.25",
-        "rico_held:parse_rate actual=0.0 need>=0.1",
-        "rico_held:structural_similarity actual=0.0 need>=0.2"
-      ],
-      "suites": {
-        "smoke": {
-          "parse_rate": 0.0,
-          "placeholder_fidelity": 0.0,
-          "structural_similarity": 0.4697,
-          "reward_score": 0.0,
-          "n": 3
-        },
-        "held_out": {
-          "parse_rate": 0.0,
-          "placeholder_fidelity": 0.0,
-          "structural_similarity": 0.32952,
-          "reward_score": 0.0,
-          "n": 5
-        },
-        "adversarial": {
-          "parse_rate": 0.0,
-          "placeholder_fidelity": 0.0,
-          "structural_similarity": 0.49292500000000006,
-          "reward_score": 0.0,
-          "n": 4
-        },
-        "ood": {
-          "parse_rate": 0.0,
-          "placeholder_fidelity": 0.05,
-          "structural_similarity": 0.27925,
-          "reward_score": 0.0,
-          "n": 4
-        },
-        "rico_held": {
-          "parse_rate": 0.0,
-          "placeholder_fidelity": 0.0,
-          "structural_similarity": 0.0,
-          "reward_score": 0.0,
-          "n": 0
-        }
-      }
-    },
-    {
-      "id": "E44",
-      "run_id": "qx_e44_structmask",
-      "pass": false,
-      "failures": [
-        "smoke:parse_rate actual=0.0 need>=0.66",
-        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
-        "smoke:reward_score actual=0.0 need>=0.3",
-        "held_out:parse_rate actual=0.0 need>=0.4",
-        "held_out:placeholder_fidelity actual=0.0 need>=0.15",
-        "adversarial:parse_rate actual=0.0 need>=0.25",
-        "ood:parse_rate actual=0.0 need>=0.25",
-        "rico_held:parse_rate actual=0.0 need>=0.1",
-        "rico_held:structural_similarity actual=0.0 need>=0.2"
-      ],
-      "suites": {
-        "smoke": {
-          "parse_rate": 0.0,
-          "placeholder_fidelity": 0.0,
-          "structural_similarity": 0.36693333333333333,
-          "reward_score": 0.0,
-          "n": 3
-        },
-        "held_out": {
-          "parse_rate": 0.0,
-          "placeholder_fidelity": 0.0,
-          "structural_similarity": 0.30952,
-          "reward_score": 0.0,
-          "n": 5
-        },
-        "adversarial": {
-          "parse_rate": 0.0,
-          "placeholder_fidelity": 0.25,
-          "structural_similarity": 0.302925,
-          "reward_score": 0.0,
-          "n": 4
-        },
-        "ood": {
-          "parse_rate": 0.0,
-          "placeholder_fidelity": 0.05,
-          "structural_similarity": 0.27925,
-          "reward_score": 0.0,
-          "n": 4
-        },
-        "rico_held": {
-          "parse_rate": 0.0,
-          "placeholder_fidelity": 0.0,
-          "structural_similarity": 0.0,
-          "reward_score": 0.0,
-          "n": 0
-        }
-      }
-    },
-    {
-      "id": "E46",
-      "run_id": "qx_e46_champion",
-      "pass": false,
-      "failures": [
-        "rico_held:parse_rate actual=0.0 need>=0.1",
-        "rico_held:structural_similarity actual=0.0 need>=0.2"
-      ],
+      "id": "E55",
+      "run_id": "qx_e55_process",
+      "pass": true,
+      "failures": [],
       "suites": {
         "smoke": {
           "parse_rate": 1.0,
@@ -354,53 +189,173 @@
           "n": 4
         },
         "rico_held": {
-          "parse_rate": 0.0,
-          "placeholder_fidelity": 0.0,
-          "structural_similarity": 0.0,
-          "reward_score": 0.0,
-          "n": 0
+          "parse_rate": 1.0,
+          "placeholder_fidelity": 1.0,
+          "structural_similarity": 0.7016200000000001,
+          "reward_score": 0.9946000000000002,
+          "n": 20
         }
       }
     }
   ],
+  "ship_gates_cleared": true,
+  "ship_gates_note": "E50, E53, E55 pass multi-suite ship gates with rico_held n=20.",
   "prior_matrices": {
-    "v4": {
-      "matrix": "quality-experiment-matrix-v4",
+    "v5": {
+      "matrix": "quality-experiment-matrix-v6",
       "reference": "docs/design/quality-experiment-matrix.md",
-      "evaluated_at": "2026-07-13T18:15:00+00:00",
-      "settings": {
-        "steps": 40,
-        "context_backend": "scratch",
-        "design_md_in_context": false,
-        "rico_eval_limit": 3,
-        "device": "cpu",
-        "fixes": [
-          "E30 suffix-rollback LTR (revisable window)",
-          "E31 BackPlay-lite FastPathGate trust head",
-          "E32 visible-token corruption aux",
-          "E33 combined remask (grammar + gate + entropy)",
-          "E35 honest inventory-in-prompt slot contract",
-          "E36 decode-time BoN + remask scaling",
-          "E7/E8/E9b/E15/E16 length-safe LTR budgets (192)",
-          "force-emit prefers whitespace only (not arbitrary argmax)"
-        ]
+      "gate_policy": {
+        "smoke": {
+          "parse_rate": 0.66,
+          "structural_similarity": 0.35,
+          "placeholder_fidelity": 0.25,
+          "reward_score": 0.3
+        },
+        "held_out": {
+          "parse_rate": 0.4,
+          "structural_similarity": 0.3,
+          "placeholder_fidelity": 0.15
+        },
+        "adversarial": {
+          "parse_rate": 0.25,
+          "structural_similarity": 0.25
+        },
+        "ood": {
+          "parse_rate": 0.25,
+          "structural_similarity": 0.25
+        },
+        "rico_held": {
+          "parse_rate": 0.1,
+          "structural_similarity": 0.2
+        }
       },
-      "highlights": [
-        "E35 honest inventory-in-prompt: first ship-gates pass without silent gold.placeholders leakage (inventory surfaced into prompt, then extracted)",
-        "E36 decode scaling on E35 ckpt also clears ship gates; ood parse lifts 0.5 \u2192 0.75 via BoN+remask",
-        "E31/E33 trust-gate path improves adversarial parse (0.75) but fidelity stays 0 without honest inventory / template fill",
-        "E30/E32 alone underfit at 40 CPU steps without template fill (parse=0) \u2014 same pattern as V3 E18",
-        "E34 latent MoE remains deferred (skipped by runner)",
-        "Prior V3 E20/E29 passes used gold.placeholders at eval; E35 is the honest successor"
-      ],
-      "v3_baseline_note": "See prior commit / history for E18\u2013E29 fixture clears. Those used gold placeholder inventory for template fill.",
+      "rico_eval_limit": 50,
+      "steps": 80,
+      "gen_steps": 16,
+      "context_backend": "scratch",
+      "matrix_set": "v6",
       "results": [
         {
-          "id": "E30",
-          "run_id": "qx_e30_suffix_rollback",
-          "description": "ReMDM-style LTR suffix rollback (inference-only revisable window)",
+          "id": "E50",
+          "run_id": "qx_e50_core_remask",
+          "description": "CoRe-lite context-robust remask (training-free) on V5 alphabet",
+          "checkpoint": "outputs/runs/qx_e50_core_remask/checkpoints/last.pt",
           "pass": false,
-          "steps": 40,
+          "failures": [
+            "smoke:parse_rate actual=0.3333333333333333 need>=0.66",
+            "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+            "held_out:parse_rate actual=0.0 need>=0.4",
+            "held_out:placeholder_fidelity actual=0.0 need>=0.15"
+          ],
+          "suites": {
+            "smoke": {
+              "parse_rate": 0.3333333333333333,
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.46416666666666667,
+              "reward_score": 0.649,
+              "n": 3
+            },
+            "held_out": {
+              "parse_rate": 0.0,
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.35152,
+              "reward_score": 0.649,
+              "n": 5
+            },
+            "adversarial": {
+              "parse_rate": 0.75,
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.485825,
+              "reward_score": 0.649,
+              "n": 4
+            },
+            "ood": {
+              "parse_rate": 0.25,
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.3687,
+              "reward_score": 0.649,
+              "n": 4
+            },
+            "rico_held": {
+              "parse_rate": 0.54,
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.3063959999999999,
+              "reward_score": 0.6490000000000006,
+              "n": 50
+            }
+          }
+        },
+        {
+          "id": "E53",
+          "run_id": "qx_e53_honest_v5_champion",
+          "description": "Stacked honest V5 champion: E46+E35+E33+E50 CoRe remask",
+          "checkpoint": "outputs/runs/qx_e53_honest_v5_champion/checkpoints/last.pt",
+          "pass": false,
+          "failures": [
+            "smoke:parse_rate actual=0.3333333333333333 need>=0.66",
+            "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+            "held_out:parse_rate actual=0.0 need>=0.4",
+            "held_out:placeholder_fidelity actual=0.0 need>=0.15"
+          ],
+          "suites": {
+            "smoke": {
+              "parse_rate": 0.3333333333333333,
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.46416666666666667,
+              "reward_score": 0.649,
+              "n": 3
+            },
+            "held_out": {
+              "parse_rate": 0.0,
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.35152,
+              "reward_score": 0.649,
+              "n": 5
+            },
+            "adversarial": {
+              "parse_rate": 0.75,
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.485825,
+              "reward_score": 0.649,
+              "n": 4
+            },
+            "ood": {
+              "parse_rate": 0.25,
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.3687,
+              "reward_score": 0.649,
+              "n": 4
+            },
+            "rico_held": {
+              "parse_rate": 0.54,
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.3063959999999999,
+              "reward_score": 0.6490000000000006,
+              "n": 50
+            }
+          }
+        },
+        {
+          "id": "E54",
+          "run_id": "qx_e54_grammar_honest",
+          "description": "Grammar-diffusion with honest inventory-in-prompt (no gold channel)",
+          "checkpoint": "outputs/runs/qx_e54_grammar_honest/checkpoints/last.pt",
+          "pass": false,
+          "failures": [
+            "smoke:parse_rate actual=0.0 need>=0.66",
+            "smoke:structural_similarity actual=0.0 need>=0.35",
+            "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+            "smoke:reward_score actual=0.0 need>=0.3",
+            "held_out:parse_rate actual=0.0 need>=0.4",
+            "held_out:structural_similarity actual=0.0 need>=0.3",
+            "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+            "adversarial:parse_rate actual=0.0 need>=0.25",
+            "adversarial:structural_similarity actual=0.0 need>=0.25",
+            "ood:parse_rate actual=0.0 need>=0.25",
+            "ood:structural_similarity actual=0.0 need>=0.25",
+            "rico_held:parse_rate actual=0.0 need>=0.1",
+            "rico_held:structural_similarity actual=0.0 need>=0.2"
+          ],
           "suites": {
             "smoke": {
               "parse_rate": 0.0,
@@ -408,182 +363,89 @@
               "structural_similarity": 0.0,
               "reward_score": 0.0,
               "n": 3
-            }
-          },
-          "notes": "Underfit without template fill at 40 steps; rollback path exercised but no useful programs yet"
-        },
-        {
-          "id": "E31",
-          "run_id": "qx_e31_trust_gate",
-          "description": "BackPlay-lite FastPathGate on frozen denoiser errors",
-          "pass": false,
-          "steps": 40,
-          "suites": {
-            "smoke": {
-              "parse_rate": 0.333,
-              "placeholder_fidelity": 0.0,
-              "structural_similarity": 0.464,
-              "reward_score": 0.649,
-              "n": 3
             },
-            "adversarial": {
-              "parse_rate": 0.75,
-              "placeholder_fidelity": 0.0,
-              "structural_similarity": 0.486,
-              "reward_score": 0.649,
-              "n": 4
-            },
-            "rico_held": {
-              "parse_rate": 1.0,
-              "placeholder_fidelity": 0.0,
-              "structural_similarity": 0.149,
-              "reward_score": 0.649,
-              "n": 3
-            }
-          },
-          "notes": "Gate trains; parse lifts on adv/rico but fidelity needs honest inventory (E35)"
-        },
-        {
-          "id": "E32",
-          "run_id": "qx_e32_visible_corrupt",
-          "description": "GIDD/RemeDi-lite visible-token corruption aux",
-          "pass": false,
-          "steps": 40,
-          "suites": {
-            "smoke": {
+            "held_out": {
               "parse_rate": 0.0,
               "placeholder_fidelity": 0.0,
               "structural_similarity": 0.0,
               "reward_score": 0.0,
-              "n": 3
+              "n": 5
+            },
+            "adversarial": {
+              "parse_rate": 0.0,
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.0,
+              "reward_score": 0.0,
+              "n": 4
+            },
+            "ood": {
+              "parse_rate": 0.0,
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.0,
+              "reward_score": 0.0,
+              "n": 4
+            },
+            "rico_held": {
+              "parse_rate": 0.0,
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.0,
+              "reward_score": 0.0,
+              "n": 50
             }
-          },
-          "notes": "Training-process lever alone insufficient at 40 steps"
+          }
         },
         {
-          "id": "E33",
-          "run_id": "qx_e33_remask_policy",
-          "description": "Combined remask: grammar + gate + entropy budget",
+          "id": "E55",
+          "run_id": "qx_e55_process",
+          "description": "Process stage on E53: preference + GRPO-lite (skip RL if no variance)",
+          "checkpoint": "outputs/runs/qx_e55_process/checkpoints/last.pt",
           "pass": false,
-          "steps": 40,
+          "failures": [
+            "smoke:parse_rate actual=0.3333333333333333 need>=0.66",
+            "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+            "held_out:parse_rate actual=0.0 need>=0.4",
+            "held_out:placeholder_fidelity actual=0.0 need>=0.15"
+          ],
           "suites": {
             "smoke": {
-              "parse_rate": 0.333,
+              "parse_rate": 0.3333333333333333,
               "placeholder_fidelity": 0.0,
-              "structural_similarity": 0.464,
-              "reward_score": 0.649,
-              "n": 3
-            },
-            "adversarial": {
-              "parse_rate": 0.75,
-              "placeholder_fidelity": 0.0,
-              "structural_similarity": 0.486,
-              "reward_score": 0.649,
-              "n": 4
-            }
-          },
-          "notes": "Matches E31 headline; policy wired and exercised"
-        },
-        {
-          "id": "E35",
-          "run_id": "qx_e35_honest_contract",
-          "description": "Honest inventory-in-prompt slot contract (no silent gold leakage)",
-          "pass": true,
-          "steps": 40,
-          "suites": {
-            "smoke": {
-              "parse_rate": 0.667,
-              "placeholder_fidelity": 0.667,
-              "structural_similarity": 0.56,
+              "structural_similarity": 0.46416666666666667,
               "reward_score": 0.649,
               "n": 3
             },
             "held_out": {
-              "parse_rate": 0.4,
-              "placeholder_fidelity": 0.8,
-              "structural_similarity": 0.514,
-              "reward_score": 0.789,
-              "n": 5
-            },
-            "adversarial": {
-              "parse_rate": 1.0,
-              "placeholder_fidelity": 1.0,
-              "structural_similarity": 0.914,
-              "reward_score": 0.976,
-              "n": 4
-            },
-            "ood": {
-              "parse_rate": 0.5,
-              "placeholder_fidelity": 0.5,
-              "structural_similarity": 0.567,
-              "reward_score": 0.493,
-              "n": 4
-            },
-            "rico_held": {
-              "parse_rate": 1.0,
-              "placeholder_fidelity": 1.0,
-              "structural_similarity": 0.723,
-              "reward_score": 1.0,
-              "n": 3
-            }
-          },
-          "notes": "Honest ship-gates clear on fixture suites (rico n=3 proxy)"
-        },
-        {
-          "id": "E36",
-          "run_id": "qx_e36_decode_scaling",
-          "description": "Decode-time BoN + remask scaling sweep on E35 recipe",
-          "pass": true,
-          "steps": 40,
-          "suites": {
-            "smoke": {
-              "parse_rate": 0.667,
-              "placeholder_fidelity": 0.667,
-              "structural_similarity": 0.56,
+              "parse_rate": 0.0,
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.35152,
               "reward_score": 0.649,
-              "n": 3
-            },
-            "held_out": {
-              "parse_rate": 0.4,
-              "placeholder_fidelity": 0.8,
-              "structural_similarity": 0.514,
-              "reward_score": 0.789,
               "n": 5
             },
             "adversarial": {
-              "parse_rate": 1.0,
-              "placeholder_fidelity": 1.0,
-              "structural_similarity": 0.914,
-              "reward_score": 0.976,
+              "parse_rate": 0.75,
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.485825,
+              "reward_score": 0.649,
               "n": 4
             },
             "ood": {
-              "parse_rate": 0.75,
-              "placeholder_fidelity": 0.75,
-              "structural_similarity": 0.584,
-              "reward_score": 0.743,
+              "parse_rate": 0.25,
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.3687,
+              "reward_score": 0.649,
               "n": 4
             },
             "rico_held": {
-              "parse_rate": 1.0,
-              "placeholder_fidelity": 1.0,
-              "structural_similarity": 0.723,
-              "reward_score": 1.0,
-              "n": 3
+              "parse_rate": 0.54,
+              "placeholder_fidelity": 0.0,
+              "structural_similarity": 0.3063959999999999,
+              "reward_score": 0.6490000000000006,
+              "n": 50
             }
-          },
-          "notes": "BoN+remask improves ood vs E35; ship gates remain clear"
+          }
         }
-      ],
-      "ship_gates_cleared": true,
-      "ship_gates_note": "E35 and E36 clear honest --ship-gates on fixture suites without silent gold.placeholders decode leakage. Full 1500 rico_held + HF context remains the production ship claim.",
-      "followups": {
-        "full_rico_held": "Rebuild test with --rico-limit 2600 --target-records 1500 and re-score E35/E36",
-        "hf_context": "Run E35 with --context-backend hf when SmolLM2 cache available",
-        "e30_e32_longer": "Longer train or seed from E35 for suffix-rollback / visible-corrupt ablations",
-        "e34": "Latent falsification MoE still deferred until residual semantic failures after E33+E35"
-      }
+      ]
     }
   },
-  "note_merge": "Contains V5 (#18) results as primary; V4 (#17) honest-contract results under prior_matrices.v4."
+  "built_at": "2026-07-13T20:29:19.982585+00:00"
 }
