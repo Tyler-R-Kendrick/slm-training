@@ -208,6 +208,7 @@ def screen_to_openui(
 def _prompt_for_screen(screen: dict[str, Any], meta: dict[str, Any]) -> str:
     labels = meta.get("component_labels") or []
     direction = meta.get("direction") or "column"
+    roles = meta.get("roles") or []
     parts: list[str] = []
     n_text = sum(1 for x in labels if x in {"Text", "Toolbar"})
     n_btn = sum(
@@ -239,11 +240,14 @@ def _prompt_for_screen(screen: dict[str, Any], meta: dict[str, Any]) -> str:
     if n_img:
         parts.append(f"{n_img} image{'s' if n_img != 1 else ''}")
     structure = ", ".join(parts) or "UI widgets"
+    # Deterministic role hint for the model (sorted unique roles).
+    role_hint = ", ".join(sorted(set(roles)))
     idx = screen.get("screen_index")
     split_src = screen.get("split_src") or "train"
     return (
         f"Build a {direction} mobile OpenUI layout with {structure} "
-        f"using placeholders (RICO {split_src} screen {idx})."
+        f"(roles: {role_hint}) using placeholders only "
+        f"(RICO {split_src} screen {idx})."
     )
 
 

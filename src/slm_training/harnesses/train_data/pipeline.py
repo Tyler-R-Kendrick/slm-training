@@ -24,15 +24,17 @@ from slm_training.harnesses.train_data.synth import PromptSynthesizer, get_synth
 class TrainDataConfig:
     seed_path: Path | None = None
     rico_path: Path | None = Path("fixtures/rico/semantic_train.jsonl")
-    # rico | fixture | both
-    source: str = "rico"
+    # rico | fixture | both | awwwards | rico+awwwards | all
+    source: str = "all"
     output_root: Path = Path("outputs/train_data")
-    version: str = "v0"
-    synthesizer: str = "template"
+    version: str = "v1"
+    synthesizer: str = "quality"
     require_split: str = "train"
     rico_hf_split: str | None = None
     rico_limit: int | None = None
     max_children: int = 6
+    min_quality_score: float = 0.55
+    require_design_md: bool = True
 
     @property
     def output_dir(self) -> Path:
@@ -117,7 +119,7 @@ def _records_from_awwwards(config: TrainDataConfig) -> tuple[list[ExampleRecord]
         records = build_awwwards_records(
             AwwwardsConfig(
                 fixture_path=Path("fixtures/awwwards/sites.jsonl"),
-                max_sites=config.rico_limit or 20,
+                max_sites=50,
             )
         )
         return records, []
@@ -159,6 +161,8 @@ def build_train_data(
         raise ValueError(f"unknown train source {config.source!r}")
 
     synth = synthesizer or get_synthesizer(config.synthesizer)
+    # Stable seed order before expansion.
+    seeds.sort(key=lambda r: r.id)
     collected: list[ExampleRecord] = []
     for seed in seeds:
         candidates = [seed, *synth.expand(seed)]
@@ -168,12 +172,20 @@ def build_train_data(
             except (ParseError, ValueError) as exc:
                 errors.append({"id": candidate.id, "error": str(exc)})
 
+    from slm_training.data.quality import filter_quality
+
+    quality_kept, quality_rejected = filter_quality(
+        collected,
+        min_score=config.min_quality_score,
+        require_design_md=config.require_design_md,
+    )
+
     deduped: list[ExampleRecord] = []
     seen_pairs: set[str] = set()
     prompt_fps: set[str] = set()
     openui_fps: set[str] = set()
     design_md_fps: set[str] = set()
-    for record in collected:
+    for record in quality_kept:
         pair = fingerprint_pair(record.prompt, record.openui)
         if pair in seen_pairs:
             continue
@@ -185,11 +197,17 @@ def build_train_data(
             design_md_fps.add(dm)
         deduped.append(record)
 
+    # Final stable order.
+    deduped.sort(key=lambda r: r.id)
+
     out_dir = config.output_dir
     out_dir.mkdir(parents=True, exist_ok=True)
     records_path = out_dir / "records.jsonl"
     write_jsonl(records_path, deduped)
 
+    quality_scores = [
+        float((r.meta or {}).get("quality", {}).get("score") or 0.0) for r in deduped
+    ]
     stats = {
         "version": config.version,
         "source": source,
@@ -198,14 +216,21 @@ def build_train_data(
         "rico_hf_split": config.rico_hf_split,
         "seed_count": len(seeds),
         "collected_count": len(collected),
+        "quality_rejected": len(quality_rejected),
+        "quality_rejected_samples": quality_rejected[:20],
         "record_count": len(deduped),
         "error_count": len(errors),
         "errors": errors[:50],
         "synthesizer": config.synthesizer,
+        "min_quality_score": config.min_quality_score,
+        "mean_quality_score": (
+            round(sum(quality_scores) / len(quality_scores), 4) if quality_scores else None
+        ),
         "placeholder_vocab_size": len(
             {p for r in deduped for p in r.placeholders}
         ),
         "with_design_md": sum(1 for r in deduped if r.design_md),
+        "component_histogram": _component_histogram(deduped),
         "built_at": datetime.now(timezone.utc).isoformat(),
     }
     stats_path = out_dir / "stats.json"
@@ -223,6 +248,7 @@ def build_train_data(
         "openui_fingerprints": sorted(openui_fps),
         "pair_fingerprints": sorted(seen_pairs),
         "design_md_fingerprints": sorted(design_md_fps),
+        "content_fingerprint": _content_fingerprint(deduped),
         "built_at": stats["built_at"],
     }
     manifest_path = out_dir / "manifest.json"
@@ -233,3 +259,24 @@ def build_train_data(
         "manifest": manifest,
         "stats": stats,
     }
+
+
+def _component_histogram(records: list[ExampleRecord]) -> dict[str, int]:
+    from slm_training.data.quality import component_counts
+
+    hist: dict[str, int] = {}
+    for record in records:
+        for name, count in component_counts(record.openui).items():
+            hist[name] = hist.get(name, 0) + count
+    return dict(sorted(hist.items()))
+
+
+def _content_fingerprint(records: list[ExampleRecord]) -> str:
+    """Stable hash of record ids + openui + prompt (ignores built_at)."""
+    import hashlib
+
+    h = hashlib.sha256()
+    for record in records:
+        payload = f"{record.id}\n{record.prompt}\n{record.openui}\n"
+        h.update(payload.encode("utf-8"))
+    return h.hexdigest()

@@ -1,5 +1,12 @@
-{"id": "aww_folio_01", "title": "North Studio Portfolio", "url": "https://example.com/north", "description": "Minimal agency portfolio with bold hero typography.", "tags": ["portfolio", "visual", "image"]}
-{"id": "aww_saas_01", "title": "Pulse Analytics", "url": "https://example.com/pulse", "description": "SaaS landing with signup form and metric cards.", "tags": ["saas", "form", "signup"]}
-{"id": "aww_shop_01", "title": "Cedar Goods", "url": "https://example.com/cedar", "description": "E-commerce landing with product hero and CTA.", "tags": ["shop", "commerce"]}
-{"id": "aww_app_01", "title": "Orbit Mobile", "url": "https://example.com/orbit", "description": "App marketing site with download CTA.", "tags": ["app", "mobile"]}
-{"id": "aww_contact_01", "title": "Harbor Contact", "url": "https://example.com/harbor", "description": "Contact-focused site with email capture.", "tags": ["contact", "form"]}
+{"id": "aww_folio_01", "title": "North Studio Portfolio", "url": "https://example.com/north", "description": "Minimal agency portfolio with bold hero typography and case-study cards.", "tags": ["portfolio", "visual", "image"]}
+{"id": "aww_saas_01", "title": "Pulse Analytics", "url": "https://example.com/pulse", "description": "SaaS landing with signup form, metric cards, and primary CTA.", "tags": ["saas", "form", "signup", "metrics"]}
+{"id": "aww_shop_01", "title": "Cedar Goods", "url": "https://example.com/cedar", "description": "E-commerce landing with product hero imagery and shop CTA.", "tags": ["shop", "commerce", "image"]}
+{"id": "aww_app_01", "title": "Orbit Mobile", "url": "https://example.com/orbit", "description": "App marketing site with download CTA and feature list.", "tags": ["app", "mobile"]}
+{"id": "aww_contact_01", "title": "Harbor Contact", "url": "https://example.com/harbor", "description": "Contact-focused site with email capture form.", "tags": ["contact", "form"]}
+{"id": "aww_docs_01", "title": "Ledger Docs", "url": "https://example.com/ledger", "description": "Documentation homepage with tabbed guides and callout tips.", "tags": ["docs", "tabs", "callout"]}
+{"id": "aww_finance_01", "title": "Mint Ledger", "url": "https://example.com/mint", "description": "Fintech dashboard teaser with KPI cards and secure login CTA.", "tags": ["finance", "metrics", "login"]}
+{"id": "aww_edu_01", "title": "Campus Learn", "url": "https://example.com/campus", "description": "Education landing with course cards and enrollment form.", "tags": ["education", "form", "cards"]}
+{"id": "aww_health_01", "title": "Vital Clinic", "url": "https://example.com/vital", "description": "Healthcare booking page with date picker and confirm button.", "tags": ["health", "form", "datepicker"]}
+{"id": "aww_creative_01", "title": "Filmstrip Lab", "url": "https://example.com/filmstrip", "description": "Creative studio site with image gallery and contact CTA.", "tags": ["creative", "gallery", "image", "visual"]}
+{"id": "aww_ops_01", "title": "Stackyard Ops", "url": "https://example.com/stackyard", "description": "Ops console marketing page with settings switches and status callout.", "tags": ["ops", "settings", "callout"]}
+{"id": "aww_events_01", "title": "Summit Days", "url": "https://example.com/summit", "description": "Event landing with agenda tabs and register form.", "tags": ["events", "tabs", "form"]}

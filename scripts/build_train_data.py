@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build versioned training-data artifacts (RICO by default)."""
+"""Build versioned training-data artifacts (high-quality, deterministic)."""
 
 from __future__ import annotations
 
@@ -14,15 +14,15 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--source",
-        default="rico",
+        default="all",
         choices=["rico", "fixture", "both", "awwwards", "rico+awwwards", "all"],
-        help="Training data source (default: rico).",
+        help="Training data source (default: all).",
     )
     parser.add_argument(
         "--seed-path",
         type=Path,
         default=Path("fixtures/train_seeds.jsonl"),
-        help="JSONL seed fixtures (used when source is fixture/both).",
+        help="JSONL seed fixtures (used when source includes fixtures).",
     )
     parser.add_argument(
         "--rico-path",
@@ -42,18 +42,32 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=Path("outputs/train_data"),
     )
-    parser.add_argument("--version", default="v0")
+    parser.add_argument("--version", default="v1")
     parser.add_argument(
         "--synthesizer",
-        default="template",
-        choices=["template", "none", "noop", "off"],
+        default="quality",
+        choices=["quality", "template", "layout", "none", "noop", "off"],
+        help="Deterministic synthesizer (default: quality = layout aug + templates).",
+    )
+    parser.add_argument(
+        "--min-quality-score",
+        type=float,
+        default=0.55,
+        help="Drop records below this quality score after validation.",
+    )
+    parser.add_argument(
+        "--allow-missing-design-md",
+        action="store_true",
+        help="Do not require DESIGN.md on every kept record.",
     )
     args = parser.parse_args(argv)
 
     result = build_train_data(
         TrainDataConfig(
             seed_path=args.seed_path if args.source in {"fixture", "both", "all"} else None,
-            rico_path=args.rico_path if args.source in {"rico", "both", "rico+awwwards", "all"} else None,
+            rico_path=args.rico_path
+            if args.source in {"rico", "both", "rico+awwwards", "all"}
+            else None,
             source=args.source,
             output_root=args.output_root,
             version=args.version,
@@ -61,10 +75,13 @@ def main(argv: list[str] | None = None) -> int:
             rico_hf_split=args.rico_hf_split,
             rico_limit=args.rico_limit,
             max_children=args.max_children,
+            min_quality_score=args.min_quality_score,
+            require_design_md=not args.allow_missing_design_md,
         )
     )
     print(json.dumps(result["stats"], indent=2))
     print(f"wrote {result['output_dir']}")
+    print(f"content_fingerprint={result['manifest'].get('content_fingerprint')}")
     return 0
 
 

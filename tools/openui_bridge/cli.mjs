@@ -48,12 +48,15 @@ function contentPolicyErrors(node, path = "root", errors = []) {
     const props = node.props || {};
     for (const [key, value] of Object.entries(props)) {
       if (CONTENT_PROPS.has(key)) {
-        // Optional content props may be omitted (null/undefined); required ones
-        // must be placeholders when present.
-        if (value == null) {
+        // Only string values are user-facing copy slots. Arrays/objects (e.g.
+        // TabItem.content children) and null/undefined optionals are exempt.
+        if (value == null || typeof value !== "string") {
+          if (value != null && typeof value === "object") {
+            contentPolicyErrors(value, `${path}.${key}`, errors);
+          }
           continue;
         }
-        if (typeof value !== "string" || !PLACEHOLDER_RE.test(value)) {
+        if (!PLACEHOLDER_RE.test(value)) {
           errors.push({
             path: `${path}.${key}`,
             code: "placeholder_required",

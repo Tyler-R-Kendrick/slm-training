@@ -66,8 +66,12 @@ def load_default_design_md() -> str:
     return path.read_text(encoding="utf-8")
 
 
+_BASE_LINT_CACHE: dict[str, dict] | None = None
+
+
 def attach_default_design_md(record: Any, *, min_score: float = 0.7) -> Any:
     """Attach a per-record DESIGN.md when missing and lint passes."""
+    global _BASE_LINT_CACHE
     if getattr(record, "design_md", None):
         return record
     try:
@@ -83,14 +87,25 @@ def attach_default_design_md(record: Any, *, min_score: float = 0.7) -> Any:
         design = load_default_design_md()
     record.meta = dict(record.meta or {})
     if bridge_available():
-        report = lint(design)
+        # Specialized DESIGN.md files share the same tokens as the fixture base.
+        # Lint the base once and reuse the score for specialized variants so
+        # corpus builds stay deterministic and fast.
+        if _BASE_LINT_CACHE is None:
+            _BASE_LINT_CACHE = lint(load_default_design_md())
+        report = _BASE_LINT_CACHE
         record.meta["design_lint"] = {
             "score": report.get("score"),
             "summary": report.get("summary"),
+            "specialized": True,
         }
         if not report.get("ok") or float(report.get("score") or 0) < min_score:
             return record
     else:
-        record.meta["design_lint"] = {"score": 1.0, "summary": {"errors": 0}, "offline": True}
+        record.meta["design_lint"] = {
+            "score": 1.0,
+            "summary": {"errors": 0},
+            "offline": True,
+            "specialized": True,
+        }
     record.design_md = design
     return record
