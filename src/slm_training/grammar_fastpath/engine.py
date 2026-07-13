@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from functools import lru_cache
 from pathlib import Path
 
@@ -57,6 +58,10 @@ class OpenUIIncrementalEngine:
     MaskGIT is adapted from Mündler et al. 2025 (arXiv:2508.10111 /
     constrained-diffusion.ai): CFG ∩ completion language non-empty,
     specialized to OpenUI via benign hole substitution + reparse.
+
+    P1: ``set_prefix`` / ``advance`` reuse the InteractiveParser when the new
+    prefix extends the previous one, feeding only newly completed lexemes
+    instead of re-lexing+re-feeding the entire prefix from scratch.
     """
 
     def __init__(self, grammar_path: Path | None = None) -> None:
@@ -65,39 +70,104 @@ class OpenUIIncrementalEngine:
         self._parser = _load_parser(str(path.resolve()))
         self._prefix = ""
         self._accepts: frozenset[str] = frozenset()
+        self._ip = None
+        self._fed_token_count = 0
+        self._full_syncs = 0
+        self._incremental_advances = 0
+        self._sync_ms = 0.0
 
     def reset(self) -> None:
         self._prefix = ""
-        self._accepts = frozenset(self._parser.parse_interactive().accepts())
-
-    def _sync(self, prefix: str) -> bool:
-        """Lex+feed complete tokens from prefix; update accepts. False on hard error."""
-        self._prefix = prefix
-        ip = self._parser.parse_interactive()
+        self._ip = self._parser.parse_interactive()
+        self._fed_token_count = 0
         try:
-            tokens = list(self._parser.lex(prefix))
+            self._accepts = frozenset(str(x) for x in self._ip.accepts())
+        except Exception:
+            self._accepts = frozenset()
+
+    def _lex_tokens(self, prefix: str) -> list | None:
+        try:
+            return list(self._parser.lex(prefix))
         except UnexpectedCharacters:
             trimmed = prefix.rstrip()
             cut = len(trimmed)
             while cut > 0 and trimmed[cut - 1] not in " \n\t=,()[]":
                 cut -= 1
             try:
-                tokens = list(self._parser.lex(trimmed[:cut])) if cut else []
+                return list(self._parser.lex(trimmed[:cut])) if cut else []
             except Exception:
-                return False
+                return None
+
+    def _refresh_accepts(self) -> None:
+        if self._ip is None:
+            self._accepts = frozenset()
+            return
+        try:
+            self._accepts = frozenset(str(x) for x in self._ip.accepts())
+        except Exception:
+            self._accepts = frozenset()
+
+    def _full_sync(self, prefix: str) -> bool:
+        """Lex+feed complete tokens from prefix; update accepts. False on hard error."""
+        self._full_syncs += 1
+        self._prefix = prefix
+        self._ip = self._parser.parse_interactive()
+        self._fed_token_count = 0
+        tokens = self._lex_tokens(prefix)
+        if tokens is None:
+            self._accepts = frozenset()
+            return False
         try:
             for tok in tokens:
-                ip.feed_token(tok)
+                self._ip.feed_token(tok)
+                self._fed_token_count += 1
         except UnexpectedToken:
             self._accepts = frozenset()
             return False
         except UnexpectedEOF:
             pass
-        try:
-            self._accepts = frozenset(str(x) for x in ip.accepts())
-        except Exception:
-            self._accepts = frozenset()
+        self._refresh_accepts()
         return True
+
+    def _incremental_sync(self, prefix: str) -> bool:
+        """Extend an existing InteractiveParser when ``prefix`` grows monotonically."""
+        assert self._ip is not None
+        tokens = self._lex_tokens(prefix)
+        if tokens is None:
+            return self._full_sync(prefix)
+        if len(tokens) < self._fed_token_count:
+            # Lexeme boundary shrank (e.g. incomplete → complete merge) — resync.
+            return self._full_sync(prefix)
+        prev_prefix = self._prefix
+        try:
+            for tok in tokens[self._fed_token_count :]:
+                self._ip.feed_token(tok)
+                self._fed_token_count += 1
+        except UnexpectedToken:
+            # InteractiveParser is poisoned after a rejected feed — full resync
+            # back to the last good prefix so shared row state stays usable.
+            return self._full_sync(prev_prefix)
+        except UnexpectedEOF:
+            pass
+        self._prefix = prefix
+        self._incremental_advances += 1
+        self._refresh_accepts()
+        return True
+
+    def _sync(self, prefix: str) -> bool:
+        t0 = time.perf_counter()
+        try:
+            if (
+                self._ip is not None
+                and prefix.startswith(self._prefix)
+                and len(prefix) >= len(self._prefix)
+            ):
+                if prefix == self._prefix:
+                    return True
+                return self._incremental_sync(prefix)
+            return self._full_sync(prefix)
+        finally:
+            self._sync_ms += (time.perf_counter() - t0) * 1000.0
 
     def feed_text(self, chunk: str) -> bool:
         if not chunk and not self._prefix:
@@ -105,11 +175,30 @@ class OpenUIIncrementalEngine:
             return True
         return self._sync(self._prefix + chunk if chunk else self._prefix)
 
+    def advance(self, chunk: str) -> bool:
+        """Append ``chunk`` to the current prefix (P1 incremental path)."""
+        if not chunk:
+            return True
+        return self._sync(self._prefix + chunk)
+
     def set_prefix(self, prefix: str) -> bool:
         return self._sync(prefix)
 
     def next_terminals(self) -> frozenset[str]:
         return self._accepts
+
+    def terminals_are_exact(self) -> bool:
+        """True when accepts() contains only non-broad structural terminals.
+
+        Used by P2 to skip Node/Lark stream probes when the DFA already pins
+        the legal set to exact punctuation / forced lexemes.
+        """
+        if not self._accepts:
+            return False
+        meaningful = self._accepts - {"$END", "COMMENT"}
+        if not meaningful:
+            return False
+        return not bool(meaningful & _BROAD)
 
     def is_deterministic_next(self) -> str | None:
         # Ignore whitespace / end markers only. Broad content terminals

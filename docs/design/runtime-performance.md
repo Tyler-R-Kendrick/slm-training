@@ -30,6 +30,22 @@ Measured on `twotower_v1_ship` (CPU, scratch context, LTR primary).
 5. Microbench: `scripts/bench_accel.py --microbench` → `docs/design/train-microbench.json`
    (scratch fuse+cache ~1.7× vs baseline on this host; HF cache is the production win).
 
+## Round 4 — inference-speed P-series
+
+See [perf-experiment-matrix.md](perf-experiment-matrix.md). Decode-only levers:
+
+1. **P1 incremental grammar state** — reuse DFA + prefix text (`grammar_incremental_state`).
+2. **P2 verify-chosen-only** — fewer stream probes (`grammar_verify_chosen_only`).
+3. **P3 multi-token accept** — fewer denoiser forwards (`grammar_multitoken_accept`).
+4. **P4 canvas lookahead** — prefix+K forwards (`grammar_canvas_lookahead`).
+5. **P5 dynamic int8 quant** / compile (`use_dynamic_quant`, `use_compile`).
+6. **P6 MaskGIT-primary** latency point; **P7** playground attempt budget.
+
+```bash
+python -m scripts.profile_generate --rounds 2
+python -m scripts.run_perf_matrix --limit 8
+```
+
 ## Kernel boundary (unchanged)
 
 ```
