@@ -112,7 +112,12 @@ def classify_parse_failure(
         return "no_placeholders"
     if error in {"empty_root_stack", "empty_card", "no_content_components"}:
         return "trivial_layout"
-    if error and "parse" in error.lower():
+    if error and (
+        "parse" in error.lower()
+        or "validation failed" in error.lower()
+        or "unexpected token" in error.lower()
+        or error.startswith("{")
+    ):
         return "parse_error"
     if canvas_cap is not None and canvas_cap > 0:
         pred_len = gold_token_len(pred, with_special=True)

@@ -599,38 +599,24 @@ class TwoTowerModel(nn.Module):
                 if use_fast
                 else None
             )
-            if forced is None:
-                logits = self.denoiser(
-                    ids, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
-                )
-                if self._effective_structural_bias():
-                    logits = apply_structural_bias(
-                        logits,
-                        self.tokenizer,
-                        bias=self._effective_structural_bias(),
-                    )
-                choice = pick_constrained_token(
-                    logits[0, t],
+            logits = self.denoiser(
+                ids, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
+            )
+            if self._effective_structural_bias():
+                logits = apply_structural_bias(
+                    logits,
                     self.tokenizer,
-                    prefix,
-                    top_k=self.config.grammar_top_k,
-                    slot_contract=contract,
-                    **self._pick_kwargs(),
+                    bias=self._effective_structural_bias(),
                 )
-            else:
-                # Zero logits stand-in; forced id short-circuits inside picker.
-                choice = pick_constrained_token(
-                    torch.zeros(
-                        self.tokenizer.vocab_size,
-                        device=ids.device,
-                    ),
-                    self.tokenizer,
-                    prefix,
-                    top_k=self.config.grammar_top_k,
-                    forced_token_id=forced,
-                    slot_contract=contract,
-                    **self._pick_kwargs(),
-                )
+            choice = pick_constrained_token(
+                logits[0, t],
+                self.tokenizer,
+                prefix,
+                top_k=self.config.grammar_top_k,
+                forced_token_id=forced,
+                slot_contract=contract,
+                **self._pick_kwargs(),
+            )
             if choice is None:
                 # No legal continuation — pad out and stop rather than emit garbage.
                 ids[0, t:] = self.tokenizer.pad_id
@@ -729,7 +715,6 @@ class TwoTowerModel(nn.Module):
                     break
                 active_idx = active.nonzero(as_tuple=False).flatten()
                 forced_map: dict[int, int] = {}
-                need_model: list[int] = []
                 if use_fast:
                     for bi in active_idx.tolist():
                         forced = force_emit_token_id(
@@ -737,34 +722,11 @@ class TwoTowerModel(nn.Module):
                         )
                         if forced is not None:
                             forced_map[bi] = forced
-                        else:
-                            need_model.append(bi)
-                else:
-                    need_model = active_idx.tolist()
+                # Always run the denoiser for active rows — force-emit is a hint
+                # only. Passing zero logits previously made force skip whitespace.
+                need_model = active_idx.tolist()
 
                 pred = ids[:, t].clone()
-                for bi, fid in forced_map.items():
-                    contract = (
-                        self._slot_contracts[bi]
-                        if self._slot_contracts and bi < len(self._slot_contracts)
-                        else None
-                    )
-                    if not getattr(self.config, "slot_contract_constrained_decode", False):
-                        contract = None
-                    choice = pick_constrained_token(
-                        torch.zeros(tok.vocab_size, device=device),
-                        tok,
-                        ids[bi, :t].tolist(),
-                        top_k=self.config.grammar_top_k,
-                        forced_token_id=fid,
-                        slot_contract=contract,
-                        **self._pick_kwargs(),
-                    )
-                    if choice is None:
-                        need_model.append(bi)
-                    else:
-                        pred[bi] = choice
-
                 if need_model:
                     need_t = torch.tensor(
                         need_model, device=device, dtype=torch.long
@@ -817,6 +779,7 @@ class TwoTowerModel(nn.Module):
                             tok,
                             ids[bi, :t].tolist(),
                             top_k=self.config.grammar_top_k,
+                            forced_token_id=forced_map.get(bi),
                             slot_contract=contract,
                             **self._pick_kwargs(),
                         )

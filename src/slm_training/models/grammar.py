@@ -235,8 +235,12 @@ def _stream_probe_ok(tokenizer: OpenUITokenizer, prefix_ids: list[int], token_id
     trial_ids = [*prefix_ids, int(token_id)]
     text = tokenizer.decode(trial_ids)
     token = tokenizer.id_to_token.get(int(token_id), "")
-    # Closing delimiters must not be probed with a synthetic "(" suffix.
-    if token in {")", "]", '"', ",", "="} or text.rstrip().endswith((")", "]", '"')):
+    # Incomplete quoted strings / closing delimiters: probe as-is (no synthetic '(').
+    if (
+        token in {")", "]", '"', ",", "=", ":", ".", " "}
+        or _incomplete_quoted_string(text)
+        or text.rstrip().endswith((")", "]", '"', ":"))
+    ):
         probe = text
     elif text.endswith(("(", "[", ",", "=", " ", "\n")):
         probe = text
@@ -323,10 +327,14 @@ def pick_constrained_token(
             allowed = None
 
     if contract_allowed is not None:
+        # Slot-contract inventory is authoritative inside a quoted placeholder.
+        # Intersecting with broad Lark terminals can empty the set (e.g. '.') —
+        # prefer the inventory, then union with DFA when both agree.
         if allowed is None:
             allowed = set(contract_allowed)
         else:
-            allowed = allowed & contract_allowed
+            inter = allowed & contract_allowed
+            allowed = inter if inter else set(contract_allowed)
         if not allowed:
             return None
 
@@ -360,6 +368,12 @@ def pick_constrained_token(
         return _stream_probe_ok(tokenizer, prefix_ids, tid)
 
     if forced_token_id is not None:
+        # Force-emit comes from significant-lexeme DFA and can skip whitespace
+        # tokens that our OpenUI tokenizer models explicitly. Prefer a legal
+        # model argmax over a structural force that would drop spaces.
+        argmax_id = int(logits_1d.argmax().item())
+        if argmax_id != int(forced_token_id) and _legal(argmax_id):
+            return argmax_id
         if _legal(int(forced_token_id)):
             return int(forced_token_id)
         forced_token_id = None
@@ -368,10 +382,18 @@ def pick_constrained_token(
     vocab = int(logits_1d.numel())
     search_k = min(max(top_k, 1), vocab)
 
-    # When DFA/contract gave a concrete allowed set, score only those ids.
+    # Score legal candidates: expand beyond the DFA terminal set so whitespace
+    # and compositionally admitted tokens (placeholder interiors) compete with
+    # the highest model logits.
     if allowed is not None and allowed:
         scored: list[tuple[float, int]] = []
-        for tid in allowed:
+        candidate_ids = set(allowed)
+        # Always let the model vote: include top-k logits so whitespace etc.
+        # that pass `_legal` via dfa_admits aren't dropped solely because the
+        # Lark terminal set omits insignificant tokens.
+        _vals, top_idx = torch.topk(logits_1d, k=min(max(top_k, 1), vocab))
+        candidate_ids.update(int(i) for i in top_idx.tolist())
+        for tid in candidate_ids:
             if tid < 0 or tid >= vocab:
                 continue
             if not _legal(tid):
@@ -380,8 +402,6 @@ def pick_constrained_token(
         if scored:
             scored.sort(key=lambda x: x[0], reverse=True)
             if sample and temperature > 0:
-                import torch
-
                 scores = torch.tensor([s[0] for s in scored], dtype=logits_1d.dtype)
                 probs = torch.softmax(scores / temperature, dim=0)
                 idx = int(torch.multinomial(probs, 1).item())
@@ -389,7 +409,12 @@ def pick_constrained_token(
             if prefer_structural:
                 preferred_names = preferred_components()
                 struct = structural_tokens()
-                for _score, tid in scored:
+                # Prefer structural tokens only when they are near the top score
+                # (within 1.0 logit) — never override a clearly better argmax.
+                best_score = scored[0][0]
+                for score, tid in scored:
+                    if best_score - score > 1.0:
+                        break
                     token = tokenizer.id_to_token.get(tid, "")
                     if token in preferred_names or token in struct:
                         return tid
