@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run inference-speed experiment matrix (docs/design/perf-experiment-matrix.md).
 
-P-series rows are decode-only overlays on an existing checkpoint (default: the
+P/Q-series rows are decode-only overlays on an existing checkpoint (default: the
 committed playground demo). Each row records latency + phase breakdown and
 checks quality guardrails against P0 (parse rate / placeholder fidelity).
 """
@@ -30,6 +30,8 @@ class PerfExperiment:
     grammar_incremental_state: bool = True
     grammar_verify_chosen_only: bool = False
     grammar_skip_exact_stream_probe: bool = True
+    grammar_copy_probes: bool = True
+    grammar_early_exit_pick: bool = True
     grammar_multitoken_accept: bool = False
     grammar_multitoken_max: int = 8
     grammar_canvas_lookahead: int = 0
@@ -43,24 +45,31 @@ class PerfExperiment:
     parallel_unmask: str = "adaptive"
     # When True, disable P1 incremental state (legacy O(T^2) grammar path).
     legacy_grammar_state: bool = False
+    # Disable Q1/Q2 for ablation baselines.
+    disable_copy_probes: bool = False
+    disable_early_exit: bool = False
 
 
 def experiments() -> list[PerfExperiment]:
-    """P0 baseline + P1–P7 + combo recipe."""
+    """P0–P8 + Q1/Q2/Q9 + playground rows."""
     return [
         PerfExperiment(
             "P0",
             "perf_p0_baseline",
-            "Baseline LTR primary (no incremental state, no P2–P7)",
+            "Baseline LTR primary (legacy grammar, no P2–Q2)",
             grammar_incremental_state=False,
             legacy_grammar_state=True,
             grammar_skip_exact_stream_probe=False,
+            disable_copy_probes=True,
+            disable_early_exit=True,
         ),
         PerfExperiment(
             "P1",
             "perf_p1_incremental_grammar",
             "Per-row persistent DFA + decoded-prefix text cache",
             grammar_incremental_state=True,
+            disable_copy_probes=True,
+            disable_early_exit=True,
         ),
         PerfExperiment(
             "P2",
@@ -69,6 +78,8 @@ def experiments() -> list[PerfExperiment]:
             grammar_incremental_state=True,
             grammar_verify_chosen_only=True,
             grammar_skip_exact_stream_probe=True,
+            disable_copy_probes=True,
+            disable_early_exit=True,
         ),
         PerfExperiment(
             "P3",
@@ -77,6 +88,8 @@ def experiments() -> list[PerfExperiment]:
             grammar_incremental_state=True,
             grammar_multitoken_accept=True,
             grammar_multitoken_max=8,
+            disable_copy_probes=True,
+            disable_early_exit=True,
         ),
         PerfExperiment(
             "P4",
@@ -84,6 +97,8 @@ def experiments() -> list[PerfExperiment]:
             "Prefix+K=32 mask lookahead canvas truncation",
             grammar_incremental_state=True,
             grammar_canvas_lookahead=32,
+            disable_copy_probes=True,
+            disable_early_exit=True,
         ),
         PerfExperiment(
             "P5",
@@ -91,6 +106,8 @@ def experiments() -> list[PerfExperiment]:
             "Dynamic int8 Linear quantization (CPU)",
             grammar_incremental_state=True,
             use_dynamic_quant=True,
+            disable_copy_probes=True,
+            disable_early_exit=True,
         ),
         PerfExperiment(
             "P6",
@@ -99,6 +116,8 @@ def experiments() -> list[PerfExperiment]:
             grammar_incremental_state=True,
             grammar_ltr_primary=False,
             parallel_unmask="adaptive",
+            disable_copy_probes=True,
+            disable_early_exit=True,
         ),
         PerfExperiment(
             "P7",
@@ -109,16 +128,60 @@ def experiments() -> list[PerfExperiment]:
             grammar_finalize_validate=True,
             generate_max_attempts=1,
             grammar_finalize_on_last_attempt_only=True,
+            disable_copy_probes=True,
+            disable_early_exit=True,
         ),
         PerfExperiment(
             "P8",
             "perf_p8_combo",
-            "Shippable recipe: P1+P2+P3+lookahead32",
+            "P1+P2+P3+lookahead32 (pre-Q recipe)",
             grammar_incremental_state=True,
             grammar_verify_chosen_only=True,
             grammar_multitoken_accept=True,
             grammar_multitoken_max=8,
             grammar_canvas_lookahead=32,
+            disable_copy_probes=True,
+            disable_early_exit=True,
+        ),
+        PerfExperiment(
+            "Q1",
+            "perf_q1_copy_probes",
+            "Copy-based O(chunk) DFA admit probes + admit memo (on P1)",
+            grammar_incremental_state=True,
+            grammar_verify_chosen_only=False,
+            disable_early_exit=True,
+        ),
+        PerfExperiment(
+            "Q2",
+            "perf_q2_early_exit",
+            "Whitespace fast-admit + early-exit pick (on P1)",
+            grammar_incremental_state=True,
+            grammar_verify_chosen_only=False,
+            disable_copy_probes=True,
+        ),
+        PerfExperiment(
+            "Q9",
+            "perf_q9_combo",
+            "Shippable recipe: P8 + Q1 + Q2",
+            grammar_incremental_state=True,
+            grammar_verify_chosen_only=True,
+            grammar_multitoken_accept=True,
+            grammar_multitoken_max=8,
+            grammar_canvas_lookahead=32,
+        ),
+        PerfExperiment(
+            "PG",
+            "perf_pg_playground",
+            "Playground path with Q9 levers (repair+finalize)",
+            grammar_incremental_state=True,
+            grammar_verify_chosen_only=True,
+            grammar_multitoken_accept=True,
+            grammar_multitoken_max=8,
+            grammar_canvas_lookahead=32,
+            grammar_ltr_repair=True,
+            grammar_finalize_validate=True,
+            generate_max_attempts=1,
+            grammar_finalize_on_last_attempt_only=True,
         ),
     ]
 
@@ -134,6 +197,12 @@ def _apply(model: TwoTowerModel, exp: PerfExperiment) -> None:
     )
     cfg.grammar_verify_chosen_only = bool(exp.grammar_verify_chosen_only)
     cfg.grammar_skip_exact_stream_probe = bool(exp.grammar_skip_exact_stream_probe)
+    cfg.grammar_copy_probes = (
+        False if exp.disable_copy_probes else bool(exp.grammar_copy_probes)
+    )
+    cfg.grammar_early_exit_pick = (
+        False if exp.disable_early_exit else bool(exp.grammar_early_exit_pick)
+    )
     cfg.grammar_multitoken_accept = bool(exp.grammar_multitoken_accept)
     cfg.grammar_multitoken_max = int(exp.grammar_multitoken_max)
     cfg.grammar_canvas_lookahead = int(exp.grammar_canvas_lookahead)
@@ -154,7 +223,6 @@ def _load_prompts(test_dir: Path, suite: str, limit: int) -> list[tuple[str, str
     """Return (prompt, gold_openui) pairs from a test suite jsonl."""
     path = test_dir / suite / "records.jsonl"
     if not path.is_file():
-        # Fall back to flat records.jsonl or seed fixtures.
         for alt in (
             test_dir / "records.jsonl",
             Path("fixtures/test_seeds.jsonl"),
@@ -176,22 +244,64 @@ def _load_prompts(test_dir: Path, suite: str, limit: int) -> list[tuple[str, str
     return out
 
 
-def _quality(pred: str, gold: str | None) -> dict[str, float]:
-    from slm_training.dsl.lang_core import validate
-    from slm_training.dsl.placeholders import extract_placeholders
-
-    parse_ok = 0.0
+def _bridge_available() -> bool:
     try:
-        validate(pred)
-        parse_ok = 1.0
+        from slm_training.dsl import lang_core
+
+        return bool(lang_core.bridge_available())
     except Exception:  # noqa: BLE001
-        parse_ok = 0.0
+        return False
+
+
+def _quality_pipeline_ok() -> bool:
+    """True when validate() accepts a known-good OpenUI snippet (bridge/Lark healthy)."""
+    try:
+        from slm_training.dsl.lang_core import validate
+
+        validate('root = Card(":t.x")\n')
+        return True
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _quality(pred: str, gold: str | None) -> dict[str, float]:
+    """Prefer meaningful-program check (same as eval_runner); track raw syntax too."""
+    from slm_training.dsl.placeholders import extract_placeholders
+    from slm_training.harnesses.model_build.eval_runner import _is_meaningful_program
+
+    gold_rec = None
+    if gold:
+        try:
+            from slm_training.dsl.schema import ExampleRecord
+
+            gold_rec = ExampleRecord(
+                id="perf",
+                prompt="p",
+                openui=gold,
+                placeholders=list(extract_placeholders(gold)),
+            )
+        except Exception:  # noqa: BLE001
+            gold_rec = None
+    ok, _err, serialized = _is_meaningful_program(pred, gold=gold_rec)
+    scored = serialized or pred
+    raw_ok = 0.0
+    try:
+        from slm_training.dsl.lang_core import validate
+
+        validate(pred)
+        raw_ok = 1.0
+    except Exception:  # noqa: BLE001
+        raw_ok = 0.0
     fidelity = 1.0
     if gold:
-        pred_set = set(extract_placeholders(pred))
+        pred_set = set(extract_placeholders(scored))
         gold_set = set(extract_placeholders(gold))
         fidelity = (len(pred_set & gold_set) / len(gold_set)) if gold_set else 1.0
-    return {"parse_ok": parse_ok, "placeholder_fidelity": fidelity}
+    return {
+        "parse_ok": 1.0 if ok else 0.0,
+        "raw_syntax_ok": raw_ok,
+        "placeholder_fidelity": fidelity,
+    }
 
 
 def run_one(
@@ -212,6 +322,7 @@ def run_one(
 
     rows: list[DecodeStats] = []
     parse_sum = 0.0
+    raw_sum = 0.0
     fid_sum = 0.0
     texts: list[str] = []
     t0 = time.perf_counter()
@@ -221,6 +332,7 @@ def run_one(
         texts.append(text)
         q = _quality(text, gold)
         parse_sum += q["parse_ok"]
+        raw_sum += q.get("raw_syntax_ok", q["parse_ok"])
         fid_sum += q["placeholder_fidelity"]
     wall = time.perf_counter() - t0
     n = max(1, len(prompts))
@@ -238,11 +350,16 @@ def run_one(
         "tokens_emitted": tokens,
         "tokens_per_sec": round(tokens / wall, 3) if wall > 0 else None,
         "parse_rate": round(parse_sum / n, 4),
+        "raw_syntax_rate": round(raw_sum / n, 4),
         "placeholder_fidelity": round(fid_sum / n, 4),
         "phase_summary": summary,
         "flags": {
             "grammar_incremental_state": bool(model.config.grammar_incremental_state),
             "grammar_verify_chosen_only": bool(model.config.grammar_verify_chosen_only),
+            "grammar_copy_probes": bool(getattr(model.config, "grammar_copy_probes", True)),
+            "grammar_early_exit_pick": bool(
+                getattr(model.config, "grammar_early_exit_pick", True)
+            ),
             "grammar_multitoken_accept": bool(model.config.grammar_multitoken_accept),
             "grammar_canvas_lookahead": int(model.config.grammar_canvas_lookahead),
             "grammar_ltr_primary": bool(model.config.grammar_ltr_primary),
@@ -299,7 +416,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--only",
         default="",
-        help="Comma-separated experiment ids (e.g. P0,P1,P8).",
+        help="Comma-separated experiment ids (e.g. P0,P8,Q9).",
     )
     parser.add_argument(
         "--out-dir",
@@ -313,11 +430,19 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
+    bridge = _bridge_available()
+    pipeline_ok = _quality_pipeline_ok()
     prompts = _load_prompts(args.test_dir, args.suite, args.limit)
     wanted = {x.strip().upper() for x in args.only.split(",") if x.strip()}
     rows_def = experiments()
     if wanted:
         rows_def = [e for e in rows_def if e.eid in wanted]
+
+    # Vacuous if the quality pipeline itself is broken (missing bridge deps, etc.).
+    vacuous = (not pipeline_ok) and bridge
+    if not pipeline_ok and not bridge:
+        # Offline Lark-only hosts: try a Lark validate path once more.
+        vacuous = not pipeline_ok
 
     results: list[dict[str, Any]] = []
     baseline: dict[str, Any] | None = None
@@ -334,12 +459,20 @@ def main(argv: list[str] | None = None) -> int:
         if exp.eid == "P0":
             baseline = result
             result["guardrails"] = {
-                "pass": True,
+                "pass": not vacuous,
                 "speedup_vs_p0": 1.0,
-                "note": "baseline",
+                "note": (
+                    "vacuous_gate: quality pipeline broken"
+                    if vacuous
+                    else "baseline"
+                ),
+                "vacuous": vacuous,
             }
         elif baseline is not None:
             result["guardrails"] = _guardrails(baseline, result)
+            if vacuous:
+                result["guardrails"]["vacuous_baseline"] = True
+                result["guardrails"]["pass"] = False
         else:
             result["guardrails"] = {"pass": True, "note": "no P0 in this run"}
         results.append(result)
@@ -352,6 +485,9 @@ def main(argv: list[str] | None = None) -> int:
         "suite": args.suite,
         "limit": args.limit,
         "device": args.device,
+        "bridge_available": bridge,
+        "quality_pipeline_ok": pipeline_ok,
+        "vacuous_guardrails": vacuous,
         "results": results,
     }
     args.out_dir.mkdir(parents=True, exist_ok=True)
@@ -361,7 +497,12 @@ def main(argv: list[str] | None = None) -> int:
     args.docs_out.write_text(json.dumps(board, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(board, indent=2))
     print(f"wrote {board_path} and {args.docs_out}")
-    # Non-zero if any guardrail failed (excluding missing baseline).
+    if vacuous:
+        print(
+            "ERROR: vacuous guardrails — quality pipeline cannot validate known-good "
+            "OpenUI (install tools/openui_bridge deps or check Lark fallback)."
+        )
+        return 2
     failed = [
         r["id"]
         for r in results

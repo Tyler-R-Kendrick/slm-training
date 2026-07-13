@@ -177,6 +177,18 @@ class GrammarDecodeState:
     prefix_text: str = ""
     verify_chosen_only: bool = False
     skip_exact_stream_probe: bool = True
+    # Q1: use InteractiveParser.copy() probes when possible.
+    use_copy_probes: bool = True
+    # Q2: early-exit descending-logit candidate scoring.
+    early_exit_pick: bool = True
+    # Per-position admit memo (token_id -> bool); cleared on advance/sync.
+    admit_memo: dict[int, bool] = field(default_factory=dict)
+    # Cached whitespace-admit result for the current position (Q2).
+    whitespace_ok: bool | None = None
+
+    def clear_position_memo(self) -> None:
+        self.admit_memo.clear()
+        self.whitespace_ok = None
 
     def sync_ids(self, tokenizer: OpenUITokenizer, prefix_ids: list[int]) -> str:
         """Update prefix_ids/text incrementally; return current prefix text."""
@@ -199,6 +211,7 @@ class GrammarDecodeState:
         else:
             self.prefix_ids = list(prefix_ids)
             self.prefix_text = tokenizer.decode(prefix_ids) if prefix_ids else ""
+        self.clear_position_memo()
         if stats is not None:
             stats.detok_ms += (time.perf_counter() - t0) * 1000.0
         return self.prefix_text
@@ -224,6 +237,7 @@ class GrammarDecodeState:
                     self.engine.set_prefix(self.prefix_text)  # type: ignore[union-attr]
                 except Exception:  # noqa: BLE001
                     pass
+        self.clear_position_memo()
         return self.prefix_text
 
 
@@ -232,6 +246,8 @@ def make_grammar_state(
     grammar_dsl: str | None = None,
     verify_chosen_only: bool = False,
     skip_exact_stream_probe: bool = True,
+    use_copy_probes: bool = True,
+    early_exit_pick: bool = True,
 ) -> GrammarDecodeState:
     """Construct a fresh per-row grammar state with a reusable DFA engine."""
     engine = _dfa_engine(grammar_dsl)
@@ -241,6 +257,8 @@ def make_grammar_state(
         engine=engine,
         verify_chosen_only=verify_chosen_only,
         skip_exact_stream_probe=skip_exact_stream_probe,
+        use_copy_probes=use_copy_probes,
+        early_exit_pick=early_exit_pick,
     )
 
 
@@ -372,34 +390,88 @@ def dfa_admits_token(
     grammar_dsl: str | None = None,
     engine=None,
     prefix_text: str | None = None,
+    state: GrammarDecodeState | None = None,
 ) -> bool:
     """True iff Lark incremental parse accepts ``prefix + token`` as a legal prefix."""
     from slm_training.models.decode_stats import get_active_stats
 
-    # Always probe on a throwaway engine so shared per-row incremental state
-    # (P1) is never poisoned by a rejected candidate feed.
+    tid = int(token_id)
+    if state is not None and tid in state.admit_memo:
+        return state.admit_memo[tid]
+
+    chunk = tokenizer.id_to_token.get(tid, "")
+    if chunk == "":
+        chunk = tokenizer.decode([tid])
+
+    if prefix_text is None:
+        if state is not None:
+            prefix_text = state.sync_ids(tokenizer, prefix_ids)
+        else:
+            stats = get_active_stats()
+            t0 = time.perf_counter()
+            prefix_text = tokenizer.decode(prefix_ids)
+            if stats is not None:
+                stats.detok_ms += (time.perf_counter() - t0) * 1000.0
+
+    # Q2: whitespace fast-admit — ignorable WS never changes DFA state.
+    if chunk and chunk.isspace() and (state is not None or engine is not None):
+        eng = (state.engine if state is not None else None) or engine
+        if eng is not None and getattr(eng, "_ip", None) is not None:
+            if state is not None and state.whitespace_ok is not None:
+                ok = state.whitespace_ok
+            else:
+                # No lex/feed needed: Lark treats WS as insignificant.
+                ok = True
+                stats = get_active_stats()
+                if stats is not None:
+                    stats.dfa_sync_count += 1
+                if state is not None:
+                    state.whitespace_ok = ok
+            if state is not None:
+                state.admit_memo[tid] = ok
+            return ok
+
+    # Q1: copy-based probe on the shared synced engine.
+    eng = (state.engine if state is not None else None) or engine
+    use_copy = bool(state is not None and state.use_copy_probes and eng is not None)
+    if use_copy and getattr(eng, "_ip", None) is not None:
+        # Ensure the shared engine is synced to prefix_text first.
+        if getattr(eng, "_prefix", None) != prefix_text:
+            try:
+                eng.set_prefix(prefix_text)  # type: ignore[union-attr]
+            except Exception:  # noqa: BLE001
+                pass
+        stats = get_active_stats()
+        t0 = time.perf_counter()
+        try:
+            probed = eng.probe_chunk(chunk)  # type: ignore[union-attr]
+        except Exception:  # noqa: BLE001
+            probed = None
+        if probed is not None:
+            ok = bool(probed)
+            if stats is not None:
+                stats.dfa_sync_ms += (time.perf_counter() - t0) * 1000.0
+                stats.dfa_sync_count += 1
+            if state is not None:
+                state.admit_memo[tid] = ok
+            return ok
+        if stats is not None:
+            # Fallback path continues timing below.
+            pass
+
+    # Fallback: throwaway engine + full set_prefix (safe, O(|prefix|)).
     try:
         from slm_training.grammar_fastpath.engine import OpenUIIncrementalEngine
     except Exception:  # noqa: BLE001
         return True
-    base = engine if engine is not None else _dfa_engine(grammar_dsl)
-    if base is None and engine is None:
-        # No DFA available for this DSL — defer to stream_check.
+    base = eng if eng is not None else _dfa_engine(grammar_dsl)
+    if base is None:
         probe_engine = _dfa_engine(grammar_dsl)
         if probe_engine is None:
             return True
     else:
-        grammar_path = getattr(base, "grammar_path", None) if base is not None else None
+        grammar_path = getattr(base, "grammar_path", None)
         probe_engine = OpenUIIncrementalEngine(grammar_path)
-    if prefix_text is None:
-        stats = get_active_stats()
-        t0 = time.perf_counter()
-        prefix_text = tokenizer.decode(prefix_ids)
-        if stats is not None:
-            stats.detok_ms += (time.perf_counter() - t0) * 1000.0
-    chunk = tokenizer.id_to_token.get(int(token_id), "")
-    if chunk == "":
-        chunk = tokenizer.decode([int(token_id)])
     text = prefix_text + chunk
     stats = get_active_stats()
     t0 = time.perf_counter()
@@ -410,6 +482,8 @@ def dfa_admits_token(
     if stats is not None:
         stats.dfa_sync_ms += (time.perf_counter() - t0) * 1000.0
         stats.dfa_sync_count += 1
+    if state is not None:
+        state.admit_memo[tid] = ok
     return ok
 
 
@@ -601,6 +675,7 @@ def pick_constrained_token(
                 tid,
                 engine=engine,
                 prefix_text=prefix_text,
+                state=state,
             ):
                 return False
         elif engine is not None and not dfa_admits_token(
@@ -609,6 +684,7 @@ def pick_constrained_token(
             tid,
             engine=engine,
             prefix_text=prefix_text,
+            state=state,
         ):
             return False
         if not stream:
@@ -654,26 +730,53 @@ def pick_constrained_token(
     backend = _backend()
     vocab = int(logits_1d.numel())
     search_k = min(max(top_k, 1), vocab)
+    early_exit = bool(state is not None and state.early_exit_pick and not sample)
+
+    # Q2: materialize logits once (avoids per-candidate .item() syncs).
+    logits_list = logits_1d.detach().tolist()
 
     # Score legal candidates: expand beyond the DFA terminal set so whitespace
     # and compositionally admitted tokens (placeholder interiors) compete with
     # the highest model logits.
     if allowed is not None and allowed:
-        scored: list[tuple[float, int]] = []
         candidate_ids = set(allowed)
         # Always let the model vote: include top-k logits so whitespace etc.
         # that pass `_legal` via dfa_admits aren't dropped solely because the
         # Lark terminal set omits insignificant tokens.
         _vals, top_idx = torch.topk(logits_1d, k=min(max(top_k, 1), vocab))
         candidate_ids.update(int(i) for i in top_idx.tolist())
-        for tid in candidate_ids:
-            if tid < 0 or tid >= vocab:
-                continue
+        # Descending-logit order for early-exit (Q2).
+        ordered = sorted(
+            (tid for tid in candidate_ids if 0 <= tid < vocab),
+            key=lambda tid: logits_list[tid],
+            reverse=True,
+        )
+        preferred_names = preferred_components() if prefer_structural else frozenset()
+        struct = structural_tokens() if prefer_structural else frozenset()
+        scored: list[tuple[float, int]] = []
+        best_score: float | None = None
+        for tid in ordered:
             if not _legal(tid):
                 continue
-            scored.append((float(logits_1d[tid].item()), tid))
+            score = float(logits_list[tid])
+            if best_score is None:
+                best_score = score
+            scored.append((score, tid))
+            if early_exit and not sample:
+                if not prefer_structural:
+                    # First legal (highest logit) wins.
+                    if stats is not None:
+                        stats.pick_ms += (time.perf_counter() - pick_t0) * 1000.0
+                    return tid
+                token = tokenizer.id_to_token.get(tid, "")
+                if token in preferred_names or token in struct:
+                    if stats is not None:
+                        stats.pick_ms += (time.perf_counter() - pick_t0) * 1000.0
+                    return tid
+                # Outside the 1.0-logit structural window — best non-structural wins.
+                if best_score - score > 1.0:
+                    break
         if scored:
-            scored.sort(key=lambda x: x[0], reverse=True)
             if sample and temperature > 0:
                 scores = torch.tensor([s[0] for s in scored], dtype=logits_1d.dtype)
                 probs = torch.softmax(scores / temperature, dim=0)
@@ -682,11 +785,9 @@ def pick_constrained_token(
                     stats.pick_ms += (time.perf_counter() - pick_t0) * 1000.0
                 return scored[idx][1]
             if prefer_structural:
-                preferred_names = preferred_components()
-                struct = structural_tokens()
                 # Prefer structural tokens only when they are near the top score
                 # (within 1.0 logit) — never override a clearly better argmax.
-                best_score = scored[0][0]
+                assert best_score is not None
                 for score, tid in scored:
                     if best_score - score > 1.0:
                         break
@@ -744,16 +845,28 @@ def pick_constrained_token(
                     )
                 ):
                     preferred.append(token_id)
+                    if early_exit:
+                        if stats is not None:
+                            stats.pick_ms += (time.perf_counter() - pick_t0) * 1000.0
+                        return token_id
                 else:
                     acceptable.append(token_id)
+                    if early_exit and not prefer_structural:
+                        if stats is not None:
+                            stats.pick_ms += (time.perf_counter() - pick_t0) * 1000.0
+                        return token_id
             else:
                 acceptable.append(token_id)
+                if early_exit:
+                    if stats is not None:
+                        stats.pick_ms += (time.perf_counter() - pick_t0) * 1000.0
+                    return token_id
 
         pool = preferred if (prefer_structural and preferred) else acceptable
         if pool:
             if sample and temperature > 0:
                 scores = torch.tensor(
-                    [float(logits_1d[i].item()) for i in pool],
+                    [float(logits_list[i]) for i in pool],
                     dtype=logits_1d.dtype,
                 )
                 probs = torch.softmax(scores / temperature, dim=0)

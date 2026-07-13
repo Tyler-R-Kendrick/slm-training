@@ -96,6 +96,8 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "grammar_incremental_state",
         "grammar_verify_chosen_only",
         "grammar_skip_exact_stream_probe",
+        "grammar_copy_probes",
+        "grammar_early_exit_pick",
         "grammar_multitoken_accept",
         "grammar_multitoken_max",
         "grammar_canvas_lookahead",
@@ -235,6 +237,8 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         grammar_skip_exact_stream_probe=getattr(
             config, "grammar_skip_exact_stream_probe", True
         ),
+        grammar_copy_probes=getattr(config, "grammar_copy_probes", True),
+        grammar_early_exit_pick=getattr(config, "grammar_early_exit_pick", True),
         grammar_multitoken_accept=getattr(config, "grammar_multitoken_accept", False),
         grammar_multitoken_max=int(getattr(config, "grammar_multitoken_max", 8) or 8),
         grammar_canvas_lookahead=int(

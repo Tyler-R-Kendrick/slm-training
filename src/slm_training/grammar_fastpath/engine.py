@@ -72,14 +72,21 @@ class OpenUIIncrementalEngine:
         self._accepts: frozenset[str] = frozenset()
         self._ip = None
         self._fed_token_count = 0
+        # (type, value) tuples for the tokens already fed into ``_ip``.
+        # Used by probe_chunk to detect NAME/COMPONENT gluing that changes
+        # an already-fed lexeme's identity without growing the token count.
+        self._fed_tokens: list[tuple[str, str]] = []
         self._full_syncs = 0
         self._incremental_advances = 0
+        self._copy_probes = 0
+        self._copy_probe_fallbacks = 0
         self._sync_ms = 0.0
 
     def reset(self) -> None:
         self._prefix = ""
         self._ip = self._parser.parse_interactive()
         self._fed_token_count = 0
+        self._fed_tokens = []
         try:
             self._accepts = frozenset(str(x) for x in self._ip.accepts())
         except Exception:
@@ -98,6 +105,9 @@ class OpenUIIncrementalEngine:
             except Exception:
                 return None
 
+    def _token_keys(self, tokens: list) -> list[tuple[str, str]]:
+        return [(str(tok.type), str(tok.value)) for tok in tokens]
+
     def _refresh_accepts(self) -> None:
         if self._ip is None:
             self._accepts = frozenset()
@@ -113,6 +123,7 @@ class OpenUIIncrementalEngine:
         self._prefix = prefix
         self._ip = self._parser.parse_interactive()
         self._fed_token_count = 0
+        self._fed_tokens = []
         tokens = self._lex_tokens(prefix)
         if tokens is None:
             self._accepts = frozenset()
@@ -121,11 +132,13 @@ class OpenUIIncrementalEngine:
             for tok in tokens:
                 self._ip.feed_token(tok)
                 self._fed_token_count += 1
+            self._fed_tokens = self._token_keys(tokens)
         except UnexpectedToken:
             self._accepts = frozenset()
+            self._fed_tokens = []
             return False
         except UnexpectedEOF:
-            pass
+            self._fed_tokens = self._token_keys(tokens[: self._fed_token_count])
         self._refresh_accepts()
         return True
 
@@ -135,20 +148,23 @@ class OpenUIIncrementalEngine:
         tokens = self._lex_tokens(prefix)
         if tokens is None:
             return self._full_sync(prefix)
-        if len(tokens) < self._fed_token_count:
-            # Lexeme boundary shrank (e.g. incomplete → complete merge) — resync.
+        keys = self._token_keys(tokens)
+        # Token count shrank OR an already-fed lexeme changed identity
+        # (NAME/COMPONENT gluing: "Te" → "Text") — must resync.
+        if len(tokens) < self._fed_token_count or keys[: self._fed_token_count] != self._fed_tokens:
             return self._full_sync(prefix)
         prev_prefix = self._prefix
         try:
             for tok in tokens[self._fed_token_count :]:
                 self._ip.feed_token(tok)
                 self._fed_token_count += 1
+            self._fed_tokens = keys[: self._fed_token_count]
         except UnexpectedToken:
             # InteractiveParser is poisoned after a rejected feed — full resync
             # back to the last good prefix so shared row state stays usable.
             return self._full_sync(prev_prefix)
         except UnexpectedEOF:
-            pass
+            self._fed_tokens = keys[: self._fed_token_count]
         self._prefix = prefix
         self._incremental_advances += 1
         self._refresh_accepts()
@@ -183,6 +199,59 @@ class OpenUIIncrementalEngine:
 
     def set_prefix(self, prefix: str) -> bool:
         return self._sync(prefix)
+
+    def probe_chunk(self, chunk: str) -> bool | None:
+        """
+        Q1: test whether ``prefix + chunk`` remains a legal prefix without
+        mutating this engine.
+
+        Uses ``InteractiveParser.copy()`` + delta-token feed when the already
+        fed lexemes are unchanged. Returns ``None`` when the caller should fall
+        back to a throwaway full sync (lexeme identity changed / unsynced).
+        """
+        if self._ip is None:
+            return None
+        if not chunk:
+            return True
+        new_prefix = self._prefix + chunk
+        t0 = time.perf_counter()
+        tokens = self._lex_tokens(new_prefix)
+        if tokens is None:
+            self._sync_ms += (time.perf_counter() - t0) * 1000.0
+            return False
+        keys = self._token_keys(tokens)
+        if (
+            len(tokens) < self._fed_token_count
+            or keys[: self._fed_token_count] != self._fed_tokens
+        ):
+            # NAME/COMPONENT gluing or boundary shrink — caller falls back.
+            self._copy_probe_fallbacks += 1
+            self._sync_ms += (time.perf_counter() - t0) * 1000.0
+            return None
+        delta = tokens[self._fed_token_count :]
+        if not delta:
+            # Whitespace / incomplete interior that adds no complete tokens.
+            self._copy_probes += 1
+            self._sync_ms += (time.perf_counter() - t0) * 1000.0
+            return True
+        try:
+            snap = self._ip.copy()
+        except Exception:
+            self._copy_probe_fallbacks += 1
+            self._sync_ms += (time.perf_counter() - t0) * 1000.0
+            return None
+        try:
+            for tok in delta:
+                snap.feed_token(tok)
+        except UnexpectedToken:
+            self._copy_probes += 1
+            self._sync_ms += (time.perf_counter() - t0) * 1000.0
+            return False
+        except UnexpectedEOF:
+            pass
+        self._copy_probes += 1
+        self._sync_ms += (time.perf_counter() - t0) * 1000.0
+        return True
 
     def next_terminals(self) -> frozenset[str]:
         return self._accepts

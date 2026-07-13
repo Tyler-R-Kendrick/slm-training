@@ -227,6 +227,10 @@ class TwoTowerConfig:
     # P2: probe model argmax first; skip stream probes on exact DFA terminals.
     grammar_verify_chosen_only: bool = False
     grammar_skip_exact_stream_probe: bool = True
+    # Q1: InteractiveParser.copy()-based DFA admit probes.
+    grammar_copy_probes: bool = True
+    # Q2: early-exit descending-logit candidate scoring in pick_constrained_token.
+    grammar_early_exit_pick: bool = True
     # P3: accept a run of consecutive grammar-legal argmax tokens per forward.
     grammar_multitoken_accept: bool = False
     grammar_multitoken_max: int = 8
@@ -410,6 +414,12 @@ class TwoTowerModel(nn.Module):
                 ),
                 skip_exact_stream_probe=bool(
                     getattr(self.config, "grammar_skip_exact_stream_probe", True)
+                ),
+                use_copy_probes=bool(
+                    getattr(self.config, "grammar_copy_probes", True)
+                ),
+                early_exit_pick=bool(
+                    getattr(self.config, "grammar_early_exit_pick", True)
                 ),
             )
             for _ in range(batch_size)
@@ -1385,19 +1395,36 @@ class TwoTowerModel(nn.Module):
                         start = max(1, frontier - window + 1)
                         ids[bi, start : frontier + 1] = tok.mask_id
                         if states is not None:
-                            states[bi] = make_grammar_state(
-                                verify_chosen_only=bool(
-                                    getattr(
-                                        self.config, "grammar_verify_chosen_only", False
-                                    )
-                                ),
-                                skip_exact_stream_probe=bool(
-                                    getattr(
-                                        self.config,
-                                        "grammar_skip_exact_stream_probe",
-                                        True,
-                                    )
-                                ),
+                            fresh = self._new_grammar_states(1)
+                            states[bi] = (
+                                fresh[0]
+                                if fresh is not None
+                                else make_grammar_state(
+                                    verify_chosen_only=bool(
+                                        getattr(
+                                            self.config,
+                                            "grammar_verify_chosen_only",
+                                            False,
+                                        )
+                                    ),
+                                    skip_exact_stream_probe=bool(
+                                        getattr(
+                                            self.config,
+                                            "grammar_skip_exact_stream_probe",
+                                            True,
+                                        )
+                                    ),
+                                    use_copy_probes=bool(
+                                        getattr(
+                                            self.config, "grammar_copy_probes", True
+                                        )
+                                    ),
+                                    early_exit_pick=bool(
+                                        getattr(
+                                            self.config, "grammar_early_exit_pick", True
+                                        )
+                                    ),
+                                )
                             )
                             states[bi].sync_ids(tok, ids[bi, :start].tolist())
                         for rt in range(start, frontier + 1):

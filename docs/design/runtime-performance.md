@@ -41,9 +41,20 @@ See [perf-experiment-matrix.md](perf-experiment-matrix.md). Decode-only levers:
 5. **P5 dynamic int8 quant** / compile (`use_dynamic_quant`, `use_compile`).
 6. **P6 MaskGIT-primary** latency point; **P7** playground attempt budget.
 
+## Round 5 — Q-series (admit-probe bottleneck)
+
+After P8, `dfa_sync_ms` was ~75% of remaining latency (throwaway full-prefix
+admits per candidate). Round 5:
+
+1. **Q1** `InteractiveParser.copy()` + delta feed (`grammar_copy_probes`).
+2. **Q2** whitespace fast-admit + early-exit descending-logit pick
+   (`grammar_early_exit_pick`).
+3. **Q9** = P8+Q1+Q2 shippable recipe (~3.2× vs P0 on CPU demo ckpt).
+4. Playground defaults now enable Q9 levers; repair path ~2.3× vs pre-Q P7.
+
 ```bash
 python -m scripts.profile_generate --rounds 2
-python -m scripts.run_perf_matrix --limit 8
+python -m scripts.run_perf_matrix --only P0,P8,Q9,PG --limit 4
 ```
 
 ## Kernel boundary (unchanged)

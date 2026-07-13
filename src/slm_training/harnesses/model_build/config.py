@@ -122,6 +122,8 @@ class ModelBuildConfig:
     grammar_incremental_state: bool = True
     grammar_verify_chosen_only: bool = False
     grammar_skip_exact_stream_probe: bool = True
+    grammar_copy_probes: bool = True
+    grammar_early_exit_pick: bool = True
     grammar_multitoken_accept: bool = False
     grammar_multitoken_max: int = 8
     grammar_canvas_lookahead: int = 0

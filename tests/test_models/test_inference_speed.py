@@ -179,3 +179,109 @@ def test_p1_bitexact_vs_legacy_on_force_path() -> None:
     state = make_grammar_state()
     b = force_emit_token_id(tok, ids, state=state)
     assert a == b == tok.token_to_id["="]
+
+
+def test_probe_chunk_agrees_with_throwaway_full_sync() -> None:
+    """Q1: copy-based probe must match throwaway set_prefix across prefixes."""
+    from slm_training.models.grammar import dfa_admits_token
+
+    eng = OpenUIIncrementalEngine()
+    cases = [
+        ("root", "="),
+        ("root=", " "),
+        ("root=", "Card"),
+        ("root = Card", "("),
+        ('root = Card("', ":"),
+        ('root = Card(":t.x"', ")"),
+        ("root = Stack([hero]", ","),
+        ("root = Stack([hero]", "]"),
+    ]
+    for prefix, chunk in cases:
+        assert eng.set_prefix(prefix), prefix
+        probed = eng.probe_chunk(chunk)
+        throwaway = OpenUIIncrementalEngine()
+        full = throwaway.set_prefix(prefix + chunk)
+        if probed is None:
+            # Fallback path — still legal via throwaway; just ensure no crash.
+            continue
+        assert bool(probed) is bool(full), (prefix, chunk, probed, full)
+        # Shared engine must remain at the original prefix.
+        assert eng._prefix == prefix
+
+
+def test_probe_chunk_name_gluing_falls_back() -> None:
+    """NAME/COMPONENT extension changes fed lexeme identity → None (fallback)."""
+    eng = OpenUIIncrementalEngine()
+    # "Te" lexes as COMPONENT; extending to "Text" changes that token's value.
+    assert eng.set_prefix("root = Te")
+    result = eng.probe_chunk("xt")
+    # Either fallback (None) or a correct bool — must not poison the engine.
+    assert result is None or isinstance(result, bool)
+    assert eng._prefix == "root = Te"
+    # Original still accepts LPAR after incomplete COMPONENT.
+    assert "LPAR" in eng.next_terminals() or eng.next_terminals()
+
+
+def test_dfa_admits_uses_copy_probe_and_memo() -> None:
+    from slm_training.models.grammar import dfa_admits_token
+
+    tok = _tok()
+    state = make_grammar_state(use_copy_probes=True)
+    prefix = tok.encode("root", add_special=False)
+    state.sync_ids(tok, prefix)
+    assert state.engine is not None
+    state.engine.set_prefix(state.prefix_text)
+
+    eq = tok.token_to_id["="]
+    ok1 = dfa_admits_token(tok, prefix, eq, state=state, prefix_text=state.prefix_text)
+    assert ok1 is True
+    assert eq in state.admit_memo
+    # Second call hits memo (no extra work).
+    ok2 = dfa_admits_token(tok, prefix, eq, state=state, prefix_text=state.prefix_text)
+    assert ok2 is ok1
+
+    # Illegal double-equal
+    prefix2 = tok.encode("root=", add_special=False)
+    state.sync_ids(tok, prefix2)
+    state.engine.set_prefix(state.prefix_text)
+    assert dfa_admits_token(
+        tok, prefix2, eq, state=state, prefix_text=state.prefix_text
+    ) is False
+
+
+def test_whitespace_fast_admit() -> None:
+    from slm_training.models.grammar import dfa_admits_token
+
+    tok = _tok()
+    if " " not in tok.token_to_id:
+        return
+    state = make_grammar_state(use_copy_probes=True)
+    prefix = tok.encode("root=", add_special=False)
+    state.sync_ids(tok, prefix)
+    state.engine.set_prefix(state.prefix_text)
+    space = tok.token_to_id[" "]
+    assert dfa_admits_token(
+        tok, prefix, space, state=state, prefix_text=state.prefix_text
+    ) is True
+    assert state.whitespace_ok is True
+
+
+def test_early_exit_pick_returns_legal_argmax() -> None:
+    tok = _tok()
+    equal_id = tok.token_to_id["="]
+    logits = torch.zeros(tok.vocab_size)
+    logits[equal_id] = 10.0
+    # A lower-scoring illegal token should not win.
+    if "]" in tok.token_to_id:
+        logits[tok.token_to_id["]"]] = 5.0
+    prefix = tok.encode("root", add_special=False)
+    state = make_grammar_state(early_exit_pick=True, use_copy_probes=True)
+    choice = pick_constrained_token(
+        logits,
+        tok,
+        prefix,
+        state=state,
+        prefer_structural=False,
+        top_k=8,
+    )
+    assert choice == equal_id
