@@ -1,7 +1,11 @@
-"""Grammar-constrained decode helpers using official OpenUI streaming parser."""
+"""Grammar-constrained decode helpers using official OpenUI streaming parser.
+
+Stream checks go through the OpenUI Node bridge (not the Cactus kernel).
+"""
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
 from typing import Iterable
 
@@ -94,6 +98,11 @@ PREFERRED_COMPONENT_NAMES = frozenset(
     }
 )
 
+_STREAM_CACHE: dict[str, "StreamStatus"] = {}
+_STREAM_CACHE_MAX = 2048
+_STRUCT_ID_CACHE: dict[int, set[int]] = {}
+_BIAS_CACHE: dict[tuple[int, float, str, str], object] = {}
+
 
 @dataclass(frozen=True)
 class StreamStatus:
@@ -127,6 +136,11 @@ class StreamStatus:
 
 def stream_check(source: str) -> StreamStatus:
     """Run official createStreamingParser over a (possibly partial) program."""
+    key = hashlib.sha256(source.encode("utf-8")).hexdigest()
+    hit = _STREAM_CACHE.get(key)
+    if hit is not None:
+        return hit
+
     from slm_training.dsl import lang_core
 
     result = lang_core.stream_check(source)
@@ -136,7 +150,7 @@ def stream_check(source: str) -> StreamStatus:
         for e in errors
         if isinstance(e, dict)
     )
-    return StreamStatus(
+    status = StreamStatus(
         ok=bool(result.get("ok")),
         incomplete=bool(result.get("incomplete")),
         has_root=bool(result.get("has_root")),
@@ -144,9 +158,18 @@ def stream_check(source: str) -> StreamStatus:
         unresolved=tuple(result.get("unresolved") or []),
         serialized=result.get("serialized"),
     )
+    if len(_STREAM_CACHE) >= _STREAM_CACHE_MAX:
+        _STREAM_CACHE.pop(next(iter(_STREAM_CACHE)))
+    _STREAM_CACHE[key] = status
+    return status
 
 
 def structural_token_ids(tokenizer: OpenUITokenizer) -> set[int]:
+    cache_key = id(tokenizer.token_to_id)
+    cached = _STRUCT_ID_CACHE.get(cache_key)
+    if cached is not None and len(cached) > 0:
+        return cached
+
     ids: set[int] = set()
     for tok in STRUCTURAL_TOKENS:
         if tok in tokenizer.token_to_id:
@@ -154,7 +177,6 @@ def structural_token_ids(tokenizer: OpenUITokenizer) -> set[int]:
     for tok, tid in tokenizer.token_to_id.items():
         if tok.startswith(":") or (tok.startswith('"') and tok.endswith('"')):
             ids.add(tid)
-        # Prefer any known library component name present in vocab.
         if tok[:1].isupper() and tok.isidentifier():
             ids.add(tid)
     ids.update(
@@ -164,6 +186,7 @@ def structural_token_ids(tokenizer: OpenUITokenizer) -> set[int]:
             tokenizer.mask_id,
         }
     )
+    _STRUCT_ID_CACHE[cache_key] = ids
     return ids
 
 
@@ -179,10 +202,19 @@ def apply_structural_bias(
     allowed = structural_token_ids(tokenizer)
     if not allowed:
         return logits
-    boost = torch.zeros(logits.size(-1), device=logits.device, dtype=logits.dtype)
-    idx = torch.tensor(sorted(allowed), device=logits.device, dtype=torch.long)
-    boost.index_fill_(0, idx, bias)
-    return logits + boost.view(1, 1, -1)
+    cache_key = (
+        id(tokenizer.token_to_id),
+        float(bias),
+        str(logits.device),
+        str(logits.dtype),
+    )
+    boost = _BIAS_CACHE.get(cache_key)
+    if boost is None or getattr(boost, "numel", lambda: 0)() != logits.size(-1):
+        boost = torch.zeros(logits.size(-1), device=logits.device, dtype=logits.dtype)
+        idx = torch.tensor(sorted(allowed), device=logits.device, dtype=torch.long)
+        boost.index_fill_(0, idx, bias)
+        _BIAS_CACHE[cache_key] = boost
+    return logits + boost.view(1, 1, -1)  # type: ignore[union-attr]
 
 
 def pick_constrained_token(

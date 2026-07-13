@@ -72,6 +72,9 @@ class TwoTowerConfig:
     # Off by default; enable for final quality evals.
     grammar_ltr_repair: bool = False
     grammar_ltr_max_tokens: int = 64
+    # Progressive LTR canvases (short first). Typical programs finish in the
+    # first stage so we avoid O(T²) cost of a full max-length canvas.
+    grammar_ltr_stages: tuple[int, ...] = (48, 96)
     # When True and grammar_constrained, skip MaskGIT and decode LTR only.
     grammar_ltr_primary: bool = False
     # Mix teacher-forced next-token CE into training (helps LTR generate).
@@ -284,36 +287,75 @@ class TwoTowerModel(nn.Module):
         ctx_pad: torch.Tensor,
         length: int,
     ) -> torch.Tensor:
-        """Left-to-right argmax decode with structural bias (no stream probes)."""
-        ids = torch.full(
-            (1, length),
-            self.tokenizer.mask_id,
-            dtype=torch.long,
-            device=self.device_name,
-        )
-        ids[0, 0] = self.tokenizer.bos_id
-        for t in range(1, length):
-            logits = self.denoiser(
-                ids, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
-            )
-            if self.config.structural_bias:
-                logits = apply_structural_bias(
-                    logits,
-                    self.tokenizer,
-                    bias=self.config.structural_bias,
+        """
+        Left-to-right argmax decode with structural bias (no stream probes).
+
+        Uses progressive canvas sizes so short programs do not pay the full
+        max-length transformer cost on every step.
+        """
+        stages = [
+            s
+            for s in self.config.grammar_ltr_stages
+            if 1 < s <= length
+        ]
+        if not stages or stages[-1] != length:
+            stages = [*stages, length] if stages else [length]
+        # Dedupe while preserving order.
+        seen: set[int] = set()
+        canvases: list[int] = []
+        for s in stages:
+            if s not in seen:
+                seen.add(s)
+                canvases.append(s)
+
+        ids: torch.Tensor | None = None
+        start_t = 1
+        bias = float(self.config.structural_bias or 0.0)
+
+        for canvas in canvases:
+            if ids is None:
+                ids = torch.full(
+                    (1, canvas),
+                    self.tokenizer.mask_id,
+                    dtype=torch.long,
+                    device=self.device_name,
                 )
-            logits = logits.clone()
-            logits[0, t, self.tokenizer.mask_id] = -1e9
-            logits[0, t, self.tokenizer.pad_id] = -1e9
-            tok = int(logits[0, t].argmax().item())
-            ids[0, t] = tok
-            if tok == self.tokenizer.eos_id:
-                if t + 1 < length:
-                    ids[0, t + 1 :] = self.tokenizer.pad_id
-                break
+                ids[0, 0] = self.tokenizer.bos_id
+            else:
+                extra = canvas - ids.size(1)
+                if extra > 0:
+                    pad = torch.full(
+                        (1, extra),
+                        self.tokenizer.mask_id,
+                        dtype=torch.long,
+                        device=self.device_name,
+                    )
+                    ids = torch.cat([ids, pad], dim=1)
+
+            for t in range(start_t, canvas):
+                logits = self.denoiser(
+                    ids, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
+                )
+                if bias:
+                    logits = apply_structural_bias(
+                        logits,
+                        self.tokenizer,
+                        bias=bias,
+                    )
+                logits = logits.clone()
+                logits[0, t, self.tokenizer.mask_id] = -1e9
+                logits[0, t, self.tokenizer.pad_id] = -1e9
+                tok = int(logits[0, t].argmax().item())
+                ids[0, t] = tok
+                if tok == self.tokenizer.eos_id:
+                    if t + 1 < canvas:
+                        ids[0, t + 1 :] = self.tokenizer.pad_id
+                    return ids
+            start_t = canvas
+        assert ids is not None
         return ids
 
-    @torch.no_grad()
+    @torch.inference_mode()
     def generate(
         self,
         prompt: str,
@@ -553,6 +595,8 @@ class TwoTowerModel(nn.Module):
             raise FileNotFoundError(f"missing tokenizer next to checkpoint: {tok_path}")
         tokenizer = OpenUITokenizer.load(tok_path)
         raw_cfg = dict(payload.get("config") or {})
+        if isinstance(raw_cfg.get("grammar_ltr_stages"), list):
+            raw_cfg["grammar_ltr_stages"] = tuple(raw_cfg["grammar_ltr_stages"])
         # Ignore unknown keys for forward/back compat
         valid = {f.name for f in TwoTowerConfig.__dataclass_fields__.values()}  # type: ignore[attr-defined]
         cfg = TwoTowerConfig(**{k: v for k, v in raw_cfg.items() if k in valid})

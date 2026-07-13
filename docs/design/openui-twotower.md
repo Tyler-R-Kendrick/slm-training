@@ -75,6 +75,7 @@ Leakage checks use exact + **structural** OpenUI fingerprints (placeholder/binde
 1–6: prior revisions (done)
 7. Full openuiLibrary + DESIGN.md + harden + Cactus/Awwwards/preference (**this revision**)
 8. Adversarial review remediations — see [adversarial-review.md](adversarial-review.md)
+9. Runtime simplify/optimize (PyTorch path); Cactus/NEON kernel stays separate — [runtime-performance.md](runtime-performance.md)
 
 ### Eval-driven ship gates (honest policy)
 

@@ -105,9 +105,17 @@ def component_type_recall(pred: str, gold_openui: str) -> float:
 
 def _gold_design_lint_score(record: ExampleRecord) -> float | None:
     """
-    Lint the *gold* DESIGN.md context quality — not the prediction.
-    Kept for dataset diagnostics; must not be treated as model skill.
+    Gold DESIGN.md context quality — not model skill.
+
+    Prefer the score already attached at corpus build time (meta.design_lint)
+    so eval does not spawn a Node lint per record (~75ms each).
     """
+    meta = (record.meta or {}).get("design_lint") or {}
+    if meta.get("score") is not None:
+        try:
+            return float(meta["score"])
+        except (TypeError, ValueError):
+            pass
     if not record.design_md:
         return None
     try:

@@ -1,4 +1,10 @@
-"""Cactus export / bench / inference adapter (ship MVP)."""
+"""Cactus export / bench / inference adapter (ship MVP).
+
+Kernel boundary: this module packages checkpoints and benchmarks the
+**PyTorch** generate path. Native Cactus / NEON kernels stay outside this
+repo (transpile offline with cactus-compute). Do not fold kernel code into
+`slm_training.models` — keep on-device engines behind this adapter only.
+"""
 
 from __future__ import annotations
 
@@ -60,10 +66,11 @@ def export_checkpoint_bundle(
         "checkpoint": str(target.name),
         "tokenizer": "tokenizer.json" if tok.exists() else None,
         "cactus_available": cactus_runtime_available(),
+        "kernel_separate": True,
         "meta": meta or {},
         "transpile_hint": (
             "Install cactus-compute and run its PyTorch transpiler on model.pt "
-            "when targeting .cact / on-device engine."
+            "when targeting .cact / on-device engine. Kernel code is not vendored here."
         ),
     }
     (out_dir / "manifest.json").write_text(
@@ -102,7 +109,10 @@ def bench_pytorch_generate(
         tokens_per_sec=round(tps, 2) if tps else None,
         overhead=round(overhead, 3),
         backend="pytorch",
-        notes="Cactus runtime not required; PyTorch baseline bench.",
+        notes=(
+            "PyTorch baseline only; Cactus/NEON kernel remains a separate transpile "
+            "target via export_checkpoint_bundle."
+        ),
     )
 
 
