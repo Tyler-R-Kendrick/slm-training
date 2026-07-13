@@ -24,6 +24,8 @@ from slm_training.harnesses.train_data.synth import PromptSynthesizer, get_synth
 @dataclass
 class TrainDataConfig:
     seed_path: Path | None = None
+    # Human thumbs-up promotions from the annotate playground.
+    human_annotations_path: Path | None = Path("fixtures/annotations/human_train.jsonl")
     rico_path: Path | None = Path("fixtures/rico/semantic_train.jsonl")
     # rico | fixture | both | awwwards | rico+awwwards | all
     source: str = "all"
@@ -75,23 +77,37 @@ def _normalize_record(record: ExampleRecord) -> ExampleRecord:
     return out
 
 
-def _records_from_fixtures(config: TrainDataConfig) -> tuple[list[ExampleRecord], list[dict]]:
-    if config.seed_path is None:
+def _records_from_seed_file(
+    path: Path | None,
+    *,
+    require_split: str,
+) -> tuple[list[ExampleRecord], list[dict]]:
+    if path is None or not Path(path).exists():
         return [], []
-    seeds = load_jsonl(config.seed_path)
+    seeds = load_jsonl(path)
     errors: list[dict] = []
     out: list[ExampleRecord] = []
     for seed in seeds:
-        if seed.split != config.require_split:
+        if seed.split != require_split:
             errors.append(
                 {
                     "id": seed.id,
-                    "error": f"expected split {config.require_split!r}, got {seed.split!r}",
+                    "error": f"expected split {require_split!r}, got {seed.split!r}",
                 }
             )
             continue
         out.append(seed)
     return out, errors
+
+
+def _records_from_fixtures(config: TrainDataConfig) -> tuple[list[ExampleRecord], list[dict]]:
+    fixture_records, fixture_errors = _records_from_seed_file(
+        config.seed_path, require_split=config.require_split
+    )
+    human_records, human_errors = _records_from_seed_file(
+        config.human_annotations_path, require_split=config.require_split
+    )
+    return fixture_records + human_records, fixture_errors + human_errors
 
 
 def _records_from_rico(config: TrainDataConfig) -> tuple[list[ExampleRecord], list[dict]]:

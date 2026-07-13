@@ -1,0 +1,15 @@
+{
+  "name": "slm-training-web",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Playground e2e + Playwright tooling for TwoTower annotate UI",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "playwright:install": "playwright install chromium",
+    "annotate:serve": "python -m scripts.serve_playground --port 8765"
+  },
+  "devDependencies": {
+    "@playwright/mcp": "latest",
+    "@playwright/test": "^1.52.0"
+  }
+}
