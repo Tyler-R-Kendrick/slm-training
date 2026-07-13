@@ -85,6 +85,15 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Emit namespace-augmented train variants (:acme.* re-prefix).",
     )
+    parser.add_argument(
+        "--max-records-per-parent",
+        type=int,
+        default=None,
+        help=(
+            "Exposure cap: keep at most N records per root parent "
+            "(original + synth variants). Default: uncapped."
+        ),
+    )
     args = parser.parse_args(argv)
 
     result = build_train_data(
@@ -108,6 +117,7 @@ def main(argv: list[str] | None = None) -> int:
             max_components=args.max_components,
             curriculum=args.curriculum,
             namespace_augment=args.namespace_augment,
+            max_records_per_parent=args.max_records_per_parent,
         )
     )
     print(json.dumps(result["stats"], indent=2))

@@ -227,12 +227,31 @@ def collect_pairs_with_generator(
     *,
     prefer_valid_rejects: bool = True,
     structure_only: bool = True,
+    include_gold: bool = True,
+    generator_checkpoint: str | None = None,
 ) -> list[PreferencePair]:
+    """Build ranked preference pairs from generated candidates.
+
+    Corpus separation (keep these distinct — conflating them makes it
+    impossible to tell whether a climb learned from its own exploration or
+    just received more supervision):
+
+    * ``include_gold=True`` (default) — the gold target is injected as a
+      candidate when missing. Pairs are tagged ``pair_corpus=gold_correction``.
+    * ``include_gold=False`` — pairs come only from policy candidates; any
+      exact-gold candidate the generator produced by copying is also dropped.
+      Pairs are tagged ``pair_corpus=self_distilled``.
+    """
     pairs: list[PreferencePair] = []
     for record in records:
         cands = generate_fn(record)
-        if record.openui not in cands:
-            cands = [record.openui, *cands]
+        gold_injected = False
+        if include_gold:
+            if record.openui not in cands:
+                cands = [record.openui, *cands]
+                gold_injected = True
+        else:
+            cands = [c for c in cands if c != record.openui]
         design = None if structure_only else record.design_md
         pair = build_pairs_from_candidates(
             record.prompt,
@@ -242,5 +261,14 @@ def collect_pairs_with_generator(
             prefer_valid_rejects=prefer_valid_rejects,
         )
         if pair:
+            gold_used = record.openui in {pair.chosen, pair.rejected}
+            pair.meta = {
+                **(pair.meta or {}),
+                "record_id": record.id,
+                "pair_corpus": "gold_correction" if include_gold else "self_distilled",
+                "gold_injected": gold_injected,
+                "gold_used": gold_used,
+                "generator_checkpoint": generator_checkpoint,
+            }
             pairs.append(pair)
     return pairs

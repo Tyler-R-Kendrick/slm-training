@@ -346,6 +346,9 @@ class TwoTowerModel(nn.Module):
         self.trust_gate = FastPathGate(self.config.d_model)
         self._rng = random.Random(self.config.seed)
         self.gen_len = self.config.max_target_len
+        # Optional decode trajectory recorder (distill.DecodeTraceRecorder).
+        # Zero-cost when None; not part of checkpoints.
+        self.trace_recorder = None
         # Optional retrieval bank: list[(norm_prompt, openui, id)]
         self.skeleton_bank: list[tuple[str, str, str]] = []
         # Train-time caches (formatted context string keyed by record id).
@@ -1024,6 +1027,8 @@ class TwoTowerModel(nn.Module):
         contract = slot_contract if use_contract else None
         length = ids.size(1)
         use_fast = bool(getattr(self.config, "grammar_fastpath", True))
+        rec = getattr(self, "trace_recorder", None)
+        repair_commits: list[dict] = []
         for t in range(length):
             if not bool(unknown[0, t].item()):
                 continue
@@ -1036,6 +1041,8 @@ class TwoTowerModel(nn.Module):
             logits = self.denoiser(
                 ids, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
             )
+            if rec is not None:
+                rec.forward()
             if self._effective_structural_bias():
                 logits = apply_structural_bias(
                     logits,
@@ -1055,14 +1062,34 @@ class TwoTowerModel(nn.Module):
                 # No legal continuation — pad out and stop rather than emit garbage.
                 ids[0, t:] = self.tokenizer.pad_id
                 unknown[0, t:] = False
+                if rec is not None:
+                    rec.event("repair_dead_end", position=t)
                 break
             ids[0, t] = choice
             unknown[0, t] = False
+            if rec is not None:
+                log_probs = F.log_softmax(logits[0, t].float(), dim=-1)
+                repair_commits.append(
+                    {
+                        "t": t,
+                        "id": int(choice),
+                        "lp": float(log_probs[int(choice)].item()),
+                        "forced": forced is not None,
+                        "phase": "ltr_repair",
+                    }
+                )
             if choice == self.tokenizer.eos_id:
                 if t + 1 < length:
                     ids[0, t + 1 :] = self.tokenizer.pad_id
                     unknown[0, t + 1 :] = False
                 break
+        if rec is not None and repair_commits:
+            rec.step(
+                "ltr_repair",
+                canvas=ids[0].tolist(),
+                unknown=unknown[0].tolist(),
+                commits=repair_commits,
+            )
         return ids
 
     def _ltr_canvases(self, length: int) -> list[int]:
@@ -1694,6 +1721,15 @@ class TwoTowerModel(nn.Module):
     ) -> str:
         """Single-sequence MaskGIT unmasking (+ optional grammar repair)."""
         device = self.device_name
+        rec = getattr(self, "trace_recorder", None)
+        if rec is not None:
+            rec.begin(
+                length=int(length),
+                use_grammar=bool(use_grammar),
+                slot_contract=list(slot_contract) if slot_contract else None,
+                gen_steps=int(self.config.gen_steps),
+                remask_ratio=float(getattr(self.config, "remask_ratio", 0.0) or 0.0),
+            )
         ids = torch.full(
             (1, length), self.tokenizer.mask_id, dtype=torch.long, device=device
         )
@@ -1727,6 +1763,8 @@ class TwoTowerModel(nn.Module):
             logits = self.denoiser(
                 ids, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
             )
+            if rec is not None:
+                rec.forward()
             if use_grammar and self._effective_structural_bias():
                 logits = apply_structural_bias(
                     logits,
@@ -1750,6 +1788,8 @@ class TwoTowerModel(nn.Module):
                 else []
             )
             newly: list[int] = []
+            step_commits: list[dict] = []
+            step_remasks: list[dict] = []
             use_fast = bool(getattr(self.config, "grammar_fastpath", True))
             mode = str(
                 getattr(self.config, "grammar_fastpath_mode", "hybrid") or "hybrid"
@@ -1810,6 +1850,21 @@ class TwoTowerModel(nn.Module):
                 unknown[b, t] = False
                 if b == 0:
                     newly.append(t)
+                    if rec is not None:
+                        step_commits.append(
+                            {
+                                "t": t,
+                                "id": int(candidate),
+                                "lp": float(
+                                    torch.log(
+                                        probs[b, t, int(candidate)].clamp(min=1e-9)
+                                    ).item()
+                                ),
+                                "forced": forced is not None,
+                                "constrained": bool(use_grammar or forced is not None),
+                                "phase": "maskgit",
+                            }
+                        )
             _ = remaining  # kept for readability / future logging
 
             for b in range(ids.size(0)):
@@ -1828,6 +1883,10 @@ class TwoTowerModel(nn.Module):
                 for t in remask:
                     ids[0, t] = self.tokenizer.mask_id
                     unknown[0, t] = True
+                if rec is not None and remask:
+                    step_remasks.append(
+                        {"positions": [int(t) for t in remask], "reason": "grammar_stream"}
+                    )
             else:
                 remask = []
 
@@ -1858,6 +1917,8 @@ class TwoTowerModel(nn.Module):
                                 ctx_pad_mask=ctx_pad,
                                 return_hidden=True,
                             )
+                            if rec is not None:
+                                rec.forward()
                             gate_trust = self.trust_gate(hidden)
                         except Exception:  # noqa: BLE001
                             gate_trust = None
@@ -1879,6 +1940,8 @@ class TwoTowerModel(nn.Module):
                                 pad_id=self.tokenizer.pad_id,
                                 ctx_pad_mask=ctx_pad,
                             )
+                            if rec is not None:
+                                rec.forward()
                             probs_pert = F.softmax(logits_pert, dim=-1)
                             instability = core_instability_scores(
                                 probs, probs_pert, ids, known
@@ -1962,6 +2025,24 @@ class TwoTowerModel(nn.Module):
                         # Defensive: even if misconfigured, never token-edit.
                         ids[b, t] = self.tokenizer.mask_id
                         unknown[b, t] = True
+                if rec is not None and expand_positions:
+                    step_remasks.append(
+                        {
+                            "positions": sorted(
+                                int(t) for b, t in expand_positions if b == 0
+                            ),
+                            "reason": f"policy_{remask_policy}",
+                        }
+                    )
+
+            if rec is not None:
+                rec.step(
+                    step,
+                    canvas=ids[0].tolist(),
+                    unknown=unknown[0].tolist(),
+                    commits=step_commits,
+                    remasks=step_remasks,
+                )
 
         if unknown.any():
             if use_grammar:
@@ -1976,6 +2057,8 @@ class TwoTowerModel(nn.Module):
                 logits = self.denoiser(
                     ids, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
                 )
+                if rec is not None:
+                    rec.forward()
                 pred = logits.argmax(dim=-1)
                 ids[unknown] = pred[unknown]
                 for b in range(ids.size(0)):
@@ -1989,6 +2072,8 @@ class TwoTowerModel(nn.Module):
                         ids[b, end + 1 :] = self.tokenizer.pad_id
 
         text = self._decode_ids(ids[0])
+        if rec is not None:
+            rec.end(canvas=ids[0].tolist(), text=text)
         if use_grammar:
             repaired = self._repair_surface_syntax(text)
             canonical = self._canonical_valid_openui(repaired)
@@ -1997,6 +2082,8 @@ class TwoTowerModel(nn.Module):
             # Grammar filtering can occasionally strand a well-trained MaskGIT
             # decode on a partial prefix. Retry once without token filtering,
             # then accept it only after deterministic syntax repair + validation.
+            if rec is not None:
+                rec.event("retry_unconstrained")
             unconstrained = self._generate_maskgit_one(
                 ctx,
                 ctx_pad,
