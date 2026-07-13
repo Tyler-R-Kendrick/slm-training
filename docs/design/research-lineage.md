@@ -301,6 +301,73 @@ OpenUI TwoTower, what is a real gap, what is out of scope) lives in
 
 ---
 
+## Speculative denoising (V7)
+
+Design write-up: [`speculative-denoising.md`](speculative-denoising.md).
+V7 adapts the AR speculative-decoding program (survival scheduling, outcome
+fanout, successor caching) to the TwoTower MaskGIT decode by imposing a
+temporary verification order over attention-derived dependency clusters. The
+grammar stack remains the verifier; no draft LM is introduced.
+
+### LESS (mutual-stability sampling)
+
+| | |
+| --- | --- |
+| **Paper** | *LESS Is More: Mutual-Stability Sampling for Diffusion Language Models*, 2026. [arXiv:2606.16908](https://arxiv.org/html/2606.16908v1) |
+| **Fidelity** | **Adapted** — E70: training-free top-1 persistence + inter-step Jensen–Shannon divergence as commit/remask signals; not the paper's full mutual-stability sampler |
+| **Code** | `StabilityTracker`, `select_remask_stability_indices` in [`models/parallel_decode.py`](../../src/slm_training/models/parallel_decode.py) |
+| **Config** | `remask_policy=stability`, `stability_min_persistence`, `stability_jsd_weight` |
+
+### DAPD / DAWN / CLAD (attention-derived dependency structure)
+
+| | |
+| --- | --- |
+| **Papers** | *DAPD: Dependency-Aware Parallel Decoding via Attention for Diffusion LLMs*, 2026. [arXiv:2603.12996](https://arxiv.org/html/2603.12996v2); *DAWN: Dependency-Aware Fast Inference for Diffusion LLMs*, 2026. [arXiv:2602.06953](https://arxiv.org/html/2602.06953v1); CLAD span-commit units (**Adjacent**) |
+| **Fidelity** | **Adapted** — E71: last-layer attention coupling → greedy commit clusters + anchor-first ordering; we do not reimplement either paper's full dependency-graph scheduler |
+| **Code** | `build_dependency_clusters`, `order_clusters` in [`models/speculative_denoise.py`](../../src/slm_training/models/speculative_denoise.py); `return_attn` in [`models/blocks.py`](../../src/slm_training/models/blocks.py) |
+| **Config** | `unmask_mode=cluster`, `cluster_attn_threshold`, `cluster_max_size` |
+
+### Self-Speculative Masked Diffusions (draft–verify inside one model)
+
+| | |
+| --- | --- |
+| **Paper** | *Self-Speculative Masked Diffusions*, 2025. [arXiv:2510.03929](https://arxiv.org/html/2510.03929v2) |
+| **Fidelity** | **Adapted** (structural idea only) — E72: noncausal trunk drafts all positions, a small sequential verifier checks them under a temporary order. Our verifier is the **grammar acceptor**, not a trained permutation-causal section; the residualized causal head is **Adjacent** (see deferred table in the design doc) |
+| **Code** | `verify_clusters_ordered` in [`models/speculative_denoise.py`](../../src/slm_training/models/speculative_denoise.py); cluster loop in `_generate_maskgit_one` |
+| **Config** | `cluster_verify` |
+
+### DSpark (confidence-scheduled speculative decoding)
+
+| | |
+| --- | --- |
+| **Paper** | *DSpark: Confidence-Scheduled Speculative Decoding with Semi-Autoregressive Generation*, 2026. [arXiv:2607.05147](https://arxiv.org/html/2607.05147v1) |
+| **Fidelity** | **Adapted** — E73: survival head predicting whether a committed token survives to the final canvas; cumulative cluster-survival commit budget replaces raw `remaining/steps` scheduling. The low-rank Markov / recurrent draft-repair head and throughput-curve-aware serving scheduler are **Adjacent** |
+| **Code** | [`grammar_fastpath/survival_train.py`](../../src/slm_training/grammar_fastpath/survival_train.py); `survival_gate` head on `TwoTowerModel`; budget logic in [`models/speculative_denoise.py`](../../src/slm_training/models/speculative_denoise.py) |
+| **Config** | `survival_gate`, `survival_gate_train`, `survival_commit_threshold` |
+
+### Saguaro (speculative speculative decoding)
+
+| | |
+| --- | --- |
+| **Paper** | *Speculative Speculative Decoding*, 2026. [arXiv:2603.03251](https://arxiv.org/html/2603.03251v3) |
+| **Fidelity** | **Adapted** — E74: while grammar verification of the current transition resolves, precompute next-pass logits for the top-K likely verifier outcomes in one batched forward; cache hit skips the next forward. Hidden-state adapters (`G_ψ`, resume at layer d+1) are **Adjacent** — at ≤6 layers / d_model ≤192 a full batched forward is as cheap and drift-free |
+| **Code** | `enumerate_outcomes`, `SuccessorCache` in [`models/speculative_denoise.py`](../../src/slm_training/models/speculative_denoise.py) |
+| **Config** | `speculative_successor`, `speculative_fanout`, `speculative_overlap` |
+
+### Adjacent V7 lineage (documented, deliberately not built)
+
+| Idea | Paper | Why deferred |
+| --- | --- | --- |
+| Multi-horizon trajectory distillation (Δ∈{1,2,4,8} heads) | T3D [arXiv:2602.12262](https://arxiv.org/html/2602.12262v4) (related: CD4LM trajectory-invariant maps + adaptive decoding effort) | Needs teacher-trajectory infra; fixture-scale trajectories are too short/small to supervise horizon heads |
+| Training-free AR-mode self-verification | S2D2 [arXiv:2603.25702](https://arxiv.org/html/2603.25702v1) | Grammar is a stronger, cheaper critic for this DSL than TwoTower's LTR repair mode |
+| Draft reference tokens + verification attention mask | SimSD [arXiv:2606.02544](https://arxiv.org/abs/2606.02544) | Requires attention-mask surgery on the trunk; grammar acceptor covers one-pass checking here |
+| Off-grid configuration training | Adaptive Block Diffusion [arXiv:2606.29275](https://arxiv.org/html/2606.29275v1) | Partially covered by `mask_pattern=mixed` + `visible_corrupt_rate` + template seeds; full config-support training is future work |
+| Continuous latent plan channel | CCDD [arXiv:2510.03206](https://arxiv.org/html/2510.03206v1) | No long-form latent-reasoning phase in short grammar-anchored OpenUI programs |
+| Coarse-to-fine block control ("Think Coarse, Critic Fine") | BACD [arXiv:2602.09555](https://arxiv.org/html/2602.09555v1) | Same task-scale reason as CCDD; revisit if programs grow |
+| Prefix-cacheability restructuring | WeDLM [arXiv:2512.22737](https://arxiv.org/html/2512.22737v1) | Deployment-scale concern; sequences ≤256 tokens, context KV already cached |
+
+---
+
 ## Systems & data (not papers, but cited lineage)
 
 | System | Role here | Link / path |
@@ -340,6 +407,12 @@ OpenUI TwoTower, what is a real gap, what is out of scope) lives in
 | Grammar-diffusion honest | E54 / X2–X7 | `models/grammar_diffusion.py` |
 | Latent critic MoE (deferred) | E34 | `research-correction-critics.md` |
 | Verifier-guided repair map | proposed E60–E65 | `verifier-guided-repair.md` |
+| Stability remask / commit gate | E70 `remask_policy=stability`, `stability_min_persistence` | `models/parallel_decode.py` (`StabilityTracker`) |
+| Attention dependency clusters | E71 `unmask_mode=cluster` | `models/speculative_denoise.py` |
+| Ordered cluster verification | E72 `cluster_verify` | `models/speculative_denoise.py` (`verify_clusters_ordered`) |
+| Trajectory-survival head | E73 `survival_gate` | `grammar_fastpath/survival_train.py` |
+| Successor-state cache | E74 `speculative_successor`, `speculative_fanout` | `models/speculative_denoise.py` (`SuccessorCache`) |
+| V7 champion | E75 | `scripts/run_quality_matrix.py --matrix v7` |
 
 ---
 

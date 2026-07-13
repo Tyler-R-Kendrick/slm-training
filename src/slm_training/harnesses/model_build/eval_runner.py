@@ -296,6 +296,11 @@ def evaluate(
         loaded_checkpoint = ckpt
         checkpoint_sha256 = _sha256_file(ckpt)
 
+    # V7 decode telemetry: reset per-suite so forwards/hit-rate are suite-local.
+    spec_stats = getattr(plugin, "speculative_stats", None)
+    if spec_stats is not None and hasattr(spec_stats, "reset"):
+        spec_stats.reset()
+
     n = len(records)
     parse_ok = 0
     raw_syntax_ok = 0
@@ -488,6 +493,13 @@ def evaluate(
         "decode_canvas_cap": canvas_cap,
         "details": details,
     }
+    # V7: speculative-denoising decode telemetry (MaskGIT path only).
+    if (
+        spec_stats is not None
+        and hasattr(spec_stats, "as_dict")
+        and getattr(spec_stats, "generates", 0)
+    ):
+        metrics["speculative_stats"] = spec_stats.as_dict()
 
     run_dir = config.run_dir
     run_dir.mkdir(parents=True, exist_ok=True)

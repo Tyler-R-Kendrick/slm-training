@@ -11,6 +11,11 @@ token entropy — remask, don't replace.
 V6 (E50): CoRe-lite context-robust remask ranks known tokens by support drop
 under masked-context perturbations (arXiv:2602.04096). Always remask→mask
 (T2M / remask-don't-replace), never token-edit.
+
+V7 (E70): LESS-lite mutual-stability signals (arXiv:2606.16908) — top-1
+persistence across passes + inter-step Jensen–Shannon divergence. Used both to
+gate commits (require persistent argmax) and to rank remask candidates.
+See ``docs/design/speculative-denoising.md``.
 """
 
 from __future__ import annotations
@@ -342,6 +347,133 @@ def select_remask_core_indices(
             _add(i)
 
     return chosen
+
+
+class StabilityTracker:
+    """
+    E70 (LESS-lite): track per-position top-1 persistence and inter-step
+    Jensen–Shannon divergence across MaskGIT passes.
+
+    Call :meth:`update` once per model pass with the full ``probs`` tensor
+    ([B, T, V]). Positions whose argmax changed reset their persistence
+    counter; the JSD measures how much the local distribution moved between
+    consecutive passes (high JSD = context-sensitive, unstable prediction).
+    """
+
+    def __init__(self, *, jsd_weight: float = 1.0) -> None:
+        self.jsd_weight = float(jsd_weight)
+        self._prev_probs: torch.Tensor | None = None
+        self._prev_argmax: torch.Tensor | None = None
+        self.persistence: torch.Tensor | None = None  # [B, T] int
+        self.jsd: torch.Tensor | None = None  # [B, T] float
+        self.observations: int = 0
+
+    @staticmethod
+    def _jsd(p: torch.Tensor, q: torch.Tensor) -> torch.Tensor:
+        """Jensen–Shannon divergence along the last dim (natural log)."""
+        p = p.clamp(min=1e-9)
+        q = q.clamp(min=1e-9)
+        m = 0.5 * (p + q)
+        kl_pm = (p * (p / m).log()).sum(dim=-1)
+        kl_qm = (q * (q / m).log()).sum(dim=-1)
+        return 0.5 * (kl_pm + kl_qm)
+
+    def update(self, probs: torch.Tensor) -> None:
+        """probs: [B, T, V] from the current pass."""
+        cur_argmax = probs.argmax(dim=-1)
+        if self._prev_probs is None or self._prev_probs.shape != probs.shape:
+            self.persistence = torch.zeros_like(cur_argmax, dtype=torch.long)
+            self.jsd = torch.zeros(
+                cur_argmax.shape, dtype=probs.dtype, device=probs.device
+            )
+        else:
+            assert self.persistence is not None and self._prev_argmax is not None
+            same = cur_argmax.eq(self._prev_argmax)
+            self.persistence = torch.where(
+                same,
+                self.persistence + 1,
+                torch.zeros_like(self.persistence),
+            )
+            self.jsd = self._jsd(self._prev_probs, probs)
+        self._prev_probs = probs.detach()
+        self._prev_argmax = cur_argmax
+        self.observations += 1
+
+    def instability_scores(self) -> torch.Tensor | None:
+        """
+        [B, T] score where higher = less stable (prefer remask).
+
+        ``jsd_weight * jsd + (1 - persistence_fraction)`` — JSD is in
+        [0, ln 2]; persistence is normalized by the number of comparisons so
+        the two terms stay commensurate.
+        """
+        if self.persistence is None or self.jsd is None:
+            return None
+        comparisons = max(1, self.observations - 1)
+        persistence_frac = self.persistence.float() / float(comparisons)
+        return self.jsd_weight * self.jsd.float() + (
+            1.0 - persistence_frac.clamp(max=1.0)
+        )
+
+    def filter_commit_indices(
+        self,
+        flat_idx: list[int],
+        *,
+        length: int,
+        min_persistence: int,
+    ) -> list[int]:
+        """
+        E70 commit gate: keep only candidates whose argmax persisted for
+        ``min_persistence`` consecutive passes. Early passes (fewer
+        comparisons than required) are exempt so decode always progresses,
+        and an empty result falls back to the original candidates.
+        """
+        if min_persistence <= 0 or self.persistence is None:
+            return flat_idx
+        comparisons = self.observations - 1
+        if comparisons < min_persistence:
+            return flat_idx
+        flat_pers = self.persistence.view(-1)
+        kept = [
+            i
+            for i in flat_idx
+            if 0 <= i < flat_pers.numel()
+            and int(flat_pers[i].item()) >= min_persistence
+        ]
+        return kept if kept else flat_idx
+
+
+def select_remask_stability_indices(
+    conf: torch.Tensor,
+    known: torch.Tensor,
+    *,
+    remask_ratio: float = 0.15,
+    protect_bos: bool = True,
+    instability: torch.Tensor | None = None,
+    grammar_positions: list[int] | None = None,
+    gate_trust: torch.Tensor | None = None,
+    entropy: torch.Tensor | None = None,
+    gate_threshold: float = 0.5,
+    combine_policy: bool = False,
+) -> list[int]:
+    """
+    E70: remask committed tokens ranked by LESS-lite instability
+    (low persistence + high inter-step JSD). Thin delegation onto the
+    instability-ranked budget machinery shared with CoRe (E50): grammar
+    hard errors always fill first; ``combine_policy`` mixes in gate/entropy.
+    """
+    return select_remask_core_indices(
+        conf,
+        known,
+        remask_ratio=remask_ratio,
+        protect_bos=protect_bos,
+        instability=instability,
+        grammar_positions=grammar_positions,
+        gate_trust=gate_trust,
+        entropy=entropy,
+        gate_threshold=gate_threshold,
+        combine_policy=combine_policy,
+    )
 
 
 def perturb_known_neighbors(

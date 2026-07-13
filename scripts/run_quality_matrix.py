@@ -96,6 +96,19 @@ class Experiment:
     remask_to_mask: bool = True
     slot_aware_trust_gate: bool = False
     model_name: str = "twotower"
+    # V7 levers: speculative denoising (docs/design/speculative-denoising.md)
+    stability_min_persistence: int = 0
+    stability_jsd_weight: float = 1.0
+    unmask_mode: str = "positions"
+    cluster_attn_threshold: float = 0.08
+    cluster_max_size: int = 4
+    cluster_verify: bool = False
+    # True = train survival head stage after SFT and use it at decode (E73).
+    survival_gate: bool = False
+    survival_commit_threshold: float = 0.3
+    speculative_successor: bool = False
+    speculative_fanout: int = 2
+    speculative_overlap: bool = False
 
 def _base_experiments(
     train_v1: Path,
@@ -882,6 +895,128 @@ def _v6_experiments(
     ]
 
 
+def _v7_experiments(
+    train_v1: Path,
+    train_cur: Path,
+    *,
+    design_md_in_context: bool = True,
+    seed_checkpoint: Path | str | None = None,
+) -> list[Experiment]:
+    """E70–E75: speculative denoising (stability, clusters, ordered verify,
+    survival head, successor cache) — docs/design/speculative-denoising.md."""
+    capacity = dict(
+        d_model=192,
+        n_heads=6,
+        context_layers=3,
+        denoiser_layers=6,
+        grammar_ltr_max_tokens=256,
+    )
+    seed = str(seed_checkpoint) if seed_checkpoint else None
+    v5_base = dict(
+        slot_contract_in_context=True,
+        slot_contract_constrained_decode=True,
+        fidelity_loss_weight=1.5,
+        schema_in_context=True,
+        grammar_ltr_repair=True,
+        grammar_ltr_primary=False,
+        ltr_loss_weight=2.0,
+        mdlm_schedule=True,
+        remask_ratio=0.12,
+        gen_steps_override=16,
+        output_tokenizer="lexer",
+        use_symbol_table=True,
+        factorized_embeddings=True,
+        mask_pattern="mixed",
+        remask_span="statement",
+        remask_to_mask=True,
+        template_fill_decode=True,
+        honest_slot_contract=True,
+        design_md_in_context=design_md_in_context,
+        **capacity,
+    )
+    return [
+        Experiment(
+            "E70",
+            "qx_e70_stability",
+            "LESS-lite stability remask + persistence commit gate",
+            train_v1,
+            remask_policy="stability",
+            stability_min_persistence=1,
+            stability_jsd_weight=1.0,
+            best_of_n=1,
+            seed_checkpoint=seed,
+            **v5_base,
+        ),
+        Experiment(
+            "E71",
+            "qx_e71_clusters",
+            "Attention dependency clusters (DAPD/DAWN-lite), anchor-first",
+            train_v1,
+            unmask_mode="cluster",
+            best_of_n=1,
+            seed_checkpoint=seed,
+            **v5_base,
+        ),
+        Experiment(
+            "E72",
+            "qx_e72_cluster_verify",
+            "Ordered cluster verification: outcome (j, repair)",
+            train_v1,
+            unmask_mode="cluster",
+            cluster_verify=True,
+            best_of_n=1,
+            seed_checkpoint=seed,
+            **v5_base,
+        ),
+        Experiment(
+            "E73",
+            "qx_e73_survival",
+            "DSpark-lite survival head + cumulative commit budget",
+            train_v1,
+            unmask_mode="cluster",
+            cluster_verify=True,
+            survival_gate=True,
+            best_of_n=1,
+            seed_checkpoint=seed,
+            **v5_base,
+        ),
+        Experiment(
+            "E74",
+            "qx_e74_successor",
+            "Saguaro-SSD-lite successor cache (K=2 outcome fanout)",
+            train_v1,
+            unmask_mode="cluster",
+            cluster_verify=True,
+            speculative_successor=True,
+            speculative_fanout=2,
+            best_of_n=1,
+            seed_checkpoint=seed,
+            **v5_base,
+        ),
+        Experiment(
+            "E75",
+            "qx_e75_v7_champion",
+            "V7 champion: E53 honest stack + stability + clusters + survival + successor cache",
+            train_cur,
+            use_curriculum=True,
+            mix_curriculum=True,
+            remask_policy="stability",
+            stability_min_persistence=1,
+            remask_use_gate=True,
+            remask_use_entropy=True,
+            unmask_mode="cluster",
+            cluster_verify=True,
+            survival_gate=True,
+            speculative_successor=True,
+            speculative_fanout=2,
+            trust_gate=True,
+            slot_aware_trust_gate=True,
+            best_of_n=4,
+            **v5_base,
+        ),
+    ]
+
+
 def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
     return ModelBuildConfig(
         train_dir=exp.train_dir,
@@ -950,6 +1085,23 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         mask_pattern=str(getattr(exp, "mask_pattern", "random") or "random"),
         remask_span=str(getattr(exp, "remask_span", "token") or "token"),
         teacher_init_embeddings=bool(getattr(exp, "teacher_init_embeddings", False)),
+        stability_min_persistence=int(
+            getattr(exp, "stability_min_persistence", 0) or 0
+        ),
+        stability_jsd_weight=float(getattr(exp, "stability_jsd_weight", 1.0) or 1.0),
+        unmask_mode=str(getattr(exp, "unmask_mode", "positions") or "positions"),
+        cluster_attn_threshold=float(
+            getattr(exp, "cluster_attn_threshold", 0.08) or 0.08
+        ),
+        cluster_max_size=int(getattr(exp, "cluster_max_size", 4) or 4),
+        cluster_verify=bool(getattr(exp, "cluster_verify", False)),
+        survival_gate=bool(getattr(exp, "survival_gate", False)),
+        survival_commit_threshold=float(
+            getattr(exp, "survival_commit_threshold", 0.3) or 0.3
+        ),
+        speculative_successor=bool(getattr(exp, "speculative_successor", False)),
+        speculative_fanout=int(getattr(exp, "speculative_fanout", 2) or 2),
+        speculative_overlap=bool(getattr(exp, "speculative_overlap", False)),
     )
 
 
@@ -996,6 +1148,12 @@ def _eval_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         "E53",
         "E54",
         "E55",
+        "E70",
+        "E71",
+        "E72",
+        "E73",
+        "E74",
+        "E75",
     }
     bon = exp.best_of_n
     if exp.decode_sweep == "gen16_repair_bon4":
@@ -1052,6 +1210,17 @@ def _apply_decode_overrides(model: Any, exp: Experiment) -> None:
         ("slot_aware_trust_gate", "slot_aware_trust_gate"),
         ("suffix_rollback_window", "suffix_rollback_window"),
         ("mdlm_schedule", "mdlm_schedule"),
+        ("stability_min_persistence", "stability_min_persistence"),
+        ("stability_jsd_weight", "stability_jsd_weight"),
+        ("unmask_mode", "unmask_mode"),
+        ("cluster_attn_threshold", "cluster_attn_threshold"),
+        ("cluster_max_size", "cluster_max_size"),
+        ("cluster_verify", "cluster_verify"),
+        ("survival_gate", "survival_gate"),
+        ("survival_commit_threshold", "survival_commit_threshold"),
+        ("speculative_successor", "speculative_successor"),
+        ("speculative_fanout", "speculative_fanout"),
+        ("speculative_overlap", "speculative_overlap"),
     ):
         if hasattr(cfg, key):
             setattr(cfg, key, getattr(exp, attr, getattr(cfg, key)))
@@ -1164,6 +1333,30 @@ def _maybe_trust_gate(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> 
     return ckpt
 
 
+def _maybe_survival_gate(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> Path:
+    """E73 (V7): train the trajectory-survival head after SFT/trust stages."""
+    if not getattr(exp, "survival_gate", False):
+        return ckpt
+    from slm_training.grammar_fastpath.survival_train import (
+        train_survival_gate_from_paths,
+    )
+
+    out_dir = args.run_root / exp.run_id / "survival_gate"
+    summary = train_survival_gate_from_paths(
+        ckpt,
+        exp.train_dir / "records.jsonl",
+        out_dir=out_dir,
+        steps=max(20, int(getattr(args, "pref_steps", 30) or 30)),
+        device=args.device,
+        limit=int(getattr(args, "pref_limit", 40) or 40),
+    )
+    gate_ckpt = Path(summary.get("checkpoint") or (out_dir / "checkpoints" / "last.pt"))
+    if gate_ckpt.is_file():
+        dest = args.run_root / exp.run_id / "checkpoints" / "last.pt"
+        return _copy_checkpoint(gate_ckpt, dest)
+    return ckpt
+
+
 def _summarize_board(board: dict[str, Any]) -> dict[str, Any]:
     suites = board.get("suites") or {}
     gates = evaluate_ship_gates(suites)
@@ -1174,6 +1367,12 @@ def _summarize_board(board: dict[str, Any]) -> dict[str, Any]:
             "structural_similarity": m.get("structural_similarity"),
             "reward_score": m.get("reward_score"),
             "n": m.get("n"),
+            # V7 decode telemetry (present when speculative levers are on).
+            **(
+                {"speculative_stats": m["speculative_stats"]}
+                if m.get("speculative_stats")
+                else {}
+            ),
         }
         for name, m in suites.items()
     }
@@ -1217,6 +1416,11 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
                 "E50",
                 "E51",
                 "E52",
+                "E70",
+                "E71",
+                "E72",
+                "E73",
+                "E74",
             }:
                 summary = train(_train_cfg(exp, args))
                 ckpt = Path(summary["checkpoint"])
@@ -1250,6 +1454,7 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
     ckpt = _maybe_preference(exp, ckpt, args)
     ckpt = _maybe_rl(exp, ckpt, args)
     ckpt = _maybe_trust_gate(exp, ckpt, args)
+    ckpt = _maybe_survival_gate(exp, ckpt, args)
     eval_cfg = _eval_cfg(exp, args)
     board = evaluate_suites(
         eval_cfg,
@@ -1344,9 +1549,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--matrix",
-        choices=("legacy", "v2", "v3", "v4", "v5", "v6", "all"),
+        choices=("legacy", "v2", "v3", "v4", "v5", "v6", "v7", "all"),
         default="v3",
-        help="Experiment set: legacy (E0–E10), v2 (E11–E17), v3 (E18–E29), v4 (E30–E36), v5 (E40–E46), v6 (E50–E55), or all.",
+        help="Experiment set: legacy (E0–E10), v2 (E11–E17), v3 (E18–E29), v4 (E30–E36), v5 (E40–E46), v6 (E50–E55), v7 (E70–E75), or all.",
     )
     parser.add_argument("--gen-steps", type=int, default=8)
     parser.add_argument(
@@ -1370,6 +1575,7 @@ def main(argv: list[str] | None = None) -> int:
             "E46",
             "E53",
             "E55",
+            "E75",
         )
     )
     if args.build_curriculum or (not args.curriculum_dir.exists() and needs_curriculum):
@@ -1449,6 +1655,15 @@ def main(argv: list[str] | None = None) -> int:
     if args.matrix in {"v6", "all"}:
         experiments.extend(
             _v6_experiments(
+                args.train_dir,
+                args.curriculum_dir,
+                design_md_in_context=design_md,
+                seed_checkpoint=args.seed_checkpoint,
+            )
+        )
+    if args.matrix in {"v7", "all"}:
+        experiments.extend(
+            _v7_experiments(
                 args.train_dir,
                 args.curriculum_dir,
                 design_md_in_context=design_md,
