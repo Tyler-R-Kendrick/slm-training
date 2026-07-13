@@ -658,7 +658,17 @@ class TwoTowerModel(nn.Module):
 
                 pred = ids[:, t].clone()
                 for bi, fid in forced_map.items():
-                    pred[bi] = fid
+                    choice = pick_constrained_token(
+                        torch.zeros(tok.vocab_size, device=device),
+                        tok,
+                        ids[bi, :t].tolist(),
+                        top_k=self.config.grammar_top_k,
+                        forced_token_id=fid,
+                    )
+                    if choice is None:
+                        need_model.append(bi)
+                    else:
+                        pred[bi] = choice
 
                 if need_model:
                     need_t = torch.tensor(

@@ -320,8 +320,13 @@ function onKeyDown(event) {
     event.preventDefault();
     void go(1);
   } else if (event.key === "Tab") {
-    event.preventDefault();
-    setView(activeView === "render" ? "dsl" : "render");
+    // Only swap views from the card/body chrome — never steal Tab from
+    // buttons, view tabs, or other focusable controls.
+    const focus = document.activeElement;
+    if (focus === cardEl || focus === document.body || focus == null) {
+      event.preventDefault();
+      setView(activeView === "render" ? "dsl" : "render");
+    }
   } else if (event.key === "d" || event.key === "D") {
     event.preventDefault();
     setView("dsl");

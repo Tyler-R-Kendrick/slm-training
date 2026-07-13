@@ -65,11 +65,11 @@ function PreviewApp({ source, keepPlaceholders }: MountOptions) {
           onParseResult={(result) => {
             const root =
               result && typeof result === "object"
-                ? ((result as { root?: { props?: { children?: unknown } } }).root ?? null)
+                ? ((result as { root?: unknown }).root ?? null)
                 : null;
-            const kids = root?.props?.children;
-            const hasKids = Array.isArray(kids) ? kids.length > 0 : Boolean(kids);
-            setParseOk(Boolean(root) && hasKids);
+            // Leaf roots (Button, TextContent, …) often have no children.
+            // Any parsed root is success; onError still flips parseOk off.
+            setParseOk(Boolean(root));
           }}
           onError={(errs) => {
             const list = Array.isArray(errs) ? errs : [];

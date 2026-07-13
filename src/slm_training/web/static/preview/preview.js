@@ -98627,8 +98627,8 @@ function v7e({ source: e, keepPlaceholders: t }) {
         response: i,
         isStreaming: !1,
         onParseResult: (s) => {
-          const c = s && typeof s == "object" ? s.root ?? null : null, d = c?.props?.children, f = Array.isArray(d) ? d.length > 0 : !!d;
-          r(!!c && f);
+          const c = s && typeof s == "object" ? s.root ?? null : null;
+          r(!!c);
         },
         onError: (s) => {
           const c = Array.isArray(s) ? s : [];

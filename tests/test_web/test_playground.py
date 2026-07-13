@@ -51,4 +51,6 @@ def test_annotate_static_has_tab_toggle() -> None:
     js = client.get("/static/app.js")
     assert js.status_code == 200
     assert 'event.key === "Tab"' in js.text
-    assert 'setView(activeView === "render" ? "dsl" : "render")' in js.text
+    assert 'activeView === "render" ? "dsl" : "render"' in js.text
+    # Tab must not steal focus from buttons / view tabs.
+    assert "focus === cardEl" in js.text
