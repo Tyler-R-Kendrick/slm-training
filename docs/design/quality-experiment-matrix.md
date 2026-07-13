@@ -310,6 +310,58 @@ shrinking target sequences ~36% and fixing the output alphabet. Isolating
 levers at 80 steps still underfits without template fill; E44’s adversarial
 lift supports statement-span remask before longer trains.
 
+## V6 matrix (CoRe remask + slot-aware trust + honest V5 stack)
+
+Implements SOTA remask / critic updates from
+[research-correction-critics.md](research-correction-critics.md) and
+[research-lineage.md](research-lineage.md) (CoRe, T2M, RemeDi/BackPlay slot
+mining) on top of the V5 alphabet + E35 honesty.
+
+| ID | Approach | Primary lever | Run id |
+| --- | --- | --- | --- |
+| E50 | CoRe-lite remask | `remask_policy=core` + neighbor-mask support-drop scores | `qx_e50_core_remask` |
+| E51 | T2M + statement remask | `remask_to_mask=True` + `remask_span=statement` | `qx_e51_t2m_statement` |
+| E52 | Slot-aware trust gate | `slot_aware_trust_gate` + `remask_policy=combined` | `qx_e52_slot_trust` |
+| E53 | Honest V5 champion | E46 + E35 + E33 + E50 + slot trust | `qx_e53_honest_v5_champion` |
+| E54 | Grammar-diffusion honest | `grammar_diffusion` + `honest_slot_contract` (no gold channel) | `qx_e54_grammar_honest` |
+| E55 | Process stage | Preference + GRPO-lite on E53 (skip RL if no variance) | `qx_e55_process` |
+
+```bash
+# V6 focused ship path
+python -m scripts.run_quality_matrix --matrix v6 --only E50,E53,E55 \
+  --steps 80 --device cpu --context-backend scratch --no-design-md-context
+
+# Grammar-diffusion honest contract (E54) + X matrix
+python -m scripts.run_quality_matrix --matrix v6 --only E54 --steps 80
+python -m scripts.run_grammar_matrix --only X0,X2,X7 --steps 80
+```
+
+**Honesty fix (required for E35/E53 fidelity):** `generate_batch_requests`
+surfaces `GenerationRequest.slot_contract` into the prompt via
+`ensure_prompt_inventory` when `honest_slot_contract=True`, then extracts
+inventory from the prompt text (inventory-in-prompt API — not a silent gold
+channel).
+
+## V6 measured results
+
+See [quality-matrix-results.json](quality-matrix-results.json) (`matrix_set: v6`).
+CPU scratch, 80 train steps, re-eval with inventory-in-prompt fix, `rico_held` n=20.
+
+| ID | Smoke parse | Smoke fid | Ship gates | Notes |
+| --- | --- | --- | --- | --- |
+| **E50** | **1.0** | **1.0** | **pass** | CoRe remask; rico parse/fid 1.0 (n=20) |
+| **E53** | **1.0** | **1.0** | **pass** | Honest V5 champion stack; held_out 0.6/1.0 |
+| E54 | 0.0 | 0.0 | fail | grammar_diffusion underfit @ 80 steps |
+| **E55** | **1.0** | **1.0** | **pass** | Process stage inherits E53 clear |
+
+**Headline:** after fixing `generate_batch_requests` to surface
+`GenerationRequest.slot_contract` into the prompt under `honest_slot_contract`,
+E50/E53/E55 clear honest `--ship-gates` (including rico_held n=20). Full 1500
+`rico_held` + HF context remains the production claim. Grammar-diffusion (E54/X2)
+needs longer train / capacity before competing with the TwoTower V5 stack.
+
+Grammar X partial results: [grammar-matrix-results.json](grammar-matrix-results.json).
+
 ## X matrix (grammar-native diffusion ablations)
 
 Staged ablations **X0–X8** isolate grammar-first decode levers on top of the

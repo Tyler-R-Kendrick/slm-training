@@ -114,7 +114,7 @@ Fixture seeds (n=20): compositional mean **72.6** tokens → lexer+symtable **46
 
 ## Recommended default going forward
 
-After proving quality:
+After proving quality (V5 E46 / V6 E53):
 
 ```text
 General tokenizer for input
@@ -123,8 +123,13 @@ General tokenizer for input
 + byte/copy fallback for literal content
 + factorized kind embeddings
 + CFG-constrained LTR/MaskGIT decode
-+ critic-guided structural remasking
++ critic-guided structural remasking (E33)
++ CoRe-lite context-robust remask (E50)
++ T2M remask→mask discipline (E51)
++ honest inventory-in-prompt (E35) + slot-aware trust (E52)
 ```
 
 Do **not** jump to pure production-rule sequences or graph diffusion until the
-critic / remask stack is proven on this representation.
+critic / remask stack is proven on this representation. The parallel **X matrix**
+(`grammar_diffusion`) explores production codecs under honest inventory
+contracts (E54 / X2–X7).

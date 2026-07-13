@@ -1454,13 +1454,25 @@ class TwoTowerModel(nn.Module):
         max_len: int | None = None,
         grammar_constrained: bool | None = None,
     ) -> list[str]:
-        """Generate using production-available inputs only (no gold records)."""
+        """Generate using production-available inputs only (no gold records).
+
+        E35 honesty: when ``honest_slot_contract`` is set, surface
+        ``request.slot_contract`` into the user-visible prompt via
+        ``ensure_prompt_inventory`` (inventory-in-prompt API), then extract
+        inventory from the prompt text — never a silent gold channel.
+        """
         if not requests:
             return []
-        prompts = [r.prompt for r in requests]
-        slot_contracts = [
-            list(r.slot_contract) if r.slot_contract else None for r in requests
-        ]
+        honest = bool(getattr(self.config, "honest_slot_contract", False))
+        prompts: list[str] = []
+        slot_contracts: list[list[str] | None] = []
+        for r in requests:
+            prompt = r.prompt
+            contract = list(r.slot_contract) if r.slot_contract else None
+            if honest and contract:
+                prompt = ensure_prompt_inventory(prompt, contract)
+            prompts.append(prompt)
+            slot_contracts.append(contract)
         schemas = [r.schema for r in requests]
         design_mds = [r.design_md for r in requests]
         n_samples = max(1, int(getattr(self.config, "best_of_n", 1) or 1))

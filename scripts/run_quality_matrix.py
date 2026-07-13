@@ -1209,8 +1209,15 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
         src = Path(exp.seed_checkpoint)
         dest = run_dir / "checkpoints" / "last.pt"
         if not src.is_file():
-            # Seed optional for some V4 decode overlays — train instead.
-            if exp.eid in {"E30", "E31", "E33"} and not Path(str(exp.seed_checkpoint)).is_file():
+            # Seed optional for V4/V6 decode overlays — train instead.
+            if exp.eid in {
+                "E30",
+                "E31",
+                "E33",
+                "E50",
+                "E51",
+                "E52",
+            }:
                 summary = train(_train_cfg(exp, args))
                 ckpt = Path(summary["checkpoint"])
             else:

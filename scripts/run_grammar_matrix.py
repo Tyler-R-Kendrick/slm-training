@@ -115,7 +115,6 @@ def _x_experiments(
             **base,
             slot_contract_in_context=True,
             slot_contract_constrained_decode=True,
-            honest_slot_contract=True,
             fidelity_loss_weight=1.0,
         ),
         GrammarExperiment(
@@ -126,7 +125,6 @@ def _x_experiments(
             model_name="grammar_diffusion",
             slot_contract_in_context=True,
             slot_contract_constrained_decode=True,
-            honest_slot_contract=True,
         ),
         GrammarExperiment(
             "X3",
@@ -172,7 +170,6 @@ def _x_experiments(
             model_name="grammar_diffusion",
             slot_contract_in_context=True,
             slot_contract_constrained_decode=True,
-            honest_slot_contract=True,
             fidelity_loss_weight=1.5,
             fastpath_aux_weight=0.15,
             fuse_ltr_loss=True,
@@ -196,7 +193,6 @@ def _x_experiments(
             model_name="grammar_diffusion",
             slot_contract_in_context=True,
             slot_contract_constrained_decode=True,
-            honest_slot_contract=True,
             fidelity_loss_weight=1.5,
             fastpath_aux_weight=0.15,
             fuse_ltr_loss=True,
