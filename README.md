@@ -10,7 +10,7 @@ Novel SLM experiments: harnesses for **placeholder OpenUI** layout generation (o
 4. **OpenUI Lang bridge** — Node sidecar over official `@openuidev/lang-core`
 5. **GPU multi-farm MCP** — list / launch / cost-project across Vast.ai, RunPod, Lambda
 
-See [docs/design/openui-twotower.md](docs/design/openui-twotower.md), [docs/design/research-lineage.md](docs/design/research-lineage.md) (papers → code), [docs/design/research-correction-critics.md](docs/design/research-correction-critics.md) (V4 remask / trust-gate / honest inventory), [docs/design/quality-experiment-matrix.md](docs/design/quality-experiment-matrix.md) (E0–E36 matrix), [docs/design/adversarial-review.md](docs/design/adversarial-review.md), [docs/design/runtime-performance.md](docs/design/runtime-performance.md), and [docs/design/gpu-multi-farm-mcp.md](docs/design/gpu-multi-farm-mcp.md).
+See [docs/design/openui-twotower.md](docs/design/openui-twotower.md), [docs/design/research-lineage.md](docs/design/research-lineage.md) (papers → code), [docs/design/research-correction-critics.md](docs/design/research-correction-critics.md) (V4 remask / trust-gate / honest inventory), [docs/design/verifier-guided-repair.md](docs/design/verifier-guided-repair.md) (PDDL-Instruct / verifier-repair applicability map; proposed E50–E55), [docs/design/quality-experiment-matrix.md](docs/design/quality-experiment-matrix.md) (E0–E46 matrix; E34 deferred), [docs/design/dsl-native-tokenizer.md](docs/design/dsl-native-tokenizer.md), [docs/design/grammar-fastpath.md](docs/design/grammar-fastpath.md), [docs/design/grammar-backends.md](docs/design/grammar-backends.md), [docs/design/structure-only-eval.md](docs/design/structure-only-eval.md), [docs/design/adversarial-review.md](docs/design/adversarial-review.md), [docs/design/runtime-performance.md](docs/design/runtime-performance.md), and [docs/design/gpu-multi-farm-mcp.md](docs/design/gpu-multi-farm-mcp.md).
 
 ## Quick start
 
@@ -156,7 +156,7 @@ MCP (Cursor): [`.cursor/mcp.json`](.cursor/mcp.json) launches `@playwright/mcp`.
 - **Context tower**: scratch TokenEncoder **or** frozen HF model (`--context-backend hf`, default `HuggingFaceTB/SmolLM2-135M`)
 - **Denoiser tower**: MaskGIT-style masked token prediction with cross-attention to context ([Chang et al. 2022](https://arxiv.org/abs/2202.04200); adapted)
 - **Grammar decode**: DFA force-emit + MaskGIT hole-admit + LTR certify so constrained samples stay valid OpenUI ([research lineage](docs/design/research-lineage.md); `--no-grammar` to disable)
-- **Tokenizer**: OpenUI-aware whitespace/placeholder tokenizer built from train artifacts
+- **Output tokenizer**: dual-mode — default **compositional** `OpenUITokenizer`, or V5 **lexer / DSL-native** `DSLNativeTokenizer` (`output_tokenizer=lexer`; see [dsl-native-tokenizer.md](docs/design/dsl-native-tokenizer.md))
 - **Eval**: `parse_rate` via lang-core, placeholder fidelity, canonical tree match — no gold oracle at generate time
 
 ```bash
@@ -176,13 +176,29 @@ GPU_MULTI_FARM_MODE=mock python -m scripts.multi_farm_mcp
 ## Layout
 
 ```
-src/slm_training/dsl/           # Python adapter + record schema
-src/slm_training/data/          # RICO adapters + leakage fingerprints
-src/slm_training/models/        # TwoTower + OpenUI tokenizer
-src/slm_training/harnesses/     # train_data, test_data, model_build
-src/gpu_multi_farm/             # FastMCP server + farm adapters
-tools/openui_bridge/            # @openuidev/lang-core Node sidecar
-scripts/                        # CLIs
-fixtures/                       # seed pairs + RICO semantic slices
-docs/design/                    # architecture + research lineage + contracts
+src/slm_training/
+  dsl/                 # OpenUI adapter, schema, parser, production codec
+  data/                # RICO / Awwwards adapters + leakage fingerprints
+  models/              # TwoTower, grammar_diffusion, tokenizers, remask
+  harnesses/           # train_data, test_data, model_build
+  grammar_fastpath/    # DFA force-emit, MaskGIT admit, FastPathGate
+  grammar_backends/    # lang-core / Lark / hybrid / toy-layout backends
+  preference/          # composite reward + DPO surrogate
+  rl/                  # GRPO-lite
+  quality/             # curriculum stages
+  retrieval/           # nearest-skeleton helpers
+  web/                 # annotate playground API + static preview
+  design_md/           # DESIGN.md Python wrapper
+  annotations/         # human feedback helpers
+  accel/               # AMP / torch.compile
+  telemetry/           # cycle timing
+  cactus/              # export + NEON kernel sketches
+  compression/         # BF16 codebook sidecar
+src/gpu_multi_farm/    # FastMCP server + farm adapters
+tools/openui_bridge/   # @openuidev/lang-core Node sidecar
+tools/design_md_bridge/
+tools/openui_preview/
+scripts/               # CLIs
+fixtures/              # seed pairs + RICO semantic slices
+docs/design/           # architecture + research lineage + contracts
 ```

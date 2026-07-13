@@ -75,7 +75,7 @@ intersections must not drop `.` / whitespace inside quoted placeholders.
 python -m scripts.diagnose_eval --train-dir outputs/train_data/v1 \
   --test-dir outputs/test_data/v1
 
-# V2 matrix (default)
+# Historical V2 matrix (CLI default is v3; prefer v4/v5 for ship claims)
 python -m scripts.run_quality_matrix --matrix v2 --steps 800 --device cpu
 
 # Isolated levers
@@ -154,9 +154,9 @@ See [quality-matrix-results.json](quality-matrix-results.json). Headline deltas 
 | E4 schema | 0.0 | 0.0 | 0.22 | mild RICO lift |
 | E7 capacity | 0.0 | 0.0 | **0.88** | best RICO; struct 0.37 |
 | E8 combo | 0.0 | 0.0 | 0.0 | underfit at 800 steps on stacked levers |
-| **E9 accel combo** | 0.0* | **0.75** | 0.02 | *smoke poisoned by curriculum-C; **adv fidelity 0.875** |
+| **E9b / accel follow-up** | 0.0* | **0.75** | 0.02 | Historical “E9 accel combo” run; matrix table uses **E9b**. *smoke poisoned by curriculum-C; **adv fidelity 0.875** |
 
-\*E9 emits `:adv.*` placeholders on smoke prompts — curriculum overfit. Still the first strong fidelity signal.
+\*That historical accel combo emitted `:adv.*` placeholders on smoke prompts — curriculum overfit. Still the first strong fidelity signal.
 
 **None clear honest `--ship-gates`.** Implemented follow-ups (see [phase-abc-results.json](phase-abc-results.json)):
 
@@ -198,8 +198,9 @@ diffusion (X matrix below).
 
 ## V3 measured results (CPU, scratch, fixture suites)
 
-See [quality-matrix-results.json](quality-matrix-results.json) (historical V3 rows
-in git history; current file is V4).
+See [quality-matrix-results.json](quality-matrix-results.json) (primary payload is
+**V5**; historical V4 lives under `prior_matrices.v4`; older V3 rows remain in
+git history).
 
 | ID | Smoke parse | Smoke fid | Ship gates | Notes |
 | --- | --- | --- | --- | --- |
@@ -356,5 +357,21 @@ python -m scripts.run_grammar_matrix --only X7,X8 --steps 400 --gen-steps 16
 ```
 
 Artifacts: `outputs/runs/grammar_matrix_summary.json`,
-`docs/design/grammar-matrix-results.json`,
 `outputs/runs/baseline_reproduction_summary.json`.
+(There is no committed `docs/design/grammar-matrix-results.json`; summarize from
+the `outputs/runs/` artifacts after a matrix run.)
+
+## V6 proposed (docs only — not in the runner yet)
+
+Verifier-guided repair levers mapped from
+[verifier-guided-repair.md](verifier-guided-repair.md). **Not implemented**;
+IDs are reserved so future PRs can land code + matrix rows together.
+
+| ID | Approach | Primary lever | Status |
+| --- | --- | --- | --- |
+| E50 | Differential validation | Dual lang-core + Lark parse; quarantine disagreement | proposed |
+| E51 | Failure-cone remask | Remask first hard error + structural dependents | proposed |
+| E52 | Minimal hard negatives | Single-edit valid→invalid counterexamples | proposed |
+| E53 | Gate calibration | ECE / selective accuracy / abstention on `FastPathGate` | proposed |
+| E54 | Trajectory-aligned RL | MDPO/d1-style on intermediate MaskGIT states | proposed |
+| E55 | Schema generalization | Held-out schemas / rename / `toy-layout` transfer | proposed |

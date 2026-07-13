@@ -17,7 +17,7 @@ Measured on `twotower_v1_ship` (CPU, scratch context, LTR primary).
 
 1. **Batched LTR decode** (`generate_batch`) with progressive canvases; eval uses it automatically.
 2. **Active-row subsetting** — finished EOS rows drop out of the transformer forward.
-3. **Stages `(32, 48, 96)`** — shorter programs exit earlier.
+3. **Stages `(64, 128, 192, 256)`** (current `grammar_ltr_stages` default; earlier notes used `(32, 48, 96)`) — shorter programs exit earlier.
 4. **Skip Node finalize validate on generate** (eval already validates); optional via `grammar_finalize_validate`.
 5. **OpenUI parse/validate result cache** in `lang_core`.
 

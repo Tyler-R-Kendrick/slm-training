@@ -5,6 +5,9 @@ Inspiration and research for improving TwoTower OpenUI quality via
 the confidence remask wired in V3. Concrete levers **E30–E36** live in
 [quality-experiment-matrix.md](quality-experiment-matrix.md); implementation
 status and fidelity tags are in [research-lineage.md](research-lineage.md).
+For how PDDL-Instruct / verifier-guided diffusion-repair ideas map onto this
+stack (and proposed **E50–E55**), see
+[verifier-guided-repair.md](verifier-guided-repair.md).
 
 V3 **Adapted** confidence remasking (`remask_ratio` / `select_remask_indices`)
 and template fill; those cleared fixture `--ship-gates` but used a silent

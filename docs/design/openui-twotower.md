@@ -14,8 +14,10 @@ Build a small, on-device-friendly specialist that generates **placeholder-augmen
 ## Non-goals (still deferred)
 
 - Consistency distillation
-- Full chat-shell AgentInterface / OpenUIChat (annotate uses a focused `Renderer` island instead)- Custom Cactus NEON kernel authorship in this repo
+- Full chat-shell AgentInterface / OpenUIChat (annotate uses a focused `Renderer` island instead)
+- Custom Cactus NEON kernel authorship in this repo
 - Production copy SLM
+- PDDL / VAL / classical planners (see [verifier-guided-repair.md](verifier-guided-repair.md))
 
 ## Official OpenUI Lang (source of truth)
 
@@ -51,8 +53,10 @@ Optional preference stage ranks candidates with the composite reward.
 **Note:** current “DPO” training is reference-free (surrogate on masked log-probs) — not textbook DPO.
 
 **Papers / techniques → code:** see [research-lineage.md](research-lineage.md)
-(MaskGIT, constrained diffusion LLMs, speculative/force-emit, DPO/GRPO surrogates).
+(MaskGIT, constrained diffusion LLMs, speculative/force-emit, DPO/GRPO surrogates;
+verifier-guided repair Adjacent lineage).
 Grammar decode details: [grammar-fastpath.md](grammar-fastpath.md).
+Applicability of PDDL-Instruct-style ideas: [verifier-guided-repair.md](verifier-guided-repair.md).
 
 ## Data sources
 
@@ -76,11 +80,14 @@ Leakage checks use exact + **structural** OpenUI fingerprints (placeholder/binde
 ## Roadmap status
 
 1–6: prior revisions (done)
-7. Full openuiLibrary + DESIGN.md + harden + Cactus/Awwwards/preference (**this revision**)
-8. Adversarial review remediations — see [adversarial-review.md](adversarial-review.md)
-9. Runtime simplify/optimize (PyTorch path); Cactus/NEON kernel stays separate — [runtime-performance.md](runtime-performance.md)
-10. Quality experiment matrix (all levers) — [quality-experiment-matrix.md](quality-experiment-matrix.md)
-11. Accelerator / parallel decode — [accel-parallel.md](accel-parallel.md)
+7. Full openuiLibrary + DESIGN.md + harden + Cactus/Awwwards/preference (**done**)
+8. Adversarial review remediations — see [adversarial-review.md](adversarial-review.md) (**done**)
+9. Runtime simplify/optimize (PyTorch path); Cactus/NEON kernel stays separate — [runtime-performance.md](runtime-performance.md) (**done**)
+10. Quality experiment matrix (all levers) — [quality-experiment-matrix.md](quality-experiment-matrix.md) (**done**; E0–E46 + X0–X8)
+11. Accelerator / parallel decode — [accel-parallel.md](accel-parallel.md) (**done**)
+12. V4 critic remask / trust gate / honest inventory (E30–E36; E34 deferred) — [research-correction-critics.md](research-correction-critics.md) (**done**; E35/E36 fixture ship)
+13. V5 DSL-native / lexer tokenizer (E40–E46) — [dsl-native-tokenizer.md](dsl-native-tokenizer.md) (**done**)
+14. Verifier-guided repair levers (proposed E50–E55: differential validation, failure-cone remask, minimal hard negatives, calibration, trajectory-aligned RL, schema generalization) — [verifier-guided-repair.md](verifier-guided-repair.md) (**proposed**; docs only)
 
 ### Eval-driven ship gates (honest policy)
 
