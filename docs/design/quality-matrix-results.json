@@ -1,0 +1,632 @@
+{
+  "matrix": "quality-experiment-matrix",
+  "reference": "docs/design/quality-experiment-matrix.md",
+  "evaluated_at": "2026-07-13T13:01:30.507417+00:00",
+  "settings": {
+    "steps": 800,
+    "context_backend": "scratch",
+    "design_md_in_context": false,
+    "seed_checkpoint": "outputs/runs/twotower_v1_ship/checkpoints/last.pt",
+    "rico_eval_limit": 32,
+    "device": "cpu"
+  },
+  "gate_policy": {
+    "smoke": {
+      "parse_rate": 0.66,
+      "structural_similarity": 0.35,
+      "placeholder_fidelity": 0.25,
+      "reward_score": 0.3
+    },
+    "held_out": {
+      "parse_rate": 0.4,
+      "structural_similarity": 0.3,
+      "placeholder_fidelity": 0.15
+    },
+    "adversarial": {
+      "parse_rate": 0.25,
+      "structural_similarity": 0.25
+    },
+    "ood": {
+      "parse_rate": 0.25,
+      "structural_similarity": 0.25
+    },
+    "rico_held": {
+      "parse_rate": 0.1,
+      "structural_similarity": 0.2
+    }
+  },
+  "highlights": [
+    "E1 repair on ship: keeps smoke parse 1.0; adversarial parse 0.25 (gate met); held_out still 0; fidelity still 0",
+    "E2 curriculum: adversarial parse 0.75 (best stress parse); held_out 0.2",
+    "E7 capacity: rico_held parse 0.875 / struct 0.366 (best RICO); smoke still 0 at 800 steps",
+    "E4 schema: rico parse 0.219",
+    "No run clears honest ship gates \u2014 fidelity remains the hard blocker on seed; fresh trains need more steps/HF for smoke"
+  ],
+  "ship_reference": {
+    "id": "SHIP",
+    "run_id": "twotower_v1_ship",
+    "description": "Existing fixture-demo ship checkpoint (honest re-eval reference)",
+    "pass": false,
+    "note": "memorizer: smoke parse 1.0 / fidelity 0; held_out/rico parse 0",
+    "suites": {
+      "smoke": {
+        "suite": "smoke",
+        "n": 3,
+        "parse_rate": 1.0,
+        "placeholder_fidelity": 0.0,
+        "placeholder_validity": 0.7000000000000001,
+        "exact_match": 0.0,
+        "structural_similarity": 0.6767,
+        "component_type_recall": 0.5,
+        "reward_score": 0.6463333333333333,
+        "gold_design_lint_score": 0.94,
+        "design_lint_score": 0.94,
+        "latency_ms_p50": 100.81,
+        "latency_ms_p95": 100.81,
+        "checkpoint": "outputs/runs/twotower_v1_ship/checkpoints/last.pt",
+        "model": "twotower",
+        "evaluated_at": "2026-07-13T08:11:34.339328+00:00"
+      },
+      "held_out": {
+        "suite": "held_out",
+        "n": 5,
+        "parse_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "placeholder_validity": 0.32,
+        "exact_match": 0.0,
+        "structural_similarity": 0.48274,
+        "component_type_recall": 0.25,
+        "reward_score": 0.1282,
+        "gold_design_lint_score": 0.9399999999999998,
+        "design_lint_score": 0.9399999999999998,
+        "latency_ms_p50": 175.28,
+        "latency_ms_p95": 177.98,
+        "checkpoint": "outputs/runs/twotower_v1_ship/checkpoints/last.pt",
+        "model": "twotower",
+        "evaluated_at": "2026-07-13T08:11:35.563028+00:00"
+      },
+      "adversarial": {
+        "suite": "adversarial",
+        "n": 4,
+        "parse_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "placeholder_validity": 0.2,
+        "exact_match": 0.0,
+        "structural_similarity": 0.4525,
+        "component_type_recall": 0.5,
+        "reward_score": 0.0,
+        "gold_design_lint_score": 0.94,
+        "design_lint_score": 0.94,
+        "latency_ms_p50": 101.78,
+        "latency_ms_p95": 101.78,
+        "checkpoint": "outputs/runs/twotower_v1_ship/checkpoints/last.pt",
+        "model": "twotower",
+        "evaluated_at": "2026-07-13T08:11:36.253278+00:00"
+      },
+      "ood": {
+        "suite": "ood",
+        "n": 4,
+        "parse_rate": 0.25,
+        "placeholder_fidelity": 0.0,
+        "placeholder_validity": 0.30000000000000004,
+        "exact_match": 0.0,
+        "structural_similarity": 0.45347499999999996,
+        "component_type_recall": 0.29166666666666663,
+        "reward_score": 0.16225,
+        "gold_design_lint_score": 0.94,
+        "design_lint_score": 0.94,
+        "latency_ms_p50": 179.56,
+        "latency_ms_p95": 179.56,
+        "checkpoint": "outputs/runs/twotower_v1_ship/checkpoints/last.pt",
+        "model": "twotower",
+        "evaluated_at": "2026-07-13T08:11:37.194110+00:00"
+      },
+      "rico_held": {
+        "suite": "rico_held",
+        "n": 1500,
+        "parse_rate": 0.0,
+        "placeholder_fidelity": 6.0606060606060605e-05,
+        "placeholder_validity": 0.2915696666666615,
+        "exact_match": 0.0,
+        "structural_similarity": 0.16765120000000108,
+        "component_type_recall": 0.08566666666666646,
+        "reward_score": 0.0,
+        "gold_design_lint_score": 0.94,
+        "design_lint_score": 0.94,
+        "latency_ms_p50": 136.87,
+        "latency_ms_p95": 201.05,
+        "checkpoint": "outputs/runs/twotower_v1_ship/checkpoints/last.pt",
+        "model": "twotower",
+        "evaluated_at": "2026-07-13T08:17:21.619343+00:00"
+      }
+    }
+  },
+  "results": [
+    {
+      "id": "E0",
+      "run_id": "qx_e0_baseline",
+      "description": "Ship-recipe baseline (v1, LTR primary, scratch)",
+      "checkpoint": "outputs/runs/qx_e0_baseline/checkpoints/last.pt",
+      "pass": false,
+      "failures": [
+        "smoke:parse_rate actual=0.0 need>=0.66",
+        "smoke:structural_similarity actual=0.3294333333333333 need>=0.35",
+        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:parse_rate actual=0.0 need>=0.4",
+        "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+        "adversarial:parse_rate actual=0.0 need>=0.25",
+        "ood:parse_rate actual=0.0 need>=0.25",
+        "rico_held:parse_rate actual=0.03125 need>=0.1"
+      ],
+      "suites": {
+        "smoke": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.3294333333333333,
+          "reward_score": 0.0,
+          "n": 3
+        },
+        "held_out": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.30419999999999997,
+          "reward_score": 0.0,
+          "n": 5
+        },
+        "adversarial": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.39125,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "ood": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.455375,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "rico_held": {
+          "parse_rate": 0.03125,
+          "placeholder_fidelity": 0.04620422979797979,
+          "structural_similarity": 0.29292187500000005,
+          "reward_score": 0.01978125,
+          "n": 32
+        }
+      }
+    },
+    {
+      "id": "E1",
+      "run_id": "qx_e1_repair",
+      "description": "Constrained LTR repair at eval (decode lever)",
+      "checkpoint": "outputs/runs/qx_e1_repair/checkpoints/last.pt",
+      "pass": false,
+      "failures": [
+        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+        "held_out:parse_rate actual=0.0 need>=0.4",
+        "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+        "rico_held:parse_rate actual=0.0 need>=0.1",
+        "rico_held:structural_similarity actual=0.122165625 need>=0.2"
+      ],
+      "suites": {
+        "smoke": {
+          "parse_rate": 1.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.6767,
+          "reward_score": 0.6463333333333333,
+          "n": 3
+        },
+        "held_out": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.51312,
+          "reward_score": 0.0,
+          "n": 5
+        },
+        "adversarial": {
+          "parse_rate": 0.25,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.38,
+          "reward_score": 0.16025,
+          "n": 4
+        },
+        "ood": {
+          "parse_rate": 0.25,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.559725,
+          "reward_score": 0.16225,
+          "n": 4
+        },
+        "rico_held": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.122165625,
+          "reward_score": 0.0,
+          "n": 32
+        }
+      }
+    },
+    {
+      "id": "E2",
+      "run_id": "qx_e2_curriculum",
+      "description": "Curriculum A\u2192B\u2192C sampling",
+      "checkpoint": "outputs/runs/qx_e2_curriculum/checkpoints/last.pt",
+      "pass": false,
+      "failures": [
+        "smoke:parse_rate actual=0.0 need>=0.66",
+        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:parse_rate actual=0.2 need>=0.4",
+        "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+        "ood:parse_rate actual=0.0 need>=0.25",
+        "rico_held:parse_rate actual=0.0 need>=0.1"
+      ],
+      "suites": {
+        "smoke": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.44659999999999994,
+          "reward_score": 0.0,
+          "n": 3
+        },
+        "held_out": {
+          "parse_rate": 0.2,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.33762,
+          "reward_score": 0.1282,
+          "n": 5
+        },
+        "adversarial": {
+          "parse_rate": 0.75,
+          "placeholder_fidelity": 0.875,
+          "structural_similarity": 0.895,
+          "reward_score": 0.61375,
+          "n": 4
+        },
+        "ood": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.4253,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "rico_held": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.248065625,
+          "reward_score": 0.0,
+          "n": 32
+        }
+      }
+    },
+    {
+      "id": "E3",
+      "run_id": "qx_e3_fidelity",
+      "description": "Fidelity aux loss on placeholder tokens",
+      "checkpoint": "outputs/runs/qx_e3_fidelity/checkpoints/last.pt",
+      "pass": false,
+      "failures": [
+        "smoke:parse_rate actual=0.0 need>=0.66",
+        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:parse_rate actual=0.0 need>=0.4",
+        "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+        "adversarial:parse_rate actual=0.0 need>=0.25",
+        "ood:parse_rate actual=0.0 need>=0.25",
+        "rico_held:parse_rate actual=0.0 need>=0.1"
+      ],
+      "suites": {
+        "smoke": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.38693333333333335,
+          "reward_score": 0.0,
+          "n": 3
+        },
+        "held_out": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.34424,
+          "reward_score": 0.0,
+          "n": 5
+        },
+        "adversarial": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.307925,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "ood": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.315975,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "rico_held": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.04416824494949495,
+          "structural_similarity": 0.25355625,
+          "reward_score": 0.0,
+          "n": 32
+        }
+      }
+    },
+    {
+      "id": "E4",
+      "run_id": "qx_e4_schema",
+      "description": "Schema-conditioned context",
+      "checkpoint": "outputs/runs/qx_e4_schema/checkpoints/last.pt",
+      "pass": false,
+      "failures": [
+        "smoke:parse_rate actual=0.0 need>=0.66",
+        "smoke:structural_similarity actual=0.3344333333333333 need>=0.35",
+        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:parse_rate actual=0.0 need>=0.4",
+        "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+        "adversarial:parse_rate actual=0.0 need>=0.25",
+        "ood:parse_rate actual=0.0 need>=0.25"
+      ],
+      "suites": {
+        "smoke": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.3344333333333333,
+          "reward_score": 0.0,
+          "n": 3
+        },
+        "held_out": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.32724000000000003,
+          "reward_score": 0.0,
+          "n": 5
+        },
+        "adversarial": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.37625,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "ood": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.306975,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "rico_held": {
+          "parse_rate": 0.21875,
+          "placeholder_fidelity": 0.09747023809523808,
+          "structural_similarity": 0.21611250000000007,
+          "reward_score": 0.14021875,
+          "n": 32
+        }
+      }
+    },
+    {
+      "id": "E5",
+      "run_id": "qx_e5_pref_bon",
+      "description": "Soft preference pairs + best-of-N decode",
+      "checkpoint": "outputs/runs/qx_e5_pref_bon/checkpoints/last.pt",
+      "pass": false,
+      "failures": [
+        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+        "held_out:parse_rate actual=0.0 need>=0.4",
+        "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+        "adversarial:parse_rate actual=0.0 need>=0.25",
+        "rico_held:parse_rate actual=0.0 need>=0.1",
+        "rico_held:structural_similarity actual=0.15132187499999997 need>=0.2"
+      ],
+      "suites": {
+        "smoke": {
+          "parse_rate": 1.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.6767,
+          "reward_score": 0.6463333333333333,
+          "n": 3
+        },
+        "held_out": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.4559,
+          "reward_score": 0.0,
+          "n": 5
+        },
+        "adversarial": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.31375000000000003,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "ood": {
+          "parse_rate": 0.25,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.524725,
+          "reward_score": 0.16225,
+          "n": 4
+        },
+        "rico_held": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.15132187499999997,
+          "reward_score": 0.0,
+          "n": 32
+        }
+      }
+    },
+    {
+      "id": "E6",
+      "run_id": "qx_e6_retrieve",
+      "description": "Retrieval skeleton bank (k=1)",
+      "checkpoint": "outputs/runs/qx_e6_retrieve/checkpoints/last.pt",
+      "pass": false,
+      "failures": [
+        "smoke:parse_rate actual=0.0 need>=0.66",
+        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:parse_rate actual=0.0 need>=0.4",
+        "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+        "adversarial:parse_rate actual=0.0 need>=0.25",
+        "adversarial:structural_similarity actual=0.22207499999999997 need>=0.25",
+        "ood:parse_rate actual=0.0 need>=0.25",
+        "rico_held:parse_rate actual=0.03125 need>=0.1"
+      ],
+      "suites": {
+        "smoke": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.3889,
+          "reward_score": 0.0,
+          "n": 3
+        },
+        "held_out": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.35992,
+          "reward_score": 0.0,
+          "n": 5
+        },
+        "adversarial": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.22207499999999997,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "ood": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.4651,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "rico_held": {
+          "parse_rate": 0.03125,
+          "placeholder_fidelity": 0.08497023809523807,
+          "structural_similarity": 0.26403437499999993,
+          "reward_score": 0.0206,
+          "n": 32
+        }
+      }
+    },
+    {
+      "id": "E7",
+      "run_id": "qx_e7_capacity",
+      "description": "Capacity upgrade (wider/deeper + longer LTR)",
+      "checkpoint": "outputs/runs/qx_e7_capacity/checkpoints/last.pt",
+      "pass": false,
+      "failures": [
+        "smoke:parse_rate actual=0.0 need>=0.66",
+        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:parse_rate actual=0.0 need>=0.4",
+        "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+        "adversarial:parse_rate actual=0.0 need>=0.25",
+        "ood:parse_rate actual=0.0 need>=0.25"
+      ],
+      "suites": {
+        "smoke": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.3811333333333333,
+          "reward_score": 0.0,
+          "n": 3
+        },
+        "held_out": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.51228,
+          "reward_score": 0.0,
+          "n": 5
+        },
+        "adversarial": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.4998000000000001,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "ood": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.45052499999999995,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "rico_held": {
+          "parse_rate": 0.875,
+          "placeholder_fidelity": 0.1611415494227994,
+          "structural_similarity": 0.36551562500000007,
+          "reward_score": 0.6114312499999999,
+          "n": 32
+        }
+      }
+    },
+    {
+      "id": "E8",
+      "run_id": "qx_e8_combo",
+      "description": "Stacked combo of all levers",
+      "checkpoint": "outputs/runs/qx_e8_combo/checkpoints/last.pt",
+      "pass": false,
+      "failures": [
+        "smoke:parse_rate actual=0.0 need>=0.66",
+        "smoke:structural_similarity actual=0.205 need>=0.35",
+        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:parse_rate actual=0.0 need>=0.4",
+        "held_out:structural_similarity actual=0.11699999999999999 need>=0.3",
+        "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+        "adversarial:parse_rate actual=0.0 need>=0.25",
+        "adversarial:structural_similarity actual=0.19 need>=0.25",
+        "ood:parse_rate actual=0.0 need>=0.25",
+        "ood:structural_similarity actual=0.186375 need>=0.25",
+        "rico_held:parse_rate actual=0.0 need>=0.1",
+        "rico_held:structural_similarity actual=0.13259062499999996 need>=0.2"
+      ],
+      "suites": {
+        "smoke": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.205,
+          "reward_score": 0.0,
+          "n": 3
+        },
+        "held_out": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.11699999999999999,
+          "reward_score": 0.0,
+          "n": 5
+        },
+        "adversarial": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 1.0,
+          "structural_similarity": 0.19,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "ood": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.186375,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "rico_held": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.13259062499999996,
+          "reward_score": 0.0,
+          "n": 32
+        }
+      }
+    }
+  ]
+}

@@ -29,7 +29,7 @@ def _copy_checkpoint(src: Path, dest: Path) -> Path:
     shutil.copy2(src, dest)
     for side in (src.with_suffix(".tokenizer.json"), src.with_suffix(".meta.json")):
         if side.is_file():
-            shutil.copy2(side, dest.with_suffix(side.suffix))
+            shutil.copy2(side, dest.parent / side.name)
     return dest
 
 
@@ -53,24 +53,39 @@ class Experiment:
     grammar_ltr_max_tokens: int = 64
     # Eval-only overlay on a prior run (skip train if set)
     eval_from_run: str | None = None
+    design_md_in_context: bool = True
+    # Absolute checkpoint seed (preferred over eval_from_run when set)
+    seed_checkpoint: str | None = None
     preference: bool = False
 
 
-def _base_experiments(train_v1: Path, train_cur: Path) -> list[Experiment]:
+def _base_experiments(
+    train_v1: Path,
+    train_cur: Path,
+    *,
+    seed_checkpoint: Path | None = None,
+    design_md_in_context: bool = True,
+) -> list[Experiment]:
+    seed = str(seed_checkpoint) if seed_checkpoint else None
+    # Decode-only overlays must match the seed checkpoint's conditioning.
+    seed_dm = False if seed else design_md_in_context
     return [
         Experiment(
             "E0",
             "qx_e0_baseline",
             "Ship-recipe baseline (v1, LTR primary, scratch)",
             train_v1,
+            design_md_in_context=design_md_in_context,
         ),
         Experiment(
             "E1",
             "qx_e1_repair",
-            "Constrained LTR repair at eval (decode lever on E0)",
+            "Constrained LTR repair at eval (decode lever)",
             train_v1,
             grammar_ltr_repair=True,
-            eval_from_run="qx_e0_baseline",
+            design_md_in_context=seed_dm,
+            eval_from_run="qx_e0_baseline" if seed is None else None,
+            seed_checkpoint=seed,
         ),
         Experiment(
             "E2",
@@ -78,6 +93,7 @@ def _base_experiments(train_v1: Path, train_cur: Path) -> list[Experiment]:
             "Curriculum A→B→C sampling",
             train_cur,
             use_curriculum=True,
+            design_md_in_context=design_md_in_context,
         ),
         Experiment(
             "E3",
@@ -85,6 +101,7 @@ def _base_experiments(train_v1: Path, train_cur: Path) -> list[Experiment]:
             "Fidelity aux loss on placeholder tokens",
             train_v1,
             fidelity_loss_weight=1.0,
+            design_md_in_context=design_md_in_context,
         ),
         Experiment(
             "E4",
@@ -92,6 +109,7 @@ def _base_experiments(train_v1: Path, train_cur: Path) -> list[Experiment]:
             "Schema-conditioned context",
             train_v1,
             schema_in_context=True,
+            design_md_in_context=design_md_in_context,
         ),
         Experiment(
             "E5",
@@ -100,7 +118,9 @@ def _base_experiments(train_v1: Path, train_cur: Path) -> list[Experiment]:
             train_v1,
             best_of_n=4,
             preference=True,
-            eval_from_run="qx_e0_baseline",
+            design_md_in_context=seed_dm,
+            eval_from_run="qx_e0_baseline" if seed is None else None,
+            seed_checkpoint=seed,
         ),
         Experiment(
             "E6",
@@ -108,6 +128,7 @@ def _base_experiments(train_v1: Path, train_cur: Path) -> list[Experiment]:
             "Retrieval skeleton bank (k=1)",
             train_v1,
             retrieval_k=1,
+            design_md_in_context=design_md_in_context,
         ),
         Experiment(
             "E7",
@@ -119,6 +140,7 @@ def _base_experiments(train_v1: Path, train_cur: Path) -> list[Experiment]:
             context_layers=3,
             denoiser_layers=6,
             grammar_ltr_max_tokens=96,
+            design_md_in_context=design_md_in_context,
         ),
         Experiment(
             "E8",
@@ -137,6 +159,7 @@ def _base_experiments(train_v1: Path, train_cur: Path) -> list[Experiment]:
             denoiser_layers=6,
             grammar_ltr_max_tokens=96,
             preference=True,
+            design_md_in_context=design_md_in_context,
         ),
     ]
 
@@ -164,7 +187,7 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         grammar_ltr_primary=True,
         grammar_ltr_repair=exp.grammar_ltr_repair,
         grammar_ltr_max_tokens=exp.grammar_ltr_max_tokens,
-        design_md_in_context=True,
+        design_md_in_context=exp.design_md_in_context,
         ltr_loss_weight=1.0,
         fidelity_loss_weight=exp.fidelity_loss_weight,
         schema_in_context=exp.schema_in_context,
@@ -242,7 +265,13 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
     run_dir = args.run_root / exp.run_id
     run_dir.mkdir(parents=True, exist_ok=True)
 
-    if exp.eval_from_run and not exp.preference:
+    if exp.seed_checkpoint:
+        src = Path(exp.seed_checkpoint)
+        dest = run_dir / "checkpoints" / "last.pt"
+        if not src.is_file():
+            raise FileNotFoundError(f"{exp.eid} needs seed checkpoint {src}")
+        ckpt = _copy_checkpoint(src, dest)
+    elif exp.eval_from_run and not exp.preference:
         src = args.run_root / exp.eval_from_run / "checkpoints" / "last.pt"
         dest = run_dir / "checkpoints" / "last.pt"
         if not src.is_file():
@@ -307,6 +336,17 @@ def main(argv: list[str] | None = None) -> int:
         help="Comma-separated experiment ids (e.g. E0,E1,E8).",
     )
     parser.add_argument(
+        "--no-design-md-context",
+        action="store_true",
+        help="Train/eval without DESIGN.md in context (matches fixture-demo ship ckpt).",
+    )
+    parser.add_argument(
+        "--seed-checkpoint",
+        type=Path,
+        default=None,
+        help="Optional strong checkpoint for decode-only experiments (E1/E5).",
+    )
+    parser.add_argument(
         "--build-curriculum",
         action="store_true",
         help="Build curriculum train corpus before running.",
@@ -329,7 +369,12 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
 
-    experiments = _base_experiments(args.train_dir, args.curriculum_dir)
+    experiments = _base_experiments(
+        args.train_dir,
+        args.curriculum_dir,
+        seed_checkpoint=args.seed_checkpoint,
+        design_md_in_context=not args.no_design_md_context,
+    )
     if args.only:
         wanted = {x.strip().upper() for x in args.only.split(",") if x.strip()}
         experiments = [e for e in experiments if e.eid in wanted]

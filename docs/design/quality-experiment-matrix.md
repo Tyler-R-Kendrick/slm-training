@@ -45,9 +45,29 @@ Same policy as `docs/design/adversarial-review.md`. Matrix may evaluate `rico_he
 python -m scripts.build_train_data --source all --version v1_curriculum \
   --synthesizer quality --curriculum
 
-# Run full matrix (scratch CPU, short steps)
-python -m scripts.run_quality_matrix --device cpu --context-backend scratch --steps 80
+# Run full matrix (scratch CPU). Use --no-design-md-context when seeding from
+# the fixture-demo ship checkpoint (it was trained without DESIGN.md in context).
+python -m scripts.run_quality_matrix \
+  --device cpu --context-backend scratch --steps 800 \
+  --no-design-md-context \
+  --seed-checkpoint outputs/runs/twotower_v1_ship/checkpoints/last.pt
 
 # Single experiment
-python -m scripts.run_quality_matrix --only E1 --steps 80
+python -m scripts.run_quality_matrix --only E1,E7 --steps 800 --no-design-md-context \
+  --seed-checkpoint outputs/runs/twotower_v1_ship/checkpoints/last.pt
 ```
+
+## Measured results (CPU, 800 steps, scratch, no DESIGN.md in context)
+
+See [quality-matrix-results.json](quality-matrix-results.json). Headline deltas vs ship memorizer:
+
+| ID | Smoke parse | Adv parse | RICO parse | Notes |
+| --- | --- | --- | --- | --- |
+| SHIP | 1.0 | 0.0 | 0.0 | fidelity 0 everywhere |
+| E1 repair | **1.0** | **0.25** | 0.0 | adversarial gate met; fidelity still 0 |
+| E2 curriculum | 0.0 | **0.75** | 0.0 | best stress parse |
+| E4 schema | 0.0 | 0.0 | 0.22 | mild RICO lift |
+| E7 capacity | 0.0 | 0.0 | **0.88** | best RICO; struct 0.37 |
+| E8 combo | 0.0 | 0.0 | 0.0 | underfit at 800 steps on stacked levers |
+
+**None clear honest `--ship-gates`.** Next: longer HF+DESIGN.md train (E0/E8), fidelity-targeted objectives, and keep E1 repair on for quality evals.
