@@ -2,33 +2,34 @@
 
 Measured on `twotower_v1_ship` (CPU, scratch context, LTR primary).
 
-## Hotspots (before)
+## Hotspots
 
-| Path | Cost | Notes |
-| --- | --- | --- |
-| LTR generate | ~93–111ms | Full canvas `T=96` every step until EOS (~47 tokens) |
-| DESIGN.md lint (one-shot Node) | ~75ms / call | Eval re-linted every gold record |
-| OpenUI validate / stream_check (REPL) | ~1.4ms | Already amortized via persistent REPL |
-| Cactus / NEON kernel | n/a | **Kept separate** — not in the PyTorch loop |
+| Path | Before (initial) | After round 1 | After round 2 |
+| --- | --- | --- | --- |
+| Single `generate` | ~111ms | ~71ms | **~63ms** |
+| Eval 64× RICO (sequential) | — | — | ~4070ms |
+| Eval 64× RICO (`generate_batch` 16) | — | — | **~1005ms (~4×)** |
+| DESIGN.md lint (repeat) | ~75ms | ~0.005ms | same |
+| Eval gold design lint | ~75ms×N | ~0 (meta) | same |
+| Cactus / NEON kernel | n/a | separate | separate |
 
-## Simplifications / optimizations (this revision)
+## Round 2 changes
 
-1. **Progressive LTR canvases** (`grammar_ltr_stages=(48, 96)`) — short programs finish on the 48-token stage and skip the long canvas.
-2. **`torch.inference_mode()`** on `generate`; cached structural-bias vectors.
-3. **DESIGN.md bridge REPL + hash cache** — same pattern as OpenUI; avoids cold Node per lint.
-4. **Eval gold lint from `meta.design_lint`** — corpus already scored; no per-record Node in eval.
-5. **Stream-check LRU** for constrained decode probes.
-6. **Cactus adapter stays a thin boundary** (`slm_training.cactus`) — bundle/export/bench only; no kernel code in `models/`.
+1. **Batched LTR decode** (`generate_batch`) with progressive canvases; eval uses it automatically.
+2. **Active-row subsetting** — finished EOS rows drop out of the transformer forward.
+3. **Stages `(32, 48, 96)`** — shorter programs exit earlier.
+4. **Skip Node finalize validate on generate** (eval already validates); optional via `grammar_finalize_validate`.
+5. **OpenUI parse/validate result cache** in `lang_core`.
 
-## Kernel boundary
+## Kernel boundary (unchanged)
 
 ```
 prompt → TwoTower (PyTorch) → OpenUI text
                 ↓ export_checkpoint_bundle
-         portable .pt + tokenizer  →  (offline) cactus-compute transpile → .cact / NEON
+         portable .pt + tokenizer  →  (offline) cactus-compute → .cact / NEON
 ```
 
-Do not vendor or inline Cactus NEON kernels into this repo’s generate path.
+Do not vendor Cactus NEON kernels into `slm_training.models`.
 
 ## Re-bench
 
