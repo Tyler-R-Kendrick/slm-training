@@ -107,6 +107,51 @@ def test_pick_constrained_rejects_double_equal() -> None:
     assert choice == tok.token_to_id["Stack"]
 
 
+def test_ensure_valid_fallback_only_when_finalize() -> None:
+    """Canned fallback must not silently inflate eval when finalize is off."""
+    records = [
+        ExampleRecord(
+            id="t1",
+            prompt="hero card",
+            openui=SAMPLE,
+            design_md="# Design\n",
+            split="train",
+            source="fixture",
+        )
+    ]
+    cfg = TwoTowerConfig(
+        context_backend="scratch",
+        d_model=64,
+        n_heads=2,
+        context_layers=1,
+        denoiser_layers=2,
+        grammar_constrained=True,
+        grammar_finalize_validate=False,
+        grammar_ltr_max_tokens=16,
+        max_target_len=32,
+        max_prompt_len=32,
+        seed=0,
+    )
+    model = TwoTowerModel.from_records(records, config=cfg, device="cpu")
+    model.eval()
+    ctx, ctx_pad = model._encode_context(["hero card"])
+    # Force repair to fail so we exercise the post-repair branch.
+    model._ltr_repair_from_bos = lambda *a, **k: "still-broken (("  # type: ignore[method-assign]
+    raw = "not valid openui at all"
+    out = model._ensure_valid_openui(raw, ctx, ctx_pad, 16, attempts=1)
+    fallback = model._minimal_valid_openui()
+    assert model._canonical_valid_openui(out) is None
+    assert fallback is None or out != fallback
+
+    model.config.grammar_finalize_validate = True
+    try:
+        certified = model._ensure_valid_openui(raw, ctx, ctx_pad, 16, attempts=1)
+        assert model._canonical_valid_openui(certified) is not None
+    except RuntimeError as exc:
+        # Tiny fixture vocab may lack fallback templates — raise is still correct.
+        assert "grammar_finalize_validate" in str(exc)
+
+
 def test_admit_fill_rejects_hard_prefix() -> None:
     tok = _tok()
     eng = OpenUIIncrementalEngine()

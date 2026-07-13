@@ -484,12 +484,13 @@ class TwoTowerModel(nn.Module):
         attempts: int = 3,
     ) -> str:
         """
-        Guarantee a valid OpenUI string when grammar-constrained.
+        Repair toward a valid OpenUI string when grammar-constrained.
 
-        Uses DFA-constrained LTR repair (pseudo speculative decoding) until
-        ``validate`` succeeds. When ``grammar_finalize_validate`` is set, never
+        Uses DFA-constrained LTR repair (pseudo speculative decoding). When
+        ``grammar_finalize_validate`` is set (playground / hard certify), never
         returns invalid OpenUI — falls back to a minimal certified program or
-        raises.
+        raises. When finalize is off (default eval), returns the best repaired
+        text so parse_rate reflects real decode quality.
         """
         ser = self._canonical_valid_openui(text)
         if ser is not None:
@@ -500,10 +501,10 @@ class TwoTowerModel(nn.Module):
             ser = self._canonical_valid_openui(last)
             if ser is not None:
                 return ser
-        fallback = self._minimal_valid_openui()
-        if fallback is not None:
-            return fallback
         if self.config.grammar_finalize_validate:
+            fallback = self._minimal_valid_openui()
+            if fallback is not None:
+                return fallback
             raise RuntimeError(
                 "grammar_finalize_validate: model could not produce a complete valid OpenUI program"
             )
