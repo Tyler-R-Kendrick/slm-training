@@ -178,6 +178,29 @@ def template_mask_positions(
 
     Keeps structural punctuation / keywords so the program stays near-valid.
     """
+    try:
+        from slm_training.models.dsl_tokenizer import TokenKind, is_dsl_native_tokenizer
+
+        if is_dsl_native_tokenizer(tokenizer):
+            special = {
+                tokenizer.pad_id,
+                tokenizer.bos_id,
+                tokenizer.eos_id,
+                tokenizer.mask_id,
+            }
+            mask_at: list[int] = []
+            for i, tid in enumerate(token_ids):
+                if tid in special:
+                    continue
+                kind = tokenizer.kind_of(int(tid))
+                if kind == TokenKind.SYM and mask_placeholders:
+                    mask_at.append(i)
+                elif kind == TokenKind.BIND and mask_binders:
+                    mask_at.append(i)
+            return mask_at
+    except Exception:  # noqa: BLE001
+        pass
+
     structural = {
         "=",
         "(",
@@ -205,7 +228,7 @@ def template_mask_positions(
         tokenizer.eos_id,
         tokenizer.mask_id,
     }
-    mask_at: list[int] = []
+    mask_at = []
     for i, tid in enumerate(token_ids):
         if tid in special:
             continue

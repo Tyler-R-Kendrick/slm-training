@@ -1,21 +1,34 @@
-"""Map grammar terminals / forced strings onto OpenUITokenizer ids."""
+"""Map grammar terminals / forced strings onto tokenizer ids.
+
+Supports both the legacy compositional ``OpenUITokenizer`` (heuristic vocab
+scan) and the V5 lexer-native ``DSLNativeTokenizer`` (exact kind metadata).
+"""
 
 from __future__ import annotations
 
+from typing import Any
+
 from slm_training.models.tokenizer import OpenUITokenizer
+
+
+def _is_dsl_native(tokenizer: Any) -> bool:
+    try:
+        from slm_training.models.dsl_tokenizer import is_dsl_native_tokenizer
+
+        return is_dsl_native_tokenizer(tokenizer)
+    except Exception:  # noqa: BLE001
+        return False
 
 
 def string_to_token_ids(tokenizer: OpenUITokenizer, text: str) -> list[int]:
     """Encode a forced lexeme; prefer exact vocab hit then tokenizer.encode."""
     if text in tokenizer.token_to_id:
         return [tokenizer.token_to_id[text]]
+    # Newline maps to NL for lexer-native tokenizers.
+    if text in {"\n", "\r\n"} and "NL" in tokenizer.token_to_id:
+        return [tokenizer.token_to_id["NL"]]
     # Multi-char forced strings (rare) — encode without BOS/EOS if possible.
-    ids = tokenizer.encode(text)
-    # Drop bos/eos wrappers when present as sole wrappers.
-    if ids and ids[0] == tokenizer.bos_id:
-        ids = ids[1:]
-    if ids and ids[-1] == tokenizer.eos_id:
-        ids = ids[:-1]
+    ids = tokenizer.encode(text, add_special=False)
     return ids
 
 
@@ -30,6 +43,74 @@ def allowed_id_set(
     """
     if not terminals:
         return None
+    if _is_dsl_native(tokenizer):
+        return _allowed_id_set_dsl(tokenizer, terminals)
+    return _allowed_id_set_compositional(tokenizer, terminals)
+
+
+def _allowed_id_set_dsl(tokenizer: Any, terminals: frozenset[str]) -> set[int] | None:
+    from slm_training.models.dsl_tokenizer import TokenKind
+
+    ignore = {"$END", "COMMENT"}
+    ids: set[int] = set()
+    broad = False
+    for term in terminals:
+        if term in ignore:
+            continue
+        if term in {"EQUAL", "="}:
+            ids.add(tokenizer.token_to_id["="])
+        elif term in {"LPAR", "("}:
+            ids.add(tokenizer.token_to_id["("])
+        elif term in {"RPAR", ")"}:
+            ids.add(tokenizer.token_to_id[")"])
+        elif term in {"LSQB", "["}:
+            ids.add(tokenizer.token_to_id["["])
+        elif term in {"RSQB", "]"}:
+            ids.add(tokenizer.token_to_id["]"])
+        elif term in {"COMMA", ","}:
+            ids.add(tokenizer.token_to_id[","])
+        elif term in {"_NL", "NL"}:
+            ids.add(tokenizer.token_to_id["NL"])
+        elif term == "WS_INLINE":
+            # Whitespace is not modeled in lexer-native output.
+            continue
+        elif term == "COMPONENT":
+            broad = True
+            ids |= tokenizer.kind_ids(TokenKind.COMPONENT)
+        elif term == "NAME":
+            broad = True
+            ids |= tokenizer.kind_ids(TokenKind.BIND)
+        elif term == "STRING":
+            broad = True
+            ids |= tokenizer.kind_ids(TokenKind.SYM)
+            ids |= tokenizer.kind_ids(TokenKind.LIT)
+            # Fixed strings + LIT_STR opener + bool/null are LIT; also allow
+            # byte channel only after LIT_STR (caller handles framing).
+            lit_str = tokenizer.token_to_id.get("LIT_STR")
+            if lit_str is not None:
+                ids.add(lit_str)
+        elif term == "NUMBER":
+            broad = True
+            lit_num = tokenizer.token_to_id.get("LIT_NUM")
+            if lit_num is not None:
+                ids.add(lit_num)
+        elif term == "BOOL":
+            for b in ("true", "false"):
+                if b in tokenizer.token_to_id:
+                    ids.add(tokenizer.token_to_id[b])
+        else:
+            # Literal terminal name may already be in vocab.
+            if term in tokenizer.token_to_id:
+                ids.add(tokenizer.token_to_id[term])
+    if not ids and broad:
+        return None
+    return ids or None
+
+
+def _allowed_id_set_compositional(
+    tokenizer: OpenUITokenizer,
+    terminals: frozenset[str],
+) -> set[int] | None:
     ignore = {"$END", "COMMENT"}
     forced_map = {
         "EQUAL": "=",

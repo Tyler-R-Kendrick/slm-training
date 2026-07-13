@@ -57,6 +57,13 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "use_compile",
         "compile_mode",
         "grammar_dsl",
+        "output_tokenizer",
+        "use_symbol_table",
+        "factorized_embeddings",
+        "mask_pattern",
+        "statement_mask_prob",
+        "remask_span",
+        "teacher_init_embeddings",
     ):
         if hasattr(config, key) and hasattr(cfg, key):
             setattr(cfg, key, getattr(config, key))
@@ -166,6 +173,15 @@ def build_model(
             ),
             grammar_block_decode=getattr(config, "grammar_block_decode", False),
             grammar_block_size=getattr(config, "grammar_block_size", 32),
+            output_tokenizer=getattr(config, "output_tokenizer", "compositional"),
+            use_symbol_table=getattr(config, "use_symbol_table", True),
+            factorized_embeddings=getattr(config, "factorized_embeddings", False),
+            mask_pattern=getattr(config, "mask_pattern", "random"),
+            statement_mask_prob=float(
+                getattr(config, "statement_mask_prob", 0.35) or 0.35
+            ),
+            remask_span=getattr(config, "remask_span", "token"),
+            teacher_init_embeddings=getattr(config, "teacher_init_embeddings", False),
             seed=config.seed,
         )
         model = TwoTowerModel.from_records(records, config=tt_cfg, device=config.device)
