@@ -231,6 +231,76 @@ levers **E30–E36** in [`quality-experiment-matrix.md`](quality-experiment-matr
 
 ---
 
+## Verifier-guided planning & repair (Adjacent lineage)
+
+These papers motivate **verifier-derived supervision**, candidate–repair loops,
+and diffusion-native policy optimization. We do **not** reimplement PDDL
+planners or VAL in this repo. The applicability mapping (what already maps to
+OpenUI TwoTower, what is a real gap, what is out of scope) lives in
+[`verifier-guided-repair.md`](verifier-guided-repair.md).
+
+### PDDL-Instruct (logical CoT instruction tuning for planning)
+
+| | |
+| --- | --- |
+| **Paper** | *Teaching LLMs to Plan: Logical Chain-of-Thought Instruction Tuning for Symbolic Planning*, LM4Plan @ ICAPS 2025 / preprint. [arXiv:2509.13351](https://arxiv.org/abs/2509.13351) |
+| **Fidelity** | **Adjacent** — we adopt the *idea* of verifier-derived process supervision and detailed failure feedback, not the PDDL/VAL training loop or the paper’s underspecified discrete step/plan losses |
+| **Takeaway** | Prefer executable traces + localized verifier diagnostics over prose CoT; keep verification at inference time |
+| **Do not use** | Unofficial third-party “symbolic-planning” sketches as a trusted parser/executor base |
+| **Design map** | [`verifier-guided-repair.md`](verifier-guided-repair.md) |
+
+### LLM-Modulo / CEGIS planning (candidate–verifier–counterexample)
+
+| | |
+| --- | --- |
+| **Lineage** | LLM proposes candidates; symbolic verifier returns counterexamples; model repairs (LLM-Modulo / neuro-symbolic CEGIS planning family). Related: LLM+P (LLM formalizes, classical planner searches) — we keep the *division of labor* lesson without adopting planners |
+| **Fidelity** | **Adjacent** — closest architectural precedent for our certify → remask → re-denoise loop |
+| **Code analogue** | `_ensure_valid_openui` + remask policies in [`models/twotower.py`](../../src/slm_training/models/twotower.py), [`models/parallel_decode.py`](../../src/slm_training/models/parallel_decode.py) |
+| **Design map** | [`verifier-guided-repair.md`](verifier-guided-repair.md) §3–§4 |
+
+### FoVer (formal tools → process verifiers)
+
+| | |
+| --- | --- |
+| **Paper** | *Training Step-Level Reasoning Verifiers with Formal Verification Tools*, 2025. [arXiv:2505.15960](https://arxiv.org/abs/2505.15960) |
+| **Fidelity** | **Adjacent** — motivates distilling expensive formal checks into a compact process model while retaining the formal tool as authority |
+| **Code analogue** | `FastPathGate` + BackPlay-lite mining ([`grammar_fastpath/gate.py`](../../src/slm_training/grammar_fastpath/gate.py), [`trust_train.py`](../../src/slm_training/grammar_fastpath/trust_train.py)); grammar remains legality authority |
+| **Proposed** | Calibration / abstention (**E63** in the mapping doc; E53 is the shipped V6 honest champion) |
+
+### MDPO / d1 (trajectory-aligned masked-diffusion RL)
+
+| | |
+| --- | --- |
+| **Papers** | *MDPO: Overcoming the Training-Inference Divide of Masked Diffusion Language Models*, 2025. [arXiv:2508.13148](https://arxiv.org/abs/2508.13148). Related: d1 masked-diffusion policy optimization [arXiv:2504.12216](https://arxiv.org/abs/2504.12216); PAPO / dOPSD-style dense intermediate rewards (Adjacent) |
+| **Fidelity** | **Adjacent** — candidates to replace the GRPO-lite **Surrogate** on final strings |
+| **Code today** | [`rl/`](../../src/slm_training/rl/) GRPO-lite; preference stage in [`preference/train.py`](../../src/slm_training/preference/train.py) |
+| **Proposed** | Trajectory-aligned objective on intermediate MaskGIT states (**E64**; E54/E55 are shipped V6 grammar-honest / process stages) |
+
+### Constrained diffusion decoding (LAVE / EPIC family)
+
+| | |
+| --- | --- |
+| **Paper** | *Lookahead-then-Verify: Reliable Constrained Decoding for Diffusion LLMs under Context-Free Grammars*, 2026. [arXiv:2602.00612](https://arxiv.org/abs/2602.00612). Related: Mündler et al. CFG∩completions [arXiv:2508.10111](https://arxiv.org/abs/2508.10111) (already **Adapted** above) |
+| **Fidelity** | **Adjacent** — diffusion-native constrained decode beyond our cheap hole-admit stand-in |
+| **Code analogue** | `admit_fill` in [`grammar_fastpath/maskgit_constrain.py`](../../src/slm_training/grammar_fastpath/maskgit_constrain.py) |
+
+### PlanBench / generalization gap / CoT brittleness
+
+| | |
+| --- | --- |
+| **Papers** | PlanBench [arXiv:2206.10498](https://arxiv.org/abs/2206.10498); *On the Generalization Gap in LLM Planning* [arXiv:2601.14456](https://arxiv.org/abs/2601.14456); Chain-of-Thoughtlessness / related CoT collapse under complexity |
+| **Fidelity** | **Adjacent** — motivates **schema-level** held-out splits (unseen component families, symbol rename), not only held-out instances |
+| **Proposed** | **E65** + `toy-layout` transfer stress; see [`verifier-guided-repair.md`](verifier-guided-repair.md) §4 |
+
+### LLM+P (neural formalize, symbolic search)
+
+| | |
+| --- | --- |
+| **Paper** | LLM+P / related “LLM writes PDDL, classical planner solves” [arXiv:2304.11477](https://arxiv.org/abs/2304.11477) |
+| **Fidelity** | **Adjacent** — lesson only: do not force the neural model to relearn exact search when a checker/planner is cheap. Here the “planner” stand-in is the OpenUI grammar stack + optional best-of-N, not Fast Downward |
+
+---
+
 ## Systems & data (not papers, but cited lineage)
 
 | System | Role here | Link / path |
@@ -249,10 +319,10 @@ levers **E30–E36** in [`quality-experiment-matrix.md`](quality-experiment-matr
 | Idea | Primary knob | Primary file |
 | --- | --- | --- |
 | MaskGIT unmask | `--parallel-unmask` | `models/parallel_decode.py` |
-| CFG hole admit | `--grammar-fastpath-mode mask\|hybrid` | `grammar_fastpath/maskgit_constrain.py` |
-| DFA force-emit | `--grammar-fastpath` / mode `force\|hybrid` | `grammar_fastpath/force_emit.py` |
-| Valid-only certify | `--grammar-ltr-primary` + repair + finalize | `models/twotower.py` (`_ensure_valid_openui`) |
-| Length-safe LTR | `grammar_ltr_max_tokens` / stages | `models/twotower.py` |
+| CFG hole admit | config `grammar_fastpath_mode` ∈ `{force,mask,hybrid}` | `grammar_fastpath/maskgit_constrain.py` |
+| DFA force-emit | config `grammar_fastpath` + mode `force\|hybrid` | `grammar_fastpath/force_emit.py`, `models/grammar.py` |
+| Valid-only certify | config `grammar_ltr_primary` + repair + finalize | `models/twotower.py` (`_ensure_valid_openui`) |
+| Length-safe LTR | `grammar_ltr_max_tokens` / `grammar_ltr_stages` | `models/twotower.py` |
 | MDLM schedule | `mdlm_schedule` | `models/twotower.py` (`_mask_targets`) |
 | Remasking | `remask_ratio` / `remask_use_gate` / `remask_use_entropy` / `remask_policy` | `models/parallel_decode.py` |
 | Template fill | `template_fill_decode` | `models/template_fill.py` |
@@ -269,6 +339,7 @@ levers **E30–E36** in [`quality-experiment-matrix.md`](quality-experiment-matr
 | Honest V5 champion | E53 | `scripts/run_quality_matrix.py --matrix v6` |
 | Grammar-diffusion honest | E54 / X2–X7 | `models/grammar_diffusion.py` |
 | Latent critic MoE (deferred) | E34 | `research-correction-critics.md` |
+| Verifier-guided repair map | proposed E60–E65 | `verifier-guided-repair.md` |
 
 ---
 
