@@ -29,31 +29,35 @@ pip install -e ".[mcp]"
 pip install -e ".[rico]"
 ```
 
-## Quick start (RICO train / disjoint test)
+## Quick start (train / disjoint test)
 
 ```bash
-# Train corpus from RICO semantic annotations (local fixture slice by default)
-python -m scripts.build_train_data --source rico --version v0
+# High-quality versioned corpus (default: all sources + quality synthesizer)
+python -m scripts.build_train_data --source all --version v1 --synthesizer quality
 
-# Test suites from RICO HF test split fixtures + hand adversarial/ood,
-# with strict leakage checks against the train manifest
-python -m scripts.build_test_data --source both --version v0 \
-  --train-manifest outputs/train_data/v0/manifest.json
+# Fast fixture-only rebuild
+python -m scripts.build_train_data --source fixture --version v0 --synthesizer quality
+
+# Test suites with strict leakage checks against the train manifest
+python -m scripts.build_test_data --source both --version v1 \
+  --train-manifest outputs/train_data/v1/manifest.json
 
 python -m scripts.train_model \
-  --train-dir outputs/train_data/v0 \
+  --train-dir outputs/train_data/v1 \
   --model twotower \
   --context-backend hf \
   --steps 200 \
-  --run-id twotower_rico_v0
+  --run-id twotower_v1
 
 python -m scripts.evaluate_model \
-  --test-dir outputs/test_data/v0 \
+  --test-dir outputs/test_data/v1 \
   --suite smoke \
   --model twotower \
-  --run-id twotower_rico_v0 \
+  --run-id twotower_v1 \
   --fail-under-parse-rate 0.5
 ```
+
+Train artifacts land in `outputs/train_data/<version>/` (`train.jsonl`, `val.jsonl`, `test.jsonl`, `manifest.json`, `stats.json`). The flush pipeline: curated seeds + RICO + Awwwards → deterministic quality synth (layout augment + prompt paraphrase) → per-record DESIGN.md + OpenUI validate → quality gates → stable sort by `id` + content fingerprint.
 
 ```bash
 pytest
