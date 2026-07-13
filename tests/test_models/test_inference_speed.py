@@ -183,8 +183,6 @@ def test_p1_bitexact_vs_legacy_on_force_path() -> None:
 
 def test_probe_chunk_agrees_with_throwaway_full_sync() -> None:
     """Q1: copy-based probe must match throwaway set_prefix across prefixes."""
-    from slm_training.models.grammar import dfa_admits_token
-
     eng = OpenUIIncrementalEngine()
     cases = [
         ("root", "="),
@@ -303,7 +301,7 @@ def test_r1_exact_allowed_skips_admit_probe() -> None:
     assert state.engine is not None
     state.engine.set_prefix(state.prefix_text)
     assert state.engine.terminals_are_exact()
-    with collect_decode_stats() as stats:
+    with collect_decode_stats():
         choice = pick_constrained_token(
             logits,
             tok,
