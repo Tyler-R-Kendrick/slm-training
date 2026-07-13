@@ -177,8 +177,9 @@ def screen_to_openui(
             lines.append(f'{name} = RadioItem("{ph}", "{desc}", "{name}")')
         elif role == "switch":
             ph = f":{name}.label"
-            placeholders.append(ph)
-            lines.append(f'{name} = SwitchItem("{ph}", null, "{name}")')
+            desc = f":{name}.description"
+            placeholders.extend([ph, desc])
+            lines.append(f'{name} = SwitchItem("{ph}", "{desc}", "{name}")')
         elif role == "image":
             alt = f":{name}.alt"
             # ImageBlock src is an asset ref; keep placeholder-shaped path for policy.

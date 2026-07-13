@@ -45,7 +45,7 @@ def _normalize(record: ExampleRecord) -> ExampleRecord:
     program = validate(record.openui)
     placeholders = list(program.placeholders) or extract_placeholders(record.openui)
     openui = program.serialized or record.openui.strip()
-    return ExampleRecord(
+    out = ExampleRecord(
         id=record.id,
         prompt=record.prompt.strip(),
         openui=openui,
@@ -53,7 +53,15 @@ def _normalize(record: ExampleRecord) -> ExampleRecord:
         split=record.split,
         source=record.source,
         meta={**dict(record.meta), "parser": "openuidev/lang-core"},
+        design_md=record.design_md,
     )
+    try:
+        from slm_training.design_md import attach_default_design_md
+
+        out = attach_default_design_md(out)
+    except Exception:  # noqa: BLE001
+        pass
+    return out
 
 
 def _fixture_seeds(config: TestDataConfig) -> list[ExampleRecord]:
@@ -125,9 +133,12 @@ def build_test_data(config: TestDataConfig) -> dict:
         if reasons:
             item = {"id": normalized.id, "reasons": reasons, "source": normalized.source}
             leakage.append(item)
-            # Hand-authored fixtures must never leak; RICO structural collisions are skipped.
-            if normalized.source != "rico":
-                fixture_leaks.append(item)
+            # Hand-authored fixtures must never leak on id/prompt/openui/pair.
+            # design_md-only collisions (shared system text) are skipped like RICO
+            # structural openui collisions — they are not content leakage.
+            hard_reasons = [r for r in reasons if r != "design_md"]
+            if normalized.source != "rico" and hard_reasons:
+                fixture_leaks.append({**item, "reasons": hard_reasons})
             continue
 
         seen_ids.add(normalized.id)

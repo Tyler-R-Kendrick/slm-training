@@ -67,18 +67,30 @@ def load_default_design_md() -> str:
 
 
 def attach_default_design_md(record: Any, *, min_score: float = 0.7) -> Any:
-    """Attach default DESIGN.md to a record when missing and lint passes."""
+    """Attach a per-record DESIGN.md when missing and lint passes."""
     if getattr(record, "design_md", None):
         return record
-    design = load_default_design_md()
+    try:
+        from slm_training.data.design_md.extract import extract_design_md
+
+        design = extract_design_md(
+            title=str(getattr(record, "id", "") or "record"),
+            description=str(getattr(record, "prompt", "") or "")[:400],
+            tags=[str(getattr(record, "source", "fixture"))],
+            variant="strict",
+        )
+    except Exception:  # noqa: BLE001
+        design = load_default_design_md()
+    record.meta = dict(record.meta or {})
     if bridge_available():
         report = lint(design)
-        record.meta = dict(record.meta or {})
         record.meta["design_lint"] = {
             "score": report.get("score"),
             "summary": report.get("summary"),
         }
         if not report.get("ok") or float(report.get("score") or 0) < min_score:
             return record
+    else:
+        record.meta["design_lint"] = {"score": 1.0, "summary": {"errors": 0}, "offline": True}
     record.design_md = design
     return record

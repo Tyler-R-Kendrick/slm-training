@@ -19,6 +19,15 @@ def _ssh_base(host: str, user: str | None, identity: Path | None, port: int) -> 
     return cmd
 
 
+def _shell_path(path: str) -> str:
+    """Quote a path, but keep leading ~/ unquoted so the remote shell expands it."""
+    if path.startswith("~/"):
+        return "~/" + shlex.quote(path[2:])
+    if path == "~":
+        return "~"
+    return shlex.quote(path)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--host", required=True, help="Pod SSH host / connect address")
@@ -43,10 +52,15 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
+    remote_dir = _shell_path(args.remote_dir)
+    run_id = shlex.quote(args.run_id)
+    ckpt = f"outputs/runs/{args.run_id}/checkpoints/last.pt"
+    ckpt_q = shlex.quote(ckpt)
+
     remote_script = f"""
 set -euo pipefail
-mkdir -p {shlex.quote(args.remote_dir)}
-cd {shlex.quote(args.remote_dir)}
+mkdir -p {remote_dir}
+cd {remote_dir}
 if [ ! -d .git ]; then
   git clone --branch {shlex.quote(args.branch)} {shlex.quote(args.repo_url)} .
 else
@@ -55,12 +69,12 @@ fi
 python -m pip install -e '.[torch,hf,rico,dev]'
 (cd tools/openui_bridge && npm ci)
 (cd tools/design_md_bridge && npm ci)
-python -m scripts.build_train_data --source rico --rico-limit 500
-python -m scripts.build_test_data --source rico --rico-limit 100 --train-manifest outputs/train_data/v0/manifest.json
-python -m scripts.train_model --run-id {shlex.quote(args.run_id)} --steps {int(args.steps)} --context-backend {shlex.quote(args.context_backend)}
-python -m scripts.evaluate_model --run-id {shlex.quote(args.run_id)} --suite smoke
-python -m scripts.export_cactus --checkpoint outputs/runs/{shlex.quote(args.run_id)}/checkpoints/model.pt --out-dir outputs/cactus/bundle
-python -m scripts.bench_cactus --checkpoint outputs/runs/{shlex.quote(args.run_id)}/checkpoints/model.pt --with-design-md
+python -m scripts.build_train_data --source rico --rico-limit 500 --version v0
+python -m scripts.build_test_data --source rico --rico-limit 100 --version v0 --train-manifest outputs/train_data/v0/manifest.json
+python -m scripts.train_model --train-dir outputs/train_data/v0 --run-id {run_id} --steps {int(args.steps)} --context-backend {shlex.quote(args.context_backend)}
+python -m scripts.evaluate_model --train-dir outputs/train_data/v0 --test-dir outputs/test_data/v0 --run-id {run_id} --suite smoke
+python -m scripts.export_cactus --checkpoint {ckpt_q} --out-dir outputs/cactus/bundle
+python -m scripts.bench_cactus --checkpoint {ckpt_q} --with-design-md
 """.strip()
 
     ssh = _ssh_base(args.host, args.user, args.identity, args.port)
@@ -68,6 +82,7 @@ python -m scripts.bench_cactus --checkpoint outputs/runs/{shlex.quote(args.run_i
         "ssh": ssh,
         "remote_script": remote_script,
         "pull_dir": str(args.pull_dir),
+        "checkpoint": ckpt,
     }
     if args.dry_run:
         print(json.dumps(plan, indent=2))
@@ -78,7 +93,18 @@ python -m scripts.bench_cactus --checkpoint outputs/runs/{shlex.quote(args.run_i
         return int(proc.returncode)
 
     args.pull_dir.mkdir(parents=True, exist_ok=True)
+    # Expand ~ on the remote via bash for scp source.
     remote_ckpt = f"{args.remote_dir}/outputs/runs/{args.run_id}/checkpoints/"
+    if remote_ckpt.startswith("~/"):
+        # scp does not expand ~; ask remote for absolute path first.
+        home_proc = subprocess.run(
+            ssh + ["bash", "-lc", "printf %s \"$HOME\""],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        home = (home_proc.stdout or "").strip() or "~"
+        remote_ckpt = f"{home}/slm-training/outputs/runs/{args.run_id}/checkpoints/"
     scp = ["scp", "-r", "-P", str(args.port)]
     if args.identity:
         scp.extend(["-i", str(args.identity)])

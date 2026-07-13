@@ -48,6 +48,11 @@ function contentPolicyErrors(node, path = "root", errors = []) {
     const props = node.props || {};
     for (const [key, value] of Object.entries(props)) {
       if (CONTENT_PROPS.has(key)) {
+        // Optional content props may be omitted (null/undefined); required ones
+        // must be placeholders when present.
+        if (value == null) {
+          continue;
+        }
         if (typeof value !== "string" || !PLACEHOLDER_RE.test(value)) {
           errors.push({
             path: `${path}.${key}`,
