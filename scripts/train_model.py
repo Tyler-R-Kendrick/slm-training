@@ -168,6 +168,30 @@ def main(argv: list[str] | None = None) -> int:
         help="torch.compile mode (reduce-overhead uses CUDA graphs on GPU).",
     )
     parser.add_argument(
+        "--fast-train",
+        action="store_true",
+        help=(
+            "Enable train-speed bundle: cache context, fuse LTR loss, "
+            "AMP+compile when the device supports them."
+        ),
+    )
+    parser.add_argument(
+        "--no-cache-context",
+        action="store_true",
+        help="Disable frozen HF / DESIGN.md context caching.",
+    )
+    parser.add_argument(
+        "--no-fuse-ltr",
+        action="store_true",
+        help="Disable fused mask+LTR (use second denoiser forward for LTR).",
+    )
+    parser.add_argument(
+        "--fastpath-aux-weight",
+        type=float,
+        default=0.0,
+        help="Cheap structural force-align aux loss weight (0 disables).",
+    )
+    parser.add_argument(
         "--grad-accum",
         type=int,
         default=1,
@@ -197,6 +221,18 @@ def main(argv: list[str] | None = None) -> int:
         freeze = True
     if args.no_freeze_context:
         freeze = False
+
+    use_amp = bool(args.amp)
+    use_compile = bool(args.compile)
+    cache_context = not bool(args.no_cache_context)
+    fuse_ltr = not bool(args.no_fuse_ltr)
+    if args.fast_train:
+        cache_context = True
+        fuse_ltr = True
+        # AMP only when accel advertises it (cuda/npu); compile still useful on CPU.
+        if accel.amp:
+            use_amp = True
+        use_compile = True
 
     summary = train(
         ModelBuildConfig(
@@ -236,11 +272,15 @@ def main(argv: list[str] | None = None) -> int:
             retrieval_k=args.retrieval_k,
             best_of_n=args.best_of_n,
             use_curriculum=args.curriculum,
-            use_amp=args.amp,
-            use_compile=args.compile,
+            use_amp=use_amp,
+            use_compile=use_compile,
             compile_mode=args.compile_mode,
             grad_accum_steps=args.grad_accum,
             parallel_unmask=args.parallel_unmask,
+            cache_context=cache_context,
+            fuse_ltr_loss=fuse_ltr,
+            grammar_fastpath=True,
+            fastpath_aux_weight=args.fastpath_aux_weight,
             noise_rate=args.noise_rate,
             eval_every=args.eval_every,
             eval_suite=args.eval_suite,

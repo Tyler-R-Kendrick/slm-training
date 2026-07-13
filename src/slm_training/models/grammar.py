@@ -132,20 +132,54 @@ def apply_structural_bias(
     return logits + boost.view(1, 1, -1)  # type: ignore[union-attr]
 
 
+def force_emit_token_id(
+    tokenizer: OpenUITokenizer,
+    prefix_ids: list[int],
+    *,
+    grammar_dsl: str | None = None,
+) -> int | None:
+    """Return a forced next token id when the grammar DFA has a singleton structural emit."""
+    dsl = grammar_dsl or active_dsl()
+    try:
+        from slm_training.grammar_fastpath import engine_for_dsl, force_next_token_id
+    except Exception:  # noqa: BLE001
+        return None
+    engine = engine_for_dsl(dsl)
+    if engine is None:
+        return None
+    prefix_text = tokenizer.decode(prefix_ids)
+    return force_next_token_id(engine, tokenizer, prefix_text)
+
+
 def pick_constrained_token(
     logits_1d,
     tokenizer: OpenUITokenizer,
     prefix_ids: list[int],
     *,
     top_k: int = 16,
+    forced_token_id: int | None = None,
 ) -> int:
     """
     Choose a next token from top-k that does not introduce a hard streaming error.
 
     Probes `prefix + token + "("` so bare identifiers are checked as component names.
     Prefers known components / structural tokens from the active backend.
+
+    When ``forced_token_id`` is set (grammar DFA force-emit), that id is returned
+    if it does not introduce a hard streaming error.
     """
     import torch
+
+    if forced_token_id is not None:
+        trial_ids = prefix_ids + [int(forced_token_id)]
+        text = tokenizer.decode(trial_ids)
+        probe = text if text.endswith(("(", "[", ",", "=", " ", "\n")) else f"{text}("
+        try:
+            status = stream_check(probe)
+            if not status.hard_error:
+                return int(forced_token_id)
+        except Exception:  # noqa: BLE001
+            return int(forced_token_id)
 
     k = min(top_k, int(logits_1d.numel()))
     _values, indices = torch.topk(logits_1d, k=k)
@@ -217,6 +251,7 @@ __all__ = [
     "active_dsl",
     "apply_structural_bias",
     "filter_ids_by_stream",
+    "force_emit_token_id",
     "pick_constrained_token",
     "preferred_components",
     "set_active_dsl",

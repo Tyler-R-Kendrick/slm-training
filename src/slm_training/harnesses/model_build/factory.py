@@ -38,6 +38,13 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "fidelity_loss_weight",
         "ltr_loss_weight",
         "parallel_unmask",
+        "cache_context",
+        "fuse_ltr_loss",
+        "grammar_fastpath",
+        "fastpath_aux_weight",
+        "use_amp",
+        "use_compile",
+        "compile_mode",
     ):
         if hasattr(config, key) and hasattr(cfg, key):
             setattr(cfg, key, getattr(config, key))
@@ -113,6 +120,10 @@ def build_model(
             use_compile=getattr(config, "use_compile", False),
             compile_mode=getattr(config, "compile_mode", "default"),
             use_amp=getattr(config, "use_amp", False),
+            cache_context=getattr(config, "cache_context", True),
+            fuse_ltr_loss=getattr(config, "fuse_ltr_loss", True),
+            grammar_fastpath=getattr(config, "grammar_fastpath", True),
+            fastpath_aux_weight=getattr(config, "fastpath_aux_weight", 0.0),
             seed=config.seed,
         )
         model = TwoTowerModel.from_records(records, config=tt_cfg, device=config.device)

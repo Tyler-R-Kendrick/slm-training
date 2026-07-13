@@ -23,6 +23,15 @@ auto-selects `cuda → npu → cpu` so the same CLI works on GPU/NPU hosts.
 See `outputs/runs/accel_bench.json` — ~11.5 train steps/s, ~39 generate prompts/s
 on 4-vCPU for d_model=128 LTR-primary. Adaptive unmask ≈ topk latency (quality knob).
 
+## Train microbench
+
+`scripts/bench_accel.py --microbench` compares cache/fuse variants and writes
+`docs/design/train-microbench.json`. Winning defaults: `cache_context=True`,
+`fuse_ltr_loss=True`, CLI `--fast-train` (AMP when accel supports it + compile).
+
+Rejected for this tiny stack: QLoRA/Unsloth (denoiser ~1.5M), Cactus-inside-train,
+MoE, per-step linter.
+
 ## E9 follow-up
 
 `qx_e9_accel_combo`: capacity + curriculum + fidelity + schema + retrieval +

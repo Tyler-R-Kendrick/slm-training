@@ -21,6 +21,15 @@ Measured on `twotower_v1_ship` (CPU, scratch context, LTR primary).
 4. **Skip Node finalize validate on generate** (eval already validates); optional via `grammar_finalize_validate`.
 5. **OpenUI parse/validate result cache** in `lang_core`.
 
+## Round 3 — train speed + grammar fast-path
+
+1. **Frozen HF backbone + DESIGN.md string cache** (`cache_context`; `--fast-train`).
+2. **Fused mask+LTR** into one denoiser forward (`fuse_ltr_loss`).
+3. **Vectorized** mask/pad; fidelity via `isin`.
+4. **Grammar force-emit / MaskGIT admit** (`grammar_fastpath`); Cactus kernel sketches under `cactus/kernels/`.
+5. Microbench: `scripts/bench_accel.py --microbench` → `docs/design/train-microbench.json`
+   (scratch fuse+cache ~1.7× vs baseline on this host; HF cache is the production win).
+
 ## Kernel boundary (unchanged)
 
 ```

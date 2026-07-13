@@ -23,6 +23,7 @@ from slm_training.models.context import (
 from slm_training.models.grammar import (
     apply_structural_bias,
     filter_ids_by_stream,
+    force_emit_token_id,
     pick_constrained_token,
     stream_check,
 )
@@ -107,13 +108,26 @@ class TwoTowerConfig:
     use_amp: bool = False
     # MaskGIT parallel unmask: topk | confidence | adaptive (mean-field-lite)
     parallel_unmask: str = "adaptive"
+    # Train-speed: cache frozen HF backbone hiddens + formatted context strings.
+    cache_context: bool = True
+    # Fuse LTR suffix masks into the MaskGIT canvas (one denoiser forward).
+    fuse_ltr_loss: bool = True
+    # Grammar fast-path (decode); aux weight applied in training_loss when >0.
+    grammar_fastpath: bool = True
+    grammar_fastpath_mode: str = "hybrid"  # force | mask | hybrid
+    grammar_draft_window: int = 8
+    fastpath_aux_weight: float = 0.0
+    fastpath_gate_threshold: float = 0.5
 
 
-def _pad_batch(seqs: list[list[int]], pad_id: int) -> torch.Tensor:
-    max_len = max(len(s) for s in seqs)
+def _pad_batch(seqs: list[list[int]], pad_id: int, device: str | torch.device | None = None) -> torch.Tensor:
+    max_len = max((len(s) for s in seqs), default=1)
     out = torch.full((len(seqs), max_len), pad_id, dtype=torch.long)
     for i, s in enumerate(seqs):
-        out[i, : len(s)] = torch.tensor(s, dtype=torch.long)
+        if s:
+            out[i, : len(s)] = torch.as_tensor(s, dtype=torch.long)
+    if device is not None:
+        out = out.to(device)
     return out
 
 
@@ -160,19 +174,37 @@ class TwoTowerModel(nn.Module):
         self.gen_len = self.config.max_target_len
         # Optional retrieval bank: list[(norm_prompt, openui, id)]
         self.skeleton_bank: list[tuple[str, str, str]] = []
+        # Train-time caches (formatted context string keyed by record id).
+        self._context_text_cache: dict[str, str] = {}
+        self._target_ids_cache: dict[str, list[int]] = {}
+        self._placeholder_token_ids: set[int] | None = None
         self.to(device)
+
+    def clear_train_caches(self) -> None:
+        self._context_text_cache.clear()
+        self._target_ids_cache.clear()
+        if is_hf_context(self.context) and hasattr(self.context, "clear_backbone_cache"):
+            self.context.clear_backbone_cache()  # type: ignore[union-attr]
 
     def trainable_parameters(self):
         return (p for p in self.parameters() if p.requires_grad)
 
-    def _encode_context(self, prompts: list[str]) -> tuple[torch.Tensor, torch.Tensor]:
+    def _encode_context(
+        self,
+        prompts: list[str],
+        *,
+        cache_keys: list[str] | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         if is_hf_context(self.context):
             assert isinstance(self.context, HFContextEncoder)
-            # HFContextEncoder freezes the backbone but keeps proj trainable.
+            self.context.cache_backbone = bool(
+                getattr(self.config, "cache_context", True)
+            )
             return self.context.forward_prompts(
                 prompts,
                 max_len=self.config.max_prompt_len,
                 device=self.device_name,
+                cache_keys=cache_keys if self.config.cache_context else None,
             )
         assert isinstance(self.context, ScratchContextEncoder)
         enable_grad = (not self.config.freeze_context) and self.training
@@ -188,24 +220,52 @@ class TwoTowerModel(nn.Module):
     def _mask_targets(
         self, target_ids: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Return noisy_ids and boolean mask of positions to predict."""
+        """Return noisy_ids and boolean mask of positions to predict (vectorized)."""
         bsz, seq = target_ids.shape
         device = target_ids.device
-        frozen = {self.tokenizer.pad_id, self.tokenizer.bos_id}
-        noise = torch.zeros(bsz, seq, dtype=torch.bool, device=device)
+        frozen = target_ids.eq(self.tokenizer.pad_id) | target_ids.eq(self.tokenizer.bos_id)
+        # Sample a per-row mask rate, then Bernoulli over valid positions.
+        rates = torch.empty(bsz, 1, device=device).uniform_(
+            self.config.mask_min, self.config.mask_max
+        )
+        rand = torch.rand(bsz, seq, device=device)
+        noise = (rand < rates) & (~frozen)
+        # Ensure at least one predictable token per non-empty row.
         for i in range(bsz):
-            valid = [
-                j for j in range(seq) if int(target_ids[i, j]) not in frozen
-            ]
-            if not valid:
+            if frozen[i].all():
                 continue
-            rate = self._rng.uniform(self.config.mask_min, self.config.mask_max)
-            k = max(1, int(math.ceil(rate * len(valid))))
-            chosen = self._rng.sample(valid, k=min(k, len(valid)))
-            noise[i, chosen] = True
+            if not bool(noise[i].any()):
+                valid = (~frozen[i]).nonzero(as_tuple=False).view(-1)
+                if valid.numel():
+                    noise[i, int(valid[self._rng.randrange(valid.numel())])] = True
         noisy = target_ids.clone()
         noisy[noise] = self.tokenizer.mask_id
         return noisy, noise
+
+    def _merge_ltr_suffix_mask(
+        self, target_ids: torch.Tensor, noisy: torch.Tensor, predict_mask: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Force-mask a random suffix into the same canvas (single-forward LTR)."""
+        bsz, seq = target_ids.shape
+        for i in range(bsz):
+            cut = self._rng.randint(1, max(1, seq - 1))
+            for j in range(cut, seq):
+                if int(target_ids[i, j]) == self.tokenizer.pad_id:
+                    break
+                predict_mask[i, j] = True
+                noisy[i, j] = self.tokenizer.mask_id
+        return noisy, predict_mask
+
+    def _placeholder_ids(self) -> set[int]:
+        if self._placeholder_token_ids is None:
+            ids: set[int] = set()
+            for tok, tid in self.tokenizer.token_to_id.items():
+                if tok.startswith(":") and "." in tok:
+                    ids.add(tid)
+                elif tok.startswith('":') or (tok.startswith('"') and ":" in tok):
+                    ids.add(tid)
+            self._placeholder_token_ids = ids
+        return self._placeholder_token_ids
 
     def forward(self, batch: list[ExampleRecord]) -> float:
         self.train()
@@ -214,17 +274,43 @@ class TwoTowerModel(nn.Module):
 
     def training_loss(self, batch: list[ExampleRecord]) -> torch.Tensor:
         self.train()
-        prompts = [
-            self._format_one_context(r.prompt, r.design_md, query_prompt=r.prompt)
-            for r in batch
-        ]
-        targets = [
-            self.tokenizer.encode(r.openui)[: self.config.max_target_len]
-            for r in batch
-        ]
-        target_ids = _pad_batch(targets, self.tokenizer.pad_id).to(self.device_name)
-        ctx, ctx_pad = self._encode_context(prompts)
+        cache_on = bool(getattr(self.config, "cache_context", True))
+        prompts: list[str] = []
+        cache_keys: list[str] = []
+        targets: list[list[int]] = []
+        for r in batch:
+            key = r.id or r.prompt
+            cache_keys.append(key)
+            if cache_on and key in self._context_text_cache:
+                prompts.append(self._context_text_cache[key])
+            else:
+                text = self._format_one_context(
+                    r.prompt, r.design_md, query_prompt=r.prompt
+                )
+                if cache_on:
+                    self._context_text_cache[key] = text
+                prompts.append(text)
+            if cache_on and key in self._target_ids_cache:
+                targets.append(self._target_ids_cache[key])
+            else:
+                ids = self.tokenizer.encode(r.openui)[: self.config.max_target_len]
+                if cache_on:
+                    self._target_ids_cache[key] = ids
+                targets.append(ids)
+
+        target_ids = _pad_batch(
+            targets, self.tokenizer.pad_id, device=self.device_name
+        )
+        ctx, ctx_pad = self._encode_context(prompts, cache_keys=cache_keys)
         noisy, predict_mask = self._mask_targets(target_ids)
+
+        ltr_w = float(self.config.ltr_loss_weight or 0.0)
+        fuse = bool(getattr(self.config, "fuse_ltr_loss", True))
+        if ltr_w > 0.0 and target_ids.size(1) >= 2 and fuse:
+            noisy, predict_mask = self._merge_ltr_suffix_mask(
+                target_ids, noisy, predict_mask
+            )
+
         logits = self.denoiser(
             noisy, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
         )
@@ -235,42 +321,56 @@ class TwoTowerModel(nn.Module):
 
         fid_w = float(getattr(self.config, "fidelity_loss_weight", 0.0) or 0.0)
         if fid_w > 0.0 and predict_mask.any():
-            # Upweight CE on gold placeholder string tokens (":ns.slot").
-            ph_mask = torch.zeros_like(predict_mask)
-            for i in range(target_ids.size(0)):
-                for j in range(target_ids.size(1)):
-                    if not bool(predict_mask[i, j].item()):
-                        continue
-                    tok = self.tokenizer.id_to_token.get(int(target_ids[i, j]), "")
-                    if '":' in tok or (tok.startswith(":") and "." in tok):
-                        ph_mask[i, j] = True
-            if ph_mask.any():
-                fid_loss = F.cross_entropy(logits[ph_mask], target_ids[ph_mask])
-                mask_loss = mask_loss + fid_w * fid_loss
+            ph_ids = self._placeholder_ids()
+            if ph_ids:
+                ph_mask = predict_mask.clone()
+                # Vectorized membership via isin.
+                ph_tensor = torch.tensor(
+                    sorted(ph_ids), device=target_ids.device, dtype=target_ids.dtype
+                )
+                ph_mask &= torch.isin(target_ids, ph_tensor)
+                if ph_mask.any():
+                    fid_loss = F.cross_entropy(logits[ph_mask], target_ids[ph_mask])
+                    mask_loss = mask_loss + fid_w * fid_loss
 
-        ltr_w = float(self.config.ltr_loss_weight or 0.0)
-        if ltr_w <= 0.0 or target_ids.size(1) < 2:
-            return mask_loss
+        # Legacy second-forward LTR when fuse disabled.
+        if ltr_w > 0.0 and target_ids.size(1) >= 2 and not fuse:
+            bsz, seq = target_ids.shape
+            ltr_noisy = target_ids.clone()
+            ltr_mask = torch.zeros_like(target_ids, dtype=torch.bool)
+            for i in range(bsz):
+                cut = self._rng.randint(1, max(1, seq - 1))
+                ltr_noisy[i, cut:] = self.tokenizer.mask_id
+                for j in range(cut, seq):
+                    if int(target_ids[i, j]) == self.tokenizer.pad_id:
+                        break
+                    ltr_mask[i, j] = True
+            ltr_logits = self.denoiser(
+                ltr_noisy, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
+            )
+            if ltr_mask.any():
+                ltr_loss = F.cross_entropy(ltr_logits[ltr_mask], target_ids[ltr_mask])
+            else:
+                ltr_loss = mask_loss * 0.0
+            mask_loss = mask_loss + ltr_w * ltr_loss
+        elif ltr_w > 0.0 and fuse:
+            # Fused path already includes suffix masks; scale total lightly by ltr_w
+            # so turning LTR up still emphasizes suffix learning without 2× FLOPs.
+            mask_loss = mask_loss * (1.0 + 0.25 * ltr_w)
 
-        # Prefix-LM style: mask a random suffix and predict those tokens.
-        bsz, seq = target_ids.shape
-        ltr_noisy = target_ids.clone()
-        ltr_mask = torch.zeros_like(target_ids, dtype=torch.bool)
-        for i in range(bsz):
-            cut = self._rng.randint(1, max(1, seq - 1))
-            ltr_noisy[i, cut:] = self.tokenizer.mask_id
-            for j in range(cut, seq):
-                if int(target_ids[i, j]) == self.tokenizer.pad_id:
-                    break
-                ltr_mask[i, j] = True
-        ltr_logits = self.denoiser(
-            ltr_noisy, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
-        )
-        if ltr_mask.any():
-            ltr_loss = F.cross_entropy(ltr_logits[ltr_mask], target_ids[ltr_mask])
-        else:
-            ltr_loss = mask_loss * 0.0
-        return mask_loss + ltr_w * ltr_loss
+        aux_w = float(getattr(self.config, "fastpath_aux_weight", 0.0) or 0.0)
+        if aux_w > 0.0 and getattr(self.config, "grammar_fastpath", False):
+            try:
+                from slm_training.grammar_fastpath.losses import force_align_loss
+
+                aux = force_align_loss(
+                    logits, target_ids, self.tokenizer, pad_id=self.tokenizer.pad_id
+                )
+                mask_loss = mask_loss + aux_w * aux
+            except Exception:  # noqa: BLE001
+                pass
+
+        return mask_loss
 
     def _format_one_context(
         self,
@@ -318,25 +418,44 @@ class TwoTowerModel(nn.Module):
     ) -> torch.Tensor:
         """Fill remaining masks left-to-right with streaming-parser filtering."""
         length = ids.size(1)
+        use_fast = bool(getattr(self.config, "grammar_fastpath", True))
         for t in range(length):
             if not bool(unknown[0, t].item()):
                 continue
-            logits = self.denoiser(
-                ids, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
-            )
-            if self.config.structural_bias:
-                logits = apply_structural_bias(
-                    logits,
-                    self.tokenizer,
-                    bias=self.config.structural_bias,
-                )
             prefix = ids[0, :t].tolist()
-            choice = pick_constrained_token(
-                logits[0, t],
-                self.tokenizer,
-                prefix,
-                top_k=self.config.grammar_top_k,
+            forced = (
+                force_emit_token_id(self.tokenizer, prefix)
+                if use_fast
+                else None
             )
+            if forced is None:
+                logits = self.denoiser(
+                    ids, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
+                )
+                if self.config.structural_bias:
+                    logits = apply_structural_bias(
+                        logits,
+                        self.tokenizer,
+                        bias=self.config.structural_bias,
+                    )
+                choice = pick_constrained_token(
+                    logits[0, t],
+                    self.tokenizer,
+                    prefix,
+                    top_k=self.config.grammar_top_k,
+                )
+            else:
+                # Zero logits stand-in; forced id short-circuits inside picker.
+                choice = pick_constrained_token(
+                    torch.zeros(
+                        self.tokenizer.vocab_size,
+                        device=ids.device,
+                    ),
+                    self.tokenizer,
+                    prefix,
+                    top_k=self.config.grammar_top_k,
+                    forced_token_id=forced,
+                )
             ids[0, t] = choice
             unknown[0, t] = False
             if choice == self.tokenizer.eos_id:
@@ -413,37 +532,70 @@ class TwoTowerModel(nn.Module):
                         pad[~active] = tok.pad_id
                     ids = torch.cat([ids, pad], dim=1)
 
+            use_fast = bool(getattr(self.config, "grammar_fastpath", True))
             for t in range(start_t, canvas):
                 if not bool(active.any()):
                     break
                 active_idx = active.nonzero(as_tuple=False).flatten()
-                if active_idx.numel() == bsz:
-                    logits = self.denoiser(
-                        ids, ctx, pad_id=tok.pad_id, ctx_pad_mask=ctx_pad
-                    )
-                    if bias:
-                        logits = apply_structural_bias(logits, tok, bias=bias)
-                    row = logits[:, t, :].clone()
+                forced_map: dict[int, int] = {}
+                need_model: list[int] = []
+                if use_fast:
+                    for bi in active_idx.tolist():
+                        forced = force_emit_token_id(
+                            tok, ids[bi, :t].tolist()
+                        )
+                        if forced is not None:
+                            forced_map[bi] = forced
+                        else:
+                            need_model.append(bi)
                 else:
-                    sub_ids = ids.index_select(0, active_idx)
-                    sub_ctx = ctx.index_select(0, active_idx)
-                    sub_pad = ctx_pad.index_select(0, active_idx)
-                    logits = self.denoiser(
-                        sub_ids, sub_ctx, pad_id=tok.pad_id, ctx_pad_mask=sub_pad
+                    need_model = active_idx.tolist()
+
+                pred = ids[:, t].clone()
+                for bi, fid in forced_map.items():
+                    pred[bi] = fid
+
+                if need_model:
+                    need_t = torch.tensor(
+                        need_model, device=device, dtype=torch.long
                     )
-                    if bias:
-                        logits = apply_structural_bias(logits, tok, bias=bias)
-                    row = torch.full(
-                        (bsz, logits.size(-1)),
-                        -1e9,
-                        device=device,
-                        dtype=logits.dtype,
-                    )
-                    row.index_copy_(0, active_idx, logits[:, t, :])
-                row = row.clone()
-                row[:, tok.mask_id] = -1e9
-                row[:, tok.pad_id] = -1e9
-                pred = row.argmax(dim=-1)
+                    if need_t.numel() == bsz:
+                        logits = self.denoiser(
+                            ids, ctx, pad_id=tok.pad_id, ctx_pad_mask=ctx_pad
+                        )
+                        if bias:
+                            logits = apply_structural_bias(
+                                logits, tok, bias=bias
+                            )
+                        row = logits[:, t, :].clone()
+                    else:
+                        sub_ids = ids.index_select(0, need_t)
+                        sub_ctx = ctx.index_select(0, need_t)
+                        sub_pad = ctx_pad.index_select(0, need_t)
+                        logits = self.denoiser(
+                            sub_ids,
+                            sub_ctx,
+                            pad_id=tok.pad_id,
+                            ctx_pad_mask=sub_pad,
+                        )
+                        if bias:
+                            logits = apply_structural_bias(
+                                logits, tok, bias=bias
+                            )
+                        row = torch.full(
+                            (bsz, logits.size(-1)),
+                            -1e9,
+                            device=device,
+                            dtype=logits.dtype,
+                        )
+                        row.index_copy_(0, need_t, logits[:, t, :])
+                    row = row.clone()
+                    row[:, tok.mask_id] = -1e9
+                    row[:, tok.pad_id] = -1e9
+                    model_pred = row.argmax(dim=-1)
+                    for bi in need_model:
+                        pred[bi] = model_pred[bi]
+
                 ids[:, t] = torch.where(active, pred, ids[:, t])
                 hit_eos = active & pred.eq(tok.eos_id)
                 if bool(hit_eos.any()) and t + 1 < canvas:
@@ -681,14 +833,42 @@ class TwoTowerModel(nn.Module):
                 mode=mode,
             )
             newly: list[int] = []
+            use_fast = bool(getattr(self.config, "grammar_fastpath", True))
+            mode = str(
+                getattr(self.config, "grammar_fastpath_mode", "hybrid") or "hybrid"
+            )
+            admit_on = use_grammar and use_fast and mode in {"mask", "hybrid"}
+            engine = None
+            if admit_on:
+                try:
+                    from slm_training.grammar_fastpath import admit_fill, engine_for_dsl
+                    from slm_training.models.grammar import active_dsl
+
+                    engine = engine_for_dsl(active_dsl())
+                    if engine is None:
+                        admit_on = False
+                except Exception:  # noqa: BLE001
+                    engine = None
+                    admit_on = False
+
             for idx in flat_idx:
                 b = idx // length
                 t = idx % length
-                if unknown[b, t]:
-                    ids[b, t] = pred[b, t]
-                    unknown[b, t] = False
-                    if b == 0:
-                        newly.append(t)
+                if not unknown[b, t]:
+                    continue
+                candidate = int(pred[b, t].item())
+                if admit_on and engine is not None and b == 0:
+                    trial = ids[0].tolist()
+                    trial[t] = candidate
+                    try:
+                        if not admit_fill(engine, self.tokenizer, trial):
+                            continue  # leave masked; try later / repair
+                    except Exception:  # noqa: BLE001
+                        pass
+                ids[b, t] = candidate
+                unknown[b, t] = False
+                if b == 0:
+                    newly.append(t)
             _ = remaining  # kept for readability / future logging
 
             for b in range(ids.size(0)):

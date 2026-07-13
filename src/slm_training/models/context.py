@@ -94,6 +94,12 @@ class HFContextEncoder(nn.Module):
         if freeze:
             for p in self.backbone.parameters():
                 p.requires_grad = False
+        # Frozen-backbone cache: key -> (hidden_cpu [S,H], pad_mask_cpu [S])
+        self._backbone_cache: dict[str, tuple[torch.Tensor, torch.Tensor]] = {}
+        self.cache_backbone: bool = True
+
+    def clear_backbone_cache(self) -> None:
+        self._backbone_cache.clear()
 
     def forward_prompts(
         self,
@@ -103,9 +109,75 @@ class HFContextEncoder(nn.Module):
         max_len: int | None = None,
         pad_id: int | None = None,
         device: str | torch.device = "cpu",
+        cache_keys: list[str] | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         _ = encode_fn, pad_id
         length = max_len or self.max_len
+        use_cache = (
+            bool(self.cache_backbone)
+            and self.freeze
+            and cache_keys is not None
+            and len(cache_keys) == len(prompts)
+        )
+        if use_cache:
+            assert cache_keys is not None
+            hiddens: list[torch.Tensor] = []
+            pads: list[torch.Tensor] = []
+            missing_idx: list[int] = []
+            missing_prompts: list[str] = []
+            missing_keys: list[str] = []
+            placeholders: list[tuple[torch.Tensor, torch.Tensor] | None] = [
+                None
+            ] * len(prompts)
+            for i, (key, prompt) in enumerate(zip(cache_keys, prompts)):
+                hit = self._backbone_cache.get(key)
+                if hit is not None:
+                    placeholders[i] = hit
+                else:
+                    missing_idx.append(i)
+                    missing_prompts.append(prompt)
+                    missing_keys.append(key)
+            if missing_prompts:
+                encoded = self.tokenizer(
+                    missing_prompts,
+                    padding=True,
+                    truncation=True,
+                    max_length=length,
+                    return_tensors="pt",
+                )
+                encoded = {k: v.to(device) for k, v in encoded.items()}
+                with torch.no_grad():
+                    out = self.backbone(**encoded)
+                    hidden_b = out.last_hidden_state
+                pad_b = encoded["attention_mask"].eq(0)
+                for j, key in enumerate(missing_keys):
+                    row_h = hidden_b[j].detach().cpu()
+                    row_p = pad_b[j].detach().cpu()
+                    # Trim trailing pad for compact cache.
+                    valid = int((~row_p).sum().item()) or 1
+                    row_h = row_h[:valid].contiguous()
+                    row_p = row_p[:valid].contiguous()
+                    self._backbone_cache[key] = (row_h, row_p)
+                    placeholders[missing_idx[j]] = (row_h, row_p)
+            # Pad batch of variable-length cached rows.
+            assert all(p is not None for p in placeholders)
+            max_s = max(int(p[0].size(0)) for p in placeholders)  # type: ignore[index]
+            hidden_dim = int(placeholders[0][0].size(-1))  # type: ignore[index]
+            hidden = torch.zeros(
+                len(prompts), max_s, hidden_dim, device=device, dtype=self.proj.weight.dtype
+            )
+            pad_mask = torch.ones(
+                len(prompts), max_s, dtype=torch.bool, device=device
+            )
+            for i, packed in enumerate(placeholders):
+                assert packed is not None
+                row_h, row_p = packed
+                sl = row_h.size(0)
+                hidden[i, :sl] = row_h.to(device=device, dtype=hidden.dtype)
+                pad_mask[i, :sl] = row_p.to(device=device)
+            ctx = self.proj(hidden)
+            return ctx, pad_mask
+
         encoded = self.tokenizer(
             prompts,
             padding=True,

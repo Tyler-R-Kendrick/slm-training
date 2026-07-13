@@ -64,6 +64,11 @@ class ModelBuildConfig:
     grad_accum_steps: int = 1
     parallel_unmask: str = "adaptive"
     parallel_workers: int = 2
+    # Train-speed bundle (also set via --fast-train)
+    cache_context: bool = True
+    fuse_ltr_loss: bool = True
+    grammar_fastpath: bool = True
+    fastpath_aux_weight: float = 0.0
 
     @property
     def run_dir(self) -> Path:
