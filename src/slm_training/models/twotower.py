@@ -1655,6 +1655,176 @@ class TwoTowerModel(nn.Module):
             )
         return out
 
+    def _remask_expand_positions(
+        self,
+        *,
+        ids: torch.Tensor,
+        unknown: torch.Tensor,
+        conf: torch.Tensor,
+        probs: torch.Tensor,
+        grammar_remask: list[int],
+        tracker: "StabilityTracker | None",
+        remask_ratio: float,
+        ctx: torch.Tensor | None,
+        ctx_pad: torch.Tensor | None,
+        allow_model_forwards: bool,
+        stats: "SpeculativeStats | None" = None,
+    ) -> set[tuple[int, int]] | None:
+        """
+        Select remask positions (E22/E33/E50/E70) for the given canvas.
+
+        Shared between the real decode loop and E74 successor speculation so
+        speculated canvases can reproduce the remask deterministically. When
+        the configured policy needs extra model forwards (trust gate, CoRe
+        perturbation) and ``allow_model_forwards`` is False, returns ``None``
+        — the caller must treat the remask as unpredictable.
+        """
+        remask = list(grammar_remask)
+        known = ~unknown
+        remask_policy = str(
+            getattr(self.config, "remask_policy", "confidence") or "confidence"
+        ).lower()
+        use_gate = bool(getattr(self.config, "remask_use_gate", False))
+        needs_forwards = use_gate or remask_policy in {"core", "combined"}
+        if needs_forwards and not allow_model_forwards:
+            return None
+        use_policy = bool(
+            use_gate
+            or getattr(self.config, "remask_use_entropy", False)
+            or remask
+            or remask_policy in {"core", "combined", "stability"}
+        )
+        gate_trust = None
+        entropy = None
+        instability = None
+        if use_policy or remask_policy in {"core", "combined"}:
+            log_probs = torch.log(probs.clamp(min=1e-9))
+            entropy = -(probs * log_probs).sum(dim=-1)
+            if use_gate:
+                try:
+                    _logits_h, hidden = self.denoiser(
+                        ids,
+                        ctx,
+                        pad_id=self.tokenizer.pad_id,
+                        ctx_pad_mask=ctx_pad,
+                        return_hidden=True,
+                    )
+                    if stats is not None:
+                        stats.denoiser_forwards += 1
+                    gate_trust = self.trust_gate(hidden)
+                except Exception:  # noqa: BLE001
+                    gate_trust = None
+            if remask_policy in {"core", "combined"}:
+                try:
+                    perturb_frac = float(
+                        getattr(self.config, "core_perturb_frac", 0.25) or 0.25
+                    )
+                    ids_pert = perturb_known_neighbors(
+                        ids,
+                        known,
+                        mask_id=self.tokenizer.mask_id,
+                        perturb_frac=perturb_frac,
+                        protect_bos=True,
+                    )
+                    logits_pert = self.denoiser(
+                        ids_pert,
+                        ctx,
+                        pad_id=self.tokenizer.pad_id,
+                        ctx_pad_mask=ctx_pad,
+                    )
+                    if stats is not None:
+                        stats.denoiser_forwards += 1
+                    probs_pert = F.softmax(logits_pert, dim=-1)
+                    instability = core_instability_scores(
+                        probs, probs_pert, ids, known
+                    )
+                except Exception:  # noqa: BLE001
+                    instability = None
+            gate_threshold = float(
+                getattr(self.config, "fastpath_gate_threshold", 0.5) or 0.5
+            )
+            if remask_policy == "stability":
+                # E70: rank remasks by low persistence + high JSD.
+                remask_flat = select_remask_stability_indices(
+                    conf,
+                    known,
+                    remask_ratio=remask_ratio,
+                    protect_bos=True,
+                    instability=tracker.instability_scores()
+                    if tracker is not None
+                    else None,
+                    grammar_positions=remask,
+                    gate_trust=gate_trust,
+                    entropy=entropy
+                    if bool(getattr(self.config, "remask_use_entropy", False))
+                    else None,
+                    gate_threshold=gate_threshold,
+                    combine_policy=bool(
+                        use_gate or getattr(self.config, "remask_use_entropy", False)
+                    ),
+                )
+            elif remask_policy in {"core", "combined"}:
+                remask_flat = select_remask_core_indices(
+                    conf,
+                    known,
+                    remask_ratio=remask_ratio,
+                    protect_bos=True,
+                    instability=instability,
+                    grammar_positions=remask,
+                    gate_trust=gate_trust,
+                    entropy=entropy
+                    if bool(getattr(self.config, "remask_use_entropy", False))
+                    or remask_policy == "combined"
+                    else None,
+                    gate_threshold=gate_threshold,
+                    combine_policy=remask_policy == "combined",
+                )
+            else:
+                remask_flat = select_remask_policy_indices(
+                    conf,
+                    known,
+                    remask_ratio=remask_ratio,
+                    protect_bos=True,
+                    grammar_positions=remask,
+                    gate_trust=gate_trust,
+                    entropy=entropy
+                    if bool(getattr(self.config, "remask_use_entropy", False))
+                    or gate_trust is not None
+                    else None,
+                    gate_threshold=gate_threshold,
+                )
+        else:
+            remask_flat = select_remask_indices(
+                conf,
+                known,
+                remask_ratio=remask_ratio,
+                protect_bos=True,
+            )
+        length = ids.size(-1)
+        remask_span = str(getattr(self.config, "remask_span", "token") or "token")
+        expand_positions: set[tuple[int, int]] = set()
+        for idx in remask_flat:
+            b = idx // length
+            t = idx % length
+            if t == 0:
+                continue
+            expand_positions.add((b, t))
+            if remask_span == "statement":
+                try:
+                    from slm_training.models.dsl_tokenizer import (
+                        is_dsl_native_tokenizer,
+                    )
+
+                    if is_dsl_native_tokenizer(self.tokenizer):
+                        span = self.tokenizer.spanning_statement(ids[b].tolist(), t)
+                        if span is not None:
+                            for tt in range(span[0], span[1]):
+                                if tt != 0:
+                                    expand_positions.add((b, tt))
+                except Exception:  # noqa: BLE001
+                    pass
+        return expand_positions
+
     def _generate_maskgit_one(
         self,
         ctx: torch.Tensor,
@@ -1935,6 +2105,18 @@ class TwoTowerModel(nn.Module):
                     def _speculate() -> SuccessorCache | None:
                         if not speculate or step >= steps - 1:
                             return None
+                        # Skip speculation when remask needs extra model forwards
+                        # (trust gate / CoRe): those canvases cannot be predicted
+                        # without paying the remask cost, so the cache would miss.
+                        remask_policy = str(
+                            getattr(self.config, "remask_policy", "confidence")
+                            or "confidence"
+                        ).lower()
+                        remask_needs_forward = bool(
+                            getattr(self.config, "remask_use_gate", False)
+                        ) or remask_policy in {"core", "combined"}
+                        if remask_ratio > 0.0 and remask_needs_forward:
+                            return None
                         outcome_canvases = enumerate_outcome_canvases(
                             ids,
                             ordered,
@@ -1946,9 +2128,38 @@ class TwoTowerModel(nn.Module):
                                     or 2
                                 ),
                             ),
+                            eos_id=self.tokenizer.eos_id,
+                            pad_id=self.tokenizer.pad_id,
                         )
                         if not outcome_canvases:
                             return None
+                        # Simulate the deterministic post-commit remask so the
+                        # speculated canvas matches the real next-step canvas.
+                        # Policies needing extra forwards (gate/CoRe) return
+                        # None → cache pre-remask canvases (honest misses).
+                        if remask_ratio > 0.0:
+                            simulated: list[tuple[int, torch.Tensor]] = []
+                            for j, canvas in outcome_canvases:
+                                unknown_out = canvas.eq(self.tokenizer.mask_id)
+                                expand = self._remask_expand_positions(
+                                    ids=canvas,
+                                    unknown=unknown_out,
+                                    conf=conf,
+                                    probs=probs,
+                                    grammar_remask=[],
+                                    tracker=tracker,
+                                    remask_ratio=remask_ratio,
+                                    ctx=ctx,
+                                    ctx_pad=ctx_pad,
+                                    allow_model_forwards=False,
+                                    stats=None,
+                                )
+                                if expand:
+                                    canvas = canvas.clone()
+                                    for b, t in expand:
+                                        canvas[b, t] = self.tokenizer.mask_id
+                                simulated.append((j, canvas))
+                            outcome_canvases = simulated
                         batch = torch.cat([c for _, c in outcome_canvases], dim=0)
                         k = batch.size(0)
                         logits_k, hidden_k, attn_k = self.denoiser(
@@ -2054,163 +2265,28 @@ class TwoTowerModel(nn.Module):
             else:
                 remask = []
 
-            # E22 / E33 / E50: remask committed tokens → mask (T2M; never token-edit).
+            # E22 / E33 / E50 / E70: remask committed tokens → mask (T2M; never
+            # token-edit). Selection is shared with E74 successor speculation
+            # via _remask_expand_positions so speculated canvases match.
             if remask_ratio > 0.0 and step < steps - 1:
-                known = ~unknown
-                remask_policy = str(
-                    getattr(self.config, "remask_policy", "confidence") or "confidence"
-                ).lower()
-                use_policy = bool(
-                    getattr(self.config, "remask_use_gate", False)
-                    or getattr(self.config, "remask_use_entropy", False)
-                    or remask
-                    or remask_policy in {"core", "combined", "stability"}
+                expand_positions = self._remask_expand_positions(
+                    ids=ids,
+                    unknown=unknown,
+                    conf=conf,
+                    probs=probs,
+                    grammar_remask=remask,
+                    tracker=tracker,
+                    remask_ratio=remask_ratio,
+                    ctx=ctx,
+                    ctx_pad=ctx_pad,
+                    allow_model_forwards=True,
+                    stats=stats,
                 )
-                gate_trust = None
-                entropy = None
-                instability = None
-                if use_policy or remask_policy in {"core", "combined"}:
-                    log_probs = torch.log(probs.clamp(min=1e-9))
-                    entropy = -(probs * log_probs).sum(dim=-1)
-                    if bool(getattr(self.config, "remask_use_gate", False)):
-                        try:
-                            _logits_h, hidden = self.denoiser(
-                                ids,
-                                ctx,
-                                pad_id=self.tokenizer.pad_id,
-                                ctx_pad_mask=ctx_pad,
-                                return_hidden=True,
-                            )
-                            stats.denoiser_forwards += 1
-                            gate_trust = self.trust_gate(hidden)
-                        except Exception:  # noqa: BLE001
-                            gate_trust = None
-                    if remask_policy in {"core", "combined"}:
-                        try:
-                            perturb_frac = float(
-                                getattr(self.config, "core_perturb_frac", 0.25) or 0.25
-                            )
-                            ids_pert = perturb_known_neighbors(
-                                ids,
-                                known,
-                                mask_id=self.tokenizer.mask_id,
-                                perturb_frac=perturb_frac,
-                                protect_bos=True,
-                            )
-                            logits_pert = self.denoiser(
-                                ids_pert,
-                                ctx,
-                                pad_id=self.tokenizer.pad_id,
-                                ctx_pad_mask=ctx_pad,
-                            )
-                            stats.denoiser_forwards += 1
-                            probs_pert = F.softmax(logits_pert, dim=-1)
-                            instability = core_instability_scores(
-                                probs, probs_pert, ids, known
-                            )
-                        except Exception:  # noqa: BLE001
-                            instability = None
-                    if remask_policy == "stability":
-                        # E70: rank remasks by low persistence + high JSD.
-                        remask_flat = select_remask_stability_indices(
-                            conf,
-                            known,
-                            remask_ratio=remask_ratio,
-                            protect_bos=True,
-                            instability=tracker.instability_scores()
-                            if tracker is not None
-                            else None,
-                            grammar_positions=remask,
-                            gate_trust=gate_trust,
-                            entropy=entropy
-                            if bool(getattr(self.config, "remask_use_entropy", False))
-                            else None,
-                            gate_threshold=float(
-                                getattr(self.config, "fastpath_gate_threshold", 0.5)
-                                or 0.5
-                            ),
-                            combine_policy=bool(
-                                getattr(self.config, "remask_use_gate", False)
-                                or getattr(self.config, "remask_use_entropy", False)
-                            ),
-                        )
-                    elif remask_policy in {"core", "combined"}:
-                        remask_flat = select_remask_core_indices(
-                            conf,
-                            known,
-                            remask_ratio=remask_ratio,
-                            protect_bos=True,
-                            instability=instability,
-                            grammar_positions=remask,
-                            gate_trust=gate_trust,
-                            entropy=entropy
-                            if bool(getattr(self.config, "remask_use_entropy", False))
-                            or remask_policy == "combined"
-                            else None,
-                            gate_threshold=float(
-                                getattr(self.config, "fastpath_gate_threshold", 0.5)
-                                or 0.5
-                            ),
-                            combine_policy=remask_policy == "combined",
-                        )
-                    else:
-                        remask_flat = select_remask_policy_indices(
-                            conf,
-                            known,
-                            remask_ratio=remask_ratio,
-                            protect_bos=True,
-                            grammar_positions=remask,
-                            gate_trust=gate_trust,
-                            entropy=entropy
-                            if bool(getattr(self.config, "remask_use_entropy", False))
-                            or gate_trust is not None
-                            else None,
-                            gate_threshold=float(
-                                getattr(self.config, "fastpath_gate_threshold", 0.5)
-                                or 0.5
-                            ),
-                        )
-                else:
-                    remask_flat = select_remask_indices(
-                        conf,
-                        known,
-                        remask_ratio=remask_ratio,
-                        protect_bos=True,
-                    )
-                remask_span = str(getattr(self.config, "remask_span", "token") or "token")
-                # E51: remask_to_mask is mandatory (T2M); token-edit paths are rejected.
-                remask_to_mask = bool(getattr(self.config, "remask_to_mask", True))
-                expand_positions: set[tuple[int, int]] = set()
-                for idx in remask_flat:
-                    b = idx // length
-                    t = idx % length
-                    if t == 0:
-                        continue
-                    expand_positions.add((b, t))
-                    if remask_span == "statement":
-                        try:
-                            from slm_training.models.dsl_tokenizer import (
-                                is_dsl_native_tokenizer,
-                            )
-
-                            if is_dsl_native_tokenizer(self.tokenizer):
-                                span = self.tokenizer.spanning_statement(
-                                    ids[b].tolist(), t
-                                )
-                                if span is not None:
-                                    for tt in range(span[0], span[1]):
-                                        if tt != 0:
-                                            expand_positions.add((b, tt))
-                        except Exception:  # noqa: BLE001
-                            pass
+                assert expand_positions is not None
                 for b, t in expand_positions:
-                    if remask_to_mask:
-                        ids[b, t] = self.tokenizer.mask_id
-                        unknown[b, t] = True
-                    else:
-                        # Defensive: even if misconfigured, never token-edit.
-                        ids[b, t] = self.tokenizer.mask_id
-                        unknown[b, t] = True
+                    # E51: remask_to_mask is mandatory (T2M); never token-edit.
+                    ids[b, t] = self.tokenizer.mask_id
+                    unknown[b, t] = True
                 stats.remasked_positions += len(expand_positions)
 
         if unknown.any():

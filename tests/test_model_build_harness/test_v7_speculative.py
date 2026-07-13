@@ -388,6 +388,25 @@ def test_generate_with_v7_flags_produces_output_and_stats() -> None:
     assert stats["successor_hits"] + stats["successor_misses"] >= 0
 
 
+def test_speculation_abstains_when_remask_needs_forwards() -> None:
+    """Trust-gate remask is non-deterministic → do not burn speculative batches."""
+    model = _tiny_model(
+        unmask_mode="cluster",
+        cluster_verify=True,
+        speculative_successor=True,
+        speculative_fanout=2,
+        remask_ratio=0.15,
+        remask_use_gate=True,
+        remask_policy="confidence",
+    )
+    model.speculative_stats.reset()
+    model.generate("Hero")
+    stats = model.speculative_stats.as_dict()
+    assert stats["speculative_batches"] == 0
+    assert stats["successor_hits"] == 0
+    assert stats["successor_misses"] == 0
+
+
 def test_generate_with_v7_overlap_thread() -> None:
     model = _tiny_model(
         unmask_mode="cluster",

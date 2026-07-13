@@ -194,6 +194,12 @@ defaults off for determinism. Telemetry counts `denoiser_forwards`,
 `successor_hits`, `successor_misses` per generate call so the hit rate and
 net forward savings are measurable, not asserted.
 
+Speculation **auto-abstains** when the active remask policy needs extra model
+forwards (trust gate / CoRe perturbation): those remasks cannot be predicted
+without paying the remask cost, so the cache would miss. Measured on V7:
+E74 (deterministic remask) hit rate 1.0; E75 (trust-gate remask) skips
+speculation and pays only the remask-forward cost.
+
 ## 4. Decode loop (V7 flags on)
 
 ```python

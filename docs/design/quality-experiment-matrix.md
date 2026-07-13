@@ -446,8 +446,29 @@ successor-cache hit rate, remask volume.
 
 ## V7 measured results
 
-Pending first matrix run — see `quality-matrix-results.json` (`matrix_set: v7`)
-after `python -m scripts.run_quality_matrix --matrix v7`.
+See [quality-matrix-results.json](quality-matrix-results.json) (`matrix_set: v7`).
+CPU scratch, 80 train steps, `--no-design-md-context`, `rico_held` n=20.
+Historical V6/V5 payloads live under `prior_matrices`.
+
+| ID | Smoke parse | Smoke fid | Ship gates | Decode telemetry (smoke) | Notes |
+| --- | --- | --- | --- | --- | --- |
+| **E70** | **1.0** | **1.0** | **pass** | 16.5 fwd/gen | LESS-lite stability remask; held_out 0.6/1.0 |
+| **E71** | **1.0** | **1.0** | **pass** | 16.5 fwd/gen; clusters proposed | Attention clusters; quality matches E70 |
+| **E72** | **1.0** | **1.0** | **pass** | 16.5 fwd/gen; 0 cluster rejects | Ordered verify; grammar accepted all proposed clusters on fixtures |
+| **E73** | **1.0** | **1.0** | **pass** | 16.5 fwd/gen; fewer clusters via survival budget | Survival head reduces proposed clusters ~10× vs E71 |
+| **E74** | **1.0** | **1.0** | **pass** | 16.5 fwd/gen; **successor hit rate 1.0** | SSD-lite cache: 45 speculative batches → 45 hits (0 miss) |
+| **E75** | **1.0** | **1.0** | **pass** | 31.5 fwd/gen; speculation skipped | Champion stack; trust-gate remask needs extra forwards → speculation auto-disabled (no wasted misses) |
+
+**Headline:** every V7 row clears honest `--ship-gates` on the fixture suites
+(including rico_held n=20), matching the V6 E53 quality floor. E74 realizes
+the SSD transfer: successor-cache hit rate 1.0 with forwards/gen unchanged vs
+the non-speculative path (~16.5). E73's survival budget materially shrinks
+cluster proposals without hurting parse/fidelity. E75's higher forward count
+is the cost of the V6 trust-gate remask path (one extra forward per remask
+step), not of speculation — speculation correctly abstains when remask is
+non-deterministic.
+
+Full 1500 `rico_held` + HF context remains the production claim.
 
 ## Verifier-guided repair proposed (docs only — not in the runner yet)
 

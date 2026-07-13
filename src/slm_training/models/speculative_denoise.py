@@ -300,6 +300,8 @@ def enumerate_outcome_canvases(
     proposals: dict[int, int],
     *,
     fanout: int = 2,
+    eos_id: int | None = None,
+    pad_id: int | None = None,
 ) -> list[tuple[int, torch.Tensor]]:
     """
     Candidate successor canvases for the top-K likely verifier outcomes.
@@ -308,6 +310,10 @@ def enumerate_outcome_canvases(
     successor canvas commits clusters ``1..j`` and leaves the rest masked.
     Likelihood ranking: accept-all first, then failure at the lowest-survival
     cluster, then the next-lowest, ... Returns [(j, canvas [1, T])], deduped.
+
+    When ``eos_id``/``pad_id`` are provided, the decode loop's deterministic
+    EOS post-processing (pad everything after the first EOS) is simulated so
+    speculated canvases match the real post-commit canvas exactly.
     """
     if not ordered or fanout <= 0:
         return []
@@ -335,8 +341,15 @@ def enumerate_outcome_canvases(
                 canvas[0, t] = int(tok)
             if not committable:
                 break
-        if committable:
-            out.append((j, canvas))
+        if not committable:
+            continue
+        if eos_id is not None and pad_id is not None:
+            eos_positions = (canvas[0] == int(eos_id)).nonzero(as_tuple=False)
+            if eos_positions.numel():
+                end = int(eos_positions[0].item())
+                if end + 1 < canvas.size(1):
+                    canvas[0, end + 1 :] = int(pad_id)
+        out.append((j, canvas))
     return out
 
 
