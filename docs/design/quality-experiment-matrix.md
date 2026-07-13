@@ -49,6 +49,30 @@
 | E16 | Long train | E15 at 2000+ steps | `qx_e16_long_train` |
 | E17 | Decode sweep | Eval-only gen_steps/repair/best-of-N on E15 ckpt | `qx_e17_decode_sweep` |
 
+## V3 matrix (decode-cap fix + SOTA levers)
+
+Root cause: `grammar_ltr_max_tokens=64/96` truncated gold programs (up to 160 tokens), making parse gates unreachable. V3 raises canvas to 256, disables structural reorder (`grammar_trust_model`), and adds block/sample decode.
+
+| ID | Approach | Primary lever | Run id |
+| --- | --- | --- | --- |
+| E18 | Decode rescue | Eval-only E16 ckpt + canvas 256 + trust-model | `qx_e18_decode_rescue` |
+| E19 | HF retrain | E15 recipe + HF context + fixed decode | `qx_e19_hf_retrain` |
+| E20 | Block decode | Semi-AR 32-token spans (block diffusion) | `qx_e20_block_decode` |
+| E21 | DINGO-lite | Legal-token sampling + best-of-N | `qx_e21_dingo_sample` |
+| E22 | Namespace+contract | F5 + F2 + curriculum combined | `qx_e22_curriculum_namespace` |
+| E23 | Self-training | Preference pairs from valid rollouts | `qx_e23_self_train` |
+| E24 | Capacity scale | d256 / 8 layers / long budget | `qx_e24_capacity_scale` |
+| E25 | AR-init | HF warm-start denoiser (SmolLM2 recipe) | `qx_e25_ar_init` |
+
+```bash
+# V3 matrix (default)
+python -m scripts.run_quality_matrix --matrix v3 --only E18,E19 --steps 400
+
+# Preflight decode feasibility before ship eval
+python -m scripts.evaluate_model --check-decode-feasibility \
+  --grammar-ltr-max-tokens 256 --ship-gates
+```
+
 ```bash
 # Diagnostic ceiling (gold-as-prediction must score ~1.0)
 python -m scripts.diagnose_eval --train-dir outputs/train_data/v1 \

@@ -43,6 +43,12 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "fuse_ltr_loss",
         "grammar_fastpath",
         "fastpath_aux_weight",
+        "grammar_prefer_structural",
+        "grammar_trust_model",
+        "grammar_sample_decode",
+        "grammar_sample_temperature",
+        "grammar_block_decode",
+        "grammar_block_size",
         "use_amp",
         "use_compile",
         "compile_mode",
@@ -144,6 +150,14 @@ def build_model(
             fuse_ltr_loss=getattr(config, "fuse_ltr_loss", True),
             grammar_fastpath=getattr(config, "grammar_fastpath", True),
             fastpath_aux_weight=getattr(config, "fastpath_aux_weight", 0.0),
+            grammar_prefer_structural=getattr(config, "grammar_prefer_structural", True),
+            grammar_trust_model=getattr(config, "grammar_trust_model", False),
+            grammar_sample_decode=getattr(config, "grammar_sample_decode", False),
+            grammar_sample_temperature=getattr(
+                config, "grammar_sample_temperature", 0.8
+            ),
+            grammar_block_decode=getattr(config, "grammar_block_decode", False),
+            grammar_block_size=getattr(config, "grammar_block_size", 32),
             seed=config.seed,
         )
         model = TwoTowerModel.from_records(records, config=tt_cfg, device=config.device)

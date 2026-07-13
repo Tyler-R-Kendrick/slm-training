@@ -234,12 +234,40 @@ def _stream_probe_ok(tokenizer: OpenUITokenizer, prefix_ids: list[int], token_id
     """Reject unknown-component / typed hard errors via streaming semantic check."""
     trial_ids = [*prefix_ids, int(token_id)]
     text = tokenizer.decode(trial_ids)
-    probe = text if text.endswith(("(", "[", ",", "=", " ", "\n")) else f"{text}("
+    token = tokenizer.id_to_token.get(int(token_id), "")
+    # Closing delimiters must not be probed with a synthetic "(" suffix.
+    if token in {")", "]", '"', ",", "="} or text.rstrip().endswith((")", "]", '"')):
+        probe = text
+    elif text.endswith(("(", "[", ",", "=", " ", "\n")):
+        probe = text
+    else:
+        probe = f"{text}("
     try:
         status = stream_check(probe)
     except Exception:  # noqa: BLE001
         return False
     return not status.hard_error
+
+
+def _placeholder_interior_allowed_ids(
+    tokenizer: OpenUITokenizer,
+    prefix_ids: list[int],
+) -> set[int] | None:
+    """When inside a quoted `:placeholder`, allow compositional subtoken ids."""
+    prefix_text = tokenizer.decode(prefix_ids)
+    if not _incomplete_quoted_string(prefix_text):
+        return None
+    last_open = prefix_text.rfind('"')
+    built = prefix_text[last_open + 1 :]
+    if not built.startswith(":"):
+        return None
+    ids: set[int] = set()
+    for tok, tid in tokenizer.token_to_id.items():
+        if tok in {'"', ':', '.'}:
+            ids.add(tid)
+        elif tok and tok.isidentifier() and tok[0].islower():
+            ids.add(tid)
+    return ids or None
 
 
 def pick_constrained_token(
@@ -250,6 +278,9 @@ def pick_constrained_token(
     top_k: int = 16,
     forced_token_id: int | None = None,
     slot_contract: list[str] | None = None,
+    prefer_structural: bool = True,
+    sample: bool = False,
+    temperature: float = 0.8,
 ) -> int | None:
     """
     Speculative constrained pick: only tokens admitted by the grammar DFA
@@ -299,19 +330,30 @@ def pick_constrained_token(
         if not allowed:
             return None
 
+    ph_allowed = _placeholder_interior_allowed_ids(tokenizer, prefix_ids)
+    if ph_allowed is not None:
+        if allowed is None:
+            allowed = set(ph_allowed)
+        else:
+            allowed = allowed | ph_allowed
+
     def _legal(token_id: int) -> bool:
         tid = int(token_id)
         if tid in {
             tokenizer.pad_id,
             tokenizer.mask_id,
             tokenizer.bos_id,
+            tokenizer.unk_id,
         }:
             return False
         if contract_allowed is not None and tid not in contract_allowed:
             return False
         if allowed is not None and tid not in allowed:
-            return False
-        if engine is not None and not dfa_admits_token(
+            # DFA terminal set can lag placeholder interiors — still admit when
+            # incremental parse accepts the extension.
+            if not dfa_admits_token(tokenizer, prefix_ids, tid, engine=engine):
+                return False
+        elif engine is not None and not dfa_admits_token(
             tokenizer, prefix_ids, tid, engine=engine
         ):
             return False
@@ -337,12 +379,20 @@ def pick_constrained_token(
             scored.append((float(logits_1d[tid].item()), tid))
         if scored:
             scored.sort(key=lambda x: x[0], reverse=True)
-            preferred_names = preferred_components()
-            struct = structural_tokens()
-            for _score, tid in scored:
-                token = tokenizer.id_to_token.get(tid, "")
-                if token in preferred_names or token in struct:
-                    return tid
+            if sample and temperature > 0:
+                import torch
+
+                scores = torch.tensor([s[0] for s in scored], dtype=logits_1d.dtype)
+                probs = torch.softmax(scores / temperature, dim=0)
+                idx = int(torch.multinomial(probs, 1).item())
+                return scored[idx][1]
+            if prefer_structural:
+                preferred_names = preferred_components()
+                struct = structural_tokens()
+                for _score, tid in scored:
+                    token = tokenizer.id_to_token.get(tid, "")
+                    if token in preferred_names or token in struct:
+                        return tid
             return scored[0][1]
 
     # Escalate top-k search if no allowed-set hit (or allowed was broad/None).
@@ -362,25 +412,47 @@ def pick_constrained_token(
             if not _legal(token_id):
                 continue
             token = tokenizer.id_to_token.get(token_id, "")
-            text = tokenizer.decode([*prefix_ids, token_id])
-            probe = text if text.endswith(("(", "[", ",", "=", " ", "\n")) else f"{text}("
-            try:
-                status = stream_check(probe)
-            except Exception:  # noqa: BLE001
-                status = None
-            if (
-                token in preferred_names
-                or token in struct
-                or (status is not None and (status.has_root or status.incomplete or status.complete_ok))
-            ):
-                preferred.append(token_id)
+            if prefer_structural:
+                text = tokenizer.decode([*prefix_ids, token_id])
+                if token in {")", "]", '"', ",", "="} or text.rstrip().endswith(
+                    (")", "]", '"')
+                ):
+                    probe = text
+                elif text.endswith(("(", "[", ",", "=", " ", "\n")):
+                    probe = text
+                else:
+                    probe = f"{text}("
+                try:
+                    status = stream_check(probe)
+                except Exception:  # noqa: BLE001
+                    status = None
+                if (
+                    token in preferred_names
+                    or token in struct
+                    or (
+                        status is not None
+                        and (status.has_root or status.incomplete or status.complete_ok)
+                    )
+                ):
+                    preferred.append(token_id)
+                else:
+                    acceptable.append(token_id)
             else:
                 acceptable.append(token_id)
 
-        if preferred:
-            return preferred[0]
-        if acceptable:
-            return acceptable[0]
+        pool = preferred if (prefer_structural and preferred) else acceptable
+        if pool:
+            if sample and temperature > 0:
+                import torch
+
+                scores = torch.tensor(
+                    [float(logits_1d[i].item()) for i in pool],
+                    dtype=logits_1d.dtype,
+                )
+                probs = torch.softmax(scores / temperature, dim=0)
+                pick = int(torch.multinomial(probs, 1).item())
+                return pool[pick]
+            return pool[0]
         if k >= vocab:
             break
     if contract_allowed:

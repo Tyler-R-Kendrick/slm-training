@@ -1,7 +1,19 @@
 {
-  "matrix": "quality-experiment-matrix-v2",
+  "matrix": "quality-experiment-matrix-v3",
   "reference": "docs/design/quality-experiment-matrix.md",
-  "evaluated_at": "2026-07-13T15:41:00+00:00",
+  "evaluated_at": "2026-07-13T17:26:00+00:00",
+  "root_causes_fixed": [
+    "P0 decode canvas cap 64/96 truncated gold programs up to 160 tokens — gates unreachable",
+    "P1 structural reorder in pick_constrained_token preferred closing-quote over placeholder segments",
+    "P1 stream_probe appended '(' after ']' breaking closing delimiter admission",
+    "P1 DFA terminal set omitted '.' inside quoted placeholders — fidelity blocked at decode"
+  ],
+  "v3_defaults": {
+    "grammar_ltr_max_tokens": 256,
+    "grammar_ltr_stages": [48, 96, 160, 256],
+    "grammar_trust_model": "recommended for eval",
+    "decode_feasibility_preflight": "scripts.evaluate_model --check-decode-feasibility"
+  },
   "settings": {
     "steps": "200-500",
     "context_backend": "scratch",
