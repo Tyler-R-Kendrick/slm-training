@@ -34,6 +34,18 @@ def main(argv: list[str] | None = None) -> int:
         help="Optional live Hugging Face RICO split for eval screens.",
     )
     parser.add_argument("--rico-limit", type=int, default=None)
+    parser.add_argument(
+        "--rico-hf-cache",
+        type=Path,
+        default=Path("fixtures/rico/hf_test_cache.jsonl"),
+        help="Cache file for HF RICO screens (speeds rebuilds / offline).",
+    )
+    parser.add_argument(
+        "--target-records",
+        type=int,
+        default=None,
+        help="Keep at least this many additional RICO samples after leakage filters.",
+    )
     parser.add_argument("--max-children", type=int, default=6)
     parser.add_argument(
         "--output-root",
@@ -57,14 +69,22 @@ def main(argv: list[str] | None = None) -> int:
         default="smoke,held_out,adversarial,ood,rico_held",
         help="Comma-separated suite names",
     )
+    parser.add_argument(
+        "--no-rico-path",
+        action="store_true",
+        help="Do not load local rico fixture JSONL (HF-only when --rico-hf-split set).",
+    )
     args = parser.parse_args(argv)
 
     suites = tuple(s.strip() for s in args.suites.split(",") if s.strip())
     train_manifest = None if args.allow_without_train_manifest else args.train_manifest
+    rico_path = None
+    if args.source in {"rico", "both"} and not args.no_rico_path:
+        rico_path = args.rico_path
     result = build_test_data(
         TestDataConfig(
             seed_path=args.seed_path if args.source in {"fixture", "both"} else None,
-            rico_path=args.rico_path if args.source in {"rico", "both"} else None,
+            rico_path=rico_path,
             source=args.source,
             output_root=args.output_root,
             version=args.version,
@@ -73,6 +93,8 @@ def main(argv: list[str] | None = None) -> int:
             require_train_manifest=not args.allow_without_train_manifest,
             rico_hf_split=args.rico_hf_split,
             rico_limit=args.rico_limit,
+            rico_hf_cache_path=args.rico_hf_cache,
+            target_records=args.target_records,
             max_children=args.max_children,
         )
     )

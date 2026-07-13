@@ -64,6 +64,15 @@ Train artifacts land in `outputs/train_data/<version>/` (`records.jsonl`, `manif
 
 Eval uses **meaningful parse** (rejects empty `Stack([])` / `Card([])`), `placeholder_validity` (namespace-normalized), `structural_similarity`, and composite `reward_score`. Suites: smoke/held_out (fixtures), `rico_held` (RICO diagnostic), adversarial, ood.
 
+Expand `rico_held` with 1500 additional HF RICO screens (cached under `fixtures/rico/hf_test_cache.jsonl`):
+
+```bash
+python -m scripts.build_test_data \
+  --source both --version v1 \
+  --train-manifest outputs/train_data/v1/manifest.json \
+  --rico-hf-split test --rico-limit 2600 --target-records 1500
+```
+
 ```bash
 pytest
 ```

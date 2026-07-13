@@ -29,10 +29,14 @@ class TestDataConfig:
     require_train_manifest: bool = True
     rico_hf_split: str | None = None
     rico_limit: int | None = None
+    rico_hf_cache_path: Path | None = Path("fixtures/rico/hf_test_cache.jsonl")
     max_children: int = 6
     # Map RICO screens into these suites (round-robin).
     # Smoke/held_out stay fixture-curated; RICO uses rico_held.
     rico_suites: tuple[str, ...] = ("rico_held",)
+    # Keep pulling / converting until at least this many non-leaking records
+    # are kept (None disables). Useful for large HF expansions.
+    target_records: int | None = None
 
     # Prevent pytest from collecting this dataclass as a test class.
     __test__ = False
@@ -74,24 +78,46 @@ def _fixture_seeds(config: TestDataConfig) -> list[ExampleRecord]:
 def _rico_seeds(config: TestDataConfig) -> list[ExampleRecord]:
     if config.rico_path is None and config.rico_hf_split is None:
         return []
-    screens = load_rico_screens(
-        path=config.rico_path,
-        hf_split=config.rico_hf_split,
-        limit=config.rico_limit,
-    )
+    # Over-fetch when targeting a kept-count so leakage/errors don't undershoot.
+    pull_limit = config.rico_limit
+    if config.target_records is not None:
+        # ~70% post-leakage yield observed on HF test; pull with headroom.
+        need = int(config.target_records * 1.6) + 50
+        pull_limit = max(pull_limit or 0, need)
+
     suites = [s for s in config.rico_suites if s in config.suites] or ["held_out"]
     out: list[ExampleRecord] = []
-    for i, screen in enumerate(screens):
-        suite = suites[i % len(suites)]
-        out.append(
-            screen_to_record(
-                screen,
-                split=suite,
-                suite=suite,
-                max_children=config.max_children,
-                id_prefix="rico_eval",
+
+    def _append(screens: list[dict], *, id_prefix: str) -> None:
+        for i, screen in enumerate(screens):
+            suite = suites[len(out) % len(suites)]
+            out.append(
+                screen_to_record(
+                    screen,
+                    split=suite,
+                    suite=suite,
+                    max_children=config.max_children,
+                    id_prefix=id_prefix,
+                )
             )
-        )
+
+    # Local fixture slice (small, stable).
+    if config.rico_path is not None:
+        local = load_rico_screens(path=config.rico_path, hf_split=None, limit=None)
+        _append(local, id_prefix="rico_eval")
+
+    # Live / cached HF pull — separate id prefix avoids screen_index collisions.
+    if config.rico_hf_split is not None:
+        remaining = None if pull_limit is None else max(0, pull_limit - len(out))
+        if remaining is None or remaining > 0:
+            hf_screens = load_rico_screens(
+                path=None,
+                hf_split=config.rico_hf_split,
+                limit=remaining if remaining is not None else 200,
+                hf_cache_path=config.rico_hf_cache_path,
+            )
+            _append(hf_screens, id_prefix="rico_hf")
+
     return out
 
 
@@ -145,6 +171,23 @@ def build_test_data(config: TestDataConfig) -> dict:
         seen_ids.add(normalized.id)
         by_suite[suite].append(normalized)
 
+        if config.target_records is not None:
+            rico_kept = sum(
+                len(by_suite.get(s, [])) for s in config.rico_suites if s in by_suite
+            )
+            if rico_kept >= config.target_records:
+                break
+
+    # Trim rico suites to the target additional count when requested.
+    if config.target_records is not None:
+        remaining = int(config.target_records)
+        for suite in config.rico_suites:
+            if suite not in by_suite:
+                continue
+            take = min(remaining, len(by_suite[suite]))
+            by_suite[suite] = by_suite[suite][:take]
+            remaining -= take
+
     if fixture_leaks:
         detail = ", ".join(
             f"{item['id']}[{'+'.join(item['reasons'])}]" for item in fixture_leaks[:20]
@@ -152,6 +195,17 @@ def build_test_data(config: TestDataConfig) -> dict:
         raise ValueError(
             f"test data overlaps train data ({len(fixture_leaks)} fixture leaks): {detail}"
         )
+
+    # Fail loudly if we could not gather enough additional RICO samples.
+    if config.target_records is not None:
+        rico_kept = sum(len(by_suite.get(s, [])) for s in config.rico_suites)
+        if rico_kept < config.target_records:
+            raise ValueError(
+                f"requested {config.target_records} additional RICO test samples, "
+                f"but only kept {rico_kept} after validate/leakage "
+                f"(errors={len(errors)}, leakage_rejected={len(leakage)}). "
+                f"Increase --rico-limit / try another --rico-hf-split."
+            )
 
     out_dir = config.output_dir
     suites_dir = out_dir / "suites"
@@ -174,10 +228,16 @@ def build_test_data(config: TestDataConfig) -> dict:
         "source": source,
         "seed_path": str(config.seed_path) if config.seed_path else None,
         "rico_path": str(config.rico_path) if config.rico_path else None,
+        "rico_hf_split": config.rico_hf_split,
+        "rico_limit": config.rico_limit,
+        "rico_hf_cache_path": (
+            str(config.rico_hf_cache_path) if config.rico_hf_cache_path else None
+        ),
+        "target_records": config.target_records,
         "suite_counts": suite_counts,
         "total_records": sum(suite_counts.values()),
         "error_count": len(errors),
-        "errors": errors,
+        "errors": errors[:50],
         "leakage_rejected": len(leakage),
         "train_manifest": str(config.train_manifest) if config.train_manifest else None,
         "built_at": built_at,

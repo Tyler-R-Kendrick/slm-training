@@ -90,14 +90,47 @@ def load_rico_screens(
     path: Path | str | None = None,
     hf_split: str | None = None,
     limit: int | None = None,
+    hf_cache_path: Path | str | None = None,
 ) -> list[dict]:
-    """Load screens from a local JSONL fixture and/or live HF split."""
+    """Load screens from a local JSONL fixture and/or live HF split.
+
+    When both a local path and ``hf_split`` are provided, ``limit`` is the
+    total desired count: local screens are kept first, then HF fills the
+    remainder (instead of truncating away the HF pull).
+    """
     screens: list[dict] = []
     if path is not None:
         screens.extend(load_rico_jsonl(path))
+
     if hf_split is not None:
-        live_limit = limit if limit is not None else 200
-        screens.extend(list(iter_rico_huggingface(split=hf_split, limit=live_limit)))
+        remaining = None if limit is None else max(0, limit - len(screens))
+        if remaining is None or remaining > 0:
+            live_limit = 200 if remaining is None else remaining
+            # Prefer a local HF cache when present (deterministic / offline).
+            cache = Path(hf_cache_path) if hf_cache_path else None
+            if cache is not None and cache.exists():
+                cached = load_rico_jsonl(cache)
+                need = live_limit
+                screens.extend(cached[:need])
+                live_limit = max(0, need - min(need, len(cached)))
+            if live_limit > 0:
+                live = list(iter_rico_huggingface(split=hf_split, limit=live_limit))
+                screens.extend(live)
+                if cache is not None:
+                    cache.parent.mkdir(parents=True, exist_ok=True)
+                    # Append-only merge into cache for reuse.
+                    existing_idx = {
+                        (s.get("split_src"), s.get("screen_index"))
+                        for s in (load_rico_jsonl(cache) if cache.exists() else [])
+                    }
+                    with cache.open("a", encoding="utf-8") as handle:
+                        for screen in live:
+                            key = (screen.get("split_src"), screen.get("screen_index"))
+                            if key in existing_idx:
+                                continue
+                            handle.write(json.dumps(screen, ensure_ascii=False) + "\n")
+                            existing_idx.add(key)
+
     if limit is not None:
         screens = screens[:limit]
     return screens
