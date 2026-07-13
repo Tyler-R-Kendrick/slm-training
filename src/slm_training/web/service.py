@@ -142,11 +142,19 @@ class PlaygroundService:
         with self._lock:
             attempts = max(1, int(max_attempts)) if grammar_constrained else 1
             for _ in range(attempts):
-                openui = model.generate(
-                    prompt,
-                    grammar_constrained=grammar_constrained,
-                    design_md=design_md,
-                )
+                try:
+                    openui = model.generate(
+                        prompt,
+                        grammar_constrained=grammar_constrained,
+                        design_md=design_md,
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    valid = False
+                    serialized = None
+                    last_error = str(exc)
+                    if not grammar_constrained:
+                        raise
+                    continue
                 try:
                     program = validate(openui)
                     valid = True

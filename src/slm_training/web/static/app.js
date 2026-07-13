@@ -286,6 +286,15 @@ function noteFocused() {
   return document.activeElement === noteEl;
 }
 
+function textInputFocused() {
+  const el = document.activeElement;
+  if (!el || el === document.body || el === cardEl) return false;
+  const tag = (el.tagName || "").toLowerCase();
+  if (tag === "textarea" || tag === "input" || tag === "select") return true;
+  if (el.isContentEditable) return true;
+  return false;
+}
+
 function onKeyDown(event) {
   if (noteFocused()) {
     if (event.key === "Escape") {
@@ -293,6 +302,9 @@ function onKeyDown(event) {
       noteEl.blur();
       cardEl.focus();
     }
+    return;
+  }
+  if (textInputFocused()) {
     return;
   }
   if (event.key === "ArrowUp") {

@@ -276,7 +276,8 @@ def pick_constrained_token(
     for k in (search_k, min(max(search_k * 4, 64), vocab), vocab):
         _values, indices = torch.topk(logits_1d, k=k)
         if not backend.available() and engine is None:
-            return int(indices[0].item()) if k > 0 else None
+            # Cannot certify legality — refuse rather than emit unconstrained top-1.
+            return None
 
         preferred_names = preferred_components()
         struct = structural_tokens()
