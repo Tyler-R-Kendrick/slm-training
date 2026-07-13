@@ -10,6 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap"
       rel="stylesheet"
     />
+    <link rel="stylesheet" href="/static/preview/preview.css" />
     <link rel="stylesheet" href="/static/styles.css" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%231f4d3a'/%3E%3C/svg%3E" />
   </head>
@@ -26,8 +27,57 @@
           <span class="index-pill" id="indexPill">1 / 1</span>
           <span class="badge" id="badge">loading</span>
         </div>
-        <p class="prompt-text" id="promptText">Loading prompt…</p>
-        <pre class="output" id="output"><code>// generating…</code></pre>
+
+        <div class="request-block">
+          <p class="field-label">Request</p>
+          <p class="prompt-text" id="promptText">Loading prompt…</p>
+        </div>
+
+        <div class="view-toggle" role="tablist" aria-label="Output view">
+          <button
+            type="button"
+            class="view-btn is-active"
+            id="btnViewRender"
+            role="tab"
+            aria-selected="true"
+            data-view="render"
+            title="Rendered view (Tab to toggle)"
+          >
+            Rendered
+          </button>
+          <button
+            type="button"
+            class="view-btn"
+            id="btnViewDsl"
+            role="tab"
+            aria-selected="false"
+            data-view="dsl"
+            title="DSL view (Tab to toggle)"
+          >
+            DSL
+          </button>
+        </div>
+
+        <div class="view-panels">
+          <div
+            class="preview-panel view-panel is-active"
+            id="panelRender"
+            role="tabpanel"
+            aria-label="Rendered OpenUI"
+          >
+            <div id="preview" class="preview-mount"></div>
+          </div>
+          <div
+            class="source-panel view-panel"
+            id="panelDsl"
+            role="tabpanel"
+            aria-label="OpenUI DSL"
+            hidden
+          >
+            <pre class="output" id="output"><code>// generating…</code></pre>
+          </div>
+        </div>
+
         <p class="error" id="error" hidden></p>
 
         <label class="note-label" for="note">Note (optional)</label>
@@ -66,8 +116,13 @@
           <input type="checkbox" id="grammar" checked />
           Grammar guard
         </label>
+        <label class="toggle">
+          <input type="checkbox" id="keepPlaceholders" />
+          Keep :placeholders in preview
+        </label>
       </details>
     </main>
+    <script src="/static/preview/preview.js" type="module"></script>
     <script src="/static/app.js" type="module"></script>
   </body>
 </html>

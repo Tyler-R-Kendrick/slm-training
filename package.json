@@ -6,7 +6,9 @@
   "scripts": {
     "test:e2e": "playwright test",
     "playwright:install": "playwright install chromium",
-    "annotate:serve": "python -m scripts.serve_playground --port 8765"
+    "annotate:serve": "python -m scripts.serve_playground --port 8765",
+    "preview:install": "npm --prefix tools/openui_preview ci",
+    "preview:build": "npm --prefix tools/openui_preview run build"
   },
   "devDependencies": {
     "@playwright/mcp": "latest",

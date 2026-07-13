@@ -203,6 +203,45 @@ def contract_allowed_token_ids(
     return allowed or None
 
 
+def _dfa_engine(grammar_dsl: str | None = None):
+    try:
+        from slm_training.grammar_fastpath import engine_for_dsl
+    except Exception:  # noqa: BLE001
+        return None
+    return engine_for_dsl(grammar_dsl or active_dsl())
+
+
+def dfa_admits_token(
+    tokenizer: OpenUITokenizer,
+    prefix_ids: list[int],
+    token_id: int,
+    *,
+    grammar_dsl: str | None = None,
+    engine=None,
+) -> bool:
+    """True iff Lark incremental parse accepts ``prefix + token`` as a legal prefix."""
+    eng = engine if engine is not None else _dfa_engine(grammar_dsl)
+    if eng is None:
+        return True  # no DFA available — defer to stream_check
+    text = tokenizer.decode([*prefix_ids, int(token_id)])
+    try:
+        return bool(eng.set_prefix(text))
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _stream_probe_ok(tokenizer: OpenUITokenizer, prefix_ids: list[int], token_id: int) -> bool:
+    """Reject unknown-component / typed hard errors via streaming semantic check."""
+    trial_ids = [*prefix_ids, int(token_id)]
+    text = tokenizer.decode(trial_ids)
+    probe = text if text.endswith(("(", "[", ",", "=", " ", "\n")) else f"{text}("
+    try:
+        status = stream_check(probe)
+    except Exception:  # noqa: BLE001
+        return False
+    return not status.hard_error
+
+
 def pick_constrained_token(
     logits_1d,
     tokenizer: OpenUITokenizer,
@@ -211,15 +250,22 @@ def pick_constrained_token(
     top_k: int = 16,
     forced_token_id: int | None = None,
     slot_contract: list[str] | None = None,
-) -> int:
+) -> int | None:
     """
-    Choose a next token from top-k that does not introduce a hard streaming error.
+    Speculative constrained pick: only tokens admitted by the grammar DFA
+    (and not rejected by stream hard-errors) may be selected.
 
-    Probes `prefix + token + "("` so bare identifiers are checked as component names.
-    Prefers known components / structural tokens from the active backend.
+    This is *pseudo* speculative decoding (verify against the OpenUI acceptor),
+    not draft-model speculative decoding — see docs/design/research-lineage.md.
 
-    When ``forced_token_id`` is set (grammar DFA force-emit), that id is returned
-    if it does not introduce a hard streaming error.
+    When ``forced_token_id`` is set (singleton DFA structural emit), that id is
+    returned only if the DFA still admits it.
+
+    When ``slot_contract`` is set and the prefix is inside a quoted placeholder,
+    candidates are further restricted to the inventory continuation.
+
+    Returns ``None`` when no legal candidate exists (never returns a DFA-illegal
+    or hard-error token).
     """
     import torch
 
@@ -227,64 +273,123 @@ def pick_constrained_token(
         tokenizer, prefix_ids, slot_contract
     )
 
+    engine = _dfa_engine()
+    allowed: set[int] | None = None
+    if engine is not None:
+        prefix_text = tokenizer.decode(prefix_ids)
+        try:
+            synced = bool(engine.set_prefix(prefix_text))
+        except Exception:  # noqa: BLE001
+            synced = False
+        if not synced and prefix_text.strip():
+            # Prefix already illegal — no legal continuation.
+            return None
+        try:
+            from slm_training.grammar_fastpath.token_map import allowed_id_set
+
+            allowed = allowed_id_set(tokenizer, engine.next_terminals())
+        except Exception:  # noqa: BLE001
+            allowed = None
+
+    if contract_allowed is not None:
+        if allowed is None:
+            allowed = set(contract_allowed)
+        else:
+            allowed = allowed & contract_allowed
+        if not allowed:
+            return None
+
+    def _legal(token_id: int) -> bool:
+        tid = int(token_id)
+        if tid in {
+            tokenizer.pad_id,
+            tokenizer.mask_id,
+            tokenizer.bos_id,
+        }:
+            return False
+        if contract_allowed is not None and tid not in contract_allowed:
+            return False
+        if allowed is not None and tid not in allowed:
+            return False
+        if engine is not None and not dfa_admits_token(
+            tokenizer, prefix_ids, tid, engine=engine
+        ):
+            return False
+        return _stream_probe_ok(tokenizer, prefix_ids, tid)
+
     if forced_token_id is not None:
-        if contract_allowed is None or int(forced_token_id) in contract_allowed:
-            trial_ids = prefix_ids + [int(forced_token_id)]
-            text = tokenizer.decode(trial_ids)
+        if _legal(int(forced_token_id)):
+            return int(forced_token_id)
+        forced_token_id = None
+
+    backend = _backend()
+    vocab = int(logits_1d.numel())
+    search_k = min(max(top_k, 1), vocab)
+
+    # When DFA/contract gave a concrete allowed set, score only those ids.
+    if allowed is not None and allowed:
+        scored: list[tuple[float, int]] = []
+        for tid in allowed:
+            if tid < 0 or tid >= vocab:
+                continue
+            if not _legal(tid):
+                continue
+            scored.append((float(logits_1d[tid].item()), tid))
+        if scored:
+            scored.sort(key=lambda x: x[0], reverse=True)
+            preferred_names = preferred_components()
+            struct = structural_tokens()
+            for _score, tid in scored:
+                token = tokenizer.id_to_token.get(tid, "")
+                if token in preferred_names or token in struct:
+                    return tid
+            return scored[0][1]
+
+    # Escalate top-k search if no allowed-set hit (or allowed was broad/None).
+    for k in (search_k, min(max(search_k * 4, 64), vocab), vocab):
+        _values, indices = torch.topk(logits_1d, k=k)
+        if not backend.available() and engine is None:
+            # Cannot certify legality — refuse rather than emit unconstrained top-1.
+            return None
+
+        preferred_names = preferred_components()
+        struct = structural_tokens()
+        preferred: list[int] = []
+        acceptable: list[int] = []
+
+        for idx in indices.tolist():
+            token_id = int(idx)
+            if not _legal(token_id):
+                continue
+            token = tokenizer.id_to_token.get(token_id, "")
+            text = tokenizer.decode([*prefix_ids, token_id])
             probe = text if text.endswith(("(", "[", ",", "=", " ", "\n")) else f"{text}("
             try:
                 status = stream_check(probe)
-                if not status.hard_error:
-                    return int(forced_token_id)
             except Exception:  # noqa: BLE001
-                return int(forced_token_id)
+                status = None
+            if (
+                token in preferred_names
+                or token in struct
+                or (status is not None and (status.has_root or status.incomplete or status.complete_ok))
+            ):
+                preferred.append(token_id)
+            else:
+                acceptable.append(token_id)
 
-    k = min(top_k, int(logits_1d.numel()))
-    _values, indices = torch.topk(logits_1d, k=k)
-    fallback = int(indices[0].item())
-
-    backend = _backend()
-    if not backend.available():
-        return fallback
-
-    preferred_names = preferred_components()
-    struct = structural_tokens()
-    preferred: list[int] = []
-    acceptable: list[int] = []
-
-    for idx in indices.tolist():
-        token_id = int(idx)
-        if contract_allowed is not None and token_id not in contract_allowed:
-            continue
-        token = tokenizer.id_to_token.get(token_id, "")
-        trial_ids = prefix_ids + [token_id]
-        text = tokenizer.decode(trial_ids)
-        probe = text if text.endswith(("(", "[", ",", "=", " ", "\n")) else f"{text}("
-        try:
-            status = stream_check(probe)
-        except Exception:  # noqa: BLE001
-            acceptable.append(token_id)
-            continue
-        if status.hard_error:
-            continue
-        if (
-            token in preferred_names
-            or token in struct
-            or status.has_root
-            or status.incomplete
-            or status.complete_ok
-        ):
-            preferred.append(token_id)
-        else:
-            acceptable.append(token_id)
-
-    if preferred:
-        return preferred[0]
-    if acceptable:
-        return acceptable[0]
+        if preferred:
+            return preferred[0]
+        if acceptable:
+            return acceptable[0]
+        if k >= vocab:
+            break
     if contract_allowed:
-        return next(iter(contract_allowed))
-    return fallback
+        # Last resort under an active placeholder contract: any inventory id
+        # that still passes DFA/stream probes.
+        for tid in contract_allowed:
+            if _legal(tid):
+                return tid
+    return None
 
 
 def filter_ids_by_stream(
@@ -302,6 +407,14 @@ def filter_ids_by_stream(
     except Exception:  # noqa: BLE001
         return []
     if not status.hard_error:
+        # Also remask when the Lark DFA rejects the full prefix.
+        engine = _dfa_engine()
+        if engine is not None:
+            try:
+                if not engine.set_prefix(text):
+                    return list(newly_filled)
+            except Exception:  # noqa: BLE001
+                pass
         return []
     return list(newly_filled)
 
@@ -313,6 +426,7 @@ __all__ = [
     "active_dsl",
     "apply_structural_bias",
     "contract_allowed_token_ids",
+    "dfa_admits_token",
     "filter_ids_by_stream",
     "force_emit_token_id",
     "pick_constrained_token",

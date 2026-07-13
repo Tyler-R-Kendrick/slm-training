@@ -33,5 +33,24 @@ def test_playground_health_and_generate() -> None:
     assert res.status_code == 200
     payload = res.json()
     assert payload["valid"] is True
-    assert "Stack" in payload["openui"]
-    assert ":" in payload["openui"]  # placeholder-augmented
+    assert "root" in payload["openui"]
+    # Grammar-constrained playground must never emit invalid OpenUI.
+    for _ in range(2):
+        again = client.post(
+            "/api/sample",
+            json={"auto_prompt": True, "grammar_constrained": True, "session_id": "test"},
+        )
+        assert again.status_code == 200
+        assert again.json()["valid"] is True
+
+
+@pytest.mark.skipif(not CKPT.exists(), reason="playground demo checkpoint missing")
+def test_annotate_static_has_tab_toggle() -> None:
+    app = create_app(checkpoint=CKPT, device="cpu")
+    client = TestClient(app)
+    js = client.get("/static/app.js")
+    assert js.status_code == 200
+    assert 'event.key === "Tab"' in js.text
+    assert 'activeView === "render" ? "dsl" : "render"' in js.text
+    # Tab must not steal focus from buttons / view tabs.
+    assert "focus === cardEl" in js.text

@@ -7,9 +7,11 @@ target. They are **not** linked into the PyTorch train path.
 
 - `force_emit_sketch.hpp` — DFA singleton emit (`=` `(` `)` `[` `]` `,`) without
   calling the transformer when the OpenUI InteractiveParser accepts set is a
-  singleton structural terminal.
-- `maskgit_admit_sketch.hpp` — hole-admissibility check inspired by
-  [constrained-diffusion.ai](https://constrained-diffusion.ai/): reject a
+  singleton structural terminal (Leviathan-adjacent force path; see
+  [research-lineage.md](../../../../docs/design/research-lineage.md)).
+- `maskgit_admit_sketch.hpp` — hole-admissibility check adapted from
+  Mündler et al. 2025 ([arXiv:2508.10111](https://arxiv.org/abs/2508.10111),
+  [constrained-diffusion.ai](https://constrained-diffusion.ai/)): reject a
   MaskGIT fill if CFG ∩ completion language is empty.
 
 ## Boundary

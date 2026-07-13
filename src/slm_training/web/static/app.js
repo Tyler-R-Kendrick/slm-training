@@ -7,6 +7,12 @@ const statusEl = document.getElementById("status");
 const noteEl = document.getElementById("note");
 const designMdEl = document.getElementById("design_md");
 const grammarEl = document.getElementById("grammar");
+const keepPlaceholdersEl = document.getElementById("keepPlaceholders");
+const previewEl = document.getElementById("preview");
+const panelRender = document.getElementById("panelRender");
+const panelDsl = document.getElementById("panelDsl");
+const btnViewRender = document.getElementById("btnViewRender");
+const btnViewDsl = document.getElementById("btnViewDsl");
 const indexPillEl = document.getElementById("indexPill");
 const btnUp = document.getElementById("btnUp");
 const btnDown = document.getElementById("btnDown");
@@ -15,6 +21,10 @@ const btnNext = document.getElementById("btnNext");
 
 const PREFETCH = 2;
 const SESSION_KEY = "twotower_annotate_session";
+const VIEW_KEY = "twotower_annotate_view";
+
+/** @type {"render"|"dsl"} */
+let activeView = localStorage.getItem(VIEW_KEY) === "dsl" ? "dsl" : "render";
 
 function sessionId() {
   let id = localStorage.getItem(SESSION_KEY);
@@ -43,6 +53,65 @@ function setOutput(text) {
   outputEl.style.animation = "";
 }
 
+function setView(view) {
+  activeView = view === "dsl" ? "dsl" : "render";
+  localStorage.setItem(VIEW_KEY, activeView);
+  const showRender = activeView === "render";
+  panelRender.classList.toggle("is-active", showRender);
+  panelDsl.classList.toggle("is-active", !showRender);
+  panelRender.hidden = !showRender;
+  panelDsl.hidden = showRender;
+  btnViewRender.classList.toggle("is-active", showRender);
+  btnViewDsl.classList.toggle("is-active", !showRender);
+  btnViewRender.setAttribute("aria-selected", showRender ? "true" : "false");
+  btnViewDsl.setAttribute("aria-selected", showRender ? "false" : "true");
+  if (showRender) updatePreview(current());
+}
+
+function waitForPreviewApi(timeoutMs = 15000) {
+  if (window.OpenUIPreview?.mount) return Promise.resolve(window.OpenUIPreview);
+  return new Promise((resolve, reject) => {
+    const t0 = performance.now();
+    const tick = () => {
+      if (window.OpenUIPreview?.mount) {
+        resolve(window.OpenUIPreview);
+        return;
+      }
+      if (performance.now() - t0 > timeoutMs) {
+        reject(new Error("OpenUI preview bundle failed to load"));
+        return;
+      }
+      requestAnimationFrame(tick);
+    };
+    tick();
+  });
+}
+
+function updatePreview(item) {
+  if (!previewEl || activeView !== "render") return;
+  const api = window.OpenUIPreview;
+  if (!api?.mount) {
+    previewEl.innerHTML =
+      '<p class="openui-preview-empty">Loading renderer…</p>';
+    return;
+  }
+  if (!item || item.status === "loading") {
+    api.mount(previewEl, { source: null });
+    return;
+  }
+  const source = item.serialized || item.openui || "";
+  try {
+    api.mount(previewEl, {
+      source,
+      keepPlaceholders: !!keepPlaceholdersEl?.checked,
+    });
+  } catch (err) {
+    previewEl.innerHTML = `<p class="openui-preview-empty">Render error: ${
+      err?.message || err
+    }</p>`;
+  }
+}
+
 function render() {
   const item = current();
   indexPillEl.textContent = `${Math.min(index + 1, Math.max(stack.length, 1))} / ${Math.max(stack.length, 1)}`;
@@ -52,11 +121,13 @@ function render() {
     badgeEl.textContent = "loading";
     badgeEl.className = "badge";
     errorEl.hidden = true;
+    updatePreview(null);
     return;
   }
   promptTextEl.textContent = item.prompt;
   setOutput(item.serialized || item.openui || "// empty");
   noteEl.value = item.note || "";
+  updatePreview(item);
   if (item.status === "loading") {
     badgeEl.textContent = "generating";
     badgeEl.className = "badge";
@@ -155,7 +226,6 @@ async function go(delta) {
     statusEl.textContent = "No sample ready yet";
     return;
   }
-  // Persist note on current before leaving.
   if (current()) current().note = noteEl.value;
   index = next;
   render();
@@ -182,6 +252,11 @@ async function grade(rating) {
         design_md: design_md || null,
         valid: item.valid,
         session_id: sessionId(),
+        meta: {
+          source: "annotate_playground",
+          usable_for_test_data: rating === "up" && !!item.valid,
+          view: activeView,
+        },
       }),
     });
     const data = await res.json();
@@ -211,6 +286,15 @@ function noteFocused() {
   return document.activeElement === noteEl;
 }
 
+function textInputFocused() {
+  const el = document.activeElement;
+  if (!el || el === document.body || el === cardEl) return false;
+  const tag = (el.tagName || "").toLowerCase();
+  if (tag === "textarea" || tag === "input" || tag === "select") return true;
+  if (el.isContentEditable) return true;
+  return false;
+}
+
 function onKeyDown(event) {
   if (noteFocused()) {
     if (event.key === "Escape") {
@@ -218,6 +302,9 @@ function onKeyDown(event) {
       noteEl.blur();
       cardEl.focus();
     }
+    return;
+  }
+  if (textInputFocused()) {
     return;
   }
   if (event.key === "ArrowUp") {
@@ -232,13 +319,25 @@ function onKeyDown(event) {
   } else if (event.key === "ArrowRight") {
     event.preventDefault();
     void go(1);
+  } else if (event.key === "Tab") {
+    // Only swap views from the card/body chrome — never steal Tab from
+    // buttons, view tabs, or other focusable controls.
+    const focus = document.activeElement;
+    if (focus === cardEl || focus === document.body || focus == null) {
+      event.preventDefault();
+      setView(activeView === "render" ? "dsl" : "render");
+    }
+  } else if (event.key === "d" || event.key === "D") {
+    event.preventDefault();
+    setView("dsl");
+  } else if (event.key === "r" || event.key === "R") {
+    event.preventDefault();
+    setView("render");
   } else if (event.key.length === 1 && !event.metaKey && !event.ctrlKey && !event.altKey) {
-    // Typing focuses the note field.
     noteEl.focus();
   }
 }
 
-// Touch swipe
 let touchX = null;
 let touchY = null;
 cardEl.addEventListener(
@@ -274,6 +373,8 @@ btnUp.addEventListener("click", () => void grade("up"));
 btnDown.addEventListener("click", () => void grade("down"));
 btnPrev.addEventListener("click", () => void go(-1));
 btnNext.addEventListener("click", () => void go(1));
+btnViewRender.addEventListener("click", () => setView("render"));
+btnViewDsl.addEventListener("click", () => setView("dsl"));
 window.addEventListener("keydown", onKeyDown);
 
 noteEl.addEventListener("input", () => {
@@ -281,11 +382,20 @@ noteEl.addEventListener("input", () => {
 });
 
 async function boot() {
+  setView(activeView);
+  statusEl.textContent = "Loading renderer…";
+  try {
+    await waitForPreviewApi();
+  } catch (err) {
+    statusEl.textContent = err.message || String(err);
+  }
   statusEl.textContent = "Prefetching samples…";
   render();
   await ensurePrefetch();
-  statusEl.textContent = "Ready · ↑/↓ grade · ←/→ navigate · type to note";
+  statusEl.textContent = "Ready · ↑/↓ grade · ←/→ navigate · Tab view · type to note";
   cardEl.focus();
 }
+
+keepPlaceholdersEl?.addEventListener("change", () => updatePreview(current()));
 
 boot();
