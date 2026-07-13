@@ -107,6 +107,64 @@ return invalid OpenUI.
 
 ---
 
+## Correction / revision (candidate work)
+
+Nothing in this section is implemented yet. All rows are **Adjacent**. Full
+write-up, paper inventory, and recommended progression live in
+[`research-correction-critics.md`](research-correction-critics.md). Proposed
+levers: **E18–E22** in [`quality-experiment-matrix.md`](quality-experiment-matrix.md).
+
+### ReMDM (inference-time remasking)
+
+| | |
+| --- | --- |
+| **Paper** | *Remasking Discrete Diffusion Models with Inference-Time Scaling*, 2025. [arXiv:2503.00307](https://arxiv.org/abs/2503.00307) |
+| **Fidelity** | **Adjacent** — not wired; would sit above grammar remask as a windowed `token → [MASK]` rollback sampler |
+| **Intent** | Let pretrained MaskGIT weights revise committed tokens without GIDD-style retraining |
+| **Hook** | Decode path in [`twotower.py`](../../src/slm_training/models/twotower.py); today only [`filter_ids_by_stream`](../../src/slm_training/models/grammar.py) remasks |
+
+### RemeDi (learned unmasking-policy stream)
+
+| | |
+| --- | --- |
+| **Paper** | *Don’t Settle Too Early: Self-Reflective Remasking for Diffusion Language Models*, 2025. [arXiv:2509.23653](https://arxiv.org/html/2509.23653v1) |
+| **Fidelity** | **Adjacent** — no UPS; nearest unused code is [`FastPathGate`](../../src/slm_training/grammar_fastpath/gate.py) (sigmoid trust on hiddens, not integrated) |
+| **Intent** | Cheap per-token reliability head that can later gate heavier critics / remask budgets |
+
+### BackPlay (frozen-model correction head)
+
+| | |
+| --- | --- |
+| **Paper** | *BackPlay: Plug-in Look-Back Self-Correction for Diffusion Language Models*, 2026. [arXiv:2601.06428](https://arxiv.org/html/2601.06428v2) |
+| **Fidelity** | **Adjacent** — template for training a plug-in head on *this* TwoTower’s own error distribution while freezing the denoiser |
+| **Intent** | Model-specific remask scores without joint generator–critic optimization |
+
+### GIDD / SCDD (revision in the training process)
+
+| | |
+| --- | --- |
+| **Papers** | *Generalized Interpolating Discrete Diffusion* [arXiv:2503.04482](https://arxiv.org/abs/2503.04482); *Generalized Discrete Diffusion with Self-Correction* [arXiv:2603.02230](https://arxiv.org/html/2603.02230v1) |
+| **Fidelity** | **Adjacent** — we stay on MaskGIT random masking; a lite visible-corruption aux loss (E20) may borrow the *idea* without a full hybrid diffusion retrain |
+| **Intent** | Teach the denoiser that visible tokens can be wrong |
+
+### Latent falsification MoE (research design)
+
+| | |
+| --- | --- |
+| **Lineage** | Coconut continuous latent reasoning [2412.06769](https://arxiv.org/abs/2412.06769); SPC adversarial critics [2504.19162](https://arxiv.org/html/2504.19162v1); sparse MoE reward/critic specialization [2606.04284](https://arxiv.org/abs/2606.04284); LLaDA-MoE (generator experts — do not confuse) [2509.24389](https://arxiv.org/abs/2509.24389); counterfactual MoE routing [2605.07260](https://arxiv.org/abs/2605.07260); parallel latent slot refinement [2606.04627](https://arxiv.org/html/2606.04627v2) |
+| **Fidelity** | **Adjacent** — long-horizon design only (E22); shared correction head + top‑k mechanism specialists over frozen \(H_t\), routing on repair utility, ReMDM as transport |
+| **Design note** | [`research-correction-critics.md`](research-correction-critics.md) |
+
+### Related decode-order / remask priors
+
+| Idea | Paper | Status here |
+| --- | --- | --- |
+| Deferred commitment / sliding windows | [arXiv:2601.02076](https://arxiv.org/abs/2601.02076) | **Adjacent** — supports revisable LTR windows |
+| Token ordering / “visible ≠ revisable” | [arXiv:2502.06768](https://arxiv.org/html/2502.06768v1) | **Adjacent** — explains our permanence gap |
+| Remask, don’t replace | [arXiv:2604.18738](https://arxiv.org/abs/2604.18738) | **Adjacent** — preferred refine action |
+
+---
+
 ## Systems & data (not papers, but cited lineage)
 
 | System | Role here | Link / path |
@@ -130,6 +188,9 @@ return invalid OpenUI.
 | Valid-only certify | `--grammar-ltr-primary` + repair + finalize | `models/twotower.py` (`_ensure_valid_openui`) |
 | Preference stage | `scripts/train_preference.py` | `preference/train.py` |
 | GRPO-lite | `scripts/train_rl.py` | `rl/` |
+| ReMDM-style rollback (candidate) | E18 matrix row | `research-correction-critics.md` |
+| Trust / remask head (candidate) | E19–E21; wire `FastPathGate` | `grammar_fastpath/gate.py` |
+| Latent critic MoE (deferred) | E22 | `research-correction-critics.md` |
 
 ---
 

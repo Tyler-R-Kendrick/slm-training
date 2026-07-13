@@ -7,7 +7,8 @@
 **Architecture:** Each row is an isolatable lever (plus a stacked `combo` run). All runs use scratch context on CPU by default; HF is optional when cached.
 
 **Tech stack:** TwoTower, OpenUI grammar, ship_gates, preference composite reward.
-**Research map:** [research-lineage.md](research-lineage.md) (MaskGIT, constrained diffusion, DPO/GRPO surrogates).
+**Research map:** [research-lineage.md](research-lineage.md) (MaskGIT, constrained diffusion, DPO/GRPO surrogates);
+correction / remask candidates: [research-correction-critics.md](research-correction-critics.md).
 
 ---
 
@@ -150,3 +151,32 @@ See [quality-matrix-results.json](quality-matrix-results.json). After F1–F5 fi
 **Ship gates still not cleared** at 200–500 CPU steps; ceiling diagnostic confirms
 metrics are achievable (gold-as-prediction = 1.0). Next levers: 2000+ steps (E16),
 HF context, and slot contract on all eval suites.
+
+## V3 matrix (revision & critique)
+
+Candidate work only — research background in
+[research-correction-critics.md](research-correction-critics.md);
+Adjacent tags in [research-lineage.md](research-lineage.md). These levers attack
+**LTR permanence** and **semantic remasking**, not base underfitting. Prefer
+clearing (or approaching) E12/E15/E16 fidelity/parse first; then run V3 on a
+stronger checkpoint.
+
+| ID | Approach | Primary lever | Expected gate delta | Run id |
+| --- | --- | --- | --- | --- |
+| E18 | Suffix-rollback LTR | ReMDM-style revisable window \(W\) behind LTR frontier; remask lowest-confidence / grammar-triggered tokens; re-denoise (inference-only, existing weights) | ↑ held_out / adversarial parse | `qx_e18_suffix_rollback` |
+| E19 | BackPlay-lite trust head | Freeze denoiser; train unwired [`FastPathGate`](../../src/slm_training/grammar_fastpath/gate.py) on model’s own token errors; drive E18 remask with gate scores | ↑ fidelity + smarter remask | `qx_e19_trust_gate` |
+| E20 | Corruption-aware train | Extend [`_mask_targets`](../../src/slm_training/models/twotower.py): small fraction of visible tokens → wrong ids (uniform / model-sampled); CE to recover gold (RemeDi/GIDD-lite) | ↑ fidelity; enables revise-visible | `qx_e20_visible_corrupt` |
+| E21 | Combined remask policy | Budgeted remask \(P_i \propto\) grammar hard-error + gate score + entropy (replaces binary `filter_ids_by_stream` as sole policy) | ↑ held_out / adv parse; ↓ over-remask | `qx_e21_remask_policy` |
+| E22 | Latent falsification MoE | Deferred: shared head + top‑2 OpenUI mechanism experts + parallel latent slots; gated on E18–E21 residual failures | Research; semantic failures DFA misses | `qx_e22_latent_critics` *(not scheduled)* |
+
+Implementation order = table order (risk ascending). **E18** touches decode only
+(`twotower.py`, `parallel_decode.py`). **E19** needs frozen-backbone error
+mining. **E20** changes the train corruption graph. **E21** composes E18+E19
+signals. **E22** is documentation + future design until cheaper remask policies
+saturate.
+
+```bash
+# After a healthy E15/E16 (or ship) checkpoint — illustration only; runners TBD
+python -m scripts.run_quality_matrix --matrix v3 --only E18 --device cpu \
+  --seed-checkpoint outputs/runs/qx_e15_combo/checkpoints/last.pt
+```
