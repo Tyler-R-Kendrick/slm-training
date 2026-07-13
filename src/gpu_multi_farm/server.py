@@ -20,7 +20,6 @@ mcp = FastMCP(name="multi-gpu-farm")
 FarmArg = Literal["all", "vast", "runpod", "lambda"]
 
 
-@mcp.tool
 async def list_available_gpus(
     farm: FarmArg = "all",
     gpu_type: str | None = None,
@@ -42,7 +41,6 @@ async def list_available_gpus(
     }
 
 
-@mcp.tool
 async def launch_training_pod(farm: str, config: dict[str, Any]) -> dict[str, Any]:
     """Launch a pod optimized for training (e.g. TwoTower denoiser workloads).
 
@@ -65,7 +63,6 @@ async def launch_training_pod(farm: str, config: dict[str, Any]) -> dict[str, An
     return result.to_dict()
 
 
-@mcp.tool
 async def project_training_cost(
     hours: int,
     gpu_type: str,
@@ -90,6 +87,11 @@ async def project_training_cost(
         model_size_gb=model_size_gb,
         overhead=settings.cactus_overhead,
     )
+
+
+mcp.tool(list_available_gpus)
+mcp.tool(launch_training_pod)
+mcp.tool(project_training_cost)
 
 
 def create_server() -> FastMCP:
