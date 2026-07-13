@@ -1,0 +1,87 @@
+"""Training-data harness tests."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+
+from slm_training.dsl.schema import ExampleRecord, write_jsonl
+from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
+
+
+def _seed_file(tmp_path: Path) -> Path:
+    path = tmp_path / "seeds.jsonl"
+    write_jsonl(
+        path,
+        [
+            ExampleRecord(
+                id="t1",
+                prompt="Hero card",
+                openui=(
+                    'root = Stack(direction="vertical", children=hero)\n'
+                    "hero = Card(title=:hero.title, body=:hero.body)"
+                ),
+                placeholders=[":hero.title", ":hero.body"],
+                split="train",
+            ),
+            ExampleRecord(
+                id="t2",
+                prompt="Button only",
+                openui="root = Button(label=:cta.label)",
+                placeholders=[":cta.label"],
+                split="train",
+            ),
+        ],
+    )
+    return path
+
+
+def test_build_train_data_writes_artifacts(tmp_path: Path) -> None:
+    seeds = _seed_file(tmp_path)
+    out_root = tmp_path / "train_data"
+    result = build_train_data(
+        TrainDataConfig(
+            seed_path=seeds,
+            output_root=out_root,
+            version="vtest",
+            synthesizer="template",
+        )
+    )
+    out_dir = Path(result["output_dir"])
+    assert (out_dir / "manifest.json").exists()
+    assert (out_dir / "records.jsonl").exists()
+    assert (out_dir / "stats.json").exists()
+    stats = json.loads((out_dir / "stats.json").read_text(encoding="utf-8"))
+    # 2 seeds * (1 original + 3 templates) = 8 if all unique prompts
+    assert stats["record_count"] >= 2
+    assert stats["error_count"] == 0
+    manifest = json.loads((out_dir / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["kind"] == "train_data"
+    assert len(manifest["ids"]) == stats["record_count"]
+
+
+def test_build_train_data_rejects_invalid_openui(tmp_path: Path) -> None:
+    path = tmp_path / "bad.jsonl"
+    write_jsonl(
+        path,
+        [
+            ExampleRecord(
+                id="bad1",
+                prompt="Bad",
+                openui='root = Button(label="nope")',
+                split="train",
+            )
+        ],
+    )
+    result = build_train_data(
+        TrainDataConfig(
+            seed_path=path,
+            output_root=tmp_path / "out",
+            version="vbad",
+            synthesizer="none",
+        )
+    )
+    assert result["stats"]["record_count"] == 0
+    assert result["stats"]["error_count"] >= 1

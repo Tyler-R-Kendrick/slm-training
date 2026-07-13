@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "slm-training"
+version = "0.1.0"
+description = "Harnesses for placeholder OpenUI SLM experiments"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Tyler Kendrick" }]
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+]
+# Optional; required only when a real model plug-in is added later.
+torch = [
+  "torch>=2.2",
+]
+
+[project.scripts]
+build-train-data = "scripts.build_train_data:main"
+build-test-data = "scripts.build_test_data:main"
+train-model = "scripts.train_model:main"
+evaluate-model = "scripts.evaluate_model:main"
+
+[tool.setuptools.packages.find]
+where = ["src", "."]
+include = ["slm_training*", "scripts*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "."]
