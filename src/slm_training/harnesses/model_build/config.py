@@ -18,7 +18,7 @@ class ModelBuildConfig:
     lr: float = 3e-4
     seed: int = 0
     device: str = "cpu"
-    model_name: str = "twotower"  # twotower | stub
+    model_name: str = "twotower"  # twotower | grammar_diffusion | stub
     # TwoTower hyperparams
     d_model: int = 128
     n_heads: int = 4
@@ -40,6 +40,7 @@ class ModelBuildConfig:
     structural_bias: float = 1.25
     grammar_ltr_repair: bool = False
     grammar_ltr_max_tokens: int = 64
+    grammar_ltr_stages: tuple[int, ...] | None = None
     grammar_ltr_primary: bool = False
     grammar_finalize_validate: bool = False
     ltr_loss_weight: float = 0.5
@@ -75,9 +76,14 @@ class ModelBuildConfig:
     cache_context: bool = True
     fuse_ltr_loss: bool = True
     grammar_fastpath: bool = True
+    grammar_fastpath_mode: str = "hybrid"  # force | mask | hybrid
     fastpath_aux_weight: float = 0.0
-    # Cycle telemetry (train/infer span JSON)
-    telemetry: bool = True
+    # Grammar-diffusion (block production codec)
+    block_size: int = 4
+    production_loss_weight: float = 1.0
+    slot_loss_weight: float = 0.5
+    confidence_loss_weight: float = 0.25
+    extendability_decode: bool = True
 
     @property
     def run_dir(self) -> Path:
