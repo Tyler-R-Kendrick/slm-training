@@ -102,6 +102,7 @@ The demo checkpoint lives in `fixtures/checkpoints/playground_demo/` (committed)
 
 ```bash
 python -m scripts.bootstrap_playground --force
+```
 
 Annotate mode (default UI): auto-generated prompts, prefetch 1–2 samples ahead, and a live **OpenUI visual preview** (same `@openuidev/react-lang` `Renderer` path as [openui.com/demo](https://www.openui.com/demo/github)).
 
