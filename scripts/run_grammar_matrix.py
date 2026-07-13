@@ -54,6 +54,7 @@ class GrammarExperiment:
     schema_in_context: bool = False
     slot_contract_in_context: bool = False
     slot_contract_constrained_decode: bool = False
+    honest_slot_contract: bool = True
     grammar_ltr_repair: bool = True
     grammar_ltr_primary: bool = True
     ltr_loss_weight: float = 1.0
@@ -97,6 +98,7 @@ def _x_experiments(
         design_md_in_context=design_md_in_context,
         grammar_ltr_repair=True,
         grammar_ltr_primary=True,
+        honest_slot_contract=True,
     )
     return [
         GrammarExperiment(
@@ -113,6 +115,7 @@ def _x_experiments(
             **base,
             slot_contract_in_context=True,
             slot_contract_constrained_decode=True,
+            honest_slot_contract=True,
             fidelity_loss_weight=1.0,
         ),
         GrammarExperiment(
@@ -121,6 +124,9 @@ def _x_experiments(
             "Production codec: grammar_diffusion over production+slot heads",
             **base,
             model_name="grammar_diffusion",
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            honest_slot_contract=True,
         ),
         GrammarExperiment(
             "X3",
@@ -166,6 +172,7 @@ def _x_experiments(
             model_name="grammar_diffusion",
             slot_contract_in_context=True,
             slot_contract_constrained_decode=True,
+            honest_slot_contract=True,
             fidelity_loss_weight=1.5,
             fastpath_aux_weight=0.15,
             fuse_ltr_loss=True,
@@ -189,6 +196,7 @@ def _x_experiments(
             model_name="grammar_diffusion",
             slot_contract_in_context=True,
             slot_contract_constrained_decode=True,
+            honest_slot_contract=True,
             fidelity_loss_weight=1.5,
             fastpath_aux_weight=0.15,
             fuse_ltr_loss=True,
@@ -241,6 +249,7 @@ def _train_cfg(exp: GrammarExperiment, args: argparse.Namespace) -> ModelBuildCo
         schema_in_context=exp.schema_in_context,
         slot_contract_in_context=exp.slot_contract_in_context,
         slot_contract_constrained_decode=exp.slot_contract_constrained_decode,
+        honest_slot_contract=bool(getattr(exp, "honest_slot_contract", True)),
         best_of_n=1,
         use_curriculum=exp.use_curriculum,
         mix_curriculum=exp.mix_curriculum,

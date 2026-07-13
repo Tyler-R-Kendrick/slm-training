@@ -30,6 +30,9 @@ from slm_training.models.grammar import (
     stream_check,
 )
 from slm_training.models.parallel_decode import (
+    core_instability_scores,
+    perturb_known_neighbors,
+    select_remask_core_indices,
     select_remask_indices,
     select_remask_policy_indices,
     select_unmask_indices,
@@ -169,6 +172,14 @@ class TwoTowerConfig:
     # E33: combine grammar + gate + entropy into remask budget.
     remask_use_gate: bool = False
     remask_use_entropy: bool = False
+    # V6 remask policy: confidence | core | combined (CoRe-lite + E33).
+    remask_policy: str = "confidence"
+    # Fraction of known neighbors masked for CoRe perturbation forward (E50).
+    core_perturb_frac: float = 0.25
+    # E51/T2M: always remask→mask (never token-edit). Kept True by design.
+    remask_to_mask: bool = True
+    # E52: trust-gate mining also labels placeholder/slot binding errors.
+    slot_aware_trust_gate: bool = False
     # E21: MDLM-faithful continuous-time absorbing mask + 1/t CE weights.
     mdlm_schedule: bool = False
     mdlm_eps: float = 1e-3
@@ -1743,18 +1754,22 @@ class TwoTowerModel(nn.Module):
             else:
                 remask = []
 
-            # E22 / E33: confidence remasking (+ optional gate/entropy policy).
+            # E22 / E33 / E50: remask committed tokens → mask (T2M; never token-edit).
             if remask_ratio > 0.0 and step < steps - 1:
                 known = ~unknown
+                remask_policy = str(
+                    getattr(self.config, "remask_policy", "confidence") or "confidence"
+                ).lower()
                 use_policy = bool(
                     getattr(self.config, "remask_use_gate", False)
                     or getattr(self.config, "remask_use_entropy", False)
                     or remask
+                    or remask_policy in {"core", "combined"}
                 )
                 gate_trust = None
                 entropy = None
-                if use_policy:
-                    # Entropy from current softmax; optional trust gate on hiddens.
+                instability = None
+                if use_policy or remask_policy in {"core", "combined"}:
                     log_probs = torch.log(probs.clamp(min=1e-9))
                     entropy = -(probs * log_probs).sum(dim=-1)
                     if bool(getattr(self.config, "remask_use_gate", False)):
@@ -1769,21 +1784,66 @@ class TwoTowerModel(nn.Module):
                             gate_trust = self.trust_gate(hidden)
                         except Exception:  # noqa: BLE001
                             gate_trust = None
-                    remask_flat = select_remask_policy_indices(
-                        conf,
-                        known,
-                        remask_ratio=remask_ratio,
-                        protect_bos=True,
-                        grammar_positions=remask,
-                        gate_trust=gate_trust,
-                        entropy=entropy
-                        if bool(getattr(self.config, "remask_use_entropy", False))
-                        or gate_trust is not None
-                        else None,
-                        gate_threshold=float(
-                            getattr(self.config, "fastpath_gate_threshold", 0.5) or 0.5
-                        ),
-                    )
+                    if remask_policy in {"core", "combined"}:
+                        try:
+                            perturb_frac = float(
+                                getattr(self.config, "core_perturb_frac", 0.25) or 0.25
+                            )
+                            ids_pert = perturb_known_neighbors(
+                                ids,
+                                known,
+                                mask_id=self.tokenizer.mask_id,
+                                perturb_frac=perturb_frac,
+                                protect_bos=True,
+                            )
+                            logits_pert = self.denoiser(
+                                ids_pert,
+                                ctx,
+                                pad_id=self.tokenizer.pad_id,
+                                ctx_pad_mask=ctx_pad,
+                            )
+                            probs_pert = F.softmax(logits_pert, dim=-1)
+                            instability = core_instability_scores(
+                                probs, probs_pert, ids, known
+                            )
+                        except Exception:  # noqa: BLE001
+                            instability = None
+                    if remask_policy in {"core", "combined"}:
+                        remask_flat = select_remask_core_indices(
+                            conf,
+                            known,
+                            remask_ratio=remask_ratio,
+                            protect_bos=True,
+                            instability=instability,
+                            grammar_positions=remask,
+                            gate_trust=gate_trust,
+                            entropy=entropy
+                            if bool(getattr(self.config, "remask_use_entropy", False))
+                            or remask_policy == "combined"
+                            else None,
+                            gate_threshold=float(
+                                getattr(self.config, "fastpath_gate_threshold", 0.5)
+                                or 0.5
+                            ),
+                            combine_policy=remask_policy == "combined",
+                        )
+                    else:
+                        remask_flat = select_remask_policy_indices(
+                            conf,
+                            known,
+                            remask_ratio=remask_ratio,
+                            protect_bos=True,
+                            grammar_positions=remask,
+                            gate_trust=gate_trust,
+                            entropy=entropy
+                            if bool(getattr(self.config, "remask_use_entropy", False))
+                            or gate_trust is not None
+                            else None,
+                            gate_threshold=float(
+                                getattr(self.config, "fastpath_gate_threshold", 0.5)
+                                or 0.5
+                            ),
+                        )
                 else:
                     remask_flat = select_remask_indices(
                         conf,
@@ -1792,6 +1852,8 @@ class TwoTowerModel(nn.Module):
                         protect_bos=True,
                     )
                 remask_span = str(getattr(self.config, "remask_span", "token") or "token")
+                # E51: remask_to_mask is mandatory (T2M); token-edit paths are rejected.
+                remask_to_mask = bool(getattr(self.config, "remask_to_mask", True))
                 expand_positions: set[tuple[int, int]] = set()
                 for idx in remask_flat:
                     b = idx // length
@@ -1816,8 +1878,13 @@ class TwoTowerModel(nn.Module):
                         except Exception:  # noqa: BLE001
                             pass
                 for b, t in expand_positions:
-                    ids[b, t] = self.tokenizer.mask_id
-                    unknown[b, t] = True
+                    if remask_to_mask:
+                        ids[b, t] = self.tokenizer.mask_id
+                        unknown[b, t] = True
+                    else:
+                        # Defensive: even if misconfigured, never token-edit.
+                        ids[b, t] = self.tokenizer.mask_id
+                        unknown[b, t] = True
 
         if unknown.any():
             if use_grammar:
