@@ -49,5 +49,34 @@
     "scoped_tests": "239 passed, 2 skipped",
     "command": "pytest -q tests/test_data tests/test_dsl tests/test_harnesses/train_data",
     "ship_gates": "not run; this is corpus-build integration evidence"
+  },
+  "contract_stamp_followup": {
+    "issue": "SLM-16 follow-up for SLM-17 acceptance",
+    "run_date": "2026-07-14",
+    "recipe": {
+      "device": "CPU",
+      "steps": 0,
+      "backend": "openuidev/lang-core via OPENUI_BRIDGE_CLI",
+      "source": "all",
+      "synthesizer": "none plus bounded P12 derivatives",
+      "programspec_count": 1,
+      "rico_limit": 1,
+      "require_design_md": false,
+      "reserved_test_structure_filter": true,
+      "honesty_mode": "corpus-build acceptance only; no model-quality or ship claim"
+    },
+    "results": {
+      "record_count": 176,
+      "missing_contract_id_before": 44,
+      "missing_contract_id_after": 0,
+      "first_content_fingerprint": "9359d47176c0ec75fce9389558af69884a6ce4afc47f89fc0f7412987ad4bf17",
+      "second_content_fingerprint": "9359d47176c0ec75fce9389558af69884a6ce4afc47f89fc0f7412987ad4bf17",
+      "stable_rebuild": true
+    },
+    "verification": {
+      "scoped_tests": "14 passed",
+      "command": "pytest -q tests/test_harnesses/train_data",
+      "ship_gates": "not run; this is corpus-build contract-stamp evidence"
+    }
   }
 }
