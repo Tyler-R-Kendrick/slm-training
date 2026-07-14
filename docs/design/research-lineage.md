@@ -84,6 +84,16 @@ return invalid OpenUI.
 | **Code** | `_mask_targets` + weighted CE in [`models/twotower.py`](../../src/slm_training/models/twotower.py) |
 | **Config** | `mdlm_schedule`, `mdlm_eps` |
 
+### Structure-aware online corruption and variable-length canvases
+
+| | |
+| --- | --- |
+| **Lineage** | Masked discrete-diffusion denoising specialized to the OpenUI program structure and ProgramSpec edit metadata |
+| **Fidelity** | **Adapted** — online token, statement, balanced-subtree, reference-group, edit-local, disjoint, all-mask, reorder, and insert/delete corruption; this is not AST graph diffusion |
+| **Code** | [`data/diffusion/`](../../src/slm_training/data/diffusion), TwoTower `_online_diffusion_targets` and target-length head in [`models/twotower.py`](../../src/slm_training/models/twotower.py) |
+| **Config** | `mask_pattern=diffusion`, `diffusion_policies`, `diffusion_length_buckets`, `diffusion_overallocate`, `diffusion_length_loss_weight` |
+| **Docs** | [`diffusion-data-adapter.md`](diffusion-data-adapter.md) |
+
 ### Confidence remasking (self-correction)
 
 | | |
