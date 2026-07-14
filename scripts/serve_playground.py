@@ -33,6 +33,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--reload", action="store_true")
     parser.add_argument(
+        "--enable-jobs",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Enable the local control-plane job runner (default: on). "
+        "Disable with --no-enable-jobs for a read-only server.",
+    )
+    parser.add_argument(
         "--annotations-path",
         type=Path,
         default=Path("outputs/annotations/feedback.jsonl"),
@@ -75,6 +82,7 @@ def main(argv: list[str] | None = None) -> int:
         human_pairs_path=args.human_pairs_path,
         bad_outputs_path=args.bad_outputs_path,
         annotation_token=annotation_token,
+        execution=args.enable_jobs,
     )
     # Eager-load so the first request is fast
     try:

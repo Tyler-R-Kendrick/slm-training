@@ -129,13 +129,47 @@ Content props must be placeholder strings. Parsing/serialization/prompt generati
 
 DESIGN.md conditioning + linter: [`tools/design_md_bridge/`](tools/design_md_bridge/) and [`fixtures/design_md/`](fixtures/design_md/).
 
-## Web playground (annotate)
+## Mission Control dashboard
+
+`serve_playground` serves a **control-plane + observability SPA** at `/` — one
+pane of glass over the whole lifecycle (data → experiments → smoke →
+checkpoints/promotion) — plus the classic annotate playground at `/playground`.
 
 ```bash
 pip install -e ".[dev,torch,web]"
-python -m scripts.serve_playground --port 8765
+python -m scripts.serve_playground --port 8765        # full control plane (local)
+python -m scripts.serve_playground --no-enable-jobs   # read-only observability
 # For network exposure, set SLM_ANNOTATION_TOKEN and add --public.
 # open http://127.0.0.1:8765
+```
+
+Surfaces (React 19 + Vite SPA, dark-first "mission control" design system):
+
+| Route | What |
+| --- | --- |
+| `/` Overview | Live jobs, experiment scoreboard, checkpoint roster, corpus health, system status |
+| `/data` | Navigate + generate versioned corpora (`build_train_data` / `build_test_data`) |
+| `/experiments` | Quality / grammar / perf / phase matrices; run `run_*_matrix` |
+| `/smoke` | Smoke canary + perf & telemetry; launch wiring runs |
+| `/checkpoints` | Roster + **live configurable ship gates** + promote / deploy + blinded A/B |
+| `/playground` | Classic annotate UI (below) |
+
+**Read vs execute.** Observability views are pure reads (work on a fresh checkout
+and on read-only Vercel, falling back to committed `docs/design/*.json` /
+`MODEL_CARD.md` / `fixtures/`, tagged with `provenance`). Generate/run/promote
+actions execute an **allowlisted** set of scripts as tracked background jobs with
+live SSE logs — only when served locally (`--enable-jobs`, default on); Vercel
+degrades to read-only automatically. Gate math (`POST /api/gates/evaluate`) is
+pure, so the threshold editor stays live even read-only. Backend:
+`src/slm_training/web/{observability,jobs,capabilities,routes}.py`; SPA source in
+[`tools/dashboard/`](tools/dashboard/) (built bundle committed under
+`web/static/app/`, like the preview lib).
+
+## Annotate playground (`/playground`)
+
+```bash
+python -m scripts.serve_playground --port 8765
+# open http://127.0.0.1:8765/playground
 ```
 
 The demo checkpoint lives in `fixtures/checkpoints/playground_demo/` (committed
@@ -170,6 +204,14 @@ python -m scripts.export_annotations export
 npm run preview:install
 npm run preview:build
 # writes src/slm_training/web/static/preview/{preview.js,preview.css}
+```
+
+### Rebuild the dashboard bundle
+
+```bash
+npm run dashboard:install
+npm run dashboard:build
+# writes src/slm_training/web/static/app/ (built SPA, committed like the preview lib)
 ```
 
 ### Playwright visual / e2e
@@ -306,7 +348,7 @@ src/slm_training/
   data/                # RICO / Awwwards adapters + leakage fingerprints
   evals/               # loss suites / denoising NLL
   runtime/             # accel, telemetry, compression, cactus
-  web/                 # annotate playground API + static preview
+  web/                 # mission-control API (observability + jobs) + annotate playground + SPA
 src/gpu_multi_farm/    # FastMCP server + farm adapters
 tools/openui_bridge/   # @openuidev/lang-core Node sidecar
 tools/design_md_bridge/

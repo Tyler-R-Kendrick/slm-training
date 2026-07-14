@@ -31,4 +31,5 @@ test-results/
 playwright-report/
 blob-report/
 src/slm_training/web/static/preview/*.map
+src/slm_training/web/static/app/assets/*.map
 tools/openui_preview/node_modules/

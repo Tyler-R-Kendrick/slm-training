@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import secrets
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Literal
 
@@ -11,9 +12,13 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from slm_training.web.capabilities import resolve_capabilities
+from slm_training.web.observability import Readers
+from slm_training.web.routes import actions_router, observability_router
 from slm_training.web.service import PlaygroundService
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+SPA_DIR = STATIC_DIR / "app"
 
 
 class GenerateRequest(BaseModel):
@@ -49,6 +54,8 @@ def create_app(
     human_pairs_path: Path | None = None,
     bad_outputs_path: Path | None = None,
     annotation_token: str | None = None,
+    execution: bool = False,
+    root: Path | None = None,
 ) -> FastAPI:
     service = PlaygroundService(
         checkpoint=checkpoint,
@@ -58,7 +65,31 @@ def create_app(
         human_pairs_path=human_pairs_path,
         bad_outputs_path=bad_outputs_path,
     )
-    app = FastAPI(title="TwoTower OpenUI Playground", version="0.2.0")
+
+    # Control-plane capability + job runner (only wired when execution is allowed).
+    app_root = Path(root) if root is not None else Path(".")
+    capabilities = resolve_capabilities(execution, outputs_dir=app_root / "outputs")
+    registry = None
+    if capabilities.execution:
+        from slm_training.web.jobs import JobRegistry
+
+        registry = JobRegistry(app_root)
+
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI):
+        if registry is not None:
+            await registry.start()
+        yield
+        if registry is not None:
+            await registry.shutdown()
+
+    app = FastAPI(
+        title="TwoTower OpenUI Playground", version="0.2.0", lifespan=lifespan
+    )
+    app.state.readers = Readers(app_root)
+    app.state.capabilities = capabilities
+    if registry is not None:
+        app.state.jobs = registry
 
     def _require_annotation_token(authorization: str | None) -> None:
         if annotation_token is None:
@@ -157,10 +188,34 @@ def create_app(
             "path": str(service.annotations_path),
         }
 
+    app.include_router(observability_router)
+    app.include_router(actions_router)
+
+    def _spa_or_classic() -> FileResponse:
+        spa_index = SPA_DIR / "index.html"
+        if spa_index.exists():
+            return FileResponse(spa_index)
+        # Cold path (SPA bundle not built): serve the classic playground so the
+        # app is never broken.
+        return FileResponse(STATIC_DIR / "index.html")
+
     @app.get("/")
     def index() -> FileResponse:
+        return _spa_or_classic()
+
+    @app.get("/playground")
+    def playground() -> FileResponse:
+        # Classic annotate playground stays reachable as a standalone page.
         return FileResponse(STATIC_DIR / "index.html")
 
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+    @app.get("/{full_path:path}")
+    def spa_fallback(full_path: str) -> FileResponse:
+        # Client-side routing: serve the SPA shell for unknown non-API paths.
+        if full_path.startswith(("api/", "static/")):
+            raise HTTPException(status_code=404, detail="not found")
+        return _spa_or_classic()
+
     app.state.service = service
     return app
