@@ -11,3 +11,13 @@ After any train / eval / benchmark / matrix run, use
 [huggingface/skills](https://github.com/huggingface/skills)
 (`hf skills add --claude --force` / `hf skills update` to refresh).
 When a checkpoint is created or promoted, update `docs/MODEL_CARD.md` and the README model-card summary.
+
+<!-- OPENWIKI:START -->
+
+## OpenWiki
+
+This repository uses OpenWiki for recurring code documentation. Start with `openwiki/quickstart.md`, then follow its links to architecture, workflows, domain concepts, operations, integrations, testing guidance, and source maps.
+
+The scheduled OpenWiki GitHub Actions workflow refreshes the repository wiki. Do not hand-edit generated OpenWiki pages unless explicitly asked; prefer updating source code/docs and letting OpenWiki regenerate.
+
+<!-- OPENWIKI:END -->

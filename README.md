@@ -227,6 +227,23 @@ Repo ships **ponytail**, **caveman**, **headroom**, and **rtk** under
 curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
 ```
 
+### OpenWiki (code mode)
+
+Repository wiki for agents lives under [`openwiki/`](openwiki/) (start at
+[`openwiki/quickstart.md`](openwiki/quickstart.md)). Setup uses
+[langchain-ai/openwiki](https://github.com/langchain-ai/openwiki) code mode:
+[`AGENTS.md`](AGENTS.md) / [`CLAUDE.md`](CLAUDE.md) OpenWiki snippets and
+[`.github/workflows/openwiki-update.yml`](.github/workflows/openwiki-update.yml).
+
+```bash
+npm install -g openwiki
+# needs OPENWIKI_PROVIDER + provider API key in env or ~/.openwiki/.env
+openwiki code --update --print
+```
+
+Add repo secret `OPENROUTER_API_KEY` (default workflow provider) to enable the
+scheduled OpenWiki update PRs.
+
 ### Hugging Face CLI + skills
 
 Agents use the official `hf` CLI and the
