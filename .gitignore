@@ -18,7 +18,9 @@ node_modules/
 *.bin
 .DS_Store
 .idea/
-.vscode/
+# Keep VS Code junk ignored; allow Serena MCP config.
+.vscode/*
+!.vscode/mcp.json
 .env
 .env.local
 .env.*.local

@@ -1,0 +1,9 @@
+---
+description: Compress large tool outputs in-context (Headroom techniques).
+globs:
+alwaysApply: false
+---
+
+Before pasting large tool results into context, apply the `headroom` skill
+transforms (SmartCrusher / LogCompressor / SearchCompressor / CodeCompressor).
+Helper scripts live under `.agents/skills/headroom/scripts/`.

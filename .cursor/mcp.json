@@ -3,6 +3,22 @@
     "playwright": {
       "command": "npx",
       "args": ["-y", "@playwright/mcp@latest"]
+    },
+    "huggingface": {
+      "type": "http",
+      "url": "https://huggingface.co/mcp?login"
+    },
+    "serena": {
+      "command": "serena",
+      "args": [
+        "start-mcp-server",
+        "--context",
+        "ide",
+        "--project",
+        ".",
+        "--open-web-dashboard",
+        "false"
+      ]
     }
   }
 }

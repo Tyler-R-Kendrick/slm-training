@@ -36,6 +36,7 @@ torch = [
 hf = [
   "transformers>=4.40,<5",
   "accelerate>=0.30,<2",
+  "huggingface_hub>=0.30,<2",
 ]
 rico = [
   "datasets>=2.18,<4",
@@ -67,10 +68,12 @@ train-preference = "scripts.train_preference:main"
 export-cactus = "scripts.export_cactus:main"
 bench-cactus = "scripts.bench_cactus:main"
 remote-train = "scripts.remote_train:main"
+hf-jobs-train = "scripts.hf_jobs_train:main"
 multi-farm-mcp = "scripts.multi_farm_mcp:main"
 serve-playground = "scripts.serve_playground:main"
 bootstrap-playground = "scripts.bootstrap_playground:main"
 export-annotations = "scripts.export_annotations:main"
+sync-checkpoints = "scripts.sync_checkpoints:main"
 
 [tool.setuptools.packages.find]
 where = ["src", "."]
@@ -88,6 +91,36 @@ asyncio_mode = "auto"
 # Playground FastAPI instance (see api/index.py). Required for Git-triggered
 # Vercel builds; without this the project fails with FASTAPI_ENTRYPOINT_NOT_FOUND.
 entrypoint = "api.index:app"
+
+[tool.ruff]
+# Vendored Hugging Face marketplace skills (refreshed via `hf skills update`).
+# Keep lint focused on repo-owned Python under src/scripts/tests.
+extend-exclude = [
+  ".agents/skills/hf-*",
+  ".agents/skills/huggingface-*",
+  ".agents/skills/trl-training",
+  ".agents/skills/train-sentence-transformers",
+  ".agents/skills/transformers-js",
+  ".agents/skills/headroom",
+  ".agents/skills/caveman*",
+  ".agents/skills/ponytail*",
+  ".claude/skills/hf-*",
+  ".claude/skills/huggingface-*",
+  ".claude/skills/trl-training",
+  ".claude/skills/train-sentence-transformers",
+  ".claude/skills/transformers-js",
+  ".claude/skills/headroom",
+  ".claude/skills/caveman*",
+  ".claude/skills/ponytail*",
+  ".cursor/skills/hf-*",
+  ".cursor/skills/huggingface-*",
+  ".cursor/skills/trl-training",
+  ".cursor/skills/train-sentence-transformers",
+  ".cursor/skills/transformers-js",
+  ".cursor/skills/headroom",
+  ".cursor/skills/caveman*",
+  ".cursor/skills/ponytail*",
+]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["E402"]
