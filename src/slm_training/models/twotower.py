@@ -22,10 +22,17 @@ from slm_training.models.context import (
     build_context_encoder,
     is_hf_context,
 )
+from slm_training.models.decode_stats import (
+    DecodeStats,
+    collect_decode_stats,
+    get_active_stats,
+    timed_ms,
+)
 from slm_training.models.grammar import (
     apply_structural_bias,
     filter_ids_by_stream,
     force_emit_token_id,
+    make_grammar_state,
     pick_constrained_token,
     stream_check,
 )
@@ -226,6 +233,26 @@ class TwoTowerConfig:
     remask_span: str = "token"
     # Optional teacher-init of symbol embeddings from HF context (E45).
     teacher_init_embeddings: bool = False
+    # --- Inference-speed levers (P/Q/R-series; decode-only, no retrain) ---
+    # P1: reuse one DFA engine + decoded prefix text per decode row.
+    grammar_incremental_state: bool = True
+    # P2: probe model argmax first; skip stream probes on exact DFA terminals.
+    grammar_verify_chosen_only: bool = False
+    grammar_skip_exact_stream_probe: bool = True
+    # Q1: InteractiveParser.copy()-based DFA admit probes.
+    grammar_copy_probes: bool = True
+    # Q2: early-exit descending-logit candidate scoring in pick_constrained_token.
+    grammar_early_exit_pick: bool = True
+    # P3: accept a run of consecutive grammar-legal argmax tokens per forward.
+    grammar_multitoken_accept: bool = False
+    grammar_multitoken_max: int = 8
+    # P4: run denoiser on prefix + K mask lookahead instead of full canvas.
+    grammar_canvas_lookahead: int = 0  # 0 = disabled (use progressive stages)
+    # P5: dynamic int8 quantization of Linear layers at eval time.
+    use_dynamic_quant: bool = False
+    # P7: playground/generate attempt budget + finalize-only-on-last.
+    generate_max_attempts: int = 3
+    grammar_finalize_on_last_attempt_only: bool = False
     # --- V7 speculative denoising (docs/design/speculative-denoising.md) ---
     # E70 LESS-lite: require argmax persistence before committing (0=off);
     # remask_policy="stability" ranks remasks by persistence + inter-step JSD.
@@ -412,7 +439,32 @@ class TwoTowerModel(nn.Module):
             "temperature": float(
                 getattr(self.config, "grammar_sample_temperature", 0.8) or 0.8
             ),
+            "verify_chosen_only": bool(
+                getattr(self.config, "grammar_verify_chosen_only", False)
+            ),
         }
+
+    def _new_grammar_states(self, batch_size: int) -> list | None:
+        """Allocate per-row GrammarDecodeState when P1 incremental state is on."""
+        if not bool(getattr(self.config, "grammar_incremental_state", True)):
+            return None
+        return [
+            make_grammar_state(
+                verify_chosen_only=bool(
+                    getattr(self.config, "grammar_verify_chosen_only", False)
+                ),
+                skip_exact_stream_probe=bool(
+                    getattr(self.config, "grammar_skip_exact_stream_probe", True)
+                ),
+                use_copy_probes=bool(
+                    getattr(self.config, "grammar_copy_probes", True)
+                ),
+                early_exit_pick=bool(
+                    getattr(self.config, "grammar_early_exit_pick", True)
+                ),
+            )
+            for _ in range(batch_size)
+        ]
 
     def clear_train_caches(self) -> None:
         self._context_text_cache.clear()
@@ -497,7 +549,8 @@ class TwoTowerModel(nn.Module):
     ) -> tuple[torch.Tensor, torch.Tensor]:
         from slm_training.telemetry import timed
 
-        with timed("context_encode"):
+        stats = get_active_stats()
+        with timed("context_encode"), timed_ms(stats, "context_ms"):
             if is_hf_context(self.context):
                 assert isinstance(self.context, HFContextEncoder)
                 self.context.cache_backbone = bool(
@@ -519,6 +572,22 @@ class TwoTowerModel(nn.Module):
                     pad_id=self.context_tokenizer.pad_id,
                     device=self.device_name,
                 )
+
+    def apply_dynamic_quant(self) -> bool:
+        """P5: dynamically quantize Linear layers to int8 (CPU). Returns True on success."""
+        if str(self.device_name) != "cpu":
+            return False
+        try:
+            quantized = torch.ao.quantization.quantize_dynamic(
+                self.denoiser,
+                {torch.nn.Linear},
+                dtype=torch.qint8,
+            )
+            self.denoiser = quantized
+            self.config.use_dynamic_quant = True
+            return True
+        except Exception:  # noqa: BLE001
+            return False
 
     def _mask_targets(
         self, target_ids: torch.Tensor
@@ -1003,7 +1072,7 @@ class TwoTowerModel(nn.Module):
         ctx_pad: torch.Tensor,
         length: int,
         *,
-        attempts: int = 3,
+        attempts: int | None = None,
         slot_contract: list[str] | None = None,
     ) -> str:
         """
@@ -1017,7 +1086,13 @@ class TwoTowerModel(nn.Module):
 
         E20: when ``template_fill_decode`` and a slot contract are set, prefer the
         inventory-bound skeleton over a broken model sample.
+
+        R5: ``attempts`` defaults to ``generate_max_attempts``; callers that
+        already ran a BOS LTR repair may pass ``attempts=0`` to skip a redundant
+        redo and fall through to finalize/minimal.
         """
+        if attempts is None:
+            attempts = int(getattr(self.config, "generate_max_attempts", 3) or 3)
         ser = self._canonical_valid_openui(text)
         if ser is not None:
             return ser
@@ -1034,7 +1109,7 @@ class TwoTowerModel(nn.Module):
         ):
             return text
         last = text
-        for _ in range(max(1, attempts)):
+        for _ in range(max(0, int(attempts))):
             last = self._ltr_repair_from_bos(ctx, ctx_pad, length)
             ser = self._canonical_valid_openui(last)
             if ser is not None:
@@ -1057,69 +1132,147 @@ class TwoTowerModel(nn.Module):
         *,
         slot_contract: list[str] | None = None,
     ) -> torch.Tensor:
-        """Fill remaining masks left-to-right with streaming-parser filtering."""
+        """Fill remaining masks left-to-right with streaming-parser filtering.
+
+        R4: honor ``grammar_multitoken_accept`` + ``grammar_canvas_lookahead``
+        so repair/BOS certify share the same forward budget as greedy LTR.
+
+        When ``trace_recorder`` is set (promotion/distill path from main), record
+        per-forward commits the same way as the pre-R4 repair loop.
+        """
         use_contract = bool(
             getattr(self.config, "slot_contract_constrained_decode", False)
         )
         contract = slot_contract if use_contract else None
         length = ids.size(1)
         use_fast = bool(getattr(self.config, "grammar_fastpath", True))
+        states = self._new_grammar_states(1)
+        st = states[0] if states is not None else None
+        pick_kw = self._pick_kwargs()
+        multitoken = bool(getattr(self.config, "grammar_multitoken_accept", False))
+        multitoken_max = max(1, int(getattr(self.config, "grammar_multitoken_max", 8) or 8))
+        lookahead = int(getattr(self.config, "grammar_canvas_lookahead", 0) or 0)
+        bias = self._effective_structural_bias()
+        tok = self.tokenizer
+        stats = get_active_stats()
         rec = getattr(self, "trace_recorder", None)
         repair_commits: list[dict] = []
-        for t in range(length):
+
+        def _record_commit(
+            pos: int,
+            token_id: int,
+            logits_1d: torch.Tensor,
+            *,
+            forced: bool,
+        ) -> None:
+            if rec is None:
+                return
+            log_probs = F.log_softmax(logits_1d.float(), dim=-1)
+            repair_commits.append(
+                {
+                    "t": pos,
+                    "id": int(token_id),
+                    "lp": float(log_probs[int(token_id)].item()),
+                    "forced": forced,
+                    "phase": "ltr_repair",
+                }
+            )
+
+        t = 0
+        while t < length:
             if not bool(unknown[0, t].item()):
+                if st is not None and len(st.prefix_ids) == t:
+                    st.advance_token(tok, int(ids[0, t].item()))
+                t += 1
                 continue
             prefix = ids[0, :t].tolist()
+            if st is not None:
+                st.sync_ids(tok, prefix)
             forced = (
-                force_emit_token_id(self.tokenizer, prefix)
-                if use_fast
-                else None
+                force_emit_token_id(tok, prefix, state=st) if use_fast else None
             )
-            logits = self.denoiser(
-                ids, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
-            )
-            if rec is not None:
-                rec.forward()
-            if self._effective_structural_bias():
-                logits = apply_structural_bias(
-                    logits,
-                    self.tokenizer,
-                    bias=self._effective_structural_bias(),
-                )
+            # P4: truncate canvas to prefix + lookahead for the forward.
+            if lookahead > 0:
+                end = min(length, t + lookahead)
+                fwd_ids = ids[:, :end]
+            else:
+                end = length
+                fwd_ids = ids
+            logits = self._denoiser_forward(fwd_ids, ctx, ctx_pad)
+            if bias:
+                logits = apply_structural_bias(logits, tok, bias=bias)
+            local_t = min(t, end - 1)
+            row = logits[0, local_t].clone()
+            row[tok.mask_id] = -1e9
+            row[tok.pad_id] = -1e9
             choice = pick_constrained_token(
-                logits[0, t],
-                self.tokenizer,
+                row,
+                tok,
                 prefix,
                 top_k=self.config.grammar_top_k,
                 forced_token_id=forced,
                 slot_contract=contract,
-                **self._pick_kwargs(),
+                state=st,
+                **pick_kw,
             )
             if choice is None:
                 # No legal continuation — pad out and stop rather than emit garbage.
-                ids[0, t:] = self.tokenizer.pad_id
+                ids[0, t:] = tok.pad_id
                 unknown[0, t:] = False
                 if rec is not None:
                     rec.event("repair_dead_end", position=t)
                 break
             ids[0, t] = choice
             unknown[0, t] = False
-            if rec is not None:
-                log_probs = F.log_softmax(logits[0, t].float(), dim=-1)
-                repair_commits.append(
-                    {
-                        "t": t,
-                        "id": int(choice),
-                        "lp": float(log_probs[int(choice)].item()),
-                        "forced": forced is not None,
-                        "phase": "ltr_repair",
-                    }
-                )
-            if choice == self.tokenizer.eos_id:
+            if st is not None:
+                st.advance_token(tok, int(choice))
+            if stats is not None:
+                stats.tokens_emitted += 1
+            _record_commit(t, int(choice), logits[0, local_t], forced=forced is not None)
+            if choice == tok.eos_id:
                 if t + 1 < length:
-                    ids[0, t + 1 :] = self.tokenizer.pad_id
+                    ids[0, t + 1 :] = tok.pad_id
                     unknown[0, t + 1 :] = False
                 break
+
+            advance = 1
+            # P3: greedily accept consecutive unknown positions from the same
+            # forward without re-running the denoiser.
+            if multitoken:
+                max_run = min(multitoken_max, end - t - 1)
+                for step in range(1, max_run + 1):
+                    pos = t + step
+                    if pos >= logits.size(1) or not bool(unknown[0, pos].item()):
+                        break
+                    logits_pos = logits[0, pos].clone()
+                    logits_pos[tok.mask_id] = -1e9
+                    logits_pos[tok.pad_id] = -1e9
+                    nxt = pick_constrained_token(
+                        logits_pos,
+                        tok,
+                        ids[0, :pos].tolist(),
+                        top_k=self.config.grammar_top_k,
+                        slot_contract=contract,
+                        state=st,
+                        **pick_kw,
+                    )
+                    if nxt is None:
+                        break
+                    ids[0, pos] = nxt
+                    unknown[0, pos] = False
+                    if st is not None:
+                        st.advance_token(tok, int(nxt))
+                    if stats is not None:
+                        stats.tokens_emitted += 1
+                        stats.accepted_run_tokens += 1
+                    _record_commit(pos, int(nxt), logits[0, pos], forced=False)
+                    advance = step + 1
+                    if nxt == tok.eos_id:
+                        if pos + 1 < length:
+                            ids[0, pos + 1 :] = tok.pad_id
+                            unknown[0, pos + 1 :] = False
+                        break
+            t += advance
         if rec is not None and repair_commits:
             rec.step(
                 "ltr_repair",
@@ -1130,6 +1283,11 @@ class TwoTowerModel(nn.Module):
         return ids
 
     def _ltr_canvases(self, length: int) -> list[int]:
+        lookahead = int(getattr(self.config, "grammar_canvas_lookahead", 0) or 0)
+        if lookahead > 0:
+            # P4: single growing canvas is replaced by prefix+K windows inside
+            # the decode loop; still expose the target length as the final stage.
+            return [length]
         if getattr(self.config, "grammar_block_decode", False):
             block = max(8, int(getattr(self.config, "grammar_block_size", 32) or 32))
             stages: list[int] = []
@@ -1153,6 +1311,26 @@ class TwoTowerModel(nn.Module):
                 canvases.append(s)
         return canvases
 
+    def _denoiser_forward(
+        self,
+        ids: torch.Tensor,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor,
+    ) -> torch.Tensor:
+        """Run denoiser and accumulate decode stats / optional trace forwards."""
+        stats = get_active_stats()
+        with timed_ms(stats, "denoiser_ms"):
+            logits = self.denoiser(
+                ids, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
+            )
+        if stats is not None:
+            stats.forwards_count += 1
+            stats.canvas_tokens += int(ids.size(1))
+        rec = getattr(self, "trace_recorder", None)
+        if rec is not None:
+            rec.forward()
+        return logits
+
     def _greedy_ltr_decode(
         self,
         ctx: torch.Tensor,
@@ -1173,12 +1351,22 @@ class TwoTowerModel(nn.Module):
 
         Finished sequences (EOS) are padded and skipped; remaining rows share
         transformer forwards — large win for eval throughput.
+
+        P1: per-row GrammarDecodeState reuses DFA + prefix text.
+        P3: multi-token accept from a single forward's logits.
+        P4: optional prefix+K mask lookahead canvas truncation.
         """
         bsz = int(ctx.size(0))
         device = self.device_name
         tok = self.tokenizer
         bias = self._effective_structural_bias()
         canvases = self._ltr_canvases(length)
+        states = self._new_grammar_states(bsz)
+        pick_kw = self._pick_kwargs()
+        multitoken = bool(getattr(self.config, "grammar_multitoken_accept", False))
+        multitoken_max = max(1, int(getattr(self.config, "grammar_multitoken_max", 8) or 8))
+        lookahead = int(getattr(self.config, "grammar_canvas_lookahead", 0) or 0)
+        stats = get_active_stats()
 
         ids: torch.Tensor | None = None
         active = torch.ones(bsz, dtype=torch.bool, device=device)
@@ -1209,40 +1397,65 @@ class TwoTowerModel(nn.Module):
                     ids = torch.cat([ids, pad], dim=1)
 
             use_fast = bool(getattr(self.config, "grammar_fastpath", True))
-            for t in range(start_t, canvas):
+            t = start_t
+            while t < canvas:
                 if not bool(active.any()):
                     break
                 active_idx = active.nonzero(as_tuple=False).flatten()
                 forced_map: dict[int, int] = {}
                 if use_fast:
                     for bi in active_idx.tolist():
-                        forced = force_emit_token_id(tok, ids[bi, :t].tolist())
+                        st = states[bi] if states is not None else None
+                        forced = force_emit_token_id(
+                            tok, ids[bi, :t].tolist(), state=st
+                        )
                         if forced is not None:
                             forced_map[bi] = forced
-                # Always run the denoiser for active rows — force-emit is a hint
-                # only. Passing zero logits previously made force skip whitespace.
                 need_model = active_idx.tolist()
-
                 pred = ids[:, t].clone()
+                # Optional P3: stash full-row logits for multi-token accept.
+                row_logits_full: torch.Tensor | None = None
+
                 if need_model:
                     need_t = torch.tensor(need_model, device=device, dtype=torch.long)
-                    if need_t.numel() == bsz:
-                        logits = self.denoiser(
-                            ids, ctx, pad_id=tok.pad_id, ctx_pad_mask=ctx_pad
+                    # P4: truncate canvas to prefix + lookahead for the forward.
+                    if lookahead > 0:
+                        end = min(canvas, t + lookahead)
+                        fwd_ids = ids.index_select(0, need_t)[:, :end]
+                        sub_ctx = ctx.index_select(0, need_t)
+                        sub_pad = ctx_pad.index_select(0, need_t)
+                        logits = self._denoiser_forward(fwd_ids, sub_ctx, sub_pad)
+                        if bias:
+                            logits = apply_structural_bias(logits, tok, bias=bias)
+                        row = torch.full(
+                            (bsz, logits.size(-1)),
+                            -1e9,
+                            device=device,
+                            dtype=logits.dtype,
                         )
+                        # Position t maps to local index t (ids already start at 0).
+                        local_t = min(t, end - 1)
+                        row.index_copy_(0, need_t, logits[:, local_t, :])
+                        if multitoken:
+                            row_logits_full = torch.full(
+                                (bsz, end, logits.size(-1)),
+                                -1e9,
+                                device=device,
+                                dtype=logits.dtype,
+                            )
+                            row_logits_full.index_copy_(0, need_t, logits)
+                    elif need_t.numel() == bsz:
+                        logits = self._denoiser_forward(ids, ctx, ctx_pad)
                         if bias:
                             logits = apply_structural_bias(logits, tok, bias=bias)
                         row = logits[:, t, :].clone()
+                        if multitoken:
+                            row_logits_full = logits
                     else:
                         sub_ids = ids.index_select(0, need_t)
                         sub_ctx = ctx.index_select(0, need_t)
                         sub_pad = ctx_pad.index_select(0, need_t)
-                        logits = self.denoiser(
-                            sub_ids,
-                            sub_ctx,
-                            pad_id=tok.pad_id,
-                            ctx_pad_mask=sub_pad,
-                        )
+                        logits = self._denoiser_forward(sub_ids, sub_ctx, sub_pad)
                         if bias:
                             logits = apply_structural_bias(logits, tok, bias=bias)
                         row = torch.full(
@@ -1252,6 +1465,14 @@ class TwoTowerModel(nn.Module):
                             dtype=logits.dtype,
                         )
                         row.index_copy_(0, need_t, logits[:, t, :])
+                        if multitoken:
+                            row_logits_full = torch.full(
+                                (bsz, logits.size(1), logits.size(-1)),
+                                -1e9,
+                                device=device,
+                                dtype=logits.dtype,
+                            )
+                            row_logits_full.index_copy_(0, need_t, logits)
                     row = row.clone()
                     row[:, tok.mask_id] = -1e9
                     row[:, tok.pad_id] = -1e9
@@ -1265,6 +1486,7 @@ class TwoTowerModel(nn.Module):
                             self.config, "slot_contract_constrained_decode", False
                         ):
                             contract = None
+                        st = states[bi] if states is not None else None
                         choice = pick_constrained_token(
                             row[bi],
                             tok,
@@ -1272,13 +1494,18 @@ class TwoTowerModel(nn.Module):
                             top_k=self.config.grammar_top_k,
                             forced_token_id=forced_map.get(bi),
                             slot_contract=contract,
-                            **self._pick_kwargs(),
+                            state=st,
+                            **pick_kw,
                         )
                         if choice is None:
                             # No legal token — end sequence rather than emit garbage.
                             pred[bi] = tok.eos_id
                         else:
                             pred[bi] = choice
+                            if st is not None:
+                                st.advance_token(tok, int(choice))
+                        if stats is not None:
+                            stats.tokens_emitted += 1
 
                 ids[:, t] = torch.where(active, pred, ids[:, t])
                 hit_eos = active & pred.eq(tok.eos_id)
@@ -1287,44 +1514,138 @@ class TwoTowerModel(nn.Module):
                         ids[b, t + 1 :] = tok.pad_id
                 active = active & ~pred.eq(tok.eos_id)
 
+                # P3: greedily accept consecutive legal argmax tokens from the
+                # same forward without re-running the denoiser.
+                advance = 1
+                if (
+                    multitoken
+                    and row_logits_full is not None
+                    and bool(active.any())
+                ):
+                    max_run = min(multitoken_max, canvas - t - 1)
+                    for step in range(1, max_run + 1):
+                        pos = t + step
+                        if pos >= row_logits_full.size(1):
+                            break
+                        step_pred = ids[:, pos].clone()
+                        any_accept = False
+                        for bi in active.nonzero(as_tuple=False).flatten().tolist():
+                            logits_pos = row_logits_full[bi, pos].clone()
+                            logits_pos[tok.mask_id] = -1e9
+                            logits_pos[tok.pad_id] = -1e9
+                            contract = (
+                                self._slot_contracts[bi]
+                                if self._slot_contracts
+                                and bi < len(self._slot_contracts)
+                                else None
+                            )
+                            if not getattr(
+                                self.config, "slot_contract_constrained_decode", False
+                            ):
+                                contract = None
+                            st = states[bi] if states is not None else None
+                            choice = pick_constrained_token(
+                                logits_pos,
+                                tok,
+                                ids[bi, :pos].tolist(),
+                                top_k=self.config.grammar_top_k,
+                                slot_contract=contract,
+                                state=st,
+                                **pick_kw,
+                            )
+                            if choice is None:
+                                step_pred[bi] = tok.eos_id
+                            else:
+                                step_pred[bi] = choice
+                                any_accept = True
+                                if st is not None:
+                                    st.advance_token(tok, int(choice))
+                                if stats is not None:
+                                    stats.tokens_emitted += 1
+                                    stats.accepted_run_tokens += 1
+                        if not any_accept:
+                            break
+                        ids[:, pos] = torch.where(active, step_pred, ids[:, pos])
+                        hit_eos = active & step_pred.eq(tok.eos_id)
+                        if bool(hit_eos.any()) and pos + 1 < canvas:
+                            for b in hit_eos.nonzero(as_tuple=False).flatten().tolist():
+                                ids[b, pos + 1 :] = tok.pad_id
+                        active = active & ~step_pred.eq(tok.eos_id)
+                        advance = step + 1
+                        if not bool(active.any()):
+                            break
+
                 # E30: suffix-rollback — revisable window behind LTR frontier.
                 window = int(getattr(self.config, "suffix_rollback_window", 0) or 0)
-                if window > 0 and t >= 2 and (t % max(2, window // 2) == 0):
-                    row_logits = row if need_model else None
+                frontier = t + advance - 1
+                if window > 0 and frontier >= 2 and (frontier % max(2, window // 2) == 0):
                     for bi in active.nonzero(as_tuple=False).flatten().tolist():
-                        prefix_text = self._decode_ids(ids[bi, : t + 1])
+                        prefix_text = self._decode_ids(ids[bi, : frontier + 1])
                         try:
                             status = stream_check(prefix_text)
                             hard = bool(status.hard_error)
                         except Exception:  # noqa: BLE001
                             hard = True
-                        # Entropy spike on current position as secondary trigger.
                         ent_spike = False
-                        if row_logits is not None:
+                        if need_model:
                             try:
-                                probs_t = F.softmax(row_logits[bi], dim=-1)
+                                probs_t = F.softmax(row[bi], dim=-1)
                                 ent = float(
                                     (-(probs_t * (probs_t + 1e-9).log()).sum()).item()
                                 )
-                                ent_spike = ent > math.log(max(2, tok.vocab_size)) * 0.55
+                                ent_spike = (
+                                    ent > math.log(max(2, tok.vocab_size)) * 0.55
+                                )
                             except Exception:  # noqa: BLE001
                                 ent_spike = False
                         if not (hard or ent_spike):
                             continue
-                        start = max(1, t - window + 1)
-                        # Remask suffix window and re-denoise left-to-right.
-                        ids[bi, start : t + 1] = tok.mask_id
-                        for rt in range(start, t + 1):
+                        start = max(1, frontier - window + 1)
+                        ids[bi, start : frontier + 1] = tok.mask_id
+                        if states is not None:
+                            fresh = self._new_grammar_states(1)
+                            states[bi] = (
+                                fresh[0]
+                                if fresh is not None
+                                else make_grammar_state(
+                                    verify_chosen_only=bool(
+                                        getattr(
+                                            self.config,
+                                            "grammar_verify_chosen_only",
+                                            False,
+                                        )
+                                    ),
+                                    skip_exact_stream_probe=bool(
+                                        getattr(
+                                            self.config,
+                                            "grammar_skip_exact_stream_probe",
+                                            True,
+                                        )
+                                    ),
+                                    use_copy_probes=bool(
+                                        getattr(
+                                            self.config, "grammar_copy_probes", True
+                                        )
+                                    ),
+                                    early_exit_pick=bool(
+                                        getattr(
+                                            self.config, "grammar_early_exit_pick", True
+                                        )
+                                    ),
+                                )
+                            )
+                            states[bi].sync_ids(tok, ids[bi, :start].tolist())
+                        for rt in range(start, frontier + 1):
+                            st = states[bi] if states is not None else None
                             forced = (
-                                force_emit_token_id(tok, ids[bi, :rt].tolist())
+                                force_emit_token_id(tok, ids[bi, :rt].tolist(), state=st)
                                 if use_fast
                                 else None
                             )
-                            logits_r = self.denoiser(
+                            logits_r = self._denoiser_forward(
                                 ids[bi : bi + 1],
                                 ctx[bi : bi + 1],
-                                pad_id=tok.pad_id,
-                                ctx_pad_mask=ctx_pad[bi : bi + 1],
+                                ctx_pad[bi : bi + 1],
                             )
                             if bias:
                                 logits_r = apply_structural_bias(
@@ -1347,7 +1668,8 @@ class TwoTowerModel(nn.Module):
                                 top_k=self.config.grammar_top_k,
                                 forced_token_id=forced,
                                 slot_contract=contract,
-                                **self._pick_kwargs(),
+                                state=st,
+                                **pick_kw,
                             )
                             if choice is None:
                                 ids[bi, rt] = tok.eos_id
@@ -1356,6 +1678,9 @@ class TwoTowerModel(nn.Module):
                                 active[bi] = False
                                 break
                             ids[bi, rt] = choice
+                            if st is not None:
+                                st.advance_token(tok, int(choice))
+                t += advance
             start_t = canvas
             if not bool(active.any()):
                 break
@@ -1710,6 +2035,16 @@ class TwoTowerModel(nn.Module):
                     slot_contracts=self._slot_contracts,
                 )
             # Certify when grammar-constrained (finalize controls canned fallback).
+            # R5: honor generate_max_attempts; when grammar_ltr_repair already ran
+            # a BOS fill and the budget is 1, skip a redundant identical redo.
+            max_attempts = max(
+                1, int(getattr(self.config, "generate_max_attempts", 3) or 3)
+            )
+            ensure_attempts = (
+                0
+                if (bool(self.config.grammar_ltr_repair) and max_attempts <= 1)
+                else max_attempts
+            )
             certified: list[str] = []
             for i, text in enumerate(texts):
                 contract = (
@@ -1723,6 +2058,7 @@ class TwoTowerModel(nn.Module):
                         ctx[i : i + 1],
                         ctx_pad[i : i + 1],
                         length,
+                        attempts=ensure_attempts,
                         slot_contract=contract,
                     )
                 )
@@ -2520,7 +2856,14 @@ class TwoTowerModel(nn.Module):
             if canonical is not None:
                 return canonical
             return self._ensure_valid_openui(
-                text, ctx, ctx_pad, length, slot_contract=slot_contract
+                text,
+                ctx,
+                ctx_pad,
+                length,
+                attempts=max(
+                    1, int(getattr(self.config, "generate_max_attempts", 3) or 3)
+                ),
+                slot_contract=slot_contract,
             )
         return text
 
@@ -2541,6 +2884,26 @@ class TwoTowerModel(nn.Module):
             grammar_constrained=grammar_constrained,
             design_mds=[design_md],
         )[0]
+
+    @torch.inference_mode()
+    def generate_with_stats(
+        self,
+        prompt: str,
+        gold: ExampleRecord | None = None,
+        max_len: int | None = None,
+        grammar_constrained: bool | None = None,
+        design_md: str | None = None,
+    ) -> tuple[str, DecodeStats]:
+        """Generate one sample and return ``(text, DecodeStats)`` phase timings."""
+        with collect_decode_stats() as stats:
+            text = self.generate(
+                prompt,
+                gold=gold,
+                max_len=max_len,
+                grammar_constrained=grammar_constrained,
+                design_md=design_md,
+            )
+        return text, stats
 
     def _state_dict_for_checkpoint(self) -> dict:
         state = {k: v.cpu() for k, v in self.state_dict().items()}

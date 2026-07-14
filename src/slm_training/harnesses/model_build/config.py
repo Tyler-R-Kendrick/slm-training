@@ -133,6 +133,18 @@ class ModelBuildConfig:
     statement_mask_prob: float = 0.35
     remask_span: str = "token"  # token | statement
     teacher_init_embeddings: bool = False
+    # Inference-speed levers (P/Q/R-series)
+    grammar_incremental_state: bool = True
+    grammar_verify_chosen_only: bool = False
+    grammar_skip_exact_stream_probe: bool = True
+    grammar_copy_probes: bool = True
+    grammar_early_exit_pick: bool = True
+    grammar_multitoken_accept: bool = False
+    grammar_multitoken_max: int = 8
+    grammar_canvas_lookahead: int = 0
+    use_dynamic_quant: bool = False
+    generate_max_attempts: int = 3
+    grammar_finalize_on_last_attempt_only: bool = False
     # V7 speculative denoising (docs/design/speculative-denoising.md)
     stability_min_persistence: int = 0  # E70 commit gate (0=off)
     stability_jsd_weight: float = 1.0  # E70 remask score mix

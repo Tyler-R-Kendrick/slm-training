@@ -30,6 +30,43 @@ Measured on `twotower_v1_ship` (CPU, scratch context, LTR primary).
 5. Microbench: `scripts/bench_accel.py --microbench` → `docs/design/train-microbench.json`
    (scratch fuse+cache ~1.7× vs baseline on this host; HF cache is the production win).
 
+## Round 4 — inference-speed P-series
+
+See [perf-experiment-matrix.md](perf-experiment-matrix.md). Decode-only levers:
+
+1. **P1 incremental grammar state** — reuse DFA + prefix text (`grammar_incremental_state`).
+2. **P2 verify-chosen-only** — fewer stream probes (`grammar_verify_chosen_only`).
+3. **P3 multi-token accept** — fewer denoiser forwards (`grammar_multitoken_accept`).
+4. **P4 canvas lookahead** — prefix+K forwards (`grammar_canvas_lookahead`).
+5. **P5 dynamic int8 quant** / compile (`use_dynamic_quant`, `use_compile`).
+6. **P6 MaskGIT-primary** latency point; **P7** playground attempt budget.
+
+## Round 5 — Q-series (admit-probe bottleneck)
+
+After P8, `dfa_sync_ms` was ~75% of remaining latency (throwaway full-prefix
+admits per candidate). Round 5:
+
+1. **Q1** `InteractiveParser.copy()` + delta feed (`grammar_copy_probes`).
+2. **Q2** whitespace fast-admit + early-exit descending-logit pick
+   (`grammar_early_exit_pick`).
+3. **Q9** = P8+Q1+Q2 shippable recipe (~3.2× vs P0 on CPU demo ckpt).
+4. Playground defaults now enable Q9 levers; repair path ~2.3× vs pre-Q P7.
+
+## Round 6 — R-series (exact-admit skip + repair budget)
+
+1. **R1** skip `dfa_admits` when tid is already in an exact DFA allowed set.
+2. **R2** skip redundant `set_prefix` when the engine is already synced
+   (pick / force-emit / admit).
+3. **R4** `_constrained_ltr_repair` honors multitoken + canvas lookahead.
+4. **R5** `_ensure_valid_openui` honors `generate_max_attempts`; with
+   `grammar_ltr_repair` + attempts=1, skip a redundant BOS ensure redo.
+5. **R9** = Q9 + R1/R2 decode recipe; **PG** = playground with R4+R5.
+
+```bash
+python -m scripts.profile_generate --rounds 2
+python -m scripts.run_perf_matrix --only P0,Q9,R9,PG --limit 4
+```
+
 ## Kernel boundary (unchanged)
 
 ```

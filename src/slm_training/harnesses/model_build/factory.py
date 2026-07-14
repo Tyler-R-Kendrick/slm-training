@@ -93,6 +93,17 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "production_loss_weight",
         "slot_loss_weight",
         "confidence_loss_weight",
+        "grammar_incremental_state",
+        "grammar_verify_chosen_only",
+        "grammar_skip_exact_stream_probe",
+        "grammar_copy_probes",
+        "grammar_early_exit_pick",
+        "grammar_multitoken_accept",
+        "grammar_multitoken_max",
+        "grammar_canvas_lookahead",
+        "use_dynamic_quant",
+        "generate_max_attempts",
+        "grammar_finalize_on_last_attempt_only",
         "stability_min_persistence",
         "stability_jsd_weight",
         "unmask_mode",
@@ -118,6 +129,24 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         cfg.grammar_ltr_repair = True
     if int(getattr(config, "best_of_n", 1) or 1) > 1 and hasattr(cfg, "best_of_n"):
         cfg.best_of_n = int(config.best_of_n)
+    if bool(getattr(config, "use_dynamic_quant", False)) and hasattr(
+        model, "apply_dynamic_quant"
+    ):
+        try:
+            model.apply_dynamic_quant()
+        except Exception:  # noqa: BLE001
+            pass
+    if bool(getattr(config, "use_compile", False)) and hasattr(model, "denoiser"):
+        try:
+            from slm_training.accel import maybe_compile
+
+            model.denoiser = maybe_compile(
+                model.denoiser,
+                enabled=True,
+                mode=str(getattr(config, "compile_mode", "default") or "default"),
+            )
+        except Exception:  # noqa: BLE001
+            pass
     if int(getattr(config, "retrieval_k", 0) or 0) > 0 and hasattr(model, "skeleton_bank"):
         try:
             from slm_training.harnesses.model_build.data import load_train_records
@@ -215,6 +244,23 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         ),
         remask_span=getattr(config, "remask_span", "token"),
         teacher_init_embeddings=getattr(config, "teacher_init_embeddings", False),
+        grammar_incremental_state=getattr(config, "grammar_incremental_state", True),
+        grammar_verify_chosen_only=getattr(config, "grammar_verify_chosen_only", False),
+        grammar_skip_exact_stream_probe=getattr(
+            config, "grammar_skip_exact_stream_probe", True
+        ),
+        grammar_copy_probes=getattr(config, "grammar_copy_probes", True),
+        grammar_early_exit_pick=getattr(config, "grammar_early_exit_pick", True),
+        grammar_multitoken_accept=getattr(config, "grammar_multitoken_accept", False),
+        grammar_multitoken_max=int(getattr(config, "grammar_multitoken_max", 8) or 8),
+        grammar_canvas_lookahead=int(
+            getattr(config, "grammar_canvas_lookahead", 0) or 0
+        ),
+        use_dynamic_quant=bool(getattr(config, "use_dynamic_quant", False)),
+        generate_max_attempts=int(getattr(config, "generate_max_attempts", 3) or 3),
+        grammar_finalize_on_last_attempt_only=bool(
+            getattr(config, "grammar_finalize_on_last_attempt_only", False)
+        ),
         stability_min_persistence=int(
             getattr(config, "stability_min_persistence", 0) or 0
         ),

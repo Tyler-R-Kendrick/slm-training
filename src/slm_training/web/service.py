@@ -109,12 +109,30 @@ class PlaygroundService:
             self._model.eval()
             # Playground contract: grammar-constrained samples must be valid OpenUI.
             # Enable the deterministic DFA / LTR speculative layer + finalize gate.
+            # Q9 decode levers (verified by perf matrix) cut repair-path latency.
             cfg = self._model.config
             cfg.grammar_constrained = True
             cfg.grammar_ltr_primary = True
             cfg.grammar_ltr_repair = True
             cfg.grammar_finalize_validate = True
             cfg.grammar_fastpath = True
+            cfg.grammar_incremental_state = True
+            cfg.grammar_verify_chosen_only = True
+            cfg.grammar_skip_exact_stream_probe = True
+            cfg.grammar_copy_probes = True
+            cfg.grammar_early_exit_pick = True
+            cfg.grammar_multitoken_accept = True
+            if int(getattr(cfg, "grammar_multitoken_max", 0) or 0) < 4:
+                cfg.grammar_multitoken_max = 8
+            if int(getattr(cfg, "grammar_canvas_lookahead", 0) or 0) <= 0:
+                cfg.grammar_canvas_lookahead = 32
+            # P1 defaults on; P7 attempt budget is honored by generate().
+            if not hasattr(cfg, "generate_max_attempts") or not isinstance(
+                getattr(cfg, "generate_max_attempts", None), (int, float)
+            ):
+                cfg.generate_max_attempts = 3
+            elif int(cfg.generate_max_attempts or 0) < 1:
+                cfg.generate_max_attempts = 3
             if int(cfg.grammar_ltr_max_tokens or 0) < 128:
                 cfg.grammar_ltr_max_tokens = 192
             return self._model
@@ -188,13 +206,39 @@ class PlaygroundService:
         serialized: str | None = None
         valid = False
         with self._lock:
-            attempts = max(1, int(max_attempts)) if grammar_constrained else 1
+            cfg = model.config
+
+            def _cfg_int(name: str, default: int) -> int:
+                raw = getattr(cfg, name, default)
+                if isinstance(raw, bool) or not isinstance(raw, (int, float)):
+                    return default
+                return max(1, int(raw))
+
+            def _cfg_bool(name: str, default: bool = False) -> bool:
+                raw = getattr(cfg, name, default)
+                if isinstance(raw, bool):
+                    return raw
+                return default
+
+            cfg_attempts = _cfg_int("generate_max_attempts", 3)
+            # Caller max_attempts wins when tighter; config can lower the budget (P7).
+            attempts = (
+                max(1, min(int(max_attempts), cfg_attempts))
+                if grammar_constrained
+                else 1
+            )
+            finalize_last_only = _cfg_bool(
+                "grammar_finalize_on_last_attempt_only", False
+            )
+            saved_finalize = _cfg_bool("grammar_finalize_validate", False)
             for attempt_no in range(1, attempts + 1):
                 # Reset per attempt so a generate_exception never reuses the
                 # previous attempt's OpenUI in the bad-output quarantine.
                 openui = ""
                 serialized = None
                 valid = False
+                if finalize_last_only:
+                    cfg.grammar_finalize_validate = attempt_no == attempts
                 try:
                     openui = model.generate(
                         prompt,
@@ -235,6 +279,10 @@ class PlaygroundService:
                     openui = ""
                     if not grammar_constrained:
                         break
+            if finalize_last_only and isinstance(
+                getattr(cfg, "grammar_finalize_validate", None), bool
+            ):
+                cfg.grammar_finalize_validate = saved_finalize
             if grammar_constrained and not valid:
                 # Absolute contract: never hand the UI an invalid grammar-constrained sample.
                 raise RuntimeError(
