@@ -78,5 +78,42 @@
       "command": "pytest -q tests/test_harnesses/train_data",
       "ship_gates": "not run; this is corpus-build contract-stamp evidence"
     }
+  },
+  "governance_accounting_followup": {
+    "issue": "SLM-13 follow-up for SLM-17 acceptance",
+    "run_date": "2026-07-14",
+    "recipe": {
+      "device": "CPU",
+      "steps": 0,
+      "backend": "openuidev/lang-core via OPENUI_BRIDGE_CLI",
+      "source": "all",
+      "synthesizer": "none plus bounded P12 derivatives",
+      "programspec_count": 1,
+      "rico_limit": 1,
+      "require_design_md": false,
+      "reserved_test_structure_filter": true,
+      "honesty_mode": "metadata-accounting acceptance only; no model-quality or ship claim"
+    },
+    "results": {
+      "seed_count": 103,
+      "collected_count": 210,
+      "record_count": 176,
+      "verifier_rejected": 24,
+      "structure_reserved_rejected": 10,
+      "error_count": 0,
+      "governed_complete": 2,
+      "quarantined_before": 174,
+      "quarantined_after": 0,
+      "internal": 174,
+      "pii_flagged": 0,
+      "secret_flagged": 0,
+      "missing_contract_id": 0,
+      "content_fingerprint": "9359d47176c0ec75fce9389558af69884a6ce4afc47f89fc0f7412987ad4bf17"
+    },
+    "verification": {
+      "focused_tests": "8 passed",
+      "command": "pytest -q tests/test_data/test_governance.py",
+      "ship_gates": "not run; this is corpus-governance metadata evidence"
+    }
   }
 }
