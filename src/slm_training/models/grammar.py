@@ -42,7 +42,7 @@ def set_active_dsl(dsl: str | None) -> None:
     _STRUCT_ID_CACHE.clear()
     _BIAS_CACHE.clear()
     if dsl:
-        from slm_training.grammar_backends import set_default_backend
+        from slm_training.dsl.grammar.backends import set_default_backend
 
         set_default_backend(dsl)
 
@@ -52,7 +52,7 @@ def active_dsl() -> str:
 
 
 def _backend():
-    from slm_training.grammar_backends import get_backend
+    from slm_training.dsl.grammar.backends import get_backend
 
     return get_backend(active_dsl())
 
@@ -274,7 +274,7 @@ def force_emit_token_id(
 
     dsl = grammar_dsl or active_dsl()
     try:
-        from slm_training.grammar_fastpath import force_next_token_id
+        from slm_training.dsl.grammar.fastpath import force_next_token_id
     except Exception:  # noqa: BLE001
         return None
     if state is not None:
@@ -380,7 +380,7 @@ def contract_allowed_token_ids(
 
 def _dfa_engine(grammar_dsl: str | None = None):
     try:
-        from slm_training.grammar_fastpath import engine_for_dsl
+        from slm_training.dsl.grammar.fastpath import engine_for_dsl
     except Exception:  # noqa: BLE001
         return None
     return engine_for_dsl(grammar_dsl or active_dsl())
@@ -470,7 +470,7 @@ def dfa_admits_token(
 
     # Fallback: throwaway engine + full set_prefix (safe, O(|prefix|)).
     try:
-        from slm_training.grammar_fastpath.engine import OpenUIIncrementalEngine
+        from slm_training.dsl.grammar.fastpath.engine import OpenUIIncrementalEngine
     except Exception:  # noqa: BLE001
         return True
     base = eng if eng is not None else _dfa_engine(grammar_dsl)
@@ -639,7 +639,7 @@ def pick_constrained_token(
                 stats.pick_ms += (time.perf_counter() - pick_t0) * 1000.0
             return None
         try:
-            from slm_training.grammar_fastpath.token_map import allowed_id_set
+            from slm_training.dsl.grammar.fastpath.token_map import allowed_id_set
 
             allowed = allowed_id_set(tokenizer, engine.next_terminals())
             exact_terminals = bool(

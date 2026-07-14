@@ -71,7 +71,7 @@ def main(argv: list[str] | None = None) -> int:
 
     import torch
 
-    from slm_training.design_md import load_default_design_md
+    from slm_training.dsl.design_md import load_default_design_md
     from slm_training.dsl.parser import validate
     from slm_training.dsl.schema import ExampleRecord
     from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel

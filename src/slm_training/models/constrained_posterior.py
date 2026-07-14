@@ -62,7 +62,7 @@ class ExtendabilityChecker:
         if not text.strip():
             return True
         try:
-            from slm_training.grammar_fastpath import engine_for_dsl
+            from slm_training.dsl.grammar.fastpath import engine_for_dsl
             from slm_training.models.grammar import active_dsl, stream_check
 
             engine = engine_for_dsl(self.grammar_dsl or active_dsl())

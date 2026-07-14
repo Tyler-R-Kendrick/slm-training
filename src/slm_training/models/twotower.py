@@ -62,7 +62,7 @@ from slm_training.models.template_fill import (
     inventory_from_prompt,
     template_mask_positions,
 )
-from slm_training.grammar_fastpath.gate import FastPathGate
+from slm_training.dsl.grammar.fastpath.gate import FastPathGate
 from slm_training.models.tokenizer import OpenUITokenizer
 
 
@@ -547,7 +547,7 @@ class TwoTowerModel(nn.Module):
         *,
         cache_keys: list[str] | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        from slm_training.telemetry import timed
+        from slm_training.runtime.telemetry import timed
 
         stats = get_active_stats()
         with timed("context_encode"), timed_ms(stats, "context_ms"):
@@ -845,7 +845,7 @@ class TwoTowerModel(nn.Module):
                 target_ids, noisy, predict_mask
             )
 
-        from slm_training.telemetry import timed
+        from slm_training.runtime.telemetry import timed
 
         with timed("denoiser_forward"):
             logits = self.denoiser(
@@ -935,7 +935,7 @@ class TwoTowerModel(nn.Module):
         aux_w = float(getattr(self.config, "fastpath_aux_weight", 0.0) or 0.0)
         if aux_w > 0.0 and getattr(self.config, "grammar_fastpath", False):
             try:
-                from slm_training.grammar_fastpath.losses import force_align_loss
+                from slm_training.dsl.grammar.fastpath.losses import force_align_loss
 
                 aux = force_align_loss(
                     logits, target_ids, self.tokenizer, pad_id=self.tokenizer.pad_id
@@ -956,7 +956,7 @@ class TwoTowerModel(nn.Module):
         schema: str | None = None,
     ) -> str:
         if schema is None and getattr(self.config, "schema_in_context", False):
-            from slm_training.quality import compact_schema_snippet
+            from slm_training.harnesses.quality import compact_schema_snippet
 
             schema = compact_schema_snippet(
                 budget=min(600, self.config.design_md_budget)
@@ -964,7 +964,7 @@ class TwoTowerModel(nn.Module):
         skeleton = None
         k = int(getattr(self.config, "retrieval_k", 0) or 0)
         if k > 0 and self.skeleton_bank:
-            from slm_training.retrieval import (
+            from slm_training.harnesses.quality import (
                 format_retrieved_skeleton,
                 nearest_skeletons,
             )
@@ -1839,7 +1839,7 @@ class TwoTowerModel(nn.Module):
     ) -> str:
         if len(candidates) == 1:
             return candidates[0]
-        from slm_training.preference import composite_reward
+        from slm_training.harnesses.preference import composite_reward
 
         best = candidates[0]
         best_score = -1.0
@@ -1861,7 +1861,7 @@ class TwoTowerModel(nn.Module):
         design_mds: list[str | None] | None = None,
     ) -> list[str]:
         """Batched generate — preferred for eval throughput."""
-        from slm_training.telemetry import timed
+        from slm_training.runtime.telemetry import timed
 
         self.eval()
         if not prompts:
@@ -2432,7 +2432,7 @@ class TwoTowerModel(nn.Module):
             engine = None
             if admit_on:
                 try:
-                    from slm_training.grammar_fastpath import admit_fill, engine_for_dsl
+                    from slm_training.dsl.grammar.fastpath import admit_fill, engine_for_dsl
                     from slm_training.models.grammar import active_dsl
 
                     engine = engine_for_dsl(active_dsl())
@@ -2513,7 +2513,7 @@ class TwoTowerModel(nn.Module):
                                 and engine is not None
                             ):
                                 try:
-                                    from slm_training.grammar_fastpath.token_map import (
+                                    from slm_training.dsl.grammar.fastpath.token_map import (
                                         allowed_id_set,
                                     )
 
@@ -2571,7 +2571,7 @@ class TwoTowerModel(nn.Module):
                 stats.clusters_proposed += len(ordered)
                 admit_fn = None
                 if admit_on and engine is not None:
-                    from slm_training.grammar_fastpath import admit_fill as _admit
+                    from slm_training.dsl.grammar.fastpath import admit_fill as _admit
 
                     def admit_fn(trial: list[int]) -> bool:  # noqa: ANN001
                         return _admit(engine, self.tokenizer, trial)

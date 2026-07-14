@@ -51,7 +51,7 @@ def main(argv: list[str] | None = None) -> int:
 
     import torch
 
-    from slm_training.distill.trace_store import (
+    from slm_training.harnesses.distill.trace_store import (
         DecodeTraceRecorder,
         TraceStore,
         checkpoint_sha,
@@ -59,7 +59,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     from slm_training.dsl.schema import load_jsonl
     from slm_training.models.twotower import TwoTowerModel
-    from slm_training.preference import (
+    from slm_training.harnesses.preference import (
         composite_reward,
         grammar_score,
         layout_metrics,

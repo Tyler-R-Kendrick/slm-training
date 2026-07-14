@@ -32,18 +32,18 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    from slm_training.experiments.efficiency_gain import efficiency_gain, efficiency_gain_lcb
-    from slm_training.experiments.ladder import (
+    from slm_training.harnesses.experiments.efficiency_gain import efficiency_gain, efficiency_gain_lcb
+    from slm_training.harnesses.experiments.ladder import (
         hf_ladder_default,
         model_build_config_for_point,
         scratch_ladder_default,
     )
-    from slm_training.experiments.promotion import (
+    from slm_training.harnesses.experiments.promotion import (
         check_data_integrity,
         evaluate_promotion,
         register_promoted_checkpoint,
     )
-    from slm_training.experiments.scaling_fit import (
+    from slm_training.harnesses.experiments.scaling_fit import (
         ScalingObservation,
         fit_power_law,
         observation_from_summary,

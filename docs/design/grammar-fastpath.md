@@ -17,7 +17,7 @@ Full fidelity tags and honesty rules: [research-lineage.md](research-lineage.md)
 
 ## Package
 
-`slm_training.grammar_fastpath`:
+`slm_training.dsl.grammar.fastpath`:
 
 | Module | Role |
 | --- | --- |
@@ -45,7 +45,7 @@ Force only narrow terminals: `=` `(` `)` `[` `]` `,`. Never force `NAME` /
 
 ## Cactus
 
-Header sketches live under `src/slm_training/cactus/kernels/` (not compiled).
+Header sketches live under `src/slm_training/runtime/cactus/kernels/` (not compiled).
 PyTorch remains the train/eval path; export via `cactus.export_checkpoint_bundle`.
 
 ## Config

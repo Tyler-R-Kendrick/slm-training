@@ -66,7 +66,7 @@ def _normalize(record: ExampleRecord) -> ExampleRecord:
         design_md=record.design_md,
     )
     try:
-        from slm_training.design_md import attach_default_design_md
+        from slm_training.dsl.design_md import attach_default_design_md
 
         out = attach_default_design_md(out)
     except Exception:  # noqa: BLE001

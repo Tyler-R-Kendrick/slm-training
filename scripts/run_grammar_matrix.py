@@ -315,9 +315,9 @@ def _maybe_preference(exp: GrammarExperiment, ckpt: Path, args: argparse.Namespa
     if not exp.preference:
         return ckpt
     from slm_training.dsl.schema import load_jsonl
-    from slm_training.preference import collect_pairs_with_generator, write_pairs
-    from slm_training.preference.train import train_preference_from_paths
-    from slm_training.quality import soft_corrupt_openui
+    from slm_training.harnesses.preference import collect_pairs_with_generator, write_pairs
+    from slm_training.harnesses.preference.train import train_preference_from_paths
+    from slm_training.harnesses.quality import soft_corrupt_openui
 
     pairs_path = args.run_root / exp.run_id / f"pairs_s{args.seed}.jsonl"
     records = load_jsonl(exp.train_dir / "records.jsonl")[: args.pref_limit]
@@ -346,7 +346,7 @@ def _maybe_preference(exp: GrammarExperiment, ckpt: Path, args: argparse.Namespa
 def _maybe_rl(exp: GrammarExperiment, ckpt: Path, args: argparse.Namespace) -> Path:
     if not exp.rl:
         return ckpt
-    from slm_training.rl import train_grpo_from_paths
+    from slm_training.harnesses.rl import train_grpo_from_paths
 
     out_dir = args.run_root / exp.run_id / f"rl_s{args.seed}"
     summary = train_grpo_from_paths(

@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from slm_training.annotations import (
+from slm_training.harnesses.annotations import (
     DEFAULT_BAD_OUTPUTS_PATH,
     DEFAULT_FEEDBACK_PATH,
     DEFAULT_HUMAN_PAIRS_PATH,
@@ -195,7 +195,7 @@ class PlaygroundService:
         model = self.load()
         if design_md is None:
             try:
-                from slm_training.design_md import load_default_design_md
+                from slm_training.dsl.design_md import load_default_design_md
 
                 design_md = load_default_design_md()
             except Exception:  # noqa: BLE001

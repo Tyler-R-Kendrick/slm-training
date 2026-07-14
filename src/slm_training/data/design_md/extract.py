@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from slm_training.design_md import bridge_available, lint, load_default_design_md
+from slm_training.dsl.design_md import bridge_available, lint, load_default_design_md
 
 
 def extract_design_md(

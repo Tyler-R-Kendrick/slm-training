@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
 from slm_training.data.design_md.extract import extract_design_md
-from slm_training.design_md import attach_default_design_md
+from slm_training.dsl.design_md import attach_default_design_md
 from slm_training.dsl.schema import ExampleRecord
 
 _SLUG_RE = re.compile(r"[^a-z0-9]+")

@@ -244,7 +244,7 @@ below. Prefer seeding decode-only rows from an E35 (or E29) checkpoint.
 | ID | Approach | Primary lever | Run id |
 | --- | --- | --- | --- |
 | E30 | Suffix-rollback LTR | ReMDM-style revisable window \(W\) behind LTR frontier; remask on grammar / entropy triggers | `qx_e30_suffix_rollback` |
-| E31 | BackPlay-lite trust head | Freeze denoiser; train [`FastPathGate`](../../src/slm_training/grammar_fastpath/gate.py) on model token errors; remask with gate scores | `qx_e31_trust_gate` |
+| E31 | BackPlay-lite trust head | Freeze denoiser; train [`FastPathGate`](../../src/slm_training/dsl/grammar/fastpath/gate.py) on model token errors; remask with gate scores | `qx_e31_trust_gate` |
 | E32 | Corruption-aware train | `_mask_targets` flips visible tokens → wrong ids; CE recovers gold (GIDD/RemeDi-lite) | `qx_e32_visible_corrupt` |
 | E33 | Combined remask policy | Budgeted remask ∝ grammar hard-error + gate + entropy (`select_remask_policy_indices`) | `qx_e33_remask_policy` |
 | E35 | Honest slot contract | Inventory-in-prompt API: surface slots into prompt, extract via `inventory_from_prompt` (no silent `gold.placeholders`) | `qx_e35_honest_contract` |

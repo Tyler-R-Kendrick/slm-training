@@ -272,7 +272,7 @@ def _apply(model: TwoTowerModel, exp: PerfExperiment) -> None:
     if exp.use_dynamic_quant:
         model.apply_dynamic_quant()
     if exp.use_compile:
-        from slm_training.accel import maybe_compile
+        from slm_training.runtime.accel import maybe_compile
 
         model.denoiser = maybe_compile(model.denoiser, enabled=True, mode="default")
 

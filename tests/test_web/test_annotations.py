@@ -10,7 +10,7 @@ import pytest
 pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient
 
-from slm_training.annotations import (
+from slm_training.harnesses.annotations import (
     AnnotationRecord,
     append_annotation,
     export_to_preference_pairs,

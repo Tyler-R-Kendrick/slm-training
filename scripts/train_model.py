@@ -326,10 +326,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.fast_train and args.no_fast_train:
         parser.error("use only one of --fast-train / --no-fast-train")
 
-    from slm_training.accel import detect_device, prefer_fast_train_env
     from slm_training.harnesses.model_build.checkpoint_bucket import (
         DEFAULT_CHECKPOINT_BUCKET_URI,
     )
+    from slm_training.runtime.accel import detect_device, prefer_fast_train_env
 
     accel = detect_device(args.device)
     device = accel.device if args.device in {"auto", "best"} else args.device

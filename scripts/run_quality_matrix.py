@@ -1231,9 +1231,9 @@ def _maybe_preference(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> 
         return ckpt
     from slm_training.dsl.schema import load_jsonl
     from slm_training.models.twotower import TwoTowerModel
-    from slm_training.preference import collect_pairs_with_generator, write_pairs
-    from slm_training.preference.train import train_preference_from_paths
-    from slm_training.quality import soft_corrupt_openui
+    from slm_training.harnesses.preference import collect_pairs_with_generator, write_pairs
+    from slm_training.harnesses.preference.train import train_preference_from_paths
+    from slm_training.harnesses.quality import soft_corrupt_openui
 
     pairs_path = args.run_root / exp.run_id / "pairs.jsonl"
     records = load_jsonl(exp.train_dir / "records.jsonl")[: args.pref_limit]
@@ -1279,7 +1279,7 @@ def _maybe_rl(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> Path:
     if not getattr(exp, "rl", False):
         return ckpt
     from slm_training.models.twotower import TwoTowerModel
-    from slm_training.rl import train_grpo_from_paths
+    from slm_training.harnesses.rl import train_grpo_from_paths
 
     # Prefetch decode overrides onto a temp copy the RL trainer will reload.
     try:
@@ -1314,7 +1314,7 @@ def _maybe_rl(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> Path:
 def _maybe_trust_gate(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> Path:
     if not getattr(exp, "trust_gate", False):
         return ckpt
-    from slm_training.grammar_fastpath.trust_train import train_trust_gate_from_paths
+    from slm_training.dsl.grammar.fastpath.trust_train import train_trust_gate_from_paths
 
     out_dir = args.run_root / exp.run_id / "trust_gate"
     summary = train_trust_gate_from_paths(
@@ -1337,7 +1337,7 @@ def _maybe_survival_gate(exp: Experiment, ckpt: Path, args: argparse.Namespace) 
     """E73 (V7): train the trajectory-survival head after SFT/trust stages."""
     if not getattr(exp, "survival_gate", False):
         return ckpt
-    from slm_training.grammar_fastpath.survival_train import (
+    from slm_training.dsl.grammar.fastpath.survival_train import (
         train_survival_gate_from_paths,
     )
 

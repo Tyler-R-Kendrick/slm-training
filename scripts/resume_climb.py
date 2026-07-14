@@ -33,12 +33,12 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     from scripts.collect_trajectories import main as collect_main
-    from slm_training.distill.trace_store import TraceStore, checkpoint_sha
-    from slm_training.experiments.promotion import register_promoted_checkpoint
+    from slm_training.harnesses.distill.trace_store import TraceStore, checkpoint_sha
+    from slm_training.harnesses.experiments.promotion import register_promoted_checkpoint
     from slm_training.harnesses.model_build import ModelBuildConfig, evaluate_suites
     from slm_training.harnesses.model_build.ship_gates import evaluate_ship_gates
     from slm_training.models.twotower import TwoTowerModel
-    from slm_training.rl.trajectory import TrajectoryRLConfig, train_trajectory_rl
+    from slm_training.harnesses.rl.trajectory import TrajectoryRLConfig, train_trajectory_rl
 
     out = Path(args.out)
     traces_dir = out / "traces"

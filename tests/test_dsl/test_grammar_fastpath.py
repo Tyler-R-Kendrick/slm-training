@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from slm_training.dsl.schema import ExampleRecord
-from slm_training.grammar_fastpath import (
+from slm_training.dsl.grammar.fastpath import (
     OpenUIIncrementalEngine,
     admit_fill,
     draft_forced_ids,
@@ -84,7 +82,7 @@ def test_admit_fill_accepts_partial_with_holes() -> None:
 
 
 def test_allowed_id_set_expands_components() -> None:
-    from slm_training.grammar_fastpath.token_map import allowed_id_set
+    from slm_training.dsl.grammar.fastpath.token_map import allowed_id_set
 
     tok = _tok()
     eng = OpenUIIncrementalEngine()
@@ -207,13 +205,9 @@ def test_train_fuse_and_cache_smoke() -> None:
 
 
 def test_cactus_kernel_sketch_files_exist() -> None:
-    root = (
-        Path(__file__).resolve().parents[2]
-        / "src"
-        / "slm_training"
-        / "cactus"
-        / "kernels"
-    )
+    from slm_training.bridge_utils import repo_root
+
+    root = repo_root() / "src" / "slm_training" / "runtime" / "cactus" / "kernels"
     assert (root / "force_emit_sketch.hpp").is_file()
     assert (root / "maskgit_admit_sketch.hpp").is_file()
     assert (root / "README.md").is_file()

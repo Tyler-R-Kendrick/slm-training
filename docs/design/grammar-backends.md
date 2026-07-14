@@ -25,7 +25,7 @@ it with `LarkFileBackend`.
   (`children`, `text`, `direction`, …) so the tree shape matches lang-core for
   common components.
 - Fingerprints: `component_multiset` / `ast_fingerprint` in
-  `slm_training.grammar_backends.ast_utils`.
+  `slm_training.dsl.grammar.backends.ast_utils`.
 
 ## Training / eval switch
 

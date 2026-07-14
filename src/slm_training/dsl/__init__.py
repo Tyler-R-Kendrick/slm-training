@@ -1,4 +1,11 @@
-"""Shared OpenUI subset DSL: official lang-core bridge + record schema."""
+"""Shared OpenUI subset DSL: lang-core bridge, schema, and grammar stack.
+
+Subpackages:
+
+- ``dsl.design_md`` — DESIGN.md lint bridge
+- ``dsl.grammar.backends`` — lang-core / Lark / hybrid / toy-layout backends
+- ``dsl.grammar.fastpath`` — DFA force-emit, MaskGIT admit, FastPathGate
+"""
 
 from slm_training.dsl.lang_core import (
     ParseError,

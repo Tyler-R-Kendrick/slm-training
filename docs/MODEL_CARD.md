@@ -21,6 +21,7 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 | Role | Run id | Kind | Location | Status |
 | --- | --- | --- | --- | --- |
 | Playground demo | `playground_demo` | Fixture wiring | `fixtures/checkpoints/playground_demo/last.pt` (git) | Demo only — **not** a ship claim |
+| Restructure CPU verify | `restructure_cpu_scratch_v0` | Fixture scratch train | `outputs/runs/restructure_cpu_scratch_v0/checkpoints/last.pt` (local) | Train OK; smoke parse **0.0** @ 80 steps — **not** a ship claim ([results](design/restructure-cpu-train-results.json)) |
 | Matrix honest champion (scratch) | `qx_e53_*` (V6 E53 family) | CPU scratch matrix clear | Primarily `outputs/runs/` (+ docs matrix JSON) | Honest `--ship-gates` on limited `rico_held` n; **not** production HF ship |
 | Production HF ship | — | — | `hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/` | **None registered yet** — fill this row after the first full HF sync |
 
@@ -92,11 +93,16 @@ Leakage: structural fingerprints + train/test isolation
 
 | Suite | n | parse | fidelity | struct | reward | Pass? |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
-| smoke | | | | | | |
+| smoke (`restructure_cpu_scratch_v0`) | 3 | 0.0 | 0.0 | 0.31 | 0.0 | No — fixture scratch wiring |
 | held_out | | | | | | |
 | adversarial | | | | | | |
 | ood | | | | | | |
 | rico_held | | | | | | |
+
+Recipe for `restructure_cpu_scratch_v0`: device=cpu, steps=80, context=scratch,
+fixture train/test `v0`, `--no-sync-checkpoints`, LTR primary, no DESIGN.md in
+context. Host: 4c / 15GB RAM, no CUDA, no `HF_TOKEN` (Jobs/bucket skipped).
+Evidence: [restructure-cpu-train-results.json](design/restructure-cpu-train-results.json).
 
 Record device, steps, context backend, honesty mode (`honest_slot_contract`),
 and whether gates used `--ship-gates`. Link
@@ -123,6 +129,8 @@ with limited `rico_held` n — see
 | Date (UTC) | Run id | Bucket / path | Metric headline | Notes |
 | --- | --- | --- | --- | --- |
 | (seed) | `playground_demo` | `fixtures/checkpoints/playground_demo/` | wiring demo | Committed fixture; regenerate via `bootstrap_playground` |
+| 2026-07-14 | `restructure_cpu_scratch_v0` | `outputs/runs/restructure_cpu_scratch_v0/` (local) | smoke parse 0.0 @ 80 steps; last_loss≈6.97 | Post-restructure CPU budget verify; not ship |
+| 2026-07-14 | `restructure_cpu_scratch_v0_cont` | `outputs/runs/restructure_cpu_scratch_v0_cont/` (local) | resume +200 scratch steps; smoke parse still 0.0 | Continues v0; HF Jobs still blocked on missing HF_TOKEN |
 
 Append a row for every new or replaced checkpoint. Do not delete history.
 

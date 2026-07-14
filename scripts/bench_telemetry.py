@@ -9,7 +9,7 @@ from pathlib import Path
 
 from slm_training.dsl.schema import load_jsonl
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
-from slm_training.telemetry import CycleTelemetry, bind_telemetry
+from slm_training.runtime.telemetry import CycleTelemetry, bind_telemetry
 
 
 def main(argv: list[str] | None = None) -> int:

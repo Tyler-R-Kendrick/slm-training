@@ -8,7 +8,7 @@ import json
 import time
 from pathlib import Path
 
-from slm_training.accel import detect_device, maybe_compile, sync_device
+from slm_training.runtime.accel import detect_device, maybe_compile, sync_device
 from slm_training.dsl.schema import load_jsonl
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 

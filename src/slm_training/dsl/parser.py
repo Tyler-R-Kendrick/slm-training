@@ -14,7 +14,7 @@ from slm_training.dsl.lang_core import ParseError, Program
 
 
 def _backend(dsl: str | None = None):
-    from slm_training.grammar_backends import get_backend
+    from slm_training.dsl.grammar.backends import get_backend
 
     return get_backend(dsl or os.getenv("SLM_GRAMMAR_DSL") or "openui")
 
