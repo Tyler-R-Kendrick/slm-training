@@ -76,10 +76,12 @@ def test_synth_emits_paraphrase_and_ladder_rows(tmp_path: Path) -> None:
     assert all(r.meta["task"] == "generation" for r in rows)
     assert {classify_source_family(r) for r in rows} == {
         "frontier_described",
-        "abstraction_ladder",
+        "frontier_semantic",
+        "frontier_user",
     }
-    ladder = [r for r in rows if r.meta.get("synth") == "abstraction_ladder"]
-    assert {r.meta["abstraction_level"] for r in ladder} == {"semantic", "user"}
+    ladder = [r for r in rows if r.meta.get("abstraction_level")]
+    assert {r.meta["abstraction_level"] for r in ladder} == {"L1", "L4"}
+    assert all("constraint_coverage" in r.meta for r in ladder)
 
 
 def test_stale_gold_drops_artifact(tmp_path: Path) -> None:

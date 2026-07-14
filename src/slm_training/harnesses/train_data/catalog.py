@@ -36,6 +36,10 @@ KNOWN_FAMILIES = (
     "edit_trajectory",
     "frontier_described",
     "abstraction_ladder",
+    "frontier_semantic",
+    "frontier_product",
+    "frontier_user",
+    "frontier_simplified",
     "renderer_visual",
     "web_distilled",
     "diffusion_corruption",
@@ -49,6 +53,10 @@ _SYNTH_TO_FAMILY = {
     "edit_trajectory": "edit_trajectory",
     "frontier_described": "frontier_described",
     "abstraction_ladder": "abstraction_ladder",
+    "frontier_semantic": "frontier_semantic",
+    "frontier_product": "frontier_product",
+    "frontier_user": "frontier_user",
+    "frontier_simplified": "frontier_simplified",
 }
 
 _BASE_SOURCE_TO_FAMILY = {
@@ -64,6 +72,10 @@ _BASE_SOURCE_TO_FAMILY = {
     "edit_trajectory": "edit_trajectory",
     "frontier_described": "frontier_described",
     "abstraction_ladder": "abstraction_ladder",
+    "frontier_semantic": "frontier_semantic",
+    "frontier_product": "frontier_product",
+    "frontier_user": "frontier_user",
+    "frontier_simplified": "frontier_simplified",
     "renderer_visual": "renderer_visual",
     "web_distilled": "web_distilled",
     "diffusion_corruption": "diffusion_corruption",

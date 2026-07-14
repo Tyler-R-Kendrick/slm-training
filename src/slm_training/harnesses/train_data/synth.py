@@ -217,6 +217,8 @@ class FrozenArtifactSynthesizer:
 
     def expand(self, record: ExampleRecord) -> list[ExampleRecord]:
         from slm_training.data.frontier import gold_content_hash, load_artifact
+        from slm_training.data.house_style import resolve_target
+        from slm_training.data.ladder import GroundingError, build_rung
         from slm_training.data.leakage import fingerprint_openui_structure
 
         gold_hash = gold_content_hash(record.openui, record.prompt)
@@ -242,14 +244,23 @@ class FrozenArtifactSynthesizer:
                 )
         for level, text in sorted(artifact.ladder.items()):
             if text.strip():
+                try:
+                    rung = build_rung(level, text, record.openui)
+                    resolution = resolve_target(text, (record.openui,), rung.level)
+                except (GroundingError, ValueError):
+                    continue
+                rung_meta = rung.to_meta()
+                if rung.target_determinacy.value == "house_style":
+                    rung_meta["house_style_resolution"] = resolution.to_meta()
                 out.append(
                     self._derive(
                         record,
                         rid=f"{record.id}_ladder_{level}",
                         prompt=text,
-                        family="abstraction_ladder",
-                        synth="abstraction_ladder",
-                        extra_meta={"abstraction_level": level},
+                        family=rung.family,
+                        synth=rung.family,
+                        openui=resolution.target,
+                        extra_meta=rung_meta,
                     )
                 )
         return out
@@ -262,12 +273,13 @@ class FrozenArtifactSynthesizer:
         prompt: str,
         family: str,
         synth: str,
+        openui: str | None = None,
         extra_meta: dict | None = None,
     ) -> ExampleRecord:
         return ExampleRecord(
             id=rid,
             prompt=prompt,
-            openui=record.openui,
+            openui=openui or record.openui,
             placeholders=list(record.placeholders),
             split=record.split,
             source=f"{record.source}+{family}",
