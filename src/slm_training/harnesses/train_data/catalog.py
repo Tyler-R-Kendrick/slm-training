@@ -48,6 +48,7 @@ _SYNTH_TO_FAMILY = {
     "corruption_repair": "corruption_repair",
     "edit_trajectory": "edit_trajectory",
     "frontier_described": "frontier_described",
+    "abstraction_ladder": "abstraction_ladder",
 }
 
 _BASE_SOURCE_TO_FAMILY = {

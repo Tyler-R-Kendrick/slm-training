@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+from pathlib import Path
 from typing import Protocol
 
 from slm_training.dsl.schema import ExampleRecord
@@ -200,6 +201,87 @@ class NamespaceAugmentSynthesizer:
         ]
 
 
+class FrozenArtifactSynthesizer:
+    """Emit paraphrase + abstraction-ladder rows from committed frontier artifacts.
+
+    Reads ``fixtures/frontier/<gold_id>.<hash8>.json`` (agent-skill output), binds
+    it to the gold by content hash *and* structural fingerprint (faithfulness), and
+    drops silently on a mismatch (a changed gold → regenerate). Rows keep the gold's
+    placeholder skeleton as the target; only the prompt varies. No model call — the
+    build stays deterministic and re-validates every row downstream. Edit / vision
+    sections of the bundle are consumed by later stages (P4 / P7).
+    """
+
+    def __init__(self, root: Path | None = None) -> None:
+        self._root = root
+
+    def expand(self, record: ExampleRecord) -> list[ExampleRecord]:
+        from slm_training.data.frontier import gold_content_hash, load_artifact
+        from slm_training.data.leakage import fingerprint_openui_structure
+
+        gold_hash = gold_content_hash(record.openui, record.prompt)
+        artifact = load_artifact(record.id, gold_hash, root=self._root)
+        if artifact is None:
+            return []
+        # Faithfulness: the described skeleton must be structurally the gold.
+        if fingerprint_openui_structure(artifact.skeleton_openui) != (
+            fingerprint_openui_structure(record.openui)
+        ):
+            return []
+        out: list[ExampleRecord] = []
+        for i, paraphrase in enumerate(artifact.paraphrases):
+            if paraphrase.strip():
+                out.append(
+                    self._derive(
+                        record,
+                        rid=f"{record.id}_fd_{i}",
+                        prompt=paraphrase,
+                        family="frontier_described",
+                        synth="frontier_described",
+                    )
+                )
+        for level, text in sorted(artifact.ladder.items()):
+            if text.strip():
+                out.append(
+                    self._derive(
+                        record,
+                        rid=f"{record.id}_ladder_{level}",
+                        prompt=text,
+                        family="abstraction_ladder",
+                        synth="abstraction_ladder",
+                        extra_meta={"abstraction_level": level},
+                    )
+                )
+        return out
+
+    @staticmethod
+    def _derive(
+        record: ExampleRecord,
+        *,
+        rid: str,
+        prompt: str,
+        family: str,
+        synth: str,
+        extra_meta: dict | None = None,
+    ) -> ExampleRecord:
+        return ExampleRecord(
+            id=rid,
+            prompt=prompt,
+            openui=record.openui,
+            placeholders=list(record.placeholders),
+            split=record.split,
+            source=f"{record.source}+{family}",
+            meta={
+                **record.meta,
+                "synth": synth,
+                "task": "generation",
+                "parent_id": record.id,
+                **(extra_meta or {}),
+            },
+            design_md=record.design_md,
+        )
+
+
 class QualitySynthesizer:
     """Compose template paraphrases + layout augments (deterministic, ordered)."""
 
@@ -223,4 +305,6 @@ def get_synthesizer(name: str) -> PromptSynthesizer:
         return NamespaceAugmentSynthesizer()
     if name in {"quality", "full", "default"}:
         return QualitySynthesizer()
+    if name in {"frontier", "frontier_artifact", "frontier_described"}:
+        return FrozenArtifactSynthesizer()
     raise ValueError(f"unknown synthesizer {name!r}")
