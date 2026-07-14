@@ -10,6 +10,7 @@ import pytest
 from slm_training.data.frontier import (
     artifact_path,
     gold_content_hash,
+    load_bundle,
     prompt_hash,
     write_worklist,
 )
@@ -86,6 +87,14 @@ def test_worklist_is_train_only_and_idempotent(tmp_path: Path) -> None:
     assert completed["complete_count"] == 1
     assert completed["pending_count"] == 0
     assert (root / "worklist.jsonl").read_text(encoding="utf-8") == ""
+
+
+@pytest.mark.parametrize("payload", [[], None, "invalid"])
+def test_reader_rejects_non_object_json(tmp_path: Path, payload: object) -> None:
+    gold = _gold()
+    path = artifact_path(tmp_path, gold)
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    assert load_bundle(path, gold) is None
 
 
 @pytest.mark.skipif(not bridge_available(), reason="OpenUI bridge deps missing")

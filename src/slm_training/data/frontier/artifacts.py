@@ -24,6 +24,8 @@ def load_bundle(path: Path | str, gold: ExampleRecord) -> dict[str, Any] | None:
     """Return a faithful current bundle, or ``None`` for stale/invalid input."""
     try:
         data = json.loads(Path(path).read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            return None
         expected_hash = gold_content_hash(gold.openui, gold.prompt)
         if data.get("schema_version") != SCHEMA_VERSION:
             return None
@@ -77,7 +79,7 @@ def build_worklist(
                 "gold_content_hash": digest,
                 "prompt_hash": prompt_hash(record.prompt),
                 "prompt": record.prompt,
-                "placeholder_skeleton": strip_style_literals(record.openui).strip(),
+                "placeholder_skeleton": strip_style_literals(record.openui or "").strip(),
                 "placeholders": list(record.placeholders),
                 "program_family_id": str(meta.get("program_family_id") or record.id),
                 "lineage_id": str(meta.get("lineage_id") or record.id),

@@ -27,7 +27,7 @@ def main(argv: list[str] | None = None) -> int:
         skill_name=args.skill_name,
         skill_version=args.skill_version,
     )
-    print(json.dumps(manifest, indent=2, sort_keys=True))
+    print(json.dumps(manifest, indent=2, sort_keys=True, ensure_ascii=False))
     return 0
 
 
