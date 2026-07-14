@@ -1,0 +1,11 @@
+# Optional Codex MCP + hooks for Serena (copy into ~/.codex/ if not already present).
+# Official: https://oraios.github.io/serena/02-usage/030_clients.html#codex-cli-and-app
+# Or run: serena setup codex
+
+[mcp_servers.serena]
+startup_timeout_sec = 15
+command = "serena"
+args = ["start-mcp-server", "--project-from-cwd", "--context=codex", "--open-web-dashboard=false"]
+
+[features]
+codex_hooks = true

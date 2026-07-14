@@ -118,8 +118,37 @@ hf skills add --dest=.cursor/skills --force      # Cursor discovery (hf-cli)
 ```
 
 Cursor also loads MCP from [`.cursor/mcp.json`](.cursor/mcp.json) (Playwright +
-Hugging Face Hub MCP at `https://huggingface.co/mcp?login`). Optional UI
-install: [Cursor marketplace — Hugging Face](https://cursor.com/marketplace/huggingface).
+Hugging Face Hub MCP + **Serena**). Optional UI install:
+[Cursor marketplace — Hugging Face](https://cursor.com/marketplace/huggingface).
+
+### Serena MCP (semantic code navigation)
+
+[Serena](https://github.com/oraios/serena) provides IDE-like symbolic tools
+(find symbol / references / rename / replace body) via MCP. Do **not** install
+from MCP marketplaces — use the official quick start:
+
+```bash
+# prerequisite: uv (https://docs.astral.sh/uv/)
+uv tool install -p 3.13 serena-agent
+serena init
+cd /path/to/slm-training
+serena project create --language python --language typescript --index
+# health: serena project health-check
+```
+
+Project config: [`.serena/project.yml`](.serena/project.yml) (committed). Cache /
+local overrides stay gitignored under `.serena/`.
+
+| Client | Config in this repo |
+| --- | --- |
+| Cursor | [`.cursor/mcp.json`](.cursor/mcp.json) (`--context ide --project .`) |
+| Claude Code | [`.mcp.json`](.mcp.json) + hooks in [`.claude/settings.json`](.claude/settings.json) |
+| VS Code / Copilot Chat | [`.vscode/mcp.json`](.vscode/mcp.json) |
+| Codex | copy [`.codex/config.toml.example`](.codex/config.toml.example) → `~/.codex/config.toml` (or `serena setup codex`) |
+| Copilot CLI | `/mcp add` → `serena start-mcp-server --context=copilot-cli --project-from-cwd` |
+
+Prefer Serena symbolic tools over raw grep/read when navigating `src/` /
+`scripts/`. Docs: https://oraios.github.io/serena/
 
 Prefer `hf` over deprecated `huggingface-cli`. Auth: `hf auth login` /
 `hf auth whoami`. CLI docs:

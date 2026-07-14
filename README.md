@@ -264,6 +264,19 @@ Optional Cursor UI: [marketplace — Hugging Face](https://cursor.com/marketplac
 CLI docs: [huggingface_hub CLI](https://huggingface.co/docs/huggingface_hub/guides/cli).
 Tokens: [settings/tokens](https://huggingface.co/settings/tokens).
 
+### Serena MCP
+
+Semantic code tools via [Serena](https://github.com/oraios/serena) (not
+marketplace installs). Project is initialised under [`.serena/`](.serena/);
+Cursor / Claude / VS Code MCP configs are wired in-repo. See
+[AGENTS.md — Serena MCP](AGENTS.md).
+
+```bash
+uv tool install -p 3.13 serena-agent
+serena init
+serena project health-check
+```
+
 ## Layout
 
 ```

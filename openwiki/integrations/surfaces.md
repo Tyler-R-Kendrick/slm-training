@@ -12,6 +12,13 @@
 - MCP: `.cursor/mcp.json` → `https://huggingface.co/mcp?login`
 - Checkpoint bucket sync for full trains (see operations page)
 
+## Serena MCP
+
+- Semantic IDE tools for agents ([oraios/serena](https://github.com/oraios/serena))
+- Project: `.serena/project.yml` (languages: python, typescript)
+- Clients: `.cursor/mcp.json`, `.mcp.json` (Claude Code), `.vscode/mcp.json`
+- Prefer `find_symbol` / `find_referencing_symbols` over raw grep when editing Python/TS
+
 ## GPU multi-farm MCP
 
 - Package: `src/gpu_multi_farm/`

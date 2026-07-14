@@ -12,6 +12,10 @@ After any train / eval / benchmark / matrix run, use
 (`hf skills add --claude --force` / `hf skills update` to refresh).
 When a checkpoint is created or promoted, update `docs/MODEL_CARD.md` and the README model-card summary.
 
+Serena MCP (semantic code tools) is configured for this repo — prefer Serena
+symbol tools over raw grep when navigating `src/` / `scripts/`. See `AGENTS.md`
+and `.serena/project.yml`.
+
 <!-- OPENWIKI:START -->
 
 ## OpenWiki
