@@ -64,3 +64,19 @@ structure filter. Both produced 176 records with content fingerprint
 all 176 rows carried the pinned contract ID. The focused train-data harness
 suite passed 14 tests. This is corpus-build evidence only: no model was trained
 or evaluated, no checkpoint was written, and no ship-readiness claim is made.
+
+## Governance accounting follow-up (2026-07-14)
+
+SLM-17's first acceptance audit also found that the Data Card reported 174 of
+176 kept rows as quarantined even though those 174 internal rows had no
+external-source governance envelope and had passed the corpus gates. SLM-13's
+metadata emitter was treating an absent envelope as a non-complete envelope.
+
+The same bounded, reserved-structure-filtered CPU recipe now reports 2 governed
+complete records, 0 quarantined records, and 174 internal records. Those counts
+exactly match the emitted row metadata; PII and secret findings remain zero,
+all 176 rows retain their contract stamp, and the content fingerprint remains
+`9359d47176c0ec75fce9389558af69884a6ce4afc47f89fc0f7412987ad4bf17`.
+The 24 incomplete external candidates still fail closed at G10 before writing.
+This is metadata-accounting evidence only, with no model, checkpoint, quality,
+or ship-readiness claim.

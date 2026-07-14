@@ -262,7 +262,11 @@ def emit_dataset_metadata(
 ) -> dict[str, Path]:
     """Write reproducible Croissant, Data Card, and SPDX JSON documents."""
     rows = sorted(records, key=lambda record: record.id)
-    governed = [record.meta.get("governance") or {} for record in rows]
+    governed = [
+        item
+        for record in rows
+        if isinstance((item := record.meta.get("governance")), dict)
+    ]
     sources = sorted(
         {
             source["source_url"]
@@ -271,7 +275,9 @@ def emit_dataset_metadata(
             and source.get("source_url")
         }
     )
-    quarantined = sum(item.get("status") != "Complete" for item in governed)
+    complete = sum(item.get("status") == "Complete" for item in governed)
+    quarantined = len(governed) - complete
+    internal = len(rows) - len(governed)
     pii_flagged = sum(
         bool((item.get("scan") or {}).get("pii_kinds")) for item in governed
     )
@@ -364,8 +370,9 @@ def emit_dataset_metadata(
             "version": version,
             "record_count": len(rows),
             "governance": {
-                "complete": len(rows) - quarantined,
+                "complete": complete,
                 "quarantined": quarantined,
+                "internal": internal,
                 "external_sources": sources,
                 "robots_policy_is_not_authorization": True,
                 "pii_and_secret_scan_required": True,

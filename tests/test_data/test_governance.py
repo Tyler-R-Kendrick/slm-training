@@ -139,3 +139,38 @@ def test_hash_and_metadata_artifacts_are_reproducible(tmp_path: Path) -> None:
     assert spdx["documentDescribes"] == ["SPDXRef-Dataset"]
     assert spdx["packages"][0]["filesAnalyzed"] is False
     assert spdx["packages"][0]["checksums"][0]["algorithm"] == "SHA256"
+
+
+def test_metadata_distinguishes_internal_from_quarantined_records(
+    tmp_path: Path,
+) -> None:
+    complete = govern_record(_record(), _provenance())
+    quarantined = govern_record(
+        ExampleRecord(
+            id="external_2",
+            prompt="Build another hero",
+            openui=OPENUI,
+            placeholders=[":hero.title"],
+            source="web_projection",
+        ),
+        None,
+    )
+    internal = ExampleRecord(
+        id="internal_1",
+        prompt="Build an internal fixture",
+        openui=OPENUI,
+        placeholders=[":hero.title"],
+        source="fixture",
+    )
+
+    paths = emit_dataset_metadata(
+        [complete, quarantined, internal], tmp_path, name="openui", version="v1"
+    )
+    governance = json.loads(paths["data_card.json"].read_text())["governance"]
+
+    assert governance["complete"] == 1
+    assert governance["quarantined"] == 1
+    assert governance["internal"] == 1
+    assert governance["external_sources"] == ["https://example.com/page"]
+    assert governance["pii_flagged"] == 0
+    assert governance["secret_flagged"] == 0
