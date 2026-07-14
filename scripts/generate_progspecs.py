@@ -7,7 +7,7 @@ import argparse
 import json
 from pathlib import Path
 
-from slm_training.data.progspec import TypedProgramGenerator
+from slm_training.data.progspec import GeneratorConfig, ProgramGenerator
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -24,10 +24,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    result = TypedProgramGenerator(
+    result = ProgramGenerator(
+        GeneratorConfig(max_depth=args.max_depth, max_width=args.max_width),
         seed=args.seed,
-        max_depth=args.max_depth,
-        max_width=args.max_width,
     ).generate(args.count)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.coverage.parent.mkdir(parents=True, exist_ok=True)
@@ -43,9 +42,7 @@ def main(argv: list[str] | None = None) -> int:
         encoding="utf-8",
     )
     print(f"wrote {len(result.programs)} ProgramSpecs to {args.output}")
-    print(
-        f"coverage: {result.coverage['covered_count']}/{result.coverage['target_count']}"
-    )
+    print(f"coverage: {result.coverage['covered']}/{result.coverage['targets']}")
     return 0 if len(result.programs) == args.count else 1
 
 
