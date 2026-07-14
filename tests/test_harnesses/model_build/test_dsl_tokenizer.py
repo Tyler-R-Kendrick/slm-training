@@ -27,6 +27,16 @@ CTA = (
     'cta = Button(":cta.label")'
 )
 
+V05_PROGRAM = (
+    'root = Stack([button, count])\n'
+    '$filter = "all"\n'
+    'items = Query("get_items", {filter: $filter}, {rows: []})\n'
+    'save = Mutation("save_item", {filter: $filter})\n'
+    'submit = Action([@Run(save), @Run(items), @Set($filter, "all")])\n'
+    'button = Button(":actions.save", submit)\n'
+    'count = TextContent("" + @Count(items.rows))'
+)
+
 
 @pytest.fixture
 def tok() -> DSLNativeTokenizer:
@@ -34,11 +44,12 @@ def tok() -> DSLNativeTokenizer:
 
 
 def test_vocab_is_fixed_and_typed(tok: DSLNativeTokenizer) -> None:
-    assert tok.vocab_size < 400
+    assert tok.vocab_size <= 400
     assert tok.kind_of(tok.token_to_id["Stack"]) == TokenKind.COMPONENT
     assert tok.kind_of(tok.token_to_id["="]) == TokenKind.STRUCT
     assert tok.kind_of(tok.sym_id(0)) == TokenKind.SYM
     assert tok.kind_of(tok.bind_id(0)) == TokenKind.BIND
+    assert tok.kind_of(tok.state_id(0)) == TokenKind.STATE
     assert "NL" in tok.token_to_id
     # No whitespace token in the fixed vocab.
     assert " " not in tok.token_to_id
@@ -154,3 +165,21 @@ def test_compositional_still_longer_on_placeholders() -> None:
     """Sanity: v2 compositional tokenization still spells placeholders."""
     tokens = tokenize_text('TextContent(":smoke.hero.title")')
     assert ":" in tokens and "smoke" in tokens
+
+
+def test_v05_typed_state_and_builtin_roundtrip(tok: DSLNativeTokenizer) -> None:
+    table = SymbolTable.from_placeholders([":actions.save"])
+    ids = tok.encode(V05_PROGRAM, table=table)
+    assert any(tok.kind_of(i) == TokenKind.STATE for i in ids)
+    assert any(tok.kind_of(i) == TokenKind.BUILTIN for i in ids)
+    decoded = tok.decode(ids, table=table)
+    assert '$s0 = "all"' in decoded
+    assert "Query(" in decoded and "Mutation(" in decoded
+    assert "Action([@Run(" in decoded and "@Set($s0" in decoded
+    assert "{filter: $s0}" in decoded
+
+
+def test_v05_tokenizer_ignores_line_comments(tok: DSLNativeTokenizer) -> None:
+    source = 'root = Stack([]) // trailing comment\n# full-line comment\n'
+    decoded = tok.decode(tok.encode(source))
+    assert decoded == "b0 = Stack([])"

@@ -278,5 +278,34 @@
     "open",
     "children",
     "size"
+  ],
+  "Query": [
+    "tool",
+    "args",
+    "defaults",
+    "refreshInterval"
+  ],
+  "Mutation": [
+    "tool",
+    "args"
+  ],
+  "Action": [
+    "steps"
+  ],
+  "Run": [
+    "statement"
+  ],
+  "Set": [
+    "target",
+    "value"
+  ],
+  "Reset": [
+    "targets"
+  ],
+  "ToAssistant": [
+    "message"
+  ],
+  "OpenUrl": [
+    "url"
   ]
 }

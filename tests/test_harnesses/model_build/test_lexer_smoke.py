@@ -77,7 +77,7 @@ def test_lexer_from_records_builds_dual_tokenizers(tmp_path: Path) -> None:
     model = TwoTowerModel.from_records(records, config=cfg, device="cpu")
     assert is_dsl_native_tokenizer(model.tokenizer)
     assert model.context_tokenizer is not model.tokenizer
-    assert model.tokenizer.vocab_size < 400
+    assert model.tokenizer.vocab_size <= 400
     loss = model.training_loss(records)
     assert float(loss.detach()) >= 0.0
 

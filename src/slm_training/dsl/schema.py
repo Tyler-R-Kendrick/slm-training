@@ -9,6 +9,8 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Iterator
 
+from slm_training.dsl.contract_id import compute_contract_id
+
 
 ALLOWED_SPLITS = frozenset(
     {"train", "held_out", "smoke", "adversarial", "ood", "rico_held"}
@@ -25,6 +27,7 @@ class ExampleRecord:
     source: str = "fixture"
     meta: dict[str, Any] = field(default_factory=dict)
     design_md: str | None = None
+    contract_id: str = ""
 
     def __post_init__(self) -> None:
         if self.split not in ALLOWED_SPLITS:
@@ -39,6 +42,10 @@ class ExampleRecord:
             raise ValueError("openui must be non-empty")
         if self.design_md is not None and not isinstance(self.design_md, str):
             raise ValueError("design_md must be a string or None")
+        if not self.contract_id:
+            self.contract_id = compute_contract_id(
+                tool_schema=self.meta.get("tool_schema") or []
+            )
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
@@ -58,6 +65,7 @@ class ExampleRecord:
             source=str(data.get("source") or "fixture"),
             meta=dict(data.get("meta") or {}),
             design_md=None if design_md is None else str(design_md),
+            contract_id=str(data.get("contract_id") or ""),
         )
 
 

@@ -13,9 +13,15 @@ from slm_training.data.contract import (
 from slm_training.data.leakage import normalize_openui_structure
 from slm_training.data.splits import clustered_train_val_split
 from slm_training.dsl.production_codec import (
+    ACTION_STMT,
     CLOSE,
+    MUTATION_STMT,
     OPEN_PREFIX,
+    QUERY_STMT,
+    ROOT_STMT,
     SLOT_PREFIX,
+    STATE_STMT,
+    V05,
     ProductionCodec,
     build_vocab_from_corpus,
     decode_productions,
@@ -29,6 +35,16 @@ HERO = (
     'hero_title = TextContent(":hero.title")\n'
     'hero_body = TextContent(":hero.body")\n'
     'hero = Card([hero_title, hero_body])'
+)
+
+V05_PROGRAM = (
+    'root = Stack([button, count])\n'
+    '$filter = "all"\n'
+    'items = Query("get_items", {filter: $filter}, {rows: []})\n'
+    'save = Mutation("save_item", {filter: $filter})\n'
+    'submit = Action([@Run(save), @Run(items), @Set($filter, "all")])\n'
+    'button = Button(":actions.save", submit)\n'
+    'count = TextContent("" + @Count(items.rows))'
 )
 
 
@@ -197,3 +213,26 @@ def test_train_fixture_roundtrips() -> None:
         assert normalize_openui_structure(decoded) == normalize_openui_structure(
             record.openui
         )
+
+
+def test_v05_production_sigils_and_roundtrip() -> None:
+    program, decoded = roundtrip_openui(V05_PROGRAM)
+    assert program.tokens[0] == V05
+    assert ROOT_STMT in program.tokens
+    assert STATE_STMT in program.tokens
+    assert QUERY_STMT in program.tokens
+    assert MUTATION_STMT in program.tokens
+    assert ACTION_STMT in program.tokens
+    parsed = __import__("slm_training.dsl", fromlist=["parse"]).parse(decoded)
+    assert parsed.root is not None
+    assert parsed.state_declarations == {"$s0": "all"}
+    assert len(parsed.query_statements) == 1
+    assert len(parsed.mutation_statements) == 1
+
+
+def test_v05_codec_handles_arithmetic_without_runtime_statements() -> None:
+    source = 'root = TextContent("" + (1 + 2 * 3))'
+    program, decoded = roundtrip_openui(source)
+    assert program.tokens[0] == V05
+    assert "1 + 2 * 3" in decoded
+    assert __import__("slm_training.dsl", fromlist=["parse"]).parse(decoded).root

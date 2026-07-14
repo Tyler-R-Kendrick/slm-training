@@ -23,6 +23,20 @@ Build a small, on-device-friendly specialist that generates **placeholder-augmen
 
 Parsing, serialization, and system-prompt generation use **`@openuidev/lang-core`** via [`tools/openui_bridge/`](../../tools/openui_bridge/), which re-exports official **`openuiLibrary`**.
 
+The pinned bridge implements **OpenUI Lang v0.5** (the language-spec version,
+distinct from the `@openuidev/lang-core@0.2.9` package version). The supported
+surface includes `$state`, `Query`, `Mutation`, `Action`, tool calls, object and
+positional arguments, member/index access, and v0.5 expressions. Bridge and
+in-process grammar paths retain query/mutation/state sidecars; validated source
+is preserved for lossless whole-program round trips.
+
+Every `ExampleRecord` is stamped with a deterministic `contract_id` derived
+from the spec and parser provenance, component and tool schemas, canonicalizer,
+renderer, and tokenizer version. The pinned inputs live in
+[`grammars/openui_contract.json`](../../grammars/openui_contract.json). Legacy
+fixtures are stamped on load; tokenizer-v1 artifacts must be regenerated for
+the v2 typed state/builtin alphabet.
+
 Root: `Stack`. Content components include `TextContent`, `Card([children])`, `Button`, `Input`, `ImageBlock`, forms, charts, etc.
 
 ### Placeholder policy

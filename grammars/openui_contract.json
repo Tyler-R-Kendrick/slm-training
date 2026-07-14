@@ -1,0 +1,19 @@
+{
+  "canonicalizer": "@openuidev/lang-core/jsonToOpenUI@0.2.9+slm-training-whole-program-v1",
+  "component_schema": {
+    "component_count": 54,
+    "library": "@openuidev/react-ui/genui-lib@0.12.1",
+    "root": "Stack",
+    "sha256": "af195b7c035b0cde3f08280a687323b86c4007a6aef0245611aea3b13f24f47c"
+  },
+  "lang_spec_version": "0.5",
+  "parser": {
+    "integrity": "sha512-LRSzjCUTuNAAUNlO5xbKDJYoe1PGoPXVosK1QTexBOD9mzOHk2Da5/BuXEqHBVdRoH+y4upfm3y9CTb2Z/Q4fg==",
+    "package": "@openuidev/lang-core",
+    "package_version": "0.2.9",
+    "source_commit": "d66cf7bb99eb4f22c90d25cadb7e8aad86d697fe",
+    "spec_commit": "7c4e68e8a8596be2dab5a54c4b4d1a717400eb90"
+  },
+  "renderer": "@openuidev/react-ui@0.12.1",
+  "tokenizer_version": 2
+}

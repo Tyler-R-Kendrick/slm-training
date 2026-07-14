@@ -24,7 +24,7 @@ from typing import Iterable
 from slm_training.dsl.openui_tokens import STRUCTURAL_TOKENS
 
 # Bump when serialization / vocab layout changes.
-DSL_TOKENIZER_VERSION = 1
+DSL_TOKENIZER_VERSION = 2
 
 PAD = "<pad>"
 BOS = "<bos>"
@@ -36,6 +36,7 @@ SPECIAL = [PAD, BOS, EOS, MASK, UNK]
 # Reserved table sizes (kept small / fixed so vocabulary is corpus-independent).
 DEFAULT_SYM_SLOTS = 64
 DEFAULT_BIND_SLOTS = 64
+DEFAULT_STATE_SLOTS = 64
 
 LIT_STR = "LIT_STR"
 LIT_NUM = "LIT_NUM"
@@ -51,6 +52,8 @@ class TokenKind(str, Enum):
     COMPONENT = "component"
     SYM = "sym"
     BIND = "bind"
+    STATE = "state"
+    BUILTIN = "builtin"
     LIT = "lit"
     BYTE = "byte"
 
@@ -134,20 +137,72 @@ _COMPONENT_NAMES: tuple[str, ...] = tuple(
     )
 )
 
-_STRUCT_PUNCT: tuple[str, ...] = ("=", "(", ")", "[", "]", ",", ".")
+_STRUCT_PUNCT: tuple[str, ...] = (
+    "=",
+    "(",
+    ")",
+    "[",
+    "]",
+    "{",
+    "}",
+    ",",
+    ".",
+    ":",
+    "?",
+    "+",
+    "-",
+    "*",
+    "/",
+    "%",
+    "!",
+    "==",
+    "!=",
+    ">",
+    "<",
+    ">=",
+    "<=",
+    "&&",
+    "||",
+)
 _BOOLS: tuple[str, ...] = ("true", "false", "null")
+_BUILTIN_NAMES: tuple[str, ...] = (
+    "Query",
+    "Mutation",
+    "Action",
+    "@Run",
+    "@Set",
+    "@Reset",
+    "@ToAssistant",
+    "@OpenUrl",
+    "@Count",
+    "@First",
+    "@Last",
+    "@Sum",
+    "@Avg",
+    "@Min",
+    "@Max",
+    "@Sort",
+    "@Filter",
+    "@Round",
+    "@Abs",
+    "@Floor",
+    "@Ceil",
+    "@Each",
+)
 
 # OpenUI surface lexer used for serialization (aligned with grammars/openui.lark).
 _LEX_RE = re.compile(
     r"""
-    ("(?:\\.|[^"\\])*")
-  | ([A-Z][A-Za-z0-9]*)
+    (//[^\n]*|\#[^\n]*)
+  | ("(?:\\.|[^"\\])*")
+  | (\$[A-Za-z_][A-Za-z0-9_]*)
+  | (@[A-Z][A-Za-z0-9_]*)
+  | ([A-Z][A-Za-z0-9_]*)
   | ([a-z_][A-Za-z0-9_]*)
-  | (-?\d+(?:\.\d+)?)
-  | (=|\(|\)|\[|\]|,|\.)
+  | (-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)
+  | (==|!=|>=|<=|&&|\|\||=|\(|\)|\[|\]|\{|\}|,|\.|:|\?|\+|-|\*|/|%|!|>|<)
   | (\n+)
   | ([^\S\n]+)
-  | (//[^\n]*)
     """,
     re.VERBOSE,
 )
@@ -173,9 +228,17 @@ def _bind_token(i: int) -> str:
     return f"<BIND_{i}>"
 
 
+def _state_token(i: int) -> str:
+    return f"<STATE_{i}>"
+
+
 def _bind_surface_name(i: int) -> str:
     """Deterministic OpenUI binder identifier for slot i."""
     return f"b{i}"
+
+
+def _state_surface_name(i: int) -> str:
+    return f"$s{i}"
 
 
 @dataclass
@@ -185,6 +248,7 @@ class SymbolTable:
     placeholders: list[str] = field(default_factory=list)
     # Maps surface binder name -> bind slot (first-occurrence order).
     binders: dict[str, int] = field(default_factory=dict)
+    states: dict[str, int] = field(default_factory=dict)
 
     def placeholder_slot(self, ph: str) -> int | None:
         key = ph if ph.startswith(":") else f":{ph}"
@@ -212,6 +276,16 @@ class SymbolTable:
         self.binders[name] = slot
         return slot
 
+    def ensure_state(self, name: str, *, max_slots: int) -> int | None:
+        key = name if name.startswith("$") else f"${name}"
+        if key in self.states:
+            return self.states[key]
+        if len(self.states) >= max_slots:
+            return None
+        slot = len(self.states)
+        self.states[key] = slot
+        return slot
+
     def binder_name(self, slot: int) -> str:
         for name, s in self.binders.items():
             if s == slot:
@@ -223,10 +297,17 @@ class SymbolTable:
             return self.placeholders[slot]
         return None
 
+    def state_name(self, slot: int) -> str:
+        for name, state_slot in self.states.items():
+            if state_slot == slot:
+                return name
+        return _state_surface_name(slot)
+
     def to_dict(self) -> dict:
         return {
             "placeholders": list(self.placeholders),
             "binders": dict(self.binders),
+            "states": dict(self.states),
         }
 
     @classmethod
@@ -236,6 +317,7 @@ class SymbolTable:
         return cls(
             placeholders=list(data.get("placeholders") or []),
             binders={str(k): int(v) for k, v in (data.get("binders") or {}).items()},
+            states={str(k): int(v) for k, v in (data.get("states") or {}).items()},
         )
 
     @classmethod
@@ -261,6 +343,7 @@ class DSLNativeTokenizer:
     version: int = DSL_TOKENIZER_VERSION
     sym_slots: int = DEFAULT_SYM_SLOTS
     bind_slots: int = DEFAULT_BIND_SLOTS
+    state_slots: int = DEFAULT_STATE_SLOTS
     # Overflow counter (byte-path used when symbol table is full).
     overflow_count: int = 0
 
@@ -305,11 +388,17 @@ class DSLNativeTokenizer:
     def is_bind_id(self, tid: int) -> bool:
         return self.kind_of(tid) == TokenKind.BIND
 
+    def is_state_id(self, tid: int) -> bool:
+        return self.kind_of(tid) == TokenKind.STATE
+
     def sym_id(self, slot: int) -> int:
         return self.token_to_id[_sym_token(slot)]
 
     def bind_id(self, slot: int) -> int:
         return self.token_to_id[_bind_token(slot)]
+
+    def state_id(self, slot: int) -> int:
+        return self.token_to_id[_state_token(slot)]
 
     def sym_slot_of(self, tid: int) -> int | None:
         tok = self.id_to_token.get(int(tid), "")
@@ -329,12 +418,22 @@ class DSLNativeTokenizer:
                 return None
         return None
 
+    def state_slot_of(self, tid: int) -> int | None:
+        tok = self.id_to_token.get(int(tid), "")
+        if tok.startswith("<STATE_") and tok.endswith(">"):
+            try:
+                return int(tok[7:-1])
+            except ValueError:
+                return None
+        return None
+
     @classmethod
     def build(
         cls,
         *,
         sym_slots: int = DEFAULT_SYM_SLOTS,
         bind_slots: int = DEFAULT_BIND_SLOTS,
+        state_slots: int = DEFAULT_STATE_SLOTS,
     ) -> DSLNativeTokenizer:
         """Build the fixed corpus-independent vocabulary."""
         vocab: list[str] = []
@@ -355,6 +454,8 @@ class DSLNativeTokenizer:
 
         for name in _COMPONENT_NAMES:
             _add(name, TokenKind.COMPONENT)
+        for name in _BUILTIN_NAMES:
+            _add(name, TokenKind.BUILTIN)
 
         for body in _FIXED_STRING_BODIES:
             _add(_fixed_string_token(body), TokenKind.LIT)
@@ -375,6 +476,8 @@ class DSLNativeTokenizer:
             _add(_sym_token(i), TokenKind.SYM)
         for i in range(bind_slots):
             _add(_bind_token(i), TokenKind.BIND)
+        for i in range(state_slots):
+            _add(_state_token(i), TokenKind.STATE)
 
         token_to_id = {t: i for i, t in enumerate(vocab)}
         id_to_token = {i: t for t, i in token_to_id.items()}
@@ -386,6 +489,7 @@ class DSLNativeTokenizer:
             version=DSL_TOKENIZER_VERSION,
             sym_slots=sym_slots,
             bind_slots=bind_slots,
+            state_slots=state_slots,
         )
 
     # --- surface lexing / canonicalize ---------------------------------
@@ -402,7 +506,7 @@ class DSLNativeTokenizer:
                     if not ch.isspace():
                         tokens.append(ch)
             raw = next(g for g in m.groups() if g is not None)
-            if raw.startswith("//"):
+            if raw.startswith(("//", "#")):
                 pos = m.end()
                 continue
             if raw.isspace() and "\n" not in raw:
@@ -472,11 +576,19 @@ class DSLNativeTokenizer:
                 and pieces[i + 1] == "="
             ):
                 table.ensure_binder(piece, max_slots=self.bind_slots)
+            if piece.startswith("$") and i + 1 < len(pieces) and pieces[i + 1] == "=":
+                table.ensure_state(piece, max_slots=self.state_slots)
 
-        for piece in pieces:
+        for i, piece in enumerate(pieces):
             ids.extend(
                 self._encode_piece(
-                    piece, table=table, use_symbol_table=use_symbol_table
+                    piece,
+                    table=table,
+                    use_symbol_table=use_symbol_table,
+                    preserve_identifier=(
+                        (i + 1 < len(pieces) and pieces[i + 1] == ":")
+                        or (i > 0 and pieces[i - 1] == ".")
+                    ),
                 )
             )
 
@@ -490,6 +602,7 @@ class DSLNativeTokenizer:
         *,
         table: SymbolTable,
         use_symbol_table: bool,
+        preserve_identifier: bool = False,
     ) -> list[int]:
         # Structural punctuation / NL
         if piece == NL:
@@ -497,6 +610,7 @@ class DSLNativeTokenizer:
         if piece in self.token_to_id and self.kind_of(self.token_to_id[piece]) in {
             TokenKind.STRUCT,
             TokenKind.COMPONENT,
+            TokenKind.BUILTIN,
         }:
             return [self.token_to_id[piece]]
         if piece in _BOOLS:
@@ -508,8 +622,17 @@ class DSLNativeTokenizer:
                 piece, table=table, use_symbol_table=use_symbol_table
             )
 
+        if piece.startswith("$"):
+            slot = table.ensure_state(piece, max_slots=self.state_slots)
+            if slot is not None:
+                return [self.state_id(slot)]
+            self.overflow_count += 1
+            return self._encode_bytes(piece)
+
         # Component already handled; NAME (binder / ref)
         if piece[:1].islower() and piece.isidentifier():
+            if preserve_identifier:
+                return self._encode_bytes(piece)
             slot = table.ensure_binder(piece, max_slots=self.bind_slots)
             if slot is None:
                 self.overflow_count += 1
@@ -605,6 +728,12 @@ class DSLNativeTokenizer:
                 i += 1
                 continue
 
+            if kind == TokenKind.STATE:
+                slot = self.state_slot_of(tid)
+                pieces.append(_state_surface_name(slot or 0))
+                i += 1
+                continue
+
             if tok == NL:
                 pieces.append("\n")
                 i += 1
@@ -626,9 +755,18 @@ class DSLNativeTokenizer:
                 continue
 
             if kind == TokenKind.BYTE:
-                # Lone byte outside LIT_* framing — append raw char.
-                pieces.append(chr(int(tok[2:], 16)) if tok.startswith(_BYTE_PREFIX) else tok)
-                i += 1
+                # Preserve an identifier/key/member as one surface piece rather
+                # than spacing each byte independently in the pretty-printer.
+                chars: list[str] = []
+                while i < n:
+                    raw = self.id_to_token.get(int(ids[i]), UNK)
+                    if self.kind_of(int(ids[i])) != TokenKind.BYTE:
+                        break
+                    chars.append(
+                        chr(int(raw[2:], 16)) if raw.startswith(_BYTE_PREFIX) else raw
+                    )
+                    i += 1
+                pieces.append("".join(chars))
                 continue
 
             if tok == LIT_END:
@@ -686,13 +824,28 @@ class DSLNativeTokenizer:
             if prev.endswith(", "):
                 out.append(tok)
                 continue
-            if tok in {")", "]", ","}:
+            if tok in {")", "]", "}"}:
                 out.append(tok)
                 continue
-            if prev.endswith("(") or prev.endswith("["):
+            if prev.endswith("(") or prev.endswith("[") or prev.endswith("{"):
                 out.append(tok)
                 continue
-            if tok in {"(", "["}:
+            if tok in {"(", "[", "{"}:
+                out.append(tok)
+                continue
+            if tok == ".":
+                out.append(tok)
+                continue
+            if prev.endswith("."):
+                out.append(tok)
+                continue
+            if tok == ":":
+                out.append(": ")
+                continue
+            if tok in {"+", "-", "*", "/", "%", "==", "!=", ">", "<", ">=", "<=", "&&", "||", "?"}:
+                out.append(f" {tok} ")
+                continue
+            if tok == "!":
                 out.append(tok)
                 continue
             # Default: no space (identifiers glued only when intended).
@@ -756,6 +909,7 @@ class DSLNativeTokenizer:
                     "version": self.version,
                     "sym_slots": self.sym_slots,
                     "bind_slots": self.bind_slots,
+                    "state_slots": self.state_slots,
                     "token_to_id": self.token_to_id,
                     "id_to_kind": {str(k): v for k, v in self.id_to_kind.items()},
                 },
@@ -782,6 +936,7 @@ class DSLNativeTokenizer:
             rebuilt = cls.build(
                 sym_slots=int(data.get("sym_slots") or DEFAULT_SYM_SLOTS),
                 bind_slots=int(data.get("bind_slots") or DEFAULT_BIND_SLOTS),
+                state_slots=int(data.get("state_slots") or DEFAULT_STATE_SLOTS),
             )
             id_to_kind = {
                 i: rebuilt.id_to_kind.get(i, TokenKind.SPECIAL.value)
@@ -794,6 +949,7 @@ class DSLNativeTokenizer:
             version=int(data.get("version") or DSL_TOKENIZER_VERSION),
             sym_slots=int(data.get("sym_slots") or DEFAULT_SYM_SLOTS),
             bind_slots=int(data.get("bind_slots") or DEFAULT_BIND_SLOTS),
+            state_slots=int(data.get("state_slots") or DEFAULT_STATE_SLOTS),
         )
 
 

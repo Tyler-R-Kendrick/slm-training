@@ -17,6 +17,16 @@ OPENUI_SRC = (
     'hero = TextContent(":hero.title")\n'
 )
 
+V05_SRC = (
+    'root = Stack([button, count])\n'
+    '$filter = "all"\n'
+    'items = Query("get_items", {filter: $filter}, {rows: []})\n'
+    'save = Mutation("save_item", {filter: $filter})\n'
+    'submit = Action([@Run(save), @Run(items), @Set($filter, "all")])\n'
+    'button = Button(":actions.save", submit)\n'
+    'count = TextContent("" + @Count(items.rows))'
+)
+
 TOY_SRC = (
     'root = row(title, action)\n'
     'title = text(":hero.title")\n'
@@ -47,6 +57,16 @@ def test_openui_lark_parses_element_ast() -> None:
     assert ":hero.title" in program.placeholders
     assert component_multiset(program.root)["Stack"] == 1
     assert component_multiset(program.root)["TextContent"] == 1
+
+
+def test_openui_lark_v05_program_metadata_and_roundtrip() -> None:
+    backend = get_backend("openui-lark")
+    program = backend.validate(V05_SRC)
+    assert program.root is not None
+    assert program.meta["state_declarations"] == ["$filter"]
+    assert program.meta["query_statements"] == ["items"]
+    assert program.meta["mutation_statements"] == ["save"]
+    assert backend.validate(backend.serialize(program)).root is not None
 
 
 def test_openui_lark_stream_check() -> None:
