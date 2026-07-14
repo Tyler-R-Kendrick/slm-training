@@ -26,7 +26,7 @@ python -m scripts.build_test_data \
   --output-root /tmp/slm17-test3 --version v1 \
   --train-manifest /tmp/slm17-build-c/v1/manifest.json
 
-python scripts/verify_data_synthesis.py \
+rtk python scripts/verify_data_synthesis.py \
   --first-train-dir /tmp/slm17-build-c/v1 \
   --second-train-dir /tmp/slm17-build-d/v1 \
   --test-dir /tmp/slm17-test3/v1 \
