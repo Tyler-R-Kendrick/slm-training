@@ -15,6 +15,7 @@ from slm_training.data.leakage import (
     fingerprint_prompt,
 )
 from slm_training.data.rico import load_rico_screens, screen_to_record
+from slm_training.dsl.language_contract import contract_id as _contract_id
 from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.parser import ParseError, validate
 from slm_training.dsl.schema import ExampleRecord, load_jsonl, write_jsonl
@@ -76,6 +77,7 @@ def _normalize_record(record: ExampleRecord) -> ExampleRecord:
             **dict(record.meta),
             "parser": "openuidev/lang-core",
             "structure_only": True,
+            "contract_id": _contract_id(),
         },
         design_md=record.design_md,
     )
@@ -329,6 +331,11 @@ def build_train_data(
         deduped, config.max_records_per_parent
     )
     deduped.sort(key=lambda r: r.id)
+    # Split-before-derive: every record inherits its root parent's split group so
+    # paraphrases / augments / edits of one program never straddle a split.
+    from slm_training.data.progspec.schema import assign_split_groups
+
+    assign_split_groups(deduped)
     source_families = family_stats(deduped)
     from slm_training.data.dedup import cluster_exposure_stats
 
@@ -354,6 +361,7 @@ def build_train_data(
     ]
     stats = {
         "version": config.version,
+        "contract_id": _contract_id(),
         "source": source,
         "seed_path": str(config.seed_path) if config.seed_path else None,
         "rico_path": str(config.rico_path) if config.rico_path else None,
@@ -408,6 +416,7 @@ def build_train_data(
         "pair_fingerprints": sorted(seen_pairs),
         "design_md_fingerprints": sorted(design_md_fps),
         "content_fingerprint": _content_fingerprint(deduped),
+        "contract_id": _contract_id(),
         "source_families": source_families,
         "built_at": stats["built_at"],
     }

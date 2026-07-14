@@ -182,3 +182,28 @@ def find_leakage(
     if fingerprint_pair(record.prompt, record.openui) in train_fps["pairs"]:
         reasons.append("pair")
     return reasons
+
+
+def split_group_fingerprint(openui: str) -> str:
+    """Split-assignment key for a program: its structural fingerprint.
+
+    All derivatives of one program share it, so split-before-derive can keep an
+    entire program family (its paraphrases, edits, corruptions, renders) on one
+    side of a train/eval split.
+    """
+    return fingerprint_openui_structure(openui)
+
+
+def find_split_group_leakage(
+    record: ExampleRecord,
+    reserved_split_groups: set[str],
+) -> bool:
+    """True if ``record`` would cross a reserved split boundary.
+
+    Honors the record's stamped ``meta['split_group_id']`` (an inherited /
+    overridden group) when present, else falls back to the structural fingerprint
+    of the record's own program.
+    """
+    meta = dict(record.meta or {})
+    group = meta.get("split_group_id") or split_group_fingerprint(record.openui)
+    return group in reserved_split_groups

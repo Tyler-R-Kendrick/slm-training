@@ -30,12 +30,42 @@ KNOWN_FAMILIES = (
     "self_distilled_success",
     "self_distilled_repair",
     "gold_correction",
+    # OpenUI-SLM program-first families (ProgramSpec derivatives).
+    "programspec_generated",
+    "language_contract",
+    "schema_primer",
+    "repair_taxonomy",
+    "hard_negative_repair",
+    "edit_patch",
+    "edit_trajectory",
+    "state_behavior",
+    "render_grounded",
+    "visual_edit",
+    "web_projection",
+    "frontier_semantic",
+    "frontier_product",
+    "frontier_user",
+    "frontier_simplified",
+    "design_md_contrastive",
+    "adversarial_injection",
+    "vision_bridged",
 )
 
 _SYNTH_TO_FAMILY = {
     "template": "prompt_paraphrase",
     "layout_augment": "layout_augment",
     "namespace_augment": "namespace_augment",
+    # OpenUI-SLM per-gold synthesizers (meta["synth"] label -> family).
+    "repair": "repair_taxonomy",
+    "hard_negative": "hard_negative_repair",
+    "edit": "edit_patch",
+    "edit_trajectory": "edit_trajectory",
+    "design_md_contrastive": "design_md_contrastive",
+    "frontier_semantic": "frontier_semantic",
+    "frontier_product": "frontier_product",
+    "frontier_user": "frontier_user",
+    "frontier_simplified": "frontier_simplified",
+    "schema_primer": "schema_primer",
 }
 
 _BASE_SOURCE_TO_FAMILY = {
@@ -44,6 +74,13 @@ _BASE_SOURCE_TO_FAMILY = {
     "human": "human_feedback",
     "rico": "rico_real",
     "awwwards": "awwwards_real",
+    # OpenUI-SLM source loaders (source base -> family).
+    "programspec": "programspec_generated",
+    "language_contract": "language_contract",
+    "schema_primer": "schema_primer",
+    "deconstruct": "web_projection",
+    "render": "render_grounded",
+    "vision": "vision_bridged",
 }
 
 
