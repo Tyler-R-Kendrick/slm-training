@@ -23,6 +23,9 @@ DEFAULT_FEEDBACK_PATH = Path("outputs/annotations/feedback.jsonl")
 DEFAULT_HUMAN_TRAIN_PATH = Path("fixtures/annotations/human_train.jsonl")
 DEFAULT_HUMAN_PAIRS_PATH = Path("outputs/preferences/human_pairs.jsonl")
 DEFAULT_BAD_OUTPUTS_PATH = Path("outputs/annotations/bad_outputs.jsonl")
+DEFAULT_GENERATION_ATTEMPTS_PATH = Path(
+    "outputs/annotations/generation_attempts.jsonl"
+)
 
 _WRITE_LOCK = threading.RLock()
 
@@ -58,6 +61,10 @@ class AnnotationRecord:
     valid: bool | None = None
     checkpoint: str | None = None
     session_id: str | None = None
+    generation_id: str | None = None
+    original_openui: str | None = None
+    human_corrected: bool = False
+    identities: dict[str, dict[str, Any]] = field(default_factory=dict)
     meta: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -66,6 +73,10 @@ class AnnotationRecord:
             data.pop("description", None)
         if data.get("design_md") is None:
             data.pop("design_md", None)
+        if data.get("generation_id") is None:
+            data.pop("generation_id", None)
+        if data.get("original_openui") is None:
+            data.pop("original_openui", None)
         return data
 
     @classmethod
@@ -90,6 +101,17 @@ class AnnotationRecord:
             session_id=None
             if data.get("session_id") is None
             else str(data["session_id"]),
+            generation_id=None
+            if data.get("generation_id") is None
+            else str(data["generation_id"]),
+            original_openui=None
+            if data.get("original_openui") in (None, "")
+            else str(data["original_openui"]),
+            human_corrected=bool(data.get("human_corrected")),
+            identities={
+                str(role): dict(identity)
+                for role, identity in dict(data.get("identities") or {}).items()
+            },
             meta=dict(data.get("meta") or {}),
         )
 
@@ -100,6 +122,102 @@ def new_annotation_id() -> str:
 
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+@dataclass
+class GenerationAttemptRecord:
+    """One model attempt, retained as raw supervised or negative training data."""
+
+    id: str
+    ts: str
+    prompt: str
+    openui: str
+    source: Literal["server", "browser"]
+    attempt: int
+    valid: bool
+    error: str | None = None
+    prior_failures: list[str] = field(default_factory=list)
+    design_md: str | None = None
+    checkpoint: str | None = None
+    session_id: str | None = None
+    identities: dict[str, dict[str, Any]] = field(default_factory=dict)
+    meta: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        data = asdict(self)
+        for key in ("error", "design_md", "checkpoint", "session_id"):
+            if data.get(key) is None:
+                data.pop(key, None)
+        return data
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> GenerationAttemptRecord:
+        source = str(data.get("source") or "")
+        if source not in {"server", "browser"}:
+            raise ValueError(f"invalid generation source {source!r}")
+        return cls(
+            id=str(data["id"]),
+            ts=str(data.get("ts") or ""),
+            prompt=str(data["prompt"]),
+            openui=str(data.get("openui") or ""),
+            source=source,  # type: ignore[arg-type]
+            attempt=int(data["attempt"]),
+            valid=bool(data.get("valid")),
+            error=None if data.get("error") in (None, "") else str(data["error"]),
+            prior_failures=[str(item) for item in data.get("prior_failures") or []],
+            design_md=None
+            if data.get("design_md") in (None, "")
+            else str(data["design_md"]),
+            checkpoint=None
+            if data.get("checkpoint") is None
+            else str(data["checkpoint"]),
+            session_id=None
+            if data.get("session_id") is None
+            else str(data["session_id"]),
+            identities={
+                str(role): dict(identity)
+                for role, identity in dict(data.get("identities") or {}).items()
+            },
+            meta=dict(data.get("meta") or {}),
+        )
+
+
+def new_generation_attempt_id(source: str, attempt: int) -> str:
+    prefix = "srv" if source == "server" else "browser"
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
+    return f"gen_{prefix}_{attempt}_{stamp}_{uuid.uuid4().hex[:8]}"
+
+
+def append_generation_attempt(
+    path: Path | str, record: GenerationAttemptRecord
+) -> Path:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    line = json.dumps(record.to_dict(), ensure_ascii=False) + "\n"
+    with _annotation_transaction(path):
+        with path.open("a", encoding="utf-8") as handle:
+            handle.write(line)
+            handle.flush()
+            os.fsync(handle.fileno())
+    return path
+
+
+def load_generation_attempts(
+    path: Path | str,
+) -> list[GenerationAttemptRecord]:
+    path = Path(path)
+    if not path.exists():
+        return []
+    out: list[GenerationAttemptRecord] = []
+    with path.open(encoding="utf-8") as handle:
+        for line_no, line in enumerate(handle, start=1):
+            if not line.strip():
+                continue
+            try:
+                out.append(GenerationAttemptRecord.from_dict(json.loads(line)))
+            except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+                raise ValueError(f"{path}:{line_no}: {exc}") from exc
+    return out
 
 
 @dataclass
@@ -231,6 +349,10 @@ def annotation_to_example(record: AnnotationRecord) -> ExampleRecord:
             "annotation_id": record.id,
             "rating": record.rating,
             "description": record.description,
+            "generation_id": record.generation_id,
+            "human_corrected": record.human_corrected,
+            "original_openui": record.original_openui,
+            "identities": record.identities,
             **dict(record.meta or {}),
         },
         design_md=record.design_md,
@@ -315,6 +437,9 @@ def export_to_preference_pairs(
                     "chosen_annotation_id": chosen.id,
                     "rejected_annotation_id": rejected.id,
                     "description": chosen.description or rejected.description,
+                    "chosen_identities": chosen.identities,
+                    "rejected_identities": rejected.identities,
+                    "chosen_human_corrected": chosen.human_corrected,
                 },
             )
         )
@@ -353,6 +478,9 @@ def maybe_append_preference_pair(
             "chosen_annotation_id": chosen.id,
             "rejected_annotation_id": rejected.id,
             "description": record.description or match.description,
+            "chosen_identities": chosen.identities,
+            "rejected_identities": rejected.identities,
+            "chosen_human_corrected": chosen.human_corrected,
         },
     )
     pairs_path = Path(pairs_path)

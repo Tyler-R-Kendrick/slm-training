@@ -22,7 +22,415 @@ async function waitForSampleReady(page: import("@playwright/test").Page) {
 }
 
 test.describe("annotate playground", () => {
-  test("desktop: thumbs icons + grade stays on sample", async ({ page }, testInfo) => {
+  test("busy and boundary states disable the correct controls", async ({ page }) => {
+    const source = [
+      'root = Stack([hero], "column")',
+      'hero_title = TextContent(":hero.title")',
+      'hero = Card([hero_title])',
+    ].join("\n");
+    await page.addInitScript(() => {
+      // @ts-expect-error Test-only counter.
+      window.__browserCreateCalls = 0;
+      // @ts-expect-error Test double for Chrome's built-in Prompt API.
+      window.LanguageModel = {
+        availability: async () => "available",
+        create: async () => {
+          // @ts-expect-error Test-only counter.
+          window.__browserCreateCalls += 1;
+          return {
+            prompt: async () =>
+              JSON.stringify({ passed: true, score: 0.95, reasons: ["Useful layout"] }),
+            destroy: () => {},
+          };
+        },
+      };
+    });
+    await page.route("**/api/server-attempt", async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 2_000));
+      const body = route.request().postDataJSON();
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          prompt: "A deliberately delayed sample for state verification",
+          openui: source,
+          serialized: source,
+          valid: true,
+          error: null,
+          source: "server",
+          attempt: {
+            id: `server_${body.attempt}`,
+            source: "server",
+            attempt: body.attempt,
+            valid: true,
+            openui: source,
+            prior_failures: body.prior_failures,
+          },
+        }),
+      });
+    });
+    await page.route("**/api/generation-review", async (route) => {
+      const body = route.request().postDataJSON();
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          ok: true,
+          id: `review_${body.attempt}`,
+          passed: true,
+          score: 0.95,
+          reasons: ["Useful layout"],
+          error: null,
+        }),
+      });
+    });
+
+    await page.goto("/");
+    await expect(page.locator("#badge")).toHaveText(/loading|generating|rendering/i);
+    for (const id of [
+      "#btnUp",
+      "#btnDown",
+      "#btnPrev",
+      "#btnNext",
+      "#btnViewRender",
+      "#btnViewDsl",
+      "#note",
+    ]) {
+      await expect(page.locator(id)).toBeDisabled();
+    }
+    await expect(page.locator("#activityLog")).toContainText(/training-model pipeline started/i);
+
+    await expect(page.locator("#badge")).toHaveText("valid", { timeout: 10_000 });
+    await expect(page.locator("#btnPrev")).toBeDisabled();
+    await expect(page.locator("#btnUp")).toBeEnabled();
+    await expect(page.locator("#modelSource")).toContainText(/training model.*browser-approved/i);
+
+    await expect(page.locator("#btnNext")).toBeEnabled({ timeout: 10_000 });
+    await page.locator("#btnNext").click();
+    await expect(page.locator("#btnNext")).toBeDisabled();
+    await expect
+      .poll(() => page.evaluate(() => (window as any).__browserCreateCalls))
+      .toBe(1);
+    await expect(page.locator("#activityLog")).toContainText(/reused for every sample/i);
+  });
+
+  test("browser fallback carries failures and stores all three attempts", async ({ page }) => {
+    const browserOutputs = [
+      "not openui",
+      "root = Missing([thing])",
+      'root = Card([title])\ntitle = TextContent(":hero.title")',
+    ];
+    await page.addInitScript((outputs) => {
+      let index = 0;
+      // @ts-expect-error Test double for Chrome's built-in Prompt API.
+      window.LanguageModel = {
+        availability: async () => "available",
+        create: async () => ({
+          prompt: async () => outputs[index++],
+          destroy: () => {},
+        }),
+      };
+    }, browserOutputs);
+
+    let serverCalls = 0;
+    await page.route("**/api/server-attempt", async (route) => {
+      serverCalls += 1;
+      const body = route.request().postDataJSON();
+      if (serverCalls > 3) {
+        const openui = 'root = Button(":cta.label")';
+        await route.fulfill({
+          contentType: "application/json",
+          body: JSON.stringify({
+            prompt: "A server-success prefetch",
+            openui,
+            serialized: openui,
+            valid: true,
+            source: "server",
+            attempt: {
+              id: `server_${body.attempt}_prefetch`,
+              source: "server",
+              attempt: body.attempt,
+              valid: true,
+              openui,
+              prior_failures: body.prior_failures,
+            },
+          }),
+        });
+        return;
+      }
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          prompt: "A browser fallback card",
+          openui: `bad server output ${body.attempt}`,
+          valid: false,
+          error: `server failure ${body.attempt}`,
+          source: "server",
+          attempt: {
+            id: `server_${body.attempt}`,
+            source: "server",
+            attempt: body.attempt,
+            valid: false,
+            error: `server failure ${body.attempt}`,
+            openui: `bad server output ${body.attempt}`,
+            prior_failures: body.prior_failures,
+          },
+        }),
+      });
+    });
+
+    const browserBodies: Array<{ attempt: number; prior_failures: string[]; openui: string }> = [];
+    await page.route("**/api/generation-attempt", async (route) => {
+      const body = route.request().postDataJSON();
+      browserBodies.push(body);
+      const valid = body.attempt === 3;
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          ok: true,
+          id: `browser_${body.attempt}`,
+          valid,
+          error: valid ? null : `browser failure ${body.attempt}`,
+          serialized: valid ? body.openui : null,
+          training_path: `attempt-${body.attempt}.json`,
+          storage: "test",
+        }),
+      });
+    });
+    await page.route("**/api/generation-review", async (route) => {
+      const body = route.request().postDataJSON();
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          ok: true,
+          id: `review_${body.attempt}`,
+          passed: true,
+          score: 0.9,
+          reasons: ["Useful baseline-quality layout"],
+          error: null,
+        }),
+      });
+    });
+
+    await page.goto("/");
+    await expect(page.locator("#badge")).toHaveText("valid", { timeout: 15_000 });
+    await expect(page.locator("#activityLog")).toContainText(/browser attempt 3\/3 succeeded/i);
+    await expect(page.locator("#modelSource")).toContainText(/browser baseline.*fallback/i);
+    expect(browserBodies).toHaveLength(3);
+    expect(browserBodies.map((body) => body.prior_failures.length)).toEqual([3, 4, 5]);
+    expect(browserBodies.map((body) => body.openui)).toEqual(browserOutputs);
+  });
+
+  test("browser baseline rejects a lint-clean candidate before display", async ({ page }) => {
+    let grade = 0;
+    await page.addInitScript(() => {
+      let review = 0;
+      // @ts-expect-error Test double for Chrome's built-in Prompt API.
+      window.LanguageModel = {
+        availability: async () => "available",
+        create: async () => ({
+          prompt: async () => {
+            review += 1;
+            return review === 1
+              ? JSON.stringify({
+                  passed: false,
+                  score: 0.35,
+                  reasons: ["Missing requested body content"],
+                })
+              : JSON.stringify({
+                  passed: true,
+                  score: 0.91,
+                  reasons: ["Complete request-aligned hierarchy"],
+                });
+          },
+          destroy: () => {},
+        }),
+      };
+    });
+    const serverBodies: Array<{ attempt: number; prior_failures: string[] }> = [];
+    await page.route("**/api/server-attempt", async (route) => {
+      const body = route.request().postDataJSON();
+      serverBodies.push(body);
+      const openui =
+        body.attempt === 1
+          ? 'root = Card([title])\ntitle = TextContent(":hero.title")'
+          : 'root = Card([title, body])\ntitle = TextContent(":hero.title")\nbody = TextContent(":hero.body")';
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          prompt: "Hero card with title and body",
+          openui,
+          serialized: openui,
+          valid: true,
+          source: "server",
+          attempt: {
+            id: `server_${body.attempt}`,
+            source: "server",
+            attempt: body.attempt,
+            valid: true,
+            openui,
+            prior_failures: body.prior_failures,
+          },
+        }),
+      });
+    });
+    const reviews: Array<{ attempt: number; passed: boolean; score: number }> = [];
+    await page.route("**/api/generation-review", async (route) => {
+      const body = route.request().postDataJSON();
+      reviews.push(body);
+      grade += 1;
+      const passed = grade === 2;
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          ok: true,
+          id: `review_${grade}`,
+          passed,
+          score: passed ? 0.91 : 0.35,
+          reasons: passed
+            ? ["Complete request-aligned hierarchy"]
+            : ["Missing requested body content"],
+          error: passed ? null : "Missing requested body content",
+        }),
+      });
+    });
+
+    await page.goto("/");
+    await expect(page.locator("#badge")).toHaveText("valid", { timeout: 15_000 });
+    await expect(page.locator("#modelSource")).toContainText(/training model.*browser-approved/i);
+    await expect(page.locator("#output")).toContainText(":hero.body");
+    expect(reviews.slice(0, 2).map((review) => review.passed)).toEqual([false, true]);
+    expect(serverBodies[1].prior_failures.join(" ")).toContain(
+      "Missing requested body content"
+    );
+  });
+
+  test("human edits preview at a stable height and persist correction identity", async ({ page }) => {
+    const generated =
+      'root = Card([title])\ntitle = TextContent(":hero.title")';
+    const corrected =
+      'root = Card([title, body])\n' +
+      'title = TextContent(":hero.title")\n' +
+      'body = TextContent(":hero.body")';
+    await page.addInitScript(() => {
+      // @ts-expect-error Test double for Chrome's built-in Prompt API.
+      window.LanguageModel = {
+        availability: async () => "available",
+        create: async () => ({
+          prompt: async () =>
+            JSON.stringify({ passed: true, score: 0.94, reasons: ["Useful layout"] }),
+          destroy: () => {},
+        }),
+      };
+    });
+    await page.route("**/api/server-attempt", async (route) => {
+      const body = route.request().postDataJSON();
+      const identities = {
+        request_generator: {
+          kind: "system",
+          provider: "slm-training",
+          id: "prompt-bank-composer:v1",
+          model: "prompt-bank-composer",
+        },
+        output_generator: {
+          kind: "model",
+          provider: "slm-training",
+          id: "twotower:last.pt",
+          model: "twotower",
+        },
+      };
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          prompt: "Hero card with title and body",
+          openui: generated,
+          serialized: generated,
+          valid: true,
+          source: "server",
+          identities,
+          attempt: {
+            id: `server_edit_${body.attempt}`,
+            source: "server",
+            attempt: body.attempt,
+            valid: true,
+            openui: generated,
+            prior_failures: body.prior_failures,
+            identities,
+          },
+        }),
+      });
+    });
+    await page.route("**/api/generation-review", async (route) => {
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          ok: true,
+          id: "review_edit",
+          passed: true,
+          score: 0.94,
+          reasons: ["Useful layout"],
+          error: null,
+        }),
+      });
+    });
+    let annotationBody: any = null;
+    await page.route("**/api/annotate", async (route) => {
+      annotationBody = route.request().postDataJSON();
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          ok: true,
+          id: "fb_human_correction",
+          rating: "up",
+          openui: annotationBody.openui,
+          human_corrected: true,
+          identities: annotationBody.identities,
+        }),
+      });
+    });
+
+    await page.goto("/");
+    await expect(page.locator("#badge")).toHaveText("valid", { timeout: 15_000 });
+    await page.locator("#annotatorIdentity").fill("alice@example.com");
+    await page.locator("#annotatorIdentity").blur();
+    const renderHeight = await page.locator(".view-panels").evaluate((el) => el.clientHeight);
+
+    await page.locator("#btnViewDsl").click();
+    await page.locator("#output").fill("root = Card([missing])");
+    await expect(page.locator("#dslDiagnostics")).toHaveClass(/error/);
+    await expect(page.locator("#dslDiagnosticList")).toContainText(
+      "Undefined component reference: missing"
+    );
+
+    await page.locator("#output").fill("root = Sta");
+    await page.locator("#output").press("Control+Space");
+    await expect(page.locator("#dslAutocomplete")).toBeVisible();
+    await expect(page.locator("#dslAutocomplete")).toContainText("Stack");
+    await page.locator("#output").press("Enter");
+    await expect(page.locator("#output")).toHaveValue(/root = Stack\(\[\], "column"\)/);
+
+    await page.locator("#output").fill(corrected);
+    await expect(page.locator("#dslDiagnosticState")).toContainText("Valid", {
+      timeout: 5_000,
+    });
+    await expect(page.locator("#correctionActions")).toBeHidden();
+    const dslHeight = await page.locator(".view-panels").evaluate((el) => el.clientHeight);
+    expect(dslHeight).toBe(renderHeight);
+
+    await page.locator("#btnViewRender").click();
+    await expect(page.locator("#correctionActions")).toBeVisible();
+    await expect(page.locator("#btnSaveCorrection")).toBeEnabled();
+    await expect(page.locator("#preview")).toContainText(/Body/i);
+    await page.locator("#btnSaveCorrection").click();
+    await expect.poll(() => annotationBody).not.toBeNull();
+
+    expect(annotationBody.human_corrected).toBe(true);
+    expect(annotationBody.original_openui).toBe(generated);
+    expect(annotationBody.openui).toBe(corrected);
+    expect(annotationBody.generation_id).toContain("server_edit_");
+    expect(annotationBody.identities.output_generator.model).toBe("twotower");
+    expect(annotationBody.identities.correction_author.id).toBe("alice@example.com");
+  });
+
+  test("desktop: icon grading swipes to the next card", async ({ page }, testInfo) => {
     const before = feedbackCount();
     await page.goto("/playground/classic");
     await page.evaluate(() => localStorage.setItem("twotower_annotate_view", "render"));
@@ -31,13 +439,10 @@ test.describe("annotate playground", () => {
     await expect(page.getByText("TwoTower")).toBeVisible();
     await expect(page.locator("#card")).toBeVisible();
 
-    // Thumbs up/down symbols (not arrow glyphs).
-    await expect(page.locator("#btnUp .thumb-icon")).toHaveText("👍");
-    await expect(page.locator("#btnDown .thumb-icon")).toHaveText("👎");
-    await expect(page.locator(".brand-sub")).toContainText("👍");
-    await expect(page.locator(".brand-sub")).toContainText("👎");
-    await expect(page.locator("#btnUp")).not.toContainText("↑");
-    await expect(page.locator("#btnDown")).not.toContainText("↓");
+    await expect(page.locator("#btnUp svg")).toBeVisible();
+    await expect(page.locator("#btnDown svg")).toBeVisible();
+    await expect(page.locator("#btnUp")).toHaveText("");
+    await expect(page.locator("#btnDown")).toHaveText("");
 
     await waitForSampleReady(page);
 
@@ -46,27 +451,25 @@ test.describe("annotate playground", () => {
     await expect(page.locator("#badge")).toHaveText("valid");
 
     const indexBefore = (await page.locator("#indexPill").innerText()).trim();
-    const promptBefore = (await page.locator("#promptText").innerText()).trim();
-
     await page.keyboard.type("looks structured");
-    await page.locator("#note").press("Escape");
-    await page.locator("#card").focus();
+    await page.locator("#note").press("Enter");
+    await expect(page.locator("#note")).not.toBeFocused();
+    await expect(page.locator("#card")).toBeFocused();
+    await expect(page.locator("#status")).toContainText("Note ready");
     await page.keyboard.press("ArrowUp");
 
-    await expect(page.locator("#status")).toContainText(/Saved thumbs up|Saving 👍/i, {
+    await expect(page.locator("#status")).toContainText(/Saved thumbs up|Saving approval/i, {
       timeout: 30_000,
     });
 
-    // Grade must not advance to the next sample.
-    await expect(page.locator("#indexPill")).toHaveText(indexBefore);
-    await expect(page.locator("#promptText")).toHaveText(promptBefore);
+    await expect(page.locator("#indexPill")).not.toHaveText(indexBefore);
 
     await expect.poll(() => feedbackCount(), { timeout: 15_000 }).toBeGreaterThan(before);
 
     await page.screenshot({
       path: path.join(
         testInfo.project.outputDir,
-        `annotate-thumbs-grade-stay-${testInfo.project.name}.png`
+        `annotate-swipe-advance-${testInfo.project.name}.png`
       ),
       fullPage: true,
     });
@@ -105,7 +508,7 @@ test.describe("annotate playground", () => {
     await page.locator("#btnViewDsl").click();
     await expect(page.locator("#panelDsl")).toBeVisible();
     await expect(page.locator("#panelRender")).toBeHidden();
-    await expect(page.locator("#output")).toContainText(/root\s*=/);
+    await expect(page.locator("#output")).toHaveValue(/root\s*=/);
 
     await page.screenshot({
       path: path.join(
@@ -144,7 +547,7 @@ test.describe("annotate playground", () => {
     await page.locator("#card").focus();
     await page.keyboard.press("ArrowDown");
 
-    await expect(page.locator("#status")).toContainText(/Saved thumbs down|Saving 👎/i, {
+    await expect(page.locator("#status")).toContainText(/Saved thumbs down|Saving rejection/i, {
       timeout: 30_000,
     });
     await expect(page.locator("#indexPill")).toHaveText(indexBefore);
@@ -156,8 +559,8 @@ test.describe("annotate playground", () => {
     await page.reload();
     await expect(page.locator("#btnUp")).toBeVisible();
     await expect(page.locator("#btnDown")).toBeVisible();
-    await expect(page.locator("#btnUp .thumb-icon")).toHaveText("👍");
-    await expect(page.locator("#btnDown .thumb-icon")).toHaveText("👎");
+    await expect(page.locator("#btnUp svg")).toBeVisible();
+    await expect(page.locator("#btnDown svg")).toBeVisible();
     await expect(page.locator("#panelRender")).toBeVisible();
     await waitForSampleReady(page);
 
