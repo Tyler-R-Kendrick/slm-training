@@ -99,6 +99,29 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--denoiser-layers", type=int, default=4)
     parser.add_argument("--mask-min", type=float, default=0.15)
     parser.add_argument("--mask-max", type=float, default=0.85)
+    parser.add_argument(
+        "--mask-pattern",
+        choices=("random", "mixed", "diffusion"),
+        default="random",
+        help="Training corruption family (diffusion enables the online adapter).",
+    )
+    parser.add_argument(
+        "--output-tokenizer",
+        choices=("compositional", "lexer"),
+        default="compositional",
+    )
+    parser.add_argument(
+        "--diffusion-policies",
+        default=",".join(ModelBuildConfig.diffusion_policies),
+        help="Comma-separated online policies used with --mask-pattern diffusion.",
+    )
+    parser.add_argument(
+        "--diffusion-length-buckets",
+        default=",".join(map(str, ModelBuildConfig.diffusion_length_buckets)),
+        help="Comma-separated target-length bucket upper bounds.",
+    )
+    parser.add_argument("--diffusion-overallocate", type=int, default=8)
+    parser.add_argument("--diffusion-length-loss-weight", type=float, default=0.1)
     parser.add_argument("--gen-steps", type=int, default=8)
     parser.add_argument(
         "--context-backend",
@@ -384,6 +407,20 @@ def main(argv: list[str] | None = None) -> int:
             denoiser_layers=args.denoiser_layers,
             mask_min=args.mask_min,
             mask_max=args.mask_max,
+            mask_pattern=args.mask_pattern,
+            output_tokenizer=args.output_tokenizer,
+            diffusion_policies=tuple(
+                value.strip()
+                for value in args.diffusion_policies.split(",")
+                if value.strip()
+            ),
+            diffusion_length_buckets=tuple(
+                int(value.strip())
+                for value in args.diffusion_length_buckets.split(",")
+                if value.strip()
+            ),
+            diffusion_overallocate=args.diffusion_overallocate,
+            diffusion_length_loss_weight=args.diffusion_length_loss_weight,
             gen_steps=args.gen_steps,
             context_backend=args.context_backend,
             hf_model_name=args.hf_model,
@@ -437,10 +474,7 @@ def main(argv: list[str] | None = None) -> int:
                     DEFAULT_CHECKPOINT_BUCKET_URI
                     if (
                         not args.no_sync_checkpoints
-                        and (
-                            args.sync_checkpoints
-                            or args.context_backend == "hf"
-                        )
+                        and (args.sync_checkpoints or args.context_backend == "hf")
                     )
                     else None
                 )

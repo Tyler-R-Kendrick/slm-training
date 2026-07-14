@@ -87,6 +87,10 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "factorized_embeddings",
         "mask_pattern",
         "statement_mask_prob",
+        "diffusion_policies",
+        "diffusion_length_buckets",
+        "diffusion_overallocate",
+        "diffusion_length_loss_weight",
         "remask_span",
         "teacher_init_embeddings",
         "block_size",
@@ -125,7 +129,9 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
     if dm is not None and hasattr(cfg, "design_md_in_context"):
         cfg.design_md_in_context = bool(dm)
     # Decode quality defaults often wanted at eval time.
-    if getattr(config, "grammar_ltr_repair", False) and hasattr(cfg, "grammar_ltr_repair"):
+    if getattr(config, "grammar_ltr_repair", False) and hasattr(
+        cfg, "grammar_ltr_repair"
+    ):
         cfg.grammar_ltr_repair = True
     if int(getattr(config, "best_of_n", 1) or 1) > 1 and hasattr(cfg, "best_of_n"):
         cfg.best_of_n = int(config.best_of_n)
@@ -147,13 +153,17 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
             )
         except Exception:  # noqa: BLE001
             pass
-    if int(getattr(config, "retrieval_k", 0) or 0) > 0 and hasattr(model, "skeleton_bank"):
+    if int(getattr(config, "retrieval_k", 0) or 0) > 0 and hasattr(
+        model, "skeleton_bank"
+    ):
         try:
             from slm_training.harnesses.model_build.data import load_train_records
             from slm_training.harnesses.quality import build_skeleton_bank
 
             if config.train_dir.exists():
-                model.skeleton_bank = build_skeleton_bank(load_train_records(config.train_dir))
+                model.skeleton_bank = build_skeleton_bank(
+                    load_train_records(config.train_dir)
+                )
         except Exception:  # noqa: BLE001
             pass
     return model
@@ -209,7 +219,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         remask_ratio=float(getattr(config, "remask_ratio", 0.0) or 0.0),
         remask_use_gate=bool(getattr(config, "remask_use_gate", False)),
         remask_use_entropy=bool(getattr(config, "remask_use_entropy", False)),
-        remask_policy=str(getattr(config, "remask_policy", "confidence") or "confidence"),
+        remask_policy=str(
+            getattr(config, "remask_policy", "confidence") or "confidence"
+        ),
         core_perturb_frac=float(getattr(config, "core_perturb_frac", 0.25) or 0.25),
         remask_to_mask=bool(getattr(config, "remask_to_mask", True)),
         slot_aware_trust_gate=bool(getattr(config, "slot_aware_trust_gate", False)),
@@ -240,8 +252,14 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         use_symbol_table=getattr(config, "use_symbol_table", True),
         factorized_embeddings=getattr(config, "factorized_embeddings", False),
         mask_pattern=getattr(config, "mask_pattern", "random"),
-        statement_mask_prob=float(
-            getattr(config, "statement_mask_prob", 0.35) or 0.35
+        statement_mask_prob=float(getattr(config, "statement_mask_prob", 0.35) or 0.35),
+        diffusion_policies=tuple(getattr(config, "diffusion_policies", ()) or ()),
+        diffusion_length_buckets=tuple(
+            getattr(config, "diffusion_length_buckets", ()) or ()
+        ),
+        diffusion_overallocate=int(getattr(config, "diffusion_overallocate", 8) or 8),
+        diffusion_length_loss_weight=float(
+            getattr(config, "diffusion_length_loss_weight", 0.1) or 0.0
         ),
         remask_span=getattr(config, "remask_span", "token"),
         teacher_init_embeddings=getattr(config, "teacher_init_embeddings", False),
@@ -265,9 +283,7 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         stability_min_persistence=int(
             getattr(config, "stability_min_persistence", 0) or 0
         ),
-        stability_jsd_weight=float(
-            getattr(config, "stability_jsd_weight", 1.0) or 1.0
-        ),
+        stability_jsd_weight=float(getattr(config, "stability_jsd_weight", 1.0) or 1.0),
         unmask_mode=str(getattr(config, "unmask_mode", "positions") or "positions"),
         cluster_attn_threshold=float(
             getattr(config, "cluster_attn_threshold", 0.08) or 0.08
@@ -284,7 +300,6 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         speculative_overlap=bool(getattr(config, "speculative_overlap", False)),
         seed=config.seed,
     )
-
 
 
 def build_model(
@@ -312,7 +327,9 @@ def build_model(
         )
 
         if checkpoint and checkpoint.exists():
-            loaded = GrammarDiffusionModel.from_checkpoint(checkpoint, device=config.device)
+            loaded = GrammarDiffusionModel.from_checkpoint(
+                checkpoint, device=config.device
+            )
             return apply_runtime_overrides(loaded, config)
 
         backend = (config.context_backend or "scratch").lower()
@@ -349,7 +366,9 @@ def build_model(
             honest_slot_contract=bool(getattr(config, "honest_slot_contract", True)),
             seed=config.seed,
         )
-        return GrammarDiffusionModel.from_records(records, config=gd_cfg, device=config.device)
+        return GrammarDiffusionModel.from_records(
+            records, config=gd_cfg, device=config.device
+        )
 
     if name in {"twotower", "two_tower", "two-tower"}:
         from slm_training.models.twotower import TwoTowerModel

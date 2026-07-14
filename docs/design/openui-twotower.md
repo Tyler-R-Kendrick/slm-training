@@ -56,6 +56,8 @@ Optional preference stage ranks candidates with the composite reward.
 (MaskGIT, constrained diffusion LLMs, speculative/force-emit, DPO/GRPO surrogates;
 verifier-guided repair Adjacent lineage).
 Grammar decode details: [grammar-fastpath.md](grammar-fastpath.md).
+Online structure-aware masking, insert/delete canvases, and target-length
+prediction: [diffusion-data-adapter.md](diffusion-data-adapter.md).
 Applicability of PDDL-Instruct-style ideas: [verifier-guided-repair.md](verifier-guided-repair.md).
 
 ## Data sources

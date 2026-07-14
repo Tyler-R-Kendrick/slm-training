@@ -230,6 +230,23 @@ class TwoTowerConfig:
     mask_pattern: str = "random"
     # Probability of statement-span masking when mask_pattern=mixed.
     statement_mask_prob: float = 0.35
+    # SLM-14: online structure-aware corruption + context length prediction.
+    diffusion_policies: tuple[str, ...] = (
+        "uniform",
+        "contiguous",
+        "statement",
+        "ast_subtree",
+        "reference",
+        "edit_local",
+        "disjoint",
+        "all_mask",
+        "expansion",
+        "contraction",
+        "reorder",
+    )
+    diffusion_length_buckets: tuple[int, ...] = (32, 64, 96, 128, 192, 256, 384, 512)
+    diffusion_overallocate: int = 8
+    diffusion_length_loss_weight: float = 0.1
     # Remask expansion: token | statement
     remask_span: str = "token"
     # Optional teacher-init of symbol embeddings from HF context (E45).
@@ -299,7 +316,9 @@ def _truncate_with_eos(ids: list[int], max_len: int, eos_id: int) -> list[int]:
     return out
 
 
-def _load_checkpoint_state(model: nn.Module, state_dict: dict[str, torch.Tensor]) -> None:
+def _load_checkpoint_state(
+    model: nn.Module, state_dict: dict[str, torch.Tensor]
+) -> None:
     """Load a checkpoint while rejecting silent trainable-weight mismatches."""
     missing, unexpected = model.load_state_dict(state_dict, strict=False)
     config = getattr(model, "config", None)
@@ -309,7 +328,9 @@ def _load_checkpoint_state(model: nn.Module, state_dict: dict[str, torch.Tensor]
         and bool(getattr(config, "freeze_context", False))
         and is_hf_context(getattr(model, "context", None))
     ):
-        allowed_missing = {key for key in missing if key.startswith("context.backbone.")}
+        allowed_missing = {
+            key for key in missing if key.startswith("context.backbone.")
+        }
     # V4 FastPathGate is a plug-in head: older checkpoints omit it and keep the
     # randomly initialized gate until BackPlay-lite training (E31) runs.
     allowed_missing |= {key for key in missing if key.startswith("trust_gate.")}
@@ -404,6 +425,11 @@ class TwoTowerModel(nn.Module):
             kind_ids=kind_ids,
             n_kinds=7 if kind_ids is not None else 0,
         )
+        self.length_head = (
+            nn.Linear(self.config.d_model, len(self.config.diffusion_length_buckets))
+            if str(getattr(self.config, "mask_pattern", "random")) == "diffusion"
+            else None
+        )
         # E31 BackPlay-lite: plug-in trust head over denoiser hiddens.
         self.trust_gate = FastPathGate(self.config.d_model)
         # E73 DSpark-lite: plug-in trajectory-survival head (V7).
@@ -458,9 +484,7 @@ class TwoTowerModel(nn.Module):
                 skip_exact_stream_probe=bool(
                     getattr(self.config, "grammar_skip_exact_stream_probe", True)
                 ),
-                use_copy_probes=bool(
-                    getattr(self.config, "grammar_copy_probes", True)
-                ),
+                use_copy_probes=bool(getattr(self.config, "grammar_copy_probes", True)),
                 early_exit_pick=bool(
                     getattr(self.config, "grammar_early_exit_pick", True)
                 ),
@@ -602,7 +626,9 @@ class TwoTowerModel(nn.Module):
         """
         bsz, seq = target_ids.shape
         device = target_ids.device
-        frozen = target_ids.eq(self.tokenizer.pad_id) | target_ids.eq(self.tokenizer.bos_id)
+        frozen = target_ids.eq(self.tokenizer.pad_id) | target_ids.eq(
+            self.tokenizer.bos_id
+        )
         row_weights: torch.Tensor | None = None
         if bool(getattr(self.config, "mdlm_schedule", False)):
             # MDLM log-linear α(t)=1-t ⇒ mask rate t, CE weight 1/t.
@@ -684,6 +710,77 @@ class TwoTowerModel(nn.Module):
                 noise = noise | flip
         return noisy, noise, row_weights
 
+    def _online_diffusion_targets(
+        self,
+        target_ids: torch.Tensor,
+        batch: list[ExampleRecord],
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Sample aligned online states while keeping the clean target cache intact."""
+        from slm_training.data.diffusion import (
+            DiffusionConfig,
+            corrupt_batch,
+        )
+
+        config = DiffusionConfig(
+            policies=tuple(self.config.diffusion_policies),
+            mask_min=float(self.config.mask_min),
+            mask_max=float(self.config.mask_max),
+            overallocate=int(self.config.diffusion_overallocate),
+            length_buckets=tuple(self.config.diffusion_length_buckets),
+            max_length=int(self.config.max_target_len),
+        )
+        corruption = corrupt_batch(
+            target_ids.detach().cpu().tolist(),
+            self.tokenizer,
+            config=config,
+            rng=self._rng,
+            metadata=[record.meta for record in batch],
+        )
+        targets = _pad_batch(
+            [list(row.target_ids) for row in corruption.rows],
+            self.tokenizer.pad_id,
+            device=target_ids.device,
+        )
+        noisy = _pad_batch(
+            [list(row.noisy_ids) for row in corruption.rows],
+            self.tokenizer.pad_id,
+            device=target_ids.device,
+        )
+        predict = torch.zeros_like(targets, dtype=torch.bool)
+        for index, row in enumerate(corruption.rows):
+            predict[index, : row.canvas_length] = torch.tensor(
+                row.predict_mask,
+                dtype=torch.bool,
+                device=target_ids.device,
+            )
+        bucket_targets = torch.tensor(
+            [row.length_bucket_index for row in corruption.rows],
+            dtype=torch.long,
+            device=target_ids.device,
+        )
+        return targets, noisy, predict, bucket_targets
+
+    @staticmethod
+    def _pool_context(
+        context: torch.Tensor, pad_mask: torch.Tensor | None
+    ) -> torch.Tensor:
+        if pad_mask is None:
+            return context.mean(dim=1)
+        visible = (~pad_mask).unsqueeze(-1).to(context.dtype)
+        return (context * visible).sum(dim=1) / visible.sum(dim=1).clamp(min=1.0)
+
+    def _predict_target_lengths(
+        self, context: torch.Tensor, pad_mask: torch.Tensor | None
+    ) -> list[int] | None:
+        if self.length_head is None:
+            return None
+        logits = self.length_head(self._pool_context(context, pad_mask))
+        buckets = tuple(int(value) for value in self.config.diffusion_length_buckets)
+        return [
+            max(8, min(buckets[int(index)], int(self.config.max_target_len)))
+            for index in logits.argmax(dim=-1).tolist()
+        ]
+
     def _merge_ltr_suffix_mask(
         self, target_ids: torch.Tensor, noisy: torch.Tensor, predict_mask: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -721,9 +818,7 @@ class TwoTowerModel(nn.Module):
                     ids.add(tid)
                 elif tok and tok[0].islower() and tok.isidentifier():
                     ids.add(tid)
-                elif tok.startswith('":') or (
-                    tok.startswith('"') and ":" in tok
-                ):
+                elif tok.startswith('":') or (tok.startswith('"') and ":" in tok):
                     ids.add(tid)
             self._placeholder_token_ids = ids
         return self._placeholder_token_ids
@@ -766,7 +861,9 @@ class TwoTowerModel(nn.Module):
         placeholders: list[str] | None = None,
         cache_key: str | None = None,
     ) -> str:
-        token_ids = ids_1d.tolist() if isinstance(ids_1d, torch.Tensor) else list(ids_1d)
+        token_ids = (
+            ids_1d.tolist() if isinstance(ids_1d, torch.Tensor) else list(ids_1d)
+        )
         if self.tokenizer.eos_id in token_ids[1:]:
             end = token_ids.index(self.tokenizer.eos_id, 1)
             token_ids = token_ids[: end + 1]
@@ -810,9 +907,7 @@ class TwoTowerModel(nn.Module):
                     r.prompt,
                     r.design_md,
                     query_prompt=r.prompt,
-                    slot_contract=self._resolve_slot_contract(
-                        r.prompt, r, r.design_md
-                    )
+                    slot_contract=self._resolve_slot_contract(r.prompt, r, r.design_md)
                     if getattr(self.config, "slot_contract_in_context", False)
                     else None,
                 )
@@ -837,7 +932,14 @@ class TwoTowerModel(nn.Module):
 
         target_ids = _pad_batch(targets, self.tokenizer.pad_id, device=self.device_name)
         ctx, ctx_pad = self._encode_context(prompts, cache_keys=cache_keys)
-        noisy, predict_mask, mdlm_row_w = self._mask_targets(target_ids)
+        bucket_targets: torch.Tensor | None = None
+        if str(getattr(self.config, "mask_pattern", "random")) == "diffusion":
+            target_ids, noisy, predict_mask, bucket_targets = (
+                self._online_diffusion_targets(target_ids, batch)
+            )
+            mdlm_row_w = None
+        else:
+            noisy, predict_mask, mdlm_row_w = self._mask_targets(target_ids)
 
         ltr_w = float(self.config.ltr_loss_weight or 0.0)
         fuse = bool(getattr(self.config, "fuse_ltr_loss", True))
@@ -870,6 +972,15 @@ class TwoTowerModel(nn.Module):
             mask_loss = (ce * weights)[mask_flat].mean()
         else:
             mask_loss = logits.sum() * 0.0
+
+        length_w = float(
+            getattr(self.config, "diffusion_length_loss_weight", 0.0) or 0.0
+        )
+        if self.length_head is not None and bucket_targets is not None and length_w > 0:
+            length_logits = self.length_head(self._pool_context(ctx, ctx_pad))
+            mask_loss = mask_loss + length_w * F.cross_entropy(
+                length_logits, bucket_targets
+            )
 
         fid_w = float(getattr(self.config, "fidelity_loss_weight", 0.0) or 0.0)
         if fid_w > 0.0 and predict_mask.any():
@@ -1152,7 +1263,9 @@ class TwoTowerModel(nn.Module):
         st = states[0] if states is not None else None
         pick_kw = self._pick_kwargs()
         multitoken = bool(getattr(self.config, "grammar_multitoken_accept", False))
-        multitoken_max = max(1, int(getattr(self.config, "grammar_multitoken_max", 8) or 8))
+        multitoken_max = max(
+            1, int(getattr(self.config, "grammar_multitoken_max", 8) or 8)
+        )
         lookahead = int(getattr(self.config, "grammar_canvas_lookahead", 0) or 0)
         bias = self._effective_structural_bias()
         tok = self.tokenizer
@@ -1190,9 +1303,7 @@ class TwoTowerModel(nn.Module):
             prefix = ids[0, :t].tolist()
             if st is not None:
                 st.sync_ids(tok, prefix)
-            forced = (
-                force_emit_token_id(tok, prefix, state=st) if use_fast else None
-            )
+            forced = force_emit_token_id(tok, prefix, state=st) if use_fast else None
             # P4: truncate canvas to prefix + lookahead for the forward.
             if lookahead > 0:
                 end = min(length, t + lookahead)
@@ -1230,7 +1341,9 @@ class TwoTowerModel(nn.Module):
                 st.advance_token(tok, int(choice))
             if stats is not None:
                 stats.tokens_emitted += 1
-            _record_commit(t, int(choice), logits[0, local_t], forced=forced is not None)
+            _record_commit(
+                t, int(choice), logits[0, local_t], forced=forced is not None
+            )
             if choice == tok.eos_id:
                 if t + 1 < length:
                     ids[0, t + 1 :] = tok.pad_id
@@ -1366,7 +1479,9 @@ class TwoTowerModel(nn.Module):
         states = self._new_grammar_states(bsz)
         pick_kw = self._pick_kwargs()
         multitoken = bool(getattr(self.config, "grammar_multitoken_accept", False))
-        multitoken_max = max(1, int(getattr(self.config, "grammar_multitoken_max", 8) or 8))
+        multitoken_max = max(
+            1, int(getattr(self.config, "grammar_multitoken_max", 8) or 8)
+        )
         lookahead = int(getattr(self.config, "grammar_canvas_lookahead", 0) or 0)
         stats = get_active_stats()
 
@@ -1519,11 +1634,7 @@ class TwoTowerModel(nn.Module):
                 # P3: greedily accept consecutive legal argmax tokens from the
                 # same forward without re-running the denoiser.
                 advance = 1
-                if (
-                    multitoken
-                    and row_logits_full is not None
-                    and bool(active.any())
-                ):
+                if multitoken and row_logits_full is not None and bool(active.any()):
                     max_run = min(multitoken_max, canvas - t - 1)
                     for step in range(1, max_run + 1):
                         pos = t + step
@@ -1580,7 +1691,11 @@ class TwoTowerModel(nn.Module):
                 # E30: suffix-rollback — revisable window behind LTR frontier.
                 window = int(getattr(self.config, "suffix_rollback_window", 0) or 0)
                 frontier = t + advance - 1
-                if window > 0 and frontier >= 2 and (frontier % max(2, window // 2) == 0):
+                if (
+                    window > 0
+                    and frontier >= 2
+                    and (frontier % max(2, window // 2) == 0)
+                ):
                     for bi in active.nonzero(as_tuple=False).flatten().tolist():
                         prefix_text = self._decode_ids(ids[bi, : frontier + 1])
                         try:
@@ -1640,7 +1755,9 @@ class TwoTowerModel(nn.Module):
                         for rt in range(start, frontier + 1):
                             st = states[bi] if states is not None else None
                             forced = (
-                                force_emit_token_id(tok, ids[bi, :rt].tolist(), state=st)
+                                force_emit_token_id(
+                                    tok, ids[bi, :rt].tolist(), state=st
+                                )
                                 if use_fast
                                 else None
                             )
@@ -1778,10 +1895,14 @@ class TwoTowerModel(nn.Module):
                     compact = ser.replace(" ", "")
                     if "Stack([])" not in compact and "Card([])" not in compact:
                         if contract:
-                            from slm_training.dsl.placeholders import extract_placeholders
+                            from slm_training.dsl.placeholders import (
+                                extract_placeholders,
+                            )
 
                             preds = set(extract_placeholders(ser))
-                            allowed = {p if p.startswith(":") else f":{p}" for p in contract}
+                            allowed = {
+                                p if p.startswith(":") else f":{p}" for p in contract
+                            }
                             if preds and not preds.issubset(allowed):
                                 return False, text
                         return True, ser
@@ -1998,13 +2119,8 @@ class TwoTowerModel(nn.Module):
                 for i in range(len(prompts))
             ]
         if use_contract_decode:
-            if (
-                not honest
-                and slot_contracts is not None
-            ):
-                self._slot_contracts = [
-                    list(c) if c else None for c in slot_contracts
-                ]
+            if not honest and slot_contracts is not None:
+                self._slot_contracts = [list(c) if c else None for c in slot_contracts]
             else:
                 self._slot_contracts = []
                 for i, prompt in enumerate(prompts):
@@ -2023,6 +2139,12 @@ class TwoTowerModel(nn.Module):
             schemas=schemas,
         )
         ctx, ctx_pad = self._encode_context(ctx_prompts)
+        row_lengths = [length] * len(prompts)
+        if max_len is None:
+            predicted_lengths = self._predict_target_lengths(ctx, ctx_pad)
+            if predicted_lengths is not None:
+                row_lengths = predicted_lengths
+                length = max(row_lengths)
 
         if use_grammar and self.config.grammar_ltr_primary:
             repair_len = min(length, max(8, int(self.config.grammar_ltr_max_tokens)))
@@ -2078,7 +2200,7 @@ class TwoTowerModel(nn.Module):
                 self._generate_maskgit_one(
                     ctx[i : i + 1],
                     ctx_pad[i : i + 1],
-                    length,
+                    row_lengths[i],
                     use_grammar=use_grammar,
                     slot_contract=contract,
                 )
@@ -2165,9 +2287,7 @@ class TwoTowerModel(nn.Module):
                     if stats is not None:
                         stats.denoiser_forwards += 1
                     probs_pert = F.softmax(logits_pert, dim=-1)
-                    instability = core_instability_scores(
-                        probs, probs_pert, ids, known
-                    )
+                    instability = core_instability_scores(probs, probs_pert, ids, known)
                 except Exception:  # noqa: BLE001
                     instability = None
             gate_threshold = float(
@@ -2434,7 +2554,10 @@ class TwoTowerModel(nn.Module):
             engine = None
             if admit_on:
                 try:
-                    from slm_training.dsl.grammar.fastpath import admit_fill, engine_for_dsl
+                    from slm_training.dsl.grammar.fastpath import (
+                        admit_fill,
+                        engine_for_dsl,
+                    )
                     from slm_training.models.grammar import active_dsl
 
                     engine = engine_for_dsl(active_dsl())
@@ -2448,9 +2571,7 @@ class TwoTowerModel(nn.Module):
                 """Constrained token proposal for one position (no commit)."""
                 prefix = ids[b, :t].tolist()
                 forced = (
-                    force_emit_token_id(self.tokenizer, prefix)
-                    if use_fast
-                    else None
+                    force_emit_token_id(self.tokenizer, prefix) if use_fast else None
                 )
                 if forced is not None or use_grammar:
                     # Speculative / constrained pick — never commit illegal tokens.
@@ -2461,7 +2582,9 @@ class TwoTowerModel(nn.Module):
                         top_k=self.config.grammar_top_k,
                         forced_token_id=forced,
                         slot_contract=slot_contract
-                        if getattr(self.config, "slot_contract_constrained_decode", False)
+                        if getattr(
+                            self.config, "slot_contract_constrained_decode", False
+                        )
                         else None,
                         **self._pick_kwargs(),
                     )
@@ -2504,9 +2627,7 @@ class TwoTowerModel(nn.Module):
                                     ).item()
                                 ),
                                 "forced": forced is not None,
-                                "constrained": bool(
-                                    use_grammar or forced is not None
-                                ),
+                                "constrained": bool(use_grammar or forced is not None),
                                 "phase": "maskgit",
                             }
                             if (
@@ -2550,8 +2671,7 @@ class TwoTowerModel(nn.Module):
                         attn[0],
                         candidates,
                         threshold=float(
-                            getattr(self.config, "cluster_attn_threshold", 0.08)
-                            or 0.08
+                            getattr(self.config, "cluster_attn_threshold", 0.08) or 0.08
                         ),
                         max_size=max(
                             1, int(getattr(self.config, "cluster_max_size", 4) or 4)
@@ -2581,9 +2701,7 @@ class TwoTowerModel(nn.Module):
                 stream_fn = None
                 if use_grammar:
 
-                    def stream_fn(
-                        trial: list[int], newly_pos: list[int]
-                    ) -> list[int]:
+                    def stream_fn(trial: list[int], newly_pos: list[int]) -> list[int]:
                         return filter_ids_by_stream(self.tokenizer, trial, newly_pos)
 
                 if cluster_verify and ordered:
@@ -2610,10 +2728,7 @@ class TwoTowerModel(nn.Module):
                             proposals,
                             fanout=max(
                                 1,
-                                int(
-                                    getattr(self.config, "speculative_fanout", 2)
-                                    or 2
-                                ),
+                                int(getattr(self.config, "speculative_fanout", 2) or 2),
                             ),
                             eos_id=self.tokenizer.eos_id,
                             pad_id=self.tokenizer.pad_id,
@@ -3069,6 +3184,9 @@ class TwoTowerModel(nn.Module):
         raw_cfg = dict(payload.get("config") or {})
         if isinstance(raw_cfg.get("grammar_ltr_stages"), list):
             raw_cfg["grammar_ltr_stages"] = tuple(raw_cfg["grammar_ltr_stages"])
+        for key in ("diffusion_policies", "diffusion_length_buckets"):
+            if isinstance(raw_cfg.get(key), list):
+                raw_cfg[key] = tuple(raw_cfg[key])
         if raw_cfg.get("grammar_ltr_stages") is None:
             raw_cfg["grammar_ltr_stages"] = (64, 128, 192, 256)
         # Ignore unknown keys for forward/back compat

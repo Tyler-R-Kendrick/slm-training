@@ -130,8 +130,24 @@ class ModelBuildConfig:
     output_tokenizer: str = "compositional"  # compositional | lexer
     use_symbol_table: bool = True
     factorized_embeddings: bool = False
-    mask_pattern: str = "random"  # random | mixed
+    mask_pattern: str = "random"  # random | mixed | diffusion
     statement_mask_prob: float = 0.35
+    diffusion_policies: tuple[str, ...] = (
+        "uniform",
+        "contiguous",
+        "statement",
+        "ast_subtree",
+        "reference",
+        "edit_local",
+        "disjoint",
+        "all_mask",
+        "expansion",
+        "contraction",
+        "reorder",
+    )
+    diffusion_length_buckets: tuple[int, ...] = (32, 64, 96, 128, 192, 256, 384, 512)
+    diffusion_overallocate: int = 8
+    diffusion_length_loss_weight: float = 0.1
     remask_span: str = "token"  # token | statement
     teacher_init_embeddings: bool = False
     # Inference-speed levers (P/Q/R-series)
