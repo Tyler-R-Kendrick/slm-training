@@ -216,6 +216,8 @@ class FrozenArtifactSynthesizer:
         self._root = root
 
     def expand(self, record: ExampleRecord) -> list[ExampleRecord]:
+        if record.split != "train":
+            return []
         from slm_training.data.frontier import gold_content_hash, load_artifact
         from slm_training.data.house_style import resolve_target
         from slm_training.data.ladder import GroundingError, build_rung
