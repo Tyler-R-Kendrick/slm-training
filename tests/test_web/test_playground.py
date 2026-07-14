@@ -27,7 +27,8 @@ def test_playground_health_and_generate() -> None:
     assert health.status_code == 200
     assert health.json()["exists"] is True
 
-    page = client.get("/")
+    # The classic annotate playground now lives at /playground ("/" is the SPA).
+    page = client.get("/playground")
     assert page.status_code == 200
     assert "TwoTower" in page.text
 
@@ -60,6 +61,6 @@ def test_annotate_static_has_tab_toggle() -> None:
     assert "focus === cardEl" in js.text
     # Grade must not auto-advance after thumbs up/down.
     assert "await go(1)" not in js.text
-    html = client.get("/")
+    html = client.get("/playground")
     assert "👍" in html.text
     assert "👎" in html.text

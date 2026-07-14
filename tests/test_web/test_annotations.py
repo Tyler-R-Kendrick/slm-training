@@ -112,7 +112,7 @@ def test_annotate_api_persists(tmp_path: Path) -> None:
     )
     client = TestClient(app)
 
-    page = client.get("/")
+    page = client.get("/playground")
     assert page.status_code == 200
     assert "TwoTower" in page.text
     assert "btnUp" in page.text or "Thumbs up" in page.text or "grade" in page.text.lower()

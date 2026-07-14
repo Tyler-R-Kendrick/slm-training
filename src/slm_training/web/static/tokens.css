@@ -1,0 +1,136 @@
+/*
+ * Mission-control design tokens — single source of truth for the dashboard SPA
+ * (and available to the classic playground). Dark-first, with a light theme that
+ * reuses the original moss/ember/sand identity. The viewer's toggle stamps
+ * [data-theme] on :root and wins over the prefers-color-scheme default.
+ *
+ * Identity preserved: Syne (display) + IBM Plex Mono (data/code), moss primary,
+ * ember action accent.
+ */
+
+:root {
+  /* Type */
+  --font-display: "Syne", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Dark theme (default) — deep ink → raised surfaces */
+  --bg-0: #0a0f0c;
+  --bg-1: #0f1613;
+  --bg-2: #14201a;
+  --bg-3: #1b2a22;
+  --surface: #111a15;
+  --border: rgba(231, 242, 234, 0.1);
+  --border-strong: rgba(231, 242, 234, 0.2);
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+
+  --text: #e7f2ea;
+  --text-dim: #9db3a6;
+  --text-mute: #6f8578;
+  --text-inverse: #10261f;
+
+  /* Accents — brightened for contrast on dark */
+  --moss: #4f9e78;
+  --moss-bright: #6fd39f;
+  --moss-bg: rgba(79, 158, 120, 0.14);
+  --ember: #e07a43;
+  --ember-bright: #ff9c5e;
+  --ember-bg: rgba(224, 122, 67, 0.14);
+
+  /* Semantic status (each with a low-alpha fill) */
+  --status-running: #4bb1d6;
+  --status-running-bg: rgba(75, 177, 214, 0.16);
+  --status-passed: #4fbf7f;
+  --status-passed-bg: rgba(79, 191, 127, 0.16);
+  --status-failed: #e5573f;
+  --status-failed-bg: rgba(229, 87, 63, 0.16);
+  --status-promoted: #d8b24a;
+  --status-promoted-bg: rgba(216, 178, 74, 0.16);
+  --status-warning: #e0a13a;
+  --status-warning-bg: rgba(224, 161, 58, 0.16);
+  --status-idle: #6f8578;
+  --status-idle-bg: rgba(111, 133, 120, 0.14);
+
+  /* Type scale */
+  --fs-display: clamp(1.9rem, 5vw, 2.9rem);
+  --fs-h1: 1.5rem;
+  --fs-h2: 1.1rem;
+  --fs-stat: 1.9rem;
+  --fs-label: 0.72rem;
+  --fs-body: 0.9rem;
+  --fs-mono: 0.82rem;
+
+  --radius: 4px;
+  --radius-lg: 8px;
+  --gap: 1rem;
+}
+
+:root[data-theme="light"] {
+  --bg-0: #f3efe4;
+  --bg-1: #f7f3e8;
+  --bg-2: #ffffff;
+  --bg-3: #eef4ee;
+  --surface: rgba(255, 255, 255, 0.82);
+  --border: rgba(16, 38, 31, 0.14);
+  --border-strong: rgba(16, 38, 31, 0.26);
+  --shadow: 0 18px 50px rgba(16, 38, 31, 0.12);
+
+  --text: #10261f;
+  --text-dim: #2f6b4f;
+  --text-mute: #5f7a6c;
+  --text-inverse: #f7f3e8;
+
+  --moss: #1f4d3a;
+  --moss-bright: #2f6b4f;
+  --moss-bg: rgba(31, 122, 76, 0.1);
+  --ember: #c45c26;
+  --ember-bright: #a8481b;
+  --ember-bg: rgba(196, 92, 38, 0.1);
+
+  --status-running: #1f6f8f;
+  --status-running-bg: rgba(31, 111, 143, 0.12);
+  --status-passed: #1f7a4c;
+  --status-passed-bg: rgba(31, 122, 76, 0.12);
+  --status-failed: #a33b2b;
+  --status-failed-bg: rgba(163, 59, 43, 0.1);
+  --status-promoted: #9a7a1e;
+  --status-promoted-bg: rgba(154, 122, 30, 0.12);
+  --status-warning: #9a6b1e;
+  --status-warning-bg: rgba(154, 107, 30, 0.12);
+  --status-idle: #5f7a6c;
+  --status-idle-bg: rgba(95, 122, 108, 0.12);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg-0: #f3efe4;
+    --bg-1: #f7f3e8;
+    --bg-2: #ffffff;
+    --bg-3: #eef4ee;
+    --surface: rgba(255, 255, 255, 0.82);
+    --border: rgba(16, 38, 31, 0.14);
+    --border-strong: rgba(16, 38, 31, 0.26);
+    --shadow: 0 18px 50px rgba(16, 38, 31, 0.12);
+    --text: #10261f;
+    --text-dim: #2f6b4f;
+    --text-mute: #5f7a6c;
+    --text-inverse: #f7f3e8;
+    --moss: #1f4d3a;
+    --moss-bright: #2f6b4f;
+    --moss-bg: rgba(31, 122, 76, 0.1);
+    --ember: #c45c26;
+    --ember-bright: #a8481b;
+    --ember-bg: rgba(196, 92, 38, 0.1);
+    --status-running: #1f6f8f;
+    --status-running-bg: rgba(31, 111, 143, 0.12);
+    --status-passed: #1f7a4c;
+    --status-passed-bg: rgba(31, 122, 76, 0.12);
+    --status-failed: #a33b2b;
+    --status-failed-bg: rgba(163, 59, 43, 0.1);
+    --status-promoted: #9a7a1e;
+    --status-promoted-bg: rgba(154, 122, 30, 0.12);
+    --status-warning: #9a6b1e;
+    --status-warning-bg: rgba(154, 107, 30, 0.12);
+    --status-idle: #5f7a6c;
+    --status-idle-bg: rgba(95, 122, 108, 0.12);
+  }
+}
