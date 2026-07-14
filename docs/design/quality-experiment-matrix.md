@@ -496,7 +496,7 @@ self-distillation, trajectory RL) are in
 | --- | --- | --- | --- |
 | E60 | Differential validation | Dual lang-core + Lark parse; quarantine disagreement | proposed |
 | E61 | Failure-cone remask | Remask first hard error + structural dependents | proposed |
-| E62 | Minimal hard negatives | Single-edit valid→invalid counterexamples | proposed |
+| E62 | Minimal hard negatives | `data/corrupt` verified invalid→clean repair taxonomy; wiring only, no quality result yet | wired |
 | E63 | Gate calibration | ECE / selective accuracy / abstention on `FastPathGate` | proposed |
 | E64 | Trajectory-aligned RL | MDPO/d1-style on intermediate MaskGIT states | proposed |
 | E65 | Schema generalization | Held-out schemas / rename / `toy-layout` transfer | proposed |

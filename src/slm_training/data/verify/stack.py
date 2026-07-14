@@ -166,7 +166,15 @@ _UNSUPPORTED_DATAFLOW_RE = re.compile(
     r"(?m)^\s*\$|\b(?:Query|Mutation|Action)\s*\(|@[A-Za-z_]"
 )
 _DETERMINISTIC_SOURCES = frozenset(
-    {"fixture", "program", "program-first", "deterministic", "extracted", "rico"}
+    {
+        "fixture",
+        "program",
+        "program-first",
+        "deterministic",
+        "extracted",
+        "repair_taxonomy",
+        "rico",
+    }
 )
 _WEAK_SOURCES = frozenset({"teacher", "web", "frontier", "distilled"})
 
@@ -212,7 +220,7 @@ def _lexical(source: str) -> GateResult:
 def _grammar(source: str) -> GateResult:
     try:
         _grammar_backend().validate(source)
-    except (ParseError, ValueError) as exc:
+    except Exception as exc:  # noqa: BLE001 - adversarial inputs must fail closed
         return _fail(Gate.GRAMMAR, str(exc).splitlines()[0][:200])
     return _pass(Gate.GRAMMAR)
 
