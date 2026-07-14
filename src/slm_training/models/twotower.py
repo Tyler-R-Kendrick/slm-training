@@ -133,6 +133,7 @@ class TwoTowerConfig:
     context_backend: str = "scratch"
     # Default production HF tower; tests may override with a tiny model.
     hf_model_name: str = "HuggingFaceTB/SmolLM2-135M"
+    hf_model_revision: str | None = None
     # True when using a pretrained HF context tower; optional for scratch.
     freeze_context: bool = False
     local_files_only: bool = False
@@ -368,6 +369,7 @@ class TwoTowerModel(nn.Module):
             dropout=self.config.dropout,
             freeze=freeze,
             hf_model_name=self.config.hf_model_name,
+            hf_model_revision=self.config.hf_model_revision,
             local_files_only=self.config.local_files_only,
         )
         kind_ids = None
@@ -2904,6 +2906,77 @@ class TwoTowerModel(nn.Module):
                 design_md=design_md,
             )
         return text, stats
+
+    def artifact_identity(self) -> dict[str, str]:
+        from slm_training.lineage.records import content_sha
+
+        tokenizer_payload = getattr(self.tokenizer, "token_to_id", None)
+        if tokenizer_payload is None:
+            tokenizer_payload = getattr(self.tokenizer, "vocab", {})
+        return {
+            "kind": "twotower",
+            "base_model_id": self.config.hf_model_name
+            if is_hf_context(self.context)
+            else "scratch",
+            "base_model_revision": str(
+                getattr(self.config, "hf_model_revision", None) or "local"
+            ),
+            "tokenizer_sha": content_sha(tokenizer_payload),
+        }
+
+    def compatibility_fingerprint(self) -> str:
+        from slm_training.lineage.records import content_sha
+
+        shapes = {name: tuple(value.shape) for name, value in self.state_dict().items()}
+        return content_sha(
+            {
+                **self.artifact_identity(),
+                "config": asdict(self.config),
+                "parameter_shapes": shapes,
+            }
+        )
+
+    def generate_constrained(self, prompt: str, **kwargs: object) -> str:
+        from slm_training.dsl.parser import validate
+
+        text = self.generate(prompt, grammar_constrained=True, **kwargs)
+        program = validate(text)
+        return (program.serialized or text).strip()
+
+    def load_parent_weights(self, path: Path | str) -> None:
+        """Branch semantics: copy model weights only, never optimizer/RNG state."""
+        self.load(path)
+
+    def export(self, path: Path | str, *, format: str = "onnx") -> tuple[Path, ...]:
+        if format != "onnx":
+            raise ValueError("TwoTower export supports format='onnx' only")
+        from scripts.export_playground_onnx import export
+
+        directory = Path(path)
+        directory.mkdir(parents=True, exist_ok=False)
+        checkpoint = directory / "model.pt"
+        self.save(checkpoint)
+        context, denoiser = export(checkpoint)
+        from onnxruntime.quantization import QuantType, quantize_dynamic
+
+        quantized = []
+        for raw in (context, denoiser):
+            target = raw.with_name(f"{raw.stem}.int8.onnx")
+            quantize_dynamic(raw, target, weight_type=QuantType.QInt8)
+            raw.unlink()
+            target.replace(raw)
+            quantized.append(raw)
+        checkpoint.unlink()
+        artifacts = (
+            *quantized,
+            checkpoint.with_suffix(".tokenizer.json"),
+            checkpoint.with_suffix(".meta.json"),
+            checkpoint.with_name(checkpoint.stem + ".context.tokenizer.json"),
+        )
+        size = sum(item.stat().st_size for item in artifacts if item.exists())
+        if size > 1_000_000_000:
+            raise ValueError(f"export exceeds 1GB: {size} bytes")
+        return tuple(item for item in artifacts if item.exists())
 
     def _state_dict_for_checkpoint(self) -> dict:
         state = {k: v.cpu() for k, v in self.state_dict().items()}

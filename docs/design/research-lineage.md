@@ -106,6 +106,20 @@ return invalid OpenUI.
 
 ## Training stack
 
+### Canonical two-track iteration
+
+Production iteration is lineage-first rather than E-series-first. The
+TwoTower track branches from the frozen E53 recipe; the causal track branches
+with [LoRA](https://arxiv.org/abs/2106.09685) from one permanently locked Qwen
+base selected by an identical bakeoff. Incremental SFT mixes 10% validated
+champion history following the [On-Policy Replay](https://arxiv.org/abs/2605.29495)
+direction. Compatible sibling deltas may be tested with
+[Model Soups](https://arxiv.org/abs/2203.05482) averaging and
+[TIES-Merging](https://arxiv.org/abs/2306.01708); merge output is always a new
+challenger. Causal grammar mask caching is adapted from the systems direction
+of [XGrammar](https://arxiv.org/abs/2411.15100). Implementation and exact gates:
+[`model-lineage.md`](model-lineage.md).
+
 ### Two-tower conditioning
 
 | | |

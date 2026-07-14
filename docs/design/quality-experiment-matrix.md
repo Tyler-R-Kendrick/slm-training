@@ -1,5 +1,11 @@
 # Quality experiment matrix — TwoTower OpenUI
 
+> **Lineage rule:** E/X rows are ablation evidence, never deployable model
+> identities. Modern V4+ runs require `--parent <checkpoint>`; use
+> `--scratch-control` only for explicitly non-deployable controls. Production
+> improvements use [`scripts/model_cycle.py`](../../scripts/model_cycle.py) and
+> the [two-track lineage contract](model-lineage.md).
+
 > **Validity notice:** Historical scores below predate strict train/eval isolation. Curriculum runs imported adversarial fixtures and are invalid for model selection; regenerate every result with the repaired harness before comparing models.
 > Agentic workers: implement levers below, then run `python -m scripts.run_quality_matrix`.
 
@@ -90,7 +96,8 @@ python -m scripts.run_quality_matrix --matrix v3 --only E18,E19a,E19b,E20,E29 \
 
 # V4 honest contract + decode scaling
 python -m scripts.run_quality_matrix --matrix v4 --only E35,E36 \
-  --steps 40 --device cpu --context-backend scratch --no-design-md-context
+  --steps 40 --device cpu --context-backend scratch --no-design-md-context \
+  --scratch-control
 ```
 
 ## Success criteria (honest gates)
@@ -255,12 +262,12 @@ below. Prefer seeding decode-only rows from an E35 (or E29) checkpoint.
 # V4 focused ship path (honest contract → decode scaling)
 python -m scripts.run_quality_matrix --matrix v4 --only E35,E36 \
   --steps 40 --device cpu --context-backend scratch --no-design-md-context \
-  --rico-limit 3
+  --rico-limit 3 --scratch-control
 
 # Ablations + trust gate (optional seed)
 python -m scripts.run_quality_matrix --matrix v4 \
   --only E30,E31,E32,E33,E35,E36 --steps 40 --device cpu \
-  --context-backend scratch --no-design-md-context --rico-limit 3
+  --context-backend scratch --no-design-md-context --rico-limit 3 --scratch-control
 ```
 
 ## V5 matrix (DSL-native output tokenizer)
@@ -287,7 +294,8 @@ python -m scripts.diagnose_tokenizer --fixtures
 
 # V5 focused path
 python -m scripts.run_quality_matrix --matrix v5 --only E40,E41,E44,E46 \
-  --steps 80 --device cpu --context-backend scratch --no-design-md-context
+  --steps 80 --device cpu --context-backend scratch --no-design-md-context \
+  --scratch-control
 ```
 
 ## V5 measured results (CPU, scratch, 80 steps, fixture suites)
@@ -330,10 +338,11 @@ mining) on top of the V5 alphabet + E35 honesty.
 ```bash
 # V6 focused ship path
 python -m scripts.run_quality_matrix --matrix v6 --only E50,E53,E55 \
-  --steps 80 --device cpu --context-backend scratch --no-design-md-context
+  --steps 80 --device cpu --context-backend scratch --no-design-md-context \
+  --scratch-control
 
 # Grammar-diffusion honest contract (E54) + X matrix
-python -m scripts.run_quality_matrix --matrix v6 --only E54 --steps 80
+python -m scripts.run_quality_matrix --matrix v6 --only E54 --steps 80 --scratch-control
 python -m scripts.run_grammar_matrix --only X0,X2,X7 --steps 80
 ```
 
@@ -433,11 +442,12 @@ Saguaro-SSD successor caching onto the honest V5/V6 TwoTower stack.
 ```bash
 # V7 focused path
 python -m scripts.run_quality_matrix --matrix v7 --only E70,E72,E74,E75 \
-  --steps 80 --device cpu --context-backend scratch --no-design-md-context
+  --steps 80 --device cpu --context-backend scratch --no-design-md-context \
+  --scratch-control
 
 # Full V7 with rico cap for CPU time
 python -m scripts.run_quality_matrix --matrix v7 --steps 80 --device cpu \
-  --context-backend scratch --no-design-md-context --rico-limit 20
+  --context-backend scratch --no-design-md-context --rico-limit 20 --scratch-control
 ```
 
 Beyond parse/fidelity, V7 rows record decode telemetry per eval

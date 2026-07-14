@@ -65,6 +65,7 @@ class HFContextEncoder(nn.Module):
     def __init__(
         self,
         model_name: str,
+        revision: str | None = None,
         d_model: int = 128,
         max_len: int = 128,
         freeze: bool = True,
@@ -80,9 +81,10 @@ class HFContextEncoder(nn.Module):
             ) from exc
 
         self.model_name = model_name
+        self.revision = revision
         self.max_len = max_len
         self.tokenizer = AutoTokenizer.from_pretrained(
-            model_name, local_files_only=local_files_only
+            model_name, revision=revision, local_files_only=local_files_only
         )
         if self.tokenizer.pad_token is None:
             # GPT-style models often lack pad; reuse eos.
@@ -90,7 +92,7 @@ class HFContextEncoder(nn.Module):
                 self.tokenizer.eos_token or self.tokenizer.unk_token
             )
         self.backbone = AutoModel.from_pretrained(
-            model_name, local_files_only=local_files_only
+            model_name, revision=revision, local_files_only=local_files_only
         )
         hidden = int(getattr(self.backbone.config, "hidden_size", d_model))
         self.proj = nn.Linear(hidden, d_model)
@@ -215,6 +217,7 @@ def build_context_encoder(
     dropout: float,
     freeze: bool,
     hf_model_name: str | None,
+    hf_model_revision: str | None = None,
     local_files_only: bool = False,
 ) -> nn.Module:
     backend = (backend or "scratch").lower()
@@ -233,6 +236,7 @@ def build_context_encoder(
             raise ValueError("hf_model_name is required when context_backend='hf'")
         return HFContextEncoder(
             model_name=hf_model_name,
+            revision=hf_model_revision,
             d_model=d_model,
             max_len=max_len,
             freeze=freeze,

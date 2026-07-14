@@ -37,6 +37,11 @@ hf = [
   "transformers>=4.40,<5",
   "accelerate>=0.30,<2",
   "huggingface_hub>=0.30,<2",
+  "datasets>=2.18,<4",
+  "peft>=0.13,<1",
+  "trl>=0.12,<1",
+  "trackio>=0.1,<1",
+  "optimum[onnxruntime]>=1.20,<2",
 ]
 rico = [
   "datasets>=2.18,<4",
@@ -74,6 +79,7 @@ serve-playground = "scripts.serve_playground:main"
 bootstrap-playground = "scripts.bootstrap_playground:main"
 export-annotations = "scripts.export_annotations:main"
 sync-checkpoints = "scripts.sync_checkpoints:main"
+model-cycle = "scripts.model_cycle:main"
 
 [tool.setuptools.packages.find]
 where = ["src", "."]

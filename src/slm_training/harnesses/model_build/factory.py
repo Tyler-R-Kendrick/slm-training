@@ -177,6 +177,7 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         gen_steps=config.gen_steps,
         context_backend=backend,
         hf_model_name=config.hf_model_name,
+        hf_model_revision=config.hf_model_revision,
         freeze_context=freeze,
         local_files_only=config.local_files_only,
         grammar_constrained=config.grammar_constrained,
