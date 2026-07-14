@@ -20,6 +20,7 @@ from slm_training.data.mixture import (
     write_mixture_manifest,
 )
 from slm_training.dsl.schema import ExampleRecord
+from slm_training.harnesses.train_data.catalog import KNOWN_FAMILIES
 
 
 def _rec(rid: str, family: str) -> ExampleRecord:
@@ -88,6 +89,7 @@ def test_local_probes_and_regression_propose() -> None:
 def test_default_mix_and_probes_cover_new_families() -> None:
     base = default_base_weights()
     assert set(NEW_FAMILIES) <= set(base)
+    assert set(KNOWN_FAMILIES) <= set(base)
     probes = local_probe_candidates(base, task_weights=DEFAULT_TASK_WEIGHTS)
     probed = {
         probe.mixture_id.removeprefix("local_").rsplit("_", 1)[0] for probe in probes
