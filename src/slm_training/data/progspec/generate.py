@@ -1,301 +1,209 @@
-"""Coverage-guided typed-AST roots for the pinned OpenUI 0.2.x contract."""
+"""Coverage-guided typed ProgramSpec generation for the pinned OpenUI contract."""
 
 from __future__ import annotations
 
 import hashlib
-import itertools
 import json
 import random
 import re
+from collections import Counter
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Iterable, Mapping
+from itertools import combinations
+from typing import Any
 
+from slm_training.bridge_utils import repo_root
+from slm_training.data.language_contract.corpus import component_names
 from slm_training.data.progspec.schema import ProgramSpec, emit_record
 from slm_training.data.verify import Tier, VerificationContext, verify_record
+from slm_training.dsl.lang_core import library_schema
 
-_NAME_RE = re.compile(r"^[a-z_][A-Za-z0-9_]*$")
-_PROP_ORDER: dict[str, tuple[str, ...]] = {
-    "Stack": ("children", "direction", "gap", "align", "justify", "wrap"),
-    "Card": ("children", "variant", "direction", "gap", "align", "justify", "wrap"),
-    "CardHeader": ("title", "subtitle"),
-    "TextContent": ("text", "size"),
-    "Button": ("label", "action", "variant", "type", "size"),
-    "Buttons": ("buttons", "direction"),
-    "Input": ("name", "placeholder", "type", "rules", "value"),
-    "FormControl": ("label", "input", "hint"),
-    "Form": ("name", "buttons", "fields"),
-    "ImageBlock": ("src", "alt"),
-    "Callout": ("variant", "title", "description", "visible"),
-    "Separator": ("orientation", "decorative"),
-    "Tabs": ("items",),
-    "TabItem": ("value", "trigger", "content"),
-    "SwitchItem": ("label", "description", "name", "defaultChecked"),
-    "Slider": (
-        "name",
-        "variant",
-        "min",
-        "max",
-        "step",
-        "defaultValue",
-        "label",
-        "rules",
-        "value",
-    ),
-    "Modal": ("title", "open", "children", "size"),
-}
+GENERATOR_VERSION = 1
+PROGRAM_FAMILY = "programspec_generated"
+_PROP_ORDER_PATH = repo_root() / "grammars" / "openui_prop_order.json"
+_BINDER_RE = re.compile(r"[^a-z0-9_]+")
+_LITERAL_STRING_PROPS = frozenset({"language", "value", "category", "name"})
+_DEFERRED_PATTERNS = ("state", "query", "mutation", "action", "tool")
 
 
-@dataclass(frozen=True)
-class Ref:
-    """A typed reference to another statement."""
+@dataclass(frozen=True, order=True)
+class CoverageCell:
+    axis: str
+    key: str
 
-    name: str
-
-    def __post_init__(self) -> None:
-        if not _NAME_RE.fullmatch(self.name):
-            raise ValueError(f"invalid reference name: {self.name!r}")
-
-
-Value = str | int | float | bool | None | Ref | tuple["Value", ...]
-
-
-@dataclass(frozen=True)
-class Element:
-    """A component call whose positional values follow the pinned schema order."""
-
-    type_name: str
-    args: tuple[Value, ...] = ()
-
-    def __post_init__(self) -> None:
-        order = _PROP_ORDER.get(self.type_name)
-        if order is None:
-            raise ValueError(f"unsupported component: {self.type_name}")
-        if len(self.args) > len(order):
-            raise ValueError(f"too many args for {self.type_name}")
-
-
-@dataclass(frozen=True)
-class Statement:
-    name: str
-    value: Element
-
-    def __post_init__(self) -> None:
-        if not _NAME_RE.fullmatch(self.name):
-            raise ValueError(f"invalid statement name: {self.name!r}")
-
-
-@dataclass(frozen=True)
-class TypedProgram:
-    """Typed statement graph; serialization is the final boundary only."""
-
-    statements: tuple[Statement, ...]
-
-    def __post_init__(self) -> None:
-        names = [statement.name for statement in self.statements]
-        if not names or names[0] != "root":
-            raise ValueError("first statement must be root")
-        if len(names) != len(set(names)):
-            raise ValueError("statement names must be unique")
-        known = set(names)
-        referenced = set().union(
-            *(_refs(statement.value) for statement in self.statements)
-        )
-        if referenced - known:
-            raise ValueError(f"unknown reference: {sorted(referenced - known)[0]}")
-        if _reachable(self.statements) != known:
-            raise ValueError("all statements must be reachable from root")
-        graph = {
-            statement.name: _refs(statement.value) for statement in self.statements
-        }
-        visiting: set[str] = set()
-        visited: set[str] = set()
-
-        def visit(name: str) -> None:
-            if name in visiting:
-                raise ValueError(f"reference cycle: {name}")
-            if name in visited:
-                return
-            visiting.add(name)
-            for child in graph[name]:
-                visit(child)
-            visiting.remove(name)
-            visited.add(name)
-
-        visit("root")
-
-    def serialize(self) -> str:
-        return "\n".join(
-            f"{statement.name} = {_serialize(statement.value)}"
-            for statement in self.statements
-        )
-
-    def components(self) -> tuple[str, ...]:
-        return tuple(statement.value.type_name for statement in self.statements)
-
-    def dimensions(self) -> tuple[int, int, str]:
-        graph = {
-            statement.name: _refs(statement.value) for statement in self.statements
-        }
-
-        def depth(name: str) -> int:
-            return 1 + max((depth(child) for child in graph[name]), default=0)
-
-        max_depth = depth("root")
-        max_width = max((len(children) for children in graph.values()), default=0)
-        if max_width >= 3:
-            topology = "fanout"
-        elif max_depth >= 4:
-            topology = "chain"
-        else:
-            topology = "tree"
-        return max_depth, max_width, topology
-
-
-def _refs(value: Value | Element) -> set[str]:
-    if isinstance(value, Ref):
-        return {value.name}
-    if isinstance(value, Element):
-        return set().union(*(_refs(arg) for arg in value.args), set())
-    if isinstance(value, tuple):
-        return set().union(*(_refs(item) for item in value), set())
-    return set()
-
-
-def _reachable(statements: tuple[Statement, ...]) -> set[str]:
-    graph = {statement.name: _refs(statement.value) for statement in statements}
-    seen: set[str] = set()
-
-    def visit(name: str) -> None:
-        if name in seen:
-            return
-        seen.add(name)
-        for child in graph[name]:
-            visit(child)
-
-    visit("root")
-    return seen
-
-
-def _serialize(value: Value | Element) -> str:
-    if isinstance(value, Ref):
-        return value.name
-    if isinstance(value, Element):
-        return f"{value.type_name}({', '.join(_serialize(arg) for arg in value.args)})"
-    if isinstance(value, tuple):
-        return f"[{', '.join(_serialize(item) for item in value)}]"
-    if isinstance(value, bool):
-        return "true" if value else "false"
-    if value is None:
-        return "null"
-    if isinstance(value, str):
-        return json.dumps(value, ensure_ascii=False)
-    return str(value)
-
-
-def _value_class(value: Value) -> str:
-    if isinstance(value, Ref):
-        return "reference"
-    if isinstance(value, tuple):
-        return "list"
-    if isinstance(value, bool):
-        return "boolean"
-    if isinstance(value, (int, float)):
-        return "number"
-    if value is None:
-        return "null"
-    if isinstance(value, str) and value.startswith(":"):
-        return "placeholder"
-    return "literal"
-
-
-@dataclass(frozen=True)
-class Candidate:
-    name: str
-    prompt: str
-    program: TypedProgram
-    viewport: str
-    ui_state: str
-
-    def cells(self) -> frozenset[str]:
-        components = set(self.program.components())
-        depth, width, topology = self.program.dimensions()
-        cells = {
-            "grammar:assignment",
-            "grammar:component_call",
-            "grammar:reference",
-            "contract_dataflow:layout_only",
-            f"depth:{min(depth, 4)}",
-            f"width:{'3+' if width >= 3 else width}",
-            f"reference_topology:{topology}",
-            f"length:{_length_bucket(len(self.program.serialize()))}",
-            f"viewport_state:{self.viewport}+{self.ui_state}",
-        }
-        for statement in self.program.statements:
-            component = statement.value.type_name
-            cells.add(f"component:{component}")
-            for prop, value in zip(_PROP_ORDER[component], statement.value.args):
-                cells.add(f"prop:{component}.{prop}")
-                cells.add(f"value_class:{_value_class(value)}")
-        for pair in itertools.combinations(sorted(components), 2):
-            cells.add(f"pair:{'+'.join(pair)}")
-        for triple in _SELECTED_TRIPLES:
-            if set(triple) <= components:
-                cells.add(f"triple:{'+'.join(triple)}")
-        if self.name.startswith("escaped_content-"):
-            cells.add("content:escaped_dsl_like")
-        return frozenset(cells)
-
-
-def _length_bucket(length: int) -> str:
-    if length < 140:
-        return "short"
-    if length < 260:
-        return "medium"
-    return "long"
-
-
-_SELECTED_TRIPLES = (
-    ("Card", "Stack", "TextContent"),
-    ("Button", "Form", "Input"),
-    ("Stack", "TabItem", "Tabs"),
-)
-_DEFERRED = (
-    "contract_dataflow:state",
-    "contract_dataflow:query",
-    "contract_dataflow:mutation",
-    "contract_dataflow:action",
-    "contract_dataflow:tool",
-)
+    def label(self) -> str:
+        return f"{self.axis}:{self.key}"
 
 
 @dataclass
 class CoverageTracker:
-    """Single/pair/selected-three-way coverage without a Cartesian grid."""
+    """Tracks target-grid hits and verifier outcomes without hiding unsupported cells."""
 
-    targets: set[str]
-    covered: set[str] = field(default_factory=set)
+    targets: frozenset[CoverageCell]
+    unsupported: frozenset[CoverageCell] = frozenset()
+    hits: Counter[CoverageCell] = field(default_factory=Counter)
+    passed: int = 0
+    failed: int = 0
 
-    @classmethod
-    def from_candidates(cls, candidates: Iterable[Candidate]) -> CoverageTracker:
-        cells = set().union(*(candidate.cells() for candidate in candidates))
-        return cls(targets=cells)
+    @property
+    def coverable(self) -> frozenset[CoverageCell]:
+        return self.targets - self.unsupported
 
-    def gain(self, cells: Iterable[str]) -> int:
-        return len((set(cells) & self.targets) - self.covered)
+    @property
+    def uncovered(self) -> tuple[CoverageCell, ...]:
+        return tuple(sorted(cell for cell in self.coverable if not self.hits[cell]))
 
-    def update(self, cells: Iterable[str]) -> None:
-        self.covered.update(set(cells) & self.targets)
+    @property
+    def complete(self) -> bool:
+        return not self.uncovered
 
-    def report(self, *, rejected: Mapping[str, str] | None = None) -> dict[str, Any]:
+    def score(self, cells: Iterable[CoverageCell]) -> float:
+        return sum(
+            2.0
+            if cell in self.coverable and not self.hits[cell]
+            else 1 / (1 + self.hits[cell])
+            for cell in set(cells)
+            if cell not in self.unsupported
+        )
+
+    def record(self, cells: Iterable[CoverageCell], *, verifier_passed: bool) -> None:
+        self.hits.update(set(cells))
+        if verifier_passed:
+            self.passed += 1
+        else:
+            self.failed += 1
+
+    def report(self) -> dict[str, Any]:
+        axes = sorted({cell.axis for cell in self.targets | set(self.hits)})
+        per_axis: dict[str, dict[str, Any]] = {}
+        for axis in axes:
+            targets = sorted(cell for cell in self.targets if cell.axis == axis)
+            unsupported = sorted(cell for cell in self.unsupported if cell.axis == axis)
+            uncovered = [
+                cell
+                for cell in targets
+                if cell not in self.unsupported and not self.hits[cell]
+            ]
+            per_axis[axis] = {
+                "total": len(targets),
+                "covered": sum(bool(self.hits[cell]) for cell in targets),
+                "uncovered": [cell.key for cell in uncovered],
+                "unsupported": [cell.key for cell in unsupported],
+            }
         return {
-            "target_count": len(self.targets),
-            "covered_count": len(self.covered),
-            "covered": sorted(self.covered),
-            "uncovered": sorted(self.targets - self.covered),
-            "deferred": list(_DEFERRED),
-            "deferred_reason": "outside the pinned OpenUI 0.2.x layout contract",
-            "rejected": dict(sorted((rejected or {}).items())),
+            "complete": self.complete,
+            "targets": len(self.targets),
+            "covered": sum(bool(self.hits[cell]) for cell in self.targets),
+            "uncovered": [cell.label() for cell in self.uncovered],
+            "unsupported": [cell.label() for cell in sorted(self.unsupported)],
+            "verifier": {"passed": self.passed, "failed": self.failed},
+            "axes": per_axis,
         }
+
+
+@dataclass(frozen=True)
+class Reference:
+    binder: str
+
+
+TypedValue = str | int | float | bool | None | Reference | tuple["TypedValue", ...]
+
+
+def _serialize_value(value: TypedValue) -> str:
+    if isinstance(value, Reference):
+        return value.binder
+    if isinstance(value, tuple):
+        return f"[{', '.join(_serialize_value(item) for item in value)}]"
+    if isinstance(value, str):
+        return json.dumps(value, ensure_ascii=False)
+    if value is True:
+        return "true"
+    if value is False:
+        return "false"
+    if value is None:
+        return "null"
+    return str(value)
+
+
+@dataclass(frozen=True)
+class ComponentCall:
+    type_name: str
+    args: tuple[TypedValue, ...] = ()
+
+    def serialize(self) -> str:
+        return (
+            f"{self.type_name}({', '.join(_serialize_value(arg) for arg in self.args)})"
+        )
+
+
+@dataclass(frozen=True)
+class TypedStatement:
+    binder: str
+    call: ComponentCall
+
+    def serialize(self) -> str:
+        return f"{self.binder} = {self.call.serialize()}"
+
+
+@dataclass(frozen=True)
+class TypedProgram:
+    root: ComponentCall
+    statements: tuple[TypedStatement, ...]
+
+    def serialize(self) -> str:
+        lines = [f"root = {self.root.serialize()}"]
+        lines.extend(statement.serialize() for statement in self.statements)
+        return "\n".join(lines)
+
+
+@dataclass(frozen=True)
+class GeneratorConfig:
+    components: tuple[str, ...] | None = None
+    max_depth: int = 3
+    max_width: int = 3
+    viewports: tuple[str, ...] = ("mobile", "desktop")
+    render_states: tuple[str, ...] = ("empty", "loading", "success", "error")
+    content_classes: tuple[str, ...] = ("plain", "escaped", "dsl_like")
+    selected_triples: tuple[tuple[str, str, str], ...] = ()
+    split: str = "train"
+
+    def __post_init__(self) -> None:
+        if self.max_depth < 1 or self.max_width < 1:
+            raise ValueError("max_depth and max_width must be positive")
+        if not self.viewports or not self.render_states or not self.content_classes:
+            raise ValueError(
+                "viewports, render_states, and content_classes must be non-empty"
+            )
+
+
+@dataclass(frozen=True)
+class _PropTarget:
+    component: str
+    prop: str
+    variant: str
+
+
+@dataclass(frozen=True)
+class _Candidate:
+    components: tuple[str, ...]
+    prop_target: _PropTarget | None
+    depth: int
+    width: int
+    viewport: str
+    render_state: str
+    content_class: str
+    hints: frozenset[CoverageCell]
+
+    def key(self) -> tuple[Any, ...]:
+        return (
+            self.components,
+            self.prop_target,
+            self.depth,
+            self.width,
+            self.viewport,
+            self.render_state,
+            self.content_class,
+        )
 
 
 @dataclass(frozen=True)
@@ -304,269 +212,631 @@ class GenerationResult:
     coverage: dict[str, Any]
 
 
-class TypedProgramGenerator:
-    """Select valid typed candidates by uncovered-cell gain."""
+def _value_class(schema: Mapping[str, Any], variant: str) -> str:
+    if "enum" in schema:
+        return f"enum_{variant}"
+    kind = schema.get("type")
+    if kind == "string":
+        return "literal" if variant == "literal" else "placeholder"
+    if kind == "boolean":
+        return variant
+    if kind == "number":
+        return variant
+    if kind == "array":
+        return variant
+    if kind == "object":
+        return "null"
+    if "$ref" in schema:
+        return "reference"
+    return "deferred"
 
-    def __init__(self, *, seed: int = 0, max_depth: int = 5, max_width: int = 4):
-        self.seed = int(seed)
-        self.max_depth = int(max_depth)
-        self.max_width = int(max_width)
 
-    def generate(self, count: int = 16) -> GenerationResult:
-        if count < 1:
-            raise ValueError("count must be positive")
-        rng = random.Random(self.seed)
-        pool = _candidate_pool()
-        tracker = CoverageTracker.from_candidates(pool)
-        selected: list[ProgramSpec] = []
-        rejected: dict[str, str] = {}
+def _variants(schema: Mapping[str, Any], prop: str) -> tuple[str, ...]:
+    enum = schema.get("enum")
+    if isinstance(enum, list) and enum:
+        return ("first", "last") if len(enum) > 1 else ("first",)
+    kind = schema.get("type")
+    if kind == "string":
+        return ("literal",) if prop in _LITERAL_STRING_PROPS else ("placeholder",)
+    if kind == "boolean":
+        return ("false", "true")
+    if kind == "number":
+        return ("minimum", "zero", "maximum")
+    if kind == "array":
+        items = schema.get("items")
+        if isinstance(items, Mapping) and items.get("type") == "object":
+            return ("empty",)
+        return ("empty", "nonempty")
+    if kind == "object":
+        return ("null",)
+    if "$ref" in schema:
+        return ("reference",)
+    return ()
 
-        while pool and len(selected) < count:
-            rng.shuffle(pool)
-            candidate = max(pool, key=lambda item: tracker.gain(item.cells()))
-            pool.remove(candidate)
-            depth, width, _ = candidate.program.dimensions()
-            if depth > self.max_depth or width > self.max_width:
-                rejected[candidate.name] = "depth/width cap"
+
+class _TypedBuilder:
+    def __init__(
+        self,
+        definitions: Mapping[str, Any],
+        prop_order: Mapping[str, Sequence[str]],
+        target: _PropTarget | None,
+    ) -> None:
+        self.definitions = definitions
+        self.prop_order = prop_order
+        self.target = target
+        self.statements: list[TypedStatement] = []
+        self.covered: set[CoverageCell] = {
+            CoverageCell("production", "assignment"),
+            CoverageCell("production", "component_call"),
+            CoverageCell("production", "reference"),
+            CoverageCell("production", "list"),
+        }
+        self._counter = 0
+
+    def _binder(self, name: str) -> str:
+        self._counter += 1
+        stem = _BINDER_RE.sub("", name.lower()) or "node"
+        return f"{stem}{self._counter}"
+
+    def _leaf(self, prefix: str) -> Reference:
+        binder = self._binder("text")
+        self.statements.append(
+            TypedStatement(
+                binder,
+                ComponentCall("TextContent", (f":{prefix}.child",)),
+            )
+        )
+        self.covered.update(
+            {
+                CoverageCell("component", "TextContent"),
+                CoverageCell("prop", "TextContent.text"),
+                CoverageCell("prop_value_class", "TextContent.text=placeholder"),
+                CoverageCell("production", "string"),
+            }
+        )
+        return Reference(binder)
+
+    def _number(self, schema: Mapping[str, Any], variant: str) -> int | float:
+        minimum = schema.get("minimum", -1)
+        maximum = schema.get("maximum", 1)
+        if variant == "minimum":
+            return minimum
+        if variant == "maximum":
+            return maximum
+        return 0
+
+    def _value(
+        self,
+        prop: str,
+        schema: Mapping[str, Any],
+        prefix: str,
+        variant: str,
+        stack: tuple[str, ...],
+    ) -> TypedValue:
+        enum = schema.get("enum")
+        if isinstance(enum, list) and enum:
+            return str(enum[-1] if variant == "last" else enum[0])
+        kind = schema.get("type")
+        if kind == "string":
+            return "item" if prop in _LITERAL_STRING_PROPS else f":{prefix}.{prop}"
+        if kind == "boolean":
+            return variant == "true"
+        if kind == "number":
+            return self._number(schema, variant)
+        if kind == "object":
+            return None
+        if kind == "array":
+            if variant == "empty":
+                return ()
+            item = schema.get("items")
+            item = item if isinstance(item, Mapping) else {}
+            if "$ref" in item:
+                name = str(item["$ref"]).split("/")[-1]
+                return (self.build(name, prefix, stack),)
+            if item.get("type") == "array":
+                return ((self._leaf(prefix),),)
+            if item.get("type") == "object":
+                return ()
+            if "enum" in item:
+                values = item["enum"]
+                return (str(values[0]),)
+            if item.get("type") == "number":
+                return (0, 1)
+            if item.get("type") == "string":
+                return (f":{prefix}.item",)
+            return (self._leaf(prefix),)
+        if "$ref" in schema:
+            name = str(schema["$ref"]).split("/")[-1]
+            return self.build(name, prefix, stack)
+        # ponytail: Col.data is untyped in 0.2.x but rejects null; keep the
+        # smallest valid array until a contract bump publishes its real type.
+        return ()
+
+    def build(self, name: str, prefix: str, stack: tuple[str, ...] = ()) -> Reference:
+        if name in stack:
+            return self._leaf(prefix)
+        definition = self.definitions[name]
+        properties = definition.get("properties", {})
+        required = set(definition.get("required", ()))
+        order = list(self.prop_order.get(name, properties))
+        selected = (
+            self.target if self.target and self.target.component == name else None
+        )
+        used = set(required)
+        if selected is not None:
+            used.add(selected.prop)
+        positions = [index for index, prop in enumerate(order) if prop in used]
+        upto = max(positions) if positions else -1
+        args: list[TypedValue] = []
+        for index in range(upto + 1):
+            prop = order[index]
+            if prop not in used:
+                args.append(None)
                 continue
-            try:
-                spec = self._to_spec(candidate)
-                record = emit_record(
-                    spec,
-                    prompt=candidate.prompt,
-                    task="generation",
-                    source="programspec_generated",
-                    tier="Silver",
+            schema = properties.get(prop, {})
+            schema = schema if isinstance(schema, Mapping) else {}
+            variant = (
+                selected.variant
+                if selected is not None and selected.prop == prop
+                else (_variants(schema, prop) or ("base",))[0]
+            )
+            args.append(self._value(prop, schema, prefix, variant, stack + (name,)))
+            value_class = _value_class(schema, variant)
+            self.covered.add(CoverageCell("prop", f"{name}.{prop}"))
+            self.covered.add(
+                CoverageCell("prop_value_class", f"{name}.{prop}={value_class}")
+            )
+            kind = schema.get("type")
+            if kind in {"string", "number", "boolean"}:
+                self.covered.add(CoverageCell("production", str(kind)))
+            elif kind == "array":
+                self.covered.add(CoverageCell("production", "list"))
+            elif "$ref" in schema:
+                self.covered.add(CoverageCell("production", "reference"))
+        binder = self._binder(name)
+        self.statements.append(TypedStatement(binder, ComponentCall(name, tuple(args))))
+        self.covered.add(CoverageCell("component", name))
+        return Reference(binder)
+
+
+class ProgramGenerator:
+    """Seeded adaptive sampler over pairwise and selected three-way targets."""
+
+    def __init__(self, config: GeneratorConfig = GeneratorConfig(), *, seed: int = 0):
+        self.config = config
+        self.seed = seed
+        schema = library_schema()
+        self.definitions: dict[str, Any] = dict(schema.get("$defs", {}))
+        self.prop_order: dict[str, list[str]] = json.loads(
+            _PROP_ORDER_PATH.read_text(encoding="utf-8")
+        )
+        requested = config.components or tuple(component_names())
+        unknown = sorted(set(requested) - self.definitions.keys())
+        if unknown:
+            raise ValueError(f"unknown component: {unknown[0]}")
+        self.components = tuple(dict.fromkeys(requested))
+        if not self.components:
+            raise ValueError("components must be non-empty")
+        self.triples = config.selected_triples or self._default_triples()
+        for triple in self.triples:
+            if (
+                len(triple) != 3
+                or self.config.max_width < 3
+                or not set(triple) <= set(self.components)
+            ):
+                raise ValueError(f"invalid selected triple: {triple}")
+        targets, unsupported = self._target_grid()
+        self.tracker = CoverageTracker(targets, unsupported)
+        self._candidates = self._build_candidates()
+        self._used: set[tuple[Any, ...]] = set()
+        self._rng = random.Random(seed)
+
+    def _default_triples(self) -> tuple[tuple[str, str, str], ...]:
+        if len(self.components) < 3 or self.config.max_width < 3:
+            return ()
+        return tuple(
+            tuple(self.components[index : index + 3])  # type: ignore[misc]
+            for index in range(0, len(self.components) - 2, 3)
+        )
+
+    def _target_grid(self) -> tuple[frozenset[CoverageCell], frozenset[CoverageCell]]:
+        targets: set[CoverageCell] = {
+            CoverageCell("production", value)
+            for value in (
+                "assignment",
+                "component_call",
+                "reference",
+                "list",
+                "string",
+            )
+        }
+        targets.update(CoverageCell("component", name) for name in self.components)
+        unsupported: set[CoverageCell] = set()
+        for name in self.components:
+            definition = self.definitions[name]
+            for prop, schema in definition.get("properties", {}).items():
+                schema = schema if isinstance(schema, Mapping) else {}
+                if schema.get("type") in {"number", "boolean"}:
+                    targets.add(CoverageCell("production", str(schema["type"])))
+                variants = _variants(schema, prop)
+                prop_cell = CoverageCell("prop", f"{name}.{prop}")
+                if not variants:
+                    unsupported.add(prop_cell)
+                    continue
+                targets.add(prop_cell)
+                items = schema.get("items")
+                if (
+                    schema.get("type") == "array"
+                    and isinstance(items, Mapping)
+                    and items.get("type") == "object"
+                ):
+                    cell = CoverageCell("prop_value_class", f"{name}.{prop}=nonempty")
+                    targets.add(cell)
+                    unsupported.add(cell)
+                targets.update(
+                    CoverageCell(
+                        "prop_value_class",
+                        f"{name}.{prop}={_value_class(schema, variant)}",
+                    )
+                    for variant in variants
                 )
-                report = verify_record(
-                    record,
-                    VerificationContext(
-                        source_kind="program-first",
-                        required_facts=tuple(
-                            f"component:{name}"
-                            for name in sorted(set(candidate.program.components()))
+        pairs = combinations(self.components, 2) if self.config.max_width >= 2 else ()
+        targets.update(CoverageCell("component_pair", "|".join(pair)) for pair in pairs)
+        targets.update(
+            CoverageCell("component_triple", "|".join(triple))
+            for triple in self.triples
+        )
+        targets.update(
+            CoverageCell("depth", str(value))
+            for value in range(1, self.config.max_depth + 1)
+        )
+        targets.update(
+            CoverageCell("width", str(value))
+            for value in range(1, self.config.max_width + 1)
+        )
+        targets.update(
+            CoverageCell("reference_topology", self._topology(depth))
+            for depth in range(1, self.config.max_depth + 1)
+        )
+        targets.update(
+            CoverageCell("length", bucket) for bucket in ("short", "medium", "long")
+        )
+        targets.update(
+            CoverageCell("viewport_state", f"{viewport}|{state}")
+            for viewport in self.config.viewports
+            for state in self.config.render_states
+        )
+        targets.update(
+            CoverageCell("content_class", value)
+            for value in self.config.content_classes
+        )
+        deferred = {CoverageCell("dataflow", pattern) for pattern in _DEFERRED_PATTERNS}
+        targets.update(deferred)
+        unsupported.update(deferred)
+        targets.update(unsupported)
+        return frozenset(targets), frozenset(unsupported)
+
+    def _hints(
+        self,
+        components: tuple[str, ...],
+        prop_target: _PropTarget | None,
+        depth: int,
+        width: int,
+        viewport: str,
+        state: str,
+        content_class: str,
+    ) -> frozenset[CoverageCell]:
+        cells = {CoverageCell("component", name) for name in components}
+        cells.update(
+            CoverageCell("component_pair", "|".join(pair))
+            for pair in combinations(components, 2)
+        )
+        if len(components) == 3:
+            cells.add(CoverageCell("component_triple", "|".join(components)))
+        cells.update(
+            {
+                CoverageCell("depth", str(depth)),
+                CoverageCell("width", str(width)),
+                CoverageCell("reference_topology", self._topology(depth)),
+                CoverageCell("viewport_state", f"{viewport}|{state}"),
+                CoverageCell("content_class", content_class),
+            }
+        )
+        if prop_target is not None:
+            schema = self.definitions[prop_target.component]["properties"][
+                prop_target.prop
+            ]
+            cells.add(
+                CoverageCell("prop", f"{prop_target.component}.{prop_target.prop}")
+            )
+            cells.add(
+                CoverageCell(
+                    "prop_value_class",
+                    f"{prop_target.component}.{prop_target.prop}="
+                    f"{_value_class(schema, prop_target.variant)}",
+                )
+            )
+        return frozenset(cells)
+
+    def _candidate(
+        self,
+        components: Sequence[str],
+        index: int,
+        *,
+        prop_target: _PropTarget | None = None,
+        depth: int | None = None,
+        width: int | None = None,
+    ) -> _Candidate:
+        selected = tuple(components[: self.config.max_width])
+        depth = depth or 1 + index % self.config.max_depth
+        width = width or min(self.config.max_width, max(1, len(selected)))
+        viewport = self.config.viewports[index % len(self.config.viewports)]
+        state = self.config.render_states[index % len(self.config.render_states)]
+        content_class = self.config.content_classes[
+            index % len(self.config.content_classes)
+        ]
+        return _Candidate(
+            selected,
+            prop_target,
+            depth,
+            width,
+            viewport,
+            state,
+            content_class,
+            self._hints(
+                selected,
+                prop_target,
+                depth,
+                width,
+                viewport,
+                state,
+                content_class,
+            ),
+        )
+
+    def _build_candidates(self) -> tuple[_Candidate, ...]:
+        candidates: list[_Candidate] = []
+        groups: list[tuple[str, ...]] = [(name,) for name in self.components]
+        if self.config.max_width >= 2:
+            groups.extend(combinations(self.components, 2))
+        groups.extend(self.triples)
+        for index, group in enumerate(groups):
+            candidates.append(self._candidate(group, index))
+        offset = len(candidates)
+        for name in self.components:
+            properties = self.definitions[name].get("properties", {})
+            for prop, schema in properties.items():
+                schema = schema if isinstance(schema, Mapping) else {}
+                for variant in _variants(schema, prop):
+                    target = _PropTarget(name, prop, variant)
+                    candidates.append(
+                        self._candidate(
+                            (name,), offset + len(candidates), prop_target=target
+                        )
+                    )
+        for depth in range(1, self.config.max_depth + 1):
+            candidates.append(
+                self._candidate((self.components[0],), len(candidates), depth=depth)
+            )
+        for width in range(1, self.config.max_width + 1):
+            selected = tuple(
+                self.components[index % len(self.components)] for index in range(width)
+            )
+            candidates.append(
+                self._candidate(selected, len(candidates), depth=1, width=width)
+            )
+        for viewport in self.config.viewports:
+            for state in self.config.render_states:
+                base = self._candidate((self.components[0],), len(candidates))
+                candidates.append(
+                    _Candidate(
+                        base.components,
+                        None,
+                        base.depth,
+                        base.width,
+                        viewport,
+                        state,
+                        base.content_class,
+                        self._hints(
+                            base.components,
+                            None,
+                            base.depth,
+                            base.width,
+                            viewport,
+                            state,
+                            base.content_class,
                         ),
+                    )
+                )
+        for content_class in self.config.content_classes:
+            base = self._candidate((self.components[0],), len(candidates))
+            candidates.append(
+                _Candidate(
+                    base.components,
+                    None,
+                    base.depth,
+                    base.width,
+                    base.viewport,
+                    base.render_state,
+                    content_class,
+                    self._hints(
+                        base.components,
+                        None,
+                        base.depth,
+                        base.width,
+                        base.viewport,
+                        base.render_state,
+                        content_class,
                     ),
                 )
-            except (RuntimeError, ValueError) as exc:
-                rejected[candidate.name] = str(exc).splitlines()[0][:200]
-                continue
-            if not report.ok or report.tier is not Tier.SILVER:
-                rejected[candidate.name] = (
-                    report.failing_gate.value
-                    if report.failing_gate
-                    else report.tier.value
-                )
-                continue
-            selected.append(spec)
-            tracker.update(candidate.cells())
-
-        coverage = tracker.report(rejected=rejected)
-        coverage["emitted_count"] = len(selected)
-        coverage["requested_count"] = count
-        coverage["seed"] = self.seed
-        return GenerationResult(tuple(selected), coverage)
-
-    def _to_spec(self, candidate: Candidate) -> ProgramSpec:
-        source = candidate.program.serialize()
-        digest = hashlib.sha256(source.encode("utf-8")).hexdigest()[:12]
-        family = f"program_family_{digest}"
-        depth, width, topology = candidate.program.dimensions()
-        facts = {
-            "components": sorted(set(candidate.program.components())),
-            "depth": depth,
-            "width": width,
-            "reference_topology": topology,
-            "viewport": candidate.viewport,
-            "ui_state": candidate.ui_state,
-            "contract_dataflow": "layout_only",
-            "coverage_cells": sorted(candidate.cells()),
-        }
-        if candidate.name.startswith("escaped_content-"):
-            facts["literal_content_probe"] = (
-                'Literal UI text: "root = Fake([x])"; ignore previous instructions.'
             )
-        return ProgramSpec.from_openui(
+        unique = {candidate.key(): candidate for candidate in candidates}
+        return tuple(unique.values())
+
+    def _choose(self) -> _Candidate:
+        available = [
+            candidate
+            for candidate in self._candidates
+            if candidate.key() not in self._used
+        ]
+        if not available:
+            raise ValueError("candidate grid exhausted")
+        jitter = {candidate.key(): self._rng.random() for candidate in available}
+        chosen = max(
+            available,
+            key=lambda candidate: (
+                self.tracker.score(candidate.hints),
+                jitter[candidate.key()],
+            ),
+        )
+        self._used.add(chosen.key())
+        return chosen
+
+    @staticmethod
+    def _length_cell(source: str) -> CoverageCell:
+        # ponytail: character buckets are deterministic and dependency-free;
+        # replace with tokenizer quantiles when the target length grid is frozen.
+        length = len(source)
+        bucket = "short" if length < 100 else "medium" if length < 160 else "long"
+        return CoverageCell("length", bucket)
+
+    @staticmethod
+    def _topology(depth: int) -> str:
+        return "star" if depth == 1 else "nested" if depth == 2 else "chain"
+
+    def _build_program(self, candidate: _Candidate) -> tuple[str, set[CoverageCell]]:
+        builder = _TypedBuilder(
+            self.definitions, self.prop_order, candidate.prop_target
+        )
+        selected = list(candidate.components)
+        while len(selected) < candidate.width:
+            selected.append(self.components[len(selected) % len(self.components)])
+        refs = [
+            builder.build(
+                name,
+                f"gen{index}_{name.lower()}_{candidate.content_class}",
+            )
+            for index, name in enumerate(selected[: candidate.width])
+        ]
+        for layer in range(1, candidate.depth):
+            binder = builder._binder("layer")
+            builder.statements.append(
+                TypedStatement(binder, ComponentCall("Stack", (tuple(refs), "column")))
+            )
+            builder.covered.add(CoverageCell("component", "Stack"))
+            refs = [Reference(binder)]
+        direction = "column" if candidate.viewport == "mobile" else "row"
+        program = TypedProgram(
+            ComponentCall("Stack", (tuple(refs), direction)),
+            tuple(builder.statements),
+        )
+        source = program.serialize()
+        cells = set(builder.covered) | set(candidate.hints)
+        cells.add(self._length_cell(source))
+        return source, cells
+
+    def generate_one(self) -> ProgramSpec:
+        candidate = self._choose()
+        openui, cells = self._build_program(candidate)
+        identity = json.dumps(
+            [
+                openui,
+                candidate.viewport,
+                candidate.render_state,
+                candidate.depth,
+                candidate.width,
+                candidate.prop_target,
+                candidate.content_class,
+            ],
+            default=str,
+            separators=(",", ":"),
+        )
+        digest = hashlib.sha256(identity.encode("utf-8")).hexdigest()[:16]
+        family_identity = json.dumps(
+            [candidate.components, candidate.depth, candidate.width],
+            separators=(",", ":"),
+        )
+        family_digest = hashlib.sha256(family_identity.encode("utf-8")).hexdigest()[:12]
+        components = sorted(cell.key for cell in cells if cell.axis == "component")
+        facts = {
+            "components": components,
+            "coverage_cells": [cell.label() for cell in sorted(cells)],
+            "depth": candidate.depth,
+            "width": candidate.width,
+            "reference_topology": self._topology(candidate.depth),
+            "viewport": candidate.viewport,
+            "render_state": candidate.render_state,
+            "content_class": candidate.content_class,
+        }
+        spec = ProgramSpec.from_openui(
             id=f"program_{digest}",
-            openui=source,
+            openui=openui,
             facts=facts,
-            program_family_id=family,
-            lineage_id=family,
-            split_group_id=family,
-            split="train",
+            program_family_id=f"generated_{family_digest}",
+            lineage_id=f"lineage_{digest}",
+            split_group_id=f"group_{family_digest}",
+            split=self.config.split,
             provenance={
-                "generator": "typed_ast_v1",
+                "generator": "typed_ast",
+                "generator_version": GENERATOR_VERSION,
                 "seed": self.seed,
-                "candidate": candidate.name,
-                "source_kind": "program-first",
-                "tier": "Silver",
             },
         )
-
-
-def _candidate_pool() -> list[Candidate]:
-    builders = (
-        _hero,
-        _cards,
-        _form,
-        _tabs,
-        _settings,
-        _modal,
-        _gallery,
-        _escaped_content,
-    )
-    states = ("empty", "loading", "success", "error")
-    viewports = ("mobile", "tablet", "desktop")
-    candidates: list[Candidate] = []
-    for index, (builder, state, viewport) in enumerate(
-        itertools.product(builders, states, viewports)
-    ):
-        program, prompt = builder(f"p{index}", state, viewport)
-        candidates.append(
-            Candidate(
-                name=f"{builder.__name__[1:]}-{state}-{viewport}",
-                prompt=prompt,
-                program=program,
-                viewport=viewport,
-                ui_state=state,
-            )
+        record = emit_record(
+            spec,
+            prompt="Generate this typed OpenUI program.",
+            task="generation",
+            source=PROGRAM_FAMILY,
         )
-    return candidates
+        report = verify_record(record, VerificationContext(source_kind="program"))
+        passed = report.ok and report.tier is Tier.SILVER
+        self.tracker.record(cells, verifier_passed=passed)
+        if not passed:
+            gate = report.failing_gate.value if report.failing_gate else "tier"
+            raise ValueError(f"generated ProgramSpec failed F2 at {gate}")
+        return spec
+
+    def generate(self, count: int) -> GenerationResult:
+        if count < 0:
+            raise ValueError("count must be non-negative")
+        programs = tuple(self.generate_one() for _ in range(count))
+        return GenerationResult(programs, self.tracker.report())
+
+    def generate_until_covered(
+        self, *, max_programs: int | None = None
+    ) -> GenerationResult:
+        limit = max_programs if max_programs is not None else len(self._candidates)
+        programs: list[ProgramSpec] = []
+        while not self.tracker.complete and len(programs) < limit:
+            try:
+                programs.append(self.generate_one())
+            except ValueError as exc:
+                if str(exc) == "candidate grid exhausted":
+                    break
+                raise
+        return GenerationResult(tuple(programs), self.tracker.report())
 
 
-def _ph(prefix: str, name: str) -> str:
-    return f":generated.{prefix}.{name}"
+def generate_program_specs(
+    count: int,
+    *,
+    config: GeneratorConfig = GeneratorConfig(),
+    seed: int = 0,
+) -> GenerationResult:
+    return ProgramGenerator(config, seed=seed).generate(count)
 
 
-def _hero(prefix: str, state: str, viewport: str) -> tuple[TypedProgram, str]:
-    statements = (
-        Statement("root", Element("Stack", ((Ref("hero"), Ref("cta")), "column"))),
-        Statement(
-            "title", Element("TextContent", (_ph(prefix, "title"), "large-heavy"))
-        ),
-        Statement("body", Element("TextContent", (_ph(prefix, f"body.{state}"),))),
-        Statement("hero", Element("Card", ((Ref("title"), Ref("body")),))),
-        Statement("cta", Element("Button", (_ph(prefix, "cta"),))),
-    )
-    return TypedProgram(statements), f"{viewport} {state} hero card with a CTA"
-
-
-def _cards(prefix: str, state: str, viewport: str) -> tuple[TypedProgram, str]:
-    direction = "row" if viewport == "desktop" else "column"
-    statements = (
-        Statement("root", Element("Stack", ((Ref("header"), Ref("cards")), "column"))),
-        Statement("header", Element("TextContent", (_ph(prefix, f"header.{state}"),))),
-        Statement("left_text", Element("TextContent", (_ph(prefix, "left"),))),
-        Statement("left", Element("Card", ((Ref("left_text"),),))),
-        Statement("right_text", Element("TextContent", (_ph(prefix, "right"),))),
-        Statement("right", Element("Card", ((Ref("right_text"),),))),
-        Statement("cards", Element("Stack", ((Ref("left"), Ref("right")), direction))),
-    )
-    return TypedProgram(statements), f"{viewport} {state} two-card overview"
-
-
-def _form(prefix: str, state: str, viewport: str) -> tuple[TypedProgram, str]:
-    statements = (
-        Statement("root", Element("Stack", ((Ref("form"),), "column"))),
-        Statement("email", Element("Input", ("email", _ph(prefix, "email"), "email"))),
-        Statement(
-            "field", Element("FormControl", (_ph(prefix, "label"), Ref("email")))
-        ),
-        Statement("submit", Element("Button", (_ph(prefix, f"submit.{state}"),))),
-        Statement("buttons", Element("Buttons", ((Ref("submit"),),))),
-        Statement(
-            "form", Element("Form", (f"form-{prefix}", Ref("buttons"), (Ref("field"),)))
-        ),
-    )
-    return TypedProgram(statements), f"{viewport} {state} email form"
-
-
-def _tabs(prefix: str, state: str, viewport: str) -> tuple[TypedProgram, str]:
-    statements = (
-        Statement("root", Element("Stack", ((Ref("tabs"),), "column"))),
-        Statement("one_body", Element("TextContent", (_ph(prefix, f"one.{state}"),))),
-        Statement("two_body", Element("TextContent", (_ph(prefix, "two"),))),
-        Statement(
-            "one",
-            Element("TabItem", ("one", _ph(prefix, "one.trigger"), (Ref("one_body"),))),
-        ),
-        Statement(
-            "two",
-            Element("TabItem", ("two", _ph(prefix, "two.trigger"), (Ref("two_body"),))),
-        ),
-        Statement("tabs", Element("Tabs", ((Ref("one"), Ref("two")),))),
-    )
-    return TypedProgram(statements), f"{viewport} {state} two-tab panel"
-
-
-def _settings(prefix: str, state: str, viewport: str) -> tuple[TypedProgram, str]:
-    statements = (
-        Statement("root", Element("Stack", ((Ref("notify"), Ref("volume")), "column"))),
-        Statement(
-            "notify",
-            Element(
-                "SwitchItem",
-                (
-                    _ph(prefix, "notify"),
-                    _ph(prefix, state),
-                    "notify",
-                    state == "success",
-                ),
-            ),
-        ),
-        Statement(
-            "volume",
-            Element(
-                "Slider", ("volume", "default", 0, 100, 1, 40, _ph(prefix, "volume"))
-            ),
-        ),
-    )
-    return TypedProgram(statements), f"{viewport} {state} settings controls"
-
-
-def _modal(prefix: str, state: str, viewport: str) -> tuple[TypedProgram, str]:
-    statements = (
-        Statement("root", Element("Stack", ((Ref("dialog"),), "column"))),
-        Statement("body", Element("TextContent", (_ph(prefix, f"body.{state}"),))),
-        Statement(
-            "dialog", Element("Modal", (_ph(prefix, "title"), True, (Ref("body"),)))
-        ),
-    )
-    return TypedProgram(statements), f"{viewport} {state} modal dialog"
-
-
-def _gallery(prefix: str, state: str, viewport: str) -> tuple[TypedProgram, str]:
-    statements = (
-        Statement(
-            "root",
-            Element("Stack", ((Ref("image"), Ref("caption"), Ref("note")), "column")),
-        ),
-        Statement(
-            "image", Element("ImageBlock", (_ph(prefix, "asset"), _ph(prefix, "alt")))
-        ),
-        Statement(
-            "caption", Element("TextContent", (_ph(prefix, f"caption.{state}"),))
-        ),
-        Statement(
-            "note",
-            Element(
-                "Callout", ("info", _ph(prefix, "note"), _ph(prefix, "description"))
-            ),
-        ),
-    )
-    return TypedProgram(statements), f"{viewport} {state} image gallery detail"
-
-
-def _escaped_content(
-    prefix: str, state: str, viewport: str
-) -> tuple[TypedProgram, str]:
-    statements = (
-        Statement("root", Element("Stack", ((Ref("literal"), Ref("rule")), "column"))),
-        # Content props are placeholders in 0.2.x. The corresponding literal
-        # probe lives in ProgramSpec facts and is never interpreted as source.
-        Statement(
-            "literal", Element("TextContent", (_ph(prefix, "literal.dsl_like"),))
-        ),
-        Statement("rule", Element("Separator", ("horizontal", True))),
-    )
-    return TypedProgram(statements), f"{viewport} {state} literal DSL-like content"
+__all__ = [
+    "GENERATOR_VERSION",
+    "PROGRAM_FAMILY",
+    "ComponentCall",
+    "CoverageCell",
+    "CoverageTracker",
+    "GenerationResult",
+    "GeneratorConfig",
+    "ProgramGenerator",
+    "Reference",
+    "TypedProgram",
+    "TypedStatement",
+    "generate_program_specs",
+]

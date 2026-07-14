@@ -1,4 +1,4 @@
-"""Coverage-guided typed ProgramSpec generation."""
+"""Typed ProgramSpec generation and adaptive coverage invariants."""
 
 from __future__ import annotations
 
@@ -6,131 +6,173 @@ import json
 
 import pytest
 
-from scripts.generate_progspecs import main
+from scripts.generate_progspecs import main as generate_main
+from slm_training.data.progspec import emit_record
 from slm_training.data.progspec.generate import (
-    Candidate,
-    CoverageTracker,
-    Element,
-    Ref,
-    Statement,
+    PROGRAM_FAMILY,
+    ComponentCall,
+    GeneratorConfig,
+    ProgramGenerator,
+    Reference,
     TypedProgram,
-    TypedProgramGenerator,
+    TypedStatement,
+    generate_program_specs,
 )
 from slm_training.data.verify import Tier, VerificationContext, verify_record
-from slm_training.dsl import bridge_available, validate
-from slm_training.dsl.schema import ExampleRecord
+from slm_training.dsl.language_contract import contract_id
+from slm_training.dsl.parser import validate
+
+SMALL_CONFIG = GeneratorConfig(
+    components=("TextContent", "Button", "Separator"),
+    max_depth=3,
+    max_width=3,
+    viewports=("mobile", "desktop"),
+    render_states=("empty", "populated"),
+)
 
 
-def test_typed_graph_rejects_unknown_and_unreachable_references() -> None:
-    with pytest.raises(ValueError, match="unknown reference"):
-        TypedProgram((Statement("root", Element("Stack", ((Ref("missing"),),))),))
-    with pytest.raises(ValueError, match="reachable"):
-        TypedProgram(
-            (
-                Statement("root", Element("TextContent", (":root",))),
-                Statement("orphan", Element("Button", (":orphan",))),
-            )
-        )
-    with pytest.raises(ValueError, match="cycle"):
-        TypedProgram(
-            (
-                Statement("root", Element("Stack", ((Ref("loop"),),))),
-                Statement("loop", Element("Stack", ((Ref("root"),),))),
-            )
-        )
+@pytest.fixture(scope="module")
+def small_result():
+    return ProgramGenerator(SMALL_CONFIG, seed=11).generate_until_covered()
 
 
-def test_coverage_tracks_pairs_selected_triples_and_gain() -> None:
+def test_typed_nodes_serialize_without_cfg_sampling() -> None:
     program = TypedProgram(
-        (
-            Statement("root", Element("Stack", ((Ref("card"),),))),
-            Statement("text", Element("TextContent", (":text",))),
-            Statement("card", Element("Card", ((Ref("text"),),))),
-        )
+        root=ComponentCall("Stack", ((Reference("cta"),), "row")),
+        statements=(
+            TypedStatement(
+                "cta",
+                ComponentCall("Button", (":cta.label", None, "primary")),
+            ),
+        ),
     )
-    candidate = Candidate("x", "p", program, "mobile", "empty")
-    tracker = CoverageTracker.from_candidates([candidate])
-    assert "pair:Card+Stack" in tracker.targets
-    assert "triple:Card+Stack+TextContent" in tracker.targets
-    assert tracker.gain(candidate.cells()) == len(tracker.targets)
-    tracker.update(candidate.cells())
-    assert tracker.gain(candidate.cells()) == 0
+    source = program.serialize()
+    assert source == (
+        'root = Stack([cta], "row")\ncta = Button(":cta.label", null, "primary")'
+    )
+    assert validate(source).root
 
 
-@pytest.mark.skipif(not bridge_available(), reason="OpenUI bridge deps missing")
-def test_generator_is_seeded_valid_silver_and_split_stable() -> None:
-    first = TypedProgramGenerator(seed=7).generate(12)
-    second = TypedProgramGenerator(seed=7).generate(12)
-    assert [spec.to_dict() for spec in first.programs] == [
-        spec.to_dict() for spec in second.programs
-    ]
-    assert len(first.programs) == 12
-    assert first.coverage["covered_count"] > 0
-    assert first.coverage["deferred"] == [
-        "contract_dataflow:state",
-        "contract_dataflow:query",
-        "contract_dataflow:mutation",
-        "contract_dataflow:action",
-        "contract_dataflow:tool",
-    ]
-    for spec in first.programs:
-        assert validate(spec.canonical_openui).root
+def test_small_grid_reaches_full_pairwise_and_selected_triple_coverage(
+    small_result,
+) -> None:
+    assert small_result.coverage["complete"] is True
+    assert small_result.coverage["uncovered"] == []
+    assert len(small_result.programs) < 25  # no Cartesian product
+
+    axes = small_result.coverage["axes"]
+    assert axes["component_pair"]["covered"] == axes["component_pair"]["total"] == 3
+    assert axes["component_triple"]["covered"] == 1
+    assert axes["prop"]["uncovered"] == []
+    assert axes["prop_value_class"]["uncovered"] == []
+    assert axes["depth"]["uncovered"] == []
+    assert axes["width"]["uncovered"] == []
+    assert axes["length"]["uncovered"] == []
+    assert axes["viewport_state"]["uncovered"] == []
+    assert axes["content_class"]["uncovered"] == []
+
+
+def test_deferred_contract_axes_are_explicit_not_generated(small_result) -> None:
+    unsupported = set(small_result.coverage["unsupported"])
+    assert {
+        "dataflow:state",
+        "dataflow:query",
+        "dataflow:mutation",
+        "dataflow:action",
+        "dataflow:tool",
+        "prop:Button.action",
+    } <= unsupported
+    assert not any(
+        token in spec.canonical_openui
+        for spec in small_result.programs
+        for token in ("$state", "Query(", "Mutation(", "Action(", "@")
+    )
+
+
+def test_every_generated_root_is_split_safe_and_f2_silver(small_result) -> None:
+    assert small_result.coverage["verifier"] == {
+        "passed": len(small_result.programs),
+        "failed": 0,
+    }
+    assert len({spec.id for spec in small_result.programs}) == len(
+        small_result.programs
+    )
+    for spec in small_result.programs:
+        assert spec.contract_id == contract_id()
         assert spec.split == "train"
-        assert spec.program_family_id == spec.lineage_id == spec.split_group_id
-        record = ExampleRecord(
-            id=spec.id,
-            prompt="generate",
-            openui=spec.canonical_openui,
-            placeholders=[],
-            split=spec.split,
-            source="programspec_generated",
+        digest = spec.id.removeprefix("program_")
+        assert digest in spec.lineage_id
+        family = spec.program_family_id.removeprefix("generated_")
+        assert family in spec.split_group_id
+        assert spec.provenance["generator"] == "typed_ast"
+        assert spec.facts["depth"] <= SMALL_CONFIG.max_depth
+        assert spec.facts["width"] <= SMALL_CONFIG.max_width
+        assert spec.facts["content_class"] in SMALL_CONFIG.content_classes
+        record = emit_record(
+            spec,
+            prompt="Generate this typed program.",
+            task="generation",
+            source=PROGRAM_FAMILY,
         )
-        report = verify_record(record, VerificationContext(source_kind="program-first"))
+        report = verify_record(record, VerificationContext(source_kind="program"))
         assert report.ok
         assert report.tier is Tier.SILVER
 
 
-@pytest.mark.skipif(not bridge_available(), reason="OpenUI bridge deps missing")
-def test_generator_contains_escaped_dsl_like_literal() -> None:
-    result = TypedProgramGenerator(seed=2).generate(96)
-    escaped = [
-        spec
-        for spec in result.programs
-        if "ignore previous instructions"
-        in str(spec.facts.get("literal_content_probe", ""))
+def test_generation_is_seed_deterministic() -> None:
+    first = generate_program_specs(8, config=SMALL_CONFIG, seed=23)
+    second = generate_program_specs(8, config=SMALL_CONFIG, seed=23)
+    assert [spec.to_dict() for spec in first.programs] == [
+        spec.to_dict() for spec in second.programs
     ]
-    assert escaped
-    assert ":generated." in escaped[0].canonical_openui
-    assert '"root = Fake([x])"' in escaped[0].facts["literal_content_probe"]
+    assert first.coverage == second.coverage
 
 
-@pytest.mark.skipif(not bridge_available(), reason="OpenUI bridge deps missing")
-def test_cli_writes_programs_and_coverage(tmp_path) -> None:
-    programs = tmp_path / "programs.jsonl"
-    coverage = tmp_path / "coverage.json"
+def test_default_grid_covers_all_published_components_early() -> None:
+    result = ProgramGenerator(seed=19).generate(18)
+    component_axis = result.coverage["axes"]["component"]
+    assert component_axis == {
+        "total": 54,
+        "covered": 54,
+        "uncovered": [],
+        "unsupported": [],
+    }
+    assert result.coverage["verifier"] == {"passed": 18, "failed": 0}
+
+
+def test_partial_run_reports_uncovered_cells_and_rejects_bad_config() -> None:
+    result = generate_program_specs(1, config=SMALL_CONFIG, seed=3)
+    assert result.coverage["complete"] is False
+    assert result.coverage["uncovered"]
+    with pytest.raises(ValueError, match="unknown component"):
+        ProgramGenerator(GeneratorConfig(components=("NotAComponent",)))
+    with pytest.raises(ValueError, match="positive"):
+        GeneratorConfig(max_depth=0)
+
+
+def test_cli_writes_programs_and_authoritative_coverage(tmp_path) -> None:
+    programs_path = tmp_path / "programs.jsonl"
+    coverage_path = tmp_path / "coverage.json"
     assert (
-        main(
+        generate_main(
             [
                 "--count",
-                "4",
+                "2",
                 "--seed",
-                "3",
+                "7",
                 "--output",
-                str(programs),
+                str(programs_path),
                 "--coverage",
-                str(coverage),
+                str(coverage_path),
             ]
         )
         == 0
     )
-    assert len(programs.read_text().splitlines()) == 4
-    report = json.loads(coverage.read_text())
-    assert report["emitted_count"] == 4
-    assert report["requested_count"] == 4
-
-
-@pytest.mark.skipif(not bridge_available(), reason="OpenUI bridge deps missing")
-def test_default_budget_covers_supported_target_grid() -> None:
-    report = TypedProgramGenerator(seed=11).generate(16).coverage
-    assert report["uncovered"] == []
-    assert {"length:short", "length:medium", "length:long"} <= set(report["covered"])
+    programs = [json.loads(line) for line in programs_path.read_text().splitlines()]
+    coverage = json.loads(coverage_path.read_text())
+    assert len(programs) == 2
+    assert all(
+        program["provenance"]["generator"] == "typed_ast" for program in programs
+    )
+    assert coverage["axes"]["component"]["total"] == 54
+    assert coverage["verifier"] == {"failed": 0, "passed": 2}
