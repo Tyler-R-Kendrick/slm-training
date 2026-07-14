@@ -40,9 +40,15 @@ def main(argv: list[str] | None = None) -> int:
             "cases": str(args.cases),
             "device": "cpu",
             "steps": 0,
-            "context_backend": None,
+            "context_backend": "none",
+            "matrix_set": "task-equivalence-wiring",
             "suite_n": len(cases),
             "honesty": "prediction_evidence_only",
+            "honest_ship_gates": {
+                "status": "not_run",
+                "pass": None,
+                "reason": "fixture prediction evidence has no learned checkpoint",
+            },
         },
         "task_scoreboard": build_task_scoreboard(cases),
     }

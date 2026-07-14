@@ -88,7 +88,7 @@ matched-signal rule or ship gates.
 Recompose the report after producing equal-recipe matrix summaries:
 
 ```bash
-python -m scripts.verify_data_synthesis \
+rtk python -m scripts.verify_data_synthesis \
   --first-train-dir outputs/slm17/corpus/first \
   --second-train-dir outputs/slm17/corpus/second \
   --test-dir outputs/slm17/test/v2 \
