@@ -1,6 +1,6 @@
 // Sketch only — not compiled in this repo.
 // Hole-admissibility for MaskGIT fills (constrained-diffusion-inspired).
-// Mirror of slm_training.grammar_fastpath.maskgit_constrain.admit_fill.
+// Mirror of slm_training.dsl.grammar.fastpath.maskgit_constrain.admit_fill.
 #pragma once
 #include <string>
 #include <string_view>

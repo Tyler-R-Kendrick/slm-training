@@ -85,10 +85,6 @@ def test_resolve_lineage_walks_to_root() -> None:
 
 def test_apply_parent_cap_prefers_root_and_is_deterministic() -> None:
     records = [
-        _record("a", meta_ignored="x")
-        for _ in range(1)
-    ]
-    records = [
         ExampleRecord(
             id=rid,
             prompt=f"p {rid}",

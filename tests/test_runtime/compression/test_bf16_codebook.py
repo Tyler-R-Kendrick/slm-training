@@ -99,6 +99,18 @@ def test_write_compressed_checkpoint(tmp_path: Path) -> None:
     assert int(restored["steps"].item()) == 3
 
 
+def test_dense_data_branch_preserves_shape() -> None:
+    sd = {
+        "tiny": torch.zeros(0, 3, dtype=torch.float32),
+        "steps": torch.tensor(1, dtype=torch.int64),
+    }
+    payload, _ = compress_state_dict(sd, layout=LAYOUT_REGROUP, min_numel=64)
+    restored = decompress_state_dict(payload)
+    assert tuple(restored["tiny"].shape) == (0, 3)
+    assert restored["tiny"].dtype == torch.float32
+    assert int(restored["steps"].item()) == 1
+
+
 def test_bytesplit_layout_roundtrip() -> None:
     sd = {"w": torch.randn(48, 48)}
     payload, _ = compress_state_dict(sd, layout=LAYOUT_BYTESPLIT, min_numel=16)

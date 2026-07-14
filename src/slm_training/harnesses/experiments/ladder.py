@@ -139,30 +139,31 @@ def model_build_config_for_point(
     extra: Mapping[str, Any] | None = None,
 ) -> ModelBuildConfig:
     decode = dict(ladder.decode_frozen or {})
-    kwargs = dict(extra or {})
-    return ModelBuildConfig(
-        train_dir=Path(train_dir),
-        test_dir=Path(test_dir) if test_dir else None,
-        run_root=Path(run_root),
-        run_id=ladder_run_id(ladder.ladder_id, point, seed),
-        steps=steps,
-        batch_size=batch_size,
-        lr=lr,
-        seed=seed,
-        d_model=point.d_model,
-        n_heads=point.n_heads,
-        context_layers=point.context_layers,
-        denoiser_layers=point.denoiser_layers,
-        target_token_budget=point.target_token_budget,
-        context_backend="scratch" if ladder.track == "scratch" else "hf",
-        freeze_context=bool(decode.get("freeze_context", ladder.track == "hf")),
-        hf_model_name=str(
+    kwargs: dict[str, Any] = {
+        "train_dir": Path(train_dir),
+        "test_dir": Path(test_dir) if test_dir else None,
+        "run_root": Path(run_root),
+        "run_id": ladder_run_id(ladder.ladder_id, point, seed),
+        "steps": steps,
+        "batch_size": batch_size,
+        "lr": lr,
+        "seed": seed,
+        "d_model": point.d_model,
+        "n_heads": point.n_heads,
+        "context_layers": point.context_layers,
+        "denoiser_layers": point.denoiser_layers,
+        "target_token_budget": point.target_token_budget,
+        "context_backend": "scratch" if ladder.track == "scratch" else "hf",
+        "freeze_context": bool(decode.get("freeze_context", ladder.track == "hf")),
+        "hf_model_name": str(
             decode.get("hf_model_name") or "HuggingFaceTB/SmolLM2-135M"
         ),
-        gen_steps=int(decode.get("gen_steps", 8)),
-        best_of_n=int(decode.get("best_of_n", 1)),
-        grammar_constrained=bool(decode.get("grammar_constrained", True)),
-        parallel_unmask=str(decode.get("parallel_unmask", "adaptive")),
-        loss_eval_every=max(1, steps // 10),
-        **kwargs,
-    )
+        "gen_steps": int(decode.get("gen_steps", 8)),
+        "best_of_n": int(decode.get("best_of_n", 1)),
+        "grammar_constrained": bool(decode.get("grammar_constrained", True)),
+        "parallel_unmask": str(decode.get("parallel_unmask", "adaptive")),
+        "loss_eval_every": max(1, steps // 10),
+    }
+    if extra:
+        kwargs.update(dict(extra))
+    return ModelBuildConfig(**kwargs)

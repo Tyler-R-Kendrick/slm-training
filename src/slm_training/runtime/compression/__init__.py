@@ -229,14 +229,22 @@ def tensor_stats(ct: CompressedTensor) -> TensorCodecStats:
     )
 
 
-def roundtrip_ok(array: np.ndarray, *, layout: str = LAYOUT_REGROUP) -> bool:
-    """True if encode→decode matches the BF16 view of `array` bit-exactly."""
+def roundtrip_ok(
+    array: np.ndarray,
+    *,
+    layout: str = LAYOUT_REGROUP,
+    ct: CompressedTensor | None = None,
+) -> bool:
+    """True if encode→decode matches the BF16 view of `array` bit-exactly.
+
+    Pass an already-encoded ``ct`` to avoid a second ``encode_tensor`` call.
+    """
     u16 = _to_bf16_u16(array)
-    ct = encode_tensor(array, layout=layout)
-    if ct.layout == LAYOUT_REGROUP:
-        rec = decode_bf16_u16_regroup(ct)
+    encoded = ct if ct is not None else encode_tensor(array, layout=layout)
+    if encoded.layout == LAYOUT_REGROUP:
+        rec = decode_bf16_u16_regroup(encoded)
     else:
-        rec = decode_bf16_u16_bytesplit(ct)
+        rec = decode_bf16_u16_bytesplit(encoded)
     return bool(np.array_equal(rec, u16))
 
 
@@ -281,7 +289,7 @@ def compress_state_dict(
             continue
         arr = value.detach().cpu().float().numpy()
         ct = encode_tensor(arr, name=name, layout=layout)
-        if not roundtrip_ok(arr, layout=layout):
+        if not roundtrip_ok(arr, layout=layout, ct=ct):
             raise RuntimeError(f"bit-exact round-trip failed for {name}")
         st = tensor_stats(ct)
         stats.append(st)
@@ -343,6 +351,9 @@ def decompress_state_dict(payload: dict[str, Any]) -> dict[str, Any]:
             t = torch.tensor(meta["data"])
             dtype_name = meta.get("dtype") or "float32"
             dtype = getattr(torch, dtype_name, torch.float32)
+            shape = meta.get("shape")
+            if shape is not None:
+                t = t.reshape(tuple(shape))
             out[name] = t.to(dtype)
         elif meta.get("raw_bytes"):
             dt = np.dtype(meta.get("numpy_dtype") or "float32")

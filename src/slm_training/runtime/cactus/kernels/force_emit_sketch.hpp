@@ -1,6 +1,6 @@
 // Sketch only — not compiled in this repo.
 // Maps OpenUI LALR accepts() singleton structural terminals to forced tokens.
-// Mirror of slm_training.grammar_fastpath.force_emit / engine.is_deterministic_next.
+// Mirror of slm_training.dsl.grammar.fastpath.force_emit / engine.is_deterministic_next.
 #pragma once
 #include <cstdint>
 #include <optional>

@@ -136,6 +136,7 @@ def train_survival_gate(
     """Freeze denoiser/context; optimize the survival head only (BCE)."""
     if device:
         model.to(device)
+    grad_was = [bool(p.requires_grad) for p in model.parameters()]
     for p in model.parameters():
         p.requires_grad_(False)
     for p in model.survival_head.parameters():
@@ -143,27 +144,29 @@ def train_survival_gate(
     opt = torch.optim.AdamW(model.survival_head.parameters(), lr=lr)
     losses: list[float] = []
     n = max(1, len(records))
-    for step in range(max(1, steps)):
-        start = (step * batch_size) % n
-        batch = records[start : start + batch_size]
-        if len(batch) < batch_size:
-            batch = batch + records[: batch_size - len(batch)]
-        hidden, labels, weights = mine_survival_batch(
-            model, batch, mask_rate=mask_rate, commit_frac=commit_frac
-        )
-        if float(weights.sum().item()) <= 0:
-            continue
-        model.survival_head.train()
-        survival = model.survival_head(hidden)
-        loss = F.binary_cross_entropy(survival, labels, weight=weights)
-        # Normalize by the committed fraction so sparse batches still learn.
-        loss = loss * (weights.numel() / weights.sum().clamp(min=1.0))
-        opt.zero_grad(set_to_none=True)
-        loss.backward()
-        opt.step()
-        losses.append(float(loss.detach().cpu()))
-    for p in model.parameters():
-        p.requires_grad_(True)
+    try:
+        for step in range(max(1, steps)):
+            start = (step * batch_size) % n
+            batch = records[start : start + batch_size]
+            if len(batch) < batch_size:
+                batch = batch + records[: batch_size - len(batch)]
+            hidden, labels, weights = mine_survival_batch(
+                model, batch, mask_rate=mask_rate, commit_frac=commit_frac
+            )
+            if float(weights.sum().item()) <= 0:
+                continue
+            model.survival_head.train()
+            survival = model.survival_head(hidden)
+            loss = F.binary_cross_entropy(survival, labels, weight=weights)
+            # Normalize by the committed fraction so sparse batches still learn.
+            loss = loss * (weights.numel() / weights.sum().clamp(min=1.0))
+            opt.zero_grad(set_to_none=True)
+            loss.backward()
+            opt.step()
+            losses.append(float(loss.detach().cpu()))
+    finally:
+        for p, was in zip(model.parameters(), grad_was):
+            p.requires_grad_(was)
     model.config.survival_gate_train = True
     model.config.survival_gate = True
     return {

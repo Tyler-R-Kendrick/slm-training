@@ -39,7 +39,7 @@ row below.
 | --- | --- |
 | **Paper** | Mündler, Dekoninck, Vechev, *Constrained Decoding of Diffusion LLMs with Context-Free Grammars*, 2025. [arXiv:2508.10111](https://arxiv.org/abs/2508.10111) · site: [constrained-diffusion.ai](https://constrained-diffusion.ai/) |
 | **Fidelity** | **Adapted** — we keep the *admit / emptiness* idea for MaskGIT holes, but use a cheap OpenUI specialization (Lark left-span sync + benign `hole` reparse) rather than the paper’s full CFG∩NFA emptiness engine |
-| **Code** | `admit_fill` in [`grammar_fastpath/maskgit_constrain.py`](../../src/slm_training/dsl/grammar/fastpath/maskgit_constrain.py); design note [`grammar-fastpath.md`](grammar-fastpath.md) |
+| **Code** | `admit_fill` in [`dsl/grammar/fastpath/maskgit_constrain.py`](../../src/slm_training/dsl/grammar/fastpath/maskgit_constrain.py); design note [`grammar-fastpath.md`](grammar-fastpath.md) |
 | **Config** | `grammar_fastpath`, `grammar_fastpath_mode` ∈ `{force, mask, hybrid}` |
 
 **What we took:** reject a MaskGIT fill when the partial canvas cannot complete
@@ -55,7 +55,7 @@ incremental acceptor + hole probe is the practical stand-in.
 | --- | --- |
 | **Papers** | Leviathan et al., *Fast Inference from Transformers via Speculative Decoding*, ICML 2023. [arXiv:2211.17192](https://arxiv.org/abs/2211.17192). Related: grammar-constrained LTR systems (Outlines / Guidance / SynCode family — **Adjacent**) |
 | **Fidelity** | **Adapted** (“pseudo speculative”) — when the OpenUI DFA has a **singleton structural** continuation (`=` `(` `)` `[` `]` `,`), we **force-emit** that token and skip the denoiser forward; otherwise we mask logits / search only DFA-legal ids (`pick_constrained_token`) |
-| **Code** | `force_emit_token_id`, `dfa_admits_token`, `pick_constrained_token` in [`models/grammar.py`](../../src/slm_training/models/grammar.py); engine in [`grammar_fastpath/engine.py`](../../src/slm_training/dsl/grammar/fastpath/engine.py); LTR repair / certify in `TwoTowerModel._ensure_valid_openui` |
+| **Code** | `force_emit_token_id`, `dfa_admits_token`, `pick_constrained_token` in [`models/grammar.py`](../../src/slm_training/models/grammar.py); engine in [`dsl/grammar/fastpath/engine.py`](../../src/slm_training/dsl/grammar/fastpath/engine.py); LTR repair / certify in `TwoTowerModel._ensure_valid_openui` |
 | **Config** | `grammar_constrained`, `grammar_ltr_primary`, `grammar_ltr_repair`, `grammar_finalize_validate`, `grammar_top_k` |
 
 This is **not** draft-model speculative decoding (no separate draft LM). It is
@@ -120,7 +120,7 @@ return invalid OpenUI.
 | --- | --- |
 | **Paper** | Rafailov et al., *Direct Preference Optimization*, NeurIPS 2023. [arXiv:2305.18290](https://arxiv.org/abs/2305.18290) |
 | **Fidelity** | **Surrogate** — reference-free loss on **masked denoiser log-probs**, not textbook DPO with a frozen reference policy over autoregressive likelihoods |
-| **Code** | [`preference/train.py`](../../src/slm_training/harnesses/preference/train.py) (`dpo_loss`), pair builders in [`preference/`](../../src/slm_training/harnesses/preference/) |
+| **Code** | [`harnesses/preference/train.py`](../../src/slm_training/harnesses/preference/train.py) (`dpo_loss`), pair builders in [`harnesses/preference/`](../../src/slm_training/harnesses/preference/) |
 | **CLI** | `scripts/train_preference.py` |
 
 ### GRPO-lite
@@ -129,7 +129,7 @@ return invalid OpenUI.
 | --- | --- |
 | **Paper** | Shao et al., *DeepSeekMath* (Group Relative Policy Optimization), 2024. [arXiv:2402.03300](https://arxiv.org/abs/2402.03300) |
 | **Fidelity** | **Surrogate / lite** — group rollouts + mean/std advantages over a **structure-only** reward; not a full RLHF stack |
-| **Code** | [`rl/`](../../src/slm_training/harnesses/rl/) (`grpo_loss_for_group`, `train_grpo`) |
+| **Code** | [`harnesses/rl/`](../../src/slm_training/harnesses/rl/) (`grpo_loss_for_group`, `train_grpo`) |
 | **CLI** | `scripts/train_rl.py`; matrix row E10 in [`quality-experiment-matrix.md`](quality-experiment-matrix.md) |
 
 ---
@@ -140,7 +140,7 @@ return invalid OpenUI.
 | --- | --- |
 | **Papers** | Rabinovich et al., *Abstract Syntax Networks* [arXiv:1704.07535](https://arxiv.org/abs/1704.07535); Kusner et al., *Grammar VAE* [arXiv:1703.01925](https://arxiv.org/abs/1703.01925); Xue et al., *ByT5* [arXiv:2105.13626](https://arxiv.org/abs/2105.13626); CFG-constrained diffusion LMs [arXiv:2508.10111](https://arxiv.org/abs/2508.10111) |
 | **Fidelity** | **Adapted** — lexer-native categorical tokens + dynamic symbol table + byte literal channel + kind-factorized embeddings; **not** production-rule sequences or graph diffusion |
-| **Code** | [`dsl_tokenizer.py`](../../src/slm_training/models/dsl_tokenizer.py), kind masks in [`token_map.py`](../../src/slm_training/dsl/grammar/fastpath/token_map.py), structural mask/remask in [`twotower.py`](../../src/slm_training/models/twotower.py) |
+| **Code** | [`dsl_tokenizer.py`](../../src/slm_training/models/dsl_tokenizer.py), kind masks in [`dsl/grammar/fastpath/token_map.py`](../../src/slm_training/dsl/grammar/fastpath/token_map.py), structural mask/remask in [`twotower.py`](../../src/slm_training/models/twotower.py) |
 | **Docs** | [`dsl-native-tokenizer.md`](dsl-native-tokenizer.md); matrix **E40–E46** |
 | **CLI** | `scripts/diagnose_tokenizer.py`; `scripts/run_quality_matrix.py --matrix v5` |
 
@@ -264,7 +264,7 @@ OpenUI TwoTower, what is a real gap, what is out of scope) lives in
 | --- | --- |
 | **Paper** | *Training Step-Level Reasoning Verifiers with Formal Verification Tools*, 2025. [arXiv:2505.15960](https://arxiv.org/abs/2505.15960) |
 | **Fidelity** | **Adjacent** — motivates distilling expensive formal checks into a compact process model while retaining the formal tool as authority |
-| **Code analogue** | `FastPathGate` + BackPlay-lite mining ([`grammar_fastpath/gate.py`](../../src/slm_training/dsl/grammar/fastpath/gate.py), [`trust_train.py`](../../src/slm_training/dsl/grammar/fastpath/trust_train.py)); grammar remains legality authority |
+| **Code analogue** | `FastPathGate` + BackPlay-lite mining ([`dsl/grammar/fastpath/gate.py`](../../src/slm_training/dsl/grammar/fastpath/gate.py), [`trust_train.py`](../../src/slm_training/dsl/grammar/fastpath/trust_train.py)); grammar remains legality authority |
 | **Proposed** | Calibration / abstention (**E63** in the mapping doc; E53 is the shipped V6 honest champion) |
 
 ### MDPO / d1 (trajectory-aligned masked-diffusion RL)
@@ -273,7 +273,7 @@ OpenUI TwoTower, what is a real gap, what is out of scope) lives in
 | --- | --- |
 | **Papers** | *MDPO: Overcoming the Training-Inference Divide of Masked Diffusion Language Models*, 2025. [arXiv:2508.13148](https://arxiv.org/abs/2508.13148). Related: d1 masked-diffusion policy optimization [arXiv:2504.12216](https://arxiv.org/abs/2504.12216); PAPO / dOPSD-style dense intermediate rewards (Adjacent) |
 | **Fidelity** | **Adjacent** — candidates to replace the GRPO-lite **Surrogate** on final strings |
-| **Code today** | [`rl/`](../../src/slm_training/harnesses/rl/) GRPO-lite; preference stage in [`preference/train.py`](../../src/slm_training/harnesses/preference/train.py) |
+| **Code today** | [`harnesses/rl/`](../../src/slm_training/harnesses/rl/) GRPO-lite; preference stage in [`harnesses/preference/train.py`](../../src/slm_training/harnesses/preference/train.py) |
 | **Proposed** | Trajectory-aligned objective on intermediate MaskGIT states (**E64**; E54/E55 are shipped V6 grammar-honest / process stages) |
 
 ### Constrained diffusion decoding (LAVE / EPIC family)
@@ -282,7 +282,7 @@ OpenUI TwoTower, what is a real gap, what is out of scope) lives in
 | --- | --- |
 | **Paper** | *Lookahead-then-Verify: Reliable Constrained Decoding for Diffusion LLMs under Context-Free Grammars*, 2026. [arXiv:2602.00612](https://arxiv.org/abs/2602.00612). Related: Mündler et al. CFG∩completions [arXiv:2508.10111](https://arxiv.org/abs/2508.10111) (already **Adapted** above) |
 | **Fidelity** | **Adjacent** — diffusion-native constrained decode beyond our cheap hole-admit stand-in |
-| **Code analogue** | `admit_fill` in [`grammar_fastpath/maskgit_constrain.py`](../../src/slm_training/dsl/grammar/fastpath/maskgit_constrain.py) |
+| **Code analogue** | `admit_fill` in [`dsl/grammar/fastpath/maskgit_constrain.py`](../../src/slm_training/dsl/grammar/fastpath/maskgit_constrain.py) |
 
 ### PlanBench / generalization gap / CoT brittleness
 
@@ -342,7 +342,7 @@ grammar stack remains the verifier; no draft LM is introduced.
 | --- | --- |
 | **Paper** | *DSpark: Confidence-Scheduled Speculative Decoding with Semi-Autoregressive Generation*, 2026. [arXiv:2607.05147](https://arxiv.org/html/2607.05147v1) |
 | **Fidelity** | **Adapted** — E73: survival head predicting whether a committed token survives to the final canvas; cumulative cluster-survival commit budget replaces raw `remaining/steps` scheduling. The low-rank Markov / recurrent draft-repair head and throughput-curve-aware serving scheduler are **Adjacent** |
-| **Code** | [`grammar_fastpath/survival_train.py`](../../src/slm_training/dsl/grammar/fastpath/survival_train.py); `survival_gate` head on `TwoTowerModel`; budget logic in [`models/speculative_denoise.py`](../../src/slm_training/models/speculative_denoise.py) |
+| **Code** | [`dsl/grammar/fastpath/survival_train.py`](../../src/slm_training/dsl/grammar/fastpath/survival_train.py); `survival_gate` head on `TwoTowerModel`; budget logic in [`models/speculative_denoise.py`](../../src/slm_training/models/speculative_denoise.py) |
 | **Config** | `survival_gate`, `survival_gate_train`, `survival_commit_threshold` |
 
 ### Saguaro (speculative speculative decoding)
@@ -374,7 +374,7 @@ grammar stack remains the verifier; no draft LM is introduced.
 | --- | --- | --- |
 | OpenUI / `@openuidev/lang-core` | Official grammar, streaming parse, validate | [openui.com](https://www.openui.com/) · [`tools/openui_bridge/`](../../tools/openui_bridge/) |
 | `@openuidev/react-lang` Renderer | Annotate playground visual preview | [`tools/openui_preview/`](../../tools/openui_preview/) |
-| Lark `InteractiveParser` | Incremental LALR acceptor for force-emit / admit | [`grammar_fastpath/engine.py`](../../src/slm_training/dsl/grammar/fastpath/engine.py) |
+| Lark `InteractiveParser` | Incremental LALR acceptor for force-emit / admit | [`dsl/grammar/fastpath/engine.py`](../../src/slm_training/dsl/grammar/fastpath/engine.py) |
 | `@google/design.md` | DESIGN.md lint in preference reward | [`tools/design_md_bridge/`](../../tools/design_md_bridge/) |
 | RICO | Mobile UI screens → OpenUI seeds | [`fixtures/rico/`](../../fixtures/rico/) |
 | BF16 exponent codebook | Optional weight-compression sidecar | [brianbell-x weight-compression](https://brianbell-x.github.io/weight-compression/) · [`runtime-performance.md`](runtime-performance.md) |
@@ -386,19 +386,19 @@ grammar stack remains the verifier; no draft LM is introduced.
 | Idea | Primary knob | Primary file |
 | --- | --- | --- |
 | MaskGIT unmask | `--parallel-unmask` | `models/parallel_decode.py` |
-| CFG hole admit | config `grammar_fastpath_mode` ∈ `{force,mask,hybrid}` | `grammar_fastpath/maskgit_constrain.py` |
-| DFA force-emit | config `grammar_fastpath` + mode `force\|hybrid` | `grammar_fastpath/force_emit.py`, `models/grammar.py` |
+| CFG hole admit | config `grammar_fastpath_mode` ∈ `{force,mask,hybrid}` | `dsl/grammar/fastpath/maskgit_constrain.py` |
+| DFA force-emit | config `grammar_fastpath` + mode `force\|hybrid` | `dsl/grammar/fastpath/force_emit.py`, `models/grammar.py` |
 | Valid-only certify | config `grammar_ltr_primary` + repair + finalize | `models/twotower.py` (`_ensure_valid_openui`) |
 | Length-safe LTR | `grammar_ltr_max_tokens` / `grammar_ltr_stages` | `models/twotower.py` |
 | MDLM schedule | `mdlm_schedule` | `models/twotower.py` (`_mask_targets`) |
 | Remasking | `remask_ratio` / `remask_use_gate` / `remask_use_entropy` / `remask_policy` | `models/parallel_decode.py` |
 | Template fill | `template_fill_decode` | `models/template_fill.py` |
 | Honest inventory | `honest_slot_contract` | `models/template_fill.py` (`inventory_from_prompt`) |
-| Preference stage | `scripts/train_preference.py` | `preference/train.py` |
-| GRPO-lite | `scripts/train_rl.py` | `rl/` |
+| Preference stage | `scripts/train_preference.py` | `harnesses/preference/train.py` |
+| GRPO-lite | `scripts/train_rl.py` | `harnesses/rl/` |
 | LTR suffix rollback | `suffix_rollback_window` (E30) | `models/twotower.py` |
-| Trust head | `trust_gate` / `FastPathGate` (E31) | `grammar_fastpath/gate.py`, `trust_train.py` |
-| Slot-aware trust | `slot_aware_trust_gate` (E52) | `grammar_fastpath/trust_train.py` |
+| Trust head | `trust_gate` / `FastPathGate` (E31) | `dsl/grammar/fastpath/gate.py`, `trust_train.py` |
+| Slot-aware trust | `slot_aware_trust_gate` (E52) | `dsl/grammar/fastpath/trust_train.py` |
 | Visible-token corruption | `visible_corrupt_rate` (E32) | `models/twotower.py` (`_mask_targets`) |
 | Combined remask policy | E33 | `parallel_decode.select_remask_policy_indices` |
 | CoRe remask | E50 `remask_policy=core\|combined` | `parallel_decode.select_remask_core_indices` |
@@ -410,7 +410,7 @@ grammar stack remains the verifier; no draft LM is introduced.
 | Stability remask / commit gate | E70 `remask_policy=stability`, `stability_min_persistence` | `models/parallel_decode.py` (`StabilityTracker`) |
 | Attention dependency clusters | E71 `unmask_mode=cluster` | `models/speculative_denoise.py` |
 | Ordered cluster verification | E72 `cluster_verify` | `models/speculative_denoise.py` (`verify_clusters_ordered`) |
-| Trajectory-survival head | E73 `survival_gate` | `grammar_fastpath/survival_train.py` |
+| Trajectory-survival head | E73 `survival_gate` | `dsl/grammar/fastpath/survival_train.py` |
 | Successor-state cache | E74 `speculative_successor`, `speculative_fanout` | `models/speculative_denoise.py` (`SuccessorCache`) |
 | V7 champion | E75 | `scripts/run_quality_matrix.py --matrix v7` |
 

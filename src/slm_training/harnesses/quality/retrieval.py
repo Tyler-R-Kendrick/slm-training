@@ -27,12 +27,11 @@ def build_skeleton_bank(records: list[ExampleRecord]) -> list[tuple[str, str, st
     return bank
 
 
-def _overlap_score(query: str, candidate: str) -> float:
-    q = set(query.split())
+def _overlap_score(query_tokens: set[str], candidate: str) -> float:
     c = set(candidate.split())
-    if not q or not c:
+    if not query_tokens or not c:
         return 0.0
-    return len(q & c) / len(q | c)
+    return len(query_tokens & c) / len(query_tokens | c)
 
 
 def nearest_skeletons(
@@ -43,11 +42,12 @@ def nearest_skeletons(
     exclude_id: str | None = None,
 ) -> list[SkeletonHit]:
     q = norm_text(query or "")
+    q_tokens = set(q.split())
     scored: list[SkeletonHit] = []
     for prompt, openui, rid in bank:
         if exclude_id and rid == exclude_id:
             continue
-        score = _overlap_score(q, prompt)
+        score = _overlap_score(q_tokens, prompt)
         if score <= 0.0:
             continue
         scored.append(SkeletonHit(prompt=prompt, openui=openui, score=score, record_id=rid))

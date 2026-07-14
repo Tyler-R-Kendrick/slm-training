@@ -192,6 +192,8 @@ def synthesize_stress_adversarial_records(
 
     Mirrors adversarial fixture shapes without importing test_seeds.jsonl.
     """
+    if limit < 0:
+        raise ValueError("limit must be non-negative")
     templates = [
         (
             "stress_empty_01",
