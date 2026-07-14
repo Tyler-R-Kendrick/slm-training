@@ -81,23 +81,27 @@ average loss.
 
 ## P1b: mixture search (`data/mixture.py`, `scripts/run_mixture_search.py`)
 
-A mixture manifest is a JSON of family weights:
+A v2 mixture manifest separates task-group targets from within-task family
+priors:
 
 ```json
-{"mixture_id": "m03", "weights": {"rico_real": 0.45, "human_curated": 0.15,
- "prompt_paraphrase": 0.10, "layout_augment": 0.10, "namespace_augment": 0.05,
- "human_feedback": 0.10, "stress_adversarial": 0.05}}
+{"mixture_id": "m03", "task_weights": {"generation": 0.2,
+ "repair_completion_inpaint": 0.2, "patch_edit": 0.2,
+ "state_behavior": 0.2, "noop_adversarial": 0.2},
+ "weights": {"rico_real": 0.12, "programspec_generated": 0.12,
+ "language_contract": 0.08, "corruption_repair": 0.06}}
 ```
 
-Sampling is **online** (weighted per-family draw in `_batches_for_step`, RNG
-= the loop rng so full-state resume keeps working) rather than materializing
-resampled corpora; the mixture manifest hash goes into `train_summary.json`
-and the full-state checkpoint.
+Sampling is **online**: draw a task group, then a source family available for
+that task, then a row. This makes task mass independent of raw row counts. All
+draws use the loop RNG so full-state resume stays bit-exact; legacy v1
+family-only manifests retain their old behavior. The manifest hash and both
+weight maps go into `train_summary.json` and the full-state checkpoint.
 
 Search hierarchy, adapted from RegMix but sized for this repo:
 
-1. **Local probes** (12–20 candidates): vary paraphrase / layout / namespace
-   / quality-tier weights while holding organic totals fixed. One small model
+1. **Local probes**: vary every configured family with non-identity scales;
+   bounded runs select one probe per family before second scales. One small model
    (`d_model=64`), one token budget, 1 seed, scored on weighted denoising NLL.
 2. **Global probes**: vary organic vs synthetic vs feedback totals with local
    composition frozen.

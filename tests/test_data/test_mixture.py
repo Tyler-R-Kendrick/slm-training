@@ -6,7 +6,10 @@ import random
 from pathlib import Path
 
 from slm_training.data.mixture import (
+    DEFAULT_TASK_WEIGHTS,
+    NEW_FAMILIES,
     MixtureManifest,
+    corpus_diagnostics,
     default_base_weights,
     fit_weight_regression,
     load_mixture_manifest,
@@ -80,3 +83,86 @@ def test_local_probes_and_regression_propose() -> None:
     assert "coefficients" in fit
     proposals = propose_from_fit(fit, base=base, n=2)
     assert len(proposals) == 2
+
+
+def test_default_mix_and_probes_cover_new_families() -> None:
+    base = default_base_weights()
+    assert set(NEW_FAMILIES) <= set(base)
+    probes = local_probe_candidates(base, task_weights=DEFAULT_TASK_WEIGHTS)
+    probed = {
+        probe.mixture_id.removeprefix("local_").rsplit("_", 1)[0] for probe in probes
+    }
+    assert set(NEW_FAMILIES) <= probed
+    assert all(probe.mixture_id.rsplit("_", 1)[-1] != "1" for probe in probes)
+
+
+def test_task_balanced_sampling_ignores_row_count_skew() -> None:
+    records = [
+        ExampleRecord(
+            id=f"g{i}",
+            prompt=f"g{i}",
+            openui='root = Button(":x")',
+            meta={"source_family": "programspec_generated", "task": "generation"},
+        )
+        for i in range(100)
+    ] + [
+        ExampleRecord(
+            id="repair",
+            prompt="repair",
+            openui='root = Button(":x")',
+            meta={"source_family": "corruption_repair", "task": "repair"},
+        )
+    ]
+    batch = sample_mixture_batch(
+        records,
+        weights={"programspec_generated": 0.5, "corruption_repair": 0.5},
+        task_weights={"generation": 0.5, "repair_completion_inpaint": 0.5},
+        batch_size=1000,
+        rng=random.Random(9),
+    )
+    generation = sum(row.meta["task"] == "generation" for row in batch)
+    assert 430 < generation < 570
+
+
+def test_manifest_v1_loads_without_task_policy(tmp_path: Path) -> None:
+    path = tmp_path / "legacy.json"
+    path.write_text(
+        '{"mixture_id":"legacy","version":1,"weights":{"rico_real":1}}\n',
+        encoding="utf-8",
+    )
+    assert load_mixture_manifest(path).task_weights is None
+
+
+def test_corpus_diagnostics_reports_task_and_structure_coverage() -> None:
+    rows = [
+        ExampleRecord(
+            id="a",
+            prompt="a",
+            openui='root = Button(":x")',
+            meta={
+                "source_family": "programspec_generated",
+                "task": "generation",
+                "program_family_id": "pf-a",
+            },
+        ),
+        ExampleRecord(
+            id="b",
+            prompt="b",
+            openui='root = Card([Button(":x")])',
+            meta={"source_family": "visual_edit", "task": "edit"},
+        ),
+    ]
+    report = corpus_diagnostics(rows, configured_weights=default_base_weights())
+    assert report["task_group_counts"] == {"generation": 1, "patch_edit": 1}
+    assert report["unique_program_families"] == 1
+    assert report["observed_component_counts"]["Button"] == 2
+
+
+def test_regression_handles_normalized_simplex_with_intercept() -> None:
+    rows = [
+        {"weights": {"a": 0.2, "b": 0.8}, "weighted_nll": 1.8},
+        {"weights": {"a": 0.5, "b": 0.5}, "weighted_nll": 1.5},
+        {"weights": {"a": 0.8, "b": 0.2}, "weighted_nll": 1.2},
+    ]
+    fit = fit_weight_regression(rows)
+    assert any(abs(value) > 0.01 for value in fit["coefficients"].values())

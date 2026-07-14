@@ -117,25 +117,32 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         curriculum_pools = index_curriculum_stages(records)
 
     mixture_weights: dict[str, float] | None = None
+    mixture_task_weights: dict[str, float] | None = None
     mixture_meta: dict | None = None
     family_pools = None
+    task_family_pools = None
     mixture_path = getattr(config, "mixture_manifest", None)
     if mixture_path:
         from slm_training.data.mixture import (
             index_family_pools,
+            index_task_family_pools,
             load_mixture_manifest,
             mixture_hash,
         )
 
         manifest = load_mixture_manifest(mixture_path)
         mixture_weights = dict(manifest.weights)
+        mixture_task_weights = dict(manifest.task_weights or {}) or None
         mixture_meta = {
             "mixture_id": manifest.mixture_id,
             "weights": mixture_weights,
+            "task_weights": mixture_task_weights,
             "hash": mixture_hash(manifest),
             "path": str(mixture_path),
         }
         family_pools = index_family_pools(records)
+        if mixture_task_weights:
+            task_family_pools = index_task_family_pools(records)
 
     def _batches_for_step(step: int) -> list[list]:
         if mixture_weights is not None:
@@ -148,6 +155,8 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 batch_size=target,
                 rng=rng,
                 pools=family_pools,
+                task_weights=mixture_task_weights,
+                task_pools=task_family_pools,
             )
             return batched(drawn, config.batch_size)
         if getattr(config, "use_curriculum", False):
@@ -250,8 +259,10 @@ def train(config: ModelBuildConfig, model=None) -> dict:
 
     def _budget_exhausted() -> bool:
         budget = getattr(config, "target_token_budget", None)
-        return budget is not None and int(budget) > 0 and (
-            seen_target_tokens >= int(budget)
+        return (
+            budget is not None
+            and int(budget) > 0
+            and (seen_target_tokens >= int(budget))
         )
 
     def _save_full_state_now() -> None:
@@ -323,9 +334,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                     }
                 # Mean of per-suite ship scores keeps multi-suite boards comparable.
                 scores = [
-                    s
-                    for s in (_ship_score(m) for m in board.values())
-                    if s is not None
+                    s for s in (_ship_score(m) for m in board.values()) if s is not None
                 ]
                 ship = sum(scores) / len(scores) if scores else None
                 row = {
@@ -511,7 +520,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         _save_full_state_now()
 
     if bool(getattr(config, "register_promoted", False)):
-        from slm_training.harnesses.experiments.promotion import register_promoted_checkpoint
+        from slm_training.harnesses.experiments.promotion import (
+            register_promoted_checkpoint,
+        )
 
         source = ckpt_dir / "best_weighted_nll.pt"
         if not source.exists():
@@ -577,9 +588,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "trainable_params": trainable_params,
             "frozen_params": frozen_params,
             "tokens_per_trainable_param": (
-                seen_target_tokens / trainable_params
-                if trainable_params
-                else None
+                seen_target_tokens / trainable_params if trainable_params else None
             ),
         },
         "accel": {
@@ -602,9 +611,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         "best_weighted_nll": (
             None if math.isinf(best_weighted_nll) else best_weighted_nll
         ),
-        "best_ship_score": (
-            None if math.isinf(best_ship_score) else best_ship_score
-        ),
+        "best_ship_score": (None if math.isinf(best_ship_score) else best_ship_score),
         "telemetry": tel.summary(),
         "telemetry_path": str(tel_path.as_posix()),
         "finished_at": datetime.now(timezone.utc).isoformat(),

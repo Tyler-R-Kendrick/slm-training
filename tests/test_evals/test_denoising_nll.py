@@ -93,6 +93,22 @@ def test_denoising_nll_is_deterministic() -> None:
     assert r1["bits_per_char"] is not None
 
 
+def test_denoising_nll_emits_reconcilable_family_and_task_slices() -> None:
+    records = _records()
+    records[0].meta = {"source_family": "programspec_generated", "task": "generation"}
+    records[1].meta = {"source_family": "corruption_repair", "task": "repair"}
+    report = evaluate_denoising_nll(_model(), records, config=DenoisingNLLConfig())
+    assert [row["id"] for row in report["per_record"]] == ["h1", "h2"]
+    assert set(report["by_family"]) == {
+        "corruption_repair",
+        "programspec_generated",
+    }
+    assert set(report["by_task"]) == {"generation", "repair"}
+    assert set(report["memorization_by_family"]) == set(report["by_family"])
+    total_tokens = sum(row["masked_tokens"] for row in report["by_family"].values())
+    assert total_tokens == report["aggregate"]["masked_tokens"]
+
+
 def test_denoising_nll_invariant_to_training_options() -> None:
     """Training-only levers must not change the eval number for a fixed model."""
     model = _model()

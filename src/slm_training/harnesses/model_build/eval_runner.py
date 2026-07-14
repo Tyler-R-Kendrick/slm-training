@@ -317,6 +317,7 @@ def evaluate(
     gold_design_scores: list[float] = []
     latencies: list[float] = []
     details: list[dict] = []
+    task_cases: list[dict] = []
     failure_breakdown: dict[str, int] = {}
     canvas_cap = _decode_canvas_cap(plugin)
 
@@ -432,6 +433,15 @@ def evaluate(
                 "serialized": (serialized or "")[:500] if serialized else None,
             }
         )
+        task_cases.append(
+            {
+                "id": record.id,
+                "task": str((record.meta or {}).get("task") or "unknown"),
+                "gold": record.openui,
+                "prediction": scored_pred,
+                "abstraction_level": (record.meta or {}).get("abstraction_level"),
+            }
+        )
 
     if batch_size > 1 and (
         callable(generate_batch_requests) or callable(generate_batch)
@@ -493,6 +503,9 @@ def evaluate(
         "decode_canvas_cap": canvas_cap,
         "details": details,
     }
+    from slm_training.evals.task_scoreboard import build_task_scoreboard
+
+    metrics["task_scoreboard"] = build_task_scoreboard(task_cases)
     # V7: speculative-denoising decode telemetry (MaskGIT path only).
     if (
         spec_stats is not None
@@ -538,9 +551,7 @@ def evaluate_suites(
             else str(checkpoint or (config.checkpoint_dir / "last.pt"))
         ),
         "checkpoint_source": "preloaded_model" if model is not None else "checkpoint",
-        "checkpoint_sha256": next(iter(board.values()), {}).get(
-            "checkpoint_sha256"
-        ),
+        "checkpoint_sha256": next(iter(board.values()), {}).get("checkpoint_sha256"),
         "suites": board,
         "evaluated_at": datetime.now(timezone.utc).isoformat(),
     }

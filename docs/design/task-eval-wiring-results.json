@@ -1,0 +1,700 @@
+{
+  "run": {
+    "kind": "prediction_evidence_fixture_wiring",
+    "cases": "fixtures/evals/task_scoreboard_smoke.jsonl",
+    "device": "cpu",
+    "steps": 0,
+    "context_backend": null,
+    "suite_n": 5,
+    "honesty": "prediction_evidence_only"
+  },
+  "task_scoreboard": {
+    "n": 5,
+    "complete": false,
+    "unavailable_metric_instances": 8,
+    "tasks": {
+      "behavior": {
+        "n": 1,
+        "metrics": {
+          "ast_edge_f1": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "ast_node_f1": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "behavior_equivalence": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "canonical_exact": {
+            "value": null,
+            "n": 0,
+            "status": "unavailable",
+            "reason": "no eligible prediction evidence"
+          },
+          "conditional_visibility": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "constraint_satisfaction": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "equivalence_score": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "language_validity": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "query_mutation_tool_args": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "ref_graph_exact": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "render_equivalence": {
+            "value": null,
+            "n": 0,
+            "status": "unavailable",
+            "reason": "no eligible prediction evidence"
+          },
+          "state_trace_match": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "tree_edit_similarity": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          }
+        }
+      },
+      "edit": {
+        "n": 1,
+        "metrics": {
+          "apply_equals_after": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "ast_edge_f1": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "ast_node_f1": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "canonical_exact": {
+            "value": null,
+            "n": 0,
+            "status": "unavailable",
+            "reason": "no eligible prediction evidence"
+          },
+          "edit_minimality": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "edit_preservation": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "language_validity": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "multi_turn_referents": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "ref_graph_exact": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "tree_edit_similarity": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "undo_redo_identity": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          }
+        }
+      },
+      "generation": {
+        "n": 2,
+        "metrics": {
+          "ast_edge_f1": {
+            "value": 1.0,
+            "n": 2,
+            "status": "available",
+            "reason": null
+          },
+          "ast_node_f1": {
+            "value": 1.0,
+            "n": 2,
+            "status": "available",
+            "reason": null
+          },
+          "behavior_equivalence": {
+            "value": null,
+            "n": 0,
+            "status": "unavailable",
+            "reason": "no eligible prediction evidence"
+          },
+          "canonical_exact": {
+            "value": null,
+            "n": 0,
+            "status": "unavailable",
+            "reason": "no eligible prediction evidence"
+          },
+          "constraint_interventions": {
+            "value": 0.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "constraint_satisfaction": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "equivalence_score": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "expand_contract_success": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "language_validity": {
+            "value": 1.0,
+            "n": 2,
+            "status": "available",
+            "reason": null
+          },
+          "length_accuracy": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "ref_graph_exact": {
+            "value": 1.0,
+            "n": 2,
+            "status": "available",
+            "reason": null
+          },
+          "render_equivalence": {
+            "value": null,
+            "n": 0,
+            "status": "unavailable",
+            "reason": "no eligible prediction evidence"
+          },
+          "steps_to_first_valid": {
+            "value": 2.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "tree_edit_similarity": {
+            "value": 1.0,
+            "n": 2,
+            "status": "available",
+            "reason": null
+          }
+        }
+      },
+      "repair": {
+        "n": 1,
+        "metrics": {
+          "ast_edge_f1": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "ast_node_f1": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "canonical_exact": {
+            "value": null,
+            "n": 0,
+            "status": "unavailable",
+            "reason": "no eligible prediction evidence"
+          },
+          "language_validity": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "ref_graph_exact": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "repair_localization": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "repair_minimality": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "repair_preservation": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "repair_target_match": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "tree_edit_similarity": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "valid_input_no_change": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          }
+        }
+      }
+    },
+    "equivalence": {
+      "value": 1.0,
+      "n": 2,
+      "status": "available",
+      "reason": null
+    },
+    "details": [
+      {
+        "id": "generation-l3",
+        "task": "generation",
+        "metrics": {
+          "language_validity": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "canonical_exact": {
+            "value": null,
+            "n": 0,
+            "status": "unavailable",
+            "reason": "official lang-core canonical serialization was not active"
+          },
+          "ast_node_f1": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "ast_edge_f1": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "tree_edit_similarity": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "ref_graph_exact": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "constraint_satisfaction": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "behavior_equivalence": {
+            "value": null,
+            "n": 0,
+            "status": "unavailable",
+            "reason": "prediction evidence 'behavior_equivalence' was not supplied"
+          },
+          "render_equivalence": {
+            "value": null,
+            "n": 0,
+            "status": "unavailable",
+            "reason": "prediction evidence 'render_equivalence' was not supplied"
+          },
+          "equivalence_score": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          }
+        }
+      },
+      {
+        "id": "repair",
+        "task": "repair",
+        "metrics": {
+          "language_validity": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "canonical_exact": {
+            "value": null,
+            "n": 0,
+            "status": "unavailable",
+            "reason": "official lang-core canonical serialization was not active"
+          },
+          "ast_node_f1": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "ast_edge_f1": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "tree_edit_similarity": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "ref_graph_exact": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "repair_target_match": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "repair_minimality": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "repair_preservation": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "repair_localization": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "valid_input_no_change": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          }
+        }
+      },
+      {
+        "id": "edit",
+        "task": "edit",
+        "metrics": {
+          "language_validity": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "canonical_exact": {
+            "value": null,
+            "n": 0,
+            "status": "unavailable",
+            "reason": "official lang-core canonical serialization was not active"
+          },
+          "ast_node_f1": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "ast_edge_f1": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "tree_edit_similarity": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "ref_graph_exact": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "apply_equals_after": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "edit_minimality": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "edit_preservation": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "undo_redo_identity": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "multi_turn_referents": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          }
+        }
+      },
+      {
+        "id": "behavior-l4",
+        "task": "behavior",
+        "metrics": {
+          "language_validity": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "canonical_exact": {
+            "value": null,
+            "n": 0,
+            "status": "unavailable",
+            "reason": "official lang-core canonical serialization was not active"
+          },
+          "ast_node_f1": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "ast_edge_f1": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "tree_edit_similarity": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "ref_graph_exact": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "state_trace_match": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "query_mutation_tool_args": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "conditional_visibility": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "constraint_satisfaction": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "behavior_equivalence": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "render_equivalence": {
+            "value": null,
+            "n": 0,
+            "status": "unavailable",
+            "reason": "prediction evidence 'render_equivalence' was not supplied"
+          },
+          "equivalence_score": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          }
+        }
+      },
+      {
+        "id": "diffusion",
+        "task": "generation",
+        "metrics": {
+          "language_validity": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "canonical_exact": {
+            "value": null,
+            "n": 0,
+            "status": "unavailable",
+            "reason": "official lang-core canonical serialization was not active"
+          },
+          "ast_node_f1": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "ast_edge_f1": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "tree_edit_similarity": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "ref_graph_exact": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "length_accuracy": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "expand_contract_success": {
+            "value": 1.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "constraint_interventions": {
+            "value": 0.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          },
+          "steps_to_first_valid": {
+            "value": 2.0,
+            "n": 1,
+            "status": "available",
+            "reason": null
+          }
+        }
+      }
+    ]
+  }
+}
