@@ -113,6 +113,7 @@ class Experiment:
     speculative_fanout: int = 2
     speculative_overlap: bool = False
 
+
 def _base_experiments(
     train_v1: Path,
     train_cur: Path,
@@ -818,7 +819,12 @@ def _v6_experiments(
             remask_policy="confidence",
             best_of_n=1,
             seed_checkpoint=seed,
-            **{**v5_base, "remask_ratio": 0.15, "remask_span": "statement", "remask_to_mask": True},
+            **{
+                **v5_base,
+                "remask_ratio": 0.15,
+                "remask_span": "statement",
+                "remask_to_mask": True,
+            },
         ),
         Experiment(
             "E52",
@@ -1080,9 +1086,13 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         structural_bias=2.5,
         telemetry=True,
         gen_steps=int(
-            getattr(exp, "gen_steps_override", None) or getattr(args, "gen_steps", 8) or 8
+            getattr(exp, "gen_steps_override", None)
+            or getattr(args, "gen_steps", 8)
+            or 8
         ),
-        output_tokenizer=str(getattr(exp, "output_tokenizer", "compositional") or "compositional"),
+        output_tokenizer=str(
+            getattr(exp, "output_tokenizer", "compositional") or "compositional"
+        ),
         use_symbol_table=bool(getattr(exp, "use_symbol_table", True)),
         factorized_embeddings=bool(getattr(exp, "factorized_embeddings", False)),
         mask_pattern=str(getattr(exp, "mask_pattern", "random") or "random"),
@@ -1110,9 +1120,7 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
 
 def _eval_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
     cfg = _train_cfg(exp, args)
-    gen_steps = int(
-        getattr(exp, "gen_steps_override", None) or args.gen_steps or 8
-    )
+    gen_steps = int(getattr(exp, "gen_steps_override", None) or args.gen_steps or 8)
     repair = exp.grammar_ltr_repair or exp.eid in {
         "E1",
         "E8",
@@ -1234,7 +1242,10 @@ def _maybe_preference(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> 
         return ckpt
     from slm_training.dsl.schema import load_jsonl
     from slm_training.models.twotower import TwoTowerModel
-    from slm_training.harnesses.preference import collect_pairs_with_generator, write_pairs
+    from slm_training.harnesses.preference import (
+        collect_pairs_with_generator,
+        write_pairs,
+    )
     from slm_training.harnesses.preference.train import train_preference_from_paths
     from slm_training.harnesses.quality import soft_corrupt_openui
 
@@ -1317,7 +1328,9 @@ def _maybe_rl(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> Path:
 def _maybe_trust_gate(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> Path:
     if not getattr(exp, "trust_gate", False):
         return ckpt
-    from slm_training.dsl.grammar.fastpath.trust_train import train_trust_gate_from_paths
+    from slm_training.dsl.grammar.fastpath.trust_train import (
+        train_trust_gate_from_paths,
+    )
 
     out_dir = args.run_root / exp.run_id / "trust_gate"
     summary = train_trust_gate_from_paths(
@@ -1471,7 +1484,7 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
     eval_cfg = _eval_cfg(exp, args)
     board = evaluate_suites(
         eval_cfg,
-        SUITES,
+        args.suites,
         checkpoint=ckpt,
         write_gates=True,
     )
@@ -1500,6 +1513,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--test-dir", type=Path, default=Path("outputs/test_data/v1"))
     parser.add_argument("--run-root", type=Path, default=Path("outputs/runs"))
+    parser.add_argument(
+        "--docs-out",
+        type=Path,
+        default=Path("docs/design/quality-matrix-results.json"),
+        help="Summary mirror path (set under outputs/ for scratch comparisons).",
+    )
     parser.add_argument("--device", default="cpu")
     parser.add_argument(
         "--context-backend", choices=("scratch", "hf"), default="scratch"
@@ -1511,6 +1530,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--eval-every", type=int, default=0)
     parser.add_argument("--rico-limit", type=int, default=32)
+    parser.add_argument(
+        "--suites",
+        default=",".join(SUITES),
+        help="Comma-separated eval suites (default: all).",
+    )
     parser.add_argument("--pref-steps", type=int, default=30)
     parser.add_argument("--pref-limit", type=int, default=40)
     parser.add_argument("--rl-steps", type=int, default=30)
@@ -1586,9 +1610,19 @@ def main(argv: list[str] | None = None) -> int:
         help="Run deferred E34 latent MoE placeholder (normally skipped).",
     )
     args = parser.parse_args(argv)
+    args.suites = tuple(
+        value.strip() for value in args.suites.split(",") if value.strip()
+    )
+    unknown_suites = sorted(set(args.suites) - set(SUITES))
+    if unknown_suites:
+        parser.error(f"unknown suites: {','.join(unknown_suites)}")
+    if not args.suites:
+        parser.error("--suites must select at least one suite")
     if args.matrix in {"v4", "v5", "v6", "v7", "all"}:
         if args.parent is None and not args.scratch_control:
-            parser.error("modern matrices require --parent or explicit --scratch-control")
+            parser.error(
+                "modern matrices require --parent or explicit --scratch-control"
+            )
 
     needs_curriculum = args.only is None or any(
         x in (args.only or "")
@@ -1620,9 +1654,7 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
 
-    needs_namespace = args.only is None or any(
-        x in (args.only or "") for x in ("E14",)
-    )
+    needs_namespace = args.only is None or any(x in (args.only or "") for x in ("E14",))
     if needs_namespace and not args.namespace_dir.exists():
         from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
 
@@ -1783,7 +1815,14 @@ def main(argv: list[str] | None = None) -> int:
         "matrix": f"quality-experiment-matrix-{args.matrix}",
         "reference": "docs/design/quality-experiment-matrix.md",
         "gate_policy": {k: v for k, v in DEFAULT_SHIP_GATES.items()},
+        "device": args.device,
+        "batch_size": args.batch_size,
+        "learning_rate": args.lr,
+        "seed": args.seed,
+        "test_dir": str(args.test_dir),
+        "design_md_in_context": not args.no_design_md_context,
         "rico_eval_limit": args.rico_limit,
+        "suites": list(args.suites),
         "steps": args.steps,
         "gen_steps": args.gen_steps,
         "context_backend": args.context_backend,
@@ -1793,7 +1832,8 @@ def main(argv: list[str] | None = None) -> int:
     out_path = args.run_root / "quality_matrix_summary.json"
     out_path.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
     # Also mirror under docs artifacts path for the PR.
-    docs_out = Path("docs/design/quality-matrix-results.json")
+    docs_out = args.docs_out
+    docs_out.parent.mkdir(parents=True, exist_ok=True)
     docs_out.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"summary": str(out_path), "n": len(results)}, indent=2))
     return 0

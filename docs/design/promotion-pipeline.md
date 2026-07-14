@@ -46,6 +46,15 @@ only when:
 Scratch-context and frozen-HF-context runs are separate tracks with separate
 baselines and curves (`summary["track"]`); never pool them on one fit.
 
+**P13 verification (2026-07-14):** the integrated-corpus E50 scratch champion
+moved `rico_held` placeholder fidelity from 0.0 to 1.0 against the fixture E0
+control at a matched 20-step budget (`n=3`), while deterministic corpus checks
+passed. This is explicitly **not promotable**: the comparison changes the
+system recipe, the same-E0 data-only control stayed at 0.0, four model suites
+were omitted, and no multi-seed/scaling/HF-context evidence exists. See
+[data-synthesis.md](data-synthesis.md); the promotion protocol above remains
+unchanged.
+
 ## P1a: fuzzy + semantic dedup (extend `catalog.py` → `data/dedup.py`)
 
 Current dedup is exact-pair only (`fingerprint_pair`). Add two layers behind
