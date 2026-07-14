@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
+from scripts.generate_progspecs import main as generate_main
 from slm_training.data.progspec import emit_record
 from slm_training.data.progspec.generate import (
     PROGRAM_FAMILY,
@@ -145,3 +148,31 @@ def test_partial_run_reports_uncovered_cells_and_rejects_bad_config() -> None:
         ProgramGenerator(GeneratorConfig(components=("NotAComponent",)))
     with pytest.raises(ValueError, match="positive"):
         GeneratorConfig(max_depth=0)
+
+
+def test_cli_writes_programs_and_authoritative_coverage(tmp_path) -> None:
+    programs_path = tmp_path / "programs.jsonl"
+    coverage_path = tmp_path / "coverage.json"
+    assert (
+        generate_main(
+            [
+                "--count",
+                "2",
+                "--seed",
+                "7",
+                "--output",
+                str(programs_path),
+                "--coverage",
+                str(coverage_path),
+            ]
+        )
+        == 0
+    )
+    programs = [json.loads(line) for line in programs_path.read_text().splitlines()]
+    coverage = json.loads(coverage_path.read_text())
+    assert len(programs) == 2
+    assert all(
+        program["provenance"]["generator"] == "typed_ast" for program in programs
+    )
+    assert coverage["axes"]["component"]["total"] == 54
+    assert coverage["verifier"] == {"failed": 0, "passed": 2}
