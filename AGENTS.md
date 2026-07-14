@@ -23,7 +23,8 @@ Start: `README.md`, `docs/design/openui-twotower.md`,
 ## Skills
 
 Canonical: **`.agents/skills/<name>/SKILL.md`**. Mirrored for discovery under
-`.claude/skills/` and `.cursor/skills/` — keep them identical when editing.
+`.claude/skills/` and `.cursor/skills/` — keep them identical when editing
+(repo-authored skills). Generated tooling skills may be symlinked instead.
 
 **If a skill might apply (~1%), open and follow it before acting.**
 
@@ -32,7 +33,26 @@ Canonical: **`.agents/skills/<name>/SKILL.md`**. Mirrored for discovery under
 | `documenting-experiment-results` | After any train / eval / bench / profile / matrix / telemetry run |
 | `honest-ship-eval` | Eval, gates, readiness claims, metric changes, demo vs ship |
 | `running-experiment-matrices` | Running or extending E* / X* / PQR / phase matrices |
+| `hf-cli` | Hub models/datasets/spaces, auth, cache, HF jobs, buckets, downloads (context tower / RICO / checkpoints) |
 | `playwright-cli` | Browser automation or playground e2e |
+
+### Hugging Face CLI (`hf`)
+
+Install the CLI (once per machine):  
+
+`curl -LsSf https://hf.co/cli/install.sh | bash`
+
+Regenerate / refresh the skill from the installed CLI:
+
+```bash
+hf skills add --force          # .agents/skills/hf-cli
+hf skills add --claude --force # also symlink .claude/skills/hf-cli
+# Cursor discovery (symlink into .cursor/skills):
+hf skills add --dest=.cursor/skills --force
+```
+
+Prefer `hf` over deprecated `huggingface-cli`. Auth: `hf auth login` /
+`hf auth whoami`. Docs: https://huggingface.co/docs/huggingface_hub/guides/cli
 
 ## Iron law: docs follow every experiment
 

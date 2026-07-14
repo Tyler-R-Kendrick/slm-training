@@ -190,6 +190,22 @@ reproduction (or decision-informing ad-hoc) run, update `docs/design/` JSON
 checklist: [AGENTS.md](AGENTS.md) (skill: `documenting-experiment-results`).
 Do not leave results only under `outputs/`.
 
+### Hugging Face CLI
+
+Agents use the official `hf` CLI (skill: `hf-cli`) for Hub downloads, auth,
+datasets, Spaces, and jobs — e.g. context towers (`HuggingFaceTB/SmolLM2-135M`)
+and RICO. Install / refresh:
+
+```bash
+curl -LsSf https://hf.co/cli/install.sh | bash
+hf skills add --force
+hf skills add --claude --force
+hf skills add --dest=.cursor/skills --force
+```
+
+See [CLI reference](https://huggingface.co/docs/huggingface_hub/guides/cli) and
+[token settings](https://huggingface.co/settings/tokens).
+
 ## Layout
 
 ```
