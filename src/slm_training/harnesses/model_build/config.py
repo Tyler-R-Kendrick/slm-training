@@ -158,6 +158,14 @@ class ModelBuildConfig:
     speculative_successor: bool = False  # E74 successor-state cache
     speculative_fanout: int = 2
     speculative_overlap: bool = False
+    # Hugging Face Bucket for durable checkpoints (full HF-context trains).
+    # None → default hf://buckets/TKendrick/OpenUI when sync is enabled.
+    # Empty string → disable auto bucket selection.
+    checkpoint_bucket: str | None = None
+    # None = auto (on for context_backend=hf); True/False force on/off.
+    sync_checkpoints: bool | None = None
+    # Plan-only sync (no upload) — for wiring tests / agents without write auth.
+    checkpoint_bucket_dry_run: bool = False
 
     @property
     def run_dir(self) -> Path:

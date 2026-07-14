@@ -43,12 +43,16 @@ python -m scripts.build_train_data --source fixture --version v0 --synthesizer q
 python -m scripts.build_test_data --source both --version v1 \
   --train-manifest outputs/train_data/v1/manifest.json
 
+# Full HF-context trains sync checkpoints to the OpenUI bucket
+# (https://huggingface.co/buckets/TKendrick/OpenUI). Requires HF_TOKEN.
+export HF_TOKEN=hf_...   # or: hf auth login
 python -m scripts.train_model \
   --train-dir outputs/train_data/v1 \
   --model twotower \
   --context-backend hf \
   --steps 200 \
   --run-id twotower_v1
+# → hf://buckets/TKendrick/OpenUI/checkpoints/twotower_v1/
 
 python -m scripts.evaluate_model \
   --test-dir outputs/test_data/v1 \
@@ -56,6 +60,11 @@ python -m scripts.evaluate_model \
   --run-id twotower_v1 \
   --ship-gates
 ```
+
+Local-only / CI scratch: add `--no-sync-checkpoints` (matrix scripts default to
+scratch and stay local). Manual sync:
+`python -m scripts.sync_checkpoints --run-dir outputs/runs/<id> --ensure-bucket`.
+See [docs/design/checkpoint-bucket.md](docs/design/checkpoint-bucket.md).
 
 Honest ship path (V4 inventory-in-prompt / V6 stacked champion):
 

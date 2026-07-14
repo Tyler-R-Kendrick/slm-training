@@ -284,7 +284,33 @@ def main(argv: list[str] | None = None) -> int:
         default=0.0,
         help="Stub-only: rate of intentional broken generations.",
     )
+    parser.add_argument(
+        "--checkpoint-bucket",
+        default=None,
+        help=(
+            "HF Bucket URI or id for durable checkpoints "
+            "(default: hf://buckets/TKendrick/OpenUI when sync is on). "
+            "Pass empty string to disable auto bucket selection."
+        ),
+    )
+    parser.add_argument(
+        "--sync-checkpoints",
+        action="store_true",
+        help="Force upload checkpoints to the HF Bucket after training.",
+    )
+    parser.add_argument(
+        "--no-sync-checkpoints",
+        action="store_true",
+        help="Keep checkpoints local-only (matrix/CI/scratch).",
+    )
+    parser.add_argument(
+        "--checkpoint-bucket-dry-run",
+        action="store_true",
+        help="Plan bucket sync without uploading (debug / no-write environments).",
+    )
     args = parser.parse_args(argv)
+    if args.sync_checkpoints and args.no_sync_checkpoints:
+        parser.error("use only one of --sync-checkpoints / --no-sync-checkpoints")
 
     from slm_training.accel import detect_device
 
@@ -373,6 +399,15 @@ def main(argv: list[str] | None = None) -> int:
             mixture_manifest=args.mixture_manifest,
             register_promoted=bool(args.register_promoted),
             telemetry=not bool(args.no_telemetry),
+            checkpoint_bucket=args.checkpoint_bucket,
+            sync_checkpoints=(
+                True
+                if args.sync_checkpoints
+                else False
+                if args.no_sync_checkpoints
+                else None
+            ),
+            checkpoint_bucket_dry_run=bool(args.checkpoint_bucket_dry_run),
         )
     )
     print(json.dumps(summary, indent=2))

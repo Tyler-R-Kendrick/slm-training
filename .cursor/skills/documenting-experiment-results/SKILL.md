@@ -56,6 +56,7 @@ digraph docs_after_run {
 | `bench_accel --microbench` | `train-microbench.json` | `runtime-performance.md` / `accel-parallel.md` |
 | `bench_telemetry` | `cycle-telemetry.json` | `telemetry.md` if narrative changes |
 | `evaluate_model --ship-gates` | summarize scoreboard/gates for the claim | `adversarial-review.md` and/or matrix doc |
+| Full HF `train_model` / `remote_train` | also sync checkpoints → OpenUI bucket; record URI in design notes | `checkpoint-bucket.md` |
 | `profile_generate` | promote if used for claims | perf / runtime docs |
 
 No row? Still add a measured-results note next to the lever's design doc and a

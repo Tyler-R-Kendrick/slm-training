@@ -15,10 +15,14 @@ Experiment-first OpenUI layout SLMs:
    levers; docs record what ran and whether gates passed.
 4. **Ship vs demo** — fixture demos are wiring-only; production claims need full
    scoreboards (full `rico_held` / HF / DESIGN.md when claimed).
+5. **Durable checkpoints** — real full HF-context trains upload checkpoints to
+   the [OpenUI HF Bucket](https://huggingface.co/buckets/TKendrick/OpenUI)
+   (`docs/design/checkpoint-bucket.md`).
 
 Start: `README.md`, `docs/design/openui-twotower.md`,
 `docs/design/quality-experiment-matrix.md`,
-`docs/design/perf-experiment-matrix.md`, `docs/design/research-lineage.md`.
+`docs/design/perf-experiment-matrix.md`, `docs/design/research-lineage.md`,
+`docs/design/checkpoint-bucket.md`.
 
 ## Skills
 
@@ -61,6 +65,28 @@ Prefer `hf` over deprecated `huggingface-cli`. Auth: `hf auth login` /
 `hf auth whoami`. CLI docs:
 https://huggingface.co/docs/huggingface_hub/guides/cli
 
+### Checkpoint bucket (full training runs)
+
+**Bucket:** `hf://buckets/TKendrick/OpenUI` →
+https://huggingface.co/buckets/TKendrick/OpenUI
+
+| Run kind | Checkpoints |
+| --- | --- |
+| Full HF-context train (`train_model` / `remote_train`, default) | Sync to bucket under `checkpoints/<run_id>/` |
+| Scratch matrix / CI / fixture demo | Local `outputs/` only (`--no-sync-checkpoints`) |
+
+```bash
+export HF_TOKEN=hf_...   # required for write; never commit
+python -m scripts.train_model --train-dir outputs/train_data/v1 \
+  --context-backend hf --run-id twotower_v1 --steps 200
+# Manual / rescue sync:
+python -m scripts.sync_checkpoints --run-dir outputs/runs/twotower_v1 --ensure-bucket
+```
+
+Agents must **not** treat a full HF train as done until
+`train_summary.json` contains `checkpoint_bucket` with a successful remote URI
+(or an explicit documented `--no-sync-checkpoints` / scratch reason). Use
+`hf-cli` / bucket skills for inspection (`hf buckets list TKendrick/OpenUI -R`).
 
 ## Iron law: docs follow every experiment
 

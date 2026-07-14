@@ -75,3 +75,12 @@ V3 template-fill clears that read gold placeholders are invalidated.
 ## After eval
 
 **REQUIRED:** Follow `documenting-experiment-results` before claiming done.
+
+## Checkpoints (full HF trains)
+
+Production HF-context trains must land weights in
+`hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/`
+([checkpoint-bucket.md](../../../docs/design/checkpoint-bucket.md)). Confirm
+`train_summary.json` → `checkpoint_bucket` (or an explicit
+`--no-sync-checkpoints` / scratch rationale). Auth: `HF_TOKEN` /
+`hf auth login`.

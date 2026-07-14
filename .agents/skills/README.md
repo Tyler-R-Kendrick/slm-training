@@ -54,4 +54,7 @@ hf skills add <name> --force          # one skill
 hf skills add --claude --force        # Claude symlinks
 ```
 
+
+Full HF-context trains sync checkpoints to `hf://buckets/TKendrick/OpenUI` (see `docs/design/checkpoint-bucket.md`).
+
 Repo process rules: [`../../AGENTS.md`](../../AGENTS.md).
