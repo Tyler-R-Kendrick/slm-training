@@ -9,6 +9,7 @@ from pathlib import Path
 
 from slm_training.data.leakage import find_leakage, load_train_fingerprints
 from slm_training.data.rico import load_rico_screens, screen_to_record
+from slm_training.dsl.contract import contract_fingerprint, contract_id
 from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.parser import ParseError, validate
 from slm_training.dsl.schema import ExampleRecord, load_jsonl, write_jsonl
@@ -62,7 +63,12 @@ def _normalize(record: ExampleRecord) -> ExampleRecord:
         placeholders=placeholders,
         split=record.split,
         source=record.source,
-        meta={**dict(record.meta), "parser": "openuidev/lang-core", "structure_only": True},
+        meta={
+            **dict(record.meta),
+            "parser": "openuidev/lang-core",
+            "structure_only": True,
+            "contract_id": contract_id(),
+        },
         design_md=record.design_md,
     )
     try:
@@ -228,6 +234,7 @@ def build_test_data(config: TestDataConfig) -> dict:
     built_at = datetime.now(timezone.utc).isoformat()
     stats = {
         "version": config.version,
+        "contract_id": contract_id(),
         "source": source,
         "seed_path": str(config.seed_path) if config.seed_path else None,
         "rico_path": str(config.rico_path) if config.rico_path else None,
@@ -251,6 +258,7 @@ def build_test_data(config: TestDataConfig) -> dict:
     manifest = {
         "version": config.version,
         "kind": "test_data",
+        "contract": contract_fingerprint(),
         "source": source,
         "suites": suite_paths,
         "stats": str(stats_path.as_posix()),

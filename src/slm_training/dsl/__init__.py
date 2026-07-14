@@ -7,6 +7,11 @@ Subpackages:
 - ``dsl.grammar.fastpath`` — DFA force-emit, MaskGIT admit, FastPathGate
 """
 
+from slm_training.dsl.contract import (
+    contract_components,
+    contract_fingerprint,
+    contract_id,
+)
 from slm_training.dsl.lang_core import (
     ParseError,
     Program,
@@ -39,6 +44,9 @@ __all__ = [
     "ProductionVocab",
     "bridge_available",
     "build_vocab_from_corpus",
+    "contract_components",
+    "contract_fingerprint",
+    "contract_id",
     "decode_productions",
     "encode_openui",
     "extract_placeholders",
