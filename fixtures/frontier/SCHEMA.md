@@ -40,7 +40,7 @@ emits literal copy or OpenUI it invents.
   "provenance": {"skill": "frontier-describe", "skill_version": "0.1.0",
                  "prompt_hash": "sha256:...", "generated_at": "2026-07-14T00:00:00Z"},
   "paraphrases": ["...", "..."],                       // NL prompts, target unchanged
-  "ladder": {"semantic": "...", "product": "...",      // L1–L5 abstraction rungs
+  "ladder": {"semantic": "...", "product": "...",      // canonical L1/L3/L4/L5 aliases
              "user": "...", "simplified": "..."},
   "edits": [{"edit_op": "add", "instruction": "...", "after_openui": "..."}],  // read by P4
   "vision": {"semantic_description": "...", "screenshot_path": "..."}          // read by P7
@@ -55,8 +55,10 @@ implements the `PromptSynthesizer.expand(record)` protocol:
 1. compute `gold_content_hash(record)`, load `<id>.<hash>.json` (miss → no rows);
 2. **faithfulness bind** — reject unless `structure_fp(skeleton_openui) == structure_fp(gold)`;
 3. emit one row per `paraphrase` (family `frontier_described`) and per `ladder`
-   rung (family `abstraction_ladder`, `meta.abstraction_level`), keeping the gold's
-   skeleton as the target and `task="generation"`;
+   rung (`frontier_semantic` / `frontier_product` / `frontier_user` /
+   `frontier_simplified`), keeping the verified skeleton as the target and
+   `task="generation"`; ladder rows carry canonical `L0`–`L5`, fact contracts,
+   constraint coverage, target determinacy, and any house-style resolution;
 4. the pipeline re-validates + decontaminates every emitted row as usual.
 
 `edits` / `vision` are defined here but consumed by later stages (edit oracle P4,
