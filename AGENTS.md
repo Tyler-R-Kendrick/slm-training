@@ -36,18 +36,19 @@ Canonical: **`.agents/skills/<name>/SKILL.md`**. Mirrored for discovery under
 
 ## Iron law: docs follow every experiment
 
-```
-NO TRAIN / EVAL / BENCH / MATRIX WITHOUT UPDATING DOCS
+```text
+NO TRAIN / EVAL / BENCH / PROFILE / TELEMETRY / MATRIX / REPRO
+WITHOUT UPDATING DOCS
 ```
 
 Numbers only in `outputs/`, chat, or a PR comment = incomplete work.
 
-**Triggers:** `train_model`, `train_rl`, `train_preference`, `remote_train`,
-`evaluate_model`, `evaluate_loss_suites`, `diagnose_eval`,
+**Triggers (complete):** `train_model`, `train_rl`, `train_preference`,
+`remote_train`, `evaluate_model`, `evaluate_loss_suites`, `diagnose_eval`,
 `run_quality_matrix`, `run_grammar_matrix`, `run_perf_matrix`,
 `run_phase_pipeline`, `reproduce_baseline`, `run_scaling_ladder`,
-`run_mixture_search`, `bench_*`, `profile_generate`, or any ad-hoc run whose
-scoreboard / gates / latency inform a decision.
+`run_mixture_search`, `bench_*` (incl. telemetry/accel), `profile_generate`,
+or any ad-hoc run whose scoreboard / gates / latency inform a decision.
 
 **Required each time:**
 

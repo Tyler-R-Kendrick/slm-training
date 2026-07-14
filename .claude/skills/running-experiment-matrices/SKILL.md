@@ -32,7 +32,8 @@ Design contracts for levers live beside research docs (`research-lineage.md`,
 ```bash
 # Quality subset (prefer modern matrix set for ship claims)
 python -m scripts.run_quality_matrix --matrix v6 --only E53 \
-  --steps 80 --device cpu --context-backend scratch --no-design-md-context
+  --steps 80 --device cpu --context-backend scratch --no-design-md-context \
+  --rico-limit 32
 
 # Grammar X
 python -m scripts.run_grammar_matrix --only X0,X2,X7 --steps 80
@@ -41,8 +42,9 @@ python -m scripts.run_grammar_matrix --only X0,X2,X7 --steps 80
 python -m scripts.run_perf_matrix --only P0,Q9,R9,PG --limit 4
 ```
 
-Use `--only` for focused work; full matrices are expensive. Keep
-`--rico-limit` explicit in docs when below full 1500.
+Use `--only` for focused work; full matrices are expensive. Always pass
+`--rico-limit` explicitly (CLI default is 32) and record that `n` in docs;
+full ship claims need 1500.
 
 ## Extending a matrix
 

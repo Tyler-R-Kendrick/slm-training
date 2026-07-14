@@ -184,9 +184,11 @@ All coding agents (Cursor, Claude Code, Codex, Gemini, Copilot, …) must follow
 **[AGENTS.md](AGENTS.md)**. Canonical skills live in [`.agents/skills/`](.agents/skills/)
 (mirrored under `.claude/skills/` and `.cursor/skills/`).
 
-**Iron law:** after any train / eval / benchmark / matrix run, update
-`docs/design/` JSON **and** the matching measured-results markdown (skill:
-`documenting-experiment-results`). Do not leave results only under `outputs/`.
+**Iron law:** after any train / eval / bench / profile / telemetry / matrix /
+reproduction (or decision-informing ad-hoc) run, update `docs/design/` JSON
+**and** the matching measured-results markdown. Full trigger list and recipe
+checklist: [AGENTS.md](AGENTS.md) (skill: `documenting-experiment-results`).
+Do not leave results only under `outputs/`.
 
 ## Layout
 
