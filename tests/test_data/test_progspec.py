@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -16,6 +18,21 @@ from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
 from slm_training.harnesses.train_data.catalog import classify_source_family
 
 OPENUI = 'root = Stack([cta])\ncta = Button(":cta.label")'
+
+
+def test_language_contract_can_load_before_generator_exports() -> None:
+    subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import slm_training.data.language_contract; "
+                "from slm_training.data.progspec import ProgramGenerator; "
+                "assert ProgramGenerator.__name__ == 'ProgramGenerator'"
+            ),
+        ],
+        check=True,
+    )
 
 
 def _spec() -> ProgramSpec:
