@@ -5,5 +5,7 @@ agent in this repo.
 
 Load skills from `.agents/skills/` (mirrored / symlinked under `.claude/skills/`).
 After any train / eval / benchmark / matrix run, use
-`documenting-experiment-results`. For Hub / HF work, use `hf-cli`
-(`hf skills add --claude --force` to refresh).
+`documenting-experiment-results`. Hugging Face pack:
+`hf-cli` + marketplace skills from
+[huggingface/skills](https://github.com/huggingface/skills)
+(`hf skills add --claude --force` / `hf skills update` to refresh).

@@ -190,21 +190,25 @@ reproduction (or decision-informing ad-hoc) run, update `docs/design/` JSON
 checklist: [AGENTS.md](AGENTS.md) (skill: `documenting-experiment-results`).
 Do not leave results only under `outputs/`.
 
-### Hugging Face CLI
+### Hugging Face CLI + skills
 
-Agents use the official `hf` CLI (skill: `hf-cli`) for Hub downloads, auth,
-datasets, Spaces, and jobs — e.g. context towers (`HuggingFaceTB/SmolLM2-135M`)
-and RICO. Install / refresh:
+Agents use the official `hf` CLI and the
+[huggingface/skills](https://github.com/huggingface/skills) pack (skill:
+`hf-cli` plus datasets / papers / trainers / Spaces / … under
+[`.agents/skills/`](.agents/skills/)). Cursor also gets the Hugging Face MCP
+server via [`.cursor/mcp.json`](.cursor/mcp.json).
 
 ```bash
 curl -LsSf https://hf.co/cli/install.sh | bash
 hf skills add --force
+hf skills update
 hf skills add --claude --force
 hf skills add --dest=.cursor/skills --force
 ```
 
-See [CLI reference](https://huggingface.co/docs/huggingface_hub/guides/cli) and
-[token settings](https://huggingface.co/settings/tokens).
+Optional Cursor UI: [marketplace — Hugging Face](https://cursor.com/marketplace/huggingface).
+CLI docs: [huggingface_hub CLI](https://huggingface.co/docs/huggingface_hub/guides/cli).
+Tokens: [settings/tokens](https://huggingface.co/settings/tokens).
 
 ## Layout
 

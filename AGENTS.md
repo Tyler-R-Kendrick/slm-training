@@ -33,26 +33,34 @@ Canonical: **`.agents/skills/<name>/SKILL.md`**. Mirrored for discovery under
 | `documenting-experiment-results` | After any train / eval / bench / profile / matrix / telemetry run |
 | `honest-ship-eval` | Eval, gates, readiness claims, metric changes, demo vs ship |
 | `running-experiment-matrices` | Running or extending E* / X* / PQR / phase matrices |
-| `hf-cli` | Hub models/datasets/spaces, auth, cache, HF jobs, buckets, downloads (context tower / RICO / checkpoints) |
+| `hf-cli` | Hub models/datasets/spaces, auth, cache, HF jobs, buckets, downloads |
+| `huggingface-*` / `hf-*` / `trl-training` / … | Other [huggingface/skills](https://github.com/huggingface/skills) workflows (papers, datasets viewer, trainers, Spaces, memory estimate, …) |
 | `playwright-cli` | Browser automation or playground e2e |
 
-### Hugging Face CLI (`hf`)
+### Hugging Face skills + CLI
 
-Install the CLI (once per machine):  
+Source: [huggingface/skills](https://github.com/huggingface/skills) (Cursor:
+marketplace installs `hf-cli`; additional skills via `hf skills add`).
 
-`curl -LsSf https://hf.co/cli/install.sh | bash`
-
-Regenerate / refresh the skill from the installed CLI:
+Project install (already in `.agents/skills/`, symlinked for Cursor/Claude):
 
 ```bash
-hf skills add --force          # .agents/skills/hf-cli
-hf skills add --claude --force # also symlink .claude/skills/hf-cli
-# Cursor discovery (symlink into .cursor/skills):
-hf skills add --dest=.cursor/skills --force
+curl -LsSf https://hf.co/cli/install.sh | bash   # once per machine
+hf skills add --force                            # regenerate hf-cli
+hf skills add <name> --force                     # one marketplace skill
+hf skills update                                 # refresh installed marketplace skills
+hf skills add --claude --force                   # Claude discovery symlinks
+hf skills add --dest=.cursor/skills --force      # Cursor discovery (hf-cli)
 ```
 
+Cursor also loads MCP from [`.cursor/mcp.json`](.cursor/mcp.json) (Playwright +
+Hugging Face Hub MCP at `https://huggingface.co/mcp?login`). Optional UI
+install: [Cursor marketplace — Hugging Face](https://cursor.com/marketplace/huggingface).
+
 Prefer `hf` over deprecated `huggingface-cli`. Auth: `hf auth login` /
-`hf auth whoami`. Docs: https://huggingface.co/docs/huggingface_hub/guides/cli
+`hf auth whoami`. CLI docs:
+https://huggingface.co/docs/huggingface_hub/guides/cli
+
 
 ## Iron law: docs follow every experiment
 
