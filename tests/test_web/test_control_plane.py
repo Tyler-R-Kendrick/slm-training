@@ -50,16 +50,17 @@ def test_checkpoints_roster_includes_fixture(ro_client: TestClient) -> None:
     assert any("playground_demo" in (c.get("run_id") or "") for c in roster)
 
 
-def test_spa_at_root_classic_playground_at_playground(ro_client: TestClient) -> None:
-    """The SPA shell serves "/"; the classic annotate playground moves to /playground."""
+def test_spa_routes_and_classic_playground_fallback(ro_client: TestClient) -> None:
+    """The SPA serves "/" and /playground; the classic page is at /playground/classic."""
     root = ro_client.get("/")
-    assert root.status_code == 200
-    assert 'id="root"' in root.text  # SPA mount point (built bundle committed)
-    classic = ro_client.get("/playground")
-    assert classic.status_code == 200
-    assert "TwoTower" in classic.text
-    # Client-side deep routes fall through to the SPA shell.
+    assert root.status_code == 200 and 'id="root"' in root.text
+    # /playground is now a SPA route (the React playground).
+    assert 'id="root"' in ro_client.get("/playground").text
+    classic = ro_client.get("/playground/classic")
+    assert classic.status_code == 200 and "TwoTower" in classic.text
+    # Client-side deep routes (incl. /runs/<id>) fall through to the SPA shell.
     assert 'id="root"' in ro_client.get("/checkpoints").text
+    assert 'id="root"' in ro_client.get("/runs/qx_e70_stability").text
 
 
 def test_readers_cold_start_fallback(tmp_path) -> None:
@@ -69,6 +70,23 @@ def test_readers_cold_start_fallback(tmp_path) -> None:
     assert readers.train_data()["provenance"] == "committed"
     assert readers.test_data()["provenance"] == "committed"
     assert readers.runs()["provenance"] == "committed"
+
+
+def test_run_detail_merges_scoreboard(ro_client: TestClient) -> None:
+    board = ro_client.get("/api/scoreboards/quality").json()["results"]
+    run_id = board[0].get("run_id") or board[0].get("id")
+    detail = ro_client.get(f"/api/runs/{run_id}").json()
+    assert detail["scoreboard"] is not None
+    assert detail["scoreboard"]["matrix"] == "quality"
+    # gates are derived from the scoreboard suites even with an empty outputs/.
+    assert detail["gates"] is not None and "pass" in detail["gates"]
+
+
+def test_run_detail_missing_is_graceful(ro_client: TestClient) -> None:
+    detail = ro_client.get("/api/runs/nope_xyz").json()
+    assert detail["provenance"] == "committed"
+    assert detail["scoreboard"] is None
+    assert detail["gates"] is None
 
 
 # --- capability gate -------------------------------------------------------
@@ -95,6 +113,37 @@ def test_gates_evaluate_matches_pure_function(ro_client: TestClient) -> None:
     ).json()
     assert resp == evaluate_ship_gates(SMOKE_SUITE, thresholds=thresholds)
     assert resp["pass"] is True
+
+
+# --- remote dispatch monitoring --------------------------------------------
+def test_dispatches_endpoint_shape(ro_client: TestClient) -> None:
+    payload = ro_client.get("/api/dispatches").json()
+    assert set(payload) >= {"jobs", "remotes", "bucket_url"}
+    assert payload["bucket_url"].startswith("https://huggingface.co/")
+
+
+def test_remote_url_extraction() -> None:
+    from slm_training.web.observability import _first_remote_url
+
+    assert _first_remote_url("submitted https://huggingface.co/jobs/x9 ok") == (
+        "https://huggingface.co/jobs/x9"
+    )
+    assert _first_remote_url("trackio https://tk-openui.hf.space/.") == (
+        "https://tk-openui.hf.space/"
+    )
+    assert _first_remote_url("no url here") is None
+
+
+def test_remote_train_allowlisted_and_safe(tmp_path) -> None:
+    assert jobs_mod.JOB_SPECS["remote_train"].kind == "dispatch"
+    with TestClient(create_app(execution=True, root=tmp_path)) as client:
+        assert (
+            client.post(
+                "/api/jobs",
+                json={"job": "remote_train", "params": {"host": "a;rm -rf /", "run_id": "r"}},
+            ).status_code
+            == 422
+        )
 
 
 # --- execution mode + allowlist (the security boundary) --------------------

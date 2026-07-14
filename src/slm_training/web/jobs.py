@@ -227,6 +227,17 @@ JOB_SPECS: dict[str, JobSpec] = {
         summary="Dispatch a full train to HF managed Jobs",
         params={"run_id": Slug(), "steps": IntRange(1, 100000), "dry_run": Flag()},
     ),
+    "remote_train": JobSpec(
+        "scripts.remote_train",
+        kind="dispatch",
+        summary="Dispatch a full train to a remote GPU pod over SSH",
+        params={
+            "host": Slug(r"^[A-Za-z0-9._-]{1,255}$"),
+            "run_id": Slug(),
+            "steps": IntRange(1, 100000),
+            "dry_run": Flag(),
+        },
+    ),
 }
 
 

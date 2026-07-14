@@ -147,12 +147,13 @@ Surfaces (React 19 + Vite SPA, dark-first "mission control" design system):
 
 | Route | What |
 | --- | --- |
-| `/` Overview | Live jobs, experiment scoreboard, checkpoint roster, corpus health, system status |
+| `/` Overview | Live jobs, experiment scoreboard, checkpoint roster, corpus health, system status, **remote dispatches** |
 | `/data` | Navigate + generate versioned corpora (`build_train_data` / `build_test_data`) |
-| `/experiments` | Quality / grammar / perf / phase matrices; run `run_*_matrix` |
+| `/experiments` | Quality / grammar / perf / phase matrices; run `run_*_matrix`; **dispatch full GPU trains** (`hf_jobs_train` / `remote_train`); drill into any run |
 | `/smoke` | Smoke canary + perf & telemetry; launch wiring runs |
 | `/checkpoints` | Roster + **live configurable ship gates** + promote / deploy + blinded A/B |
-| `/playground` | Classic annotate UI (below) |
+| `/runs/<id>` | Per-run detail — gate matrix, telemetry spans, `train_summary` metrics, durable-checkpoint link |
+| `/playground` | Annotate UI (React); classic vanilla page kept at `/playground/classic` |
 
 **Read vs execute.** Observability views are pure reads (work on a fresh checkout
 and on read-only Vercel, falling back to committed `docs/design/*.json` /
@@ -171,6 +172,10 @@ pure, so the threshold editor stays live even read-only. Backend:
 python -m scripts.serve_playground --port 8765
 # open http://127.0.0.1:8765/playground
 ```
+
+`/playground` is the React annotate UI inside the SPA shell (shares the dark
+design system); the original standalone vanilla page is preserved at
+`/playground/classic`. Both drive the same `/api/sample` + `/api/annotate` flow.
 
 The demo checkpoint lives in `fixtures/checkpoints/playground_demo/` (committed
 `last.pt` + tokenizer + meta). To regenerate it:
