@@ -11,6 +11,9 @@ After any train / eval / benchmark / matrix run, use
 [huggingface/skills](https://github.com/huggingface/skills)
 (`hf skills add --claude --force` / `hf skills update` to refresh).
 When a checkpoint is created or promoted, update `docs/MODEL_CARD.md` and the README model-card summary.
+When you change a dashboard page (`tools/dashboard/src/pages/*.tsx`), keep its interpreted-mode
+`src/slm_training/web/static/openui/*.openui` program at parity and run `scripts/validate_page_dsl.py` —
+use the `dashboard-openui-parity` skill.
 
 Serena MCP (semantic code tools) is configured for this repo — prefer Serena
 symbol tools over raw grep when navigating `src/` / `scripts/`. See `AGENTS.md`

@@ -10,6 +10,8 @@ import { Smoke } from "./pages/Smoke";
 import { Checkpoints } from "./pages/Checkpoints";
 import { RunDetail } from "./pages/RunDetail";
 import { Playground } from "./pages/Playground";
+import { DslView } from "./interpret/DslView";
+import { ModeContext, type RenderMode } from "./mode";
 
 type Nav = (to: string) => void;
 
@@ -47,9 +49,21 @@ function useTheme(): [string, () => void] {
   return [theme, () => setTheme((t) => (t === "dark" ? "light" : "dark"))];
 }
 
+function useModeState(): [RenderMode, () => void] {
+  const [mode, setMode] = useState<RenderMode>(
+    () => (localStorage.getItem("slm-mode") as RenderMode) || "compiled"
+  );
+  useEffect(() => {
+    document.documentElement.dataset.mode = mode;
+    localStorage.setItem("slm-mode", mode);
+  }, [mode]);
+  return [mode, () => setMode((m) => (m === "compiled" ? "interpreted" : "compiled"))];
+}
+
 function App() {
   const [path, navigate] = useRouter();
   const [theme, toggleTheme] = useTheme();
+  const [mode, toggleMode] = useModeState();
   const [caps, setCaps] = useState<Caps>({ execution: false, read_only: true, jobs: [] });
 
   useEffect(() => {
@@ -67,6 +81,7 @@ function App() {
 
   return (
     <CapsContext.Provider value={caps}>
+     <ModeContext.Provider value={mode}>
       <div className="app">
         <aside className="sidebar">
           <div className="brand" onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
@@ -95,14 +110,28 @@ function App() {
               Read-only. Serve locally with <span className="mono">serve_playground</span> for the full control plane.
             </div>
           )}
+          <button
+            className={`theme-toggle ${mode === "interpreted" ? "mode-on" : ""}`}
+            onClick={toggleMode}
+            title="Toggle compiled (React) vs interpreted (live OpenUI DSL) rendering"
+          >
+            {mode === "compiled" ? "◈ Compiled" : "◇ Interpreted"}
+          </button>
           <button className="theme-toggle" onClick={toggleTheme}>
             {theme === "dark" ? "☀ Light" : "☾ Dark"}
           </button>
         </aside>
         <main className="main">
-          {runMatch ? <RunDetail runId={runMatch} navigate={navigate} /> : route.el(navigate)}
+          {runMatch ? (
+            <RunDetail runId={runMatch} navigate={navigate} />
+          ) : mode === "interpreted" ? (
+            <DslView page={route.path} navigate={navigate} />
+          ) : (
+            route.el(navigate)
+          )}
         </main>
       </div>
+     </ModeContext.Provider>
     </CapsContext.Provider>
   );
 }

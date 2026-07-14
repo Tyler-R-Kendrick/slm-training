@@ -1,0 +1,24 @@
+$version = ""
+
+train = Query("data_train", { version: $version }, { tiles: [], composition: [], versions: [], version: "" }, 0)
+test = Query("data_test", {}, { rows: [] }, 0)
+records = Query("data_records", { version: $version }, { count: 0, rows: [] }, 0)
+
+head = PageHead("Training Data", "Navigate, generate, and validate versioned corpora. Cold-start shows committed fixtures; generated corpora live under outputs/train_data/.")
+
+versionTabs = ChipTabs($version, train.versions)
+
+tileRow = Grid(@Each(train.tiles, "t", StatTile(t.label, t.value, t.sub, t.accent)), "190px")
+
+compPanel = Panel("Corpus composition", [Bars(train.composition)], ProvenanceBadge(train.provenance))
+suitesPanel = Panel("Eval suites", [Bars(test.rows), Hint("Ship claims require full rico_held (n≥1500).", true)], ProvenanceBadge(test.provenance))
+row1 = Row([compPanel, suitesPanel])
+
+recCols = [{ key: "id", label: "id" }, { key: "split", label: "split" }, { key: "source", label: "source" }, { key: "prompt", label: "prompt" }]
+recordsBody = train.version ? DataTable(recCols, records.rows) : EmptyNote("No built corpus. Generate one below.")
+recordsPanel = Panel("Records", [recordsBody], Note(records.count + " in corpus", "hint"))
+
+genJobs = [{ job: "build_train_data", defaults: { source: "fixture", version: "v1", synthesizer: "quality" } }, { job: "build_test_data", defaults: { source: "both", version: "v1", train_version: "v1" } }]
+genPanel = Panel("Generate", [JobConsole(genJobs)])
+
+root = Page([head, versionTabs, tileRow, row1, recordsPanel, genPanel])

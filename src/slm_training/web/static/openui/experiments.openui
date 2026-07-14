@@ -1,0 +1,26 @@
+$kind = "quality"
+
+board = Query("scoreboard", { kind: $kind }, { rows: [], meta: { count: 0, passed: "0/0", matrix: "quality", steps: "—", all_pass: false }, reference: "" }, 0)
+
+head = PageHead("Experiments", "Ablation matrices — each row is one lever with a stable id. Cells are per-suite metrics against ship gates. Rows are evidence, not deployable models.")
+
+kindTabs = ChipTabs($kind, ["quality", "grammar", "perf", "phase"])
+
+tExp = StatTile("Experiments", board.meta.count, null, "moss")
+tPass = StatTile("Passing", board.meta.passed, null, board.meta.all_pass ? "passed" : "")
+tMatrix = StatTile("Matrix", board.meta.matrix, null, "")
+tSteps = StatTile("Steps", board.meta.steps, null, "")
+tileRow = Grid([tExp, tPass, tMatrix, tSteps], "190px")
+
+matrixCols = [{ key: "id", label: "id" }, { key: "description", label: "lever" }, { key: "pass_status", label: "gate" }, { key: "smoke", label: "smoke parse", align: "right" }, { key: "held", label: "held_out parse", align: "right" }, { key: "struct", label: "struct", align: "right" }]
+matrixTable = DataTable(matrixCols, board.rows, 26, "id")
+matrixRight = [ProvenanceBadge(board.provenance), " ", Note(board.reference, "hint")]
+matrixPanel = Panel($kind + " matrix", [matrixTable], matrixRight)
+
+runJobs = [{ job: "run_quality_matrix", defaults: { matrix: "v6", only: "E53", steps: 40, device: "cpu", context_backend: "scratch" } }, { job: "run_grammar_matrix", defaults: { only: "X0", steps: 40, device: "cpu" } }]
+runPanel = Panel("Run a matrix", [JobConsole(runJobs)])
+
+dispatchJobs = [{ job: "hf_jobs_train", defaults: { run_id: "twotower_v1", steps: 200, dry_run: true } }, { job: "remote_train", defaults: { host: "", run_id: "twotower_v1", steps: 200, dry_run: true } }]
+dispatchPanel = Panel("Dispatch a full GPU train", [Hint("Heavy trains run on HF Jobs / a GPU pod — the dispatcher streams here, and durable checkpoints land in the HF bucket (see Overview → Remote dispatches). Use dry_run to preview without credentials."), JobConsole(dispatchJobs)], Pill("remote", "warning"))
+
+root = Page([head, kindTabs, tileRow, matrixPanel, runPanel, dispatchPanel])
