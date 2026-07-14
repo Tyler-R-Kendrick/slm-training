@@ -178,9 +178,21 @@ pip install -e ".[mcp]"
 GPU_MULTI_FARM_MODE=mock python -m scripts.multi_farm_mcp
 ```
 
+## Agent instructions
+
+All coding agents (Cursor, Claude Code, Codex, Gemini, Copilot, …) must follow
+**[AGENTS.md](AGENTS.md)**. Canonical skills live in [`.agents/skills/`](.agents/skills/)
+(mirrored under `.claude/skills/` and `.cursor/skills/`).
+
+**Iron law:** after any train / eval / benchmark / matrix run, update
+`docs/design/` JSON **and** the matching measured-results markdown (skill:
+`documenting-experiment-results`). Do not leave results only under `outputs/`.
+
 ## Layout
 
 ```
+AGENTS.md              # cross-tool agent instructions (required reading)
+.agents/skills/        # canonical agent skills
 src/slm_training/
   dsl/                 # OpenUI adapter, schema, parser, production codec
   data/                # RICO / Awwwards adapters + leakage fingerprints
