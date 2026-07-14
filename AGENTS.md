@@ -161,13 +161,19 @@ https://huggingface.co/buckets/TKendrick/OpenUI
 
 | Run kind | Checkpoints |
 | --- | --- |
-| Full HF-context train (`train_model` / `remote_train`, default) | Sync to bucket under `checkpoints/<run_id>/` |
+| Full HF-context train (`train_model` / `hf_jobs_train` / `remote_train`) | Sync to bucket under `checkpoints/<run_id>/` |
 | Scratch matrix / CI / fixture demo | Local `outputs/` only (`--no-sync-checkpoints`) |
+
+**GPU host:** Prefer [HF Jobs](docs/design/hf-jobs-train.md)
+(`python -m scripts.hf_jobs_train --dry-run`) or pods (`remote_train`). Do **not**
+use Spaces ZeroGPU for full trains (short quotas, no `torch.compile`).
 
 ```bash
 export HF_TOKEN=hf_...   # required for write; never commit
 python -m scripts.train_model --train-dir outputs/train_data/v1 \
-  --context-backend hf --run-id twotower_v1 --steps 200
+  --context-backend hf --run-id twotower_v1 --steps 200 --fast-train
+# Managed GPU Job (A10G+):
+python -m scripts.hf_jobs_train --run-id twotower_v1 --steps 200 --branch main
 # Manual / rescue sync:
 python -m scripts.sync_checkpoints --run-dir outputs/runs/twotower_v1 --ensure-bucket
 ```
@@ -188,7 +194,7 @@ Whenever a checkpoint is **created, synced, bootstrapped, or promoted**:
    full card for detail. Do not let the README diverge from the card.
 3. Keep claims honest (fixture / scratch matrix ≠ production HF ship).
 
-Triggers include: `train_model`, `remote_train`, `bootstrap_playground`,
+Triggers include: `train_model`, `hf_jobs_train`, `remote_train`, `bootstrap_playground`,
 `sync_checkpoints`, matrix runs that designate a reusable champion, preference /
 RL stages that write a new serving `*.pt`, and `--register-promoted`.
 
@@ -205,7 +211,7 @@ WITHOUT UPDATING DOCS
 Numbers only in `outputs/`, chat, or a PR comment = incomplete work.
 
 **Triggers (complete):** `train_model`, `train_rl`, `train_preference`,
-`remote_train`, `evaluate_model`, `evaluate_loss_suites`, `diagnose_eval`,
+`remote_train`, `hf_jobs_train`, `evaluate_model`, `evaluate_loss_suites`, `diagnose_eval`,
 `run_quality_matrix`, `run_grammar_matrix`, `run_perf_matrix`,
 `run_phase_pipeline`, `reproduce_baseline`, `run_scaling_ladder`,
 `run_mixture_search`, `bench_*` (incl. telemetry/accel), `profile_generate`,

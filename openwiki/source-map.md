@@ -31,7 +31,7 @@ High-signal paths (not exhaustive):
 
 ## `scripts/`
 
-Train/eval/matrix CLIs: `train_model`, `evaluate_model`, `run_quality_matrix`, `run_perf_matrix`, `run_grammar_matrix`, `remote_train`, `sync_checkpoints`, `bootstrap_playground`, …
+Train/eval/matrix CLIs: `train_model`, `evaluate_model`, `run_quality_matrix`, `run_perf_matrix`, `run_grammar_matrix`, `hf_jobs_train`, `remote_train`, `sync_checkpoints`, `bootstrap_playground`, …
 
 ## Related packages
 

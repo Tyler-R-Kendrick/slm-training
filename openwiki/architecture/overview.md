@@ -20,7 +20,7 @@ Key modules:
 
 - `src/slm_training/harnesses/model_build/train_loop.py` — training loop + post-train bucket sync hook
 - `src/slm_training/harnesses/model_build/checkpoint_bucket.py` — HF bucket URI helpers
-- `scripts/train_model.py` / `scripts/remote_train.py` / `scripts/sync_checkpoints.py`
+- `scripts/train_model.py` / `scripts/hf_jobs_train.py` / `scripts/remote_train.py` / `scripts/sync_checkpoints.py`
 
 ## Research → code map
 

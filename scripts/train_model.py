@@ -238,16 +238,28 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--compile-mode",
-        default="default",
+        default=None,
         choices=("default", "reduce-overhead", "max-autotune"),
-        help="torch.compile mode (reduce-overhead uses CUDA graphs on GPU).",
+        help=(
+            "torch.compile mode (reduce-overhead uses CUDA graphs on GPU). "
+            "Default: reduce-overhead under --fast-train on CUDA, else default."
+        ),
     )
     parser.add_argument(
         "--fast-train",
         action="store_true",
         help=(
             "Enable train-speed bundle: cache context, fuse LTR loss, "
-            "AMP+compile when the device supports them."
+            "AMP+compile when the device supports them. "
+            "Also auto-enabled on HF Jobs / SLM_FAST_TRAIN=1."
+        ),
+    )
+    parser.add_argument(
+        "--no-fast-train",
+        action="store_true",
+        help=(
+            "Disable the train-speed bundle even when HF Jobs / "
+            "SLM_FAST_TRAIN would enable it."
         ),
     )
     parser.add_argument(
@@ -311,8 +323,10 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.sync_checkpoints and args.no_sync_checkpoints:
         parser.error("use only one of --sync-checkpoints / --no-sync-checkpoints")
+    if args.fast_train and args.no_fast_train:
+        parser.error("use only one of --fast-train / --no-fast-train")
 
-    from slm_training.accel import detect_device
+    from slm_training.accel import detect_device, prefer_fast_train_env
     from slm_training.harnesses.model_build.checkpoint_bucket import (
         DEFAULT_CHECKPOINT_BUCKET_URI,
     )
@@ -330,13 +344,21 @@ def main(argv: list[str] | None = None) -> int:
     use_compile = bool(args.compile)
     cache_context = not bool(args.no_cache_context)
     fuse_ltr = not bool(args.no_fuse_ltr)
-    if args.fast_train:
+    want_fast = bool(args.fast_train) or (
+        prefer_fast_train_env() and not bool(args.no_fast_train)
+    )
+    if want_fast:
         cache_context = True
         fuse_ltr = True
         # AMP only when accel advertises it (cuda/npu); compile still useful on CPU.
         if accel.amp:
             use_amp = True
         use_compile = True
+    compile_mode = args.compile_mode
+    if compile_mode is None:
+        compile_mode = (
+            "reduce-overhead" if want_fast and accel.backend == "cuda" else "default"
+        )
 
     summary = train(
         ModelBuildConfig(
@@ -381,7 +403,7 @@ def main(argv: list[str] | None = None) -> int:
             mix_curriculum=not bool(args.hard_curriculum),
             use_amp=use_amp,
             use_compile=use_compile,
-            compile_mode=args.compile_mode,
+            compile_mode=compile_mode,
             grad_accum_steps=args.grad_accum,
             parallel_unmask=args.parallel_unmask,
             cache_context=cache_context,

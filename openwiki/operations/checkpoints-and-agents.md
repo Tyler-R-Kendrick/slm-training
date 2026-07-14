@@ -11,6 +11,7 @@
 | --- | --- |
 | `scripts.train_model` (`--context-backend hf`) | on |
 | `scripts.remote_train` | on |
+| `scripts.hf_jobs_train` | on |
 | Programmatic `ModelBuildConfig` / pytest | off |
 | Quality matrix / scratch | off |
 

@@ -87,9 +87,12 @@ def main(argv: list[str] | None = None) -> int:
         else "# HF_TOKEN not forwarded (bucket sync disabled or unset locally)"
     )
     # Forward HF write auth into the remote train (required for bucket sync).
+    # --fast-train + reduce-overhead match HF Jobs CUDA defaults (TF32 / AMP / compile).
     remote_script = f"""
 set -euo pipefail
 {token_export}
+export SLM_FAST_TRAIN=1
+export PYTORCH_CUDA_ALLOC_CONF="${{PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}}"
 mkdir -p {remote_dir}
 cd {remote_dir}
 if [ ! -d .git ]; then
@@ -102,7 +105,7 @@ python -m pip install -e '.[torch,hf,rico,dev]'
 (cd tools/design_md_bridge && npm ci)
 python -m scripts.build_train_data --source all --version v1 --synthesizer quality --max-openui-chars 600 --max-components 10
 python -m scripts.build_test_data --source both --version v1 --train-manifest outputs/train_data/v1/manifest.json
-python -m scripts.train_model --train-dir outputs/train_data/v1 --run-id {run_id} --steps {int(args.steps)} --context-backend {shlex.quote(args.context_backend)} --ltr-loss-weight 1.0 --grammar-ltr-primary {sync_flag}
+python -m scripts.train_model --train-dir outputs/train_data/v1 --run-id {run_id} --steps {int(args.steps)} --device auto --context-backend {shlex.quote(args.context_backend)} --fast-train --compile-mode reduce-overhead --ltr-loss-weight 1.0 --grammar-ltr-primary {sync_flag}
 python -m scripts.evaluate_model --train-dir outputs/train_data/v1 --test-dir outputs/test_data/v1 --run-id {run_id} --ship-gates
 python -m scripts.export_cactus --checkpoint {ckpt_q} --out-dir outputs/cactus/bundle
 python -m scripts.bench_cactus --checkpoint {ckpt_q} --with-design-md

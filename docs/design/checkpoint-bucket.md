@@ -26,6 +26,7 @@ disabled. Scratch / quality-matrix CPU demos stay local-only.
 | Entry | Default |
 | --- | --- |
 | `scripts.train_model` (default `--context-backend hf`) | sync on (CLI sets `sync_checkpoints=True`) |
+| `scripts.hf_jobs_train` | sync on (Jobs entrypoint `--sync-checkpoints`) |
 | `scripts.remote_train` | sync on (`--sync-checkpoints`) |
 | Programmatic `ModelBuildConfig` / pytest | sync off |
 | `scripts.run_quality_matrix` (default scratch) | sync off |
