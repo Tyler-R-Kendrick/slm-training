@@ -240,8 +240,8 @@ def _records_from_progspec(
     config: TrainDataConfig,
 ) -> tuple[list[ExampleRecord], list[dict]]:
     from slm_training.data.progspec import (
+        ProgramGenerator,
         ProgramSpec,
-        TypedProgramGenerator,
         emit_record,
     )
     from slm_training.data.verify import VerificationContext, stamp_record
@@ -260,7 +260,7 @@ def _records_from_progspec(
             except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
                 errors.append({"id": f"programspec:{line_number}", "error": str(exc)})
     elif config.programspec_count > 0:
-        result = TypedProgramGenerator(seed=config.programspec_seed).generate(
+        result = ProgramGenerator(seed=config.programspec_seed).generate(
             config.programspec_count
         )
         specs.extend(result.programs)
