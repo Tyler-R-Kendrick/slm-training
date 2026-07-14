@@ -1,4 +1,4 @@
-"""Canonical program roots and derivative projection."""
+"""Canonical program roots, generation, and derivative projection."""
 
 from slm_training.data.progspec.generate import (
     CoverageCell,
