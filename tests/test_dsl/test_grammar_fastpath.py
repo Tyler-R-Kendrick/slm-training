@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.dsl.grammar.fastpath import (
     OpenUIIncrementalEngine,
