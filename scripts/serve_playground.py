@@ -30,7 +30,14 @@ def main(argv: list[str] | None = None) -> int:
         help="Bearer token required by the annotation endpoint.",
     )
     parser.add_argument("--port", type=int, default=8765)
-    parser.add_argument("--device", default="cpu")
+    parser.add_argument(
+        "--device",
+        default="auto",
+        help=(
+            "Device: auto|cpu|cuda|npu:0|directml "
+            "(auto picks the best available accelerator)."
+        ),
+    )
     parser.add_argument("--reload", action="store_true")
     parser.add_argument(
         "--enable-jobs",
@@ -61,6 +68,12 @@ def main(argv: list[str] | None = None) -> int:
         default=Path("outputs/annotations/bad_outputs.jsonl"),
         help="Append-only JSONL for invalid model outputs (negative training)",
     )
+    parser.add_argument(
+        "--generation-attempts-path",
+        type=Path,
+        default=Path("outputs/annotations/generation_attempts.jsonl"),
+        help="Append-only JSONL for every server and browser model attempt",
+    )
     args = parser.parse_args(argv)
     host = "0.0.0.0" if args.public else args.host
     annotation_token = args.annotation_token or os.getenv("SLM_ANNOTATION_TOKEN")
@@ -72,15 +85,24 @@ def main(argv: list[str] | None = None) -> int:
 
     import uvicorn
 
+    from slm_training.runtime.accel import detect_device
     from slm_training.web.app import create_app
 
+    accel = detect_device(args.device)
+    device = (
+        accel.device
+        if args.device in {"auto", "best", "dml", "directml"}
+        else args.device
+    )
+    print(f"Inference device: {device} ({accel.note})")
     app = create_app(
         checkpoint=args.checkpoint,
-        device=args.device,
+        device=device,
         annotations_path=args.annotations_path,
         human_train_path=args.human_train_path,
         human_pairs_path=args.human_pairs_path,
         bad_outputs_path=args.bad_outputs_path,
+        generation_attempts_path=args.generation_attempts_path,
         annotation_token=annotation_token,
         execution=args.enable_jobs,
     )

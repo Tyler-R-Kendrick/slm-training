@@ -112,12 +112,12 @@ path until an external fused engine consumes the narrow form.
 
 ## Accelerator utilization
 
-`slm_training.runtime.accel` auto-selects **cuda → Ascend NPU → CPU**, configures thread pools,
-and exposes AMP + `torch.compile` for train/decode.
+`slm_training.runtime.accel` auto-selects **CUDA → Ascend NPU → DirectML → CPU**, configures
+thread pools, and exposes AMP + `torch.compile` where the backend supports them.
 
 | Knob | Flag | Notes |
 | --- | --- | --- |
-| Device | `--device auto` | CUDA/NPU when present |
+| Device | `--device auto` | CUDA, Ascend NPU, or Torch-DirectML when present |
 | AMP | `--amp` | bf16/fp16 autocast on accelerators |
 | Compile | `--compile` | Inductor; `reduce-overhead` → CUDA graphs on GPU |
 | Grad accum | `--grad-accum N` | Larger effective batch without OOM |
@@ -132,3 +132,16 @@ python -m scripts.train_model --device auto --compile --amp --grad-accum 2 \
 
 This environment's measured accel bench is recorded under `outputs/runs/accel_bench.json`.
 Fused NEON/Cactus kernels remain external (`slm_training.runtime.cactus`).
+
+### Local Qualcomm DirectML train (2026-07-14)
+
+[`local_directml_adreno_20260714`](local-directml-train-results.json) completed a real
+five-step TwoTower scratch train on the Windows Qualcomm Adreno X1-85 GPU through
+Torch-DirectML (`privateuseone:0`). The 924,386-parameter run processed 5,120 prompt
+and 3,581 target tokens, reported 4,861.289 ms total cycle telemetry, wrote a
+3,727,242-byte checkpoint, and reloaded it on CPU. This is accelerator/checkpoint
+wiring evidence only: no eval suite or ship gates ran. DirectML moved the unsupported
+AdamW `aten::lerp.Scalar_out` operator to CPU, so the run is GPU-backed rather than
+pure-GPU. The checkpoint loaded and passed the CPU playground health check, but a
+real generation did not return within 120 seconds; the known-good fixture remains
+the local demo checkpoint.

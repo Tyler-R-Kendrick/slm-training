@@ -1,0 +1,62 @@
+{
+  "run_id": "local_directml_adreno_20260714",
+  "date_utc": "2026-07-14",
+  "role": "local DirectML hardware validation",
+  "claim": "GPU-backed scratch training wiring only; not a quality or ship claim",
+  "hardware": {
+    "adapter": "Qualcomm(R) Adreno(TM) X1-85 GPU",
+    "windows_driver": "31.0.133.1",
+    "device": "privateuseone:0",
+    "backend": "dml",
+    "torch": "2.4.1",
+    "torch_directml": "0.2.5.dev240914",
+    "windows_python": "3.11.15 x86_64 emulated on Windows ARM64"
+  },
+  "recipe": {
+    "train_dir": "outputs/train_data/remediated",
+    "record_count": 585,
+    "steps": 5,
+    "batch_size": 4,
+    "context_backend": "scratch",
+    "d_model": 96,
+    "n_heads": 4,
+    "context_layers": 2,
+    "denoiser_layers": 3,
+    "amp": false,
+    "compile": false,
+    "checkpoint_sync": "disabled with --no-sync-checkpoints",
+    "honesty_mode": "no evaluation or ship-gate claim"
+  },
+  "result": {
+    "status": "completed",
+    "stopped_on": "steps",
+    "last_loss": 61.296226501464844,
+    "seen_prompt_tokens": 5120,
+    "seen_target_tokens": 3581,
+    "trainable_params": 924386,
+    "telemetry_total_ms": 4861.289,
+    "checkpoint": "outputs/runs/local_directml_adreno_20260714/checkpoints/last.pt",
+    "checkpoint_bytes": 3727242,
+    "cpu_reload_verified": true
+  },
+  "evaluation": {
+    "suite": null,
+    "n": 0,
+    "ship_gates": false,
+    "pass": false,
+    "reason": "This five-step run validates local GPU training and checkpoint production only."
+  },
+  "serving_validation": {
+    "checkpoint_loaded": true,
+    "health_ok": true,
+    "serving_device": "cpu",
+    "prompt": "Hero card with title and body",
+    "timeout_seconds": 120,
+    "generation_completed": false,
+    "viable_for_playground": false,
+    "reason": "A real playground generation did not return within 120 seconds, so this checkpoint is retained as training hardware evidence rather than a usable demo candidate."
+  },
+  "fallbacks": [
+    "Torch-DirectML reported aten::lerp.Scalar_out unsupported during AdamW and executed that optimizer operator on CPU."
+  ]
+}

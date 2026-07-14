@@ -22,6 +22,7 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 | --- | --- | --- | --- | --- |
 | Playground demo | `playground_demo` | Fixture wiring | `fixtures/checkpoints/playground_demo/last.pt` (git) | Demo only — **not** a ship claim |
 | Restructure CPU verify | `restructure_cpu_scratch_v0` | Fixture scratch train | `outputs/runs/restructure_cpu_scratch_v0/checkpoints/last.pt` (local) | Train OK; smoke parse **0.0** @ 80 steps — **not** a ship claim ([results](design/restructure-cpu-train-results.json)) |
+| Local DirectML verify | `local_directml_adreno_20260714` | Local GPU scratch train | `outputs/runs/local_directml_adreno_20260714/checkpoints/last.pt` (local) | Adreno DirectML train/checkpoint OK @ 5 steps; not evaluated — **not** a ship claim ([results](design/local-directml-train-results.json)) |
 | Matrix honest champion (scratch) | `qx_e53_*` (V6 E53 family) | CPU scratch matrix clear | Primarily `outputs/runs/` (+ docs matrix JSON) | Honest `--ship-gates` on limited `rico_held` n; **not** production HF ship |
 | P13 fixture E50 control | `qx_e50_core_remask` | CPU scratch, fixture corpus | `/tmp/slm17-e50-fixture-honest/` (local) | Matched control; held 0.08 / RICO 0.0667 fidelity; parse 0.0, not ship |
 | P13 integrated E50 candidate | `qx_e50_core_remask` | CPU scratch, integrated corpus | `/tmp/slm17-e50-new-honest/` (local) | Strict fidelity gain on both smoke suites; parse 0.0, not promotable or ship |
@@ -96,6 +97,7 @@ Leakage: structural fingerprints + train/test isolation
 | Suite | n | parse | fidelity | struct | reward | Pass? |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
 | smoke (`restructure_cpu_scratch_v0`) | 3 | 0.0 | 0.0 | 0.31 | 0.0 | No — fixture scratch wiring |
+| not run (`local_directml_adreno_20260714`) | 0 | — | — | — | — | No — hardware/checkpoint validation only |
 | held_out | | | | | | |
 | adversarial | | | | | | |
 | ood | | | | | | |
@@ -105,6 +107,15 @@ Recipe for `restructure_cpu_scratch_v0`: device=cpu, steps=80, context=scratch,
 fixture train/test `v0`, `--no-sync-checkpoints`, LTR primary, no DESIGN.md in
 context. Host: 4c / 15GB RAM, no CUDA, no `HF_TOKEN` (Jobs/bucket skipped).
 Evidence: [restructure-cpu-train-results.json](design/restructure-cpu-train-results.json).
+
+Recipe for `local_directml_adreno_20260714`: Qualcomm Adreno X1-85 via
+Torch-DirectML (`privateuseone:0`), 5 steps, batch 4, 585-record remediated
+corpus, scratch context, 924,386 trainable parameters, no AMP/compile, and
+`--no-sync-checkpoints`. Last loss was 61.2962; no eval suite or ship gates ran.
+AdamW `aten::lerp.Scalar_out` fell back to CPU. The checkpoint loaded in the CPU
+playground, but a real generation did not return within 120 seconds, so it is not
+a viable playground candidate. Evidence:
+[local-directml-train-results.json](design/local-directml-train-results.json).
 
 Record device, steps, context backend, honesty mode (`honest_slot_contract`),
 and whether gates used `--ship-gates`. Link
@@ -154,6 +165,7 @@ Evidence: [data-synthesis.md](design/data-synthesis.md) and
 | 2026-07-14 | `qx_e50_core_remask` (P13 superseded) | `outputs/slm17/matrix-smoke-champion/` (local) | `rico_held n=3` parse/fidelity 1.0 | System-recipe probe, not a matched data signal; scratch/no-sync |
 | 2026-07-14 | fixture `qx_e50_core_remask` (P13 final) | `/tmp/slm17-e50-fixture-honest/` (local) | held 0.08 / RICO 0.0667 fidelity; parse 0.0 | Equal-recipe fixture control; scratch/no-sync; not ship |
 | 2026-07-14 | integrated `qx_e50_core_remask` (P13 final) | `/tmp/slm17-e50-new-honest/` (local) | held 0.12 / RICO 0.10 fidelity; parse 0.0 | Strict two-suite data signal; scratch/no-sync; not promotable or ship |
+| 2026-07-14 | `local_directml_adreno_20260714` | `outputs/runs/local_directml_adreno_20260714/` (local) | DirectML train completed @ 5 steps; last_loss≈61.30 | Adreno GPU/checkpoint wiring; one AdamW op used CPU fallback; CPU generation timed out at 120s; no eval/ship claim |
 
 Append a row for every new or replaced checkpoint. Do not delete history.
 

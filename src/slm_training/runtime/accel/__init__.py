@@ -16,7 +16,7 @@ from typing import Any, Iterator
 @dataclass(frozen=True)
 class AccelInfo:
     device: str
-    backend: str  # cuda | npu | cpu
+    backend: str  # cuda | npu | dml | cpu
     amp: bool
     compile: bool
     num_threads: int
@@ -24,8 +24,16 @@ class AccelInfo:
 
 
 def detect_device(preferred: str | None = None) -> AccelInfo:
-    """Pick cuda → npu → cpu unless `preferred` forces a device string."""
+    """Pick CUDA → Ascend NPU → DirectML → CPU unless explicitly forced."""
     import torch
+
+    if preferred and preferred.lower() in {"dml", "directml"}:
+        info = _detect_directml()
+        if info is None:
+            raise RuntimeError(
+                "DirectML was requested but torch-directml is unavailable or has no device"
+            )
+        return info
 
     if preferred and preferred not in {"auto", "best"}:
         backend = "cpu"
@@ -33,12 +41,14 @@ def detect_device(preferred: str | None = None) -> AccelInfo:
             backend = "cuda"
         elif preferred.startswith("npu"):
             backend = "npu"
+        elif preferred.startswith("privateuseone"):
+            backend = "dml"
         threads = _configure_cpu_threads()
         info = AccelInfo(
             device=preferred,
             backend=backend,
             amp=backend in {"cuda", "npu"},
-            compile=True,
+            compile=backend != "dml",
             num_threads=threads,
             note="user-preferred",
         )
@@ -74,6 +84,10 @@ def detect_device(preferred: str | None = None) -> AccelInfo:
     except Exception:  # noqa: BLE001
         pass
 
+    directml = _detect_directml()
+    if directml is not None:
+        return directml
+
     threads = _configure_cpu_threads()
     return AccelInfo(
         device="cpu",
@@ -83,6 +97,26 @@ def detect_device(preferred: str | None = None) -> AccelInfo:
         num_threads=threads,
         note="cpu-only",
     )
+
+
+def _detect_directml() -> AccelInfo | None:
+    """Return the optional Torch-DirectML device used by Windows/WSL GPUs."""
+    try:
+        import torch_directml
+
+        device = torch_directml.device()
+        if device is None:
+            return None
+        return AccelInfo(
+            device=str(device),
+            backend="dml",
+            amp=False,
+            compile=False,
+            num_threads=_configure_cpu_threads(),
+            note="torch-directml",
+        )
+    except Exception:  # noqa: BLE001
+        return None
 
 
 def _configure_cpu_threads(num: int | None = None) -> int:

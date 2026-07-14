@@ -17,7 +17,7 @@ def test_detect_device_cpu_fallback() -> None:
 
 def test_detect_device_auto() -> None:
     info = detect_device("auto")
-    assert info.backend in {"cpu", "cuda", "npu"}
+    assert info.backend in {"cpu", "cuda", "npu", "dml"}
     assert info.device
 
 
@@ -41,3 +41,22 @@ def test_maybe_compile_smoke() -> None:
     mod = torch.nn.Linear(8, 8)
     out = maybe_compile(mod, enabled=False)
     assert out is mod
+
+
+def test_detect_device_explicit_directml(monkeypatch) -> None:
+    import sys
+    import types
+
+    directml = types.SimpleNamespace(device=lambda: "privateuseone:0")
+    monkeypatch.setitem(sys.modules, "torch_directml", directml)
+    info = detect_device("directml")
+    assert info.device == "privateuseone:0"
+    assert info.backend == "dml"
+    assert info.note == "torch-directml"
+
+
+def test_detect_device_resolved_directml() -> None:
+    info = detect_device("privateuseone:0")
+    assert info.device == "privateuseone:0"
+    assert info.backend == "dml"
+    assert info.compile is False

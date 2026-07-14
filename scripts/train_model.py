@@ -91,7 +91,10 @@ def main(argv: list[str] | None = None) -> int:
         "--device",
         type=str,
         default="auto",
-        help="Device: auto|cpu|cuda|npu:0 (auto picks cuda→npu→cpu).",
+        help=(
+            "Device: auto|cpu|cuda|npu:0|directml "
+            "(auto picks CUDA→Ascend NPU→DirectML→CPU)."
+        ),
     )
     parser.add_argument("--d-model", type=int, default=128)
     parser.add_argument("--n-heads", type=int, default=4)
@@ -360,7 +363,11 @@ def main(argv: list[str] | None = None) -> int:
     from slm_training.runtime.accel import detect_device, prefer_fast_train_env
 
     accel = detect_device(args.device)
-    device = accel.device if args.device in {"auto", "best"} else args.device
+    device = (
+        accel.device
+        if args.device in {"auto", "best", "dml", "directml"}
+        else args.device
+    )
 
     freeze = args.freeze_context
     if args.context_backend == "hf" and not args.no_freeze_context:
