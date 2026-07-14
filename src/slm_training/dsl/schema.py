@@ -13,6 +13,20 @@ from typing import Any, Iterable, Iterator
 ALLOWED_SPLITS = frozenset(
     {"train", "held_out", "smoke", "adversarial", "ood", "rico_held"}
 )
+TASK_TOKENS = frozenset(
+    {
+        "generation",
+        "completion",
+        "inpaint",
+        "repair",
+        "patch",
+        "edit",
+        "state",
+        "behavior",
+        "noop",
+        "adversarial",
+    }
+)
 
 
 @dataclass
@@ -39,6 +53,7 @@ class ExampleRecord:
             raise ValueError("openui must be non-empty")
         if self.design_md is not None and not isinstance(self.design_md, str):
             raise ValueError("design_md must be a string or None")
+        _validate_meta(self.meta)
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
@@ -107,3 +122,29 @@ def write_jsonl(path: Path | str, records: Iterable[ExampleRecord]) -> int:
 
 def iter_jsonl(path: Path | str) -> Iterator[ExampleRecord]:
     yield from load_jsonl(path)
+
+
+def _validate_meta(meta: dict[str, Any]) -> None:
+    """Validate optional lineage conventions without changing the wire shape."""
+    if not isinstance(meta, dict):
+        raise ValueError("meta must be a dictionary")
+    task = meta.get("task")
+    if task is not None and task not in TASK_TOKENS:
+        raise ValueError(f"invalid meta.task {task!r}")
+    split_group_id = meta.get("split_group_id")
+    if split_group_id is not None and not str(split_group_id).strip():
+        raise ValueError("meta.split_group_id must be non-empty")
+    provenance = meta.get("provenance")
+    if provenance is not None and not isinstance(provenance, dict):
+        raise ValueError("meta.provenance must be a dictionary")
+    for key in ("determinacy", "tier"):
+        if key in meta and not isinstance(meta[key], str):
+            raise ValueError(f"meta.{key} must be a string")
+    abstraction_level = meta.get("abstraction_level")
+    if abstraction_level is not None and not isinstance(
+        abstraction_level, (str, int)
+    ):
+        raise ValueError("meta.abstraction_level must be a string or integer")
+    for key in ("edit", "repair", "frontier"):
+        if key in meta and not isinstance(meta[key], dict):
+            raise ValueError(f"meta.{key} must be a dictionary")

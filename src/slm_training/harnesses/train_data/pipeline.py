@@ -402,6 +402,13 @@ def build_train_data(
         "stats": str(stats_path.as_posix()),
         "record_count": len(deduped),
         "ids": [r.id for r in deduped],
+        "split_group_ids": sorted(
+            {
+                str(group)
+                for r in deduped
+                if (group := (r.meta or {}).get("split_group_id"))
+            }
+        ),
         "prompt_fingerprints": sorted(prompt_fps),
         "openui_fingerprints": sorted(openui_fps),
         "structure_fingerprints": sorted(structure_fps),
