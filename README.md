@@ -204,15 +204,28 @@ GPU_MULTI_FARM_MODE=mock python -m scripts.multi_farm_mcp
 
 ## Agent instructions
 
-All coding agents (Cursor, Claude Code, Codex, Gemini, Copilot, …) must follow
-**[AGENTS.md](AGENTS.md)**. Canonical skills live in [`.agents/skills/`](.agents/skills/)
-(mirrored under `.claude/skills/` and `.cursor/skills/`).
+All coding agents (Cursor, Claude Code, Codex, Gemini, Copilot / GHCP, …) must
+follow **[AGENTS.md](AGENTS.md)**. Canonical skills live in
+[`.agents/skills/`](.agents/skills/) (mirrored under `.claude/skills/` and
+`.cursor/skills/`).
 
 **Iron law:** after any train / eval / bench / profile / telemetry / matrix /
 reproduction (or decision-informing ad-hoc) run, update `docs/design/` JSON
 **and** the matching measured-results markdown. Full trigger list and recipe
 checklist: [AGENTS.md](AGENTS.md) (skill: `documenting-experiment-results`).
 Do not leave results only under `outputs/`.
+
+### Token-efficiency stack
+
+Repo ships **ponytail**, **caveman**, **headroom**, and **rtk** under
+`.agents/skills/` (plus [`RTK.md`](RTK.md), Cursor rules, and GHCP
+`.github/copilot-instructions.md`). Details and refresh commands:
+[AGENTS.md — Token-efficiency stack](AGENTS.md).
+
+```bash
+# RTK binary (once per machine) — must pass `rtk gain`
+curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
+```
 
 ### Hugging Face CLI + skills
 
@@ -238,6 +251,7 @@ Tokens: [settings/tokens](https://huggingface.co/settings/tokens).
 
 ```
 AGENTS.md              # cross-tool agent instructions (required reading)
+RTK.md                 # Rust Token Killer usage (shell output compression)
 docs/MODEL_CARD.md     # checkpoint roster + eval (README holds a summary)
 .agents/skills/        # canonical agent skills
 src/slm_training/

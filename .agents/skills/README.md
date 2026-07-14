@@ -2,8 +2,9 @@
 
 This directory is the **source of truth** for repo skills. Tool-discovery copies
 live under `.claude/skills/` and `.cursor/skills/` (full mirrors for
-repo-authored skills; **symlinks** for Hugging Face marketplace / generated
-skills).
+repo-authored skills; **symlinks** for marketplace / generated skills).
+
+Codex and GitHub Copilot also load project skills from **`.agents/skills/`**.
 
 ## Repo-authored
 
@@ -13,8 +14,49 @@ skills).
 | `honest-ship-eval` | Multi-suite honest ship gates vs fixture demo |
 | `running-experiment-matrices` | Quality / grammar / perf / phase matrices |
 | `playwright-cli` | Browser / playground automation |
+| `rtk` | Prefer Rust Token Killer for verbose shell output ([`RTK.md`](../../RTK.md)) |
 
-Edit here, then copy into `.claude/skills/` and `.cursor/skills/`.
+Edit here, then copy into `.claude/skills/` and `.cursor/skills/` (or symlink).
+
+## Token-efficiency pack
+
+Pinned via root [`skills-lock.json`](../../skills-lock.json). Installed for
+**claude-code**, **cursor**, **codex**, and **github-copilot**.
+
+| Skill | Source |
+| --- | --- |
+| `ponytail` (+ review/audit/debt/gain/help) | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) |
+| `caveman` (+ commit/review/help/compress/stats) | [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) |
+| `headroom` (+ `scripts/` helpers) | [roman-ryzenadvanced/headroom-skill](https://github.com/roman-ryzenadvanced/headroom-skill) |
+
+Cursor always-on / opt-in rules: [`.cursor/rules/`](../../.cursor/rules/).
+GHCP: [`.github/copilot-instructions.md`](../../.github/copilot-instructions.md).
+
+Refresh:
+
+```bash
+npx skills add DietrichGebert/ponytail --skill '*' \
+  -a claude-code -a cursor -a codex -a github-copilot -y --copy
+npx skills add JuliusBrussee/caveman \
+  --skill caveman --skill caveman-commit --skill caveman-review \
+  --skill caveman-help --skill caveman-compress --skill caveman-stats \
+  -a claude-code -a cursor -a codex -a github-copilot -y --copy
+npx skills add roman-ryzenadvanced/headroom-skill --skill headroom \
+  -a claude-code -a cursor -a codex -a github-copilot -y --copy
+# Prefer symlinks for discovery dirs (after --copy duplicates):
+for name in ponytail ponytail-audit ponytail-debt ponytail-gain ponytail-help \
+  ponytail-review caveman caveman-commit caveman-compress caveman-help \
+  caveman-review caveman-stats headroom rtk; do
+  rm -rf ".claude/skills/$name" ".cursor/skills/$name"
+  ln -s "../../.agents/skills/$name" ".claude/skills/$name"
+  ln -s "../../.agents/skills/$name" ".cursor/skills/$name"
+done
+# Re-copy headroom helpers if the skills CLI only dropped SKILL.md:
+# git clone --depth 1 https://github.com/roman-ryzenadvanced/headroom-skill /tmp/hr
+# cp -a /tmp/hr/{scripts,prompts,docs,examples,AGENTS.md,CLAUDE.md,LICENSE,NOTICE} .agents/skills/headroom/
+```
+
+RTK binary: see [`RTK.md`](../../RTK.md).
 
 ## Hugging Face ([huggingface/skills](https://github.com/huggingface/skills))
 
@@ -53,7 +95,6 @@ hf skills add --force                 # regenerate hf-cli
 hf skills add <name> --force          # one skill
 hf skills add --claude --force        # Claude symlinks
 ```
-
 
 Full HF-context trains sync checkpoints to `hf://buckets/TKendrick/OpenUI` (see `docs/design/checkpoint-bucket.md`).
 

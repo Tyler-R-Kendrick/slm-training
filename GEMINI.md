@@ -4,7 +4,8 @@ Follow **[AGENTS.md](AGENTS.md)** — the canonical instructions for every codin
 agent in this repo.
 
 Activate skills from `.agents/skills/`. After any train / eval / benchmark /
-matrix run, use `documenting-experiment-results`. Hugging Face pack:
+matrix run, use `documenting-experiment-results`. Token stack: `ponytail`,
+`caveman`, `headroom`, `rtk` (see `AGENTS.md` / `RTK.md`). Hugging Face pack:
 `hf-cli` + marketplace skills from
 [huggingface/skills](https://github.com/huggingface/skills)
 (`hf skills add --force` / `hf skills update` to refresh).

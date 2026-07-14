@@ -1,7 +1,9 @@
 # Agent instructions (all coding agents)
 
-Applies to **every** coding agent (Cursor, Claude Code, Codex, Gemini, Copilot,
-others). Prefer this file over tool-specific defaults on process conflicts.
+Applies to **every** coding agent (Cursor, Claude Code, Codex, Gemini, Copilot /
+GHCP, others). Prefer this file over tool-specific defaults on process conflicts.
+
+@RTK.md
 
 ## Repo goals
 
@@ -40,9 +42,64 @@ Canonical: **`.agents/skills/<name>/SKILL.md`**. Mirrored for discovery under
 | `documenting-experiment-results` | After any train / eval / bench / profile / matrix / telemetry run |
 | `honest-ship-eval` | Eval, gates, readiness claims, metric changes, demo vs ship |
 | `running-experiment-matrices` | Running or extending E* / X* / PQR / phase matrices |
+| `ponytail` (+ `-review` / `-audit` / …) | Any coding task — write the minimum that works (YAGNI ladder) |
+| `caveman` (+ `-commit` / `-review` / …) | Opt-in terse chat / short commits / one-line review comments |
+| `headroom` | Large tool outputs, logs, greps, or context pressure |
+| `rtk` | Verbose shell output — prefer `rtk <cmd>` when installed ([`RTK.md`](RTK.md)) |
 | `hf-cli` | Hub models/datasets/spaces, auth, cache, HF jobs, buckets, downloads |
 | `huggingface-*` / `hf-*` / `trl-training` / … | Other [huggingface/skills](https://github.com/huggingface/skills) workflows (papers, datasets viewer, trainers, Spaces, memory estimate, …) |
 | `playwright-cli` | Browser automation or playground e2e |
+
+### Token-efficiency stack (ponytail · caveman · headroom · rtk)
+
+Installed into **`.agents/skills/`** and discovered by Claude Code
+(`.claude/skills/`), Cursor / Codex / GitHub Copilot (project `.agents/skills/`),
+with Cursor rule files under [`.cursor/rules/`](.cursor/rules/) and GHCP under
+[`.github/copilot-instructions.md`](.github/copilot-instructions.md).
+
+| Layer | What it saves | Default |
+| --- | --- | --- |
+| [ponytail](https://github.com/DietrichGebert/ponytail) | Less code written | Always on for coding (skills + Cursor rules) |
+| [caveman](https://github.com/JuliusBrussee/caveman) | Shorter agent prose | Opt-in (`/caveman` or “talk like caveman”) |
+| [headroom](https://github.com/roman-ryzenadvanced/headroom-skill) | Smaller pasted tool results | When outputs are large / context is tight |
+| [rtk](https://github.com/rtk-ai/rtk) | Smaller shell command output | Prefer `rtk` when binary available |
+
+Refresh / reinstall (project, four agents):
+
+```bash
+npx skills add DietrichGebert/ponytail --skill '*' \
+  -a claude-code -a cursor -a codex -a github-copilot -y --copy
+npx skills add JuliusBrussee/caveman \
+  --skill caveman --skill caveman-commit --skill caveman-review \
+  --skill caveman-help --skill caveman-compress --skill caveman-stats \
+  -a claude-code -a cursor -a codex -a github-copilot -y --copy
+npx skills add roman-ryzenadvanced/headroom-skill --skill headroom \
+  -a claude-code -a cursor -a codex -a github-copilot -y --copy
+# then re-symlink .claude/.cursor discovery → .agents/skills (see skills README)
+curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
+rtk init --copilot   # project GHCP hooks + instructions
+```
+
+Optional **plugin** installs (Claude Code / Codex / Copilot CLI) when you want
+host lifecycle hooks beyond skills:
+
+```text
+# Claude Code
+/plugin marketplace add DietrichGebert/ponytail
+/plugin install ponytail@ponytail
+/plugin marketplace add JuliusBrussee/caveman
+/plugin install caveman@caveman
+
+# Codex CLI
+codex plugin marketplace add DietrichGebert/ponytail && codex plugin add ponytail@ponytail
+
+# GitHub Copilot CLI (ghcp)
+copilot plugin marketplace add DietrichGebert/ponytail
+copilot plugin install ponytail@ponytail
+```
+
+Optional full Headroom proxy (heavier than the portable skill):
+`uv tool install "headroom-ai[all]"` then `headroom wrap claude|codex|copilot|cursor`.
 
 ### Hugging Face skills + CLI
 
