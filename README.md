@@ -20,6 +20,7 @@ summary and the full card whenever a checkpoint is created or promoted.
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
 | Playground demo | `playground_demo/last.pt` | `fixtures/checkpoints/playground_demo/` (git) | Wiring / annotate UI only |
+| Restructure CPU verify | `restructure_cpu_scratch_v0/last.pt` | `outputs/runs/…` (local) | Fixture scratch train OK; smoke parse 0.0 — not ship |
 | Matrix honest champion | V6 E53 family | `outputs/runs/` + matrix docs | Scratch + limited `rico_held` — not production HF ship |
 | Production HF ship | *(none yet)* | [HF Bucket `TKendrick/OpenUI`](https://huggingface.co/buckets/TKendrick/OpenUI) `checkpoints/<run_id>/` | Register here after first full HF sync + `--ship-gates` |
 

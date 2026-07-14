@@ -77,3 +77,9 @@ update:
 
 Agent process: [`AGENTS.md`](../../AGENTS.md) + skill
 `documenting-experiment-results`.
+
+## Measured results
+
+| Date (UTC) | Run | Sync? | Notes |
+| --- | --- | --- | --- |
+| 2026-07-14 | `restructure_cpu_scratch_v0` | No (`--no-sync-checkpoints`) | Post-package-restructure CPU fixture/scratch train on a 4c/15GB host with **no** `HF_TOKEN`. Validates harness wiring after the dsl/harnesses/runtime move. Smoke parse **0.0** @ 80 steps — not a ship claim. JSON: [restructure-cpu-train-results.json](restructure-cpu-train-results.json). |
