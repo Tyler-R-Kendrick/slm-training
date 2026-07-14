@@ -46,6 +46,19 @@ MATCHED_MATRIX_KEYS = (
     "design_md_in_context",
     "gate_policy",
 )
+MATCHED_RESULT_KEYS = (
+    "id",
+    "initialization",
+    "honest_slot_contract",
+    "schema_in_context",
+    "slot_contract_in_context",
+    "slot_contract_constrained_decode",
+    "template_fill_decode",
+    "grammar_ltr_primary",
+    "grammar_ltr_repair",
+    "effective_gen_steps",
+    "best_of_n",
+)
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -85,19 +98,42 @@ def _reverse_patch(patch: EditPatch) -> EditPatch:
                     operation.name,
                     before=operation.after,
                     after=operation.before,
+                    target=operation.target,
+                    index=operation.index,
+                    previous_index=operation.previous_index,
                 )
             )
         elif operation.kind is EditKind.ADD:
             operations.append(
-                EditOperation(EditKind.REMOVE, operation.name, before=operation.after)
+                EditOperation(
+                    EditKind.REMOVE,
+                    operation.name,
+                    before=operation.after,
+                    index=operation.index,
+                    previous_index=operation.previous_index,
+                )
             )
         elif operation.kind is EditKind.REMOVE:
             operations.append(
-                EditOperation(EditKind.ADD, operation.name, after=operation.before)
+                EditOperation(
+                    EditKind.ADD,
+                    operation.name,
+                    after=operation.before,
+                    index=(
+                        operation.previous_index
+                        if operation.previous_index is not None
+                        else operation.index
+                    ),
+                    previous_index=operation.previous_index,
+                )
             )
         else:
             raise ValueError(f"cannot derive inverse for {operation.kind.value}")
-    return EditPatch(tuple(operations))
+    return EditPatch(
+        tuple(operations),
+        instruction=patch.instruction,
+        collect_unreachable=patch.collect_unreachable,
+    )
 
 
 def _check(ok: bool, evidence: Any, *, status: str | None = None) -> dict[str, Any]:
@@ -120,6 +156,70 @@ def _matrix_result(summary: dict[str, Any]) -> dict[str, Any]:
     if len(results) != 1:
         raise ValueError("matched smoke summaries must contain exactly one result")
     return dict(results[0])
+
+
+def _matched_quality_check(
+    baseline_summary: dict[str, Any], champion_summary: dict[str, Any]
+) -> dict[str, Any]:
+    mismatched = {
+        key: [baseline_summary.get(key), champion_summary.get(key)]
+        for key in MATCHED_MATRIX_KEYS
+        if baseline_summary.get(key) != champion_summary.get(key)
+    }
+    baseline = _matrix_result(baseline_summary)
+    champion = _matrix_result(champion_summary)
+    result_mismatched = {
+        key: [baseline.get(key), champion.get(key)]
+        for key in MATCHED_RESULT_KEYS
+        if key not in baseline
+        or key not in champion
+        or baseline.get(key) != champion.get(key)
+    }
+    baseline_fingerprint = str(baseline.get("train_content_fingerprint") or "")
+    champion_fingerprint = str(champion.get("train_content_fingerprint") or "")
+    fingerprint_ok = (
+        bool(baseline_fingerprint)
+        and bool(champion_fingerprint)
+        and baseline_fingerprint != champion_fingerprint
+    )
+    signal: dict[str, dict[str, Any]] = {}
+    signal_ok = True
+    for suite in ("held_out", "rico_held"):
+        baseline_suite = (baseline.get("suites") or {}).get(suite) or {}
+        champion_suite = (champion.get("suites") or {}).get(suite) or {}
+        baseline_value = float(baseline_suite.get("placeholder_fidelity") or 0.0)
+        champion_value = float(champion_suite.get("placeholder_fidelity") or 0.0)
+        same_nonzero_n = int(baseline_suite.get("n") or 0) > 0 and baseline_suite.get(
+            "n"
+        ) == champion_suite.get("n")
+        improved = champion_value > baseline_value and champion_value > 0.0
+        signal_ok = signal_ok and same_nonzero_n and improved
+        signal[suite] = {
+            "n": champion_suite.get("n"),
+            "baseline": baseline_value,
+            "champion": champion_value,
+            "delta": champion_value - baseline_value,
+            "same_nonzero_n": same_nonzero_n,
+            "improved": improved,
+        }
+    return _check(
+        not mismatched and not result_mismatched and fingerprint_ok and signal_ok,
+        {
+            "matched_recipe": {
+                key: baseline_summary.get(key) for key in MATCHED_MATRIX_KEYS
+            },
+            "mismatched": mismatched,
+            "result_mismatched": result_mismatched,
+            "train_content_fingerprints": {
+                "baseline": baseline_fingerprint,
+                "champion": champion_fingerprint,
+                "distinct": fingerprint_ok,
+            },
+            "baseline": baseline,
+            "champion": champion,
+            "placeholder_fidelity": signal,
+        },
+    )
 
 
 def build_report(
@@ -341,12 +441,19 @@ def build_report(
     tasks = _read_json(task_results).get("task_scoreboard") or {}
     task_names = set((tasks.get("tasks") or {}).keys())
     equivalence = tasks.get("equivalence") or {}
+    equivalence_levels = {
+        str(row.get("id") or "").rsplit("-", maxsplit=1)[-1].upper()
+        for row in tasks.get("details") or []
+        if str(row.get("id") or "").lower().endswith(("-l3", "-l4", "-l5"))
+    }
     checks["task_and_equivalence_eval"] = _check(
-        {"generation", "repair", "edit", "behavior"} <= task_names
+        {"generation", "repair", "edit", "behavior", "visual"} <= task_names
+        and equivalence_levels == {"L3", "L4", "L5"}
         and equivalence.get("status") == "available"
-        and int(equivalence.get("n") or 0) > 0,
+        and int(equivalence.get("n") or 0) >= 3,
         {
             "task_names": sorted(task_names),
+            "equivalence_levels": sorted(equivalence_levels),
             "equivalence": equivalence,
             "unavailable_metric_instances": tasks.get("unavailable_metric_instances"),
         },
@@ -367,38 +474,8 @@ def build_report(
         generalization_evidence,
     )
 
-    baseline_summary = _read_json(baseline_matrix)
-    champion_summary = _read_json(champion_matrix)
-    mismatched = {
-        key: [baseline_summary.get(key), champion_summary.get(key)]
-        for key in MATCHED_MATRIX_KEYS
-        if baseline_summary.get(key) != champion_summary.get(key)
-    }
-    baseline = _matrix_result(baseline_summary)
-    champion = _matrix_result(champion_summary)
-    baseline_rico = float(
-        (baseline.get("suites") or {}).get("rico_held", {}).get("placeholder_fidelity")
-        or 0.0
-    )
-    champion_rico = float(
-        (champion.get("suites") or {}).get("rico_held", {}).get("placeholder_fidelity")
-        or 0.0
-    )
-    checks["matched_quality_signal"] = _check(
-        not mismatched and champion_rico > baseline_rico and champion_rico > 0.0,
-        {
-            "matched_recipe": {
-                key: baseline_summary.get(key) for key in MATCHED_MATRIX_KEYS
-            },
-            "mismatched": mismatched,
-            "baseline": baseline,
-            "champion": champion,
-            "rico_held_placeholder_fidelity": {
-                "baseline": baseline_rico,
-                "champion": champion_rico,
-                "delta": champion_rico - baseline_rico,
-            },
-        },
+    checks["matched_quality_signal"] = _matched_quality_check(
+        _read_json(baseline_matrix), _read_json(champion_matrix)
     )
 
     required = [value for value in checks.values() if value["status"] != "deferred"]

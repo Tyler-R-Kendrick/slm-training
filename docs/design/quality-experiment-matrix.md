@@ -482,21 +482,28 @@ Full 1500 `rico_held` + HF context remains the production claim.
 
 ## P13 data-synthesis verification (CPU scratch, 2026-07-14)
 
-The final bounded comparison used identical device, steps (20), batch (4),
-learning rate (`3e-4`), seed (17), decode steps (16), test build, and unchanged
-gate policy. The fixture E0 control scored `rico_held` placeholder fidelity
-0.0; the integrated-corpus honest E50 champion scored 1.0 with parse 1.0 and
-structure 0.7512 (`n=3`). The matrix summaries remain `pass=false` because
-non-RICO suites were intentionally omitted; this is a signal check, not a ship
-clear. A same-E0 integrated-data control stayed at fidelity 0.0, so no
-data-only causal claim is made. Full evidence, failed iterations, and the
-non-promotion decision are in [data-synthesis.md](data-synthesis.md) and
+The accepted comparison uses the same E53 experiment and effective decode
+recipe on both corpora: CPU scratch, 80 train steps, 30 trust-gate steps,
+batch 4, lr `3e-4`, seed 0, honest slot contract, parallel eight-step decode,
+best-of-1, no template fill/LTR repair/DESIGN.md, and unchanged gates.
+
+| Suite | n | Fixture fidelity | Integrated fidelity | Delta | Decision |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `held_out` | 5 | 0.2 | 0.2 | 0.0 | fail |
+| `rico_held` | 4 | 0.5278 | 0.5278 | 0.0 | fail |
+
+Both arms have parse/structure/reward 0.0 and fail unchanged ship gates. The
+earlier E0-vs-E50, RICO-only result was a system-recipe comparison and is
+superseded; the verifier now rejects differing experiment/decode settings and
+requires strict gains on both suites. Full evidence and the no-promotion
+decision are in [data-synthesis.md](data-synthesis.md) and
 [data-synthesis-results.json](data-synthesis-results.json).
 
-## Verifier-guided repair proposed (docs only — not in the runner yet)
+## Verifier-guided repair (mixed status)
 
-Remaining verifier-guided repair gaps from
-[verifier-guided-repair.md](verifier-guided-repair.md). **Not implemented**.
+Verifier-guided repair status from
+[verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
+E60–E61 and E63–E65 remain proposed.
 The inner-loop prerequisites (deterministic denoising-NLL suites, token
 budgets, full-state resume, source-family manifests, decode trajectory
 store) plus the P1–P3 staged plan (mixture search, scaling ladders,

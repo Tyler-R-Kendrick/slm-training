@@ -1494,6 +1494,19 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
         "initialization": exp.initialization,
         "parent_checkpoint": exp.parent_checkpoint,
         "description": exp.description,
+        "honest_slot_contract": eval_cfg.honest_slot_contract,
+        "schema_in_context": eval_cfg.schema_in_context,
+        "slot_contract_in_context": eval_cfg.slot_contract_in_context,
+        "slot_contract_constrained_decode": (eval_cfg.slot_contract_constrained_decode),
+        "template_fill_decode": eval_cfg.template_fill_decode,
+        "grammar_ltr_primary": eval_cfg.grammar_ltr_primary,
+        "grammar_ltr_repair": eval_cfg.grammar_ltr_repair,
+        "effective_gen_steps": eval_cfg.gen_steps,
+        "best_of_n": eval_cfg.best_of_n,
+        "train_dir": str(exp.train_dir),
+        "train_content_fingerprint": json.loads(
+            (exp.train_dir / "manifest.json").read_text(encoding="utf-8")
+        ).get("content_fingerprint"),
         "checkpoint": str(ckpt),
         **_summarize_board(board),
     }
@@ -1516,8 +1529,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--docs-out",
         type=Path,
-        default=Path("docs/design/quality-matrix-results.json"),
-        help="Summary mirror path (set under outputs/ for scratch comparisons).",
+        default=None,
+        help=(
+            "Summary mirror path (defaults to a run-root-specific file under "
+            "docs/design for non-default run roots)."
+        ),
     )
     parser.add_argument("--device", default="cpu")
     parser.add_argument(
@@ -1822,7 +1838,7 @@ def main(argv: list[str] | None = None) -> int:
         "test_dir": str(args.test_dir),
         "design_md_in_context": not args.no_design_md_context,
         "rico_eval_limit": args.rico_limit,
-        "suites": list(args.suites),
+        "suites": sorted(args.suites),
         "steps": args.steps,
         "gen_steps": args.gen_steps,
         "context_backend": args.context_backend,
@@ -1832,7 +1848,11 @@ def main(argv: list[str] | None = None) -> int:
     out_path = args.run_root / "quality_matrix_summary.json"
     out_path.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
     # Also mirror under docs artifacts path for the PR.
-    docs_out = args.docs_out
+    docs_out = args.docs_out or Path("docs/design") / (
+        "quality-matrix-results.json"
+        if args.run_root == Path("outputs/runs")
+        else f"quality-matrix-results-{args.run_root.name}.json"
+    )
     docs_out.parent.mkdir(parents=True, exist_ok=True)
     docs_out.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"summary": str(out_path), "n": len(results)}, indent=2))

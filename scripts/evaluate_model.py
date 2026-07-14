@@ -152,6 +152,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Override: constrain placeholder decode to slot contract.",
     )
     parser.add_argument(
+        "--honest-slot-contract",
+        action="store_true",
+        help="Forbid hidden gold placeholder inventory during evaluation.",
+    )
+    parser.add_argument(
         "--retrieval-k",
         type=int,
         default=0,
@@ -235,6 +240,7 @@ def main(argv: list[str] | None = None) -> int:
         schema_in_context=args.schema_in_context,
         slot_contract_in_context=args.slot_contract_in_context,
         slot_contract_constrained_decode=args.slot_contract_constrained_decode,
+        honest_slot_contract=args.honest_slot_contract,
         retrieval_k=args.retrieval_k,
         best_of_n=args.best_of_n,
         design_md_in_context=design_md_override,

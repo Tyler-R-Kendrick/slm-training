@@ -1,86 +1,100 @@
 # Data synthesis definition of done (P13)
 
-Status: **verified for the bounded fixture-backed corpus**. Machine-readable
-evidence: [data-synthesis-results.json](data-synthesis-results.json). This is a
-CPU scratch/data-integration result, not a production HF-context ship claim.
+Status: **NO-GO — corpus integrity passes, matched learned signal fails**.
+Machine-readable evidence:
+[data-synthesis-results.json](data-synthesis-results.json). This is a bounded
+CPU scratch result, not a production HF-context ship claim.
 
 ## Reproduction recipe
 
-The final corpus was built twice with `source=all`, `synthesizer=none`,
-`programspec_count=1`, `rico_limit=1`, and DESIGN.md attached without making it
-a quality filter. The two 176-record builds produced the same
-`content_fingerprint`:
-`9359d47176c0ec75fce9389558af69884a6ce4afc47f89fc0f7412987ad4bf17`.
-Every kept record carries contract `b8b156526f65d26c`.
+The verification corpus was built twice with `source=all`,
+`synthesizer=none`, `programspec_count=1`, and `rico_limit=1`. Both 176-record
+builds produced content fingerprint
+`9359d47176c0ec75fce9389558af69884a6ce4afc47f89fc0f7412987ad4bf17`;
+every kept row carries contract `b8b156526f65d26c`.
 
-The eval build used the committed fixture + local RICO sources, the train
-manifest for split-before-derive filtering, and `max_children=4`. It contains
-51 decontaminated records: smoke 3, held_out 5, adversarial 4, OOD 4, and
-`rico_held` 35. `diagnose_eval` used the modern 256-token LTR budget.
+The static eval projection contains 51 decontaminated rows: smoke 3,
+held-out 5, adversarial 4, OOD 4, and `rico_held` 35. Diagnostics use the
+modern 256-token LTR budget. The matched learned comparison uses separate
+fixture (103 rows) and integrated (689 rows) curriculum corpora and the same
+E53 recipe on each arm:
+
+- CPU scratch context; seed 0; 80 train steps; batch 4; lr `3e-4`;
+- E53 slot-aware trust stage, 30 steps, then the resulting checkpoint;
+- schema + slot contract in context, constrained slot decode, and
+  `honest_slot_contract=true` (hidden gold inventory forbidden);
+- parallel eight-step decode, best-of-1, template fill and LTR repair off;
+- no DESIGN.md context; held-out n=5 and `rico_held` n=4;
+- unchanged repository ship-gate policy.
+
+The two checkpoints are local scratch artifacts with the matrix no-sync
+rationale. They are not reusable production champions and were not uploaded.
 
 ## Verification scoreboard
 
 | Check | Result |
 | --- | --- |
-| Pinned bridge | 61 positive contract records round-trip the supported component/ref/list/placeholder surface; state/query/mutation/action remain explicitly unsupported by OpenUI 0.2.9 |
-| Families | 10/10 expected families present; every family has at least one root parent (82 roots total) |
+| Pinned bridge | 122 positive contract rows round-trip the supported component/ref/list/placeholder surface; state/query/mutation/action remain explicitly deferred by OpenUI 0.2.9 |
+| Families | 10/10 expected families present; every family has at least one root parent |
 | Leakage | 0/51 exact, structural, or `split_group_id` collisions with train |
-| Diagnostic ceiling | parse, placeholder fidelity/validity, structure, and component recall = 1.0 on smoke/held_out/adversarial/OOD |
-| Length | train p95 93; `rico_held` p95/max 190; zero records over the 256-token budget |
-| Verifier tiers | Bronze 153, Silver 21, Gold 2; no failing gate on Gold/Silver |
+| Diagnostic ceiling | parse, fidelity/validity, structure, and component recall = 1.0 on smoke/held-out/adversarial/OOD |
+| Length | train p95 93; `rico_held` p95/max 190; zero rows over 256 tokens |
+| Verifier tiers | Bronze 153, Silver 21, Gold 2; no failing Gold/Silver gate |
 | Governance | Croissant, Data Card, and SPDX emitted; PII=0, secrets=0, instruction-like=0 |
-| Edit invariants | 5/5 deltas satisfy `apply(before, delta) = after` and inverse/undo-redo identity |
-| Task/equivalence | generation, repair, edit, behavior present; L3-L5 equivalence 1.0 (`n=2`); unavailable metrics stay null |
-| Generalization | 51/51 accepted; 32 longer-program, 5 unseen-pair, and 5 unseen-triple slice memberships; no contamination |
+| Edit invariants | 5/5 deltas satisfy apply and inverse/undo-redo identity |
+| Task/equivalence | generation, repair, edit, behavior, visual wired; L3/L4/L5 fixture equivalence 1.0 (`n=3`) |
+| Generalization | 51/51 accepted; longer-program, unseen-pair, and unseen-triple slices populated and clean |
+| Matched quality | **Fail:** both arms tie on both required suites; no positive data signal |
 
-## Matched smoke signal
+## Matched learned result
 
-Both final arms used CPU scratch, 20 steps, batch 4, learning rate `3e-4`, seed
-17, 16 decode steps, no DESIGN.md context, the same `rico_held` records (`n=3`),
-and unchanged ship-gate policy.
+| Corpus / checkpoint | Suite | n | Parse | Fidelity | Structure | Reward |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Fixture E53 (`7e9cedb3`) | `held_out` | 5 | 0.0 | 0.2 | 0.0 | 0.0 |
+| Integrated E53 (`b7446345`) | `held_out` | 5 | 0.0 | 0.2 | 0.0 | 0.0 |
+| Fixture E53 (`7e9cedb3`) | `rico_held` | 4 | 0.0 | 0.5278 | 0.0 | 0.0 |
+| Integrated E53 (`b7446345`) | `rico_held` | 4 | 0.0 | 0.5278 | 0.0 | 0.0 |
 
-| Arm | Data / system | Parse | Placeholder fidelity | Structure | Reward |
-| --- | --- | ---: | ---: | ---: | ---: |
-| Fixture control | 17 fixture rows; E0 ship-recipe baseline | 0.0 | 0.0 | 0.0 | 0.0 |
-| Integrated champion | 176-row integrated corpus; honest E50 CoRe/V5 stack | 1.0 | 1.0 | 0.7512 | 1.0 |
+The fidelity deltas are 0.0 on both suites, so SLM-17's required strict
+improvement is not met. Both bounded scoreboards also fail unchanged ship
+gates: all generated programs fail parsing/structure, and the three omitted
+suites are reported missing. The verifier exits nonzero and promotion remains
+blocked.
 
-This proves the integrated champion moves off the fidelity-0 failure under a
-bounded matched budget. It does **not** isolate data from objective/decoder
-effects: a same-E0, 20-step integrated-data control also stayed at fidelity
-0.0. The optional attribution control therefore says the measured gain is a
-system-level corpus+objective result, not a data-only causal claim.
+## Superseded probes
 
-The narrow matrix summaries themselves remain `pass=false` because four suites
-were intentionally omitted and are reported as missing. No gate was lowered.
-Promotion remains blocked on full multi-suite, full-size `rico_held`, multiple
-seeds, rank stability, and a production HF-context checkpoint.
+1. A 20-step E0-vs-E0 data-only probe stayed at fidelity 0.0.
+2. The original PR artifact compared fixture E0 against integrated E50 on
+   `rico_held` only. It reached fidelity 1.0, but experiment/decode differences
+   meant it was not a matched data comparison. The verifier now rejects that
+   shape.
+3. A template-fill E53 probe saturated the fixture path and was too slow to
+   attribute signal to learned weights.
+4. A standalone parallel decode was stopped after held-out because its runtime
+   override had `honest_slot_contract=false`. The accepted comparison adds the
+   explicit `--honest-slot-contract` flag and forbids hidden gold inventory.
 
-## Failed iterations retained
+Failed and interrupted attempts are retained here because experiment failures
+are evidence, not omitted results.
 
-1. The first E0-vs-E0 20-step comparison stayed at fidelity 0.0 in both arms.
-2. The first test projection had `rico_held` p95 280 against the legacy
-   192-token budget. Rebuilding the same decontaminated source with
-   `max_children=4` reduced p95/max to 190; the final diagnostic uses the
-   champion's 256-token budget.
-3. A full-suite E50 decode was stopped after smoke because it was about one
-   minute per record. The final quality smoke evaluates only the acceptance
-   signal; all-suite correctness is supplied by the separate deterministic
-   ceiling/leakage report, not misrepresented as a model ship clear.
+## Decision and next unblock
 
-## Re-run
+P13 does not admit this integrated corpus/checkpoint pair to promotion. Static
+corpus correctness is green, but the required learned signal is absent. The
+next attempt must improve the model under an equal E53 recipe (preferably a
+full HF-context, multi-seed train) and rerun both suites without weakening the
+matched-signal rule or ship gates.
 
-Run `scripts.build_train_data` twice, build test data against the first
-manifest, run `scripts.evaluate_tasks` and the two bounded quality-matrix arms,
-then compose the fail-closed report:
+Recompose the report after producing equal-recipe matrix summaries:
 
 ```bash
 python -m scripts.verify_data_synthesis \
   --first-train-dir outputs/slm17/corpus/first \
   --second-train-dir outputs/slm17/corpus/second \
   --test-dir outputs/slm17/test/v2 \
-  --task-results outputs/slm17/task-results.json \
-  --baseline-matrix outputs/slm17/matrix-smoke-baseline-summary.json \
-  --champion-matrix outputs/slm17/matrix-smoke-champion-summary.json \
+  --task-results docs/design/task-eval-wiring-results.json \
+  --baseline-matrix outputs/slm17/matched-e53-fixture-summary.json \
+  --champion-matrix outputs/slm17/matched-e53-integrated-summary.json \
   --ltr-max-tokens 256 \
   --out docs/design/data-synthesis-results.json
 ```
