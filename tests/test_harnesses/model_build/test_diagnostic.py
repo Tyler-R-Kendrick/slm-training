@@ -139,12 +139,11 @@ def test_length_budget_flags_truncation() -> None:
 
 
 def test_fixture_seeds_fit_e18_budget() -> None:
-    from pathlib import Path
-
+    from slm_training.bridge_utils import repo_root
     from slm_training.dsl.schema import load_jsonl
     from slm_training.harnesses.model_build.diagnostic import length_budget_report
 
-    root = Path(__file__).resolve().parents[2]
+    root = repo_root()
     train = load_jsonl(root / "fixtures" / "train_seeds.jsonl")
     test = load_jsonl(root / "fixtures" / "test_seeds.jsonl")
     report = length_budget_report(

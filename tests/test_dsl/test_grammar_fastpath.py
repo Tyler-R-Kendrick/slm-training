@@ -207,14 +207,9 @@ def test_train_fuse_and_cache_smoke() -> None:
 
 
 def test_cactus_kernel_sketch_files_exist() -> None:
-    root = (
-        Path(__file__).resolve().parents[2]
-        / "src"
-        / "slm_training"
-        / "runtime"
-        / "cactus"
-        / "kernels"
-    )
+    from slm_training.bridge_utils import repo_root
+
+    root = repo_root() / "src" / "slm_training" / "runtime" / "cactus" / "kernels"
     assert (root / "force_emit_sketch.hpp").is_file()
     assert (root / "maskgit_admit_sketch.hpp").is_file()
     assert (root / "README.md").is_file()
