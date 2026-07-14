@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from slm_training.data.frontier import artifact_path, gold_content_hash
 from slm_training.dsl.schema import ExampleRecord, write_jsonl
 from slm_training.harnesses.train_data.catalog import classify_source_family
@@ -92,6 +94,39 @@ def test_stale_gold_drops_artifact(tmp_path: Path) -> None:
         id=gold.id, prompt=gold.prompt, openui=OTHER, placeholders=[":x.y"], split="train"
     )
     assert FrozenArtifactSynthesizer(root=tmp_path).expand(changed) == []
+
+
+@pytest.mark.parametrize("payload", [[], None, "invalid", "{"])
+def test_malformed_artifact_drops_silently(tmp_path: Path, payload: object) -> None:
+    gold = _gold()
+    path = artifact_path(
+        gold.id, gold_content_hash(gold.openui, gold.prompt), root=tmp_path
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    content = payload if isinstance(payload, str) and payload == "{" else json.dumps(payload)
+    path.write_text(content, encoding="utf-8")
+    assert FrozenArtifactSynthesizer(root=tmp_path).expand(gold) == []
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("gold_id", "other"), ("gold_content_hash", "0" * 16)],
+)
+def test_embedded_artifact_identity_must_match_path(
+    tmp_path: Path, field: str, value: str
+) -> None:
+    gold = _gold()
+    path = _write_artifact(tmp_path, gold, paraphrases=("Build a hero card.",))
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload[field] = value
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    assert FrozenArtifactSynthesizer(root=tmp_path).expand(gold) == []
+
+
+def test_held_out_artifact_is_never_described(tmp_path: Path) -> None:
+    held = _gold(split="held_out")
+    _write_artifact(tmp_path, held, paraphrases=("Build a hero card.",))
+    assert FrozenArtifactSynthesizer(root=tmp_path).expand(held) == []
 
 
 def test_faithfulness_bind_rejects_mismatched_skeleton(tmp_path: Path) -> None:

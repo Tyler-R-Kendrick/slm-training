@@ -63,4 +63,10 @@ def load_artifact(
     path = artifact_path(gold_id, gold_hash8, root=root)
     if not path.exists():
         return None
-    return FrozenArtifact.from_path(path)
+    try:
+        artifact = FrozenArtifact.from_path(path)
+    except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError):
+        return None
+    if artifact.gold_id != gold_id or artifact.gold_content_hash != gold_hash8:
+        return None
+    return artifact
