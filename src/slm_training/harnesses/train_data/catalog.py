@@ -30,12 +30,24 @@ KNOWN_FAMILIES = (
     "self_distilled_success",
     "self_distilled_repair",
     "gold_correction",
+    "programspec_generated",
+    "language_contract",
+    "corruption_repair",
+    "edit_trajectory",
+    "frontier_described",
+    "abstraction_ladder",
+    "renderer_visual",
+    "web_distilled",
+    "diffusion_corruption",
 )
 
 _SYNTH_TO_FAMILY = {
     "template": "prompt_paraphrase",
     "layout_augment": "layout_augment",
     "namespace_augment": "namespace_augment",
+    "corruption_repair": "corruption_repair",
+    "edit_trajectory": "edit_trajectory",
+    "frontier_described": "frontier_described",
 }
 
 _BASE_SOURCE_TO_FAMILY = {
@@ -44,6 +56,16 @@ _BASE_SOURCE_TO_FAMILY = {
     "human": "human_feedback",
     "rico": "rico_real",
     "awwwards": "awwwards_real",
+    "programspec": "programspec_generated",
+    "programspec_generated": "programspec_generated",
+    "language_contract": "language_contract",
+    "corruption_repair": "corruption_repair",
+    "edit_trajectory": "edit_trajectory",
+    "frontier_described": "frontier_described",
+    "abstraction_ladder": "abstraction_ladder",
+    "renderer_visual": "renderer_visual",
+    "web_distilled": "web_distilled",
+    "diffusion_corruption": "diffusion_corruption",
 }
 
 

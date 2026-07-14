@@ -109,6 +109,7 @@ def load_train_fingerprints(manifest_path: Path | None) -> dict[str, set[str]]:
     """Load id / prompt / openui / structure / pair / design_md fingerprints."""
     empty = {
         "ids": set(),
+        "split_group_ids": set(),
         "prompts": set(),
         "openuis": set(),
         "structures": set(),
@@ -123,6 +124,7 @@ def load_train_fingerprints(manifest_path: Path | None) -> dict[str, set[str]]:
 
     data = json.loads(manifest_path.read_text(encoding="utf-8"))
     ids = set(data.get("ids") or [])
+    split_group_ids = set(data.get("split_group_ids") or [])
     prompts = set(data.get("prompt_fingerprints") or [])
     openuis = set(data.get("openui_fingerprints") or [])
     structures = set(data.get("structure_fingerprints") or [])
@@ -134,6 +136,7 @@ def load_train_fingerprints(manifest_path: Path | None) -> dict[str, set[str]]:
         records_path
         and (
             not prompts
+            or not split_group_ids
             or not openuis
             or not pairs
             or not design_mds
@@ -143,6 +146,9 @@ def load_train_fingerprints(manifest_path: Path | None) -> dict[str, set[str]]:
     if need_backfill:
         for record in load_jsonl(records_path):
             ids.add(record.id)
+            group = (record.meta or {}).get("split_group_id")
+            if group:
+                split_group_ids.add(str(group))
             prompts.add(fingerprint_prompt(record.prompt))
             openuis.add(fingerprint_openui(record.openui))
             structures.add(fingerprint_openui_structure(record.openui))
@@ -153,6 +159,7 @@ def load_train_fingerprints(manifest_path: Path | None) -> dict[str, set[str]]:
 
     return {
         "ids": ids,
+        "split_group_ids": split_group_ids,
         "prompts": prompts,
         "openuis": openuis,
         "structures": structures,
@@ -173,6 +180,11 @@ def find_leakage(
     reasons: list[str] = []
     if record.id in train_fps["ids"]:
         reasons.append("id")
+    split_group_id = (record.meta or {}).get("split_group_id")
+    if split_group_id and str(split_group_id) in train_fps.get(
+        "split_group_ids", set()
+    ):
+        reasons.append("split_group_id")
     if fingerprint_prompt(record.prompt) in train_fps["prompts"]:
         reasons.append("prompt")
     if fingerprint_openui(record.openui) in train_fps["openuis"]:
