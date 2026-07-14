@@ -9,7 +9,7 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-from slm_training.distill.trace_store import (
+from slm_training.harnesses.distill.trace_store import (
     DecodeTraceRecorder,
     TraceStore,
     decode_config_hash,

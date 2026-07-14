@@ -7,7 +7,7 @@ import argparse
 import json
 from pathlib import Path
 
-from slm_training.cactus import export_checkpoint_bundle
+from slm_training.runtime.cactus import export_checkpoint_bundle
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -13,10 +13,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from slm_training.bridge_utils import readline_with_timeout
+from slm_training.bridge_utils import readline_with_timeout, repo_root
 from slm_training.dsl.placeholders import extract_placeholders
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = repo_root()
 DEFAULT_BRIDGE_DIR = REPO_ROOT / "tools" / "openui_bridge"
 DEFAULT_CLI = DEFAULT_BRIDGE_DIR / "cli.mjs"
 

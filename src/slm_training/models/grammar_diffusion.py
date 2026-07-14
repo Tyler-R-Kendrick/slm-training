@@ -483,7 +483,7 @@ class GrammarDiffusionModel(nn.Module):
         dm = design_md if self.config.design_md_in_context else None
         contract = slot_contract if self.config.slot_contract_in_context else None
         if schema is None and self.config.schema_in_context:
-            from slm_training.quality import compact_schema_snippet
+            from slm_training.harnesses.quality import compact_schema_snippet
 
             schema = compact_schema_snippet(budget=min(600, self.config.design_md_budget))
         return format_context_text(

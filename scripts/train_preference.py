@@ -8,11 +8,11 @@ import json
 from pathlib import Path
 
 from slm_training.dsl.schema import load_jsonl
-from slm_training.preference import (
+from slm_training.harnesses.preference import (
     collect_pairs_with_generator,
     write_pairs,
 )
-from slm_training.preference.train import train_preference_from_paths
+from slm_training.harnesses.preference.train import train_preference_from_paths
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -81,7 +81,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.limit is not None:
             records = records[: max(0, int(args.limit))]
 
-        from slm_training.quality import soft_corrupt_openui
+        from slm_training.harnesses.quality import soft_corrupt_openui
 
         include_gold = not bool(args.no_gold)
         if not include_gold and args.from_checkpoint is None:

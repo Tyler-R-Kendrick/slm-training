@@ -7,8 +7,8 @@ import argparse
 import json
 from pathlib import Path
 
-from slm_training.cactus import bench_pytorch_generate, write_bench
-from slm_training.design_md import load_default_design_md
+from slm_training.runtime.cactus import bench_pytorch_generate, write_bench
+from slm_training.dsl.design_md import load_default_design_md
 
 
 def main(argv: list[str] | None = None) -> int:

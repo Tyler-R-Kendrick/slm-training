@@ -123,7 +123,7 @@ def default_eligible_positions(model: Any, ids: list[int]) -> list[int]:
 
 def _legal_engine() -> Any | None:
     try:
-        from slm_training.grammar_fastpath import engine_for_dsl
+        from slm_training.dsl.grammar.fastpath import engine_for_dsl
         from slm_training.models.grammar import active_dsl
 
         return engine_for_dsl(active_dsl())
@@ -144,7 +144,7 @@ def _legal_support_ids(
     vocabulary, i.e. unconstrained) — mirroring the constrained decoder's
     fallback behavior.
     """
-    from slm_training.grammar_fastpath.token_map import allowed_id_set
+    from slm_training.dsl.grammar.fastpath.token_map import allowed_id_set
 
     eos_id = model.tokenizer.eos_id
     if ids[position] == eos_id:

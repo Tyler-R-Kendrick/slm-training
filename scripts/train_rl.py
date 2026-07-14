@@ -7,7 +7,7 @@ import argparse
 import json
 from pathlib import Path
 
-from slm_training.rl import train_grpo_from_paths
+from slm_training.harnesses.rl import train_grpo_from_paths
 
 
 def main(argv: list[str] | None = None) -> int:

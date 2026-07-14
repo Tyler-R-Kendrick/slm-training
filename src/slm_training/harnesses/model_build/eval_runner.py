@@ -182,7 +182,7 @@ def _gold_design_lint_score(record: ExampleRecord) -> float | None:
     if not record.design_md:
         return None
     try:
-        from slm_training.design_md import bridge_available, lint
+        from slm_training.dsl.design_md import bridge_available, lint
 
         if not bridge_available():
             return None
@@ -199,7 +199,7 @@ def _reward_for_prediction(pred: str, record: ExampleRecord) -> float:
     ship ``reward_score`` gates.
     """
     try:
-        from slm_training.preference import composite_reward
+        from slm_training.harnesses.preference import composite_reward
 
         return float(
             composite_reward(
@@ -334,7 +334,7 @@ def evaluate(
     def _eval_schema() -> str | None:
         if not getattr(config, "schema_in_context", False):
             return None
-        from slm_training.quality import compact_schema_snippet
+        from slm_training.harnesses.quality import compact_schema_snippet
 
         budget = min(600, int(getattr(config, "design_md_budget", 1800) or 1800))
         return compact_schema_snippet(budget=budget)

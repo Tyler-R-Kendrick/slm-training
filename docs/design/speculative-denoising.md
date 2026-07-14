@@ -154,7 +154,7 @@ drafted token **survives target verification**, rather than raw confidence.
 The diffusion analogue: will this committed token remain unchanged through the
 rest of the denoising trajectory (and match the final answer)?
 
-[`grammar_fastpath/survival_train.py`](../../src/slm_training/grammar_fastpath/survival_train.py)
+[`grammar_fastpath/survival_train.py`](../../src/slm_training/dsl/grammar/fastpath/survival_train.py)
 mirrors the BackPlay-lite trust-gate recipe (`trust_train.py`): freeze the
 denoiser, run partial-canvas forwards on train records, label each visible
 position by whether the model's current commitment agrees with gold (a cheap,

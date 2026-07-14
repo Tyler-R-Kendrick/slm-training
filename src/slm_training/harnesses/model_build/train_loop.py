@@ -11,7 +11,7 @@ from pathlib import Path
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.harnesses.model_build.data import batched, load_train_records
 from slm_training.harnesses.model_build.factory import build_model
-from slm_training.telemetry import CycleTelemetry, bind_telemetry, timed
+from slm_training.runtime.telemetry import CycleTelemetry, bind_telemetry, timed
 
 
 def _parse_eval_suites(config: ModelBuildConfig) -> list[str]:
@@ -46,7 +46,7 @@ def _ship_score(metrics: dict) -> float | None:
 
 
 def train(config: ModelBuildConfig, model=None) -> dict:
-    from slm_training.accel import (
+    from slm_training.runtime.accel import (
         autocast_context,
         detect_device,
         grad_scaler,
@@ -72,7 +72,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     rng = random.Random(config.seed)
     records = list(records)
     if getattr(config, "use_curriculum", False):
-        from slm_training.quality import apply_curriculum_tags
+        from slm_training.harnesses.quality import apply_curriculum_tags
 
         records = apply_curriculum_tags(records, sanitize=True)
     rng.shuffle(records)
@@ -82,7 +82,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     if int(getattr(config, "retrieval_k", 0) or 0) > 0 and hasattr(
         plugin, "skeleton_bank"
     ):
-        from slm_training.retrieval import build_skeleton_bank
+        from slm_training.harnesses.quality import build_skeleton_bank
 
         plugin.skeleton_bank = build_skeleton_bank(records)
 
@@ -112,7 +112,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     mix_curriculum = bool(getattr(config, "mix_curriculum", True))
     curriculum_pools = None
     if getattr(config, "use_curriculum", False):
-        from slm_training.quality import index_curriculum_stages
+        from slm_training.harnesses.quality import index_curriculum_stages
 
         curriculum_pools = index_curriculum_stages(records)
 
@@ -151,7 +151,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             )
             return batched(drawn, config.batch_size)
         if getattr(config, "use_curriculum", False):
-            from slm_training.quality import sample_curriculum_batch
+            from slm_training.harnesses.quality import sample_curriculum_batch
 
             # Generate only the bounded batch window consumed before refresh.
             target = config.batch_size * 8
@@ -511,7 +511,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         _save_full_state_now()
 
     if bool(getattr(config, "register_promoted", False)):
-        from slm_training.experiments.promotion import register_promoted_checkpoint
+        from slm_training.harnesses.experiments.promotion import register_promoted_checkpoint
 
         source = ckpt_dir / "best_weighted_nll.pt"
         if not source.exists():

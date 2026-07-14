@@ -14,7 +14,7 @@ import pytest
 from gpu_multi_farm.models import FarmListResult, Offer
 from gpu_multi_farm.registry import list_across_farms
 from scripts import remote_train
-from slm_training.annotations import (
+from slm_training.harnesses.annotations import (
     AnnotationRecord,
     load_annotations,
     persist_annotation,
@@ -43,22 +43,16 @@ class _BlockingProc:
     [
         pytest.param(
             __import__(
-                "slm_training.dsl.lang_core", fromlist=["_readline_with_timeout"]
-            )._readline_with_timeout,
-            id="openui",
-        ),
-        pytest.param(
-            __import__(
-                "slm_training.design_md", fromlist=["_readline_with_timeout"]
-            )._readline_with_timeout,
-            id="design-md",
+                "slm_training.bridge_utils", fromlist=["readline_with_timeout"]
+            ).readline_with_timeout,
+            id="bridge-utils",
         ),
     ],
 )
 def test_bridge_readline_deadline(reader) -> None:
     started = time.monotonic()
     with pytest.raises(subprocess.TimeoutExpired):
-        reader(_BlockingProc(), 0.02)
+        reader(_BlockingProc(), 0.02, error_message="bridge timed out")
     assert time.monotonic() - started < 0.25
 
 

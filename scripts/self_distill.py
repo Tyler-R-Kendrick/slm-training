@@ -34,8 +34,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.cmd == "select":
-        from slm_training.distill.select import SelectConfig, select_traces
-        from slm_training.distill.trace_store import TraceStore
+        from slm_training.harnesses.distill.select import SelectConfig, select_traces
+        from slm_training.harnesses.distill.trace_store import TraceStore
 
         store = TraceStore(args.traces)
         selected = select_traces(
@@ -51,7 +51,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"selected": len(selected), "out": str(args.out)}, indent=2))
         return 0
 
-    from slm_training.distill.sft import train_self_distill_from_paths
+    from slm_training.harnesses.distill.sft import train_self_distill_from_paths
 
     summary = train_self_distill_from_paths(
         args.checkpoint,

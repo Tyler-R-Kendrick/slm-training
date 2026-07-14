@@ -112,7 +112,7 @@ path until an external fused engine consumes the narrow form.
 
 ## Accelerator utilization
 
-`slm_training.accel` auto-selects **cuda → Ascend NPU → CPU**, configures thread pools,
+`slm_training.runtime.accel` auto-selects **cuda → Ascend NPU → CPU**, configures thread pools,
 and exposes AMP + `torch.compile` for train/decode.
 
 | Knob | Flag | Notes |
@@ -131,4 +131,4 @@ python -m scripts.train_model --device auto --compile --amp --grad-accum 2 \
 ```
 
 This environment's measured accel bench is recorded under `outputs/runs/accel_bench.json`.
-Fused NEON/Cactus kernels remain external (`slm_training.cactus`).
+Fused NEON/Cactus kernels remain external (`slm_training.runtime.cactus`).

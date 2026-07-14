@@ -138,7 +138,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
             pass
     if bool(getattr(config, "use_compile", False)) and hasattr(model, "denoiser"):
         try:
-            from slm_training.accel import maybe_compile
+            from slm_training.runtime.accel import maybe_compile
 
             model.denoiser = maybe_compile(
                 model.denoiser,
@@ -150,7 +150,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
     if int(getattr(config, "retrieval_k", 0) or 0) > 0 and hasattr(model, "skeleton_bank"):
         try:
             from slm_training.harnesses.model_build.data import load_train_records
-            from slm_training.retrieval import build_skeleton_bank
+            from slm_training.harnesses.quality import build_skeleton_bank
 
             if config.train_dir.exists():
                 model.skeleton_bank = build_skeleton_bank(load_train_records(config.train_dir))
@@ -360,7 +360,7 @@ def build_model(
         tt_cfg = _twotower_config_from_build(config)
         model = TwoTowerModel.from_records(records, config=tt_cfg, device=config.device)
         if int(getattr(config, "retrieval_k", 0) or 0) > 0:
-            from slm_training.retrieval import build_skeleton_bank
+            from slm_training.harnesses.quality import build_skeleton_bank
 
             model.skeleton_bank = build_skeleton_bank(records)
         return model

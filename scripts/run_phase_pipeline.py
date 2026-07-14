@@ -20,10 +20,10 @@ from typing import Any
 from slm_training.harnesses.model_build import ModelBuildConfig, train
 from slm_training.harnesses.model_build.eval_runner import evaluate_suites
 from slm_training.harnesses.model_build.ship_gates import evaluate_ship_gates
-from slm_training.preference import collect_pairs_with_generator, write_pairs
-from slm_training.preference.train import train_preference_from_paths
-from slm_training.quality import soft_corrupt_openui
-from slm_training.rl import train_grpo_from_paths
+from slm_training.harnesses.preference import collect_pairs_with_generator, write_pairs
+from slm_training.harnesses.preference.train import train_preference_from_paths
+from slm_training.harnesses.quality import soft_corrupt_openui
+from slm_training.harnesses.rl import train_grpo_from_paths
 from slm_training.dsl.schema import load_jsonl
 
 

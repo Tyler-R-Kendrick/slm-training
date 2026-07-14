@@ -12,8 +12,8 @@ from slm_training.data.contract import canonical_slot_contract
 from slm_training.data.structure import strip_style_literals
 from slm_training.dsl.lang_core import ParseError, Program
 from slm_training.dsl.placeholders import is_placeholder
-from slm_training.grammar_backends.ast_utils import map_positional_props
-from slm_training.grammar_backends.types import GRAMMARS_DIR
+from slm_training.dsl.grammar.backends.ast_utils import map_positional_props
+from slm_training.dsl.grammar.backends.types import GRAMMARS_DIR
 
 OPEN_PREFIX = "+"
 CLOSE = "-"
@@ -108,7 +108,7 @@ def _prop_order() -> dict[str, list[str]]:
 
 
 def _parse_program(source: str) -> Program:
-    from slm_training.grammar_backends import get_backend
+    from slm_training.dsl.grammar.backends import get_backend
 
     text = strip_style_literals(source or "").strip()
     if not text:

@@ -7,7 +7,7 @@ import argparse
 import json
 from pathlib import Path
 
-from slm_training.annotations import (
+from slm_training.harnesses.annotations import (
     DEFAULT_FEEDBACK_PATH,
     DEFAULT_HUMAN_PAIRS_PATH,
     DEFAULT_HUMAN_TRAIN_PATH,

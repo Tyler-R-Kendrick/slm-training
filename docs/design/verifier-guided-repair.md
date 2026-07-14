@@ -75,11 +75,11 @@ not Faithful reimplementations of PDDL-Instruct.
 | --- | --- | --- |
 | Typed executable trace (not prose CoT) | OpenUI DSL + compositional / lexer-native tokenization | [`dsl/`](../../src/slm_training/dsl/), [`models/dsl_tokenizer.py`](../../src/slm_training/models/dsl_tokenizer.py), [`models/tokenizer.py`](../../src/slm_training/models/tokenizer.py) |
 | Inference-time verification | `_ensure_valid_openui` certify / repair / finalize | [`models/twotower.py`](../../src/slm_training/models/twotower.py) |
-| Constrained decoding during denoising | DFA force-emit + MaskGIT hole admit (`force` / `mask` / `hybrid`) | [`grammar_fastpath/`](../../src/slm_training/grammar_fastpath/), [`models/grammar.py`](../../src/slm_training/models/grammar.py) |
-| Process / value head | `FastPathGate` trust scores; BackPlay-lite + slot-aware mining (E31/E52) | [`grammar_fastpath/gate.py`](../../src/slm_training/grammar_fastpath/gate.py), [`trust_train.py`](../../src/slm_training/grammar_fastpath/trust_train.py) |
+| Constrained decoding during denoising | DFA force-emit + MaskGIT hole admit (`force` / `mask` / `hybrid`) | [`grammar_fastpath/`](../../src/slm_training/dsl/grammar/fastpath/), [`models/grammar.py`](../../src/slm_training/models/grammar.py) |
+| Process / value head | `FastPathGate` trust scores; BackPlay-lite + slot-aware mining (E31/E52) | [`grammar_fastpath/gate.py`](../../src/slm_training/dsl/grammar/fastpath/gate.py), [`trust_train.py`](../../src/slm_training/dsl/grammar/fastpath/trust_train.py) |
 | Remasking low-confidence commitments | V3 confidence remask + V4 E33 + **V6 CoRe (E50)** + **T2M (E51)** | [`models/parallel_decode.py`](../../src/slm_training/models/parallel_decode.py) |
 | Skeleton / landmarks before fill | Template fill from prompt-visible slot inventory | [`models/template_fill.py`](../../src/slm_training/models/template_fill.py) |
-| Valid-over-invalid preference | Structure-first `composite_reward` + human preference pairs + E55 process stage | [`preference/`](../../src/slm_training/preference/), [`rl/`](../../src/slm_training/rl/) |
+| Valid-over-invalid preference | Structure-first `composite_reward` + human preference pairs + E55 process stage | [`preference/`](../../src/slm_training/harnesses/preference/), [`rl/`](../../src/slm_training/harnesses/rl/) |
 | Training-time process signal | Masked CE / MDLM, fidelity aux, visible corruption (E32), GRPO-lite | [`models/twotower.py`](../../src/slm_training/models/twotower.py) |
 
 **Important honesty note:** remask is driven by **confidence, trust-gate,

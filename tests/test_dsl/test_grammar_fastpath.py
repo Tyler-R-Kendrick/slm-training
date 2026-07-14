@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from slm_training.dsl.schema import ExampleRecord
-from slm_training.grammar_fastpath import (
+from slm_training.dsl.grammar.fastpath import (
     OpenUIIncrementalEngine,
     admit_fill,
     draft_forced_ids,
@@ -84,7 +84,7 @@ def test_admit_fill_accepts_partial_with_holes() -> None:
 
 
 def test_allowed_id_set_expands_components() -> None:
-    from slm_training.grammar_fastpath.token_map import allowed_id_set
+    from slm_training.dsl.grammar.fastpath.token_map import allowed_id_set
 
     tok = _tok()
     eng = OpenUIIncrementalEngine()
@@ -211,6 +211,7 @@ def test_cactus_kernel_sketch_files_exist() -> None:
         Path(__file__).resolve().parents[2]
         / "src"
         / "slm_training"
+        / "runtime"
         / "cactus"
         / "kernels"
     )

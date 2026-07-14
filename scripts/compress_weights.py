@@ -10,7 +10,7 @@ import argparse
 import json
 from pathlib import Path
 
-from slm_training.compression import (
+from slm_training.runtime.compression import (
     LAYOUT_BYTESPLIT,
     LAYOUT_REGROUP,
     decompress_state_dict,
@@ -56,7 +56,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.verify_load:
         import torch
 
-        from slm_training.compression import _to_bf16_u16
+        from slm_training.runtime.compression import _to_bf16_u16
 
         raw = torch.load(args.checkpoint, map_location="cpu", weights_only=True)
         state = raw.get("state_dict") or raw

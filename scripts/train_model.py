@@ -286,7 +286,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    from slm_training.accel import detect_device
+    from slm_training.runtime.accel import detect_device
 
     accel = detect_device(args.device)
     device = accel.device if args.device in {"auto", "best"} else args.device

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import torch
 
-from slm_training.grammar_fastpath import OpenUIIncrementalEngine
+from slm_training.dsl.grammar.fastpath import OpenUIIncrementalEngine
 from slm_training.models.decode_stats import DecodeStats, collect_decode_stats
 from slm_training.models.grammar import (
     force_emit_token_id,

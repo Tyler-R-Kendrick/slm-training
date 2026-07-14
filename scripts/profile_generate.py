@@ -39,7 +39,7 @@ def _apply_profile_flags(model: TwoTowerModel, args: argparse.Namespace) -> None
     if args.quant:
         model.apply_dynamic_quant()
     if args.compile:
-        from slm_training.accel import maybe_compile
+        from slm_training.runtime.accel import maybe_compile
 
         model.denoiser = maybe_compile(model.denoiser, enabled=True, mode="default")
 

@@ -5,8 +5,8 @@ from __future__ import annotations
 import pytest
 
 from slm_training.dsl import bridge_available
-from slm_training.grammar_backends import available_backends, get_backend
-from slm_training.grammar_backends.ast_utils import (
+from slm_training.dsl.grammar.backends import available_backends, get_backend
+from slm_training.dsl.grammar.backends.ast_utils import (
     ast_fingerprint,
     component_multiset,
 )

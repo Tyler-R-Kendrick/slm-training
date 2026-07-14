@@ -182,23 +182,14 @@ GPU_MULTI_FARM_MODE=mock python -m scripts.multi_farm_mcp
 
 ```
 src/slm_training/
-  dsl/                 # OpenUI adapter, schema, parser, production codec
-  data/                # RICO / Awwwards adapters + leakage fingerprints
+  dsl/                 # OpenUI adapter + design_md + grammar/{backends,fastpath}
+  harnesses/           # train_data, test_data, model_build, rl, preference,
+                       # distill, quality(+retrieval), experiments, annotations
   models/              # TwoTower, grammar_diffusion, tokenizers, remask
-  harnesses/           # train_data, test_data, model_build
-  grammar_fastpath/    # DFA force-emit, MaskGIT admit, FastPathGate
-  grammar_backends/    # lang-core / Lark / hybrid / toy-layout backends
-  preference/          # composite reward + DPO surrogate
-  rl/                  # GRPO-lite
-  quality/             # curriculum stages
-  retrieval/           # nearest-skeleton helpers
+  data/                # RICO / Awwwards adapters + leakage fingerprints
+  evals/               # loss suites / denoising NLL
+  runtime/             # accel, telemetry, compression, cactus
   web/                 # annotate playground API + static preview
-  design_md/           # DESIGN.md Python wrapper
-  annotations/         # human feedback helpers
-  accel/               # AMP / torch.compile
-  telemetry/           # cycle timing
-  cactus/              # export + NEON kernel sketches
-  compression/         # BF16 codebook sidecar
 src/gpu_multi_farm/    # FastMCP server + farm adapters
 tools/openui_bridge/   # @openuidev/lang-core Node sidecar
 tools/design_md_bridge/
@@ -206,4 +197,9 @@ tools/openui_preview/
 scripts/               # CLIs
 fixtures/              # seed pairs + RICO semantic slices
 docs/design/           # architecture + research lineage + contracts
+tests/
+  test_dsl/            # parser, grammar, design_md
+  test_harnesses/      # mirrors harnesses/* (rl is its own suite)
+  test_runtime/        # accel / cactus / compression
+  test_models/ test_data/ test_web/ ...
 ```

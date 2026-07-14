@@ -6,7 +6,7 @@ from slm_training.data.leakage import normalize_openui_structure
 from slm_training.data.structure import strip_style_literals
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.harnesses.model_build.eval_runner import structural_similarity
-from slm_training.preference import composite_reward
+from slm_training.harnesses.preference import composite_reward
 
 
 def test_strip_style_removes_gap_and_typography() -> None:

@@ -10,7 +10,7 @@ ladder sweeps are CLI-driven and intentionally cheap in CI (`--dry-fit`,
 | P0 denoising-NLL / token budget / full-state resume / catalog / preference / traces | `evals/`, `train_loop.py`, `full_state.py`, `catalog.py`, `preference/`, `distill/trace_store.py` |
 | P1a fuzzy + semantic dedup | `src/slm_training/data/dedup.py` (`--fuzzy-dedup`, `--semantic-cluster-cap`) |
 | P1b mixture search + online sampling | `src/slm_training/data/mixture.py`, `scripts/run_mixture_search.py`, `ModelBuildConfig.mixture_manifest` |
-| P1c scaling ladders + EG + promotion protocol | `src/slm_training/experiments/`, `scripts/run_scaling_ladder.py` |
+| P1c scaling ladders + EG + promotion protocol | `src/slm_training/harnesses/experiments/`, `scripts/run_scaling_ladder.py` |
 | P1d midtraining anchor | `register_promoted` → `promoted.pt` / `promoted.json` |
 | P2 self-distillation | `distill/select.py`, `distill/sft.py`, `distill/repair.py`, `scripts/self_distill.py` |
 | P3 trajectory RL (E64) | `rl/trajectory.py`, `scripts/resume_climb.py`, `--record-support` on collect |
@@ -242,14 +242,14 @@ constraints (the recorder carries the raw material).
 ```text
 src/slm_training/data/dedup.py            # P1a fuzzy + semantic layers
 src/slm_training/data/mixture.py          # P1b mixture manifests + online sampling
-src/slm_training/experiments/ladder.py    # P1c ladder definitions
-src/slm_training/experiments/scaling_fit.py
-src/slm_training/experiments/efficiency_gain.py
-src/slm_training/experiments/promotion.py # promotion-protocol evaluation
-src/slm_training/distill/select.py        # P2 stratified trace selection
-src/slm_training/distill/sft.py           # P2 anchor-mixed self-distillation
-src/slm_training/distill/repair.py        # P2/P3 failure-cone repair data
-src/slm_training/rl/trajectory.py         # P3 E64 objective
+src/slm_training/harnesses/experiments/ladder.py    # P1c ladder definitions
+src/slm_training/harnesses/experiments/scaling_fit.py
+src/slm_training/harnesses/experiments/efficiency_gain.py
+src/slm_training/harnesses/experiments/promotion.py # promotion-protocol evaluation
+src/slm_training/harnesses/distill/select.py        # P2 stratified trace selection
+src/slm_training/harnesses/distill/sft.py           # P2 anchor-mixed self-distillation
+src/slm_training/harnesses/distill/repair.py        # P2/P3 failure-cone repair data
+src/slm_training/harnesses/rl/trajectory.py         # P3 E64 objective
 
 scripts/run_mixture_search.py
 scripts/run_scaling_ladder.py

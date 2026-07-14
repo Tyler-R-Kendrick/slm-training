@@ -80,7 +80,7 @@ def _normalize_record(record: ExampleRecord) -> ExampleRecord:
         design_md=record.design_md,
     )
     try:
-        from slm_training.design_md import attach_default_design_md
+        from slm_training.dsl.design_md import attach_default_design_md
 
         out = attach_default_design_md(out)
     except Exception:  # noqa: BLE001
@@ -275,10 +275,10 @@ def build_train_data(
     # Final stable order.
     deduped.sort(key=lambda r: r.id)
     if config.curriculum:
-        from slm_training.quality import apply_curriculum_tags
+        from slm_training.harnesses.quality import apply_curriculum_tags
 
         deduped = apply_curriculum_tags(deduped)
-        from slm_training.quality import synthesize_stress_adversarial_records
+        from slm_training.harnesses.quality import synthesize_stress_adversarial_records
 
         for stress in synthesize_stress_adversarial_records():
             lineage_index[stress.id] = lineage_entry(stress)

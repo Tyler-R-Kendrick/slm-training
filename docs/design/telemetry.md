@@ -2,7 +2,7 @@
 
 ## What it measures
 
-`slm_training.telemetry.CycleTelemetry` accumulates named spans and ranks them by
+`slm_training.runtime.telemetry.CycleTelemetry` accumulates named spans and ranks them by
 wall-time share. Artifacts:
 
 | Artifact | Source |
