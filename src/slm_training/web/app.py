@@ -203,9 +203,10 @@ def create_app(
     def index() -> FileResponse:
         return _spa_or_classic()
 
-    @app.get("/playground")
-    def playground() -> FileResponse:
-        # Classic annotate playground stays reachable as a standalone page.
+    @app.get("/playground/classic")
+    def playground_classic() -> FileResponse:
+        # Original vanilla annotate playground, kept as a tested fallback.
+        # (/playground itself now routes to the React playground in the SPA.)
         return FileResponse(STATIC_DIR / "index.html")
 
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")

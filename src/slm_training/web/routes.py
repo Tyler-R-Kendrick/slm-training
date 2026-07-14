@@ -138,6 +138,11 @@ def system(request: Request) -> dict[str, Any]:
     return _readers(request).system()
 
 
+@observability_router.get("/dispatches")
+def dispatches(request: Request) -> dict[str, Any]:
+    return _readers(request).dispatches()
+
+
 # --------------------------------------------------------------------------- #
 # Pure-compute gate/promotion evaluation (read-only-safe; powers gate editor)
 # --------------------------------------------------------------------------- #

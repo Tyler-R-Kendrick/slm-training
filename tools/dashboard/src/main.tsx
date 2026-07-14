@@ -8,6 +8,8 @@ import { Data } from "./pages/Data";
 import { Experiments } from "./pages/Experiments";
 import { Smoke } from "./pages/Smoke";
 import { Checkpoints } from "./pages/Checkpoints";
+import { RunDetail } from "./pages/RunDetail";
+import { Playground } from "./pages/Playground";
 
 type Nav = (to: string) => void;
 
@@ -17,6 +19,7 @@ const ROUTES: { path: string; label: string; icon: string; el: (nav: Nav) => Rea
   { path: "/experiments", label: "Experiments", icon: "⚗", el: (nav) => <Experiments navigate={nav} /> },
   { path: "/smoke", label: "Smoke Runs", icon: "✷", el: (nav) => <Smoke navigate={nav} /> },
   { path: "/checkpoints", label: "Checkpoints", icon: "◆", el: (nav) => <Checkpoints navigate={nav} /> },
+  { path: "/playground", label: "Playground", icon: "✎", el: () => <Playground /> },
 ];
 
 function useRouter(): [string, Nav] {
@@ -55,7 +58,12 @@ function App() {
       .catch(() => setCaps({ execution: false, read_only: true, jobs: [] }));
   }, []);
 
+  const runMatch = path.startsWith("/runs/")
+    ? decodeURIComponent(path.slice("/runs/".length))
+    : null;
   const route = ROUTES.find((r) => r.path === path) ?? ROUTES[0];
+  // A run-detail view is reached from Experiments — keep that nav item lit.
+  const activePath = runMatch ? "/experiments" : route.path;
 
   return (
     <CapsContext.Provider value={caps}>
@@ -74,17 +82,13 @@ function App() {
           {ROUTES.map((r) => (
             <a
               key={r.path}
-              className={`nav-link ${r.path === route.path ? "active" : ""}`}
+              className={`nav-link ${r.path === activePath ? "active" : ""}`}
               onClick={() => navigate(r.path)}
             >
               <span className="nav-icon">{r.icon}</span>
               {r.label}
             </a>
           ))}
-          <a className="nav-link" href="/playground">
-            <span className="nav-icon">✎</span>
-            Playground
-          </a>
           <div className="nav-spacer" />
           {!caps.execution && (
             <div className="hint" style={{ margin: "0 0.4rem 0.5rem" }}>
@@ -95,7 +99,9 @@ function App() {
             {theme === "dark" ? "☀ Light" : "☾ Dark"}
           </button>
         </aside>
-        <main className="main">{route.el(navigate)}</main>
+        <main className="main">
+          {runMatch ? <RunDetail runId={runMatch} navigate={navigate} /> : route.el(navigate)}
+        </main>
       </div>
     </CapsContext.Provider>
   );

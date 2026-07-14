@@ -23,8 +23,14 @@ test.describe("mission control dashboard", () => {
     await expect(page.getByText("GATES FAIL")).toBeVisible({ timeout: 5_000 });
   });
 
-  test("classic annotate playground stays reachable", async ({ page }) => {
+  test("react playground renders inside the SPA shell", async ({ page }) => {
     await page.goto("/playground");
+    await expect(page.locator(".page-title")).toHaveText(/Playground/);
+    await expect(page.locator(".pg-card")).toBeVisible();
+  });
+
+  test("classic annotate playground stays reachable as a fallback", async ({ page }) => {
+    await page.goto("/playground/classic");
     await expect(page.getByText("TwoTower")).toBeVisible();
   });
 });

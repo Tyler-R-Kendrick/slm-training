@@ -18,6 +18,7 @@ export function Overview({ navigate }: { navigate: (to: string) => void }) {
   const caps = useCaps();
   const { data, error } = usePoll<any>("/api/overview", 15000);
   const jobs = usePoll<any>("/api/jobs", caps.execution ? 4000 : 0);
+  const dispatches = usePoll<any>("/api/dispatches", caps.execution ? 8000 : 0);
 
   if (error) return <ErrorNote error={error} />;
   if (!data) return <div className="loading">Loading mission control…</div>;
@@ -147,6 +148,37 @@ export function Overview({ navigate }: { navigate: (to: string) => void }) {
           />
         </Card>
       </div>
+
+      <Card
+        title="Remote dispatches"
+        right={<a className="runlink" href={dispatches.data?.bucket_url} target="_blank" rel="noreferrer">HF bucket ↗</a>}
+      >
+        {(() => {
+          const dj = dispatches.data?.jobs ?? [];
+          const rem = dispatches.data?.remotes ?? [];
+          if (!dj.length && !rem.length)
+            return <Empty>No remote (HF Jobs / pod) trains dispatched — launch one from Experiments.</Empty>;
+          return (
+            <>
+              {dj.map((j: any) => (
+                <div key={j.id} className="dispatch-row">
+                  <span className="mono">{j.job_key}</span>
+                  <span style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
+                    <StatusPill value={j.status} />
+                    {j.remote_url && <a className="runlink" href={j.remote_url} target="_blank" rel="noreferrer">view remote ↗</a>}
+                  </span>
+                </div>
+              ))}
+              {rem.map((r: any) => (
+                <div key={r.run_id} className="dispatch-row">
+                  <span className="mono">{r.run_id}</span>
+                  {r.url && <a className="runlink" href={r.url} target="_blank" rel="noreferrer">durable checkpoint ↗</a>}
+                </div>
+              ))}
+            </>
+          );
+        })()}
+      </Card>
     </div>
   );
 }

@@ -16,6 +16,7 @@ entrypoint keeps cold-starting.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -73,6 +74,29 @@ def _count_lines(path: Path) -> int:
             return sum(1 for line in handle if line.strip())
     except OSError:
         return 0
+
+
+# Remote monitoring handles come from a dispatch job's captured stdout (the
+# `hf jobs run` / SSH output flows into the job log) or a synced run's bucket.
+_REMOTE_URL_RE = re.compile(
+    r"https://(?:huggingface\.co|[A-Za-z0-9-]+\.hf\.space|[A-Za-z0-9.-]*trackio[A-Za-z0-9.-]*)\S*"
+)
+
+
+def _first_remote_url(text: str | None) -> str | None:
+    match = _REMOTE_URL_RE.search(text or "")
+    return match.group(0).rstrip(".,)'\"") if match else None
+
+
+def _read_text_tail(path: Path, nbytes: int = 4000) -> str:
+    try:
+        with open(path, "rb") as handle:
+            handle.seek(0, 2)
+            size = handle.tell()
+            handle.seek(max(0, size - nbytes))
+            return handle.read().decode("utf-8", "replace")
+    except OSError:
+        return ""
 
 
 def _results_of(payload: Any) -> list[dict[str, Any]]:
@@ -214,9 +238,17 @@ class Readers:
                 )
         return {"provenance": "committed", "runs": derived}
 
+    def _scoreboard_row(self, run_id: str) -> dict[str, Any] | None:
+        """Find the matrix row (with suites) whose run_id or experiment id matches."""
+        for kind in ("quality", "grammar", "perf"):
+            for row in self.scoreboard(kind)["results"]:
+                if run_id in (row.get("run_id"), row.get("id")):
+                    return {"matrix": kind, **row}
+        return None
+
     def run(self, run_id: str) -> dict[str, Any]:
         run_dir = self.outputs / "runs" / run_id
-        artifacts = {
+        live = {
             "train_summary": _read_json(run_dir / "train_summary.json"),
             "gates": _read_json(run_dir / "gates.json"),
             "telemetry": _read_json(run_dir / "train_telemetry.json"),
@@ -227,11 +259,19 @@ class Readers:
             lineage_manifest = self.lineage.load_run(run_id).to_dict()
         except (FileNotFoundError, OSError, ValueError):
             lineage_manifest = None
-        has_live = any(v is not None for v in artifacts.values()) or lineage_manifest
+        has_live = any(v is not None for v in live.values()) or bool(lineage_manifest)
+        # Attach the matching committed scoreboard row so the detail view is useful
+        # even on a cold outputs/; derive a gate matrix from its suites when no live
+        # gates.json exists.
+        scoreboard = self._scoreboard_row(run_id)
+        artifacts = dict(live)
+        if artifacts["gates"] is None and scoreboard and scoreboard.get("suites"):
+            artifacts["gates"] = evaluate_ship_gates(scoreboard["suites"])
         return {
             "run_id": run_id,
             "provenance": "live" if has_live else "committed",
             "manifest": lineage_manifest,
+            "scoreboard": scoreboard,
             **artifacts,
         }
 
@@ -431,6 +471,52 @@ class Readers:
             "wilson_lower_bound": wilson,
             "deployment_ready": all(checks.values()),
             "checks": checks,
+        }
+
+    # ---- remote dispatch monitoring ------------------------------------------
+
+    def dispatches(self) -> dict[str, Any]:
+        """Surface dispatched (remote GPU) trains: dispatch-kind jobs + their
+        parsed remote handle, plus durable remotes from synced runs. Reads the
+        persisted job meta/log so it works read-only and after a restart."""
+        jobs: list[dict[str, Any]] = []
+        jobs_dir = self.outputs / "jobs"
+        if jobs_dir.exists():
+            for meta_path in sorted(jobs_dir.glob("*/meta.json"), reverse=True):
+                meta = _read_json(meta_path) or {}
+                if meta.get("kind") != "dispatch":
+                    continue
+                remote_url = _first_remote_url(
+                    _read_text_tail(meta_path.parent / "log.txt")
+                )
+                jobs.append(
+                    {
+                        "id": meta.get("id"),
+                        "job_key": meta.get("job_key"),
+                        "status": meta.get("status"),
+                        "created_at": meta.get("created_at"),
+                        "ended_at": meta.get("ended_at"),
+                        "remote_url": remote_url,
+                    }
+                )
+        remotes: list[dict[str, Any]] = []
+        runs_dir = self.outputs / "runs"
+        if runs_dir.exists():
+            for cb_path in sorted(runs_dir.glob("*/checkpoint_bucket.json")):
+                cb = _read_json(cb_path) or {}
+                if cb.get("bucket_url") or cb.get("remote_uri"):
+                    remotes.append(
+                        {
+                            "run_id": cb.get("run_id", cb_path.parent.name),
+                            "url": cb.get("bucket_url"),
+                            "uri": cb.get("remote_uri"),
+                        }
+                    )
+        return {
+            "provenance": "live" if (jobs or remotes) else "committed",
+            "jobs": jobs,
+            "remotes": remotes,
+            "bucket_url": "https://huggingface.co/buckets/TKendrick/OpenUI",
         }
 
     # ---- system + overview aggregate -----------------------------------------

@@ -16,7 +16,7 @@ import {
 
 const KINDS = ["quality", "grammar", "perf", "phase"];
 
-export function Experiments({ navigate: _navigate }: { navigate: (to: string) => void }) {
+export function Experiments({ navigate }: { navigate: (to: string) => void }) {
   const caps = useCaps();
   const [kind, setKind] = useState("quality");
   const [jobId, setJobId] = useState<string | null>(null);
@@ -70,7 +70,11 @@ export function Experiments({ navigate: _navigate }: { navigate: (to: string) =>
           ]}
           rows={results}
           render={{
-            id: (r) => <span className="mono">{r.id}</span>,
+            id: (r) => (
+              <a className="mono runlink" onClick={() => navigate(`/runs/${encodeURIComponent(r.run_id || r.id)}`)} title="open run detail">
+                {r.id}
+              </a>
+            ),
             description: (r) => <span style={{ color: "var(--text-dim)" }}>{(r.description || "").slice(0, 70)}</span>,
             pass: (r) => (r.pass === undefined ? <span className="hint">—</span> : <StatusPill value={r.pass} label={r.pass ? "pass" : "fail"} />),
             smoke: (r) => suiteMetric(r, "smoke", "parse_rate"),
@@ -99,8 +103,35 @@ export function Experiments({ navigate: _navigate }: { navigate: (to: string) =>
             />
           )}
         </div>
-        <LogStream jobId={jobId} />
       </Card>
+
+      <Card title="Dispatch a full GPU train" right={<span className="pill pill-warning">remote</span>}>
+        <p className="hint" style={{ marginBottom: "0.7rem" }}>
+          Heavy trains run on HF Jobs / a GPU pod — the dispatcher streams here, and durable
+          checkpoints land in the HF bucket (see Overview → Remote dispatches). Use <span className="mono">dry_run</span> to
+          preview without credentials.
+        </p>
+        <div className="two-col">
+          {jobDef(caps, "hf_jobs_train") && (
+            <JobLauncher
+              jobDef={jobDef(caps, "hf_jobs_train")!}
+              execution={caps.execution}
+              defaults={{ run_id: "twotower_v1", steps: 200, dry_run: true }}
+              onLaunched={setJobId}
+            />
+          )}
+          {jobDef(caps, "remote_train") && (
+            <JobLauncher
+              jobDef={jobDef(caps, "remote_train")!}
+              execution={caps.execution}
+              defaults={{ host: "", run_id: "twotower_v1", steps: 200, dry_run: true }}
+              onLaunched={setJobId}
+            />
+          )}
+        </div>
+      </Card>
+
+      <LogStream jobId={jobId} />
     </div>
   );
 }

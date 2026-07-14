@@ -24,7 +24,7 @@ async function waitForSampleReady(page: import("@playwright/test").Page) {
 test.describe("annotate playground", () => {
   test("desktop: thumbs icons + grade stays on sample", async ({ page }, testInfo) => {
     const before = feedbackCount();
-    await page.goto("/playground");
+    await page.goto("/playground/classic");
     await page.evaluate(() => localStorage.setItem("twotower_annotate_view", "render"));
     await page.reload();
 
@@ -73,7 +73,7 @@ test.describe("annotate playground", () => {
   });
 
   test("desktop: request + rendered default + dsl toggle", async ({ page }, testInfo) => {
-    await page.goto("/playground");
+    await page.goto("/playground/classic");
     await page.evaluate(() => localStorage.setItem("twotower_annotate_view", "render"));
     await page.reload();
 
@@ -133,7 +133,7 @@ test.describe("annotate playground", () => {
   });
 
   test("desktop: arrow down grades without advancing", async ({ page }) => {
-    await page.goto("/playground");
+    await page.goto("/playground/classic");
     await page.evaluate(() => localStorage.setItem("twotower_annotate_view", "render"));
     await page.reload();
 
@@ -151,7 +151,7 @@ test.describe("annotate playground", () => {
   });
 
   test("mobile: preview default + grade targets", async ({ page }, testInfo) => {
-    await page.goto("/playground");
+    await page.goto("/playground/classic");
     await page.evaluate(() => localStorage.setItem("twotower_annotate_view", "render"));
     await page.reload();
     await expect(page.locator("#btnUp")).toBeVisible();
