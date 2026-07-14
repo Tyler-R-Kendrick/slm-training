@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from slm_training.dsl import bridge_available
-from slm_training.dsl.schema import ExampleRecord, write_jsonl
+from slm_training.dsl.schema import ExampleRecord, load_jsonl, write_jsonl
 from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
 
 
@@ -24,7 +24,7 @@ def _seed_file(tmp_path: Path) -> Path:
                     'root = Stack([hero], "column")\n'
                     'hero_title = TextContent(":hero.title")\n'
                     'hero_body = TextContent(":hero.body")\n'
-                    'hero = Card([hero_title, hero_body])'
+                    "hero = Card([hero_title, hero_body])"
                 ),
                 placeholders=[":hero.title", ":hero.body"],
                 split="train",
@@ -125,3 +125,49 @@ def test_build_train_data_from_rico_fixtures(tmp_path: Path) -> None:
     assert result["stats"]["record_count"] >= 5
     assert result["stats"]["error_count"] == 0
     assert result["manifest"]["source"] == "rico"
+
+
+@pytest.mark.skipif(
+    not bridge_available(),
+    reason="OpenUI bridge deps missing; run: cd tools/openui_bridge && npm ci",
+)
+def test_all_sources_are_tiered_and_rebuild_stably(tmp_path: Path) -> None:
+    config = TrainDataConfig(
+        seed_path=Path("fixtures/train_seeds.jsonl"),
+        rico_path=Path("fixtures/rico/semantic_train.jsonl"),
+        rico_limit=1,
+        source="all",
+        output_root=tmp_path / "integrated",
+        version="v12",
+        synthesizer="none",
+        programspec_count=1,
+        require_design_md=False,
+        test_seed_path=None,
+    )
+    first = build_train_data(config)
+    second = build_train_data(config)
+
+    families = set(first["manifest"]["source_families"]["families"])
+    assert {
+        "programspec_generated",
+        "language_contract",
+        "corruption_repair",
+        "edit_trajectory",
+        "frontier_described",
+        "abstraction_ladder",
+        "renderer_visual",
+        "web_distilled",
+    } <= families
+    rows = load_jsonl(Path(first["output_dir"]) / "records.jsonl")
+    assert rows
+    assert all(row.meta.get("verification_tier") for row in rows)
+    assert all(row.meta["verification_tier"] != "Quarantine" for row in rows)
+    assert first["manifest"]["diffusion_online"]["policies"]
+    assert Path(first["manifest"]["mixture"]).is_file()
+    assert all(
+        Path(path).is_file() for path in first["manifest"]["governance"].values()
+    )
+    assert (
+        first["manifest"]["content_fingerprint"]
+        == second["manifest"]["content_fingerprint"]
+    )

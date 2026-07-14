@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from slm_training.data.leakage import (
     fingerprint_design_md,
@@ -52,6 +53,22 @@ class TrainDataConfig:
     fuzzy_dedup: bool = False
     fuzzy_jaccard: float = 0.92
     semantic_cluster_cap: int | None = None
+    # P12 producer inputs. ProgramSpecs fall back to deterministic generation
+    # when the configured file has not been materialized yet.
+    programspec_path: Path | None = Path("outputs/progspec/programs.jsonl")
+    programspec_count: int = 16
+    programspec_seed: int = 0
+    include_language_contract: bool = True
+    deconstruct_path: Path | None = Path("fixtures/deconstruct/pipeline.jsonl")
+    render_path: Path | None = Path("fixtures/render/sample_program.json")
+    frontier_artifact_root: Path | None = Path("fixtures/frontier")
+    include_frontier_artifacts: bool = True
+    repairs_per_program: int = 1
+    include_edit_derivatives: bool = True
+    include_design_md_contrastive: bool = True
+    diffusion_online: bool = True
+    governance_artifacts: bool = True
+    mixture_manifest: bool = True
 
     @property
     def output_dir(self) -> Path:
@@ -59,24 +76,70 @@ class TrainDataConfig:
 
 
 def _normalize_record(record: ExampleRecord) -> ExampleRecord:
+    from slm_training.data.progspec import ProgramSpec, emit_record
     from slm_training.data.structure import strip_style_literals
+    from slm_training.data.verify import stamp_record
 
     scrubbed = strip_style_literals(record.openui)
     program = validate(scrubbed)
     placeholders = list(program.placeholders) or extract_placeholders(scrubbed)
     openui = strip_style_literals(program.serialized or scrubbed.strip())
-    out = ExampleRecord(
-        id=record.id,
-        prompt=record.prompt.strip(),
+    meta = dict(record.meta)
+    original_meta_keys = set(meta)
+    if "verification" in meta:
+        meta["upstream_verification"] = meta["verification"]
+    root_id = str(meta.get("parent_id") or record.id)
+    meta.setdefault("program_family_id", f"{record.source}:{root_id}")
+    meta.setdefault("lineage_id", root_id)
+    meta.setdefault("split_group_id", root_id)
+    meta.setdefault("task", "generation")
+    meta.setdefault("determinacy", "deterministic")
+    meta.setdefault("parent_id", root_id)
+    meta.setdefault("provenance", {})
+    spec = ProgramSpec.from_openui(
+        id=root_id,
         openui=openui,
-        placeholders=placeholders,
+        facts=dict(meta.get("facts") or {}),
+        program_family_id=str(meta["program_family_id"]),
+        lineage_id=str(meta["lineage_id"]),
+        split_group_id=str(meta["split_group_id"]),
         split=record.split,
+        provenance=dict(meta.get("provenance") or {}),
+    )
+    emitted = emit_record(
+        spec,
+        prompt=record.prompt.strip(),
+        task=str(meta["task"]),
+        openui=openui,
+        record_id=record.id,
+        parent_id=root_id,
         source=record.source,
-        meta={
-            **dict(record.meta),
-            "parser": "openuidev/lang-core",
-            "structure_only": True,
-        },
+        determinacy=str(meta["determinacy"]),
+        tier=str(meta.get("tier") or "Silver"),
+        meta={**meta, "parser": "openuidev/lang-core", "structure_only": True},
+    )
+    emitted_meta = dict(emitted.meta)
+    for key in (
+        "contract_id",
+        "program_family_id",
+        "lineage_id",
+        "split_group_id",
+        "task",
+        "determinacy",
+        "provenance",
+    ):
+        if key not in original_meta_keys:
+            emitted_meta.pop(key, None)
+    if "parent_id" not in original_meta_keys:
+        emitted_meta.pop("parent_id", None)
+    out = ExampleRecord(
+        id=emitted.id,
+        prompt=emitted.prompt,
+        openui=emitted.openui,
+        placeholders=placeholders,
+        split=emitted.split,
+        source=emitted.source,
+        meta=emitted_meta,
         design_md=record.design_md,
     )
     try:
@@ -85,7 +148,419 @@ def _normalize_record(record: ExampleRecord) -> ExampleRecord:
         out = attach_default_design_md(out)
     except Exception:  # noqa: BLE001
         pass
-    return out
+    # Re-run F2 after F1 projection even when a producer supplied an earlier stamp.
+    return stamp_record(out)
+
+
+def _with_source(record: ExampleRecord, source: str) -> ExampleRecord:
+    return ExampleRecord(
+        id=record.id,
+        prompt=record.prompt,
+        openui=record.openui,
+        placeholders=list(record.placeholders),
+        split=record.split,
+        source=source,
+        meta=dict(record.meta),
+        design_md=record.design_md,
+    )
+
+
+def _program_edit_records(spec: Any) -> list[ExampleRecord]:
+    from slm_training.data.edits import (
+        EditKind,
+        EditOperation,
+        EditPatch,
+        ProgramDocument,
+        build_transition,
+        emit_transition_records,
+    )
+
+    document = ProgramDocument.from_openui(spec.canonical_openui)
+    for statement in document.statements:
+        if statement.name == "root":
+            continue
+        placeholders = extract_placeholders(statement.expression)
+        if not placeholders:
+            continue
+        placeholder = placeholders[0]
+        replacement = f"{placeholder}_edited"
+        patch = EditPatch(
+            (
+                EditOperation(
+                    EditKind.REPLACE,
+                    statement.name,
+                    before=statement.expression,
+                    after=statement.expression.replace(placeholder, replacement, 1),
+                ),
+            ),
+            instruction=f"Update {statement.name} content.",
+        )
+        transition = build_transition(
+            spec.canonical_openui,
+            patch.instruction,
+            patch,
+            render_verifier=lambda source: validate(source) is not None,
+        )
+        return [
+            _with_source(record, "edit_trajectory")
+            for record in emit_transition_records(spec, transition)
+        ]
+    return []
+
+
+def _program_repair_records(spec: Any, limit: int) -> list[ExampleRecord]:
+    if limit <= 0:
+        return []
+    from slm_training.data.corrupt import (
+        CorruptionNotApplicable,
+        CorruptionOperator,
+        build_corruption,
+    )
+
+    records: list[ExampleRecord] = []
+    for operator in CorruptionOperator:
+        try:
+            case = build_corruption(spec.canonical_openui, operator)
+        except (CorruptionNotApplicable, RuntimeError, ValueError):
+            continue
+        record = case.to_record(spec)
+        meta = {
+            **record.meta,
+            "synth": "corruption_repair",
+            "source_kind": "deterministic",
+        }
+        record.meta = meta
+        records.append(_with_source(record, "corruption_repair"))
+        if len(records) >= limit:
+            break
+    return records
+
+
+def _records_from_progspec(
+    config: TrainDataConfig,
+) -> tuple[list[ExampleRecord], list[dict]]:
+    from slm_training.data.progspec import (
+        ProgramGenerator,
+        ProgramSpec,
+        emit_record,
+    )
+    from slm_training.data.verify import VerificationContext, stamp_record
+
+    errors: list[dict] = []
+    specs: list[ProgramSpec] = []
+    path = config.programspec_path
+    if path is not None and Path(path).exists():
+        for line_number, line in enumerate(
+            Path(path).read_text(encoding="utf-8").splitlines(), start=1
+        ):
+            if not line.strip():
+                continue
+            try:
+                specs.append(ProgramSpec.from_dict(json.loads(line)))
+            except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+                errors.append({"id": f"programspec:{line_number}", "error": str(exc)})
+    elif config.programspec_count > 0:
+        result = ProgramGenerator(seed=config.programspec_seed).generate(
+            config.programspec_count
+        )
+        specs.extend(result.programs)
+        if len(specs) != config.programspec_count:
+            errors.append(
+                {
+                    "error": "programspec generator emitted "
+                    f"{len(specs)}/{config.programspec_count} requested roots"
+                }
+            )
+
+    out: list[ExampleRecord] = []
+    for spec in sorted(specs, key=lambda item: item.id):
+        if spec.split != config.require_split:
+            errors.append(
+                {
+                    "id": spec.id,
+                    "error": f"expected split {config.require_split!r}, got {spec.split!r}",
+                }
+            )
+            continue
+        try:
+            record = emit_record(
+                spec,
+                prompt=f"Generate the {spec.program_family_id} OpenUI program.",
+                task="generation",
+                record_id=spec.id,
+                source="programspec_generated",
+                meta={"source_kind": "program-first"},
+            )
+            out.append(
+                stamp_record(record, VerificationContext(source_kind="program-first"))
+            )
+            out.extend(_program_repair_records(spec, config.repairs_per_program))
+            if config.include_edit_derivatives:
+                out.extend(_program_edit_records(spec))
+        except (RuntimeError, ValueError) as exc:
+            errors.append({"id": spec.id, "error": str(exc)})
+    return out, errors
+
+
+def _records_from_language_contract(
+    config: TrainDataConfig,
+) -> tuple[list[ExampleRecord], list[dict]]:
+    if not config.include_language_contract:
+        return [], []
+    from slm_training.data.language_contract import iter_positives
+
+    return list(iter_positives(config.require_split)), []
+
+
+def _records_from_deconstruct(
+    config: TrainDataConfig,
+) -> tuple[list[ExampleRecord], list[dict]]:
+    """Build governed web candidates from committed, inert capture evidence."""
+    path = config.deconstruct_path
+    if path is None or not Path(path).exists():
+        return [], []
+    from slm_training.data.deconstruct import BrowserCapture, build_web_projection
+    from slm_training.data.governance import SourceProvenance
+    from slm_training.data.verify import RuntimeEvidence
+
+    records: list[ExampleRecord] = []
+    errors: list[dict] = []
+    for line_number, line in enumerate(
+        Path(path).read_text(encoding="utf-8").splitlines(), start=1
+    ):
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+            if "prompt" in row and "openui" in row:
+                record = ExampleRecord.from_dict(row)
+                records.append(_with_source(record, "web_distilled"))
+                continue
+            capture_data = dict(row["capture"])
+            capture = BrowserCapture(
+                source_url=str(capture_data["source_url"]),
+                dom_snapshot=capture_data.get("dom_snapshot"),
+                accessibility_tree=tuple(capture_data.get("accessibility_tree") or ()),
+                computed_layout=tuple(capture_data.get("computed_layout") or ()),
+                screenshot_refs=tuple(capture_data.get("screenshot_refs") or ()),
+                interaction_trace=tuple(capture_data.get("interaction_trace") or ()),
+                responsive_state=str(capture_data.get("responsive_state") or "default"),
+            )
+            provenance_data = dict(row["provenance"])
+            provenance = SourceProvenance.from_content(
+                source_url=capture.source_url,
+                acquisition_date=str(provenance_data["acquisition_date"]),
+                terms_policy_id=str(provenance_data["terms_policy_id"]),
+                legal_basis=str(provenance_data["legal_basis"]),
+                license=str(provenance_data["license"]),
+                attribution=str(provenance_data["attribution"]),
+                asset_rights=dict(provenance_data["asset_rights"]),
+                robots_policy=str(provenance_data["robots_policy"]),
+                deletion_procedure=str(provenance_data["deletion_procedure"]),
+                content=capture.dom_snapshot or "",
+                transformation_history=tuple(
+                    provenance_data.get("transformation_history") or ()
+                ),
+            )
+            records.append(
+                build_web_projection(
+                    projection_id=str(row["id"]),
+                    capture=capture,
+                    candidate_openui=str(row["candidate_openui"]),
+                    element_statuses=dict(row["element_statuses"]),
+                    runtime_evidence=RuntimeEvidence.from_dict(
+                        dict(row.get("runtime_evidence") or {})
+                    ),
+                    provenance=provenance,
+                    candidate_links=dict(row.get("candidate_links") or {}),
+                    matched_behaviors=int(row.get("matched_behaviors") or 0),
+                    expected_behaviors=int(row.get("expected_behaviors") or 0),
+                    human_reviewed=bool(row.get("human_reviewed")),
+                )
+            )
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+            errors.append({"id": f"deconstruct:{line_number}", "error": str(exc)})
+    return [_with_source(record, "web_distilled") for record in records], errors
+
+
+def _records_from_render(
+    config: TrainDataConfig,
+) -> tuple[list[ExampleRecord], list[dict]]:
+    """Build a grounded visual edit from the committed renderer contract fixture."""
+    path = config.render_path
+    if path is None or not Path(path).exists():
+        return [], []
+    if Path(path).suffix == ".jsonl":
+        records, errors = _records_from_seed_file(
+            Path(path), require_split=config.require_split
+        )
+        return [_with_source(record, "renderer_visual") for record in records], errors
+    from slm_training.data.edits import EditKind, EditOperation, EditPatch
+    from slm_training.data.progspec import ProgramSpec
+    from slm_training.data.render import (
+        BoundingBox,
+        CaptureVariant,
+        RenderCapture,
+        RenderElement,
+        ScrollTile,
+        VisualMarkup,
+        build_visual_edit_record,
+        openui_node_id,
+    )
+    from slm_training.dsl.language_contract import contract_id
+
+    try:
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
+        if isinstance(data, dict) and "prompt" in data and "openui" in data:
+            return [_with_source(ExampleRecord.from_dict(data), "renderer_visual")], []
+        data["contract_id"] = contract_id()
+        spec = ProgramSpec.from_dict(data)
+
+        def element(
+            statement: str,
+            box: BoundingBox,
+            *,
+            parent: str | None = "root",
+            z: int = 0,
+            role: str = "generic",
+        ) -> RenderElement:
+            return RenderElement(
+                openui_node_id=openui_node_id(spec.id, statement),
+                statement_name=statement,
+                parent_node_id=(
+                    None if parent is None else openui_node_id(spec.id, parent)
+                ),
+                bounding_box=box,
+                visible_clip=box,
+                z_order=z,
+                semantic_role=role,
+                accessible_name=statement,
+                interaction_target=role == "button",
+                render_state="populated",
+            )
+
+        capture = RenderCapture(
+            program_id=spec.id,
+            variant=CaptureVariant(390, 844, "light", "populated"),
+            fixed_screenshot="fixture.render.fixed.png",
+            full_page_screenshot="fixture.render.full.png",
+            scroll_tiles=(ScrollTile("fixture.render.tile.png", 0, 0, 390, 844),),
+            elements=(
+                element("root", BoundingBox(0, 0, 390, 200), parent=None),
+                element("title", BoundingBox(20, 20, 200, 30), z=1, role="text"),
+                element("cta", BoundingBox(20, 60, 120, 40), z=2, role="button"),
+            ),
+            interaction_trace=("click:button",),
+        )
+        patch = EditPatch(
+            (
+                EditOperation(
+                    EditKind.REPLACE,
+                    "cta",
+                    before='Button(":hero.cta")',
+                    after='Button(":hero.secondary_cta")',
+                ),
+            )
+        )
+        record = build_visual_edit_record(
+            spec,
+            capture=capture,
+            markup=VisualMarkup("point", ((30, 70),)),
+            instruction="Change the call to action copy",
+            patch=patch,
+        )
+        return [_with_source(record, "renderer_visual")], []
+    except (KeyError, RuntimeError, TypeError, ValueError, json.JSONDecodeError) as exc:
+        return [], [{"id": "render", "error": str(exc)}]
+
+
+def _apply_governance_gate(record: ExampleRecord) -> ExampleRecord:
+    base_source = record.source.split("+", 1)[0]
+    if base_source not in {"awwwards", "awwwards_real", "web_distilled"}:
+        return record
+    governance = record.meta.get("governance")
+    if (
+        isinstance(governance, dict)
+        and governance.get("status") == "Complete"
+        and record.meta.get("provenance_complete") is True
+    ):
+        return record
+    from slm_training.data.governance import govern_record
+
+    return govern_record(record, None)
+
+
+class _CompositeSynthesizer:
+    def __init__(self, synthesizers: list[PromptSynthesizer]) -> None:
+        self._synthesizers = synthesizers
+
+    def expand(self, record: ExampleRecord) -> list[ExampleRecord]:
+        return [row for synth in self._synthesizers for row in synth.expand(record)]
+
+
+class _FrozenArtifactBuildSynthesizer:
+    """Map P6 ladder subtypes onto P11's weighted abstraction-ladder family."""
+
+    def __init__(self, root: Path | None) -> None:
+        from slm_training.harnesses.train_data.synth import FrozenArtifactSynthesizer
+
+        self._delegate = FrozenArtifactSynthesizer(root=root)
+
+    def expand(self, record: ExampleRecord) -> list[ExampleRecord]:
+        rows = self._delegate.expand(record)
+        for row in rows:
+            if "abstraction_level" not in row.meta:
+                continue
+            original = str(row.meta.get("synth") or "abstraction_ladder")
+            row.meta = {
+                **row.meta,
+                "synth": "abstraction_ladder",
+                "ladder_subfamily": original,
+            }
+            row.source = f"{record.source}+abstraction_ladder"
+        return rows
+
+
+class _DesignMdContrastiveSynthesizer:
+    """Attach a matched DESIGN.md and identify a deterministic mismatched control."""
+
+    def expand(self, record: ExampleRecord) -> list[ExampleRecord]:
+        if record.split != "train" or (record.meta or {}).get("task") not in {
+            None,
+            "generation",
+        }:
+            return []
+        from slm_training.data.design_md import extract_design_md
+        from slm_training.dsl.design_md import attach_default_design_md
+
+        matched = attach_default_design_md(record)
+        negative = extract_design_md(
+            title=f"Mismatched control for {record.id}", variant="a11y"
+        )
+        return [
+            ExampleRecord(
+                id=f"{record.id}_design_contrastive",
+                prompt=(
+                    f"{record.prompt} Follow the supplied DESIGN.md as a binding "
+                    "layout contract."
+                ),
+                openui=record.openui,
+                placeholders=list(record.placeholders),
+                split=record.split,
+                source=f"{record.source}+design_md_contrastive",
+                meta={
+                    **record.meta,
+                    "synth": "design_md_contrastive",
+                    "parent_id": record.id,
+                    "task": "generation",
+                    "design_md_contrastive": {
+                        "role": "matched",
+                        "negative_fingerprint": fingerprint_design_md(negative),
+                    },
+                },
+                design_md=matched.design_md,
+            )
+        ]
 
 
 def _records_from_seed_file(
@@ -175,7 +650,7 @@ def build_train_data(
     config: TrainDataConfig,
     synthesizer: PromptSynthesizer | None = None,
 ) -> dict:
-    """Load RICO/fixtures/awwwards, synthesize, validate, dedupe, and write artifacts."""
+    """Load every enabled producer, synthesize, verify, dedupe, and write artifacts."""
     source = (config.source or "rico").lower()
     seeds: list[ExampleRecord] = []
     errors: list[dict] = []
@@ -192,6 +667,22 @@ def build_train_data(
         aww_records, aww_errors = _records_from_awwwards(config)
         seeds.extend(aww_records)
         errors.extend(aww_errors)
+    if source in {"programspec", "integrated", "all"}:
+        records, source_errors = _records_from_progspec(config)
+        seeds.extend(records)
+        errors.extend(source_errors)
+    if source in {"language_contract", "integrated", "all"}:
+        records, source_errors = _records_from_language_contract(config)
+        seeds.extend(records)
+        errors.extend(source_errors)
+    if source in {"deconstruct", "integrated", "all"}:
+        records, source_errors = _records_from_deconstruct(config)
+        seeds.extend(records)
+        errors.extend(source_errors)
+    if source in {"render", "integrated", "all"}:
+        records, source_errors = _records_from_render(config)
+        seeds.extend(records)
+        errors.extend(source_errors)
     allowed = {
         "rico",
         "fixture",
@@ -199,6 +690,11 @@ def build_train_data(
         "both",
         "awwwards",
         "rico+awwwards",
+        "programspec",
+        "language_contract",
+        "deconstruct",
+        "render",
+        "integrated",
         "all",
     }
     if source not in allowed:
@@ -209,16 +705,29 @@ def build_train_data(
         lineage_entry,
     )
 
-    synth = synthesizer or get_synthesizer(config.synthesizer)
+    synths = [synthesizer or get_synthesizer(config.synthesizer)]
+    if config.include_frontier_artifacts:
+        synths.append(_FrozenArtifactBuildSynthesizer(config.frontier_artifact_root))
+    if config.include_design_md_contrastive and source in {
+        "programspec",
+        "integrated",
+        "all",
+    }:
+        synths.append(_DesignMdContrastiveSynthesizer())
+    synth: PromptSynthesizer = _CompositeSynthesizer(synths)
     # Stable seed order before expansion.
     seeds.sort(key=lambda r: r.id)
     collected: list[ExampleRecord] = []
     # Lineage over *all* candidates so parent chains survive later filtering.
     lineage_index: LineageIndex = {}
     for seed in seeds:
-        candidates = [seed, *synth.expand(seed)]
+        candidates = [seed]
+        if (seed.meta or {}).get("task") in {None, "generation"}:
+            candidates.extend(synth.expand(seed))
         if config.namespace_augment:
-            from slm_training.harnesses.train_data.synth import NamespaceAugmentSynthesizer
+            from slm_training.harnesses.train_data.synth import (
+                NamespaceAugmentSynthesizer,
+            )
 
             ns = NamespaceAugmentSynthesizer()
             extra: list[ExampleRecord] = []
@@ -226,16 +735,38 @@ def build_train_data(
                 extra.extend(ns.expand(candidate))
             candidates.extend(extra)
         for candidate in candidates:
+            candidate = _apply_governance_gate(candidate)
             lineage_index[candidate.id] = lineage_entry(candidate)
             try:
                 collected.append(_normalize_record(candidate))
             except (ParseError, ValueError) as exc:
                 errors.append({"id": candidate.id, "error": str(exc)})
 
+    verifier_rejected: list[dict] = []
+    verified: list[ExampleRecord] = []
+    for record in collected:
+        governance = record.meta.get("governance")
+        governance_status = (
+            governance.get("status") if isinstance(governance, dict) else None
+        )
+        if (
+            record.meta.get("verification_tier") == "Quarantine"
+            or governance_status == "Quarantined"
+        ):
+            verifier_rejected.append(
+                {
+                    "id": record.id,
+                    "failing_gate": record.meta.get("failing_gate"),
+                    "governance_status": governance_status,
+                }
+            )
+            continue
+        verified.append(record)
+
     from slm_training.data.quality import filter_quality
 
     quality_kept, quality_rejected = filter_quality(
-        collected,
+        verified,
         min_score=config.min_quality_score,
         require_design_md=config.require_design_md,
         max_openui_chars=config.max_openui_chars,
@@ -251,6 +782,7 @@ def build_train_data(
 
     deduped: list[ExampleRecord] = []
     seen_pairs: set[str] = set()
+
     def _accept_record(record: ExampleRecord) -> bool:
         pair = fingerprint_pair(record.prompt, record.openui)
         if pair in seen_pairs:
@@ -349,6 +881,46 @@ def build_train_data(
     records_path = out_dir / "records.jsonl"
     write_jsonl(records_path, deduped)
 
+    governance_paths: dict[str, Path] = {}
+    if config.governance_artifacts:
+        from slm_training.data.governance import emit_dataset_metadata
+
+        governance_paths = emit_dataset_metadata(
+            deduped,
+            out_dir / "governance",
+            name="OpenUI training corpus",
+            version=config.version,
+        )
+
+    mixture_payload: dict | None = None
+    mixture_path: Path | None = None
+    if config.mixture_manifest:
+        from slm_training.data.mixture import (
+            DEFAULT_TASK_WEIGHTS,
+            MixtureManifest,
+            corpus_diagnostics,
+            default_base_weights,
+            mixture_hash,
+        )
+
+        mixture = MixtureManifest(
+            mixture_id=f"{config.version}-base",
+            weights=default_base_weights(),
+            task_weights=DEFAULT_TASK_WEIGHTS,
+            notes="P12 deterministic build; P11-owned weights.",
+        ).normalized()
+        mixture_payload = {
+            "manifest": asdict(mixture),
+            "hash": mixture_hash(mixture),
+            "diagnostics": corpus_diagnostics(
+                deduped, configured_weights=mixture.weights
+            ),
+        }
+        mixture_path = out_dir / "mixture.json"
+        mixture_path.write_text(
+            json.dumps(mixture_payload, indent=2) + "\n", encoding="utf-8"
+        )
+
     quality_scores = [
         float((r.meta or {}).get("quality", {}).get("score") or 0.0) for r in deduped
     ]
@@ -360,6 +932,8 @@ def build_train_data(
         "rico_hf_split": config.rico_hf_split,
         "seed_count": len(seeds),
         "collected_count": len(collected),
+        "verifier_rejected": len(verifier_rejected),
+        "verifier_rejected_samples": verifier_rejected[:20],
         "quality_rejected": len(quality_rejected),
         "quality_rejected_samples": quality_rejected[:20],
         "record_count": len(deduped),
@@ -381,6 +955,23 @@ def build_train_data(
         "semantic_cluster_cap": config.semantic_cluster_cap,
         "semantic_dropped": len(semantic_dropped),
         "semantic_dropped_samples": semantic_dropped[:20],
+        "producer_inputs": {
+            "programspec_path": (
+                str(config.programspec_path) if config.programspec_path else None
+            ),
+            "programspec_count": config.programspec_count,
+            "programspec_seed": config.programspec_seed,
+            "language_contract": bool(config.include_language_contract),
+            "deconstruct_path": (
+                str(config.deconstruct_path) if config.deconstruct_path else None
+            ),
+            "render_path": str(config.render_path) if config.render_path else None,
+            "frontier_artifacts": bool(config.include_frontier_artifacts),
+            "repairs_per_program": config.repairs_per_program,
+            "edit_derivatives": bool(config.include_edit_derivatives),
+            "design_md_contrastive": bool(config.include_design_md_contrastive),
+        },
+        "mixture": mixture_payload,
         "mean_quality_score": (
             round(sum(quality_scores) / len(quality_scores), 4)
             if quality_scores
@@ -416,6 +1007,13 @@ def build_train_data(
         "design_md_fingerprints": sorted(design_md_fps),
         "content_fingerprint": _content_fingerprint(deduped),
         "source_families": source_families,
+        "governance": {
+            name: str(path.as_posix()) for name, path in governance_paths.items()
+        },
+        "mixture": str(mixture_path.as_posix()) if mixture_path else None,
+        "diffusion_online": (
+            asdict(_diffusion_config()) if config.diffusion_online else None
+        ),
         "built_at": stats["built_at"],
     }
     manifest_path = out_dir / "manifest.json"
@@ -425,7 +1023,14 @@ def build_train_data(
         "output_dir": str(out_dir),
         "manifest": manifest,
         "stats": stats,
+        "governance": {name: str(path) for name, path in governance_paths.items()},
     }
+
+
+def _diffusion_config():
+    from slm_training.data.diffusion import DiffusionConfig
+
+    return DiffusionConfig()
 
 
 def _component_histogram(records: list[ExampleRecord]) -> dict[str, int]:

@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "issue": "SLM-16",
+  "run_date": "2026-07-14",
+  "kind": "train_data_build_reproduction",
+  "recipe": {
+    "device": "CPU",
+    "steps": 0,
+    "backend": "openuidev/lang-core via OPENUI_BRIDGE_CLI",
+    "source": "all",
+    "synthesizer": "none plus bounded P12 derivatives",
+    "programspec_count": 1,
+    "rico_limit": 1,
+    "require_design_md": false,
+    "reserved_test_structure_filter": false,
+    "honesty_mode": "fixture-backed integration only; no model-quality or ship claim"
+  },
+  "results": {
+    "seed_count": 103,
+    "collected_count": 210,
+    "record_count": 186,
+    "verifier_rejected": 24,
+    "quality_rejected": 0,
+    "error_count": 0,
+    "first_content_fingerprint": "2f14233beeca874af171990935ea168cd4c4024fce9c803ce873ee48fc77d9a7",
+    "second_content_fingerprint": "2f14233beeca874af171990935ea168cd4c4024fce9c803ce873ee48fc77d9a7",
+    "stable_rebuild": true,
+    "families": [
+      "abstraction_ladder",
+      "corruption_repair",
+      "edit_trajectory",
+      "frontier_described",
+      "human_curated",
+      "language_contract",
+      "programspec_generated",
+      "renderer_visual",
+      "rico_real",
+      "web_distilled"
+    ],
+    "diffusion_policy_count": 11,
+    "governance_artifacts": [
+      "croissant.json",
+      "data_card.json",
+      "dataset.spdx.json"
+    ],
+    "mixture_hash": "5b3c27c878f71af3d9734271d87c23a08bef2fc8165f5fec73dd7f55420c8397"
+  },
+  "verification": {
+    "scoped_tests": "239 passed, 2 skipped",
+    "command": "pytest -q tests/test_data tests/test_dsl tests/test_harnesses/train_data",
+    "ship_gates": "not run; this is corpus-build integration evidence"
+  }
+}

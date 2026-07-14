@@ -14,11 +14,11 @@
     "Lay out a single hero card in a column using :hero.title and :hero.body."
   ],
   "ladder": {
-    "L1": "A column contains one hero card; the card contains :hero.title followed by :hero.body.",
-    "L2": "Create one vertically stacked hero card with a title placeholder :hero.title and body placeholder :hero.body.",
-    "L3": "Design a hero section that clearly prioritizes :hero.title and supports it with :hero.body.",
-    "L4": "As a visitor, I need a focused introduction using :hero.title and :hero.body.",
-    "L5": "Make a clear hero using :hero.title and :hero.body."
+    "L1": "A card with two text content elements.",
+    "L2": "Create one card with a title and body.",
+    "L3": "Design a focused hero card for a product.",
+    "L4": "I need a focused introduction card.",
+    "L5": "Make a clear hero card."
   },
   "edits": [
     {
