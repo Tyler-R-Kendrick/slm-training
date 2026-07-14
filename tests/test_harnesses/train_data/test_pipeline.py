@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from slm_training.dsl import bridge_available
+from slm_training.dsl.language_contract import contract_id
 from slm_training.dsl.schema import ExampleRecord, load_jsonl, write_jsonl
 from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
 
@@ -70,6 +71,9 @@ def test_build_train_data_writes_artifacts(tmp_path: Path) -> None:
     assert "prompt_fingerprints" in manifest
     assert "openui_fingerprints" in manifest
     assert len(manifest["ids"]) == stats["record_count"]
+    assert {
+        row.meta.get("contract_id") for row in load_jsonl(out_dir / "records.jsonl")
+    } == {contract_id()}
 
 
 @pytest.mark.skipif(

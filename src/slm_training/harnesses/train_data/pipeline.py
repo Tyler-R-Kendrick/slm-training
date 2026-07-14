@@ -120,7 +120,6 @@ def _normalize_record(record: ExampleRecord) -> ExampleRecord:
     )
     emitted_meta = dict(emitted.meta)
     for key in (
-        "contract_id",
         "program_family_id",
         "lineage_id",
         "split_group_id",
