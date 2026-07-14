@@ -17,6 +17,12 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", type=Path, default=Path("outputs/mixtures"))
     parser.add_argument(
+        "--summary-out",
+        type=Path,
+        default=None,
+        help="Optional durable copy of search_summary.json.",
+    )
+    parser.add_argument(
         "--base",
         type=Path,
         default=None,
@@ -32,10 +38,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--steps", type=int, default=20)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--limit-probes", type=int, default=12)
+    parser.add_argument(
+        "--limit-probes",
+        type=int,
+        default=0,
+        help="Optional bounded probe count; 0 keeps all family probes.",
+    )
     args = parser.parse_args(argv)
 
     from slm_training.data.mixture import (
+        DEFAULT_TASK_WEIGHTS,
+        MixtureManifest,
+        corpus_diagnostics,
         default_base_weights,
         fit_weight_regression,
         global_probe_candidates,
@@ -45,16 +59,39 @@ def main(argv: list[str] | None = None) -> int:
         write_mixture_manifest,
     )
 
-    base = (
-        load_mixture_manifest(args.base).weights
+    base_manifest = (
+        load_mixture_manifest(args.base)
         if args.base
-        else default_base_weights()
+        else MixtureManifest(
+            mixture_id="task_balanced_v2",
+            weights=default_base_weights(),
+            task_weights=DEFAULT_TASK_WEIGHTS,
+            notes="equal task-group targets; family weights are within-task priors",
+        ).normalized()
     )
-    probes = local_probe_candidates(base) + global_probe_candidates(base)
-    probes = probes[: max(1, int(args.limit_probes))]
+    base = base_manifest.weights
+    local = local_probe_candidates(base, task_weights=base_manifest.task_weights)
+    scales_per_family = 3
+    local = [
+        probe
+        for offset in range(scales_per_family)
+        for probe in local[offset::scales_per_family]
+    ]
+    probes = local + global_probe_candidates(
+        base, task_weights=base_manifest.task_weights
+    )
+    if args.limit_probes > 0:
+        probes = probes[: args.limit_probes]
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
+    diagnostics = None
+    if args.train_dir is not None:
+        from slm_training.harnesses.model_build.data import load_train_records
+
+        diagnostics = corpus_diagnostics(
+            load_train_records(args.train_dir), configured_weights=base
+        )
     for probe in probes:
         write_mixture_manifest(out / f"{probe.mixture_id}.json", probe)
 
@@ -91,36 +128,61 @@ def main(argv: list[str] | None = None) -> int:
                     "weights": probe.weights,
                     "weighted_nll": nll,
                     "run_id": probe.mixture_id,
+                    "task_weights": probe.task_weights,
+                    "nll_learning_curve": summary.get("nll_history") or [],
                 }
             )
 
         fit = fit_weight_regression(scored)
-        proposals = propose_from_fit(fit, base=base, n=3)
+        proposals = propose_from_fit(
+            fit,
+            base=base,
+            n=3,
+            task_weights=base_manifest.task_weights,
+        )
         for prop in proposals:
             write_mixture_manifest(out / f"{prop.mixture_id}.json", prop)
-        (out / "search_summary.json").write_text(
-            json.dumps(
-                {"probes": scored, "fit": fit, "proposals": [p.mixture_id for p in proposals]},
-                indent=2,
-            )
-            + "\n",
-            encoding="utf-8",
-        )
+        summary_payload = {
+            "base": base_manifest.mixture_id,
+            "task_weights": base_manifest.task_weights,
+            "corpus_diagnostics": diagnostics,
+            "probes": scored,
+            "fit": fit,
+            "fit_stable": len(scored) > len(fit.get("families") or []) + 1,
+            "proposals": [p.mixture_id for p in proposals],
+            "scored": True,
+        }
     else:
-        (out / "search_summary.json").write_text(
-            json.dumps(
-                {
-                    "probes": [p.mixture_id for p in probes],
-                    "scored": False,
-                    "note": "Pass --score to train and regress.",
-                },
-                indent=2,
-            )
-            + "\n",
-            encoding="utf-8",
-        )
+        summary_payload = {
+            "base": base_manifest.mixture_id,
+            "probes": [p.mixture_id for p in probes],
+            "task_weights": base_manifest.task_weights,
+            "corpus_diagnostics": diagnostics,
+            "scored": False,
+            "note": "Pass --score to train and regress.",
+        }
 
-    print(json.dumps({"out": str(out), "n_probes": len(probes), "scored": bool(args.score)}, indent=2))
+    summary_payload["run"] = {
+        "kind": "scored_mixture_search" if args.score else "dry_fixture_wiring",
+        "train_dir": str(args.train_dir) if args.train_dir else None,
+        "test_dir": str(args.test_dir) if args.test_dir else None,
+        "device": args.device,
+        "steps": args.steps if args.score else 0,
+        "context_backend": "scratch" if args.score else None,
+        "honesty": "weighted_nll" if args.score else "no_quality_claim",
+    }
+    summary_text = json.dumps(summary_payload, indent=2) + "\n"
+    (out / "search_summary.json").write_text(summary_text, encoding="utf-8")
+    if args.summary_out is not None:
+        args.summary_out.parent.mkdir(parents=True, exist_ok=True)
+        args.summary_out.write_text(summary_text, encoding="utf-8")
+
+    print(
+        json.dumps(
+            {"out": str(out), "n_probes": len(probes), "scored": bool(args.score)},
+            indent=2,
+        )
+    )
     return 0
 
 

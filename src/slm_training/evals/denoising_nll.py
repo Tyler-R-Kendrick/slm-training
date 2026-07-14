@@ -34,6 +34,7 @@ import torch
 import torch.nn.functional as F
 
 from slm_training.dsl.schema import ExampleRecord
+from slm_training.harnesses.train_data.catalog import classify_source_family
 
 DEFAULT_MASK_RATES: tuple[float, ...] = (0.15, 0.30, 0.50, 0.70, 0.85)
 
@@ -202,9 +203,12 @@ def evaluate_denoising_nll(
     engine = _legal_engine() if cfg.compute_legal_support else None
     legal_available = engine is not None
 
-    accs: dict[float, _RateAccumulator] = {r: _RateAccumulator() for r in cfg.mask_rates}
+    accs: dict[float, _RateAccumulator] = {
+        r: _RateAccumulator() for r in cfg.mask_rates
+    }
     skipped: list[dict[str, str]] = []
     scored_records = 0
+    per_record_acc: dict[str, dict[str, Any]] = {}
 
     batch_size = max(1, int(cfg.batch_size))
     for start in range(0, len(records), batch_size):
@@ -272,6 +276,23 @@ def evaluate_denoising_nll(
                         max(1, len(record.openui)),
                     )
                 )
+                record_row = per_record_acc.setdefault(
+                    record.id,
+                    {
+                        "id": record.id,
+                        "source_family": "",
+                        "task": str((record.meta or {}).get("task") or "unknown"),
+                        "nll_sum": 0.0,
+                        "masked_tokens": 0,
+                    },
+                )
+                if not record_row["source_family"]:
+                    record_row["source_family"] = str(
+                        (record.meta or {}).get("source_family")
+                        or classify_source_family(record)
+                    )
+                record_row["nll_sum"] += row_nll
+                record_row["masked_tokens"] += len(positions)
 
                 if engine is None:
                     continue
@@ -351,6 +372,41 @@ def evaluate_denoising_nll(
     )
     if was_training:
         model.train()
+    per_record = []
+    for row in sorted(per_record_acc.values(), key=lambda value: value["id"]):
+        tokens = int(row["masked_tokens"])
+        per_record.append(
+            {
+                "id": row["id"],
+                "source_family": row["source_family"],
+                "task": row["task"],
+                "mean_nll": row["nll_sum"] / tokens if tokens else None,
+                "masked_tokens": tokens,
+            }
+        )
+
+    def grouped(key: str) -> dict[str, Any]:
+        groups: dict[str, list[dict[str, Any]]] = {}
+        for row in per_record:
+            groups.setdefault(str(row[key]), []).append(row)
+        return {
+            name: {
+                "n_records": len(rows),
+                "masked_tokens": sum(int(row["masked_tokens"]) for row in rows),
+                "mean_nll": (
+                    sum(
+                        float(row["mean_nll"]) * int(row["masked_tokens"])
+                        for row in rows
+                        if row["mean_nll"] is not None
+                    )
+                    / max(1, sum(int(row["masked_tokens"]) for row in rows))
+                ),
+            }
+            for name, rows in sorted(groups.items())
+        }
+
+    from slm_training.data.dedup import memorization_diagnostic
+
     return {
         **cfg.key(),
         "n_records": scored_records,
@@ -370,9 +426,11 @@ def evaluate_denoising_nll(
             ),
         },
         # Approximate bits-per-byte over len(mask_rates) extrapolated passes.
-        "bits_per_char": (
-            bits_num / (math.log(2.0) * bits_den) if bits_den else None
-        ),
+        "bits_per_char": (bits_num / (math.log(2.0) * bits_den) if bits_den else None),
         "nll_per_char": (bits_num / bits_den if bits_den else None),
         "legal_support_available": legal_available,
+        "per_record": per_record,
+        "by_family": grouped("source_family"),
+        "by_task": grouped("task"),
+        "memorization_by_family": memorization_diagnostic(per_record),
     }

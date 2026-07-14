@@ -30,3 +30,15 @@ __all__ = [
     "evaluate_repair_nll",
     "fixed_mask_positions",
 ]
+from slm_training.evals.generalization import (
+    generalization_report,
+    train_generalization_profile,
+)
+from slm_training.evals.task_scoreboard import build_task_scoreboard, score_case
+
+__all__ = [
+    "build_task_scoreboard",
+    "generalization_report",
+    "score_case",
+    "train_generalization_profile",
+]
