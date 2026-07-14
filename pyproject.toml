@@ -11,9 +11,11 @@ requires-python = ">=3.12,<3.13"
 license = { text = "MIT" }
 authors = [{ name = "Tyler Kendrick" }]
 dependencies = [
-  "lark>=1.1,<2",
-  # Required for Vercel / playground FastAPI entrypoint (api/index.py).
   "fastapi>=0.110,<1",
+  "lark>=1.1,<2",
+  "numpy>=1.26,<3",
+  "onnxruntime>=1.18,<2",
+  "vercel>=0.5,<1",
 ]
 
 [project.optional-dependencies]
@@ -90,6 +92,7 @@ include = ["slm_training*", "gpu_multi_farm*", "scripts*"]
 
 [tool.setuptools.package-data]
 slm_training = ["evals/*.json"]
+"slm_training.web" = ["static/**/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

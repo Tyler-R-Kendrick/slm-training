@@ -12,8 +12,8 @@ import onnxruntime as ort
 
 from slm_training.dsl.parser import validate
 from slm_training.models.grammar import (
+    dfa_admits_token,
     force_emit_token_id,
-    pick_constrained_token,
     structural_token_ids,
 )
 from slm_training.models.tokenizer import OpenUITokenizer
@@ -120,6 +120,36 @@ class OnnxTwoTowerModel:
             return None
         return serialized
 
+    def _pick_constrained_token(
+        self,
+        logits: np.ndarray,
+        prefix: list[int],
+        forced_token_id: int | None,
+    ) -> int | None:
+        blocked = {
+            self.tokenizer.pad_id,
+            self.tokenizer.mask_id,
+            self.tokenizer.bos_id,
+            self.tokenizer.unk_id,
+        }
+        ranked = np.argsort(-logits).tolist()
+        if forced_token_id is not None:
+            ranked.insert(0, forced_token_id)
+        for candidate in dict.fromkeys(int(token_id) for token_id in ranked):
+            if candidate in blocked:
+                continue
+            text = self.tokenizer.decode([*prefix, candidate])
+            if candidate == self.tokenizer.eos_id:
+                if self._certify(text) is not None:
+                    return candidate
+                continue
+            try:
+                if dfa_admits_token(self.tokenizer, prefix, candidate):
+                    return candidate
+            except Exception:  # noqa: BLE001
+                continue
+        return None
+
     def generate(
         self,
         prompt: str,
@@ -166,21 +196,10 @@ class OnnxTwoTowerModel:
                     if bool(getattr(self.config, "grammar_fastpath", True))
                     else None
                 )
-                choice = pick_constrained_token(
+                choice = self._pick_constrained_token(
                     logits,
-                    self.tokenizer,
                     prefix,
-                    top_k=int(self.config.grammar_top_k),
-                    forced_token_id=forced,
-                    prefer_structural=bool(
-                        getattr(self.config, "grammar_prefer_structural", True)
-                    ),
-                    sample=bool(
-                        getattr(self.config, "grammar_sample_decode", False)
-                    ),
-                    temperature=float(
-                        getattr(self.config, "grammar_sample_temperature", 0.8)
-                    ),
+                    forced,
                 )
             else:
                 choice = int(logits.argmax())

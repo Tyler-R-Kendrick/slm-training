@@ -12,6 +12,9 @@ def test_api_index_exports_fastapi_app() -> None:
     assert app.title == "TwoTower OpenUI Playground"
     routes = {getattr(route, "path", None) for route in app.routes}
     assert "/api/health" in routes
+    assert "/api/generation-attempt" in routes
+    assert "/api/generation-review" in routes
+    assert "/api/server-attempt" in routes
     assert "/" in routes
 
 
