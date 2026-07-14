@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
+from pathlib import Path
 from typing import Protocol
 
 from slm_training.dsl.schema import ExampleRecord
@@ -23,6 +25,83 @@ class PromptSynthesizer(Protocol):
 class NoopSynthesizer:
     def expand(self, record: ExampleRecord) -> list[ExampleRecord]:
         return []
+
+
+class FrozenArtifactSynthesizer:
+    """Read hash-bound train-only artifacts produced by the frontier skill."""
+
+    def __init__(self, root: Path | None = None) -> None:
+        self.root = root or Path(__file__).resolve().parents[4] / "fixtures" / "frontier"
+
+    def expand(self, record: ExampleRecord) -> list[ExampleRecord]:
+        if record.split != "train":
+            return []
+        from slm_training.data.frontier import artifact_path, load_bundle
+        from slm_training.data.progspec import ProgramSpec, emit_record
+        from slm_training.data.verify import stamp_record
+
+        path = artifact_path(self.root, record)
+        bundle = load_bundle(path, record)
+        if bundle is None:
+            return []
+        meta = record.meta or {}
+        try:
+            spec = ProgramSpec.from_openui(
+                id=record.id,
+                openui=record.openui,
+                facts=dict(meta.get("facts") or {}),
+                program_family_id=str(meta.get("program_family_id") or record.id),
+                lineage_id=str(meta.get("lineage_id") or record.id),
+                split_group_id=str(meta.get("split_group_id") or record.id),
+                split=record.split,
+                provenance=dict(bundle["provenance"]),
+            )
+        except (TypeError, ValueError, RuntimeError):
+            return []
+
+        items: list[tuple[str, int, dict]] = []
+        items.extend(
+            ("paraphrases", i, {"prompt": prompt, "task": "generation"})
+            for i, prompt in enumerate(bundle["paraphrases"])
+        )
+        items.extend(("ladder", i, item) for i, item in enumerate(bundle["ladder"]))
+        items.extend(("edits", i, item) for i, item in enumerate(bundle["edits"]))
+        items.extend(("vision", i, item) for i, item in enumerate(bundle["vision"]))
+
+        out: list[ExampleRecord] = []
+        for kind, index, raw in items:
+            item = raw if isinstance(raw, dict) else {}
+            prompt = str(item.get("prompt") or "").strip()
+            if not prompt:
+                continue
+            try:
+                projected = emit_record(
+                    spec,
+                    prompt=prompt,
+                    task=str(item.get("task") or ("edit" if kind == "edits" else "generation")),
+                    openui=str(item.get("openui") or record.openui),
+                    record_id=f"{record.id}_frontier_{kind}_{index}",
+                    source="frontier_described",
+                    abstraction_level=item.get("level"),
+                    determinacy=str(item.get("determinacy") or "deterministic"),
+                    tier=str(item.get("tier") or "Bronze"),
+                    meta={
+                        "frontier": {
+                            "artifact": path.name,
+                            "kind": kind,
+                            "index": index,
+                            "payload_hash": hashlib.sha256(
+                                json.dumps(item, sort_keys=True).encode("utf-8")
+                            ).hexdigest(),
+                        }
+                    },
+                )
+                stamped = stamp_record(projected)
+                if stamped.meta["verification_tier"] != "Quarantine":
+                    out.append(stamped)
+            except (TypeError, ValueError, RuntimeError):
+                continue
+        return out
 
 
 class TemplateSynthesizer:
@@ -215,6 +294,8 @@ class QualitySynthesizer:
 def get_synthesizer(name: str) -> PromptSynthesizer:
     if name in {"none", "noop", "off"}:
         return NoopSynthesizer()
+    if name in {"frontier", "frozen_frontier", "frozen_artifacts"}:
+        return FrozenArtifactSynthesizer()
     if name in {"template", "templates"}:
         return TemplateSynthesizer()
     if name in {"layout", "layout_augment", "aug"}:
