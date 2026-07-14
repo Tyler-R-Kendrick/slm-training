@@ -98,7 +98,9 @@ def test_train_and_eval_stub(tmp_path: Path) -> None:
     summary = train(config)
     assert summary["steps"] == 2
     assert summary["eval_history"]
+    assert summary["best_ship_score"] is not None
     assert (config.run_dir / "eval_history.jsonl").exists()
+    assert (config.checkpoint_dir / "best_ship_score.pt").exists()
     ckpt = Path(summary["checkpoint"])
     assert ckpt.exists()
 

@@ -57,6 +57,15 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Allow grammar-invalid rejects when ranking pairs (default: prefer valid).",
     )
+    build.add_argument(
+        "--no-gold",
+        action="store_true",
+        help=(
+            "Policy-only self-distillation corpus: never inject the gold target "
+            "and never synthesize gold-derived rejects. Requires "
+            "--from-checkpoint. Pairs are tagged pair_corpus=self_distilled."
+        ),
+    )
 
     train = sub.add_parser("train", help="Run preference training from a checkpoint")
     train.add_argument("--checkpoint", type=Path, required=True)
@@ -74,7 +83,14 @@ def main(argv: list[str] | None = None) -> int:
 
         from slm_training.quality import soft_corrupt_openui
 
-        use_soft = bool(args.soft_corrupt) and not bool(args.no_soft_corrupt)
+        include_gold = not bool(args.no_gold)
+        if not include_gold and args.from_checkpoint is None:
+            parser.error("--no-gold requires --from-checkpoint (policy-only pairs)")
+        use_soft = (
+            bool(args.soft_corrupt)
+            and not bool(args.no_soft_corrupt)
+            and include_gold  # soft-corrupt rejects are gold-derived
+        )
         prefer_valid = not bool(args.allow_invalid_rejects)
 
         if args.from_checkpoint is not None:
@@ -88,12 +104,12 @@ def main(argv: list[str] | None = None) -> int:
             n_samp = max(1, int(args.samples_per_prompt))
 
             def gen(record):
-                cands = [record.openui]
+                cands = [record.openui] if include_gold else []
                 for _ in range(n_samp):
                     cands.append(model.generate(record.prompt, gold=None))
                 if use_soft:
                     cands.append(soft_corrupt_openui(record.openui))
-                if args.corrupt:
+                if args.corrupt and include_gold:
                     bad = record.openui.replace("TextContent", "BrokenText", 1)
                     if bad == record.openui:
                         bad = "root = Broken()"
@@ -117,6 +133,10 @@ def main(argv: list[str] | None = None) -> int:
             gen,
             prefer_valid_rejects=prefer_valid,
             structure_only=True,
+            include_gold=include_gold,
+            generator_checkpoint=(
+                str(args.from_checkpoint) if args.from_checkpoint else None
+            ),
         )
         n = write_pairs(args.out, pairs)
         print(
@@ -124,6 +144,9 @@ def main(argv: list[str] | None = None) -> int:
                 {
                     "pairs": n,
                     "out": str(args.out),
+                    "pair_corpus": (
+                        "gold_correction" if include_gold else "self_distilled"
+                    ),
                     "soft_corrupt": use_soft,
                     "prefer_valid_rejects": prefer_valid,
                     "structure_only": True,
