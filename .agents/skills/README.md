@@ -11,6 +11,7 @@ Codex and GitHub Copilot also load project skills from **`.agents/skills/`**.
 | Skill | Purpose |
 | --- | --- |
 | `documenting-experiment-results` | Update `docs/design/` + `MODEL_CARD.md` / README summary after experiments & checkpoints |
+| `dashboard-openui-parity` | Keep each dashboard page's interpreted-mode `static/openui/*.openui` program at parity with its compiled React page |
 | `honest-ship-eval` | Multi-suite honest ship gates vs fixture demo |
 | `running-experiment-matrices` | Quality / grammar / perf / phase matrices |
 | `playwright-cli` | Browser / playground automation |

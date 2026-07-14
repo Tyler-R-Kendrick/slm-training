@@ -20,6 +20,17 @@
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 scripts/validate_page_dsl.py --changed"
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "matcher": "",
