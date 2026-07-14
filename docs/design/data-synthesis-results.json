@@ -1,0 +1,633 @@
+{
+  "schema_version": 1,
+  "issue": "SLM-17",
+  "kind": "data_synthesis_definition_of_done",
+  "honesty": {
+    "fixture_or_scratch": true,
+    "ship_claim": false,
+    "gates_lowered": false,
+    "note": "Bounded CPU fixture smoke; not a production HF-context claim."
+  },
+  "inputs": {
+    "first_train_dir": "/tmp/slm17-build-c/v1",
+    "second_train_dir": "/tmp/slm17-build-d/v1",
+    "test_dir": "/tmp/slm17-test3/v1",
+    "task_results": "docs/design/task-eval-wiring-results.json",
+    "baseline_matrix": "/tmp/slm17-e50-fixture-final-summary.json",
+    "champion_matrix": "/tmp/slm17-e50-integrated-final-summary.json",
+    "ltr_max_tokens": 256
+  },
+  "checks": {
+    "contract_id": {
+      "status": "pass",
+      "evidence": {
+        "active": "b8b156526f65d26c",
+        "counts": {
+          "b8b156526f65d26c": 176
+        }
+      }
+    },
+    "content_fingerprint": {
+      "status": "pass",
+      "evidence": {
+        "first": "9359d47176c0ec75fce9389558af69884a6ce4afc47f89fc0f7412987ad4bf17",
+        "second": "9359d47176c0ec75fce9389558af69884a6ce4afc47f89fc0f7412987ad4bf17",
+        "record_counts": [
+          176,
+          176
+        ]
+      }
+    },
+    "language_bridge": {
+      "status": "pass",
+      "evidence": {
+        "positive_records": 122,
+        "component_records": 108,
+        "placeholder_records": 122,
+        "required_targets": [
+          "forward_reference",
+          "multi_child",
+          "nested_list"
+        ],
+        "observed_targets": [
+          "boolean_literal",
+          "component_Accordion",
+          "component_AccordionItem",
+          "component_AreaChart",
+          "component_BarChart",
+          "component_Button",
+          "component_Buttons",
+          "component_Callout",
+          "component_Card",
+          "component_CardHeader",
+          "component_Carousel",
+          "component_CheckBoxGroup",
+          "component_CheckBoxItem",
+          "component_CodeBlock",
+          "component_Col",
+          "component_DatePicker",
+          "component_Form",
+          "component_FormControl",
+          "component_HorizontalBarChart",
+          "component_Image",
+          "component_ImageBlock",
+          "component_ImageGallery",
+          "component_Input",
+          "component_Label",
+          "component_LineChart",
+          "component_MarkDownRenderer",
+          "component_Modal",
+          "component_PieChart",
+          "component_Point",
+          "component_RadarChart",
+          "component_RadialChart",
+          "component_RadioGroup",
+          "component_RadioItem",
+          "component_ScatterChart",
+          "component_ScatterSeries",
+          "component_Select",
+          "component_SelectItem",
+          "component_Separator",
+          "component_Series",
+          "component_SingleStackedBarChart",
+          "component_Slice",
+          "component_Slider",
+          "component_Stack",
+          "component_Steps",
+          "component_StepsItem",
+          "component_SwitchGroup",
+          "component_SwitchItem",
+          "component_TabItem",
+          "component_Table",
+          "component_Tabs",
+          "component_Tag",
+          "component_TagBlock",
+          "component_TextArea",
+          "component_TextCallout",
+          "component_TextContent",
+          "enum_prop",
+          "forward_reference",
+          "multi_child",
+          "negative_number",
+          "nested_list",
+          "number_literal"
+        ],
+        "failures": []
+      }
+    },
+    "deferred_language_surface": {
+      "status": "deferred",
+      "evidence": {
+        "lang_spec": "openui-lang-0.2.x",
+        "openui_versions": {
+          "@openuidev/lang-core": "0.2.9",
+          "@openuidev/react-headless": "^0.9.1",
+          "@openuidev/react-lang": "^0.2.8",
+          "@openuidev/react-ui": "0.12.1"
+        },
+        "state": "unsupported",
+        "query": "unsupported",
+        "mutation": "unsupported",
+        "action": "unsupported",
+        "reason": "not exposed by the pinned OpenUI 0.2.9 language contract"
+      }
+    },
+    "source_families": {
+      "status": "pass",
+      "evidence": {
+        "expected": [
+          "abstraction_ladder",
+          "corruption_repair",
+          "edit_trajectory",
+          "frontier_described",
+          "human_curated",
+          "language_contract",
+          "programspec_generated",
+          "renderer_visual",
+          "rico_real",
+          "web_distilled"
+        ],
+        "missing": [],
+        "bad_unique_root_parents": [],
+        "families": {
+          "abstraction_ladder": {
+            "unique_records": 5,
+            "unique_root_parents": 1,
+            "prompt_chars": 175,
+            "target_chars": 725,
+            "target_tokens": 275,
+            "records_per_root_parent": {
+              "max": 5,
+              "p50": 5,
+              "p95": 5
+            }
+          },
+          "corruption_repair": {
+            "unique_records": 1,
+            "unique_root_parents": 1,
+            "prompt_chars": 293,
+            "target_chars": 253,
+            "target_tokens": 78,
+            "records_per_root_parent": {
+              "max": 1,
+              "p50": 1,
+              "p95": 1
+            }
+          },
+          "edit_trajectory": {
+            "unique_records": 4,
+            "unique_root_parents": 1,
+            "prompt_chars": 769,
+            "target_chars": 1040,
+            "target_tokens": 312,
+            "records_per_root_parent": {
+              "max": 4,
+              "p50": 4,
+              "p95": 4
+            }
+          },
+          "frontier_described": {
+            "unique_records": 3,
+            "unique_root_parents": 1,
+            "prompt_chars": 211,
+            "target_chars": 435,
+            "target_tokens": 165,
+            "records_per_root_parent": {
+              "max": 3,
+              "p50": 3,
+              "p95": 3
+            }
+          },
+          "human_curated": {
+            "unique_records": 34,
+            "unique_root_parents": 17,
+            "prompt_chars": 2592,
+            "target_chars": 5482,
+            "target_tokens": 2194,
+            "records_per_root_parent": {
+              "max": 2,
+              "p50": 2,
+              "p95": 2
+            }
+          },
+          "language_contract": {
+            "unique_records": 122,
+            "unique_root_parents": 61,
+            "prompt_chars": 9840,
+            "target_chars": 15074,
+            "target_tokens": 6110,
+            "records_per_root_parent": {
+              "max": 2,
+              "p50": 2,
+              "p95": 2
+            }
+          },
+          "programspec_generated": {
+            "unique_records": 2,
+            "unique_root_parents": 1,
+            "prompt_chars": 162,
+            "target_chars": 506,
+            "target_tokens": 156,
+            "records_per_root_parent": {
+              "max": 2,
+              "p50": 2,
+              "p95": 2
+            }
+          },
+          "renderer_visual": {
+            "unique_records": 1,
+            "unique_root_parents": 1,
+            "prompt_chars": 30,
+            "target_chars": 107,
+            "target_tokens": 44,
+            "records_per_root_parent": {
+              "max": 1,
+              "p50": 1,
+              "p95": 1
+            }
+          },
+          "rico_real": {
+            "unique_records": 2,
+            "unique_root_parents": 1,
+            "prompt_chars": 318,
+            "target_chars": 660,
+            "target_tokens": 234,
+            "records_per_root_parent": {
+              "max": 2,
+              "p50": 2,
+              "p95": 2
+            }
+          },
+          "web_distilled": {
+            "unique_records": 2,
+            "unique_root_parents": 1,
+            "prompt_chars": 204,
+            "target_chars": 214,
+            "target_tokens": 96,
+            "records_per_root_parent": {
+              "max": 2,
+              "p50": 2,
+              "p95": 2
+            }
+          }
+        }
+      }
+    },
+    "split_before_derive_leakage": {
+      "status": "pass",
+      "evidence": {
+        "held_out_n": 35,
+        "contaminated": []
+      }
+    },
+    "diagnostic_ceiling": {
+      "status": "pass",
+      "evidence": {
+        "suites": {
+          "smoke": {
+            "n": 3,
+            "parse_rate": 1.0,
+            "placeholder_fidelity": 1.0,
+            "placeholder_validity": 1.0,
+            "structural_similarity": 1.0,
+            "component_type_recall": 1.0,
+            "failures": []
+          },
+          "held_out": {
+            "n": 5,
+            "parse_rate": 1.0,
+            "placeholder_fidelity": 1.0,
+            "placeholder_validity": 1.0,
+            "structural_similarity": 1.0,
+            "component_type_recall": 1.0,
+            "failures": []
+          },
+          "adversarial": {
+            "n": 4,
+            "parse_rate": 1.0,
+            "placeholder_fidelity": 1.0,
+            "placeholder_validity": 1.0,
+            "structural_similarity": 1.0,
+            "component_type_recall": 1.0,
+            "failures": []
+          },
+          "ood": {
+            "n": 4,
+            "parse_rate": 1.0,
+            "placeholder_fidelity": 1.0,
+            "placeholder_validity": 1.0,
+            "structural_similarity": 1.0,
+            "component_type_recall": 1.0,
+            "failures": []
+          }
+        },
+        "failures": {}
+      }
+    },
+    "length_budget": {
+      "status": "pass",
+      "evidence": {
+        "grammar_ltr_max_tokens": 256,
+        "grammar_ltr_stages": [
+          64,
+          128,
+          192,
+          256
+        ],
+        "effective_budget": 256,
+        "sections": {
+          "train": {
+            "n": 176,
+            "min": 27,
+            "max": 117,
+            "mean": 54.90909090909091,
+            "p50": 52,
+            "p90": 78,
+            "p95": 93,
+            "p99": 112,
+            "over_budget": 0,
+            "ok": true,
+            "samples_over_budget": []
+          },
+          "smoke": {
+            "n": 3,
+            "min": 40,
+            "max": 99,
+            "mean": 66.66666666666667,
+            "p50": 61,
+            "p90": 99,
+            "p95": 99,
+            "p99": 99,
+            "over_budget": 0,
+            "ok": true,
+            "samples_over_budget": []
+          },
+          "held_out": {
+            "n": 5,
+            "min": 53,
+            "max": 160,
+            "mean": 101.4,
+            "p50": 106,
+            "p90": 160,
+            "p95": 160,
+            "p99": 160,
+            "over_budget": 0,
+            "ok": true,
+            "samples_over_budget": []
+          },
+          "adversarial": {
+            "n": 4,
+            "min": 26,
+            "max": 116,
+            "mean": 76.0,
+            "p50": 95,
+            "p90": 116,
+            "p95": 116,
+            "p99": 116,
+            "over_budget": 0,
+            "ok": true,
+            "samples_over_budget": []
+          },
+          "ood": {
+            "n": 4,
+            "min": 72,
+            "max": 149,
+            "mean": 101.75,
+            "p50": 113,
+            "p90": 149,
+            "p95": 149,
+            "p99": 149,
+            "over_budget": 0,
+            "ok": true,
+            "samples_over_budget": []
+          },
+          "rico_held": {
+            "n": 19,
+            "min": 89,
+            "max": 145,
+            "mean": 120.78947368421052,
+            "p50": 117,
+            "p90": 145,
+            "p95": 145,
+            "p99": 145,
+            "over_budget": 0,
+            "ok": true,
+            "samples_over_budget": []
+          }
+        },
+        "failures": [],
+        "ok": true
+      }
+    },
+    "verifier_tiers": {
+      "status": "pass",
+      "evidence": {
+        "counts": {
+          "Bronze": 153,
+          "Gold": 2,
+          "Silver": 21
+        },
+        "gold_silver_failures": []
+      }
+    },
+    "governance": {
+      "status": "pass",
+      "evidence": {
+        "artifacts": {
+          "croissant.json": "/tmp/slm17-build-c/v1/governance/croissant.json",
+          "data_card.json": "/tmp/slm17-build-c/v1/governance/data_card.json",
+          "dataset.spdx.json": "/tmp/slm17-build-c/v1/governance/dataset.spdx.json"
+        },
+        "missing": [],
+        "scan_counts": {
+          "pii": 0,
+          "secrets": 0,
+          "instruction_like": 0
+        }
+      }
+    },
+    "edit_invariants": {
+      "status": "pass",
+      "evidence": {
+        "records": 5,
+        "failures": []
+      }
+    },
+    "task_and_equivalence_eval": {
+      "status": "pass",
+      "evidence": {
+        "task_names": [
+          "behavior",
+          "edit",
+          "generation",
+          "repair",
+          "visual"
+        ],
+        "equivalence_levels": [
+          "L3",
+          "L4",
+          "L5"
+        ],
+        "equivalence": {
+          "value": 1.0,
+          "n": 3,
+          "status": "available",
+          "reason": null
+        },
+        "unavailable_metric_instances": 3
+      }
+    },
+    "generalization_held_outs": {
+      "status": "pass",
+      "evidence": {
+        "decontaminated": true,
+        "held_out_n": 35,
+        "accepted_n": 35,
+        "contaminated": [],
+        "slice_counts": {
+          "longer_program": 10,
+          "unseen_component_pair": 5,
+          "unseen_component_triple": 5
+        }
+      }
+    },
+    "matched_quality_signal": {
+      "status": "pass",
+      "evidence": {
+        "matched_recipe": {
+          "device": "cpu",
+          "steps": 80,
+          "batch_size": 4,
+          "learning_rate": 0.0003,
+          "seed": 0,
+          "gen_steps": 4,
+          "context_backend": "scratch",
+          "rico_eval_limit": 5,
+          "suites": [
+            "held_out",
+            "rico_held"
+          ],
+          "test_dir": "/tmp/slm17-test3/v1",
+          "design_md_in_context": false,
+          "gate_policy": {
+            "smoke": {
+              "parse_rate": 0.66,
+              "structural_similarity": 0.35,
+              "placeholder_fidelity": 0.25,
+              "reward_score": 0.3
+            },
+            "held_out": {
+              "parse_rate": 0.4,
+              "structural_similarity": 0.3,
+              "placeholder_fidelity": 0.15
+            },
+            "adversarial": {
+              "parse_rate": 0.25,
+              "structural_similarity": 0.25
+            },
+            "ood": {
+              "parse_rate": 0.25,
+              "structural_similarity": 0.25
+            },
+            "rico_held": {
+              "parse_rate": 0.1,
+              "structural_similarity": 0.2
+            }
+          }
+        },
+        "mismatched": {},
+        "result_mismatched": {},
+        "train_content_fingerprints": {
+          "baseline": "a1c82610aeeea9874660e8883032b579cb6bb0f61f35a381ab6a8a554b8f618f",
+          "champion": "9359d47176c0ec75fce9389558af69884a6ce4afc47f89fc0f7412987ad4bf17",
+          "distinct": true
+        },
+        "baseline": {
+          "id": "E50",
+          "initialization": "eval_only",
+          "honest_slot_contract": true,
+          "schema_in_context": true,
+          "slot_contract_in_context": true,
+          "slot_contract_constrained_decode": true,
+          "template_fill_decode": false,
+          "grammar_ltr_primary": false,
+          "grammar_ltr_repair": true,
+          "effective_gen_steps": 4,
+          "best_of_n": 1,
+          "train_dir": "/tmp/slm17-final-fixture/v1",
+          "train_content_fingerprint": "a1c82610aeeea9874660e8883032b579cb6bb0f61f35a381ab6a8a554b8f618f",
+          "checkpoint": "/tmp/slm17-e50-fixture-honest-eval/qx_e50_core_remask/checkpoints/last.pt",
+          "pass": false,
+          "suites": {
+            "held_out": {
+              "n": 5,
+              "parse_rate": 0.0,
+              "placeholder_fidelity": 0.08,
+              "structural_similarity": 0.0,
+              "reward_score": 0.0
+            },
+            "rico_held": {
+              "n": 5,
+              "parse_rate": 0.0,
+              "placeholder_fidelity": 0.06666666666666667,
+              "structural_similarity": 0.0,
+              "reward_score": 0.0
+            }
+          }
+        },
+        "champion": {
+          "id": "E50",
+          "initialization": "eval_only",
+          "honest_slot_contract": true,
+          "schema_in_context": true,
+          "slot_contract_in_context": true,
+          "slot_contract_constrained_decode": true,
+          "template_fill_decode": false,
+          "grammar_ltr_primary": false,
+          "grammar_ltr_repair": true,
+          "effective_gen_steps": 4,
+          "best_of_n": 1,
+          "train_dir": "/tmp/slm17-build-c/v1",
+          "train_content_fingerprint": "9359d47176c0ec75fce9389558af69884a6ce4afc47f89fc0f7412987ad4bf17",
+          "checkpoint": "/tmp/slm17-e50-new-honest-eval/qx_e50_core_remask/checkpoints/last.pt",
+          "pass": false,
+          "suites": {
+            "held_out": {
+              "n": 5,
+              "parse_rate": 0.0,
+              "placeholder_fidelity": 0.12,
+              "structural_similarity": 0.0,
+              "reward_score": 0.0
+            },
+            "rico_held": {
+              "n": 5,
+              "parse_rate": 0.0,
+              "placeholder_fidelity": 0.1,
+              "structural_similarity": 0.0,
+              "reward_score": 0.0
+            }
+          }
+        },
+        "placeholder_fidelity": {
+          "held_out": {
+            "n": 5,
+            "baseline": 0.08,
+            "champion": 0.12,
+            "delta": 0.039999999999999994,
+            "same_nonzero_n": true,
+            "improved": true
+          },
+          "rico_held": {
+            "n": 5,
+            "baseline": 0.06666666666666667,
+            "champion": 0.1,
+            "delta": 0.03333333333333334,
+            "same_nonzero_n": true,
+            "improved": true
+          }
+        }
+      }
+    }
+  },
+  "pass": true
+}

@@ -46,6 +46,15 @@ only when:
 Scratch-context and frozen-HF-context runs are separate tracks with separate
 baselines and curves (`summary["track"]`); never pool them on one fit.
 
+**P13 verification (2026-07-14): NO-GO.** Deterministic corpus checks pass, but
+equal-recipe E53 fixture and integrated checkpoints tie on placeholder fidelity
+for both held-out (0.2, n=5) and RICO (0.5278, n=4); parse and structure are 0.0
+on both arms. The earlier E0-vs-E50 result changed the system recipe and is
+superseded. Promotion is blocked until an honest equal-recipe run produces a
+strict gain on both suites, then clears the remaining multi-seed, scaling,
+full-suite, HF-context, and bucket requirements. See
+[data-synthesis.md](data-synthesis.md); the protocol above is unchanged.
+
 ## P1a: fuzzy + semantic dedup (extend `catalog.py` → `data/dedup.py`)
 
 Current dedup is exact-pair only (`fingerprint_pair`). Add two layers behind

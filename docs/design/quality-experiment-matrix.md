@@ -480,10 +480,30 @@ non-deterministic.
 
 Full 1500 `rico_held` + HF context remains the production claim.
 
-## Verifier-guided repair proposed (docs only — not in the runner yet)
+## P13 data-synthesis verification (CPU scratch, 2026-07-14)
 
-Remaining verifier-guided repair gaps from
-[verifier-guided-repair.md](verifier-guided-repair.md). **Not implemented**.
+The accepted comparison uses the same E50 experiment and effective decode
+recipe on both corpora: CPU scratch, 80 train steps, batch 4, lr `3e-4`, seed
+0, honest slot contract, four-step best-of-1 decode, no template fill or
+DESIGN.md context, and unchanged gates.
+
+| Suite | n | Fixture fidelity | Integrated fidelity | Delta | Decision |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `held_out` | 5 | 0.08 | 0.12 | +0.04 | bounded signal pass |
+| `rico_held` | 5 | 0.0667 | 0.10 | +0.0333 | bounded signal pass |
+
+Both arms have parse/structure/reward 0.0 and fail unchanged ship gates. The
+earlier E0/E41/E53 probes were negative or non-attributable and are
+superseded; the verifier rejects differing experiment/decode settings and
+requires strict gains on both suites. Full evidence and the no-promotion
+decision are in [data-synthesis.md](data-synthesis.md) and
+[data-synthesis-results.json](data-synthesis-results.json).
+
+## Verifier-guided repair (mixed status)
+
+Verifier-guided repair status from
+[verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
+E60–E61 and E63–E65 remain proposed.
 The inner-loop prerequisites (deterministic denoising-NLL suites, token
 budgets, full-state resume, source-family manifests, decode trajectory
 store) plus the P1–P3 staged plan (mixture search, scaling ladders,
