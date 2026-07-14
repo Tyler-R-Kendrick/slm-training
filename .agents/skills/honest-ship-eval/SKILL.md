@@ -84,3 +84,8 @@ Production HF-context trains must land weights in
 `train_summary.json` → `checkpoint_bucket` (or an explicit
 `--no-sync-checkpoints` / scratch rationale). Auth: `HF_TOKEN` /
 `hf auth login`.
+
+Then update [`docs/MODEL_CARD.md`](../../../docs/MODEL_CARD.md) **and** the
+README “Model card (summary)” with run id, URI, suite metrics, and claim level
+(demo / scratch matrix / production HF). Ship claims without a card+summary
+update are incomplete.

@@ -64,3 +64,14 @@ python -m scripts.sync_checkpoints --run-dir outputs/runs/twotower_v1 --dry-run
 
 Artifacts: `outputs/runs/<id>/checkpoint_bucket.json` plus
 `train_summary.json` → `checkpoint_bucket` field.
+
+## Model card (required)
+
+After every successful sync (or fixture bootstrap that writes a checkpoint),
+update:
+
+1. [`docs/MODEL_CARD.md`](../MODEL_CARD.md) — roster, eval, history, URI
+2. [`README.md`](../../README.md) — “Model card (summary)” table only
+
+Agent process: [`AGENTS.md`](../../AGENTS.md) + skill
+`documenting-experiment-results`.

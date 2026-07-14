@@ -9,3 +9,4 @@ After any train / eval / benchmark / matrix run, use
 `hf-cli` + marketplace skills from
 [huggingface/skills](https://github.com/huggingface/skills)
 (`hf skills add --claude --force` / `hf skills update` to refresh).
+When a checkpoint is created or promoted, update `docs/MODEL_CARD.md` and the README model-card summary.

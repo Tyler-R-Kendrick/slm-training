@@ -18,8 +18,11 @@ Experiment-first OpenUI layout SLMs:
 5. **Durable checkpoints** — real full HF-context trains upload checkpoints to
    the [OpenUI HF Bucket](https://huggingface.co/buckets/TKendrick/OpenUI)
    (`docs/design/checkpoint-bucket.md`).
+6. **Model cards** — every new/promoted checkpoint updates
+   [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md) **and** the README “Model card
+   (summary)” section.
 
-Start: `README.md`, `docs/design/openui-twotower.md`,
+Start: `README.md`, `docs/MODEL_CARD.md`, `docs/design/openui-twotower.md`,
 `docs/design/quality-experiment-matrix.md`,
 `docs/design/perf-experiment-matrix.md`, `docs/design/research-lineage.md`,
 `docs/design/checkpoint-bucket.md`.
@@ -88,6 +91,24 @@ Agents must **not** treat a full HF train as done until
 (or an explicit documented `--no-sync-checkpoints` / scratch reason). Use
 `hf-cli` / bucket skills for inspection (`hf buckets list TKendrick/OpenUI -R`).
 
+### Model card (required with every checkpoint)
+
+Whenever a checkpoint is **created, synced, bootstrapped, or promoted**:
+
+1. Update **[`docs/MODEL_CARD.md`](docs/MODEL_CARD.md)** — roster row, eval table
+   (suite `n` + metrics + pass/fail), recipe (device/steps/backend/honesty),
+   bucket URI or local path, and append **Checkpoint history**.
+2. Refresh **README → “Model card (summary)”** — short table only; link to the
+   full card for detail. Do not let the README diverge from the card.
+3. Keep claims honest (fixture / scratch matrix ≠ production HF ship).
+
+Triggers include: `train_model`, `remote_train`, `bootstrap_playground`,
+`sync_checkpoints`, matrix runs that designate a reusable champion, preference /
+RL stages that write a new serving `*.pt`, and `--register-promoted`.
+
+A checkpoint without a model-card + README summary update is incomplete work
+(same bar as missing `docs/design/` measured-results).
+
 ## Iron law: docs follow every experiment
 
 ```text
@@ -110,11 +131,14 @@ or any ad-hoc run whose scoreboard / gates / latency inform a decision.
 2. Matching markdown measured-results / notes updated (not JSON-only).
 3. Recipe metadata: device, steps, backend, matrix set, suite `n`, honesty mode.
 4. Honest pass/fail vs `--ship-gates` or perf guardrails.
-5. Commit docs with the experiment — no “docs later” TODO.
+5. If a checkpoint was written/promoted: update `docs/MODEL_CARD.md` **and**
+   README “Model card (summary)”.
+6. Commit docs with the experiment — no “docs later” TODO.
 
 **Doc homes:** quality/ship → `quality-experiment-matrix.md` (+ adversarial
 review on policy changes); perf → `perf-experiment-matrix.md` /
-`runtime-performance.md`; lever-specific → that design doc.
+`runtime-performance.md`; checkpoints → `MODEL_CARD.md` + README summary +
+`checkpoint-bucket.md`; lever-specific → that design doc.
 
 | Excuse | Reality |
 | --- | --- |
@@ -122,6 +146,7 @@ review on policy changes); perf → `perf-experiment-matrix.md` /
 | "JSON written; markdown later" | Headline tables are the scoreboard. |
 | "Failed/partial — skip docs" | Document failure + recipe. |
 | "It's in the PR body" | PR text is ephemeral. |
+| "Bucket URI is enough; skip the model card" | Card + README summary are how humans find the checkpoint. |
 
 **REQUIRED SKILL:** `documenting-experiment-results`.
 
@@ -135,8 +160,9 @@ review on policy changes); perf → `perf-experiment-matrix.md` /
 - Match existing style; no unrelated drive-by refactors.
 
 ```
-docs/design/      # matrices + measured results (source of truth)
-scripts/          # train / eval / matrix / bench CLIs
+docs/MODEL_CARD.md # checkpoint roster + eval (keep README summary in sync)
+docs/design/       # matrices + measured results (source of truth)
+scripts/           # train / eval / matrix / bench CLIs
 src/slm_training/
-.agents/skills/   # canonical skills for all tools
+.agents/skills/    # canonical skills for all tools
 ```

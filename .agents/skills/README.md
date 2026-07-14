@@ -9,7 +9,7 @@ skills).
 
 | Skill | Purpose |
 | --- | --- |
-| `documenting-experiment-results` | Update `docs/design/` after every experiment run |
+| `documenting-experiment-results` | Update `docs/design/` + `MODEL_CARD.md` / README summary after experiments & checkpoints |
 | `honest-ship-eval` | Multi-suite honest ship gates vs fixture demo |
 | `running-experiment-matrices` | Quality / grammar / perf / phase matrices |
 | `playwright-cli` | Browser / playground automation |
