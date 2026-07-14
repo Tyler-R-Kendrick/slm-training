@@ -23,6 +23,7 @@ from slm_training.data.leakage import (
     fingerprint_prompt,
 )
 from slm_training.data.progspec import ProgramSpec, emit_record
+from slm_training.data.verify import RuntimeEvidence
 from slm_training.dsl.schema import ExampleRecord
 
 _SAFE_ID_RE = re.compile(r"[^a-z0-9_]+")
@@ -309,10 +310,14 @@ def _placeholder(namespace: str, index: int, field: str, value: Any) -> str | No
 
 
 def normalize_capture(
-    capture: BrowserCapture, *, namespace: str
+    capture: BrowserCapture,
+    *,
+    namespace: str,
+    candidate_links: Mapping[str, str] | None = None,
 ) -> NormalizedUIGraph:
     """Drop raw user text and retain only stable placeholder skeletons."""
     namespace = _safe_id(namespace)
+    candidate_links = candidate_links or {}
     nodes: list[UIGraphNode] = []
     for index, raw in enumerate(capture.elements):
         bbox = raw.get("bbox") or {}
@@ -345,7 +350,10 @@ def normalize_capture(
                     if raw.get("screenshot_ref")
                     else None
                 ),
-                dsl_node=(str(raw["dsl_node"]) if raw.get("dsl_node") else None),
+                dsl_node=(
+                    candidate_links.get(str(raw.get("id") or f"node_{index}"))
+                    or (str(raw["dsl_node"]) if raw.get("dsl_node") else None)
+                ),
             )
         )
     return NormalizedUIGraph(
@@ -525,7 +533,9 @@ def project_capture(
     capture: BrowserCapture,
     candidate_openui: str,
     evidence: ProjectionEvidence,
+    candidate_runtime: RuntimeEvidence,
     eval_records: Iterable[ExampleRecord],
+    candidate_links: Mapping[str, str] | None = None,
     split: str = "train",
 ) -> ExampleRecord:
     """Emit a lineage-linked weak candidate, governed and checked against eval."""
@@ -538,7 +548,11 @@ def project_capture(
         or capture.interaction_trace
     ):
         raise ValueError("raw DOM cannot be the sole projection evidence")
-    graph = normalize_capture(capture, namespace=entry.id)
+    graph = normalize_capture(
+        capture,
+        namespace=entry.id,
+        candidate_links=candidate_links,
+    )
     source_content = capture.content_blob()
     provenance = entry.provenance(source_content)
     digest = hashlib.sha256(f"{entry.id}\0{entry.url}".encode()).hexdigest()[:12]
@@ -559,6 +573,26 @@ def project_capture(
             "content_hash": provenance.content_hash,
         },
     )
+    graph_ids = {node.id for node in graph.nodes}
+    unknown_source_nodes = sorted(set(candidate_links or {}) - graph_ids)
+    if unknown_source_nodes:
+        raise ValueError(
+            f"candidate link references unknown capture node: {unknown_source_nodes[0]}"
+        )
+    binders = {
+        line.partition("=")[0].strip()
+        for line in spec.canonical_openui.splitlines()
+        if "=" in line
+    }
+    unknown_dsl_nodes = sorted(
+        node.dsl_node
+        for node in graph.nodes
+        if node.dsl_node and node.dsl_node not in binders
+    )
+    if unknown_dsl_nodes:
+        raise ValueError(
+            f"capture correspondence references unknown DSL node: {unknown_dsl_nodes[0]}"
+        )
     namespace = _safe_id(entry.id)
     record = emit_record(
         spec,
@@ -577,6 +611,9 @@ def project_capture(
             "candidate_label": "weak_evidence_backed",
             "projection": evidence.to_dict(),
             "normalized_ui_graph": graph.to_dict(),
+            "runtime_evidence": candidate_runtime.to_dict(),
+            "require_runtime": True,
+            "require_behavior": any(node.affordances for node in graph.nodes),
             "evidence_channels": [
                 "dom",
                 "accessibility",

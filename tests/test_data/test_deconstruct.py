@@ -18,6 +18,7 @@ from slm_training.data.deconstruct import (
     normalize_capture,
     project_capture,
 )
+from slm_training.data.verify import RuntimeEvidence
 from slm_training.dsl.schema import ExampleRecord
 
 OPENUI = 'root = Stack([cta])\ncta = Button(":external.cta")'
@@ -83,6 +84,10 @@ def _eval_record() -> ExampleRecord:
         openui='root = TextContent(":held.text")',
         split="held_out",
     )
+
+
+def _runtime() -> RuntimeEvidence:
+    return RuntimeEvidence(rendered=True, interaction_trace=("click:cta",))
 
 
 def test_manifest_is_stable_and_capture_is_fail_closed(tmp_path: Path) -> None:
@@ -164,6 +169,7 @@ def test_projection_is_weak_placeholderized_lineage_with_governance() -> None:
         capture=_capture(),
         candidate_openui=OPENUI,
         evidence=evidence,
+        candidate_runtime=_runtime(),
         eval_records=[_eval_record()],
     )
     assert record.source == "web_projection"
@@ -191,6 +197,7 @@ def test_incomplete_rights_or_pii_capture_is_quarantined() -> None:
         evidence=ProjectionEvidence.from_counts(
             matched_elements=1, total_source_elements=1
         ),
+        candidate_runtime=_runtime(),
         eval_records=[_eval_record()],
     )
     assert incomplete.meta["verification_tier"] == "Quarantine"
@@ -203,6 +210,7 @@ def test_incomplete_rights_or_pii_capture_is_quarantined() -> None:
         evidence=ProjectionEvidence.from_counts(
             matched_elements=1, total_source_elements=1
         ),
+        candidate_runtime=_runtime(),
         eval_records=[_eval_record()],
     )
     assert pii.meta["verification_tier"] == "Quarantine"
@@ -217,6 +225,7 @@ def test_eval_overlap_is_rejected() -> None:
         evidence=ProjectionEvidence.from_counts(
             matched_elements=1, total_source_elements=1
         ),
+        candidate_runtime=_runtime(),
         eval_records=[_eval_record()],
     )
     with pytest.raises(ValueError, match="openui_structure"):
@@ -248,5 +257,37 @@ def test_raw_dom_is_never_the_only_projection_evidence() -> None:
             evidence=ProjectionEvidence.from_counts(
                 matched_elements=0, total_source_elements=0
             ),
+            candidate_runtime=_runtime(),
             eval_records=[_eval_record()],
+        )
+
+
+def test_candidate_runtime_and_dom_to_dsl_links_are_verified() -> None:
+    kwargs = {
+        "entry": _entry(),
+        "capture": _capture(),
+        "candidate_openui": OPENUI,
+        "evidence": ProjectionEvidence.from_counts(
+            matched_elements=1, total_source_elements=1
+        ),
+        "eval_records": [_eval_record()],
+    }
+    failed_runtime = project_capture(
+        **kwargs,
+        candidate_runtime=RuntimeEvidence(rendered=False),
+    )
+    assert failed_runtime.meta["verification_tier"] == "Quarantine"
+    assert failed_runtime.meta["failing_gate"] == "G5"
+
+    linked = project_capture(
+        **kwargs,
+        candidate_runtime=_runtime(),
+        candidate_links={"node_0": "cta"},
+    )
+    assert linked.meta["normalized_ui_graph"]["nodes"][0]["dsl_node"] == "cta"
+    with pytest.raises(ValueError, match="unknown DSL node"):
+        project_capture(
+            **kwargs,
+            candidate_runtime=_runtime(),
+            candidate_links={"node_0": "missing"},
         )
