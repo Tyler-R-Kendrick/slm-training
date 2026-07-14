@@ -612,4 +612,26 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     (run_dir / "train_summary.json").write_text(
         json.dumps(summary, indent=2) + "\n", encoding="utf-8"
     )
+
+    # Durable remote copy for real full training runs (HF-context track).
+    try:
+        from slm_training.harnesses.model_build.checkpoint_bucket import (
+            maybe_sync_train_checkpoints,
+        )
+
+        bucket_report = maybe_sync_train_checkpoints(config, ckpt_dir)
+    except Exception as exc:  # noqa: BLE001
+        # Surface clearly — full runs must not silently keep checkpoints local-only.
+        raise RuntimeError(
+            f"checkpoint bucket sync failed for run_id={config.run_id!r}: {exc}"
+        ) from exc
+    if bucket_report is not None:
+        summary["checkpoint_bucket"] = bucket_report
+        (run_dir / "train_summary.json").write_text(
+            json.dumps(summary, indent=2) + "\n", encoding="utf-8"
+        )
+        (run_dir / "checkpoint_bucket.json").write_text(
+            json.dumps(bucket_report, indent=2) + "\n", encoding="utf-8"
+        )
+
     return summary

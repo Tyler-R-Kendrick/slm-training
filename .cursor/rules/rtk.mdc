@@ -1,0 +1,8 @@
+---
+description: Prefer RTK (Rust Token Killer) for verbose shell output.
+globs:
+alwaysApply: true
+---
+
+When `rtk` is available on PATH (`rtk gain` works), prefix verbose shell commands
+with `rtk` (git status/diff/log, pytest, ruff, ls, docker, kubectl). See `RTK.md`.

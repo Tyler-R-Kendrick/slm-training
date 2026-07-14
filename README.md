@@ -10,7 +10,22 @@ Novel SLM experiments: harnesses for **placeholder OpenUI** layout generation (o
 4. **OpenUI Lang bridge** — Node sidecar over official `@openuidev/lang-core`
 5. **GPU multi-farm MCP** — list / launch / cost-project across Vast.ai, RunPod, Lambda
 
-See [docs/design/openui-twotower.md](docs/design/openui-twotower.md), [docs/design/research-lineage.md](docs/design/research-lineage.md) (papers → code), [docs/design/research-correction-critics.md](docs/design/research-correction-critics.md) (V4 remask / trust-gate / honest inventory; V6 CoRe/T2M), [docs/design/verifier-guided-repair.md](docs/design/verifier-guided-repair.md) (PDDL-Instruct / verifier-repair applicability map), [docs/design/quality-experiment-matrix.md](docs/design/quality-experiment-matrix.md) (E0–E75 + X0–X8 matrices; E34 deferred), [docs/design/speculative-denoising.md](docs/design/speculative-denoising.md) (V7 stability / dependency-cluster / survival / successor-cache decode), [docs/design/dsl-native-tokenizer.md](docs/design/dsl-native-tokenizer.md) (V5 lexer alphabet), [docs/design/grammar-fastpath.md](docs/design/grammar-fastpath.md), [docs/design/grammar-backends.md](docs/design/grammar-backends.md), [docs/design/structure-only-eval.md](docs/design/structure-only-eval.md), [docs/design/adversarial-review.md](docs/design/adversarial-review.md), [docs/design/runtime-performance.md](docs/design/runtime-performance.md), and [docs/design/gpu-multi-farm-mcp.md](docs/design/gpu-multi-farm-mcp.md).
+See [docs/design/openui-twotower.md](docs/design/openui-twotower.md), [docs/design/research-lineage.md](docs/design/research-lineage.md) (papers → code), [docs/design/research-correction-critics.md](docs/design/research-correction-critics.md) (V4 remask / trust-gate / honest inventory; V6 CoRe/T2M), [docs/design/verifier-guided-repair.md](docs/design/verifier-guided-repair.md) (PDDL-Instruct / verifier-repair applicability map), [docs/design/quality-experiment-matrix.md](docs/design/quality-experiment-matrix.md) (E0–E75 + X0–X8 matrices; E34 deferred), [docs/design/speculative-denoising.md](docs/design/speculative-denoising.md) (V7 stability / dependency-cluster / survival / successor-cache decode), [docs/design/dsl-native-tokenizer.md](docs/design/dsl-native-tokenizer.md) (V5 lexer alphabet), [docs/design/grammar-fastpath.md](docs/design/grammar-fastpath.md), [docs/design/grammar-backends.md](docs/design/grammar-backends.md), [docs/design/structure-only-eval.md](docs/design/structure-only-eval.md), [docs/design/adversarial-review.md](docs/design/adversarial-review.md), [docs/design/runtime-performance.md](docs/design/runtime-performance.md), [docs/design/hf-jobs-train.md](docs/design/hf-jobs-train.md) (HF Jobs full train — not ZeroGPU), [docs/design/gpu-multi-farm-mcp.md](docs/design/gpu-multi-farm-mcp.md), and [docs/MODEL_CARD.md](docs/MODEL_CARD.md).
+
+## Model card (summary)
+
+Full card: **[docs/MODEL_CARD.md](docs/MODEL_CARD.md)**. Agents update both this
+summary and the full card whenever a checkpoint is created or promoted.
+
+| Role | Checkpoint | Where | Claim |
+| --- | --- | --- | --- |
+| Playground demo | `playground_demo/last.pt` | `fixtures/checkpoints/playground_demo/` (git) | Wiring / annotate UI only |
+| Matrix honest champion | V6 E53 family | `outputs/runs/` + matrix docs | Scratch + limited `rico_held` — not production HF ship |
+| Production HF ship | *(none yet)* | [HF Bucket `TKendrick/OpenUI`](https://huggingface.co/buckets/TKendrick/OpenUI) `checkpoints/<run_id>/` | Register here after first full HF sync + `--ship-gates` |
+
+**Load demo:** `python -m scripts.serve_playground` · **Full train sync:** set
+`HF_TOKEN`, then `train_model --context-backend hf` (auto-uploads). Details,
+eval tables, and history live in the model card.
 
 ## Quick start
 
@@ -43,12 +58,16 @@ python -m scripts.build_train_data --source fixture --version v0 --synthesizer q
 python -m scripts.build_test_data --source both --version v1 \
   --train-manifest outputs/train_data/v1/manifest.json
 
+# Full HF-context trains sync checkpoints to the OpenUI bucket
+# (https://huggingface.co/buckets/TKendrick/OpenUI). Requires HF_TOKEN.
+export HF_TOKEN=hf_...   # or: hf auth login
 python -m scripts.train_model \
   --train-dir outputs/train_data/v1 \
   --model twotower \
   --context-backend hf \
   --steps 200 \
   --run-id twotower_v1
+# → hf://buckets/TKendrick/OpenUI/checkpoints/twotower_v1/
 
 python -m scripts.evaluate_model \
   --test-dir outputs/test_data/v1 \
@@ -56,6 +75,11 @@ python -m scripts.evaluate_model \
   --run-id twotower_v1 \
   --ship-gates
 ```
+
+Local-only / CI scratch: add `--no-sync-checkpoints` (matrix scripts default to
+scratch and stay local). Manual sync:
+`python -m scripts.sync_checkpoints --run-dir outputs/runs/<id> --ensure-bucket`.
+See [docs/design/checkpoint-bucket.md](docs/design/checkpoint-bucket.md).
 
 Honest ship path (V4 inventory-in-prompt / V6 stacked champion):
 
@@ -167,8 +191,19 @@ MCP (Cursor): [`.cursor/mcp.json`](.cursor/mcp.json) launches `@playwright/mcp`.
 ```bash
 # Optional HF context (requires: pip install -e ".[hf]")
 python -m scripts.train_model --model twotower --context-backend hf \
-  --hf-model HuggingFaceTB/SmolLM2-135M --steps 200 --run-id twotower_hf
+  --hf-model HuggingFaceTB/SmolLM2-135M --steps 200 --run-id twotower_hf --fast-train
 ```
+
+## Hugging Face Jobs (full GPU train)
+
+ZeroGPU Spaces are for short demos only. Full trains use managed Jobs:
+
+```bash
+python -m scripts.hf_jobs_train --dry-run --run-id twotower_jobs_v1 --steps 200
+# submit: export HF_TOKEN=… && python -m scripts.hf_jobs_train --run-id … --steps 200
+```
+
+Details: [docs/design/hf-jobs-train.md](docs/design/hf-jobs-train.md).
 
 ## GPU multi-farm MCP
 
@@ -178,9 +213,88 @@ pip install -e ".[mcp]"
 GPU_MULTI_FARM_MODE=mock python -m scripts.multi_farm_mcp
 ```
 
+## Agent instructions
+
+All coding agents (Cursor, Claude Code, Codex, Gemini, Copilot / GHCP, …) must
+follow **[AGENTS.md](AGENTS.md)**. Canonical skills live in
+[`.agents/skills/`](.agents/skills/) (mirrored under `.claude/skills/` and
+`.cursor/skills/`).
+
+**Iron law:** after any train / eval / bench / profile / telemetry / matrix /
+reproduction (or decision-informing ad-hoc) run, update `docs/design/` JSON
+**and** the matching measured-results markdown. Full trigger list and recipe
+checklist: [AGENTS.md](AGENTS.md) (skill: `documenting-experiment-results`).
+Do not leave results only under `outputs/`.
+
+### Token-efficiency stack
+
+Repo ships **ponytail**, **caveman**, **headroom**, and **rtk** under
+`.agents/skills/` (plus [`RTK.md`](RTK.md), Cursor rules, and GHCP
+`.github/copilot-instructions.md`). Details and refresh commands:
+[AGENTS.md — Token-efficiency stack](AGENTS.md).
+
+```bash
+# RTK binary (once per machine) — must pass `rtk gain`
+curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
+```
+
+### OpenWiki (code mode)
+
+Repository wiki for agents lives under [`openwiki/`](openwiki/) (start at
+[`openwiki/quickstart.md`](openwiki/quickstart.md)). Setup uses
+[langchain-ai/openwiki](https://github.com/langchain-ai/openwiki) code mode:
+[`AGENTS.md`](AGENTS.md) / [`CLAUDE.md`](CLAUDE.md) OpenWiki snippets and
+[`.github/workflows/openwiki-update.yml`](.github/workflows/openwiki-update.yml).
+
+```bash
+npm install -g openwiki
+# needs OPENWIKI_PROVIDER + provider API key in env or ~/.openwiki/.env
+openwiki code --update --print
+```
+
+Add repo secret `OPENROUTER_API_KEY` (default workflow provider) to enable the
+scheduled OpenWiki update PRs.
+
+### Hugging Face CLI + skills
+
+Agents use the official `hf` CLI and the
+[huggingface/skills](https://github.com/huggingface/skills) pack (skill:
+`hf-cli` plus datasets / papers / trainers / Spaces / … under
+[`.agents/skills/`](.agents/skills/)). Cursor also gets the Hugging Face MCP
+server via [`.cursor/mcp.json`](.cursor/mcp.json).
+
+```bash
+curl -LsSf https://hf.co/cli/install.sh | bash
+hf skills add --force
+hf skills update
+hf skills add --claude --force
+hf skills add --dest=.cursor/skills --force
+```
+
+Optional Cursor UI: [marketplace — Hugging Face](https://cursor.com/marketplace/huggingface).
+CLI docs: [huggingface_hub CLI](https://huggingface.co/docs/huggingface_hub/guides/cli).
+Tokens: [settings/tokens](https://huggingface.co/settings/tokens).
+
+### Serena MCP
+
+Semantic code tools via [Serena](https://github.com/oraios/serena) (not
+marketplace installs). Project is initialised under [`.serena/`](.serena/);
+Cursor / Claude / VS Code MCP configs are wired in-repo. See
+[AGENTS.md — Serena MCP](AGENTS.md).
+
+```bash
+uv tool install -p 3.13 serena-agent
+serena init
+serena project health-check
+```
+
 ## Layout
 
 ```
+AGENTS.md              # cross-tool agent instructions (required reading)
+RTK.md                 # Rust Token Killer usage (shell output compression)
+docs/MODEL_CARD.md     # checkpoint roster + eval (README holds a summary)
+.agents/skills/        # canonical agent skills
 src/slm_training/
   dsl/                 # OpenUI adapter + design_md + grammar/{backends,fastpath}
   harnesses/           # train_data, test_data, model_build, rl, preference,

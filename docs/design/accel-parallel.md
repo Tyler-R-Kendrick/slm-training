@@ -32,6 +32,11 @@ on 4-vCPU for d_model=128 LTR-primary. Adaptive unmask ≈ topk latency (quality
 `docs/design/train-microbench.json`. Winning defaults: `cache_context=True`,
 `fuse_ltr_loss=True`, CLI `--fast-train` (AMP when accel supports it + compile).
 
+**Full GPU trains:** use [HF Jobs](hf-jobs-train.md) (`scripts.hf_jobs_train`) or
+pods (`scripts.remote_train`), not Spaces ZeroGPU. Jobs/pods get TF32,
+cudnn.benchmark, `--fast-train`, and `--compile-mode reduce-overhead`. Auto
+`SLM_FAST_TRAIN` / `HF_JOB_ID` enable the speed bundle; ZeroGPU never does.
+
 Rejected for this tiny stack: QLoRA/Unsloth (denoiser ~1.5M), Cactus-inside-train,
 MoE, per-step linter.
 
