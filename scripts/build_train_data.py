@@ -85,6 +85,32 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Emit namespace-augmented train variants (:acme.* re-prefix).",
     )
+    parser.add_argument(
+        "--max-records-per-parent",
+        type=int,
+        default=None,
+        help=(
+            "Exposure cap: keep at most N records per root parent "
+            "(original + synth variants). Default: uncapped."
+        ),
+    )
+    parser.add_argument(
+        "--fuzzy-dedup",
+        action="store_true",
+        help="P1a: MinHash fuzzy dedup within structure clusters (Jaccard≥0.92).",
+    )
+    parser.add_argument(
+        "--fuzzy-jaccard",
+        type=float,
+        default=0.92,
+        help="Fuzzy MinHash Jaccard threshold (default: 0.92).",
+    )
+    parser.add_argument(
+        "--semantic-cluster-cap",
+        type=int,
+        default=None,
+        help="P1a: max representatives per semantic cluster (default: uncapped).",
+    )
     args = parser.parse_args(argv)
 
     result = build_train_data(
@@ -108,6 +134,10 @@ def main(argv: list[str] | None = None) -> int:
             max_components=args.max_components,
             curriculum=args.curriculum,
             namespace_augment=args.namespace_augment,
+            max_records_per_parent=args.max_records_per_parent,
+            fuzzy_dedup=bool(args.fuzzy_dedup),
+            fuzzy_jaccard=float(args.fuzzy_jaccard),
+            semantic_cluster_cap=args.semantic_cluster_cap,
         )
     )
     print(json.dumps(result["stats"], indent=2))

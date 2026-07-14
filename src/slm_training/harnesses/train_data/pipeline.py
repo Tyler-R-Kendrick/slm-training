@@ -45,6 +45,13 @@ class TrainDataConfig:
     namespace_augment: bool = False
     # Exclude train records whose layout tree matches hand-authored test fixtures.
     test_seed_path: Path | None = Path("fixtures/test_seeds.jsonl")
+    # Exposure control: cap records per root parent (None = uncapped). One
+    # parent otherwise receives up to 6+ rows (original + synth variants).
+    max_records_per_parent: int | None = None
+    # P1a: fuzzy MinHash + semantic cluster caps (after exact pair dedup).
+    fuzzy_dedup: bool = False
+    fuzzy_jaccard: float = 0.92
+    semantic_cluster_cap: int | None = None
 
     @property
     def output_dir(self) -> Path:
@@ -197,10 +204,17 @@ def build_train_data(
     if source not in allowed:
         raise ValueError(f"unknown train source {config.source!r}")
 
+    from slm_training.harnesses.train_data.catalog import (
+        LineageIndex,
+        lineage_entry,
+    )
+
     synth = synthesizer or get_synthesizer(config.synthesizer)
     # Stable seed order before expansion.
     seeds.sort(key=lambda r: r.id)
     collected: list[ExampleRecord] = []
+    # Lineage over *all* candidates so parent chains survive later filtering.
+    lineage_index: LineageIndex = {}
     for seed in seeds:
         candidates = [seed, *synth.expand(seed)]
         if config.namespace_augment:
@@ -212,6 +226,7 @@ def build_train_data(
                 extra.extend(ns.expand(candidate))
             candidates.extend(extra)
         for candidate in candidates:
+            lineage_index[candidate.id] = lineage_entry(candidate)
             try:
                 collected.append(_normalize_record(candidate))
             except (ParseError, ValueError) as exc:
@@ -266,6 +281,7 @@ def build_train_data(
         from slm_training.quality import synthesize_stress_adversarial_records
 
         for stress in synthesize_stress_adversarial_records():
+            lineage_index[stress.id] = lineage_entry(stress)
             try:
                 normalized = _normalize_record(stress)
             except (ParseError, ValueError) as exc:
@@ -283,6 +299,40 @@ def build_train_data(
                 continue
             _accept_record(normalized)
         deduped.sort(key=lambda r: r.id)
+
+    # Source-family lineage + exposure control (annotate before the cap so
+    # capping can group variants under their root parent).
+    from slm_training.harnesses.train_data.catalog import (
+        annotate_lineage,
+        apply_parent_cap,
+        family_stats,
+    )
+
+    deduped = annotate_lineage(deduped, lineage_index)
+
+    fuzzy_dropped: list[dict] = []
+    semantic_dropped: list[dict] = []
+    if config.fuzzy_dedup:
+        from slm_training.data.dedup import apply_fuzzy_dedup
+
+        deduped, fuzzy_dropped = apply_fuzzy_dedup(
+            deduped, threshold=float(config.fuzzy_jaccard)
+        )
+    if config.semantic_cluster_cap:
+        from slm_training.data.dedup import apply_semantic_cluster_cap
+
+        deduped, semantic_dropped = apply_semantic_cluster_cap(
+            deduped, max_per_cluster=int(config.semantic_cluster_cap)
+        )
+
+    deduped, parent_cap_dropped = apply_parent_cap(
+        deduped, config.max_records_per_parent
+    )
+    deduped.sort(key=lambda r: r.id)
+    source_families = family_stats(deduped)
+    from slm_training.data.dedup import cluster_exposure_stats
+
+    source_families["cluster_exposure"] = cluster_exposure_stats(deduped)
 
     # Fingerprint final records after every train-only transformation so the
     # leakage manifest describes the exact bytes written to records.jsonl.
@@ -322,6 +372,15 @@ def build_train_data(
         "curriculum": bool(config.curriculum),
         "structure_reserved_rejected": len(structure_reserved_rejected),
         "structure_reserved_rejected_samples": structure_reserved_rejected[:20],
+        "max_records_per_parent": config.max_records_per_parent,
+        "parent_cap_dropped": len(parent_cap_dropped),
+        "parent_cap_dropped_samples": parent_cap_dropped[:20],
+        "fuzzy_dedup": bool(config.fuzzy_dedup),
+        "fuzzy_dropped": len(fuzzy_dropped),
+        "fuzzy_dropped_samples": fuzzy_dropped[:20],
+        "semantic_cluster_cap": config.semantic_cluster_cap,
+        "semantic_dropped": len(semantic_dropped),
+        "semantic_dropped_samples": semantic_dropped[:20],
         "mean_quality_score": (
             round(sum(quality_scores) / len(quality_scores), 4)
             if quality_scores
@@ -349,6 +408,7 @@ def build_train_data(
         "pair_fingerprints": sorted(seen_pairs),
         "design_md_fingerprints": sorted(design_md_fps),
         "content_fingerprint": _content_fingerprint(deduped),
+        "source_families": source_families,
         "built_at": stats["built_at"],
     }
     manifest_path = out_dir / "manifest.json"

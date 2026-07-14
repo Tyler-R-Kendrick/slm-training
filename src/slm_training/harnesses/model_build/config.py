@@ -58,11 +58,26 @@ class ModelBuildConfig:
     use_curriculum: bool = False
     # Soft A/B/C mix (anti-leak); False restores hard stage cutovers.
     mix_curriculum: bool = True
+    # P1b: optional mixture manifest (JSON) for online family-weighted sampling.
+    mixture_manifest: Path | None = None
+    # P1d: after base training, write promoted.pt from best_weighted_nll / last.
+    register_promoted: bool = False
     # Stub-only
     noise_rate: float = 0.0
     # Eval-driven training: run suite eval every N steps (0 disables).
     eval_every: int = 0
     eval_suite: str = "smoke"
+    # Deterministic denoising-NLL suites every N optimizer steps (0 disables).
+    # Cheap teacher-forced signal — decoupled from the generated scoreboard.
+    loss_eval_every: int = 0
+    loss_suite_version: str = "v1"
+    loss_mask_seed: int = 0
+    # Stop when this many target tokens have been consumed (None = steps only).
+    target_token_budget: int | None = None
+    # Resume bit-exact from a full-state checkpoint (last_full_state.pt).
+    resume_from: Path | None = None
+    # Write full training state (optimizer/RNG/sampler) alongside last.pt.
+    full_state_checkpoint: bool = True
     # Comma-separated suites for mid-train scoreboard (overrides single eval_suite when set).
     eval_suites: str = ""
     # Cap rico_held size during matrix / CPU evals (None = full suite).

@@ -474,6 +474,11 @@ Full 1500 `rico_held` + HF context remains the production claim.
 
 Remaining verifier-guided repair gaps from
 [verifier-guided-repair.md](verifier-guided-repair.md). **Not implemented**.
+The inner-loop prerequisites (deterministic denoising-NLL suites, token
+budgets, full-state resume, source-family manifests, decode trajectory
+store) plus the P1–P3 staged plan (mixture search, scaling ladders,
+self-distillation, trajectory RL) are in
+[promotion-pipeline.md](promotion-pipeline.md).
 **E50–E55 are taken by shipped V6** (CoRe / T2M / slot trust / champion) and
 **E70–E75 by V7 speculative denoising**; do not reuse those IDs.
 

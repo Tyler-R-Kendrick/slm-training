@@ -31,6 +31,51 @@ def main(argv: list[str] | None = None) -> int:
         default=0,
         help="Run smoke eval every N steps (0 disables).",
     )
+    parser.add_argument(
+        "--loss-eval-every",
+        type=int,
+        default=0,
+        help="Run deterministic denoising-NLL suites every N steps (0 disables).",
+    )
+    parser.add_argument(
+        "--loss-suite-version",
+        default="v1",
+        help="Frozen loss-suite JSON version (default: v1).",
+    )
+    parser.add_argument(
+        "--loss-mask-seed",
+        type=int,
+        default=0,
+        help="Seed mixed into fixed-mask NLL draws (default: 0).",
+    )
+    parser.add_argument(
+        "--target-token-budget",
+        type=int,
+        default=None,
+        help="Stop training once seen target tokens reach this budget.",
+    )
+    parser.add_argument(
+        "--resume-from",
+        type=Path,
+        default=None,
+        help="Resume from a last_full_state.pt checkpoint (bit-exact).",
+    )
+    parser.add_argument(
+        "--no-full-state-checkpoint",
+        action="store_true",
+        help="Skip writing last_full_state.pt (serving last.pt still written).",
+    )
+    parser.add_argument(
+        "--mixture-manifest",
+        type=Path,
+        default=None,
+        help="P1b: JSON mixture weights for online family-weighted sampling.",
+    )
+    parser.add_argument(
+        "--register-promoted",
+        action="store_true",
+        help="P1d: write promoted.pt from best_weighted_nll / best_ship / last.",
+    )
     parser.add_argument("--eval-suite", default="smoke")
     parser.add_argument(
         "--model",
@@ -319,6 +364,14 @@ def main(argv: list[str] | None = None) -> int:
             eval_every=args.eval_every,
             eval_suite=args.eval_suite,
             eval_suites=args.eval_suites,
+            loss_eval_every=args.loss_eval_every,
+            loss_suite_version=args.loss_suite_version,
+            loss_mask_seed=args.loss_mask_seed,
+            target_token_budget=args.target_token_budget,
+            resume_from=args.resume_from,
+            full_state_checkpoint=not bool(args.no_full_state_checkpoint),
+            mixture_manifest=args.mixture_manifest,
+            register_promoted=bool(args.register_promoted),
             telemetry=not bool(args.no_telemetry),
         )
     )
