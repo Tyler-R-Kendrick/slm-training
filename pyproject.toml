@@ -54,6 +54,7 @@ mcp = [
 ]
 web = [
   "fastapi>=0.110,<1",
+  "onnx>=1.16,<2",
   "onnxruntime>=1.18,<2",
   "uvicorn[standard]>=0.27,<1",
 ]
