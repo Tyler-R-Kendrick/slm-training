@@ -4,9 +4,15 @@
     "cases": "fixtures/evals/task_scoreboard_smoke.jsonl",
     "device": "cpu",
     "steps": 0,
-    "context_backend": null,
+    "context_backend": "none",
+    "matrix_set": "task-equivalence-wiring",
     "suite_n": 6,
-    "honesty": "prediction_evidence_only"
+    "honesty": "prediction_evidence_only",
+    "honest_ship_gates": {
+      "status": "not_run",
+      "pass": null,
+      "reason": "fixture prediction evidence has no learned checkpoint"
+    }
   },
   "task_scoreboard": {
     "n": 6,

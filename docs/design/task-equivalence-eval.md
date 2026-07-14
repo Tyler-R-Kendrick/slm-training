@@ -74,7 +74,7 @@ and [`task-eval-wiring-results.json`](task-eval-wiring-results.json).
 | Run | Recipe | Result | Decision |
 | --- | --- | --- | --- |
 | task-mixture dry wiring | CPU; 0 train steps; 5 fixture rows; one row in each task group; no checkpoint or NLL score | 81 probes emitted across 24 configured families; 5/5 task groups classified; 0 unclassified; 1 structural/ProgramSpec family; 19 configured families intentionally absent from the tiny fixture | CLI/probe/diagnostic wiring passes. RegMix tuning is **not run** until the real producer families and validation slices land. |
-| task/equivalence wiring | CPU; 0 train steps; 6 synthetic prediction-evidence cases across generation, repair, edit, behavior, visual | AST/ref/tree metrics emitted; L3/L4/L5 equivalence evidence `n=3`, fixture score 1.0; 3 ineligible metric instances unavailable; canonical exact uses the official bridge when available | Null/coverage behavior passes. L5 uses explicit prediction-side render evidence; values are fixture self-consistency, not model quality. |
+| task/equivalence wiring | CPU; 0 train steps; backend `none`; matrix `task-equivalence-wiring`; 6 synthetic prediction-evidence cases; honesty `prediction_evidence_only` | AST/ref/tree metrics emitted; L3/L4/L5 equivalence evidence `n=3`, fixture score 1.0; 3 ineligible metric instances unavailable; canonical exact uses the official bridge when available | Wiring guardrail passes. Honest ship gates are **not run / not applicable** because there is no learned checkpoint; values are fixture self-consistency, not model quality. |
 
 No checkpoint was created, so the model card and README model-card summary do
 not change. A future scored mixture run must append weighted-NLL curves here;
