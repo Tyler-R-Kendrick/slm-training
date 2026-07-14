@@ -37,6 +37,21 @@ def test_remote_run_prefix() -> None:
 
 
 def test_resolve_sync_auto() -> None:
+    # Default / explicit off stays local-only.
+    assert (
+        resolve_sync_checkpoints(
+            sync_checkpoints=False, context_backend="hf", explicit_bucket=None
+        )
+        is False
+    )
+    # Full-train CLI forces True.
+    assert (
+        resolve_sync_checkpoints(
+            sync_checkpoints=True, context_backend="hf", explicit_bucket=None
+        )
+        is True
+    )
+    # Legacy None auto: HF on, scratch off, empty bucket disables.
     assert (
         resolve_sync_checkpoints(
             sync_checkpoints=None, context_backend="hf", explicit_bucket=None
@@ -52,12 +67,6 @@ def test_resolve_sync_auto() -> None:
     assert (
         resolve_sync_checkpoints(
             sync_checkpoints=None, context_backend="hf", explicit_bucket=""
-        )
-        is False
-    )
-    assert (
-        resolve_sync_checkpoints(
-            sync_checkpoints=False, context_backend="hf", explicit_bucket=None
         )
         is False
     )

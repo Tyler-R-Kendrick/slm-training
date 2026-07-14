@@ -162,8 +162,10 @@ class ModelBuildConfig:
     # None → default hf://buckets/TKendrick/OpenUI when sync is enabled.
     # Empty string → disable auto bucket selection.
     checkpoint_bucket: str | None = None
-    # None = auto (on for context_backend=hf); True/False force on/off.
-    sync_checkpoints: bool | None = None
+    # Off by default for programmatic/tests. `scripts.train_model` enables this
+    # for HF-context full trains (see resolve_sync_checkpoints / CLI flags).
+    # None = auto (HF backend → on) for callers that still use the old sentinel.
+    sync_checkpoints: bool | None = False
     # Plan-only sync (no upload) — for wiring tests / agents without write auth.
     checkpoint_bucket_dry_run: bool = False
 

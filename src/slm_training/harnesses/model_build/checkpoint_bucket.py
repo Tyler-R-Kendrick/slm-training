@@ -87,18 +87,12 @@ def resolve_sync_checkpoints(
 ) -> bool:
     """Decide whether a train should push checkpoints.
 
-    Auto (``sync_checkpoints is None``): on for HF-context full tracks when a
-    bucket target is available (configured or default). Scratch / matrix demos
-    stay local-only unless explicitly enabled.
+    - ``False`` / unset: local-only (tests, matrix, programmatic harness calls).
+    - ``True``: always sync (full HF CLI trains set this).
+    - ``None`` (legacy auto): on only for HF-context when a bucket is selected
+      and not disabled via env / empty bucket string.
     """
     if sync_checkpoints is False:
-        return False
-    if sync_checkpoints is True:
-        return True
-    if str(context_backend or "").lower() != "hf":
-        return False
-    # Explicit empty string disables the default bucket in auto mode.
-    if explicit_bucket is not None and explicit_bucket.strip() == "":
         return False
     if os.environ.get("SLM_DISABLE_CHECKPOINT_BUCKET", "").strip() in {
         "1",
@@ -106,7 +100,14 @@ def resolve_sync_checkpoints(
         "yes",
     }:
         return False
-    return True
+    if explicit_bucket is not None and explicit_bucket.strip() == "":
+        return False
+    if sync_checkpoints is True:
+        return True
+    # Legacy auto sentinel.
+    if sync_checkpoints is None:
+        return str(context_backend or "").lower() == "hf"
+    return False
 
 
 def _require_hub() -> Any:

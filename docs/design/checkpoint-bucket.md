@@ -25,10 +25,11 @@ disabled. Scratch / quality-matrix CPU demos stay local-only.
 
 | Entry | Default |
 | --- | --- |
-| `scripts.train_model` (default `--context-backend hf`) | sync on |
+| `scripts.train_model` (default `--context-backend hf`) | sync on (CLI sets `sync_checkpoints=True`) |
 | `scripts.remote_train` | sync on (`--sync-checkpoints`) |
+| Programmatic `ModelBuildConfig` / pytest | sync off |
 | `scripts.run_quality_matrix` (default scratch) | sync off |
-| CI / fixture demos | use `--no-sync-checkpoints` or scratch |
+| CI / fixture demos | local-only (no CLI sync flags) |
 
 Disable: `--no-sync-checkpoints`, `SLM_DISABLE_CHECKPOINT_BUCKET=1`, or
 `checkpoint_bucket=""`.

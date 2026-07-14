@@ -313,6 +313,9 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("use only one of --sync-checkpoints / --no-sync-checkpoints")
 
     from slm_training.accel import detect_device
+    from slm_training.harnesses.model_build.checkpoint_bucket import (
+        DEFAULT_CHECKPOINT_BUCKET_URI,
+    )
 
     accel = detect_device(args.device)
     device = accel.device if args.device in {"auto", "best"} else args.device
@@ -399,13 +402,27 @@ def main(argv: list[str] | None = None) -> int:
             mixture_manifest=args.mixture_manifest,
             register_promoted=bool(args.register_promoted),
             telemetry=not bool(args.no_telemetry),
-            checkpoint_bucket=args.checkpoint_bucket,
+            checkpoint_bucket=(
+                args.checkpoint_bucket
+                if args.checkpoint_bucket is not None
+                else (
+                    DEFAULT_CHECKPOINT_BUCKET_URI
+                    if (
+                        not args.no_sync_checkpoints
+                        and (
+                            args.sync_checkpoints
+                            or args.context_backend == "hf"
+                        )
+                    )
+                    else None
+                )
+            ),
             sync_checkpoints=(
-                True
-                if args.sync_checkpoints
-                else False
+                False
                 if args.no_sync_checkpoints
-                else None
+                else True
+                if args.sync_checkpoints or args.context_backend == "hf"
+                else False
             ),
             checkpoint_bucket_dry_run=bool(args.checkpoint_bucket_dry_run),
         )
