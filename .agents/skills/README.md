@@ -14,6 +14,7 @@ Codex and GitHub Copilot also load project skills from **`.agents/skills/`**.
 | `honest-ship-eval` | Multi-suite honest ship gates vs fixture demo |
 | `running-experiment-matrices` | Quality / grammar / perf / phase matrices |
 | `playwright-cli` | Browser / playground automation |
+| `frontier-describe` | Train-only frozen paraphrase / ladder / edit / vision artifacts |
 | `rtk` | Prefer Rust Token Killer for verbose shell output ([`RTK.md`](../../RTK.md)) |
 
 Edit here, then copy into `.claude/skills/` and `.cursor/skills/` (or symlink).

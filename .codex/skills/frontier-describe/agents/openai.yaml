@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontier Describe"
+  short_description: "Create safe frozen frontier artifacts"
+  default_prompt: "Use $frontier-describe to fill missing train-only frontier artifacts and validate the coverage manifest."

@@ -1,0 +1,36 @@
+{
+  "gold_id": "train_hero_01",
+  "gold_content_hash": "c2fb6646c61e8083",
+  "skeleton_openui": "root = Stack([hero], \"column\")\nhero_title = TextContent(\":hero.title\")\nhero_body = TextContent(\":hero.body\")\nhero = Card([hero_title, hero_body])",
+  "provenance": {
+    "skill": "frontier-describe",
+    "skill_version": "0.1.0",
+    "prompt_hash": "sha256:dbc238c26ddd6368487e309f388b690f1d052906a929e587353e66872eb75f84",
+    "generated_at": "2026-07-14T16:55:00Z"
+  },
+  "paraphrases": [
+    "Compose a vertically arranged hero card with :hero.title and :hero.body.",
+    "Build one hero surface that presents :hero.title before :hero.body.",
+    "Lay out a single hero card in a column using :hero.title and :hero.body."
+  ],
+  "ladder": {
+    "L1": "A column contains one hero card; the card contains :hero.title followed by :hero.body.",
+    "L2": "Create one vertically stacked hero card with a title placeholder :hero.title and body placeholder :hero.body.",
+    "L3": "Design a hero section that clearly prioritizes :hero.title and supports it with :hero.body.",
+    "L4": "As a visitor, I need a focused introduction using :hero.title and :hero.body.",
+    "L5": "Make a clear hero using :hero.title and :hero.body."
+  },
+  "edits": [
+    {
+      "edit_op": "reorder",
+      "instruction": "Place :hero.body before :hero.title within the hero card.",
+      "delta_ref": "hero.children:1->0"
+    },
+    {
+      "edit_op": "remove",
+      "instruction": "Remove :hero.body while keeping :hero.title.",
+      "delta_ref": "hero.children:remove(hero_body)"
+    }
+  ],
+  "vision": {}
+}

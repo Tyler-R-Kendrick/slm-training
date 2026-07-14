@@ -49,6 +49,7 @@ Canonical: **`.agents/skills/<name>/SKILL.md`**. Mirrored for discovery under
 | `hf-cli` | Hub models/datasets/spaces, auth, cache, HF jobs, buckets, downloads |
 | `huggingface-*` / `hf-*` / `trl-training` / … | Other [huggingface/skills](https://github.com/huggingface/skills) workflows (papers, datasets viewer, trainers, Spaces, memory estimate, …) |
 | `playwright-cli` | Browser automation or playground e2e |
+| `frontier-describe` | Fill train-only frozen frontier artifacts and validate leakage/coverage |
 
 ### Token-efficiency stack (ponytail · caveman · headroom · rtk)
 
