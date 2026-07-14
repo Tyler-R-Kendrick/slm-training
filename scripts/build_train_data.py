@@ -15,7 +15,19 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--source",
         default="all",
-        choices=["rico", "fixture", "both", "awwwards", "rico+awwwards", "all"],
+        choices=[
+            "rico",
+            "fixture",
+            "both",
+            "awwwards",
+            "rico+awwwards",
+            "programspec",
+            "language_contract",
+            "deconstruct",
+            "render",
+            "integrated",
+            "all",
+        ],
         help="Training data source (default: all).",
     )
     parser.add_argument(
@@ -46,8 +58,76 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--synthesizer",
         default="quality",
-        choices=["quality", "template", "layout", "none", "noop", "off"],
+        choices=[
+            "quality",
+            "template",
+            "layout",
+            "frontier",
+            "none",
+            "noop",
+            "off",
+        ],
         help="Deterministic synthesizer (default: quality = layout aug + templates).",
+    )
+    parser.add_argument(
+        "--programspec-path",
+        type=Path,
+        default=Path("outputs/progspec/programs.jsonl"),
+        help="Optional JSONL ProgramSpec roots; deterministic generation is the fallback.",
+    )
+    parser.add_argument("--programspec-count", type=int, default=16)
+    parser.add_argument("--programspec-seed", type=int, default=0)
+    parser.add_argument(
+        "--language-contract",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add_argument(
+        "--deconstruct-path",
+        type=Path,
+        default=Path("fixtures/deconstruct/pipeline.jsonl"),
+    )
+    parser.add_argument(
+        "--render-path",
+        type=Path,
+        default=Path("fixtures/render/sample_program.json"),
+    )
+    parser.add_argument(
+        "--frontier-artifact-root",
+        type=Path,
+        default=Path("fixtures/frontier"),
+    )
+    parser.add_argument(
+        "--frontier-artifacts",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add_argument("--repairs-per-program", type=int, default=1)
+    parser.add_argument(
+        "--edit-derivatives",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add_argument(
+        "--design-md-contrastive",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add_argument(
+        "--diffusion-online",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Record train-time diffusion policies; never materialize noisy targets.",
+    )
+    parser.add_argument(
+        "--governance-artifacts",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add_argument(
+        "--mixture-manifest",
+        action=argparse.BooleanOptionalAction,
+        default=True,
     )
     parser.add_argument(
         "--min-quality-score",
@@ -138,6 +218,20 @@ def main(argv: list[str] | None = None) -> int:
             fuzzy_dedup=bool(args.fuzzy_dedup),
             fuzzy_jaccard=float(args.fuzzy_jaccard),
             semantic_cluster_cap=args.semantic_cluster_cap,
+            programspec_path=args.programspec_path,
+            programspec_count=args.programspec_count,
+            programspec_seed=args.programspec_seed,
+            include_language_contract=args.language_contract,
+            deconstruct_path=args.deconstruct_path,
+            render_path=args.render_path,
+            frontier_artifact_root=args.frontier_artifact_root,
+            include_frontier_artifacts=args.frontier_artifacts,
+            repairs_per_program=args.repairs_per_program,
+            include_edit_derivatives=args.edit_derivatives,
+            include_design_md_contrastive=args.design_md_contrastive,
+            diffusion_online=args.diffusion_online,
+            governance_artifacts=args.governance_artifacts,
+            mixture_manifest=args.mixture_manifest,
         )
     )
     print(json.dumps(result["stats"], indent=2))
