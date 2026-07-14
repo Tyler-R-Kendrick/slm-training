@@ -13,6 +13,12 @@ from slm_training.dsl.schema import ExampleRecord
 
 
 class ModelPlugin(Protocol):
+    def artifact_identity(self) -> dict[str, str]:
+        """Return stable model/base/tokenizer identity fields."""
+
+    def compatibility_fingerprint(self) -> str:
+        """Hash architecture, tokenizer, base revision, and parameter shapes."""
+
     def forward(self, batch: list[ExampleRecord]) -> float:
         """Return a scalar training loss for the batch."""
 
@@ -21,6 +27,15 @@ class ModelPlugin(Protocol):
 
     def generate_batch_requests(self, requests: list[GenerationRequest]) -> list[str]:
         """Generate using production-available inputs only."""
+
+    def generate_constrained(self, prompt: str, **kwargs: object) -> str:
+        """Generate through the official OpenUI grammar constraint."""
+
+    def export(self, path: Path, *, format: str) -> tuple[Path, ...]:
+        """Export a deployment artifact."""
+
+    def load_parent_weights(self, path: Path) -> None:
+        """Load only parent model weights for a fresh branch optimizer."""
 
     def save(self, path: Path) -> None:
         ...
@@ -65,6 +80,37 @@ class StubModel:
 
     def generate_batch_requests(self, requests: list[GenerationRequest]) -> list[str]:
         return [self.generate(request.prompt) for request in requests]
+
+    def artifact_identity(self) -> dict[str, str]:
+        from slm_training.lineage.records import content_sha
+
+        return {
+            "kind": "stub",
+            "base_model_id": "stub",
+            "base_model_revision": "local",
+            "tokenizer_sha": content_sha("stub"),
+        }
+
+    def compatibility_fingerprint(self) -> str:
+        from slm_training.lineage.records import content_sha
+
+        return content_sha({"kind": "stub", "keys": sorted(self.memory)})
+
+    def generate_constrained(self, prompt: str, **kwargs: object) -> str:
+        from slm_training.dsl.parser import validate
+
+        output = self.generate(prompt)
+        validate(output)
+        return output
+
+    def export(self, path: Path, *, format: str = "json") -> tuple[Path, ...]:
+        if format != "json":
+            raise ValueError("stub export supports format='json' only")
+        self.save(path)
+        return (path,)
+
+    def load_parent_weights(self, path: Path) -> None:
+        self.load(path)
 
     def save(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)

@@ -6,11 +6,11 @@ Novel SLM experiments: harnesses for **placeholder OpenUI** layout generation (o
 
 1. **Training-data harness** — build/validate versioned train corpora
 2. **Testing-data harness** — held-out / adversarial / OOD eval suites
-3. **Model-building harness** — train/eval with **TwoTower** (default) or stub plug-in
+3. **Model-building harness** — lineage-first **TwoTower** and causal-LoRA tracks
 4. **OpenUI Lang bridge** — Node sidecar over official `@openuidev/lang-core`
 5. **GPU multi-farm MCP** — list / launch / cost-project across Vast.ai, RunPod, Lambda
 
-See [docs/design/openui-twotower.md](docs/design/openui-twotower.md), [docs/design/research-lineage.md](docs/design/research-lineage.md) (papers → code), [docs/design/research-correction-critics.md](docs/design/research-correction-critics.md) (V4 remask / trust-gate / honest inventory; V6 CoRe/T2M), [docs/design/verifier-guided-repair.md](docs/design/verifier-guided-repair.md) (PDDL-Instruct / verifier-repair applicability map), [docs/design/quality-experiment-matrix.md](docs/design/quality-experiment-matrix.md) (E0–E75 + X0–X8 matrices; E34 deferred), [docs/design/speculative-denoising.md](docs/design/speculative-denoising.md) (V7 stability / dependency-cluster / survival / successor-cache decode), [docs/design/dsl-native-tokenizer.md](docs/design/dsl-native-tokenizer.md) (V5 lexer alphabet), [docs/design/grammar-fastpath.md](docs/design/grammar-fastpath.md), [docs/design/grammar-backends.md](docs/design/grammar-backends.md), [docs/design/structure-only-eval.md](docs/design/structure-only-eval.md), [docs/design/adversarial-review.md](docs/design/adversarial-review.md), [docs/design/runtime-performance.md](docs/design/runtime-performance.md), [docs/design/hf-jobs-train.md](docs/design/hf-jobs-train.md) (HF Jobs full train — not ZeroGPU), [docs/design/gpu-multi-farm-mcp.md](docs/design/gpu-multi-farm-mcp.md), and [docs/MODEL_CARD.md](docs/MODEL_CARD.md).
+See [docs/design/model-lineage.md](docs/design/model-lineage.md) (canonical two-track cycle), [docs/design/openui-twotower.md](docs/design/openui-twotower.md), [docs/design/research-lineage.md](docs/design/research-lineage.md) (papers → code), [docs/design/research-correction-critics.md](docs/design/research-correction-critics.md) (V4 remask / trust-gate / honest inventory; V6 CoRe/T2M), [docs/design/verifier-guided-repair.md](docs/design/verifier-guided-repair.md) (PDDL-Instruct / verifier-repair applicability map), [docs/design/quality-experiment-matrix.md](docs/design/quality-experiment-matrix.md) (E0–E75 + X0–X8 matrices; E34 deferred), [docs/design/speculative-denoising.md](docs/design/speculative-denoising.md) (V7 stability / dependency-cluster / survival / successor-cache decode), [docs/design/dsl-native-tokenizer.md](docs/design/dsl-native-tokenizer.md) (V5 lexer alphabet), [docs/design/grammar-fastpath.md](docs/design/grammar-fastpath.md), [docs/design/grammar-backends.md](docs/design/grammar-backends.md), [docs/design/structure-only-eval.md](docs/design/structure-only-eval.md), [docs/design/adversarial-review.md](docs/design/adversarial-review.md), [docs/design/runtime-performance.md](docs/design/runtime-performance.md), [docs/design/hf-jobs-train.md](docs/design/hf-jobs-train.md) (HF Jobs full train — not ZeroGPU), [docs/design/gpu-multi-farm-mcp.md](docs/design/gpu-multi-farm-mcp.md), and [docs/MODEL_CARD.md](docs/MODEL_CARD.md).
 
 ## Model card (summary)
 
@@ -86,11 +86,13 @@ Honest ship path (V4 inventory-in-prompt / V6 stacked champion):
 
 ```bash
 python -m scripts.run_quality_matrix --matrix v4 --only E35,E36 \
-  --steps 40 --device cpu --context-backend scratch --no-design-md-context
+  --steps 40 --device cpu --context-backend scratch --no-design-md-context \
+  --scratch-control
 
 # V6: CoRe remask + slot-aware trust + honest V5 alphabet
 python -m scripts.run_quality_matrix --matrix v6 --only E53 \
-  --steps 80 --device cpu --context-backend scratch --no-design-md-context
+  --steps 80 --device cpu --context-backend scratch --no-design-md-context \
+  --scratch-control
 ```
 
 Train artifacts land in `outputs/train_data/<version>/` (`records.jsonl`, `manifest.json`, `stats.json`). The flush pipeline: curated seeds + RICO + Awwwards → deterministic quality synth → per-record DESIGN.md + OpenUI validate → quality gates → stable sort by `id` + content fingerprint.

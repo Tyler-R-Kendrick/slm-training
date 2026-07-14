@@ -30,6 +30,7 @@ class ModelBuildConfig:
     # Prefer HF when available; tests/CI can pass --context-backend scratch.
     context_backend: str = "hf"  # scratch | hf
     hf_model_name: str = "HuggingFaceTB/SmolLM2-135M"
+    hf_model_revision: str | None = None
     # False for scratch POC; True by default when context_backend=hf (see factory)
     freeze_context: bool = True
     local_files_only: bool = False

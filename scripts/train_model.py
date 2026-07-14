@@ -112,6 +112,11 @@ def main(argv: list[str] | None = None) -> int:
         help="HF model id when --context-backend hf.",
     )
     parser.add_argument(
+        "--hf-revision",
+        default=None,
+        help="Immutable Hugging Face commit revision for the context model.",
+    )
+    parser.add_argument(
         "--freeze-context",
         action="store_true",
         help="Freeze context tower weights.",
@@ -382,6 +387,7 @@ def main(argv: list[str] | None = None) -> int:
             gen_steps=args.gen_steps,
             context_backend=args.context_backend,
             hf_model_name=args.hf_model,
+            hf_model_revision=args.hf_revision,
             freeze_context=freeze,
             local_files_only=args.local_files_only,
             grammar_constrained=not args.no_grammar,

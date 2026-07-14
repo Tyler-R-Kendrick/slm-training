@@ -7,9 +7,10 @@ import argparse
 import json
 from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
-from slm_training.harnesses.model_build import ModelBuildConfig, train
+from slm_training.harnesses.model_build import ModelBuildConfig, build_model, train
+from slm_training.harnesses.model_build.data import load_train_records
 from slm_training.harnesses.model_build.eval_runner import evaluate_suites
 from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
@@ -42,6 +43,8 @@ class Experiment:
     run_id: str
     description: str
     train_dir: Path
+    initialization: Literal["scratch", "parent", "eval_only", "process"] = "parent"
+    parent_checkpoint: str | None = None
     # Train overrides
     fidelity_loss_weight: float = 0.0
     schema_in_context: bool = False
@@ -1404,7 +1407,17 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
         )
         return result
 
-    if exp.seed_checkpoint:
+    if exp.initialization == "parent":
+        if not exp.parent_checkpoint:
+            raise ValueError(f"{exp.eid} parent initialization requires --parent")
+        parent = Path(exp.parent_checkpoint)
+        if not parent.is_file():
+            raise FileNotFoundError(f"{exp.eid} needs parent checkpoint {parent}")
+        cfg = _train_cfg(exp, args)
+        model = build_model(cfg, load_train_records(exp.train_dir), checkpoint=parent)
+        summary = train(cfg, model=model)
+        ckpt = Path(summary["checkpoint"])
+    elif exp.seed_checkpoint:
         src = Path(exp.seed_checkpoint)
         dest = run_dir / "checkpoints" / "last.pt"
         if not src.is_file():
@@ -1465,6 +1478,8 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
     result = {
         "id": exp.eid,
         "run_id": exp.run_id,
+        "initialization": exp.initialization,
+        "parent_checkpoint": exp.parent_checkpoint,
         "description": exp.description,
         "checkpoint": str(ckpt),
         **_summarize_board(board),
@@ -1538,6 +1553,17 @@ def main(argv: list[str] | None = None) -> int:
         help="Optional strong checkpoint for decode-only experiments (E1/E5).",
     )
     parser.add_argument(
+        "--parent",
+        type=Path,
+        default=None,
+        help="Named parent model checkpoint for branch-initialized matrix candidates.",
+    )
+    parser.add_argument(
+        "--scratch-control",
+        action="store_true",
+        help="Explicitly run selected rows as non-deployable scratch controls.",
+    )
+    parser.add_argument(
         "--build-curriculum",
         action="store_true",
         help="Build curriculum train corpus before running.",
@@ -1560,6 +1586,9 @@ def main(argv: list[str] | None = None) -> int:
         help="Run deferred E34 latent MoE placeholder (normally skipped).",
     )
     args = parser.parse_args(argv)
+    if args.matrix in {"v4", "v5", "v6", "v7", "all"}:
+        if args.parent is None and not args.scratch_control:
+            parser.error("modern matrices require --parent or explicit --scratch-control")
 
     needs_curriculum = args.only is None or any(
         x in (args.only or "")
@@ -1673,6 +1702,34 @@ def main(argv: list[str] | None = None) -> int:
     if args.only:
         wanted = {x.strip().upper() for x in args.only.split(",") if x.strip()}
         experiments = [e for e in experiments if e.eid in wanted]
+
+    classified: list[Experiment] = []
+    for exp in experiments:
+        if args.scratch_control or args.matrix in {"legacy", "v2", "v3"}:
+            initialization = "scratch"
+        elif exp.eval_from_run or exp.eval_from_checkpoint:
+            initialization = "eval_only"
+        elif exp.preference or exp.rl or exp.trust_gate or exp.survival_gate:
+            initialization = "process"
+        else:
+            initialization = "parent"
+        classified.append(
+            replace(
+                exp,
+                initialization=initialization,
+                parent_checkpoint=(
+                    str(args.parent)
+                    if args.parent is not None and initialization == "parent"
+                    else exp.parent_checkpoint
+                ),
+                seed_checkpoint=(
+                    str(args.parent)
+                    if args.parent is not None and initialization == "process"
+                    else exp.seed_checkpoint
+                ),
+            )
+        )
+    experiments = classified
 
     # Ensure E0 runs before dependents when selected together.
     order = {e.eid: i for i, e in enumerate(experiments)}
