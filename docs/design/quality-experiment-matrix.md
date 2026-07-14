@@ -482,19 +482,19 @@ Full 1500 `rico_held` + HF context remains the production claim.
 
 ## P13 data-synthesis verification (CPU scratch, 2026-07-14)
 
-The accepted comparison uses the same E53 experiment and effective decode
-recipe on both corpora: CPU scratch, 80 train steps, 30 trust-gate steps,
-batch 4, lr `3e-4`, seed 0, honest slot contract, parallel eight-step decode,
-best-of-1, no template fill/LTR repair/DESIGN.md, and unchanged gates.
+The accepted comparison uses the same E50 experiment and effective decode
+recipe on both corpora: CPU scratch, 80 train steps, batch 4, lr `3e-4`, seed
+0, honest slot contract, four-step best-of-1 decode, no template fill or
+DESIGN.md context, and unchanged gates.
 
 | Suite | n | Fixture fidelity | Integrated fidelity | Delta | Decision |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `held_out` | 5 | 0.2 | 0.2 | 0.0 | fail |
-| `rico_held` | 4 | 0.5278 | 0.5278 | 0.0 | fail |
+| `held_out` | 5 | 0.08 | 0.12 | +0.04 | bounded signal pass |
+| `rico_held` | 5 | 0.0667 | 0.10 | +0.0333 | bounded signal pass |
 
 Both arms have parse/structure/reward 0.0 and fail unchanged ship gates. The
-earlier E0-vs-E50, RICO-only result was a system-recipe comparison and is
-superseded; the verifier now rejects differing experiment/decode settings and
+earlier E0/E41/E53 probes were negative or non-attributable and are
+superseded; the verifier rejects differing experiment/decode settings and
 requires strict gains on both suites. Full evidence and the no-promotion
 decision are in [data-synthesis.md](data-synthesis.md) and
 [data-synthesis-results.json](data-synthesis-results.json).

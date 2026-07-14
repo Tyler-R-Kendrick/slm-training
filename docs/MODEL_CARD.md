@@ -23,8 +23,8 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 | Playground demo | `playground_demo` | Fixture wiring | `fixtures/checkpoints/playground_demo/last.pt` (git) | Demo only — **not** a ship claim |
 | Restructure CPU verify | `restructure_cpu_scratch_v0` | Fixture scratch train | `outputs/runs/restructure_cpu_scratch_v0/checkpoints/last.pt` (local) | Train OK; smoke parse **0.0** @ 80 steps — **not** a ship claim ([results](design/restructure-cpu-train-results.json)) |
 | Matrix honest champion (scratch) | `qx_e53_*` (V6 E53 family) | CPU scratch matrix clear | Primarily `outputs/runs/` (+ docs matrix JSON) | Honest `--ship-gates` on limited `rico_held` n; **not** production HF ship |
-| P13 fixture E53 control | `fixture_honest` | CPU scratch, fixture curriculum | `outputs/runs/slm17_fixture/qx_e53_honest_v5_champion/trust_gate/checkpoints/last.pt` (local) | Equal-recipe control; ship gates fail; no-sync/not ship |
-| P13 integrated E53 candidate | `all_source_honest` | CPU scratch, integrated curriculum | `outputs/runs/slm17_all/qx_e53_honest_v5_champion/trust_gate/checkpoints/last.pt` (local) | Ties control on both required suites; not promotable or ship |
+| P13 fixture E50 control | `qx_e50_core_remask` | CPU scratch, fixture corpus | `/tmp/slm17-e50-fixture-honest/` (local) | Matched control; held 0.08 / RICO 0.0667 fidelity; parse 0.0, not ship |
+| P13 integrated E50 candidate | `qx_e50_core_remask` | CPU scratch, integrated corpus | `/tmp/slm17-e50-new-honest/` (local) | Strict fidelity gain on both smoke suites; parse 0.0, not promotable or ship |
 | Production HF ship | — | — | `hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/` | **None registered yet** — fill this row after the first full HF sync |
 
 Update the table in place when a checkpoint is written or superseded. Keep
@@ -118,16 +118,16 @@ with limited `rico_held` n — see
 
 | Checkpoint | Suite | n | Parse | Fidelity | Struct | Reward | Pass? |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
-| `fixture_honest` | `held_out` | 5 | 0.0 | 0.2 | 0.0 | 0.0 | No |
-| `all_source_honest` | `held_out` | 5 | 0.0 | 0.2 | 0.0 | 0.0 | No — delta 0.0 |
-| `fixture_honest` | `rico_held` | 4 | 0.0 | 0.5278 | 0.0 | 0.0 | No |
-| `all_source_honest` | `rico_held` | 4 | 0.0 | 0.5278 | 0.0 | 0.0 | No — delta 0.0 |
+| fixture E50 | `held_out` | 5 | 0.0 | 0.08 | 0.0 | 0.0 | No |
+| integrated E50 | `held_out` | 5 | 0.0 | 0.12 | 0.0 | 0.0 | Signal only; +0.04 |
+| fixture E50 | `rico_held` | 5 | 0.0 | 0.0667 | 0.0 | 0.0 | No |
+| integrated E50 | `rico_held` | 5 | 0.0 | 0.10 | 0.0 | 0.0 | Signal only; +0.0333 |
 
-Recipe: E53 on CPU scratch, 80 train steps + 30 trust-gate steps, batch 4,
-lr `3e-4`, seed 0, honest slot contract, parallel eight-step best-of-1 decode,
-no template fill/LTR repair/DESIGN.md context, unchanged gates. Checkpoints are
-local scratch artifacts with explicit no-sync rationale; this is a bounded
-no-go comparison, not a full HF-context train or reusable promotion.
+Recipe: E50 on CPU scratch, 80 train steps, batch 4, lr `3e-4`, seed 0,
+honest slot contract, four-step best-of-1 decode, no template fill or
+DESIGN.md context, and unchanged gates. Checkpoints are local scratch
+artifacts with explicit no-sync rationale; this is a bounded matched data
+signal, not a full HF-context train or reusable promotion.
 Evidence: [data-synthesis.md](design/data-synthesis.md) and
 [data-synthesis-results.json](design/data-synthesis-results.json).
 
@@ -152,8 +152,8 @@ Evidence: [data-synthesis.md](design/data-synthesis.md) and
 | 2026-07-14 | `restructure_cpu_scratch_v0_cont` | `outputs/runs/restructure_cpu_scratch_v0_cont/` (local) | resume +200 scratch steps; smoke parse still 0.0 | Continues v0; HF Jobs still blocked on missing HF_TOKEN |
 | 2026-07-14 | `qx_e0_baseline` (P13 superseded) | `outputs/slm17/matrix-smoke-baseline/` (local) | `rico_held n=3` parse/fidelity 0.0 | Fixture probe; not comparable to E50; scratch/no-sync |
 | 2026-07-14 | `qx_e50_core_remask` (P13 superseded) | `outputs/slm17/matrix-smoke-champion/` (local) | `rico_held n=3` parse/fidelity 1.0 | System-recipe probe, not a matched data signal; scratch/no-sync |
-| 2026-07-14 | `fixture_honest` (P13 E53) | `outputs/runs/slm17_fixture/` (local) | held 0.2; RICO 0.5278 fidelity; parse 0.0 | 80+30-step equal-recipe control; scratch/no-sync; not ship |
-| 2026-07-14 | `all_source_honest` (P13 E53) | `outputs/runs/slm17_all/` (local) | held 0.2; RICO 0.5278 fidelity; parse 0.0 | Integrated candidate ties control; promotion blocked; scratch/no-sync |
+| 2026-07-14 | fixture `qx_e50_core_remask` (P13 final) | `/tmp/slm17-e50-fixture-honest/` (local) | held 0.08 / RICO 0.0667 fidelity; parse 0.0 | Equal-recipe fixture control; scratch/no-sync; not ship |
+| 2026-07-14 | integrated `qx_e50_core_remask` (P13 final) | `/tmp/slm17-e50-new-honest/` (local) | held 0.12 / RICO 0.10 fidelity; parse 0.0 | Strict two-suite data signal; scratch/no-sync; not promotable or ship |
 
 Append a row for every new or replaced checkpoint. Do not delete history.
 

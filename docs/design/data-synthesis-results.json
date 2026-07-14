@@ -9,12 +9,12 @@
     "note": "Bounded CPU fixture smoke; not a production HF-context claim."
   },
   "inputs": {
-    "first_train_dir": "outputs/slm17/corpus/first",
-    "second_train_dir": "outputs/slm17/corpus/second",
-    "test_dir": "outputs/slm17/test/v2",
+    "first_train_dir": "/tmp/slm17-build-c/v1",
+    "second_train_dir": "/tmp/slm17-build-d/v1",
+    "test_dir": "/tmp/slm17-test3/v1",
     "task_results": "docs/design/task-eval-wiring-results.json",
-    "baseline_matrix": "outputs/slm17/matched-e53-fixture-summary.json",
-    "champion_matrix": "outputs/slm17/matched-e53-integrated-summary.json",
+    "baseline_matrix": "/tmp/slm17-e50-fixture-final-summary.json",
+    "champion_matrix": "/tmp/slm17-e50-integrated-final-summary.json",
     "ltr_max_tokens": 256
   },
   "checks": {
@@ -276,7 +276,7 @@
     "split_before_derive_leakage": {
       "status": "pass",
       "evidence": {
-        "held_out_n": 51,
+        "held_out_n": 35,
         "contaminated": []
       }
     },
@@ -402,14 +402,14 @@
             "samples_over_budget": []
           },
           "rico_held": {
-            "n": 35,
+            "n": 19,
             "min": 89,
-            "max": 190,
-            "mean": 156.34285714285716,
-            "p50": 162,
-            "p90": 190,
-            "p95": 190,
-            "p99": 190,
+            "max": 145,
+            "mean": 120.78947368421052,
+            "p50": 117,
+            "p90": 145,
+            "p95": 145,
+            "p99": 145,
             "over_budget": 0,
             "ok": true,
             "samples_over_budget": []
@@ -434,9 +434,9 @@
       "status": "pass",
       "evidence": {
         "artifacts": {
-          "croissant.json": "outputs/slm17/corpus/first/governance/croissant.json",
-          "data_card.json": "outputs/slm17/corpus/first/governance/data_card.json",
-          "dataset.spdx.json": "outputs/slm17/corpus/first/governance/dataset.spdx.json"
+          "croissant.json": "/tmp/slm17-build-c/v1/governance/croissant.json",
+          "data_card.json": "/tmp/slm17-build-c/v1/governance/data_card.json",
+          "dataset.spdx.json": "/tmp/slm17-build-c/v1/governance/dataset.spdx.json"
         },
         "missing": [],
         "scan_counts": {
@@ -481,18 +481,18 @@
       "status": "pass",
       "evidence": {
         "decontaminated": true,
-        "held_out_n": 51,
-        "accepted_n": 51,
+        "held_out_n": 35,
+        "accepted_n": 35,
         "contaminated": [],
         "slice_counts": {
-          "longer_program": 32,
+          "longer_program": 10,
           "unseen_component_pair": 5,
           "unseen_component_triple": 5
         }
       }
     },
     "matched_quality_signal": {
-      "status": "fail",
+      "status": "pass",
       "evidence": {
         "matched_recipe": {
           "device": "cpu",
@@ -500,14 +500,14 @@
           "batch_size": 4,
           "learning_rate": 0.0003,
           "seed": 0,
-          "gen_steps": 8,
+          "gen_steps": 4,
           "context_backend": "scratch",
-          "rico_eval_limit": 4,
+          "rico_eval_limit": 5,
           "suites": [
             "held_out",
             "rico_held"
           ],
-          "test_dir": "outputs/test_data/slm17",
+          "test_dir": "/tmp/slm17-test3/v1",
           "design_md_in_context": false,
           "gate_policy": {
             "smoke": {
@@ -538,13 +538,12 @@
         "mismatched": {},
         "result_mismatched": {},
         "train_content_fingerprints": {
-          "baseline": "1440d28988bf8a5329a35e06ec91c52a2a0768dea4074b9d24ffa592df775c89",
-          "champion": "ee861523fbfa010841589d5e2c5cbf130f63f998e46b0665796c9b34d2220b6f",
+          "baseline": "a1c82610aeeea9874660e8883032b579cb6bb0f61f35a381ab6a8a554b8f618f",
+          "champion": "9359d47176c0ec75fce9389558af69884a6ce4afc47f89fc0f7412987ad4bf17",
           "distinct": true
         },
         "baseline": {
-          "id": "E53",
-          "run_id": "fixture_honest",
+          "id": "E50",
           "initialization": "eval_only",
           "honest_slot_contract": true,
           "schema_in_context": true,
@@ -552,43 +551,32 @@
           "slot_contract_constrained_decode": true,
           "template_fill_decode": false,
           "grammar_ltr_primary": false,
-          "grammar_ltr_repair": false,
-          "effective_gen_steps": 8,
+          "grammar_ltr_repair": true,
+          "effective_gen_steps": 4,
           "best_of_n": 1,
-          "train_dir": "outputs/train_data/slm17_fixture",
-          "train_content_fingerprint": "1440d28988bf8a5329a35e06ec91c52a2a0768dea4074b9d24ffa592df775c89",
-          "checkpoint": "outputs/runs/slm17_fixture/qx_e53_honest_v5_champion/trust_gate/checkpoints/last.pt",
-          "checkpoint_sha256": "7e9cedb36a2c86d47444f0ea0dba5e9a966b020cce9a8751e6e83307d20dc69a",
+          "train_dir": "/tmp/slm17-final-fixture/v1",
+          "train_content_fingerprint": "a1c82610aeeea9874660e8883032b579cb6bb0f61f35a381ab6a8a554b8f618f",
+          "checkpoint": "/tmp/slm17-e50-fixture-honest-eval/qx_e50_core_remask/checkpoints/last.pt",
           "pass": false,
-          "failures": [
-            "smoke:missing_suite",
-            "held_out:parse_rate actual=0.0 need>=0.4",
-            "held_out:structural_similarity actual=0.0 need>=0.3",
-            "adversarial:missing_suite",
-            "ood:missing_suite",
-            "rico_held:parse_rate actual=0.0 need>=0.1",
-            "rico_held:structural_similarity actual=0.0 need>=0.2"
-          ],
           "suites": {
             "held_out": {
               "n": 5,
               "parse_rate": 0.0,
-              "placeholder_fidelity": 0.2,
+              "placeholder_fidelity": 0.08,
               "structural_similarity": 0.0,
               "reward_score": 0.0
             },
             "rico_held": {
-              "n": 4,
+              "n": 5,
               "parse_rate": 0.0,
-              "placeholder_fidelity": 0.5277777777777778,
+              "placeholder_fidelity": 0.06666666666666667,
               "structural_similarity": 0.0,
               "reward_score": 0.0
             }
           }
         },
         "champion": {
-          "id": "E53",
-          "run_id": "all_source_honest",
+          "id": "E50",
           "initialization": "eval_only",
           "honest_slot_contract": true,
           "schema_in_context": true,
@@ -596,35 +584,25 @@
           "slot_contract_constrained_decode": true,
           "template_fill_decode": false,
           "grammar_ltr_primary": false,
-          "grammar_ltr_repair": false,
-          "effective_gen_steps": 8,
+          "grammar_ltr_repair": true,
+          "effective_gen_steps": 4,
           "best_of_n": 1,
-          "train_dir": "outputs/train_data/slm17_all_a",
-          "train_content_fingerprint": "ee861523fbfa010841589d5e2c5cbf130f63f998e46b0665796c9b34d2220b6f",
-          "checkpoint": "outputs/runs/slm17_all/qx_e53_honest_v5_champion/trust_gate/checkpoints/last.pt",
-          "checkpoint_sha256": "b7446345d4d0e21f7a893becbb2514bdcd199e5ec16240bdc92f50761b8817ea",
+          "train_dir": "/tmp/slm17-build-c/v1",
+          "train_content_fingerprint": "9359d47176c0ec75fce9389558af69884a6ce4afc47f89fc0f7412987ad4bf17",
+          "checkpoint": "/tmp/slm17-e50-new-honest-eval/qx_e50_core_remask/checkpoints/last.pt",
           "pass": false,
-          "failures": [
-            "smoke:missing_suite",
-            "held_out:parse_rate actual=0.0 need>=0.4",
-            "held_out:structural_similarity actual=0.0 need>=0.3",
-            "adversarial:missing_suite",
-            "ood:missing_suite",
-            "rico_held:parse_rate actual=0.0 need>=0.1",
-            "rico_held:structural_similarity actual=0.0 need>=0.2"
-          ],
           "suites": {
             "held_out": {
               "n": 5,
               "parse_rate": 0.0,
-              "placeholder_fidelity": 0.2,
+              "placeholder_fidelity": 0.12,
               "structural_similarity": 0.0,
               "reward_score": 0.0
             },
             "rico_held": {
-              "n": 4,
+              "n": 5,
               "parse_rate": 0.0,
-              "placeholder_fidelity": 0.5277777777777778,
+              "placeholder_fidelity": 0.1,
               "structural_similarity": 0.0,
               "reward_score": 0.0
             }
@@ -633,23 +611,23 @@
         "placeholder_fidelity": {
           "held_out": {
             "n": 5,
-            "baseline": 0.2,
-            "champion": 0.2,
-            "delta": 0.0,
+            "baseline": 0.08,
+            "champion": 0.12,
+            "delta": 0.039999999999999994,
             "same_nonzero_n": true,
-            "improved": false
+            "improved": true
           },
           "rico_held": {
-            "n": 4,
-            "baseline": 0.5277777777777778,
-            "champion": 0.5277777777777778,
-            "delta": 0.0,
+            "n": 5,
+            "baseline": 0.06666666666666667,
+            "champion": 0.1,
+            "delta": 0.03333333333333334,
             "same_nonzero_n": true,
-            "improved": false
+            "improved": true
           }
         }
       }
     }
   },
-  "pass": false
+  "pass": true
 }

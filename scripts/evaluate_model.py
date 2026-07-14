@@ -21,13 +21,22 @@ def _check_fail_unders(metrics: dict, args: argparse.Namespace) -> int:
         if float(metrics.get("parse_rate") or 0) < args.fail_under_parse_rate:
             return 2
     if args.fail_under_placeholder_fidelity is not None:
-        if float(metrics.get("placeholder_fidelity") or 0) < args.fail_under_placeholder_fidelity:
+        if (
+            float(metrics.get("placeholder_fidelity") or 0)
+            < args.fail_under_placeholder_fidelity
+        ):
             return 4
     if args.fail_under_placeholder_validity is not None:
-        if float(metrics.get("placeholder_validity") or 0) < args.fail_under_placeholder_validity:
+        if (
+            float(metrics.get("placeholder_validity") or 0)
+            < args.fail_under_placeholder_validity
+        ):
             return 7
     if args.fail_under_structural_similarity is not None:
-        if float(metrics.get("structural_similarity") or 0) < args.fail_under_structural_similarity:
+        if (
+            float(metrics.get("structural_similarity") or 0)
+            < args.fail_under_structural_similarity
+        ):
             return 5
     if args.fail_under_reward_score is not None:
         if float(metrics.get("reward_score") or 0) < args.fail_under_reward_score:
@@ -219,7 +228,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.no_design_md_context and args.design_md_context:
-        raise SystemExit("pass only one of --design-md-context / --no-design-md-context")
+        raise SystemExit(
+            "pass only one of --design-md-context / --no-design-md-context"
+        )
     design_md_override: bool | None = None
     if args.no_design_md_context:
         design_md_override = False
