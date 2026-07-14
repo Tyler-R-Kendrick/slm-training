@@ -73,7 +73,7 @@ and [`task-eval-wiring-results.json`](task-eval-wiring-results.json).
 
 | Run | Recipe | Result | Decision |
 | --- | --- | --- | --- |
-| task-mixture dry wiring | CPU; 0 train steps; 5 fixture rows; one row in each task group; no checkpoint or NLL score | 69 probes emitted across 20 configured families; 5/5 task groups classified; 0 unclassified; 1 structural/ProgramSpec family; 15 configured families intentionally absent from the tiny fixture | CLI/probe/diagnostic wiring passes. RegMix tuning is **not run** until the real producer families and validation slices land. |
+| task-mixture dry wiring | CPU; 0 train steps; 5 fixture rows; one row in each task group; no checkpoint or NLL score | 81 probes emitted across 24 configured families; 5/5 task groups classified; 0 unclassified; 1 structural/ProgramSpec family; 19 configured families intentionally absent from the tiny fixture | CLI/probe/diagnostic wiring passes. RegMix tuning is **not run** until the real producer families and validation slices land. |
 | task/equivalence wiring | CPU; 0 train steps; 5 synthetic prediction-evidence cases across generation, repair, edit, behavior | AST/ref/tree metrics emitted; L3/L4 equivalence evidence `n=2`, fixture score 1.0; 8 metric instances unavailable; canonical exact unavailable because official lang-core serialization was not active | Null/coverage behavior passes. Values are fixture self-consistency, not model quality. |
 
 No checkpoint was created, so the model card and README model-card summary do
