@@ -383,6 +383,10 @@ def main(argv: list[str] | None = None) -> int:
         help="Plan bucket sync without uploading (debug / no-write environments).",
     )
     args = parser.parse_args(argv)
+    if (args.eval_every > 0 or args.loss_eval_every > 0) and not args.test_dir:
+        parser.error(
+            "--test-dir is required when --eval-every or --loss-eval-every is enabled"
+        )
     if args.sync_checkpoints and args.no_sync_checkpoints:
         parser.error("use only one of --sync-checkpoints / --no-sync-checkpoints")
     if args.fast_train and args.no_fast_train:
