@@ -8,6 +8,12 @@ Durable storage for **real full training runs** (HF-context ship track).
 | URI | `hf://buckets/TKendrick/OpenUI` |
 | Layout | `checkpoints/<run_id>/…` |
 
+Autoresearch evidence bundles use a separate prefix,
+`autoresearch/<campaign_id>/`. They contain campaign specs, source/evidence
+snapshots, decisions, outcomes, telemetry, and checksums—not serving checkpoints.
+The checkpoint and model-card rules below still apply to any full training run
+launched by a campaign.
+
 ## What gets synced
 
 From `outputs/runs/<run_id>/checkpoints/`:

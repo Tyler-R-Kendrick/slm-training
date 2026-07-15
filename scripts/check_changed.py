@@ -33,6 +33,7 @@ SUITES_BY_PREFIX = (
         "scripts/hf_jobs_train.py",
         ("tests/test_runtime/accel", "tests/test_harnesses/model_build"),
     ),
+    ("scripts/autoresearch.py", ("tests/test_autoresearch",)),
     ("scripts/model_cycle.py", ("tests/test_lineage",)),
     (
         "scripts/remote_train.py",
@@ -60,6 +61,7 @@ SUITES_BY_PREFIX = (
             "tests/test_rico",
         ),
     ),
+    ("src/slm_training/autoresearch/", ("tests/test_autoresearch",)),
     ("src/slm_training/dsl/", ("tests/test_dsl", "tests/test_harnesses/model_build")),
     ("src/slm_training/evals/", ("tests/test_evals", "tests/test_harnesses/model_build")),
     ("src/slm_training/harnesses/distill/", ("tests/test_harnesses/distill",)),

@@ -606,8 +606,14 @@ def cmd_promote(args: argparse.Namespace) -> int:
     return 0
 
 
-def _nemo_recipe(manifest: RunManifest, *, job_id: str | None = None) -> dict[str, Any]:
+def _nemo_recipe(
+    manifest: RunManifest,
+    *,
+    job_id: str | None = None,
+    rl_readiness_report_id: str | None = None,
+) -> dict[str, Any]:
     recipe = dict(manifest.recipe)
+    prior_nemo = recipe.get("nemo_rl") or {}
     recipe["nemo_rl"] = {
         "version": NEMO_RL_VERSION,
         "git_sha": NEMO_RL_GIT_SHA,
@@ -617,11 +623,17 @@ def _nemo_recipe(manifest: RunManifest, *, job_id: str | None = None) -> dict[st
         "lora": {"rank": 16, "alpha": 32, "dropout": 0.05},
         "job_id": job_id,
         "claim": "hardware_smoke",
+        "rl_readiness_report_id": (
+            rl_readiness_report_id or prior_nemo.get("rl_readiness_report_id")
+        ),
     }
     return recipe
 
 
 def cmd_submit_nemo(args: argparse.Namespace) -> int:
+    from slm_training.autoresearch.rl_gate import assert_rl_ready
+
+    readiness = assert_rl_ready(args.rl_readiness_report)
     store = _store(args)
     manifest = store.load_run(args.run_id)
     if manifest.track != "causal_lm":
@@ -638,6 +650,7 @@ def cmd_submit_nemo(args: argparse.Namespace) -> int:
         data_path=args.data_path,
         checkpoint_bucket=args.checkpoint_bucket,
         seed=manifest.seed,
+        rl_readiness_report=readiness.model_dump(mode="json"),
     )
     command = build_nemo_job_command(
         entrypoint=entrypoint,
@@ -656,6 +669,7 @@ def cmd_submit_nemo(args: argparse.Namespace) -> int:
         "checkpoint_bucket": args.checkpoint_bucket,
         "command": command,
         "entrypoint": entrypoint,
+        "rl_readiness_report_id": readiness.report_id,
     }
     if args.dry_run:
         print(json.dumps(plan, indent=2))
@@ -674,7 +688,11 @@ def cmd_submit_nemo(args: argparse.Namespace) -> int:
     hardware.update({"provider": "hf_jobs", "flavor": args.flavor})
     store.record_run_metadata(
         manifest.run_id,
-        recipe=_nemo_recipe(manifest, job_id=job_id),
+        recipe=_nemo_recipe(
+            manifest,
+            job_id=job_id,
+            rl_readiness_report_id=readiness.report_id,
+        ),
         hardware=hardware,
         artifact_uris=(*manifest.artifact_uris, f"hf-job://{job_id}"),
         legacy_kind="hardware_smoke",
@@ -1067,6 +1085,7 @@ def build_parser() -> argparse.ArgumentParser:
     submit_nemo.add_argument("--timeout", default="2h")
     submit_nemo.add_argument("--dry-run", action="store_true")
     submit_nemo.add_argument("--ack-paid-gpu", action="store_true")
+    submit_nemo.add_argument("--rl-readiness-report", type=Path, required=True)
     submit_nemo.set_defaults(func=cmd_submit_nemo)
 
     reconcile_nemo = sub.add_parser("reconcile-nemo")

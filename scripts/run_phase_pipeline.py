@@ -88,6 +88,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--pref-limit", type=int, default=48)
     parser.add_argument("--rl-limit", type=int, default=32)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--rl-readiness-report", type=Path, required=True)
     parser.add_argument(
         "--skip-sft",
         action="store_true",
@@ -100,6 +101,9 @@ def main(argv: list[str] | None = None) -> int:
         help="Optional warm-start SFT checkpoint (skips random init).",
     )
     args = parser.parse_args(argv)
+    from slm_training.autoresearch.rl_gate import assert_rl_ready
+
+    readiness = assert_rl_ready(args.rl_readiness_report)
 
     run_dir = args.run_root / args.run_id
     ckpt_dir = run_dir / "checkpoints"
@@ -223,6 +227,7 @@ def main(argv: list[str] | None = None) -> int:
         limit=args.rl_limit,
         kl_beta=0.02,
         lr=1e-5,
+        readiness_report=readiness,
     )
     rl_ckpt = Path(rl_summary["checkpoint"])
     phases["C"] = {

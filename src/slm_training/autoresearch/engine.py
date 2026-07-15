@@ -1,0 +1,318 @@
+"""Experiment validation, bounded command compilation, and failure diagnosis."""
+
+from __future__ import annotations
+
+import json
+import subprocess
+from pathlib import Path
+from slm_training.autoresearch.rl_gate import assert_rl_ready
+from slm_training.autoresearch.schemas import (
+    CampaignSpec,
+    Diagnosis,
+    EvidenceSnapshot,
+    ExperimentOutcome,
+    ExperimentSpec,
+    ResearchSource,
+    utc_now,
+)
+
+
+def validate_experiment(
+    campaign: CampaignSpec,
+    experiment: ExperimentSpec,
+    evidence: EvidenceSnapshot,
+    sources: list[ResearchSource],
+) -> None:
+    if experiment.campaign_id != campaign.campaign_id:
+        raise ValueError("experiment campaign_id does not match campaign")
+    changed = set(experiment.knobs.model_dump(exclude_none=True))
+    forbidden = changed - set(campaign.allowed_knobs)
+    if forbidden:
+        raise ValueError(f"experiment changes forbidden knobs: {sorted(forbidden)}")
+    known_citations = {source.uri for source in sources}
+    known_citations.update(item.path for item in evidence.items)
+    if not set(experiment.citations) & known_citations:
+        raise ValueError("experiment is ungrounded: no citation matches captured evidence")
+    if experiment.requires_rl:
+        assert_rl_ready(experiment.rl_readiness_report)
+
+
+def compile_commands(
+    campaign: CampaignSpec,
+    experiment: ExperimentSpec,
+    *,
+    output_root: Path | str = Path("outputs/autoresearch"),
+) -> list[list[str]]:
+    """Compile typed knobs only; no researcher-authored shell is accepted."""
+    knobs = experiment.knobs
+    root = Path(output_root) / campaign.campaign_id / "runs" / experiment.experiment_id
+    version = f"autoresearch-{campaign.campaign_id}-{experiment.experiment_id}"
+    train_dir = Path("outputs/train_data") / version
+    commands: list[list[str]] = []
+    if knobs.data_source:
+        build = [
+            "python",
+            "-m",
+            "scripts.build_train_data",
+            "--source",
+            knobs.data_source,
+            "--version",
+            version,
+            "--immutable",
+        ]
+        if knobs.derive_from:
+            build.extend(["--derive-from", knobs.derive_from])
+        if knobs.synthesizer:
+            build.extend(["--synthesizer", knobs.synthesizer])
+        if knobs.max_records_per_parent:
+            build.extend(["--max-records-per-parent", str(knobs.max_records_per_parent)])
+        if knobs.min_quality_score is not None:
+            build.extend(["--min-quality-score", str(knobs.min_quality_score)])
+        commands.append(build)
+    else:
+        train_dir = Path("outputs/train_data/v1")
+    mixture_path = root / "mixture.json"
+    if knobs.mixture_weights:
+        commands.append(
+            [
+                "python",
+                "-m",
+                "scripts.autoresearch",
+                "materialize-mixture",
+                "--output",
+                str(mixture_path),
+                "--mixture-id",
+                f"{campaign.campaign_id}-{experiment.experiment_id}",
+                "--weights-json",
+                json.dumps(knobs.mixture_weights, sort_keys=True),
+            ]
+        )
+    if campaign.track != "twotower":
+        raise ValueError(
+            "embedded execution currently supports twotower; causal_lm proposals "
+            "must use the agent-driven model_cycle lineage workflow"
+        )
+    train = [
+        "python",
+        "-m",
+        "scripts.train_model",
+        "--train-dir",
+        str(train_dir),
+        "--run-root",
+        str(root.parent),
+        "--run-id",
+        root.name,
+        "--steps",
+        str(knobs.steps or 200),
+        "--batch-size",
+        str(knobs.batch_size or 4),
+        "--lr",
+        str(knobs.lr or 3e-4),
+        "--seed",
+        str(knobs.seed or 0),
+        "--context-backend",
+        knobs.context_backend or "hf",
+        "--device",
+        "cpu" if campaign.budget.max_gpu_hours == 0 else "auto",
+    ]
+    if knobs.mixture_weights:
+        train.extend(["--mixture-manifest", str(mixture_path)])
+    commands.append(train)
+    commands.append(
+        [
+            "python",
+            "-m",
+            "scripts.evaluate_model",
+            "--train-dir",
+            str(train_dir),
+            "--test-dir",
+            "outputs/test_data/v1",
+            "--run-root",
+            str(root.parent),
+            "--run-id",
+            root.name,
+            "--ship-gates",
+        ]
+    )
+    return commands
+
+
+def execute_commands(
+    experiment: ExperimentSpec,
+    commands: list[list[str]],
+    *,
+    cwd: Path | str = Path("."),
+    timeout_seconds: float | None = None,
+) -> ExperimentOutcome:
+    started = utc_now()
+    combined: list[str] = []
+    stages: list[dict[str, object]] = []
+    metrics: dict[str, float] = {}
+    data_metrics: dict[str, float] = {}
+    for command in commands:
+        try:
+            completed = subprocess.run(
+                command,
+                cwd=cwd,
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=timeout_seconds,
+            )
+        except subprocess.TimeoutExpired as exc:
+            stages.append(
+                {
+                    "command": command,
+                    "timed_out": True,
+                    "stdout": str(exc.stdout or "")[-8000:],
+                    "stderr": str(exc.stderr or "")[-8000:],
+                }
+            )
+            return ExperimentOutcome(
+                experiment_id=experiment.experiment_id,
+                campaign_id=experiment.campaign_id,
+                status="stopped",
+                metrics=metrics,
+                data_metrics=data_metrics,
+                command=tuple(" ".join(item) for item in commands),
+                error=f"stage exceeded wall-time limit: {' '.join(command)}",
+                stage_telemetry=tuple(stages),
+                started_at=started,
+                finished_at=utc_now(),
+            )
+        combined.extend([completed.stdout, completed.stderr])
+        parsed = _parse_json_output(completed.stdout)
+        flattened = _numeric_metrics(parsed) if parsed is not None else {}
+        if "scripts.build_train_data" in command:
+            data_metrics.update(flattened)
+        elif "scripts.evaluate_model" in command:
+            metrics.update(flattened)
+        stages.append(
+            {
+                "command": command,
+                "exit_code": completed.returncode,
+                "stdout": completed.stdout[-8000:],
+                "stderr": completed.stderr[-8000:],
+                "parsed_output": parsed,
+            }
+        )
+        if completed.returncode:
+            return ExperimentOutcome(
+                experiment_id=experiment.experiment_id,
+                campaign_id=experiment.campaign_id,
+                status="failed",
+                command=tuple(" ".join(command) for command in commands),
+                exit_code=completed.returncode,
+                error="\n".join(combined)[-8000:],
+                metrics=metrics,
+                data_metrics=data_metrics,
+                stage_telemetry=tuple(stages),
+                started_at=started,
+                finished_at=utc_now(),
+            )
+    return ExperimentOutcome(
+        experiment_id=experiment.experiment_id,
+        campaign_id=experiment.campaign_id,
+        status="completed",
+        metrics=metrics,
+        data_metrics=data_metrics,
+        command=tuple(" ".join(command) for command in commands),
+        exit_code=0,
+        stage_telemetry=tuple(stages),
+        started_at=started,
+        finished_at=utc_now(),
+    )
+
+
+def _parse_json_output(stdout: str) -> object | None:
+    text = stdout.strip()
+    if not text:
+        return None
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        return None
+
+
+def _numeric_metrics(value: object, prefix: str = "") -> dict[str, float]:
+    result: dict[str, float] = {}
+    if isinstance(value, dict):
+        for key, child in value.items():
+            name = f"{prefix}.{key}".strip(".")
+            if isinstance(child, bool):
+                result[name] = float(child)
+            elif isinstance(child, (int, float)):
+                result[name] = float(child)
+            elif len(result) < 300:
+                result.update(_numeric_metrics(child, name))
+    return result
+
+
+def diagnose_outcome(outcome: ExperimentOutcome) -> Diagnosis:
+    data = outcome.data_metrics
+    metrics = outcome.metrics
+    evidence: list[str] = []
+    actions: list[str] = []
+    if outcome.status in {"failed", "stopped"} and not metrics and not data:
+        target = "infrastructure"
+        evidence.append(outcome.error or "experiment process failed")
+        actions.append("repair the failed harness stage and rerun the identical spec")
+        confidence = 0.9
+    elif (
+        _metric(data, "leakage_count", default=0) > 0
+        or _metric(data, "valid_rate", default=1) < 0.98
+        or _metric(data, "quality_score", "mean_quality_score", default=1) < 0.55
+        or _metric(data, "error_count", default=0)
+        > max(1, 0.02 * _metric(data, "record_count", default=1))
+    ):
+        target = "data"
+        evidence.append(f"data metrics={json.dumps(data, sort_keys=True)}")
+        actions.extend(
+            (
+                "derive a new immutable data snapshot from the failing snapshot",
+                "adjust synthesis filters or family mixture, then rerun matched controls",
+            )
+        )
+        confidence = 0.9
+    elif _has_metric(metrics, "primary_delta") and _metric(
+        metrics, "primary_delta", default=0
+    ) <= 0:
+        target = "researcher"
+        evidence.append("valid experiment did not improve the declared primary metric")
+        actions.extend(
+            (
+                "feed this outcome into the next evidence snapshot",
+                "revise the hypothesis policy on the frozen researcher benchmark",
+            )
+        )
+        confidence = 0.7
+    elif metrics and not bool(
+        _metric(metrics, "ship_gates_pass", "gates.pass", "pass", default=0)
+    ):
+        target = "model"
+        evidence.append("experiment improved locally but still fails honest ship gates")
+        actions.append("continue SFT or architecture experiments; keep RL locked")
+        confidence = 0.75
+    else:
+        target = "none"
+        evidence.append("no actionable defect detected")
+        actions.append("retain as evidence and compare against matched controls")
+        confidence = 0.6
+    return Diagnosis(
+        experiment_id=outcome.experiment_id,
+        target=target,
+        confidence=confidence,
+        evidence=tuple(evidence),
+        recommended_actions=tuple(actions),
+    )
+
+
+def _metric(metrics: dict[str, float], *names: str, default: float) -> float:
+    for key, value in metrics.items():
+        if key in names or any(key.endswith(f".{name}") for name in names):
+            return float(value)
+    return default
+
+
+def _has_metric(metrics: dict[str, float], name: str) -> bool:
+    return any(key == name or key.endswith(f".{name}") for key in metrics)

@@ -45,6 +45,7 @@ Canonical: **`.agents/skills/<name>/SKILL.md`**. Mirrored for discovery under
 | `documenting-experiment-results` | After any train / eval / bench / profile / matrix / telemetry run |
 | `honest-ship-eval` | Eval, gates, readiness claims, metric changes, demo vs ship |
 | `running-experiment-matrices` | Running or extending E* / X* / PQR / phase matrices |
+| `openui-autoresearch` | Evidence-grounded campaigns, data/researcher repair, telemetry persistence, and RL readiness |
 | `ponytail` (+ `-review` / `-audit` / …) | Any coding task — write the minimum that works (YAGNI ladder) |
 | `caveman` (+ `-commit` / `-review` / …) | Opt-in terse chat / short commits / one-line review comments |
 | `headroom` | Large tool outputs, logs, greps, or context pressure |

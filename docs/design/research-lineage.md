@@ -437,6 +437,7 @@ grammar stack remains the verifier; no draft LM is introduced.
 | Trajectory-survival head | E73 `survival_gate` | `dsl/grammar/fastpath/survival_train.py` |
 | Successor-state cache | E74 `speculative_successor`, `speculative_fanout` | `models/speculative_denoise.py` (`SuccessorCache`) |
 | V7 champion | E75 | `scripts/run_quality_matrix.py --matrix v7` |
+| Evidence-grounded autoresearch | typed `ExperimentKnobs` | `scripts/autoresearch.py`, `src/slm_training/autoresearch/` |
 
 ---
 

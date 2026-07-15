@@ -14,6 +14,8 @@ from slm_training.models.twotower import TwoTowerModel
 from slm_training.harnesses.preference import composite_reward, grammar_score
 from slm_training.harnesses.preference.train import _logprob_of_target
 from slm_training.runtime.telemetry import CycleTelemetry, bind_telemetry, timed
+from slm_training.autoresearch.rl_gate import assert_rl_ready
+from slm_training.autoresearch.schemas import RLReadinessReport
 
 
 @dataclass
@@ -89,8 +91,10 @@ def train_grpo(
     config: GRPOConfig | None = None,
     ref_model: TwoTowerModel | None = None,
     out_dir: Path | None = None,
+    readiness_report: RLReadinessReport | Path | str | None = None,
 ) -> dict[str, Any]:
     """Online GRPO-lite: rollout K samples / prompt, update denoiser."""
+    readiness = assert_rl_ready(readiness_report)
     cfg = config or GRPOConfig()
     if not records:
         raise ValueError("no records for GRPO")
@@ -209,6 +213,7 @@ def train_grpo(
         "checkpoint": str(ckpt),
         "telemetry": tel.summary(),
         "telemetry_path": str(tel_path),
+        "rl_readiness_report_id": readiness.report_id,
         "note": (
             "On-policy group-relative updates; skips zero-variance / zero-reward "
             "groups; restores best-reward weights at end."
@@ -232,7 +237,9 @@ def train_grpo_from_paths(
     limit: int | None = 64,
     kl_beta: float = 0.02,
     lr: float = 1e-5,
+    readiness_report: RLReadinessReport | Path | str | None = None,
 ) -> dict[str, Any]:
+    readiness = assert_rl_ready(readiness_report)
     model = TwoTowerModel.from_checkpoint(checkpoint, device=device)
     records = load_jsonl(train_records)
     if limit is not None:
@@ -251,4 +258,5 @@ def train_grpo_from_paths(
         ),
         ref_model=ref,
         out_dir=out_dir,
+        readiness_report=readiness,
     )

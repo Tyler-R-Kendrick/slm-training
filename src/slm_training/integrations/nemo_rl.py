@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import base64
 import re
 import shlex
 from dataclasses import dataclass
@@ -78,6 +79,7 @@ def build_entrypoint_script(
     data_path: str,
     checkpoint_bucket: str,
     seed: int,
+    rl_readiness_report: Mapping[str, Any],
 ) -> str:
     """Build the hermetic one-step LoRA GRPO smoke command."""
     if not _RUN_ID_RE.fullmatch(run_id):
@@ -91,6 +93,8 @@ def build_entrypoint_script(
     expected_code = revision.split("+", 1)[0]
     output_root = f"/workspace/nemo-runs/{run_id}"
     bucket_uri = f"{checkpoint_bucket}/checkpoints/{run_id}/nemo_rl"
+    readiness_json = json.dumps(dict(rl_readiness_report), sort_keys=True)
+    readiness_b64 = base64.b64encode(readiness_json.encode("utf-8")).decode("ascii")
     return f"""set -euo pipefail
 export TOKENIZERS_PARALLELISM=false
 export PYTHONPATH=/workspace/slm-training:${{PYTHONPATH:-}}
@@ -103,6 +107,7 @@ export SLM_NEMO_BASE_MODEL_REVISION={q(base_model_revision)}
 export SLM_NEMO_CODE_REVISION={q(revision)}
 export SLM_NEMO_DATA_PATH={q(data_path)}
 export SLM_NEMO_SEED={int(seed)}
+export SLM_NEMO_RL_READINESS_B64={q(readiness_b64)}
 
 test "$(git -C {q(NEMO_RL_ROOT)} rev-parse HEAD)" = {q(NEMO_RL_GIT_SHA)}
 rm -rf /workspace/slm-training

@@ -37,3 +37,4 @@ src/slm_training/web/static/app/assets/*.map
 tools/openui_preview/node_modules/
 .vercel
 .env*
+session/

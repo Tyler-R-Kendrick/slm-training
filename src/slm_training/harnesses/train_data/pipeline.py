@@ -7,6 +7,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from collections import Counter
 
 from slm_training.data.leakage import (
     fingerprint_design_md,
@@ -71,6 +72,8 @@ class TrainDataConfig:
     diffusion_online: bool = True
     governance_artifacts: bool = True
     mixture_manifest: bool = True
+    # Autoresearch snapshots must never overwrite prior evidence.
+    immutable: bool = False
 
     @property
     def output_dir(self) -> Path:
@@ -714,6 +717,10 @@ def build_train_data(
     synthesizer: PromptSynthesizer | None = None,
 ) -> dict:
     """Load every enabled producer, synthesize, verify, dedupe, and write artifacts."""
+    if config.immutable and (config.output_dir / "manifest.json").exists():
+        raise FileExistsError(
+            f"immutable training-data snapshot already exists: {config.output_dir}"
+        )
     source = (config.source or "rico").lower()
     seeds: list[ExampleRecord] = []
     errors: list[dict] = []
@@ -1061,6 +1068,13 @@ def build_train_data(
     stats_path = out_dir / "stats.json"
     stats_path.write_text(json.dumps(stats, indent=2) + "\n", encoding="utf-8")
 
+    synthesis_telemetry_path = out_dir / "synthesis_telemetry.jsonl"
+    synthesis_rows = _synthesis_telemetry(deduped)
+    synthesis_telemetry_path.write_text(
+        "".join(json.dumps(row, sort_keys=True) + "\n" for row in synthesis_rows),
+        encoding="utf-8",
+    )
+
     manifest = {
         "version": config.version,
         "kind": "train_data",
@@ -1087,6 +1101,8 @@ def build_train_data(
             name: str(path.as_posix()) for name, path in governance_paths.items()
         },
         "mixture": str(mixture_path.as_posix()) if mixture_path else None,
+        "synthesis_telemetry": str(synthesis_telemetry_path.as_posix()),
+        "synthesis_telemetry_sha256": _file_sha(synthesis_telemetry_path),
         "diffusion_online": (
             asdict(_diffusion_config()) if config.diffusion_online else None
         ),
@@ -1128,3 +1144,46 @@ def _content_fingerprint(records: list[ExampleRecord]) -> str:
         payload = f"{record.id}\n{record.prompt}\n{record.openui}\n"
         h.update(payload.encode("utf-8"))
     return h.hexdigest()
+
+
+def _synthesis_telemetry(records: list[ExampleRecord]) -> list[dict[str, Any]]:
+    by_family: dict[str, list[ExampleRecord]] = {}
+    for record in records:
+        family = str((record.meta or {}).get("source_family") or record.source)
+        by_family.setdefault(family, []).append(record)
+    rows = []
+    for family, members in sorted(by_family.items()):
+        scores = [
+            float((record.meta or {}).get("quality", {}).get("score") or 0)
+            for record in members
+        ]
+        rows.append(
+            {
+                "source_family": family,
+                "record_count": len(members),
+                "root_parent_count": len(
+                    {
+                        str((record.meta or {}).get("parent_id") or record.id)
+                        for record in members
+                    }
+                ),
+                "mean_quality_score": round(sum(scores) / len(scores), 6),
+                "min_quality_score": min(scores),
+                "max_quality_score": max(scores),
+                "task_counts": dict(
+                    sorted(
+                        Counter(
+                            str((record.meta or {}).get("task") or "generation")
+                            for record in members
+                        ).items()
+                    )
+                ),
+            }
+        )
+    return rows
+
+
+def _file_sha(path: Path) -> str:
+    import hashlib
+
+    return hashlib.sha256(path.read_bytes()).hexdigest()

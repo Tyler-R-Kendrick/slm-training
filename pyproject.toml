@@ -15,6 +15,7 @@ dependencies = [
   "lark>=1.1,<2",
   "numpy>=1.26,<3",
   "onnxruntime>=1.18,<2",
+  "pydantic>=2.7,<3",
   "vercel>=0.5,<1",
 ]
 
@@ -54,6 +55,12 @@ mcp = [
   "httpx>=0.27,<1",
   "python-dotenv>=1.0,<2",
 ]
+research = [
+  "huggingface_hub>=0.30,<2",
+  "httpx>=0.27,<1",
+  "openai>=2.0,<3",
+  "trackio>=0.1,<1",
+]
 web = [
   "fastapi>=0.110,<1",
   "onnx>=1.16,<2",
@@ -85,6 +92,7 @@ bootstrap-playground = "scripts.bootstrap_playground:main"
 export-annotations = "scripts.export_annotations:main"
 sync-checkpoints = "scripts.sync_checkpoints:main"
 model-cycle = "scripts.model_cycle:main"
+autoresearch = "scripts.autoresearch:main"
 
 [tool.setuptools.packages.find]
 where = ["src", "."]

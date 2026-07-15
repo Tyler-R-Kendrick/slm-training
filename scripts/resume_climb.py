@@ -20,6 +20,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--rl-steps", type=int, default=20)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--rl-readiness-report", type=Path, default=None)
     parser.add_argument(
         "--skip-rl",
         action="store_true",
@@ -31,6 +32,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Persist grammar allowed_id_set on commits (E64 support match).",
     )
     args = parser.parse_args(argv)
+    readiness = None
+    if not args.skip_rl:
+        from slm_training.autoresearch.rl_gate import assert_rl_ready
+
+        readiness = assert_rl_ready(args.rl_readiness_report)
 
     from scripts.collect_trajectories import main as collect_main
     from slm_training.harnesses.distill.trace_store import TraceStore, checkpoint_sha
@@ -85,6 +91,7 @@ def main(argv: list[str] | None = None) -> int:
                 ),
                 out_dir=out / "rl",
                 base_policy_sha=policy_sha,
+                readiness_report=readiness,
             )
             shutil.copy2(out / "rl" / "model.pt", model_out)
         except ValueError as exc:

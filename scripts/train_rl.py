@@ -32,6 +32,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--limit", type=int, default=64)
     parser.add_argument("--device", default="cpu")
+    parser.add_argument(
+        "--rl-readiness-report",
+        type=Path,
+        required=True,
+        help="Approved frozen full-suite competence report; RL has no bypass.",
+    )
     args = parser.parse_args(argv)
 
     summary = train_grpo_from_paths(
@@ -45,6 +51,7 @@ def main(argv: list[str] | None = None) -> int:
         limit=args.limit,
         kl_beta=args.kl_beta,
         lr=args.lr,
+        readiness_report=args.rl_readiness_report,
     )
     print(json.dumps({k: v for k, v in summary.items() if k != "history"}, indent=2))
     return 0
