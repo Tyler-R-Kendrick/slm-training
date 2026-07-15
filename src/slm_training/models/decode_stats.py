@@ -28,6 +28,7 @@ class DecodeStats:
     attempts: int = 1
     accepted_run_tokens: int = 0  # P3 multi-token accepts beyond the first
     canvas_tokens: int = 0
+    unconstrained_retries: int = 0  # grammar decode fell back to unfiltered retry
     backbone_ms: float = 0.0
     projection_ms: float = 0.0
     compiler_ms: float = 0.0
@@ -117,6 +118,7 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "tokens_emitted",
         "accepted_run_tokens",
         "canvas_tokens",
+        "unconstrained_retries",
         "backbone_ms",
         "projection_ms",
         "compiler_ms",
