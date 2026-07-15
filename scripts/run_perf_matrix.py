@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import json
 import time
+import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -431,6 +432,12 @@ def run_one(
     (run_dir / "matrix_result.json").write_text(
         json.dumps(result, indent=2) + "\n", encoding="utf-8"
     )
+    try:
+        from slm_training.autoresearch.run_insights import load_run_insights
+
+        load_run_insights(run_dir, run_id=exp.run_id)
+    except Exception as exc:  # noqa: BLE001 - analysis must never fail the matrix
+        warnings.warn(f"run insight analysis failed: {exc}", stacklevel=2)
     return result
 
 

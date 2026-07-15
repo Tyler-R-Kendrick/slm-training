@@ -108,6 +108,14 @@ root is `outputs/`, including lineage records, run summaries, raw telemetry,
 AgentEvals/AgentV, annotation and preference feedback, data manifests and synthesis
 telemetry, matrices, and previous autoresearch bundles.
 
+Each completed train or performance-matrix run also emits
+`outputs/runs/<id>/run_insights.json`. Its deterministic loss findings, phase
+recommendations, and any persisted browser/OpenAI hypotheses are classified as
+`run_insight` evidence and prioritized ahead of bulk output artifacts in the
+bounded evidence snapshot. Generated suggestions therefore inform later proposal
+compilation, but never enqueue an experiment directly; the normal typed-spec,
+citation, budget, validation, and RL-lock checks still apply.
+
 After local capture, `research` reads recent HF Daily Papers (`/api/daily_papers`)
 and targeted historical paper search (`/api/papers/search`). A selected researcher
 receives those sources and the immutable local evidence summary, and may discover
@@ -133,6 +141,11 @@ Local artifacts are authoritative. Trackio is an optional live mirror. A complet
 campaign can be mirrored to
 `hf://buckets/TKendrick/OpenUI/autoresearch/<campaign>/`. `sync` is dry-run unless
 `--push` is supplied. Full checkpoint and model-card rules still apply separately.
+Run insight enrichment is stored in the run-local `run_insights.json` with its
+source fingerprint and provider/runtime metadata. If source metrics change, stale
+enrichment is rejected rather than attached to new evidence. A browser result that
+cannot be persisted may be shown for the current UI session but is not autoresearch
+evidence until the action endpoint writes it successfully.
 
 ## Isolated researcher setup
 

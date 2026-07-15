@@ -47,4 +47,25 @@ test.describe("mission control dashboard", () => {
     await page.goto("/playground/classic");
     await expect(page.getByText("TwoTower")).toBeVisible();
   });
+
+  test("run detail charts loss, marks collapse, and explains phase improvements", async ({ page }) => {
+    await page.route("**/api/runs/demo/rl-traces**", (route) => route.fulfill({ json: { traces: [], total: 0, count: 0, invalid_rows: 0 } }));
+    await page.route("**/api/runs/demo", (route) => route.fulfill({ json: {
+      run_id: "demo",
+      provenance: "live",
+      train_summary: { steps: 6, last_loss: 3, finished_at: "2026-07-15T00:00:00Z" },
+      scoreboard: {}, manifest: null, gates: null, telemetry: null, matrix_result: null,
+      insights: {
+        run_id: "demo", source_fingerprint: "a".repeat(64), enrichment: { generated: { summary: "The final batch coincides with a loss spike.", causes: [] } },
+        loss: { status: "collapsed", points: [{ step: 1, loss: 1 }, { step: 5, loss: 1 }, { step: 6, loss: 3 }], events: [{ kind: "spike", step: 6, loss: 3, severity: "critical", finding: "Loss spiked above its rolling baseline.", suggestion: "Test a lower learning rate." }] },
+        phases: [{ label: "denoiser", value: 72, help: "Profile model forwards first, then rerun quality guardrails." }],
+      },
+    } }));
+    await page.goto("/runs/demo");
+    await expect(page.getByText("Loss over time")).toBeVisible();
+    await expect(page.locator(".loss-line")).toBeVisible();
+    await expect(page.locator(".loss-marker-critical circle")).toHaveCount(1);
+    await expect(page.locator(".bar-help")).toHaveAttribute("aria-label", /rerun quality guardrails/);
+    await expect(page.getByText("The final batch coincides with a loss spike.")).toBeVisible();
+  });
 });
