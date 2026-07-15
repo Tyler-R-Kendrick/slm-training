@@ -589,6 +589,12 @@ accepted but, correctly, cannot speculate on the final step. E74 therefore
 still has no cache-hit/performance evidence; the next diagnostic is a two-step
 decode to force one successor opportunity.
 
+An E72 lower-learning-rate control (`lr=1e-4`, requested 5 steps) produced
+losses 656.3, 456.8, and 2460.5 before stopping without a checkpoint or
+scoreboard. The persisted run-insights report therefore rejects the simple LR
+hypothesis; the next training repair should inspect batch/data outliers and
+objective stability instead.
+
 ## P13 data-synthesis verification (CPU scratch, 2026-07-14)
 
 The accepted comparison uses the same E50 experiment and effective decode
