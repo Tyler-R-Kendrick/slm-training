@@ -1,0 +1,10 @@
+{
+  "run_id": "probe",
+  "run_dir": "outputs/runs/telemetry_gradaccum2_20260715/probe",
+  "recipe": {"device": "cpu", "steps": 1, "batch_size": 4, "grad_accum": 2, "context_backend": "scratch"},
+  "loss": 110.71040344238281,
+  "telemetry": {"total_ms": 22352.02, "backward_pct": 69.84, "forward_pct": 12.87, "optim_step_pct": 3.85},
+  "insights_persisted": true,
+  "comparison": {"baseline_total_ms": 18743.739, "microbatch_count": 2, "ms_per_microbatch": 11176.01},
+  "decision": "Gradient accumulation reduces per-microbatch wall time in this probe; validate quality and effective-batch convergence before adopting it as a recipe."
+}
