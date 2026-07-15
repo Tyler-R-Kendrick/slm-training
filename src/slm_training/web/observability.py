@@ -42,6 +42,7 @@ SCOREBOARD_FILES: dict[str, str] = {
 # Suite ordering used across the UI (matches ALLOWED_SPLITS eval order).
 SUITE_ORDER = ("smoke", "held_out", "adversarial", "ood", "rico_held")
 TRACKS = ("twotower", "causal_lm")
+_RUN_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 
 
 def _read_json(path: Path) -> Any | None:
@@ -318,6 +319,52 @@ class Readers:
             "manifest": lineage_manifest,
             "scoreboard": scoreboard,
             **artifacts,
+        }
+
+    def rl_traces(self, run_id: str, *, offset: int = 0, limit: int = 20) -> dict[str, Any]:
+        """Read a page of normalized RL traces; raw PyTorch dumps stay remote."""
+        if not _RUN_ID_RE.fullmatch(run_id):
+            return {
+                "run_id": run_id,
+                "offset": offset,
+                "limit": limit,
+                "total": 0,
+                "count": 0,
+                "invalid_rows": 0,
+                "traces": [],
+                "provenance": "missing",
+            }
+        path = self.outputs / "runs" / run_id / "rl_traces.jsonl"
+        traces: list[dict[str, Any]] = []
+        total = 0
+        invalid = 0
+        try:
+            with path.open(encoding="utf-8") as handle:
+                for line in handle:
+                    if not line.strip():
+                        continue
+                    try:
+                        row = json.loads(line)
+                    except ValueError:
+                        invalid += 1
+                        continue
+                    if not isinstance(row, dict) or row.get("run_id") != run_id:
+                        invalid += 1
+                        continue
+                    if offset <= total < offset + limit:
+                        traces.append(row)
+                    total += 1
+        except OSError:
+            pass
+        return {
+            "run_id": run_id,
+            "offset": offset,
+            "limit": limit,
+            "total": total,
+            "count": len(traces),
+            "invalid_rows": invalid,
+            "traces": traces,
+            "provenance": "live" if path.exists() else "missing",
         }
 
     # ---- lineage champions / deployments --------------------------------------

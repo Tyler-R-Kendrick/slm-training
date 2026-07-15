@@ -17,6 +17,17 @@ import {
 
 export function RunDetail({ runId, navigate }: { runId: string; navigate: (to: string) => void }) {
   const { data, error } = usePoll<any>(`/api/runs/${encodeURIComponent(runId)}`, 0);
+  const traceLimit = 20;
+  const [traceOffset, setTraceOffset] = React.useState(0);
+  const {
+    data: traceData,
+    error: traceError,
+    loading: tracesLoading,
+  } = usePoll<any>(
+    `/api/runs/${encodeURIComponent(runId)}/rl-traces?offset=${traceOffset}&limit=${traceLimit}`,
+    0,
+  );
+  React.useEffect(() => setTraceOffset(0), [runId]);
 
   if (error) return <ErrorNote error={error} />;
   if (!data) return <div className="loading">Loading run…</div>;
@@ -120,6 +131,74 @@ export function RunDetail({ runId, navigate }: { runId: string; navigate: (to: s
           )}
         </Card>
       </div>
+
+      <Card
+        title="RL traces"
+        right={traceData && <span className="hint">{fmt(traceData.total)} normalized traces</span>}
+      >
+        {traceError ? (
+          <ErrorNote error={traceError} />
+        ) : !traceData ? (
+          <div className="loading">Loading RL traces…</div>
+        ) : traceData.traces.length === 0 ? (
+          <Empty>No normalized RL traces for this run.</Empty>
+        ) : (
+          <div>
+            {traceData.invalid_rows > 0 && (
+              <div className="error-note">Skipped {traceData.invalid_rows} malformed trace rows.</div>
+            )}
+            {traceData.traces.map((trace: any, index: number) => (
+              <details className="record-detail" key={`${trace.step}-${trace.rollout_id}-${index}`}>
+                <summary>
+                  <span className="mono">{trace.engine} · step {trace.step} · {trace.rollout_id || "rollout"}</span>
+                  {trace.truncated && <StatusPill value={false} label="truncated" />}
+                </summary>
+                <div className="chip-row" style={{ marginTop: "0.7rem" }}>
+                  <span className="chip">group {trace.group_id || "—"}</span>
+                  <span className="chip">reward {fmt(trace.rewards?.composite, 4)}</span>
+                  <span className="chip">parse {fmt(trace.rewards?.parse, 4)}</span>
+                  <span className="chip">slots {fmt(trace.rewards?.placeholder_fidelity, 4)}</span>
+                  <span className="chip">structure {fmt(trace.rewards?.structural_similarity, 4)}</span>
+                  <span className="chip">tokens {fmt(trace.prompt_tokens)} + {fmt(trace.completion_tokens)}</span>
+                </div>
+                <h3>Prompt</h3>
+                <pre>{trace.prompt}</pre>
+                <h3>Completion</h3>
+                <pre>{trace.completion}</pre>
+                <h3>Gold OpenUI</h3>
+                <pre>{trace.gold_openui}</pre>
+                <h3>Action token IDs</h3>
+                <pre>{JSON.stringify(trace.action_token_ids)}</pre>
+                {trace.rollout_logprobs && (
+                  <>
+                    <h3>Rollout log probabilities</h3>
+                    <pre>{JSON.stringify(trace.rollout_logprobs)}</pre>
+                  </>
+                )}
+              </details>
+            ))}
+            <div className="data-browser-pages">
+              <button
+                className="btn btn-small"
+                disabled={tracesLoading || traceOffset === 0}
+                onClick={() => setTraceOffset(Math.max(0, traceOffset - traceLimit))}
+              >
+                Previous
+              </button>
+              <span className="hint">
+                {traceOffset + 1}–{Math.min(traceOffset + traceData.count, traceData.total)} of {traceData.total}
+              </span>
+              <button
+                className="btn btn-small"
+                disabled={tracesLoading || traceOffset + traceData.count >= traceData.total}
+                onClick={() => setTraceOffset(traceOffset + traceLimit)}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

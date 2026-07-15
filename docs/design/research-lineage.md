@@ -156,6 +156,16 @@ of [XGrammar](https://arxiv.org/abs/2411.15100). Implementation and exact gates:
 | **Code** | [`harnesses/rl/`](../../src/slm_training/harnesses/rl/) (`grpo_loss_for_group`, `train_grpo`) |
 | **CLI** | `scripts/train_rl.py`; matrix row E10 in [`quality-experiment-matrix.md`](quality-experiment-matrix.md) |
 
+### Molt causal RL
+
+| | |
+| --- | --- |
+| **System** | [NVIDIA Molt](https://github.com/NVIDIA-NeMo/labs-molt), pinned to `0.1.2` / `21c1b8921b73f5c8317b5fc9e359e9a1b7d255d2` |
+| **Fidelity** | **Faithful integration** — token-first `Env`/`StepEnvRunner`, vLLM rollouts, GRPO, FSDP actor update, raw rollout dump/replay |
+| **Scope** | Causal-LM track only; one-step hardware smoke is wiring evidence, never a quality or ship claim |
+| **Code** | [`integrations/molt_rl.py`](../../src/slm_training/integrations/molt_rl.py), agent adapter, and `scripts.model_cycle submit-molt` / `reconcile-molt` |
+| **Docs** | [`molt-rl-autoresearch.md`](molt-rl-autoresearch.md) |
+
 ---
 
 ## DSL-native output representation (V5)
@@ -454,6 +464,7 @@ enter this repository without review and local evidence.
 | Honest inventory | `honest_slot_contract` | `models/template_fill.py` (`inventory_from_prompt`) |
 | Preference stage | `scripts/train_preference.py` | `harnesses/preference/train.py` |
 | GRPO-lite | `scripts/train_rl.py` | `harnesses/rl/` |
+| Molt causal RL | `scripts.model_cycle submit-molt` | `integrations/molt_rl.py` |
 | LTR suffix rollback | `suffix_rollback_window` (E30) | `models/twotower.py` |
 | Trust head | `trust_gate` / `FastPathGate` (E31) | `dsl/grammar/fastpath/gate.py`, `trust_train.py` |
 | Slot-aware trust | `slot_aware_trust_gate` (E52) | `dsl/grammar/fastpath/trust_train.py` |
