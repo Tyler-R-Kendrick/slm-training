@@ -414,6 +414,12 @@ grammar stack remains the verifier; no draft LM is introduced.
 | Continuous latent plan channel | CCDD [arXiv:2510.03206](https://arxiv.org/html/2510.03206v1) | No long-form latent-reasoning phase in short grammar-anchored OpenUI programs |
 | Coarse-to-fine block control ("Think Coarse, Critic Fine") | BACD [arXiv:2602.09555](https://arxiv.org/html/2602.09555v1) | Same task-scale reason as CCDD; revisit if programs grow |
 | Prefix-cacheability restructuring | WeDLM [arXiv:2512.22737](https://arxiv.org/html/2512.22737v1) | Deployment-scale concern; sequences ≤256 tokens, context KV already cached |
+| Token-tree speculative verification | SpecInfer [arXiv:2305.09781](https://arxiv.org/abs/2305.09781) | **Adapted**: completion paths share trie-parent canvases and one verifier batch; compiler coverage replaces a learned drafter |
+| Static completion tree ranking | TreeRanker [arXiv:2508.02455](https://arxiv.org/abs/2508.02455) | **Adapted**: compiler-valid paths are ranked from target token scores; this implementation uses gathered semantic rows and diffusion canvases |
+| Prefix automata + inhabitable-type search | Type-Constrained Code Generation [arXiv:2504.09246](https://arxiv.org/abs/2504.09246) | **Adapted boundary**: Lark reachability, layout capability constraints, and active symbol inventories provide the current OpenUI subset; no claim of reproducing its TypeScript type-search system |
+| Hierarchical diffusion verification trees | Self Speculative Decoding for Diffusion LMs [arXiv:2510.04147](https://arxiv.org/abs/2510.04147) | **Adapted**: candidate trie parents use isolated prefix-visible/future-masked canvases; no claim of causal AR probabilities from bidirectional diffusion scores |
+| Distribution-preserving speculative sampling | Leviathan et al. [arXiv:2211.17192](https://arxiv.org/abs/2211.17192) | **Adjacent**: greedy constrained ranking is target-equivalent on complete candidate sets; exact stochastic residual sampling is not implemented |
+| Incremental constrained code decoding | Constrained FIM decoding [arXiv:2402.17988](https://arxiv.org/abs/2402.17988) | **Adapted**: incremental parsing rejects invalid prefixes early; OpenUI semantic inventories add a narrower project-specific layer |
 
 ---
 
@@ -497,6 +503,7 @@ enter this repository without review and local evidence.
 | Trajectory-survival head | E73 `survival_gate` | `dsl/grammar/fastpath/survival_train.py` |
 | Successor-state cache | E74 `speculative_successor`, `speculative_fanout` | `models/speculative_denoise.py` (`SuccessorCache`) |
 | V7 champion | E75 | `scripts/run_quality_matrix.py --matrix v7` |
+| Compiler-drafted decode | `compiler_decode_mode=forced|restricted|tree` | `dsl/grammar/fastpath/compiler_draft.py`, `models/twotower.py` |
 | Evidence-grounded autoresearch | `--researcher`, typed `ResearcherRun` / `ExperimentKnobs` | `scripts/autoresearch.py`, `src/slm_training/autoresearch/` |
 
 ---

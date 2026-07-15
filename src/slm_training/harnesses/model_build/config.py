@@ -101,6 +101,7 @@ class ModelBuildConfig:
     grammar_fastpath: bool = True
     grammar_fastpath_mode: str = "hybrid"  # force | mask | hybrid
     grammar_draft_window: int = 8
+    compiler_decode_mode: str = "off"  # off | forced | restricted | tree
     fastpath_aux_weight: float = 0.0
     fastpath_gate_threshold: float = 0.5
     # V4 critic / remask levers

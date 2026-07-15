@@ -225,7 +225,9 @@ class GrammarDecodeState:
         stats = get_active_stats()
         t0 = time.perf_counter()
         chunk = tokenizer.id_to_token.get(int(token_id), "")
-        if chunk == "":
+        if chunk == "NL":
+            chunk = "\n"
+        elif chunk == "" or chunk.startswith(("<BIND_", "<SYM_", "<STATE_")):
             chunk = tokenizer.decode([int(token_id)])
         self.prefix_text = self.prefix_text + chunk
         if stats is not None:

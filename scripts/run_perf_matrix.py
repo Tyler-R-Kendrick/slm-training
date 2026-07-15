@@ -4,6 +4,7 @@
 P/Q-series rows are decode-only overlays on an existing checkpoint (default: the
 committed playground demo). Each row records latency + phase breakdown and
 checks quality guardrails against P0 (parse rate / placeholder fidelity).
+C-series rows compare compiler-drafted decode against the same-run C0 control.
 """
 
 from __future__ import annotations
@@ -44,6 +45,7 @@ class PerfExperiment:
     generate_max_attempts: int = 1
     grammar_finalize_on_last_attempt_only: bool = False
     parallel_unmask: str = "adaptive"
+    compiler_decode_mode: str = "off"
     # When True, disable P1 incremental state (legacy O(T^2) grammar path).
     legacy_grammar_state: bool = False
     # Disable Q1/Q2 for ablation baselines.
@@ -242,6 +244,40 @@ def experiments() -> list[PerfExperiment]:
             generate_max_attempts=1,
             grammar_finalize_on_last_attempt_only=True,
         ),
+        PerfExperiment(
+            "C0",
+            "perf_c0_r9_control",
+            "Current R9 full-vocabulary control",
+            grammar_verify_chosen_only=True,
+            grammar_multitoken_accept=True,
+            grammar_canvas_lookahead=32,
+        ),
+        PerfExperiment(
+            "C1",
+            "perf_c1_forced",
+            "Compiler maximal forced spans; full projection at branches",
+            compiler_decode_mode="forced",
+        ),
+        PerfExperiment(
+            "C2",
+            "perf_c2_restricted",
+            "Restricted semantic action and symbol projection",
+            compiler_decode_mode="restricted",
+        ),
+        PerfExperiment(
+            "C3",
+            "perf_c3_tree",
+            "Packed completion-trie verification",
+            compiler_decode_mode="tree",
+        ),
+        PerfExperiment(
+            "C4",
+            "perf_c4_hierarchy",
+            "Full compiler hierarchy with prefix-seeded V7 fallback",
+            compiler_decode_mode="tree",
+            grammar_ltr_repair=True,
+            generate_max_attempts=1,
+        ),
     ]
 
 
@@ -270,6 +306,7 @@ def _apply(model: TwoTowerModel, exp: PerfExperiment) -> None:
         exp.grammar_finalize_on_last_attempt_only
     )
     cfg.parallel_unmask = str(exp.parallel_unmask)
+    cfg.compiler_decode_mode = str(exp.compiler_decode_mode)
     if exp.use_dynamic_quant:
         model.apply_dynamic_quant()
     if exp.use_compile:
@@ -424,6 +461,7 @@ def run_one(
             "grammar_ltr_primary": bool(model.config.grammar_ltr_primary),
             "grammar_ltr_repair": bool(model.config.grammar_ltr_repair),
             "use_dynamic_quant": bool(model.config.use_dynamic_quant),
+            "compiler_decode_mode": str(model.config.compiler_decode_mode),
         },
         "sample_output": texts[0] if texts else "",
     }
@@ -533,15 +571,23 @@ def main(argv: list[str] | None = None) -> int:
             warmup=args.warmup,
             out_dir=args.out_dir,
         )
-        if exp.eid == "P0":
+        if exp.eid in {"P0", "C0"}:
             baseline = result
+            quality_anchor = (
+                float(result.get("parse_rate") or 0.0) > 0.0
+                and float(result.get("placeholder_fidelity") or 0.0) > 0.0
+            )
             result["guardrails"] = {
-                "pass": not vacuous,
+                "pass": bool(not vacuous and quality_anchor),
                 "speedup_vs_p0": 1.0,
                 "note": (
                     "vacuous_gate: quality pipeline broken"
                     if vacuous
-                    else "baseline"
+                    else (
+                        "baseline"
+                        if quality_anchor
+                        else "invalid zero-quality baseline; not promotable"
+                    )
                 ),
                 "vacuous": vacuous,
             }
@@ -573,6 +619,54 @@ def main(argv: list[str] | None = None) -> int:
         "vacuous_guardrails": vacuous,
         "results": results,
     }
+    by_id = {row["id"]: row for row in results}
+    c0 = by_id.get("C0")
+    c4 = by_id.get("C4")
+    if c0 and c4:
+        base_phase = c0.get("phase_summary") or {}
+        candidate_phase = c4.get("phase_summary") or {}
+        lower_forwards = float(candidate_phase.get("forwards_count_mean") or 0.0) < float(
+            base_phase.get("forwards_count_mean") or 0.0
+        )
+        lower_p50 = float(c4.get("latency_ms_p50") or 0.0) < float(
+            c0.get("latency_ms_p50") or 0.0
+        )
+        gate_pass = bool((c4.get("guardrails") or {}).get("pass"))
+        board["compiler_default_recommendation"] = {
+            "mode": "tree" if gate_pass and lower_forwards and lower_p50 else "off",
+            "quality_guardrails_pass": gate_pass,
+            "fewer_forwards": lower_forwards,
+            "lower_p50": lower_p50,
+            "note": (
+                "promote only after a non-vacuous quality baseline"
+                if not gate_pass
+                else "same-run C0/C4 decision"
+            ),
+        }
+    from slm_training.evals.agentv import publish_agentv_evaluation
+
+    board["agentv"] = publish_agentv_evaluation(
+        args.out_dir,
+        name="compiler-decode-c-series",
+        claim="compiler_decode_perf_and_quality_guardrails",
+        cases=[
+            {
+                "id": row["id"],
+                "criteria": (
+                    "Preserve parse and placeholder fidelity within five absolute "
+                    "points of the same-run control before speed claims."
+                ),
+                "pass": bool((row.get("guardrails") or {}).get("pass")),
+                "failures": []
+                if (row.get("guardrails") or {}).get("pass")
+                else [str((row.get("guardrails") or {}).get("note") or "guardrail_failed")],
+                "result": row,
+                "metadata": {"suite": args.suite, "device": args.device},
+            }
+            for row in results
+            if row["id"].startswith("C")
+        ],
+    )
     args.out_dir.mkdir(parents=True, exist_ok=True)
     board_path = args.out_dir / "scoreboard.json"
     board_path.write_text(json.dumps(board, indent=2) + "\n", encoding="utf-8")

@@ -215,6 +215,9 @@ class TwoTowerConfig:
     grammar_fastpath: bool = True
     grammar_fastpath_mode: str = "hybrid"  # force | mask | hybrid
     grammar_draft_window: int = 8
+    # Compiler-drafted decode: off | forced | restricted | tree.
+    # Decode-only; ``off`` preserves existing checkpoint behavior.
+    compiler_decode_mode: str = "off"
     fastpath_aux_weight: float = 0.0
     fastpath_gate_threshold: float = 0.5
     # E31: train/use FastPathGate trust head for remask.
@@ -1480,11 +1483,323 @@ class TwoTowerModel(nn.Module):
             )
         if stats is not None:
             stats.forwards_count += 1
+            stats.full_projections += 1
             stats.canvas_tokens += int(ids.size(1))
         rec = getattr(self, "trace_recorder", None)
         if rec is not None:
             rec.forward()
         return logits
+
+    def _denoiser_hidden(
+        self,
+        ids: torch.Tensor,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor,
+    ) -> torch.Tensor:
+        """Run only the transformer backbone for restricted candidate scoring."""
+        stats = get_active_stats()
+        with timed_ms(stats, "backbone_ms"):
+            hidden = self.denoiser.encode(
+                ids, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
+            )
+        if stats is not None:
+            stats.forwards_count += 1
+            stats.canvas_tokens += int(ids.size(1))
+        rec = getattr(self, "trace_recorder", None)
+        if rec is not None:
+            rec.forward()
+        return hidden
+
+    def _compiler_canvas(self, prefix: list[int], length: int) -> torch.Tensor:
+        canvas = torch.full(
+            (1, length),
+            self.tokenizer.mask_id,
+            dtype=torch.long,
+            device=self.device_name,
+        )
+        used = min(length, len(prefix))
+        if used:
+            canvas[0, :used] = torch.as_tensor(
+                prefix[:used], dtype=torch.long, device=self.device_name
+            )
+        return canvas
+
+    def _project_candidates(
+        self, hidden: torch.Tensor, candidate_ids: tuple[int, ...]
+    ) -> torch.Tensor:
+        stats = get_active_stats()
+        index = torch.as_tensor(
+            candidate_ids, dtype=torch.long, device=hidden.device
+        )
+        with timed_ms(stats, "projection_ms"):
+            scores = self.denoiser.project(hidden, index)
+        if stats is not None:
+            stats.restricted_projections += 1
+        bias = self._effective_structural_bias()
+        if bias:
+            from slm_training.models.grammar import structural_token_ids
+
+            structural = structural_token_ids(self.tokenizer)
+            boost = torch.as_tensor(
+                [bias if tid in structural else 0.0 for tid in candidate_ids],
+                dtype=scores.dtype,
+                device=scores.device,
+            )
+            scores = scores + boost
+        return scores
+
+    def _select_compiler_path(
+        self,
+        prefix: list[int],
+        paths: tuple,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor,
+        length: int,
+        *,
+        tree: bool,
+    ) -> tuple[int, ...]:
+        """Rank completion paths using gathered rows of the tied LM head."""
+        if len(paths) == 1:
+            return tuple(paths[0].token_ids)
+        stats = get_active_stats()
+        if stats is not None:
+            stats.compiler_candidates += len(paths)
+
+        if not tree:
+            canvas = self._compiler_canvas(prefix, length)
+            hidden = self._denoiser_hidden(canvas, ctx, ctx_pad)
+            candidates = tuple(int(path.token_ids[0]) for path in paths)
+            scores = self._project_candidates(hidden[0, len(prefix)], candidates)
+            if bool(getattr(self.config, "grammar_sample_decode", False)):
+                temp = float(
+                    getattr(self.config, "grammar_sample_temperature", 0.8) or 0.8
+                )
+                chosen = int(torch.multinomial(F.softmax(scores / temp, dim=0), 1))
+            else:
+                chosen = int(scores.argmax().item())
+            return tuple(paths[chosen].token_ids)
+
+        # Prefix trie: each distinct parent canvas is encoded once, and all of
+        # its children are scored by a gathered projection. Forced single-child
+        # edges contribute zero after constrained renormalization.
+        with timed_ms(stats, "trie_ms"):
+            children: dict[tuple[int, ...], set[int]] = {}
+            for path in paths:
+                parent = tuple(prefix)
+                for token_id in path.token_ids:
+                    children.setdefault(parent, set()).add(int(token_id))
+                    parent = (*parent, int(token_id))
+            parents = [parent for parent in children if len(parent) < length]
+            canvases = torch.cat(
+                [self._compiler_canvas(list(parent), length) for parent in parents],
+                dim=0,
+            )
+            k = len(parents)
+            hidden = self._denoiser_hidden(
+                canvases,
+                ctx.expand(k, -1, -1),
+                ctx_pad.expand(k, -1) if ctx_pad is not None else ctx_pad,
+            )
+            edge_scores: dict[tuple[tuple[int, ...], int], float] = {}
+            for row, parent in enumerate(parents):
+                candidate_ids = tuple(sorted(children[parent]))
+                if len(candidate_ids) == 1:
+                    edge_scores[(parent, candidate_ids[0])] = 0.0
+                    continue
+                scores = self._project_candidates(
+                    hidden[row, len(parent)], candidate_ids
+                )
+                log_probs = F.log_softmax(scores, dim=0)
+                for i, token_id in enumerate(candidate_ids):
+                    edge_scores[(parent, token_id)] = float(log_probs[i].item())
+            if stats is not None:
+                stats.trie_nodes += len(parents)
+
+        path_scores: list[float] = []
+        for path in paths:
+            parent = tuple(prefix)
+            score = 0.0
+            branches = 0
+            for token_id in path.token_ids:
+                score += edge_scores.get((parent, int(token_id)), 0.0)
+                if len(children.get(parent, ())) > 1:
+                    branches += 1
+                parent = (*parent, int(token_id))
+            path_scores.append(score / max(1, branches))
+        if bool(getattr(self.config, "grammar_sample_decode", False)):
+            temp = float(
+                getattr(self.config, "grammar_sample_temperature", 0.8) or 0.8
+            )
+            probs = F.softmax(torch.tensor(path_scores) / temp, dim=0)
+            chosen = int(torch.multinomial(probs, 1).item())
+        else:
+            chosen = max(range(len(paths)), key=path_scores.__getitem__)
+        return tuple(paths[chosen].token_ids)
+
+    def _compiler_ltr_decode_one(
+        self,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor,
+        length: int,
+        *,
+        mode: str,
+        slot_contract: list[str] | None,
+    ) -> torch.Tensor:
+        from slm_training.dsl.grammar.fastpath.compiler_draft import (
+            build_completion_forest,
+        )
+
+        if mode not in {"forced", "restricted", "tree"}:
+            raise ValueError(
+                "compiler_decode_mode must be off, forced, restricted, or tree"
+            )
+        state_rows = self._new_grammar_states(1)
+        state = state_rows[0] if state_rows else make_grammar_state()
+        prefix = [int(self.tokenizer.bos_id)]
+        stats = get_active_stats()
+        while len(prefix) < length:
+            with timed_ms(stats, "compiler_ms"):
+                forest = build_completion_forest(
+                    self.tokenizer,
+                    prefix,
+                    state=state,
+                    slot_contract=slot_contract,
+                    max_path_tokens=int(
+                        getattr(self.config, "grammar_draft_window", 8) or 8
+                    ),
+                )
+            if forest.coverage != "complete" or not forest.paths:
+                if mode == "forced" and forest.paths:
+                    canvas = self._compiler_canvas(prefix, length)
+                    logits = self._denoiser_forward(canvas, ctx, ctx_pad)
+                    choice = pick_constrained_token(
+                        logits[0, len(prefix)].clone(),
+                        self.tokenizer,
+                        prefix,
+                        top_k=self.config.grammar_top_k,
+                        slot_contract=slot_contract,
+                        state=state,
+                        **self._pick_kwargs(),
+                    )
+                    token_id = int(
+                        choice if choice is not None else self.tokenizer.eos_id
+                    )
+                    prefix.append(token_id)
+                    state.advance_token(self.tokenizer, token_id)
+                    if stats is not None:
+                        stats.tokens_emitted += 1
+                    if token_id == self.tokenizer.eos_id:
+                        break
+                    continue
+                if stats is not None:
+                    stats.compiler_fallbacks += 1
+                    stats.seeded_fallbacks += 1
+                before_forwards = int(self.speculative_stats.denoiser_forwards)
+                text = self._generate_maskgit_one(
+                    ctx,
+                    ctx_pad,
+                    length,
+                    use_grammar=False,
+                    slot_contract=slot_contract,
+                    seed_ids=prefix,
+                )
+                encoded = self._encode_openui(
+                    text, placeholders=list(slot_contract or [])
+                )[:length]
+                fallback_forwards = max(
+                    0,
+                    int(self.speculative_stats.denoiser_forwards) - before_forwards,
+                )
+                if stats is not None:
+                    stats.forwards_count += fallback_forwards
+                    stats.full_projections += fallback_forwards
+                    stats.canvas_tokens += fallback_forwards * int(length)
+                    stats.tokens_emitted += max(0, len(encoded) - 1)
+                prefix = [int(x) for x in encoded]
+                break
+
+            if mode == "forced" and len(forest.paths) > 1:
+                # Forced-only mode preserves the legacy full-vocabulary choice
+                # at semantic branch points while still collapsing unique spans.
+                canvas = self._compiler_canvas(prefix, length)
+                logits = self._denoiser_forward(canvas, ctx, ctx_pad)
+                row = logits[0, len(prefix)].clone()
+                choice = pick_constrained_token(
+                    row,
+                    self.tokenizer,
+                    prefix,
+                    top_k=self.config.grammar_top_k,
+                    slot_contract=slot_contract,
+                    state=state,
+                    **self._pick_kwargs(),
+                )
+                selected = (int(choice if choice is not None else self.tokenizer.eos_id),)
+            else:
+                selected = self._select_compiler_path(
+                    prefix,
+                    forest.paths,
+                    ctx,
+                    ctx_pad,
+                    length,
+                    tree=mode == "tree",
+                )
+            room = length - len(prefix)
+            selected = selected[:room]
+            if not selected:
+                break
+            forced_span = len(forest.paths) == 1 or len(selected) > 1
+            if forced_span and stats is not None:
+                stats.forced_spans += 1
+                stats.forced_tokens += len(selected)
+            for token_id in selected:
+                prefix.append(int(token_id))
+                state.advance_token(self.tokenizer, int(token_id))
+                if stats is not None:
+                    stats.tokens_emitted += 1
+                if token_id == self.tokenizer.eos_id:
+                    break
+            if prefix[-1] == self.tokenizer.eos_id:
+                break
+
+        result = torch.full(
+            (length,),
+            self.tokenizer.pad_id,
+            dtype=torch.long,
+            device=self.device_name,
+        )
+        used = min(length, len(prefix))
+        result[:used] = torch.as_tensor(
+            prefix[:used], dtype=torch.long, device=self.device_name
+        )
+        return result
+
+    def _compiler_ltr_decode_batch(
+        self,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor,
+        length: int,
+        *,
+        mode: str,
+    ) -> torch.Tensor:
+        rows = []
+        for i in range(int(ctx.size(0))):
+            contract = (
+                self._slot_contracts[i]
+                if self._slot_contracts and i < len(self._slot_contracts)
+                else None
+            )
+            if not getattr(self.config, "slot_contract_constrained_decode", False):
+                contract = None
+            rows.append(
+                self._compiler_ltr_decode_one(
+                    ctx[i : i + 1],
+                    ctx_pad[i : i + 1],
+                    length,
+                    mode=mode,
+                    slot_contract=contract,
+                )
+            )
+        return torch.stack(rows)
 
     def _greedy_ltr_decode(
         self,
@@ -1511,6 +1826,13 @@ class TwoTowerModel(nn.Module):
         P3: multi-token accept from a single forward's logits.
         P4: optional prefix+K mask lookahead canvas truncation.
         """
+        compiler_mode = str(
+            getattr(self.config, "compiler_decode_mode", "off") or "off"
+        ).lower()
+        if compiler_mode != "off":
+            return self._compiler_ltr_decode_batch(
+                ctx, ctx_pad, length, mode=compiler_mode
+            )
         bsz = int(ctx.size(0))
         device = self.device_name
         tok = self.tokenizer
@@ -2423,6 +2745,7 @@ class TwoTowerModel(nn.Module):
         *,
         use_grammar: bool,
         slot_contract: list[str] | None = None,
+        seed_ids: list[int] | None = None,
     ) -> str:
         """Single-sequence MaskGIT unmasking (+ optional grammar repair)."""
         device = self.device_name
@@ -2441,8 +2764,22 @@ class TwoTowerModel(nn.Module):
         ids[0, 0] = self.tokenizer.bos_id
         unknown = ids.eq(self.tokenizer.mask_id)
 
+        # Compiler fallback: accepted prefix is authoritative and remains
+        # visible while V7 denoises the unresolved suffix in parallel.
+        if seed_ids:
+            used = min(length, len(seed_ids))
+            ids[0, :used] = torch.as_tensor(
+                seed_ids[:used], dtype=torch.long, device=device
+            )
+            unknown[0, :used] = False
+            ids[0, 0] = self.tokenizer.bos_id
+
         # E20: seed from slot-contract skeleton, remask binder/content positions.
-        if bool(getattr(self.config, "template_fill_decode", False)) and slot_contract:
+        if (
+            not seed_ids
+            and bool(getattr(self.config, "template_fill_decode", False))
+            and slot_contract
+        ):
             template = build_slot_contract_template(slot_contract)
             seed = self._encode_openui(template, placeholders=list(slot_contract))[
                 :length

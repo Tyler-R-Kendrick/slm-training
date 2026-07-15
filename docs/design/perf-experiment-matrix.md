@@ -204,6 +204,7 @@ python -m scripts.run_perf_matrix --only P0,Q9,R9,PG --limit 4
 | `use_dynamic_quant` | `False` | P5 |
 | `generate_max_attempts` | `3` | P7/R5 playground budget (honored by `_ensure_valid_openui`) |
 | `grammar_finalize_on_last_attempt_only` | `False` | P7 |
+| `compiler_decode_mode` | `off` | C-series: `forced`, `restricted`, or packed `tree` |
 
 ## Instrumentation
 
@@ -211,3 +212,40 @@ python -m scripts.run_perf_matrix --only P0,Q9,R9,PG --limit 4
 `denoiser_ms`, `dfa_sync_ms`, `stream_check_ms`, `detok_ms`, `context_ms`,
 `pick_ms`, `forwards_count`, `probes_count`, `tokens_emitted`,
 `accepted_run_tokens`.
+
+## C-series: compiler-drafted constrained decoding (2026-07-15)
+
+```bash
+OPENUI_BRIDGE_CLI=/home/codex/repos/slm-training/src/apps/openui_bridge/cli.mjs \
+AGENTV_RUNNER=/home/codex/repos/slm-training/scripts/run_agentv_eval.mjs \
+python -m scripts.run_perf_matrix --only C0,C1,C2,C3,C4 --limit 2 --warmup 0
+```
+
+Recipe: CPU, committed `playground_demo/last.pt`, smoke `n=2`, no training,
+same-run C0 control, official bridge healthy. The run emitted AgentEvals JSONL
+and a pinned `@agentv/core` result bundle (`total=5`, `passed=0`,
+`executionErrors=0`). Full evidence is in
+[`perf-matrix-results.json`](perf-matrix-results.json).
+
+| ID | mode | mean ms | p50 ms | forwards/call | forced tokens | fallbacks | parse | fidelity |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| C0 | R9 / `off` | 1293.53 | 1210.37 | 13.5 | 0.0 | 0.0 | 0.00 | 0.00 |
+| C1 | `forced` | 1069.76 | 604.55 | 14.5 | 1.5 | 1.0 | 0.00 | 0.00 |
+| C2 | `restricted` | 511.96 | 461.00 | 9.0 | 0.0 | 1.0 | 0.00 | 0.00 |
+| C3 | `tree` | 478.91 | 375.23 | 9.0 | 0.0 | 1.0 | 0.00 | 0.00 |
+| C4 | hierarchy + repair | 715.17 | 695.39 | 12.0 | 0.0 | 1.0 | 0.00 | 0.00 |
+
+This is wiring/performance evidence, not a ship result. The committed demo has
+the compositional tokenizer, so C2–C4 correctly classified semantic coverage as
+partial and exercised the prefix-seeded V7 fallback; they did not exercise a
+complete lexer-native completion tree. C4 reduced p50 and neural forwards, but
+the zero-parse/zero-fidelity C0 anchor is invalid. All five AgentV cases failed
+the honest quality gate, so `compiler_decode_mode` remains **`off` by default**.
+A promotion rerun requires an honestly evaluated lexer-native V7 checkpoint and
+must preserve parse/fidelity within five absolute points while reducing both
+forwards and p50.
+
+Instrumentation now also records `backbone_ms`, `projection_ms`, `compiler_ms`,
+`trie_ms`, `compiler_candidates`, `forced_spans`, `forced_tokens`, `trie_nodes`,
+`restricted_projections`, `full_projections`, `compiler_fallbacks`, and
+`seeded_fallbacks`.
