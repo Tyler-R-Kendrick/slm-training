@@ -595,6 +595,12 @@ scoreboard. The persisted run-insights report therefore rejects the simple LR
 hypothesis; the next training repair should inspect batch/data outliers and
 objective stability instead.
 
+The remediated-corpus profile found 585 records, with `rico+template` making
+up 240 (41%) and OpenUI target lengths from 63 to 1341 characters (median
+498, p90 884). No single extreme record explains the E72 spike; the next
+instrumentation step is to persist batch IDs, source families, and target
+lengths alongside each loss row before changing the data mixture.
+
 ## P13 data-synthesis verification (CPU scratch, 2026-07-14)
 
 The accepted comparison uses the same E50 experiment and effective decode
