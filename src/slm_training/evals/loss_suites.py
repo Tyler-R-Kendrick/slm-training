@@ -397,7 +397,26 @@ def evaluate_loss_suites(
 
 
 def write_loss_suite_report(path: Path | str, report: dict[str, Any]) -> Path:
+    from slm_training.evals.agentv import publish_agentv_evaluation
+
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
+    aggregate = report.get("aggregate") or {}
+    report["agentv"] = publish_agentv_evaluation(
+        path.parent,
+        name=f"openui-loss-suites-{path.stem}",
+        claim="diagnostic_loss_comparison_not_ship",
+        cases=[
+            {
+                "id": "loss-suites",
+                "criteria": "Produce a complete finite diagnostic loss-suite report.",
+                "pass": bool(aggregate.get("complete"))
+                and aggregate.get("weighted_nll") is not None,
+                "failures": list(aggregate.get("missing_categories") or []),
+                "result": aggregate,
+                "metadata": {"honesty": "diagnostic_not_ship"},
+            }
+        ],
+    )
     path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     return path

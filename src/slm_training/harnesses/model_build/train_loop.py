@@ -298,9 +298,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             config.eval_every <= 0 or step <= 0 or step % config.eval_every != 0
         ):
             return None
-        from dataclasses import replace
-
-        from slm_training.harnesses.model_build.eval_runner import evaluate
+        from slm_training.harnesses.model_build.eval_runner import evaluate_suites
 
         mid_ckpt = ckpt_dir / "last.pt"
         with timed("eval_save_ckpt"):
@@ -308,9 +306,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         suites = _parse_eval_suites(config)
         ship: float | None = None
         with timed("eval_suites"):
+            scoreboard = evaluate_suites(config, suites, model=plugin)
             if len(suites) == 1:
-                eval_cfg = replace(config, suite=suites[0])
-                metrics = evaluate(eval_cfg, model=plugin)
+                metrics = scoreboard["suites"][suites[0]]
                 ship = _ship_score(metrics)
                 row = {
                     "step": step,
@@ -322,16 +320,15 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                     "ts": datetime.now(timezone.utc).isoformat(),
                 }
             else:
-                board: dict[str, dict] = {}
-                for suite in suites:
-                    eval_cfg = replace(config, suite=suite)
-                    metrics = evaluate(eval_cfg, model=plugin)
-                    board[suite] = {
+                board = {
+                    suite: {
                         "parse_rate": metrics.get("parse_rate"),
                         "placeholder_fidelity": metrics.get("placeholder_fidelity"),
                         "structural_similarity": metrics.get("structural_similarity"),
                         "reward_score": metrics.get("reward_score"),
                     }
+                    for suite, metrics in scoreboard["suites"].items()
+                }
                 # Mean of per-suite ship scores keeps multi-suite boards comparable.
                 scores = [
                     s for s in (_ship_score(m) for m in board.values()) if s is not None
@@ -370,7 +367,10 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         if not (hasattr(plugin, "denoiser") and hasattr(plugin, "tokenizer")):
             return None
         from slm_training.evals.denoising_nll import DenoisingNLLConfig
-        from slm_training.evals.loss_suites import evaluate_loss_suites
+        from slm_training.evals.loss_suites import (
+            evaluate_loss_suites,
+            write_loss_suite_report,
+        )
         from slm_training.harnesses.model_build.data import load_suite_records
 
         base_suite = "held_out"
@@ -388,6 +388,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 config.test_dir,
                 nll_config=nll_cfg,
                 base_suite=base_suite,
+            )
+            write_loss_suite_report(
+                run_dir / f"loss_suites_step_{step}.json", report
             )
         aggregate = report.get("aggregate") or {}
         broad = (report.get("categories") or {}).get("broad") or {}

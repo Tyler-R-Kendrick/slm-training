@@ -79,6 +79,13 @@ python -m scripts.evaluate_model \
   --ship-gates
 ```
 
+Evaluation uses the [AgentEvals](https://agentevals.io/) JSONL/YAML contract
+and the pinned AgentV SDK. Run `npm ci` before Python eval commands; shared
+model, loss, task, and diagnostic eval paths automatically write AgentV bundles
+beside their domain JSON under `<run-dir>/agentv/`. The existing honest OpenUI
+ship gates remain authoritative. See
+[the AgentV evaluation contract](docs/design/agentv-evaluation.md).
+
 Local-only / CI scratch: add `--no-sync-checkpoints` (matrix scripts default to
 scratch and stay local). Manual sync:
 `python -m scripts.sync_checkpoints --run-dir outputs/runs/<id> --ensure-bucket`.
@@ -298,6 +305,10 @@ reproduction (or decision-informing ad-hoc) run, update `docs/design/` JSON
 **and** the matching measured-results markdown. Full trigger list and recipe
 checklist: [AGENTS.md](AGENTS.md) (skill: `documenting-experiment-results`).
 Do not leave results only under `outputs/`.
+
+All eval entrypoints also publish standard AgentEvals cases and AgentV SDK
+artifacts. Do not add evaluator-specific envelope formats; extend
+`src/slm_training/evals/agentv.py`.
 
 ### Token-efficiency stack
 

@@ -23,6 +23,9 @@ Experiment-first OpenUI layout SLMs:
 6. **Model cards** — every new/promoted checkpoint updates
    [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md) **and** the README “Model card
    (summary)” section.
+7. **Standard evals** — every evaluation run emits AgentEvals JSONL and is
+   executed/published with the pinned AgentV SDK; domain metrics and honest ship
+   gates remain authoritative (`docs/design/agentv-evaluation.md`).
 
 Start: `README.md`, `docs/MODEL_CARD.md`, `docs/design/openui-twotower.md`,
 `docs/design/quality-experiment-matrix.md`,
@@ -239,13 +242,16 @@ or any ad-hoc run whose scoreboard / gates / latency inform a decision.
 
 **Required each time:**
 
-1. JSON under `docs/design/` (scripts often mirror; verify it matches this run).
-2. Matching markdown measured-results / notes updated (not JSON-only).
-3. Recipe metadata: device, steps, backend, matrix set, suite `n`, honesty mode.
-4. Honest pass/fail vs `--ship-gates` or perf guardrails.
-5. If a checkpoint was written/promoted: update `docs/MODEL_CARD.md` **and**
+1. AgentEvals JSONL plus an AgentV SDK result bundle for every eval run. New
+   eval entrypoints use `src/slm_training/evals/agentv.py`; no alternate run
+   envelope.
+2. JSON under `docs/design/` (scripts often mirror; verify it matches this run).
+3. Matching markdown measured-results / notes updated (not JSON-only).
+4. Recipe metadata: device, steps, backend, matrix set, suite `n`, honesty mode.
+5. Honest pass/fail vs `--ship-gates` or perf guardrails.
+6. If a checkpoint was written/promoted: update `docs/MODEL_CARD.md` **and**
    README “Model card (summary)”.
-6. Commit docs with the experiment — no “docs later” TODO.
+7. Commit docs with the experiment — no “docs later” TODO.
 
 **Doc homes:** quality/ship → `quality-experiment-matrix.md` (+ adversarial
 review on policy changes); perf → `perf-experiment-matrix.md` /
