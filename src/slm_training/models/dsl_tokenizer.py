@@ -275,9 +275,19 @@ class SymbolTable:
     def ensure_binder(self, name: str, *, max_slots: int) -> int | None:
         if name in self.binders:
             return self.binders[name]
-        if len(self.binders) >= max_slots:
+        if max_slots <= 0:
             return None
-        slot = len(self.binders)
+        if name == "root":
+            if 0 in self.binders.values():
+                if max(self.binders.values(), default=-1) + 1 >= max_slots:
+                    return None
+                self.binders = {key: value + 1 for key, value in self.binders.items()}
+            self.binders[name] = 0
+            return 0
+        used = set(self.binders.values())
+        slot = next((candidate for candidate in range(max_slots) if candidate not in used), None)
+        if slot is None:
+            return None
         self.binders[name] = slot
         return slot
 
@@ -726,9 +736,8 @@ class DSLNativeTokenizer:
 
             if kind == TokenKind.BIND:
                 slot = self.bind_slot_of(tid)
-                # Always emit deterministic binder names so decode is table-
-                # independent for local binders (alpha-renaming is semantics-preserving).
-                pieces.append(_bind_surface_name(slot or 0))
+                # Slot zero is reserved for the required OpenUI root binder.
+                pieces.append("root" if (slot or 0) == 0 else _bind_surface_name(slot or 0))
                 i += 1
                 continue
 
