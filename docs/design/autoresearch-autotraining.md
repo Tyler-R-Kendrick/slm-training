@@ -122,10 +122,10 @@ outputs/autoresearch/<campaign>/
   events.jsonl             # append-only hash chain
   results.tsv              # human-scannable event ledger
   checksums.jsonl
-  artifacts/<kind>/<content-sha>.json
-    researcher_runs/      # pin + request hash + memo + trajectory + telemetry
-    research_sources/     # normalized, citation-valid source set
-    experiments/          # compiler output after strict validation
+  artifacts/
+    researcher_runs/<content-sha>.json   # pin + memo + trajectory + telemetry
+    research_sources/<content-sha>.json  # normalized citation-valid source set
+    experiments/<content-sha>.json       # compiler output after validation
   runs/<experiment>/...
 ```
 

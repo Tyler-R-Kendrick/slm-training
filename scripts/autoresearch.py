@@ -221,12 +221,14 @@ def cmd_propose(args: argparse.Namespace) -> int:
         if not args.proposal:
             raise ValueError("--provider agent requires --proposal")
         provider = AgentProposalProvider(args.proposal)
+        result = provider.propose(campaign, evidence, sources)
     elif mode == "fixture":
         if not args.proposal:
             raise ValueError("--provider fixture requires --proposal")
         fixture = ExperimentSpec.model_validate_json(args.proposal.read_text(encoding="utf-8"))
         provider = FixtureResearchProvider(fixture)
-    elif args.compiler:
+        result = provider.propose(campaign, evidence, sources)
+    elif args.compiler == "openai":
         provider = OpenAIProposalCompiler(model=args.model)
         result = provider.propose(
             campaign,
@@ -236,7 +238,6 @@ def cmd_propose(args: argparse.Namespace) -> int:
         )
     else:
         provider = OpenAIResearchProvider(model=args.model)
-    if mode in {"agent", "fixture"} or not args.compiler:
         result = provider.propose(campaign, evidence, sources)
     validate_experiment(campaign, result.experiment, evidence, list(result.sources))
     experiment_path = store.write_artifact("experiments", result.experiment)
@@ -434,7 +435,7 @@ def build_parser() -> argparse.ArgumentParser:
     propose = sub.add_parser("propose")
     propose.add_argument("--campaign-id", required=True)
     propose.add_argument("--provider", choices=("agent", "openai", "fixture"))
-    propose.add_argument("--compiler", choices=("agent", "openai", "fixture"))
+    propose.add_argument("--compiler", choices=("openai",))
     propose.add_argument("--proposal", type=Path)
     propose.add_argument("--memo", type=Path)
     propose.add_argument("--evidence", type=Path)
