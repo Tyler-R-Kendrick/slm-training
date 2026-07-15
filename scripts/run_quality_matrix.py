@@ -1813,7 +1813,7 @@ def main(argv: list[str] | None = None) -> int:
     results: list[dict[str, Any]] = []
     progress_path = args.run_root / "quality_matrix_progress.json"
 
-    def _persist_progress(status: str) -> None:
+    def _persist_progress(status: str, active: Experiment | None = None) -> None:
         progress_path.parent.mkdir(parents=True, exist_ok=True)
         progress_path.write_text(
             json.dumps(
@@ -1822,6 +1822,11 @@ def main(argv: list[str] | None = None) -> int:
                     "matrix": args.matrix,
                     "completed": len(results),
                     "total": len(experiments),
+                    "active": (
+                        {"id": active.eid, "run_id": active.run_id}
+                        if active is not None
+                        else None
+                    ),
                     "results": sorted(results, key=lambda r: r.get("id") or ""),
                 },
                 indent=2,
@@ -1840,6 +1845,7 @@ def main(argv: list[str] | None = None) -> int:
     independent = [e for e in experiments if e not in dependent]
 
     def _run(exp: Experiment) -> dict[str, Any]:
+        _persist_progress("running", active=exp)
         print(json.dumps({"status": "start", "id": exp.eid, "run_id": exp.run_id}))
         try:
             result = run_one(exp, args)
