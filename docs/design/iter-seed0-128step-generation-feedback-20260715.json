@@ -1,0 +1,11 @@
+{
+  "date": "2026-07-15",
+  "kind": "longer-training-regression-feedback",
+  "recipe": {"steps": 128, "batch_size": 8, "effective_batch_size": 8, "learning_rate": 0.0006, "seed": 0, "context_backend": "scratch", "device": "cpu", "loss_eval_every": 0, "eval_limit": 1, "gen_steps": 16, "max_attempts": 1},
+  "corpus": {"records": 585, "manifest_sha256": "928ec8d4921954c7736d2386fe7abf88bbef75523a7cfe404792f45ddcd5d4ba"},
+  "training": {"target_tokens": 172553, "weighted_nll": 7.312290141510578, "telemetry_persisted": true},
+  "constrained_generation": {"latency_ms_p50": 3464.44, "parse_rate": 0.0, "structural_similarity": 0.1917, "placeholder_validity": 0.0, "component_type_recall": 0.0, "reward_score": 0.0, "decode_timeout_count": 0, "agentv_persisted": true, "parse_diagnostic": "Stack received 9 args (6 expected); required children field was null"},
+  "comparison": {"steps_64_weighted_nll": 7.056898204491874, "steps_64_structural_similarity": 0.2333, "steps_64_placeholder_validity": 0.2667},
+  "decision": "reject final checkpoint; repeat with interval loss feedback for measured checkpoint selection",
+  "honesty": "scratch diagnostics; not a ship claim"
+}
