@@ -1,0 +1,13 @@
+Warning: truncated output (original token count: 262144)
+Total output lines: 28289
+
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-15",
+  "source": "outputs/runs/*/train_summary.json and loss_suites_step_*.json",
+  "runs": [
+    {
+      "run_id": "iter-next-accum2-4step-finalonl…262044 tokens truncated…2386fe7abf88bbef75523a7cfe404792f45ddcd5d4ba"
+    }
+  ]
+}
