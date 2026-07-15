@@ -549,13 +549,14 @@ The separate E70 40-step continuation attempt produced partial training
 artifacts but no complete scoreboard and is retained as an operationally
 incomplete run, not included in the comparison.
 
-E72 ordered cluster verification was then trained for the same 20 steps. Its
-training telemetry is complete and its smoke, held-out, adversarial, and OOD
-metrics exactly match E70/E71, but both the matrix wrapper and a standalone
-evaluation stopped before emitting the limited `rico_held` result or an AgentV
-bundle. The run is therefore recorded as **incomplete**, with no promotion;
-the missing RICO artifact is an evaluation-orchestration issue to fix before
-using E72 as evidence for the lever.
+E72 ordered cluster verification was then trained for the same 20 steps. The
+complete bounded result persisted all five suites (`smoke` n=3, `held_out`
+n=5, `adversarial` n=4, `ood` n=4, `rico_held` n=3) plus AgentV bundles.
+Metrics matched E70/E71, while ordered verification accepted every proposed
+cluster (320/320 smoke, 594/594 held-out, 402/402 adversarial, 480/480 OOD,
+444/444 RICO-held) with zero rejects. This is a bounded fixture result, not a
+production ship claim; the next iteration should test whether the accepted
+clusters reduce forwards or wall time before promotion.
 
 ## P13 data-synthesis verification (CPU scratch, 2026-07-14)
 
