@@ -167,6 +167,14 @@ reporting them as passing; use `--only P0,<candidate>` for a quality-gated
 comparison. Dynamic quantization measured 10.18 tok/s and MaskGIT 0.58 tok/s
 in the same environment, so both remain rejected for this CPU path.
 
+### Guardrail fix rerun (2026-07-15, CPU, bridge up, `--limit 8`)
+
+The previous larger rerun exposed a second harness bug: zero-quality P0 values
+created negative floors, allowing unusable candidates to pass. The guardrail
+now rejects every candidate when P0 has zero parse or placeholder fidelity.
+The corrected rerun measured Q9 at 80.7 tok/s, R9 at 85.7 tok/s, and PG at
+79.7 tok/s, but all remain non-promotable because P0 was parse=0/fidelity=0.
+
 ```bash
 python -m scripts.run_perf_matrix --only P0,Q9,R9,PG --limit 4
 ```
