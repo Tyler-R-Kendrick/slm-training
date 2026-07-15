@@ -566,6 +566,13 @@ now keeps `survival_gate=False` during SFT and enables it only after
 Two CPU probes still ended before checkpoint finalization (steps 19 and 4),
 so E73 has no quality or performance result yet and is not promoted.
 
+E74 successor-cache training exposed the same phase-mixing issue: successor
+reuse is decode-only but was enabled in the base SFT configuration. The runner
+now keeps `speculative_successor=False` during SFT and enables it only in the
+evaluation configuration. The available CPU probes still stopped at step 2
+before checkpoint finalization, so E74 has no quality or cache-performance
+result and is not promoted.
+
 ## P13 data-synthesis verification (CPU scratch, 2026-07-14)
 
 The accepted comparison uses the same E50 experiment and effective decode
