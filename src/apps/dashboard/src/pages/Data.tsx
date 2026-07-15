@@ -7,10 +7,8 @@ import {
   StatTile,
   DataTable,
   Bars,
-  JobLauncher,
   LogStream,
   ProvenanceBadge,
-  Empty,
   ErrorNote,
 } from "../components";
 
@@ -44,7 +42,6 @@ export function TrainingDataBrowser({ version }: { version?: string }) {
     setSelected(null);
   }, [query, source]);
 
-  if (!version) return <Empty>No built corpus. Generate one below.</Empty>;
   const count = recs.data?.count ?? 0;
   const rows = recs.data?.records ?? [];
   const start = count ? page * PAGE_SIZE + 1 : 0;
@@ -76,17 +73,15 @@ export function TrainingDataBrowser({ version }: { version?: string }) {
       <ErrorNote error={recs.error} />
       <DataTable
         columns={[
-          { key: "id", label: "id" },
-          { key: "source", label: "source" },
-          { key: "task", label: "task" },
           { key: "prompt", label: "prompt" },
+          { key: "target", label: "expected layout" },
+          { key: "source", label: "source" },
           { key: "view", label: "" },
         ]}
         rows={rows}
         render={{
-          id: (r) => <span className="mono">{r.id}</span>,
-          task: (r) => <span>{r.meta?.task ?? "generation"}</span>,
           prompt: (r) => <span className="data-prompt">{r.prompt}</span>,
+          target: (r) => <span className="data-target mono">{r.openui}</span>,
           view: (r) => (
             <button className="btn btn-small" onClick={() => setSelected(r)}>
               View
@@ -136,67 +131,29 @@ export function TrainingDataBrowser({ version }: { version?: string }) {
   );
 }
 
-const RECIPES: Record<string, { label: string; help: string; synthesizer: string; namespace?: boolean; edits?: boolean; repairs?: number }> = {
-  full: { label: "Full derivative mix", help: "Prompt, layout, namespace, edit, and repair variants.", synthesizer: "quality", namespace: true, edits: true, repairs: 1 },
-  quality: { label: "Prompt + layout", help: "Balanced prompt paraphrases and structural layout changes.", synthesizer: "quality" },
-  prompts: { label: "Prompt paraphrases", help: "New requests paired with the same OpenUI target.", synthesizer: "template" },
-  layouts: { label: "Layout variations", help: "Stack direction and call-to-action structural variants.", synthesizer: "layout" },
-  namespaces: { label: "Namespace variations", help: "Re-prefix placeholders without changing the layout intent.", synthesizer: "none", namespace: true },
-  edits: { label: "Edit + repair tasks", help: "Generate edit trajectories and corrupted-program repair examples.", synthesizer: "none", edits: true, repairs: 2 },
-  validate: { label: "Validate / copy only", help: "Revalidate, deduplicate, and version the selected roots without variants.", synthesizer: "none" },
-};
-
 export function TrainingDataGenerator({
   versions = [],
-  selectedVersion,
 }: {
   versions?: string[];
-  selectedVersion?: string;
 }) {
   const caps = useCaps();
-  const [base, setBase] = useState("");
-  const [recipe, setRecipe] = useState("quality");
-  const [version, setVersion] = useState("v1");
-  const [curriculum, setCurriculum] = useState(false);
-  const [fuzzyDedup, setFuzzyDedup] = useState(false);
+  const [version, setVersion] = useState("");
   const [jobId, setJobId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const trainJob = jobDef(caps, "build_train_data");
-
-  useEffect(() => {
-    if (selectedVersion) {
-      setBase(`existing:${selectedVersion}`);
-      setVersion(`${selectedVersion}-derived`);
-      setRecipe("full");
-    }
-  }, [selectedVersion]);
-
-  const activeBase = base || "fixture";
-  const activeRecipe = RECIPES[recipe];
-  const existingVersion = activeBase.startsWith("existing:")
-    ? activeBase.slice("existing:".length)
-    : null;
-  const supportsEdits = !!existingVersion || ["programspec", "integrated", "all"].includes(activeBase);
-  const incompatible = recipe === "edits" && !supportsEdits;
+  const outputVersion = version.trim() || `training-v${Math.max(1, versions.length)}`;
 
   async function launch() {
-    if (!trainJob || incompatible) return;
+    if (!trainJob) return;
     setBusy(true);
     setError(null);
     try {
-      const params: Record<string, unknown> = {
-        source: existingVersion ? "existing" : activeBase,
-        version,
-        synthesizer: activeRecipe.synthesizer,
-        namespace_augment: !!activeRecipe.namespace,
-        edit_derivatives: !!activeRecipe.edits,
-        repairs_per_program: activeRecipe.repairs ?? 0,
-        curriculum,
-        fuzzy_dedup: fuzzyDedup,
-      };
-      if (existingVersion) params.base_version = existingVersion;
-      const job = await postJSON<any>("/api/jobs", { job: "build_train_data", params });
+      const job = await postJSON<any>("/api/jobs", {
+        job: "build_train_data",
+        params: { version: outputVersion },
+      });
+      setVersion(outputVersion);
       setJobId(job.id);
     } catch (e: any) {
       setError(String(e?.message ?? e));
@@ -207,57 +164,27 @@ export function TrainingDataGenerator({
 
   return (
     <div className="data-generator">
-      <div className="data-generator-fields">
-        <label className="launcher-field">
-          <span>Start from</span>
-          <select value={activeBase} onChange={(e) => setBase(e.target.value)}>
-            {versions.length > 0 && (
-              <optgroup label="Existing generated corpus">
-                {versions.map((item) => <option key={item} value={`existing:${item}`}>{item}</option>)}
-              </optgroup>
-            )}
-            <optgroup label="New roots">
-              <option value="fixture">Committed fixtures</option>
-              <option value="rico">RICO screens</option>
-              <option value="awwwards">Awwwards screens</option>
-              <option value="both">Fixtures + RICO</option>
-              <option value="rico+awwwards">RICO + Awwwards</option>
-              <option value="programspec">Generated ProgramSpecs</option>
-              <option value="language_contract">Language contract</option>
-              <option value="deconstruct">Deconstructed web captures</option>
-              <option value="render">Rendered examples</option>
-              <option value="integrated">All program-first roots</option>
-              <option value="all">All available roots</option>
-            </optgroup>
-          </select>
-        </label>
-        <label className="launcher-field">
-          <span>Variation recipe</span>
-          <select value={recipe} onChange={(e) => setRecipe(e.target.value)}>
-            {Object.entries(RECIPES).map(([key, item]) => (
-              <option key={key} value={key}>{item.label}</option>
-            ))}
-          </select>
-        </label>
-        <label className="launcher-field">
-          <span>Output version</span>
-          <input type="text" value={version} onChange={(e) => setVersion(e.target.value)} />
-        </label>
-      </div>
-      <p className="launcher-summary">{activeRecipe.help}</p>
-      {incompatible && <div className="error-note">Edit + repair tasks need an existing corpus or ProgramSpec roots.</div>}
-      <div className="data-generator-options">
-        <label><input type="checkbox" checked={curriculum} onChange={(e) => setCurriculum(e.target.checked)} /> Curriculum tags + stress cases</label>
-        <label><input type="checkbox" checked={fuzzyDedup} onChange={(e) => setFuzzyDedup(e.target.checked)} /> Fuzzy deduplication</label>
-      </div>
+      <p className="launcher-summary">
+        Build a ready-to-train dataset from all available examples. Variations,
+        validation, and duplicate removal are handled automatically.
+      </p>
+      <label className="launcher-field data-generator-name">
+        <span>Dataset name</span>
+        <input
+          type="text"
+          value={version}
+          placeholder={outputVersion}
+          onChange={(e) => setVersion(e.target.value)}
+        />
+      </label>
       <ErrorNote error={error} />
       <button
         className="btn btn-primary"
-        disabled={!caps.execution || !trainJob || busy || incompatible || !version}
+        disabled={!caps.execution || !trainJob || busy || !outputVersion}
         onClick={launch}
         title={caps.execution ? "" : "Serve locally to enable generation"}
       >
-        {busy ? "Starting…" : caps.execution ? "Generate training data" : "Read-only"}
+        {busy ? "Starting…" : caps.execution ? "Create dataset" : "Read-only"}
       </button>
       <LogStream jobId={jobId} />
     </div>
@@ -266,29 +193,10 @@ export function TrainingDataGenerator({
 
 export function TrainingDataWorkspace({
   versions = [],
-  selectedVersion,
 }: {
   versions?: string[];
-  selectedVersion?: string;
 }) {
-  const caps = useCaps();
-  const [testJobId, setTestJobId] = useState<string | null>(null);
-  return (
-    <>
-      <TrainingDataGenerator versions={versions} selectedVersion={selectedVersion} />
-      <div style={{ marginTop: "1rem" }}>
-        {jobDef(caps, "build_test_data") && (
-          <JobLauncher
-            jobDef={jobDef(caps, "build_test_data")!}
-            execution={caps.execution}
-            defaults={{ source: "both", version: "v1", train_version: "v1" }}
-            onLaunched={setTestJobId}
-          />
-        )}
-      </div>
-      <LogStream jobId={testJobId} />
-    </>
-  );
+  return <TrainingDataGenerator versions={versions} />;
 }
 
 export function Data({ navigate: _navigate }: { navigate: (to: string) => void }) {
@@ -304,8 +212,7 @@ export function Data({ navigate: _navigate }: { navigate: (to: string) => void }
       <div className="page-head">
         <h1 className="page-title">Training Data</h1>
         <p className="page-sub">
-          Navigate, generate, and validate versioned corpora. Cold-start shows committed
-          fixtures; generated corpora live under <span className="mono">outputs/train_data/</span>.
+          Review the examples the model learns from, or create a new ready-to-train dataset.
         </p>
       </div>
 
@@ -320,12 +227,20 @@ export function Data({ navigate: _navigate }: { navigate: (to: string) => void }
       )}
 
       <Grid min="190px">
-        <StatTile label="Records" value={train.data?.record_count ?? stats?.record_count ?? "—"} accent="moss" sub={v ? `train_data/${v}` : "no built corpus"} />
+        <StatTile label="Records" value={train.data?.record_count ?? stats?.record_count ?? "—"} accent="moss" sub={v === "examples" ? "built-in examples" : v ? `train_data/${v}` : "no data"} />
         <StatTile label="Collected" value={stats?.collected_count ?? "—"} />
         <StatTile label="Quality rejected" value={stats?.quality_rejected ?? "—"} accent={stats?.quality_rejected ? "failed" : undefined} />
         <StatTile label="Synthesizer" value={stats?.synthesizer ?? "—"} />
         <StatTile label="Errors" value={stats?.error_count ?? "—"} accent={stats?.error_count ? "failed" : undefined} />
       </Grid>
+
+      <Card title="Training examples" right={<span className="hint">search · filter · inspect</span>}>
+        <TrainingDataBrowser version={v} />
+      </Card>
+
+      <Card title="Create a training dataset" right={<span className="hint">recommended settings included</span>}>
+        <TrainingDataWorkspace versions={train.data?.versions ?? []} />
+      </Card>
 
       <div className="two-col">
         <Card title="Corpus composition" right={<ProvenanceBadge provenance={train.data?.provenance} />}>
@@ -348,14 +263,6 @@ export function Data({ navigate: _navigate }: { navigate: (to: string) => void }
           <p className="hint" style={{ marginTop: "0.5rem" }}>Ship claims require full <span className="mono">rico_held</span> (n≥1500).</p>
         </Card>
       </div>
-
-      <Card title="Browse records" right={<span className="hint">search · filter · inspect</span>}>
-        <TrainingDataBrowser version={v} />
-      </Card>
-
-      <Card title="Generate training data" right={<span className="hint">new roots or derivatives</span>}>
-        <TrainingDataWorkspace versions={train.data?.versions ?? []} selectedVersion={v} />
-      </Card>
     </div>
   );
 }

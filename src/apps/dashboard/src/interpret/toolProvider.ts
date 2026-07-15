@@ -210,7 +210,7 @@ export const toolProvider: Record<string, QueryFn> = {
       version: d.version,
       versions: d.versions ?? [],
       tiles: [
-        { label: "Records", value: String(d.record_count ?? stats?.record_count ?? "—"), sub: d.version ? `train_data/${d.version}` : "no built corpus", accent: "moss" },
+        { label: "Records", value: String(d.record_count ?? stats?.record_count ?? "—"), sub: d.version === "examples" ? "built-in examples" : d.version ? `train_data/${d.version}` : "no data", accent: "moss" },
         { label: "Collected", value: String(stats?.collected_count ?? "—"), sub: null, accent: "" },
         { label: "Quality rejected", value: String(stats?.quality_rejected ?? "—"), sub: null, accent: stats?.quality_rejected ? "failed" : "" },
         { label: "Synthesizer", value: String(stats?.synthesizer ?? "—"), sub: null, accent: "" },

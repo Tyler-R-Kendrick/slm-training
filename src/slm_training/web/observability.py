@@ -199,7 +199,7 @@ class Readers:
         self.docs_design = self.root / "docs" / "design"
         self.model_card = self.root / "docs" / "MODEL_CARD.md"
         self.outputs = self.root / "outputs"
-        self.fixtures = self.root / "fixtures"
+        self.fixtures = self.root / "src" / "slm_training" / "resources"
         self.lineage = LineageStore(self.outputs / "lineage")
         self.deployments = DeploymentRegistry(self.outputs / "lineage" / "deployments")
         self.comparisons = BlindedComparisonStore(
@@ -464,14 +464,20 @@ class Readers:
 
     def train_data(self, version: str | None = None) -> dict[str, Any]:
         train_root = self.outputs / "train_data"
-        versions = (
+        generated_versions = (
             sorted(p.name for p in train_root.iterdir() if p.is_dir())
             if train_root.exists()
             else []
         )
-        if not versions:
-            return {"provenance": "committed", "versions": [], **self._fixture_data()}
-        chosen = version if version in versions else versions[-1]
+        versions = ["examples", *generated_versions]
+        if version == "examples" or not generated_versions:
+            return {
+                "provenance": "committed",
+                "versions": versions,
+                "version": "examples",
+                **self._fixture_data(),
+            }
+        chosen = version if version in generated_versions else generated_versions[-1]
         vdir = train_root / chosen
         stats = _read_json(vdir / "stats.json") or {}
         manifest = _read_json(vdir / "manifest.json") or {}
@@ -498,7 +504,11 @@ class Readers:
     ) -> dict[str, Any]:
         if not re.fullmatch(r"[A-Za-z0-9._,-]{1,64}", version):
             return {"version": version, "count": 0, "offset": 0, "records": []}
-        path = self.outputs / "train_data" / version / "records.jsonl"
+        path = (
+            self.fixtures / "train_seeds.jsonl"
+            if version == "examples"
+            else self.outputs / "train_data" / version / "records.jsonl"
+        )
         rows = _read_jsonl(path, limit=None)
         if split:
             rows = [r for r in rows if r.get("split") == split]
