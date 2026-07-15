@@ -1,0 +1,28 @@
+{
+  "date": "2026-07-15",
+  "kind": "training-harness-feedback",
+  "recipe": {
+    "train_dir": "outputs/train_data/remediated",
+    "manifest_sha256": "928ec8d4921954c7736d2386fe7abf88bbef75523a7cfe404792f45ddcd5d4ba",
+    "context_backend": "scratch",
+    "device": "cpu",
+    "batch_size": 8,
+    "learning_rate": 0.0006,
+    "seed": 0
+  },
+  "observation": {
+    "intermediate_loss_pct": 79.54,
+    "intermediate_loss_nll": 36.676366570470535,
+    "no_midloss_wall_ms": 2895.844,
+    "no_midloss_feedback_before_fix": false
+  },
+  "fix": "loss_eval_every=0 disables intermediate checks but forces final loss feedback",
+  "verification": {
+    "final_loss_eval": true,
+    "weighted_nll": 47.999125359528406,
+    "seen_target_tokens": 1632,
+    "run_insights_persisted": true,
+    "telemetry_persisted": true
+  },
+  "honesty": "scratch diagnostic; not a ship claim"
+}

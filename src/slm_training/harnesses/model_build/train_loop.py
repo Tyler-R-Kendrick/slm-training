@@ -108,6 +108,10 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "device": config.device,
             "model": config.model_name,
             "context_backend": getattr(config, "context_backend", None),
+            "batch_size": int(config.batch_size),
+            "grad_accum": int(getattr(config, "grad_accum_steps", 1) or 1),
+            "effective_batch_size": int(config.batch_size)
+            * int(getattr(config, "grad_accum_steps", 1) or 1),
         },
     )
     mix_curriculum = bool(getattr(config, "mix_curriculum", True))
@@ -200,6 +204,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     accum_loss_sum = 0.0
     accum_loss_count = 0
     accum_batch_meta: list[dict] = []
+    accum_example_losses: list[float] = []
     seen_prompt_tokens = 0
     seen_target_tokens = 0
     best_weighted_nll = math.inf
@@ -266,23 +271,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             {
                 "id": str(record.id),
                 "source": str(record.source),
-                "source_family": str(
-                    (record.meta or {}).get("source_family") or record.source
-                ),
-                "prompt_chars": len(record.prompt),
-                "target_chars": len(record.openui),
-            }
-            for record in batch
-        ]
-
-    def _batch_meta(batch: list) -> list[dict]:
-        return [
-            {
-                "id": str(record.id),
-                "source": str(record.source),
-                "source_family": str(
-                    (record.meta or {}).get("source_family") or record.source
-                ),
+                "source_family": str((record.meta or {}).get("source_family") or record.source),
                 "prompt_chars": len(record.prompt),
                 "target_chars": len(record.openui),
             }
@@ -486,6 +475,10 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 accum_loss_sum += float(raw_loss_t.detach().cpu())
                 accum_loss_count += 1
                 accum_batch_meta.extend(_batch_meta(batch))
+                accum_example_losses.extend(
+                    float(value)
+                    for value in (getattr(plugin, "_last_example_token_losses", None) or [])
+                )
                 micro += 1
                 if micro >= grad_accum:
                     with timed("optim_step"):
@@ -512,12 +505,14 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                         "compile": use_compile,
                         "grad_accum": grad_accum,
                         "batches": accum_batch_meta,
+                        "example_token_loss_proxy": accum_example_losses,
                         "ts": datetime.now(timezone.utc).isoformat(),
                     }
                     extra_metrics = getattr(plugin, "last_training_metrics", None)
                     if isinstance(extra_metrics, dict):
                         row.update(extra_metrics)
                     accum_batch_meta = []
+                    accum_example_losses = []
                     metrics_file.write(json.dumps(row) + "\n")
                     metrics_file.flush()
                     did_eval = _maybe_eval(step)
@@ -561,9 +556,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         )
         final_loss_eval = _maybe_loss_eval(
             step,
-            force=bool(
-                config.test_dir and int(getattr(config, "loss_eval_every", 0) or 0) > 0
-            ),
+            # Cadence 0 disables intermediate checks, but never disables the
+            # final feedback artifact for a testable TwoTower run.
+            force=bool(config.test_dir),
         )
         _save_full_state_now()
 
@@ -644,6 +639,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "amp": use_amp,
             "compile": use_compile,
             "grad_accum": grad_accum,
+            "effective_batch_size": int(config.batch_size) * grad_accum,
             "num_threads": accel.num_threads,
             "note": accel.note,
         },

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
 import { getJSON } from "./api";
@@ -19,13 +19,27 @@ const ROUTES: { path: string; label: string; icon: string }[] = [
 
 function useRouter(): [string, Nav] {
   const [path, setPath] = useState(window.location.pathname);
+  const pathRef = useRef(path);
+  pathRef.current = path;
+  const canNavigate = (to: string) => window.dispatchEvent(new CustomEvent("slm-before-navigate", {
+    cancelable: true,
+    detail: { from: pathRef.current, to },
+  }));
   useEffect(() => {
-    const onPop = () => setPath(window.location.pathname);
+    const onPop = () => {
+      const next = window.location.pathname;
+      if (!canNavigate(next)) {
+        window.history.pushState({}, "", pathRef.current);
+        return;
+      }
+      setPath(next);
+    };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
   const navigate: Nav = (to) => {
     if (to === window.location.pathname) return;
+    if (!canNavigate(to)) return;
     window.history.pushState({}, "", to);
     setPath(to);
     window.scrollTo(0, 0);

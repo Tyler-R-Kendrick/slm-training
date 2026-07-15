@@ -734,7 +734,13 @@ def pick_constrained_token(
                 return False
         if not stream:
             return True
-        if exact_terminals:
+        # Once the DFA has admitted the candidate, the optional stream probe is
+        # redundant.  In particular, broad terminals used to call the
+        # LangCore subprocess for every candidate even when
+        # ``skip_exact_stream_probe`` was enabled, making constrained decode
+        # effectively unbounded on CPU.  Keep the name for checkpoint/API
+        # compatibility, but honor it for all DFA-admitted candidates.
+        if skip_exact or exact_terminals:
             return True
         return _stream_probe_ok(
             tokenizer, prefix_ids, tid, prefix_text=prefix_text

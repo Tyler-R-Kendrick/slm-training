@@ -51,14 +51,15 @@ def test_checkpoints_roster_includes_fixture(ro_client: TestClient) -> None:
     assert any("playground_demo" in (c.get("run_id") or "") for c in roster)
 
 
-def test_spa_routes_and_classic_playground_fallback(ro_client: TestClient) -> None:
-    """The SPA serves "/" and /playground; the classic page is at /playground/classic."""
+def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
+    """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")
     assert root.status_code == 200 and 'id="root"' in root.text
     # /playground is now a SPA route (the React playground).
     assert 'id="root"' in ro_client.get("/playground").text
-    classic = ro_client.get("/playground/classic")
-    assert classic.status_code == 200 and "TwoTower" in classic.text
+    classic = ro_client.get("/playground/classic", follow_redirects=False)
+    assert classic.status_code == 308
+    assert classic.headers["location"] == "/playground"
     # Client-side deep routes (incl. /runs/<id>) fall through to the SPA shell.
     assert 'id="root"' in ro_client.get("/checkpoints").text
     assert 'id="root"' in ro_client.get("/runs/qx_e70_stability").text

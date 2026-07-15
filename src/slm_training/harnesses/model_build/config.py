@@ -83,6 +83,8 @@ class ModelBuildConfig:
     eval_suites: str = ""
     # Cap rico_held size during matrix / CPU evals (None = full suite).
     rico_eval_limit: int | None = None
+    # Optional cap for every eval suite; diagnostic-only when explicitly set.
+    eval_limit: int | None = None
     # Accelerator / throughput
     use_amp: bool = False
     use_compile: bool = False

@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Callable, Literal
 
 from fastapi import FastAPI, Header, HTTPException, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -401,23 +401,23 @@ def create_app(
     app.include_router(observability_router)
     app.include_router(actions_router)
 
-    def _spa_or_classic() -> FileResponse:
+    def _spa() -> FileResponse:
         spa_index = SPA_DIR / "index.html"
         if spa_index.exists():
             return FileResponse(spa_index)
-        # Cold path (SPA bundle not built): serve the classic playground so the
-        # app is never broken.
-        return FileResponse(STATIC_DIR / "index.html")
+        raise HTTPException(
+            status_code=503,
+            detail="dashboard bundle missing; run npm run dashboard:build",
+        )
 
     @app.get("/")
     def index() -> FileResponse:
-        return _spa_or_classic()
+        return _spa()
 
     @app.get("/playground/classic")
-    def playground_classic() -> FileResponse:
-        # Original vanilla annotate playground, kept as a tested fallback.
-        # (/playground itself now routes to the React playground in the SPA.)
-        return FileResponse(STATIC_DIR / "index.html")
+    def playground_classic() -> RedirectResponse:
+        # Preserve old bookmarks while keeping one supported playground.
+        return RedirectResponse(url="/playground", status_code=308)
 
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
@@ -426,7 +426,7 @@ def create_app(
         # Client-side routing: serve the SPA shell for unknown non-API paths.
         if full_path.startswith(("api/", "static/")):
             raise HTTPException(status_code=404, detail="not found")
-        return _spa_or_classic()
+        return _spa()
 
     app.state.service = service
     return app

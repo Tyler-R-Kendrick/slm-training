@@ -186,6 +186,34 @@ def main(argv: list[str] | None = None) -> int:
         help="Cap rico_held eval size (CPU/matrix).",
     )
     parser.add_argument(
+        "--eval-limit",
+        type=int,
+        default=None,
+        help="Diagnostic-only cap for every selected suite; omit for full eval.",
+    )
+    parser.add_argument(
+        "--gen-steps",
+        type=int,
+        default=8,
+        help="Decode denoising steps; lower values are diagnostic-only.",
+    )
+    parser.add_argument(
+        "--max-attempts",
+        type=int,
+        default=3,
+        help="Maximum decode retries per record; lower values are diagnostic-only.",
+    )
+    parser.add_argument(
+        "--skip-exact-stream-probe",
+        action="store_true",
+        help="Diagnostic override: skip the blocking exact grammar stream probe.",
+    )
+    parser.add_argument(
+        "--no-grammar-constrained",
+        action="store_true",
+        help="Diagnostic override: disable grammar-constrained token selection.",
+    )
+    parser.add_argument(
         "--no-design-md-context",
         action="store_true",
         help="Override: do not concatenate DESIGN.md into context.",
@@ -258,6 +286,14 @@ def main(argv: list[str] | None = None) -> int:
         best_of_n=args.best_of_n,
         design_md_in_context=design_md_override,
         rico_eval_limit=args.rico_limit,
+        eval_limit=args.eval_limit,
+        gen_steps=args.gen_steps,
+        generate_max_attempts=max(1, args.max_attempts),
+        # Preserve the checkpoint setting unless the diagnostic flag is explicit.
+        grammar_skip_exact_stream_probe=(
+            True if args.skip_exact_stream_probe else None
+        ),
+        grammar_constrained=(False if args.no_grammar_constrained else None),
         grammar_dsl=args.grammar_dsl,
         grammar_trust_model=args.grammar_trust_model,
         grammar_sample_decode=args.grammar_sample_decode,

@@ -1,0 +1,12 @@
+{
+  "date": "2026-07-15",
+  "kind": "effective-batch-control",
+  "recipe": {"learning_rate": 0.0006, "seed": 0, "target_tokens": 6252, "context_backend": "scratch", "feedback": "final-only"},
+  "controls": [
+    {"batch_size": 8, "grad_accum": 1, "effective_batch_size": 8, "weighted_nll": 27.977443108643225, "total_ms": 22598.268},
+    {"batch_size": 4, "grad_accum": 2, "effective_batch_size": 8, "weighted_nll": 28.06526670970657, "total_ms": 8308.108}
+  ],
+  "decision": "treat effective batch as the comparison unit; no quality recipe change",
+  "telemetry_change": "persist effective_batch_size in metadata and accel summary",
+  "honesty": "scratch diagnostic; not a ship claim"
+}

@@ -123,51 +123,90 @@ async function createTransformersSession(systemPrompt, onProgress) {
 
   let generator = null;
   let selectedDevice = null;
+  let selectedIndex = -1;
   const failures = [];
-  for (const device of capabilities.devices) {
-    onProgress({ status: `trying ${device}`, progress: null });
-    try {
-      generator = await pipeline("text-generation", TRANSFORMERS_JS_MODEL, {
-        device,
-        dtype: "q4",
-        progress_callback(info) {
-          const raw = Number(info?.progress);
-          const progress = Number.isFinite(raw) ? (raw > 1 ? raw / 100 : raw) : null;
-          if (progress !== null) onProgress({ status: "downloading", progress });
-          else if (info?.status === "ready") {
-            onProgress({ status: `ready ${device}`, progress: null });
+  let disposed = false;
+  async function initializeFrom(startIndex) {
+    for (let index = startIndex; index < capabilities.devices.length; index += 1) {
+      if (disposed) throw new Error("Browser inference session has been disposed");
+      const device = capabilities.devices[index];
+      onProgress({ status: `trying ${device}`, progress: null });
+      try {
+        if (device === "webgpu") {
+          const adapter = await globalThis.navigator?.gpu?.requestAdapter?.();
+          const storage = Number(adapter?.limits?.maxComputeWorkgroupStorageSize || 0);
+          if (storage && storage < 65536) {
+            throw new Error(`WebGPU workgroup storage ${storage} is below the model requirement 65536`);
           }
-        },
-      });
-      selectedDevice = device;
-      break;
-    } catch (error) {
-      const reason = error?.message || String(error);
-      failures.push(`${device}: ${reason}`);
-      onProgress({ status: `failed ${device} — ${reason}`, progress: null });
+        }
+        generator = await pipeline("text-generation", TRANSFORMERS_JS_MODEL, {
+          device,
+          dtype: "q4",
+          progress_callback(info) {
+            const raw = Number(info?.progress);
+            const progress = Number.isFinite(raw) ? (raw > 1 ? raw / 100 : raw) : null;
+            if (progress !== null) onProgress({ status: "downloading", progress });
+            else if (info?.status === "ready") {
+              onProgress({ status: `ready ${device}`, progress: null });
+            }
+          },
+        });
+        if (disposed) {
+          await generator?.dispose?.();
+          generator = null;
+          throw new Error("Browser inference session has been disposed");
+        }
+        selectedDevice = device;
+        selectedIndex = index;
+        return;
+      } catch (error) {
+        if (disposed) throw error;
+        const reason = error?.message || String(error);
+        failures.push(`${device}: ${reason}`);
+        onProgress({ status: `failed ${device} — ${reason}`, progress: null });
+      }
     }
-  }
-  if (!generator || !selectedDevice) {
     throw new Error(`No browser inference backend initialized (${failures.join("; ")})`);
   }
-  let disposed = false;
+  await initializeFrom(0);
   return {
     device: selectedDevice,
     session: {
       async prompt(content) {
         if (disposed) throw new Error("Browser inference session has been disposed");
-        const output = await generator(
-          [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: String(content || "") },
-          ],
-          { max_new_tokens: 512, do_sample: false, return_full_text: false }
-        );
-        return generatedText(output);
+        for (;;) {
+          try {
+            if (disposed) throw new Error("Browser inference session has been disposed");
+            const output = await generator(
+              [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: String(content || "") },
+              ],
+              { max_new_tokens: 512, do_sample: false, return_full_text: false }
+            );
+            if (disposed) throw new Error("Browser inference session has been disposed");
+            return generatedText(output);
+          } catch (error) {
+            if (disposed) throw new Error("Browser inference session has been disposed");
+            const reason = error?.message || String(error);
+            failures.push(`${selectedDevice} inference: ${reason}`);
+            onProgress({ status: `failed ${selectedDevice} inference — ${reason}`, progress: null });
+            await generator?.dispose?.();
+            generator = null;
+            selectedDevice = null;
+            if (disposed) throw new Error("Browser inference session has been disposed");
+            await initializeFrom(selectedIndex + 1);
+            if (disposed) {
+              await generator?.dispose?.();
+              generator = null;
+              throw new Error("Browser inference session has been disposed");
+            }
+          }
+        }
       },
       destroy() {
         disposed = true;
-        void generator.dispose?.();
+        void generator?.dispose?.();
       },
     },
   };
