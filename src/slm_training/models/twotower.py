@@ -2710,7 +2710,9 @@ class TwoTowerModel(nn.Module):
                         return _admit(engine, self.tokenizer, trial)
 
                 stream_fn = None
-                if use_grammar:
+                if use_grammar and not bool(
+                    getattr(self.config, "grammar_skip_exact_stream_probe", True)
+                ):
 
                     def stream_fn(trial: list[int], newly_pos: list[int]) -> list[int]:
                         return filter_ids_by_stream(self.tokenizer, trial, newly_pos)
@@ -3196,121 +3198,3 @@ class TwoTowerModel(nn.Module):
         if isinstance(raw_cfg.get("grammar_ltr_stages"), list):
             raw_cfg["grammar_ltr_stages"] = tuple(raw_cfg["grammar_ltr_stages"])
         for key in ("diffusion_policies", "diffusion_length_buckets"):
-            if isinstance(raw_cfg.get(key), list):
-                raw_cfg[key] = tuple(raw_cfg[key])
-        if raw_cfg.get("grammar_ltr_stages") is None:
-            raw_cfg["grammar_ltr_stages"] = (64, 128, 192, 256)
-        # Ignore unknown keys for forward/back compat
-        valid = {f.name for f in TwoTowerConfig.__dataclass_fields__.values()}  # type: ignore[attr-defined]
-        cfg = TwoTowerConfig(**{k: v for k, v in raw_cfg.items() if k in valid})
-        model = cls(
-            tokenizer=tokenizer,
-            config=cfg,
-            device=device,
-            context_tokenizer=context_tokenizer,
-        )
-        _load_checkpoint_state(model, payload["state_dict"])
-        if "gen_len" in payload:
-            model.gen_len = int(payload["gen_len"])
-        return model
-
-    @classmethod
-    def from_records(
-        cls,
-        records: list[ExampleRecord],
-        config: TwoTowerConfig | None = None,
-        device: str | torch.device = "cpu",
-    ) -> TwoTowerModel:
-        cfg = config or TwoTowerConfig()
-        if _is_lexer_output(cfg):
-            from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
-
-            tokenizer = DSLNativeTokenizer.build()
-            # Scratch context keeps a prompt-word tokenizer (decoupled).
-            ctx_texts = [r.prompt for r in records]
-            context_tokenizer = OpenUITokenizer.build(ctx_texts)
-            use_sym = bool(getattr(cfg, "use_symbol_table", True))
-            max_target = max(
-                (
-                    len(
-                        tokenizer.encode(
-                            r.openui,
-                            add_special=True,
-                            use_symbol_table=use_sym,
-                            placeholders=list(r.placeholders or []),
-                        )
-                    )
-                    for r in records
-                ),
-                default=32,
-            )
-            max_prompt = max(
-                (len(context_tokenizer.encode(r.prompt)) for r in records),
-                default=16,
-            )
-        else:
-            texts = [r.prompt for r in records] + [r.openui for r in records]
-            tokenizer = OpenUITokenizer.build(texts)
-            context_tokenizer = tokenizer
-            max_prompt = max(
-                (len(tokenizer.encode(r.prompt)) for r in records), default=16
-            )
-            max_target = max(
-                (len(tokenizer.encode(r.openui)) for r in records), default=32
-            )
-        cfg.max_prompt_len = max(cfg.max_prompt_len, max_prompt + 4)
-        cfg.max_target_len = max(cfg.max_target_len, max_target + 8)
-        model = cls(
-            tokenizer=tokenizer,
-            config=cfg,
-            device=device,
-            context_tokenizer=context_tokenizer,
-        )
-        model.gen_len = max(max_target + 2, 16)
-        if bool(getattr(cfg, "teacher_init_embeddings", False)):
-            model._try_teacher_init_embeddings(records)
-        return model
-
-    def _try_teacher_init_embeddings(self, records: list[ExampleRecord]) -> None:
-        """Initialize DSL symbol rows from a frozen HF teacher when available."""
-        try:
-            from slm_training.models.dsl_tokenizer import (
-                TokenKind,
-                is_dsl_native_tokenizer,
-            )
-
-            if not is_dsl_native_tokenizer(self.tokenizer):
-                return
-            if not is_hf_context(self.context):
-                return
-            assert isinstance(self.context, HFContextEncoder)
-            # Map component / fixed-string tokens to short textual glosses.
-            glosses: dict[int, str] = {}
-            for tid, tok in self.tokenizer.id_to_token.items():
-                kind = self.tokenizer.kind_of(tid)
-                if kind == TokenKind.COMPONENT:
-                    glosses[tid] = f"{tok} UI component"
-                elif kind == TokenKind.LIT and tok.startswith("STR:"):
-                    glosses[tid] = tok[4:]
-                elif kind == TokenKind.STRUCT and tok not in {"NL"}:
-                    glosses[tid] = f"punctuation {tok}"
-            if not glosses:
-                return
-            prompts = [glosses[i] for i in sorted(glosses)]
-            ids = sorted(glosses)
-            with torch.no_grad():
-                hidden, _ = self.context.forward_prompts(
-                    prompts,
-                    max_len=min(32, self.config.max_prompt_len),
-                    device=self.device_name,
-                )
-                # Mean-pool over sequence.
-                pooled = hidden.mean(dim=1)
-                if pooled.size(-1) != self.config.d_model:
-                    # Project if HF hidden size differs (should match d_model via adapter).
-                    return
-                weight = self.denoiser.tok.weight.data
-                for row, vec in zip(ids, pooled):
-                    weight[row].copy_(vec)
-        except Exception:  # noqa: BLE001
-            return

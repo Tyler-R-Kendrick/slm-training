@@ -22,6 +22,11 @@ that flag, one decode step, one attempt, and a toy grammar backend still failed
 to produce a scoreboard, so checkpoint/model initialization or another decode
 path remains to be isolated.
 
+The skip setting was also wired through MaskGIT remask verification, where
+`filter_ids_by_stream` could re-enter LangCore after token selection. The
+bounded constrained retry still exceeded the environment window, so this is a
+performance intervention with regression coverage, not a quality result.
+
 The unconstrained model-forward control did complete: one-record smoke,
 one-step, one-attempt evaluation finished in **3.39 s** and persisted AgentV
 artifacts. It produced parse rate **0**, structural similarity **0**, and reward
