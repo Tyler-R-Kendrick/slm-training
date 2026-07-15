@@ -280,6 +280,12 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Exit 9 if decode canvas makes ship parse gates unreachable.",
     )
+    parser.add_argument(
+        "--no-unconstrained-fallback",
+        action="store_true",
+        help="Disable unconstrained retries so constrained-decode adherence is measured directly.",
+    )
+
     args = parser.parse_args(argv)
 
     if args.no_design_md_context and args.design_md_context:
@@ -315,6 +321,7 @@ def main(argv: list[str] | None = None) -> int:
         eval_limit=args.eval_limit,
         gen_steps=args.gen_steps,
         generate_max_attempts=max(1, args.max_attempts),
+        allow_unconstrained_fallback=not args.no_unconstrained_fallback,
         # Preserve checkpoint settings unless an explicit override is supplied.
         grammar_skip_exact_stream_probe=(
             True if args.skip_exact_stream_probe else None

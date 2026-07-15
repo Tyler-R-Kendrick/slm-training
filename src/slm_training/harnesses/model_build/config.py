@@ -181,6 +181,7 @@ class ModelBuildConfig:
     # Diagnostic per-record generation timeout; None/0 preserves unlimited eval.
     decode_timeout_seconds: float | None = None
     grammar_finalize_on_last_attempt_only: bool = False
+    allow_unconstrained_fallback: bool = True
     # V7 speculative denoising (docs/design/speculative-denoising.md)
     stability_min_persistence: int = 0  # E70 commit gate (0=off)
     stability_jsd_weight: float = 1.0  # E70 remask score mix
