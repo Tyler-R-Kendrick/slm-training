@@ -274,6 +274,7 @@ class TwoTowerConfig:
     # P7: playground/generate attempt budget + finalize-only-on-last.
     generate_max_attempts: int = 3
     grammar_finalize_on_last_attempt_only: bool = False
+    allow_unconstrained_fallback: bool = True
     # --- V7 speculative denoising (docs/design/speculative-denoising.md) ---
     # E70 LESS-lite: require argmax persistence before committing (0=off);
     # remask_policy="stability" ranks remasks by persistence + inter-step JSD.
@@ -3343,6 +3344,8 @@ class TwoTowerModel(nn.Module):
             active_stats = get_active_stats()
             if active_stats is not None:
                 active_stats.unconstrained_retries += 1
+            if not bool(getattr(self.config, "allow_unconstrained_fallback", True)):
+                return text
             unconstrained = self._generate_maskgit_one(
                 ctx,
                 ctx_pad,
