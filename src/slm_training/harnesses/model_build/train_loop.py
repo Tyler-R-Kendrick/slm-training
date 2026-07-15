@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import math
 import random
+import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -196,6 +197,8 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     step = 0
     last_loss = 0.0
     micro = 0
+    accum_loss_sum = 0.0
+    accum_loss_count = 0
     seen_prompt_tokens = 0
     seen_target_tokens = 0
     best_weighted_nll = math.inf
@@ -444,10 +447,13 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                     optimizer.zero_grad(set_to_none=True)
                 with timed("forward"):
                     with autocast_context(config.device, enabled=use_amp):
-                        loss_t = plugin.training_loss(batch) / grad_accum
+                        raw_loss_t = plugin.training_loss(batch)
+                        loss_t = raw_loss_t / grad_accum
                 with timed("backward"):
                     scaler.scale(loss_t).backward()
                 _count_tokens(batch)
+                accum_loss_sum += float(raw_loss_t.detach().cpu())
+                accum_loss_count += 1
                 micro += 1
                 if micro >= grad_accum:
                     with timed("optim_step"):
@@ -458,7 +464,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                         scaler.step(optimizer)
                         scaler.update()
                     micro = 0
-                    last_loss = float(loss_t.detach().cpu()) * grad_accum
+                    last_loss = accum_loss_sum / max(1, accum_loss_count)
+                    accum_loss_sum = 0.0
+                    accum_loss_count = 0
                     step += 1
                     row = {
                         "step": step,
@@ -643,5 +651,12 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         (run_dir / "checkpoint_bucket.json").write_text(
             json.dumps(bucket_report, indent=2) + "\n", encoding="utf-8"
         )
+
+    try:
+        from slm_training.autoresearch.run_insights import load_run_insights
+
+        load_run_insights(run_dir, run_id=config.run_id)
+    except Exception as exc:  # noqa: BLE001 - analysis must never fail training
+        warnings.warn(f"run insight analysis failed: {exc}", stacklevel=2)
 
     return summary
