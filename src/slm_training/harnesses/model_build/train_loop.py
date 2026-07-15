@@ -653,6 +653,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "steps_requested": config.steps,
             "batch_size": config.batch_size,
             "ltr_loss_weight": getattr(config, "ltr_loss_weight", 0.0),
+            "fuse_ltr_loss": bool(getattr(config, "fuse_ltr_loss", True)),
             "fidelity_loss_weight": getattr(config, "fidelity_loss_weight", 0.0),
             "fastpath_aux_weight": getattr(config, "fastpath_aux_weight", 0.0),
             "schema_in_context": bool(getattr(config, "schema_in_context", False)),
