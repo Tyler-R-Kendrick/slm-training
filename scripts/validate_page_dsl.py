@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
 """Validate the dashboard's per-page OpenUI DSL programs and keep a manifest.
 
-The dashboard can render each page two ways (see the compiled ↔ interpreted toggle):
-
-* **compiled**  — the hand-written React pages in ``src/apps/dashboard/src/pages/``
-* **interpreted** — the committed OpenUI Lang programs in
-  ``src/slm_training/web/static/openui/*.openui`` run live through the official
+The dashboard renders each page from the committed OpenUI Lang programs in
+``src/slm_training/web/static/openui/*.openui`` run live through the official
   ``@openuidev`` ``<Renderer>`` with the dashboard's hybrid component library
   (``src/apps/dashboard/src/interpret/library.tsx``) and ``/api`` tool provider
   (``src/apps/dashboard/src/interpret/toolProvider.ts``).
@@ -14,7 +11,7 @@ Those ``.openui`` programs are a **different dialect** from the placeholder-only
 training DSL that ``src/apps/openui_bridge`` validates: they use the full OpenUI Lang
 (``Query`` / ``@Each`` / ``$state``) plus the dashboard's own custom components. So
 this validator does **not** go through the training bridge. Instead it structurally
-checks each program against the two source-of-truth files that back interpreted mode:
+checks each program against the two source-of-truth files that back OpenUI rendering:
 
 * every ``Query("name", …)`` resolves to a key in ``toolProvider.ts``
 * every ``Component(…)`` call resolves to a stock ``@openuidev`` component or a
@@ -69,7 +66,7 @@ STOCK_COMPONENTS = {
 # Language builtins that appear as Capitalized calls in OpenUI Lang programs.
 BUILTINS = {"Query", "Mutation", "Action"}
 
-# Routes that are intentionally compiled-only (dynamic / not expressible as a static
+# Routes that are intentionally React-only (dynamic / not expressible as a static
 # page program) and therefore exempt from the "every route has a .openui" check.
 COMPILED_ONLY_SLUGS = {"runs"}
 
