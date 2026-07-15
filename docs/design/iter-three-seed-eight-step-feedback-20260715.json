@@ -1,0 +1,14 @@
+{
+  "date": "2026-07-15",
+  "kind": "three-seed-loss-generation-feedback",
+  "recipe": {"steps": 8, "batch_size": 8, "effective_batch_size": 8, "learning_rate": 0.0006, "context_backend": "scratch", "device": "cpu", "loss_eval_every": 0, "diagnostic_eval_limit": 1, "diagnostic_gen_steps": 1, "diagnostic_max_attempts": 1},
+  "corpus": {"records": 585, "manifest_sha256": "928ec8d4921954c7736d2386fe7abf88bbef75523a7cfe404792f45ddcd5d4ba"},
+  "seeds": [
+    {"seed": 0, "target_tokens": 11122, "weighted_nll": 17.40958114777779, "parse_rate": 0.0, "structural_similarity": 0.0, "reward_score": 0.0},
+    {"seed": 1, "target_tokens": 12258, "weighted_nll": 31.84144890013186, "parse_rate": 0.0, "structural_similarity": 0.0, "reward_score": 0.0},
+    {"seed": 2, "target_tokens": 10460, "weighted_nll": 29.1764311491962, "parse_rate": 0.0, "structural_similarity": 0.3, "reward_score": 0.0}
+  ],
+  "summary": {"mean_weighted_nll": 26.14248706570195, "sample_sd_weighted_nll": 7.679408455843891, "min_weighted_nll": 17.40958114777779, "max_weighted_nll": 31.84144890013186},
+  "decision": "hold corpus and recipe; improve constrained generation termination and observability before promotion",
+  "honesty": "scratch diagnostics; not a ship claim"
+}
