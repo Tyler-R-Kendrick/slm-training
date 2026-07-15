@@ -1,0 +1,10 @@
+{
+  "date": "2026-07-15",
+  "kind": "quality-diagnostic-infrastructure",
+  "change": "generic per-suite eval limit",
+  "default": "unlimited",
+  "flags": ["--eval-limit 1", "--suites smoke"],
+  "honesty": "diagnostic subset; not a ship result",
+  "validation": {"tests": 12, "compileall": true, "diff_check": true},
+  "result": "bounded E0->E1 probe was interrupted during decode; progress artifact retained active E0"
+}
