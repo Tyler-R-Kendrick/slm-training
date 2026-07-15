@@ -43,6 +43,24 @@
       "skillPath": "SKILL.md",
       "computedHash": "0a9ec27b1d384611fccf39f67d525a31bb5849831e2726369c51b2daacb98c72"
     },
+    "nemo-rl-auto-research": {
+      "source": "NVIDIA/skills@1700ebd31ba862df5b6992403764c989f2bda66b",
+      "sourceType": "github",
+      "skillPath": "skills/nemo-rl-auto-research/SKILL.md",
+      "computedHash": "71e9ca6813664a675ccb3ced0a3a57062d281cd931fe4fcf89ac6f3d0434db00"
+    },
+    "nemo-rl-hf-jobs-etiquette": {
+      "source": ".agents/skills/nemo-rl-hf-jobs-etiquette",
+      "sourceType": "local",
+      "skillPath": "SKILL.md",
+      "computedHash": "73b07db6cd4605c63c038a1ff93424bf8dca775e3210dbc808bf4a2ac7944c23"
+    },
+    "nemo-rl-session-memory": {
+      "source": "NVIDIA/skills@1700ebd31ba862df5b6992403764c989f2bda66b",
+      "sourceType": "github",
+      "skillPath": "skills/nemo-rl-session-memory/SKILL.md",
+      "computedHash": "2987abe4a066314b5390b7fde6edb42fc178ae608dbc54d08cb204a9c220c054"
+    },
     "ponytail": {
       "source": "DietrichGebert/ponytail",
       "sourceType": "github",

@@ -13,6 +13,7 @@ build/
 htmlcov/
 .firecrawl/
 outputs/
+session/
 node_modules/
 *.pt
 !fixtures/checkpoints/**/*.pt

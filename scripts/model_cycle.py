@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
+import tempfile
 import uuid
 from dataclasses import fields, replace
 from pathlib import Path
@@ -35,6 +37,18 @@ from slm_training.lineage.tracks import (
     TWOTOWER_BASE_ID,
     TWOTOWER_BASE_REVISION,
     TWOTOWER_E53_RECIPE,
+)
+from slm_training.integrations.nemo_rl import (
+    DEFAULT_BUCKET as NEMO_DEFAULT_BUCKET,
+    DEFAULT_FLAVOR as NEMO_DEFAULT_FLAVOR,
+    DEFAULT_REPO as NEMO_DEFAULT_REPO,
+    NEMO_RL_GIT_SHA,
+    NEMO_RL_IMAGE,
+    NEMO_RL_VERSION,
+    build_entrypoint_script as build_nemo_entrypoint,
+    build_hf_jobs_command as build_nemo_job_command,
+    parse_job_status,
+    validate_train_summary,
 )
 
 
@@ -465,6 +479,8 @@ def cmd_evaluate(args: argparse.Namespace) -> int:
 def cmd_promote(args: argparse.Namespace) -> int:
     store = _store(args)
     manifest = store.load_run(args.run_id)
+    if manifest.legacy_kind is not None:
+        raise ValueError("legacy and hardware-smoke runs cannot be promoted")
     if manifest.lifecycle_state != "validated":
         raise ValueError("promotion requires a validated run")
     eval_snapshot = store.load_snapshot(manifest.eval_snapshot_sha)
@@ -587,6 +603,168 @@ def cmd_promote(args: argparse.Namespace) -> int:
     )
     path = store.promote(pointer)
     print(json.dumps({"pointer_sha": pointer.sha, "path": str(path)}, indent=2))
+    return 0
+
+
+def _nemo_recipe(manifest: RunManifest, *, job_id: str | None = None) -> dict[str, Any]:
+    recipe = dict(manifest.recipe)
+    recipe["nemo_rl"] = {
+        "version": NEMO_RL_VERSION,
+        "git_sha": NEMO_RL_GIT_SHA,
+        "image": NEMO_RL_IMAGE,
+        "algorithm": "grpo",
+        "steps": 1,
+        "lora": {"rank": 16, "alpha": 32, "dropout": 0.05},
+        "job_id": job_id,
+        "claim": "hardware_smoke",
+    }
+    return recipe
+
+
+def cmd_submit_nemo(args: argparse.Namespace) -> int:
+    store = _store(args)
+    manifest = store.load_run(args.run_id)
+    if manifest.track != "causal_lm":
+        raise ValueError("NeMo RL submission requires a causal_lm run")
+    if manifest.lifecycle_state != "running":
+        raise ValueError("NeMo RL submission requires a running branch")
+    revision = args.revision or manifest.code_sha.split("+", 1)[0]
+    entrypoint = build_nemo_entrypoint(
+        run_id=manifest.run_id,
+        base_model_id=manifest.base_model_id,
+        base_model_revision=manifest.base_model_revision,
+        repo_url=args.repo_url,
+        revision=revision,
+        data_path=args.data_path,
+        checkpoint_bucket=args.checkpoint_bucket,
+        seed=manifest.seed,
+    )
+    command = build_nemo_job_command(
+        entrypoint=entrypoint,
+        flavor=args.flavor,
+        timeout=args.timeout,
+        checkpoint_bucket=args.checkpoint_bucket,
+    )
+    plan = {
+        "run_id": manifest.run_id,
+        "kind": "hardware_smoke",
+        "nemo_rl_version": NEMO_RL_VERSION,
+        "nemo_rl_git_sha": NEMO_RL_GIT_SHA,
+        "image": NEMO_RL_IMAGE,
+        "flavor": args.flavor,
+        "revision": revision,
+        "checkpoint_bucket": args.checkpoint_bucket,
+        "command": command,
+        "entrypoint": entrypoint,
+    }
+    if args.dry_run:
+        print(json.dumps(plan, indent=2))
+        return 0
+    if not args.ack_paid_gpu:
+        raise ValueError("paid GPU submission requires --ack-paid-gpu")
+    if "+dirty" in manifest.code_sha:
+        raise ValueError("paid submission requires a clean 40-character code revision")
+    if not (os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")):
+        raise ValueError("HF_TOKEN is required for a paid NeMo RL job")
+    proc = subprocess.run(command, check=True, capture_output=True, text=True)
+    job_id = proc.stdout.strip().splitlines()[-1].strip()
+    if not job_id:
+        raise RuntimeError("HF Jobs did not return a job id")
+    hardware = dict(manifest.hardware)
+    hardware.update({"provider": "hf_jobs", "flavor": args.flavor})
+    store.record_run_metadata(
+        manifest.run_id,
+        recipe=_nemo_recipe(manifest, job_id=job_id),
+        hardware=hardware,
+        artifact_uris=(*manifest.artifact_uris, f"hf-job://{job_id}"),
+        legacy_kind="hardware_smoke",
+    )
+    print(json.dumps({"run_id": manifest.run_id, "job_id": job_id}, indent=2))
+    return 0
+
+
+def _load_job_payload(job_id: str, status_json: Path | None) -> dict[str, Any]:
+    if status_json:
+        value = json.loads(status_json.read_text(encoding="utf-8"))
+    else:
+        proc = subprocess.run(
+            ["hf", "jobs", "inspect", job_id, "--format", "json"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        value = json.loads(proc.stdout)
+    if isinstance(value, list):
+        if len(value) != 1:
+            raise ValueError("expected one HF Jobs record")
+        value = value[0]
+    if not isinstance(value, dict):
+        raise ValueError("HF Jobs response must be an object")
+    return value
+
+
+def _load_nemo_summary(
+    *, job_id: str, run_id: str, bucket: str, summary: Path | None
+) -> dict[str, Any]:
+    if summary:
+        return json.loads(summary.read_text(encoding="utf-8"))
+    remote = f"{bucket}/checkpoints/{run_id}/nemo_rl/train_summary.json"
+    with tempfile.TemporaryDirectory(prefix=f"nemo-{job_id}-") as raw:
+        local = Path(raw) / "train_summary.json"
+        subprocess.run(
+            ["hf", "buckets", "cp", remote, str(local)],
+            check=True,
+        )
+        return json.loads(local.read_text(encoding="utf-8"))
+
+
+def cmd_reconcile_nemo(args: argparse.Namespace) -> int:
+    store = _store(args)
+    manifest = store.load_run(args.run_id)
+    if manifest.track != "causal_lm":
+        raise ValueError("NeMo RL reconciliation requires a causal_lm run")
+    if manifest.legacy_kind not in {None, "hardware_smoke"}:
+        raise ValueError("run is not a NeMo RL hardware smoke")
+    recorded_job = (manifest.recipe.get("nemo_rl") or {}).get("job_id")
+    if args.status_json is None and recorded_job != args.job_id:
+        raise ValueError("job id does not match the submitted NeMo RL run")
+    payload = _load_job_payload(args.job_id, args.status_json)
+    status = parse_job_status(payload)
+    if status not in {"completed", "finished", "success", "succeeded"}:
+        terminal_failure = status in {"cancelled", "canceled", "error", "failed"}
+        if terminal_failure and manifest.lifecycle_state == "running":
+            store.transition_run(manifest.run_id, "rejected")
+        print(json.dumps({"job_id": args.job_id, "status": status}, indent=2))
+        return 2
+    summary = _load_nemo_summary(
+        job_id=args.job_id,
+        run_id=manifest.run_id,
+        bucket=args.checkpoint_bucket,
+        summary=args.summary,
+    )
+    validate_train_summary(summary, run_id=manifest.run_id)
+    artifact_uri = str(summary["checkpoint_bucket"])
+    recipe = _nemo_recipe(manifest, job_id=args.job_id)
+    recipe["nemo_rl"]["status"] = status
+    updated = store.record_run_metadata(
+        manifest.run_id,
+        recipe=recipe,
+        artifact_uris=tuple(dict.fromkeys((*manifest.artifact_uris, artifact_uri))),
+        legacy_kind="hardware_smoke",
+    )
+    if updated.lifecycle_state == "running":
+        updated = store.transition_run(updated.run_id, "screened")
+    print(
+        json.dumps(
+            {
+                "run_id": updated.run_id,
+                "status": status,
+                "lifecycle_state": updated.lifecycle_state,
+                "artifact_uri": artifact_uri,
+            },
+            indent=2,
+        )
+    )
     return 0
 
 
@@ -876,6 +1054,28 @@ def build_parser() -> argparse.ArgumentParser:
     promote.add_argument("--finalist-report", action="append", default=[])
     promote.add_argument("--deployment-artifact", type=Path)
     promote.set_defaults(func=cmd_promote)
+
+    submit_nemo = sub.add_parser("submit-nemo")
+    submit_nemo.add_argument("--run-id", required=True)
+    submit_nemo.add_argument("--repo-url", default=NEMO_DEFAULT_REPO)
+    submit_nemo.add_argument("--revision")
+    submit_nemo.add_argument(
+        "--data-path", default="fixtures/nemo_rl/openui_smoke.jsonl"
+    )
+    submit_nemo.add_argument("--checkpoint-bucket", default=NEMO_DEFAULT_BUCKET)
+    submit_nemo.add_argument("--flavor", default=NEMO_DEFAULT_FLAVOR)
+    submit_nemo.add_argument("--timeout", default="2h")
+    submit_nemo.add_argument("--dry-run", action="store_true")
+    submit_nemo.add_argument("--ack-paid-gpu", action="store_true")
+    submit_nemo.set_defaults(func=cmd_submit_nemo)
+
+    reconcile_nemo = sub.add_parser("reconcile-nemo")
+    reconcile_nemo.add_argument("--run-id", required=True)
+    reconcile_nemo.add_argument("--job-id", required=True)
+    reconcile_nemo.add_argument("--checkpoint-bucket", default=NEMO_DEFAULT_BUCKET)
+    reconcile_nemo.add_argument("--status-json", type=Path)
+    reconcile_nemo.add_argument("--summary", type=Path)
+    reconcile_nemo.set_defaults(func=cmd_reconcile_nemo)
 
     export = sub.add_parser("export")
     export.add_argument("--run-id", required=True)
