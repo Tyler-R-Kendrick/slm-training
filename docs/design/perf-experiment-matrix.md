@@ -174,6 +174,8 @@ p95 below p50 for `n=2` (for example, a Q9 control reported p50≈1,687 ms and
 p95≈1,527 ms). It now uses nearest-rank indexing. A fresh two-prompt control
 reported P0 p50/p95≈1,996/6,976 ms and Q9≈1,421/1,436 ms; the quality anchor
 remained invalid, so this was a telemetry-only correction and not a promotion.
+The model-evaluation runner now uses the same percentile definition so
+dashboard quality and perf latency summaries agree.
 
 ### Guardrail fix rerun (2026-07-15, CPU, bridge up, `--limit 8`)
 

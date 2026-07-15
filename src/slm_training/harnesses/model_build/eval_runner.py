@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import re
 import time
 from datetime import datetime, timezone
@@ -22,6 +23,16 @@ from slm_training.harnesses.model_build.factory import build_model
 from slm_training.harnesses.model_build.plugin import GenerationRequest
 
 _COMPONENT_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s*\(")
+
+
+def _nearest_rank(sorted_values: list[float], fraction: float) -> float | None:
+    """Return a monotonic nearest-rank percentile for small samples."""
+    if not sorted_values:
+        return None
+    index = max(
+        0, min(len(sorted_values) - 1, math.ceil(fraction * len(sorted_values)) - 1)
+    )
+    return sorted_values[index]
 
 
 def _sha256_file(path: Path) -> str:
@@ -465,8 +476,9 @@ def evaluate(
             _score_one(record, pred, latencies[-1])
 
     lat_sorted = sorted(latencies)
-    p50 = lat_sorted[len(lat_sorted) // 2] if lat_sorted else None
-    p95 = lat_sorted[int(0.95 * (len(lat_sorted) - 1))] if lat_sorted else None
+
+    p50 = _nearest_rank(lat_sorted, 0.50)
+    p95 = _nearest_rank(lat_sorted, 0.95)
     gold_design_mean = (
         sum(gold_design_scores) / len(gold_design_scores)
         if gold_design_scores
