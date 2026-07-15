@@ -210,9 +210,10 @@ def main(argv: list[str] | None = None) -> int:
         help="Diagnostic override: skip the blocking exact grammar stream probe.",
     )
     parser.add_argument(
-        "--no-grammar-constrained",
-        action="store_true",
-        help="Diagnostic override: disable grammar-constrained token selection.",
+        "--grammar-constrained",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Override the checkpoint's grammar-constrained decode setting.",
     )
     parser.add_argument(\n        "--verify-chosen-only",\n        action="store_true",\n        help="Diagnostic override: verify only the model-chosen token per step.",\n    )\n    parser.add_argument(\n        "--grammar-top-k",\n        type=int,\n        default=None,\n        help="Diagnostic override for constrained candidate breadth.",\n    )\n    parser.add_argument(\n        "--decode-timeout-seconds",\n        type=float,\n        default=None,\n        help="Diagnostic per-record decode timeout; omit for unlimited evaluation.",\n    )\n    parser.add_argument(
         "--no-design-md-context",
@@ -291,11 +292,11 @@ def main(argv: list[str] | None = None) -> int:
         eval_limit=args.eval_limit,
         gen_steps=args.gen_steps,
         generate_max_attempts=max(1, args.max_attempts),
-        # Preserve the checkpoint setting unless the diagnostic flag is explicit.
+        # Preserve checkpoint settings unless an explicit override is supplied.
         grammar_skip_exact_stream_probe=(
             True if args.skip_exact_stream_probe else None
         ),
-        grammar_constrained=(False if args.no_grammar_constrained else None),\n        grammar_verify_chosen_only=(True if args.verify_chosen_only else None),\n        grammar_top_k=args.grammar_top_k,
+        grammar_constrained=args.grammar_constrained,\n        grammar_verify_chosen_only=(True if args.verify_chosen_only else None),\n        grammar_top_k=args.grammar_top_k,
         decode_timeout_seconds=args.decode_timeout_seconds,
         grammar_dsl=args.grammar_dsl,
         grammar_trust_model=args.grammar_trust_model,
