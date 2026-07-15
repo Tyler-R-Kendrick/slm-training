@@ -1,0 +1,11 @@
+{
+  "mixture_id": "remediated-organic-balanced",
+  "weights": {
+    "rico_real": 0.5,
+    "awwwards_real": 0.2,
+    "human_curated": 0.15,
+    "prompt_paraphrase": 0.1,
+    "layout_augment": 0.05
+  },
+  "notes": "Reduce repair/template exposure while retaining organic and curated structure targets."
+}
