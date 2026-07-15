@@ -1,0 +1,10 @@
+{
+  "date": "2026-07-15",
+  "kind": "constrained-decoder-profile",
+  "probe": {"records": 1, "decode_steps": 1, "max_attempts": 1, "design_md": false},
+  "before": "openui_langcore.stream_check",
+  "after": "lark.lexer",
+  "unconstrained_control": {"runtime_seconds": 3.39, "parse_rate": 0.0, "structural_similarity": 0.0, "reward_score": 0.0, "agentv_persisted": true},
+  "decision": "profile DFA candidate probing next; make no data or ship decision",
+  "honesty": "diagnostic only; no generated-quality claim"
+}
