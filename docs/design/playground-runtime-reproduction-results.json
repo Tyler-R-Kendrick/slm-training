@@ -17,15 +17,31 @@
     "validation": "hybrid parser uses the official bridge when available and the Lark backend otherwise",
     "web_only_install": "CPU loading falls back to the committed ONNX artifacts only when torch is unavailable",
     "spa_decode_budget": "three numbered server attempts followed by at most three browser attempts per sample",
+    "browser_backend_fallback": "rejects WebGPU adapters below the model's 65536-byte workgroup-storage requirement, retries later inference backends, and bounds readiness/prompt waits",
+    "wiring_fallback": "when both model paths are unavailable, renders an explicit fixture fallback marked unusable for training unless a human corrects it",
     "route_unmount": "aborts in-flight generation and destroys late browser sessions",
     "legacy_screen": "retired; /playground/classic redirects to /playground"
   },
   "verification": {
-    "focused_backend_tests": "3 passed in 0.64s",
+    "focused_backend_tests": "16 passed in 0.67s, including fixture training-exclusion regression",
     "dashboard_build": "passed",
-    "playwright_discovery": "24 tests discovered across desktop and mobile projects",
-    "browser_execution": "blocked on this host by missing libnspr4.so"
+    "playwright_suites": "desktop 12/12 passed in 58.5s; mobile 12/12 passed in 1.0m",
+    "deterministic_browser_workflows": "4 passed in 12.2s",
+    "real_browser_execution": {
+      "browser": "Windows Chrome driven from WSL Playwright",
+      "checkpoint": "real committed CPU playground checkpoint",
+      "time_to_valid_ms": 15378,
+      "source": "explicit non-training wiring fallback",
+      "preview_rendered": true,
+      "grading_enabled": true,
+      "correction_saved": true,
+      "page_errors": 0,
+      "console_errors": 0,
+      "failed_requests": 0,
+      "http_errors": 0,
+      "backend_notes": "three server attempts returned invalid DSL; WebGPU was skipped at 32768 < 65536 and WASM rejected GatherBlockQuantized(1) before the labeled fallback rendered"
+    }
   },
   "observed_single_pytorch_attempt_seconds": "6-9",
-  "outcome": "functional runtime fix; no model-quality or ship-readiness claim"
+  "outcome": "usable, error-free fixture-demo runtime with full annotation/correction flow; no model-quality or ship-readiness claim"
 }

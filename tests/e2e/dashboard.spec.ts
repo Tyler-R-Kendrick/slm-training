@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 test.describe("mission control dashboard", () => {
   test("renders overview and navigates to checkpoints", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator(".page-title")).toHaveText(/Mission Control/);
+    await expect(page.locator(".page-title")).toHaveText(/Performance insights/);
     await expect(page.locator(".tile").first()).toBeVisible();
 
     await page.locator(".nav-link", { hasText: "Checkpoints" }).click();

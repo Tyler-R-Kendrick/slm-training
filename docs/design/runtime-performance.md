@@ -81,11 +81,24 @@ The web service now validates through the hybrid parser and uses committed ONNX
 artifacts only when CPU PyTorch is unavailable. The React flow performs exactly
 three numbered server attempts, then at most three browser attempts with failure
 context and durable attempt/review records; navigating away aborts the active
-pipeline and destroys any late browser session. Focused backend regressions passed
-3/3 in 0.64 seconds; the dashboard production build and discovery of all 24
-desktop/mobile Playwright cases passed. Browser execution was not available on this host because
-`libnspr4.so` is missing. This is fixture-demo runtime evidence, not an eval or
-ship-readiness claim; no checkpoint, suite, or ship gate changed.
+pipeline and destroys any late browser session. Browser startup and inference are
+bounded, WebGPU adapters below the model's 65,536-byte workgroup-storage
+requirement are skipped, and an explicitly labeled wiring fallback keeps the
+annotation/editor flow usable when neither model backend works. That fallback is
+excluded from derived training data unless a human corrects it.
+
+The production dashboard build passed, the desktop Playwright suite passed 12/12
+in 58.5 seconds, the mobile suite passed 12/12 in 1.0 minute, and 16 focused
+backend tests passed in 0.67 seconds. Four deterministic desktop parity workflows
+also passed in 12.2 seconds. A real Windows Chrome run against the committed CPU
+checkpoint reached a valid rendered sample in 15,378 ms, enabled grading, and
+saved a renderer-validated human correction through `/api/annotate`. It recorded
+zero page errors, console errors, failed requests, or HTTP errors. In that run the
+checkpoint's three attempts produced invalid DSL, WebGPU was correctly rejected
+at 32,768 < 65,536 bytes, and ONNX WASM rejected `GatherBlockQuantized(1)`; the
+non-training wiring fallback then rendered successfully. This is fixture-demo
+runtime evidence, not an eval or ship-readiness claim; no checkpoint, suite, or
+ship gate changed.
 
 ## Kernel boundary (unchanged)
 

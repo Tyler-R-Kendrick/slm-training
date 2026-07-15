@@ -83,8 +83,18 @@ test.describe("annotate playground", () => {
       });
     });
     let keyboardGradeAuthorization: string | undefined;
+    let annotationCalls = 0;
     await page.route("**/api/annotate", async (route) => {
       keyboardGradeAuthorization = route.request().headers().authorization;
+      annotationCalls += 1;
+      if (annotationCalls === 1) {
+        await route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: JSON.stringify({ detail: "temporary annotation store failure" }),
+        });
+        return;
+      }
       await route.fulfill({
         contentType: "application/json",
         body: JSON.stringify({ ok: true, id: "feedback_keyboard", rating: "up" }),
@@ -115,6 +125,15 @@ test.describe("annotate playground", () => {
     await page.locator("#card").focus();
     await page.keyboard.press("ArrowUp");
     await expect.poll(() => keyboardGradeAuthorization).toBe("Bearer keyboard-secret");
+    await expect(page.locator("#error")).toContainText("temporary annotation store failure");
+    await expect(page.locator("#status")).toHaveText("");
+    await expect(page.locator("#btnUp")).toBeEnabled();
+
+    await page.locator("#card").focus();
+    await page.keyboard.press("ArrowUp");
+    await expect(page.locator("#btnUp")).toBeDisabled();
+    await expect(page.locator("#status")).toContainText("Saved thumbs up");
+    await expect(page.locator("#btnUp")).toBeEnabled({ timeout: 2_000 });
 
     await expect(page.locator("#btnNext")).toBeEnabled({ timeout: 10_000 });
     await page.locator("#btnNext").click();
@@ -123,6 +142,7 @@ test.describe("annotate playground", () => {
       .poll(() => page.evaluate(() => (window as any).__browserCreateCalls))
       .toBe(1);
     await expect(page.locator("#activityLog")).toContainText(/reused for every sample/i);
+    await expect.poll(() => page.locator("#activityLog").evaluate((element) => element.scrollTop > 0)).toBe(true);
   });
 
   test("browser fallback carries failures and stores all three attempts", async ({ page }) => {
@@ -421,6 +441,8 @@ test.describe("annotate playground", () => {
     await page.locator("#output").press("Control+Space");
     await expect(page.locator("#dslAutocomplete")).toBeVisible();
     await expect(page.locator("#dslAutocomplete")).toContainText("Stack");
+    await expect(page.locator("#output")).toHaveAttribute("aria-activedescendant", "dslCompletion0");
+    await expect(page.locator("#dslCompletion0")).toHaveAttribute("aria-selected", "true");
     await page.locator("#output").press("Enter");
     await expect(page.locator("#output")).toHaveValue(/root = Stack\(\[\], "column"\)/);
 
@@ -431,6 +453,10 @@ test.describe("annotate playground", () => {
     await expect(page.locator("#correctionActions")).toBeHidden();
     const dslHeight = await page.locator(".view-panels").evaluate((el) => el.clientHeight);
     expect(dslHeight).toBe(renderHeight);
+
+    await page.locator(".nav-link", { hasText: "Training Data" }).click();
+    await expect(page).toHaveURL(/\/playground$/);
+    await expect(page.locator("#status")).toContainText("Save or discard the correction before leaving");
 
     await page.locator("#btnViewRender").click();
     await expect(page.locator("#correctionActions")).toBeVisible();

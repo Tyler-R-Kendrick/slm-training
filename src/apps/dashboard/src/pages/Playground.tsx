@@ -7,10 +7,12 @@ const SESSION_KEY = "twotower_annotate_session";
 const VIEW_KEY = "twotower_annotate_view";
 const ANNOTATION_TOKEN_KEY = "twotower_annotation_token";
 const ANNOTATOR_IDENTITY_KEY = "twotower_annotator_identity";
+const BROWSER_READY_TIMEOUT_MS = 10_000;
+const BROWSER_PROMPT_TIMEOUT_MS = 30_000;
 const DIFFUSION_GLYPHS = ["·", "░", "▒", "▓", "#", "∷", "□", "◇"];
 
 type View = "render" | "dsl";
-type Source = "server" | "browser";
+type Source = "server" | "browser" | "fixture";
 
 interface Diagnostics {
   valid: boolean;
@@ -46,6 +48,7 @@ interface Sample {
 
 interface LogEntry {
   id: number;
+  dateTime: string;
   time: string;
   message: string;
   level: "info" | "success" | "warning" | "error";
@@ -127,16 +130,33 @@ function waitForPreviewApi(timeoutMs = 15_000): Promise<any> {
   });
 }
 
-const browserModuleUrl = "/static/browser_inference.js?v=20260713-4";
+const browserModuleUrl = "/static/browser_inference.js?v=20260715-1";
 const editorModuleUrl = "/static/openui_editor.js?v=20260713-1";
 let browserModulePromise: Promise<any> | null = null;
 let editorModulePromise: Promise<any> | null = null;
 const loadBrowserModule = () => browserModulePromise ||= import(/* @vite-ignore */ browserModuleUrl);
 const loadEditorModule = () => editorModulePromise ||= import(/* @vite-ignore */ editorModuleUrl);
 
+class ResponseError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "ResponseError";
+    this.status = status;
+  }
+}
+
+class BrowserTimeoutError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "BrowserTimeoutError";
+  }
+}
+
 async function responseJSON(res: Response, fallback: string): Promise<any> {
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.detail || `${fallback} (${res.status})`);
+  if (!res.ok) throw new ResponseError(res.status, data.detail || `${fallback} (${res.status})`);
   return data;
 }
 
@@ -191,6 +211,7 @@ export function Playground() {
   const outputRef = useRef<HTMLTextAreaElement>(null);
   const highlightRef = useRef<HTMLPreElement>(null);
   const completionRef = useRef<HTMLDivElement>(null);
+  const activityLogRef = useRef<HTMLOListElement>(null);
   const pointerRef = useRef<{ id: number; x: number; y: number } | null>(null);
   const grammarValueRef = useRef(grammar);
   const designMdValueRef = useRef(designMd);
@@ -206,14 +227,26 @@ export function Playground() {
   const current = () => stackRef.current[indexRef.current] || null;
 
   function appendLog(message: string, level: LogEntry["level"] = "info") {
+    const now = new Date();
     const entry: LogEntry = {
       id: ++logIdRef.current,
-      time: new Intl.DateTimeFormat([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date()),
+      dateTime: now.toISOString(),
+      time: new Intl.DateTimeFormat([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(now),
       message,
       level,
     };
     setLogs((existing) => [...existing, entry].slice(-MAX_LOG_ENTRIES));
   }
+
+  useEffect(() => {
+    const log = activityLogRef.current;
+    if (log) log.scrollTop = log.scrollHeight;
+  }, [logs]);
+
+  useEffect(() => {
+    if (!completions.length) return;
+    completionRef.current?.querySelector(".is-selected")?.scrollIntoView({ block: "nearest" });
+  }, [completionIndex, completions]);
 
   function browserModelIdentity(role = "output") {
     const runtime = browserRef.current.runtime || "browser";
@@ -224,6 +257,16 @@ export function Playground() {
       id: transformers ? "onnx-community/gemma-3-270m-it-ONNX" : "prompt-api-default",
       model: transformers ? "gemma-3-270m-it-ONNX" : role === "review" ? "prompt-api-baseline-reviewer" : "prompt-api-default",
       runtime,
+    };
+  }
+
+  function fixtureIdentity() {
+    return {
+      kind: "system",
+      provider: "slm-training",
+      id: "playground-wiring-fallback:v1",
+      model: "deterministic-openui-fixture",
+      runtime: "browser",
     };
   }
 
@@ -269,12 +312,15 @@ export function Playground() {
           appendLog(`Browser baseline ready (${created.runtime}); it will be reused for every sample.`, "success");
           return created.session;
         }).catch((error: any) => {
-          if (state.promise === creation) state.promise = null;
-          if (!isAbortError(error)) {
-            state.error = error;
-            if ([...state.waiters].some((waiter: AbortSignal) => !waiter.aborted)) appendLog(`Browser baseline initialization failed — ${error?.message || String(error)}`, "error");
+          if (isAbortError(error)) {
+            if (state.promise === creation) state.promise = null;
+            throw error;
           }
-          throw error;
+          state.error = error;
+          if ([...state.waiters].some((waiter: AbortSignal) => !waiter.aborted)) appendLog(`Browser baseline initialization failed — ${error?.message || String(error)}`, "error");
+          // Match the classic page: retain one resolved failure for this mount
+          // instead of restarting the same model download on every attempt.
+          return null;
         });
         state.promise = creation;
       }
@@ -297,11 +343,25 @@ export function Playground() {
       if (session !== base) session.destroy?.();
       throw abortError();
     }
+    let timer = 0;
     try {
-      const result = await callback(session);
+      const result = await Promise.race([
+        callback(session),
+        new Promise<never>((_, reject) => {
+          timer = window.setTimeout(() => reject(new BrowserTimeoutError(`Browser inference exceeded ${BROWSER_PROMPT_TIMEOUT_MS / 1000}s`)), BROWSER_PROMPT_TIMEOUT_MS);
+        }),
+      ]);
       signal.throwIfAborted();
       return result;
+    } catch (error) {
+      if (error instanceof BrowserTimeoutError && session === base) {
+        base.destroy?.();
+        state.session = null;
+        state.error = error;
+      }
+      throw error;
     } finally {
+      window.clearTimeout(timer);
       if (session !== base) session.destroy?.();
     }
   }
@@ -322,6 +382,14 @@ export function Playground() {
       attemptRecord: data.attempt, generationId: data.attempt?.id || null,
       identities: data.identities || data.attempt?.identities || {}, note: "",
     };
+  }
+
+  async function fetchNextPrompt(signal: AbortSignal) {
+    signal.throwIfAborted();
+    const res = await fetch(`/api/prompt/next?session_id=${encodeURIComponent(sessionId())}`, { signal });
+    const data = await responseJSON(res, "Prompt selection failed");
+    signal.throwIfAborted();
+    return String(data.prompt || "").trim();
   }
 
   async function persistBrowserReview(candidate: Sample, judgement: any, priorFailures: string[], signal: AbortSignal) {
@@ -391,6 +459,48 @@ export function Playground() {
     return data;
   }
 
+  async function waitForBrowserSession(signal: AbortSignal) {
+    if (browserRef.current.session) return browserRef.current.session;
+    let timer = 0;
+    try {
+      return await Promise.race([
+        preloadBrowserModel(signal),
+        new Promise<never>((_, reject) => {
+          timer = window.setTimeout(() => reject(new BrowserTimeoutError(`Browser model was not ready after ${BROWSER_READY_TIMEOUT_MS / 1000}s`)), BROWSER_READY_TIMEOUT_MS);
+        }),
+      ]);
+    } finally {
+      window.clearTimeout(timer);
+    }
+  }
+
+  function fixtureFallback(sample: Sample, slot: number, reason: string): Sample {
+    const openui = [
+      'root = Stack([summary, action], "column")',
+      "summary = Card([title, body])",
+      'title = TextContent(":content.title")',
+      'body = TextContent(":content.body")',
+      'action = Button(":actions.primary")',
+    ].join("\n");
+    appendLog(`Sample ${slot + 1}: model backends unavailable — showing an explicitly non-training wiring fallback (${reason}).`, "warning");
+    return {
+      prompt: sample.prompt,
+      openui,
+      serialized: openui,
+      originalOpenui: openui,
+      valid: true,
+      error: null,
+      status: "ready",
+      source: "fixture",
+      phase: "ready",
+      generationId: null,
+      identities: { ...(sample.identities || {}), output_generator: fixtureIdentity() },
+      browserApproved: false,
+      failureReasons: sample.failureReasons,
+      note: "",
+    };
+  }
+
   async function browserFallback(sample: Sample, slot: number, signal: AbortSignal): Promise<Sample> {
     signal.throwIfAborted();
     const browser = await loadBrowserModule();
@@ -399,6 +509,13 @@ export function Playground() {
     if (!failureReasons.length) for (const attempt of sample.attempts || []) if (!attempt.valid) failureReasons.push(formatAttemptFailure(attempt));
     let lastError = sample.error || "The real model exhausted three attempts";
     appendLog(`Sample ${slot + 1}: real model exhausted; switching to browser inference.`, "warning");
+    try {
+      const session = await waitForBrowserSession(signal);
+      if (!session) return fixtureFallback(sample, slot, browserRef.current.error?.message || "browser model unavailable");
+    } catch (error: any) {
+      if (isAbortError(error)) throw error;
+      return fixtureFallback(sample, slot, error?.message || String(error));
+    }
     for (let attempt = 1; attempt <= 3; attempt += 1) {
       signal.throwIfAborted();
       const priorFailures = [...failureReasons];
@@ -420,6 +537,9 @@ export function Playground() {
         window.clearInterval(heartbeat);
       }
       signal.throwIfAborted();
+      if (inferenceError && browserRef.current.error instanceof BrowserTimeoutError) {
+        return fixtureFallback({ ...sample, failureReasons: [...failureReasons, inferenceError] }, slot, inferenceError);
+      }
       const stored = await persistBrowserAttempt({
         prompt: sample.prompt, openui, attempt, error: inferenceError, priorFailures,
         runtime: browserRef.current.runtime, availability: browserRef.current.availability,
@@ -440,20 +560,27 @@ export function Playground() {
       failureReasons.push(`browser attempt ${attempt} failed: ${lastError}.${openui ? ` Output was: ${openui.slice(0, 1200)}` : ""}`);
       appendLog(`Sample ${slot + 1}: browser attempt ${attempt}/3 failed — ${lastError}; training record ${stored.id}.`, "error");
     }
-    return { prompt: sample.prompt, openui: "", serialized: null, valid: false, error: lastError, status: "error", source: null, note: "" };
+    return fixtureFallback({ ...sample, failureReasons }, slot, lastError);
   }
 
   async function trainingModelPipeline(placeholder: Sample, slot: number, signal: AbortSignal): Promise<Sample> {
     signal.throwIfAborted();
     const attempts: any[] = [];
     const failureReasons: string[] = [];
-    let prompt: string | null = null;
-    let requestIdentity: any = null;
+    const prompt = await fetchNextPrompt(signal);
+    if (!prompt) throw new Error("Prompt selection returned an empty request");
+    placeholder.prompt = prompt;
+    const requestIdentity: any = {
+      kind: "system",
+      provider: "slm-training",
+      id: "prompt-bank-composer:v1",
+      model: "prompt-bank-composer",
+    };
     let identities: Record<string, any> = {};
     let lastError = "The training model exhausted three attempts";
     for (let attempt = 1; attempt <= 3; attempt += 1) {
       signal.throwIfAborted();
-      Object.assign(placeholder, { prompt: prompt || "Selecting a request…", openui: "", serialized: null, valid: false, error: null, status: "loading", source: "server", phase: "server-generation", attempt });
+      Object.assign(placeholder, { prompt, openui: "", serialized: null, valid: false, error: null, status: "loading", source: "server", phase: "server-generation", attempt });
       forceRender();
       appendLog(`Sample ${slot + 1}: training model attempt ${attempt}/3 started.`);
       let candidate: Sample;
@@ -465,11 +592,11 @@ export function Playground() {
         lastError = error?.message || String(error);
         failureReasons.push(`training model attempt ${attempt} request failed: ${lastError}`);
         appendLog(`Sample ${slot + 1}: training model attempt ${attempt}/3 request failed — ${lastError}`, "error");
+        if (error instanceof ResponseError && error.status >= 400 && error.status < 500) throw error;
+        if (error instanceof ResponseError && error.status >= 500) break;
         continue;
       }
-      prompt = candidate.prompt;
       identities = candidate.identities || identities;
-      requestIdentity = identities.request_generator || requestIdentity;
       placeholder.prompt = prompt;
       attempts.push(candidate.attemptRecord);
       appendLog(`Sample ${slot + 1}: training model attempt ${attempt}/3 ${candidate.valid ? "passed lint" : `failed lint — ${candidate.error}`}; training record ${candidate.attemptRecord?.id || "unknown"}.`, candidate.valid ? "success" : "error");
@@ -496,7 +623,7 @@ export function Playground() {
       failureReasons.push(`browser baseline rejected training attempt ${attempt} (score ${Number(review.score).toFixed(2)}): ${(review.reasons || []).join("; ")}. Output was: ${(candidate.serialized || candidate.openui).slice(0, 1200)}`);
     }
     signal.throwIfAborted();
-    return browserFallback({ prompt: prompt || placeholder.prompt, openui: "", valid: false, error: lastError, status: "loading", source: null, attempts, failureReasons, identities, note: "" }, slot, signal);
+    return browserFallback({ prompt, openui: "", valid: false, error: lastError, status: "loading", source: null, attempts, failureReasons, identities, note: "" }, slot, signal);
   }
 
   async function ensurePrefetch(signal: AbortSignal) {
@@ -526,7 +653,10 @@ export function Playground() {
         renderedItemRef.current = null;
         forceRender();
         if (slot === indexRef.current) setNote(sample.note || "");
-        if (sample.valid) appendLog(`Sample ${slot + 1}: ${sample.source} output ready after ${((performance.now() - started) / 1000).toFixed(1)}s.`, "success");
+        if (sample.valid) {
+          appendLog(`Sample ${slot + 1}: ${sample.source} output ready after ${((performance.now() - started) / 1000).toFixed(1)}s.`, "success");
+          if (slot === indexRef.current) setStatus("Ready · swipe or use thumbs · arrows browse · Tab changes view");
+        }
         else {
           setStatus(`All generation attempts failed (${sample.error || "unknown error"})`);
           setUiError(sample.error || "All generation attempts failed");
@@ -555,6 +685,7 @@ export function Playground() {
     if (annotationTokenValueRef.current.trim()) headers.Authorization = `Bearer ${annotationTokenValueRef.current.trim()}`;
     const res = await fetch("/api/annotate", {
       method: "POST", headers,
+      signal: activeControllerRef.current?.signal,
       body: JSON.stringify({
         prompt: item.prompt, openui, rating, description: noteValueRef.current.trim() || null, design_md: designMdValueRef.current.trim() || null,
         valid: item.valid, session_id: sessionId(), generation_id: item.generationId || item.attemptRecord?.id || null,
@@ -562,12 +693,23 @@ export function Playground() {
         meta: {
           source: "annotate_playground", generation_source: item.source, browser_baseline: item.source === "browser",
           browser_gate_passed: !!item.browserApproved, browser_review_id: item.browserReview?.id || null,
-          browser_review_score: item.browserReview?.score ?? null, usable_for_test_data: rating === "up" && !!item.valid,
+          browser_review_score: item.browserReview?.score ?? null, usable_for_test_data: rating === "up" && !!item.valid && (item.source !== "fixture" || !!options.humanCorrected),
+          usable_for_training: item.source !== "fixture" || !!options.humanCorrected,
+          fixture_demo: item.source === "fixture",
           human_corrected: !!options.humanCorrected, view: viewRef.current,
         },
       }),
     });
     return responseJSON(res, "Annotate failed");
+  }
+
+  async function swipeAway(rating: "up" | "down") {
+    setFlash("");
+    await new Promise<void>((resolve) => requestAnimationFrame(() => {
+      setFlash(rating);
+      window.setTimeout(resolve, 285);
+    }));
+    setFlash("");
   }
 
   async function grade(rating: "up" | "down") {
@@ -584,9 +726,9 @@ export function Playground() {
       appendLog(`Saved thumbs ${rating} · ${data.id}`, "success");
       item.note = "";
       setNote("");
-      setFlash(rating);
-      window.setTimeout(() => setFlash(""), 285);
+      await swipeAway(rating);
     } catch (error: any) {
+      setStatus("");
       setUiError(error?.message || String(error));
       appendLog(`Annotation failed — ${error?.message || String(error)}`, "error");
     } finally {
@@ -717,6 +859,7 @@ export function Playground() {
     const corrected = (item.draftOpenui || "").trim();
     const original = item.originalOpenui || item.serialized || item.openui;
     busyGradeRef.current = true;
+    setUiError("");
     setStatus("Saving human correction…");
     forceRender();
     try {
@@ -732,9 +875,9 @@ export function Playground() {
       setNote("");
       item.note = "";
       setStatus(`Correction saved · ${data.id}`);
+      setUiError("");
       appendLog(`Saved human correction · ${data.id}`, "success");
-      setFlash("up");
-      window.setTimeout(() => setFlash(""), 285);
+      await swipeAway("up");
     } catch (error: any) {
       setUiError(error?.message || String(error));
       setStatus("Correction was not saved");
@@ -758,6 +901,7 @@ export function Playground() {
     renderedItemRef.current = null;
     previewRenderTokenRef.current += 1;
     previewRenderingRef.current = false;
+    setUiError("");
     setStatus("Correction discarded");
     appendLog(`Discarded correction for sample ${indexRef.current + 1}.`, "warning");
     forceRender();
@@ -810,6 +954,27 @@ export function Playground() {
     const { signal } = controller;
     activeControllerRef.current = controller;
     let alive = true;
+    const releaseBrowserRuntime = () => {
+      const state = browserRef.current;
+      state.session?.destroy?.();
+      state.session = null;
+      state.promise = null;
+      state.error = null;
+    };
+    const unmountPreviews = () => {
+      const preview = (window as any).OpenUIPreview;
+      preview?.unmount?.(previewRef.current);
+      preview?.unmount?.(lintMountRef.current);
+    };
+    const onPageHide = () => {
+      unmountPreviews();
+      releaseBrowserRuntime();
+    };
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted && !signal.aborted) void preloadBrowserModel(signal).catch(() => {});
+    };
+    window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("pageshow", onPageShow);
     appendLog("Playground starting.");
     void preloadBrowserModel(signal).catch((error) => {
       if (!isAbortError(error) && !signal.aborted) appendLog(`Browser baseline initialization failed — ${error?.message || String(error)}`, "error");
@@ -858,12 +1023,33 @@ export function Playground() {
       if (lintTimerRef.current != null) window.clearTimeout(lintTimerRef.current);
       lintTokenRef.current += 1;
       previewRenderTokenRef.current += 1;
-      (window as any).OpenUIPreview?.unmount?.(lintMountRef.current);
+      window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("pageshow", onPageShow);
+      unmountPreviews();
       if (![...browserRef.current.waiters].some((waiter: AbortSignal) => !waiter.aborted)) {
-        browserRef.current.session?.destroy?.();
-        browserRef.current.session = null;
-        if (!browserRef.current.promise) browserRef.current.error = null;
+        releaseBrowserRuntime();
       }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const guardNavigation = (event: Event) => {
+      if (!current()?.dirty && !busyGradeRef.current) return;
+      event.preventDefault();
+      setStatus(current()?.dirty ? "Save or discard the correction before leaving" : "Wait for the annotation to finish saving");
+      cardRef.current?.focus();
+    };
+    const guardUnload = (event: BeforeUnloadEvent) => {
+      if (!current()?.dirty && !busyGradeRef.current) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("slm-before-navigate", guardNavigation);
+    window.addEventListener("beforeunload", guardUnload);
+    return () => {
+      window.removeEventListener("slm-before-navigate", guardNavigation);
+      window.removeEventListener("beforeunload", guardUnload);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -885,7 +1071,7 @@ export function Playground() {
         }
         return;
       }
-      if (active && active !== document.body && active !== cardRef.current && ["textarea", "input", "select"].includes(active.tagName.toLowerCase())) return;
+      if (active && active !== document.body && active !== cardRef.current && (["textarea", "input", "select"].includes(active.tagName.toLowerCase()) || (active as HTMLElement).isContentEditable)) return;
       const item = current();
       const busy = !item || item.status === "loading" || previewRenderingRef.current;
       if (busy) {
@@ -948,8 +1134,8 @@ export function Playground() {
   const gradable = !!item && item.status === "ready" && item.valid && !item.renderError && !editing && !busyGradeRef.current && !busy;
   const diagnostics = item?.dslDiagnostics || { valid: !!item?.valid, pending: false, errors: item?.valid ? [] : [item?.error || "OpenUI is not valid"], warnings: [] };
   const badge = !item ? "loading" : item.status === "loading" ? "generating" : editing && diagnostics.pending ? "checking DSL" : editing && !diagnostics.valid ? "invalid DSL" : item.status === "error" || item.renderError ? "error" : previewRenderingRef.current || previewNeeded ? "rendering" : item.valid ? "valid" : "invalid";
-  const modelSource = item?.phase === "browser-review" ? "Browser baseline reviewing" : item?.source === "server" ? item.status === "ready" ? "Training model · browser-approved" : `Training model · attempt ${item.attempt || 1}/3` : item?.source === "browser" ? item.status === "ready" ? "Browser baseline · fallback" : `Browser baseline · attempt ${item.attempt || 1}/3` : "Selecting model";
-  const modelClass = item?.phase === "browser-review" ? "review" : item?.source === "server" ? "training" : item?.source === "browser" ? "baseline" : "pending";
+  const modelSource = item?.phase === "browser-review" ? "Browser baseline reviewing" : item?.source === "server" ? item.status === "ready" ? "Training model · browser-approved" : `Training model · attempt ${item.attempt || 1}/3` : item?.source === "browser" ? item.status === "ready" ? "Browser baseline · fallback" : `Browser baseline · attempt ${item.attempt || 1}/3` : item?.source === "fixture" ? "Wiring fallback · not training data" : "Selecting model";
+  const modelClass = item?.phase === "browser-review" ? "review" : item?.source === "server" ? "training" : item?.source === "browser" ? "baseline" : item?.source === "fixture" ? "fixture" : "pending";
   const total = Math.max(stackRef.current.length, 1);
   const position = Math.min(indexRef.current + 1, total);
   const previewBlocked = view === "render" && !!item?.dirty && diagnostics.valid !== true;
@@ -959,17 +1145,19 @@ export function Playground() {
     <div className="pg-page">
       <div className="page-head">
         <h1 className="page-title">Playground</h1>
-        <p className="page-sub">Grade, repair, and retain browser-reviewed OpenUI samples. Feedback flows to <span className="mono">outputs/annotations/</span>.</p>
+        <p className="page-sub">Grade, repair, and retain browser-reviewed OpenUI samples. Swipe right to keep or left to reject; arrows browse and Tab changes view. Feedback flows to <span className="mono">outputs/annotations/</span>.</p>
         <div className="pg-legend" aria-label="Model source legend">
           <span className="pg-source training">Training model · candidate under evaluation</span>
           <span className="pg-source baseline">Browser baseline · on-device reference</span>
+          <span className="pg-source fixture">Wiring fallback · explicitly excluded from training</span>
         </div>
         <label className="pg-annotator" htmlFor="annotatorIdentity">
           <span>Annotator</span>
-          <input id="annotatorIdentity" value={annotator} maxLength={160} autoComplete="username" spellCheck={false} onChange={(event) => setAnnotator(event.target.value)} onBlur={() => {
+          <input id="annotatorIdentity" value={annotator} maxLength={160} autoComplete="username" spellCheck={false} aria-describedby="annotatorHint" onChange={(event) => setAnnotator(event.target.value)} onBlur={() => {
             const id = annotator.trim() || sessionId();
             setAnnotator(id); localStorage.setItem(ANNOTATOR_IDENTITY_KEY, id); appendLog(`Annotator identity set to ${id}.`, "success");
           }} />
+          <small id="annotatorHint">Saved with every human grade and correction</small>
         </label>
       </div>
 
@@ -982,7 +1170,7 @@ export function Playground() {
           <span className="mono" id="indexPill">{position} / {total}</span>
           <div className="pg-state">
             <span id="modelSource" className={`pg-source ${modelClass}`}>{modelSource}</span>
-            <span id="badge" className={`pill pill-${badge === "valid" ? "passed" : badge === "invalid" || badge === "invalid DSL" || badge === "error" ? "failed" : "idle"}`}>{badge}</span>
+            <span id="badge" className={`pill pg-badge ${busy ? "is-busy" : ""} pill-${badge === "valid" ? "passed" : badge === "invalid" || badge === "invalid DSL" || badge === "error" ? "failed" : "idle"}`}>{badge}</span>
           </div>
         </div>
 
@@ -992,8 +1180,8 @@ export function Playground() {
         </div>
 
         <div className="view-toggle" role="tablist" aria-label="Output view">
-          <button id="btnViewRender" type="button" role="tab" aria-selected={view === "render"} disabled={busy} className={`view-btn ${view === "render" ? "is-active" : ""}`} onClick={() => switchView("render")}>Rendered</button>
-          <button id="btnViewDsl" type="button" role="tab" aria-selected={view === "dsl"} disabled={busy} className={`view-btn ${view === "dsl" ? "is-active" : ""}`} onClick={() => switchView("dsl")}>DSL</button>
+          <button id="btnViewRender" type="button" role="tab" aria-selected={view === "render"} disabled={busy} title="Rendered view · press R" className={`view-btn ${view === "render" ? "is-active" : ""}`} onClick={() => switchView("render")}>Rendered</button>
+          <button id="btnViewDsl" type="button" role="tab" aria-selected={view === "dsl"} disabled={busy} title="DSL view · press D" className={`view-btn ${view === "dsl" ? "is-active" : ""}`} onClick={() => switchView("dsl")}>DSL</button>
         </div>
 
         <div className="view-panels">
@@ -1012,9 +1200,9 @@ export function Playground() {
             <div className="editor-shell">
               <pre id="dslHighlight" className="dsl-highlight" ref={highlightRef} aria-hidden="true"><code dangerouslySetInnerHTML={{ __html: editorRef.current?.highlightOpenUI(displayedOpenUI(item)) || "" }} /></pre>
               <textarea
-                id="output" ref={outputRef} className="dsl-editor" value={displayedOpenUI(item) || "// empty"} rows={12}
+                id="output" ref={outputRef} className="dsl-editor" value={displayedOpenUI(item)} rows={12}
                 disabled={busy || item?.status !== "ready" || !item?.valid} spellCheck={false} aria-label="Editable OpenUI DSL"
-                aria-describedby="dslDiagnostics" aria-autocomplete="list" aria-controls="dslAutocomplete" aria-invalid={diagnostics.errors.length > 0}
+                aria-describedby="dslDiagnostics" aria-autocomplete="list" aria-controls="dslAutocomplete" aria-activedescendant={completions.length ? `dslCompletion${completionIndex}` : undefined} aria-invalid={diagnostics.errors.length > 0}
                 onChange={(event) => onDslChange(event.target.value)} onScroll={() => syncHighlight()} onClick={() => updateCompletions()}
                 onBlur={() => window.setTimeout(() => setCompletions([]), 100)}
                 onKeyDown={(event) => {
@@ -1027,11 +1215,11 @@ export function Playground() {
                 }}
               />
               <div id="dslAutocomplete" ref={completionRef} className="dsl-autocomplete" role="listbox" aria-label="OpenUI suggestions" hidden={!completions.length}>
-                {completions.map((completion, suggestionIndex) => <button key={`${completion.label}-${suggestionIndex}`} type="button" role="option" aria-selected={suggestionIndex === completionIndex} className={`completion-option ${suggestionIndex === completionIndex ? "is-selected" : ""}`} onPointerDown={(event) => event.preventDefault()} onClick={() => acceptCompletion(suggestionIndex)}><span>{completion.label}</span><small>{completion.detail || "OpenUI suggestion"}</small></button>)}
+                {completions.map((completion, suggestionIndex) => <button id={`dslCompletion${suggestionIndex}`} key={`${completion.label}-${suggestionIndex}`} type="button" role="option" aria-selected={suggestionIndex === completionIndex} className={`completion-option ${suggestionIndex === completionIndex ? "is-selected" : ""}`} onPointerDown={(event) => event.preventDefault()} onClick={() => acceptCompletion(suggestionIndex)}><span>{completion.label}</span><small>{completion.detail || "OpenUI suggestion"}</small></button>)}
               </div>
             </div>
             <div id="dslDiagnostics" className={`dsl-diagnostics ${diagnostics.errors.length ? "error" : diagnostics.warnings.length ? "warning" : "valid"}`} role="status" aria-live="polite">
-              <div className="diagnostic-summary"><span id="dslDiagnosticState">{diagnostics.pending ? "Checking OpenUI syntax…" : diagnostics.errors.length ? `${diagnostics.errors.length} ${diagnostics.errors.length === 1 ? "error" : "errors"}` : diagnostics.warnings.length ? `Valid with ${diagnostics.warnings.length} ${diagnostics.warnings.length === 1 ? "warning" : "warnings"}` : "Valid OpenUI"}</span><span>Ctrl/⌘ Space for suggestions</span></div>
+              <div className="diagnostic-summary"><span id="dslDiagnosticState">{diagnostics.pending ? "Checking OpenUI syntax…" : diagnostics.errors.length ? `${diagnostics.errors.length} ${diagnostics.errors.length === 1 ? "error" : "errors"}` : diagnostics.warnings.length ? `Valid with ${diagnostics.warnings.length} ${diagnostics.warnings.length === 1 ? "warning" : "warnings"}` : "Valid OpenUI"}</span><span>Only valid OpenUI can be previewed or saved · Ctrl/⌘ Space for suggestions</span></div>
               <ul id="dslDiagnosticList">{diagnostics.errors.map((error) => <li className="diagnostic-error" key={error}>{error}</li>)}{diagnostics.warnings.map((warning) => <li className="diagnostic-warning" key={warning}>{warning}</li>)}</ul>
             </div>
           </div>
@@ -1043,17 +1231,18 @@ export function Playground() {
         <textarea id="note" rows={2} className="pg-note" value={note} disabled={busy} placeholder="Type to annotate… Enter to finish; Shift+Enter for a new line" onChange={(event) => { setNote(event.target.value); if (current()) current()!.note = event.target.value; }} />
 
         <div className="pg-grade" role="group" aria-label="Swipe or grade sample">
-          <button id="btnPrev" className="btn pg-nav" type="button" disabled={busy || editing || indexRef.current === 0} onClick={() => void go(-1)} aria-label="Previous sample">←</button>
-          <button id="btnDown" className="btn btn-ember pg-down" type="button" disabled={!gradable} onClick={() => void grade("down")} aria-label="Thumbs down"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10v8M4 18h6l4 3V14h3.5a2 2 0 0 0 2-1.7l.8-5A2 2 0 0 0 18.3 5H12l-2 5H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1Z" /></svg>Down</button>
-          <button id="btnUp" className="btn btn-primary pg-up" type="button" disabled={!gradable} onClick={() => void grade("up")} aria-label="Thumbs up">Up<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14V6M4 6h6l4-3v7h3.5a2 2 0 0 1 2 1.7l.8 5a2 2 0 0 1-2 2.3H12l-2-5H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z" /></svg></button>
-          <button id="btnNext" className="btn pg-nav" type="button" disabled={busy || editing || indexRef.current >= stackRef.current.length - 1} onClick={() => void go(1)} aria-label="Next sample">→</button>
+          <button id="btnPrev" className="btn pg-nav" type="button" disabled={busy || editing || indexRef.current === 0} onClick={() => void go(-1)} aria-label="Previous sample" title="Previous sample · press ←">←</button>
+          <button id="btnDown" className="btn btn-ember pg-down" type="button" disabled={!gradable} onClick={() => void grade("down")} aria-label="Thumbs down" title="Reject · swipe left or press ↓"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10v8M4 18h6l4 3V14h3.5a2 2 0 0 0 2-1.7l.8-5A2 2 0 0 0 18.3 5H12l-2 5H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1Z" /></svg>Down</button>
+          <span className="pg-swipe-hint" aria-hidden="true">swipe</span>
+          <button id="btnUp" className="btn btn-primary pg-up" type="button" disabled={!gradable} onClick={() => void grade("up")} aria-label="Thumbs up" title="Keep · swipe right or press ↑">Up<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14V6M4 6h6l4-3v7h3.5a2 2 0 0 1 2 1.7l.8 5a2 2 0 0 1-2 2.3H12l-2-5H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z" /></svg></button>
+          <button id="btnNext" className="btn pg-nav" type="button" disabled={busy || editing || indexRef.current >= stackRef.current.length - 1} onClick={() => void go(1)} aria-label="Next sample" title="Next sample · press →">→</button>
         </div>
         <p id="status" className="hint pg-status" role="status">{status}</p>
 
         <section className="pg-activity" aria-labelledby="activityTitle">
           <div className="pg-activity-head"><p id="activityTitle">Activity log</p><span>● live</span></div>
-          <ol id="activityLog" className="pg-activity-log" role="log" aria-live="polite" aria-relevant="additions">
-            {logs.map((entry) => <li className={`pg-activity-entry ${entry.level}`} key={entry.id}><time>{entry.time}</time><span>{entry.message}</span></li>)}
+          <ol id="activityLog" ref={activityLogRef} className="pg-activity-log" role="log" aria-live="polite" aria-relevant="additions">
+            {logs.map((entry) => <li className={`pg-activity-entry ${entry.level}`} key={entry.id}><time dateTime={entry.dateTime}>{entry.time}</time><span>{entry.message}</span></li>)}
           </ol>
         </section>
       </section>
@@ -1066,10 +1255,10 @@ export function Playground() {
           if (token.trim()) sessionStorage.setItem(ANNOTATION_TOKEN_KEY, token.trim()); else sessionStorage.removeItem(ANNOTATION_TOKEN_KEY);
         }} />
         <label className="tile-label" htmlFor="design_md">DESIGN.md (optional)</label>
-        <textarea id="design_md" rows={3} className="pg-note" value={designMd} onChange={(event) => setDesignMd(event.target.value)} placeholder="Paste DESIGN.md to condition generation" />
+        <textarea id="design_md" rows={3} className="pg-note" value={designMd} spellCheck={false} onChange={(event) => setDesignMd(event.target.value)} placeholder="Paste DESIGN.md to condition generation" />
         <label className="pg-toggle"><input type="checkbox" id="grammar" checked={grammar} onChange={(event) => setGrammar(event.target.checked)} /> Grammar guard</label>
         <label className="pg-toggle"><input type="checkbox" id="keepPlaceholders" checked={keepPlaceholders} onChange={(event) => { setKeepPlaceholders(event.target.checked); renderedItemRef.current = null; forceRender(); }} /> Keep :placeholders in preview</label>
-        {!caps.execution && <p className="hint">Generation needs a running model server; read-only deploys cannot generate.</p>}
+        {!caps.execution && <p className="hint">Job controls are read-only; playground generation remains available when its checkpoint and annotation store are configured.</p>}
       </details>
     </div>
   );

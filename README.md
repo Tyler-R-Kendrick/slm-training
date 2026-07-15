@@ -221,6 +221,9 @@ design system). It owns the complete annotation flow: bounded server attempts,
 browser review/fallback, editable and validated DSL corrections, annotator/model
 identity, bearer-token support, activity history, keyboard/swipe grading, and the
 diffusion progress canvas. The retired `/playground/classic` URL redirects here.
+If both model paths are unavailable, the page shows a clearly labeled wiring
+fallback so the renderer/editor/annotation flow remains testable; uncorrected
+fallback feedback is excluded from derived training data.
 
 The demo checkpoint lives in `src/slm_training/resources/checkpoints/playground_demo/` (committed
 `last.pt` + tokenizer + meta). To regenerate it:

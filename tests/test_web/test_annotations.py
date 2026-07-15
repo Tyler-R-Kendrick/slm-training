@@ -99,6 +99,26 @@ def test_annotation_append_and_promote(tmp_path: Path) -> None:
     assert pref["count"] >= 1
 
 
+def test_fixture_feedback_is_not_promoted_to_training(tmp_path: Path) -> None:
+    feedback = tmp_path / "feedback.jsonl"
+    human = tmp_path / "human_train.jsonl"
+    pairs = tmp_path / "pairs.jsonl"
+    fixture = AnnotationRecord(
+        id=new_annotation_id(),
+        ts=utc_now_iso(),
+        prompt="Fallback card",
+        openui=HERO,
+        rating="up",
+        valid=True,
+        meta={"fixture_demo": True, "usable_for_training": False},
+    )
+    append_annotation(feedback, fixture)
+
+    assert upsert_human_train_seed(fixture, human) is None
+    assert export_to_train_seeds(feedback, human)["count"] == 0
+    assert export_to_preference_pairs(feedback, pairs)["count"] == 0
+
+
 def test_annotate_api_persists(tmp_path: Path) -> None:
     feedback = tmp_path / "feedback.jsonl"
     human = tmp_path / "human.jsonl"
