@@ -515,6 +515,25 @@ budget without emitting a scoreboard. This is recorded as an operational
 failure, not a quality result or a ship signal; the partial checkpoint remains
 under `/tmp/overnight-e53/` for later profiling.
 
+## Iterative training loop (2026-07-15)
+
+The first post-UI-loop V7 E70 reproduction used the remediated corpus, CPU
+scratch context, honest slot contract, 20 steps, batch size 4, and `rico_held`
+limit 5. The run persisted a checkpoint, `train_summary.json`,
+`train_telemetry.json`, per-step metrics, a scoreboard, and three AgentV
+JSONL bundles under `outputs/runs/iter_e70_20260715/qx_e70_stability/`.
+
+| Run | Smoke (n=3) | Held-out (n=5) | Outcome |
+| --- | --- | --- | --- |
+| E70 `qx_e70_stability` | parse 1.00, fidelity 1.00, reward 0.969 | parse 0.60, fidelity 1.00, reward 0.989 | fixture control clears available gates; not a ship claim |
+
+The run's training loss reached 21.01 at step 20. Telemetry identified
+`eval_suites` as 94.88% of wall time because this probe evaluated at steps 10
+and 20; subsequent probes should evaluate only at the end unless checkpoint
+trajectory feedback is specifically needed. The requested `rico_held` suite
+was not emitted by this short run and the missing `adversarial`/`ood` suites
+remain an explicit limitation, not a pass.
+
 ## P13 data-synthesis verification (CPU scratch, 2026-07-14)
 
 The accepted comparison uses the same E50 experiment and effective decode
