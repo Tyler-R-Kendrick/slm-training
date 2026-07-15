@@ -1,0 +1,8 @@
+{
+  "experiment": "E46",
+  "corpus": "remediated_roots",
+  "manifest_sha": "f8d714f122ac7f091236fd4e562935758de330534cac146abf30af13d0ac98ce",
+  "early_point": {"steps": 16, "smoke_n": 3, "parse_rate": 1.0, "structural_similarity": 0.6489, "placeholder_fidelity": 1.0, "reward_score": 0.969, "decode_timeout_count": 0, "decision": "smoke_pass_not_ship_ready"},
+  "long_point": {"steps": 128, "weighted_nll": 6.601378989556057, "smoke_parse_rate": 0.0, "smoke_structural_similarity": 0.0, "smoke_reward_score": 0.0, "decode_timeout_count": 3, "latency_ms_p50": 6667.33, "decision": "reject"},
+  "next": "select checkpoints by generation quality, not held-out loss"
+}
