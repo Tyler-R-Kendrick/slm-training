@@ -21,7 +21,9 @@ def load_suite_records(test_dir: Path, suite: str) -> list[ExampleRecord]:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         suites = manifest.get("suites") or {}
         if suite in suites:
-            return load_jsonl(suites[suite])
+            declared = Path(suites[suite])
+            if declared.is_file():
+                return load_jsonl(declared)
     # Fallback to conventional path
     path = test_dir / "suites" / suite / "records.jsonl"
     if not path.exists():

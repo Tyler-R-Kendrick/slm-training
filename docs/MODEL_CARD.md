@@ -28,6 +28,9 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 | Matrix honest champion (scratch) | `qx_e53_*` (V6 E53 family) | CPU scratch matrix clear | Primarily `outputs/runs/` (+ docs matrix JSON) | Honest `--ship-gates` on limited `rico_held` n; **not** production HF ship |
 | P13 fixture E50 control | `qx_e50_core_remask` | CPU scratch, fixture corpus | `/tmp/slm17-e50-fixture-honest/` (local) | Matched control; held 0.08 / RICO 0.0667 fidelity; parse 0.0, not ship |
 | P13 integrated E50 candidate | `qx_e50_core_remask` | CPU scratch, integrated corpus | `/tmp/slm17-e50-new-honest/` (local) | Strict fidelity gain on both smoke suites; parse 0.0, not promotable or ship |
+| Frozen X2 baseline | `gx_x2_codec` seeds 0/1/2 | Retired fixed-canvas grammar diffusion | `/tmp/slm-training-fixed-baseline/outputs/topology_baseline/` (local) | 80 steps; all suites parse/fidelity/structure/reward 0.0; comparison only, not ship |
+| Topology implementation smoke | `grammar_diffusion_overfit` | CPU scratch fixture topology v2 | pytest temporary checkpoint (local) | 200 steps; smoke n=2 parse/fidelity 0.5, topology composite 0.482; not reusable or ship |
+| Topology X9/X14 confirmation | `gx_x9_topology_base`, `gx_x14_buffer` seeds 0/1/2 | CPU scratch topology v2 matrix | `/tmp/slm-training-grammar-topology/outputs/topology_confirm_4bf964d/` (local) | 200 steps; all 6 fail multi-suite gates; not promoted or synced |
 | Production HF ship | — | — | `hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/` | **None registered yet** — fill this row after the first full HF sync |
 
 Update the table in place when a checkpoint is written or superseded. Keep
@@ -55,6 +58,7 @@ scratch-matrix clears as production readiness; silent gold-placeholder channels.
 | Context | HF frozen backbone (`HuggingFaceTB/SmolLM2-135M`) for full ship track; scratch for matrix/CI demos |
 | Output tokenizer | Compositional `OpenUITokenizer` (default) or V5 lexer (`DSLNativeTokenizer`) |
 | Decode | Grammar-constrained LTR / MaskGIT + repair levers (see design docs) |
+| Topology experiment | `grammar_diffusion` v2: typed production-tree expansion/contraction with bounded active nodes; no fixed canvas |
 | Eval gates | Multi-suite `--ship-gates` (parse, structural, `placeholder_fidelity`, reward) |
 
 ---
@@ -144,6 +148,37 @@ signal, not a full HF-context train or reusable promotion.
 Evidence: [data-synthesis.md](design/data-synthesis.md) and
 [data-synthesis-results.json](design/data-synthesis-results.json).
 
+### Grammar topology implementation smoke
+
+| Checkpoint | Suite | n | Parse | Fidelity | Struct | Topology composite | Pass? |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| retired X2, seeds 0/1/2 | all five | 19 per seed | 0.0 | 0.0 | 0.0 | unavailable | No |
+| topology v2 fixture overfit | smoke | 2 | 0.5 | 0.5 | 0.225 | 0.4820 | Wiring only; no ship |
+| X9 confirmation median | smoke | 3 | 0.0 | 0.333 | 0.098 | 0.414 | No |
+| X9 confirmation median | held_out | 5 | 0.0 | 0.0 | 0.0 | 0.372 | No |
+| X9 confirmation median | adversarial | 4 | 0.0 | 0.0 | 0.0 | 0.472 | No |
+| X9 confirmation median | ood | 4 | 0.0 | 0.083 | 0.108 | 0.330 | No |
+| X9 confirmation median | rico_held | 3 | 0.667 | 0.125 | 0.317 | 0.464 | No — limited slice; other suites fail |
+| X14 confirmation median | smoke | 3 | 0.0 | 0.0 | 0.309 | 0.298 | No |
+| X14 confirmation median | held_out | 5 | 0.0 | 0.0 | 0.251 | 0.277 | No |
+| X14 confirmation median | adversarial | 4 | 0.0 | 0.0 | 0.291 | 0.285 | No |
+| X14 confirmation median | ood | 4 | 0.0 | 0.0 | 0.237 | 0.278 | No |
+| X14 confirmation median | rico_held | 3 | 0.0 | 0.042 | 0.078 | 0.233 | No |
+
+X2 used CPU scratch, 80 steps, batch 4, seeds 0/1/2, the 1,165-record
+curriculum corpus, limited remediated suites, and no checkpoint sync. All three
+AgentV bundles ran without execution errors and all ship gates failed. Topology v2
+used CPU scratch, 200 steps, batch 2, learning rate `3e-3`, two fixture records,
+and honest request slot contracts; AgentV ran 5 checks with zero passes. Neither
+checkpoint family was promoted or uploaded. Evidence:
+[grammar-fixed-canvas-baseline-results.json](design/grammar-fixed-canvas-baseline-results.json)
+and [grammar-topology-smoke-results.json](design/grammar-topology-smoke-results.json).
+The X9/X14 confirmation used the same 1,165-record curriculum corpus, CPU scratch
+context, 200 steps, batch 4, learning rate `3e-4`, 16 generation phases, and seeds
+0/1/2. Six AgentV bundles completed. All checkpoints are local short-budget matrix
+artifacts with an explicit no-sync rationale; no reusable champion was designated.
+Evidence: [grammar-matrix-results.json](design/grammar-matrix-results.json).
+
 ---
 
 ## Limitations & honesty
@@ -170,6 +205,10 @@ Evidence: [data-synthesis.md](design/data-synthesis.md) and
 | 2026-07-14 | `local_directml_adreno_20260714` | `outputs/runs/local_directml_adreno_20260714/` (local) | DirectML train completed @ 5 steps; last_loss≈61.30 | Adreno GPU/checkpoint wiring; one AdamW op used CPU fallback; CPU generation timed out at 120s; no eval/ship claim |
 | 2026-07-15 | `overnight_retrain_200` | `/tmp/slm-training-overnight/outputs/runs/overnight_retrain_200/` (local) | 200 CPU scratch steps; last_loss≈6.64; all suites parse 0.0 | Full honest eval with AgentV bundle; no promotion; decode-path investigation continues |
 | 2026-07-15 | `overnight_retrain_1000` | `/tmp/slm-training-overnight/outputs/runs/overnight_retrain_1000/` (local) | 1,000 CPU scratch steps; last_loss≈1.12; smoke parse 0.0 at every checkpoint | Extended training did not improve generation quality; no promotion |
+| 2026-07-15 | `gx_x2_codec` seeds 0/1/2 | `/tmp/slm-training-fixed-baseline/outputs/topology_baseline/` (local) | all five suites parse/fidelity/structure/reward 0.0 | Frozen format-v1 comparison; AgentV complete; not promoted or synced |
+| 2026-07-15 | topology `grammar_diffusion_overfit` | pytest temporary local checkpoint | smoke n=2 parse/fidelity 0.5; topology composite 0.4820 | Implementation smoke only; temporary checkpoint, not promoted or synced |
+| 2026-07-15 | `gx_x9_topology_base` seeds 0/1/2 | `/tmp/slm-training-grammar-topology/outputs/topology_confirm_4bf964d/` (local) | RICO n=3 median parse 0.667, but held/adversarial/OOD parse 0.0 | 200-step CPU scratch confirmation; all seeds fail multi-suite gates; not promoted or synced |
+| 2026-07-15 | `gx_x14_buffer` seeds 0/1/2 | `/tmp/slm-training-grammar-topology/outputs/topology_confirm_4bf964d/` (local) | all-suite median parse 0.0 | 200-step CPU scratch confirmation; all seeds fail; not promoted or synced |
 
 Append a row for every new or replaced checkpoint. Do not delete history.
 

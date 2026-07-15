@@ -83,7 +83,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--model",
-        choices=("twotower", "stub"),
+        choices=("twotower", "grammar_diffusion", "stub"),
         default="twotower",
         help="Must match the checkpoint kind.",
     )
