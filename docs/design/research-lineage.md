@@ -94,6 +94,21 @@ return invalid OpenUI.
 | **Config** | `mask_pattern=diffusion`, `diffusion_policies`, `diffusion_length_buckets`, `diffusion_overallocate`, `diffusion_length_loss_weight` |
 | **Docs** | [`diffusion-data-adapter.md`](diffusion-data-adapter.md) |
 
+### Grammar-topology diffusion (trans-dimensional OpenUI tree)
+
+| | |
+| --- | --- |
+| **Papers** | Stern et al., *Insertion Transformer* [arXiv:1902.03249](https://arxiv.org/abs/1902.03249); Gu et al., *Levenshtein Transformer* [arXiv:1905.11006](https://arxiv.org/abs/1905.11006); Chen et al., *Diffusion Forcing* [arXiv:2407.01392](https://arxiv.org/abs/2407.01392); *Deletion-Insertion Diffusion* [arXiv:2603.23507](https://arxiv.org/abs/2603.23507); *Multi-Block Diffusion* [arXiv:2606.29215](https://arxiv.org/abs/2606.29215) |
+| **Fidelity** | **Adapted** — synchronous typed production-tree expansion/contraction with a bounded active buffer; not a faithful implementation of any cited sequence model |
+| **Code** | [`models/grammar_diffusion.py`](../../src/slm_training/models/grammar_diffusion.py), topology metrics in [`harnesses/model_build/eval_runner.py`](../../src/slm_training/harnesses/model_build/eval_runner.py) |
+| **Config** | `topology_actions`, `topology_structural_embeddings`, `topology_heterogeneous_noise`, `topology_critic_decode`, `topology_bounded_buffer`, topology budgets |
+| **Docs** | [`grammar-topology-diffusion.md`](grammar-topology-diffusion.md), X9-X15 in [`quality-experiment-matrix.md`](quality-experiment-matrix.md) |
+
+Unlike the fixed-canvas MaskGIT/MDLM rows, a topology mask denotes a typed grammar
+work item that may materialize zero or many child nodes. Persistent IDs and
+tree-relative coordinates avoid assigning a shifted absolute position to every
+later production after insertion.
+
 ### Confidence remasking (self-correction)
 
 | | |
@@ -473,7 +488,7 @@ enter this repository without review and local evidence.
 | CoRe remask | E50 `remask_policy=core\|combined` | `parallel_decode.select_remask_core_indices` |
 | T2M remask-to-mask | E51 `remask_to_mask` | `models/twotower.py` |
 | Honest V5 champion | E53 | `scripts/run_quality_matrix.py --matrix v6` |
-| Grammar-diffusion honest | E54 / X2–X7 | `models/grammar_diffusion.py` |
+| Grammar-topology diffusion | E54 / X9–X15 | `models/grammar_diffusion.py` |
 | Latent critic MoE (deferred) | E34 | `research-correction-critics.md` |
 | Verifier-guided repair map | proposed E60–E65 | `verifier-guided-repair.md` |
 | Stability remask / commit gate | E70 `remask_policy=stability`, `stability_min_persistence` | `models/parallel_decode.py` (`StabilityTracker`) |

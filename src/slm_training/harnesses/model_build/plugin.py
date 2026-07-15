@@ -28,6 +28,9 @@ class ModelPlugin(Protocol):
     def generate_batch_requests(self, requests: list[GenerationRequest]) -> list[str]:
         """Generate using production-available inputs only."""
 
+    def consume_generation_evidence(self) -> list[dict[str, object]]:
+        """Return and clear optional evidence aligned to the last generated batch."""
+
     def generate_constrained(self, prompt: str, **kwargs: object) -> str:
         """Generate through the official OpenUI grammar constraint."""
 
@@ -37,11 +40,9 @@ class ModelPlugin(Protocol):
     def load_parent_weights(self, path: Path) -> None:
         """Load only parent model weights for a fresh branch optimizer."""
 
-    def save(self, path: Path) -> None:
-        ...
+    def save(self, path: Path) -> None: ...
 
-    def load(self, path: Path) -> None:
-        ...
+    def load(self, path: Path) -> None: ...
 
 
 @dataclass
@@ -52,6 +53,7 @@ class StubModel:
     noise_rate: float = 0.0
     seed: int = 0
     _rng: random.Random = field(init=False, repr=False)
+    last_training_metrics: dict[str, float] = field(default_factory=dict, init=False)
 
     def __post_init__(self) -> None:
         self._rng = random.Random(self.seed)
@@ -80,6 +82,9 @@ class StubModel:
 
     def generate_batch_requests(self, requests: list[GenerationRequest]) -> list[str]:
         return [self.generate(request.prompt) for request in requests]
+
+    def consume_generation_evidence(self) -> list[dict[str, object]]:
+        return []
 
     def artifact_identity(self) -> dict[str, str]:
         from slm_training.lineage.records import content_sha

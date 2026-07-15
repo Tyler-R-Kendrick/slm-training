@@ -97,9 +97,12 @@ unknown fields forbidden:
 - `RLReadinessReport` is the only accepted RL capability token.
 
 `compile_commands` constructs argv arrays from typed fields. No provider-authored
-shell is evaluated. Embedded execution currently compiles the TwoTower data,
-training, and honest evaluation path. Causal-LM code or recipe changes stay on the
-agent-driven `model_cycle` path so immutable parents and base pins are preserved.
+shell is evaluated. Embedded execution compiles the TwoTower and
+`grammar_diffusion` data, training, and honest evaluation paths. Grammar campaigns
+may vary only the allowlisted topology action, structural-embedding,
+heterogeneous-noise, critic, buffer, and budget knobs. Causal-LM code or recipe
+changes stay on the agent-driven `model_cycle` path so immutable parents and base
+pins are preserved.
 
 ## Evidence and literature order
 
@@ -290,6 +293,13 @@ python -m scripts.autoresearch init \
   --objective "Improve minimum-suite structure without parse regression" \
   --primary-metric min_suite.structural_similarity \
   --researcher-mode open-deep-research
+
+# Topology campaigns use the same evidence/compiler boundary.
+python -m scripts.autoresearch init \
+  --campaign-id openui-topology-001 \
+  --track grammar_diffusion \
+  --objective "Improve honest topology composite without a ship-gate regression" \
+  --primary-metric topology_composite
 
 # The campaign researcher-mode selects the registry entry; an explicit
 # --researcher overrides it. The runner verifies the exact reviewed Git pin.

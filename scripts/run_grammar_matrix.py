@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the grammar-native diffusion experiment matrix (X0–X8).
+"""Run grammar topology diffusion experiments (X9-X15).
 
 Staged ablations with 3 seeds and successive halving on smoke → held_out → adversarial.
 See docs/design/quality-experiment-matrix.md (X matrix section).
@@ -9,6 +9,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
+import statistics
+import subprocess
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
@@ -23,6 +26,7 @@ from slm_training.harnesses.model_build.ship_gates import (
 HALVING_SUITES = ["smoke", "held_out", "adversarial"]
 FULL_SUITES = ["smoke", "held_out", "adversarial", "ood", "rico_held"]
 DEFAULT_SEEDS = [0, 1, 2]
+LEGACY_FIXED_IDS = {"X2", "X3", "X4", "X5", "X7", "X8"}
 
 
 def _args_with_seed(args: argparse.Namespace, seed: int) -> argparse.Namespace:
@@ -84,6 +88,11 @@ class GrammarExperiment:
     production_loss_weight: float = 1.0
     slot_loss_weight: float = 0.5
     confidence_loss_weight: float = 0.25
+    topology_actions: bool = True
+    topology_structural_embeddings: bool = True
+    topology_heterogeneous_noise: bool = True
+    topology_critic_decode: bool = True
+    topology_bounded_buffer: bool = True
 
 
 def _x_experiments(
@@ -92,7 +101,7 @@ def _x_experiments(
     *,
     design_md_in_context: bool = True,
 ) -> list[GrammarExperiment]:
-    """X0–X8 staged grammar-native ablations."""
+    """Runnable honest controls plus X9-X15 topology ablations."""
     base = dict(
         train_dir=train_v1,
         design_md_in_context=design_md_in_context,
@@ -118,42 +127,6 @@ def _x_experiments(
             fidelity_loss_weight=1.0,
         ),
         GrammarExperiment(
-            "X2",
-            "gx_x2_codec",
-            "Production codec: grammar_diffusion over production+slot heads",
-            **base,
-            model_name="grammar_diffusion",
-            slot_contract_in_context=True,
-            slot_contract_constrained_decode=True,
-        ),
-        GrammarExperiment(
-            "X3",
-            "gx_x3_block_obj",
-            "Block objective: grammar_diffusion block noise schedule",
-            **base,
-            model_name="grammar_diffusion",
-            block_size=4,
-            production_loss_weight=1.5,
-            slot_loss_weight=0.75,
-        ),
-        GrammarExperiment(
-            "X4",
-            "gx_x4_confidence",
-            "Confidence schedule: parallel_unmask=confidence + calib loss",
-            **base,
-            model_name="grammar_diffusion",
-            parallel_unmask="confidence",
-            confidence_loss_weight=0.5,
-        ),
-        GrammarExperiment(
-            "X5",
-            "gx_x5_extend",
-            "Extendability decode: grammar_diffusion extendability checker",
-            **base,
-            model_name="grammar_diffusion",
-            parallel_unmask="adaptive",
-        ),
-        GrammarExperiment(
             "X6",
             "gx_x6_curriculum",
             "Grammar curriculum: soft A/B/C mix (anti-leak)",
@@ -163,54 +136,89 @@ def _x_experiments(
             mix_curriculum=True,
         ),
         GrammarExperiment(
-            "X7",
-            "gx_x7_champion",
-            "Champion combo: contract + codec + block + confidence + extend + curriculum",
-            train_cur,
+            "X9",
+            "gx_x9_topology_base",
+            "Typed subtree collapse + synchronous expansion",
+            **base,
             model_name="grammar_diffusion",
             slot_contract_in_context=True,
             slot_contract_constrained_decode=True,
-            fidelity_loss_weight=1.5,
-            fastpath_aux_weight=0.15,
-            fuse_ltr_loss=True,
-            ltr_loss_weight=2.0,
-            parallel_unmask="confidence",
-            grammar_ltr_stages=(32, 64, 96, 128),
-            grammar_ltr_max_tokens=128,
-            use_curriculum=True,
-            mix_curriculum=True,
-            d_model=192,
-            n_heads=6,
-            context_layers=3,
-            denoiser_layers=6,
-            design_md_in_context=design_md_in_context,
+            topology_actions=False,
+            topology_structural_embeddings=False,
+            topology_heterogeneous_noise=False,
+            topology_critic_decode=False,
+            topology_bounded_buffer=False,
         ),
         GrammarExperiment(
-            "X8",
-            "gx_x8_process",
-            "Process optimization: X7 + pref/RL (skip RL when reward variance=0)",
+            "X10",
+            "gx_x10_topology_actions",
+            "X9 + insertion/deletion/contraction actions",
+            **base,
+            model_name="grammar_diffusion",
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            topology_structural_embeddings=False,
+            topology_heterogeneous_noise=False,
+            topology_critic_decode=False,
+            topology_bounded_buffer=False,
+        ),
+        GrammarExperiment(
+            "X11",
+            "gx_x11_tree_embeddings",
+            "X10 + tree structural embeddings",
+            **base,
+            model_name="grammar_diffusion",
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            topology_heterogeneous_noise=False,
+            topology_critic_decode=False,
+            topology_bounded_buffer=False,
+        ),
+        GrammarExperiment(
+            "X12",
+            "gx_x12_heterogeneous_noise",
+            "X11 + heterogeneous node noise",
+            **base,
+            model_name="grammar_diffusion",
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            topology_critic_decode=False,
+            topology_bounded_buffer=False,
+        ),
+        GrammarExperiment(
+            "X13",
+            "gx_x13_critic",
+            "X12 + critic-guided accept/defer/contract",
+            **base,
+            model_name="grammar_diffusion",
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            topology_bounded_buffer=False,
+        ),
+        GrammarExperiment(
+            "X14",
+            "gx_x14_buffer",
+            "X13 + bounded active buffer and global sync",
+            **base,
+            model_name="grammar_diffusion",
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+        ),
+        GrammarExperiment(
+            "X15",
+            "gx_x15_topology_champion",
+            "Full grammar-topology diffusion stack",
             train_cur,
             model_name="grammar_diffusion",
             slot_contract_in_context=True,
             slot_contract_constrained_decode=True,
-            fidelity_loss_weight=1.5,
-            fastpath_aux_weight=0.15,
-            fuse_ltr_loss=True,
-            ltr_loss_weight=2.0,
-            parallel_unmask="confidence",
-            grammar_ltr_stages=(32, 64, 96, 128),
-            grammar_ltr_max_tokens=128,
             use_curriculum=True,
             mix_curriculum=True,
+            design_md_in_context=design_md_in_context,
             d_model=192,
             n_heads=6,
             context_layers=3,
             denoiser_layers=6,
-            preference=True,
-            rl=True,
-            skip_rl_no_variance=True,
-            best_of_n=4,
-            design_md_in_context=design_md_in_context,
         ),
     ]
 
@@ -261,6 +269,11 @@ def _train_cfg(exp: GrammarExperiment, args: argparse.Namespace) -> ModelBuildCo
         production_loss_weight=exp.production_loss_weight,
         slot_loss_weight=exp.slot_loss_weight,
         confidence_loss_weight=exp.confidence_loss_weight,
+        topology_actions=exp.topology_actions,
+        topology_structural_embeddings=exp.topology_structural_embeddings,
+        topology_heterogeneous_noise=exp.topology_heterogeneous_noise,
+        topology_critic_decode=exp.topology_critic_decode,
+        topology_bounded_buffer=exp.topology_bounded_buffer,
         eval_every=args.eval_every,
         eval_suite="smoke",
         eval_suites="smoke,held_out" if args.eval_every else "",
@@ -283,6 +296,9 @@ def _eval_cfg(exp: GrammarExperiment, args: argparse.Namespace) -> ModelBuildCon
 
 def _halving_score(suites: dict[str, Any], suite: str) -> float:
     m = suites.get(suite) or {}
+    topology = m.get("topology_composite")
+    if topology is not None:
+        return float(topology)
     return (
         2.0 * float(m.get("parse_rate") or 0.0)
         + 2.0 * float(m.get("placeholder_fidelity") or 0.0)
@@ -300,6 +316,15 @@ def _summarize_board(board: dict[str, Any]) -> dict[str, Any]:
             "placeholder_fidelity": m.get("placeholder_fidelity"),
             "structural_similarity": m.get("structural_similarity"),
             "reward_score": m.get("reward_score"),
+            "ast_node_f1": m.get("ast_node_f1"),
+            "ast_edge_f1": m.get("ast_edge_f1"),
+            "tree_edit_similarity": m.get("tree_edit_similarity"),
+            "topology_quality_score": m.get("topology_quality_score"),
+            "topology_structure_score": m.get("topology_structure_score"),
+            "topology_trace_score": m.get("topology_trace_score"),
+            "topology_efficiency_score": m.get("topology_efficiency_score"),
+            "topology_composite": m.get("topology_composite"),
+            "topology_telemetry": m.get("topology_telemetry"),
             "n": m.get("n"),
         }
         for name, m in suites.items()
@@ -311,11 +336,16 @@ def _summarize_board(board: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _maybe_preference(exp: GrammarExperiment, ckpt: Path, args: argparse.Namespace) -> Path:
+def _maybe_preference(
+    exp: GrammarExperiment, ckpt: Path, args: argparse.Namespace
+) -> Path:
     if not exp.preference:
         return ckpt
     from slm_training.dsl.schema import load_jsonl
-    from slm_training.harnesses.preference import collect_pairs_with_generator, write_pairs
+    from slm_training.harnesses.preference import (
+        collect_pairs_with_generator,
+        write_pairs,
+    )
     from slm_training.harnesses.preference.train import train_preference_from_paths
     from slm_training.harnesses.quality import soft_corrupt_openui
 
@@ -366,7 +396,11 @@ def _maybe_rl(exp: GrammarExperiment, ckpt: Path, args: argparse.Namespace) -> P
     )
     skipped = int(summary.get("skipped_groups") or 0)
     rl_ckpt = Path(summary.get("checkpoint") or (out_dir / "model.pt"))
-    if exp.skip_rl_no_variance and skipped > 0 and summary.get("last_reward_mean", 0) <= 0:
+    if (
+        exp.skip_rl_no_variance
+        and skipped > 0
+        and summary.get("last_reward_mean", 0) <= 0
+    ):
         return ckpt
     if rl_ckpt.is_file():
         dest = args.run_root / exp.run_id / f"checkpoints_s{args.seed}" / "last.pt"
@@ -396,7 +430,9 @@ def run_one(
             raise FileNotFoundError(f"{exp.xid} needs seed checkpoint {src}")
         ckpt = _copy_checkpoint(src, dest)
     elif not skip_train and exp.eval_from_run and not exp.preference:
-        src = args.run_root / exp.eval_from_run / f"checkpoints_s{args.seed}" / "last.pt"
+        src = (
+            args.run_root / exp.eval_from_run / f"checkpoints_s{args.seed}" / "last.pt"
+        )
         if not src.is_file():
             src = args.run_root / exp.eval_from_run / "checkpoints" / "last.pt"
         dest = ckpt_dir / "last.pt"
@@ -407,7 +443,12 @@ def run_one(
         train_cfg = _train_cfg(exp, args)
         train_cfg = replace(train_cfg, run_id=run_id)
         if exp.eval_from_run and exp.preference:
-            src = args.run_root / exp.eval_from_run / f"checkpoints_s{args.seed}" / "last.pt"
+            src = (
+                args.run_root
+                / exp.eval_from_run
+                / f"checkpoints_s{args.seed}"
+                / "last.pt"
+            )
             if not src.is_file():
                 src = args.run_root / exp.eval_from_run / "checkpoints" / "last.pt"
             dest = ckpt_dir / "last.pt"
@@ -418,7 +459,9 @@ def run_one(
             _copy_checkpoint(ckpt, ckpt_dir / "last.pt")
             ckpt = ckpt_dir / "last.pt"
     elif not ckpt.is_file():
-        raise FileNotFoundError(f"{exp.xid} seed {args.seed}: missing checkpoint for skip_train")
+        raise FileNotFoundError(
+            f"{exp.xid} seed {args.seed}: missing checkpoint for skip_train"
+        )
 
     ckpt = _maybe_preference(exp, ckpt, args)
     ckpt = _maybe_rl(exp, ckpt, args)
@@ -482,18 +525,37 @@ def successive_halving(
             score = _halving_score(trained[key].get("suites") or {}, suite)
             round_results.append(((exp, seed), score))
 
-        round_results.sort(key=lambda x: x[1], reverse=True)
-        keep = max(1, len(round_results) // 2)
-        survivors = [pair for pair, _ in round_results[:keep]]
+        grouped: dict[str, list[float]] = {}
+        experiments_by_id: dict[str, GrammarExperiment] = {}
+        for (experiment, _seed), score in round_results:
+            grouped.setdefault(experiment.xid, []).append(score)
+            experiments_by_id[experiment.xid] = experiment
+        experiment_scores = sorted(
+            (
+                (experiments_by_id[xid], statistics.median(scores))
+                for xid, scores in grouped.items()
+            ),
+            key=lambda item: item[1],
+            reverse=True,
+        )
+        keep = max(
+            1,
+            min(
+                len(experiment_scores),
+                max(2, math.ceil(len(experiment_scores) / 2)),
+            ),
+        )
+        kept_ids = {experiment.xid for experiment, _ in experiment_scores[:keep]}
+        survivors = [pair for pair in survivors if pair[0].xid in kept_ids]
         print(
             json.dumps(
                 {
                     "halving_round": suite,
                     "kept": keep,
-                    "total": len(round_results),
+                    "total": len(experiment_scores),
                     "top": [
-                        {"id": e.xid, "seed": s, "score": sc}
-                        for (e, s), sc in round_results[:keep]
+                        {"id": experiment.xid, "median_score": score}
+                        for experiment, score in experiment_scores[:keep]
                     ],
                 }
             )
@@ -521,7 +583,9 @@ def successive_halving(
 
     # Include non-survivor results for the summary artifact.
     for key, result in trained.items():
-        if not any(r.get("id") == key[0] and r.get("seed") == key[1] for r in all_results):
+        if not any(
+            r.get("id") == key[0] and r.get("seed") == key[1] for r in all_results
+        ):
             all_results.append(result)
 
     return survivors, all_results
@@ -538,7 +602,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--test-dir", type=Path, default=Path("outputs/test_data/v1"))
     parser.add_argument("--run-root", type=Path, default=Path("outputs/runs"))
     parser.add_argument("--device", default="cpu")
-    parser.add_argument("--context-backend", choices=("scratch", "hf"), default="scratch")
+    parser.add_argument(
+        "--context-backend", choices=("scratch", "hf"), default="scratch"
+    )
     parser.add_argument("--local-files-only", action="store_true")
     parser.add_argument("--steps", type=int, default=80)
     parser.add_argument("--batch-size", type=int, default=4)
@@ -557,6 +623,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--rl-group-size", type=int, default=4)
     parser.add_argument("--rl-readiness-report", type=Path, default=None)
     parser.add_argument("--gen-steps", type=int, default=8)
+    parser.add_argument(
+        "--confirm-steps",
+        type=int,
+        default=0,
+        help="After halving, retrain the surviving experiment rows at this step count.",
+    )
+    parser.add_argument(
+        "--confirm-top",
+        type=int,
+        default=2,
+        help="Number of surviving experiment rows to confirm (default 2).",
+    )
     parser.add_argument(
         "--only",
         default=None,
@@ -594,7 +672,7 @@ def main(argv: list[str] | None = None) -> int:
         seed_list = list(DEFAULT_SEEDS)
 
     needs_curriculum = args.only is None or any(
-        x in (args.only or "") for x in ("X6", "X7", "X8")
+        x in (args.only or "") for x in ("X6", "X15")
     )
     if args.build_curriculum or (not args.curriculum_dir.exists() and needs_curriculum):
         from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
@@ -617,6 +695,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     if args.only:
         wanted = {x.strip().upper() for x in args.only.split(",") if x.strip()}
+        legacy = sorted(wanted & LEGACY_FIXED_IDS)
+        if legacy:
+            raise ValueError(
+                f"{legacy} are frozen fixed-canvas rows; rerun them from the "
+                "source_commit recorded in docs/design/grammar-matrix-results.json"
+            )
         experiments = [e for e in experiments if e.xid in wanted]
 
     candidates = [(exp, seed) for exp in experiments for seed in seed_list]
@@ -629,13 +713,34 @@ def main(argv: list[str] | None = None) -> int:
             result = run_one(exp, ns)
             print(
                 json.dumps(
-                    {"status": "done", "id": exp.xid, "seed": seed, "pass": result["pass"]}
+                    {
+                        "status": "done",
+                        "id": exp.xid,
+                        "seed": seed,
+                        "pass": result["pass"],
+                    }
                 )
             )
             results.append(result)
         survivors = candidates
     else:
         survivors, results = successive_halving(candidates, args)
+        if args.confirm_steps > 0:
+            survivor_ids = list(dict.fromkeys(exp.xid for exp, _seed in survivors))[
+                : max(1, args.confirm_top)
+            ]
+            for exp, seed in survivors:
+                if exp.xid not in survivor_ids:
+                    continue
+                confirmed = replace(
+                    exp,
+                    run_id=f"{exp.run_id}_confirm_{args.confirm_steps}",
+                )
+                ns = _args_with_seed(args, seed)
+                ns.steps = args.confirm_steps
+                result = run_one(confirmed, ns)
+                result["stage"] = "confirmation"
+                results.append(result)
 
     results.sort(key=lambda r: (r.get("id") or "", r.get("seed") or 0))
 
@@ -648,16 +753,34 @@ def main(argv: list[str] | None = None) -> int:
         "rico_eval_limit": args.rico_limit,
         "steps": args.steps,
         "gen_steps": args.gen_steps,
+        "confirmation_steps": args.confirm_steps,
         "context_backend": args.context_backend,
         "halving_enabled": not args.no_halving,
         "survivors": [{"id": e.xid, "seed": s} for e, s in survivors],
         "results": results,
+        "source_commit": subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], text=True
+        ).strip(),
     }
     out_path = args.run_root / "grammar_matrix_summary.json"
     out_path.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
     docs_out = Path("docs/design/grammar-matrix-results.json")
+    if docs_out.exists():
+        prior = json.loads(docs_out.read_text(encoding="utf-8"))
+        legacy = prior.get("legacy_fixed_canvas")
+        if legacy is None and any(
+            result.get("id") in LEGACY_FIXED_IDS for result in prior.get("results", [])
+        ):
+            legacy = prior
+        if legacy is not None:
+            out["legacy_fixed_canvas"] = legacy
     docs_out.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps({"summary": str(out_path), "n": len(results), "survivors": len(survivors)}, indent=2))
+    print(
+        json.dumps(
+            {"summary": str(out_path), "n": len(results), "survivors": len(survivors)},
+            indent=2,
+        )
+    )
     return 0
 
 

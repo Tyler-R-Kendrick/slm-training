@@ -425,9 +425,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 nll_config=nll_cfg,
                 base_suite=base_suite,
             )
-            write_loss_suite_report(
-                run_dir / f"loss_suites_step_{step}.json", report
-            )
+            write_loss_suite_report(run_dir / f"loss_suites_step_{step}.json", report)
         aggregate = report.get("aggregate") or {}
         broad = (report.get("categories") or {}).get("broad") or {}
         row = {
@@ -516,9 +514,10 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                         "batches": accum_batch_meta,
                         "ts": datetime.now(timezone.utc).isoformat(),
                     }
+                    extra_metrics = getattr(plugin, "last_training_metrics", None)
+                    if isinstance(extra_metrics, dict):
+                        row.update(extra_metrics)
                     accum_batch_meta = []
-                    accum_batch_meta = []
-                    accum_example_losses = []
                     metrics_file.write(json.dumps(row) + "\n")
                     metrics_file.flush()
                     did_eval = _maybe_eval(step)

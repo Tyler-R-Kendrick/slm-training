@@ -118,12 +118,26 @@ class ModelBuildConfig:
     grammar_sample_temperature: float = 0.8
     grammar_block_decode: bool = False
     grammar_block_size: int = 32
-    # Grammar-diffusion (block production codec)
+    # Grammar-topology diffusion (format v2 production tree)
     block_size: int = 4
     production_loss_weight: float = 1.0
     slot_loss_weight: float = 0.5
     confidence_loss_weight: float = 0.25
     extendability_decode: bool = True
+    # Grammar topology diffusion (X9-X15).
+    topology_actions: bool = True
+    topology_structural_embeddings: bool = True
+    topology_heterogeneous_noise: bool = True
+    topology_critic_decode: bool = True
+    topology_bounded_buffer: bool = True
+    topology_max_nodes: int = 256
+    topology_max_active: int = 64
+    topology_max_arity: int = 8
+    topology_max_depth: int = 32
+    topology_max_phases: int = 32
+    topology_global_sync_interval: int = 4
+    topology_accept_threshold: float = 0.5
+    topology_contract_threshold: float = 0.25
     # Cycle telemetry (train/infer span JSON)
     telemetry: bool = True
     # V5: lexer-native output tokenizer + Stage-2 levers

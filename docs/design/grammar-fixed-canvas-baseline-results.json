@@ -1,0 +1,66 @@
+{
+  "experiment": "X2-fixed-canvas-baseline",
+  "architecture": "retired grammar_diffusion format v1 fixed canvas",
+  "source_commit": "e1c2c0d09e6ae203994bf4b879b37553977c3cc0",
+  "date_utc": "2026-07-15",
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "steps": 80,
+    "batch_size": 4,
+    "learning_rate": 0.0003,
+    "seeds": [0, 1, 2],
+    "train_records": 1165,
+    "train_dir": "/home/codex/repos/slm-training/outputs/train_data/v1_curriculum",
+    "test_dir": "/home/codex/repos/slm-training/outputs/test_data/remediated",
+    "rico_eval_limit": 32,
+    "checkpoint_sync": "disabled: local CPU scratch matrix"
+  },
+  "suite_sizes": {
+    "smoke": 3,
+    "held_out": 5,
+    "adversarial": 4,
+    "ood": 4,
+    "rico_held": 3
+  },
+  "results": [
+    {
+      "seed": 0,
+      "checkpoint": "/tmp/slm-training-fixed-baseline/outputs/topology_baseline/gx_x2_codec/checkpoints_s0/last.pt",
+      "parse_rate_all_suites": 0.0,
+      "placeholder_fidelity_all_suites": 0.0,
+      "structural_similarity_all_suites": 0.0,
+      "reward_score_all_suites": 0.0,
+      "ship_gates_pass": false,
+      "agentv": {"total": 5, "passed": 0, "failed": 5, "execution_errors": 0, "duration_ms": 50, "mean_score": 0.5}
+    },
+    {
+      "seed": 1,
+      "checkpoint": "/tmp/slm-training-fixed-baseline/outputs/topology_baseline/gx_x2_codec/checkpoints_s1/last.pt",
+      "parse_rate_all_suites": 0.0,
+      "placeholder_fidelity_all_suites": 0.0,
+      "structural_similarity_all_suites": 0.0,
+      "reward_score_all_suites": 0.0,
+      "ship_gates_pass": false,
+      "agentv": {"total": 5, "passed": 0, "failed": 5, "execution_errors": 0, "duration_ms": 33, "mean_score": 0.5}
+    },
+    {
+      "seed": 2,
+      "checkpoint": "/tmp/slm-training-fixed-baseline/outputs/topology_baseline/gx_x2_codec/checkpoints_s2/last.pt",
+      "parse_rate_all_suites": 0.0,
+      "placeholder_fidelity_all_suites": 0.0,
+      "structural_similarity_all_suites": 0.0,
+      "reward_score_all_suites": 0.0,
+      "ship_gates_pass": false,
+      "agentv": {"total": 5, "passed": 0, "failed": 5, "execution_errors": 0, "duration_ms": 25, "mean_score": 0.5}
+    }
+  ],
+  "aggregate": {
+    "median_parse_rate_all_suites": 0.0,
+    "median_placeholder_fidelity_all_suites": 0.0,
+    "median_structural_similarity_all_suites": 0.0,
+    "median_reward_score_all_suites": 0.0,
+    "ship_gates_pass": false
+  },
+  "claim": "Evidence-complete negative local baseline; no checkpoint promotion and no ship claim."
+}

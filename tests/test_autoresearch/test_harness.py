@@ -103,7 +103,12 @@ def passing_evaluation() -> dict:
                 "placeholder_fidelity": 1,
                 "reward_score": 1,
             },
-            "held_out": {"n": 10, "parse_rate": 1, "structural_similarity": 1, "placeholder_fidelity": 1},
+            "held_out": {
+                "n": 10,
+                "parse_rate": 1,
+                "structural_similarity": 1,
+                "placeholder_fidelity": 1,
+            },
             "adversarial": {"n": 10, "parse_rate": 1, "structural_similarity": 1},
             "ood": {"n": 10, "parse_rate": 1, "structural_similarity": 1},
             "rico_held": {"n": 1500, "parse_rate": 1, "structural_similarity": 1},
@@ -131,7 +136,10 @@ def test_campaign_store_is_content_addressed_and_chained(tmp_path: Path) -> None
     second = store.write_artifact("experiments", spec)
     assert first == second
     event = store.append_event("experiment_proposed", artifact_sha256=first.stem)
-    lines = [json.loads(line) for line in (store.root / "events.jsonl").read_text().splitlines()]
+    lines = [
+        json.loads(line)
+        for line in (store.root / "events.jsonl").read_text().splitlines()
+    ]
     assert lines[-1]["event_id"] == event["event_id"]
     assert lines[-1]["previous_event_sha256"] == lines[-2]["event_id"]
     assert (store.root / "checksums.jsonl").is_file()
@@ -168,7 +176,11 @@ class FakeHTTP:
         return FakeResponse(
             [
                 {
-                    "paper": {"id": "2601.00001", "title": "A paper", "summary": "Useful"},
+                    "paper": {
+                        "id": "2601.00001",
+                        "title": "A paper",
+                        "summary": "Useful",
+                    },
                     "numUpvotes": 5,
                 }
             ]
@@ -190,7 +202,9 @@ class FakeResponses:
             model="gpt-test",
             output_text="memo",
             usage={"input_tokens": 10},
-            to_dict=lambda: {"sources": [{"url": "https://example.com/paper", "title": "Paper"}]},
+            to_dict=lambda: {
+                "sources": [{"url": "https://example.com/paper", "title": "Paper"}]
+            },
         )
 
     def parse(self, **kwargs):
@@ -403,6 +417,33 @@ def test_compile_is_typed_and_diagnosis_routes_bad_data() -> None:
     )
     assert diagnosis.target == "data"
     assert "immutable data snapshot" in diagnosis.recommended_actions[0]
+
+
+def test_compile_grammar_topology_campaign_uses_typed_knobs() -> None:
+    grammar_campaign = campaign().model_copy(update={"track": "grammar_diffusion"})
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            steps=20,
+            context_backend="scratch",
+            topology_actions=True,
+            topology_critic_decode=False,
+            topology_max_nodes=128,
+            topology_max_active=24,
+            topology_accept_threshold=0.4,
+        )
+    )
+    commands = compile_commands(grammar_campaign, spec)
+    train = next(command for command in commands if "scripts.train_model" in command)
+    evaluate = next(
+        command for command in commands if "scripts.evaluate_model" in command
+    )
+    assert train[train.index("--model") + 1] == "grammar_diffusion"
+    assert "--topology-actions" in train
+    assert "--no-topology-critic-decode" in train
+    assert train[train.index("--topology-max-nodes") + 1] == "128"
+    assert train[train.index("--topology-max-active") + 1] == "24"
+    assert train[train.index("--topology-accept-threshold") + 1] == "0.4"
+    assert evaluate[evaluate.index("--model") + 1] == "grammar_diffusion"
 
 
 def test_rl_readiness_is_fail_closed() -> None:

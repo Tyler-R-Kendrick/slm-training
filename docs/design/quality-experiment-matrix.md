@@ -341,9 +341,8 @@ python -m scripts.run_quality_matrix --matrix v6 --only E50,E53,E55 \
   --steps 80 --device cpu --context-backend scratch --no-design-md-context \
   --scratch-control
 
-# Grammar-diffusion honest contract (E54) + X matrix
+# Grammar-diffusion honest contract (E54) + frozen fixed-canvas evidence
 python -m scripts.run_quality_matrix --matrix v6 --only E54 --steps 80 --scratch-control
-python -m scripts.run_grammar_matrix --only X0,X2,X7 --steps 80
 ```
 
 **Honesty fix (required for E35/E53 fidelity):** `generate_batch_requests`
@@ -370,52 +369,82 @@ E50/E53/E55 clear honest `--ship-gates` (including rico_held n=20). Full 1500
 `rico_held` + HF context remains the production claim. Grammar-diffusion (E54/X2)
 needs longer train / capacity before competing with the TwoTower V5 stack.
 
-Grammar X partial results: [grammar-matrix-results.json](grammar-matrix-results.json).
+Grammar X results: [grammar-matrix-results.json](grammar-matrix-results.json).
 
 ## X matrix (grammar-native diffusion ablations)
 
-Staged ablations **X0–X8** isolate grammar-first decode levers on top of the
-corrected honest baseline. Each experiment runs **3 seeds** (0/1/2) with
-**successive halving** on `smoke` → `held_out` → `adversarial` before full
-multi-suite eval on survivors.
+X2-X8 are frozen evidence for the retired fixed-canvas implementation. The current
+runner preserves those results but refuses to execute their IDs, so a topology run
+cannot silently overwrite an architectural baseline. Reproduction requires the
+`source_commit` recorded in `grammar-matrix-results.json`.
+
+The three-seed X2 reproduction at source commit `e1c2c0d` is recorded in
+[grammar-fixed-canvas-baseline-results.json](grammar-fixed-canvas-baseline-results.json):
+80 CPU/scratch steps, seeds 0/1/2, and all five honest suites produced zero parse,
+fidelity, structure, and reward. All three AgentV runs executed without SDK errors;
+ship gates failed. The local checkpoints were retained only as comparison artifacts.
+
+Staged ablations **X9-X15** add one topology lever at a time. Each experiment runs
+**3 seeds** (0/1/2). Successive halving uses the median topology composite across
+all seeds for `smoke` → `held_out` → `adversarial`, then evaluates survivors on all
+five suites. The normal ship gates remain authoritative.
 
 | ID | Approach | Primary lever | Model | Run id |
 | --- | --- | --- | --- | --- |
 | X0 | Corrected baseline | twotower + honest DESIGN.md eval | twotower | `gx_x0_baseline` |
 | X1 | Data/contract | slot contract in context + inventory decode | twotower | `gx_x1_contract` |
-| X2 | Production codec | grammar_diffusion over production+slot heads | grammar_diffusion | `gx_x2_codec` |
-| X3 | Block objective | grammar_diffusion block noise schedule | grammar_diffusion | `gx_x3_block_obj` |
-| X4 | Confidence schedule | `parallel_unmask=confidence` + calib loss | grammar_diffusion | `gx_x4_confidence` |
-| X5 | Extendability decode | ExtendabilityChecker in constrained posterior | grammar_diffusion | `gx_x5_extend` |
+| X2 | Production codec (frozen) | fixed canvas over production+slot heads | retired grammar_diffusion v1 | `gx_x2_codec` |
+| X3 | Block objective (frozen) | fixed positional block noise | retired grammar_diffusion v1 | `gx_x3_block_obj` |
+| X4 | Confidence schedule (frozen) | fixed-canvas parallel unmask | retired grammar_diffusion v1 | `gx_x4_confidence` |
+| X5 | Extendability decode (frozen) | constrained positional posterior | retired grammar_diffusion v1 | `gx_x5_extend` |
 | X6 | Grammar curriculum | soft A/B/C mix (anti-leak) | twotower | `gx_x6_curriculum` |
-| X7 | Champion combo | X1–X6 stacked + capacity | grammar_diffusion | `gx_x7_champion` |
-| X8 | Process optimization | X7 + pref/RL (skip RL when reward variance=0) | grammar_diffusion | `gx_x8_process` |
+| X7 | Champion combo (frozen) | fixed-canvas X1-X6 stack | retired grammar_diffusion v1 | `gx_x7_champion` |
+| X8 | Process optimization (frozen) | fixed-canvas preference/RL stage | retired grammar_diffusion v1 | `gx_x8_process` |
+| X9 | Typed topology baseline | tree state + synchronous expansion | grammar_diffusion v2 | `gx_x9_topology_base` |
+| X10 | Edit actions | X9 + delete/contract/stop supervision | grammar_diffusion v2 | `gx_x10_actions` |
+| X11 | Tree coordinates | X10 + type/parent/depth/sibling embeddings | grammar_diffusion v2 | `gx_x11_tree_embeddings` |
+| X12 | Heterogeneous corruption | X11 + node/depth-specific noise | grammar_diffusion v2 | `gx_x12_heterogeneous_noise` |
+| X13 | Critic scheduling | X12 + accept/defer/contract calibration | grammar_diffusion v2 | `gx_x13_critic` |
+| X14 | Dynamic work buffer | X13 + bounded active nodes/global sync | grammar_diffusion v2 | `gx_x14_buffer` |
+| X15 | Topology champion | X14 + curriculum/capacity | grammar_diffusion v2 | `gx_x15_topology_champion` |
 
 `grammar_diffusion` is the harness plug-in for
-`GrammarDiffusionModel` (production codec + block diffusion). See
-`src/slm_training/models/grammar_diffusion.py` and
-`src/slm_training/harnesses/model_build/factory.py`.
+`GrammarDiffusionModel` format v2 (typed production-tree diffusion). See
+[grammar-topology-diffusion.md](grammar-topology-diffusion.md),
+`src/slm_training/models/grammar_diffusion.py`, and
+`src/slm_training/harnesses/model_build/factory.py`. Format-v1 checkpoints require
+the explicit warm-start migrator; the runtime has no legacy alias.
 
 ### Commands
 
 ```bash
-# Three-seed honest baseline reproduction (X0)
-python -m scripts.reproduce_baseline \
-  --device cpu --context-backend scratch --steps 80
-
-# Full X matrix with successive halving (default 3 seeds)
+# Full topology matrix with successive halving and two-row confirmation
 python -m scripts.run_grammar_matrix \
-  --device cpu --context-backend scratch --steps 80
+  --device cpu --context-backend scratch --steps 80 --confirm-steps 200
 
-# Isolated levers
-python -m scripts.run_grammar_matrix --only X0,X2,X7 --steps 200
+# Isolated topology levers
+python -m scripts.run_grammar_matrix --only X9,X10,X11 --steps 80
 
 # Disable halving (run every experiment×seed to completion)
-python -m scripts.run_grammar_matrix --no-halving --only X0,X1,X2 --steps 80
+python -m scripts.run_grammar_matrix --no-halving --only X9,X15 --steps 80
 
-# Champion + process stage
-python -m scripts.run_grammar_matrix --only X7,X8 --steps 400 --gen-steps 16
+# Or confirm two selected rows directly.
+python -m scripts.run_grammar_matrix --no-halving --only X<best>,X<runner-up> \
+  --steps 200 --gen-steps 16
 ```
+
+Screening score:
+
+```text
+topology_composite = 0.45 honest_quality
+                   + 0.25 AST_topology
+                   + 0.20 expansion_and_critic_trace
+                   + 0.10 node_pass_efficiency
+```
+
+The component definitions, budgets, checkpoint boundary, and evidence rules are in
+[grammar-topology-diffusion.md](grammar-topology-diffusion.md). Evidence-complete
+negative results count; undocumented or JSON-only runs do not.
 
 Artifacts: `outputs/runs/grammar_matrix_summary.json`,
 [`docs/design/grammar-matrix-results.json`](grammar-matrix-results.json),

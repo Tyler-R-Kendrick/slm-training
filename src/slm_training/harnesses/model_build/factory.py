@@ -354,6 +354,33 @@ def build_model(
             production_loss_weight=getattr(config, "production_loss_weight", 1.0),
             slot_loss_weight=getattr(config, "slot_loss_weight", 0.5),
             confidence_loss_weight=getattr(config, "confidence_loss_weight", 0.25),
+            topology_actions=bool(getattr(config, "topology_actions", True)),
+            topology_structural_embeddings=bool(
+                getattr(config, "topology_structural_embeddings", True)
+            ),
+            topology_heterogeneous_noise=bool(
+                getattr(config, "topology_heterogeneous_noise", True)
+            ),
+            topology_critic_decode=bool(
+                getattr(config, "topology_critic_decode", True)
+            ),
+            topology_bounded_buffer=bool(
+                getattr(config, "topology_bounded_buffer", True)
+            ),
+            topology_max_nodes=int(getattr(config, "topology_max_nodes", 256)),
+            topology_max_active=int(getattr(config, "topology_max_active", 64)),
+            topology_max_arity=int(getattr(config, "topology_max_arity", 8)),
+            topology_max_depth=int(getattr(config, "topology_max_depth", 32)),
+            topology_max_phases=int(getattr(config, "topology_max_phases", 32)),
+            topology_global_sync_interval=int(
+                getattr(config, "topology_global_sync_interval", 4)
+            ),
+            topology_accept_threshold=float(
+                getattr(config, "topology_accept_threshold", 0.5)
+            ),
+            topology_contract_threshold=float(
+                getattr(config, "topology_contract_threshold", 0.25)
+            ),
             design_md_in_context=(
                 False
                 if config.design_md_in_context is None
