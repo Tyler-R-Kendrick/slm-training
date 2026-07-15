@@ -204,6 +204,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Maximum decode retries per record; lower values are diagnostic-only.",
     )
     parser.add_argument(
+        "--skip-exact-stream-probe",
+        action="store_true",
+        help="Diagnostic override: skip the blocking exact grammar stream probe.",
+    )
+    parser.add_argument(
         "--no-design-md-context",
         action="store_true",
         help="Override: do not concatenate DESIGN.md into context.",
@@ -279,6 +284,7 @@ def main(argv: list[str] | None = None) -> int:
         eval_limit=args.eval_limit,
         gen_steps=args.gen_steps,
         generate_max_attempts=max(1, args.max_attempts),
+        grammar_skip_exact_stream_probe=args.skip_exact_stream_probe,
         grammar_dsl=args.grammar_dsl,
         grammar_trust_model=args.grammar_trust_model,
         grammar_sample_decode=args.grammar_sample_decode,

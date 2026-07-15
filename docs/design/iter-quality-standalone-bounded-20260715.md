@@ -15,3 +15,9 @@ A third isolation probe removed DESIGN context and structural trust, then set
 `--max-attempts 1`; it was still terminated before a scoreboard. This rules out
 the obvious retry/context multipliers and leaves checkpoint-load/model-decode
 profiling as the next required diagnostic. No generated-quality claim is made.
+
+Stack tracing identified `openui_langcore.stream_check` inside constrained
+token selection. The CLI now exposes `--skip-exact-stream-probe`. A retry with
+that flag, one decode step, one attempt, and a toy grammar backend still failed
+to produce a scoreboard, so checkpoint/model initialization or another decode
+path remains to be isolated.
