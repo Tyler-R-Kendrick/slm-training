@@ -589,6 +589,10 @@ def evaluate_suites(
         scoreboard["gates"] = {k: gates[k] for k in ("pass", "failures", "output")}
     from slm_training.evals.agentv import publish_model_evaluation
 
-    scoreboard["agentv"] = publish_model_evaluation(run_dir, board)
+    scoreboard["agentv"] = publish_model_evaluation(
+        run_dir,
+        board,
+        include_missing_suites=set(suites) == set(DEFAULT_SHIP_GATES),
+    )
     path.write_text(json.dumps(scoreboard, indent=2) + "\n", encoding="utf-8")
     return scoreboard
