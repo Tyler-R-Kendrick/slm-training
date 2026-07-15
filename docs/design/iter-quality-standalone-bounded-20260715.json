@@ -1,9 +1,9 @@
 {
   "date": "2026-07-15",
   "kind": "generated-quality-diagnostic-infrastructure",
-  "change": ["standalone --eval-limit", "standalone --gen-steps"],
-  "probe": {"suite": "smoke", "records": 1, "decode_steps": 1, "checkpoint": "iter-next-batch8-4step-finalonly-20260715"},
-  "result": "environment terminated decode before scoreboard",
+  "change": ["standalone --eval-limit", "standalone --gen-steps", "standalone --max-attempts"],
+  "probe": {"suite": "smoke", "records": 1, "decode_steps": 1, "max_attempts": 1, "checkpoint": "iter-next-batch8-4step-finalonly-20260715"},
+  "result": "environment terminated decode before scoreboard even after context/retry isolation",
   "quality_claim": null,
   "next": "instrument standalone evaluation interruption state and profile decoder"
 }

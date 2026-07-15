@@ -198,6 +198,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Decode denoising steps; lower values are diagnostic-only.",
     )
     parser.add_argument(
+        "--max-attempts",
+        type=int,
+        default=3,
+        help="Maximum decode retries per record; lower values are diagnostic-only.",
+    )
+    parser.add_argument(
         "--no-design-md-context",
         action="store_true",
         help="Override: do not concatenate DESIGN.md into context.",
@@ -272,6 +278,7 @@ def main(argv: list[str] | None = None) -> int:
         rico_eval_limit=args.rico_limit,
         eval_limit=args.eval_limit,
         gen_steps=args.gen_steps,
+        generate_max_attempts=max(1, args.max_attempts),
         grammar_dsl=args.grammar_dsl,
         grammar_trust_model=args.grammar_trust_model,
         grammar_sample_decode=args.grammar_sample_decode,
