@@ -177,6 +177,8 @@ class ModelBuildConfig:
     grammar_canvas_lookahead: int = 0
     use_dynamic_quant: bool = False
     generate_max_attempts: int = 3
+    # Diagnostic per-record generation timeout; None/0 preserves unlimited eval.
+    decode_timeout_seconds: float | None = None
     grammar_finalize_on_last_attempt_only: bool = False
     # V7 speculative denoising (docs/design/speculative-denoising.md)
     stability_min_persistence: int = 0  # E70 commit gate (0=off)

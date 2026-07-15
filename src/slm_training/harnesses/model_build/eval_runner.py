@@ -6,6 +6,7 @@ import hashlib
 import json
 import math
 import re
+import signal
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -364,7 +365,7 @@ def evaluate(
         schema = _eval_schema()
         return [GenerationRequest.from_record(r, schema=schema) for r in chunk]
 
-    def _generate_chunk(
+    def _generate_chunk_unbounded(
         chunk: list[ExampleRecord],
     ) -> tuple[list[str], list[dict[str, Any]]]:
         """Generate without passing gold ExampleRecord to the model."""
@@ -391,6 +392,31 @@ def evaluate(
         consume = getattr(plugin, "consume_generation_evidence", None)
         evidence = consume() if callable(consume) else []
         return out, list(evidence)
+
+    decode_timeout_count = 0
+
+    def _generate_chunk(
+        chunk: list[ExampleRecord],
+    ) -> tuple[list[str], list[dict[str, Any]]]:
+        """Generate a chunk, converting an explicit diagnostic timeout to failures."""
+        nonlocal decode_timeout_count
+        seconds = float(getattr(config, "decode_timeout_seconds", 0) or 0)
+        if seconds <= 0 or not hasattr(signal, "setitimer"):
+            return _generate_chunk_unbounded(chunk)
+
+        def _alarm(_signum: int, _frame: object) -> None:
+            raise TimeoutError(f"decode exceeded {seconds:g}s")
+
+        previous = signal.signal(signal.SIGALRM, _alarm)
+        signal.setitimer(signal.ITIMER_REAL, seconds)
+        try:
+            return _generate_chunk_unbounded(chunk)
+        except TimeoutError:
+            decode_timeout_count += len(chunk)
+            return ["" for _ in chunk], []
+        finally:
+            signal.setitimer(signal.ITIMER_REAL, 0)
+            signal.signal(signal.SIGALRM, previous)
 
     def _score_one(
         record: ExampleRecord,
@@ -561,6 +587,7 @@ def evaluate(
         "model": config.model_name,
         "evaluated_at": datetime.now(timezone.utc).isoformat(),
         "failure_breakdown": failure_breakdown,
+        "decode_timeout_count": decode_timeout_count,
         "decode_canvas_cap": canvas_cap,
         "details": details,
     }
