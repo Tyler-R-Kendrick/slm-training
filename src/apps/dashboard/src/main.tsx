@@ -3,25 +3,18 @@ import { createRoot } from "react-dom/client";
 import "./styles.css";
 import { getJSON } from "./api";
 import { CapsContext, type Caps } from "./caps";
-import { Overview } from "./pages/Overview";
-import { Data } from "./pages/Data";
-import { Experiments } from "./pages/Experiments";
-import { Smoke } from "./pages/Smoke";
-import { Checkpoints } from "./pages/Checkpoints";
 import { RunDetail } from "./pages/RunDetail";
-import { Playground } from "./pages/Playground";
 import { DslView } from "./interpret/DslView";
-import { ModeContext, type RenderMode } from "./mode";
 
 type Nav = (to: string) => void;
 
-const ROUTES: { path: string; label: string; icon: string; el: (nav: Nav) => React.ReactNode }[] = [
-  { path: "/", label: "Overview", icon: "◎", el: (nav) => <Overview navigate={nav} /> },
-  { path: "/data", label: "Training Data", icon: "▤", el: (nav) => <Data navigate={nav} /> },
-  { path: "/experiments", label: "Experiments", icon: "⚗", el: (nav) => <Experiments navigate={nav} /> },
-  { path: "/smoke", label: "Smoke Runs", icon: "✷", el: (nav) => <Smoke navigate={nav} /> },
-  { path: "/checkpoints", label: "Checkpoints", icon: "◆", el: (nav) => <Checkpoints navigate={nav} /> },
-  { path: "/playground", label: "Playground", icon: "✎", el: () => <Playground /> },
+const ROUTES: { path: string; label: string; icon: string }[] = [
+  { path: "/", label: "Overview", icon: "◎" },
+  { path: "/data", label: "Training Data", icon: "▤" },
+  { path: "/experiments", label: "Experiments", icon: "⚗" },
+  { path: "/smoke", label: "Smoke Runs", icon: "✷" },
+  { path: "/checkpoints", label: "Checkpoints", icon: "◆" },
+  { path: "/playground", label: "Playground", icon: "✎" },
 ];
 
 function useRouter(): [string, Nav] {
@@ -49,21 +42,9 @@ function useTheme(): [string, () => void] {
   return [theme, () => setTheme((t) => (t === "dark" ? "light" : "dark"))];
 }
 
-function useModeState(): [RenderMode, () => void] {
-  const [mode, setMode] = useState<RenderMode>(
-    () => (localStorage.getItem("slm-mode") as RenderMode) || "compiled"
-  );
-  useEffect(() => {
-    document.documentElement.dataset.mode = mode;
-    localStorage.setItem("slm-mode", mode);
-  }, [mode]);
-  return [mode, () => setMode((m) => (m === "compiled" ? "interpreted" : "compiled"))];
-}
-
 function App() {
   const [path, navigate] = useRouter();
   const [theme, toggleTheme] = useTheme();
-  const [mode, toggleMode] = useModeState();
   const [caps, setCaps] = useState<Caps>({ execution: false, read_only: true, jobs: [] });
 
   useEffect(() => {
@@ -81,7 +62,6 @@ function App() {
 
   return (
     <CapsContext.Provider value={caps}>
-     <ModeContext.Provider value={mode}>
       <div className="app">
         <aside className="sidebar">
           <div className="brand" onClick={() => navigate("/")} style={{ cursor: "pointer" }}>
@@ -110,13 +90,6 @@ function App() {
               Read-only. Serve locally with <span className="mono">serve_playground</span> for the full control plane.
             </div>
           )}
-          <button
-            className={`theme-toggle ${mode === "interpreted" ? "mode-on" : ""}`}
-            onClick={toggleMode}
-            title="Toggle compiled (React) vs interpreted (live OpenUI DSL) rendering"
-          >
-            {mode === "compiled" ? "◈ Compiled" : "◇ Interpreted"}
-          </button>
           <button className="theme-toggle" onClick={toggleTheme}>
             {theme === "dark" ? "☀ Light" : "☾ Dark"}
           </button>
@@ -124,14 +97,11 @@ function App() {
         <main className="main">
           {runMatch ? (
             <RunDetail runId={runMatch} navigate={navigate} />
-          ) : mode === "interpreted" ? (
-            <DslView page={route.path} navigate={navigate} />
           ) : (
-            route.el(navigate)
+            <DslView page={route.path} navigate={navigate} />
           )}
         </main>
       </div>
-     </ModeContext.Provider>
     </CapsContext.Provider>
   );
 }
