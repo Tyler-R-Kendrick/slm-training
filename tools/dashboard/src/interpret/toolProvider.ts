@@ -18,6 +18,37 @@ type QueryFn = (args: Record<string, unknown>) => Promise<unknown>;
 
 export const toolProvider: Record<string, QueryFn> = {
   // ---- Overview -----------------------------------------------------------
+  overview_insights: async () => {
+    const d: any = await getJSON("/api/overview");
+    const p = d.performance ?? {};
+    const s = p.stats ?? {};
+    return {
+      references: {
+        rows: (p.references ?? []).map((r: any) => ({ ...r, card_state: r.status })),
+        provenance: p.reference_provenance,
+      },
+      tiles: {
+        rows: [
+          { label: "Reference models", value: String(s.reference_models ?? 0), sub: "champions + latest checkpoint", accent: "promoted" },
+          { label: "Experiments reviewed", value: String(s.experiments ?? 0), sub: "quality and grammar evidence", accent: "" },
+          { label: "Gate clears", value: `${s.passing ?? 0}/${s.experiments ?? 0}`, sub: "recorded experiment policy", accent: "passed" },
+          { label: "Comparable deltas", value: String(s.comparable ?? 0), sub: s.comparable ? "against current reference" : "reference eval required", accent: s.comparable ? "moss" : "failed" },
+        ],
+      },
+      insights: p.insights ?? { improvements: [], carry_forward: [], novel: [] },
+      comparisons: {
+        rows: (p.comparisons ?? []).map((r: any) => ({
+          ...r,
+          parse: r.parse == null ? "—" : pct(r.parse),
+          fidelity: r.fidelity == null ? "—" : pct(r.fidelity),
+          structure: r.structure == null ? "—" : pct(r.structure),
+          reward: r.reward == null ? "—" : pct(r.reward),
+        })),
+      },
+      comparison_basis: p.comparison_basis ?? "",
+      cache: p.cache ?? {},
+    };
+  },
   overview_tiles: async () => {
     const [d, jobsResp]: any = await Promise.all([getJSON("/api/overview"), getJSON("/api/jobs").catch(() => ({ jobs: [] }))]);
     const t = d.experiment_totals ?? { count: 0, passed: 0 };
