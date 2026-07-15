@@ -1,0 +1,475 @@
+{
+  "version": "remediated_roots",
+  "source": "all",
+  "derive_from": null,
+  "seed_path": "src/slm_training/resources/train_seeds.jsonl",
+  "rico_path": "src/slm_training/resources/rico/semantic_train.jsonl",
+  "rico_hf_split": null,
+  "seed_count": 129,
+  "collected_count": 129,
+  "verifier_rejected": 12,
+  "verifier_rejected_samples": [
+    {
+      "id": "aww_app_01",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_contact_01",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_creative_01",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_docs_01",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_edu_01",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_events_01",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_finance_01",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_folio_01",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_health_01",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_ops_01",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_saas_01",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_shop_01",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    }
+  ],
+  "quality_rejected": 4,
+  "quality_rejected_samples": [
+    {
+      "id": "program_6154681f3a809853",
+      "ok": false,
+      "score": 0.6,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 4,
+      "n_placeholders": 0,
+      "component_diversity": 4,
+      "openui_chars": 175,
+      "design_lint_score": null,
+      "components": {
+        "Stack": 1,
+        "Separator": 1,
+        "Series": 1,
+        "SingleStackedBarChart": 1
+      }
+    },
+    {
+      "id": "program_6154681f3a809853_repair_c1eb27eb373d",
+      "ok": false,
+      "score": 0.6,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 4,
+      "n_placeholders": 0,
+      "component_diversity": 4,
+      "openui_chars": 175,
+      "design_lint_score": null,
+      "components": {
+        "Stack": 1,
+        "Separator": 1,
+        "Series": 1,
+        "SingleStackedBarChart": 1
+      }
+    },
+    {
+      "id": "program_7a100aea1fb8dbba",
+      "ok": false,
+      "score": 0.6,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 4,
+      "n_placeholders": 0,
+      "component_diversity": 4,
+      "openui_chars": 150,
+      "design_lint_score": null,
+      "components": {
+        "Stack": 1,
+        "Point": 1,
+        "RadarChart": 1,
+        "RadialChart": 1
+      }
+    },
+    {
+      "id": "program_7a100aea1fb8dbba_repair_17913539737f",
+      "ok": false,
+      "score": 0.6,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 4,
+      "n_placeholders": 0,
+      "component_diversity": 4,
+      "openui_chars": 150,
+      "design_lint_score": null,
+      "components": {
+        "Stack": 1,
+        "Point": 1,
+        "RadarChart": 1,
+        "RadialChart": 1
+      }
+    }
+  ],
+  "record_count": 108,
+  "error_count": 80,
+  "errors": [
+    {
+      "id": "rico_train_0",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_2",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_3",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_7",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_10",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_13",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_14",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_15",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_22",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_26",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_29",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_33",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_34",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_36",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_40",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_41",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_42",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_43",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_44",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_46",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_48",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_51",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_53",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_59",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_60",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_61",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_64",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_66",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_68",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_69",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_72",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_85",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_86",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_93",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_94",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_96",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_100",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_101",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_102",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_103",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_104",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_107",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_115",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_120",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_122",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_124",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_130",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_131",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_139",
+      "error": "no mappable RICO elements"
+    },
+    {
+      "id": "rico_train_141",
+      "error": "no mappable RICO elements"
+    }
+  ],
+  "synthesizer": "none",
+  "min_quality_score": 0.55,
+  "max_openui_chars": null,
+  "max_components": null,
+  "curriculum": false,
+  "structure_reserved_rejected": 5,
+  "structure_reserved_rejected_samples": [
+    {
+      "id": "lc_assignment_generation_fef4b6999def",
+      "source": "language_contract",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "lc_comment_line_generation_a5b479a75e02",
+      "source": "language_contract",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_card_stack_01",
+      "source": "fixture",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_metrics_01",
+      "source": "fixture",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_tabs_01",
+      "source": "fixture",
+      "reason": "test_fixture_structure"
+    }
+  ],
+  "max_records_per_parent": null,
+  "parent_cap_dropped": 0,
+  "parent_cap_dropped_samples": [],
+  "fuzzy_dedup": false,
+  "fuzzy_dropped": 0,
+  "fuzzy_dropped_samples": [],
+  "semantic_cluster_cap": null,
+  "semantic_dropped": 0,
+  "semantic_dropped_samples": [],
+  "producer_inputs": {
+    "programspec_path": "outputs/progspec/programs.jsonl",
+    "programspec_count": 16,
+    "programspec_seed": 0,
+    "language_contract": true,
+    "deconstruct_path": "src/slm_training/resources/deconstruct/pipeline.jsonl",
+    "render_path": "src/slm_training/resources/render/sample_program.json",
+    "frontier_artifacts": false,
+    "repairs_per_program": 1,
+    "edit_derivatives": false,
+    "design_md_contrastive": false
+  },
+  "mixture": null,
+  "mean_quality_score": 0.9639,
+  "placeholder_vocab_size": 91,
+  "with_design_md": 108,
+  "component_histogram": {
+    "Accordion": 3,
+    "AccordionItem": 4,
+    "AreaChart": 3,
+    "BarChart": 1,
+    "Button": 15,
+    "Buttons": 5,
+    "Callout": 4,
+    "Card": 9,
+    "CardHeader": 4,
+    "Carousel": 3,
+    "CheckBoxGroup": 3,
+    "CheckBoxItem": 4,
+    "CodeBlock": 3,
+    "Col": 4,
+    "DatePicker": 3,
+    "Form": 4,
+    "FormControl": 5,
+    "HorizontalBarChart": 3,
+    "Image": 3,
+    "ImageBlock": 6,
+    "ImageGallery": 3,
+    "Input": 7,
+    "Label": 3,
+    "LineChart": 3,
+    "MarkDownRenderer": 3,
+    "Modal": 4,
+    "PieChart": 3,
+    "Point": 3,
+    "RadarChart": 1,
+    "RadialChart": 1,
+    "RadioGroup": 3,
+    "RadioItem": 4,
+    "ScatterChart": 3,
+    "ScatterSeries": 4,
+    "Select": 3,
+    "SelectItem": 4,
+    "Separator": 3,
+    "Series": 6,
+    "SingleStackedBarChart": 1,
+    "Slice": 1,
+    "Slider": 4,
+    "Stack": 142,
+    "Steps": 3,
+    "StepsItem": 4,
+    "SwitchGroup": 3,
+    "SwitchItem": 5,
+    "TabItem": 4,
+    "Table": 3,
+    "Tabs": 3,
+    "Tag": 3,
+    "TagBlock": 3,
+    "TextArea": 3,
+    "TextCallout": 3,
+    "TextContent": 97
+  },
+  "built_at": "2026-07-15T18:32:46.653329+00:00"
+}
