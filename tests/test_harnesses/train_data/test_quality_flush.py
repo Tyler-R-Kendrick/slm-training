@@ -78,3 +78,40 @@ def test_assess_record_rejects_empty_prompt() -> None:
     )
     report = assess_record(record, require_design_md=False)
     assert "prompt_too_short" in report.reasons
+
+
+def test_independent_judge_rejects_unrelated_boolean_layout() -> None:
+    record = ExampleRecord(
+        id="judge-boolean",
+        prompt="Emit the OpenUI construct: a boolean literal.",
+        openui='root = Stack([sep, cap])\nsep = Separator("horizontal", true)\ncap = TextContent(":cap")',
+        placeholders=[":cap"],
+    )
+    report = assess_record(record, require_design_md=False)
+    assert not report.ok
+    assert "prompt_lexical_target_wrapped_in_unrelated_layout" in report.reasons
+
+
+def test_independent_judge_requires_named_component() -> None:
+    record = ExampleRecord(
+        id="judge-component",
+        prompt="Emit the Accordion component.",
+        openui='root = Stack([card])\ncard = Card([TextContent(":x")])',
+        placeholders=[":x"],
+    )
+    report = assess_record(record, require_design_md=False)
+    assert not report.ok
+    assert "prompt_component_missing_from_output" in report.reasons
+
+
+def test_independent_judge_rejects_under_specified_contract_prompt() -> None:
+    record = ExampleRecord(
+        id="judge-contract",
+        prompt="Emit the OpenUI construct: the Button component.",
+        openui='root = Stack([button, cap])\nbutton = Button(":label")\ncap = TextContent(":caption")',
+        placeholders=[":label", ":caption"],
+        meta={"source_family": "language_contract"},
+    )
+    report = assess_record(record, require_design_md=False)
+    assert not report.ok
+    assert "prompt_under_specified_for_layout" in report.reasons

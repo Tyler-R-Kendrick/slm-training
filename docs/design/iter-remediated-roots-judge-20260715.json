@@ -1,0 +1,14 @@
+{
+  "run_id": "iter-remediated-roots-judge-20260715",
+  "input": "outputs/train_data/remediated_roots/records.jsonl",
+  "output": "src/slm_training/resources/train_data/remediated_roots_judged",
+  "collected": 480,
+  "verifier_rejected": 0,
+  "quality_rejected": 61,
+  "published": 405,
+  "rejection_reason_primary": "prompt_under_specified_for_layout",
+  "content_fingerprint": "b6d135be9806c708486f1f09efd5c993bafdbff99d029c1985488c57c0a11ec1",
+  "mean_quality_score": 0.9663,
+  "judge": "deterministic_independent_prompt_output_contract",
+  "training_policy": "use_judged_corpus_only"
+}
