@@ -1,0 +1,13 @@
+{
+  "run_id": "window",
+  "steps": 6,
+  "data_manifest_sha": "928ec8d4921954c7736d2386fe7abf88bbef75523a7cfe404792f45ddcd5d4ba",
+  "telemetry_persisted": true,
+  "attribution": {
+    "records": 24,
+    "source_family_proxy_mean_loss": {"rico+aug": 80.13997377668109, "fixture+aug": 82.64694213867188, "rico": 66.70544528961182, "rico+template": 59.03828345404731, "fixture+template": 46.4334831237793, "awwwards+template": 59.82109832763672},
+    "length_proxy_mean_loss": {"short": 62.76959848403931, "medium": 73.11488418579101, "long": 66.06817696311258}
+  },
+  "limitation": "loss is recorded per optimizer batch, so assigning it to each record is a diagnostic proxy, not per-example attribution",
+  "decision": "do not alter the corpus from this six-step window; collect larger windows or per-example loss before rebalancing"
+}
