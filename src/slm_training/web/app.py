@@ -167,7 +167,9 @@ def create_app(
     app = FastAPI(
         title="TwoTower OpenUI Playground", version="0.2.0", lifespan=lifespan
     )
-    app.state.readers = Readers(app_root)
+    app.state.readers = Readers(
+        app_root, persist_insights=capabilities.execution
+    )
     app.state.capabilities = capabilities
     if registry is not None:
         app.state.jobs = registry

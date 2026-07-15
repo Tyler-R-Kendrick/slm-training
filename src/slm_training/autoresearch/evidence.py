@@ -46,7 +46,12 @@ def collect_evidence(
                 if path.is_file() and path.suffix.lower() in SUPPORTED_SUFFIXES
             )
     items: list[EvidenceItem] = []
-    for path in sorted(candidates)[:max_files]:
+    # Run diagnoses should reach the bounded researcher prompt before bulk outputs.
+    ordered = sorted(
+        candidates,
+        key=lambda path: (0 if path.name == "run_insights.json" else 1, str(path)),
+    )
+    for path in ordered[:max_files]:
         size = path.stat().st_size
         if size > max_file_bytes or _looks_sensitive(path):
             continue
@@ -92,6 +97,8 @@ def collect_evidence(
 def classify_evidence(path: Path) -> str:
     name = path.name.lower()
     joined = "/".join(path.parts).lower()
+    if name == "run_insights.json":
+        return "run_insight"
     if "research-lineage" in name or "experiment-matrix" in name:
         return "repo_lineage"
     if "agentv" in joined or name.endswith(".eval.jsonl"):
@@ -118,6 +125,23 @@ def summarize_evidence(path: Path, raw: bytes) -> tuple[str, dict[str, float]]:
         try:
             value = json.loads(text)
             _collect_metrics(value, metrics)
+            if path.name == "run_insights.json" and isinstance(value, dict):
+                lines = []
+                for item in value.get("insights") or []:
+                    if isinstance(item, dict):
+                        lines.append(
+                            f"finding={item.get('finding', '')} suggestion={item.get('suggestion', '')}"
+                        )
+                generated = (value.get("enrichment") or {}).get("generated") or {}
+                if isinstance(generated, dict):
+                    if generated.get("summary"):
+                        lines.append(f"enriched_summary={generated['summary']}")
+                    for cause in generated.get("causes") or []:
+                        if isinstance(cause, dict):
+                            lines.append(
+                                f"hypothesis={cause.get('title', '')}: {cause.get('rationale', '')} suggestion={cause.get('suggestion', '')}"
+                            )
+                return " | ".join(lines)[:6000], dict(sorted(metrics.items())[:100])
             summary = _json_summary(value)
             return summary[:1500], dict(sorted(metrics.items())[:100])
         except json.JSONDecodeError:

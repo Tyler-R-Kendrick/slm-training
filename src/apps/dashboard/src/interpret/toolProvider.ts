@@ -159,9 +159,12 @@ export const toolProvider: Record<string, QueryFn> = {
     const rows = d.results ?? [];
     const first = rows[0] ?? {};
     const ph = first.phase_summary ?? {};
+    const runId = first.run_id || first.id || "";
+    const detail: any = runId ? await getJSON(`/api/runs/${encodeURIComponent(runId)}`).catch(() => ({})) : {};
+    const phases = detail.insights?.phases;
     return {
       provenance: d.provenance,
-      first_id: first.run_id || first.id || "",
+      first_id: runId,
       tiles: [
         { label: "Latency p50", value: first.latency_ms_p50 ? `${f(first.latency_ms_p50, 0)}ms` : "—", accent: "ember" },
         { label: "Latency p95", value: first.latency_ms_p95 ? `${f(first.latency_ms_p95, 0)}ms` : "—", accent: "" },
@@ -169,13 +172,14 @@ export const toolProvider: Record<string, QueryFn> = {
         { label: "Wall sec", value: f(first.wall_sec, 2), accent: "" },
         { label: "Perf runs", value: String(rows.length), accent: "" },
       ],
-      phase: [
-        { label: "denoiser", value: ph.denoiser_ms_mean ?? 0 },
-        { label: "dfa sync", value: ph.dfa_sync_ms_mean ?? 0 },
-        { label: "stream check", value: ph.stream_check_ms_mean ?? 0 },
+      phase: phases?.length ? phases : [
+        { label: "denoiser", value: ph.denoiser_ms_mean ?? 0, help: "Profile model forwards first; test AMP/compile, batching, or fewer decode steps, then rerun quality guardrails." },
+        { label: "dfa sync", value: ph.dfa_sync_ms_mean ?? 0, help: "Remove unnecessary host/device synchronization boundaries and measure again on the same device." },
+        { label: "stream check", value: ph.stream_check_ms_mean ?? 0, help: "Prefer incremental or chosen-token verification; keep final validation and parse guardrails enabled." },
       ],
       rows: rows.map((r: any) => ({
         id: r.id,
+        run_id: r.run_id || r.id,
         latency_ms_p50: r.latency_ms_p50,
         tokens_per_sec: r.tokens_per_sec,
         parse_rate: r.parse_rate,
@@ -191,6 +195,7 @@ export const toolProvider: Record<string, QueryFn> = {
         const parse = r.suites?.smoke?.parse_rate;
         return {
           id: r.id,
+          run_id: r.run_id || r.id,
           parse: f(parse, 2),
           fidelity: f(r.suites?.smoke?.placeholder_fidelity, 2),
           reward: f(r.suites?.smoke?.reward_score, 2),

@@ -148,6 +148,25 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.01em; }
 .bar-track { background: var(--bg-3); border-radius: 999px; height: 8px; overflow: hidden; }
 .bar-fill { display: block; height: 100%; background: var(--moss); border-radius: 999px; }
 .bar-value { text-align: right; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.bar-help { position: relative; margin-left: 0.3rem; color: var(--ember); cursor: help; overflow: visible; }
+.bar-help .table-tooltip { left: 0; right: auto; width: min(24rem, 70vw); white-space: normal; }
+.bar-help:hover .table-tooltip, .bar-help:focus .table-tooltip { display: block; }
+
+.loss-chart-wrap { width: 100%; overflow-x: auto; }
+.loss-chart { display: block; width: 100%; min-width: 36rem; color: var(--text-dim); font: 11px var(--font-mono); }
+.loss-grid { stroke: var(--border); stroke-width: 1; }
+.loss-line { fill: none; stroke: var(--moss); stroke-width: 2.5; vector-effect: non-scaling-stroke; }
+.loss-marker line { stroke: var(--ember); stroke-width: 1; stroke-dasharray: 4 3; opacity: 0.65; }
+.loss-marker circle { fill: var(--ember); stroke: var(--bg); stroke-width: 2; }
+.loss-marker-critical line { stroke: var(--danger); }
+.loss-marker-critical circle { fill: var(--danger); }
+.collapse-findings { display: grid; gap: 0.45rem; margin-top: 0.8rem; }
+.collapse-findings details, .insight-cause { padding: 0.65rem 0.8rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-2); }
+.collapse-findings summary { cursor: pointer; }
+.insight-settings { display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem 1rem; margin-bottom: 0.65rem; }
+.insight-settings label { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--text-dim); font-size: 0.78rem; }
+.generated-insights { display: grid; gap: 0.55rem; }
+.insight-cause p { margin: 0.35rem 0 0; }
 
 /* ---- log stream --------------------------------------------------------- */
 .logstream { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-top: 0.8rem; }
