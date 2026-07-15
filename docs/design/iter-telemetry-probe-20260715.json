@@ -1,0 +1,9 @@
+{
+  "run_id": "probe",
+  "run_dir": "outputs/runs/telemetry_probe_20260715/probe",
+  "recipe": {"device": "cpu", "steps": 1, "batch_size": 4, "context_backend": "scratch", "train_dir": "outputs/train_data/remediated"},
+  "loss": 123.42798614501953,
+  "telemetry": {"backward_pct": 69.45, "forward_pct": 11.11, "denoiser_forward_pct": 8.17},
+  "run_insights": {"persisted": true, "status": "healthy", "dominant_phase": "backward"},
+  "decision": "Test gradient accumulation or supported mixed precision before changing the data mixture."
+}
