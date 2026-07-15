@@ -549,6 +549,14 @@ The separate E70 40-step continuation attempt produced partial training
 artifacts but no complete scoreboard and is retained as an operationally
 incomplete run, not included in the comparison.
 
+E72 ordered cluster verification was then trained for the same 20 steps. Its
+training telemetry is complete and its smoke, held-out, adversarial, and OOD
+metrics exactly match E70/E71, but both the matrix wrapper and a standalone
+evaluation stopped before emitting the limited `rico_held` result or an AgentV
+bundle. The run is therefore recorded as **incomplete**, with no promotion;
+the missing RICO artifact is an evaluation-orchestration issue to fix before
+using E72 as evidence for the lever.
+
 ## P13 data-synthesis verification (CPU scratch, 2026-07-14)
 
 The accepted comparison uses the same E50 experiment and effective decode

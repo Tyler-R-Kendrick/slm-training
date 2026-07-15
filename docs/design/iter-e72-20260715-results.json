@@ -1,0 +1,25 @@
+{
+  "matrix": "quality-experiment-matrix-v7",
+  "reference": "docs/design/quality-experiment-matrix.md",
+  "experiment": "E72",
+  "run_id": "qx_e72_cluster_verify",
+  "recipe": {
+    "device": "cpu",
+    "steps": 20,
+    "batch_size": 4,
+    "context_backend": "scratch",
+    "train_dir": "outputs/train_data/remediated",
+    "honest_slot_contract": true,
+    "rico_eval_limit": 5
+  },
+  "suites": {
+    "smoke": {"n": 3, "parse_rate": 1.0, "structural_similarity": 0.6489, "placeholder_fidelity": 1.0, "reward_score": 0.969},
+    "held_out": {"n": 5, "parse_rate": 0.6, "structural_similarity": 0.55388, "placeholder_fidelity": 1.0, "reward_score": 0.9892},
+    "adversarial": {"n": 4, "parse_rate": 1.0, "structural_similarity": 0.8263, "placeholder_fidelity": 1.0, "reward_score": 0.97},
+    "ood": {"n": 4, "parse_rate": 1.0, "structural_similarity": 0.597375, "placeholder_fidelity": 1.0, "reward_score": 0.9895}
+  },
+  "telemetry": "outputs/runs/iter_e72_20260715/qx_e72_cluster_verify/train_telemetry.json",
+  "status": "incomplete",
+  "limitations": ["rico_held did not emit a result or AgentV bundle under the matrix or standalone evaluator"],
+  "decision": "No promotion; E72 quality matches E70/E71 on available suites and cluster verification remains unproven."
+}
