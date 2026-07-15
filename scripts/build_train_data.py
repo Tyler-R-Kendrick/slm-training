@@ -57,6 +57,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--rico-limit", type=int, default=None)
     parser.add_argument("--max-children", type=int, default=6)
     parser.add_argument(
+        "--min-verification-tier",
+        choices=("Bronze", "Silver", "Gold"),
+        default=None,
+        help="Require this independent verification tier before quality filtering.",
+    )
+    parser.add_argument(
         "--output-root",
         type=Path,
         default=Path("outputs/train_data"),
@@ -223,6 +229,7 @@ def main(argv: list[str] | None = None) -> int:
             rico_limit=args.rico_limit,
             max_children=args.max_children,
             min_quality_score=args.min_quality_score,
+            min_verification_tier=args.min_verification_tier,
             require_design_md=not args.allow_missing_design_md,
             max_openui_chars=args.max_openui_chars,
             max_components=args.max_components,
