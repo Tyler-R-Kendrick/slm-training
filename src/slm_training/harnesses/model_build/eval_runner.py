@@ -21,6 +21,7 @@ from slm_training.harnesses.model_build.data import (
 )
 from slm_training.harnesses.model_build.factory import build_model
 from slm_training.harnesses.model_build.plugin import GenerationRequest
+from slm_training.harnesses.model_build.ship_gates import DEFAULT_SHIP_GATES
 
 _COMPONENT_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s*\(")
 
@@ -277,11 +278,11 @@ def evaluate(
         raise ValueError("test_dir is required for evaluation")
 
     records = load_suite_records(config.test_dir, config.suite)
-    if (
-        config.suite == "rico_held"
-        and getattr(config, "rico_eval_limit", None) is not None
-    ):
-        records = records[: max(0, int(config.rico_eval_limit))]
+    suite_limit = getattr(config, "eval_limit", None)
+    if suite_limit is None and config.suite == "rico_held":
+        suite_limit = getattr(config, "rico_eval_limit", None)
+    if suite_limit is not None:
+        records = records[: max(0, int(suite_limit))]
     ckpt = checkpoint or (config.checkpoint_dir / "last.pt")
 
     if model is not None:
@@ -488,6 +489,8 @@ def evaluate(
     metrics = {
         "suite": config.suite,
         "n": n,
+        "eval_limit": suite_limit,
+        "diagnostic_subset": suite_limit is not None,
         "parse_rate": (parse_ok / n) if n else 0.0,
         "raw_syntax_validity": (raw_syntax_ok / n) if n else 0.0,
         "contract_precision": (contract_precision_sum / n) if n else 0.0,

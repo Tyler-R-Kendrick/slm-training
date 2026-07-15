@@ -1,4 +1,0 @@
-interface:
-  display_name: "Organize Repository"
-  short_description: "Keep repository files organized and canonical"
-  default_prompt: "Use $organize-repository to place or move these repository files without creating sprawl."

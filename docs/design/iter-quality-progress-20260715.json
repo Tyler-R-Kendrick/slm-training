@@ -1,9 +1,0 @@
-{
-  "run_id": "baseline",
-  "recipe": {"grad_accum": 1, "lr": 0.0003, "steps": 6, "decode_steps": 8},
-  "data_manifest_sha": "928ec8d4921954c7736d2386fe7abf88bbef75523a7cfe404792f45ddcd5d4ba",
-  "training_rows_persisted": 6,
-  "quality_summary_persisted": false,
-  "finding": "inline decode evaluation terminated after checkpoint creation and before the final matrix summary",
-  "harness_fix": "run_quality_matrix now writes quality_matrix_progress.json before and after each experiment, records the active experiment, and preserves per-experiment exceptions"
-}

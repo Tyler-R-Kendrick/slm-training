@@ -1,2 +1,0 @@
-"""External training-system integrations."""
-

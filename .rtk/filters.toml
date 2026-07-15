@@ -1,3 +1,0 @@
-# Optional project-local RTK filters. See https://www.rtk-ai.app/guide
-# [hooks]
-# exclude_commands = ["playwright"]

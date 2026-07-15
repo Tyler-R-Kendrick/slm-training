@@ -1,9 +1,0 @@
-{
-  "run_family": "E72",
-  "corpus": "outputs/train_data/remediated",
-  "record_count": 585,
-  "source_counts": {"rico+template": 240, "rico+aug": 93, "rico": 80, "fixture+template": 60, "awwwards+template": 36, "fixture+aug": 32, "fixture": 20, "awwwards": 12, "awwwards+aug": 12},
-  "openui_length_chars": {"min": 63, "median": 498, "p90": 884, "max": 1341},
-  "finding": "No single extreme record explains the early loss spike; the corpus is mixed and heavily weighted toward rico+template derivatives.",
-  "next_instrumentation": "Persist batch record IDs, source families, and target-length summaries beside each loss row before changing the objective or data mix."
-}

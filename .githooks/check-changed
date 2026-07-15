@@ -1,9 +1,0 @@
-#!/bin/sh
-set -eu
-
-root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-cd "$root"
-if [ -x .venv/bin/python ]; then
-  exec .venv/bin/python -m scripts.check_changed "$@"
-fi
-exec python3 -m scripts.check_changed "$@"
