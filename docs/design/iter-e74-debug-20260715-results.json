@@ -1,0 +1,11 @@
+{
+  "experiment": "E74",
+  "mode": "seeded_debug_overlay",
+  "seed_checkpoint": "outputs/runs/iter_e72_20260715/qx_e72_cluster_verify/checkpoints/last.pt",
+  "override_gen_steps": 1,
+  "suite": "smoke",
+  "rico_limit": 1,
+  "status": "no_scoreboard",
+  "finding": "The explicit evaluation step override is accepted, but the successor-enabled overlay still exceeded the local execution boundary before writing a result.",
+  "telemetry": "No evaluation telemetry emitted; E72 remains the last complete baseline."
+}

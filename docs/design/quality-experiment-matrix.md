@@ -586,6 +586,12 @@ step. None emitted a scoreboard before the sandbox execution boundary. This
 confirms the limitation is inside the successor-enabled evaluation path, not
 just SFT duration; E74 remains unverified.
 
+The runner now exposes `--override-gen-steps` so diagnostic evaluations can
+override experiment presets such as E74's 16-step decode. A one-example,
+one-step seeded E74 probe still emitted no scoreboard locally, confirming that
+the remaining issue is evaluation-path cost or sandbox lifetime rather than
+the preset alone.
+
 ## P13 data-synthesis verification (CPU scratch, 2026-07-14)
 
 The accepted comparison uses the same E50 experiment and effective decode

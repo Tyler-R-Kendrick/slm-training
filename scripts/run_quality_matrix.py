@@ -1125,7 +1125,12 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
 
 def _eval_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
     cfg = _train_cfg(exp, args)
-    gen_steps = int(getattr(exp, "gen_steps_override", None) or args.gen_steps or 8)
+    gen_steps = int(
+        getattr(args, "override_gen_steps", None)
+        or getattr(exp, "gen_steps_override", None)
+        or args.gen_steps
+        or 8
+    )
     repair = exp.grammar_ltr_repair or exp.eid in {
         "E1",
         "E8",
@@ -1630,6 +1635,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Experiment set: legacy (E0–E10), v2 (E11–E17), v3 (E18–E29), v4 (E30–E36), v5 (E40–E46), v6 (E50–E55), v7 (E70–E75), or all.",
     )
     parser.add_argument("--gen-steps", type=int, default=8)
+    parser.add_argument(
+        "--override-gen-steps",
+        type=int,
+        default=None,
+        help="Force evaluation decode steps, overriding an experiment preset.",
+    )
     parser.add_argument(
         "--force-e34",
         action="store_true",
