@@ -166,7 +166,7 @@ DESIGN.md conditioning + linter: [`src/apps/design_md_bridge/`](src/apps/design_
 
 `serve_playground` serves a **control-plane + observability SPA** at `/` — one
 pane of glass over the whole lifecycle (data → experiments → smoke →
-checkpoints/promotion) — plus the classic annotate playground at `/playground`.
+checkpoints/promotion) — including the annotate playground at `/playground`.
 
 ```bash
 pip install -e ".[dev,torch,web]"
@@ -186,7 +186,7 @@ Surfaces (React 19 + Vite SPA, dark-first "mission control" design system):
 | `/smoke` | Smoke canary + perf & telemetry; launch wiring runs |
 | `/checkpoints` | Roster + **live configurable ship gates** + promote / deploy + blinded A/B |
 | `/runs/<id>` | Per-run detail — gate matrix, telemetry spans, `train_summary` metrics, durable-checkpoint link |
-| `/playground` | Annotate UI (React); classic vanilla page kept at `/playground/classic` |
+| `/playground` | Full annotate UI (React): staged generation, browser fallback/review, DSL repair, and feedback |
 
 **Read vs execute.** Observability views are pure reads (work on a fresh checkout
 and on read-only Vercel, falling back to committed `docs/design/*.json` /
@@ -217,8 +217,13 @@ python -m scripts.serve_playground --port 8765
 ```
 
 `/playground` is the React annotate UI inside the SPA shell (shares the dark
-design system); the original standalone vanilla page is preserved at
-`/playground/classic`. Both drive the same `/api/sample` + `/api/annotate` flow.
+design system). It owns the complete annotation flow: bounded server attempts,
+browser review/fallback, editable and validated DSL corrections, annotator/model
+identity, bearer-token support, activity history, keyboard/swipe grading, and the
+diffusion progress canvas. The retired `/playground/classic` URL redirects here.
+If both model paths are unavailable, the page shows a clearly labeled wiring
+fallback so the renderer/editor/annotation flow remains testable; uncorrected
+fallback feedback is excluded from derived training data.
 
 The demo checkpoint lives in `src/slm_training/resources/checkpoints/playground_demo/` (committed
 `last.pt` + tokenizer + meta). To regenerate it:

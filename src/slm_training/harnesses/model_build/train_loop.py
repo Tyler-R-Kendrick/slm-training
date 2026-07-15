@@ -517,8 +517,6 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                         "ts": datetime.now(timezone.utc).isoformat(),
                     }
                     accum_batch_meta = []
-                    accum_batch_meta = []
-                    accum_example_losses = []
                     metrics_file.write(json.dumps(row) + "\n")
                     metrics_file.flush()
                     did_eval = _maybe_eval(step)
