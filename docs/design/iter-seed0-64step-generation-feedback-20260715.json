@@ -1,0 +1,11 @@
+{
+  "date": "2026-07-15",
+  "kind": "longer-training-generation-feedback",
+  "recipe": {"steps": 64, "batch_size": 8, "effective_batch_size": 8, "learning_rate": 0.0006, "seed": 0, "context_backend": "scratch", "device": "cpu", "eval_limit": 1, "gen_steps": 8, "max_attempts": 1, "skip_exact_stream_probe": true, "verify_chosen_only": true, "decode_timeout_seconds": 10},
+  "corpus": {"records": 585, "manifest_sha256": "928ec8d4921954c7736d2386fe7abf88bbef75523a7cfe404792f45ddcd5d4ba"},
+  "training": {"target_tokens": 87055, "weighted_nll": 7.056898204491874, "telemetry_persisted": true},
+  "constrained_generation": {"latency_ms_p50": 2972.43, "parse_rate": 0.0, "structural_similarity": 0.2333, "placeholder_validity": 0.2667, "component_type_recall": 0.25, "reward_score": 0.0, "decode_timeout_count": 0, "agentv_persisted": true},
+  "comparison": {"steps_32_weighted_nll": 8.883002662560523, "steps_32_structural_similarity": 0.1125, "steps_32_placeholder_validity": 0.1333},
+  "decision": "continue controlled longer training before changing data or loss weights; not ready for ship gates",
+  "honesty": "scratch diagnostic; not a ship claim"
+}
