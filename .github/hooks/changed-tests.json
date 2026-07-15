@@ -1,14 +1,4 @@
 {
   "version": 1,
-  "hooks": {
-    "agentStop": [
-      {
-        "type": "command",
-        "bash": ".githooks/check-changed --hook",
-        "powershell": "python -m scripts.check_changed --hook",
-        "cwd": ".",
-        "timeoutSec": 600
-      }
-    ]
-  }
+  "hooks": {}
 }

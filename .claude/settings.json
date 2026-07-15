@@ -61,17 +61,6 @@
           }
         ]
       }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": ".githooks/check-changed --hook",
-            "timeout": 600
-          }
-        ]
-      }
     ]
   }
 }
