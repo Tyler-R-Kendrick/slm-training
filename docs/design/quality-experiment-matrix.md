@@ -534,6 +534,21 @@ trajectory feedback is specifically needed. The requested `rico_held` suite
 was not emitted by this short run and the missing `adversarial`/`ood` suites
 remain an explicit limitation, not a pass.
 
+The adjacent E71 attention-cluster reproduction used the same corpus and
+20-step recipe with end-only evaluation. It persisted all five available
+limited suites (`smoke` n=3, `held_out` n=5, `adversarial` n=4, `ood` n=4,
+`rico_held` n=3) under `outputs/runs/iter_e71_20260715/qx_e71_clusters/` and
+passed those bounded fixture gates. Metrics matched E70 on smoke and
+held-out; adversarial parse was 1.00 with structural similarity 0.8263, OOD
+parse was 1.00 with structural similarity 0.5974, and RICO-held parse was
+1.00 with structural similarity 0.7618. Decode telemetry proposed clusters
+but accepted none, so this is a reproducibility result, not evidence that the
+cluster optimization is active or a production ship claim.
+
+The separate E70 40-step continuation attempt produced partial training
+artifacts but no complete scoreboard and is retained as an operationally
+incomplete run, not included in the comparison.
+
 ## P13 data-synthesis verification (CPU scratch, 2026-07-14)
 
 The accepted comparison uses the same E50 experiment and effective decode
