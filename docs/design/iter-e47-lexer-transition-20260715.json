@@ -1,0 +1,27 @@
+{
+  "run_id": "iter-e47-lexer-transition-20260715",
+  "parent_run": "iter-e47-silver-ltr-supervision-20260715",
+  "target_transition_probe": {
+    "records_checked": 1,
+    "target_tokens": 37,
+    "admitted_tokens": 37,
+    "first_rejection_before_fix": "B:68 inside framed string literal",
+    "transition_fixes": [
+      "BYTE surface normalization",
+      "LIT_STR/LIT_END quote normalization",
+      "NL surface newline normalization",
+      "legal argmax before structural tie-break"
+    ]
+  },
+  "strict_ltr_checkpoint": {
+    "checkpoint": "outputs/runs/iter-e47-silver-256-20260715/qx_e47_ltr_supervision/checkpoints/last.pt",
+    "parse_rate": 0.0,
+    "structural_similarity": 0.0,
+    "constrained_fallback_rate": 0.0,
+    "latency_ms_p50": 8502.87,
+    "agentv": {"passed": 0, "failed": 5, "execution_errors": 0}
+  },
+  "focused_tests": {"passed": 40, "deselected": 1},
+  "decision": "keep transition fixes; retrain after corrected lexer surface contract before further loss tuning",
+  "honesty": "decoder probe plus scratch smoke evaluation; not a ship claim"
+}
