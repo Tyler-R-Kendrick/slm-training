@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import json
 import re
 from pathlib import Path
@@ -34,14 +35,15 @@ class _GenericTransformer(Transformer):
         self.prop_order = prop_order or {}
         self.component_rule = component_rule
         self.bindings: dict[str, Any] = {}
+        self.statement_kinds: dict[str, str] = {}
 
     def STRING(self, tok: Token) -> str:
         raw = str(tok)
-        return raw[1:-1].encode("utf-8").decode("unicode_escape")
+        return json.loads(raw) if raw.startswith('"') else ast.literal_eval(raw)
 
     def NUMBER(self, tok: Token) -> float | int:
         text = str(tok)
-        return float(text) if "." in text else int(text)
+        return float(text) if any(ch in text for ch in ".eE") else int(text)
 
     def BOOL(self, tok: Token) -> bool:
         return str(tok) == "true"
@@ -52,8 +54,29 @@ class _GenericTransformer(Transformer):
     def COMPONENT(self, tok: Token) -> str:
         return str(tok)
 
+    def BUILTIN(self, tok: Token) -> str:
+        return str(tok)
+
+    def STATE_NAME(self, tok: Token) -> str:
+        return str(tok)
+
+    def NULL(self, _tok: Token) -> None:
+        return None
+
+    def call_name(self, items: list[Any]) -> Any:
+        return items[0]
+
+    def field_name(self, items: list[Any]) -> str:
+        return str(items[0])
+
+    def object_key(self, items: list[Any]) -> str:
+        return str(items[0])
+
     def ref(self, items: list[Any]) -> dict[str, Any]:
         return {"type": "ref", "name": items[0]}
+
+    def state_ref(self, items: list[Any]) -> dict[str, Any]:
+        return {"k": "StateRef", "n": str(items[0])}
 
     def list(self, items: list[Any]) -> list[Any]:
         return list(items)
@@ -61,8 +84,78 @@ class _GenericTransformer(Transformer):
     def arg_list(self, items: list[Any]) -> list[Any]:
         return list(items)
 
+    def object_entry(self, items: list[Any]) -> tuple[str, Any]:
+        return str(items[0]), items[1]
+
+    def object(self, items: list[Any]) -> dict[str, Any]:
+        return {"k": "Obj", "entries": list(items)}
+
+    @staticmethod
+    def _binary(op: str, items: list[Any]) -> dict[str, Any]:
+        return {"k": "BinOp", "op": op, "left": items[0], "right": items[1]}
+
+    def or_expr(self, items: list[Any]) -> dict[str, Any]:
+        return self._binary("||", items)
+
+    def and_expr(self, items: list[Any]) -> dict[str, Any]:
+        return self._binary("&&", items)
+
+    def eq_expr(self, items: list[Any]) -> dict[str, Any]:
+        return self._binary("==", items)
+
+    def ne_expr(self, items: list[Any]) -> dict[str, Any]:
+        return self._binary("!=", items)
+
+    def ge_expr(self, items: list[Any]) -> dict[str, Any]:
+        return self._binary(">=", items)
+
+    def le_expr(self, items: list[Any]) -> dict[str, Any]:
+        return self._binary("<=", items)
+
+    def gt_expr(self, items: list[Any]) -> dict[str, Any]:
+        return self._binary(">", items)
+
+    def lt_expr(self, items: list[Any]) -> dict[str, Any]:
+        return self._binary("<", items)
+
+    def add_expr(self, items: list[Any]) -> dict[str, Any]:
+        return self._binary("+", items)
+
+    def sub_expr(self, items: list[Any]) -> dict[str, Any]:
+        return self._binary("-", items)
+
+    def mul_expr(self, items: list[Any]) -> dict[str, Any]:
+        return self._binary("*", items)
+
+    def div_expr(self, items: list[Any]) -> dict[str, Any]:
+        return self._binary("/", items)
+
+    def mod_expr(self, items: list[Any]) -> dict[str, Any]:
+        return self._binary("%", items)
+
+    def not_expr(self, items: list[Any]) -> dict[str, Any]:
+        return {"k": "UnaryOp", "op": "!", "operand": items[0]}
+
+    def neg_expr(self, items: list[Any]) -> dict[str, Any]:
+        return {"k": "UnaryOp", "op": "-", "operand": items[0]}
+
+    def ternary_expr(self, items: list[Any]) -> dict[str, Any]:
+        return {"k": "Ternary", "cond": items[0], "then": items[1], "else": items[2]}
+
+    def member_expr(self, items: list[Any]) -> dict[str, Any]:
+        return {"k": "Member", "obj": items[0], "field": str(items[1])}
+
+    def index_expr(self, items: list[Any]) -> dict[str, Any]:
+        return {"k": "Index", "obj": items[0], "index": items[1]}
+
     def _make_call(self, name: Any, args: list[Any]) -> dict[str, Any]:
         type_name = str(name)
+        if type_name.startswith("@") or type_name in {"Action", "Query", "Mutation"}:
+            return {
+                "k": "Comp",
+                "name": type_name.removeprefix("@"),
+                "args": [self._runtime_ast(arg) for arg in args],
+            }
         if self.call_as_component:
             props = map_positional_props(type_name, args, self.prop_order)
             return {
@@ -72,6 +165,12 @@ class _GenericTransformer(Transformer):
                 "partial": False,
             }
         return {"type": "call", "name": type_name, "args": args}
+
+    @classmethod
+    def _runtime_ast(cls, value: Any) -> Any:
+        if isinstance(value, list):
+            return {"k": "Arr", "els": [cls._runtime_ast(item) for item in value]}
+        return value
 
     def call(self, items: list[Any]) -> dict[str, Any]:
         name = items[0]
@@ -83,15 +182,41 @@ class _GenericTransformer(Transformer):
     def component(self, items: list[Any]) -> dict[str, Any]:
         return self.call(items)
 
+    def value_statement(self, items: list[Any]) -> tuple[str, Any]:
+        return self._record_statement(items[0], items[1])
+
+    def _record_statement(self, raw_name: Any, expr: Any) -> tuple[str, Any]:
+        name = str(raw_name)
+        self.bindings[name] = expr
+        if isinstance(expr, dict) and expr.get("k") == "Comp":
+            call_name = str(expr.get("name") or "")
+            if call_name in {"Query", "Mutation", "Action"}:
+                self.statement_kinds[name] = call_name.lower()
+            else:
+                self.statement_kinds[name] = "value"
+        else:
+            self.statement_kinds[name] = "value"
+        return name, expr
+
+    def state_statement(self, items: list[Any]) -> tuple[str, Any]:
+        name, expr = str(items[0]), items[1]
+        self.bindings[name] = expr
+        self.statement_kinds[name] = "state"
+        return name, expr
+
     def statement(self, items: list[Any]) -> tuple[str, Any]:
-        name, expr = items[0], items[1]
-        self.bindings[str(name)] = expr
-        return str(name), expr
+        if len(items) >= 2:
+            return self._record_statement(items[0], items[1])
+        return items[0]
 
     def start(self, items: list[Any]) -> dict[str, Any]:
         def resolve(node: Any) -> Any:
             if isinstance(node, dict) and node.get("type") == "ref":
-                target = self.bindings.get(node["name"])
+                name = str(node["name"])
+                kind = self.statement_kinds.get(name)
+                if kind in {"query", "mutation"}:
+                    return {"k": "RuntimeRef", "n": name, "refType": kind}
+                target = self.bindings.get(name)
                 if target is None:
                     return node
                 resolved = resolve(target)
@@ -115,6 +240,15 @@ class _GenericTransformer(Transformer):
         return {
             "bindings": {k: resolve(v) for k, v in self.bindings.items()},
             "root": root,
+            "state_declarations": [
+                name for name, kind in self.statement_kinds.items() if kind == "state"
+            ],
+            "query_statements": [
+                name for name, kind in self.statement_kinds.items() if kind == "query"
+            ],
+            "mutation_statements": [
+                name for name, kind in self.statement_kinds.items() if kind == "mutation"
+            ],
         }
 
 
@@ -215,6 +349,9 @@ class LarkFileBackend:
                 "backend": self._id,
                 "kind": "lark",
                 "bindings": list((data.get("bindings") or {}).keys()),
+                "state_declarations": list(data.get("state_declarations") or []),
+                "query_statements": list(data.get("query_statements") or []),
+                "mutation_statements": list(data.get("mutation_statements") or []),
             },
             serialized=source.strip(),
         )
@@ -257,21 +394,10 @@ class LarkFileBackend:
             # when the buffer looks like a truncated program (unbalanced delimiters
             # or error near the end).
             msg = str(exc)
-            open_delims = source.count("(") + source.count("[")
-            close_delims = source.count(")") + source.count("]")
+            open_delims = source.count("(") + source.count("[") + source.count("{")
+            close_delims = source.count(")") + source.count("]") + source.count("}")
             unbalanced = open_delims > close_delims
-            near_end = getattr(exc, "pos_in_stream", None)
-            at_frontier = near_end is None or near_end >= max(0, len(source) - 3)
             if unbalanced or "Unexpected EOF" in msg or "Unexpected end" in msg:
-                return StreamStatus(
-                    ok=True,
-                    incomplete=True,
-                    has_root="root" in source,
-                    error_codes=(),
-                    unresolved=(),
-                    serialized=None,
-                )
-            if at_frontier and not source.strip().endswith((")", "]")):
                 return StreamStatus(
                     ok=True,
                     incomplete=True,

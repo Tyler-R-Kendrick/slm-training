@@ -52,23 +52,41 @@ def _allowed_id_set_dsl(tokenizer: Any, terminals: frozenset[str]) -> set[int] |
     from slm_training.models.dsl_tokenizer import TokenKind
 
     ignore = {"$END", "COMMENT"}
+    punctuation = {
+        "EQUAL": "=",
+        "LPAR": "(",
+        "RPAR": ")",
+        "LSQB": "[",
+        "RSQB": "]",
+        "LBRACE": "{",
+        "RBRACE": "}",
+        "COMMA": ",",
+        "DOT": ".",
+        "COLON": ":",
+        "QMARK": "?",
+        "PLUS": "+",
+        "MINUS": "-",
+        "STAR": "*",
+        "SLASH": "/",
+        "PERCENT": "%",
+        "BANG": "!",
+        "MORETHAN": ">",
+        "LESSTHAN": "<",
+        "__ANON_0": "||",
+        "__ANON_1": "&&",
+        "__ANON_2": "==",
+        "__ANON_3": "!=",
+        "__ANON_4": ">=",
+        "__ANON_5": "<=",
+    }
     ids: set[int] = set()
     broad = False
     for term in terminals:
         if term in ignore:
             continue
-        if term in {"EQUAL", "="}:
-            ids.add(tokenizer.token_to_id["="])
-        elif term in {"LPAR", "("}:
-            ids.add(tokenizer.token_to_id["("])
-        elif term in {"RPAR", ")"}:
-            ids.add(tokenizer.token_to_id[")"])
-        elif term in {"LSQB", "["}:
-            ids.add(tokenizer.token_to_id["["])
-        elif term in {"RSQB", "]"}:
-            ids.add(tokenizer.token_to_id["]"])
-        elif term in {"COMMA", ","}:
-            ids.add(tokenizer.token_to_id[","])
+        mapped = punctuation.get(term, term)
+        if mapped in tokenizer.token_to_id and mapped in punctuation.values():
+            ids.add(tokenizer.token_to_id[mapped])
         elif term in {"_NL", "NL"}:
             ids.add(tokenizer.token_to_id["NL"])
         elif term == "WS_INLINE":
@@ -80,6 +98,12 @@ def _allowed_id_set_dsl(tokenizer: Any, terminals: frozenset[str]) -> set[int] |
         elif term == "NAME":
             broad = True
             ids |= tokenizer.kind_ids(TokenKind.BIND)
+        elif term == "STATE_NAME":
+            broad = True
+            ids |= tokenizer.kind_ids(TokenKind.STATE)
+        elif term == "BUILTIN":
+            broad = True
+            ids |= tokenizer.kind_ids(TokenKind.BUILTIN)
         elif term == "STRING":
             broad = True
             ids |= tokenizer.kind_ids(TokenKind.SYM)
@@ -98,6 +122,9 @@ def _allowed_id_set_dsl(tokenizer: Any, terminals: frozenset[str]) -> set[int] |
             for b in ("true", "false"):
                 if b in tokenizer.token_to_id:
                     ids.add(tokenizer.token_to_id[b])
+        elif term == "NULL":
+            if "null" in tokenizer.token_to_id:
+                ids.add(tokenizer.token_to_id["null"])
         else:
             # Literal terminal name may already be in vocab.
             if term in tokenizer.token_to_id:

@@ -108,6 +108,7 @@ def structural_token_ids(tokenizer: OpenUITokenizer) -> set[int]:
         if is_dsl_native_tokenizer(tokenizer):
             ids |= tokenizer.kind_ids(TokenKind.STRUCT)
             ids |= tokenizer.kind_ids(TokenKind.COMPONENT)
+            ids |= tokenizer.kind_ids(TokenKind.BUILTIN)
             ids |= tokenizer.kind_ids(TokenKind.SYM)
             ids |= tokenizer.kind_ids(TokenKind.LIT)
             ids.update(

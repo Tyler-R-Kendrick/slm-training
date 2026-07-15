@@ -15,7 +15,35 @@ import {
 import { library, CONTENT_PROPS, PLACEHOLDER_RE } from "./library.mjs";
 
 const schema = library.toJSONSchema();
-const parser = createParser(schema);
+const parser = createParser(schema, library.root);
+const FEATURES = [
+  "state",
+  "query",
+  "mutation",
+  "action",
+  "tool-call",
+  "bindings",
+  "expressions",
+];
+
+function programMetadata(result) {
+  return {
+    state_declarations: result.stateDeclarations || {},
+    query_statements: result.queryStatements || [],
+    mutation_statements: result.mutationStatements || [],
+  };
+}
+
+function serializeParsed(result, source) {
+  const metadata = programMetadata(result);
+  const hasSidecars =
+    metadata.query_statements.length > 0 ||
+    metadata.mutation_statements.length > 0;
+  if (hasSidecars) return source.trim();
+  return jsonToOpenUI(result.root, library, {
+    stateDeclarations: metadata.state_declarations,
+  }).trim();
+}
 
 function collectPlaceholders(node, out = []) {
   if (!node || typeof node !== "object") return out;
@@ -76,26 +104,44 @@ function handle(req) {
   if (!op) throw new Error("missing op");
 
   if (op === "schema") {
-    return { ok: true, schema, library_id: library.id, root: library.root };
+    return {
+      ok: true,
+      schema: {
+        ...schema,
+        "x-openui-lang": { version: "0.5", features: FEATURES },
+      },
+      library_id: library.id,
+      root: library.root,
+    };
   }
 
   if (op === "prompt") {
     const options = req.options || {};
+    const tools = options.tools || [];
+    const toolCalls = options.toolCalls ?? tools.length > 0;
+    const bindings = options.bindings ?? toolCalls;
+    const additionalRules = options.additionalRules || [
+      "Use official openuiLibrary components (Stack, Card, TextContent, Button, Form, Input, …).",
+      'Stack direction is "row"|"column"; gap is "none"|"xs"|"s"|"m"|"l"|"xl"|"2xl".',
+      "Card takes children arrays; TextContent(text, size?) accepts copy slots.",
+      "Put placeholders (for example :hero.title) in every static user-facing string prop.",
+      "Do not invent literal user-facing copy; a separate model fills placeholders.",
+      ...(toolCalls
+        ? []
+        : ["Do not use Query(), Mutation(), Action(), tool calls, or $bindings in layout-only skeletons."]),
+    ];
     const text = library.prompt({
       preamble:
         options.preamble ||
         "You generate placeholder-augmented OpenUI layout skeletons. Content props must be placeholder strings like :hero.title — never marketing copy.",
-      additionalRules: options.additionalRules || [
-        "Use official openuiLibrary components (Stack, Card, TextContent, Button, Form, Input, …).",
-        "Stack direction is \"row\"|\"column\"; gap is \"none\"|\"xs\"|\"s\"|\"m\"|\"l\"|\"xl\"|\"2xl\".",
-        "Card takes children arrays (e.g. Card([title, body])); TextContent(text, size?) for copy slots.",
-        "Put placeholders (e.g. :hero.title, :cta.label) in all user-facing string props (text, label, title, placeholder, alt, …).",
-        "Do not invent literal user-facing copy; a separate model fills placeholders later.",
-        "Do not use Query(), Mutation(), Action(), or $bindings in layout skeletons.",
-      ],
+      additionalRules,
       examples: options.examples,
-      toolCalls: false,
-      bindings: false,
+      toolExamples: options.toolExamples,
+      tools,
+      toolCalls,
+      bindings,
+      editMode: options.editMode,
+      inlineMode: options.inlineMode,
     });
     return { ok: true, prompt: text };
   }
@@ -103,8 +149,8 @@ function handle(req) {
   if (op === "stream_check") {
     const source = req.source;
     if (typeof source !== "string") throw new Error("source must be a string");
-    const streaming = createStreamingParser(schema);
-    const result = streaming.push(source);
+    const streaming = createStreamingParser(schema, library.root);
+    const result = streaming.set(source);
     const policyErrors = result.root ? contentPolicyErrors(result.root) : [];
     const errors = [...(result.meta.errors || []), ...policyErrors];
     const ok =
@@ -121,10 +167,11 @@ function handle(req) {
       placeholders: result.root ? collectPlaceholders(result.root) : [],
       serialized:
         result.root != null && !result.meta.incomplete
-          ? jsonToOpenUI(result.root, library).trim()
+          ? serializeParsed(result, source)
           : null,
       root: result.root,
       meta: result.meta,
+      ...programMetadata(result),
     };
   }
 
@@ -149,14 +196,26 @@ function handle(req) {
       placeholders,
       policy_errors: policyErrors,
       serialized:
-        result.root != null ? jsonToOpenUI(result.root, library).trim() : null,
+        result.root != null && !result.meta.incomplete
+          ? serializeParsed(result, source)
+          : null,
+      ...programMetadata(result),
     };
   }
 
   if (op === "serialize") {
     const root = req.root;
     if (!root) throw new Error("root ElementNode required");
-    return { ok: true, source: jsonToOpenUI(root, library).trim() };
+    const hasSidecars =
+      (req.query_statements || []).length > 0 ||
+      (req.mutation_statements || []).length > 0;
+    const source =
+      hasSidecars && typeof req.source === "string" && req.source.trim()
+        ? req.source.trim()
+        : jsonToOpenUI(root, library, {
+            stateDeclarations: req.state_declarations || {},
+          }).trim();
+    return { ok: true, source };
   }
 
   throw new Error(`unknown op: ${op}`);

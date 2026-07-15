@@ -408,6 +408,8 @@ class TwoTowerModel(nn.Module):
                         "bind": 4,
                         "lit": 5,
                         "byte": 6,
+                        "builtin": 7,
+                        "state": 8,
                     }
                     kind_ids = [
                         kind_name_to_idx.get(tokenizer.id_to_kind.get(i, "special"), 0)
@@ -423,7 +425,7 @@ class TwoTowerModel(nn.Module):
             max_len=self.config.max_target_len,
             dropout=self.config.dropout,
             kind_ids=kind_ids,
-            n_kinds=7 if kind_ids is not None else 0,
+            n_kinds=max(kind_ids) + 1 if kind_ids else 0,
         )
         self.length_head = (
             nn.Linear(self.config.d_model, len(self.config.diffusion_length_buckets))

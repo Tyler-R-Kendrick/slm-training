@@ -49,15 +49,16 @@ but still:
 
 ### Fixed grammar vocabulary
 
-One id per structural terminal (`=`, `(`, `)`, `[`, `]`, `,`, `NL`, `.`),
-each OpenUI component keyword (`Stack`, `Card`, …), `true`/`false`/`null`,
-typed literal openers (`LIT_STR`, `LIT_NUM`, `LIT_END`), and closed string atoms
+One id per structural terminal (`=`, delimiters, object/expression operators,
+`NL`, `.`), each OpenUI component keyword (`Stack`, `Card`, …), runtime builtin
+(`Query`, `Mutation`, `Action`, `@Run`, …), `true`/`false`/`null`, typed literal
+openers (`LIT_STR`, `LIT_NUM`, `LIT_END`), and closed string atoms
 (`STR:column`, `STR:row`, …).
 
 ### Dynamic symbol table (pointer / copy)
 
-Per example, binders are alpha-renamed to `<BIND_j>`; placeholders from the
-slot-contract inventory bind to `<SYM_i>`:
+Per example, binders are alpha-renamed to `<BIND_j>`, state names to
+`<STATE_j>`, and placeholders from the slot-contract inventory bind to `<SYM_i>`:
 
 ```text
 TextContent( <SYM_0> )     # ← ":hero.title"
@@ -78,8 +79,10 @@ Optional `E_tok[id] + E_kind[kind(id)] + E_pos[i]` in
 [`DenoiserTower`](../../src/slm_training/models/blocks.py) behind
 `factorized_embeddings=True`.
 
-Kind metadata (`special|struct|component|sym|bind|lit|byte`) is serialized in
-the tokenizer JSON and is the authority for grammar masks.
+Kind metadata
+(`special|struct|component|builtin|sym|bind|state|lit|byte`) is serialized in
+the tokenizer JSON and is the authority for grammar masks. The added v2 kinds
+extend the factorized kind table without renumbering the original seven kinds.
 
 ## Interaction with MaskGIT / remask / critics
 

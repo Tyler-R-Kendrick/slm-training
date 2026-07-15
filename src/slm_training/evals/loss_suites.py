@@ -71,9 +71,9 @@ def _token_class(tokenizer: Any, token_id: int) -> str:
 
         if is_dsl_native_tokenizer(tokenizer):
             kind = tokenizer.kind_of(token_id)
-            if kind in {TokenKind.SYM, TokenKind.BIND}:
+            if kind in {TokenKind.SYM, TokenKind.BIND, TokenKind.STATE}:
                 return "binding"
-            if kind in {TokenKind.STRUCT, TokenKind.COMPONENT}:
+            if kind in {TokenKind.STRUCT, TokenKind.COMPONENT, TokenKind.BUILTIN}:
                 return "structural"
             return "other"
     except Exception:  # noqa: BLE001

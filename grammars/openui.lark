@@ -1,29 +1,70 @@
-// OpenUI Lang (subset) — Lark grammar for in-process AST extraction.
-// Aligns with OpenUI Lang assignment/statement shape used by @openuidev/lang-core.
-// Schema-level component validation still prefers the official Node bridge.
+// OpenUI Lang v0.5 — in-process grammar for AST extraction/constrained decode.
+// Component validation and runtime semantics remain authoritative in lang-core.
 
-start: statement*
+start: (_NL | statement)*
 
-statement: NAME "=" expr (_NL | COMMENT | WS_INLINE)*
+statement: (state_statement | value_statement) (_NL | COMMENT | WS_INLINE)*
+state_statement: STATE_NAME "=" expr
+value_statement: NAME "=" expr
 
-?expr: component
-     | list
-     | STRING
-     | NUMBER
-     | BOOL
-     | NAME          -> ref
+?expr: ternary
+?ternary: logic_or "?" expr ":" expr  -> ternary_expr
+        | logic_or
+?logic_or: logic_or "||" logic_and   -> or_expr
+         | logic_and
+?logic_and: logic_and "&&" equality  -> and_expr
+          | equality
+?equality: equality "==" comparison  -> eq_expr
+         | equality "!=" comparison  -> ne_expr
+         | comparison
+?comparison: comparison ">=" sum     -> ge_expr
+           | comparison "<=" sum     -> le_expr
+           | comparison ">" sum      -> gt_expr
+           | comparison "<" sum      -> lt_expr
+           | sum
+?sum: sum "+" product                -> add_expr
+    | sum "-" product                -> sub_expr
+    | product
+?product: product "*" unary          -> mul_expr
+        | product "/" unary          -> div_expr
+        | product "%" unary          -> mod_expr
+        | unary
+?unary: "!" unary                    -> not_expr
+      | "-" unary                    -> neg_expr
+      | postfix
+?postfix: postfix "." field_name     -> member_expr
+        | postfix "[" expr "]"       -> index_expr
+        | primary
+?primary: call
+        | list
+        | object
+        | STRING
+        | NUMBER
+        | BOOL
+        | NULL
+        | STATE_NAME                  -> state_ref
+        | NAME                        -> ref
+        | "(" expr ")"
 
-component: COMPONENT "(" [arg_list] ")"
+call: call_name "(" [arg_list] ")"
+call_name: COMPONENT | BUILTIN
 arg_list: expr ("," expr)*
 list: "[" [expr ("," expr)*] "]"
+object: "{" [object_entry ("," object_entry)*] "}"
+object_entry: object_key ":" expr
+object_key: NAME | COMPONENT | STRING
+field_name: NAME | COMPONENT
 
-COMPONENT: /[A-Z][A-Za-z0-9]*/
+BUILTIN: /@[A-Z][A-Za-z0-9_]*/
+STATE_NAME: /\$[A-Za-z_][A-Za-z0-9_]*/
+COMPONENT: /[A-Z][A-Za-z0-9_]*/
 NAME: /[a-z_][A-Za-z0-9_]*/
-STRING: /"(?:\\.|[^"\\])*"/
-NUMBER: /-?\d+(?:\.\d+)?/
+STRING: /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/
+NUMBER: /-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?/
 BOOL: "true" | "false"
+NULL: "null"
 
-COMMENT: /\/\/[^\n]*/
+COMMENT: /\/\/[^\n]*/ | /#[^\n]*/
 _NL: /(\r?\n)+/
 
 %import common.WS_INLINE

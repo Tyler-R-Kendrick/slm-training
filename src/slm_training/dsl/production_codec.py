@@ -24,9 +24,29 @@ LIT_PREFIX = "#"
 LIST_OPEN = "["
 LIST_CLOSE = "]"
 STMT = "="
+V05 = "!v0.5"
+ROOT_STMT = "r="
+STATE_STMT = "$="
+QUERY_STMT = "q="
+MUTATION_STMT = "m="
+ACTION_STMT = "a="
+EOL = ";"
+STATE_REF_PREFIX = "$@"
+BUILTIN_PREFIX = "*"
+NAME_PREFIX = "n:"
+PUNCT_PREFIX = "p:"
 
 _DIRECTIONS = frozenset({"column", "row"})
 _STMT_RE = re.compile(r"(?m)^([a-z_][A-Za-z0-9_]*)\s*=\s*(.+?)\s*$")
+_V05_STMT_RE = re.compile(
+    r"^\s*(\$?[A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$"
+)
+_V05_LEX_RE = re.compile(
+    r'''//[^\n]*|\#[^\n]*|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|'''
+    r"\$[A-Za-z_][A-Za-z0-9_]*|@[A-Z][A-Za-z0-9_]*|"
+    r"[A-Za-z_][A-Za-z0-9_]*|-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?|"
+    r"==|!=|>=|<=|&&|\|\||[=()\[\]{},.:?+*/%!<>-]"
+)
 
 
 @dataclass(frozen=True)
@@ -298,6 +318,133 @@ def _resolve_binding(bindings: dict[str, Any], name: str) -> Any:
     return bindings[name]
 
 
+def _requires_v05_codec(source: str) -> bool:
+    for piece in _V05_LEX_RE.findall(source):
+        if piece.startswith(('"', "'", "//", "#")):
+            continue
+        if piece.startswith(("$", "@")) or piece in {"Query", "Mutation", "Action"}:
+            return True
+        if piece in {
+            "{",
+            "}",
+            ".",
+            ":",
+            "?",
+            "+",
+            "-",
+            "*",
+            "/",
+            "%",
+            "!",
+            "==",
+            "!=",
+            ">",
+            "<",
+            ">=",
+            "<=",
+            "&&",
+            "||",
+        }:
+            return True
+    return False
+
+
+def _v05_statements(source: str) -> list[tuple[str, str]]:
+    statements: list[tuple[str, str]] = []
+    for line in source.splitlines():
+        clean = line.strip()
+        if not clean or clean.startswith(("//", "#")):
+            continue
+        match = _V05_STMT_RE.fullmatch(clean)
+        if not match:
+            raise ParseError(f"unsupported v0.5 statement: {line!r}")
+        statements.append((match.group(1), match.group(2)))
+    if not any(name == "root" for name, _ in statements):
+        raise ParseError("missing root binding")
+    return statements
+
+
+def _v05_marker(name: str, rhs: str) -> str:
+    if name == "root":
+        return ROOT_STMT
+    if name.startswith("$"):
+        return STATE_STMT
+    call = re.match(r"(Query|Mutation|Action)\s*\(", rhs)
+    if call:
+        return {
+            "Query": QUERY_STMT,
+            "Mutation": MUTATION_STMT,
+            "Action": ACTION_STMT,
+        }[call.group(1)]
+    return STMT
+
+
+def _encode_v05(
+    source: str,
+    *,
+    slot_contract: Iterable[str] | None,
+) -> ProductionProgram:
+    _parse_program(source)
+    statements = _v05_statements(source)
+    contract = (
+        canonical_slot_contract(source, declared=slot_contract)
+        if slot_contract is not None
+        else canonical_slot_contract(source)
+    )
+    slot_index = {placeholder: i for i, placeholder in enumerate(contract)}
+    binder_index = {name: i for i, (name, _) in enumerate(statements)}
+    state_names = [name for name, _ in statements if name.startswith("$")]
+    state_index = {name: i for i, name in enumerate(state_names)}
+    tokens = [V05]
+
+    for name, rhs in statements:
+        tokens.append(_v05_marker(name, rhs))
+        pieces = [piece for piece in _V05_LEX_RE.findall(rhs) if not piece.startswith(("//", "#"))]
+        for i, piece in enumerate(pieces):
+            if piece.startswith(('"', "'")):
+                value = json.loads(piece) if piece.startswith('"') else piece[1:-1]
+                if isinstance(value, str) and is_placeholder(value):
+                    if value not in slot_index:
+                        raise ParseError(
+                            f"placeholder {value!r} missing from slot_contract"
+                        )
+                    tokens.append(f"{SLOT_PREFIX}{slot_index[value]}")
+                else:
+                    tokens.append(_literal_token(value))
+                continue
+            if piece.startswith("$"):
+                if piece not in state_index:
+                    state_index[piece] = len(state_index)
+                tokens.append(f"{STATE_REF_PREFIX}{state_index[piece]}")
+                continue
+            if piece.startswith("@"):
+                tokens.append(f"{BUILTIN_PREFIX}{piece[1:]}")
+                continue
+            if re.fullmatch(r"-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?", piece):
+                tokens.append(f"{LIT_PREFIX}{piece}")
+                continue
+            if piece in {"true", "false", "null"}:
+                tokens.append(f"{LIT_PREFIX}{piece}")
+                continue
+            if re.fullmatch(r"[A-Z][A-Za-z0-9_]*", piece):
+                tokens.append(f"{OPEN_PREFIX}{piece}")
+                continue
+            if re.fullmatch(r"[a-z_][A-Za-z0-9_]*", piece):
+                literal_name = (
+                    (i + 1 < len(pieces) and pieces[i + 1] == ":")
+                    or (i > 0 and pieces[i - 1] == ".")
+                )
+                if piece in binder_index and not literal_name:
+                    tokens.append(f"{REF_PREFIX}{binder_index[piece]}")
+                else:
+                    tokens.append(f"{NAME_PREFIX}{piece}")
+                continue
+            tokens.append(f"{PUNCT_PREFIX}{piece}")
+        tokens.append(EOL)
+
+    return ProductionProgram(tokens=tuple(tokens), slot_contract=tuple(contract))
+
+
 def encode_openui(
     source: str,
     *,
@@ -305,6 +452,8 @@ def encode_openui(
 ) -> ProductionProgram:
     """Parse OpenUI and emit a compact production token sequence."""
     scrubbed = strip_style_literals(source or "").strip()
+    if _requires_v05_codec(scrubbed):
+        return _encode_v05(scrubbed, slot_contract=slot_contract)
     _parse_program(scrubbed)
     bindings = _parse_bindings(scrubbed)
     contract = (
@@ -335,6 +484,8 @@ def decode_productions(
     """Reconstruct deterministic OpenUI source from production tokens + contract."""
     contract = tuple(slot_contract)
     stream = list(tokens)
+    if stream[:1] == [V05]:
+        return _decode_v05(stream, contract, root_name=root_name)
     pos = 0
     statements: list[tuple[str, str]] = []
     generated_names: list[str] = []
@@ -396,6 +547,103 @@ def decode_productions(
 
     root_lines = [f"{name} = {expr}" for name, expr in statements if name == root_name]
     other_lines = [f"{name} = {expr}" for name, expr in statements if name != root_name]
+    return "\n".join(root_lines + other_lines)
+
+
+def _decode_v05(
+    stream: list[str],
+    contract: tuple[str, ...],
+    *,
+    root_name: str,
+) -> str:
+    """Decode the typed v0.5 lexical stream with deterministic alpha-renaming."""
+    markers = {ROOT_STMT, STATE_STMT, QUERY_STMT, MUTATION_STMT, ACTION_STMT, STMT}
+    sections: list[tuple[str, list[str]]] = []
+    pos = 1
+    while pos < len(stream):
+        marker = stream[pos]
+        pos += 1
+        if marker not in markers:
+            raise ParseError(f"expected v0.5 statement marker, got {marker!r}")
+        end = pos
+        while end < len(stream) and stream[end] != EOL:
+            end += 1
+        if end == len(stream):
+            raise ParseError("unterminated v0.5 production statement")
+        sections.append((marker, stream[pos:end]))
+        pos = end + 1
+
+    binder_names: list[str] = []
+    counters = {STATE_STMT: 0, QUERY_STMT: 0, MUTATION_STMT: 0, ACTION_STMT: 0}
+    prefixes = {QUERY_STMT: "q", MUTATION_STMT: "m", ACTION_STMT: "a"}
+    for index, (marker, _) in enumerate(sections):
+        if marker == ROOT_STMT:
+            name = root_name
+        elif marker == STATE_STMT:
+            name = f"$s{counters[STATE_STMT]}"
+            counters[STATE_STMT] += 1
+        elif marker in prefixes:
+            name = f"{prefixes[marker]}{counters[marker]}"
+            counters[marker] += 1
+        else:
+            name = f"v{index}"
+        binder_names.append(name)
+
+    state_names = [
+        name
+        for (marker, _), name in zip(sections, binder_names)
+        if marker == STATE_STMT
+    ]
+
+    def surface(token: str) -> str:
+        if token.startswith(SLOT_PREFIX):
+            index = int(token[len(SLOT_PREFIX) :])
+            if index < 0 or index >= len(contract):
+                raise ParseError(f"slot pointer out of range: {token}")
+            return json.dumps(contract[index])
+        if token.startswith(STATE_REF_PREFIX):
+            index = int(token[len(STATE_REF_PREFIX) :])
+            return state_names[index] if index < len(state_names) else f"$s{index}"
+        if token.startswith(REF_PREFIX):
+            index = int(token[len(REF_PREFIX) :])
+            if index < 0 or index >= len(binder_names):
+                raise ParseError(f"statement ref out of range: {token}")
+            return binder_names[index]
+        if token.startswith(BUILTIN_PREFIX):
+            return f"@{token[len(BUILTIN_PREFIX):]}"
+        if token.startswith(OPEN_PREFIX):
+            return token[len(OPEN_PREFIX) :]
+        if token.startswith(NAME_PREFIX):
+            return token[len(NAME_PREFIX) :]
+        if token.startswith(PUNCT_PREFIX):
+            return token[len(PUNCT_PREFIX) :]
+        if token.startswith(LIT_PREFIX):
+            return _decode_literal(token[len(LIT_PREFIX) :])
+        raise ParseError(f"unknown v0.5 production token: {token}")
+
+    def pretty(tokens: list[str]) -> str:
+        pieces = [surface(token) for token in tokens]
+        out: list[str] = []
+        operators = {"?", "+", "-", "*", "/", "%", "==", "!=", ">", "<", ">=", "<=", "&&", "||"}
+        for piece in pieces:
+            if piece == ",":
+                out.append(", ")
+            elif piece == ":":
+                out.append(": ")
+            elif piece in operators:
+                out.append(f" {piece} ")
+            elif piece == "!":
+                out.append(piece)
+            else:
+                out.append(piece)
+        return "".join(out)
+
+    lines = [
+        f"{name} = {pretty(tokens)}"
+        for name, (_, tokens) in zip(binder_names, sections)
+    ]
+    root_lines = [line for line in lines if line.startswith(f"{root_name} = ")]
+    other_lines = [line for line in lines if not line.startswith(f"{root_name} = ")]
     return "\n".join(root_lines + other_lines)
 
 
@@ -669,15 +917,24 @@ class ProductionCodec:
 
 
 __all__ = [
+    "ACTION_STMT",
+    "BUILTIN_PREFIX",
     "CLOSE",
     "DIR_PREFIX",
     "LIST_CLOSE",
     "LIST_OPEN",
     "LIT_PREFIX",
+    "MUTATION_STMT",
+    "NAME_PREFIX",
     "OPEN_PREFIX",
     "REF_PREFIX",
+    "ROOT_STMT",
     "SLOT_PREFIX",
     "STMT",
+    "STATE_REF_PREFIX",
+    "STATE_STMT",
+    "QUERY_STMT",
+    "V05",
     "ProductionCodec",
     "ProductionProgram",
     "ProductionVocab",

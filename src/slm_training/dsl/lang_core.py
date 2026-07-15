@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from slm_training.bridge_utils import readline_with_timeout, repo_root
+from slm_training.dsl.language_contract import contract_id
 from slm_training.dsl.placeholders import extract_placeholders
 
 REPO_ROOT = repo_root()
@@ -53,6 +54,9 @@ class Program:
     meta: dict[str, Any] = field(default_factory=dict)
     serialized: str | None = None
     policy_errors: list[dict[str, Any]] = field(default_factory=list)
+    state_declarations: dict[str, Any] = field(default_factory=dict)
+    query_statements: list[dict[str, Any]] = field(default_factory=list)
+    mutation_statements: list[dict[str, Any]] = field(default_factory=list)
 
     @property
     def statements(self) -> list[Any]:
@@ -223,9 +227,15 @@ def parse(source: str) -> Program:
         source=source,
         root=result.get("root"),
         placeholders=placeholders,
-        meta=dict(result.get("meta") or {}),
+        meta={
+            **dict(result.get("meta") or {}),
+            "contract_id": contract_id(),
+        },
         serialized=result.get("serialized"),
         policy_errors=list(result.get("policy_errors") or []),
+        state_declarations=dict(result.get("state_declarations") or {}),
+        query_statements=list(result.get("query_statements") or []),
+        mutation_statements=list(result.get("mutation_statements") or []),
     )
     _cache_put(cache_key, program)
     return program
@@ -251,9 +261,15 @@ def validate(source: str) -> Program:
         source=source,
         root=result.get("root"),
         placeholders=placeholders,
-        meta=dict(result.get("meta") or {}),
+        meta={
+            **dict(result.get("meta") or {}),
+            "contract_id": contract_id(),
+        },
         serialized=result.get("serialized"),
         policy_errors=policy,
+        state_declarations=dict(result.get("state_declarations") or {}),
+        query_statements=list(result.get("query_statements") or []),
+        mutation_statements=list(result.get("mutation_statements") or []),
     )
     _cache_put(cache_key, program)
     return program
@@ -264,7 +280,16 @@ def serialize(program: Program) -> str:
         return program.serialized
     if program.root is None:
         raise ParseError("cannot serialize program without root")
-    result = _invoke({"op": "serialize", "root": program.root})
+    result = _invoke(
+        {
+            "op": "serialize",
+            "root": program.root,
+            "source": program.source,
+            "state_declarations": program.state_declarations,
+            "query_statements": program.query_statements,
+            "mutation_statements": program.mutation_statements,
+        }
+    )
     if not result.get("ok"):
         raise ParseError(result.get("error") or "serialize failed")
     return str(result["source"])

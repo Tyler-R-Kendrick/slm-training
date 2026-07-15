@@ -308,7 +308,7 @@ def template_mask_positions(
                 kind = tokenizer.kind_of(int(tid))
                 if kind == TokenKind.SYM and mask_placeholders:
                     mask_at.append(i)
-                elif kind == TokenKind.BIND and mask_binders:
+                elif kind in {TokenKind.BIND, TokenKind.STATE} and mask_binders:
                     mask_at.append(i)
             return mask_at
     except Exception:  # noqa: BLE001

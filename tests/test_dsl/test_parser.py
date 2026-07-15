@@ -10,14 +10,32 @@ from slm_training.dsl import (
     bridge_available,
     extract_placeholders,
     generate_system_prompt,
+    library_schema,
     parse,
     serialize,
+    stream_check,
     validate,
 )
+from slm_training.dsl.language_contract import contract_id
 
 pytestmark = pytest.mark.skipif(
     not bridge_available(),
     reason="OpenUI bridge deps missing; run: cd tools/openui_bridge && npm ci",
+)
+
+V05_PROGRAM = (
+    'root = Stack([form, card])\n'
+    '$filter = "all"\n'
+    'items = Query("get_items", {filter: $filter}, {rows: []})\n'
+    'save = Mutation("save_item", {filter: $filter})\n'
+    'submit = Action([@Run(save), @Run(items), @Set($filter, "all")])\n'
+    'button = Button(":actions.save", submit)\n'
+    'buttons = Buttons([button])\n'
+    'input = Input("filter", ":filter.placeholder", "text", null, $filter)\n'
+    'field = FormControl(":filter.label", input)\n'
+    'form = Form("filters", buttons, [field])\n'
+    'count = TextContent("" + @Count(items.rows))\n'
+    'card = Card([count])'
 )
 
 
@@ -76,3 +94,52 @@ def test_official_system_prompt() -> None:
     prompt = generate_system_prompt()
     assert "openui-lang" in prompt.lower() or "OpenUI" in prompt or "Stack" in prompt
     assert "placeholder" in prompt.lower() or ":hero.title" in prompt
+
+
+def test_v05_whole_program_roundtrip() -> None:
+    program = validate(V05_PROGRAM)
+    assert program.meta["contract_id"] == contract_id()
+    assert program.state_declarations == {"$filter": "all"}
+    assert [q["statementId"] for q in program.query_statements] == ["items"]
+    assert [m["statementId"] for m in program.mutation_statements] == ["save"]
+
+    serialized = serialize(program)
+    assert 'items = Query("get_items"' in serialized
+    assert 'save = Mutation("save_item"' in serialized
+    assert "submit = Action([@Run(save), @Run(items)" in serialized
+    again = validate(serialized)
+    assert again.state_declarations == program.state_declarations
+    assert len(again.query_statements) == 1
+    assert len(again.mutation_statements) == 1
+
+
+def test_v05_prompt_schema_and_stream_metadata() -> None:
+    prompt = generate_system_prompt(
+        tools=[
+            {
+                "name": "get_items",
+                "description": "List items",
+                "inputSchema": {"type": "object"},
+                "outputSchema": {"type": "object"},
+            }
+        ],
+        toolCalls=True,
+        bindings=True,
+    )
+    assert "Query(" in prompt
+    assert "Mutation(" in prompt
+    assert "$variables" in prompt
+
+    schema = library_schema()
+    assert schema["x-openui-lang"]["version"] == "0.5"
+    assert "query" in schema["x-openui-lang"]["features"]
+
+    streamed = stream_check(V05_PROGRAM)
+    assert streamed["ok"] is True
+    assert streamed["state_declarations"] == {"$filter": "all"}
+    assert len(streamed["query_statements"]) == 1
+    assert len(streamed["mutation_statements"]) == 1
+
+    partial = stream_check('root = Stack([button])\nbutton = Button(":save"')
+    assert partial["incomplete"] is True
+    assert partial["serialized"] is None

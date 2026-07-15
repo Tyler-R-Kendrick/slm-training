@@ -94,6 +94,32 @@ def test_allowed_id_set_expands_components() -> None:
     assert tok.token_to_id["="] not in allowed
 
 
+def test_dsl_native_terminal_map_covers_v05_surface() -> None:
+    from slm_training.dsl.grammar.fastpath.token_map import allowed_id_set
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tok = DSLNativeTokenizer.build()
+    terminals = frozenset(
+        {
+            "LBRACE",
+            "RBRACE",
+            "COLON",
+            "QMARK",
+            "DOT",
+            "PLUS",
+            "__ANON_4",
+            "BUILTIN",
+            "STATE_NAME",
+            "NULL",
+        }
+    )
+    allowed = allowed_id_set(tok, terminals)
+    assert allowed is not None
+    for token in ("{", "}", ":", "?", ".", "+", ">=", "@Run", "null"):
+        assert tok.token_to_id[token] in allowed
+    assert tok.state_id(0) in allowed
+
+
 def test_pick_constrained_rejects_double_equal() -> None:
     import torch
 

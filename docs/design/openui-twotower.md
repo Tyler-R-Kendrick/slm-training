@@ -23,6 +23,20 @@ Build a small, on-device-friendly specialist that generates **placeholder-augmen
 
 Parsing, serialization, and system-prompt generation use **`@openuidev/lang-core`** via [`tools/openui_bridge/`](../../tools/openui_bridge/), which re-exports official **`openuiLibrary`**.
 
+The pinned `@openuidev/lang-core@0.2.9` bridge and in-process grammar can parse
+the prototype v0.5 surface: `$state`, `Query`, `Mutation`, `Action`, tool calls,
+objects, member/index access, and expressions. They retain runtime sidecars and
+preserve validated whole-program source when canonical tree serialization would
+drop declarations. This is parser/codec capability only: the honest layout SLM
+training contract remains the published 0.2.x subset and the verifier continues
+to reject runtime/dataflow syntax from layout-only datasets.
+
+The canonical 16-hex contract identity remains
+[`language_contract.py`](../../src/slm_training/dsl/language_contract.py). Its
+grammar and tokenizer hashes change with this surface, so tokenizer-v1 artifacts
+must be regenerated for the v2 typed state/builtin alphabet; the
+`ExampleRecord` wire shape remains unchanged and stores identity in metadata.
+
 Root: `Stack`. Content components include `TextContent`, `Card([children])`, `Button`, `Input`, `ImageBlock`, forms, charts, etc.
 
 ### Placeholder policy
