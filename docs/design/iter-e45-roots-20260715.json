@@ -1,0 +1,12 @@
+{
+  "matrix": "quality-experiment-matrix-v5",
+  "experiment": "E45",
+  "run_id": "qx_e45_teacher_init",
+  "corpus": "remediated_roots",
+  "manifest_sha": "f8d714f122ac7f091236fd4e562935758de330534cac146abf30af13d0ac98ce",
+  "recipe": {"model": "twotower", "context_backend": "scratch", "device": "cpu", "output_tokenizer": "lexer", "teacher_init_embeddings": true, "freeze_context": true, "steps": 128, "batch_size": 8},
+  "telemetry_path": "outputs/runs/iter-e45-roots-20260715/qx_e45_teacher_init/train_telemetry.json",
+  "loss": {"weighted_nll": 8.747976462776764, "broad_mean_nll": 5.626024514396082, "target_tokens": 49042},
+  "evaluation": {"suite": "smoke", "n": 3, "parse_rate": 0.0, "structural_similarity": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0, "latency_ms_p50": 10053.23, "decode_timeout_count": 0, "decision": "reject"},
+  "next": "evaluate champion combination or redesign output objective"
+}
