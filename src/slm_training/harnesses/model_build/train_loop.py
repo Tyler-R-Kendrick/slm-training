@@ -275,6 +275,20 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             for record in batch
         ]
 
+    def _batch_meta(batch: list) -> list[dict]:
+        return [
+            {
+                "id": str(record.id),
+                "source": str(record.source),
+                "source_family": str(
+                    (record.meta or {}).get("source_family") or record.source
+                ),
+                "prompt_chars": len(record.prompt),
+                "target_chars": len(record.openui),
+            }
+            for record in batch
+        ]
+
     def _budget_exhausted() -> bool:
         budget = getattr(config, "target_token_budget", None)
         return (
@@ -503,6 +517,8 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                         "ts": datetime.now(timezone.utc).isoformat(),
                     }
                     accum_batch_meta = []
+                    accum_batch_meta = []
+                    accum_example_losses = []
                     metrics_file.write(json.dumps(row) + "\n")
                     metrics_file.flush()
                     did_eval = _maybe_eval(step)
