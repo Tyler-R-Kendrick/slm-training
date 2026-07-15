@@ -80,6 +80,32 @@ def test_build_train_data_writes_artifacts(tmp_path: Path) -> None:
     not bridge_available(),
     reason="OpenUI bridge deps missing; run: cd tools/openui_bridge && npm ci",
 )
+def test_build_train_data_derives_from_existing_records(tmp_path: Path) -> None:
+    roots = _seed_file(tmp_path)
+    result = build_train_data(
+        TrainDataConfig(
+            source="existing",
+            derive_from=roots,
+            output_root=tmp_path / "train_data",
+            version="derived",
+            synthesizer="template",
+            include_frontier_artifacts=False,
+            include_edit_derivatives=False,
+            repairs_per_program=0,
+        )
+    )
+    rows = load_jsonl(Path(result["output_dir"]) / "records.jsonl")
+    assert result["stats"]["source"] == "existing"
+    assert result["stats"]["derive_from"] == str(roots)
+    assert {row.meta.get("derivation_source") for row in rows} == {str(roots)}
+    assert any(row.meta.get("synth") == "template" for row in rows)
+    assert len(rows) > 2
+
+
+@pytest.mark.skipif(
+    not bridge_available(),
+    reason="OpenUI bridge deps missing; run: cd tools/openui_bridge && npm ci",
+)
 def test_build_train_data_rejects_invalid_openui(tmp_path: Path) -> None:
     path = tmp_path / "bad.jsonl"
     write_jsonl(

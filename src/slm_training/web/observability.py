@@ -395,13 +395,43 @@ class Readers:
         }
 
     def train_records(
-        self, version: str, *, split: str | None = None, limit: int = 50
+        self,
+        version: str,
+        *,
+        split: str | None = None,
+        source: str | None = None,
+        query: str | None = None,
+        offset: int = 0,
+        limit: int = 50,
     ) -> dict[str, Any]:
+        if not re.fullmatch(r"[A-Za-z0-9._,-]{1,64}", version):
+            return {"version": version, "count": 0, "offset": 0, "records": []}
         path = self.outputs / "train_data" / version / "records.jsonl"
         rows = _read_jsonl(path, limit=None)
         if split:
             rows = [r for r in rows if r.get("split") == split]
-        return {"version": version, "count": len(rows), "records": rows[:limit]}
+        sources = sorted({str(r.get("source") or "unknown") for r in rows})
+        if source:
+            rows = [r for r in rows if str(r.get("source") or "unknown") == source]
+        if query:
+            needle = query.casefold()
+            rows = [
+                r
+                for r in rows
+                if needle
+                in " ".join(
+                    str(r.get(key) or "") for key in ("id", "source", "prompt", "openui")
+                ).casefold()
+            ]
+        start = max(0, offset)
+        return {
+            "version": version,
+            "count": len(rows),
+            "offset": start,
+            "limit": limit,
+            "sources": sources,
+            "records": rows[start : start + limit],
+        }
 
     def _fixture_data(self) -> dict[str, Any]:
         """Cold-start corpus health from committed fixtures."""

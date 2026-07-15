@@ -72,6 +72,32 @@ def test_readers_cold_start_fallback(tmp_path) -> None:
     assert readers.runs()["provenance"] == "committed"
 
 
+def test_train_records_supports_browsing_filters_and_pagination(tmp_path) -> None:
+    from slm_training.dsl.schema import ExampleRecord, write_jsonl
+
+    path = tmp_path / "outputs" / "train_data" / "v1" / "records.jsonl"
+    write_jsonl(
+        path,
+        [
+            ExampleRecord(
+                id=f"row-{i}",
+                prompt=f"Prompt {i}",
+                openui='root = TextContent(":copy.value")',
+                source="template" if i % 2 else "layout",
+            )
+            for i in range(6)
+        ],
+    )
+    readers = Readers(tmp_path)
+    page = readers.train_records("v1", offset=2, limit=2)
+    assert page["count"] == 6
+    assert [row["id"] for row in page["records"]] == ["row-2", "row-3"]
+    assert page["sources"] == ["layout", "template"]
+    filtered = readers.train_records("v1", source="template", query="Prompt 3")
+    assert filtered["count"] == 1
+    assert filtered["records"][0]["id"] == "row-3"
+
+
 def test_run_detail_merges_scoreboard(ro_client: TestClient) -> None:
     board = ro_client.get("/api/scoreboards/quality").json()["results"]
     run_id = board[0].get("run_id") or board[0].get("id")
@@ -166,6 +192,25 @@ def test_allowlist_rejects_unknown_and_malicious(tmp_path) -> None:
             ).status_code
             == 422
         )
+
+
+def test_train_data_job_renders_existing_derivative_controls() -> None:
+    argv = jobs_mod.JOB_SPECS["build_train_data"].render_argv(
+        {
+            "source": "existing",
+            "base_version": "v1",
+            "version": "v1-derived",
+            "synthesizer": "layout",
+            "namespace_augment": True,
+            "edit_derivatives": False,
+            "repairs_per_program": 0,
+        }
+    )
+    assert ["--derive-from", "outputs/train_data/v1/records.jsonl"] == argv[
+        argv.index("--derive-from") : argv.index("--derive-from") + 2
+    ]
+    assert "--namespace-augment" in argv
+    assert "--no-edit-derivatives" in argv
 
 
 def test_job_runs_to_completion(tmp_path, monkeypatch) -> None:

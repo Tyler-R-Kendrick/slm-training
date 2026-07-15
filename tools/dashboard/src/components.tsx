@@ -373,7 +373,7 @@ export function JobLauncher({
                 <option value="">—</option>
                 {rule.choices?.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
-            ) : rule.type === "Flag" ? (
+            ) : rule.type === "Flag" || rule.type === "BooleanOptionalFlag" ? (
               <input type="checkbox" checked={!!params[name]} onChange={(e) => set(name, e.target.checked)} />
             ) : rule.type === "IntRange" ? (
               <input type="number" min={rule.min} max={rule.max} value={params[name] ?? ""} onChange={(e) => set(name, Number(e.target.value))} />

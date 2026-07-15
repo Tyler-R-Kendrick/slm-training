@@ -21,6 +21,7 @@ def main(argv: list[str] | None = None) -> int:
             "both",
             "awwwards",
             "rico+awwwards",
+            "existing",
             "programspec",
             "language_contract",
             "deconstruct",
@@ -35,6 +36,12 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=Path("fixtures/train_seeds.jsonl"),
         help="JSONL seed fixtures (used when source includes fixtures).",
+    )
+    parser.add_argument(
+        "--derive-from",
+        type=Path,
+        default=None,
+        help="Existing records.jsonl to use as roots when --source existing.",
     )
     parser.add_argument(
         "--rico-path",
@@ -202,6 +209,7 @@ def main(argv: list[str] | None = None) -> int:
             if args.source in {"rico", "both", "rico+awwwards", "all"}
             else None,
             source=args.source,
+            derive_from=args.derive_from,
             output_root=args.output_root,
             version=args.version,
             synthesizer=args.synthesizer,
