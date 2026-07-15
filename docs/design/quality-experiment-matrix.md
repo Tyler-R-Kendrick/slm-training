@@ -508,6 +508,13 @@ every smoke checkpoint (steps 200, 400, 600, 800, and 1000). This is a
 negative training result, not a promotion candidate; the durable run summary
 and telemetry are under `outputs/runs/overnight_retrain_1000/`.
 
+The E53 V6 scratch-control follow-up completed its 80-step base train and
+30-step trust-gate fit, but both the full matrix evaluator and a direct
+smoke-only evaluation of its lexer checkpoint exceeded the overnight runtime
+budget without emitting a scoreboard. This is recorded as an operational
+failure, not a quality result or a ship signal; the partial checkpoint remains
+under `/tmp/overnight-e53/` for later profiling.
+
 ## P13 data-synthesis verification (CPU scratch, 2026-07-14)
 
 The accepted comparison uses the same E50 experiment and effective decode
