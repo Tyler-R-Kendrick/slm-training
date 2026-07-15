@@ -130,3 +130,11 @@ def test_annotate_static_has_tab_toggle() -> None:
     assert 'id="modelSource"' in html.text
     assert "Training model · candidate under evaluation" in html.text
     assert "Browser baseline · on-device reference" in html.text
+
+
+def test_spa_playground_has_diffusion_progressive_render() -> None:
+    from pathlib import Path
+
+    source = Path("src/apps/dashboard/src/pages/Playground.tsx").read_text(encoding="utf-8")
+    assert "DiffusionCanvas" in source
+    assert "resolving changing blocks" in source

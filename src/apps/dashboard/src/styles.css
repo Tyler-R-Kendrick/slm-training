@@ -195,6 +195,18 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.01em; }
   .data-browser-count { padding-bottom: 0; }
 }
 .openui-preview { background: #fff; border-radius: var(--radius); padding: 0.5rem; overflow: auto; max-height: 260px; }
+.diffusion-canvas { min-height: 220px; padding: 1rem; border: 1px solid var(--border-strong); border-radius: var(--radius); background: radial-gradient(circle at 20% 0%, var(--moss-bg), transparent 45%), var(--bg-2); overflow: hidden; }
+.diffusion-head { display: flex; align-items: center; gap: 0.5rem; color: var(--text-dim); font-size: 0.7rem; letter-spacing: 0.08em; }
+.diffusion-pulse { width: 0.45rem; height: 0.45rem; border-radius: 50%; background: var(--moss-bright); box-shadow: 0 0 0 0 var(--moss); animation: diffusionPulse 1.2s ease-out infinite; }
+.diffusion-field { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 0.35rem; margin: 1.35rem 0 0.85rem; }
+.diffusion-token { display: grid; place-items: center; min-height: 1.65rem; border: 1px solid color-mix(in srgb, var(--moss) 55%, transparent); border-radius: 0.3rem; color: var(--moss-bright); background: color-mix(in srgb, var(--moss-bg) 65%, transparent); font-family: var(--font-mono); font-size: 0.8rem; transition: opacity 180ms ease, transform 180ms ease, color 180ms ease; }
+.token-age-0 { opacity: 0.3; transform: scale(0.82); color: var(--text-mute); }
+.token-age-1 { opacity: 0.45; transform: scale(0.9); }
+.token-age-2 { opacity: 0.62; }
+.token-age-3 { opacity: 0.78; }
+.token-age-4, .token-age-5 { opacity: 1; }
+.diffusion-caption { margin: 0; }
+@keyframes diffusionPulse { 70% { box-shadow: 0 0 0 0.45rem transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
 .runlink { color: var(--moss-bright); cursor: pointer; }
 .runlink:hover { text-decoration: underline; }
 .dispatch-row { display: flex; justify-content: space-between; align-items: center; padding: 0.45rem 0; border-bottom: 1px solid var(--border); font-size: 0.82rem; }
@@ -216,6 +228,7 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.01em; }
 @keyframes flashUp { 40% { transform: translateY(-8px); border-color: var(--status-passed); } }
 @keyframes flashDown { 40% { transform: translateY(8px); border-color: var(--status-failed); } }
 @media (prefers-reduced-motion: reduce) { .pg-card.flash-up, .pg-card.flash-down { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .diffusion-pulse { animation: none; } .diffusion-token { transition: none; } }
 @media (max-width: 640px) {
   .pg-grade { grid-template-columns: 1fr 1fr; }
   .pg-up { grid-column: 2; grid-row: 1; }
