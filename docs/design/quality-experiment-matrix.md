@@ -580,6 +580,12 @@ AgentV bundle. E75 therefore remains **incomplete** with no champion or ship
 claim. The full composition needs a longer-lived execution host so its
 survival/trust/successor telemetry can be compared fairly against E72.
 
+Additional E74 overlays seeded from the completed E72 checkpoint were tried
+with all suites, smoke only, and finally one smoke example with one decode
+step. None emitted a scoreboard before the sandbox execution boundary. This
+confirms the limitation is inside the successor-enabled evaluation path, not
+just SFT duration; E74 remains unverified.
+
 ## P13 data-synthesis verification (CPU scratch, 2026-07-14)
 
 The accepted comparison uses the same E50 experiment and effective decode
