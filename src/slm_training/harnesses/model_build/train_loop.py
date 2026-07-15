@@ -6,6 +6,7 @@ import json
 import math
 import random
 import warnings
+import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -297,6 +298,8 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         nonlocal best_ship_score
         if config.test_dir is None:
             return None
+        if eval_history and eval_history[-1].get("step") == step:
+            return eval_history[-1]
         if not force and (
             config.eval_every <= 0 or step <= 0 or step % config.eval_every != 0
         ):
@@ -364,6 +367,8 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         nonlocal best_weighted_nll
         if config.test_dir is None or not is_twotower:
             return None
+        if nll_history and nll_history[-1].get("step") == step:
+            return nll_history[-1]
         every = int(getattr(config, "loss_eval_every", 0) or 0)
         if not force and (every <= 0 or step <= 0 or step % every != 0):
             return None
@@ -651,6 +656,13 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         (run_dir / "checkpoint_bucket.json").write_text(
             json.dumps(bucket_report, indent=2) + "\n", encoding="utf-8"
         )
+
+    try:
+        from slm_training.autoresearch.run_insights import load_run_insights
+
+        load_run_insights(run_dir, run_id=config.run_id)
+    except Exception as exc:  # noqa: BLE001 - analysis must never fail training
+        warnings.warn(f"run insight analysis failed: {exc}", stacklevel=2)
 
     try:
         from slm_training.autoresearch.run_insights import load_run_insights
