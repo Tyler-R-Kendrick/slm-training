@@ -113,8 +113,19 @@ python -m scripts.build_test_data \
 ```
 
 ```bash
+# Lightweight unit/integration suite (iterative model training is excluded)
 pytest
+
+# Only suites affected by staged + unstaged local changes
+.githooks/check-changed
+
+# Explicit, compute-intensive model-training tests
+pytest -m training
 ```
+
+Enable the tracked pre-commit hook once per clone with
+`git config core.hooksPath .githooks`. Claude Code, Codex (example config), and
+Copilot CLI stop hooks run the same changed-file checker automatically.
 
 ## OpenUI Lang
 

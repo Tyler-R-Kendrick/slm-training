@@ -27,6 +27,11 @@
         "hooks": [
           {
             "type": "command",
+            "command": ".githooks/check-changed --hook",
+            "timeout": 600
+          },
+          {
+            "type": "command",
             "command": "serena-hooks cleanup --client=codex"
           }
         ]
