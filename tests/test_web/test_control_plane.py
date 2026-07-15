@@ -66,9 +66,27 @@ def test_spa_routes_and_classic_playground_fallback(ro_client: TestClient) -> No
 
 def test_readers_cold_start_fallback(tmp_path) -> None:
     """An empty repo root must never raise; it reports committed provenance."""
+    from slm_training.dsl.schema import ExampleRecord, write_jsonl
+
+    write_jsonl(
+        tmp_path / "src" / "slm_training" / "resources" / "train_seeds.jsonl",
+        [
+            ExampleRecord(
+                id="example-1",
+                prompt="Show the training data",
+                openui='root = TextContent(":copy.value")',
+                source="fixture",
+            )
+        ],
+    )
     readers = Readers(tmp_path)
     assert readers.scoreboard("quality")["results"] == []
-    assert readers.train_data()["provenance"] == "committed"
+    train = readers.train_data()
+    assert train["provenance"] == "committed"
+    assert train["version"] == "examples"
+    assert train["versions"] == ["examples"]
+    assert train["record_count"] == 1
+    assert readers.train_records("examples")["records"][0]["id"] == "example-1"
     assert readers.test_data()["provenance"] == "committed"
     assert readers.runs()["provenance"] == "committed"
 
@@ -90,6 +108,7 @@ def test_train_records_supports_browsing_filters_and_pagination(tmp_path) -> Non
         ],
     )
     readers = Readers(tmp_path)
+    assert readers.train_data()["versions"] == ["examples", "v1"]
     page = readers.train_records("v1", offset=2, limit=2)
     assert page["count"] == 6
     assert [row["id"] for row in page["records"]] == ["row-2", "row-3"]

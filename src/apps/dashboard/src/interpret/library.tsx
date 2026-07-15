@@ -452,10 +452,10 @@ const DataBrowser = defineComponent({
 
 const DataGenerator = defineComponent({
   name: "DataGenerator",
-  description: "Training-data root and derivative recipe controls.",
-  props: z.object({ versions: z.array(z.string()).optional(), selectedVersion: z.string().optional() }),
+  description: "Simple training-dataset creation control with safe defaults.",
+  props: z.object({ versions: z.array(z.string()).optional() }),
   component: ({ props }: any) => (
-    <TrainingDataWorkspace versions={props.versions || []} selectedVersion={props.selectedVersion} />
+    <TrainingDataWorkspace versions={props.versions || []} />
   ),
 });
 

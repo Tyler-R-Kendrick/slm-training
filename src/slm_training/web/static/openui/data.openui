@@ -2,7 +2,7 @@ $version = ""
 
 train = Query("data_train", { version: $version }, { tiles: [], composition: [], versions: [], version: "" }, 3)
 test = Query("data_test", {}, { rows: [] }, 0)
-head = PageHead("Training Data", "Navigate, generate, and validate versioned corpora. Cold-start shows committed fixtures; generated corpora live under outputs/train_data/.")
+head = PageHead("Training Data", "Review the examples the model learns from, or create a new ready-to-train dataset.")
 
 versionTabs = ChipTabs($version, train.versions)
 
@@ -12,8 +12,8 @@ compPanel = Panel("Corpus composition", [Bars(train.composition)], ProvenanceBad
 suitesPanel = Panel("Eval suites", [Bars(test.rows), Hint("Ship claims require full rico_held (n≥1500).", true)], ProvenanceBadge(test.provenance))
 row1 = Row([compPanel, suitesPanel])
 
-recordsPanel = Panel("Browse records", [DataBrowser(train.version)], Note("search · filter · inspect", "hint"))
+recordsPanel = Panel("Training examples", [DataBrowser(train.version)], Note("search · filter · inspect", "hint"))
 
-genPanel = Panel("Generate training data", [DataGenerator(train.versions, train.version)], Note("new roots or derivatives", "hint"))
+genPanel = Panel("Create a training dataset", [DataGenerator(train.versions)], Note("recommended settings included", "hint"))
 
-root = Page([head, versionTabs, tileRow, row1, recordsPanel, genPanel])
+root = Page([head, versionTabs, tileRow, recordsPanel, genPanel, row1])

@@ -29,6 +29,20 @@ test.describe("mission control dashboard", () => {
     await expect(page.locator(".pg-card")).toBeVisible();
   });
 
+  test("training data is visible and dataset creation is simple", async ({ page }) => {
+    await page.goto("/data");
+    await expect(page.locator(".page-title")).toHaveText("Training Data");
+    await expect(page.getByText("Training examples")).toBeVisible();
+    await expect(page.locator(".dtable tbody tr").first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator(".data-prompt").first()).not.toBeEmpty();
+    await expect(page.locator(".data-target").first()).not.toBeEmpty();
+
+    await expect(page.getByText("Create a training dataset")).toBeVisible();
+    await expect(page.getByLabel("Dataset name")).toBeVisible();
+    await expect(page.getByText("Variation recipe")).toHaveCount(0);
+    await expect(page.getByText("Fuzzy deduplication")).toHaveCount(0);
+  });
+
   test("classic annotate playground stays reachable as a fallback", async ({ page }) => {
     await page.goto("/playground/classic");
     await expect(page.getByText("TwoTower")).toBeVisible();

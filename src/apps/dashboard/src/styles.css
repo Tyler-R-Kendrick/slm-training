@@ -187,16 +187,14 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.01em; }
 .btn-small { padding: 0.28rem 0.55rem; font-size: 0.72rem; }
 .data-browser-tools { display: grid; grid-template-columns: minmax(240px, 2fr) minmax(180px, 1fr) auto; align-items: end; gap: 0.7rem; margin-bottom: 0.7rem; }
 .data-browser-count { padding-bottom: 0.4rem; white-space: nowrap; }
-.data-prompt { color: var(--text-dim); display: block; max-width: 54ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.data-prompt, .data-target { color: var(--text-dim); display: block; max-width: 42ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .data-browser-pages { display: flex; justify-content: flex-end; align-items: center; gap: 0.6rem; margin-top: 0.7rem; }
 .record-detail { margin-top: 0.9rem; padding: 0.85rem; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--bg-2); }
 .record-detail-head { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
 .record-detail h3 { margin: 0.85rem 0 0.3rem; font-size: 0.78rem; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.06em; }
 .record-detail p { margin: 0; line-height: 1.5; }
 .record-detail pre { margin: 0; padding: 0.7rem; max-height: 320px; overflow: auto; white-space: pre-wrap; word-break: break-word; background: var(--bg-0); border-radius: var(--radius); color: var(--text-dim); }
-.data-generator-fields { display: grid; grid-template-columns: minmax(220px, 1.4fr) minmax(220px, 1.4fr) minmax(160px, 1fr); gap: 0.7rem; }
-.data-generator-options { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.7rem 0; color: var(--text-dim); font-size: 0.76rem; }
-.data-generator-options label { display: flex; align-items: center; gap: 0.35rem; }
+.data-generator-name { max-width: 360px; margin: 0.7rem 0; }
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; }
 @media (max-width: 1000px) { .two-col { grid-template-columns: 1fr; } }
 @media (max-width: 720px) {
@@ -204,7 +202,7 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.01em; }
   .sidebar { position: static; height: auto; flex-direction: row; flex-wrap: wrap; gap: 0.3rem; }
   .brand { width: 100%; margin-bottom: 0.5rem; }
   .nav-spacer { display: none; }
-  .data-browser-tools, .data-generator-fields { grid-template-columns: 1fr; }
+  .data-browser-tools { grid-template-columns: 1fr; }
   .data-browser-count { padding-bottom: 0; }
 }
 .openui-preview { background: #fff; border-radius: var(--radius); padding: 0.5rem; overflow: auto; max-height: 260px; }
