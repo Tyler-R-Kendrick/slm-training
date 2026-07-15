@@ -213,7 +213,7 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Diagnostic override: disable grammar-constrained token selection.",
     )
-    parser.add_argument(\n        "--verify-chosen-only",\n        action="store_true",\n        help="Diagnostic override: verify only the model-chosen token per step.",\n    )\n    parser.add_argument(\n        "--grammar-top-k",\n        type=int,\n        default=None,\n        help="Diagnostic override for constrained candidate breadth.",\n    )\n    parser.add_argument(
+    parser.add_argument(\n        "--verify-chosen-only",\n        action="store_true",\n        help="Diagnostic override: verify only the model-chosen token per step.",\n    )\n    parser.add_argument(\n        "--grammar-top-k",\n        type=int,\n        default=None,\n        help="Diagnostic override for constrained candidate breadth.",\n    )\n    parser.add_argument(\n        "--decode-timeout-seconds",\n        type=float,\n        default=None,\n        help="Diagnostic per-record decode timeout; omit for unlimited evaluation.",\n    )\n    parser.add_argument(
         "--no-design-md-context",
         action="store_true",
         help="Override: do not concatenate DESIGN.md into context.",
@@ -294,6 +294,7 @@ def main(argv: list[str] | None = None) -> int:
             True if args.skip_exact_stream_probe else None
         ),
         grammar_constrained=(False if args.no_grammar_constrained else None),\n        grammar_verify_chosen_only=(True if args.verify_chosen_only else None),\n        grammar_top_k=args.grammar_top_k,
+        decode_timeout_seconds=args.decode_timeout_seconds,
         grammar_dsl=args.grammar_dsl,
         grammar_trust_model=args.grammar_trust_model,
         grammar_sample_decode=args.grammar_sample_decode,
