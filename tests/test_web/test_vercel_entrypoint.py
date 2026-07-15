@@ -4,8 +4,19 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import tomllib
+from pathlib import Path
 
 from fastapi import FastAPI
+
+
+def test_vercel_entrypoint_points_to_a_module_file() -> None:
+    root = Path(__file__).parents[2]
+    config = tomllib.loads((root / "pyproject.toml").read_text())
+    module, separator, name = config["tool"]["vercel"]["entrypoint"].partition(":")
+
+    assert (separator, name) == (":", "app")
+    assert root.joinpath(*module.split(".")).with_suffix(".py").is_file()
 
 
 def test_api_index_exports_fastapi_app() -> None:

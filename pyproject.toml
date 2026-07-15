@@ -114,7 +114,7 @@ markers = [
 [tool.vercel]
 # Playground FastAPI instance. Required for Git-triggered
 # Vercel builds; without this the project fails with FASTAPI_ENTRYPOINT_NOT_FOUND.
-entrypoint = "slm_training.web.vercel:app"
+entrypoint = "src.slm_training.web.vercel:app"
 
 [tool.ruff]
 # Vendored Hugging Face marketplace skills (refreshed via `hf skills update`).
