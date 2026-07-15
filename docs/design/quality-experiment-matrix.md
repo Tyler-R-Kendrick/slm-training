@@ -558,6 +558,14 @@ cluster (320/320 smoke, 594/594 held-out, 402/402 adversarial, 480/480 OOD,
 production ship claim; the next iteration should test whether the accepted
 clusters reduce forwards or wall time before promotion.
 
+E73 survival-budget training exposed a harness issue: the base SFT config was
+also enabling survival decoding before the auxiliary head existed. The runner
+now keeps `survival_gate=False` during SFT and enables it only after
+`_maybe_survival_gate`; the auxiliary fit also honors the existing
+`--pref-steps` and `--pref-limit` controls without a hidden 20-step floor.
+Two CPU probes still ended before checkpoint finalization (steps 19 and 4),
+so E73 has no quality or performance result yet and is not promoted.
+
 ## P13 data-synthesis verification (CPU scratch, 2026-07-14)
 
 The accepted comparison uses the same E50 experiment and effective decode
