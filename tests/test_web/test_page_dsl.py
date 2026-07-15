@@ -1,6 +1,6 @@
-"""The dashboard's interpreted-mode OpenUI page programs stay valid and in sync.
+"""The dashboard's OpenUI page programs stay valid and in sync.
 
-Guards the compiled ↔ interpreted parity contract: every dashboard route has a
+Guards the OpenUI rendering contract: every dashboard route has a
 committed ``static/openui/<slug>.openui`` program, each one references only real
 components (``library.tsx`` / stock ``@openuidev``) and real tool-provider queries
 (``toolProvider.ts``), and ``MANIFEST.json`` is regenerated. See
