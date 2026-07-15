@@ -208,6 +208,7 @@ class Readers:
         self.model_card = self.root / "docs" / "MODEL_CARD.md"
         self.outputs = self.root / "outputs"
         self.fixtures = self.root / "src" / "slm_training" / "resources"
+        self.published_train_root = self.fixtures / "train_data"
         self.dashboard_snapshot = self.root / "src" / "slm_training" / "web" / "static" / "dashboard_snapshot.json"
         self.lineage = LineageStore(self.outputs / "lineage")
         self.deployments = DeploymentRegistry(self.outputs / "lineage" / "deployments")
@@ -535,20 +536,26 @@ class Readers:
             if train_root.exists()
             else []
         )
-        versions = ["examples", *generated_versions]
-        if version == "examples" or not generated_versions:
+        published_versions = (
+            sorted(p.name for p in self.published_train_root.iterdir() if p.is_dir())
+            if self.published_train_root.exists()
+            else []
+        )
+        versions = ["examples", *sorted(set(generated_versions) | set(published_versions))]
+        if version == "examples" or not (generated_versions or published_versions):
             return {
                 "provenance": "committed",
                 "versions": versions,
                 "version": "examples",
                 **self._fixture_data(),
             }
-        chosen = version if version in generated_versions else generated_versions[-1]
-        vdir = train_root / chosen
+        available = set(generated_versions) | set(published_versions)
+        chosen = version if version in available else sorted(available)[-1]
+        vdir = (train_root / chosen) if chosen in generated_versions else (self.published_train_root / chosen)
         stats = _read_json(vdir / "stats.json") or {}
         manifest = _read_json(vdir / "manifest.json") or {}
         return {
-            "provenance": "live",
+            "provenance": "live" if chosen in generated_versions else "published",
             "versions": versions,
             "version": chosen,
             "stats": stats,
@@ -570,10 +577,12 @@ class Readers:
     ) -> dict[str, Any]:
         if not re.fullmatch(r"[A-Za-z0-9._,-]{1,64}", version):
             return {"version": version, "count": 0, "offset": 0, "records": []}
+        published_path = self.published_train_root / version / "records.jsonl"
+        generated_path = self.outputs / "train_data" / version / "records.jsonl"
         path = (
             self.fixtures / "train_seeds.jsonl"
             if version == "examples"
-            else self.outputs / "train_data" / version / "records.jsonl"
+            else generated_path if generated_path.exists() else published_path
         )
         rows = _read_jsonl(path, limit=None)
         if split:
