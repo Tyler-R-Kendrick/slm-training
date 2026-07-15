@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import signal
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Literal
@@ -1206,6 +1207,7 @@ def _eval_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         suffix_rollback_window=int(getattr(exp, "suffix_rollback_window", 0) or 0),
         visible_corrupt_rate=float(getattr(exp, "visible_corrupt_rate", 0.0) or 0.0),
         rico_eval_limit=args.rico_limit,
+        eval_limit=args.eval_limit,
         run_id=exp.run_id,
     )
 
@@ -1561,6 +1563,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--eval-every", type=int, default=0)
     parser.add_argument("--rico-limit", type=int, default=32)
     parser.add_argument(
+        "--eval-limit",
+        type=int,
+        default=None,
+        help="Diagnostic-only cap per selected suite; omit for full evaluation.",
+    )
+    parser.add_argument(
         "--suites",
         default=",".join(SUITES),
         help="Comma-separated eval suites (default: all).",
@@ -1812,8 +1820,12 @@ def main(argv: list[str] | None = None) -> int:
 
     results: list[dict[str, Any]] = []
     progress_path = args.run_root / "quality_matrix_progress.json"
+    active_experiment: Experiment | None = None
 
     def _persist_progress(status: str, active: Experiment | None = None) -> None:
+        nonlocal active_experiment
+        if active is not None:
+            active_experiment = active
         progress_path.parent.mkdir(parents=True, exist_ok=True)
         progress_path.write_text(
             json.dumps(
@@ -1834,6 +1846,14 @@ def main(argv: list[str] | None = None) -> int:
             + "\n",
             encoding="utf-8",
         )
+
+    def _mark_interrupted(signum: int, _frame: Any) -> None:
+        """Persist resumable state before the supervisor stops the matrix."""
+        _persist_progress("interrupted", active=active_experiment)
+        raise SystemExit(128 + signum)
+
+    signal.signal(signal.SIGINT, _mark_interrupted)
+    signal.signal(signal.SIGTERM, _mark_interrupted)
 
     workers = max(1, int(args.workers))
     # Seed/decode overlays that depend on another run stay sequential first.
