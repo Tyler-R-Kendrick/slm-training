@@ -1090,15 +1090,15 @@ class TwoTowerModel(nn.Module):
 
         aux_w = float(getattr(self.config, "fastpath_aux_weight", 0.0) or 0.0)
         if aux_w > 0.0 and getattr(self.config, "grammar_fastpath", False):
-            try:
+            # Keep this span visible in train telemetry: a silently skipped
+            # structural objective cannot be evaluated or tuned honestly.
+            with timed("fastpath_aux_loss"):
                 from slm_training.dsl.grammar.fastpath.losses import force_align_loss
 
                 aux = force_align_loss(
                     logits, target_ids, self.tokenizer, pad_id=self.tokenizer.pad_id
                 )
                 mask_loss = mask_loss + aux_w * aux
-            except Exception:  # noqa: BLE001
-                pass
 
         return mask_loss
 
