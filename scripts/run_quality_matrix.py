@@ -1811,6 +1811,25 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     results: list[dict[str, Any]] = []
+    progress_path = args.run_root / "quality_matrix_progress.json"
+
+    def _persist_progress(status: str) -> None:
+        progress_path.parent.mkdir(parents=True, exist_ok=True)
+        progress_path.write_text(
+            json.dumps(
+                {
+                    "status": status,
+                    "matrix": args.matrix,
+                    "completed": len(results),
+                    "total": len(experiments),
+                    "results": sorted(results, key=lambda r: r.get("id") or ""),
+                },
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
     workers = max(1, int(args.workers))
     # Seed/decode overlays that depend on another run stay sequential first.
     dependent = [
@@ -1822,7 +1841,16 @@ def main(argv: list[str] | None = None) -> int:
 
     def _run(exp: Experiment) -> dict[str, Any]:
         print(json.dumps({"status": "start", "id": exp.eid, "run_id": exp.run_id}))
-        result = run_one(exp, args)
+        try:
+            result = run_one(exp, args)
+        except Exception as exc:  # noqa: BLE001 - preserve partial matrix evidence
+            result = {
+                "id": exp.eid,
+                "run_id": exp.run_id,
+                "pass": False,
+                "failures": [f"exception: {type(exc).__name__}: {exc}"],
+                "suites": {},
+            }
         print(json.dumps({"status": "done", "id": exp.eid, "pass": result["pass"]}))
         return result
 
@@ -1838,12 +1866,15 @@ def main(argv: list[str] | None = None) -> int:
             futs = {pool.submit(_run, exp): exp for exp in independent}
             for fut in as_completed(futs):
                 results.append(fut.result())
+                _persist_progress("running")
     else:
         for exp in independent:
             results.append(_run(exp))
+            _persist_progress("running")
 
     for exp in dependent:
         results.append(_run(exp))
+        _persist_progress("running")
 
     # Stable order by experiment id.
     results.sort(key=lambda r: r.get("id") or "")
@@ -1868,6 +1899,7 @@ def main(argv: list[str] | None = None) -> int:
     }
     out_path = args.run_root / "quality_matrix_summary.json"
     out_path.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
+    _persist_progress("complete")
     # Also mirror under docs artifacts path for the PR.
     docs_out = args.docs_out or Path("docs/design") / (
         "quality-matrix-results.json"
