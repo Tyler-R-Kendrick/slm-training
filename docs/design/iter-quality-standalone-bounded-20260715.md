@@ -28,3 +28,9 @@ artifacts. It produced parse rate **0**, structural similarity **0**, and reward
 **0**. This is diagnostic feedback only, but it localizes the interruption to
 the constrained-decoding path rather than checkpoint loading or evaluator
 persistence.
+
+The constrained path was also tested after making `skip_exact_stream_probe`
+skip the redundant post-DFA stream probe and disabling structural preference;
+it still exceeded the execution window. Grammar/DFA regression tests passed
+(31 tests), but no constrained quality metric is claimed until the remaining
+stream-check call site is isolated.
