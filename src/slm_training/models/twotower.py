@@ -3340,6 +3340,9 @@ class TwoTowerModel(nn.Module):
             # then accept it only after deterministic syntax repair + validation.
             if rec is not None:
                 rec.event("retry_unconstrained")
+            active_stats = get_active_stats()
+            if active_stats is not None:
+                active_stats.unconstrained_retries += 1
             unconstrained = self._generate_maskgit_one(
                 ctx,
                 ctx_pad,
