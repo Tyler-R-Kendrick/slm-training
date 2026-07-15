@@ -4,7 +4,8 @@ An attempted six-step baseline produced its checkpoint and six training metric
 rows, but the inline eight-step decode evaluation terminated before writing the
 final matrix summary. This is incomplete evidence, not a quality result.
 
-The matrix runner now writes `quality_matrix_progress.json` after every
-completed experiment and records an exception as a failed result instead of
+The matrix runner now writes `quality_matrix_progress.json` before and after
+each experiment, records the active experiment, and writes after every
+completed experiment. It records an exception as a failed result instead of
 discarding all prior results. The final summary remains the authoritative
 completed-run artifact.

@@ -5,5 +5,5 @@
   "training_rows_persisted": 6,
   "quality_summary_persisted": false,
   "finding": "inline decode evaluation terminated after checkpoint creation and before the final matrix summary",
-  "harness_fix": "run_quality_matrix now writes quality_matrix_progress.json after every completed experiment and records per-experiment exceptions"
+  "harness_fix": "run_quality_matrix now writes quality_matrix_progress.json before and after each experiment, records the active experiment, and preserves per-experiment exceptions"
 }
