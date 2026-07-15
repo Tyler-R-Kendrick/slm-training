@@ -685,6 +685,19 @@ def pick_constrained_token(
             tokenizer.unk_id,
         }:
             return False
+        # MaskGIT commits positions out of order, so lexical grammar alone can
+        # admit a binder before the required OpenUI root binding. Keep
+        # whitespace, otherwise require root at the first significant token.
+        if not prefix_text.strip():
+            token = tokenizer.id_to_token.get(tid, "")
+            native_root = False
+            try:
+                from slm_training.models.dsl_tokenizer import is_dsl_native_tokenizer
+                native_root = is_dsl_native_tokenizer(tokenizer) and tid == tokenizer.bind_id(0)
+            except Exception:  # noqa: BLE001
+                pass
+            if token not in {"root", " ", "\n", "\t", "NL"} and not native_root:
+                return False
         # EOS must terminate a complete program, not an UnexpectedEOF prefix.
         if tid == tokenizer.eos_id:
             try:
