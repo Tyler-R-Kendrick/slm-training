@@ -67,6 +67,26 @@ python -m scripts.profile_generate --rounds 2
 python -m scripts.run_perf_matrix --only P0,Q9,R9,PG --limit 4
 ```
 
+## Playground load reproduction (2026-07-15)
+
+The [runtime reproduction](playground-runtime-reproduction-results.json) found
+three independent failures in the React playground path. A fresh worktree could
+throw a bridge-install error during validation, a `web`-only install could fail
+to import PyTorch despite committed ONNX artifacts, and the SPA multiplied its
+own six retries by the service's three-attempt budget while prefetching three
+samples (up to 54 server decodes). One PyTorch attempt took roughly 6–9 seconds
+on this CPU fixture host, so the amplification looked like a hung application.
+
+The web service now validates through the hybrid parser and uses committed ONNX
+artifacts only when CPU PyTorch is unavailable. The React flow performs exactly
+three numbered server attempts, then at most three browser attempts with failure
+context and durable attempt/review records; navigating away aborts the active
+pipeline and destroys any late browser session. Focused backend regressions passed
+3/3 in 0.64 seconds; the dashboard production build and discovery of all 24
+desktop/mobile Playwright cases passed. Browser execution was not available on this host because
+`libnspr4.so` is missing. This is fixture-demo runtime evidence, not an eval or
+ship-readiness claim; no checkpoint, suite, or ship gate changed.
+
 ## Kernel boundary (unchanged)
 
 ```

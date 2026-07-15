@@ -1,0 +1,31 @@
+{
+  "run_id": "playground_runtime_reproduction_20260715",
+  "kind": "runtime_reproduction",
+  "date": "2026-07-15",
+  "device": "cpu",
+  "checkpoint": "src/slm_training/resources/checkpoints/playground_demo/last.pt",
+  "backend": "pytorch_when_installed_onnx_when_torch_missing",
+  "honesty_mode": "fixture_demo_not_ship",
+  "suite_n": 0,
+  "ship_gates": false,
+  "before": {
+    "fresh_worktree_validation": "failed when OpenUI bridge node_modules were absent",
+    "web_only_install": "failed when torch was absent",
+    "spa_decode_budget": "up to 54 server decodes during initial prefetch"
+  },
+  "after": {
+    "validation": "hybrid parser uses the official bridge when available and the Lark backend otherwise",
+    "web_only_install": "CPU loading falls back to the committed ONNX artifacts only when torch is unavailable",
+    "spa_decode_budget": "three numbered server attempts followed by at most three browser attempts per sample",
+    "route_unmount": "aborts in-flight generation and destroys late browser sessions",
+    "legacy_screen": "retired; /playground/classic redirects to /playground"
+  },
+  "verification": {
+    "focused_backend_tests": "3 passed in 0.64s",
+    "dashboard_build": "passed",
+    "playwright_discovery": "24 tests discovered across desktop and mobile projects",
+    "browser_execution": "blocked on this host by missing libnspr4.so"
+  },
+  "observed_single_pytorch_attempt_seconds": "6-9",
+  "outcome": "functional runtime fix; no model-quality or ship-readiness claim"
+}

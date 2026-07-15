@@ -112,10 +112,9 @@ def test_annotate_api_persists(tmp_path: Path) -> None:
     )
     client = TestClient(app)
 
-    page = client.get("/playground/classic")
+    page = client.get("/playground")
     assert page.status_code == 200
-    assert "TwoTower" in page.text
-    assert "btnUp" in page.text or "Thumbs up" in page.text or "grade" in page.text.lower()
+    assert 'id="root"' in page.text
 
     prompt = client.get("/api/prompt/next", params={"session_id": "unit"})
     assert prompt.status_code == 200

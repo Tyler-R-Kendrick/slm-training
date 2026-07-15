@@ -24,7 +24,7 @@ from slm_training.harnesses.annotations import (
     utc_now_iso,
 )
 from slm_training.harnesses.annotations.store import AnnotationStore, FileAnnotationStore
-from slm_training.dsl.lang_core import ParseError, stream_check, validate
+from slm_training.dsl.parser import ParseError, stream_check, validate
 from slm_training.models.paths import PLAYGROUND_DEMO_CHECKPOINT
 from slm_training.web.prompts import EXAMPLE_PROMPTS, PromptCursor, load_prompt_bank
 
@@ -169,11 +169,20 @@ class PlaygroundService:
             if self._model_factory is not None:
                 self._model = self._model_factory(self.checkpoint, self.device)
             else:
-                from slm_training.models.twotower import TwoTowerModel
+                try:
+                    from slm_training.models.twotower import TwoTowerModel
+                except ModuleNotFoundError as exc:
+                    if exc.name != "torch" or self.device != "cpu":
+                        raise
+                    from slm_training.models.onnx_inference import OnnxTwoTowerModel
 
-                self._model = TwoTowerModel.from_checkpoint(
-                    self.checkpoint, device=self.device
-                )
+                    self._model = OnnxTwoTowerModel.from_checkpoint(
+                        self.checkpoint, device=self.device
+                    )
+                else:
+                    self._model = TwoTowerModel.from_checkpoint(
+                        self.checkpoint, device=self.device
+                    )
             self._model.eval()
             # Enable the deterministic DFA / LTR speculative layer. Validation
             # and fallback policy belong to this service. Q9 decode levers cut
@@ -523,17 +532,27 @@ class PlaygroundService:
                 )
 
         stream = stream_check(openui)
+        if isinstance(stream, dict):
+            stream_payload = stream
+        else:
+            stream_payload = {
+                "ok": stream.ok,
+                "incomplete": stream.incomplete,
+                "has_root": stream.has_root,
+                "errors": list(stream.error_codes),
+                "unresolved": list(stream.unresolved),
+            }
         return GenerateResult(
             prompt=prompt,
             openui=openui,
             valid=valid,
             error=last_error,
             stream={
-                "ok": stream.get("ok"),
-                "incomplete": stream.get("incomplete"),
-                "has_root": stream.get("has_root"),
-                "errors": stream.get("errors") or [],
-                "unresolved": stream.get("unresolved") or [],
+                "ok": stream_payload.get("ok"),
+                "incomplete": stream_payload.get("incomplete"),
+                "has_root": stream_payload.get("has_root"),
+                "errors": stream_payload.get("errors") or [],
+                "unresolved": stream_payload.get("unresolved") or [],
             },
             serialized=serialized,
             attempts=attempt_summaries,

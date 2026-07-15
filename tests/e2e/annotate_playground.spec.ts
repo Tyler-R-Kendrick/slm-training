@@ -82,8 +82,16 @@ test.describe("annotate playground", () => {
         }),
       });
     });
+    let keyboardGradeAuthorization: string | undefined;
+    await page.route("**/api/annotate", async (route) => {
+      keyboardGradeAuthorization = route.request().headers().authorization;
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true, id: "feedback_keyboard", rating: "up" }),
+      });
+    });
 
-    await page.goto("/");
+    await page.goto("/playground");
     await expect(page.locator("#badge")).toHaveText(/loading|generating|rendering/i);
     for (const id of [
       "#btnUp",
@@ -102,6 +110,11 @@ test.describe("annotate playground", () => {
     await expect(page.locator("#btnPrev")).toBeDisabled();
     await expect(page.locator("#btnUp")).toBeEnabled();
     await expect(page.locator("#modelSource")).toContainText(/training model.*browser-approved/i);
+    await page.locator(".pg-advanced summary").click();
+    await page.locator("#annotationToken").fill("keyboard-secret");
+    await page.locator("#card").focus();
+    await page.keyboard.press("ArrowUp");
+    await expect.poll(() => keyboardGradeAuthorization).toBe("Bearer keyboard-secret");
 
     await expect(page.locator("#btnNext")).toBeEnabled({ timeout: 10_000 });
     await page.locator("#btnNext").click();
@@ -210,7 +223,7 @@ test.describe("annotate playground", () => {
       });
     });
 
-    await page.goto("/");
+    await page.goto("/playground");
     await expect(page.locator("#badge")).toHaveText("valid", { timeout: 15_000 });
     await expect(page.locator("#activityLog")).toContainText(/browser attempt 3\/3 succeeded/i);
     await expect(page.locator("#modelSource")).toContainText(/browser baseline.*fallback/i);
@@ -293,7 +306,7 @@ test.describe("annotate playground", () => {
       });
     });
 
-    await page.goto("/");
+    await page.goto("/playground");
     await expect(page.locator("#badge")).toHaveText("valid", { timeout: 15_000 });
     await expect(page.locator("#modelSource")).toContainText(/training model.*browser-approved/i);
     await expect(page.locator("#output")).toContainText(":hero.body");
@@ -372,8 +385,10 @@ test.describe("annotate playground", () => {
       });
     });
     let annotationBody: any = null;
+    let annotationAuthorization: string | undefined;
     await page.route("**/api/annotate", async (route) => {
       annotationBody = route.request().postDataJSON();
+      annotationAuthorization = route.request().headers().authorization;
       await route.fulfill({
         contentType: "application/json",
         body: JSON.stringify({
@@ -387,10 +402,12 @@ test.describe("annotate playground", () => {
       });
     });
 
-    await page.goto("/");
+    await page.goto("/playground");
     await expect(page.locator("#badge")).toHaveText("valid", { timeout: 15_000 });
     await page.locator("#annotatorIdentity").fill("alice@example.com");
     await page.locator("#annotatorIdentity").blur();
+    await page.locator(".pg-advanced summary").click();
+    await page.locator("#annotationToken").fill("test-secret");
     const renderHeight = await page.locator(".view-panels").evaluate((el) => el.clientHeight);
 
     await page.locator("#btnViewDsl").click();
@@ -428,21 +445,22 @@ test.describe("annotate playground", () => {
     expect(annotationBody.generation_id).toContain("server_edit_");
     expect(annotationBody.identities.output_generator.model).toBe("twotower");
     expect(annotationBody.identities.correction_author.id).toBe("alice@example.com");
+    expect(annotationAuthorization).toBe("Bearer test-secret");
   });
 
-  test("desktop: icon grading swipes to the next card", async ({ page }, testInfo) => {
+  test("desktop: icon grading persists without advancing", async ({ page }, testInfo) => {
     const before = feedbackCount();
-    await page.goto("/playground/classic");
+    await page.goto("/playground");
     await page.evaluate(() => localStorage.setItem("twotower_annotate_view", "render"));
     await page.reload();
 
-    await expect(page.getByText("TwoTower")).toBeVisible();
+    await expect(page.locator(".page-title")).toHaveText(/Playground/);
     await expect(page.locator("#card")).toBeVisible();
 
     await expect(page.locator("#btnUp svg")).toBeVisible();
     await expect(page.locator("#btnDown svg")).toBeVisible();
-    await expect(page.locator("#btnUp")).toHaveText("");
-    await expect(page.locator("#btnDown")).toHaveText("");
+    await expect(page.locator("#btnUp")).toContainText("Up");
+    await expect(page.locator("#btnDown")).toContainText("Down");
 
     await waitForSampleReady(page);
 
@@ -462,21 +480,21 @@ test.describe("annotate playground", () => {
       timeout: 30_000,
     });
 
-    await expect(page.locator("#indexPill")).not.toHaveText(indexBefore);
+    await expect(page.locator("#indexPill")).toHaveText(indexBefore);
 
     await expect.poll(() => feedbackCount(), { timeout: 15_000 }).toBeGreaterThan(before);
 
     await page.screenshot({
       path: path.join(
         testInfo.project.outputDir,
-        `annotate-swipe-advance-${testInfo.project.name}.png`
+        `annotate-grade-stays-${testInfo.project.name}.png`
       ),
       fullPage: true,
     });
   });
 
   test("desktop: request + rendered default + dsl toggle", async ({ page }, testInfo) => {
-    await page.goto("/playground/classic");
+    await page.goto("/playground");
     await page.evaluate(() => localStorage.setItem("twotower_annotate_view", "render"));
     await page.reload();
 
@@ -536,7 +554,7 @@ test.describe("annotate playground", () => {
   });
 
   test("desktop: arrow down grades without advancing", async ({ page }) => {
-    await page.goto("/playground/classic");
+    await page.goto("/playground");
     await page.evaluate(() => localStorage.setItem("twotower_annotate_view", "render"));
     await page.reload();
 
@@ -554,7 +572,7 @@ test.describe("annotate playground", () => {
   });
 
   test("mobile: preview default + grade targets", async ({ page }, testInfo) => {
-    await page.goto("/playground/classic");
+    await page.goto("/playground");
     await page.evaluate(() => localStorage.setItem("twotower_annotate_view", "render"));
     await page.reload();
     await expect(page.locator("#btnUp")).toBeVisible();
