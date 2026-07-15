@@ -337,6 +337,7 @@ def evaluate(
     topology_evidence: list[dict[str, Any]] = []
     topology_target_evidence: list[dict[str, Any]] = []
     failure_breakdown: dict[str, int] = {}
+    decode_stats_rows: list[object] = []
     canvas_cap = _decode_canvas_cap(plugin)
     score_topology_targets = getattr(plugin, "score_topology_targets", None)
     if callable(score_topology_targets):
@@ -345,6 +346,7 @@ def evaluate(
     batch_size = 1
     generate_batch_requests = getattr(plugin, "generate_batch_requests", None)
     generate_batch = getattr(plugin, "generate_batch", None)
+    generate_with_stats = getattr(plugin, "generate_with_stats", None)
     if callable(generate_batch_requests) or callable(generate_batch):
         batch_size = max(
             1,
@@ -352,6 +354,8 @@ def evaluate(
                 getattr(getattr(plugin, "config", None), "generate_batch_size", 8) or 8
             ),
         )
+    if callable(generate_with_stats):
+        batch_size = 1
 
     def _eval_schema() -> str | None:
         if not getattr(config, "schema_in_context", False):
@@ -369,6 +373,10 @@ def evaluate(
         chunk: list[ExampleRecord],
     ) -> tuple[list[str], list[dict[str, Any]]]:
         """Generate without passing gold ExampleRecord to the model."""
+        if callable(generate_with_stats) and len(chunk) == 1:
+            text, stats = generate_with_stats(chunk[0].prompt)
+            decode_stats_rows.append(stats)
+            return [text]
         if callable(generate_batch_requests):
             predictions = generate_batch_requests(_requests_for(chunk))
             consume = getattr(plugin, "consume_generation_evidence", None)
@@ -677,6 +685,11 @@ def evaluate(
         and getattr(spec_stats, "generates", 0)
     ):
         metrics["speculative_stats"] = spec_stats.as_dict()
+    if decode_stats_rows:
+        from slm_training.models.decode_stats import aggregate_stats
+        metrics["decode_stats"] = aggregate_stats(decode_stats_rows)
+        retries = sum(int(getattr(row, "unconstrained_retries", 0)) for row in decode_stats_rows)
+        metrics["constrained_fallback_rate"] = retries / len(decode_stats_rows)
 
     run_dir = config.run_dir
     run_dir.mkdir(parents=True, exist_ok=True)
