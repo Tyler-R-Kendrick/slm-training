@@ -127,6 +127,9 @@ def test_annotate_static_has_tab_toggle() -> None:
     assert 'devices.push("wasm")' in browser_js.text
     assert "wasm.numThreads = capabilities.wasmThreads" in browser_js.text
     assert "browserAccelerationCapabilities" in browser_js.text
+    assert "RUN_INSIGHTS_SYSTEM_PROMPT" in browser_js.text
+    assert "buildRunInsightsPrompt" in browser_js.text
+    assert "parseRunInsightsResponse" in browser_js.text
     assert 'id="modelSource"' in html.text
     assert "Training model · candidate under evaluation" in html.text
     assert "Browser baseline · on-device reference" in html.text

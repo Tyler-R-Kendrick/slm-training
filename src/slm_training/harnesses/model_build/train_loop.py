@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import math
 import random
+import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -643,5 +644,12 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         (run_dir / "checkpoint_bucket.json").write_text(
             json.dumps(bucket_report, indent=2) + "\n", encoding="utf-8"
         )
+
+    try:
+        from slm_training.autoresearch.run_insights import load_run_insights
+
+        load_run_insights(run_dir, run_id=config.run_id)
+    except Exception as exc:  # noqa: BLE001 - analysis must never fail training
+        warnings.warn(f"run insight analysis failed: {exc}", stacklevel=2)
 
     return summary

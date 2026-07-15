@@ -21,6 +21,13 @@ useful component hierarchy, complete placeholder-backed content, and obvious str
 Syntactic linting has already run, but you must reject empty, trivial, incoherent, or request-ignoring layouts.
 Return only JSON with: passed (boolean), score (number from 0 to 1), and reasons (array of concise strings).`;
 
+const RUN_INSIGHTS_SYSTEM_PROMPT = `You explain supplied OpenUI training-run evidence.
+Deterministic events are authoritative observations; possible causes are hypotheses. Cite only evidence
+paths present in the input. Recommend bounded experiments, never commands, automatic queue actions,
+or weaker quality gates. Return only JSON with summary, causes, and phase_suggestions. Each cause has
+category (collapse, data, optimization, or unknown), title, rationale, evidence (string paths),
+suggestion, confidence (0 to 1), and optional event_step. Each phase suggestion has phase and suggestion.`;
+
 const OPENUI_BROWSER_SYSTEM_PROMPT = `You are the on-device browser baseline for OpenUI. Every user
 request starts with a TASK marker and you must follow the matching output contract.
 
@@ -168,7 +175,9 @@ async function createTransformersSession(systemPrompt, onProgress) {
 
 async function createBrowserModelSession({ mode = "generate", onProgress = () => {} } = {}) {
   const systemPrompt =
-    mode === "shared"
+    mode === "insights"
+      ? RUN_INSIGHTS_SYSTEM_PROMPT
+      : mode === "shared"
       ? OPENUI_BROWSER_SYSTEM_PROMPT
       : mode === "review"
         ? OPENUI_REVIEW_SYSTEM_PROMPT
@@ -222,6 +231,55 @@ async function createBrowserModelSession({ mode = "generate", onProgress = () =>
     runtime: `transformers-js:${created.device}`,
     availability: "available",
   };
+}
+
+function buildRunInsightsPrompt(report) {
+  const evidence = {
+    run_id: report?.run_id,
+    loss: report?.loss,
+    phases: report?.phases,
+    deterministic_insights: report?.insights,
+  };
+  return `Explain this completed run. Return only the requested JSON.\n\n${JSON.stringify(evidence)}`;
+}
+
+function parseRunInsightsResponse(value) {
+  let text = String(value || "").trim();
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fenced) text = fenced[1].trim();
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start >= 0 && end > start) text = text.slice(start, end + 1);
+  const parsed = JSON.parse(text);
+  const summary = String(parsed.summary || "").trim().slice(0, 1600);
+  if (!summary) throw new Error("browser insights returned no summary");
+  const categories = new Set(["collapse", "data", "optimization", "unknown"]);
+  const causes = (Array.isArray(parsed.causes) ? parsed.causes : []).slice(0, 8).map((cause) => {
+    const title = String(cause?.title || "").trim().slice(0, 160);
+    const rationale = String(cause?.rationale || "").trim().slice(0, 1200);
+    const suggestion = String(cause?.suggestion || "").trim().slice(0, 1200);
+    if (!title || !rationale || !suggestion) throw new Error("browser insights returned an incomplete cause");
+    const confidence = Math.max(0, Math.min(1, Number(cause.confidence)));
+    if (!Number.isFinite(confidence)) throw new Error("browser insights returned invalid confidence");
+    const eventStep = Number(cause.event_step);
+    return {
+      category: categories.has(cause.category) ? cause.category : "unknown",
+      title,
+      rationale,
+      evidence: (Array.isArray(cause.evidence) ? cause.evidence : []).map(String).slice(0, 8),
+      suggestion,
+      confidence,
+      event_step: Number.isInteger(eventStep) && eventStep >= 0 ? eventStep : null,
+    };
+  });
+  const phase_suggestions = (Array.isArray(parsed.phase_suggestions) ? parsed.phase_suggestions : [])
+    .slice(0, 12)
+    .map((item) => ({
+      phase: String(item?.phase || "").trim().slice(0, 120),
+      suggestion: String(item?.suggestion || "").trim().slice(0, 1200),
+    }))
+    .filter((item) => item.phase && item.suggestion);
+  return { summary, causes, phase_suggestions };
 }
 
 function buildBrowserGradePrompt(prompt, openui, attempt) {
@@ -284,10 +342,13 @@ export {
   OPENUI_SYSTEM_PROMPT,
   OPENUI_REVIEW_SCHEMA,
   OPENUI_REVIEW_SYSTEM_PROMPT,
+  RUN_INSIGHTS_SYSTEM_PROMPT,
   buildBrowserGradePrompt,
   buildBrowserRepairPrompt,
+  buildRunInsightsPrompt,
   browserAccelerationCapabilities,
   cleanOpenUIResponse,
   createBrowserModelSession,
   parseBrowserGradeResponse,
+  parseRunInsightsResponse,
 };

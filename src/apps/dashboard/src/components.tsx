@@ -77,6 +77,10 @@ const STATUS_CLASS: Record<string, string> = {
   validated: "running",
   screened: "warning",
   rejected: "failed",
+  collapsed: "failed",
+  healthy: "passed",
+  warning: "warning",
+  unavailable: "idle",
 };
 
 export function StatusPill({ value, label }: { value: any; label?: string }) {
@@ -141,13 +145,16 @@ export function Sparkline({ data, width = 120, height = 28 }: { data: number[]; 
   );
 }
 
-export function Bars({ data }: { data: { label: string; value: number; accent?: string }[] }) {
+export function Bars({ data }: { data: { label: string; value: number; accent?: string; help?: string }[] }) {
   const max = Math.max(1, ...data.map((d) => d.value));
   return (
     <div className="bars">
       {data.map((d, i) => (
         <div className="bar-row" key={i}>
-          <span className="bar-label" title={d.label}>{d.label}</span>
+          <span className="bar-label" title={d.label}>
+            {d.label}
+            {d.help && <span className="bar-help" tabIndex={0} title={d.help} aria-label={`${d.label}: ${d.help}`}>ⓘ<span className="table-tooltip" role="tooltip">{d.help}</span></span>}
+          </span>
           <span className="bar-track">
             <span className="bar-fill" style={{ width: `${(d.value / max) * 100}%`, background: d.accent }} />
           </span>

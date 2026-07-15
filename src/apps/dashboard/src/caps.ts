@@ -6,6 +6,7 @@ export interface Caps {
   read_only: boolean;
   jobs_concurrency?: number;
   jobs: JobDef[];
+  run_insights?: { browser: boolean; openai_available: boolean };
 }
 
 export const CapsContext = createContext<Caps>({

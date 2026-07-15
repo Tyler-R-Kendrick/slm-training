@@ -26,6 +26,12 @@ from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
     evaluate_ship_gates,
 )
+from slm_training.autoresearch.run_insights import (
+    RunInsightSubmission,
+    enrich_with_openai,
+    load_run_insights,
+    save_enrichment,
+)
 from slm_training.lineage.records import content_sha
 from slm_training.lineage.store import LineageStore, utc_now
 from slm_training.web.comparisons import BlindedComparisonStore
@@ -194,7 +200,9 @@ def _atomic_json(path: Path, payload: dict[str, Any]) -> None:
 class Readers:
     """Facade over the repo's evidence tree. ``root`` is the repo root."""
 
-    def __init__(self, root: Path | str = Path(".")) -> None:
+    def __init__(
+        self, root: Path | str = Path("."), *, persist_insights: bool = False
+    ) -> None:
         self.root = Path(root)
         self.docs_design = self.root / "docs" / "design"
         self.model_card = self.root / "docs" / "MODEL_CARD.md"
@@ -205,6 +213,7 @@ class Readers:
         self.comparisons = BlindedComparisonStore(
             self.outputs / "annotations" / "comparisons.jsonl"
         )
+        self.persist_insights = persist_insights
 
     # ---- scoreboards (experiment / perf matrices) -----------------------------
 
@@ -293,6 +302,18 @@ class Readers:
         return None
 
     def run(self, run_id: str) -> dict[str, Any]:
+        if not _RUN_ID_RE.fullmatch(run_id):
+            return {
+                "run_id": run_id,
+                "provenance": "missing",
+                "manifest": None,
+                "scoreboard": None,
+                "train_summary": None,
+                "gates": None,
+                "telemetry": None,
+                "matrix_result": None,
+                "insights": None,
+            }
         run_dir = self.outputs / "runs" / run_id
         live = {
             "train_summary": _read_json(run_dir / "train_summary.json"),
@@ -313,13 +334,48 @@ class Readers:
         artifacts = dict(live)
         if artifacts["gates"] is None and scoreboard and scoreboard.get("suites"):
             artifacts["gates"] = evaluate_ship_gates(scoreboard["suites"])
+        insights = load_run_insights(
+            run_dir,
+            run_id=run_id,
+            scoreboard=scoreboard,
+            persist=self.persist_insights,
+        )
         return {
             "run_id": run_id,
             "provenance": "live" if has_live else "committed",
             "manifest": lineage_manifest,
             "scoreboard": scoreboard,
+            "insights": insights,
             **artifacts,
         }
+
+    def save_run_insights(
+        self, run_id: str, submission: RunInsightSubmission
+    ) -> dict[str, Any]:
+        if not _RUN_ID_RE.fullmatch(run_id):
+            raise ValueError("invalid run id")
+        return save_enrichment(
+            self.outputs / "runs" / run_id,
+            run_id=run_id,
+            submission=submission,
+            scoreboard=self._scoreboard_row(run_id),
+        )
+
+    def enrich_run_with_openai(self, run_id: str) -> dict[str, Any]:
+        if not _RUN_ID_RE.fullmatch(run_id):
+            raise ValueError("invalid run id")
+        if not os.getenv("OPENAI_API_KEY"):
+            raise RuntimeError("OpenAI fallback is not configured")
+        run_dir = self.outputs / "runs" / run_id
+        scoreboard = self._scoreboard_row(run_id)
+        report = load_run_insights(run_dir, run_id=run_id, scoreboard=scoreboard)
+        submission = enrich_with_openai(report)
+        return save_enrichment(
+            run_dir,
+            run_id=run_id,
+            submission=submission,
+            scoreboard=scoreboard,
+        )
 
     def rl_traces(self, run_id: str, *, offset: int = 0, limit: int = 20) -> dict[str, Any]:
         """Read a page of normalized RL traces; raw PyTorch dumps stay remote."""

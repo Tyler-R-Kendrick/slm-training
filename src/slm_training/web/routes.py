@@ -9,12 +9,14 @@ otherwise. State (readers / capabilities / jobs registry) lives on ``app.state``
 
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+from slm_training.autoresearch.run_insights import RunInsightSubmission
 from slm_training.harnesses.experiments.promotion import (
     PromotionCriteria,
     evaluate_promotion,
@@ -50,6 +52,10 @@ def capabilities(request: Request) -> dict[str, Any]:
 
     caps = request.app.state.capabilities.to_dict()
     caps["jobs"] = catalog()
+    caps["run_insights"] = {
+        "browser": True,
+        "openai_available": bool(os.getenv("OPENAI_API_KEY")),
+    }
     return caps
 
 
@@ -208,6 +214,32 @@ def promotion_evaluate(payload: PromotionEvalRequest) -> dict[str, Any]:
 class JobRequest(BaseModel):
     job: str = Field(..., min_length=1, max_length=64)
     params: dict[str, Any] = Field(default_factory=dict)
+
+
+@actions_router.post("/runs/{run_id}/insights")
+def persist_run_insights(
+    request: Request, run_id: str, payload: RunInsightSubmission
+) -> dict[str, Any]:
+    _require_execution(request)
+    try:
+        return _readers(request).save_run_insights(run_id, payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except OSError as exc:
+        raise HTTPException(status_code=503, detail="run insights are not writable") from exc
+
+
+@actions_router.post("/runs/{run_id}/insights/openai")
+def enrich_run_insights_openai(request: Request, run_id: str) -> dict[str, Any]:
+    _require_execution(request)
+    try:
+        return _readers(request).enrich_run_with_openai(run_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except OSError as exc:
+        raise HTTPException(status_code=503, detail="run insights are not writable") from exc
 
 
 @actions_router.post("/jobs")

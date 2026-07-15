@@ -15,7 +15,19 @@ import {
   fmt,
 } from "../components";
 
-export function Smoke({ navigate: _navigate }: { navigate: (to: string) => void }) {
+function PhaseBreakdown({ runId, fallback }: { runId: string; fallback: any }) {
+  const detail = usePoll<any>(runId ? `/api/runs/${encodeURIComponent(runId)}` : null, 0);
+  const data = detail.data?.insights?.phases?.length
+    ? detail.data.insights.phases
+    : [
+        { label: "denoiser", value: fallback.denoiser_ms_mean ?? 0, help: "Profile model forwards first; test AMP/compile, batching, or fewer decode steps, then rerun quality guardrails." },
+        { label: "dfa sync", value: fallback.dfa_sync_ms_mean ?? 0, help: "Remove unnecessary host/device synchronization boundaries and measure again on the same device." },
+        { label: "stream check", value: fallback.stream_check_ms_mean ?? 0, help: "Prefer incremental or chosen-token verification; keep final validation and parse guardrails enabled." },
+      ];
+  return <Bars data={data} />;
+}
+
+export function Smoke({ navigate }: { navigate: (to: string) => void }) {
   const caps = useCaps();
   const [jobId, setJobId] = useState<string | null>(null);
   const perf = usePoll<any>("/api/scoreboards/perf", 0);
@@ -56,13 +68,7 @@ export function Smoke({ navigate: _navigate }: { navigate: (to: string) => void 
 
       <div className="two-col">
         <Card title="Phase breakdown (mean ms)" right={<span className="hint mono">{first.run_id || first.id || ""}</span>}>
-          <Bars
-            data={[
-              { label: "denoiser", value: phase.denoiser_ms_mean ?? 0 },
-              { label: "dfa sync", value: phase.dfa_sync_ms_mean ?? 0 },
-              { label: "stream check", value: phase.stream_check_ms_mean ?? 0 },
-            ]}
-          />
+          <PhaseBreakdown runId={first.run_id || first.id || ""} fallback={phase} />
           <p className="hint" style={{ marginTop: "0.5rem" }}>Where cycle time goes — target the tallest bar first.</p>
         </Card>
 
@@ -77,7 +83,7 @@ export function Smoke({ navigate: _navigate }: { navigate: (to: string) => void 
             rows={perfRows}
             searchable
             searchPlaceholder="Search perf experiments"
-            render={{ id: (r) => <span className="mono">{r.id}</span> }}
+            render={{ id: (r) => <a className="mono runlink" onClick={() => navigate(`/runs/${encodeURIComponent(r.run_id || r.id)}`)}>{r.id}</a> }}
           />
         </Card>
       </div>
@@ -95,7 +101,7 @@ export function Smoke({ navigate: _navigate }: { navigate: (to: string) => void 
           searchable
           searchPlaceholder="Search smoke experiments"
           render={{
-            id: (r) => <span className="mono">{r.id}</span>,
+            id: (r) => <a className="mono runlink" onClick={() => navigate(`/runs/${encodeURIComponent(r.run_id || r.id)}`)}>{r.id}</a>,
             parse: (r) => fmt(r.parse, 2),
             fidelity: (r) => fmt(r.fidelity, 2),
             reward: (r) => fmt(r.reward, 2),
