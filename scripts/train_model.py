@@ -79,7 +79,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--eval-suite", default="smoke")
     parser.add_argument(
         "--model",
-        choices=("twotower", "grammar_diffusion", "stub"),
+        choices=("twotower", "stub"),
         default="twotower",
         help="Model plug-in to train (default: twotower).",
     )
@@ -126,37 +126,6 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--diffusion-overallocate", type=int, default=8)
     parser.add_argument("--diffusion-length-loss-weight", type=float, default=0.1)
     parser.add_argument("--gen-steps", type=int, default=8)
-    parser.add_argument(
-        "--topology-actions", action=argparse.BooleanOptionalAction, default=True
-    )
-    parser.add_argument(
-        "--topology-structural-embeddings",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-    )
-    parser.add_argument(
-        "--topology-heterogeneous-noise",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-    )
-    parser.add_argument(
-        "--topology-critic-decode",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-    )
-    parser.add_argument(
-        "--topology-bounded-buffer",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-    )
-    parser.add_argument("--topology-max-nodes", type=int, default=256)
-    parser.add_argument("--topology-max-active", type=int, default=64)
-    parser.add_argument("--topology-max-arity", type=int, default=8)
-    parser.add_argument("--topology-max-depth", type=int, default=32)
-    parser.add_argument("--topology-max-phases", type=int, default=32)
-    parser.add_argument("--topology-global-sync-interval", type=int, default=4)
-    parser.add_argument("--topology-accept-threshold", type=float, default=0.5)
-    parser.add_argument("--topology-contract-threshold", type=float, default=0.25)
     parser.add_argument(
         "--context-backend",
         choices=("scratch", "hf"),
@@ -383,6 +352,10 @@ def main(argv: list[str] | None = None) -> int:
         help="Plan bucket sync without uploading (debug / no-write environments).",
     )
     args = parser.parse_args(argv)
+    if (args.eval_every > 0 or args.loss_eval_every > 0) and not args.test_dir:
+        parser.error(
+            "--test-dir is required when --eval-every or --loss-eval-every is enabled"
+        )
     if args.sync_checkpoints and args.no_sync_checkpoints:
         parser.error("use only one of --sync-checkpoints / --no-sync-checkpoints")
     if args.fast_train and args.no_fast_train:
@@ -460,19 +433,6 @@ def main(argv: list[str] | None = None) -> int:
             diffusion_overallocate=args.diffusion_overallocate,
             diffusion_length_loss_weight=args.diffusion_length_loss_weight,
             gen_steps=args.gen_steps,
-            topology_actions=args.topology_actions,
-            topology_structural_embeddings=args.topology_structural_embeddings,
-            topology_heterogeneous_noise=args.topology_heterogeneous_noise,
-            topology_critic_decode=args.topology_critic_decode,
-            topology_bounded_buffer=args.topology_bounded_buffer,
-            topology_max_nodes=args.topology_max_nodes,
-            topology_max_active=args.topology_max_active,
-            topology_max_arity=args.topology_max_arity,
-            topology_max_depth=args.topology_max_depth,
-            topology_max_phases=args.topology_max_phases,
-            topology_global_sync_interval=args.topology_global_sync_interval,
-            topology_accept_threshold=args.topology_accept_threshold,
-            topology_contract_threshold=args.topology_contract_threshold,
             context_backend=args.context_backend,
             hf_model_name=args.hf_model,
             hf_model_revision=args.hf_revision,
