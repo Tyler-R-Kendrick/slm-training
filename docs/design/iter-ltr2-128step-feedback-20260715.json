@@ -1,0 +1,9 @@
+{
+  "date": "2026-07-15",
+  "kind": "ltr2-longer-checkpoint-selection",
+  "recipe": {"steps": 128, "batch_size": 8, "effective_batch_size": 8, "seed": 0, "ltr_loss_weight": 2.0, "context_backend": "scratch", "device": "cpu", "loss_eval_every": 32, "eval_limit": 1, "gen_steps": 8, "max_attempts": 1},
+  "loss_history": [{"step": 32, "weighted_nll": 8.954803327494739}, {"step": 64, "weighted_nll": 7.294002248996842}, {"step": 96, "weighted_nll": 8.123338152642562}, {"step": 128, "weighted_nll": 7.575430752550107}],
+  "selected_checkpoint": {"step": 64, "weighted_nll": 7.294002248996842, "structural_similarity": 0.5375, "component_type_recall": 0.5, "placeholder_validity": 0.2, "parse_rate": 0.0, "reward_score": 0.0, "agentv_persisted": true},
+  "decision": "retain ltr2 step64 for syntax-gap experiments; reject final step128 and do not promote",
+  "honesty": "scratch diagnostic; not a ship claim"
+}
