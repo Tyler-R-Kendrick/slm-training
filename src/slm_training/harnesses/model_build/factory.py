@@ -109,6 +109,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "use_dynamic_quant",
         "generate_max_attempts",
         "grammar_finalize_on_last_attempt_only",
+        "allow_unconstrained_fallback",
         "stability_min_persistence",
         "stability_jsd_weight",
         "unmask_mode",
@@ -285,6 +286,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         generate_max_attempts=int(getattr(config, "generate_max_attempts", 3) or 3),
         grammar_finalize_on_last_attempt_only=bool(
             getattr(config, "grammar_finalize_on_last_attempt_only", False)
+        ),
+        allow_unconstrained_fallback=bool(
+            getattr(config, "allow_unconstrained_fallback", True)
         ),
         stability_min_persistence=int(
             getattr(config, "stability_min_persistence", 0) or 0
