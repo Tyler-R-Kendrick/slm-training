@@ -21,6 +21,35 @@ SUITES_BY_PREFIX = (
     ("api/", ("tests/test_web",)),
     ("gpu_multi_farm/", ("tests/test_gpu_multi_farm",)),
     ("grammars/", ("tests/test_dsl", "tests/test_harnesses/model_build")),
+    (
+        "scripts/build_train_data.py",
+        ("tests/test_data", "tests/test_harnesses/train_data"),
+    ),
+    (
+        "scripts/build_test_data.py",
+        ("tests/test_data", "tests/test_harnesses/test_data", "tests/test_integration"),
+    ),
+    (
+        "scripts/hf_jobs_train.py",
+        ("tests/test_runtime/accel", "tests/test_harnesses/model_build"),
+    ),
+    ("scripts/model_cycle.py", ("tests/test_lineage",)),
+    (
+        "scripts/remote_train.py",
+        ("tests/test_runtime/accel", "tests/test_regressions"),
+    ),
+    (
+        "scripts/train_",
+        ("tests/test_harnesses/model_build", "tests/test_harnesses/quality", "tests/test_harnesses/rl"),
+    ),
+    (
+        "scripts/evaluate_",
+        ("tests/test_evals", "tests/test_harnesses/model_build"),
+    ),
+    (
+        "scripts/serve_playground.py",
+        ("tests/test_web",),
+    ),
     ("scripts/", ("tests/test_scripts",)),
     (
         "src/slm_training/data/",

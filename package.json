@@ -13,8 +13,10 @@
     "dashboard:build": "npm --prefix tools/dashboard run build"
   },
   "devDependencies": {
+    "@agentv/core": "^4.42.4",
     "@playwright/mcp": "0.0.78",
-    "@playwright/test": "1.61.1"
+    "@playwright/test": "1.61.1",
+    "agentv": "^4.42.4"
   },
   "engines": {
     "node": ">=20 <23"

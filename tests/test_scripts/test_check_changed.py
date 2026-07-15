@@ -15,3 +15,12 @@ def test_select_tests_deduplicates_nested_targets() -> None:
     assert select_tests(
         ["src/slm_training/dsl/parser.py", "tests/test_dsl/test_parser.py"]
     ) == ["tests/test_dsl", "tests/test_harnesses/model_build"]
+
+
+def test_script_changes_include_their_domain_suite() -> None:
+    assert select_tests(["scripts/train_model.py"]) == [
+        "tests/test_harnesses/model_build",
+        "tests/test_harnesses/quality",
+        "tests/test_harnesses/rl",
+        "tests/test_scripts",
+    ]
