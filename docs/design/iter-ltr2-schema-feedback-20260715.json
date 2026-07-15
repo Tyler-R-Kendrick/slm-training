@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "kind": "schema-conditioned-ltr-feedback",
+  "run_id": "iter-seed0-batch8-64step-ltr2-schema-20260715",
+  "feedback_run_id": "iter-seed0-64step-ltr2-schema-feedback-20260715",
+  "recipe": {
+    "model": "twotower",
+    "context_backend": "scratch",
+    "seed": 0,
+    "steps": 64,
+    "batch_size": 8,
+    "learning_rate": 0.0006,
+    "ltr_loss_weight": 2.0,
+    "schema_in_context": true,
+    "loss_eval_every": 32,
+    "device": "cpu",
+    "honesty_mode": "no-design-md-context",
+    "data_manifest_sha": "928ec8d4921954c7736d2386fe7abf88bbef75523a7cfe404792f45ddcd5d4ba"
+  },
+  "loss": {
+    "step_32_weighted_nll": 8.816689638047473,
+    "step_64_weighted_nll": 7.215127748257143,
+    "best_weighted_nll": 7.215127748257143
+  },
+  "feedback": {
+    "suite": "smoke",
+    "n": 1,
+    "gen_steps": 8,
+    "parse_rate": 0.0,
+    "structural_similarity": 0.35,
+    "placeholder_validity": 0.1333,
+    "component_type_recall": 0.5,
+    "reward_score": 0.0,
+    "latency_ms_p50": 3148.18,
+    "agentv_passed": 0,
+    "agentv_failed": 1
+  },
+  "control": {
+    "run_id": "iter-seed0-batch8-64step-ltr2-20260715",
+    "structural_similarity": 0.5375,
+    "placeholder_validity": 0.2,
+    "component_type_recall": 0.5,
+    "parse_rate": 0.0,
+    "reward_score": 0.0
+  },
+  "decision": "reject-schema-conditioning",
+  "reason": "Schema conditioning lowered bounded structural similarity and placeholder validity relative to the matched LTR2 control despite lower held-out NLL; no syntax or reward gate passed.",
+  "artifacts": {
+    "train_summary": "outputs/runs/iter-seed0-batch8-64step-ltr2-schema-20260715/train_summary.json",
+    "scoreboard": "outputs/runs/iter-seed0-64step-ltr2-schema-feedback-20260715/scoreboard.json",
+    "agentv": "outputs/runs/iter-seed0-64step-ltr2-schema-feedback-20260715/agentv"
+  }
+}
