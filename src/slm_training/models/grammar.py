@@ -883,10 +883,17 @@ def pick_constrained_token(
                     probe = text
                 else:
                     probe = f"{text}("
-                try:
-                    status = stream_check(probe)
-                except Exception:  # noqa: BLE001
-                    status = None
+                status = None
+                # `_legal` already applies the configured stream-probe policy.
+                # Do not bypass `skip_exact_stream_probe` here: this fallback
+                # ranking loop can inspect hundreds of candidates, and a
+                # direct LangCore probe per candidate makes constrained decode
+                # effectively unbounded on CPU.
+                if not skip_exact and not exact_terminals:
+                    try:
+                        status = stream_check(probe)
+                    except Exception:  # noqa: BLE001
+                        status = None
                 if (
                     token in preferred_names
                     or token in struct
