@@ -18,6 +18,7 @@ def main(argv: list[str] | None = None) -> int:
         default=Path("outputs/train_data/v1"),
     )
     parser.add_argument("--run-root", type=Path, default=Path("outputs/runs"))
+    parser.add_argument("--train-version", default=None, help="Use a published source-controlled corpus version from src/slm_training/resources/train_data.")
     parser.add_argument("--run-id", default="latest")
     parser.add_argument(
         "--test-dir",
