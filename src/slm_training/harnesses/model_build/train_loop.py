@@ -108,6 +108,10 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "device": config.device,
             "model": config.model_name,
             "context_backend": getattr(config, "context_backend", None),
+            "batch_size": int(config.batch_size),
+            "grad_accum": int(getattr(config, "grad_accum_steps", 1) or 1),
+            "effective_batch_size": int(config.batch_size)
+            * int(getattr(config, "grad_accum_steps", 1) or 1),
         },
     )
     mix_curriculum = bool(getattr(config, "mix_curriculum", True))
@@ -634,6 +638,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "amp": use_amp,
             "compile": use_compile,
             "grad_accum": grad_accum,
+            "effective_batch_size": int(config.batch_size) * grad_accum,
             "num_threads": accel.num_threads,
             "note": accel.note,
         },
