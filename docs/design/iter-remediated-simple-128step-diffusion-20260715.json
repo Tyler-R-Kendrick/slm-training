@@ -1,0 +1,11 @@
+{
+  "run_id": "iter-remediated-simple-128step-diffusion-20260715",
+  "corpus": "remediated_simple",
+  "manifest_sha": "1c30c46f1e98b61b90edb1e5a60883e6d354e3ee825518b04f34622b5bdf086c",
+  "record_count": 137,
+  "recipe": {"model": "twotower", "context_backend": "scratch", "device": "cpu", "mask_pattern": "diffusion", "steps": 128, "batch_size": 8, "ltr_loss_weight": 2.0},
+  "telemetry": {"target_tokens": 49120, "total_ms": 31909.615},
+  "loss": {"best_weighted_nll": 4.962871854631968, "broad_mean_nll": 5.752689853885375},
+  "evaluation": {"suite": "smoke", "n": 3, "parse_rate": 0.0, "structural_similarity": 0.0, "reward_score": 0.0, "decode_timeout_count": 0, "latency_ms_p50": 2311.49, "decision": "reject"},
+  "next": "change output head/objective or investigate prompt-to-target conditioning"
+}
