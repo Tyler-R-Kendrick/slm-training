@@ -663,6 +663,28 @@ class TwoTowerModel(nn.Module):
                         for j in range(lo, hi):
                             if not bool(frozen[i, j]):
                                 noise[i, j] = True
+                else:
+                    # CompositionalTokenizer has no lexer statement_spans API.
+                    # Derive newline-delimited spans so mixed masking is not a
+                    # silent random-mask fallback.
+                    newline_ids = set(self.tokenizer.encode("\n", add_special=False))
+                    if newline_ids:
+                        for i in range(bsz):
+                            if self._rng.random() > stmt_p:
+                                continue
+                            row = target_ids[i].tolist()
+                            boundaries = [j for j, tid in enumerate(row) if tid in newline_ids]
+                            start = 0
+                            spans: list[tuple[int, int]] = []
+                            for boundary in boundaries + [seq]:
+                                if boundary > start:
+                                    spans.append((start, boundary + 1))
+                                start = boundary + 1
+                            if spans:
+                                lo, hi = spans[self._rng.randrange(len(spans))]
+                                for j in range(lo, min(hi, seq)):
+                                    if not bool(frozen[i, j]):
+                                        noise[i, j] = True
             except Exception:  # noqa: BLE001
                 pass
 
