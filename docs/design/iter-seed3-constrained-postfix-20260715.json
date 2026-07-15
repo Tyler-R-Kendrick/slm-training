@@ -1,0 +1,9 @@
+{
+  "date": "2026-07-15",
+  "kind": "post-harness-fix-constrained-feedback",
+  "recipe": {"steps": 8, "batch_size": 8, "effective_batch_size": 8, "learning_rate": 0.0006, "seed": 3, "context_backend": "scratch", "device": "cpu", "eval_limit": 1, "gen_steps": 1, "max_attempts": 1, "skip_exact_stream_probe": true, "verify_chosen_only": true, "decode_timeout_seconds": 5},
+  "loss": {"weighted_nll": 30.708661427817432, "target_tokens": 10057, "complete": true},
+  "constrained_generation": {"latency_ms_p50": 2753.24, "decode_timeout_count": 0, "parse_rate": 0.0, "structural_similarity": 0.0, "reward_score": 0.0, "agentv_persisted": true},
+  "decision": "retain corpus and recipe; use bounded constrained feedback for the next harness/model experiment",
+  "honesty": "scratch diagnostic; not a ship claim"
+}
