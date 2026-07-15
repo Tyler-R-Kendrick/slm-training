@@ -532,7 +532,13 @@ def main(argv: list[str] | None = None) -> int:
                 result["guardrails"]["vacuous_baseline"] = True
                 result["guardrails"]["pass"] = False
         else:
-            result["guardrails"] = {"pass": True, "note": "no P0 in this run"}
+            # A speed row without the same-run P0 control is not quality-gated.
+            # Mark it incomplete instead of silently making an unanchored row
+            # look promotable in a focused run.
+            result["guardrails"] = {
+                "pass": False,
+                "note": "missing P0 control; rerun with --only P0,<candidate>",
+            }
         results.append(result)
         (args.out_dir / exp.run_id / "matrix_result.json").write_text(
             json.dumps(result, indent=2) + "\n", encoding="utf-8"

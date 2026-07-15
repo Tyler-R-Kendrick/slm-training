@@ -147,6 +147,26 @@ Round-3 takeaways:
 - Ship recipe unchanged for decode-only (**Q9/R9 flags**); playground uses
   the same levers plus repair/finalize with the R4/R5 wiring.
 
+### Overnight rerun (2026-07-14, CPU, bridge up, `--limit 4`)
+
+Fresh worktree from `origin/main`, committed `playground_demo/last.pt`,
+`uv sync --extra dev --extra grammar`, and `npm ci` in the pinned OpenUI
+bridge. This rerun is a performance result, not a ship claim: the demo
+checkpoint produced `parse_rate=0.0` for P0/Q9/R9 and `0.25` for PG, so no
+champion promotion was made.
+
+| ID | latency mean | p50 | effective tok/s | parse | fidelity | outcome |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| P0 | 4358.8 ms | 7086.4 ms | 9.75 | 0.00 | 0.00 | control; invalid demo output |
+| Q9 | 1424.1 ms | 1422.5 ms | 80.05 | 0.00 | 0.00 | 3.06x faster; quality failure |
+| R9 | 1415.9 ms | 1438.9 ms | 80.52 | 0.00 | 0.00 | fastest; quality failure |
+| PG | 1585.9 ms | 1593.4 ms | 73.14 | 0.25 | 0.00 | partial parse; not promotable |
+
+The focused matrix now marks candidate-only runs as unanchored instead of
+reporting them as passing; use `--only P0,<candidate>` for a quality-gated
+comparison. Dynamic quantization measured 10.18 tok/s and MaskGIT 0.58 tok/s
+in the same environment, so both remain rejected for this CPU path.
+
 ```bash
 python -m scripts.run_perf_matrix --only P0,Q9,R9,PG --limit 4
 ```
