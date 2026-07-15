@@ -168,6 +168,16 @@ pure, so the threshold editor stays live even read-only. Backend:
 [`tools/dashboard/`](tools/dashboard/) (built bundle committed under
 `web/static/app/`, like the preview lib).
 
+**Compiled ↔ interpreted (dogfooding OpenUI).** The sidebar has a
+**◈ Compiled / ◇ Interpreted** toggle. *Compiled* is the hand-written React above.
+*Interpreted* renders each page from a committed **OpenUI Lang** program
+(`src/slm_training/web/static/openui/<slug>.openui`) run **live** through the official
+[`@openuidev`](https://openui.com) `<Renderer>` — same components, live `/api` data via a
+tool provider, working nav, reactive selectors, launchers, and the live gate editor — so
+the app *is* the DSL. The two are kept at parity (`scripts/validate_page_dsl.py` +
+`tests/test_web/test_page_dsl.py` + the `dashboard-openui-parity` skill); interpreted-mode
+source lives in [`tools/dashboard/src/interpret/`](tools/dashboard/src/interpret/).
+
 ## Annotate playground (`/playground`)
 
 ```bash

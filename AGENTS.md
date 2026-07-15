@@ -50,6 +50,7 @@ Canonical: **`.agents/skills/<name>/SKILL.md`**. Mirrored for discovery under
 | `huggingface-*` / `hf-*` / `trl-training` / … | Other [huggingface/skills](https://github.com/huggingface/skills) workflows (papers, datasets viewer, trainers, Spaces, memory estimate, …) |
 | `playwright-cli` | Browser automation or playground e2e |
 | `frontier-describe` | Fill train-only frozen frontier artifacts and validate leakage/coverage |
+| `dashboard-openui-parity` | Editing a dashboard page (`tools/dashboard/src/pages/*.tsx`) — keep its interpreted-mode `static/openui/*.openui` program at parity |
 
 ### Token-efficiency stack (ponytail · caveman · headroom · rtk)
 
@@ -201,6 +202,24 @@ RL stages that write a new serving `*.pt`, and `--register-promoted`.
 
 A checkpoint without a model-card + README summary update is incomplete work
 (same bar as missing `docs/design/` measured-results).
+
+### Dashboard OpenUI parity (keep DSL in sync)
+
+The dashboard renders every page **two ways**, switchable by the sidebar
+**◈ Compiled / ◇ Interpreted** toggle: hand-written React
+(`tools/dashboard/src/pages/*.tsx`, *compiled*) and a committed **OpenUI Lang**
+program (`src/slm_training/web/static/openui/<slug>.openui`, *interpreted*) run live
+through the official `@openuidev` `<Renderer>` with the dashboard's hybrid library +
+`/api` tool provider (`tools/dashboard/src/interpret/`). **They must stay at parity.**
+
+Whenever you change a page (`pages/*.tsx`), its shared components
+(`components.tsx`), or add/remove a route (`main.tsx`): update the matching `.openui`
+program (and any `library.tsx` component / `toolProvider.ts` query it needs), then run
+`python scripts/validate_page_dsl.py` (rewrites `static/openui/MANIFEST.json`). A page
+change that leaves interpreted mode wrong is incomplete work. Full loop + gotchas:
+**REQUIRED SKILL:** `dashboard-openui-parity`. These programs use the full OpenUI Lang
+(not the placeholder training subset) — validate with `validate_page_dsl.py`, never the
+training bridge; training data + ship-gates are untouched.
 
 ## Iron law: docs follow every experiment
 

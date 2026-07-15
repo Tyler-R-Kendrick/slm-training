@@ -1,0 +1,27 @@
+tiles = Query("overview_tiles", {}, { rows: [] }, 15)
+jobs = Query("overview_jobs", {}, { rows: [], execution: false }, 4)
+scoreboards = Query("overview_scoreboards", {}, { rows: [] }, 15)
+roster = Query("checkpoints_roster", {}, { rows: [] }, 30)
+corpus = Query("overview_corpus", {}, { rows: [] }, 30)
+system = Query("overview_system", {}, { rows: [] }, 30)
+disp = Query("dispatches", {}, { rows: [], remotes: [] }, 8)
+
+head = PageHead("Mission Control", "What is actually going on — live jobs, the experiment scoreboard, checkpoint readiness, and corpus health, aggregated from the lineage store and committed evidence.")
+
+tileRow = Grid(@Each(tiles.rows, "t", StatTile(t.label, t.value, t.sub, t.accent)))
+
+jobsPanel = Panel("Live jobs", [JobList(jobs)], JobsBadge(jobs))
+sbPanel = Panel("Experiment scoreboards", [Bars(scoreboards), Hint("Fraction of experiments passing per matrix.", true)], NavChip("open →", "/experiments"))
+row1 = Row([jobsPanel, sbPanel])
+
+rosterCols = [{ key: "role", label: "Role" }, { key: "run_id", label: "Run" }, { key: "kind", label: "Kind" }, { key: "status", label: "Status" }]
+rosterPanel = Panel("Checkpoint roster", [DataTable(rosterCols, roster.rows, 22)], [ProvenanceBadge(roster.provenance), " ", NavChip("open →", "/checkpoints")])
+
+corpusPanel = Panel("Corpus health", [Bars(corpus), NavChip("manage data →", "/data", false, true)], ProvenanceBadge(corpus.provenance))
+sysCols = [{ key: "k", label: "Component" }, { key: "v", label: "State" }]
+sysPanel = Panel("System", [DataTable(sysCols, system.rows)])
+row2 = Row([corpusPanel, sysPanel])
+
+dispPanel = Panel("Remote dispatches", [DispatchList(disp)], NavChip("HF bucket ↗", disp.bucket_url, true))
+
+root = Page([head, tileRow, row1, rosterPanel, row2, dispPanel])
