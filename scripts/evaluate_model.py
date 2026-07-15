@@ -213,7 +213,7 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Diagnostic override: disable grammar-constrained token selection.",
     )
-    parser.add_argument(
+    parser.add_argument(\n        "--verify-chosen-only",\n        action="store_true",\n        help="Diagnostic override: verify only the model-chosen token per step.",\n    )\n    parser.add_argument(
         "--no-design-md-context",
         action="store_true",
         help="Override: do not concatenate DESIGN.md into context.",
@@ -293,7 +293,7 @@ def main(argv: list[str] | None = None) -> int:
         grammar_skip_exact_stream_probe=(
             True if args.skip_exact_stream_probe else None
         ),
-        grammar_constrained=(False if args.no_grammar_constrained else None),
+        grammar_constrained=(False if args.no_grammar_constrained else None),\n        grammar_verify_chosen_only=(True if args.verify_chosen_only else None),
         grammar_dsl=args.grammar_dsl,
         grammar_trust_model=args.grammar_trust_model,
         grammar_sample_decode=args.grammar_sample_decode,
