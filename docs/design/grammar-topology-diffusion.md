@@ -149,3 +149,42 @@ before checkpoint or evaluation because the implementation had not yet been
 committed and would have inherited the frozen baseline SHA. It is recorded in the
 JSON as setup telemetry only, not matrix evidence. The measured matrix starts from
 the committed implementation revision.
+
+## Measured X9-X15 matrix (2026-07-15 UTC)
+
+The complete staged result is in
+[grammar-matrix-results.json](grammar-matrix-results.json). Screening trained all
+21 X9-X15 seed combinations for 80 CPU/scratch steps on 1,165 curriculum records.
+Smoke retained X15, X12, X9, and X14; held-out and adversarial retained X14 and X9.
+The first held-out pass exposed an evaluation-only frozen-vocabulary bug after all
+checkpoints had trained. Commit `4bf964d` fixed it without retraining: scoring now
+parses with an isolated codec, maps unseen model-facing productions to `<unk>`,
+does not mutate the checkpoint vocabulary, and reports `production_oov_rate`.
+Held-out OOV was 0.0443 and OOD OOV was 0.0263 for both survivors.
+
+The planned confirmation retrained X9 and X14 for 200 steps with seeds 0/1/2,
+batch 4, learning rate `3e-4`, 16 generation phases, frozen scratch context, and
+the limited remediated suites (smoke n=3, held-out n=5, adversarial n=4, OOD n=4,
+RICO n=3). Values below are medians across seeds.
+
+| Row | Suite | Parse | Fidelity | Structure | Reward | Topology composite |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| X9 | smoke | 0.000 | 0.333 | 0.098 | 0.312 | 0.414 |
+| X9 | held-out | 0.000 | 0.000 | 0.000 | 0.000 | 0.372 |
+| X9 | adversarial | 0.000 | 0.000 | 0.000 | 0.000 | 0.472 |
+| X9 | OOD | 0.000 | 0.083 | 0.108 | 0.184 | 0.330 |
+| X9 | RICO n=3 | 0.667 | 0.125 | 0.317 | 0.675 | 0.464 |
+| X14 | smoke | 0.000 | 0.000 | 0.309 | 0.000 | 0.298 |
+| X14 | held-out | 0.000 | 0.000 | 0.251 | 0.000 | 0.277 |
+| X14 | adversarial | 0.000 | 0.000 | 0.291 | 0.000 | 0.285 |
+| X14 | OOD | 0.000 | 0.000 | 0.237 | 0.000 | 0.278 |
+| X14 | RICO n=3 | 0.000 | 0.042 | 0.078 | 0.215 | 0.233 |
+
+All six confirmation checkpoints failed the unchanged multi-suite ship gates.
+X9's limited RICO parse signal is not a ship result because held-out,
+adversarial, and OOD parse remained zero. Six confirmation AgentV bundles were
+published: the JSON envelope grader passed throughout, while domain assertions
+passed 1/5, 2/5, and 0/5 for X9 and 0/5 for every X14 seed. Checkpoints remain
+local scratch artifacts under `outputs/topology_confirm_4bf964d`; none were
+promoted or synced. The next experiment should improve generation validity and
+held-out vocabulary coverage before any full HF-context spend.

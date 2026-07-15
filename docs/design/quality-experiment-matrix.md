@@ -450,6 +450,23 @@ Artifacts: `outputs/runs/grammar_matrix_summary.json`,
 [`docs/design/grammar-matrix-results.json`](grammar-matrix-results.json),
 `outputs/runs/baseline_reproduction_summary.json`.
 
+### Measured X9-X15 result (2026-07-15 UTC)
+
+The 80-step, three-seed screen trained all 21 topology candidates and selected
+X14 and X9 after smoke, held-out, and adversarial halving. A frozen-vocabulary
+evaluation failure was repaired in `4bf964d`; the exact checkpoints were reused,
+and held-out production OOV is now measured at 0.0443. The 200-step confirmation
+then ran X9 and X14 across seeds 0/1/2 and all five limited suites.
+
+Every confirmation failed the unchanged ship gates. Median held-out parse was
+0.0 for both rows; median held-out topology composite was 0.372 for X9 and 0.277
+for X14. X9 reached median parse 0.667 on limited `rico_held` n=3 but retained
+zero median parse on held-out, adversarial, and OOD, so it is not promotable.
+X14's median RICO parse was 0.0. Full recipes, per-seed metrics, evaluator
+provenance, AgentV evidence counts, and checkpoint disposition are in
+[grammar-matrix-results.json](grammar-matrix-results.json) and
+[grammar-topology-diffusion.md](grammar-topology-diffusion.md).
+
 ## V7 matrix (speculative denoising)
 
 Implements the speculative-denoising design in
