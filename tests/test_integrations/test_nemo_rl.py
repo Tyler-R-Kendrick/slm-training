@@ -75,7 +75,7 @@ def test_openui_reward_uses_visible_slot_contract() -> None:
     )
 
 
-def test_hf_job_recipe_is_pinned_and_secret_safe() -> None:
+def test_hf_job_recipe_is_pinned_and_secret_safe(approved_rl_report) -> None:
     script = build_entrypoint_script(
         run_id="nemo-smoke",
         base_model_id="Qwen/Qwen3-0.6B",
@@ -85,6 +85,7 @@ def test_hf_job_recipe_is_pinned_and_secret_safe() -> None:
         data_path="fixtures/nemo_rl/openui_smoke.jsonl",
         checkpoint_bucket="hf://buckets/TKendrick/OpenUI",
         seed=7,
+        rl_readiness_report=approved_rl_report.model_dump(mode="json"),
     )
     command = build_hf_jobs_command(entrypoint=script)
     assert NEMO_RL_GIT_SHA in script
@@ -103,6 +104,7 @@ def test_hf_job_recipe_is_pinned_and_secret_safe() -> None:
             data_path="fixtures/nemo_rl/openui_smoke.jsonl",
             checkpoint_bucket="hf://buckets/TKendrick/OpenUI",
             seed=7,
+            rl_readiness_report=approved_rl_report.model_dump(mode="json"),
         )
 
 
@@ -125,7 +127,9 @@ def test_summary_and_hf_status_validation(tmp_path: Path) -> None:
         validate_train_summary({**payload, "checkpoint_written": False}, run_id="nemo-smoke")
 
 
-def test_lineage_dry_run_and_reconcile(tmp_path: Path, capsys) -> None:
+def test_lineage_dry_run_and_reconcile(
+    tmp_path: Path, capsys, approved_rl_report_path
+) -> None:
     root = tmp_path / "lineage"
     store = LineageStore(root)
     store.create_run(causal_manifest())
@@ -138,6 +142,8 @@ def test_lineage_dry_run_and_reconcile(tmp_path: Path, capsys) -> None:
                 "--run-id",
                 "nemo-smoke",
                 "--dry-run",
+                "--rl-readiness-report",
+                str(approved_rl_report_path),
             ]
         )
         == 0

@@ -1294,6 +1294,9 @@ def _maybe_rl(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> Path:
         return ckpt
     from slm_training.models.twotower import TwoTowerModel
     from slm_training.harnesses.rl import train_grpo_from_paths
+    from slm_training.autoresearch.rl_gate import assert_rl_ready
+
+    readiness = assert_rl_ready(getattr(args, "rl_readiness_report", None))
 
     # Prefetch decode overrides onto a temp copy the RL trainer will reload.
     try:
@@ -1317,6 +1320,7 @@ def _maybe_rl(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> Path:
         ref_checkpoint=ckpt,
         limit=int(getattr(args, "pref_limit", 32) or 32),
         kl_beta=0.05,
+        readiness_report=readiness,
     )
     rl_ckpt = Path(summary.get("checkpoint") or (out_dir / "model.pt"))
     if rl_ckpt.is_file():
@@ -1555,6 +1559,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--pref-limit", type=int, default=40)
     parser.add_argument("--rl-steps", type=int, default=30)
     parser.add_argument("--rl-group-size", type=int, default=4)
+    parser.add_argument("--rl-readiness-report", type=Path, default=None)
     parser.add_argument(
         "--workers",
         type=int,

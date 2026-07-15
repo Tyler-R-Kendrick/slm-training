@@ -5,12 +5,24 @@ from __future__ import annotations
 
 import os
 import runpy
+import base64
+import json
 from pathlib import Path
 
 from slm_training.integrations.nemo_rl import NEMO_RL_ROOT, write_train_summary
 
 
 def main() -> int:
+    from slm_training.autoresearch.rl_gate import assert_rl_ready
+    from slm_training.autoresearch.schemas import RLReadinessReport
+
+    encoded = os.environ.get("SLM_NEMO_RL_READINESS_B64")
+    if not encoded:
+        raise ValueError("RL is locked: missing SLM_NEMO_RL_READINESS_B64")
+    readiness = RLReadinessReport.model_validate(
+        json.loads(base64.b64decode(encoded).decode("utf-8"))
+    )
+    assert_rl_ready(readiness)
     actor_fqn = (
         "slm_training.integrations.nemo_rl_environment.OpenUIEnvironment"
     )
@@ -42,6 +54,7 @@ def main() -> int:
             "code_revision": os.environ["SLM_NEMO_CODE_REVISION"],
             "data_path": os.environ["SLM_NEMO_DATA_PATH"],
             "seed": int(os.environ["SLM_NEMO_SEED"]),
+            "rl_readiness_report_id": readiness.report_id,
         },
     )
     return 0

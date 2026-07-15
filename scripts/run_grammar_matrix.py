@@ -347,6 +347,9 @@ def _maybe_rl(exp: GrammarExperiment, ckpt: Path, args: argparse.Namespace) -> P
     if not exp.rl:
         return ckpt
     from slm_training.harnesses.rl import train_grpo_from_paths
+    from slm_training.autoresearch.rl_gate import assert_rl_ready
+
+    readiness = assert_rl_ready(getattr(args, "rl_readiness_report", None))
 
     out_dir = args.run_root / exp.run_id / f"rl_s{args.seed}"
     summary = train_grpo_from_paths(
@@ -359,6 +362,7 @@ def _maybe_rl(exp: GrammarExperiment, ckpt: Path, args: argparse.Namespace) -> P
         ref_checkpoint=ckpt,
         limit=int(getattr(args, "pref_limit", 32) or 32),
         kl_beta=0.05,
+        readiness_report=readiness,
     )
     skipped = int(summary.get("skipped_groups") or 0)
     rl_ckpt = Path(summary.get("checkpoint") or (out_dir / "model.pt"))
@@ -551,6 +555,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--pref-limit", type=int, default=40)
     parser.add_argument("--rl-steps", type=int, default=30)
     parser.add_argument("--rl-group-size", type=int, default=4)
+    parser.add_argument("--rl-readiness-report", type=Path, default=None)
     parser.add_argument("--gen-steps", type=int, default=8)
     parser.add_argument(
         "--only",

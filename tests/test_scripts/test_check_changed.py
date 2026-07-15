@@ -24,3 +24,7 @@ def test_script_changes_include_their_domain_suite() -> None:
         "tests/test_harnesses/rl",
         "tests/test_scripts",
     ]
+    assert select_tests(["scripts/autoresearch.py"]) == [
+        "tests/test_autoresearch",
+        "tests/test_scripts",
+    ]

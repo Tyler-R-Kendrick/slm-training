@@ -8,6 +8,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from slm_training.autoresearch.rl_gate import assert_rl_ready
+from slm_training.autoresearch.schemas import RLReadinessReport
+
 import torch
 import torch.nn.functional as F
 
@@ -161,7 +164,9 @@ def train_trajectory_rl(
     config: TrajectoryRLConfig | None = None,
     out_dir: Path | None = None,
     base_policy_sha: str | None = None,
+    readiness_report: RLReadinessReport | Path | str | None = None,
 ) -> dict[str, Any]:
+    readiness = assert_rl_ready(readiness_report)
     cfg = config or TrajectoryRLConfig()
     out_dir = Path(out_dir) if out_dir else Path("outputs/runs/traj_rl")
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -246,6 +251,7 @@ def train_trajectory_rl(
     model.save(out_dir / "model.pt")
     summary = {
         "algo": "e64_trajectory_rl",
+        "rl_readiness_report_id": readiness.report_id,
         "steps": cfg.steps,
         "n_traces": len(traces),
         "n_groups": len(usable),

@@ -103,7 +103,7 @@ def test_build_pairs_prefer_valid() -> None:
     assert "Broken" not in pair.rejected
 
 
-def test_grpo_smoke(tmp_path: Path) -> None:
+def test_grpo_smoke(tmp_path: Path, approved_rl_report) -> None:
     records = [
         ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train"),
         ExampleRecord(
@@ -130,6 +130,7 @@ def test_grpo_smoke(tmp_path: Path) -> None:
         records,
         config=GRPOConfig(steps=2, group_size=2, batch_prompts=1, lr=1e-3),
         out_dir=tmp_path / "rl",
+        readiness_report=approved_rl_report,
     )
     assert summary["steps"] == 2
     assert Path(summary["checkpoint"]).exists()

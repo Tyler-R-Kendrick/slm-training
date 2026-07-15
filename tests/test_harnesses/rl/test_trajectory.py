@@ -28,7 +28,7 @@ def test_lexicographic_reward_gates_invalid() -> None:
     assert good > 1_000_000
 
 
-def test_trajectory_rl_smoke(tmp_path: Path) -> None:
+def test_trajectory_rl_smoke(tmp_path: Path, approved_rl_report) -> None:
     openui = 'root = Stack([cta])\ncta = Button(":cta.label")'
     records = [
         ExampleRecord(
@@ -81,6 +81,7 @@ def test_trajectory_rl_smoke(tmp_path: Path) -> None:
         config=TrajectoryRLConfig(steps=2, group_size=2, seed=0),
         out_dir=tmp_path / "rl",
         base_policy_sha="sha1",
+        readiness_report=approved_rl_report,
     )
     assert summary["n_groups"] >= 1
     assert (tmp_path / "rl" / "model.pt").exists()

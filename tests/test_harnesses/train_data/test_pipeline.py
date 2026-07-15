@@ -63,6 +63,7 @@ def test_build_train_data_writes_artifacts(tmp_path: Path) -> None:
     assert (out_dir / "manifest.json").exists()
     assert (out_dir / "records.jsonl").exists()
     assert (out_dir / "stats.json").exists()
+    assert (out_dir / "synthesis_telemetry.jsonl").exists()
     stats = json.loads((out_dir / "stats.json").read_text(encoding="utf-8"))
     assert stats["record_count"] >= 2
     assert stats["error_count"] == 0
@@ -70,6 +71,7 @@ def test_build_train_data_writes_artifacts(tmp_path: Path) -> None:
     assert manifest["kind"] == "train_data"
     assert "prompt_fingerprints" in manifest
     assert "openui_fingerprints" in manifest
+    assert len(manifest["synthesis_telemetry_sha256"]) == 64
     assert len(manifest["ids"]) == stats["record_count"]
     assert {
         row.meta.get("contract_id") for row in load_jsonl(out_dir / "records.jsonl")
@@ -100,6 +102,25 @@ def test_build_train_data_derives_from_existing_records(tmp_path: Path) -> None:
     assert {row.meta.get("derivation_source") for row in rows} == {str(roots)}
     assert any(row.meta.get("synth") == "template" for row in rows)
     assert len(rows) > 2
+
+
+@pytest.mark.skipif(
+    not bridge_available(),
+    reason="OpenUI bridge deps missing; run: cd tools/openui_bridge && npm ci",
+)
+def test_immutable_build_refuses_to_overwrite_snapshot(tmp_path: Path) -> None:
+    config = TrainDataConfig(
+        seed_path=_seed_file(tmp_path),
+        rico_path=None,
+        source="fixture",
+        output_root=tmp_path / "train_data",
+        version="immutable",
+        synthesizer="none",
+        immutable=True,
+    )
+    build_train_data(config)
+    with pytest.raises(FileExistsError, match="immutable training-data snapshot"):
+        build_train_data(config)
 
 
 @pytest.mark.skipif(

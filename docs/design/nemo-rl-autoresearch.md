@@ -42,7 +42,8 @@ placed in manifests, commands, or summaries.
 
 ```text
 causal_lm branch
-  -> model-cycle submit-nemo --dry-run
+  -> approved frozen full-suite RL readiness report
+  -> model-cycle submit-nemo --dry-run --rl-readiness-report <report>
   -> explicit approval + --ack-paid-gpu
   -> pinned NeMo container on HF Jobs
   -> OpenUI processor -> Ray reward environment -> one GRPO step
@@ -84,14 +85,16 @@ commands. Then preview the exact paid command:
 
 ```bash
 python -m scripts.model_cycle --lineage-root outputs/lineage \
-  submit-nemo --run-id <causal-run-id> --dry-run
+  submit-nemo --run-id <causal-run-id> --dry-run \
+  --rl-readiness-report outputs/runs/<causal-run-id>/rl_readiness.json
 ```
 
 Only after reviewing cost, revision, recipe, data, and command:
 
 ```bash
 python -m scripts.model_cycle --lineage-root outputs/lineage \
-  submit-nemo --run-id <causal-run-id> --ack-paid-gpu
+  submit-nemo --run-id <causal-run-id> --ack-paid-gpu \
+  --rl-readiness-report outputs/runs/<causal-run-id>/rl_readiness.json
 ```
 
 Reconciliation reads HF Jobs status and the durable summary:
@@ -110,7 +113,8 @@ For offline testing, `reconcile-nemo` accepts `--status-json` and `--summary`.
 | Static integration | Ruff, compile, unit tests | Implemented |
 | Dispatch safety | exact dry-run, explicit paid flag, named secret | Implemented |
 | Runtime identity | image git SHA, code SHA, model revision checks | Implemented |
-| Hardware smoke | one optimizer step on HF Jobs | Not run |
+| RL readiness | frozen full suites + AgentV + reward variance | Required; no bypass |
+| Hardware smoke | one optimizer step on HF Jobs after readiness | Not run |
 | Durability | checkpoint + valid summary in HF Bucket | Not run |
 | Reload | load emitted LoRA artifact on pinned base | Not run |
 | Quality | full honest eval snapshot and ship gates | Out of smoke scope |
@@ -123,11 +127,15 @@ smoke runs are permanently barred from promotion by `model_cycle`.
 
 ## Autoresearch phase after acceptance
 
-Start a campaign only after the smoke and reload gates pass and the user sets a
+Start a campaign after supervised competence clears RL readiness and the user sets a
 metric plus a time/GPU-hour/experiment budget. Use a dedicated branch per
 hypothesis, the session-memory handoff, and a TSV experiment ledger. Baseline
 first; then vary one bounded lever at a time. Full candidates must train on a
 real versioned data snapshot and run the frozen production evaluation suites.
 Only normal validated causal runs—not hardware-smoke lineage—may enter the
 existing promote/merge/deploy path.
+
+The previous smoke-first ordering is intentionally superseded: even a wiring-only
+GRPO optimizer step is RL, so `submit-nemo` embeds and revalidates the approved
+readiness report inside the remote container before NeMo imports or training.
 

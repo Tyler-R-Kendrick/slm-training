@@ -1,0 +1,4 @@
+interface:
+  display_name: "OpenUI Autoresearch"
+  short_description: "Run evidence-grounded, telemetry-complete OpenUI training research"
+  default_prompt: "Use the OpenUI autoresearch campaign harness, preserve honest gates, and persist every decision and result."
