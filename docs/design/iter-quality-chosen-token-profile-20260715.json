@@ -1,0 +1,9 @@
+{
+  "date": "2026-07-15",
+  "kind": "constrained-decoder-profile",
+  "control": "verify_chosen_only",
+  "probe": {"records": 1, "decode_steps": 1, "max_attempts": 1},
+  "result": "still exceeded execution window",
+  "decision": "do not claim quality; continue DFA/Lark profiling",
+  "honesty": "diagnostic only"
+}
