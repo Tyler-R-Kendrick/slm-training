@@ -208,6 +208,7 @@ class Readers:
         self.model_card = self.root / "docs" / "MODEL_CARD.md"
         self.outputs = self.root / "outputs"
         self.fixtures = self.root / "src" / "slm_training" / "resources"
+        self.dashboard_snapshot = self.root / "src" / "slm_training" / "web" / "static" / "dashboard_snapshot.json"
         self.lineage = LineageStore(self.outputs / "lineage")
         self.deployments = DeploymentRegistry(self.outputs / "lineage" / "deployments")
         self.comparisons = BlindedComparisonStore(
@@ -223,6 +224,11 @@ class Readers:
             return {"kind": kind, "provenance": "unknown", "results": [], "meta": {}}
         payload = _read_json(self.docs_design / filename)
         results = _results_of(payload)
+        snapshot = _read_json(self.dashboard_snapshot) or {}
+        if kind == "quality":
+            published = _results_of(snapshot.get("quality_results"))
+            known = {r.get("run_id") or r.get("id") for r in results}
+            results.extend(r for r in published if (r.get("run_id") or r.get("id")) not in known)
         meta = {k: v for k, v in (payload or {}).items() if k != "results"} if isinstance(
             payload, dict
         ) else {}
@@ -276,8 +282,12 @@ class Readers:
                 )
         if live:
             return {"provenance": "live", "runs": live}
-        # Cold start: synthesize runs from committed matrix rows.
+        # Cold start: synthesize runs from committed matrix rows and the published
+        # experiment snapshot generated from completed local runs.
+        snapshot = _read_json(self.dashboard_snapshot) or {}
         derived: list[dict[str, Any]] = []
+        for row in _results_of(snapshot.get("runs")):
+            derived.append({**row, "provenance": "committed-snapshot"})
         for kind in ("quality", "grammar", "perf"):
             for row in self.scoreboard(kind)["results"]:
                 derived.append(
@@ -614,6 +624,10 @@ class Readers:
                     for suite in SUITE_ORDER:
                         sizes[suite] = _count_lines(suites_dir / suite / "records.jsonl")
                 return {"provenance": "live", "version": versions[-1], "suites": sizes}
+        snapshot = _read_json(self.dashboard_snapshot) or {}
+        snapshot_test = snapshot.get("test_data") if isinstance(snapshot, dict) else None
+        if isinstance(snapshot_test, dict):
+            return {"provenance": "committed-snapshot", **snapshot_test, "records": None}
         # Cold start: committed fixture test seeds by split.
         rows = _read_jsonl(self.fixtures / "test_seeds.jsonl")
         sizes = {suite: 0 for suite in SUITE_ORDER}
@@ -622,6 +636,21 @@ class Readers:
             if split in sizes:
                 sizes[split] += 1
         return {"provenance": "committed", "version": None, "suites": sizes}
+
+    def test_records(
+        self, suite: str | None = None, *, query: str | None = None,
+        offset: int = 0, limit: int = 50,
+    ) -> dict[str, Any]:
+        snapshot = _read_json(self.dashboard_snapshot) or {}
+        data = snapshot.get("test_data") if isinstance(snapshot, dict) else None
+        rows = list((data or {}).get("records") or [])
+        if suite:
+            rows = [r for r in rows if r.get("suite") == suite]
+        if query:
+            needle = query.casefold()
+            rows = [r for r in rows if needle in " ".join(str(r.get(k) or "") for k in ("id", "suite", "prompt", "openui")).casefold()]
+        start = max(0, offset)
+        return {"provenance": "committed-snapshot", "version": (data or {}).get("version"), "count": len(rows), "offset": start, "limit": limit, "records": rows[start:start + limit]}
 
     # ---- annotations / comparisons -------------------------------------------
 
