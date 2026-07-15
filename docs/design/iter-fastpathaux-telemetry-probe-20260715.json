@@ -1,0 +1,6 @@
+{
+  "run_id": "iter-fastpathaux-telemetry-probe-20260715",
+  "recipe": {"model": "twotower", "device": "cpu", "steps": 1, "batch_size": 8, "mask_pattern": "diffusion", "fastpath_aux_weight": 1.0},
+  "telemetry": {"span": "fastpath_aux_loss", "count": 1, "total_ms": 1.748, "mean_ms": 1.748},
+  "decision": "objective active; continue quality iteration"
+}
