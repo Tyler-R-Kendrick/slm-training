@@ -70,17 +70,14 @@ export function Smoke({ navigate: _navigate }: { navigate: (to: string) => void 
           <DataTable
             columns={[
               { key: "id", label: "id" },
-              { key: "latency_ms_p50", label: "p50 ms", align: "right" },
-              { key: "tokens_per_sec", label: "tok/s", align: "right" },
-              { key: "parse_rate", label: "parse", align: "right" },
+              { key: "latency_ms_p50", label: "p50 ms", align: "right", digits: 0, direction: "lower", help: "Median generation latency in milliseconds; lower is better." },
+              { key: "tokens_per_sec", label: "tok/s", align: "right", digits: 1, direction: "higher", help: "Generated tokens per second; higher is better." },
+              { key: "parse_rate", label: "parse", align: "right", digits: 2, direction: "higher", help: "Share of outputs that parse as valid OpenUI; higher is better." },
             ]}
             rows={perfRows}
-            render={{
-              id: (r) => <span className="mono">{r.id}</span>,
-              latency_ms_p50: (r) => fmt(r.latency_ms_p50, 0),
-              tokens_per_sec: (r) => fmt(r.tokens_per_sec, 1),
-              parse_rate: (r) => fmt(r.parse_rate, 2),
-            }}
+            searchable
+            searchPlaceholder="Search perf experiments"
+            render={{ id: (r) => <span className="mono">{r.id}</span> }}
           />
         </Card>
       </div>
@@ -89,12 +86,14 @@ export function Smoke({ navigate: _navigate }: { navigate: (to: string) => void 
         <DataTable
           columns={[
             { key: "id", label: "experiment" },
-            { key: "parse", label: "parse", align: "right" },
-            { key: "fidelity", label: "fidelity", align: "right" },
-            { key: "reward", label: "reward", align: "right" },
+            { key: "parse", label: "parse", align: "right", digits: 2, help: "Share of smoke outputs that parse as valid OpenUI." },
+            { key: "fidelity", label: "fidelity", align: "right", digits: 2, help: "Placeholder fidelity against the expected target." },
+            { key: "reward", label: "reward", align: "right", digits: 2, help: "Aggregate smoke reward; higher is better." },
             { key: "gate", label: "≥0.66 parse" },
           ]}
           rows={smokeRows}
+          searchable
+          searchPlaceholder="Search smoke experiments"
           render={{
             id: (r) => <span className="mono">{r.id}</span>,
             parse: (r) => fmt(r.parse, 2),

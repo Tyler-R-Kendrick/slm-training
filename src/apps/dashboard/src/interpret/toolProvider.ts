@@ -176,9 +176,10 @@ export const toolProvider: Record<string, QueryFn> = {
       ],
       rows: rows.map((r: any) => ({
         id: r.id,
-        latency_ms_p50: f(r.latency_ms_p50, 0),
-        tokens_per_sec: f(r.tokens_per_sec, 1),
-        parse_rate: f(r.parse_rate, 2),
+        latency_ms_p50: r.latency_ms_p50,
+        tokens_per_sec: r.tokens_per_sec,
+        parse_rate: r.parse_rate,
+        guardrails: r.guardrails,
       })),
     };
   },

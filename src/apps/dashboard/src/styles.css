@@ -99,13 +99,16 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.01em; }
 .prov-committed { color: var(--text-mute); }
 
 /* ---- tables ------------------------------------------------------------- */
-.table-wrap { overflow-x: auto; border-radius: var(--radius); }
+.table-search { display: flex; align-items: center; gap: 0.55rem; margin-bottom: 0.55rem; color: var(--text-mute); font-size: 0.7rem; }
+.table-search input { flex: 1; min-width: 12rem; background: var(--bg-2); border: 1px solid var(--border-strong); color: var(--text); border-radius: var(--radius); padding: 0.35rem 0.45rem; font-family: var(--font-mono); font-size: 0.78rem; }
+.table-wrap { overflow: auto; border-radius: var(--radius); }
 .dtable { width: 100%; border-collapse: collapse; font-size: var(--fs-mono); }
 .dtable th {
   text-align: left; font-family: var(--font-mono); font-weight: 500;
   font-size: var(--fs-label); letter-spacing: 0.06em; text-transform: uppercase;
   color: var(--text-mute); padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--border-strong);
   white-space: nowrap;
+  position: sticky; top: 0; z-index: 1; background: var(--bg-2);
 }
 .dtable td { padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--border); font-variant-numeric: tabular-nums; vertical-align: top; }
 .dtable tbody tr:hover { background: var(--bg-2); }
@@ -115,6 +118,16 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.01em; }
 .gate-fail { color: var(--status-failed); background: var(--status-failed-bg); }
 .gate-na { color: var(--text-mute); text-align: center; }
 .gate-glyph { font-weight: 700; }
+.table-help, .metric-flag { position: relative; cursor: help; }
+.table-help:focus, .metric-flag:focus { outline: 1px solid var(--moss); outline-offset: 2px; }
+.table-tooltip { visibility: hidden; opacity: 0; position: absolute; left: 50%; bottom: calc(100% + 0.45rem); transform: translateX(-50%); width: max-content; max-width: 18rem; padding: 0.45rem 0.55rem; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--bg-3); color: var(--text); font: 0.72rem/1.35 var(--font-display); text-transform: none; letter-spacing: normal; white-space: normal; pointer-events: none; box-shadow: 0 0.4rem 1.2rem #0008; }
+.table-help:hover .table-tooltip, .table-help:focus .table-tooltip, .metric-flag:hover .table-tooltip, .metric-flag:focus .table-tooltip { visibility: visible; opacity: 1; }
+.metric-value { display: inline-flex; align-items: center; gap: 0.3rem; }
+.metric-good { color: var(--status-passed); }
+.metric-bad { color: var(--status-failed); }
+.metric-warning { color: var(--status-warning); }
+.metric-info { color: var(--status-running); }
+.metric-flag { font-size: 0.78rem; }
 
 /* ---- timeline ----------------------------------------------------------- */
 .timeline { list-style: none; display: flex; gap: 0; padding: 0; margin: 0.5rem 0; flex-wrap: wrap; }
