@@ -68,32 +68,23 @@
     },
     "overview": {
       "components": [
-        "Bars",
+        "Badge",
         "DataTable",
-        "DispatchList",
         "Grid",
         "Hint",
-        "JobList",
-        "JobsBadge",
         "NavChip",
         "Page",
         "PageHead",
         "Panel",
+        "Pill",
         "ProvenanceBadge",
-        "Row",
         "StatTile"
       ],
       "file": "overview.openui",
       "queries": [
-        "checkpoints_roster",
-        "dispatches",
-        "overview_corpus",
-        "overview_jobs",
-        "overview_scoreboards",
-        "overview_system",
-        "overview_tiles"
+        "overview_insights"
       ],
-      "sha256": "9b21f06929fb4e895414f0444c4e431c155ebd3ed4baa630b87cae5677b86763",
+      "sha256": "592496c0f482f13e6ff35304acb5e0af17b2942e37396ed0f7c338750d9a2db1",
       "status": "ok"
     },
     "playground": {

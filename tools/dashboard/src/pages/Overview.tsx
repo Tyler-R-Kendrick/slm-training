@@ -1,183 +1,129 @@
 import React from "react";
-import { usePoll, postJSON } from "../api";
-import { useCaps } from "../caps";
+import { usePoll } from "../api";
 import {
   Card,
+  DataTable,
+  ErrorNote,
   Grid,
+  ProvenanceBadge,
   StatTile,
   StatusPill,
-  ProvenanceBadge,
-  DataTable,
-  Bars,
-  Empty,
-  ErrorNote,
   pct,
 } from "../components";
 
+const insightColumns = [
+  { key: "finding", label: "Finding" },
+  { key: "suggestion", label: "Suggested mitigation" },
+];
+
 export function Overview({ navigate }: { navigate: (to: string) => void }) {
-  const caps = useCaps();
   const { data, error } = usePoll<any>("/api/overview", 15000);
-  const jobs = usePoll<any>("/api/jobs", caps.execution ? 4000 : 0);
-  const dispatches = usePoll<any>("/api/dispatches", caps.execution ? 8000 : 0);
 
   if (error) return <ErrorNote error={error} />;
-  if (!data) return <div className="loading">Loading mission control…</div>;
+  if (!data) return <div className="loading">Loading performance insights…</div>;
 
-  const totals = data.experiment_totals ?? { count: 0, passed: 0 };
-  const passRate = totals.count ? totals.passed / totals.count : 0;
-  const corpus = data.data ?? {};
-  const anns = data.annotations ?? {};
-  const activeJobs = (jobs.data?.jobs ?? []).filter((j: any) =>
-    ["running", "queued"].includes(j.status)
-  );
-  const dep = data.system?.deployment ?? {};
+  const performance = data.performance ?? {};
+  const references = performance.references ?? [];
+  const comparisons = performance.comparisons ?? [];
+  const insights = performance.insights ?? {};
+  const stats = performance.stats ?? {};
+  const cache = performance.cache ?? {};
 
   return (
     <div>
       <div className="page-head">
-        <h1 className="page-title">Mission Control</h1>
+        <h1 className="page-title">Performance insights</h1>
         <p className="page-sub">
-          What is actually going on — live jobs, the experiment scoreboard, checkpoint
-          readiness, and corpus health, aggregated from the lineage store and committed
-          evidence.
+          What to improve, what to carry forward, and signals that are easy to miss —
+          anchored to the current model card and track champions.
         </p>
       </div>
 
-      <Grid min="200px">
-        <StatTile
-          label="Experiments passing"
-          value={`${totals.passed}/${totals.count}`}
-          sub={`${pct(passRate)} pass rate`}
-          accent="moss"
-        />
-        <StatTile
-          label="Active jobs"
-          value={activeJobs.length}
-          sub={caps.execution ? "control plane online" : "read-only"}
-          accent={activeJobs.length ? "running" : undefined}
-        />
-        <StatTile
-          label="Training records"
-          value={corpus.record_count ?? "—"}
-          sub={corpus.version ? `train_data/${corpus.version}` : "fixtures (cold start)"}
-        />
-        <StatTile
-          label="Checkpoints"
-          value={(data.checkpoints?.checkpoints ?? []).length}
-          sub={dep.selected ? "1 deployed" : "none deployed"}
-          accent={dep.selected ? "promoted" : undefined}
-        />
-        <StatTile label="Human feedback" value={anns.feedback ?? 0} sub={`${anns.human_pairs ?? 0} pref pairs`} />
-      </Grid>
-
-      <div className="two-col">
-        <Card
-          title="Live jobs"
-          right={caps.execution ? <StatusPill value="running" label="control plane" /> : <span className="prov prov-committed">read-only</span>}
-        >
-          {!caps.execution && <Empty>Execution disabled — serve locally to run jobs.</Empty>}
-          {caps.execution && activeJobs.length === 0 && <Empty>No jobs running.</Empty>}
-          {activeJobs.map((j: any) => (
-            <div className="job-line" key={j.id} style={{ display: "flex", justifyContent: "space-between", padding: "0.35rem 0", borderBottom: "1px solid var(--border)" }}>
-              <span className="mono">{j.job_key}</span>
-              <span style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                <StatusPill value={j.status} />
-                <button className="chip" onClick={() => postJSON(`/api/jobs/${j.id}/cancel`, {})}>cancel</button>
-              </span>
-            </div>
-          ))}
-        </Card>
-
-        <Card title="Experiment scoreboards" right={<button className="chip" onClick={() => navigate("/experiments")}>open →</button>}>
-          <Bars
-            data={(data.scoreboards ?? []).map((s: any) => ({
-              label: `${s.kind} (${s.passed}/${s.count})`,
-              value: s.count ? s.passed / s.count : 0,
-            }))}
-          />
-          <p className="hint" style={{ marginTop: "0.6rem" }}>Fraction of experiments passing per matrix.</p>
-        </Card>
-      </div>
-
       <Card
-        title="Checkpoint roster"
-        right={<><ProvenanceBadge provenance={data.runs_provenance} /> <button className="chip" onClick={() => navigate("/checkpoints")}>open →</button></>}
+        title="Current model card"
+        right={
+          <>
+            <ProvenanceBadge provenance={performance.reference_provenance} />{" "}
+            <button className="chip" onClick={() => navigate("/checkpoints")}>open checkpoints →</button>
+          </>
+        }
       >
         <DataTable
           columns={[
-            { key: "role", label: "Role" },
+            { key: "role", label: "Reference role" },
+            { key: "track", label: "Track" },
             { key: "run_id", label: "Run" },
             { key: "kind", label: "Kind" },
-            { key: "status", label: "Status" },
+            { key: "location", label: "Artifact" },
+            { key: "evaluation_status", label: "Evaluation" },
+            { key: "status", label: "Model-card status" },
           ]}
-          rows={(data.checkpoints?.checkpoints ?? []).slice(0, 8)}
+          rows={references}
           render={{
-            run_id: (r) => <span className="mono">{r.run_id || "—"}</span>,
-            status: (r) => <StatusPill value={r.status} label={r.status?.slice(0, 22) || "—"} />,
+            run_id: (row) => (
+              <a className="mono runlink" onClick={() => navigate(`/runs/${encodeURIComponent(row.run_id)}`)}>
+                {row.run_id || "—"}
+              </a>
+            ),
+            evaluation_status: (row) => <StatusPill value={row.evaluation_status} />,
+            status: (row) => <span className="hint">{row.status || "—"}</span>,
           }}
         />
+        <p className="hint" style={{ marginTop: "0.6rem" }}>{performance.comparison_basis}</p>
       </Card>
 
-      <div className="two-col">
-        <Card title="Corpus health" right={<ProvenanceBadge provenance={corpus.provenance} />}>
-          {corpus.stats ? (
-            <Bars
-              data={[
-                { label: "records", value: corpus.stats.record_count ?? 0 },
-                { label: "collected", value: corpus.stats.collected_count ?? 0 },
-                { label: "quality rejected", value: corpus.stats.quality_rejected ?? 0 },
-                { label: "errors", value: corpus.stats.error_count ?? 0 },
-              ]}
-            />
-          ) : (
-            <Bars data={Object.entries(corpus.fixture_counts ?? {}).map(([k, v]) => ({ label: k, value: v as number }))} />
-          )}
-          <button className="chip" style={{ marginTop: "0.6rem" }} onClick={() => navigate("/data")}>manage data →</button>
-        </Card>
+      <Grid min="210px">
+        <StatTile label="Reference models" value={stats.reference_models ?? 0} sub="champions + latest checkpoint" accent="promoted" />
+        <StatTile label="Experiments reviewed" value={stats.experiments ?? 0} sub="quality and grammar evidence" />
+        <StatTile label="Gate clears" value={`${stats.passing ?? 0}/${stats.experiments ?? 0}`} sub="recorded experiment policy" accent="passed" />
+        <StatTile label="Comparable deltas" value={stats.comparable ?? 0} sub={stats.comparable ? "against current reference" : "reference eval required"} accent={stats.comparable ? "moss" : "failed"} />
+      </Grid>
 
-        <Card title="System">
-          <DataTable
-            columns={[{ key: "k", label: "Component" }, { key: "v", label: "State" }]}
-            rows={[
-              { k: "checkpoint bucket", v: data.system?.checkpoint_bucket ?? "—" },
-              { k: "deployed model", v: dep.selected ? "selected" : "none" },
-              { k: "outputs/ present", v: String(data.system?.outputs_present) },
-              { k: "test suites", v: Object.entries(data.test_data?.suites ?? {}).map(([s, n]) => `${s}:${n}`).join("  ") },
-            ]}
-            render={{ v: (r) => <span className="mono" style={{ fontSize: "0.74rem" }}>{r.v}</span> }}
-          />
+      <Grid min="320px">
+        <Card title="Improve next" right={<StatusPill value="failed" label="mitigate" />}>
+          <DataTable columns={insightColumns} rows={insights.improvements ?? []} />
         </Card>
-      </div>
+        <Card title="Carry forward" right={<StatusPill value="passed" label="preserve" />}>
+          <DataTable columns={insightColumns} rows={insights.carry_forward ?? []} />
+        </Card>
+        <Card title="Easy-to-miss signals" right={<StatusPill value="running" label="investigate" />}>
+          <DataTable columns={insightColumns} rows={insights.novel ?? []} />
+        </Card>
+      </Grid>
 
       <Card
-        title="Remote dispatches"
-        right={<a className="runlink" href={dispatches.data?.bucket_url} target="_blank" rel="noreferrer">HF bucket ↗</a>}
+        title="Experiment performance vs current reference"
+        right={<span className={`prov prov-${cache.persisted ? "live" : "committed"}`}>{cache.persisted ? "insights persisted" : "session insight"}</span>}
       >
-        {(() => {
-          const dj = dispatches.data?.jobs ?? [];
-          const rem = dispatches.data?.remotes ?? [];
-          if (!dj.length && !rem.length)
-            return <Empty>No remote (HF Jobs / pod) trains dispatched — launch one from Experiments.</Empty>;
-          return (
-            <>
-              {dj.map((j: any) => (
-                <div key={j.id} className="dispatch-row">
-                  <span className="mono">{j.job_key}</span>
-                  <span style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
-                    <StatusPill value={j.status} />
-                    {j.remote_url && <a className="runlink" href={j.remote_url} target="_blank" rel="noreferrer">view remote ↗</a>}
-                  </span>
-                </div>
-              ))}
-              {rem.map((r: any) => (
-                <div key={r.run_id} className="dispatch-row">
-                  <span className="mono">{r.run_id}</span>
-                  {r.url && <a className="runlink" href={r.url} target="_blank" rel="noreferrer">durable checkpoint ↗</a>}
-                </div>
-              ))}
-            </>
-          );
-        })()}
+        <DataTable
+          columns={[
+            { key: "id", label: "Experiment" },
+            { key: "run_id", label: "Run" },
+            { key: "matrix", label: "Matrix" },
+            { key: "gate_status", label: "Gate" },
+            { key: "parse", label: "Parse", align: "right" },
+            { key: "fidelity", label: "Fidelity", align: "right" },
+            { key: "structure", label: "Structure", align: "right" },
+            { key: "reward", label: "Reward", align: "right" },
+            { key: "vs_reference", label: "Vs reference", align: "right" },
+          ]}
+          rows={comparisons}
+          render={{
+            run_id: (row) => (
+              <a className="mono runlink" onClick={() => navigate(`/runs/${encodeURIComponent(row.run_id)}`)}>
+                {row.run_id}
+              </a>
+            ),
+            gate_status: (row) => <StatusPill value={row.gate_status} />,
+            parse: (row) => pct(row.parse),
+            fidelity: (row) => pct(row.fidelity),
+            structure: (row) => pct(row.structure),
+            reward: (row) => pct(row.reward),
+          }}
+        />
+        <p className="hint" style={{ marginTop: "0.6rem" }}>
+          Persisted {cache.generated_at ?? "—"}; regenerated only when the model-card checkpoint roster or a track champion changes.
+        </p>
       </Card>
     </div>
   );

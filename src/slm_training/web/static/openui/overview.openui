@@ -1,27 +1,21 @@
-tiles = Query("overview_tiles", {}, { rows: [] }, 15)
-jobs = Query("overview_jobs", {}, { rows: [], execution: false }, 4)
-scoreboards = Query("overview_scoreboards", {}, { rows: [] }, 15)
-roster = Query("checkpoints_roster", {}, { rows: [] }, 30)
-corpus = Query("overview_corpus", {}, { rows: [] }, 30)
-system = Query("overview_system", {}, { rows: [] }, 30)
-disp = Query("dispatches", {}, { rows: [], remotes: [] }, 8)
+perf = Query("overview_insights", {}, { references: { rows: [], provenance: "committed" }, tiles: { rows: [] }, insights: { improvements: [], carry_forward: [], novel: [] }, comparisons: { rows: [] }, comparison_basis: "", cache: {} }, 15)
 
-head = PageHead("Mission Control", "What is actually going on — live jobs, the experiment scoreboard, checkpoint readiness, and corpus health, aggregated from the lineage store and committed evidence.")
+head = PageHead("Performance insights", "What to improve, what to carry forward, and signals that are easy to miss — anchored to the current model card and track champions.")
 
-tileRow = Grid(@Each(tiles.rows, "t", StatTile(t.label, t.value, t.sub, t.accent)))
+referenceCols = [{ key: "role", label: "Reference role" }, { key: "track", label: "Track" }, { key: "run_id", label: "Run" }, { key: "kind", label: "Kind" }, { key: "location", label: "Artifact" }, { key: "evaluation_status", label: "Evaluation" }, { key: "card_state", label: "Model-card status" }]
+referencePanel = Panel("Current model card", [DataTable(referenceCols, perf.references, 26, "run_id"), Hint(perf.comparison_basis, true)], [ProvenanceBadge(perf.references.provenance), " ", NavChip("open checkpoints →", "/checkpoints")])
 
-jobsPanel = Panel("Live jobs", [JobList(jobs)], JobsBadge(jobs))
-sbPanel = Panel("Experiment scoreboards", [Bars(scoreboards), Hint("Fraction of experiments passing per matrix.", true)], NavChip("open →", "/experiments"))
-row1 = Row([jobsPanel, sbPanel])
+tileRow = Grid(@Each(perf.tiles.rows, "t", StatTile(t.label, t.value, t.sub, t.accent)), "210px")
 
-rosterCols = [{ key: "role", label: "Role" }, { key: "run_id", label: "Run" }, { key: "kind", label: "Kind" }, { key: "status", label: "Status" }]
-rosterPanel = Panel("Checkpoint roster", [DataTable(rosterCols, roster.rows, 22)], [ProvenanceBadge(roster.provenance), " ", NavChip("open →", "/checkpoints")])
+insightCols = [{ key: "finding", label: "Finding" }, { key: "suggestion", label: "Suggested mitigation" }]
+improvePanel = Panel("Improve next", [DataTable(insightCols, perf.insights.improvements)], Pill("mitigate", "failed"))
+carryPanel = Panel("Carry forward", [DataTable(insightCols, perf.insights.carry_forward)], Pill("preserve", "passed"))
+novelPanel = Panel("Easy-to-miss signals", [DataTable(insightCols, perf.insights.novel)], Pill("investigate", "running"))
+insightGrid = Grid([improvePanel, carryPanel, novelPanel], "320px")
 
-corpusPanel = Panel("Corpus health", [Bars(corpus), NavChip("manage data →", "/data", false, true)], ProvenanceBadge(corpus.provenance))
-sysCols = [{ key: "k", label: "Component" }, { key: "v", label: "State" }]
-sysPanel = Panel("System", [DataTable(sysCols, system.rows)])
-row2 = Row([corpusPanel, sysPanel])
+comparisonCols = [{ key: "id", label: "Experiment" }, { key: "run_id", label: "Run" }, { key: "matrix", label: "Matrix" }, { key: "gate_status", label: "Gate" }, { key: "parse", label: "Parse", align: "right" }, { key: "fidelity", label: "Fidelity", align: "right" }, { key: "structure", label: "Structure", align: "right" }, { key: "reward", label: "Reward", align: "right" }, { key: "vs_reference", label: "Vs reference", align: "right" }]
+cacheBadge = Badge(perf.cache.persisted ? "insights persisted" : "session insight", perf.cache.persisted ? "live" : "committed")
+comparisonNote = "Persisted " + perf.cache.generated_at + "; regenerated only when the model-card checkpoint roster or a track champion changes."
+comparisonPanel = Panel("Experiment performance vs current reference", [DataTable(comparisonCols, perf.comparisons, 26, "run_id"), Hint(comparisonNote, true)], cacheBadge)
 
-dispPanel = Panel("Remote dispatches", [DispatchList(disp)], NavChip("HF bucket ↗", disp.bucket_url, true))
-
-root = Page([head, tileRow, row1, rosterPanel, row2, dispPanel])
+root = Page([head, referencePanel, tileRow, insightGrid, comparisonPanel])

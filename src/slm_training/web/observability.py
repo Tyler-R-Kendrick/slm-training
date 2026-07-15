@@ -16,7 +16,9 @@ entrypoint keeps cold-starting.
 from __future__ import annotations
 
 import json
+import os
 import re
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -24,7 +26,8 @@ from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
     evaluate_ship_gates,
 )
-from slm_training.lineage.store import LineageStore
+from slm_training.lineage.records import content_sha
+from slm_training.lineage.store import LineageStore, utc_now
 from slm_training.web.comparisons import BlindedComparisonStore
 from slm_training.web.deployments import DeploymentRegistry
 
@@ -143,6 +146,48 @@ def _parse_markdown_table(text: str, heading: str) -> list[dict[str, str]]:
             cells += [""] * (len(header) - len(cells))
         rows.append(dict(zip(header, cells)))
     return rows
+
+
+def _plain_markdown(value: str | None) -> str:
+    text = re.sub(r"\[([^]]+)]\([^)]+\)", r"\1", value or "")
+    return text.replace("`", "").replace("**", "").strip()
+
+
+def _suite_metrics(suites: Any) -> tuple[dict[str, float], int]:
+    """Collapse suite metrics with sample-count weighting for fair comparisons."""
+    keys = ("parse_rate", "placeholder_fidelity", "structural_similarity", "reward_score")
+    totals = {key: 0.0 for key in keys}
+    weights = {key: 0 for key in keys}
+    sample_count = 0
+    if not isinstance(suites, dict):
+        return {}, 0
+    for suite in suites.values():
+        if not isinstance(suite, dict):
+            continue
+        weight = max(1, int(suite.get("n") or 0))
+        sample_count += int(suite.get("n") or 0)
+        for key in keys:
+            value = suite.get(key)
+            if isinstance(value, (int, float)):
+                totals[key] += float(value) * weight
+                weights[key] += weight
+    return (
+        {key: totals[key] / weights[key] for key in keys if weights[key]},
+        sample_count,
+    )
+
+
+def _atomic_json(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, raw = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+    tmp = Path(raw)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle, indent=2, sort_keys=True)
+            handle.write("\n")
+        os.replace(tmp, path)
+    finally:
+        tmp.unlink(missing_ok=True)
 
 
 class Readers:
@@ -549,6 +594,360 @@ class Readers:
             "bucket_url": "https://huggingface.co/buckets/TKendrick/OpenUI",
         }
 
+    # ---- reference model + persisted performance insights -------------------
+
+    def _model_card_rows(self) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+        try:
+            text = self.model_card.read_text(encoding="utf-8")
+        except OSError:
+            text = ""
+        roster = _parse_markdown_table(text, "## Current checkpoint roster")
+        history = _parse_markdown_table(text, "## Checkpoint history")
+        return roster, history
+
+    def _reference_models(self) -> tuple[list[dict[str, Any]], str]:
+        roster, history = self._model_card_rows()
+        references: list[dict[str, Any]] = []
+        champion_identity: list[dict[str, Any]] = []
+
+        for track in TRACKS:
+            try:
+                pointer = self.lineage.champion(track)
+            except (OSError, ValueError):
+                pointer = None
+            if pointer is None:
+                continue
+            metrics: dict[str, float] = {}
+            suite_sizes: dict[str, int] = {}
+            try:
+                report = self.lineage.load_report(pointer.evaluation_report_sha)
+                metrics = {
+                    key: float(value)
+                    for key, value in report.metrics.items()
+                    if key
+                    in {
+                        "parse_rate",
+                        "placeholder_fidelity",
+                        "structural_similarity",
+                        "reward_score",
+                    }
+                    and isinstance(value, (int, float))
+                }
+                suite_sizes = dict(report.suite_sizes)
+            except (FileNotFoundError, OSError, ValueError, TypeError):
+                pass
+            reference = {
+                "role": "Champion",
+                "track": track,
+                "run_id": pointer.run_id,
+                "kind": "lineage champion",
+                "location": pointer.artifact_uri,
+                "status": "champion",
+                "evaluation_status": "evaluated" if metrics else "evaluation unavailable",
+                "metrics": metrics,
+                "suite_sizes": suite_sizes,
+                "created_at": pointer.created_at,
+                "provenance": "live",
+            }
+            references.append(reference)
+            champion_identity.append(pointer.to_dict())
+
+        # A model-card champion remains visible until it is represented by a live
+        # lineage pointer. This preserves the repo's existing scratch-champion state.
+        live_run_ids = {row["run_id"] for row in references}
+        for row in roster:
+            role = _plain_markdown(row.get("role"))
+            run_id = _plain_markdown(row.get("run id"))
+            if "champion" not in role.casefold() or run_id in live_run_ids:
+                continue
+            references.append(
+                {
+                    "role": role,
+                    "track": "twotower",
+                    "run_id": run_id,
+                    "kind": _plain_markdown(row.get("kind")),
+                    "location": _plain_markdown(row.get("location")),
+                    "status": _plain_markdown(row.get("status")),
+                    "evaluation_status": "evaluation not attached",
+                    "metrics": {},
+                    "suite_sizes": {},
+                    "created_at": None,
+                    "provenance": "committed",
+                }
+            )
+
+        # The final history row is the newest checkpoint recorded by the canonical
+        # model card. Keep it beside champions even when it has not been promoted.
+        if history:
+            newest = history[-1]
+            run_id = _plain_markdown(newest.get("run id"))
+            matched = next(
+                (
+                    row
+                    for row in roster
+                    if _plain_markdown(row.get("run id")) == run_id
+                ),
+                {},
+            )
+            if run_id and run_id not in {row["run_id"] for row in references}:
+                scoreboard = self._scoreboard_row(run_id)
+                metrics, suite_n = _suite_metrics((scoreboard or {}).get("suites"))
+                references.append(
+                    {
+                        "role": "Latest checkpoint",
+                        "track": "twotower",
+                        "run_id": run_id,
+                        "kind": _plain_markdown(matched.get("kind")) or "checkpoint",
+                        "location": _plain_markdown(newest.get("bucket / path"))
+                        or _plain_markdown(matched.get("location")),
+                        "status": _plain_markdown(matched.get("status"))
+                        or _plain_markdown(newest.get("notes")),
+                        "evaluation_status": "evaluated" if metrics else "not evaluated",
+                        "metrics": metrics,
+                        "suite_sizes": {"all": suite_n} if suite_n else {},
+                        "created_at": _plain_markdown(newest.get("date (utc)")),
+                        "provenance": "committed",
+                    }
+                )
+
+        if not references and roster:
+            row = roster[0]
+            references.append(
+                {
+                    "role": _plain_markdown(row.get("role")),
+                    "track": "twotower",
+                    "run_id": _plain_markdown(row.get("run id")),
+                    "kind": _plain_markdown(row.get("kind")),
+                    "location": _plain_markdown(row.get("location")),
+                    "status": _plain_markdown(row.get("status")),
+                    "evaluation_status": "evaluation not attached",
+                    "metrics": {},
+                    "suite_sizes": {},
+                    "created_at": None,
+                    "provenance": "committed",
+                }
+            )
+
+        identity = content_sha(
+            {
+                "champions": champion_identity,
+                "model_card_roster": [
+                    {
+                        "role": _plain_markdown(row.get("role")),
+                        "run_id": _plain_markdown(row.get("run id")),
+                        "location": _plain_markdown(row.get("location")),
+                        "status": _plain_markdown(row.get("status")),
+                    }
+                    for row in roster
+                ],
+                "latest_checkpoint_history": (
+                    {
+                        key: _plain_markdown(value)
+                        for key, value in history[-1].items()
+                    }
+                    if history
+                    else None
+                ),
+            }
+        )
+        return references, identity
+
+    def _performance_rows(
+        self, references: list[dict[str, Any]]
+    ) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
+        primary = next(
+            (r for r in references if r["track"] == "twotower" and r["metrics"]),
+            None,
+        )
+        baseline_score = (
+            sum(primary["metrics"].values()) / len(primary["metrics"])
+            if primary and primary["metrics"]
+            else None
+        )
+        rows: list[dict[str, Any]] = []
+        for kind in ("quality", "grammar"):
+            for row in self.scoreboard(kind)["results"]:
+                metrics, sample_count = _suite_metrics(row.get("suites"))
+                if not metrics:
+                    continue
+                score = sum(metrics.values()) / len(metrics)
+                delta = score - baseline_score if baseline_score is not None else None
+                rows.append(
+                    {
+                        "id": row.get("id") or row.get("run_id"),
+                        "run_id": row.get("run_id") or row.get("id"),
+                        "matrix": kind,
+                        "description": row.get("description") or "",
+                        "gate_status": (
+                            "pass"
+                            if row.get("pass") is True
+                            else "fail"
+                            if row.get("pass") is False
+                            else "not recorded"
+                        ),
+                        "parse": metrics.get("parse_rate"),
+                        "fidelity": metrics.get("placeholder_fidelity"),
+                        "structure": metrics.get("structural_similarity"),
+                        "reward": metrics.get("reward_score"),
+                        "score": score,
+                        "sample_count": sample_count,
+                        "vs_reference": (
+                            f"{delta * 100:+.1f} pp"
+                            if delta is not None
+                            else "reference not evaluated"
+                        ),
+                    }
+                )
+        return rows, primary
+
+    @staticmethod
+    def _generate_insights(
+        references: list[dict[str, Any]],
+        rows: list[dict[str, Any]],
+        primary: dict[str, Any] | None,
+    ) -> dict[str, list[dict[str, str]]]:
+        improvements: list[dict[str, str]] = []
+        carry_forward: list[dict[str, str]] = []
+        novel: list[dict[str, str]] = []
+
+        if primary is None:
+            improvements.append(
+                {
+                    "finding": "The current reference has no attached standard evaluation, so honest deltas cannot be calculated.",
+                    "suggestion": "Run the full standard suites with ship gates and AgentV, then attach that report to the checkpoint or champion.",
+                }
+            )
+        else:
+            weakest = min(primary["metrics"], key=primary["metrics"].get)
+            improvements.append(
+                {
+                    "finding": f"The reference's weakest aggregate metric is {weakest.replace('_', ' ')} ({primary['metrics'][weakest]:.1%}).",
+                    "suggestion": "Prioritize the failing suite slices for that metric; keep the existing gates fixed while testing the mitigation.",
+                }
+            )
+
+        failed = [row for row in rows if row["gate_status"] == "fail"]
+        if failed:
+            improvements.append(
+                {
+                    "finding": f"{len(failed)} evaluated experiment{'s' if len(failed) != 1 else ''} failed {'their' if len(failed) != 1 else 'its'} recorded gate policy.",
+                    "suggestion": "Cluster failures by suite and metric, then branch one mitigation at a time from the current reference.",
+                }
+            )
+
+        if rows:
+            best = max(rows, key=lambda row: row["score"])
+            carry_forward.append(
+                {
+                    "finding": f"{best['id']} has the strongest aggregate evidence ({best['score']:.1%}) across {best['sample_count']} suite examples.",
+                    "suggestion": "Carry its recipe forward as the experimental control; change one lever per branch.",
+                }
+            )
+            passing = [row for row in rows if row["gate_status"] == "pass"]
+            if passing:
+                carry_forward.append(
+                    {
+                        "finding": f"{len(passing)} experiment{'s' if len(passing) != 1 else ''} cleared the recorded gates.",
+                        "suggestion": "Preserve their honesty, constrained-decode, and evaluation settings in descendant recipes.",
+                    }
+                )
+
+            signatures: dict[tuple[float | None, ...], list[str]] = {}
+            for row in rows:
+                signature = tuple(
+                    round(row[key], 6) if isinstance(row[key], float) else None
+                    for key in ("parse", "fidelity", "structure", "reward")
+                )
+                signatures.setdefault(signature, []).append(str(row["id"]))
+            same = max(signatures.values(), key=len)
+            if len(same) > 1:
+                novel.append(
+                    {
+                        "finding": f"{len(same)} experiments ({', '.join(same)}) have indistinguishable aggregate quality metrics.",
+                        "suggestion": "Verify that each lever activates in telemetry; if it does, enlarge the discriminating suites before claiming a gain.",
+                    }
+                )
+
+            max_examples = max(row["sample_count"] for row in rows)
+            if max_examples < 1500:
+                novel.append(
+                    {
+                        "finding": f"The broadest recorded comparison covers only {max_examples} suite examples, below the full RICO ship bar.",
+                        "suggestion": "Treat rankings as directional and rerun the finalist on full rico_held before promotion.",
+                    }
+                )
+
+        if len(references) > 1:
+            novel.append(
+                {
+                    "finding": f"The model card currently exposes {len(references)} reference artifacts, not one universal champion.",
+                    "suggestion": "Keep track-specific champions separate and label which reference each future matrix branches from.",
+                }
+            )
+
+        return {
+            "improvements": improvements,
+            "carry_forward": carry_forward,
+            "novel": novel,
+        }
+
+    def performance_insights(self) -> dict[str, Any]:
+        references, fingerprint = self._reference_models()
+        rows, primary = self._performance_rows(references)
+        cache_path = self.outputs / "dashboard" / "overview-insights.json"
+        cached_payload = _read_json(cache_path) or {}
+        cached = (
+            cached_payload.get("reference_fingerprint") == fingerprint
+            and isinstance(cached_payload.get("insights"), dict)
+        )
+        persisted = cached
+        if cached:
+            insights = cached_payload["insights"]
+            generated_at = cached_payload.get("generated_at")
+        else:
+            insights = self._generate_insights(references, rows, primary)
+            generated_at = utc_now()
+            payload = {
+                "reference_fingerprint": fingerprint,
+                "reference_run_ids": [row["run_id"] for row in references],
+                "generated_at": generated_at,
+                "insights": insights,
+            }
+            try:
+                _atomic_json(cache_path, payload)
+                persisted = True
+            except OSError:
+                persisted = False
+
+        passing = sum(row["gate_status"] == "pass" for row in rows)
+        basis = (
+            f"All deltas use {primary['run_id']} as the TwoTower reference."
+            if primary
+            else "Reference evaluation is missing; absolute experiment scores are shown and deltas are withheld."
+        )
+        return {
+            "references": references,
+            "reference_fingerprint": fingerprint,
+            "reference_provenance": (
+                "live" if any(row["provenance"] == "live" for row in references) else "committed"
+            ),
+            "comparison_basis": basis,
+            "comparisons": rows,
+            "stats": {
+                "reference_models": len(references),
+                "experiments": len(rows),
+                "passing": passing,
+                "comparable": len(rows) if primary else 0,
+            },
+            "insights": insights,
+            "cache": {
+                "cached": cached,
+                "persisted": persisted,
+                "generated_at": generated_at,
+                "path": str(cache_path.relative_to(self.root)),
+            },
+        }
+
     # ---- system + overview aggregate -----------------------------------------
 
     def system(self) -> dict[str, Any]:
@@ -573,4 +972,5 @@ class Readers:
             "test_data": self.test_data(),
             "annotations": self.annotations_summary(),
             "system": self.system(),
+            "performance": self.performance_insights(),
         }
