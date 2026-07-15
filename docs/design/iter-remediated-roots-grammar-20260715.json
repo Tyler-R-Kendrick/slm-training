@@ -1,0 +1,37 @@
+{
+  "run_id": "iter-remediated-roots-64step-grammar-20260715",
+  "corpus": {
+    "version": "remediated_roots",
+    "records": 108,
+    "unique_targets": 94,
+    "manifest_sha": "f8d714f122ac7f091236fd4e562935758de330534cac146abf30af13d0ac98ce"
+  },
+  "recipe": {
+    "model": "twotower",
+    "context_backend": "scratch",
+    "device": "cpu",
+    "steps": 64,
+    "batch_size": 8,
+    "grammar_enabled": true,
+    "grammar_ltr_primary": true,
+    "grammar_ltr_repair": true,
+    "no_sync_checkpoints": true
+  },
+  "train": {
+    "weighted_nll": 7.270489132273055,
+    "broad_mean_nll": 6.437989640124196,
+    "target_tokens": 30705,
+    "telemetry_total_ms": 18681.936
+  },
+  "evaluation": {
+    "suite": "smoke",
+    "n": 3,
+    "parse_rate": 0.0,
+    "structural_similarity": 0.0,
+    "reward_score": 0.0,
+    "decode_timeout_count": 0,
+    "latency_ms_p50": 1949.94,
+    "decision": "reject"
+  },
+  "conclusion": "Grammar configuration alone did not improve this candidate; target model/tokenizer or objective next."
+}
