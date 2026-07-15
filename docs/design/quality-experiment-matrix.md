@@ -480,6 +480,27 @@ non-deterministic.
 
 Full 1500 `rico_held` + HF context remains the production claim.
 
+## Overnight honest eval and retrain (2026-07-15)
+
+The committed demo checkpoint was evaluated with the pinned AgentV SDK and
+the full ship-gate suite using the remediated test artifact (`smoke n=3`,
+`held_out n=5`, `rico_held` capped at 32). Every suite had parse=0.0,
+structural similarity=0.0, and placeholder fidelity=0.0; AgentV recorded
+5/5 failed cases with no execution errors. No promotion was made.
+
+A 200-step CPU scratch retrain (`overnight_retrain_200`, 857,282 trainable
+parameters, scratch context, batch 16, last loss≈6.64) produced the same
+all-suite parse=0.0 result. Its checkpoint remains local-only and is not a
+champion. Durable scoreboard, gates, AgentEvals JSONL, and telemetry are under
+`outputs/runs/overnight_retrain_200_eval/` and
+`outputs/runs/overnight_retrain_200/`.
+
+The evaluation harness also had a real correctness bug: omitted
+`--grammar-ltr-primary` / `--grammar-ltr-repair` flags defaulted to `False` and
+overwrote checkpoint settings. Those flags are now tri-state; omitted means
+preserve checkpoint configuration. The fix is covered by
+`test_factory_overrides.py`.
+
 ## P13 data-synthesis verification (CPU scratch, 2026-07-14)
 
 The accepted comparison uses the same E50 experiment and effective decode
