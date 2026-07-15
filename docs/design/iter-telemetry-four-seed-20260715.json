@@ -1,0 +1,9 @@
+{
+  "date": "2026-07-15",
+  "kind": "multi-seed-recipe-variance",
+  "recipe": {"steps": 4, "batch_size": 8, "effective_batch_size": 8, "learning_rate": 0.0006, "context_backend": "scratch"},
+  "weighted_nll": {"seed0": 27.977443108643225, "seed1": 31.16450060005228, "seed2": 30.282858774398097, "seed3": 31.10200809810486, "mean": 30.131702645299615, "sample_sd": 1.4912910082345787},
+  "telemetry_complete": true,
+  "decision": "no data or recipe intervention; treat spread as seed variance",
+  "honesty": "scratch diagnostic; not a ship claim"
+}
