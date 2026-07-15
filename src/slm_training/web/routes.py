@@ -81,6 +81,16 @@ def run(request: Request, run_id: str) -> dict[str, Any]:
     return _readers(request).run(run_id)
 
 
+@observability_router.get("/runs/{run_id}/rl-traces")
+def rl_traces(
+    request: Request,
+    run_id: str,
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=200),
+) -> dict[str, Any]:
+    return _readers(request).rl_traces(run_id, offset=offset, limit=limit)
+
+
 @observability_router.get("/lineage/champions")
 def champions(request: Request) -> dict[str, Any]:
     return _readers(request).champions()

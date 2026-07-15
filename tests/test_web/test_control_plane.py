@@ -7,6 +7,7 @@ pure-compute gate endpoint, the execution capability gate, the job allowlist
 
 from __future__ import annotations
 
+import json
 import time
 
 import pytest
@@ -113,6 +114,37 @@ def test_run_detail_missing_is_graceful(ro_client: TestClient) -> None:
     assert detail["provenance"] == "committed"
     assert detail["scoreboard"] is None
     assert detail["gates"] is None
+
+
+def test_rl_traces_are_paginated_and_malformed_rows_are_skipped(tmp_path) -> None:
+    path = tmp_path / "outputs" / "runs" / "molt-smoke" / "rl_traces.jsonl"
+    path.parent.mkdir(parents=True)
+    rows = [
+        {"run_id": "molt-smoke", "engine": "molt", "rollout_id": f"r-{i}"}
+        for i in range(3)
+    ]
+    path.write_text(
+        json.dumps(rows[0])
+        + "\nnot-json\n"
+        + json.dumps({"run_id": "other"})
+        + "\n"
+        + json.dumps(rows[1])
+        + "\n"
+        + json.dumps(rows[2])
+        + "\n"
+    )
+    with TestClient(create_app(execution=False, root=tmp_path)) as client:
+        response = client.get("/api/runs/molt-smoke/rl-traces?offset=1&limit=1")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] == 3
+    assert payload["count"] == 1
+    assert payload["invalid_rows"] == 2
+    assert payload["traces"][0]["rollout_id"] == "r-1"
+
+    missing = Readers(tmp_path).rl_traces("../escape")
+    assert missing["provenance"] == "missing"
+    assert missing["traces"] == []
 
 
 # --- capability gate -------------------------------------------------------

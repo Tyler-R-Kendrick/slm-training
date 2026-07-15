@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import tempfile
 import uuid
@@ -49,6 +50,18 @@ from slm_training.integrations.nemo_rl import (
     build_hf_jobs_command as build_nemo_job_command,
     parse_job_status,
     validate_train_summary,
+)
+from slm_training.integrations.molt_rl import (
+    DEFAULT_BUCKET as MOLT_DEFAULT_BUCKET,
+    DEFAULT_FLAVOR as MOLT_DEFAULT_FLAVOR,
+    DEFAULT_REPO as MOLT_DEFAULT_REPO,
+    MOLT_GIT_SHA,
+    MOLT_IMAGE,
+    MOLT_VERSION,
+    build_entrypoint_script as build_molt_entrypoint,
+    build_hf_jobs_command as build_molt_job_command,
+    validate_trace_file as validate_molt_trace_file,
+    validate_train_summary as validate_molt_train_summary,
 )
 
 
@@ -786,6 +799,200 @@ def cmd_reconcile_nemo(args: argparse.Namespace) -> int:
     return 0
 
 
+def _molt_recipe(
+    manifest: RunManifest,
+    *,
+    job_id: str | None = None,
+    rl_readiness_report_id: str | None = None,
+) -> dict[str, Any]:
+    recipe = dict(manifest.recipe)
+    prior = recipe.get("molt_rl") or {}
+    recipe["molt_rl"] = {
+        "version": MOLT_VERSION,
+        "git_sha": MOLT_GIT_SHA,
+        "image": MOLT_IMAGE,
+        "algorithm": "grpo",
+        "steps": 1,
+        "update": "full_parameter_fsdp",
+        "job_id": job_id,
+        "claim": "hardware_smoke",
+        "rl_readiness_report_id": (
+            rl_readiness_report_id or prior.get("rl_readiness_report_id")
+        ),
+    }
+    return recipe
+
+
+def cmd_submit_molt(args: argparse.Namespace) -> int:
+    from slm_training.autoresearch.rl_gate import assert_rl_ready
+
+    readiness = assert_rl_ready(args.rl_readiness_report)
+    store = _store(args)
+    manifest = store.load_run(args.run_id)
+    if manifest.track != "causal_lm":
+        raise ValueError("Molt RL submission requires a causal_lm run")
+    if manifest.lifecycle_state != "running":
+        raise ValueError("Molt RL submission requires a running branch")
+    revision = args.revision or manifest.code_sha.split("+", 1)[0]
+    entrypoint = build_molt_entrypoint(
+        run_id=manifest.run_id,
+        base_model_id=manifest.base_model_id,
+        base_model_revision=manifest.base_model_revision,
+        repo_url=args.repo_url,
+        revision=revision,
+        data_path=args.data_path,
+        checkpoint_bucket=args.checkpoint_bucket,
+        seed=manifest.seed,
+        rl_readiness_report=readiness.model_dump(mode="json"),
+    )
+    command = build_molt_job_command(
+        entrypoint=entrypoint,
+        flavor=args.flavor,
+        timeout=args.timeout,
+        checkpoint_bucket=args.checkpoint_bucket,
+    )
+    plan = {
+        "run_id": manifest.run_id,
+        "kind": "hardware_smoke",
+        "molt_version": MOLT_VERSION,
+        "molt_git_sha": MOLT_GIT_SHA,
+        "image": MOLT_IMAGE,
+        "flavor": args.flavor,
+        "revision": revision,
+        "checkpoint_bucket": args.checkpoint_bucket,
+        "command": command,
+        "entrypoint": entrypoint,
+        "rl_readiness_report_id": readiness.report_id,
+    }
+    if args.dry_run:
+        print(json.dumps(plan, indent=2))
+        return 0
+    if not args.ack_paid_gpu:
+        raise ValueError("paid GPU submission requires --ack-paid-gpu")
+    if "+dirty" in manifest.code_sha:
+        raise ValueError("paid submission requires a clean 40-character code revision")
+    if not (os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")):
+        raise ValueError("HF_TOKEN is required for a paid Molt RL job")
+    proc = subprocess.run(command, check=True, capture_output=True, text=True)
+    job_id = proc.stdout.strip().splitlines()[-1].strip()
+    if not job_id:
+        raise RuntimeError("HF Jobs did not return a job id")
+    hardware = dict(manifest.hardware)
+    hardware.update({"provider": "hf_jobs", "flavor": args.flavor})
+    store.record_run_metadata(
+        manifest.run_id,
+        recipe=_molt_recipe(
+            manifest,
+            job_id=job_id,
+            rl_readiness_report_id=readiness.report_id,
+        ),
+        hardware=hardware,
+        artifact_uris=(*manifest.artifact_uris, f"hf-job://{job_id}"),
+        legacy_kind="hardware_smoke",
+    )
+    print(json.dumps({"run_id": manifest.run_id, "job_id": job_id}, indent=2))
+    return 0
+
+
+def _load_molt_summary(
+    *, job_id: str, run_id: str, bucket: str, summary: Path | None
+) -> dict[str, Any]:
+    if summary:
+        return json.loads(summary.read_text(encoding="utf-8"))
+    remote = f"{bucket}/checkpoints/{run_id}/molt_rl/train_summary.json"
+    with tempfile.TemporaryDirectory(prefix=f"molt-{job_id}-") as raw:
+        local = Path(raw) / "train_summary.json"
+        subprocess.run(["hf", "buckets", "cp", remote, str(local)], check=True)
+        return json.loads(local.read_text(encoding="utf-8"))
+
+
+def _persist_molt_trace(
+    *,
+    run_id: str,
+    bucket: str,
+    source: Path | None,
+    run_root: Path,
+) -> Path:
+    destination = run_root / run_id / "rl_traces.jsonl"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if source:
+        validate_molt_trace_file(source, run_id=run_id)
+        shutil.copyfile(source, destination)
+        return destination
+    remote = f"{bucket}/checkpoints/{run_id}/molt_rl/rl_traces.jsonl"
+    with tempfile.TemporaryDirectory(prefix=f"molt-traces-{run_id}-") as raw:
+        downloaded = Path(raw) / "rl_traces.jsonl"
+        subprocess.run(["hf", "buckets", "cp", remote, str(downloaded)], check=True)
+        validate_molt_trace_file(downloaded, run_id=run_id)
+        shutil.copyfile(downloaded, destination)
+    return destination
+
+
+def cmd_reconcile_molt(args: argparse.Namespace) -> int:
+    store = _store(args)
+    manifest = store.load_run(args.run_id)
+    if manifest.track != "causal_lm":
+        raise ValueError("Molt RL reconciliation requires a causal_lm run")
+    if manifest.legacy_kind not in {None, "hardware_smoke"}:
+        raise ValueError("run is not a Molt RL hardware smoke")
+    recorded_job = (manifest.recipe.get("molt_rl") or {}).get("job_id")
+    if args.status_json is None and recorded_job != args.job_id:
+        raise ValueError("job id does not match the submitted Molt RL run")
+    status = parse_job_status(_load_job_payload(args.job_id, args.status_json))
+    if status not in {"completed", "finished", "success", "succeeded"}:
+        terminal_failure = status in {"cancelled", "canceled", "error", "failed"}
+        if terminal_failure and manifest.lifecycle_state == "running":
+            store.transition_run(manifest.run_id, "rejected")
+        print(json.dumps({"job_id": args.job_id, "status": status}, indent=2))
+        return 2
+    summary = _load_molt_summary(
+        job_id=args.job_id,
+        run_id=manifest.run_id,
+        bucket=args.checkpoint_bucket,
+        summary=args.summary,
+    )
+    validate_molt_train_summary(summary, run_id=manifest.run_id)
+    trace_path = _persist_molt_trace(
+        run_id=manifest.run_id,
+        bucket=args.checkpoint_bucket,
+        source=args.trace,
+        run_root=args.run_root,
+    )
+    artifact_uris = tuple(
+        dict.fromkeys(
+            (
+                *manifest.artifact_uris,
+                str(summary["checkpoint_bucket"]),
+                str(summary["raw_traces"]),
+                str(summary["normalized_traces"]),
+            )
+        )
+    )
+    recipe = _molt_recipe(manifest, job_id=args.job_id)
+    recipe["molt_rl"]["status"] = status
+    updated = store.record_run_metadata(
+        manifest.run_id,
+        recipe=recipe,
+        artifact_uris=artifact_uris,
+        legacy_kind="hardware_smoke",
+    )
+    if updated.lifecycle_state == "running":
+        updated = store.transition_run(updated.run_id, "screened")
+    print(
+        json.dumps(
+            {
+                "run_id": updated.run_id,
+                "status": status,
+                "lifecycle_state": updated.lifecycle_state,
+                "artifact_uri": summary["checkpoint_bucket"],
+                "trace_path": str(trace_path),
+            },
+            indent=2,
+        )
+    )
+    return 0
+
+
 def cmd_export(args: argparse.Namespace) -> int:
     store = _store(args)
     manifest = store.load_run(args.run_id)
@@ -1095,6 +1302,31 @@ def build_parser() -> argparse.ArgumentParser:
     reconcile_nemo.add_argument("--status-json", type=Path)
     reconcile_nemo.add_argument("--summary", type=Path)
     reconcile_nemo.set_defaults(func=cmd_reconcile_nemo)
+
+    submit_molt = sub.add_parser("submit-molt")
+    submit_molt.add_argument("--run-id", required=True)
+    submit_molt.add_argument("--repo-url", default=MOLT_DEFAULT_REPO)
+    submit_molt.add_argument("--revision")
+    submit_molt.add_argument(
+        "--data-path", default="fixtures/nemo_rl/openui_smoke.jsonl"
+    )
+    submit_molt.add_argument("--checkpoint-bucket", default=MOLT_DEFAULT_BUCKET)
+    submit_molt.add_argument("--flavor", default=MOLT_DEFAULT_FLAVOR)
+    submit_molt.add_argument("--timeout", default="2h")
+    submit_molt.add_argument("--dry-run", action="store_true")
+    submit_molt.add_argument("--ack-paid-gpu", action="store_true")
+    submit_molt.add_argument("--rl-readiness-report", type=Path, required=True)
+    submit_molt.set_defaults(func=cmd_submit_molt)
+
+    reconcile_molt = sub.add_parser("reconcile-molt")
+    reconcile_molt.add_argument("--run-id", required=True)
+    reconcile_molt.add_argument("--job-id", required=True)
+    reconcile_molt.add_argument("--checkpoint-bucket", default=MOLT_DEFAULT_BUCKET)
+    reconcile_molt.add_argument("--status-json", type=Path)
+    reconcile_molt.add_argument("--summary", type=Path)
+    reconcile_molt.add_argument("--trace", type=Path)
+    reconcile_molt.add_argument("--run-root", type=Path, default=Path("outputs/runs"))
+    reconcile_molt.set_defaults(func=cmd_reconcile_molt)
 
     export = sub.add_parser("export")
     export.add_argument("--run-id", required=True)

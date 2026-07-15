@@ -248,8 +248,8 @@ training, checkpoint, or GPU was used.
 
 ## RL is fail-closed
 
-All GRPO-lite, trajectory RL, phase pipeline, quality/grammar matrix RL, and NeMo RL
-entrypoints call the same library assertion. There is no override. One evaluation
+All GRPO-lite, trajectory RL, phase pipeline, quality/grammar matrix RL, NeMo RL,
+and Molt RL entrypoints call the same library assertion. There is no override. One evaluation
 bundle must prove:
 
 1. `frozen_production_evaluation` metadata and a never-trained feedback holdout;
@@ -266,8 +266,8 @@ python -m scripts.autoresearch validate-rl \
 ```
 
 A failure is a supervised-model or data-improvement signal. Do not weaken the gate.
-For NeMo, the validated report is embedded and revalidated inside the container
-before imports or optimizer work.
+For NeMo and Molt, the validated report is embedded and revalidated inside the
+container before framework imports or optimizer work.
 
 ## Campaign commands
 

@@ -163,18 +163,23 @@ def _browser_ready() -> bool:
     node = shutil.which("node")
     if not node or not (root / "node_modules" / "@playwright" / "test").exists():
         return False
-    probe = subprocess.run(
-        [
-            node,
-            "--input-type=module",
-            "-e",
-            "import fs from 'node:fs'; import { chromium } from '@playwright/test'; "
-            "process.exit(fs.existsSync(chromium.executablePath()) ? 0 : 1)",
-        ],
-        cwd=root,
-        capture_output=True,
-        check=False,
-    )
+    try:
+        probe = subprocess.run(
+            [
+                node,
+                "--input-type=module",
+                "-e",
+                "import { chromium } from '@playwright/test'; "
+                "try { const browser = await chromium.launch({ headless: true }); "
+                "await browser.close(); } catch { process.exit(1); }",
+            ],
+            cwd=root,
+            capture_output=True,
+            check=False,
+            timeout=15,
+        )
+    except subprocess.TimeoutExpired:
+        return False
     return probe.returncode == 0
 
 
