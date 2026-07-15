@@ -34,6 +34,7 @@ import {
 import { getJSON, postJSON } from "../api";
 import { useCaps, jobDef } from "../caps";
 import { Playground } from "../pages/Playground";
+import { TrainingDataBrowser, TrainingDataWorkspace } from "../pages/Data";
 import { navRef } from "./nav";
 
 const any = z.any();
@@ -440,6 +441,22 @@ const JobConsole = defineComponent({
   component: ({ props }: any) => <JobConsoleImpl jobs={props.jobs || []} emptyText={props.emptyText} />,
 });
 
+const DataBrowser = defineComponent({
+  name: "DataBrowser",
+  description: "Paginated, searchable training-record browser with full record inspection.",
+  props: z.object({ version: z.string().optional() }),
+  component: ({ props }: any) => <TrainingDataBrowser version={props.version} />,
+});
+
+const DataGenerator = defineComponent({
+  name: "DataGenerator",
+  description: "Training-data root and derivative recipe controls.",
+  props: z.object({ versions: z.array(z.string()).optional(), selectedVersion: z.string().optional() }),
+  component: ({ props }: any) => (
+    <TrainingDataWorkspace versions={props.versions || []} selectedVersion={props.selectedVersion} />
+  ),
+});
+
 // The full Checkpoints interactive region: run selector + live threshold editor +
 // gate matrix + lifecycle + blinded-A/B + promote/deploy. Owns the shared selected-run
 // state the compiled page threads through several cards; the gate math runs server-side.
@@ -618,6 +635,8 @@ const CUSTOM = [
   DispatchList,
   ChipTabs,
   JobConsole,
+  DataBrowser,
+  DataGenerator,
   CheckpointConsole,
   AnnotatePlayground,
 ];

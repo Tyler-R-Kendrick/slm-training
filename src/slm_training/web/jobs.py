@@ -88,6 +88,17 @@ class Flag(ParamRule):
         return [f"--{name.replace('_', '-')}"] if value else []
 
 
+class BooleanOptionalFlag(ParamRule):
+    """Render argparse.BooleanOptionalAction values in either direction."""
+
+    def coerce(self, value: Any) -> str:
+        return "true" if value else "false"
+
+    def render(self, name: str, value: Any) -> list[str]:
+        prefix = "" if value else "no-"
+        return [f"--{prefix}{name.replace('_', '-')}"]
+
+
 class PathTemplate(ParamRule):
     """Render a filesystem flag from a slug-validated token — no path escape."""
 
@@ -120,7 +131,9 @@ class JobSpec:
         for name, rule in self.params.items():
             if name in self.positional:
                 continue
-            if name not in values or values[name] in (None, "", False):
+            if name not in values or values[name] in (None, ""):
+                continue
+            if values[name] is False and not isinstance(rule, BooleanOptionalFlag):
                 continue
             argv.extend(rule.render(name, values[name]))
         return argv
@@ -134,9 +147,28 @@ JOB_SPECS: dict[str, JobSpec] = {
         "scripts.build_train_data",
         summary="Build a versioned training corpus",
         params={
-            "source": Choice("all", "rico", "fixture", "both", "awwwards", "rico+awwwards"),
+            "source": Choice(
+                "all",
+                "rico",
+                "fixture",
+                "both",
+                "awwwards",
+                "rico+awwwards",
+                "existing",
+                "programspec",
+                "language_contract",
+                "deconstruct",
+                "render",
+                "integrated",
+            ),
             "version": Slug(),
-            "synthesizer": Choice("quality", "template", "layout", "none"),
+            "base_version": PathTemplate(
+                "--derive-from", "outputs/train_data/{value}/records.jsonl"
+            ),
+            "synthesizer": Choice("quality", "template", "layout", "frontier", "none"),
+            "namespace_augment": Flag(),
+            "edit_derivatives": BooleanOptionalFlag(),
+            "repairs_per_program": IntRange(0, 8),
             "fuzzy_dedup": Flag(),
             "curriculum": Flag(),
         },

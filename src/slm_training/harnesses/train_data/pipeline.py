@@ -28,8 +28,10 @@ class TrainDataConfig:
     # Human thumbs-up promotions from the annotate playground.
     human_annotations_path: Path | None = Path("fixtures/annotations/human_train.jsonl")
     rico_path: Path | None = Path("fixtures/rico/semantic_train.jsonl")
-    # rico | fixture | both | awwwards | rico+awwwards | all
+    # rico | fixture | existing | both | awwwards | rico+awwwards | all
     source: str = "all"
+    # Reuse a previously built records.jsonl as roots for deterministic variants.
+    derive_from: Path | None = None
     output_root: Path = Path("outputs/train_data")
     version: str = "v1"
     synthesizer: str = "quality"
@@ -645,6 +647,68 @@ def _records_from_awwwards(
         return [], [{"error": f"awwwards: {exc}"}]
 
 
+def _records_from_existing(
+    config: TrainDataConfig,
+) -> tuple[list[ExampleRecord], list[dict]]:
+    path = config.derive_from
+    if path is None:
+        raise ValueError("source 'existing' requires --derive-from")
+    if not Path(path).is_file():
+        raise ValueError(f"derivation source does not exist: {path}")
+    records: list[ExampleRecord] = []
+    errors: list[dict] = []
+    for record in load_jsonl(path):
+        if record.split != config.require_split:
+            errors.append(
+                {
+                    "id": record.id,
+                    "error": f"expected split {config.require_split!r}, got {record.split!r}",
+                }
+            )
+            continue
+        records.append(
+            ExampleRecord(
+                id=record.id,
+                prompt=record.prompt,
+                openui=record.openui,
+                placeholders=list(record.placeholders),
+                split=record.split,
+                source=record.source,
+                meta={
+                    **record.meta,
+                    "derivation_source": str(path),
+                    "parent_id": (record.meta or {}).get("parent_id") or record.id,
+                },
+                design_md=record.design_md,
+            )
+        )
+    return records, errors
+
+
+def _existing_program_derivatives(
+    record: ExampleRecord, config: TrainDataConfig
+) -> list[ExampleRecord]:
+    """Project edit/repair tasks from an existing corpus root."""
+    from slm_training.data.progspec import ProgramSpec
+
+    meta = record.meta or {}
+    root_id = str(meta.get("parent_id") or record.id)
+    spec = ProgramSpec.from_openui(
+        id=root_id,
+        openui=record.openui,
+        facts=dict(meta.get("facts") or {}),
+        program_family_id=str(meta.get("program_family_id") or f"{record.source}:{root_id}"),
+        lineage_id=str(meta.get("lineage_id") or root_id),
+        split_group_id=str(meta.get("split_group_id") or root_id),
+        split=record.split,
+        provenance=dict(meta.get("provenance") or {}),
+    )
+    out = _program_repair_records(spec, config.repairs_per_program)
+    if config.include_edit_derivatives:
+        out.extend(_program_edit_records(spec))
+    return out
+
+
 def build_train_data(
     config: TrainDataConfig,
     synthesizer: PromptSynthesizer | None = None,
@@ -666,6 +730,10 @@ def build_train_data(
         aww_records, aww_errors = _records_from_awwwards(config)
         seeds.extend(aww_records)
         errors.extend(aww_errors)
+    if source == "existing":
+        records, source_errors = _records_from_existing(config)
+        seeds.extend(records)
+        errors.extend(source_errors)
     if source in {"programspec", "integrated", "all"}:
         records, source_errors = _records_from_progspec(config)
         seeds.extend(records)
@@ -688,6 +756,7 @@ def build_train_data(
         "fixtures",
         "both",
         "awwwards",
+        "existing",
         "rico+awwwards",
         "programspec",
         "language_contract",
@@ -723,6 +792,13 @@ def build_train_data(
         candidates = [seed]
         if (seed.meta or {}).get("task") in {None, "generation"}:
             candidates.extend(synth.expand(seed))
+            if source == "existing" and (
+                config.include_edit_derivatives or config.repairs_per_program > 0
+            ):
+                try:
+                    candidates.extend(_existing_program_derivatives(seed, config))
+                except (ParseError, RuntimeError, ValueError) as exc:
+                    errors.append({"id": seed.id, "error": str(exc)})
         if config.namespace_augment:
             from slm_training.harnesses.train_data.synth import (
                 NamespaceAugmentSynthesizer,
@@ -926,6 +1002,7 @@ def build_train_data(
     stats = {
         "version": config.version,
         "source": source,
+        "derive_from": str(config.derive_from) if config.derive_from else None,
         "seed_path": str(config.seed_path) if config.seed_path else None,
         "rico_path": str(config.rico_path) if config.rico_path else None,
         "rico_hf_split": config.rico_hf_split,

@@ -24,11 +24,10 @@
       "components": [
         "Bars",
         "ChipTabs",
-        "DataTable",
-        "EmptyNote",
+        "DataBrowser",
+        "DataGenerator",
         "Grid",
         "Hint",
-        "JobConsole",
         "Note",
         "Page",
         "PageHead",
@@ -39,11 +38,10 @@
       ],
       "file": "data.openui",
       "queries": [
-        "data_records",
         "data_test",
         "data_train"
       ],
-      "sha256": "c1903de658b763e9b22e23e6e14febdd22b29356ca7d992d14bf71252118aa02",
+      "sha256": "02589856f1e0d561e511915cd83b46426e1e4a4e951b382fbc6b1911faccee73",
       "status": "ok"
     },
     "experiments": {

@@ -111,9 +111,14 @@ def data_train_records(
     request: Request,
     version: str,
     split: str | None = Query(default=None),
+    source: str | None = Query(default=None),
+    q: str | None = Query(default=None, max_length=200),
+    offset: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=500),
 ) -> dict[str, Any]:
-    return _readers(request).train_records(version, split=split, limit=limit)
+    return _readers(request).train_records(
+        version, split=split, source=source, query=q, offset=offset, limit=limit
+    )
 
 
 @observability_router.get("/data/test")
