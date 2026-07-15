@@ -573,6 +573,13 @@ evaluation configuration. The available CPU probes still stopped at step 2
 before checkpoint finalization, so E74 has no quality or cache-performance
 result and is not promoted.
 
+E75 V7 champion composition was also attempted. A fresh CPU run stopped after
+one training step; an overlay seeded from the completed E72 checkpoint reached
+the auxiliary trust-gate stage but stopped before producing a scoreboard or
+AgentV bundle. E75 therefore remains **incomplete** with no champion or ship
+claim. The full composition needs a longer-lived execution host so its
+survival/trust/successor telemetry can be compared fairly against E72.
+
 ## P13 data-synthesis verification (CPU scratch, 2026-07-14)
 
 The accepted comparison uses the same E50 experiment and effective decode
