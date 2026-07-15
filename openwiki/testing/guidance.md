@@ -23,6 +23,14 @@ Use skill `honest-ship-eval` before claiming readiness:
 
 Adversarial inventory: [`docs/design/adversarial-review.md`](../docs/design/adversarial-review.md).
 
+## Standard eval format
+
+Model, loss, task, and diagnostic eval runs publish AgentEvals JSONL plus an
+AgentV SDK bundle. Install the exact npm dependencies with `npm ci`. Missing
+model suites remain failed AgentV cases; AgentV never relaxes the canonical
+OpenUI ship gates. See
+[`docs/design/agentv-evaluation.md`](../../docs/design/agentv-evaluation.md).
+
 ## Structure-only eval
 
 See [`docs/design/structure-only-eval.md`](../docs/design/structure-only-eval.md) and `scripts/evaluate_model.py` / `evaluate_loss_suites.py`.

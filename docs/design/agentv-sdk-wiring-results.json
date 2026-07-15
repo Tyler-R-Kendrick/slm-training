@@ -1,0 +1,39 @@
+{
+  "run": {
+    "kind": "agentv_sdk_wiring",
+    "date": "2026-07-14",
+    "device": "cpu",
+    "steps": 0,
+    "context_backend": "none",
+    "matrix_set": "agentv-sdk-wiring",
+    "suite_n": 34,
+    "honesty": "tooling_fixture_not_model_eval",
+    "checkpoint": null,
+    "ship_gates": {
+      "status": "not_run",
+      "pass": null,
+      "reason": "No model checkpoint was evaluated."
+    }
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "cli": "agentv@4.42.4",
+    "sdk": "@agentv/core@4.42.4",
+    "sdk_fixture": {
+      "cases": 1,
+      "passed": 1,
+      "execution_errors": 0
+    },
+    "dependency_audit": {
+      "critical": 0,
+      "high": 0,
+      "moderate": 9,
+      "note": "protobufjs is overridden to patched 8.7.1; remaining findings are AgentV OpenTelemetry transitive advisories"
+    }
+  },
+  "verification": {
+    "command": ".venv/bin/pytest -q tests/test_harnesses/model_build/test_loop.py tests/test_scripts tests/test_evals/test_agentv.py tests/test_harnesses/model_build/test_eval_gates.py tests/test_evals/test_denoising_nll.py",
+    "passed": 34,
+    "failed": 0
+  }
+}

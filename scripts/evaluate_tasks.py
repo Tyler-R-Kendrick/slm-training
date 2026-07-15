@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 from slm_training.dsl.schema import load_jsonl
+from slm_training.evals.agentv import publish_agentv_evaluation
 from slm_training.evals.generalization import generalization_report
 from slm_training.evals.task_scoreboard import build_task_scoreboard
 
@@ -59,6 +60,26 @@ def main(argv: list[str] | None = None) -> int:
             load_jsonl(args.train_records), load_jsonl(args.held_records)
         )
     args.out.parent.mkdir(parents=True, exist_ok=True)
+    ship = payload["run"]["honest_ship_gates"]
+    payload["agentv"] = publish_agentv_evaluation(
+        args.out.parent,
+        name=f"openui-task-equivalence-{args.out.stem}",
+        claim="fixture_prediction_evidence_not_ship",
+        cases=[
+            {
+                "id": "task-equivalence",
+                "criteria": "Provide prediction evidence that clears honest ship gates.",
+                "pass": ship["pass"] is True,
+                "failures": [] if ship["pass"] else [ship["reason"]],
+                "result": {
+                    "task_scoreboard": payload["task_scoreboard"],
+                    "generalization": payload.get("generalization"),
+                    "ship_gates": ship,
+                },
+                "metadata": {"honesty": payload["run"]["honesty"]},
+            }
+        ],
+    )
     args.out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     print(json.dumps({"out": str(args.out), "cases": payload["task_scoreboard"]["n"]}))
     return 0

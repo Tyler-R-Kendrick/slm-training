@@ -29,6 +29,7 @@ def test_evaluate_tasks_cli_writes_scoreboard(tmp_path: Path) -> None:
     payload = json.loads(out.read_text(encoding="utf-8"))
     assert payload["task_scoreboard"]["n"] == 1
     assert payload["task_scoreboard"]["tasks"]["generation"]["n"] == 1
+    assert payload["agentv"]["summary"]["failed"] == 1
 
 
 def test_mixture_search_dry_run_profiles_task_corpus(tmp_path: Path) -> None:

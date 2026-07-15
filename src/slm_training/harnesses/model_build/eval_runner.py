@@ -259,6 +259,8 @@ def evaluate(
     config: ModelBuildConfig,
     model=None,
     checkpoint: Path | None = None,
+    *,
+    publish_agentv: bool = True,
 ) -> dict:
     if config.test_dir is None:
         raise ValueError("test_dir is required for evaluation")
@@ -517,11 +519,17 @@ def evaluate(
     run_dir = config.run_dir
     run_dir.mkdir(parents=True, exist_ok=True)
     suite_path = run_dir / f"eval_{config.suite}.json"
+    metrics["output"] = str(suite_path)
+    if publish_agentv:
+        from slm_training.evals.agentv import publish_model_evaluation
+
+        metrics["agentv"] = publish_model_evaluation(
+            run_dir, {config.suite: metrics}
+        )
     payload = json.dumps(metrics, indent=2) + "\n"
     suite_path.write_text(payload, encoding="utf-8")
     if config.suite == "smoke":
         (run_dir / "eval.json").write_text(payload, encoding="utf-8")
-    metrics["output"] = str(suite_path)
     return metrics
 
 
@@ -541,7 +549,12 @@ def evaluate_suites(
     board: dict[str, dict] = {}
     for suite in suites:
         suite_config = replace(config, suite=suite)
-        metrics = evaluate(suite_config, model=model, checkpoint=checkpoint)
+        metrics = evaluate(
+            suite_config,
+            model=model,
+            checkpoint=checkpoint,
+            publish_agentv=False,
+        )
         board[suite] = {k: v for k, v in metrics.items() if k != "details"}
     scoreboard = {
         "run_id": config.run_id,
@@ -558,9 +571,12 @@ def evaluate_suites(
     run_dir = config.run_dir
     run_dir.mkdir(parents=True, exist_ok=True)
     path = run_dir / "scoreboard.json"
-    path.write_text(json.dumps(scoreboard, indent=2) + "\n", encoding="utf-8")
     scoreboard["output"] = str(path)
     if write_gates:
         gates = write_ship_gates(run_dir, board)
         scoreboard["gates"] = {k: gates[k] for k in ("pass", "failures", "output")}
+    from slm_training.evals.agentv import publish_model_evaluation
+
+    scoreboard["agentv"] = publish_model_evaluation(run_dir, board)
+    path.write_text(json.dumps(scoreboard, indent=2) + "\n", encoding="utf-8")
     return scoreboard

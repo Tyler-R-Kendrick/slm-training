@@ -13,6 +13,10 @@ python -m scripts.evaluate_model ...
 python -m scripts.run_quality_matrix ...   # often scratch / local-only
 ```
 
+Run `npm ci` before evaluation. Shared eval paths automatically publish the
+AgentEvals JSONL source and AgentV SDK artifacts under `<run-dir>/agentv/`; see
+[`docs/design/agentv-evaluation.md`](../../docs/design/agentv-evaluation.md).
+
 After every run:
 
 1. Update matching `docs/design/*.json` and measured-results markdown.
