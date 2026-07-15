@@ -1,0 +1,15 @@
+{
+  "matrix": "quality-experiment-matrix-v7",
+  "reference": "docs/design/quality-experiment-matrix.md",
+  "experiment": "E74",
+  "run_ids": ["qx_e74_successor", "qx_e74_successor_fixed"],
+  "recipe": {"device": "cpu", "steps": 20, "context_backend": "scratch", "train_dir": "outputs/train_data/remediated"},
+  "status": "incomplete",
+  "training": {"last_observed_step": 2, "reason": "interactive execution window ended before checkpoint finalization"},
+  "telemetry": [
+    "outputs/runs/iter_e74_20260715/qx_e74_successor/metrics.jsonl",
+    "outputs/runs/iter_e74-fixed_20260715/qx_e74_successor/metrics.jsonl"
+  ],
+  "harness_change": "E74 successor reuse is disabled during base SFT and reserved for post-training evaluation.",
+  "decision": "No quality or cache-performance claim; the partial run must be repeated on a longer-lived execution host."
+}

@@ -1115,7 +1115,9 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         survival_commit_threshold=float(
             getattr(exp, "survival_commit_threshold", 0.3) or 0.3
         ),
-        speculative_successor=bool(getattr(exp, "speculative_successor", False)),
+        # Successor reuse is decode-only; keep it out of base SFT and enable it
+        # through _eval_cfg after training.
+        speculative_successor=False,
         speculative_fanout=int(getattr(exp, "speculative_fanout", 2) or 2),
         speculative_overlap=bool(getattr(exp, "speculative_overlap", False)),
     )
