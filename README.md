@@ -11,8 +11,11 @@ Novel SLM experiments: harnesses for **placeholder OpenUI** layout generation (o
 5. **GPU multi-farm MCP** — list / launch / cost-project across Vast.ai, RunPod, Lambda
 
 Autonomous experiment campaigns use the fail-closed, evidence-grounded
-[`autoresearch` harness](docs/design/autoresearch-autotraining.md); RL remains locked
-until a model passes the frozen production readiness contract.
+[`autoresearch` harness](docs/design/autoresearch-autotraining.md), with isolated,
+pinned [Open Deep Research](https://github.com/langchain-ai/open_deep_research) and
+[OpenResearcher](https://github.com/TIGER-AI-Lab/OpenResearcher) implementations
+behind one memo/trajectory contract and trusted proposal compiler. RL remains
+locked until a model passes the frozen production readiness contract.
 
 See [docs/design/model-lineage.md](docs/design/model-lineage.md) (canonical two-track cycle), [docs/design/openui-twotower.md](docs/design/openui-twotower.md), [docs/design/research-lineage.md](docs/design/research-lineage.md) (papers → code), [docs/design/research-correction-critics.md](docs/design/research-correction-critics.md) (V4 remask / trust-gate / honest inventory; V6 CoRe/T2M), [docs/design/verifier-stack.md](docs/design/verifier-stack.md) (G0–G12 corpus gates + confidence tiers), [docs/design/abstraction-house-style.md](docs/design/abstraction-house-style.md) (L0–L5 determinacy, grounding, and canonical defaults), [docs/design/verifier-guided-repair.md](docs/design/verifier-guided-repair.md) (PDDL-Instruct / verifier-repair applicability map), [docs/design/quality-experiment-matrix.md](docs/design/quality-experiment-matrix.md) (E0–E75 + X0–X8 matrices; E34 deferred), [docs/design/speculative-denoising.md](docs/design/speculative-denoising.md) (V7 stability / dependency-cluster / survival / successor-cache decode), [docs/design/dsl-native-tokenizer.md](docs/design/dsl-native-tokenizer.md) (V5 lexer alphabet), [docs/design/grammar-fastpath.md](docs/design/grammar-fastpath.md), [docs/design/grammar-backends.md](docs/design/grammar-backends.md), [docs/design/structure-only-eval.md](docs/design/structure-only-eval.md), [docs/design/adversarial-review.md](docs/design/adversarial-review.md), [docs/design/runtime-performance.md](docs/design/runtime-performance.md), [docs/design/hf-jobs-train.md](docs/design/hf-jobs-train.md) (HF Jobs full train — not ZeroGPU), [docs/design/gpu-multi-farm-mcp.md](docs/design/gpu-multi-farm-mcp.md), and [docs/MODEL_CARD.md](docs/MODEL_CARD.md).
 

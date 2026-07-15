@@ -7,6 +7,8 @@ from slm_training.autoresearch.schemas import (
     EvidenceSnapshot,
     ExperimentOutcome,
     ExperimentSpec,
+    ResearchRequest,
+    ResearcherRun,
     RLReadinessReport,
     ResearchSource,
 )
@@ -19,6 +21,8 @@ __all__ = [
     "EvidenceSnapshot",
     "ExperimentOutcome",
     "ExperimentSpec",
+    "ResearchRequest",
+    "ResearcherRun",
     "RLReadinessReport",
     "ResearchSource",
     "assert_rl_ready",

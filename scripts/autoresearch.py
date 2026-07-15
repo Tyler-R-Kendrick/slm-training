@@ -19,8 +19,10 @@ from slm_training.autoresearch.persistence import sync_campaign
 from slm_training.autoresearch.providers import (
     AgentProposalProvider,
     FixtureResearchProvider,
+    OpenAIProposalCompiler,
     OpenAIResearchProvider,
 )
+from slm_training.autoresearch.researchers import RESEARCHERS, get_researcher
 from slm_training.autoresearch.researcher_eval import evaluate_researcher
 from slm_training.autoresearch.rl_gate import assess_rl_readiness, write_rl_readiness
 from slm_training.autoresearch.schemas import (
@@ -29,6 +31,7 @@ from slm_training.autoresearch.schemas import (
     EvidenceSnapshot,
     ExperimentOutcome,
     ExperimentSpec,
+    ResearcherRun,
     ResearchSource,
 )
 from slm_training.autoresearch.storage import CampaignStore
@@ -94,6 +97,49 @@ def cmd_research(args: argparse.Namespace) -> int:
     campaign = store.load_campaign()
     evidence, evidence_path = _capture(store, campaign)
     sources = _research_sources(args)
+    researcher_path = None
+    researcher_id = args.researcher
+    if researcher_id is None and campaign.researcher_mode in RESEARCHERS:
+        researcher_id = campaign.researcher_mode
+    if researcher_id:
+        if args.offline:
+            raise ValueError("--offline cannot be combined with an external researcher")
+        if not args.researcher_checkout or not args.researcher_python:
+            raise ValueError(
+                "external researcher requires --researcher-checkout and --researcher-python"
+            )
+        config = (
+            json.loads(args.researcher_config.read_text(encoding="utf-8"))
+            if args.researcher_config
+            else {}
+        )
+        researcher = get_researcher(
+            researcher_id,
+            checkout=args.researcher_checkout,
+            python=args.researcher_python,
+            worker=ROOT / "scripts" / "researcher_worker.py",
+            config=config,
+            timeout_seconds=(
+                args.researcher_timeout
+                if args.researcher_timeout is not None
+                else float(campaign.budget.max_wall_minutes * 60)
+            ),
+        )
+        run = researcher.run(campaign, evidence, sources)
+        researcher_path = store.write_artifact("researcher_runs", run)
+        store.append_event(
+            "researcher_completed" if run.status == "completed" else "researcher_failed",
+            status=run.status,
+            artifact_sha256=researcher_path.stem,
+            detail={
+                "researcher_id": run.researcher_id,
+                "upstream_revision": run.upstream_revision,
+                "error": run.error,
+            },
+        )
+        if run.status == "failed":
+            raise RuntimeError(run.error)
+        sources = list(run.sources)
     source_path = store.write_artifact(
         "research_sources", {"sources": [item.model_dump(mode="json") for item in sources]}
     )
@@ -102,7 +148,16 @@ def cmd_research(args: argparse.Namespace) -> int:
         artifact_sha256=source_path.stem,
         detail={"sources": len(sources), "evidence_snapshot_id": evidence.snapshot_id},
     )
-    print(json.dumps({"evidence": str(evidence_path), "sources": str(source_path)}, indent=2))
+    print(
+        json.dumps(
+            {
+                "evidence": str(evidence_path),
+                "sources": str(source_path),
+                "researcher_run": str(researcher_path) if researcher_path else None,
+            },
+            indent=2,
+        )
+    )
     return 0
 
 
@@ -111,6 +166,28 @@ def _load_sources(path: Path | None) -> list[ResearchSource]:
         return []
     payload = json.loads(path.read_text(encoding="utf-8"))
     return [ResearchSource.model_validate(item) for item in payload.get("sources", [])]
+
+
+def _load_memo(store: CampaignStore, path: Path | None) -> str:
+    if path:
+        text = path.read_text(encoding="utf-8")
+        try:
+            payload = json.loads(text)
+        except json.JSONDecodeError:
+            return text
+        if not isinstance(payload, dict):
+            raise ValueError("memo JSON must be an object with memo or text")
+        return str(payload.get("memo") or payload.get("text") or "")
+    candidates = sorted(
+        (store.root / "artifacts" / "researcher_runs").glob("*.json"),
+        key=lambda item: item.stat().st_mtime_ns,
+        reverse=True,
+    )
+    for candidate in candidates:
+        run = ResearcherRun.model_validate_json(candidate.read_text(encoding="utf-8"))
+        if run.status == "completed":
+            return run.memo
+    raise FileNotFoundError(f"no completed researcher run for {store.campaign_id}")
 
 
 def cmd_propose(args: argparse.Namespace) -> int:
@@ -135,18 +212,32 @@ def cmd_propose(args: argparse.Namespace) -> int:
         candidates = list((store.root / "artifacts" / "research_sources").glob("*.json"))
         source_path = max(candidates, key=lambda p: p.stat().st_mtime_ns) if candidates else None
     sources = _load_sources(source_path)
-    if args.provider == "agent":
+    if args.provider and args.compiler:
+        raise ValueError("choose --provider (legacy) or --compiler, not both")
+    mode = args.compiler or args.provider
+    if not mode:
+        raise ValueError("propose requires --compiler or legacy --provider")
+    if mode == "agent":
         if not args.proposal:
             raise ValueError("--provider agent requires --proposal")
         provider = AgentProposalProvider(args.proposal)
-    elif args.provider == "fixture":
+    elif mode == "fixture":
         if not args.proposal:
             raise ValueError("--provider fixture requires --proposal")
         fixture = ExperimentSpec.model_validate_json(args.proposal.read_text(encoding="utf-8"))
         provider = FixtureResearchProvider(fixture)
+    elif args.compiler:
+        provider = OpenAIProposalCompiler(model=args.model)
+        result = provider.propose(
+            campaign,
+            evidence,
+            sources,
+            _load_memo(store, args.memo),
+        )
     else:
         provider = OpenAIResearchProvider(model=args.model)
-    result = provider.propose(campaign, evidence, sources)
+    if mode in {"agent", "fixture"} or not args.compiler:
+        result = provider.propose(campaign, evidence, sources)
     validate_experiment(campaign, result.experiment, evidence, list(result.sources))
     experiment_path = store.write_artifact("experiments", result.experiment)
     source_out = store.write_artifact(
@@ -315,7 +406,7 @@ def build_parser() -> argparse.ArgumentParser:
     init.add_argument("--objective", required=True)
     init.add_argument("--primary-metric", required=True)
     init.add_argument("--track", choices=("twotower", "causal_lm"), default="twotower")
-    init.add_argument("--researcher-mode", choices=("agent", "openai", "fixture"), default="agent")
+    init.add_argument("--researcher-mode", default="agent")
     init.add_argument("--evidence-root", type=Path, action="append", default=[Path("outputs")])
     init.add_argument("--max-experiments", type=int, default=12)
     init.add_argument("--max-gpu-hours", type=float, default=0)
@@ -328,6 +419,11 @@ def build_parser() -> argparse.ArgumentParser:
     research.add_argument("--offline", action="store_true")
     research.add_argument("--hf-days", type=int, default=7)
     research.add_argument("--hf-limit", type=int, default=20)
+    research.add_argument("--researcher", choices=tuple(RESEARCHERS))
+    research.add_argument("--researcher-checkout", type=Path)
+    research.add_argument("--researcher-python", type=Path)
+    research.add_argument("--researcher-config", type=Path)
+    research.add_argument("--researcher-timeout", type=float)
     research.add_argument(
         "--paper-query",
         action="append",
@@ -337,8 +433,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     propose = sub.add_parser("propose")
     propose.add_argument("--campaign-id", required=True)
-    propose.add_argument("--provider", choices=("agent", "openai", "fixture"), required=True)
+    propose.add_argument("--provider", choices=("agent", "openai", "fixture"))
+    propose.add_argument("--compiler", choices=("agent", "openai", "fixture"))
     propose.add_argument("--proposal", type=Path)
+    propose.add_argument("--memo", type=Path)
     propose.add_argument("--evidence", type=Path)
     propose.add_argument("--sources", type=Path)
     propose.add_argument("--model", default="gpt-5.6-sol")

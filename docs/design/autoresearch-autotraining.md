@@ -1,8 +1,8 @@
 # Autoresearch and autotraining harness
 
-**Status:** harness implemented; no live model, paid GPU, or provider run in this
-change. The committed researcher fixture benchmark is wiring evidence, not a model
-quality claim.
+**Status:** pluggable researcher harness implemented; no live upstream researcher,
+model, paid GPU, or provider run in this change. The committed researcher fixture
+benchmark is wiring evidence, not a model-quality claim.
 
 ## Goal and boundary
 
@@ -11,18 +11,36 @@ feedback into bounded, falsifiable training experiments. It does not create a ne
 trainer or lineage. Training still flows through the canonical data, model,
 evaluation, AgentV, checkpoint, and promotion surfaces.
 
-There are two researcher modes:
+Research and proposal compilation are separate stages:
 
-- **agent-driven:** a coding agent may inspect and change code on an experiment
-  branch, but its proposal must validate as an `ExperimentSpec` before entering the
-  ledger;
-- **embedded:** OpenAI Responses performs a web-search discovery pass followed by a
-  Structured Outputs pass. It changes only typed, campaign-allowlisted knobs and
-  cannot supply commands, Python, patches, or arbitrary configuration.
+1. a swappable `Researcher` implementation receives a bounded `ResearchRequest`
+   and returns a cited memo, normalized sources, trajectory, and telemetry in a
+   `ResearcherRun`;
+2. the shared proposal compiler treats that memo as untrusted evidence and produces
+   one strict `ExperimentSpec`; normal validation then enforces citations, campaign
+   identity, allowlisted knobs, experiment budget, and the RL lock.
 
-The embedded default is `gpt-5.6-sol`, with `store=False`. The local record keeps
-requested and returned model IDs, response IDs, usage, prompt/evidence identity,
-citations, and sources. It never stores API keys.
+The registry in `src/slm_training/autoresearch/researchers.py` initially provides
+two invocation adapters. Both run in a separately installed upstream checkout and
+Python environment; no upstream package or dependency graph is vendored into this
+repository.
+
+| Researcher ID | Upstream entry point | Reviewed revision |
+| --- | --- | --- |
+| `open-deep-research` | LangGraph `deep_researcher.ainvoke` from [Open Deep Research](https://github.com/langchain-ai/open_deep_research) | `b764481fca7f0dbf00b2c70239bd97cea59d1059` |
+| `open-researcher` | `deploy_agent.run_one` from [OpenResearcher](https://github.com/TIGER-AI-Lab/OpenResearcher) | `785fd6ba5fcbc068daa4a2f07bbe0964f2983c86` |
+
+The runner refuses a checkout whose `git rev-parse HEAD` differs from the registry
+pin, uses argv-only subprocess execution with a wall timeout and a 2 MB result
+limit, and persists log hashes rather than log contents. Typed configuration
+forbids unknown fields, so credentials remain environment variables in the isolated
+process. Open Deep Research is MIT-licensed; the reviewed OpenResearcher checkout
+does not contain an explicit license file, so do not redistribute it without a
+separate license review.
+
+Agent-authored and deterministic fixture proposals remain supported. The legacy
+two-pass OpenAI provider remains for compatibility; new external-researcher runs
+use `--compiler openai`, whose default is `gpt-5.6-sol` with `store=False`.
 
 ## Closed loop
 
@@ -33,23 +51,26 @@ repo lineage + HF Daily Papers + web + prior artifacts
                immutable EvidenceSnapshot
                          |
                          v
-      researcher -> typed ExperimentSpec -> validation
-                         |                    |
-                         | rejected           | accepted
-                         v                    v
-                  researcher feedback   compiled commands
-                                              |
-                                              v
-                     train data -> SFT/eval -> outcome
-                         ^                       |
-                         |                       v
-                  data repair <---- diagnosis ----> researcher repair
-                                              |
-                                              v
-                  full competence + AgentV + reward variance
-                                              |
-                                              v
-                                    RL readiness (locked)
+       researcher -> cited memo/trajectory -> proposal compiler
+                                                   |
+                                                   v
+                                      typed ExperimentSpec -> validation
+                                                   |              |
+                                          rejected |              | accepted
+                                                   v              v
+                                         researcher repair   compiled commands
+                                                                  |
+                                                                  v
+                                         train data -> SFT/eval -> outcome
+                                             ^                       |
+                                             |                       v
+                                      data repair <---- diagnosis ----> model repair
+                                                                  |
+                                                                  v
+                                      full competence + AgentV + reward variance
+                                                                  |
+                                                                  v
+                                                        RL readiness (locked)
 ```
 
 Every arrow writes a content-addressed artifact and an append-only event.
@@ -66,6 +87,9 @@ unknown fields forbidden:
   manifests, matrices, and older campaigns;
 - `ResearchSource` records HF Daily Paper, HF paper search, web, repository, or
   prior-run sources;
+- `ResearchRequest`, backend-specific typed configs, and `ResearcherRun` record the
+  exact upstream repository/revision, request hash, memo, normalized sources,
+  trajectory, timing, and non-secret process telemetry;
 - `ExperimentSpec` requires a hypothesis, expected effect, falsification and stop
   criteria, citations, parent, and typed `ExperimentKnobs`;
 - `ExperimentOutcome` and `Diagnosis` route failures to data, researcher, model, or
@@ -85,9 +109,10 @@ AgentEvals/AgentV, annotation and preference feedback, data manifests and synthe
 telemetry, matrices, and previous autoresearch bundles.
 
 After local capture, `research` reads recent HF Daily Papers (`/api/daily_papers`)
-and targeted historical paper search (`/api/papers/search`). The OpenAI discovery
-pass performs general web search for remaining gaps. Each proposed citation must
-resolve to captured evidence or a captured source.
+and targeted historical paper search (`/api/papers/search`). A selected researcher
+receives those sources and the immutable local evidence summary, and may discover
+additional URLs. Each proposed citation must resolve to captured evidence or a
+normalized captured source.
 
 ## Persistence and observability
 
@@ -98,6 +123,9 @@ outputs/autoresearch/<campaign>/
   results.tsv              # human-scannable event ledger
   checksums.jsonl
   artifacts/<kind>/<content-sha>.json
+    researcher_runs/      # pin + request hash + memo + trajectory + telemetry
+    research_sources/     # normalized, citation-valid source set
+    experiments/          # compiler output after strict validation
   runs/<experiment>/...
 ```
 
@@ -105,6 +133,68 @@ Local artifacts are authoritative. Trackio is an optional live mirror. A complet
 campaign can be mirrored to
 `hf://buckets/TKendrick/OpenUI/autoresearch/<campaign>/`. `sync` is dry-run unless
 `--push` is supplied. Full checkpoint and model-card rules still apply separately.
+
+## Isolated researcher setup
+
+Installation is deliberately manual because the upstream environments are large,
+networked, and provider-specific. Clone outside this repository, check out the
+reviewed revision, and follow the upstream environment instructions. For example:
+
+```bash
+# Open Deep Research: upstream documents Python 3.11 + uv sync.
+git clone https://github.com/langchain-ai/open_deep_research /path/open_deep_research
+git -C /path/open_deep_research checkout b764481fca7f0dbf00b2c70239bd97cea59d1059
+cd /path/open_deep_research && uv venv --python 3.11 && uv sync
+
+# OpenResearcher: upstream documents Python 3.12 and a GPU/search-heavy stack.
+git clone https://github.com/TIGER-AI-Lab/OpenResearcher /path/OpenResearcher
+git -C /path/OpenResearcher checkout 785fd6ba5fcbc068daa4a2f07bbe0964f2983c86
+cd /path/OpenResearcher && uv venv --python 3.12 && uv pip install -e .
+```
+
+Keep provider/search credentials only in that environment. A config file selects
+non-secret options. Open Deep Research accepts `{}` for its reviewed defaults. A
+minimal OpenResearcher config is:
+
+```json
+{
+  "base_url": "http://127.0.0.1:8001/v1",
+  "model": "OpenResearcher/OpenResearcher-30B-A3B",
+  "browser_backend": "serper",
+  "max_rounds": 50
+}
+```
+
+The upstream OpenResearcher recipe describes an eight-A100 environment; adopting
+its invocation surface here does not claim that local hardware can serve its model.
+
+## Paper reproduction consideration
+
+alphaXiv exposes an optional Autoresearch page at
+`https://www.alphaxiv.org/replicate/<arxiv-id>`. Its current local-harness flow
+installs and starts `orx`, then accepts a command of the form
+`/reproduce-paper <arxiv-id> <title>`. This harness does **not** install it, submit a
+reproduction, authenticate, allocate cloud compute, or duplicate a paper by
+default.
+
+An agent considering reproduction must:
+
+1. ask for explicit approval before installation, authentication, cloud/GPU use,
+   or cloning generated code into this repository;
+2. work in a separate scratch repository or worktree and pin the paper version,
+   author-code revision, dependencies, datasets, and seeds;
+3. define a finite matrix of paper claims and acceptance rules before execution;
+4. keep supplied paper assets separate from generated outputs and record provenance
+   for every comparison;
+5. treat a partial or failed reproduction as a measured result, not validation of
+   the paper or a reason to weaken this repository's ship gates;
+6. import only reviewed, minimal findings through the normal research → typed spec
+   → experiment path, with the required JSON, markdown, AgentV, and model-card
+   evidence for any runs or checkpoints produced here.
+
+For the papers tracked in [`research-lineage.md`](research-lineage.md), this change
+records applicability only. No alphaXiv reproduction or upstream training run was
+started.
 
 ## Data iteration
 
@@ -142,18 +232,19 @@ Durable result: [`autoresearch-researcher-benchmark.json`](autoresearch-research
 
 | Recipe / result | Value |
 | --- | --- |
-| Researcher | deterministic `fixture-v1` predictions |
+| Benchmark / rerun | `researcher-d2585593fa0d3fee`; 2026-07-14 CDT |
+| Researcher | `harness-v2` over deterministic fixture predictions |
 | Backend / device / steps | fixture JSONL + pinned AgentV SDK / CPU / no training |
 | Frozen set | 3 cases; data-family repair, mixture regression, weak-SFT RL lock |
 | Grounded / valid / novel / actionable | `1.00 / 1.00 / 1.00 / 1.00` |
-| AgentV | `3/3` pass, 0 execution errors, mean score `1.0` |
+| AgentV | `3/3` pass, 0 execution errors, mean score `1.0`, 20 ms |
 | Threshold | `0.80` per rate; benchmark pass |
 | Promotion | **No** — `human_approved=false`, therefore `promotable=false` |
 | Honesty | wiring-only researcher benchmark; no model/data quality or ship claim |
 
-The first invocation failed before evaluation because the isolated worktree was not
-on `PYTHONPATH`. The repeated command set `PYTHONPATH=src:.`; the measured AgentV run
-then completed. No provider, network, model training, checkpoint, or GPU was used.
+The measured command set `PYTHONPATH=src:.` and wrote its AgentV bundle under
+`outputs/autoresearch/researcher_eval_fixture_v2/`. No provider, network, model
+training, checkpoint, or GPU was used.
 
 ## RL is fail-closed
 
@@ -184,11 +275,29 @@ before imports or optimizer work.
 python -m scripts.autoresearch init \
   --campaign-id openui-sft-001 \
   --objective "Improve minimum-suite structure without parse regression" \
-  --primary-metric min_suite.structural_similarity
+  --primary-metric min_suite.structural_similarity \
+  --researcher-mode open-deep-research
 
-python -m scripts.autoresearch research --campaign-id openui-sft-001
+# The campaign researcher-mode selects the registry entry; an explicit
+# --researcher overrides it. The runner verifies the exact reviewed Git pin.
+python -m scripts.autoresearch research \
+  --campaign-id openui-sft-001 \
+  --researcher-checkout /path/open_deep_research \
+  --researcher-python /path/open_deep_research/.venv/bin/python \
+  --researcher-config open-deep-research.json
+
 python -m scripts.autoresearch propose \
-  --campaign-id openui-sft-001 --provider openai
+  --campaign-id openui-sft-001 --compiler openai
+
+# Swap the researcher without changing the evidence, memo, or compiler contracts.
+python -m scripts.autoresearch research \
+  --campaign-id openui-sft-001 \
+  --researcher open-researcher \
+  --researcher-checkout /path/OpenResearcher \
+  --researcher-python /path/OpenResearcher/.venv/bin/python \
+  --researcher-config open-researcher.json
+
+# Agent-authored specs remain a non-provider path.
 python -m scripts.autoresearch propose \
   --campaign-id openui-sft-001 --provider agent --proposal proposal.json
 python -m scripts.autoresearch run \
