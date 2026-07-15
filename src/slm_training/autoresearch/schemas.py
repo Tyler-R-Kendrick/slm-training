@@ -44,7 +44,9 @@ class CampaignSpec(StrictModel):
     objective: str = Field(min_length=8)
     primary_metric: str = Field(min_length=1)
     track: Literal["twotower", "causal_lm"] = "twotower"
-    researcher_mode: Literal["agent", "openai", "fixture"] = "agent"
+    researcher_mode: str = Field(
+        default="agent", pattern=r"^[a-z0-9][a-z0-9._-]{0,127}$"
+    )
     evidence_roots: tuple[str, ...] = ("outputs",)
     allowed_knobs: frozenset[str] = DEFAULT_ALLOWED_KNOBS
     budget: CampaignBudget = Field(default_factory=CampaignBudget)
@@ -64,6 +66,7 @@ class ResearchSource(StrictModel):
         "feedback",
         "data_snapshot",
         "agent",
+        "researcher",
     ]
     title: str
     uri: str
@@ -90,6 +93,58 @@ class EvidenceSnapshot(StrictModel):
     items: tuple[EvidenceItem, ...]
     source_counts: dict[str, int] = Field(default_factory=dict)
     prior_campaign_ids: tuple[str, ...] = ()
+
+
+class OpenDeepResearchConfig(StrictModel):
+    search_api: str = "tavily"
+    summarization_model: str = "openai:gpt-4.1-mini"
+    research_model: str = "openai:gpt-4.1"
+    compression_model: str = "openai:gpt-4.1"
+    final_report_model: str = "openai:gpt-4.1"
+    max_concurrent_research_units: int = Field(default=3, ge=1, le=20)
+    max_researcher_iterations: int = Field(default=3, ge=1, le=20)
+    max_react_tool_calls: int = Field(default=5, ge=1, le=50)
+
+
+class OpenResearcherConfig(StrictModel):
+    base_url: str
+    model: str = "OpenResearcher/OpenResearcher-30B-A3B"
+    browser_backend: Literal["local", "serper"] = "serper"
+    search_url: str | None = None
+    max_rounds: int = Field(default=50, ge=1, le=200)
+
+
+class ResearchRequest(StrictModel):
+    researcher_id: str
+    upstream_repo: str
+    upstream_revision: str = Field(pattern=r"^[0-9a-f]{40}$")
+    campaign_id: str
+    evidence_snapshot_id: str
+    prompt: str = Field(min_length=1, max_length=120_000)
+    config: dict[str, Any] = Field(default_factory=dict)
+
+
+class ResearcherRun(StrictModel):
+    researcher_id: str
+    upstream_repo: str
+    upstream_revision: str = Field(pattern=r"^[0-9a-f]{40}$")
+    request_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    status: Literal["completed", "failed"]
+    memo: str = Field(default="", max_length=250_000)
+    sources: tuple[ResearchSource, ...] = ()
+    trace: dict[str, Any] = Field(default_factory=dict)
+    telemetry: dict[str, Any] = Field(default_factory=dict)
+    error: str | None = None
+    started_at: str
+    finished_at: str
+
+    @model_validator(mode="after")
+    def validate_status(self) -> ResearcherRun:
+        if self.status == "completed" and not self.memo.strip():
+            raise ValueError("completed researcher run requires a memo")
+        if self.status == "failed" and not self.error:
+            raise ValueError("failed researcher run requires an error")
+        return self
 
 
 class ExperimentKnobs(StrictModel):

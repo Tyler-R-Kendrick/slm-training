@@ -392,6 +392,38 @@ grammar stack remains the verifier; no draft LM is introduced.
 
 ---
 
+## Autoresearch systems and adjacent research directions
+
+### Swappable deep-research systems
+
+| System / paper | Fidelity and role here | Integration |
+| --- | --- | --- |
+| LangChain, [Open Deep Research](https://github.com/langchain-ai/open_deep_research) | **Adapted system integration** — its configurable LangGraph researcher produces an untrusted cited memo and trajectory; it does not author executable commands or bypass proposal validation | Isolated invocation adapter pinned to `b764481fca7f0dbf00b2c70239bd97cea59d1059` in [`autoresearch/researchers.py`](../../src/slm_training/autoresearch/researchers.py) |
+| Li et al., *OpenResearcher: A Fully Open Pipeline for Long-Horizon Deep Research Trajectory Synthesis*, [arXiv:2603.20278](https://arxiv.org/abs/2603.20278), [code](https://github.com/TIGER-AI-Lab/OpenResearcher) | **Adapted system integration** — the released search/browse trajectory runner is another memo producer. We do not adopt its training recipe, model weights, corpus, benchmark claims, or GPU topology | Isolated invocation adapter pinned to `785fd6ba5fcbc068daa4a2f07bbe0964f2983c86`; upstream code is not vendored |
+
+Both implementations share `ResearchRequest` / `ResearcherRun` contracts and the
+same trusted `ExperimentSpec` compiler. Setup, pinning, failure limits, and the
+paper-reproduction policy are documented in
+[`autoresearch-autotraining.md`](autoresearch-autotraining.md).
+
+### Newly tracked papers and applicability
+
+| Paper / code | Status here | Concrete takeaway and boundary |
+| --- | --- | --- |
+| Fu et al., *Proxy Exploration and Reusable Guidance: A Modular LLM Post-Training Paradigm via Proxy-Guided Update Signals* (PUST), [arXiv:2607.11505](https://arxiv.org/abs/2607.11505), [alphaXiv](https://www.alphaxiv.org/abs/2607.11505) | **Adjacent** | Proxy exploration, relative update-signal transfer, and reusable cached guidance motivate separating evidence-producing exploration from the promoted model. Our memo/compiler split is only a systems analogue: it does **not** implement PUST update extraction or policy transfer, and the RL readiness lock still applies. |
+| Zhao et al., *UltraX: Refining Pre-Training Data at Scale with Adaptive Programmatic Editing*, [arXiv:2607.08646](https://arxiv.org/abs/2607.08646), [code](https://github.com/openbmb/UltraX) | **Adjacent** | Typed insert/delete/replace programs, confidence filtering, controlled operation mixtures, validation, and deterministic execution are relevant to future immutable data-repair experiments. Current `ExperimentKnobs` and synthesis telemetry do not reproduce UltraX's LAM/DCR pipeline, refinement model, or 20B-token evaluation. |
+| Monea et al., *The State-Prediction Separation Hypothesis*, [arXiv:2607.01218](https://arxiv.org/abs/2607.01218), [alphaXiv](https://www.alphaxiv.org/abs/2607.01218) | **Adjacent** | Separating state storage from next-token prediction is an architecture hypothesis worth a matched causal-LM ablation. It is not the same as this repository's context-encoder + denoiser “TwoTower,” so no fidelity claim is made. |
+| Korchinski, Favero, Wyart, *Learn from your own latents and not from tokens: A sample-complexity theory*, [arXiv:2605.27734](https://arxiv.org/abs/2605.27734) | **Adjacent** | The theory motivates a future, separately gated own-latent prediction objective for hierarchical program structure. Current masked-token CE, context embeddings, and deferred latent critic are not latent-prediction training and do not inherit the paper's sample-complexity result. |
+| Das et al., *Recover-LoRA for Aggressive Quantization: Reclaiming Accuracy in 2-Bit Language Models via Low-Rank Adaptation with Knowledge Distillation on Synthetic Data*, [arXiv:2606.04238v1](https://arxiv.org/html/2606.04238v1) | **Adjacent** | Selective mixed precision plus synthetic logit-distillation adapters is a candidate recovery stage only if an honestly evaluated causal-LoRA checkpoint later needs ≤2-bit deployment. No current model is quantized or accuracy-recovered by this method. |
+
+These rows are literature intake, not experiment results. Any adoption starts with a
+frozen baseline, one bounded lever, full provenance, and the normal quality/perf
+matrix and model-card rules. An alphaXiv Autoresearch availability page may help
+construct a scratch reproduction, but generated code or reported results do not
+enter this repository without review and local evidence.
+
+---
+
 ## Systems & data (not papers, but cited lineage)
 
 | System | Role here | Link / path |
@@ -437,7 +469,7 @@ grammar stack remains the verifier; no draft LM is introduced.
 | Trajectory-survival head | E73 `survival_gate` | `dsl/grammar/fastpath/survival_train.py` |
 | Successor-state cache | E74 `speculative_successor`, `speculative_fanout` | `models/speculative_denoise.py` (`SuccessorCache`) |
 | V7 champion | E75 | `scripts/run_quality_matrix.py --matrix v7` |
-| Evidence-grounded autoresearch | typed `ExperimentKnobs` | `scripts/autoresearch.py`, `src/slm_training/autoresearch/` |
+| Evidence-grounded autoresearch | `--researcher`, typed `ResearcherRun` / `ExperimentKnobs` | `scripts/autoresearch.py`, `src/slm_training/autoresearch/` |
 
 ---
 

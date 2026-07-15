@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -14,7 +16,11 @@ from slm_training.autoresearch.engine import (
 )
 from slm_training.autoresearch.evidence import collect_evidence
 from slm_training.autoresearch.literature import HuggingFacePapersClient
-from slm_training.autoresearch.providers import OpenAIResearchProvider
+from slm_training.autoresearch.providers import (
+    OpenAIProposalCompiler,
+    OpenAIResearchProvider,
+)
+from slm_training.autoresearch.researchers import IsolatedResearcher, ResearcherSpec
 from slm_training.autoresearch.persistence import sync_campaign
 from slm_training.autoresearch.rl_gate import assert_rl_ready, assess_rl_readiness
 from slm_training.autoresearch.schemas import (
@@ -24,6 +30,8 @@ from slm_training.autoresearch.schemas import (
     ExperimentKnobs,
     ExperimentOutcome,
     ExperimentSpec,
+    OpenDeepResearchConfig,
+    OpenResearcherConfig,
     ResearchSource,
 )
 from slm_training.autoresearch.storage import CampaignStore
@@ -204,6 +212,172 @@ def test_openai_provider_is_two_pass_and_persists_usage() -> None:
     assert result.telemetry["store"] is False
     assert result.telemetry["discovery_response_id"] == "resp-discovery"
     assert any(item.kind == "web" for item in result.sources)
+
+
+def test_openai_compiler_uses_persisted_memo_without_discovery() -> None:
+    responses = FakeResponses()
+    compiler = OpenAIProposalCompiler(
+        model="gpt-test", client=SimpleNamespace(responses=responses)
+    )
+    result = compiler.propose(campaign(), evidence(), [source()], "cited memo")
+    assert result.experiment.experiment_id == "exp-1"
+    assert result.research_memo == "cited memo"
+    assert result.telemetry["provider"] == "openai_proposal_compiler"
+
+
+def _commit_fixture_repo(path: Path) -> str:
+    subprocess.run(["git", "init", "-q", str(path)], check=True)
+    subprocess.run(
+        ["git", "-C", str(path), "config", "user.email", "fixture@example.com"],
+        check=True,
+    )
+    subprocess.run(
+        ["git", "-C", str(path), "config", "user.name", "Fixture"], check=True
+    )
+    subprocess.run(["git", "-C", str(path), "add", "."], check=True)
+    subprocess.run(
+        ["git", "-C", str(path), "commit", "-q", "-m", "fixture"], check=True
+    )
+    return subprocess.run(
+        ["git", "-C", str(path), "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+
+def test_open_deep_research_runs_in_pinned_isolated_worker(tmp_path: Path) -> None:
+    checkout = tmp_path / "open-deep-research"
+    package = checkout / "src/open_deep_research"
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_text("")
+    (package / "deep_researcher.py").write_text(
+        "class Graph:\n"
+        "    async def ainvoke(self, request, config):\n"
+        "        return {'final_report': 'Memo https://example.com/paper', "
+        "'request': request, 'config': config}\n"
+        "deep_researcher = Graph()\n"
+    )
+    revision = _commit_fixture_repo(checkout)
+    spec = ResearcherSpec(
+        "open-deep-research",
+        "https://example.com/open-deep-research",
+        revision,
+        OpenDeepResearchConfig,
+    )
+    researcher = IsolatedResearcher(
+        spec,
+        checkout=checkout,
+        python=sys.executable,
+        worker=Path(__file__).resolve().parents[2] / "scripts/researcher_worker.py",
+        timeout_seconds=10,
+    )
+    result = researcher.run(campaign(), evidence(), [source()])
+    assert result.status == "completed"
+    assert result.upstream_revision == revision
+    assert any(item.uri == "https://example.com/paper" for item in result.sources)
+    assert "final_report" in result.trace
+
+
+def test_open_researcher_runs_in_pinned_isolated_worker(tmp_path: Path) -> None:
+    checkout = tmp_path / "open-researcher"
+    (checkout / "utils").mkdir(parents=True)
+    (checkout / "utils/__init__.py").write_text("")
+    (checkout / "utils/openai_generator.py").write_text(
+        "class OpenAIAsyncGenerator:\n"
+        "    def __init__(self, **kwargs): self.kwargs = kwargs\n"
+    )
+    (checkout / "deploy_agent.py").write_text(
+        "class BrowserPool:\n"
+        "    def __init__(self, **kwargs): self.kwargs = kwargs\n"
+        "async def run_one(**kwargs):\n"
+        "    return [{'role': 'tool', 'content': 'https://example.com/source'}, "
+        "{'role': 'assistant', 'content': 'Final cited memo'}]\n"
+    )
+    revision = _commit_fixture_repo(checkout)
+    spec = ResearcherSpec(
+        "open-researcher",
+        "https://example.com/open-researcher",
+        revision,
+        OpenResearcherConfig,
+    )
+    researcher = IsolatedResearcher(
+        spec,
+        checkout=checkout,
+        python=sys.executable,
+        worker=Path(__file__).resolve().parents[2] / "scripts/researcher_worker.py",
+        config={"base_url": "http://127.0.0.1:8001/v1"},
+        timeout_seconds=10,
+    )
+    result = researcher.run(campaign(), evidence(), [source()])
+    assert result.status == "completed"
+    assert result.memo == "Final cited memo"
+    assert any(item.uri == "https://example.com/source" for item in result.sources)
+
+
+def test_researcher_fails_closed_on_revision_drift(tmp_path: Path) -> None:
+    checkout = tmp_path / "researcher"
+    checkout.mkdir()
+    (checkout / "README.md").write_text("fixture")
+    _commit_fixture_repo(checkout)
+    researcher = IsolatedResearcher(
+        ResearcherSpec(
+            "open-deep-research",
+            "https://example.com/researcher",
+            "0" * 40,
+            OpenDeepResearchConfig,
+        ),
+        checkout=checkout,
+        python=sys.executable,
+        worker=Path(__file__).resolve().parents[2] / "scripts/researcher_worker.py",
+    )
+    result = researcher.run(campaign(), evidence(), [source()])
+    assert result.status == "failed"
+    assert "revision mismatch" in str(result.error)
+
+
+def test_researcher_config_and_timeout_fail_closed(tmp_path: Path) -> None:
+    with pytest.raises(ValidationError, match="api_key"):
+        OpenDeepResearchConfig.model_validate({"api_key": "must-stay-in-env"})
+
+    checkout = tmp_path / "researcher"
+    checkout.mkdir()
+    (checkout / "README.md").write_text("fixture")
+    revision = _commit_fixture_repo(checkout)
+    worker = tmp_path / "sleeping_worker.py"
+    worker.write_text("import time\ntime.sleep(1)\n")
+    researcher = IsolatedResearcher(
+        ResearcherSpec(
+            "open-deep-research",
+            "https://example.com/researcher",
+            revision,
+            OpenDeepResearchConfig,
+        ),
+        checkout=checkout,
+        python=sys.executable,
+        worker=worker,
+        timeout_seconds=0.01,
+    )
+    result = researcher.run(campaign(), evidence(), [source()])
+    assert result.status == "failed"
+    assert "timed out" in str(result.error)
+
+    empty_worker = tmp_path / "empty_worker.py"
+    empty_worker.write_text(
+        "import json, sys\n"
+        "from pathlib import Path\n"
+        "output = Path(sys.argv[sys.argv.index('--output') + 1])\n"
+        "output.write_text(json.dumps({'memo': '', 'trace': {}, 'telemetry': {}}))\n"
+    )
+    empty = IsolatedResearcher(
+        researcher.spec,
+        checkout=checkout,
+        python=sys.executable,
+        worker=empty_worker,
+        timeout_seconds=1,
+    ).run(campaign(), evidence(), [source()])
+    assert empty.status == "failed"
+    assert "empty memo" in str(empty.error)
 
 
 def test_compile_is_typed_and_diagnosis_routes_bad_data() -> None:

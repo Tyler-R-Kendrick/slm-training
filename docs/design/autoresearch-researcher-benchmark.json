@@ -1,6 +1,6 @@
 {
-  "benchmark_id": "researcher-f5e3d6199912bade",
-  "researcher_id": "fixture-v1",
+  "benchmark_id": "researcher-d2585593fa0d3fee",
+  "researcher_id": "harness-v2",
   "cases": 3,
   "grounded_rate": 1.0,
   "valid_spec_rate": 1.0,
@@ -13,21 +13,21 @@
   "agentv": {
     "format": "AgentEvals JSONL",
     "sdk": "@agentv/core",
-    "spec": "outputs/autoresearch/researcher_eval_fixture/agentv/autoresearch-researcher-fixture-v1.eval.jsonl",
+    "spec": "outputs/autoresearch/researcher_eval_fixture_v2/agentv/autoresearch-researcher-harness-v2.eval.jsonl",
     "summary": {
       "total": 3,
       "passed": 3,
       "failed": 0,
       "executionErrors": 0,
-      "durationMs": 22,
+      "durationMs": 20,
       "meanScore": 1
     },
     "artifacts": {
-      "runDir": "outputs/autoresearch/researcher_eval_fixture/agentv/autoresearch-researcher-fixture-v1",
-      "benchmarkPath": "outputs/autoresearch/researcher_eval_fixture/agentv/autoresearch-researcher-fixture-v1/benchmark.json",
-      "indexPath": "outputs/autoresearch/researcher_eval_fixture/agentv/autoresearch-researcher-fixture-v1/index.jsonl",
-      "timingPath": "outputs/autoresearch/researcher_eval_fixture/agentv/autoresearch-researcher-fixture-v1/timing.json"
+      "runDir": "outputs/autoresearch/researcher_eval_fixture_v2/agentv/autoresearch-researcher-harness-v2",
+      "benchmarkPath": "outputs/autoresearch/researcher_eval_fixture_v2/agentv/autoresearch-researcher-harness-v2/benchmark.json",
+      "indexPath": "outputs/autoresearch/researcher_eval_fixture_v2/agentv/autoresearch-researcher-harness-v2/index.jsonl",
+      "timingPath": "outputs/autoresearch/researcher_eval_fixture_v2/agentv/autoresearch-researcher-harness-v2/timing.json"
     }
   },
-  "created_at": "2026-07-15T02:51:53.836255Z"
+  "created_at": "2026-07-15T04:06:57.585685Z"
 }
