@@ -1,0 +1,11 @@
+{
+  "date": "2026-07-15",
+  "kind": "training-feedback",
+  "recipe": {"steps": 2, "batch_size": 8, "effective_batch_size": 8, "learning_rate": 0.0006, "seed": 2, "context_backend": "scratch"},
+  "target_tokens": 2526,
+  "weighted_nll": 36.91458381480952,
+  "loss_suites_pct": 80.93,
+  "artifacts": ["train_summary.json", "train_telemetry.json", "run_insights.json", "nll_history.jsonl", "loss_suites.json"],
+  "decision": "collect longer multi-seed evidence; no data or recipe change",
+  "honesty": "scratch diagnostic; not a ship claim"
+}
