@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import subprocess
+import sys
+
 from fastapi import FastAPI
 
 
@@ -18,15 +21,13 @@ def test_api_index_exports_fastapi_app() -> None:
     assert "/" in routes
 
 
-def test_playground_service_imports_without_torch() -> None:
+def test_vercel_entrypoint_imports_without_torch() -> None:
     """Cold-start path must not require torch (Vercel entrypoint constraint)."""
-    import sys
-
-    # Ensure a clean check: service module should not have pulled twotower yet.
-    sys.modules.pop("slm_training.models.twotower", None)
-    from slm_training.web import service as service_mod
-
-    assert "slm_training.models.twotower" not in sys.modules
-    svc = service_mod.PlaygroundService(checkpoint=service_mod.DEFAULT_CHECKPOINT)
-    assert svc.ready is True or svc.ready is False  # exists() bool
-    assert svc._model is None
+    subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import sys; sys.modules['torch'] = None; import api.index",
+        ],
+        check=True,
+    )
