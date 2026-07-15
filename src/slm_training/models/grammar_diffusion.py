@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import random
+from copy import deepcopy
 from difflib import SequenceMatcher
 from dataclasses import asdict, dataclass, field
 from enum import IntEnum
@@ -1084,6 +1085,8 @@ class GrammarDiffusionModel(nn.Module):
         self.eval()
         prompts: list[str] = []
         rows: list[list[TopologyNode]] = []
+        oov_rates: list[float] = []
+        vocab_size = self.denoiser.core.tok.num_embeddings
         for index, record in enumerate(records):
             inventory = list(record.placeholders or extract_placeholders(record.openui))
             prompts.append(
@@ -1093,17 +1096,34 @@ class GrammarDiffusionModel(nn.Module):
                     slot_contract=inventory,
                 )
             )
-            gold = topology_from_openui(self.codec, record.openui, inventory, max_len=0)
-            rows.append(
-                _flatten(
-                    _corrupt_topology(
-                        gold,
-                        self.codec,
-                        self.config,
-                        random.Random(self.config.seed + index + 10_000),
-                    )
-                )[: self.config.topology_max_nodes]
+            # ProductionCodec.encode learns unseen productions. Evaluation must not
+            # resize the checkpoint vocabulary, so retain their syntax in a throwaway
+            # codec and map only model-facing IDs to the checkpoint's <unk> row.
+            eval_codec = deepcopy(self.codec)
+            gold = topology_from_openui(eval_codec, record.openui, inventory, max_len=0)
+            gold_ids = [node.production_id for node in _flatten(gold)]
+            oov_rates.append(
+                sum(not 0 <= pid < vocab_size for pid in gold_ids)
+                / max(1, len(gold_ids))
             )
+            row = _flatten(
+                _corrupt_topology(
+                    gold,
+                    eval_codec,
+                    self.config,
+                    random.Random(self.config.seed + index + 10_000),
+                )
+            )[: self.config.topology_max_nodes]
+            unk_id = int(getattr(self.codec, "unk_id", self.codec.mask_id))
+            for node in row:
+                if not 0 <= node.production_id < vocab_size:
+                    node.production_id = unk_id
+                if (
+                    node.target_production_id is not None
+                    and not 0 <= node.target_production_id < vocab_size
+                ):
+                    node.target_production_id = unk_id
+            rows.append(row)
         ctx, ctx_pad = self._encode_context(prompts)
         ids = _pad_rows(
             [[node.production_id for node in row] for row in rows],
@@ -1201,6 +1221,7 @@ class GrammarDiffusionModel(nn.Module):
                     "production_head_accuracy": production_accuracy,
                     "arity_head_accuracy": arity_accuracy,
                     "critic_ece": critic_ece,
+                    "production_oov_rate": oov_rates[batch_index],
                 }
             )
         return evidence

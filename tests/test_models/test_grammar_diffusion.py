@@ -215,6 +215,34 @@ def test_factory_builds_grammar_diffusion() -> None:
     )
 
 
+def test_topology_scoring_maps_unseen_productions_without_mutating_codec() -> None:
+    records = [ExampleRecord(id="a", prompt="CTA", openui=CTA, split="train")]
+    model = GrammarDiffusionModel.from_records(
+        records,
+        config=GrammarDiffusionConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+        ),
+        device="cpu",
+    )
+    vocab_before = dict(model.codec.production_to_id)
+    held_out = ExampleRecord(
+        id="held-out",
+        prompt="Novel component",
+        openui='root = TextContent(":copy")',
+        split="held_out",
+        placeholders=[":copy"],
+    )
+
+    evidence = model.score_topology_targets([held_out])
+
+    assert len(evidence) == 1
+    assert evidence[0]["production_oov_rate"] > 0.0
+    assert model.codec.production_to_id == vocab_before
+
+
 def test_fixed_canvas_checkpoint_requires_explicit_migration(tmp_path: Path) -> None:
     records = [ExampleRecord(id="a", prompt="CTA", openui=CTA, split="train")]
     model = GrammarDiffusionModel.from_records(

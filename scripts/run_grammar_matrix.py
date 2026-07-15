@@ -503,7 +503,12 @@ def successive_halving(
             key = (exp.xid, seed)
             ns = _args_with_seed(args, seed)
             if key not in trained:
-                trained[key] = run_one(exp, ns, suites=[suite])
+                trained[key] = run_one(
+                    exp,
+                    ns,
+                    suites=[suite],
+                    skip_train=args.reuse_checkpoints,
+                )
             else:
                 eval_cfg = _eval_cfg(exp, ns)
                 eval_cfg = replace(eval_cfg, run_id=f"{exp.run_id}_s{seed}")
@@ -646,6 +651,16 @@ def main(argv: list[str] | None = None) -> int:
         help="Run all experiment×seed combos without successive halving.",
     )
     parser.add_argument(
+        "--reuse-checkpoints",
+        action="store_true",
+        help="Resume halving from existing per-seed checkpoints without retraining.",
+    )
+    parser.add_argument(
+        "--training-source-commit",
+        default=None,
+        help="Commit that produced reused checkpoints (recorded separately from eval).",
+    )
+    parser.add_argument(
         "--no-design-md-context",
         action="store_true",
         help="Train/eval without DESIGN.md in context.",
@@ -744,6 +759,9 @@ def main(argv: list[str] | None = None) -> int:
 
     results.sort(key=lambda r: (r.get("id") or "", r.get("seed") or 0))
 
+    evaluation_source_commit = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], text=True
+    ).strip()
     out = {
         "matrix": "grammar-experiment-matrix-x",
         "reference": "docs/design/quality-experiment-matrix.md",
@@ -758,9 +776,10 @@ def main(argv: list[str] | None = None) -> int:
         "halving_enabled": not args.no_halving,
         "survivors": [{"id": e.xid, "seed": s} for e, s in survivors],
         "results": results,
-        "source_commit": subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], text=True
-        ).strip(),
+        "source_commit": args.training_source_commit or evaluation_source_commit,
+        "training_source_commit": args.training_source_commit
+        or evaluation_source_commit,
+        "evaluation_source_commit": evaluation_source_commit,
     }
     out_path = args.run_root / "grammar_matrix_summary.json"
     out_path.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
