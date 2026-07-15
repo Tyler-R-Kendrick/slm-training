@@ -11,6 +11,34 @@ const PREFETCH = 2;
 const SESSION_KEY = "twotower_annotate_session";
 const VIEW_KEY = "twotower_annotate_view";
 
+const DIFFUSION_GLYPHS = ["·", "░", "▒", "▓", "#", "∷", "□", "◇"];
+
+function DiffusionCanvas() {
+  const [phase, setPhase] = useState(0);
+  useEffect(() => {
+    const timer = window.setInterval(() => setPhase((value) => value + 1), 180);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="diffusion-canvas" role="status" aria-label="Diffusion pass in progress">
+      <div className="diffusion-head">
+        <span className="mono">DIFFUSION PASS</span>
+        <span className="diffusion-pulse" aria-hidden="true" />
+        <span className="hint">resolving changing blocks</span>
+      </div>
+      <div className="diffusion-field" aria-hidden="true">
+        {Array.from({ length: 48 }, (_, index) => {
+          const age = (phase + index * 3) % 17;
+          const glyph = DIFFUSION_GLYPHS[(phase + index * 5) % DIFFUSION_GLYPHS.length];
+          return <span className={`diffusion-token token-age-${Math.min(age, 5)}`} key={index}>{glyph}</span>;
+        })}
+      </div>
+      <p className="hint diffusion-caption">The layout is taking shape; unstable tokens stay visibly provisional until the pass settles.</p>
+    </div>
+  );
+}
+
 interface Sample {
   prompt: string;
   openui: string;
@@ -336,7 +364,7 @@ export function Playground() {
         </div>
 
         {view === "render" ? (
-          <div className="openui-preview" ref={previewRef} />
+          item?.status === "loading" ? <DiffusionCanvas /> : <div className="openui-preview" ref={previewRef} />
         ) : (
           <pre className="logstream-body" style={{ maxHeight: "42vh" }}>{item?.serialized || item?.openui || "// empty"}</pre>
         )}
