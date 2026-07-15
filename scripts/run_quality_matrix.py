@@ -1869,7 +1869,9 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"status": "start", "id": exp.eid, "run_id": exp.run_id}))
         try:
             result = run_one(exp, args)
-        except Exception as exc:  # noqa: BLE001 - preserve partial matrix evidence
+        except BaseException as exc:  # noqa: BLE001 - preserve partial matrix evidence
+            if isinstance(exc, (KeyboardInterrupt, GeneratorExit)):
+                raise
             result = {
                 "id": exp.eid,
                 "run_id": exp.run_id,
