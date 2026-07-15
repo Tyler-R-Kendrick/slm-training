@@ -37,7 +37,7 @@
     "smoke"
   ],
   "steps": 0,
-  "gen_steps": 8,
+  "gen_steps": 1,
   "context_backend": "scratch",
   "matrix_set": "v7",
   "results": [
@@ -54,11 +54,11 @@
       "template_fill_decode": true,
       "grammar_ltr_primary": false,
       "grammar_ltr_repair": true,
-      "effective_gen_steps": 1,
+      "effective_gen_steps": 16,
       "best_of_n": 1,
       "train_dir": "outputs/train_data/remediated",
       "train_content_fingerprint": "928ec8d4921954c7736d2386fe7abf88bbef75523a7cfe404792f45ddcd5d4ba",
-      "checkpoint": "outputs/runs/iter_e74-debug_20260715/qx_e74_successor/checkpoints/last.pt",
+      "checkpoint": "outputs/runs/iter_e74-overlay-fast_20260715/qx_e74_successor/checkpoints/last.pt",
       "pass": false,
       "failures": [
         "held_out:missing_suite",
@@ -75,17 +75,17 @@
           "n": 3,
           "speculative_stats": {
             "generates": 6,
-            "denoiser_forwards": 9,
-            "forwards_per_generate": 1.5,
+            "denoiser_forwards": 99,
+            "forwards_per_generate": 16.5,
             "speculative_batches": 0,
             "speculative_canvases": 0,
             "successor_hits": 0,
             "successor_misses": 0,
             "successor_hit_rate": null,
-            "clusters_proposed": 18,
-            "clusters_accepted": 18,
+            "clusters_proposed": 320,
+            "clusters_accepted": 320,
             "clusters_rejected": 0,
-            "remasked_positions": 0
+            "remasked_positions": 1815
           }
         }
       }

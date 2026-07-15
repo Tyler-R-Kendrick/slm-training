@@ -580,17 +580,14 @@ AgentV bundle. E75 therefore remains **incomplete** with no champion or ship
 claim. The full composition needs a longer-lived execution host so its
 survival/trust/successor telemetry can be compared fairly against E72.
 
-Additional E74 overlays seeded from the completed E72 checkpoint were tried
-with all suites, smoke only, and finally one smoke example with one decode
-step. None emitted a scoreboard before the sandbox execution boundary. This
-confirms the limitation is inside the successor-enabled evaluation path, not
-just SFT duration; E74 remains unverified.
-
 The runner now exposes `--override-gen-steps` so diagnostic evaluations can
-override experiment presets such as E74's 16-step decode. A one-example,
-one-step seeded E74 probe still emitted no scoreboard locally, confirming that
-the remaining issue is evaluation-path cost or sandbox lifetime rather than
-the preset alone.
+override experiment presets such as E74's 16-step decode. The delayed smoke
+artifact now shows the overlay is valid (parse 1.00, fidelity 1.00,
+structural 0.6489, reward 0.969), but successor telemetry is zero at the
+16-step preset. The one-step diagnostic also completes with 18/18 clusters
+accepted but, correctly, cannot speculate on the final step. E74 therefore
+still has no cache-hit/performance evidence; the next diagnostic is a two-step
+decode to force one successor opportunity.
 
 ## P13 data-synthesis verification (CPU scratch, 2026-07-14)
 
