@@ -1,0 +1,8 @@
+{
+  "run_id": "iter-remediated-roots-128step-diffusion-sample-feedback-20260715",
+  "checkpoint": "iter-remediated-roots-128step-diffusion-20260715",
+  "corpus": "remediated_roots",
+  "recipe": {"grammar_constrained": true, "grammar_sample_decode": true, "grammar_ltr_primary": true, "grammar_ltr_repair": true, "grammar_ltr_max_tokens": 64, "smoke_n": 3},
+  "evaluation": {"parse_rate": 0.0, "structural_similarity": 0.0, "reward_score": 0.0, "decode_timeout_count": 0, "latency_ms_p50": 7067.69, "decision": "reject"},
+  "next": "make partial-prefix and EOS handling explicit and testable"
+}
