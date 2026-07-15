@@ -167,6 +167,14 @@ reporting them as passing; use `--only P0,<candidate>` for a quality-gated
 comparison. Dynamic quantization measured 10.18 tok/s and MaskGIT 0.58 tok/s
 in the same environment, so both remain rejected for this CPU path.
 
+### Telemetry correction (2026-07-15)
+
+`aggregate_stats` previously used floor indexing for p95, which could report a
+p95 below p50 for `n=2` (for example, a Q9 control reported p50≈1,687 ms and
+p95≈1,527 ms). It now uses nearest-rank indexing. A fresh two-prompt control
+reported P0 p50/p95≈1,996/6,976 ms and Q9≈1,421/1,436 ms; the quality anchor
+remained invalid, so this was a telemetry-only correction and not a promotion.
+
 ### Guardrail fix rerun (2026-07-15, CPU, bridge up, `--limit 8`)
 
 The previous larger rerun exposed a second harness bug: zero-quality P0 values
