@@ -1,0 +1,11 @@
+{
+  "date": "2026-07-15",
+  "kind": "constrained-decoder-harness-fix",
+  "change": "fallback candidate ranking now honors skip_exact_stream_probe instead of directly calling stream_check per candidate",
+  "checkpoint": "outputs/runs/iter-seed2-batch8-8step-finalonly-20260715/checkpoints/last.pt",
+  "recipe": {"eval_limit": 1, "gen_steps": 1, "max_attempts": 1, "skip_exact_stream_probe": true, "verify_chosen_only": true, "decode_timeout_seconds": 5, "context_backend": "scratch", "device": "cpu"},
+  "before": {"status": "stopped before scoreboard", "agentv_persisted": false},
+  "after": {"status": "completed", "latency_ms_p50": 2671.66, "decode_timeout_count": 0, "agentv_persisted": true, "parse_rate": 0.0, "structural_similarity": 0.3, "reward_score": 0.0},
+  "decision": "keep model and data unchanged; proceed to meaningful constrained generation experiments now that bounded feedback terminates",
+  "honesty": "harness diagnostic; not a ship claim"
+}
