@@ -28,6 +28,18 @@ class DecodeStats:
     attempts: int = 1
     accepted_run_tokens: int = 0  # P3 multi-token accepts beyond the first
     canvas_tokens: int = 0
+    backbone_ms: float = 0.0
+    projection_ms: float = 0.0
+    compiler_ms: float = 0.0
+    trie_ms: float = 0.0
+    compiler_candidates: int = 0
+    forced_spans: int = 0
+    forced_tokens: int = 0
+    trie_nodes: int = 0
+    restricted_projections: int = 0
+    full_projections: int = 0
+    compiler_fallbacks: int = 0
+    seeded_fallbacks: int = 0
 
     def add_ms(self, field_name: str, ms: float) -> None:
         setattr(self, field_name, float(getattr(self, field_name)) + float(ms))
@@ -105,6 +117,18 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "tokens_emitted",
         "accepted_run_tokens",
         "canvas_tokens",
+        "backbone_ms",
+        "projection_ms",
+        "compiler_ms",
+        "trie_ms",
+        "compiler_candidates",
+        "forced_spans",
+        "forced_tokens",
+        "trie_nodes",
+        "restricted_projections",
+        "full_projections",
+        "compiler_fallbacks",
+        "seeded_fallbacks",
     ]
     out: dict[str, Any] = {"n": len(rows)}
     for key in keys:

@@ -166,6 +166,18 @@ python -m scripts.train_model --device auto --compile --amp --grad-accum 2 \
 This environment's measured accel bench is recorded under `outputs/runs/accel_bench.json`.
 Fused NEON/Cactus kernels remain external (`slm_training.runtime.cactus`).
 
+### Restricted semantic projection
+
+TwoTower's denoiser now exposes a decode-only `encode` / `project` split. The
+legacy forward still computes the full tied vocabulary head, while compiler
+decode gathers only valid semantic rows. Packed trie verification batches
+prefix-visible/future-masked canvases and projects each parent's child set.
+This removes LM-head work, not backbone work; deterministic singleton spans
+are the only path that skips neural inference entirely. See the C-series in
+[`perf-experiment-matrix.md`](perf-experiment-matrix.md). The feature remains
+opt-in because the current committed checkpoint cannot provide a valid quality
+anchor.
+
 ### Local Qualcomm DirectML train (2026-07-14)
 
 [`local_directml_adreno_20260714`](local-directml-train-results.json) completed a real

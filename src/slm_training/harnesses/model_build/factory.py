@@ -60,6 +60,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "grammar_fastpath",
         "grammar_fastpath_mode",
         "grammar_draft_window",
+        "compiler_decode_mode",
         "fastpath_aux_weight",
         "fastpath_gate_threshold",
         "suffix_rollback_window",
@@ -239,6 +240,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         grammar_fastpath=getattr(config, "grammar_fastpath", True),
         grammar_fastpath_mode=getattr(config, "grammar_fastpath_mode", "hybrid"),
         grammar_draft_window=int(getattr(config, "grammar_draft_window", 8) or 8),
+        compiler_decode_mode=str(
+            getattr(config, "compiler_decode_mode", "off") or "off"
+        ),
         fastpath_aux_weight=getattr(config, "fastpath_aux_weight", 0.0),
         fastpath_gate_threshold=float(
             getattr(config, "fastpath_gate_threshold", 0.5) or 0.5

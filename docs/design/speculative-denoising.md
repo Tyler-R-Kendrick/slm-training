@@ -270,3 +270,30 @@ Success metrics beyond parse/fidelity (all recorded in telemetry):
 
 Commands and measured results live in
 [quality-experiment-matrix.md](quality-experiment-matrix.md) §V7.
+
+## 8. Compiler-drafted constrained decoder (decode-only)
+
+`compiler_decode_mode=off|forced|restricted|tree` adds an opt-in hierarchy on
+top of TwoTower V7. `off` is the checkpoint-compatible default.
+
+1. The incremental Lark parser enumerates extendable next actions. The cached
+   official JSON Schema limits component names and positional property enums;
+   the lexer-native tokenizer supplies binder and dynamic `<SYM_i>` /
+   `<BIND_i>` pointer spaces. The selected layout contract removes state/effect
+   actions and the slot contract limits placeholder symbols.
+2. A unique action is extended through its maximal deterministic suffix and
+   emitted without a neural forward.
+3. `restricted` calls `DenoiserTower.encode()` once and applies the tied LM
+   head only to gathered candidate rows. A one-candidate set skips projection.
+4. `tree` deduplicates candidate parent prefixes, packs one prefix-visible
+   canvas per trie parent, masks the unresolved suffix, and scores only child
+   rows. Path scores sum constrained child log-probabilities.
+5. Partial lexical coverage is explicit. Legacy compositional tokenizers are
+   not claimed to exhaust semantic names; they seed the accepted prefix into
+   V7 MaskGIT instead of silently deleting the model's “other” branch.
+
+Telemetry separates `backbone_ms`, `projection_ms`, `compiler_ms`, and
+`trie_ms`, plus candidate, forced-span, trie-node, restricted/full-projection,
+and seeded-fallback counters. This implementation changes decoding only: no
+checkpoint, language-contract version, training objective, or grammar-topology
+diffusion path changed.

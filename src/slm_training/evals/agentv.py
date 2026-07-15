@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -52,7 +53,10 @@ def publish_agentv_evaluation(
     spec_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
 
     repo_root = Path(__file__).resolve().parents[3]
-    runner = repo_root / "scripts" / "run_agentv_eval.mjs"
+    runner = Path(
+        os.getenv("AGENTV_RUNNER")
+        or repo_root / "scripts" / "run_agentv_eval.mjs"
+    )
     completed = subprocess.run(
         [
             "node",

@@ -234,25 +234,16 @@ class DenoiserTower(nn.Module):
         # Tie embeddings
         self.lm_head.weight = self.tok.weight
 
-    def forward(
+    def encode(
         self,
         noisy_ids: torch.Tensor,
         context: torch.Tensor,
         pad_id: int,
         ctx_pad_mask: torch.Tensor | None = None,
         *,
-        return_hidden: bool = False,
         return_attn: bool = False,
-    ) -> (
-        torch.Tensor
-        | tuple[torch.Tensor, torch.Tensor]
-        | tuple[torch.Tensor, torch.Tensor, torch.Tensor]
-    ):
-        """
-        Returns logits; with ``return_hidden`` → (logits, hidden); with
-        ``return_attn`` (E71) → (logits, hidden, attn) where attn is the last
-        layer's head-averaged self-attention [B, T, T].
-        """
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
+        """Encode a noisy canvas without paying for the vocabulary projection."""
         bsz, seq = noisy_ids.shape
         if seq > self.max_len:
             noisy_ids = noisy_ids[:, : self.max_len]
@@ -280,6 +271,53 @@ class DenoiserTower(nn.Module):
                     x, self_pad_mask=self_pad, ctx=context, ctx_pad_mask=ctx_pad_mask
                 )
         hidden = self.norm(x)
+        if return_attn:
+            assert attn is not None
+            return hidden, attn
+        return hidden
+
+    def project(
+        self,
+        hidden: torch.Tensor,
+        candidate_ids: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        """Project hidden states to the full vocabulary or gathered candidates."""
+        if candidate_ids is None:
+            return self.lm_head(hidden)
+        raw_weight = self.lm_head.weight
+        weight = raw_weight() if callable(raw_weight) else raw_weight
+        if weight.is_quantized:
+            weight = weight.dequantize()
+        weight = weight.index_select(0, candidate_ids)
+        return F.linear(hidden, weight)
+
+    def forward(
+        self,
+        noisy_ids: torch.Tensor,
+        context: torch.Tensor,
+        pad_id: int,
+        ctx_pad_mask: torch.Tensor | None = None,
+        *,
+        return_hidden: bool = False,
+        return_attn: bool = False,
+    ) -> (
+        torch.Tensor
+        | tuple[torch.Tensor, torch.Tensor]
+        | tuple[torch.Tensor, torch.Tensor, torch.Tensor]
+    ):
+        """Run the legacy full-vocabulary path (checkpoint-compatible)."""
+        encoded = self.encode(
+            noisy_ids,
+            context,
+            pad_id,
+            ctx_pad_mask,
+            return_attn=return_attn,
+        )
+        if return_attn:
+            hidden, attn = encoded
+        else:
+            hidden = encoded
+            attn = None
         logits = self.lm_head(hidden)
         if return_attn:
             assert attn is not None

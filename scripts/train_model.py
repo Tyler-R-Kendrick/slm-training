@@ -226,6 +226,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Re-decode failing LTR outputs with streaming grammar constraints.",
     )
     parser.add_argument(
+        "--compiler-decode-mode",
+        choices=("off", "forced", "restricted", "tree"),
+        default="off",
+        help="Compiler-drafted decode hierarchy used by in-run evaluations.",
+    )
+    parser.add_argument(
         "--grammar-ltr-max-tokens",
         type=int,
         default=256,
@@ -492,6 +498,7 @@ def main(argv: list[str] | None = None) -> int:
             fidelity_loss_weight=args.fidelity_loss_weight,
             grammar_ltr_primary=args.grammar_ltr_primary,
             grammar_ltr_repair=args.grammar_ltr_repair,
+            compiler_decode_mode=args.compiler_decode_mode,
             grammar_ltr_max_tokens=args.grammar_ltr_max_tokens,
             schema_in_context=args.schema_in_context,
             slot_contract_in_context=args.slot_contract_in_context,

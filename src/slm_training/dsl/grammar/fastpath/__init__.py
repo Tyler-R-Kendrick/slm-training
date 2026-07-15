@@ -5,6 +5,11 @@ from typing import Any
 from slm_training.dsl.grammar.fastpath.engine import OpenUIIncrementalEngine, engine_for_dsl
 from slm_training.dsl.grammar.fastpath.force_emit import draft_forced_ids, force_next_token_id
 from slm_training.dsl.grammar.fastpath.maskgit_constrain import admit_fill
+from slm_training.dsl.grammar.fastpath.compiler_draft import (
+    CompletionForest,
+    CompletionPath,
+    build_completion_forest,
+)
 
 
 def __getattr__(name: str) -> Any:
@@ -18,8 +23,11 @@ def __getattr__(name: str) -> Any:
 __all__ = [
     "FastPathGate",
     "OpenUIIncrementalEngine",
+    "CompletionForest",
+    "CompletionPath",
     "admit_fill",
     "draft_forced_ids",
     "engine_for_dsl",
     "force_next_token_id",
+    "build_completion_forest",
 ]
