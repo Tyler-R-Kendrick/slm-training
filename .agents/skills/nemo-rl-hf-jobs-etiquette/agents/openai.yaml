@@ -1,0 +1,4 @@
+interface:
+  display_name: "NeMo RL on HF Jobs"
+  short_description: "Run NeMo RL safely on Hugging Face Jobs"
+  default_prompt: "Use $nemo-rl-hf-jobs-etiquette to prepare or monitor this NeMo RL Hugging Face Job."

@@ -138,6 +138,31 @@ class LineageStore:
         _atomic_write(run_dir / "current.json", {"record": rel})
         return updated
 
+    def record_run_metadata(
+        self,
+        run_id: str,
+        *,
+        recipe: dict[str, Any] | None = None,
+        hardware: dict[str, Any] | None = None,
+        artifact_uris: tuple[str, ...] | None = None,
+        legacy_kind: str | None = None,
+    ) -> RunManifest:
+        """Append orchestration metadata without changing lifecycle state."""
+        current = self.load_run(run_id)
+        updated = replace(
+            current,
+            recipe=recipe or current.recipe,
+            recipe_sha=content_sha(recipe) if recipe else current.recipe_sha,
+            hardware=hardware or current.hardware,
+            artifact_uris=artifact_uris or current.artifact_uris,
+            legacy_kind=legacy_kind or current.legacy_kind,  # type: ignore[arg-type]
+        )
+        rel = f"revisions/{updated.lifecycle_state}-metadata-{updated.sha}.json"
+        run_dir = self.root / "runs" / run_id
+        _write_new(run_dir / rel, updated.to_dict())
+        _atomic_write(run_dir / "current.json", {"record": rel})
+        return updated
+
     def write_snapshot(self, snapshot: DataSnapshot) -> Path:
         return _write_new(
             self.root
