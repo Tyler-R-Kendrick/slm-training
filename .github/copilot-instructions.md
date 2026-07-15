@@ -40,4 +40,6 @@ Canonical skills: `.agents/skills/` (Claude / Codex / Cursor / GitHub Copilot).
 | **rtk** | Compress shell command output (`rtk <cmd>`) |
 
 Always-on for Copilot Chat: prefer minimal diffs (ponytail ladder) and `rtk` for verbose CLI. Activate caveman/headroom skills when needed.
+Before creating or relocating tracked paths, activate `organize-repository`,
+follow `docs/repository-organization.md`, and use `git mv` for moves.
 <!-- /token-efficiency-stack -->

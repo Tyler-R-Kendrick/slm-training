@@ -16,7 +16,7 @@ def main(argv: list[str] | None = None) -> int:
         "--checkpoint",
         type=Path,
         default=PLAYGROUND_DEMO_CHECKPOINT,
-        help="Checkpoint path (default: fixtures/checkpoints/playground_demo/last.pt).",
+        help="Checkpoint path (default: src/slm_training/resources/checkpoints/playground_demo/last.pt).",
     )
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument(
@@ -55,7 +55,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--human-train-path",
         type=Path,
-        default=Path("fixtures/annotations/human_train.jsonl"),
+        default=Path("src/slm_training/resources/annotations/human_train.jsonl"),
     )
     parser.add_argument(
         "--human-pairs-path",

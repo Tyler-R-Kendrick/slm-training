@@ -39,7 +39,7 @@ remain fail-closed; rejection is not converted into synthetic success.
 
 ```bash
 PYTHONPATH=src \
-OPENUI_BRIDGE_CLI=/home/codex/repos/slm-training/tools/openui_bridge/cli.mjs \
+OPENUI_BRIDGE_CLI=/home/codex/repos/slm-training/src/apps/openui_bridge/cli.mjs \
 /home/codex/repos/slm-training/.venv/bin/pytest -q \
   tests/test_data tests/test_dsl tests/test_harnesses/train_data
 ```

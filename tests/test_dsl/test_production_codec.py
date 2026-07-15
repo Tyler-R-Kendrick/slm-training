@@ -161,8 +161,8 @@ def test_normalize_switchitem_and_slider_signatures() -> None:
 
 
 def test_fixture_settings_schema_consistency() -> None:
-    test_line = Path("fixtures/test_seeds.jsonl").read_text(encoding="utf-8").splitlines()[7]
-    train_line = Path("fixtures/train_seeds.jsonl").read_text(encoding="utf-8").splitlines()[15]
+    test_line = Path("src/slm_training/resources/test_seeds.jsonl").read_text(encoding="utf-8").splitlines()[7]
+    train_line = Path("src/slm_training/resources/train_seeds.jsonl").read_text(encoding="utf-8").splitlines()[15]
     test_rec = normalize_example_record(ExampleRecord.from_dict(json.loads(test_line)))
     train_rec = normalize_example_record(ExampleRecord.from_dict(json.loads(train_line)))
     assert 'SwitchItem(' in test_rec.openui and '"notify"' in test_rec.openui
@@ -200,7 +200,7 @@ def test_clustered_split_keeps_structures_disjoint() -> None:
 
 
 def test_train_fixture_roundtrips() -> None:
-    records = load_jsonl("fixtures/train_seeds.jsonl")
+    records = load_jsonl("src/slm_training/resources/train_seeds.jsonl")
     for record in records[:5]:
         program, decoded = roundtrip_openui(
             record.openui,

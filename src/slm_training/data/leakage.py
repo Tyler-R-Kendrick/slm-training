@@ -79,7 +79,7 @@ def fingerprint_design_md(design_md: str | None) -> str | None:
 
 
 def load_reserved_test_structure_fingerprints(
-    test_seed_path: Path | str | None = Path("fixtures/test_seeds.jsonl"),
+    test_seed_path: Path | str | None = Path("src/slm_training/resources/test_seeds.jsonl"),
 ) -> set[str]:
     """
     Structural fingerprints reserved for hand-authored test fixtures.

@@ -16,7 +16,7 @@ outputs/
 session/
 node_modules/
 *.pt
-!fixtures/checkpoints/**/*.pt
+!src/slm_training/resources/checkpoints/**/*.pt
 *.bin
 .DS_Store
 .idea/
@@ -26,7 +26,7 @@ node_modules/
 .env
 .env.local
 .env.*.local
-fixtures/annotations/human_train.jsonl
+src/slm_training/resources/annotations/human_train.jsonl
 outputs/preferences/human_pairs.jsonl
 .playwright-cli/
 test-results/
@@ -34,7 +34,7 @@ playwright-report/
 blob-report/
 src/slm_training/web/static/preview/*.map
 src/slm_training/web/static/app/assets/*.map
-tools/openui_preview/node_modules/
+src/apps/openui_preview/node_modules/
 .vercel
 .env*
 session/

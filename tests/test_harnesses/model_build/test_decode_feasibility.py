@@ -15,7 +15,7 @@ from slm_training.models.tokenizer import OpenUITokenizer
 def test_gold_token_len_fixture_smoke_hero() -> None:
     import json
 
-    for line in Path("fixtures/test_seeds.jsonl").read_text().splitlines():
+    for line in Path("src/slm_training/resources/test_seeds.jsonl").read_text().splitlines():
         if not line.strip():
             continue
         rec = json.loads(line)

@@ -12,8 +12,8 @@ from pathlib import Path
 
 from slm_training.dsl.schema import load_jsonl
 
-DEFAULT_SEED_PATH = Path("fixtures/train_seeds.jsonl")
-DEFAULT_TEST_SEED_PATH = Path("fixtures/test_seeds.jsonl")
+DEFAULT_SEED_PATH = Path("src/slm_training/resources/train_seeds.jsonl")
+DEFAULT_TEST_SEED_PATH = Path("src/slm_training/resources/test_seeds.jsonl")
 
 # Kept for /api/examples chips only (not used as annotation prompt bases).
 EXAMPLE_PROMPTS = [

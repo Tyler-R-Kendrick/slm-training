@@ -1,0 +1,10 @@
+---
+description: Keep tracked repository files canonical and use git mv for moves
+alwaysApply: true
+---
+
+Before creating, moving, renaming, deleting, or duplicating tracked paths, use
+the `organize-repository` skill from `.agents/skills/`. Follow
+`docs/repository-organization.md`, search for an existing owner first, and use
+`git mv` instead of `mv` for tracked relocations. Run
+`python -m scripts.repo_policy` before finishing.

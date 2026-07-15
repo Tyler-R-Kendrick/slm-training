@@ -10,7 +10,7 @@ from slm_training.harnesses.preference import collect_pairs_with_generator
 
 pytestmark = pytest.mark.skipif(
     not bridge_available(),
-    reason="OpenUI bridge deps missing; run: cd tools/openui_bridge && npm ci",
+    reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
 )
 
 GOLD = 'root = Stack([cta])\ncta = Button(":cta.label")'

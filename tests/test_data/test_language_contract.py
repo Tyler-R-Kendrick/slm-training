@@ -22,7 +22,7 @@ from slm_training.harnesses.train_data.catalog import classify_source_family
 # (G2) requires it, so skip the whole module when bridge deps are absent.
 pytestmark = pytest.mark.skipif(
     not bridge_available(),
-    reason="OpenUI bridge deps missing; run: cd tools/openui_bridge && npm ci",
+    reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
 )
 
 _GATE_BY_ID = {gate.value: gate for gate in Gate}

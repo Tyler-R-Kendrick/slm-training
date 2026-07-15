@@ -334,7 +334,7 @@ def build_web_projection(
 
 
 def load_manifest(
-    path: Path | str = Path("fixtures/deconstruct/manifest.jsonl"),
+    path: Path | str = Path("src/slm_training/resources/deconstruct/manifest.jsonl"),
 ) -> list[dict[str, Any]]:
     """Load approved-source definitions in stable identifier order."""
     rows = [

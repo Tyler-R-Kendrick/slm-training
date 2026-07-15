@@ -3,15 +3,15 @@
 
 The dashboard can render each page two ways (see the compiled ↔ interpreted toggle):
 
-* **compiled**  — the hand-written React pages in ``tools/dashboard/src/pages/``
+* **compiled**  — the hand-written React pages in ``src/apps/dashboard/src/pages/``
 * **interpreted** — the committed OpenUI Lang programs in
   ``src/slm_training/web/static/openui/*.openui`` run live through the official
   ``@openuidev`` ``<Renderer>`` with the dashboard's hybrid component library
-  (``tools/dashboard/src/interpret/library.tsx``) and ``/api`` tool provider
-  (``tools/dashboard/src/interpret/toolProvider.ts``).
+  (``src/apps/dashboard/src/interpret/library.tsx``) and ``/api`` tool provider
+  (``src/apps/dashboard/src/interpret/toolProvider.ts``).
 
 Those ``.openui`` programs are a **different dialect** from the placeholder-only
-training DSL that ``tools/openui_bridge`` validates: they use the full OpenUI Lang
+training DSL that ``src/apps/openui_bridge`` validates: they use the full OpenUI Lang
 (``Query`` / ``@Each`` / ``$state``) plus the dashboard's own custom components. So
 this validator does **not** go through the training bridge. Instead it structurally
 checks each program against the two source-of-truth files that back interpreted mode:
@@ -44,9 +44,11 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 OPENUI_DIR = REPO / "src" / "slm_training" / "web" / "static" / "openui"
-LIBRARY_TSX = REPO / "tools" / "dashboard" / "src" / "interpret" / "library.tsx"
-TOOLPROVIDER_TS = REPO / "tools" / "dashboard" / "src" / "interpret" / "toolProvider.ts"
-MAIN_TSX = REPO / "tools" / "dashboard" / "src" / "main.tsx"
+LIBRARY_TSX = REPO / "src" / "apps" / "dashboard" / "src" / "interpret" / "library.tsx"
+TOOLPROVIDER_TS = (
+    REPO / "src" / "apps" / "dashboard" / "src" / "interpret" / "toolProvider.ts"
+)
+MAIN_TSX = REPO / "src" / "apps" / "dashboard" / "src" / "main.tsx"
 MANIFEST = OPENUI_DIR / "MANIFEST.json"
 
 # Stock @openuidev/react-ui component names (openuiLibrary.components) — embedded so

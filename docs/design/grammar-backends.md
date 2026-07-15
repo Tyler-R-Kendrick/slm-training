@@ -9,9 +9,9 @@ frontend grammar; the same stack can train against any backend that implements
 | id | kind | AST source |
 |---|---|---|
 | `openui` (default) | hybrid | Official `@openuidev/lang-core` when the Node bridge is installed; otherwise Lark |
-| `openui-langcore` | lang-core | Official ElementNode via `tools/openui_bridge` |
-| `openui-lark` | lark | In-process Lark parse of `grammars/openui.lark` → ElementNode-like dict |
-| `toy-layout` | lark | Example alternate DSL (`grammars/toy_layout.lark`) |
+| `openui-langcore` | lang-core | Official ElementNode via `src/apps/openui_bridge` |
+| `openui-lark` | lark | In-process Lark parse of `src/slm_training/dsl/grammars/openui.lark` → ElementNode-like dict |
+| `toy-layout` | lark | Example alternate DSL (`src/slm_training/dsl/grammars/toy_layout.lark`) |
 
 Register more DSLs with `register_backend(...)` or drop a `.lark` file and wrap
 it with `LarkFileBackend`.
@@ -20,7 +20,7 @@ it with `LarkFileBackend`.
 
 - **Official path:** `get_backend("openui-langcore").parse(src).root` is the
   ElementNode dict from `createParser` / `jsonToOpenUI`.
-- **Lark path:** `grammars/openui.lark` + `grammars/openui_prop_order.json`
+- **Lark path:** `src/slm_training/dsl/grammars/openui.lark` + `src/slm_training/dsl/grammars/openui_prop_order.json`
   (schema prop order snapshot) map positional calls onto named props
   (`children`, `text`, `direction`, …) so the tree shape matches lang-core for
   common components.
@@ -41,7 +41,7 @@ structural bias, and (via `dsl.parser`) parse/validate when that module is used.
 
 ## Adding a new DSL
 
-1. Author `grammars/<name>.lark` (assignment / call / list shape works with the
+1. Author `src/slm_training/dsl/grammars/<name>.lark` (assignment / call / list shape works with the
    generic transformer).
 2. Optionally ship a prop-order JSON for named props.
 3. Subclass `LarkFileBackend` or implement `GrammarBackend` in

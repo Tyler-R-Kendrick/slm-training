@@ -89,14 +89,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--fixtures",
         action="store_true",
-        help="Use fixtures/train_seeds.jsonl instead of built corpus.",
+        help="Use src/slm_training/resources/train_seeds.jsonl instead of built corpus.",
     )
     parser.add_argument("--out", type=Path, default=None)
     args = parser.parse_args(argv)
-    path = Path("fixtures/train_seeds.jsonl") if args.fixtures else args.train_records
+    path = Path("src/slm_training/resources/train_seeds.jsonl") if args.fixtures else args.train_records
     if not path.is_file():
         # Fall back to fixtures when corpus is missing.
-        path = Path("fixtures/train_seeds.jsonl")
+        path = Path("src/slm_training/resources/train_seeds.jsonl")
     report = diagnose(path)
     text = json.dumps(report, indent=2) + "\n"
     if args.out:

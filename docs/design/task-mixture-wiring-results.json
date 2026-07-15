@@ -147,7 +147,7 @@
   "note": "Pass --score to train and regress.",
   "run": {
     "kind": "dry_fixture_wiring",
-    "train_dir": "fixtures/evals/task_mixture_smoke",
+    "train_dir": "src/slm_training/resources/evals/task_mixture_smoke",
     "test_dir": null,
     "device": "cpu",
     "steps": 0,

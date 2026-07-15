@@ -99,7 +99,7 @@ where = ["src", "."]
 include = ["slm_training*", "gpu_multi_farm*", "scripts*"]
 
 [tool.setuptools.package-data]
-slm_training = ["evals/*.json"]
+slm_training = ["evals/*.json", "dsl/grammars/*", "resources/**/*"]
 "slm_training.web" = ["static/**/*"]
 
 [tool.pytest.ini_options]
@@ -112,9 +112,9 @@ markers = [
 ]
 
 [tool.vercel]
-# Playground FastAPI instance (see api/index.py). Required for Git-triggered
+# Playground FastAPI instance. Required for Git-triggered
 # Vercel builds; without this the project fails with FASTAPI_ENTRYPOINT_NOT_FOUND.
-entrypoint = "api.index:app"
+entrypoint = "slm_training.web.vercel:app"
 
 [tool.ruff]
 # Vendored Hugging Face marketplace skills (refreshed via `hf skills update`).

@@ -20,7 +20,14 @@ from slm_training.dsl.lang_core import library_schema
 
 GENERATOR_VERSION = 1
 PROGRAM_FAMILY = "programspec_generated"
-_PROP_ORDER_PATH = repo_root() / "grammars" / "openui_prop_order.json"
+_PROP_ORDER_PATH = (
+    repo_root()
+    / "src"
+    / "slm_training"
+    / "dsl"
+    / "grammars"
+    / "openui_prop_order.json"
+)
 _BINDER_RE = re.compile(r"[^a-z0-9_]+")
 _LITERAL_STRING_PROPS = frozenset({"language", "value", "category", "name"})
 _DEFERRED_PATTERNS = ("state", "query", "mutation", "action", "tool")

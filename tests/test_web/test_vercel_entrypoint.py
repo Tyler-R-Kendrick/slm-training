@@ -9,7 +9,7 @@ from fastapi import FastAPI
 
 
 def test_api_index_exports_fastapi_app() -> None:
-    from api.index import app
+    from slm_training.web.vercel import app
 
     assert isinstance(app, FastAPI)
     assert app.title == "TwoTower OpenUI Playground"
@@ -27,7 +27,7 @@ def test_vercel_entrypoint_imports_without_torch() -> None:
         [
             sys.executable,
             "-c",
-            "import sys; sys.modules['torch'] = None; import api.index",
+            "import sys; sys.modules['torch'] = None; import slm_training.web.vercel",
         ],
         check=True,
     )

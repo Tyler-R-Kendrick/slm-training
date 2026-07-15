@@ -23,7 +23,7 @@ summary and the full card whenever a checkpoint is created or promoted.
 
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
-| Playground demo | `playground_demo/last.pt` | `fixtures/checkpoints/playground_demo/` (git) | Wiring / annotate UI only |
+| Playground demo | `playground_demo/last.pt` | `src/slm_training/resources/checkpoints/playground_demo/` (git) | Wiring / annotate UI only |
 | Restructure CPU verify | `restructure_cpu_scratch_v0/last.pt` | `outputs/runs/…` (local) | Fixture scratch train OK; smoke parse 0.0 — not ship |
 | Local DirectML verify | `local_directml_adreno_20260714/last.pt` | `outputs/runs/…` (local) | Adreno GPU train/checkpoint OK; 5-step wiring run, not evaluated or ship |
 | Matrix honest champion | V6 E53 family | `outputs/runs/` + matrix docs | Scratch + limited `rico_held` — not production HF ship |
@@ -43,8 +43,8 @@ source .venv/bin/activate
 pip install -e ".[dev,hf]"
 
 # Official OpenUI parser + DESIGN.md bridges
-cd tools/openui_bridge && npm ci && cd ../..
-cd tools/design_md_bridge && npm ci && cd ../..
+cd src/apps/openui_bridge && npm ci && cd ../..
+cd src/apps/design_md_bridge && npm ci && cd ../..
 
 # optional MCP server deps
 pip install -e ".[mcp]"
@@ -114,7 +114,7 @@ Eval uses **meaningful parse** (rejects empty stacks, missing placeholders, and 
 
 **Fixture demo vs ship:** a tiny upsample + scratch + smoke-only fail-under is wiring only. Readiness requires `--ship-gates` on the full scoreboard (see adversarial review).
 
-Expand `rico_held` with 1500 additional HF RICO screens (cached under `fixtures/rico/hf_test_cache.jsonl`):
+Expand `rico_held` with 1500 additional HF RICO screens (cached under `src/slm_training/resources/rico/hf_test_cache.jsonl`):
 
 ```bash
 python -m scripts.build_test_data \
@@ -130,13 +130,17 @@ pytest
 # Only suites affected by staged + unstaged local changes
 .githooks/check-changed
 
+# Repository layout, skill mirrors, and tracked-artifact policy
+python -m scripts.repo_policy
+
 # Explicit, compute-intensive model-training tests
 pytest -m training
 ```
 
 Enable the tracked pre-commit hook once per clone with
-`git config core.hooksPath .githooks`. Claude Code, Codex (example config), and
-Copilot CLI stop hooks run the same changed-file checker automatically.
+`git config core.hooksPath .githooks`. Claude Code, Codex, and Copilot CLI
+hooks run the same changed-file checker automatically and reject raw `mv` for
+tracked paths. See [`docs/repository-organization.md`](docs/repository-organization.md).
 
 ## OpenUI Lang
 
@@ -149,9 +153,9 @@ hero_body = TextContent(":hero.body")
 hero = Card([hero_title, hero_body])
 ```
 
-Content props must be placeholder strings. Parsing/serialization/prompt generation come from `@openuidev/lang-core` + `@openuidev/react-ui` — see [`tools/openui_bridge/`](tools/openui_bridge/).
+Content props must be placeholder strings. Parsing/serialization/prompt generation come from `@openuidev/lang-core` + `@openuidev/react-ui` — see [`src/apps/openui_bridge/`](src/apps/openui_bridge/).
 
-DESIGN.md conditioning + linter: [`tools/design_md_bridge/`](tools/design_md_bridge/) and [`fixtures/design_md/`](fixtures/design_md/).
+DESIGN.md conditioning + linter: [`src/apps/design_md_bridge/`](src/apps/design_md_bridge/) and [`src/slm_training/resources/design_md/`](src/slm_training/resources/design_md/).
 
 ## Mission Control dashboard
 
@@ -181,13 +185,13 @@ Surfaces (React 19 + Vite SPA, dark-first "mission control" design system):
 
 **Read vs execute.** Observability views are pure reads (work on a fresh checkout
 and on read-only Vercel, falling back to committed `docs/design/*.json` /
-`MODEL_CARD.md` / `fixtures/`, tagged with `provenance`). Generate/run/promote
+`MODEL_CARD.md` / `src/slm_training/resources/`, tagged with `provenance`). Generate/run/promote
 actions execute an **allowlisted** set of scripts as tracked background jobs with
 live SSE logs — only when served locally (`--enable-jobs`, default on); Vercel
 degrades to read-only automatically. Gate math (`POST /api/gates/evaluate`) is
 pure, so the threshold editor stays live even read-only. Backend:
 `src/slm_training/web/{observability,jobs,capabilities,routes}.py`; SPA source in
-[`tools/dashboard/`](tools/dashboard/) (built bundle committed under
+[`src/apps/dashboard/`](src/apps/dashboard/) (built bundle committed under
 `web/static/app/`, like the preview lib).
 
 **Compiled ↔ interpreted (dogfooding OpenUI).** The sidebar has a
@@ -198,7 +202,7 @@ pure, so the threshold editor stays live even read-only. Backend:
 tool provider, working nav, reactive selectors, launchers, and the live gate editor — so
 the app *is* the DSL. The two are kept at parity (`scripts/validate_page_dsl.py` +
 `tests/test_web/test_page_dsl.py` + the `dashboard-openui-parity` skill); interpreted-mode
-source lives in [`tools/dashboard/src/interpret/`](tools/dashboard/src/interpret/).
+source lives in [`src/apps/dashboard/src/interpret/`](src/apps/dashboard/src/interpret/).
 
 ## Annotate playground (`/playground`)
 
@@ -211,7 +215,7 @@ python -m scripts.serve_playground --port 8765
 design system); the original standalone vanilla page is preserved at
 `/playground/classic`. Both drive the same `/api/sample` + `/api/annotate` flow.
 
-The demo checkpoint lives in `fixtures/checkpoints/playground_demo/` (committed
+The demo checkpoint lives in `src/slm_training/resources/checkpoints/playground_demo/` (committed
 `last.pt` + tokenizer + meta). To regenerate it:
 
 ```bash
@@ -230,7 +234,7 @@ Annotate mode (default UI): auto-generated prompts, prefetch 1–2 samples ahead
 | typing | Focus optional note |
 | swipe | Mobile: horizontal navigate, vertical grade |
 
-Annotations append to `outputs/annotations/feedback.jsonl`. Invalid model outputs are quarantined to `outputs/annotations/bad_outputs.jsonl` (never shown in the app). Thumbs-up rows promote into `fixtures/annotations/human_train.jsonl` (merged by `build_train_data`). Opposite ratings on the same prompt also write `outputs/preferences/human_pairs.jsonl`.
+Annotations append to `outputs/annotations/feedback.jsonl`. Invalid model outputs are quarantined to `outputs/annotations/bad_outputs.jsonl` (never shown in the app). Thumbs-up rows promote into `src/slm_training/resources/annotations/human_train.jsonl` (merged by `build_train_data`). Opposite ratings on the same prompt also write `outputs/preferences/human_pairs.jsonl`.
 
 ```bash
 python -m scripts.export_annotations status
@@ -328,20 +332,22 @@ curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/instal
 
 ### OpenWiki (code mode)
 
-Repository wiki for agents lives under [`openwiki/`](openwiki/) (start at
-[`openwiki/quickstart.md`](openwiki/quickstart.md)). Setup uses
+Repository wiki for agents lives under [`docs/openwiki/`](docs/openwiki/) (start at
+[`docs/openwiki/quickstart.md`](docs/openwiki/quickstart.md)). Setup uses
 [langchain-ai/openwiki](https://github.com/langchain-ai/openwiki) code mode:
 [`AGENTS.md`](AGENTS.md) / [`CLAUDE.md`](CLAUDE.md) OpenWiki snippets and
 [`.github/workflows/openwiki-update.yml`](.github/workflows/openwiki-update.yml).
 
 ```bash
-npm install -g openwiki
-# needs OPENWIKI_PROVIDER + provider API key in env or ~/.openwiki/.env
-openwiki code --update --print
+npm install -g openwiki@0.1.2
+# needs OPENAI_API_KEY (preferred) or OPENROUTER_API_KEY
+python -m scripts.update_openwiki --update --print
 ```
 
-Add repo secret `OPENROUTER_API_KEY` (default workflow provider) to enable the
-scheduled OpenWiki update PRs.
+Add repo secret `OPENAI_API_KEY` to enable scheduled OpenWiki update PRs. The
+workflow falls back to `OPENROUTER_API_KEY` when OpenAI is unavailable and
+fails clearly when neither secret exists. `LANGSMITH_API_KEY` enables optional
+tracing.
 
 ### Hugging Face CLI + skills
 
@@ -382,6 +388,7 @@ serena project health-check
 AGENTS.md              # cross-tool agent instructions (required reading)
 RTK.md                 # Rust Token Killer usage (shell output compression)
 docs/MODEL_CARD.md     # checkpoint roster + eval (README holds a summary)
+docs/repository-organization.md # tracked-file placement + move policy
 .agents/skills/        # canonical agent skills
 src/slm_training/
   dsl/                 # OpenUI adapter + design_md + grammar/{backends,fastpath}
@@ -393,11 +400,11 @@ src/slm_training/
   runtime/             # accel, telemetry, compression, cactus
   web/                 # mission-control API (observability + jobs) + annotate playground + SPA
 src/gpu_multi_farm/    # FastMCP server + farm adapters
-tools/openui_bridge/   # @openuidev/lang-core Node sidecar
-tools/design_md_bridge/
-tools/openui_preview/
+src/apps/openui_bridge/   # @openuidev/lang-core Node sidecar
+src/apps/design_md_bridge/
+src/apps/openui_preview/
 scripts/               # CLIs
-fixtures/              # seed pairs + RICO semantic slices
+src/slm_training/resources/              # seed pairs + RICO semantic slices
 docs/design/           # architecture + research lineage + contracts
 tests/
   test_dsl/            # parser, grammar, design_md

@@ -1,5 +1,5 @@
 {
-  "checkpoint": "fixtures/checkpoints/playground_demo/last.pt",
+  "checkpoint": "src/slm_training/resources/checkpoints/playground_demo/last.pt",
   "suite": "smoke",
   "limit": 4,
   "device": "cpu",

@@ -82,8 +82,8 @@ cd "$WORK"
 
 python -m pip install -U pip
 python -m pip install -e '.[torch,hf,rico,dev]'
-(cd tools/openui_bridge && npm ci)
-(cd tools/design_md_bridge && npm ci)
+(cd src/apps/openui_bridge && npm ci)
+(cd src/apps/design_md_bridge && npm ci)
 
 python -m scripts.build_train_data --source all --version v1 --synthesizer quality --max-openui-chars 600 --max-components 10
 python -m scripts.build_test_data --source both --version v1 --train-manifest outputs/train_data/v1/manifest.json

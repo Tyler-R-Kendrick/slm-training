@@ -1,6 +1,6 @@
 """DESIGN.md lint bridge (@google/design.md).
 
-Python adapter only — the linter kernel lives in Node (`tools/design_md_bridge`).
+Python adapter only — the linter kernel lives in Node (`src/apps/design_md_bridge`).
 Uses a persistent REPL when available; results are hashed-cached.
 """
 
@@ -17,7 +17,7 @@ from typing import Any
 
 from slm_training.bridge_utils import readline_with_timeout, repo_root
 
-_BRIDGE_DIR = repo_root() / "tools" / "design_md_bridge"
+_BRIDGE_DIR = repo_root() / "src" / "apps" / "design_md_bridge"
 _CLI = _BRIDGE_DIR / "cli.mjs"
 
 _REPL_LOCK = threading.Lock()
@@ -63,7 +63,7 @@ def _ensure_repl() -> subprocess.Popen[str]:
         return _REPL_PROC
     if not bridge_available():
         raise RuntimeError(
-            "DESIGN.md bridge unavailable; run: cd tools/design_md_bridge && npm ci"
+            "DESIGN.md bridge unavailable; run: cd src/apps/design_md_bridge && npm ci"
         )
     _REPL_PROC = subprocess.Popen(
         ["node", str(_CLI), "--repl"],
@@ -80,7 +80,7 @@ def _ensure_repl() -> subprocess.Popen[str]:
 def _invoke_once(payload: dict[str, Any], *, timeout: float = 30.0) -> dict[str, Any]:
     if not bridge_available():
         raise RuntimeError(
-            "DESIGN.md bridge unavailable; run: cd tools/design_md_bridge && npm ci"
+            "DESIGN.md bridge unavailable; run: cd src/apps/design_md_bridge && npm ci"
         )
     env = os.environ.copy()
     proc = subprocess.run(
@@ -173,7 +173,14 @@ def score(source: str) -> float:
 
 
 def load_default_design_md() -> str:
-    path = repo_root() / "fixtures" / "design_md" / "default.DESIGN.md"
+    path = (
+        repo_root()
+        / "src"
+        / "slm_training"
+        / "resources"
+        / "design_md"
+        / "default.DESIGN.md"
+    )
     return path.read_text(encoding="utf-8")
 
 

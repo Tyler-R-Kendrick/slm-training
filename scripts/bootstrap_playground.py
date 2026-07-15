@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Train the web playground demo checkpoint and persist it under fixtures/checkpoints/."""
+"""Train the web playground demo checkpoint and persist it under src/slm_training/resources/checkpoints/."""
 
 from __future__ import annotations
 

@@ -4,7 +4,7 @@ Every dashboard view flows through :class:`Readers`. The methods are pure reads
 with tolerant JSON parsing and **cold-start fallback**: because ``outputs/`` is
 gitignored and empty on a fresh checkout (and on a read-only Vercel deploy), each
 reader falls back to the committed source of truth — ``docs/design/*.json``,
-``docs/MODEL_CARD.md``, and ``fixtures/``. Every payload carries a ``provenance``
+``docs/MODEL_CARD.md``, and ``src/slm_training/resources/``. Every payload carries a ``provenance``
 of ``"live"`` (read from ``outputs/``) or ``"committed"`` (fallback snapshot) so
 the UI never passes a committed snapshot off as current state — matching the
 repo's honesty ethos.

@@ -191,7 +191,7 @@ _BUILTIN_NAMES: tuple[str, ...] = (
     "@Each",
 )
 
-# OpenUI surface lexer used for serialization (aligned with grammars/openui.lark).
+# OpenUI surface lexer used for serialization (aligned with src/slm_training/dsl/grammars/openui.lark).
 _NUMBER_PATTERN = r"-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?"
 _NUMBER_RE = re.compile(_NUMBER_PATTERN)
 _LEX_RE = re.compile(

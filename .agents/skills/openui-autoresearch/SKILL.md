@@ -36,7 +36,7 @@ readiness.
      --objective "<falsifiable objective>" --primary-metric <metric>
    ```
 
-2. Capture evidence and literature. Use `--offline` only for fixtures/CI.
+2. Capture evidence and literature. Use `--offline` only for src/slm_training/resources/CI.
 
    ```bash
    python -m scripts.autoresearch research --campaign-id <id>

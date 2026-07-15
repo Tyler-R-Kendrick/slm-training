@@ -30,13 +30,13 @@ Experiment-first OpenUI layout SLMs:
 Start: `README.md`, `docs/MODEL_CARD.md`, `docs/design/openui-twotower.md`,
 `docs/design/quality-experiment-matrix.md`,
 `docs/design/perf-experiment-matrix.md`, `docs/design/research-lineage.md`,
-`docs/design/checkpoint-bucket.md`.
+`docs/design/checkpoint-bucket.md`, `docs/repository-organization.md`.
 
 ## Skills
 
 Canonical: **`.agents/skills/<name>/SKILL.md`**. Mirrored for discovery under
-`.claude/skills/` and `.cursor/skills/` — keep them identical when editing
-(repo-authored skills). Generated tooling skills may be symlinked instead.
+`.claude/skills/` and `.cursor/skills/` with symlinks. Edit only the canonical
+copy; Codex and GitHub Copilot discover `.agents/skills/` directly.
 
 **If a skill might apply (~1%), open and follow it before acting.**
 
@@ -47,6 +47,7 @@ Canonical: **`.agents/skills/<name>/SKILL.md`**. Mirrored for discovery under
 | `running-experiment-matrices` | Running or extending E* / X* / PQR / phase matrices |
 | `openui-autoresearch` | Evidence-grounded campaigns, data/researcher repair, telemetry persistence, and RL readiness |
 | `ponytail` (+ `-review` / `-audit` / …) | Any coding task — write the minimum that works (YAGNI ladder) |
+| `organize-repository` | Creating, moving, renaming, deleting, or duplicating tracked paths; adding modules/docs/src/apps/skills; repository-sprawl review |
 | `caveman` (+ `-commit` / `-review` / …) | Opt-in terse chat / short commits / one-line review comments |
 | `headroom` | Large tool outputs, logs, greps, or context pressure |
 | `rtk` | Verbose shell output — prefer `rtk <cmd>` when installed ([`RTK.md`](RTK.md)) |
@@ -54,7 +55,7 @@ Canonical: **`.agents/skills/<name>/SKILL.md`**. Mirrored for discovery under
 | `huggingface-*` / `hf-*` / `trl-training` / … | Other [huggingface/skills](https://github.com/huggingface/skills) workflows (papers, datasets viewer, trainers, Spaces, memory estimate, …) |
 | `playwright-cli` | Browser automation or playground e2e |
 | `frontier-describe` | Fill train-only frozen frontier artifacts and validate leakage/coverage |
-| `dashboard-openui-parity` | Editing a dashboard page (`tools/dashboard/src/pages/*.tsx`) — keep its interpreted-mode `static/openui/*.openui` program at parity |
+| `dashboard-openui-parity` | Editing a dashboard page (`src/apps/dashboard/src/pages/*.tsx`) — keep its interpreted-mode `static/openui/*.openui` program at parity |
 
 ### Token-efficiency stack (ponytail · caveman · headroom · rtk)
 
@@ -150,7 +151,7 @@ local overrides stay gitignored under `.serena/`.
 | Cursor | [`.cursor/mcp.json`](.cursor/mcp.json) (`--context ide --project .`) |
 | Claude Code | [`.mcp.json`](.mcp.json) + hooks in [`.claude/settings.json`](.claude/settings.json) |
 | VS Code / Copilot Chat | [`.vscode/mcp.json`](.vscode/mcp.json) |
-| Codex | copy [`.codex/config.toml.example`](.codex/config.toml.example) → `~/.codex/config.toml` (or `serena setup codex`) |
+| Codex | copy [`.codex/serena.config.toml.example`](.codex/serena.config.toml.example) → `~/.codex/config.toml` (or `serena setup codex`) |
 | Copilot CLI | `/mcp add` → `serena start-mcp-server --context=copilot-cli --project-from-cwd` |
 
 Prefer Serena symbolic tools over raw grep/read when navigating `src/` /
@@ -211,10 +212,10 @@ A checkpoint without a model-card + README summary update is incomplete work
 
 The dashboard renders every page **two ways**, switchable by the sidebar
 **◈ Compiled / ◇ Interpreted** toggle: hand-written React
-(`tools/dashboard/src/pages/*.tsx`, *compiled*) and a committed **OpenUI Lang**
+(`src/apps/dashboard/src/pages/*.tsx`, *compiled*) and a committed **OpenUI Lang**
 program (`src/slm_training/web/static/openui/<slug>.openui`, *interpreted*) run live
 through the official `@openuidev` `<Renderer>` with the dashboard's hybrid library +
-`/api` tool provider (`tools/dashboard/src/interpret/`). **They must stay at parity.**
+`/api` tool provider (`src/apps/dashboard/src/interpret/`). **They must stay at parity.**
 
 Whenever you change a page (`pages/*.tsx`), its shared components
 (`components.tsx`), or add/remove a route (`main.tsx`): update the matching `.openui`
@@ -277,6 +278,8 @@ review on policy changes); perf → `perf-experiment-matrix.md` /
   `honest_slot_contract=True`.
 - Say fixture-demo vs ship. Do not weaken ship gates to green CI.
 - Match existing style; no unrelated drive-by refactors.
+- Before adding or relocating tracked paths, use `organize-repository`, follow
+  `docs/repository-organization.md`, and use `git mv` rather than `mv` for moves.
 
 ```
 docs/MODEL_CARD.md # checkpoint roster + eval (keep README summary in sync)
@@ -290,7 +293,7 @@ src/slm_training/
 
 ## OpenWiki
 
-This repository uses OpenWiki for recurring code documentation. Start with `openwiki/quickstart.md`, then follow its links to architecture, workflows, domain concepts, operations, integrations, testing guidance, and source maps.
+This repository uses OpenWiki for recurring code documentation. Start with `docs/openwiki/quickstart.md`, then follow its links to architecture, workflows, domain concepts, operations, integrations, testing guidance, repository organization, and source maps.
 
 The scheduled OpenWiki GitHub Actions workflow refreshes the repository wiki. Do not hand-edit generated OpenWiki pages unless explicitly asked; prefer updating source code/docs and letting OpenWiki regenerate.
 

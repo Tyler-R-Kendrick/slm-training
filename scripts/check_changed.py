@@ -8,6 +8,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from scripts.repo_policy import validate_repository
+
 
 ROOT = Path(__file__).resolve().parents[1]
 GLOBAL_TEST_FILES = {
@@ -18,9 +20,8 @@ GLOBAL_TEST_FILES = {
     "tests/conftest.py",
 }
 SUITES_BY_PREFIX = (
-    ("api/", ("tests/test_web",)),
     ("gpu_multi_farm/", ("tests/test_gpu_multi_farm",)),
-    ("grammars/", ("tests/test_dsl", "tests/test_harnesses/model_build")),
+    ("src/slm_training/dsl/grammars/", ("tests/test_dsl", "tests/test_harnesses/model_build")),
     (
         "scripts/build_train_data.py",
         ("tests/test_data", "tests/test_harnesses/train_data"),
@@ -94,12 +95,12 @@ SUITES_BY_PREFIX = (
     ("src/slm_training/runtime/", ("tests/test_runtime",)),
     ("src/slm_training/web/", ("tests/test_web",)),
     (
-        "tools/openui_bridge/",
+        "src/apps/openui_bridge/",
         ("tests/test_dsl", "tests/test_awwwards", "tests/test_regressions"),
     ),
-    ("tools/design_md_bridge/", ("tests/test_dsl/design_md",)),
-    ("tools/dashboard/", ("tests/test_web",)),
-    ("tools/openui_preview/", ("tests/test_web",)),
+    ("src/apps/design_md_bridge/", ("tests/test_dsl/design_md",)),
+    ("src/apps/dashboard/", ("tests/test_web",)),
+    ("src/apps/openui_preview/", ("tests/test_web",)),
 )
 CODE_SUFFIXES = {".c", ".css", ".html", ".js", ".json", ".mjs", ".py", ".ts", ".tsx", ".yaml", ".yml"}
 
@@ -129,7 +130,7 @@ def select_tests(paths: list[str]) -> list[str]:
         if matches:
             targets.update(suite for suites in matches for suite in suites)
             continue
-        if path.startswith(("docs/", "openwiki/")) or Path(path).suffix in {
+        if path.startswith("docs/") or Path(path).suffix in {
             ".md",
             ".rst",
             ".txt",
@@ -141,6 +142,12 @@ def select_tests(paths: list[str]) -> list[str]:
 
 
 def check(paths: list[str]) -> int:
+    policy_errors = validate_repository()
+    if policy_errors:
+        print("repo-policy: failed")
+        for error in policy_errors:
+            print(f"- {error}")
+        return 1
     tests = select_tests(paths)
     python_paths = [path for path in paths if path.endswith(".py") and (ROOT / path).is_file()]
     print(f"changed-check: {len(paths)} file(s), pytest targets: {', '.join(tests) or 'none'}")

@@ -52,7 +52,7 @@ def run_preview_verifier(
     if not node:
         raise RuntimeError("Node.js is required for the OpenUI preview verifier")
     root = root or repo_root()
-    script = root / "tools" / "openui_preview" / "verify.mjs"
+    script = root / "src" / "apps" / "openui_preview" / "verify.mjs"
     if not script.is_file():
         raise RuntimeError(f"OpenUI preview verifier not found: {script}")
     payload = {

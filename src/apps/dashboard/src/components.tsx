@@ -1,0 +1,392 @@
+import React, { useEffect, useMemo, useState } from "react";
+import { postJSON, useJobStream } from "./api";
+
+// --- formatting helpers ----------------------------------------------------
+export function fmt(v: any, digits = 3): string {
+  if (v === null || v === undefined) return "—";
+  if (typeof v === "number") {
+    if (Number.isInteger(v)) return String(v);
+    return v.toFixed(digits);
+  }
+  return String(v);
+}
+
+export function pct(v: any): string {
+  if (typeof v !== "number") return "—";
+  return `${(v * 100).toFixed(0)}%`;
+}
+
+// --- layout ----------------------------------------------------------------
+export function Card({
+  title,
+  right,
+  children,
+  className = "",
+}: {
+  title?: React.ReactNode;
+  right?: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={`card ${className}`}>
+      {(title || right) && (
+        <header className="card-head">
+          {title && <h2 className="card-title">{title}</h2>}
+          {right && <div className="card-right">{right}</div>}
+        </header>
+      )}
+      {children}
+    </section>
+  );
+}
+
+export function Grid({ children, min = "220px" }: { children: React.ReactNode; min?: string }) {
+  return (
+    <div className="grid" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${min}, 1fr))` }}>
+      {children}
+    </div>
+  );
+}
+
+export function Empty({ children }: { children: React.ReactNode }) {
+  return <div className="empty">{children}</div>;
+}
+
+export function ErrorNote({ error }: { error: string | null }) {
+  if (!error) return null;
+  return <div className="error-note">⚠ {error}</div>;
+}
+
+// --- status + provenance ---------------------------------------------------
+const STATUS_CLASS: Record<string, string> = {
+  running: "running",
+  queued: "idle",
+  cancelling: "warning",
+  succeeded: "passed",
+  passed: "passed",
+  pass: "passed",
+  true: "passed",
+  failed: "failed",
+  fail: "failed",
+  false: "failed",
+  cancelled: "idle",
+  champion: "promoted",
+  deployed: "promoted",
+  promoted: "promoted",
+  validated: "running",
+  screened: "warning",
+  rejected: "failed",
+};
+
+export function StatusPill({ value, label }: { value: any; label?: string }) {
+  const key = String(value).toLowerCase();
+  const cls = STATUS_CLASS[key] ?? "idle";
+  return <span className={`pill pill-${cls}`}>{label ?? String(value)}</span>;
+}
+
+export function ProvenanceBadge({ provenance }: { provenance?: string }) {
+  if (!provenance) return null;
+  const live = provenance === "live";
+  return (
+    <span className={`prov ${live ? "prov-live" : "prov-committed"}`} title={live ? "read from outputs/ (current)" : "committed snapshot (docs/ or src/slm_training/resources/)"}>
+      {live ? "live" : "committed"}
+    </span>
+  );
+}
+
+// --- stat tile -------------------------------------------------------------
+export function StatTile({
+  label,
+  value,
+  sub,
+  accent,
+  spark,
+}: {
+  label: string;
+  value: React.ReactNode;
+  sub?: React.ReactNode;
+  accent?: "moss" | "ember" | "passed" | "failed" | "running" | "promoted";
+  spark?: number[];
+}) {
+  return (
+    <div className={`tile ${accent ? `tile-${accent}` : ""}`}>
+      <div className="tile-label">{label}</div>
+      <div className="tile-value">{value}</div>
+      {spark && spark.length > 1 && <Sparkline data={spark} />}
+      {sub !== undefined && <div className="tile-sub">{sub}</div>}
+    </div>
+  );
+}
+
+// --- charts (hand-rolled SVG, theme via currentColor) ----------------------
+export function Sparkline({ data, width = 120, height = 28 }: { data: number[]; width?: number; height?: number }) {
+  const pts = useMemo(() => {
+    if (!data.length) return "";
+    const min = Math.min(...data);
+    const max = Math.max(...data);
+    const span = max - min || 1;
+    return data
+      .map((d, i) => {
+        const x = (i / (data.length - 1 || 1)) * width;
+        const y = height - ((d - min) / span) * (height - 4) - 2;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      })
+      .join(" ");
+  }, [data, width, height]);
+  return (
+    <svg className="spark" width={width} height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+      <polyline points={pts} fill="none" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+export function Bars({ data }: { data: { label: string; value: number; accent?: string }[] }) {
+  const max = Math.max(1, ...data.map((d) => d.value));
+  return (
+    <div className="bars">
+      {data.map((d, i) => (
+        <div className="bar-row" key={i}>
+          <span className="bar-label" title={d.label}>{d.label}</span>
+          <span className="bar-track">
+            <span className="bar-fill" style={{ width: `${(d.value / max) * 100}%`, background: d.accent }} />
+          </span>
+          <span className="bar-value">{fmt(d.value)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// --- dense table -----------------------------------------------------------
+export function DataTable({
+  columns,
+  rows,
+  render,
+}: {
+  columns: { key: string; label: string; align?: "left" | "right" }[];
+  rows: any[];
+  render?: Record<string, (row: any) => React.ReactNode>;
+}) {
+  if (!rows.length) return <Empty>No rows.</Empty>;
+  return (
+    <div className="table-wrap">
+      <table className="dtable">
+        <thead>
+          <tr>
+            {columns.map((c) => (
+              <th key={c.key} style={{ textAlign: c.align ?? "left" }}>{c.label}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, i) => (
+            <tr key={i}>
+              {columns.map((c) => (
+                <td key={c.key} style={{ textAlign: c.align ?? "left" }}>
+                  {render && render[c.key] ? render[c.key](row) : fmt(row[c.key])}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// --- gate matrix -----------------------------------------------------------
+export interface GatePayload {
+  policy?: Record<string, Record<string, number>>;
+  actual?: Record<string, Record<string, any>>;
+  gates?: Record<string, boolean>;
+  failures?: string[];
+  pass?: boolean;
+}
+
+export function GateMatrix({ gate }: { gate: GatePayload }) {
+  const policy = gate.policy ?? {};
+  const actual = gate.actual ?? {};
+  const suites = Object.keys(policy);
+  const metrics = Array.from(new Set(suites.flatMap((s) => Object.keys(policy[s] ?? {}))));
+  if (!suites.length) return <Empty>No gate policy.</Empty>;
+  return (
+    <div className="table-wrap">
+      <table className="dtable gate-matrix">
+        <thead>
+          <tr>
+            <th>suite</th>
+            {metrics.map((m) => <th key={m} style={{ textAlign: "right" }}>{m}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {suites.map((s) => (
+            <tr key={s}>
+              <td className="mono">{s}</td>
+              {metrics.map((m) => {
+                const need = policy[s]?.[m];
+                if (need === undefined) return <td key={m} className="gate-na">·</td>;
+                const got = actual[s]?.[m];
+                const ok = gate.gates?.[`${s}:${m}`];
+                return (
+                  <td key={m} className={`gate-cell gate-${ok ? "pass" : "fail"}`} style={{ textAlign: "right" }} title={`need ≥ ${need}`}>
+                    <span className="gate-glyph">{ok ? "✓" : "✕"}</span> {fmt(got, 2)}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// --- lifecycle timeline ----------------------------------------------------
+const LIFECYCLE = ["running", "screened", "validated", "champion", "deployed"];
+export function Timeline({ state }: { state?: string | null }) {
+  const idx = state ? LIFECYCLE.indexOf(state) : -1;
+  const rejected = state === "rejected";
+  return (
+    <ol className="timeline">
+      {LIFECYCLE.map((s, i) => (
+        <li key={s} className={`tl-step ${i <= idx ? "tl-done" : ""} ${i === idx ? "tl-current" : ""}`}>
+          <span className="tl-dot" />
+          <span className="tl-label">{s}</span>
+        </li>
+      ))}
+      {rejected && <li className="tl-step tl-rejected"><span className="tl-dot" /><span className="tl-label">rejected</span></li>}
+    </ol>
+  );
+}
+
+// --- log stream (SSE) ------------------------------------------------------
+export function LogStream({ jobId }: { jobId: string | null }) {
+  const { lines, status } = useJobStream(jobId);
+  const ref = React.useRef<HTMLPreElement>(null);
+  useEffect(() => {
+    if (ref.current) ref.current.scrollTop = ref.current.scrollHeight;
+  }, [lines.length]);
+  if (!jobId) return null;
+  return (
+    <div className="logstream">
+      <div className="logstream-head">
+        <span className="mono">job {jobId}</span>
+        {status && <StatusPill value={status} />}
+      </div>
+      <pre ref={ref} className="logstream-body">{lines.join("\n") || "…"}</pre>
+    </div>
+  );
+}
+
+// --- threshold editor ------------------------------------------------------
+export function ThresholdEditor({
+  policy,
+  onChange,
+}: {
+  policy: Record<string, Record<string, number>>;
+  onChange: (next: Record<string, Record<string, number>>) => void;
+}) {
+  const suites = Object.keys(policy);
+  return (
+    <div className="thresholds">
+      {suites.map((s) => (
+        <div className="thr-suite" key={s}>
+          <div className="thr-suite-name mono">{s}</div>
+          <div className="thr-metrics">
+            {Object.entries(policy[s]).map(([m, val]) => (
+              <label className="thr-metric" key={m}>
+                <span>{m}</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="1"
+                  value={val}
+                  onChange={(e) => {
+                    const next = JSON.parse(JSON.stringify(policy));
+                    next[s][m] = Number(e.target.value);
+                    onChange(next);
+                  }}
+                />
+              </label>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// --- job launcher (allowlist-driven) --------------------------------------
+export interface JobDef {
+  job: string;
+  kind: string;
+  summary: string;
+  positional: string[];
+  params: Record<string, { type: string; choices?: string[]; min?: number; max?: number }>;
+}
+
+export function JobLauncher({
+  jobDef,
+  execution,
+  onLaunched,
+  defaults = {},
+}: {
+  jobDef: JobDef;
+  execution: boolean;
+  onLaunched: (jobId: string) => void;
+  defaults?: Record<string, any>;
+}) {
+  const [params, setParams] = useState<Record<string, any>>(defaults);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const set = (k: string, v: any) => setParams((p) => ({ ...p, [k]: v }));
+
+  async function launch() {
+    setBusy(true);
+    setErr(null);
+    try {
+      const job = await postJSON("/api/jobs", { job: jobDef.job, params });
+      onLaunched(job.id);
+    } catch (e: any) {
+      setErr(String(e?.message ?? e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="launcher">
+      <div className="launcher-head">
+        <span className="mono launcher-name">{jobDef.job}</span>
+        {jobDef.kind === "dispatch" && <span className="pill pill-warning">dispatch</span>}
+      </div>
+      <p className="launcher-summary">{jobDef.summary}</p>
+      <div className="launcher-params">
+        {Object.entries(jobDef.params).map(([name, rule]) => (
+          <label className="launcher-field" key={name}>
+            <span>{name}</span>
+            {rule.type === "Choice" ? (
+              <select value={params[name] ?? ""} onChange={(e) => set(name, e.target.value)}>
+                <option value="">—</option>
+                {rule.choices?.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            ) : rule.type === "Flag" || rule.type === "BooleanOptionalFlag" ? (
+              <input type="checkbox" checked={!!params[name]} onChange={(e) => set(name, e.target.checked)} />
+            ) : rule.type === "IntRange" ? (
+              <input type="number" min={rule.min} max={rule.max} value={params[name] ?? ""} onChange={(e) => set(name, Number(e.target.value))} />
+            ) : (
+              <input type="text" value={params[name] ?? ""} onChange={(e) => set(name, e.target.value)} />
+            )}
+          </label>
+        ))}
+      </div>
+      {err && <div className="error-note">{err}</div>}
+      <button className="btn btn-primary" disabled={!execution || busy} onClick={launch} title={execution ? "" : "read-only deployment"}>
+        {busy ? "launching…" : execution ? "Run" : "Read-only"}
+      </button>
+    </div>
+  );
+}

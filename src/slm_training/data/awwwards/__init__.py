@@ -20,8 +20,8 @@ _SLUG_RE = re.compile(r"[^a-z0-9]+")
 
 @dataclass
 class AwwwardsConfig:
-    cache_dir: Path = Path("fixtures/awwwards/cache")
-    fixture_path: Path = Path("fixtures/awwwards/sites.jsonl")
+    cache_dir: Path = Path("src/slm_training/resources/awwwards/cache")
+    fixture_path: Path = Path("src/slm_training/resources/awwwards/sites.jsonl")
     rate_limit_s: float = 1.0
     user_agent: str = "slm-training-awwwards/0.1 (+research; respectful)"
     live: bool = False

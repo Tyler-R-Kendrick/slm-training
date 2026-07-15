@@ -81,7 +81,7 @@ model-cycle snapshot-eval --snapshot-id eval-v1 \
   --suite adversarial=outputs/test_data/v1/adversarial.jsonl \
   --suite ood=outputs/test_data/v1/ood.jsonl \
   --suite rico_held=outputs/test_data/v1/rico_held.jsonl \
-  --human-feedback-holdout fixtures/annotations/human_holdout.jsonl
+  --human-feedback-holdout src/slm_training/resources/annotations/human_holdout.jsonl
 
 model-cycle init --track twotower --run-id tt-baseline \
   --data-snapshot-sha <sha> --eval-snapshot-sha <sha>

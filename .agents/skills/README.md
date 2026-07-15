@@ -1,8 +1,7 @@
 # Agent skills (canonical)
 
-This directory is the **source of truth** for repo skills. Tool-discovery copies
-live under `.claude/skills/` and `.cursor/skills/` (full mirrors for
-repo-authored skills; **symlinks** for marketplace / generated skills).
+This directory is the **source of truth** for repo skills. Tool-discovery
+entries under `.claude/skills/` and `.cursor/skills/` are symlinks back here.
 
 Codex and GitHub Copilot also load project skills from **`.agents/skills/`**.
 
@@ -16,9 +15,10 @@ Codex and GitHub Copilot also load project skills from **`.agents/skills/`**.
 | `running-experiment-matrices` | Quality / grammar / perf / phase matrices |
 | `playwright-cli` | Browser / playground automation |
 | `frontier-describe` | Train-only frozen paraphrase / ladder / edit / vision artifacts |
+| `organize-repository` | Canonical file placement, deduplication, and `git mv` workflow |
 | `rtk` | Prefer Rust Token Killer for verbose shell output ([`RTK.md`](../../RTK.md)) |
 
-Edit here, then copy into `.claude/skills/` and `.cursor/skills/` (or symlink).
+Edit only here; discovery symlinks update every client automatically.
 
 ## Token-efficiency pack
 

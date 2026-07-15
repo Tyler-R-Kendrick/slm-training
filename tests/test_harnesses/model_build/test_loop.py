@@ -19,7 +19,7 @@ from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
 
 pytestmark = pytest.mark.skipif(
     not bridge_available(),
-    reason="OpenUI bridge deps missing; run: cd tools/openui_bridge && npm ci",
+    reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
 )
 
 HERO = 'root = Stack([hero], "column")\nhero_title = TextContent(":hero.title")\nhero_body = TextContent(":hero.body")\nhero = Card([hero_title, hero_body])'

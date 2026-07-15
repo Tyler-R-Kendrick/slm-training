@@ -36,10 +36,10 @@ def test_screen_to_openui_builds_stack() -> None:
 
 @pytest.mark.skipif(
     not bridge_available(),
-    reason="OpenUI bridge deps missing; run: cd tools/openui_bridge && npm ci",
+    reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
 )
 def test_rico_fixture_screens_validate() -> None:
-    path = Path("fixtures/rico/semantic_train.jsonl")
+    path = Path("src/slm_training/resources/rico/semantic_train.jsonl")
     if not path.exists():
         pytest.skip("RICO fixtures missing")
     ok = 0

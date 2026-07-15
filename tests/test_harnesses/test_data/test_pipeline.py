@@ -14,7 +14,7 @@ from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
 
 pytestmark = pytest.mark.skipif(
     not bridge_available(),
-    reason="OpenUI bridge deps missing; run: cd tools/openui_bridge && npm ci",
+    reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
 )
 
 
@@ -173,8 +173,8 @@ def test_leakage_detection_by_openui(tmp_path: Path) -> None:
 
 
 def test_rico_train_and_test_are_disjoint(tmp_path: Path) -> None:
-    train_rico = Path("fixtures/rico/semantic_train.jsonl")
-    test_rico = Path("fixtures/rico/semantic_test.jsonl")
+    train_rico = Path("src/slm_training/resources/rico/semantic_train.jsonl")
+    test_rico = Path("src/slm_training/resources/rico/semantic_test.jsonl")
     if not train_rico.exists() or not test_rico.exists():
         pytest.skip("RICO fixtures missing")
 

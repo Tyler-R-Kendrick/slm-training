@@ -301,7 +301,7 @@ python -m scripts.run_quality_matrix --matrix v5 --only E40,E41,E44,E46 \
 ## V5 measured results (CPU, scratch, 80 steps, fixture suites)
 
 See [quality-matrix-results.json](quality-matrix-results.json) (`matrix_set: v5`).
-Tokenizer diagnostic on `fixtures/train_seeds.jsonl`: compositional mean 72.6
+Tokenizer diagnostic on `src/slm_training/resources/train_seeds.jsonl`: compositional mean 72.6
 tokens → lexer+symtable **46.3** (ratio **0.64**); fixed output vocab **296**.
 
 | ID | Smoke parse | Smoke fid | Smoke reward | Notes |

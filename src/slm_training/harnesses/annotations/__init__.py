@@ -20,7 +20,7 @@ from slm_training.harnesses.preference import PreferencePair, write_pairs
 Rating = Literal["up", "down"]
 
 DEFAULT_FEEDBACK_PATH = Path("outputs/annotations/feedback.jsonl")
-DEFAULT_HUMAN_TRAIN_PATH = Path("fixtures/annotations/human_train.jsonl")
+DEFAULT_HUMAN_TRAIN_PATH = Path("src/slm_training/resources/annotations/human_train.jsonl")
 DEFAULT_HUMAN_PAIRS_PATH = Path("outputs/preferences/human_pairs.jsonl")
 DEFAULT_BAD_OUTPUTS_PATH = Path("outputs/annotations/bad_outputs.jsonl")
 DEFAULT_GENERATION_ATTEMPTS_PATH = Path(

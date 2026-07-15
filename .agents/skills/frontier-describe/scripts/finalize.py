@@ -196,11 +196,11 @@ def build_manifest(worklist: Path, root: Path) -> tuple[dict[str, Any], list[str
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--worklist", type=Path, default=Path("fixtures/frontier/worklist.jsonl")
+        "--worklist", type=Path, default=Path("src/slm_training/resources/frontier/worklist.jsonl")
     )
-    parser.add_argument("--root", type=Path, default=Path("fixtures/frontier"))
+    parser.add_argument("--root", type=Path, default=Path("src/slm_training/resources/frontier"))
     parser.add_argument(
-        "--manifest", type=Path, default=Path("fixtures/frontier/MANIFEST.json")
+        "--manifest", type=Path, default=Path("src/slm_training/resources/frontier/MANIFEST.json")
     )
     parser.add_argument("--require-complete", action="store_true")
     args = parser.parse_args(argv)

@@ -18,7 +18,7 @@ pytestmark = pytest.mark.skipif(
 
 
 def test_train_seeds_all_validate() -> None:
-    records = load_jsonl("fixtures/train_seeds.jsonl")
+    records = load_jsonl("src/slm_training/resources/train_seeds.jsonl")
     assert len(records) >= 18
     for record in records:
         program = validate(record.openui)
@@ -41,7 +41,7 @@ def test_tabs_content_array_not_flagged_as_placeholder_prop() -> None:
 def test_quality_fixture_build_is_deterministic(tmp_path: Path) -> None:
     """Fixture-only builds are fast and bit-stable across runs."""
     cfg_kwargs = dict(
-        seed_path=Path("fixtures/train_seeds.jsonl"),
+        seed_path=Path("src/slm_training/resources/train_seeds.jsonl"),
         rico_path=None,
         source="fixture",
         synthesizer="quality",

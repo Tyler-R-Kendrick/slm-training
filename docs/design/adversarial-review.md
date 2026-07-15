@@ -18,7 +18,7 @@ Rubber-duck / red-team audit of what shipped under `twotower_v1_ship` and the su
 ### P0 — correctness / honesty
 
 1. **Gates exclude hard suites.** `evaluate_model --suites …` only fail-unders the primary (smoke). Hand-written `gates.json` marks held_out pass at parse ≥ 0.15 (1/5). `rico_held` / adversarial parse **0.0** never fail the ship.
-2. **Smoke ≈ memorization.** `fixtures/train_seeds.jsonl` `meta.layout=smoke_align` duplicates smoke OpenUI trees (namespace-only diffs). Upsampled paraphrases amplify them. Structural similarity 1.0 + fidelity 0.0 is the tell.
+2. **Smoke ≈ memorization.** `src/slm_training/resources/train_seeds.jsonl` `meta.layout=smoke_align` duplicates smoke OpenUI trees (namespace-only diffs). Upsampled paraphrases amplify them. Structural similarity 1.0 + fidelity 0.0 is the tell.
 3. **Stale rico_held eval.** Scoreboard n=23 vs manifest suite_counts `rico_held=1500`.
 4. **`remote_train.py` corpus mismatch.** Builds `outputs/train_data/v1`, trains `v1_fixture_up`.
 5. **Ship corpus ≠ claimed recipe.** Fixture upsample, scratch, no DESIGN.md in context — docs implied HF + DESIGN.md + broad RICO.

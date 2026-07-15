@@ -1078,7 +1078,7 @@ def build_parser() -> argparse.ArgumentParser:
     submit_nemo.add_argument("--repo-url", default=NEMO_DEFAULT_REPO)
     submit_nemo.add_argument("--revision")
     submit_nemo.add_argument(
-        "--data-path", default="fixtures/nemo_rl/openui_smoke.jsonl"
+        "--data-path", default="src/slm_training/resources/nemo_rl/openui_smoke.jsonl"
     )
     submit_nemo.add_argument("--checkpoint-bucket", default=NEMO_DEFAULT_BUCKET)
     submit_nemo.add_argument("--flavor", default=NEMO_DEFAULT_FLAVOR)

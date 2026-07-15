@@ -28,10 +28,15 @@ LANG_SPEC = "openui-lang-0.2.x"
 
 # src/slm_training/dsl/language_contract.py -> repo root is parents[3].
 _REPO_ROOT = Path(__file__).resolve().parents[3]
-_BRIDGE_PACKAGE_JSON = _REPO_ROOT / "tools" / "openui_bridge" / "package.json"
+_BRIDGE_PACKAGE_JSON = _REPO_ROOT / "src" / "apps" / "openui_bridge" / "package.json"
 _GRAMMAR_FILES = (
-    _REPO_ROOT / "grammars" / "openui.lark",
-    _REPO_ROOT / "grammars" / "openui_prop_order.json",
+    _REPO_ROOT / "src" / "slm_training" / "dsl" / "grammars" / "openui.lark",
+    _REPO_ROOT
+    / "src"
+    / "slm_training"
+    / "dsl"
+    / "grammars"
+    / "openui_prop_order.json",
 )
 # The official OpenUI packages whose versions define the language surface.
 _OPENUI_PACKAGES = (

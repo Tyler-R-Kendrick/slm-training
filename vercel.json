@@ -2,10 +2,10 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "fastapi",
   "functions": {
-    "api/**/*.py": {
+    "src/slm_training/web/vercel.py": {
       "maxDuration": 300,
-      "includeFiles": "fixtures/checkpoints/playground_demo/**",
-      "excludeFiles": "{.venv/**,.vercel/**,node_modules/**,outputs/**,tests/**,tools/**}"
+      "includeFiles": "src/slm_training/resources/checkpoints/playground_demo/**",
+      "excludeFiles": "{.venv/**,.vercel/**,node_modules/**,outputs/**,tests/**,src/apps/**}"
     }
   }
 }
