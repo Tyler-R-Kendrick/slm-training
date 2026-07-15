@@ -1,0 +1,28 @@
+{
+  "run_id": "iter-e41-roots-aligned-20260715",
+  "experiment": "E41",
+  "status": "negative_control",
+  "recipe": {
+    "context_backend": "scratch",
+    "train_dir": "outputs/train_data/remediated_roots",
+    "train_content_fingerprint": "f8d714f122ac7f091236fd4e562935758de330534cac146abf30af13d0ac98ce",
+    "steps": 64,
+    "batch_size": 8,
+    "output_tokenizer": "lexer",
+    "factorized_embeddings": false,
+    "use_symbol_table": true,
+    "slot_contract_in_context": true,
+    "grammar_ltr_repair": true
+  },
+  "smoke": {
+    "n": 3,
+    "parse_rate": 0.0,
+    "structural_similarity": 0.0,
+    "placeholder_fidelity": 0.0,
+    "reward_score": 0.0,
+    "latency_ms_p50": 7276.63,
+    "decode_timeout_count": 0
+  },
+  "feedback": "lexer-native binder/state collapse; parser produced no root element",
+  "evidence": "outputs/runs/iter-e41-roots-aligned-20260715/qx_e41_symtable"
+}
