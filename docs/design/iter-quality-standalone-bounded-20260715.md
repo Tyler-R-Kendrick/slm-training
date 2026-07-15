@@ -21,3 +21,10 @@ token selection. The CLI now exposes `--skip-exact-stream-probe`. A retry with
 that flag, one decode step, one attempt, and a toy grammar backend still failed
 to produce a scoreboard, so checkpoint/model initialization or another decode
 path remains to be isolated.
+
+The unconstrained model-forward control did complete: one-record smoke,
+one-step, one-attempt evaluation finished in **3.39 s** and persisted AgentV
+artifacts. It produced parse rate **0**, structural similarity **0**, and reward
+**0**. This is diagnostic feedback only, but it localizes the interruption to
+the constrained-decoding path rather than checkpoint loading or evaluator
+persistence.

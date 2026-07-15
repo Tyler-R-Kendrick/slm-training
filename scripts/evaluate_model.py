@@ -209,6 +209,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Diagnostic override: skip the blocking exact grammar stream probe.",
     )
     parser.add_argument(
+        "--no-grammar-constrained",
+        action="store_true",
+        help="Diagnostic override: disable grammar-constrained token selection.",
+    )
+    parser.add_argument(
         "--no-design-md-context",
         action="store_true",
         help="Override: do not concatenate DESIGN.md into context.",
@@ -284,7 +289,11 @@ def main(argv: list[str] | None = None) -> int:
         eval_limit=args.eval_limit,
         gen_steps=args.gen_steps,
         generate_max_attempts=max(1, args.max_attempts),
-        grammar_skip_exact_stream_probe=args.skip_exact_stream_probe,
+        # Preserve the checkpoint setting unless the diagnostic flag is explicit.
+        grammar_skip_exact_stream_probe=(
+            True if args.skip_exact_stream_probe else None
+        ),
+        grammar_constrained=(False if args.no_grammar_constrained else None),
         grammar_dsl=args.grammar_dsl,
         grammar_trust_model=args.grammar_trust_model,
         grammar_sample_decode=args.grammar_sample_decode,
