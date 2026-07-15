@@ -501,6 +501,13 @@ overwrote checkpoint settings. Those flags are now tri-state; omitted means
 preserve checkpoint configuration. The fix is covered by
 `test_factory_overrides.py`.
 
+An extended 1,000-step continuation (`overnight_retrain_1000`, 857,282
+trainable parameters, scratch context, batch 16) reduced training loss to
+≈1.12 but produced parse=0.0, placeholder fidelity=0.0, and reward=0.0 at
+every smoke checkpoint (steps 200, 400, 600, 800, and 1000). This is a
+negative training result, not a promotion candidate; the durable run summary
+and telemetry are under `outputs/runs/overnight_retrain_1000/`.
+
 ## P13 data-synthesis verification (CPU scratch, 2026-07-14)
 
 The accepted comparison uses the same E50 experiment and effective decode
