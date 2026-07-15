@@ -1,0 +1,11 @@
+{
+  "matrix": "quality-experiment-matrix-v7",
+  "reference": "docs/design/quality-experiment-matrix.md",
+  "experiment": "E75",
+  "run_ids": ["qx_e75_v7_champion", "qx_e75_v7_champion_overlay"],
+  "recipe": {"device": "cpu", "context_backend": "scratch", "train_dir": "outputs/train_data/remediated", "overlay_seed": "outputs/runs/iter_e72_20260715/qx_e72_cluster_verify/checkpoints/last.pt"},
+  "status": "incomplete",
+  "artifacts": ["outputs/runs/iter_e75_20260715/qx_e75_v7_champion/metrics.jsonl", "outputs/runs/iter_e75-overlay_20260715/qx_e75_v7_champion/trust_gate_summary.json"],
+  "limitation": "Fresh training stopped after one step; the E72-seeded overlay stopped during auxiliary trust/survival processing before a scoreboard or AgentV bundle.",
+  "decision": "No champion or ship claim; run E75 on a longer-lived host and compare against E72 only after all five suites and decode telemetry persist."
+}
