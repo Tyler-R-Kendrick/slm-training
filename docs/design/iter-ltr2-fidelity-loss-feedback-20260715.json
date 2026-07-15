@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "kind": "fidelity-loss-weight-feedback",
+  "run_id": "iter-seed0-batch8-64step-ltr2-fidelity2-20260715",
+  "feedback_run_id": "iter-seed0-64step-ltr2-fidelity2-feedback-20260715",
+  "recipe": {
+    "model": "twotower",
+    "context_backend": "scratch",
+    "seed": 0,
+    "steps": 64,
+    "batch_size": 8,
+    "learning_rate": 0.0006,
+    "ltr_loss_weight": 2,
+    "fidelity_loss_weight": 2,
+    "device": "cpu",
+    "honesty_mode": "no-design-md-context",
+    "data_manifest_sha": "928ec8d4921954c7736d2386fe7abf88bbef75523a7cfe404792f45ddcd5d4ba"
+  },
+  "loss": {
+    "step_32_weighted_nll": 9.739765658319016,
+    "step_64_weighted_nll": 7.503505412322403
+  },
+  "feedback": {
+    "suite": "smoke",
+    "n": 1,
+    "parse_rate": 0,
+    "structural_similarity": 0.3417,
+    "placeholder_validity": 0.0667,
+    "component_type_recall": 0.25,
+    "reward_score": 0,
+    "latency_ms_p50": 3443.78,
+    "agentv_passed": 0,
+    "agentv_failed": 1
+  },
+  "control": {
+    "run_id": "iter-seed0-batch8-64step-ltr2-20260715",
+    "structural_similarity": 0.5375,
+    "placeholder_validity": 0.2,
+    "component_type_recall": 0.5,
+    "parse_rate": 0,
+    "reward_score": 0
+  },
+  "decision": "reject-fidelity-weight-2",
+  "reason": "Stronger placeholder-token supervision worsened loss and all executable-output diagnostics; no syntax or reward gate passed. The prior fidelity-weight 0.5 probe was not a distinct intervention because 0.5 is the existing default.",
+  "artifacts": {
+    "train_summary": "outputs/runs/iter-seed0-batch8-64step-ltr2-fidelity2-20260715/train_summary.json",
+    "scoreboard": "outputs/runs/iter-seed0-64step-ltr2-fidelity2-feedback-20260715/scoreboard.json",
+    "agentv": "outputs/runs/iter-seed0-64step-ltr2-fidelity2-feedback-20260715/agentv"
+  }
+}
