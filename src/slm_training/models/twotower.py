@@ -813,6 +813,13 @@ class TwoTowerModel(nn.Module):
         ltr_suffix = torch.zeros_like(predict_mask)
         for i in range(bsz):
             cut = self._rng.randint(1, max(1, seq - 1))
+            # Always train the first post-BOS decision. Random suffix cuts make
+            # this position otherwise receive LTR supervision only rarely.
+            if int(target_ids[i, 1]) != self.tokenizer.pad_id:
+                ltr_suffix[i, 1] = True
+                if not bool(predict_mask[i, 1].item()):
+                    predict_mask[i, 1] = True
+                    noisy[i, 1] = self.tokenizer.mask_id
             for j in range(cut, seq):
                 if int(target_ids[i, j]) == self.tokenizer.pad_id:
                     break
