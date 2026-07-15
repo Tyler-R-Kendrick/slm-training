@@ -88,6 +88,7 @@ def main(argv: list[str] | None = None) -> int:
         help="Must match the checkpoint kind.",
     )
     parser.add_argument("--device", type=str, default="cpu")
+    parser.add_argument("--output-tokenizer", choices=("compositional", "lexer"), default=None, help="Override the checkpoint output tokenizer during evaluation.")
     parser.add_argument(
         "--ship-gates",
         action="store_true",
@@ -275,6 +276,7 @@ def main(argv: list[str] | None = None) -> int:
         run_id=args.run_id,
         model_name=args.model,
         device=args.device,
+        output_tokenizer=args.output_tokenizer,
         context_backend=args.context_backend or "hf",
         grammar_ltr_primary=args.grammar_ltr_primary,
         grammar_ltr_repair=args.grammar_ltr_repair,
