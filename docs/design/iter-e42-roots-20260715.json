@@ -1,0 +1,12 @@
+{
+  "matrix": "quality-experiment-matrix-v5",
+  "experiment": "E42",
+  "run_id": "qx_e42_factorized",
+  "corpus": "remediated_roots",
+  "manifest_sha": "f8d714f122ac7f091236fd4e562935758de330534cac146abf30af13d0ac98ce",
+  "recipe": {"model": "twotower", "context_backend": "scratch", "device": "cpu", "output_tokenizer": "lexer", "factorized_embeddings": true, "steps": 128, "batch_size": 8},
+  "telemetry_path": "outputs/runs/iter-e42-roots-20260715/qx_e42_factorized/train_telemetry.json",
+  "loss": {"best_weighted_nll": 10.056364678779627, "broad_mean_nll": 5.6185306384871625},
+  "evaluation": {"suite": "smoke", "n": 3, "parse_rate": 0.0, "structural_similarity": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0, "latency_ms_p50": 7244.14, "decode_timeout_count": 0, "decision": "reject"},
+  "next": "change output objective or head; factorized embeddings are not sufficient"
+}
