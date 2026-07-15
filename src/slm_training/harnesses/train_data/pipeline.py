@@ -27,8 +27,8 @@ from slm_training.harnesses.train_data.synth import PromptSynthesizer, get_synth
 class TrainDataConfig:
     seed_path: Path | None = None
     # Human thumbs-up promotions from the annotate playground.
-    human_annotations_path: Path | None = Path("fixtures/annotations/human_train.jsonl")
-    rico_path: Path | None = Path("fixtures/rico/semantic_train.jsonl")
+    human_annotations_path: Path | None = Path("src/slm_training/resources/annotations/human_train.jsonl")
+    rico_path: Path | None = Path("src/slm_training/resources/rico/semantic_train.jsonl")
     # rico | fixture | existing | both | awwwards | rico+awwwards | all
     source: str = "all"
     # Reuse a previously built records.jsonl as roots for deterministic variants.
@@ -48,7 +48,7 @@ class TrainDataConfig:
     curriculum: bool = False
     namespace_augment: bool = False
     # Exclude train records whose layout tree matches hand-authored test fixtures.
-    test_seed_path: Path | None = Path("fixtures/test_seeds.jsonl")
+    test_seed_path: Path | None = Path("src/slm_training/resources/test_seeds.jsonl")
     # Exposure control: cap records per root parent (None = uncapped). One
     # parent otherwise receives up to 6+ rows (original + synth variants).
     max_records_per_parent: int | None = None
@@ -62,9 +62,9 @@ class TrainDataConfig:
     programspec_count: int = 16
     programspec_seed: int = 0
     include_language_contract: bool = True
-    deconstruct_path: Path | None = Path("fixtures/deconstruct/pipeline.jsonl")
-    render_path: Path | None = Path("fixtures/render/sample_program.json")
-    frontier_artifact_root: Path | None = Path("fixtures/frontier")
+    deconstruct_path: Path | None = Path("src/slm_training/resources/deconstruct/pipeline.jsonl")
+    render_path: Path | None = Path("src/slm_training/resources/render/sample_program.json")
+    frontier_artifact_root: Path | None = Path("src/slm_training/resources/frontier")
     include_frontier_artifacts: bool = True
     repairs_per_program: int = 1
     include_edit_derivatives: bool = True
@@ -641,7 +641,7 @@ def _records_from_awwwards(
     try:
         records = build_awwwards_records(
             AwwwardsConfig(
-                fixture_path=Path("fixtures/awwwards/sites.jsonl"),
+                fixture_path=Path("src/slm_training/resources/awwwards/sites.jsonl"),
                 max_sites=50,
             )
         )

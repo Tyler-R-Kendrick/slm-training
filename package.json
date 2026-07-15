@@ -9,10 +9,10 @@
     "test:e2e": "playwright test",
     "playwright:install": "playwright install chromium",
     "annotate:serve": "python -m scripts.serve_playground --port 8765",
-    "preview:install": "npm --prefix tools/openui_preview ci",
-    "preview:build": "npm --prefix tools/openui_preview run build",
-    "dashboard:install": "npm --prefix tools/dashboard install",
-    "dashboard:build": "npm --prefix tools/dashboard run build"
+    "preview:install": "npm --prefix src/apps/openui_preview ci",
+    "preview:build": "npm --prefix src/apps/openui_preview run build",
+    "dashboard:install": "npm --prefix src/apps/dashboard install",
+    "dashboard:build": "npm --prefix src/apps/dashboard run build"
   },
   "devDependencies": {
     "@agentv/core": "4.42.4",

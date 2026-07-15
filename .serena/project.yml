@@ -118,7 +118,7 @@ initial_prompt: |
   Prefer Serena symbolic tools (find_symbol, find_referencing_symbols,
   get_symbols_overview, replace_symbol_body, rename) over raw grep/read when
   navigating Python under src/slm_training and scripts/.
-  Process rules: AGENTS.md. Agent wiki: openwiki/quickstart.md.
+  Process rules: AGENTS.md. Agent wiki: docs/openwiki/quickstart.md.
   Design evidence: docs/design/. Skills: .agents/skills/.
 
 # time budget (seconds) per tool call for the retrieval of additional symbol information

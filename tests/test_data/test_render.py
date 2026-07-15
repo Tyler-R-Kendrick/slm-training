@@ -30,7 +30,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def _spec() -> ProgramSpec:
     data = json.loads(
-        (ROOT / "fixtures/render/sample_program.json").read_text(encoding="utf-8")
+        (ROOT / "src/slm_training/resources/render/sample_program.json").read_text(encoding="utf-8")
     )
     data["contract_id"] = contract_id()
     return ProgramSpec.from_dict(data)

@@ -1,7 +1,7 @@
 """DSL parse/validate/serialize — routed through GrammarBackend.
 
 Default DSL is OpenUI (hybrid: official @openuidev/lang-core when available,
-otherwise the Lark grammar in ``grammars/openui.lark``). Pass ``dsl=`` or set
+otherwise the Lark grammar in ``src/slm_training/dsl/grammars/openui.lark``). Pass ``dsl=`` or set
 ``SLM_GRAMMAR_DSL`` to switch grammars for training.
 """
 

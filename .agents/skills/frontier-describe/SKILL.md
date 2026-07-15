@@ -1,6 +1,6 @@
 ---
 name: frontier-describe
-description: Create or refresh committed train-only frontier description bundles for OpenUI gold records. Use when filling fixtures/frontier/worklist.jsonl with paraphrases, L1-L5 abstraction prompts, minimal edit instructions, or optional external-page vision semantics while preserving placeholders, preventing DSL or literal-copy leakage, and rebuilding the deterministic coverage manifest.
+description: Create or refresh committed train-only frontier description bundles for OpenUI gold records. Use when filling src/slm_training/resources/frontier/worklist.jsonl with paraphrases, L1-L5 abstraction prompts, minimal edit instructions, or optional external-page vision semantics while preserving placeholders, preventing DSL or literal-copy leakage, and rebuilding the deterministic coverage manifest.
 ---
 
 # Frontier Describe
@@ -16,10 +16,10 @@ model from the Python build and never describe test or held-out records.
    python -m scripts.frontier_worklist
    ```
 
-2. Read `fixtures/frontier/SCHEMA.md`, then process only worklist rows whose
+2. Read `src/slm_training/resources/frontier/SCHEMA.md`, then process only worklist rows whose
    `has_fresh_artifact` is false. Do not open test or held-out fixtures.
 3. For each row, create
-   `fixtures/frontier/<gold_id>.<gold_content_hash>.json`:
+   `src/slm_training/resources/frontier/<gold_id>.<gold_content_hash>.json`:
 
    - copy `gold_id`, `gold_content_hash`, and `skeleton_openui` byte-for-byte;
    - stamp `provenance.skill = "frontier-describe"`, `skill_version = "0.1.0"`,

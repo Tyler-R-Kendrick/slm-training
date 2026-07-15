@@ -370,7 +370,7 @@ def build_parser() -> argparse.ArgumentParser:
     readiness.set_defaults(func=cmd_validate_rl)
 
     benchmark = sub.add_parser("evaluate-researcher")
-    benchmark.add_argument("--cases", type=Path, default=Path("fixtures/autoresearch/researcher_cases.json"))
+    benchmark.add_argument("--cases", type=Path, default=Path("src/slm_training/resources/autoresearch/researcher_cases.json"))
     benchmark.add_argument("--predictions", type=Path, required=True)
     benchmark.add_argument("--run-dir", type=Path, default=Path("outputs/autoresearch/researcher_eval"))
     benchmark.add_argument("--researcher-id", required=True)

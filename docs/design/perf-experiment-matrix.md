@@ -2,7 +2,7 @@
 
 Decode-only optimizations for TwoTower LTR grammar-constrained generate.
 No retraining — each row overlays flags on an existing checkpoint (default:
-`fixtures/checkpoints/playground_demo/last.pt`).
+`src/slm_training/resources/checkpoints/playground_demo/last.pt`).
 
 See also: [runtime-performance.md](runtime-performance.md).
 

@@ -19,7 +19,7 @@ from slm_training.harnesses.train_data.catalog import (
 
 pytestmark_bridge = pytest.mark.skipif(
     not bridge_available(),
-    reason="OpenUI bridge deps missing; run: cd tools/openui_bridge && npm ci",
+    reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
 )
 
 HERO = (

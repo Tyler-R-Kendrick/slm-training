@@ -8,7 +8,7 @@ from slm_training.dsl.grammar.backends.types import GRAMMARS_DIR
 
 
 class OpenUILarkBackend(LarkFileBackend):
-    """Parse OpenUI Lang with ``grammars/openui.lark`` into ElementNode-like ASTs."""
+    """Parse OpenUI Lang with ``src/slm_training/dsl/grammars/openui.lark`` into ElementNode-like ASTs."""
 
     def __init__(self) -> None:
         super().__init__(

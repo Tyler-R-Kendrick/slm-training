@@ -49,7 +49,7 @@ def capture_program(
     if not node:
         raise RuntimeError("Node.js is required for renderer-first capture")
     root = root or repo_root()
-    script = root / "tools" / "openui_preview" / "capture.mjs"
+    script = root / "src" / "apps" / "openui_preview" / "capture.mjs"
     if not script.is_file():
         raise RuntimeError(f"OpenUI capture script not found: {script}")
     config = config or CaptureConfig()

@@ -21,7 +21,7 @@ Build a small, on-device-friendly specialist that generates **placeholder-augmen
 
 ## Official OpenUI Lang (source of truth)
 
-Parsing, serialization, and system-prompt generation use **`@openuidev/lang-core`** via [`tools/openui_bridge/`](../../tools/openui_bridge/), which re-exports official **`openuiLibrary`**.
+Parsing, serialization, and system-prompt generation use **`@openuidev/lang-core`** via [`src/apps/openui_bridge/`](../../src/apps/openui_bridge/), which re-exports official **`openuiLibrary`**.
 
 The pinned `@openuidev/lang-core@0.2.9` bridge and in-process grammar can parse
 the prototype v0.5 surface: `$state`, `Query`, `Mutation`, `Action`, tool calls,
@@ -45,8 +45,8 @@ User-facing string props (`text`, `label`, `title`, `placeholder`, `alt`, …) *
 
 ### DESIGN.md
 
-- Fixture: [`fixtures/design_md/default.DESIGN.md`](../../fixtures/design_md/default.DESIGN.md)
-- Lint bridge: [`tools/design_md_bridge/`](../../tools/design_md_bridge/) (`@google/design.md`)
+- Fixture: [`src/slm_training/resources/design_md/default.DESIGN.md`](../../src/slm_training/resources/design_md/default.DESIGN.md)
+- Lint bridge: [`src/apps/design_md_bridge/`](../../src/apps/design_md_bridge/) (`@google/design.md`)
 - Records may carry `design_md`; TwoTower context = `prompt + DESIGN.md`
 - Preference reward: grammar → placeholders → linter score → layout metrics
 - Eval must not credit gold DESIGN.md lint when `design_md_in_context=false`
@@ -79,8 +79,8 @@ Applicability of PDDL-Instruct-style ideas: [verifier-guided-repair.md](verifier
 | Source | Notes |
 | --- | --- |
 | RICO | Semantic screens → openuiLibrary (+ default DESIGN.md) |
-| Awwwards fixtures | [`fixtures/awwwards/sites.jsonl`](../../fixtures/awwwards/sites.jsonl) |
-| Hand fixtures | [`fixtures/train_seeds.jsonl`](../../fixtures/train_seeds.jsonl) |
+| Awwwards fixtures | [`src/slm_training/resources/awwwards/sites.jsonl`](../../src/slm_training/resources/awwwards/sites.jsonl) |
+| Hand fixtures | [`src/slm_training/resources/train_seeds.jsonl`](../../src/slm_training/resources/train_seeds.jsonl) |
 
 Leakage checks use exact + **structural** OpenUI fingerprints (placeholder/binder normalized).
 

@@ -45,7 +45,7 @@ gate report into `meta` without adding a wire field.
 
 ## Runtime and behavior evidence
 
-`tools/openui_preview/verify.mjs` launches Chromium through Playwright, mounts
+`src/apps/openui_preview/verify.mjs` launches Chromium through Playwright, mounts
 the same bundled preview used by the playground, records console/page errors,
 and clicks the first rendered button when present. Python callers use
 `run_preview_verifier()` and pass the returned evidence into G5/G6. The runner

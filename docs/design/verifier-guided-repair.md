@@ -58,7 +58,7 @@ For OpenUI generation those layers become:
 | --- | --- | --- | --- |
 | **Formalization** | Does the PDDL capture the user’s request? | Does the layout / slot inventory capture the prompt + DESIGN.md intent? | Human annotation, DESIGN.md lint, inventory-in-prompt (E35); **not** fully automatic |
 | **Structural validity** | Is the plan valid under the PDDL? | Is the program parseable / typed / placeholder-legal OpenUI? | `@openuidev/lang-core` + Lark DFA (`dsl/grammar/backends/`, `dsl/grammar/fastpath/`) |
-| **Execution** | Do tools behave as the PDDL effects say? | Does the React `Renderer` preview render the intended UI? | Preview island (`tools/openui_preview/`); not a training gate |
+| **Execution** | Do tools behave as the PDDL effects say? | Does the React `Renderer` preview render the intended UI? | Preview island (`src/apps/openui_preview/`); not a training gate |
 
 A program can be fully grammar-valid while solving the wrong layout intent.
 Grammar verification only covers the middle layer — same caveat VAL has for

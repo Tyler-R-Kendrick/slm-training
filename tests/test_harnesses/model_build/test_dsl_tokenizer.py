@@ -142,7 +142,7 @@ def test_terminal_kind_alignment(tok: DSLNativeTokenizer) -> None:
 
 
 def test_fixture_seeds_round_trip(tok: DSLNativeTokenizer) -> None:
-    path = Path("fixtures/train_seeds.jsonl")
+    path = Path("src/slm_training/resources/train_seeds.jsonl")
     if not path.is_file():
         pytest.skip("fixtures missing")
     import json

@@ -283,8 +283,8 @@ def _load_prompts(test_dir: Path, suite: str, limit: int) -> list[tuple[str, str
     if not path.is_file():
         for alt in (
             test_dir / "records.jsonl",
-            Path("fixtures/test_seeds.jsonl"),
-            Path("fixtures/train_seeds.jsonl"),
+            Path("src/slm_training/resources/test_seeds.jsonl"),
+            Path("src/slm_training/resources/train_seeds.jsonl"),
         ):
             if alt.is_file():
                 path = alt
@@ -558,7 +558,7 @@ def main(argv: list[str] | None = None) -> int:
     if vacuous:
         print(
             "ERROR: vacuous guardrails — quality pipeline cannot validate known-good "
-            "OpenUI (install tools/openui_bridge deps or check Lark fallback)."
+            "OpenUI (install src/apps/openui_bridge deps or check Lark fallback)."
         )
         return 2
     failed = [

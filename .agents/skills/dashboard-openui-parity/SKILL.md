@@ -1,6 +1,6 @@
 ---
 name: dashboard-openui-parity
-description: Use whenever a dashboard page changes — editing any tools/dashboard/src/pages/*.tsx or the shared components in tools/dashboard/src/components.tsx, or when adding/removing a route in main.tsx. The dashboard renders every page two ways (a compiled/interpreted toggle): hand-written React (compiled) and a committed OpenUI Lang program run live through the official @openuidev Renderer (interpreted). The two must stay at parity. This skill is the loop for updating the matching src/slm_training/web/static/openui/<slug>.openui program, the interpreted-mode library/toolProvider, and re-validating. Also use when a .openui program, tools/dashboard/src/interpret/*, or the page manifest is edited.
+description: Use whenever a dashboard page changes — editing any src/apps/dashboard/src/pages/*.tsx or the shared components in src/apps/dashboard/src/components.tsx, or when adding/removing a route in main.tsx. The dashboard renders every page two ways (a compiled/interpreted toggle): hand-written React (compiled) and a committed OpenUI Lang program run live through the official @openuidev Renderer (interpreted). The two must stay at parity. This skill is the loop for updating the matching src/slm_training/web/static/openui/<slug>.openui program, the interpreted-mode library/toolProvider, and re-validating. Also use when a .openui program, src/apps/dashboard/src/interpret/*, or the page manifest is edited.
 ---
 
 # Dashboard OpenUI parity (keep compiled ↔ interpreted in sync)
@@ -9,11 +9,11 @@ The dashboard ships **two renderers for the same pages**, switchable at runtime 
 the sidebar **◈ Compiled / ◇ Interpreted** toggle (`localStorage "slm-mode"`,
 `data-mode` on `:root`):
 
-- **compiled** — the hand-written React pages under `tools/dashboard/src/pages/*.tsx`.
+- **compiled** — the hand-written React pages under `src/apps/dashboard/src/pages/*.tsx`.
 - **interpreted** — the committed **OpenUI Lang** programs under
   `src/slm_training/web/static/openui/<slug>.openui`, fetched and run live through
   the official `@openuidev/react-lang` `<Renderer>` with the dashboard's hybrid
-  component library and `/api` tool provider (`tools/dashboard/src/interpret/`).
+  component library and `/api` tool provider (`src/apps/dashboard/src/interpret/`).
 
 **They must render the same thing.** When you change a page, update its `.openui`
 program too, or the two drift and interpreted mode is wrong.
@@ -23,13 +23,13 @@ program too, or the two drift and interpreted mode is wrong.
 | File | Role |
 | --- | --- |
 | `src/slm_training/web/static/openui/<slug>.openui` | The page program (one per route). Full OpenUI Lang: `Query`, `@Each`, `$state`, ternaries, custom components. |
-| `tools/dashboard/src/interpret/library.tsx` | Hybrid component library: stock `@openuidev` components **+** `defineComponent` wrappers of the dashboard's real React widgets (StatTile, DataTable, GateMatrix, JobConsole, …). Wrappers guarantee pixel parity. |
-| `tools/dashboard/src/interpret/toolProvider.ts` | Maps each `Query("name", …)` to `/api`, reshaping responses into DSL-friendly row-sets (the interpreted analogue of a compiled page's `usePoll`). Pre-format numeric cells to strings so table precision matches compiled. |
-| `tools/dashboard/src/interpret/{DslView,actions,nav}.tsx` | The renderer host, action handler, and in-app nav ref. |
+| `src/apps/dashboard/src/interpret/library.tsx` | Hybrid component library: stock `@openuidev` components **+** `defineComponent` wrappers of the dashboard's real React widgets (StatTile, DataTable, GateMatrix, JobConsole, …). Wrappers guarantee pixel parity. |
+| `src/apps/dashboard/src/interpret/toolProvider.ts` | Maps each `Query("name", …)` to `/api`, reshaping responses into DSL-friendly row-sets (the interpreted analogue of a compiled page's `usePoll`). Pre-format numeric cells to strings so table precision matches compiled. |
+| `src/apps/dashboard/src/interpret/{DslView,actions,nav}.tsx` | The renderer host, action handler, and in-app nav ref. |
 | `scripts/validate_page_dsl.py` | Structural validator + `MANIFEST.json` writer (see below). |
 
 **Dialect note:** these programs are **not** the placeholder-only training DSL that
-`tools/openui_bridge` validates. They use the full OpenUI Lang + the dashboard
+`src/apps/openui_bridge` validates. They use the full OpenUI Lang + the dashboard
 library, so validate with `scripts/validate_page_dsl.py`, **never** the training
 `validate`/bridge. Training data and ship-gates are untouched by this.
 
@@ -37,7 +37,7 @@ library, so validate with `scripts/validate_page_dsl.py`, **never** the training
 
 For a page (`overview`, `data`, `experiments`, `smoke`, `checkpoints`, `playground`):
 
-1. **Read the compiled page** (`tools/dashboard/src/pages/<Page>.tsx`) — note the exact
+1. **Read the compiled page** (`src/apps/dashboard/src/pages/<Page>.tsx`) — note the exact
    structure: page-head, tile grid (and its `min` width), each card's title + right-slot
    badge/chip/link, tables (columns, per-column number precision, status pills), bars,
    and any interactive widgets (selectors, launchers, gate editor).
@@ -48,7 +48,7 @@ For a page (`overview`, `data`, `experiments`, `smoke`, `checkpoints`, `playgrou
    annotate playground) as custom components in `library.tsx` — that is the "Hybrid"
    contract and what yields parity.
 3. **Add any missing** `toolProvider` query or `library` component the program needs.
-4. **Build**: `env -u NODE_OPTIONS npm --prefix tools/dashboard run build`
+4. **Build**: `env -u NODE_OPTIONS npm --prefix src/apps/dashboard run build`
    (the sandbox sets `NODE_OPTIONS="--import tsx"`, which breaks `node`/`npm` — always
    prefix node/npm with `env -u NODE_OPTIONS`). The `.openui` files are served verbatim
    from `/static/openui/`, so DSL-only edits need **no** rebuild — only library /

@@ -30,7 +30,14 @@ from slm_training.dsl.schema import ExampleRecord
 
 LANGUAGE_CONTRACT_FAMILY = "language_contract"
 _SOURCE = "language_contract"
-_PROP_ORDER_PATH = repo_root() / "grammars" / "openui_prop_order.json"
+_PROP_ORDER_PATH = (
+    repo_root()
+    / "src"
+    / "slm_training"
+    / "dsl"
+    / "grammars"
+    / "openui_prop_order.json"
+)
 
 # Gate ids mirror ``slm_training.data.verify.stack.Gate`` values.
 GATE_LEXICAL = "G0"

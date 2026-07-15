@@ -15,7 +15,7 @@ CKPT = PLAYGROUND_DEMO_CHECKPOINT
 
 
 def test_playground_demo_checkpoint_committed() -> None:
-    assert CKPT.is_file(), "playground demo checkpoint must be committed under fixtures/checkpoints/"
+    assert CKPT.is_file(), "playground demo checkpoint must be committed under src/slm_training/resources/checkpoints/"
     assert CKPT.with_suffix(".tokenizer.json").is_file()
     assert CKPT.with_suffix(".meta.json").is_file()
 

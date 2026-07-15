@@ -34,7 +34,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--seed-path",
         type=Path,
-        default=Path("fixtures/train_seeds.jsonl"),
+        default=Path("src/slm_training/resources/train_seeds.jsonl"),
         help="JSONL seed fixtures (used when source includes fixtures).",
     )
     parser.add_argument(
@@ -46,7 +46,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--rico-path",
         type=Path,
-        default=Path("fixtures/rico/semantic_train.jsonl"),
+        default=Path("src/slm_training/resources/rico/semantic_train.jsonl"),
         help="Local RICO semantic JSONL (HF-exported screens).",
     )
     parser.add_argument(
@@ -97,17 +97,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--deconstruct-path",
         type=Path,
-        default=Path("fixtures/deconstruct/pipeline.jsonl"),
+        default=Path("src/slm_training/resources/deconstruct/pipeline.jsonl"),
     )
     parser.add_argument(
         "--render-path",
         type=Path,
-        default=Path("fixtures/render/sample_program.json"),
+        default=Path("src/slm_training/resources/render/sample_program.json"),
     )
     parser.add_argument(
         "--frontier-artifact-root",
         type=Path,
-        default=Path("fixtures/frontier"),
+        default=Path("src/slm_training/resources/frontier"),
     )
     parser.add_argument(
         "--frontier-artifacts",

@@ -18,8 +18,8 @@ DEFAULT_SUITES = ("smoke", "held_out", "adversarial", "ood", "rico_held")
 
 @dataclass
 class TestDataConfig:
-    seed_path: Path | None = Path("fixtures/test_seeds.jsonl")
-    rico_path: Path | None = Path("fixtures/rico/semantic_test.jsonl")
+    seed_path: Path | None = Path("src/slm_training/resources/test_seeds.jsonl")
+    rico_path: Path | None = Path("src/slm_training/resources/rico/semantic_test.jsonl")
     # fixture | rico | both
     source: str = "both"
     output_root: Path = Path("outputs/test_data")
@@ -29,7 +29,7 @@ class TestDataConfig:
     require_train_manifest: bool = True
     rico_hf_split: str | None = None
     rico_limit: int | None = None
-    rico_hf_cache_path: Path | None = Path("fixtures/rico/hf_test_cache.jsonl")
+    rico_hf_cache_path: Path | None = Path("src/slm_training/resources/rico/hf_test_cache.jsonl")
     max_children: int = 6
     # Map RICO screens into these suites (round-robin).
     # Smoke/held_out stay fixture-curated; RICO uses rico_held.

@@ -44,7 +44,7 @@ def _seed_file(tmp_path: Path) -> Path:
 
 @pytest.mark.skipif(
     not bridge_available(),
-    reason="OpenUI bridge deps missing; run: cd tools/openui_bridge && npm ci",
+    reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
 )
 def test_build_train_data_writes_artifacts(tmp_path: Path) -> None:
     seeds = _seed_file(tmp_path)
@@ -80,7 +80,7 @@ def test_build_train_data_writes_artifacts(tmp_path: Path) -> None:
 
 @pytest.mark.skipif(
     not bridge_available(),
-    reason="OpenUI bridge deps missing; run: cd tools/openui_bridge && npm ci",
+    reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
 )
 def test_build_train_data_derives_from_existing_records(tmp_path: Path) -> None:
     roots = _seed_file(tmp_path)
@@ -106,7 +106,7 @@ def test_build_train_data_derives_from_existing_records(tmp_path: Path) -> None:
 
 @pytest.mark.skipif(
     not bridge_available(),
-    reason="OpenUI bridge deps missing; run: cd tools/openui_bridge && npm ci",
+    reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
 )
 def test_immutable_build_refuses_to_overwrite_snapshot(tmp_path: Path) -> None:
     config = TrainDataConfig(
@@ -125,7 +125,7 @@ def test_immutable_build_refuses_to_overwrite_snapshot(tmp_path: Path) -> None:
 
 @pytest.mark.skipif(
     not bridge_available(),
-    reason="OpenUI bridge deps missing; run: cd tools/openui_bridge && npm ci",
+    reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
 )
 def test_build_train_data_rejects_invalid_openui(tmp_path: Path) -> None:
     path = tmp_path / "bad.jsonl"
@@ -156,10 +156,10 @@ def test_build_train_data_rejects_invalid_openui(tmp_path: Path) -> None:
 
 @pytest.mark.skipif(
     not bridge_available(),
-    reason="OpenUI bridge deps missing; run: cd tools/openui_bridge && npm ci",
+    reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
 )
 def test_build_train_data_from_rico_fixtures(tmp_path: Path) -> None:
-    rico = Path("fixtures/rico/semantic_train.jsonl")
+    rico = Path("src/slm_training/resources/rico/semantic_train.jsonl")
     if not rico.exists():
         pytest.skip("RICO fixtures missing")
     result = build_train_data(
@@ -180,12 +180,12 @@ def test_build_train_data_from_rico_fixtures(tmp_path: Path) -> None:
 
 @pytest.mark.skipif(
     not bridge_available(),
-    reason="OpenUI bridge deps missing; run: cd tools/openui_bridge && npm ci",
+    reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
 )
 def test_all_sources_are_tiered_and_rebuild_stably(tmp_path: Path) -> None:
     config = TrainDataConfig(
-        seed_path=Path("fixtures/train_seeds.jsonl"),
-        rico_path=Path("fixtures/rico/semantic_train.jsonl"),
+        seed_path=Path("src/slm_training/resources/train_seeds.jsonl"),
+        rico_path=Path("src/slm_training/resources/rico/semantic_train.jsonl"),
         rico_limit=1,
         source="all",
         output_root=tmp_path / "integrated",

@@ -1,7 +1,7 @@
 {
   "run": {
     "kind": "prediction_evidence_fixture_wiring",
-    "cases": "fixtures/evals/task_scoreboard_smoke.jsonl",
+    "cases": "src/slm_training/resources/evals/task_scoreboard_smoke.jsonl",
     "device": "cpu",
     "steps": 0,
     "context_backend": "none",

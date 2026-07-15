@@ -204,7 +204,7 @@ class NamespaceAugmentSynthesizer:
 class FrozenArtifactSynthesizer:
     """Emit paraphrase + abstraction-ladder rows from committed frontier artifacts.
 
-    Reads ``fixtures/frontier/<gold_id>.<hash8>.json`` (agent-skill output), binds
+    Reads ``src/slm_training/resources/frontier/<gold_id>.<hash8>.json`` (agent-skill output), binds
     it to the gold by content hash *and* structural fingerprint (faithfulness), and
     drops silently on a mismatch (a changed gold → regenerate). Rows keep the gold's
     placeholder skeleton as the target; only the prompt varies. No model call — the

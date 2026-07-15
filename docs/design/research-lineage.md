@@ -396,11 +396,11 @@ grammar stack remains the verifier; no draft LM is introduced.
 
 | System | Role here | Link / path |
 | --- | --- | --- |
-| OpenUI / `@openuidev/lang-core` | Official grammar, streaming parse, validate | [openui.com](https://www.openui.com/) · [`tools/openui_bridge/`](../../tools/openui_bridge/) |
-| `@openuidev/react-lang` Renderer | Annotate playground visual preview | [`tools/openui_preview/`](../../tools/openui_preview/) |
+| OpenUI / `@openuidev/lang-core` | Official grammar, streaming parse, validate | [openui.com](https://www.openui.com/) · [`src/apps/openui_bridge/`](../../src/apps/openui_bridge/) |
+| `@openuidev/react-lang` Renderer | Annotate playground visual preview | [`src/apps/openui_preview/`](../../src/apps/openui_preview/) |
 | Lark `InteractiveParser` | Incremental LALR acceptor for force-emit / admit | [`dsl/grammar/fastpath/engine.py`](../../src/slm_training/dsl/grammar/fastpath/engine.py) |
-| `@google/design.md` | DESIGN.md lint in preference reward | [`tools/design_md_bridge/`](../../tools/design_md_bridge/) |
-| RICO | Mobile UI screens → OpenUI seeds | [`fixtures/rico/`](../../fixtures/rico/) |
+| `@google/design.md` | DESIGN.md lint in preference reward | [`src/apps/design_md_bridge/`](../../src/apps/design_md_bridge/) |
+| RICO | Mobile UI screens → OpenUI seeds | [`src/slm_training/resources/rico/`](../../src/slm_training/resources/rico/) |
 | BF16 exponent codebook | Optional weight-compression sidecar | [brianbell-x weight-compression](https://brianbell-x.github.io/weight-compression/) · [`runtime-performance.md`](runtime-performance.md) |
 
 ---

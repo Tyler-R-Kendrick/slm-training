@@ -51,7 +51,7 @@ placeholder-normalized) appears in the train manifest. Train synthesis can
 accidentally recreate test fixture structures (e.g. dual-card column, tabs panel).
 
 `build_train_data` loads reserved structure fingerprints from
-`fixtures/test_seeds.jsonl` and drops any train record (including synthesizer
+`src/slm_training/resources/test_seeds.jsonl` and drops any train record (including synthesizer
 variants) that collides. Stats report `structure_reserved_rejected`.
 
 ```bash
@@ -77,7 +77,7 @@ Fresh training from scratch is still preferred for ship gates.
 
 ## Fixtures
 
-`fixtures/test_seeds.jsonl` and `fixtures/train_seeds.jsonl` are structure-scrubbed.
+`src/slm_training/resources/test_seeds.jsonl` and `src/slm_training/resources/train_seeds.jsonl` are structure-scrubbed.
 Rebuild corpora after pulling:
 
 ```bash

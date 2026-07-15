@@ -9,4 +9,6 @@ matrix run, use `documenting-experiment-results`. Token stack: `ponytail`,
 `hf-cli` + marketplace skills from
 [huggingface/skills](https://github.com/huggingface/skills)
 (`hf skills add --force` / `hf skills update` to refresh).
+Use `organize-repository` before changing tracked file placement and use
+`git mv` for every tracked relocation.
 When a checkpoint is created or promoted, update `docs/MODEL_CARD.md` and the README model-card summary.

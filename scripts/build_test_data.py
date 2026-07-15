@@ -21,12 +21,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--seed-path",
         type=Path,
-        default=Path("fixtures/test_seeds.jsonl"),
+        default=Path("src/slm_training/resources/test_seeds.jsonl"),
     )
     parser.add_argument(
         "--rico-path",
         type=Path,
-        default=Path("fixtures/rico/semantic_test.jsonl"),
+        default=Path("src/slm_training/resources/rico/semantic_test.jsonl"),
     )
     parser.add_argument(
         "--rico-hf-split",
@@ -37,7 +37,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--rico-hf-cache",
         type=Path,
-        default=Path("fixtures/rico/hf_test_cache.jsonl"),
+        default=Path("src/slm_training/resources/rico/hf_test_cache.jsonl"),
         help="Cache file for HF RICO screens (speeds rebuilds / offline).",
     )
     parser.add_argument(

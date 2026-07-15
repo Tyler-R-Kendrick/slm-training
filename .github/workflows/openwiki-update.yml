@@ -22,26 +22,43 @@ jobs:
           node-version: "22"
 
       - name: Install OpenWiki
-        run: npm install --global openwiki
+        run: npm install --global openwiki@0.1.2
+
+      - name: Select OpenWiki provider
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+        run: |
+          if [[ -n "$OPENAI_API_KEY" ]]; then
+            echo "OPENWIKI_PROVIDER=openai" >> "$GITHUB_ENV"
+            echo "OPENWIKI_MODEL_ID=gpt-5.6-terra" >> "$GITHUB_ENV"
+          elif [[ -n "$OPENROUTER_API_KEY" ]]; then
+            echo "OPENWIKI_PROVIDER=openrouter" >> "$GITHUB_ENV"
+            echo "OPENWIKI_MODEL_ID=z-ai/glm-5.2" >> "$GITHUB_ENV"
+          else
+            echo "Missing OPENAI_API_KEY and OPENROUTER_API_KEY repository secrets." >&2
+            exit 1
+          fi
+          if [[ -n "$LANGSMITH_API_KEY" ]]; then
+            echo "LANGCHAIN_TRACING_V2=true" >> "$GITHUB_ENV"
+          else
+            echo "LANGCHAIN_TRACING_V2=false" >> "$GITHUB_ENV"
+          fi
 
       - name: Run OpenWiki
-        run: openwiki code --update --print
+        run: python -m scripts.update_openwiki --update --print
         env:
-          OPENWIKI_PROVIDER: openrouter
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          OPENWIKI_MODEL_ID: z-ai/glm-5.2
           LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
           LANGCHAIN_PROJECT: openwiki
-          LANGCHAIN_TRACING_V2: "true"
 
       - name: Create OpenWiki update pull request
         uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7
         with:
           add-paths: |
-            openwiki
-            AGENTS.md
-            CLAUDE.md
-            .github/workflows/openwiki-update.yml
+            docs/openwiki
           branch: openwiki/update
           commit-message: "docs: update OpenWiki"
           title: "docs: update OpenWiki"

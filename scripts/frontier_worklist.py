@@ -40,7 +40,7 @@ def build_worklist(records_path: Path, *, frontier_root: Path) -> list[dict]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--records", type=Path, default=Path("fixtures/train_seeds.jsonl"))
+    parser.add_argument("--records", type=Path, default=Path("src/slm_training/resources/train_seeds.jsonl"))
     parser.add_argument("--out", type=Path, default=FRONTIER_DIR / "worklist.jsonl")
     parser.add_argument("--frontier-root", type=Path, default=FRONTIER_DIR)
     args = parser.parse_args(argv)

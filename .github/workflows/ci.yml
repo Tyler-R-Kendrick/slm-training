@@ -26,15 +26,17 @@ jobs:
           cache: npm
           cache-dependency-path: |
             package-lock.json
-            tools/openui_bridge/package-lock.json
-            tools/design_md_bridge/package-lock.json
+            src/apps/openui_bridge/package-lock.json
+            src/apps/design_md_bridge/package-lock.json
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e ".[dev,mcp,web]"
       - run: npm ci
       - run: npm ci
-        working-directory: tools/openui_bridge
+        working-directory: src/apps/openui_bridge
       - run: npm ci
-        working-directory: tools/design_md_bridge
+        working-directory: src/apps/design_md_bridge
+      - name: Validate repository organization
+        run: python -m scripts.repo_policy
       - run: ruff check .
       - run: python -m compileall -q src scripts tests
       - run: pytest -q

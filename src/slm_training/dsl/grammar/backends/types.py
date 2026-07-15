@@ -11,7 +11,7 @@ from slm_training.dsl.lang_core import Program
 from slm_training.dsl.stream_types import StreamStatus
 
 REPO_ROOT = repo_root()
-GRAMMARS_DIR = REPO_ROOT / "grammars"
+GRAMMARS_DIR = REPO_ROOT / "src" / "slm_training" / "dsl" / "grammars"
 
 
 @dataclass(frozen=True)

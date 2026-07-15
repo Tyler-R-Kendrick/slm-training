@@ -1,10 +1,10 @@
 """Frozen frontier artifact: committed, versioned skill output the build re-validates.
 
 The agent-skill (P5 `frontier-describe`) writes one JSON bundle per train gold to
-``fixtures/frontier/<gold_id>.<gold_hash8>.json``. The deterministic Python build
+``src/slm_training/resources/frontier/<gold_id>.<gold_hash8>.json``. The deterministic Python build
 never calls a model — it only reads these committed bundles, binds each to the
 exact gold (content hash + structural fingerprint), and re-validates every row it
-emits. See ``fixtures/frontier/SCHEMA.md``.
+emits. See ``src/slm_training/resources/frontier/SCHEMA.md``.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-FRONTIER_DIR = Path("fixtures/frontier")
+FRONTIER_DIR = Path("src/slm_training/resources/frontier")
 
 
 @dataclass(frozen=True)

@@ -70,7 +70,7 @@ The initial recipe is deliberately small and diagnostic:
 - two prompts, two generations per prompt, global batch four;
 - DTensor v2 LoRA, rank 16, alpha 32, dropout 0.05;
 - Qwen projection targets from the frozen causal recipe;
-- two committed wiring-only prompts under `fixtures/nemo_rl/`;
+- two committed wiring-only prompts under `src/slm_training/resources/nemo_rl/`;
 - safetensors/consolidated checkpoint, no W&B, bucket sync required.
 
 These fixtures are not held-out evaluation data. A completed run proves model

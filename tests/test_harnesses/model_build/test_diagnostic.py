@@ -144,8 +144,9 @@ def test_fixture_seeds_fit_e18_budget() -> None:
     from slm_training.harnesses.model_build.diagnostic import length_budget_report
 
     root = repo_root()
-    train = load_jsonl(root / "fixtures" / "train_seeds.jsonl")
-    test = load_jsonl(root / "fixtures" / "test_seeds.jsonl")
+    resources = root / "src" / "slm_training" / "resources"
+    train = load_jsonl(resources / "train_seeds.jsonl")
+    test = load_jsonl(resources / "test_seeds.jsonl")
     report = length_budget_report(
         records=list(train) + list(test),
         grammar_ltr_max_tokens=192,

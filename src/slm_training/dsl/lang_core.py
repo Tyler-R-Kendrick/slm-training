@@ -18,7 +18,7 @@ from slm_training.dsl.language_contract import contract_id
 from slm_training.dsl.placeholders import extract_placeholders
 
 REPO_ROOT = repo_root()
-DEFAULT_BRIDGE_DIR = REPO_ROOT / "tools" / "openui_bridge"
+DEFAULT_BRIDGE_DIR = REPO_ROOT / "src" / "apps" / "openui_bridge"
 DEFAULT_CLI = DEFAULT_BRIDGE_DIR / "cli.mjs"
 
 _REPL_LOCK = threading.Lock()

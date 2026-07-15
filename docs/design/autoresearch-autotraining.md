@@ -130,7 +130,7 @@ matched control. Never edit a prior snapshot or train on the feedback eval holdo
 ## Researcher improvement
 
 Researcher changes are evaluated on
-`fixtures/autoresearch/researcher_cases.json`. The benchmark measures strict-spec
+`src/slm_training/resources/autoresearch/researcher_cases.json`. The benchmark measures strict-spec
 validity, grounded citations, distinct bounded knob signatures, and actionable
 expected-knob/stop coverage. It publishes AgentEvals JSONL through the pinned AgentV
 SDK. Promotion requires every score to clear the threshold, all cases to pass, and a

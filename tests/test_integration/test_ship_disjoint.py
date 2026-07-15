@@ -25,8 +25,8 @@ def test_switchitem_null_description_allowed() -> None:
 def test_train_all_and_test_fixtures_are_disjoint(tmp_path: Path) -> None:
     train = build_train_data(
         TrainDataConfig(
-            seed_path=Path("fixtures/train_seeds.jsonl"),
-            rico_path=Path("fixtures/rico/semantic_train.jsonl"),
+            seed_path=Path("src/slm_training/resources/train_seeds.jsonl"),
+            rico_path=Path("src/slm_training/resources/rico/semantic_train.jsonl"),
             source="all",
             output_root=tmp_path / "train",
             version="v0",
@@ -38,7 +38,7 @@ def test_train_all_and_test_fixtures_are_disjoint(tmp_path: Path) -> None:
     # Rebuild should succeed without fixture openui collisions.
     test = build_test_data(
         TestDataConfig(
-            seed_path=Path("fixtures/test_seeds.jsonl"),
+            seed_path=Path("src/slm_training/resources/test_seeds.jsonl"),
             rico_path=None,
             source="fixture",
             output_root=tmp_path / "test",
