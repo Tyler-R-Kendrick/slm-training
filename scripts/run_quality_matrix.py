@@ -1108,7 +1108,10 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         ),
         cluster_max_size=int(getattr(exp, "cluster_max_size", 4) or 4),
         cluster_verify=bool(getattr(exp, "cluster_verify", False)),
-        survival_gate=bool(getattr(exp, "survival_gate", False)),
+        # Train the base model first; E73 fits the survival head in
+        # _maybe_survival_gate before evaluation. Enabling decode-time survival
+        # during SFT makes every training step take the expensive decode path.
+        survival_gate=False,
         survival_commit_threshold=float(
             getattr(exp, "survival_commit_threshold", 0.3) or 0.3
         ),
@@ -1341,7 +1344,7 @@ def _maybe_trust_gate(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> 
         ckpt,
         exp.train_dir / "records.jsonl",
         out_dir=out_dir,
-        steps=max(20, int(getattr(args, "pref_steps", 30) or 30)),
+        steps=max(1, int(getattr(args, "pref_steps", 30) or 30)),
         device=args.device,
         limit=int(getattr(args, "pref_limit", 40) or 40),
         slot_aware=bool(getattr(exp, "slot_aware_trust_gate", False)),
