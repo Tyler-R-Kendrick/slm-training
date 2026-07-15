@@ -122,7 +122,9 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "speculative_overlap",
     ):
         if hasattr(config, key) and hasattr(cfg, key):
-            setattr(cfg, key, getattr(config, key))
+            value = getattr(config, key)
+            if value is not None:
+                setattr(cfg, key, value)
     # Preserve checkpoint DESIGN.md conditioning unless caller sets an explicit bool.
     # Eval defaults must not force-enable gold DESIGN.md on no-design-md checkpoints.
     dm = getattr(config, "design_md_in_context", None)

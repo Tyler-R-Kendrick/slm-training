@@ -436,8 +436,20 @@ def run_one(
 
 def _guardrails(baseline: dict[str, Any], row: dict[str, Any]) -> dict[str, Any]:
     """Quality must not regress vs P0 beyond small tolerance."""
-    parse_floor = float(baseline.get("parse_rate") or 0.0) - 0.05
-    fid_floor = float(baseline.get("placeholder_fidelity") or 0.0) - 0.05
+    baseline_parse = float(baseline.get("parse_rate") or 0.0)
+    baseline_fid = float(baseline.get("placeholder_fidelity") or 0.0)
+    if baseline_parse <= 0.0 or baseline_fid <= 0.0:
+        return {
+            "pass": False,
+            "parse_ok": False,
+            "fidelity_ok": False,
+            "speedup_vs_p0": None,
+            "parse_floor": None,
+            "fidelity_floor": None,
+            "note": "invalid P0 quality anchor; candidate is not promotable",
+        }
+    parse_floor = baseline_parse - 0.05
+    fid_floor = baseline_fid - 0.05
     parse_ok = float(row.get("parse_rate") or 0.0) >= parse_floor
     fid_ok = float(row.get("placeholder_fidelity") or 0.0) >= fid_floor
     speedup = None
@@ -532,7 +544,13 @@ def main(argv: list[str] | None = None) -> int:
                 result["guardrails"]["vacuous_baseline"] = True
                 result["guardrails"]["pass"] = False
         else:
-            result["guardrails"] = {"pass": True, "note": "no P0 in this run"}
+            # A speed row without the same-run P0 control is not quality-gated.
+            # Mark it incomplete instead of silently making an unanchored row
+            # look promotable in a focused run.
+            result["guardrails"] = {
+                "pass": False,
+                "note": "missing P0 control; rerun with --only P0,<candidate>",
+            }
         results.append(result)
         (args.out_dir / exp.run_id / "matrix_result.json").write_text(
             json.dumps(result, indent=2) + "\n", encoding="utf-8"

@@ -138,11 +138,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--grammar-ltr-primary",
         action="store_true",
+        default=None,
         help="Override checkpoint: prefer greedy LTR decode.",
     )
     parser.add_argument(
         "--grammar-ltr-repair",
         action="store_true",
+        default=None,
         help="Override checkpoint: constrained LTR repair on failed parses.",
     )
     parser.add_argument(

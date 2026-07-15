@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import time
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
@@ -111,9 +112,16 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         out[f"{key}_sum"] = round(sum(vals), 3)
         out[f"{key}_mean"] = round(sum(vals) / len(vals), 3)
     totals = sorted(float(r.total_ms) for r in rows)
-    mid = len(totals) // 2
-    out["total_ms_p50"] = totals[mid] if totals else None
-    out["total_ms_p95"] = totals[max(0, int(len(totals) * 0.95) - 1)] if totals else None
+
+    def _nearest_rank(fraction: float) -> float | None:
+        if not totals:
+            return None
+        # Nearest-rank percentiles keep p95 >= p50 for tiny benchmark samples.
+        index = max(0, min(len(totals) - 1, math.ceil(fraction * len(totals)) - 1))
+        return totals[index]
+
+    out["total_ms_p50"] = _nearest_rank(0.50)
+    out["total_ms_p95"] = _nearest_rank(0.95)
     return out
 
 
