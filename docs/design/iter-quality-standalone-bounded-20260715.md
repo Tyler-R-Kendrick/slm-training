@@ -10,3 +10,8 @@ steps; the second used `--gen-steps 1`. Both were terminated by the execution
 environment during decoding before a scoreboard was written. Therefore no
 generated-quality metric or ship conclusion is claimed. The loss feedback path
 remains complete and authoritative for these runs.
+
+A third isolation probe removed DESIGN context and structural trust, then set
+`--max-attempts 1`; it was still terminated before a scoreboard. This rules out
+the obvious retry/context multipliers and leaves checkpoint-load/model-decode
+profiling as the next required diagnostic. No generated-quality claim is made.
