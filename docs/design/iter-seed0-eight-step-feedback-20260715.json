@@ -1,0 +1,9 @@
+{
+  "date": "2026-07-15",
+  "kind": "loss-vs-generation-feedback",
+  "recipe": {"steps": 8, "batch_size": 8, "effective_batch_size": 8, "learning_rate": 0.0006, "seed": 0, "context_backend": "scratch"},
+  "loss": {"weighted_nll": 17.40958114777779, "target_tokens": 11122},
+  "unconstrained_generation": {"parse_rate": 0.0, "structural_similarity": 0.0, "reward_score": 0.0, "agentv_persisted": true},
+  "decision": "do not promote; loss progress does not establish generation readiness",
+  "honesty": "scratch diagnostic; not a ship claim"
+}
