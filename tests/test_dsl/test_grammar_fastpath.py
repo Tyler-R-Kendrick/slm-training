@@ -135,6 +135,20 @@ def test_pick_constrained_rejects_double_equal() -> None:
     assert choice == tok.token_to_id["Stack"]
 
 
+def test_pick_constrained_rejects_eos_on_incomplete_prefix() -> None:
+    import torch
+
+    from slm_training.models.grammar import pick_constrained_token
+
+    tok = _tok()
+    prefix = tok.encode("root", add_special=False)
+    logits = torch.full((tok.vocab_size,), -20.0)
+    logits[tok.eos_id] = 50.0
+    logits[tok.token_to_id["="]] = 1.0
+    choice = pick_constrained_token(logits, tok, prefix, top_k=4)
+    assert choice != tok.eos_id
+
+
 def test_ensure_valid_fallback_only_when_finalize() -> None:
     """Canned fallback must not silently inflate eval when finalize is off."""
     records = [
