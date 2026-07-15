@@ -683,6 +683,15 @@ def pick_constrained_token(
             tokenizer.unk_id,
         }:
             return False
+        # EOS must terminate a complete program, not an UnexpectedEOF prefix.
+        if tid == tokenizer.eos_id:
+            try:
+                from slm_training.dsl.parser import validate
+                program = validate(prefix_text.strip())
+                if not getattr(program, "serialized", None):
+                    return False
+            except Exception:  # noqa: BLE001
+                return False
         if contract_allowed is not None and tid not in contract_allowed:
             return False
         # R1: when the DFA already lists this id in an exact (non-broad) accept
