@@ -163,36 +163,93 @@ export function DataTable({
   columns,
   rows,
   render,
+  searchable = false,
+  searchPlaceholder = "Search experiments",
+  maxHeight = "28rem",
 }: {
-  columns: { key: string; label: string; align?: "left" | "right" }[];
+  columns: { key: string; label: string; align?: "left" | "right"; help?: string; digits?: number; direction?: "higher" | "lower" }[];
   rows: any[];
   render?: Record<string, (row: any) => React.ReactNode>;
+  searchable?: boolean;
+  searchPlaceholder?: string;
+  maxHeight?: string;
 }) {
+  const [query, setQuery] = React.useState("");
   if (!rows.length) return <Empty>No rows.</Empty>;
+  const baseline = rows.find((row) => row.id === "P0");
+  const filtered = query.trim()
+    ? rows.filter((row) => Object.values(row).some((value) => String(value ?? "").toLowerCase().includes(query.toLowerCase())))
+    : rows;
   return (
-    <div className="table-wrap">
-      <table className="dtable">
+    <div>
+      {searchable && (
+        <label className="table-search">
+          <span>Search experiments</span>
+          <input type="search" value={query} placeholder={searchPlaceholder} onChange={(event) => setQuery(event.target.value)} />
+          <span className="hint">{filtered.length} / {rows.length}</span>
+        </label>
+      )}
+      <div className="table-wrap" style={{ maxHeight }}>
+        <table className="dtable">
         <thead>
           <tr>
             {columns.map((c) => (
-              <th key={c.key} style={{ textAlign: c.align ?? "left" }}>{c.label}</th>
+              <th key={c.key} style={{ textAlign: c.align ?? "left" }}>
+                {c.help ? <span className="table-help" tabIndex={0} title={c.help} aria-label={`${c.label}: ${c.help}`}>{c.label}<span aria-hidden="true"> ⓘ</span><span className="table-tooltip" role="tooltip">{c.help}</span></span> : c.label}
+              </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {rows.map((row, i) => (
+          {filtered.map((row, i) => (
             <tr key={i}>
               {columns.map((c) => (
                 <td key={c.key} style={{ textAlign: c.align ?? "left" }}>
-                  {render && render[c.key] ? render[c.key](row) : fmt(row[c.key])}
+                  {render && render[c.key] ? render[c.key](row) : c.direction ? <MetricCell row={row} baseline={baseline} column={c} /> : fmt(row[c.key], c.digits ?? 3)}
                 </td>
               ))}
             </tr>
           ))}
         </tbody>
-      </table>
+        </table>
+      </div>
     </div>
   );
+}
+
+type MetricColumn = { key: string; label: string; help?: string; digits?: number; direction?: "higher" | "lower" };
+
+function MetricCell({ row, baseline, column }: { row: any; baseline: any; column: MetricColumn }) {
+  const value = row[column.key];
+  const numeric = typeof value === "number" ? value : Number(value);
+  let state = "neutral";
+  let insight = "Within the neutral comparison band.";
+  if (!Number.isFinite(numeric)) {
+    state = "info";
+    insight = "No numeric value was recorded for this metric.";
+  } else if (!baseline || typeof baseline[column.key] !== "number") {
+    state = "info";
+    insight = "No numeric P0 baseline is available for this comparison.";
+  } else if (row.id !== "P0") {
+    const base = baseline[column.key];
+    if (base === 0) {
+      state = "warning";
+      insight = row.guardrails?.note || "P0 is zero, so a relative performance range cannot be established.";
+    } else {
+      const change = (numeric - base) / Math.abs(base);
+      const favorable = column.direction === "lower" ? -change : change;
+      state = favorable > 0.05 ? "good" : favorable < -0.05 ? "bad" : "neutral";
+      insight = `${favorable >= 0 ? "+" : ""}${(favorable * 100).toFixed(1)}% vs P0; ${column.direction === "lower" ? "lower" : "higher"} is better.`;
+      if (column.key === "parse_rate" && row.guardrails?.note) {
+        state = "warning";
+        insight = row.guardrails.note;
+      }
+    }
+  }
+  return <span className={`metric-value metric-${state}`}>
+    {fmt(value, column.digits ?? 3)}
+    {state !== "neutral" && <span className="metric-flag" tabIndex={0} aria-label={insight} title={insight}>{state === "good" ? "✓" : state === "bad" ? "↓" : state === "warning" ? "⚠" : "ⓘ"}<span className="table-tooltip" role="tooltip">{insight}</span></span>}
+  </span>;
 }
 
 // --- gate matrix -----------------------------------------------------------

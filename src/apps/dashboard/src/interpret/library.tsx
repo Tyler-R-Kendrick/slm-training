@@ -196,8 +196,8 @@ const Timeline = defineComponent({
 const DataTable = defineComponent({
   name: "DataTable",
   description:
-    "Dense table. columns = [{key,label,align}]; rows = a Query row-set; statusLen truncates status-pill labels (default 26); linkKey renders that column as a mono run-link that opens /runs/<row.run_id>.",
-  props: z.object({ columns: z.array(any), rows: any, statusLen: z.number().optional(), linkKey: z.string().optional() }),
+    "Dense table. columns = [{key,label,align,help,digits,direction}]; rows = a Query row-set; statusLen truncates status-pill labels (default 26); linkKey renders that column as a mono run-link; searchable enables filtering.",
+  props: z.object({ columns: z.array(any), rows: any, statusLen: z.number().optional(), linkKey: z.string().optional(), searchable: z.boolean().optional(), searchPlaceholder: z.string().optional() }),
   component: ({ props }: any) => {
     const cols = (props.columns || []).filter((c: any) => c && c.key);
     const data = rowsOf(props.rows);
@@ -208,8 +208,10 @@ const DataTable = defineComponent({
       <DataTableC
         columns={cols as any}
         rows={data}
+        searchable={props.searchable}
+        searchPlaceholder={props.searchPlaceholder}
         render={Object.fromEntries(
-          cols.map((c: any) => [
+          cols.filter((c: any) => !c.direction).map((c: any) => [
             c.key,
             (r: any) => {
               if (linkKey && c.key === linkKey) {
