@@ -972,8 +972,17 @@ class TwoTowerModel(nn.Module):
                 weights = weights * row_flat
             mask_flat = predict_mask.reshape(-1)
             mask_loss = (ce * weights)[mask_flat].mean()
+            # Diagnostic only: preserve per-record masked token loss without
+            # changing the scalar objective or its gradient reduction.
+            row_values = (ce * weights).reshape(target_ids.shape)
+            row_mask = predict_mask
+            row_counts = row_mask.sum(dim=1).clamp_min(1)
+            self._last_example_token_losses = (
+                (row_values * row_mask).sum(dim=1) / row_counts
+            ).detach().cpu().tolist()
         else:
             mask_loss = logits.sum() * 0.0
+            self._last_example_token_losses = [0.0] * len(batch)
 
         length_w = float(
             getattr(self.config, "diffusion_length_loss_weight", 0.0) or 0.0
