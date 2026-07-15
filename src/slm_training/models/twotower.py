@@ -2710,7 +2710,9 @@ class TwoTowerModel(nn.Module):
                         return _admit(engine, self.tokenizer, trial)
 
                 stream_fn = None
-                if use_grammar:
+                if use_grammar and not bool(
+                    getattr(self.config, "grammar_skip_exact_stream_probe", True)
+                ):
 
                     def stream_fn(trial: list[int], newly_pos: list[int]) -> list[int]:
                         return filter_ids_by_stream(self.tokenizer, trial, newly_pos)
