@@ -67,6 +67,33 @@ def test_pick_constrained_honors_forced_id() -> None:
     assert choice == equal_id
 
 
+def test_lexer_root_round_trips_and_is_first_token_legal() -> None:
+    import torch
+
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tok = DSLNativeTokenizer.build()
+    ids = tok.encode("root = Stack([])", add_special=False)
+    assert tok.decode(ids).startswith("root =")
+    logits = torch.full((tok.vocab_size,), -20.0)
+    logits[tok.bind_id(0)] = 50.0
+    logits[tok.token_to_id["Stack"]] = 1.0
+    choice = pick_constrained_token(logits, tok, [], top_k=8)
+    assert choice == tok.bind_id(0)
+
+
+def test_grammar_state_uses_surface_text_for_lexer_ids() -> None:
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+    from slm_training.models.grammar import make_grammar_state
+
+    tok = DSLNativeTokenizer.build()
+    state = make_grammar_state()
+    state.advance_token(tok, tok.bind_id(0))
+    assert state.prefix_text == "root"
+    assert state.engine is not None
+    assert state.engine._prefix == "root"
+
+
 def test_admit_fill_accepts_partial_with_holes() -> None:
     tok = _tok()
     eng = OpenUIIncrementalEngine()

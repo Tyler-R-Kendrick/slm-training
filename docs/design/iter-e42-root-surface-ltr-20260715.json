@@ -1,0 +1,30 @@
+{
+  "run_id": "iter-e42-root-surface-ltr-20260715",
+  "parent_run": "iter-e42-judged-factorized-20260715",
+  "checkpoint": "outputs/runs/iter-e42-judged-factorized-20260715/qx_e42_factorized/checkpoints/last.pt",
+  "suite": "smoke",
+  "n": 3,
+  "changes": [
+    "reserve lexer binder slot zero for root",
+    "decode native binder slot zero as root",
+    "advance grammar state with decoded surface text",
+    "require root at the first significant constrained token"
+  ],
+  "focused_tests": {"passed": 37, "deselected": 1},
+  "decode_ab": {
+    "parallel_strict": {
+      "parse_rate": 0.0,
+      "latency_ms_p50": 9621.23,
+      "constrained_fallback_rate": 1.0
+    },
+    "ltr_primary_strict": {
+      "parse_rate": 0.0,
+      "latency_ms_p50": 4832.31,
+      "constrained_fallback_rate": 0.0,
+      "forwards_mean": 110.0,
+      "agentv": {"passed": 0, "failed": 5, "execution_errors": 0}
+    }
+  },
+  "interpretation": "The fixes removed the root/binder representation and DFA surface-cache defects; the checkpoint now begins root = under direct LTR decode, but still fails complete parsing. Remaining failure is model/constrained grammar coverage after the root assignment.",
+  "honesty": "decode-only scratch probe; not a ship claim"
+}
