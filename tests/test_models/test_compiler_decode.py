@@ -830,6 +830,9 @@ def test_binder_arity_supervises_and_biases_continue_stop_paths() -> None:
     )
     loss = model.training_loss([record])
     loss.backward()
+    auxiliary_loss = model.take_detached_auxiliary_loss()
+    assert auxiliary_loss is not None
+    auxiliary_loss.backward()
     assert torch.isfinite(loss)
     assert model.binder_arity_head is not None
     assert model.binder_arity_head.weight.grad is not None

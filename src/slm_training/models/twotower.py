@@ -714,6 +714,11 @@ class TwoTowerModel(nn.Module):
     def trainable_parameters(self):
         return (p for p in self.parameters() if p.requires_grad)
 
+    def take_detached_auxiliary_loss(self) -> torch.Tensor | None:
+        loss = getattr(self, "_detached_auxiliary_loss", None)
+        self._detached_auxiliary_loss = None
+        return loss
+
     def optimizer_parameter_groups(self) -> list[dict[str, list[nn.Parameter]]]:
         """Keep shared-model optimizer grouping invariant across aux heads."""
         auxiliary = (
@@ -1254,6 +1259,7 @@ class TwoTowerModel(nn.Module):
     def training_loss(self, batch: list[ExampleRecord]) -> torch.Tensor:
         self.train()
         self.last_training_metrics = {}
+        self._detached_auxiliary_loss: torch.Tensor | None = None
         cache_on = bool(getattr(self.config, "cache_context", True))
         prompts: list[str] = []
         cache_keys: list[str] = []
@@ -1906,7 +1912,7 @@ class TwoTowerModel(nn.Module):
                 if arity_losses
                 else arity_logits.sum() * 0.0
             )
-            mask_loss = mask_loss + binder_arity_w * arity_loss
+            self._detached_auxiliary_loss = binder_arity_w * arity_loss
             self.last_training_metrics.update(
                 {
                     "binder_arity_loss": float(arity_loss.detach().cpu()),

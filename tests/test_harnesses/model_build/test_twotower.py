@@ -249,6 +249,50 @@ def test_auxiliary_heads_do_not_change_base_optimizer_updates() -> None:
             assert torch.equal(parameter, arity_state[name]), name
 
 
+def test_auxiliary_loss_does_not_change_base_gradients() -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+
+    def model(**kwargs) -> TwoTowerModel:
+        torch.manual_seed(123)
+        return TwoTowerModel.from_records(
+            records,
+            config=TwoTowerConfig(
+                d_model=32,
+                n_heads=4,
+                context_layers=1,
+                denoiser_layers=1,
+                output_tokenizer="lexer",
+                **kwargs,
+            ),
+        )
+
+    baseline = model()
+    arity = model(binder_arity_loss_weight=1.0)
+    rng_state = baseline._rng.getstate()
+    torch.manual_seed(456)
+    baseline.training_loss(records).backward()
+    baseline._rng.setstate(rng_state)
+    arity._rng.setstate(rng_state)
+    torch.manual_seed(456)
+    arity.training_loss(records).backward()
+
+    arity_parameters = dict(arity.named_parameters())
+    for name, parameter in baseline.named_parameters():
+        if name.startswith("binder_arity_head."):
+            continue
+        other = arity_parameters[name]
+        if parameter.grad is None or other.grad is None:
+            assert parameter.grad is other.grad
+        else:
+            assert torch.equal(parameter.grad, other.grad), name
+
+    auxiliary_loss = arity.take_detached_auxiliary_loss()
+    assert auxiliary_loss is not None
+    auxiliary_loss.backward()
+    assert arity.binder_arity_head is not None
+    assert arity.binder_arity_head.weight.grad is not None
+
+
 def test_surface_syntax_repair_preserves_string_literals() -> None:
     damaged = (
         'root===Stack([cta, card, =])\n'

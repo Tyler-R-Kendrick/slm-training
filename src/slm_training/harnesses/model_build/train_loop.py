@@ -517,11 +517,21 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 with timed("forward"):
                     with autocast_context(config.device, enabled=use_amp):
                         raw_loss_t = plugin.training_loss(batch)
+                        auxiliary_loss_t = (
+                            plugin.take_detached_auxiliary_loss()
+                            if hasattr(plugin, "take_detached_auxiliary_loss")
+                            else None
+                        )
                         loss_t = raw_loss_t / grad_accum
                 with timed("backward"):
                     scaler.scale(loss_t).backward()
+                    if auxiliary_loss_t is not None:
+                        scaler.scale(auxiliary_loss_t / grad_accum).backward()
                 _count_tokens(batch)
-                accum_loss_sum += float(raw_loss_t.detach().cpu())
+                reported_loss_t = raw_loss_t.detach()
+                if auxiliary_loss_t is not None:
+                    reported_loss_t = reported_loss_t + auxiliary_loss_t.detach()
+                accum_loss_sum += float(reported_loss_t.cpu())
                 accum_loss_count += 1
                 accum_batch_meta.extend(_batch_meta(batch))
                 accum_example_losses.extend(
