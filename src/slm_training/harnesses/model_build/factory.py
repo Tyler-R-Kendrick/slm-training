@@ -146,6 +146,11 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         cfg, "grammar_ltr_repair"
     ):
         cfg.grammar_ltr_repair = True
+    if (
+        str(getattr(config, "compiler_decode_mode", "off") or "off") != "off"
+        and hasattr(cfg, "grammar_ltr_primary")
+    ):
+        cfg.grammar_ltr_primary = True
     if int(getattr(config, "best_of_n", 1) or 1) > 1 and hasattr(cfg, "best_of_n"):
         cfg.best_of_n = int(config.best_of_n)
     if bool(getattr(config, "use_dynamic_quant", False)) and hasattr(

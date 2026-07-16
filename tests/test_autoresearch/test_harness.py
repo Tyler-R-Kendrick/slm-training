@@ -1133,6 +1133,7 @@ def test_compile_resolves_canonical_published_train_version() -> None:
     assert "--no-sync-checkpoints" in commands[0]
     assert commands[0][commands[0].index("--mixture-sampling-policy") + 1] == "capacity_aware"
     assert commands[-1][commands[-1].index("--compiler-decode-mode") + 1] == "tree"
+    assert "--grammar-ltr-primary" in commands[-1]
     assert "--no-unconstrained-fallback" in commands[-1]
 
 

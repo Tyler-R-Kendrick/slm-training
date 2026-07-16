@@ -337,7 +337,9 @@ def main(argv: list[str] | None = None) -> int:
         output_tokenizer=args.output_tokenizer,
         context_backend=args.context_backend or "hf",
         local_files_only=args.local_files_only,
-        grammar_ltr_primary=args.grammar_ltr_primary,
+        grammar_ltr_primary=(
+            True if args.compiler_decode_mode != "off" else args.grammar_ltr_primary
+        ),
         grammar_ltr_repair=args.grammar_ltr_repair,
         schema_in_context=args.schema_in_context,
         slot_contract_in_context=args.slot_contract_in_context,

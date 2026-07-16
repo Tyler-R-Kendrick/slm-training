@@ -19,3 +19,22 @@ def test_none_decode_overrides_preserve_checkpoint_settings() -> None:
 
     assert model.config.grammar_ltr_primary is True
     assert model.config.grammar_ltr_repair is True
+
+
+def test_compiler_decode_mode_activates_primary_ltr_path() -> None:
+    model = SimpleNamespace(
+        config=SimpleNamespace(
+            compiler_decode_mode="off",
+            grammar_ltr_primary=False,
+        )
+    )
+    config = ModelBuildConfig(
+        train_dir=Path("."),
+        compiler_decode_mode="tree",
+        grammar_ltr_primary=None,
+    )
+
+    apply_runtime_overrides(model, config)
+
+    assert model.config.compiler_decode_mode == "tree"
+    assert model.config.grammar_ltr_primary is True
