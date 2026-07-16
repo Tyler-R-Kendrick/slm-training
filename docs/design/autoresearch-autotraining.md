@@ -351,6 +351,9 @@ checkpoint is diagnostic-only. Compiled stages use the active Python interpreter
 an unavailable executable is persisted as a typed failed outcome instead of
 escaping the campaign ledger.
 
+Evaluation datasets are selected with the typed `eval_version` knob and resolved
+through `DataStore`; campaign compilation must not assume a local `v1` directory.
+
 ## Researcher improvement
 
 Researcher changes are evaluated on

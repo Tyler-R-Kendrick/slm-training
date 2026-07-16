@@ -399,7 +399,7 @@ def compile_commands(
         "-m",
         "scripts.evaluate_model",
         "--test-dir",
-        "outputs/data/eval/v1",
+        knobs.eval_version or "v1",
         "--run-root",
         str(root.parent),
         "--run-id",

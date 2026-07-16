@@ -1,6 +1,7 @@
 # E221 — task-balanced exposure launch preflight
 
-Status: **launch failures only; zero training steps; no checkpoint**.
+Status: **training completed; exposure hypothesis falsified; evaluation path failed;
+no checkpoint promoted**.
 
 E219 drew 128 examples from the corrected 480-record E218 corpus but exposed
 only 29.90 effective records. E221 tests whether the committed task-balanced
@@ -18,8 +19,19 @@ Three preflight failures occurred before model training:
    pipeline's canonical `{manifest, diagnostics}` envelope. The loader now accepts
    both that envelope and historical bare manifests.
 
-These are negative harness results, not training results. No optimizer step ran,
-no evaluation ran, no checkpoint was written or synced, and no ship claim is
-made. The retry must use a fresh immutable campaign because the failed campaign's
-single-experiment budget was consumed.
+E221 v4 then completed the matched 32-step CPU train on the committed 480-record
+E218 corpus. Last loss was 14.1748 over 21,709 prompt and 6,185 target tokens;
+wall time was 129.91 s. Checkpoint SHA is `85f0fb0c…bd7cd`; it remains local and
+was not synced.
 
+The task-balanced policy increased unique exposure from 54 to 80 records, but
+effective exposure fell slightly from 29.90 to 29.68 records (23.19%). One
+renderer row was drawn 18 times. Therefore the exposure hypothesis is falsified:
+task balancing alone moves concentration into undersized task/family cells and
+does not provide capacity-aware sampling.
+
+Evaluation did not start because the typed compiler still targeted nonexistent
+`outputs/data/eval/v1`. The complete 19-record, five-suite `remediated` snapshot
+is now published as canonical `eval:remediated`, and a typed `eval_version` knob
+replaces the hardcoded path. No ship claim is made until that checkpoint is
+evaluated through the canonical snapshot.

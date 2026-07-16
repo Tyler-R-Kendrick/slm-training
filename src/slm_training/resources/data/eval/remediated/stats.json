@@ -1,0 +1,23 @@
+{
+  "version": "remediated",
+  "source": "both",
+  "seed_path": "fixtures/test_seeds.jsonl",
+  "rico_path": "fixtures/rico/semantic_test.jsonl",
+  "rico_hf_split": null,
+  "rico_limit": null,
+  "rico_hf_cache_path": "fixtures/rico/hf_test_cache.jsonl",
+  "target_records": null,
+  "suite_counts": {
+    "smoke": 3,
+    "held_out": 5,
+    "adversarial": 4,
+    "ood": 4,
+    "rico_held": 3
+  },
+  "total_records": 19,
+  "error_count": 0,
+  "errors": [],
+  "leakage_rejected": 37,
+  "train_manifest": "outputs/train_data/remediated/manifest.json",
+  "built_at": "2026-07-13T16:51:48.013788+00:00"
+}

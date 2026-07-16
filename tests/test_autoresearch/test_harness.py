@@ -1099,6 +1099,7 @@ def test_compile_resolves_canonical_published_train_version() -> None:
     spec = experiment(
         knobs=ExperimentKnobs(
             train_version="e218_schema_normalized_judge_v5",
+            eval_version="remediated",
             steps=32,
             output_tokenizer="lexer",
             compiler_alignment_loss_weight=1.0,
@@ -1118,6 +1119,7 @@ def test_compile_resolves_canonical_published_train_version() -> None:
     assert "e218_schema_normalized_judge_v5" in commands[0]
     assert "--train-dir" not in commands[0]
     assert "--train-version" in commands[-1]
+    assert commands[-1][commands[-1].index("--test-dir") + 1] == "remediated"
     assert commands[0][commands[0].index("--output-tokenizer") + 1] == "lexer"
     assert "--compiler-alignment-stratified" in commands[0]
     assert "--schema-in-context" in commands[0]

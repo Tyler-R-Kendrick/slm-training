@@ -1,0 +1,80 @@
+{
+  "version": "remediated",
+  "kind": "eval",
+  "source": "both",
+  "suites": {
+    "smoke": "src/slm_training/resources/data/eval/remediated/suites/smoke/records.jsonl",
+    "held_out": "src/slm_training/resources/data/eval/remediated/suites/held_out/records.jsonl",
+    "adversarial": "src/slm_training/resources/data/eval/remediated/suites/adversarial/records.jsonl",
+    "ood": "src/slm_training/resources/data/eval/remediated/suites/ood/records.jsonl",
+    "rico_held": "src/slm_training/resources/data/eval/remediated/suites/rico_held/records.jsonl"
+  },
+  "stats": "src/slm_training/resources/data/eval/remediated/stats.json",
+  "ids": [
+    "smoke_hero_01",
+    "smoke_button_01",
+    "smoke_callout_01",
+    "held_out_form_01",
+    "held_out_dual_card_01",
+    "held_out_input_01",
+    "held_out_tabs_01",
+    "held_out_settings_01",
+    "adv_empty_prompt_01",
+    "adv_dual_card_01",
+    "adv_deep_nest_01",
+    "adv_many_buttons_01",
+    "ood_dashboard_01",
+    "ood_gallery_01",
+    "ood_modal_01",
+    "ood_auth_01",
+    "rico_eval_test_25",
+    "rico_eval_test_42",
+    "rico_eval_test_77"
+  ],
+  "suite_counts": {
+    "smoke": 3,
+    "held_out": 5,
+    "adversarial": 4,
+    "ood": 4,
+    "rico_held": 3
+  },
+  "train_manifest": "outputs/train_data/remediated/manifest.json",
+  "built_at": "2026-07-13T16:51:48.013788+00:00",
+  "schema_version": 2,
+  "dataset_id": "remediated",
+  "immutable": true,
+  "content_fingerprint": "2c53a3f6d03f319dceb173f82d8a651dbf52d304fbe1bc3a242eed66b9d8c500",
+  "trace_id": null,
+  "artifacts": [
+    {
+      "path": "stats.json",
+      "sha256": "d88ad0e079b1f3a0beec9b9a9b19ae318674ed536d3525364a95e5a44a383ffb",
+      "size": 597
+    },
+    {
+      "path": "suites/adversarial/records.jsonl",
+      "sha256": "9514367ce3a950ed1f8f353f9cf15db3fadb1787e251ee5088acb6c32a0b476f",
+      "size": 16510
+    },
+    {
+      "path": "suites/held_out/records.jsonl",
+      "sha256": "3d973d512531f63b7bf8c609205169938b18f528b1348f7a303d33c8bf350274",
+      "size": 21360
+    },
+    {
+      "path": "suites/ood/records.jsonl",
+      "sha256": "b94d0c272387bf3fe65e4eedd68f3a88a12ec623dfdf554fd9869084b8df0424",
+      "size": 16929
+    },
+    {
+      "path": "suites/rico_held/records.jsonl",
+      "sha256": "147bfa445f91f3739c038285690ce411744d05671b2d901ad5e1d76cc569eab1",
+      "size": 15791
+    },
+    {
+      "path": "suites/smoke/records.jsonl",
+      "sha256": "9cf9ab46201b79e787dca445035f7d5cda2fa0c835e5d33dc38eca88db900e1c",
+      "size": 12320
+    }
+  ]
+}

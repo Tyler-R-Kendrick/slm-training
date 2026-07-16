@@ -32,6 +32,7 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "compiler_decode_mode",
         "data_source",
         "design_md_context",
+        "eval_version",
         "derive_from",
         "lr",
         "local_files_only",
@@ -184,6 +185,9 @@ class ResearcherRun(StrictModel):
 
 
 class ExperimentKnobs(StrictModel):
+    eval_version: str | None = Field(
+        default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    )
     train_version: str | None = Field(
         default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
     )
