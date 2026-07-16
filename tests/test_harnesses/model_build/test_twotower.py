@@ -192,6 +192,30 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     assert loaded.config.binder_arity_decode_weight == 0.0
 
 
+def test_optional_heads_do_not_shift_training_rng() -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+
+    def state_after(**kwargs) -> torch.Tensor:
+        torch.manual_seed(123)
+        TwoTowerModel.from_records(
+            records,
+            config=TwoTowerConfig(
+                d_model=32,
+                n_heads=4,
+                context_layers=1,
+                denoiser_layers=1,
+                output_tokenizer="lexer",
+                **kwargs,
+            ),
+        )
+        return torch.random.get_rng_state()
+
+    baseline = state_after()
+    assert torch.equal(baseline, state_after(binder_arity_loss_weight=1.0))
+    assert torch.equal(baseline, state_after(binder_topology_loss_weight=1.0))
+    assert torch.equal(baseline, state_after(component_plan_loss_weight=1.0))
+
+
 def test_surface_syntax_repair_preserves_string_literals() -> None:
     damaged = (
         'root===Stack([cta, card, =])\n'

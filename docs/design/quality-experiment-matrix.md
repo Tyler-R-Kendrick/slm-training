@@ -1011,6 +1011,15 @@ checkpoint, and reformulate topology around reference arity/stop decisions.
 Full evidence:
 [iter-e237-detached-topology-20260716.md](iter-e237-detached-topology-20260716.md).
 
+E238 adds grammar-derived binder-reference arity and directly scores
+continue/stop completion paths. The head learns, but the run is invalidated:
+optional-head initialization advanced global Torch RNG and silently changed
+matched masking/dropout draws. Strict evaluation failed ten thresholds and
+AgentV was 0/5; decode on/off aggregates were identical despite three changed
+choices. Auxiliary modules now use isolated stable seeds, and E239 is the
+corrected rerun. Full evidence:
+[iter-e238-binder-arity-confounded-20260716.md](iter-e238-binder-arity-confounded-20260716.md).
+
 ## V9 lattice-guided recursive compiler search (proposed, unrun)
 
 The research synthesis and implementation boundary are in

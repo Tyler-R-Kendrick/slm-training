@@ -482,8 +482,21 @@ class TwoTowerModel(nn.Module):
             kind_ids=kind_ids,
             n_kinds=max(kind_ids) + 1 if kind_ids else 0,
         )
+
+        def isolated_aux_init(factory, offset: int):
+            """Initialize an auxiliary module without shifting train RNG."""
+            with torch.random.fork_rng(devices=[]):
+                torch.manual_seed(int(self.config.seed) + offset)
+                return factory()
+
         self.length_head = (
-            nn.Linear(self.config.d_model, len(self.config.diffusion_length_buckets))
+            isolated_aux_init(
+                lambda: nn.Linear(
+                    self.config.d_model,
+                    len(self.config.diffusion_length_buckets),
+                ),
+                101,
+            )
             if str(getattr(self.config, "mask_pattern", "random")) == "diffusion"
             else None
         )
@@ -496,7 +509,10 @@ class TwoTowerModel(nn.Module):
             > 0.0
         )
         self.component_inventory_head = (
-            nn.Linear(self.config.d_model, tokenizer.vocab_size)
+            isolated_aux_init(
+                lambda: nn.Linear(self.config.d_model, tokenizer.vocab_size),
+                102,
+            )
             if inventory_enabled
             else None
         )
@@ -507,7 +523,10 @@ class TwoTowerModel(nn.Module):
             > 0.0
         )
         self.component_plan_head = (
-            nn.Linear(self.config.d_model, 2 * tokenizer.vocab_size)
+            isolated_aux_init(
+                lambda: nn.Linear(self.config.d_model, 2 * tokenizer.vocab_size),
+                103,
+            )
             if plan_enabled
             else None
         )
@@ -527,9 +546,12 @@ class TwoTowerModel(nn.Module):
             > 0.0
         )
         self.component_edge_head = (
-            nn.Linear(
-                self.config.d_model,
-                len(component_edge_ids) * len(component_edge_ids),
+            isolated_aux_init(
+                lambda: nn.Linear(
+                    self.config.d_model,
+                    len(component_edge_ids) * len(component_edge_ids),
+                ),
+                104,
             )
             if edge_enabled and component_edge_ids
             else None
@@ -551,9 +573,12 @@ class TwoTowerModel(nn.Module):
             > 0.0
         )
         self.binder_component_plan_head = (
-            nn.Linear(
-                self.config.d_model,
-                len(binder_plan_ids) * len(component_edge_ids),
+            isolated_aux_init(
+                lambda: nn.Linear(
+                    self.config.d_model,
+                    len(binder_plan_ids) * len(component_edge_ids),
+                ),
+                105,
             )
             if binder_plan_enabled and binder_plan_ids and component_edge_ids
             else None
@@ -567,9 +592,12 @@ class TwoTowerModel(nn.Module):
             > 0.0
         )
         self.binder_topology_head = (
-            nn.Linear(
-                self.config.d_model,
-                len(binder_plan_ids) * len(binder_plan_ids),
+            isolated_aux_init(
+                lambda: nn.Linear(
+                    self.config.d_model,
+                    len(binder_plan_ids) * len(binder_plan_ids),
+                ),
+                106,
             )
             if binder_topology_enabled and binder_plan_ids
             else None
@@ -581,17 +609,24 @@ class TwoTowerModel(nn.Module):
             > 0.0
         )
         self.binder_arity_head = (
-            nn.Linear(
-                self.config.d_model,
-                len(binder_plan_ids) * (len(binder_plan_ids) + 1),
+            isolated_aux_init(
+                lambda: nn.Linear(
+                    self.config.d_model,
+                    len(binder_plan_ids) * (len(binder_plan_ids) + 1),
+                ),
+                107,
             )
             if binder_arity_enabled and binder_plan_ids
             else None
         )
         # E31 BackPlay-lite: plug-in trust head over denoiser hiddens.
-        self.trust_gate = FastPathGate(self.config.d_model)
+        self.trust_gate = isolated_aux_init(
+            lambda: FastPathGate(self.config.d_model), 108
+        )
         # E73 DSpark-lite: plug-in trajectory-survival head (V7).
-        self.survival_head = FastPathGate(self.config.d_model)
+        self.survival_head = isolated_aux_init(
+            lambda: FastPathGate(self.config.d_model), 109
+        )
         # V7 decode telemetry (MaskGIT path): forwards, successor hits/misses.
         self.speculative_stats = SpeculativeStats()
         self._rng = random.Random(self.config.seed)
