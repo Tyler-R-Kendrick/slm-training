@@ -1,0 +1,30 @@
+{
+  "iteration": "E148",
+  "date": "2026-07-15",
+  "objective": "Test whether the LTR repair path alone causes the constrained-decoder failure.",
+  "recipe": {
+    "checkpoint": "outputs/runs/iter-e147-judge-gated-control-20260715/e147-judge-gated-control/checkpoints/last.pt",
+    "train_dir": "src/slm_training/resources/train_data/remediated_roots_judged",
+    "backend": "hf",
+    "device": "cpu",
+    "suite": "smoke",
+    "n": 1,
+    "grammar_ltr_primary": true,
+    "grammar_ltr_repair": false,
+    "decode_timeout_seconds": 20,
+    "max_attempts": 3
+  },
+  "result": {
+    "parse_rate": 0.0,
+    "structural_similarity": 0.0,
+    "placeholder_validity": 0.0,
+    "decode_timeout_count": 1,
+    "latency_ms_p50": 20001.01,
+    "selection_trace_events": 64,
+    "agentv_passed": 0,
+    "agentv_failed": 5,
+    "first_chosen_token": " ",
+    "first_model_argmax": "TextContent"
+  },
+  "conclusion": "Disabling LTR repair does not recover parseability or latency. The failure is not isolated to the repair flag; the broader constrained LTR path or model/policy interaction remains implicated."
+}
