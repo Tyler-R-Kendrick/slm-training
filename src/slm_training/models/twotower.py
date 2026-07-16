@@ -235,6 +235,9 @@ class TwoTowerConfig:
     # Compiler-drafted decode: off | forced | restricted | tree.
     # Decode-only; ``off`` preserves existing checkpoint behavior.
     compiler_decode_mode: str = "off"
+    # Search over compiler-valid branches: greedy | lattice.
+    compiler_search_mode: str = "greedy"
+    compiler_search_backtrack_limit: int = 8
     fastpath_aux_weight: float = 0.0
     fastpath_gate_threshold: float = 0.5
     # E31: train/use FastPathGate trust head for remask.
@@ -2126,6 +2129,10 @@ class TwoTowerModel(nn.Module):
         from slm_training.dsl.grammar.fastpath.compiler_draft import (
             build_completion_forest,
         )
+        from slm_training.dsl.grammar.fastpath.lattice_search import (
+            LatticeSearchState,
+            rank_forest,
+        )
 
         if mode not in {"forced", "restricted", "tree"}:
             raise ValueError(
@@ -2135,6 +2142,22 @@ class TwoTowerModel(nn.Module):
         state = state_rows[0] if state_rows else make_grammar_state()
         prefix = [int(self.tokenizer.bos_id)]
         stats = get_active_stats()
+        search_mode = str(
+            getattr(self.config, "compiler_search_mode", "greedy") or "greedy"
+        ).lower()
+        if search_mode not in {"greedy", "lattice"}:
+            raise ValueError("compiler_search_mode must be greedy or lattice")
+        search = LatticeSearchState(
+            backtrack_limit=max(
+                0,
+                int(
+                    getattr(
+                        self.config, "compiler_search_backtrack_limit", 8
+                    )
+                    or 0
+                ),
+            )
+        )
         while len(prefix) < length:
             with timed_ms(stats, "compiler_ms"):
                 forest = build_completion_forest(
@@ -2153,6 +2176,28 @@ class TwoTowerModel(nn.Module):
             # points it is meant to protect. Fall back only when no legal path
             # exists at all.
             if not forest.paths:
+                if search_mode == "lattice":
+                    if stats is not None:
+                        stats.compiler_lattice_bottoms += 1
+                    restored = search.rollback()
+                    if restored is not None:
+                        prefix, selected_path = restored
+                        selected = tuple(selected_path.token_ids)
+                        if stats is not None:
+                            stats.compiler_lattice_rollbacks += 1
+                            stats.compiler_lattice_nogoods = len(search.nogoods)
+                    else:
+                        selected = ()
+                    if selected:
+                        # ``build_completion_forest`` resynchronizes the parser
+                        # from this restored stable prefix on the next loop.
+                        room = length - len(prefix)
+                        selected = selected[:room]
+                        for token_id in selected:
+                            prefix.append(int(token_id))
+                            if stats is not None:
+                                stats.tokens_emitted += 1
+                        continue
                 if mode == "forced" and forest.paths:
                     canvas = self._compiler_canvas(prefix, length)
                     logits = self._denoiser_forward(canvas, ctx, ctx_pad)
@@ -2235,6 +2280,23 @@ class TwoTowerModel(nn.Module):
                     length,
                     tree=mode == "tree",
                 )
+            if search_mode == "lattice":
+                ranked = rank_forest(
+                    forest,
+                    {tuple(selected): 1.0},
+                    prefix=tuple(prefix),
+                    nogoods=frozenset(search.nogoods),
+                )
+                decision = search.choose(prefix, ranked)
+                selected = tuple(decision.token_ids) if decision else ()
+                if stats is not None:
+                    stats.compiler_lattice_states += 1
+                    stats.compiler_lattice_candidates += len(ranked.paths)
+                    stats.compiler_lattice_nogood_hits += len(forest.paths) - len(
+                        ranked.paths
+                    )
+                    stats.compiler_lattice_last_signature = ranked.signature
+                    stats.compiler_lattice_nogoods = len(search.nogoods)
             room = length - len(prefix)
             if room <= int(getattr(self.config, "grammar_draft_window", 8) or 8):
                 eos_path = next(
