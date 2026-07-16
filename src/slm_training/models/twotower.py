@@ -1270,6 +1270,7 @@ class TwoTowerModel(nn.Module):
             aligned_positions: list[int] = []
             aligned_context_rows: list[int] = []
             aligned_kinds: list[str] = []
+            aligned_candidate_ids: list[tuple[int, ...]] = []
             kind_rows: dict[str, int] = {}
             for row, record in enumerate(batch):
                 target_key = tuple(
@@ -1318,6 +1319,7 @@ class TwoTowerModel(nn.Module):
                     aligned_positions.append(cut)
                     aligned_context_rows.append(row)
                     aligned_kinds.append(decision.kind)
+                    aligned_candidate_ids.append(decision.candidate_ids)
                     kind_rows[decision.kind] = kind_rows.get(decision.kind, 0) + 1
             aligned_rows = len(aligned_canvases)
             if aligned_canvases:
@@ -1335,23 +1337,31 @@ class TwoTowerModel(nn.Module):
                         else None
                     ),
                 )
-                position_index = torch.tensor(
-                    aligned_positions,
-                    device=aligned_logits.device,
-                    dtype=torch.long,
-                )
-                batch_index = torch.arange(
-                    aligned_rows, device=aligned_logits.device
-                )
-                target_tensor = torch.tensor(
-                    aligned_targets,
-                    device=aligned_logits.device,
-                    dtype=target_ids.dtype,
-                )
-                alignment_losses = F.cross_entropy(
-                    aligned_logits[batch_index, position_index],
-                    target_tensor,
-                    reduction="none",
+                alignment_losses = torch.stack(
+                    [
+                        F.cross_entropy(
+                            aligned_logits[index, position][
+                                torch.tensor(
+                                    candidates,
+                                    device=aligned_logits.device,
+                                    dtype=torch.long,
+                                )
+                            ].unsqueeze(0),
+                            torch.tensor(
+                                [candidates.index(int(target))],
+                                device=aligned_logits.device,
+                                dtype=torch.long,
+                            ),
+                        )
+                        for index, (position, target, candidates) in enumerate(
+                            zip(
+                                aligned_positions,
+                                aligned_targets,
+                                aligned_candidate_ids,
+                                strict=True,
+                            )
+                        )
+                    ]
                 )
                 alignment_loss = alignment_losses.mean()
                 mask_loss = mask_loss + alignment_w * alignment_loss
@@ -1377,6 +1387,14 @@ class TwoTowerModel(nn.Module):
                     float(alignment_loss.detach().cpu())
                     if aligned_canvases
                     else 0.0
+                ),
+                "compiler_alignment_candidate_count_mean": (
+                    sum(map(len, aligned_candidate_ids)) / aligned_rows
+                    if aligned_rows
+                    else 0.0
+                ),
+                "compiler_alignment_candidate_count_max": max(
+                    map(len, aligned_candidate_ids), default=0
                 ),
                 **{
                     f"compiler_alignment_{kind}_rows": count
