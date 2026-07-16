@@ -409,6 +409,8 @@ def compile_commands(
         "--run-id",
         root.name,
         "--ship-gates",
+        "--honest-slot-contract",
+        "--slot-contract-constrained-decode",
     ]
     if knobs.train_version:
         evaluate.extend(["--train-version", knobs.train_version])

@@ -1135,6 +1135,8 @@ def test_compile_resolves_canonical_published_train_version() -> None:
     assert commands[-1][commands[-1].index("--compiler-decode-mode") + 1] == "tree"
     assert "--grammar-ltr-primary" in commands[-1]
     assert "--no-unconstrained-fallback" in commands[-1]
+    assert "--honest-slot-contract" in commands[-1]
+    assert "--slot-contract-constrained-decode" in commands[-1]
 
 
 def test_execute_records_process_launch_failure() -> None:

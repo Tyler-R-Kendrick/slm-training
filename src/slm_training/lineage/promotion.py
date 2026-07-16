@@ -14,6 +14,7 @@ METRIC_REGRESSION_POINTS = 0.02
 HARD_NLL_CATEGORIES = ("binding", "structural", "repair")
 HARD_METRICS = (
     "parse_rate",
+    "meaningful_program_rate",
     "placeholder_fidelity",
     "request_coverage",
     "structural_similarity",

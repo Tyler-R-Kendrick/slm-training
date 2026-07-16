@@ -30,7 +30,7 @@ def _ship_score(metrics: dict) -> float | None:
     ship-best checkpoints remain independently trackable.
     """
     keys = (
-        ("parse_rate", 2.0),
+        ("meaningful_program_rate", 2.0),
         ("placeholder_fidelity", 2.0),
         ("structural_similarity", 1.0),
         ("reward_score", 0.5),
@@ -374,6 +374,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                     "step": step,
                     "suite": suites[0],
                     "parse_rate": metrics.get("parse_rate"),
+                    "meaningful_program_rate": metrics.get(
+                        "meaningful_program_rate"
+                    ),
                     "placeholder_fidelity": metrics.get("placeholder_fidelity"),
                     "structural_similarity": metrics.get("structural_similarity"),
                     "reward_score": metrics.get("reward_score"),
@@ -383,6 +386,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 board = {
                     suite: {
                         "parse_rate": metrics.get("parse_rate"),
+                        "meaningful_program_rate": metrics.get(
+                            "meaningful_program_rate"
+                        ),
                         "placeholder_fidelity": metrics.get("placeholder_fidelity"),
                         "structural_similarity": metrics.get("structural_similarity"),
                         "reward_score": metrics.get("reward_score"),

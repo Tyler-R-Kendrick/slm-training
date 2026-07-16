@@ -9,26 +9,26 @@ from typing import Any
 # Per-suite minimums. Smoke is a canary; generalization requires the rest.
 DEFAULT_SHIP_GATES: dict[str, dict[str, float]] = {
     "smoke": {
-        "parse_rate": 0.66,
+        "meaningful_program_rate": 0.66,
         "structural_similarity": 0.35,
         "placeholder_fidelity": 0.25,
         "reward_score": 0.30,
     },
     "held_out": {
-        "parse_rate": 0.40,
+        "meaningful_program_rate": 0.40,
         "structural_similarity": 0.30,
         "placeholder_fidelity": 0.15,
     },
     "adversarial": {
-        "parse_rate": 0.25,
+        "meaningful_program_rate": 0.25,
         "structural_similarity": 0.25,
     },
     "ood": {
-        "parse_rate": 0.25,
+        "meaningful_program_rate": 0.25,
         "structural_similarity": 0.25,
     },
     "rico_held": {
-        "parse_rate": 0.10,
+        "meaningful_program_rate": 0.10,
         "structural_similarity": 0.20,
     },
 }
@@ -60,11 +60,20 @@ def evaluate_ship_gates(
         slim = {
             "n": metrics.get("n"),
             "parse_rate": metrics.get("parse_rate"),
+            "meaningful_program_rate": metrics.get("meaningful_program_rate"),
+            "syntax_parse_rate": metrics.get("syntax_parse_rate"),
             "placeholder_fidelity": metrics.get("placeholder_fidelity"),
             "placeholder_validity": metrics.get("placeholder_validity"),
             "structural_similarity": metrics.get("structural_similarity"),
             "reward_score": metrics.get("reward_score"),
         }
+        if (
+            slim["meaningful_program_rate"] is None
+            and metrics.get("syntax_parse_rate") is None
+        ):
+            # Historical scoreboards used parse_rate for meaningful-program
+            # quality. New scoreboards persist both metrics explicitly.
+            slim["meaningful_program_rate"] = metrics.get("parse_rate")
         actual[suite_name] = slim
         fallback_count = int(metrics.get("fallback_count") or 0)
         fallback_key = f"{suite_name}:certified_fallback"
@@ -75,7 +84,7 @@ def evaluate_ship_gates(
             )
         for metric, minimum in mins.items():
             key = f"{suite_name}:{metric}"
-            value = metrics.get(metric)
+            value = slim.get(metric, metrics.get(metric))
             ok = value is not None and float(value) >= float(minimum)
             checks[key] = ok
             if not ok:
@@ -91,7 +100,9 @@ def evaluate_ship_gates(
         "pass": all(checks.values()) if checks else False,
         "note": (
             "Honest ship gates require all policy suites and score structure only "
-            "(parse / structural_similarity / placeholder_fidelity / reward_score). "
+            "(meaningful_program_rate / structural_similarity / "
+            "placeholder_fidelity / reward_score). Syntax parse is reported "
+            "separately and is not a learned-quality substitute. "
             "DESIGN.md style lint is never a ship gate. "
             "See docs/design/adversarial-review.md and docs/design/structure-only-eval.md."
         ),

@@ -52,7 +52,7 @@ Rubber-duck / red-team audit of what shipped under `twotower_v1_ship` and the su
 
 All evaluated suites must be checked. Defaults (CLI `--ship-gates`):
 
-| Suite | parse | structural | placeholder_fidelity | reward |
+| Suite | meaningful program | structural | placeholder_fidelity | reward |
 | --- | --- | --- | --- | --- |
 | smoke | ≥ 0.66 | ≥ 0.35 | ≥ 0.25 | ≥ 0.30 |
 | held_out | ≥ 0.40 | ≥ 0.30 | ≥ 0.15 | — |
@@ -61,6 +61,10 @@ All evaluated suites must be checked. Defaults (CLI `--ship-gates`):
 | rico_held | ≥ 0.10 | ≥ 0.20 | — | — |
 
 Smoke is a **canary**, not proof of generalization. Ship pass requires held_out + adversarial + ood + rico_held bars as well.
+
+`parse_rate` now means syntactic OpenUI parse and is reported separately.
+`meaningful_program_rate` is the learned-quality gate above; historical
+scoreboards that predate the split used `parse_rate` for that heuristic.
 
 ## Fixture demo vs ship
 

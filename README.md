@@ -67,7 +67,7 @@ summary and the full card whenever a checkpoint is created or promoted.
 | E221 task-balanced exposure diagnostic | `e221-canonical-task-balanced` | `outputs/autoresearch/e221-task-balanced-exposure-v4/runs/…` (local) | 32 CPU steps on canonical E218; effective exposure 29.68/128; strict eval failed 9 gates, AgentV 1/5 — not ship |
 | E222 capacity-aware exposure diagnostic | `e222-capacity-aware-matched` | `outputs/autoresearch/e222-capacity-aware-exposure/runs/…` (local) | Effective exposure rose to 83.59/128, but strict smoke parse regressed to 0.0 and 10 gates failed — not ship |
 | E223 quota-capacity exposure diagnostic | `e223-quota-capacity-matched` | `outputs/autoresearch/e223-quota-capacity-exposure/runs/…` (local) | Task quotas and syntax are deterministic, but semantic metrics are 0.0 and 12 gates failed — not ship |
-| E224/E225 semantic alignment + corrected tree eval | `e224-semantic-exhaustive-matched` | `outputs/autoresearch/e224-semantic-exhaustive-alignment/runs/…` (local) | Tree path now proven active; structure/recall improve, but syntax/meaningful parse remain 0.0 with 8 failed gates — not ship |
+| E224–E226 semantic alignment + honest tree eval | `e224-semantic-exhaustive-matched` | `outputs/autoresearch/e224-semantic-exhaustive-alignment/runs/…` (local) | Deterministic tree reaches syntax 1.0 on all suites with honest fidelity, but meaningful-program quality fails 5 gates — not ship |
 | Matrix honest champion | V6 E53 family | `outputs/runs/` + matrix docs | Scratch + limited `rico_held` — not production HF ship |
 | P13 matched E50 controls | fixture + integrated E50 | `/tmp/slm17-e50-*-honest/` (local scratch) | Integrated fidelity +0.04 held / +0.0333 RICO; parse 0.0, not ship |
 | Frozen X2 baseline | `gx_x2_codec` seeds 0/1/2 | `/tmp/slm-training-fixed-baseline/outputs/topology_baseline/` | Fixed-canvas comparison scored zero on all suites; not ship |
@@ -337,7 +337,7 @@ MCP (Cursor): [`.cursor/mcp.json`](.cursor/mcp.json) launches `@playwright/mcp`.
 - **Denoiser tower**: MaskGIT-style masked token prediction with cross-attention to context ([Chang et al. 2022](https://arxiv.org/abs/2202.04200); adapted)
 - **Grammar decode**: DFA force-emit + MaskGIT hole-admit + LTR certify so constrained samples stay valid OpenUI ([research lineage](docs/design/research-lineage.md); `--no-grammar` to disable)
 - **Output tokenizer**: dual-mode — default **compositional** `OpenUITokenizer`, or V5 **lexer / DSL-native** `DSLNativeTokenizer` (`output_tokenizer=lexer`; see [dsl-native-tokenizer.md](docs/design/dsl-native-tokenizer.md))
-- **Eval**: `parse_rate` via lang-core, placeholder fidelity, canonical tree match — no gold oracle at generate time
+- **Eval**: syntax `parse_rate`, separate `meaningful_program_rate`, placeholder fidelity, and canonical tree match — no hidden gold channel at generate time
 
 ```bash
 # Optional HF context (requires: pip install -e ".[hf]")
