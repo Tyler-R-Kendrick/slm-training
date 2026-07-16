@@ -1,0 +1,28 @@
+{
+  "campaign": "E223 quota-capacity exposure",
+  "date_utc": "2026-07-16",
+  "status": "allocation_confirmed_quality_recovery_falsified_ship_gates_failed",
+  "hypothesis": "Capacity-capped deterministic task and family quotas will retain E222 exposure gains while recovering strict semantic quality lost to allocation drift.",
+  "matrix": {"campaign_id": "e223-quota-capacity-exposure", "matrix_id": "e223-matrix-1", "candidate_count": 5, "recommended_experiment_id": "e223-quota-capacity-matched"},
+  "recipe": {"device": "cpu", "steps": 32, "batch_size": 4, "learning_rate": 0.0003, "seed": 0, "context_backend": "hf_local_files_only", "train_version": "e218_schema_normalized_judge_v5", "eval_version": "remediated", "output_tokenizer": "lexer", "compiler_alignment_loss_weight": 1.0, "compiler_alignment_stratified": true, "compiler_decode_mode": "tree", "schema_in_context": true, "slot_contract_in_context": true, "design_md_in_context": false, "allow_unconstrained_fallback": false, "mixture_sampling_policy": "quota_capacity_aware", "checkpoint_sync": false},
+  "train_result": {"run_id": "e223-quota-capacity-matched", "last_loss": 11.906000137329102, "wall_ms": 146035.222, "seen_prompt_tokens": 22924, "seen_target_tokens": 6401, "checkpoint": "outputs/autoresearch/e223-quota-capacity-exposure/runs/e223-quota-capacity-matched/checkpoints/last.pt", "checkpoint_sha256": "2db1e7979b88073a80a8c0a7338f9116ef7c196eda8f7482e7a80df128a5ab87", "trace_id": "d564a679da92a72dc3ce3519a5de66a6"},
+  "exposure": {"draws": 128, "unique_records": 103, "unique_ratio": 0.8047, "effective_records": 81.11, "effective_ratio": 0.6337, "max_repeat": 4, "task_group_draw_counts": {"generation": 44, "patch_edit": 44, "repair_completion_inpaint": 40}, "family_draw_counts": {"edit_trajectory": 52, "corruption_repair": 40, "programspec_generated": 28, "renderer_visual": 4, "web_distilled": 4}, "allocation_mechanism_confirmed": true},
+  "evaluation": {
+    "evaluated_at": "2026-07-16T14:15:48.870064+00:00",
+    "suites": {
+      "smoke": {"n": 3, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.30943333333333334, "component_type_recall": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0},
+      "held_out": {"n": 5, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.25139999999999996, "component_type_recall": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0},
+      "adversarial": {"n": 4, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.29050000000000004, "component_type_recall": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0},
+      "ood": {"n": 4, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.236875, "component_type_recall": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0},
+      "rico_held": {"n": 3, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.09006666666666667, "component_type_recall": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0}
+    },
+    "fallback_count": 0,
+    "constrained_fallback_rate": 0.0,
+    "ship_gates": {"pass": false, "failure_count": 12},
+    "agentv": {"total": 5, "passed": 0, "failed": 5, "execution_errors": 0, "mean_score": 0.5},
+    "scoreboard": "outputs/autoresearch/e223-quota-capacity-exposure/runs/e223-quota-capacity-matched/scoreboard.json"
+  },
+  "honesty": {"training_completed": true, "evaluation_completed": true, "checkpoint_written": true, "checkpoint_synced": false, "ship_gates": false, "promoted": false},
+  "conclusion": "Quota-capacity sampling fixes task allocation while preserving exposure and deterministic syntax, but all semantic metrics remain zero. The quality-recovery hypothesis is falsified.",
+  "next_action": "Inspect generalized semantic alignment targets and model-selected AST roles under the stable quota-capacity sampler before proposing another train, after fetching and reconciling latest main."
+}
