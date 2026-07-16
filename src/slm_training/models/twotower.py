@@ -3880,6 +3880,7 @@ class TwoTowerModel(nn.Module):
         cls,
         path: Path | str,
         device: str | torch.device = "cpu",
+        local_files_only: bool | None = None,
     ) -> TwoTowerModel:
         path = Path(path)
         payload = torch.load(path, map_location=device, weights_only=True)
@@ -3906,6 +3907,8 @@ class TwoTowerModel(nn.Module):
                 raw_cfg[key] = tuple(raw_cfg[key])
         if raw_cfg.get("grammar_ltr_stages") is None:
             raw_cfg["grammar_ltr_stages"] = (64, 128, 192, 256)
+        if local_files_only is not None:
+            raw_cfg["local_files_only"] = bool(local_files_only)
         # Ignore unknown keys for forward/back compat
         valid = {f.name for f in TwoTowerConfig.__dataclass_fields__.values()}  # type: ignore[attr-defined]
         cfg = TwoTowerConfig(**{k: v for k, v in raw_cfg.items() if k in valid})

@@ -1,0 +1,12 @@
+{
+  "experiment_id": "E136",
+  "date": "2026-07-15",
+  "kind": "representation_iteration",
+  "parent": "E135",
+  "recipe": {"device": "cpu", "steps": 32, "seed": 0, "batch_size": 4, "context_backend": "hf", "hf_model": "HuggingFaceTB/SmolLM2-135M", "local_files_only": true, "freeze_context": true, "output_tokenizer": "compositional", "schema_in_context": true, "slot_contract_in_context": true, "slot_contract_constrained_decode": true, "grammar_ltr_primary": true, "grammar_ltr_repair": true, "ltr_loss_weight": 0.5, "fidelity_loss_weight": 0.5, "train_dir": "src/slm_training/resources/train_data/remediated_roots_judged", "record_count": 405, "honesty_mode": "HF diagnostic; no ship claim"},
+  "training": {"run_id": "e136_hf_context_32", "last_loss": 10.869207382202148, "checkpoint": "outputs/runs/iter-e136-hf-context-20260715/e136_hf_context_32/checkpoints/last.pt", "checkpoint_sha256": "6cc5de4bf975aea5f9416784805c26a76bbc74501e376e3da3cb91231f6cdbe1", "telemetry": "outputs/runs/iter-e136-hf-context-20260715/e136_hf_context_32/train_telemetry.json"},
+  "feedback": {"run_id": "iter-e136-three-smoke-local", "suite": "smoke", "n": 3, "parse_rate": 0.0, "raw_syntax_validity": 0.0, "placeholder_fidelity": 0.0, "placeholder_validity": 0.0, "structural_similarity": 0.0825, "reward_score": 0.0, "latency_ms_p50": 4594.42, "latency_ms_p95": 7020.69, "decode_timeout_count": 0, "agentv": "outputs/runs/iter-e136-hf-context-20260715/iter-e136-three-smoke-local/agentv/openui-model-ship-gates-2026-07-16t01-34-20-655869-00-00.eval.jsonl"},
+  "comparison": {"e135_steps": 8, "e135_structural_similarity": 0.24223333333333333, "e135_placeholder_validity": 0.3166666666666667, "e136_steps": 32, "e136_structural_similarity": 0.0825, "e136_placeholder_validity": 0.0},
+  "finding": "The early HF representation signal did not persist through 32 steps; longer training regressed structural and placeholder metrics while parse remained zero.",
+  "decision": "Do not promote the HF control or simply extend it. Investigate checkpoint selection/early stopping and supervision alignment before more steps."
+}

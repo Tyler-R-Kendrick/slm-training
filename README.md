@@ -40,6 +40,10 @@ summary and the full card whenever a checkpoint is created or promoted.
 | E130 schema/slot seed-1 control | `e130_judged_schema_slots_seed1/last.pt` | `outputs/runs/iter-e130-schema-slots-20260715/…` (local) | Seed-1 control had parse and placeholder signals 0.0; E127 not reproducible — not ship |
 | E132 generation-focused mixture | `e132_generation_focus/last.pt` | `outputs/runs/iter-e132-generation-focus-20260715/…` (local) | Three-prompt smoke parse/placeholder 0.0; task reweighting rejected — not ship |
 | E133 no-fused-LTR path | `e133_no_fuse_ltr/last.pt` | `outputs/runs/iter-e133-no-fuse-ltr-20260715/…` (local) | Three-prompt smoke parse/structure 0.0 with one timeout; fused LTR retained — not ship |
+| E135 HF context control | `e135_hf_context_control/last.pt` | `outputs/runs/iter-e135-hf-context-20260715/…` (local) | HF context improves structural/placeholder signals but parse 0.0 with one timeout — not ship |
+| E136 HF context 32-step control | `e136_hf_context_32/last.pt` | `outputs/runs/iter-e136-hf-context-20260715/…` (local) | Longer HF run regressed structure/placeholder to 0.0; checkpoint selection next — not ship |
+| E137 HF context 16-step midpoint | `e137_hf_context_16/last.pt` | `outputs/runs/iter-e137-hf-context-20260715/…` (local) | Placeholder validity 0.40 and structure 0.2142, parse 0.0; non-monotonic checkpoint trajectory — not ship |
+| E138 HF context seed-1 8-step control | `e138_hf_context_seed1_8/last.pt` | `outputs/runs/iter-e138-hf-seed1-20260715/…` (local) | Same recipe as E135 but seed 1: placeholder validity 0.0 and structure 0.1683, parse 0.0 — not ship |
 | Matrix honest champion | V6 E53 family | `outputs/runs/` + matrix docs | Scratch + limited `rico_held` — not production HF ship |
 | P13 matched E50 controls | fixture + integrated E50 | `/tmp/slm17-e50-*-honest/` (local scratch) | Integrated fidelity +0.04 held / +0.0333 RICO; parse 0.0, not ship |
 | Frozen X2 baseline | `gx_x2_codec` seeds 0/1/2 | `/tmp/slm-training-fixed-baseline/outputs/topology_baseline/` | Fixed-canvas comparison scored zero on all suites; not ship |

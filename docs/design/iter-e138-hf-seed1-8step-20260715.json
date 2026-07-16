@@ -1,0 +1,12 @@
+{
+  "experiment_id": "E138",
+  "date": "2026-07-15",
+  "kind": "hf_seed_variance_control",
+  "parent": "E135",
+  "recipe": {"device": "cpu", "steps": 8, "seed": 1, "batch_size": 4, "context_backend": "hf", "hf_model": "HuggingFaceTB/SmolLM2-135M", "local_files_only": true, "freeze_context": true, "output_tokenizer": "compositional", "schema_in_context": true, "slot_contract_in_context": true, "slot_contract_constrained_decode": true, "grammar_ltr_primary": true, "grammar_ltr_repair": true, "ltr_loss_weight": 0.5, "fidelity_loss_weight": 0.5, "train_dir": "src/slm_training/resources/train_data/remediated_roots_judged", "record_count": 405, "honesty_mode": "HF diagnostic; no ship claim"},
+  "training": {"run_id": "e138_hf_context_seed1_8", "last_loss": 32.51583480834961, "checkpoint": "outputs/runs/iter-e138-hf-seed1-20260715/e138_hf_context_seed1_8/checkpoints/last.pt", "checkpoint_sha256": "0e5dc3a8bd552960ea9ba8c3b05cdfa3511b2f5e7845085d6cd1dcd9be866414", "telemetry": "outputs/runs/iter-e138-hf-seed1-20260715/e138_hf_context_seed1_8/train_telemetry.json"},
+  "feedback": {"run_id": "e138-three-smoke-local", "suite": "smoke", "n": 3, "parse_rate": 0.0, "raw_syntax_validity": 0.0, "placeholder_fidelity": 0.0, "placeholder_validity": 0.0, "structural_similarity": 0.16833333333333333, "reward_score": 0.0, "latency_ms_p50": 12490.92, "latency_ms_p95": 17140.66, "decode_timeout_count": 0, "constrained_fallback_rate": 0.0, "agentv": "outputs/runs/iter-e138-hf-seed1-20260715/e138-three-smoke-local/agentv/openui-model-ship-gates-2026-07-16t01-47-01-556624-00-00.eval.jsonl"},
+  "comparison": {"e135_seed0_steps8_structural_similarity": 0.24223333333333333, "e135_seed0_steps8_placeholder_validity": 0.3166666666666667, "e138_seed1_steps8_structural_similarity": 0.16833333333333333, "e138_seed1_steps8_placeholder_validity": 0.0},
+  "finding": "At the same 8-step HF recipe, seed 1 is worse than seed 0 on structure and placeholder validity; both fail parse and reward gates.",
+  "decision": "Do not promote or tune from one seed. Preserve the seed-0 E135 signal as provisional and run a small multi-seed checkpoint-selection control before changing the judged corpus or loss weights."
+}
