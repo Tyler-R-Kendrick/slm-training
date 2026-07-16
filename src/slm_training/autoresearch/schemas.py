@@ -37,6 +37,7 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "component_plan_loss_weight",
         "component_plan_decode_weight",
         "component_edge_loss_weight",
+        "component_edge_alignment_loss_weight",
         "component_edge_decode_weight",
         "compiler_decode_mode",
         "compiler_search_mode",
@@ -251,6 +252,9 @@ class ExperimentKnobs(StrictModel):
     component_plan_loss_weight: float | None = Field(default=None, ge=0, le=20)
     component_plan_decode_weight: float | None = Field(default=None, ge=0, le=20)
     component_edge_loss_weight: float | None = Field(default=None, ge=0, le=20)
+    component_edge_alignment_loss_weight: float | None = Field(
+        default=None, ge=0, le=20
+    )
     component_edge_decode_weight: float | None = Field(default=None, ge=0, le=20)
     compiler_decode_mode: Literal["off", "forced", "restricted", "tree"] | None = None
     compiler_search_mode: Literal["greedy", "lattice", "ptrm", "gram"] | None = None

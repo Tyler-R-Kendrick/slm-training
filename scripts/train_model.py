@@ -358,6 +358,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Prompt-to-resolved-AST component-edge loss weight.",
     )
     parser.add_argument(
+        "--component-edge-alignment-loss-weight",
+        type=float,
+        default=0.0,
+        help="Parent-conditioned CE over compiler-legal bound components.",
+    )
+    parser.add_argument(
         "--component-edge-decode-weight",
         type=float,
         default=0.0,
@@ -688,6 +694,9 @@ def main(argv: list[str] | None = None) -> int:
             component_plan_loss_weight=args.component_plan_loss_weight,
             component_plan_decode_weight=args.component_plan_decode_weight,
             component_edge_loss_weight=args.component_edge_loss_weight,
+            component_edge_alignment_loss_weight=(
+                args.component_edge_alignment_loss_weight
+            ),
             component_edge_decode_weight=args.component_edge_decode_weight,
             fidelity_loss_weight=args.fidelity_loss_weight,
             grammar_ltr_primary=args.grammar_ltr_primary,
