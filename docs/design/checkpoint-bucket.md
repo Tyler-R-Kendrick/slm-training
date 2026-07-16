@@ -56,7 +56,7 @@ Also accepted: `HUGGING_FACE_HUB_TOKEN`, `SLM_CHECKPOINT_BUCKET` (override URI).
 ```bash
 # Full HF train (auto-sync at end)
 python -m scripts.train_model \
-  --train-dir outputs/train_data/v1 \
+  --train-dir outputs/data/train/v1 \
   --run-id twotower_v1 \
   --context-backend hf \
   --steps 200

@@ -65,7 +65,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--output-root",
         type=Path,
-        default=Path("outputs/train_data"),
+        default=Path("outputs/data/train"),
     )
     parser.add_argument("--version", default="v1")
     parser.add_argument(
@@ -90,7 +90,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--programspec-path",
         type=Path,
-        default=Path("outputs/progspec/programs.jsonl"),
+        default=Path("outputs/data/programspec/programs.jsonl"),
         help="Optional JSONL ProgramSpec roots; deterministic generation is the fallback.",
     )
     parser.add_argument("--programspec-count", type=int, default=16)
@@ -222,8 +222,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    result = build_train_data(
-        TrainDataConfig(
+    config = TrainDataConfig(
             seed_path=args.seed_path
             if args.source in {"fixture", "both", "all"}
             else None,
@@ -266,8 +265,33 @@ def main(argv: list[str] | None = None) -> int:
             diffusion_online=args.diffusion_online,
             governance_artifacts=args.governance_artifacts,
             mixture_manifest=args.mixture_manifest,
-        )
     )
+    from slm_training.data.store import write_common_manifest
+    from slm_training.runtime.telemetry import run_trace
+
+    with run_trace(
+        f"data-build-{args.version}",
+        "data.build",
+        attributes={"slm.data.id": args.version, "slm.data.kind": "train"},
+    ) as trace:
+        result = build_train_data(config)
+        output_dir = Path(result["output_dir"])
+        synthesis = output_dir / "synthesis_telemetry.jsonl"
+        if synthesis.is_file():
+            centralized = trace.domain_path("synthesis", "synthesis_telemetry.jsonl")
+            synthesis.replace(centralized)
+            manifest_path = output_dir / "manifest.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["synthesis_telemetry"] = centralized.as_posix()
+            manifest_path.write_text(
+                json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+            )
+        result["manifest"] = write_common_manifest(
+            output_dir,
+            kind="train",
+            dataset_id=args.version,
+            trace_id=trace.trace_id,
+        )
     print(json.dumps(result["stats"], indent=2))
     print(f"wrote {result['output_dir']}")
     print(f"content_fingerprint={result['manifest'].get('content_fingerprint')}")

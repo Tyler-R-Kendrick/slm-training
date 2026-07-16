@@ -177,7 +177,7 @@ use Spaces ZeroGPU for full trains (short quotas, no `torch.compile`).
 
 ```bash
 export HF_TOKEN=hf_...   # required for write; never commit
-python -m scripts.train_model --train-dir outputs/train_data/v1 \
+python -m scripts.train_model --train-dir outputs/data/train/v1 \
   --context-backend hf --run-id twotower_v1 --steps 200 --fast-train
 # Managed GPU Job (A10G+):
 python -m scripts.hf_jobs_train --run-id twotower_v1 --steps 200 --branch main

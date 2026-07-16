@@ -26,7 +26,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--train-records",
         type=Path,
-        default=Path("outputs/train_data/v1/records.jsonl"),
+        default=Path("outputs/data/train/v1/records.jsonl"),
         help="Train records used to rebuild compositional vocabulary.",
     )
     parser.add_argument(

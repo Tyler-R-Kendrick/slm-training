@@ -6,9 +6,11 @@ import json
 from pathlib import Path
 
 from slm_training.dsl.schema import ExampleRecord, load_jsonl
+from slm_training.data.store import DataStore
 
 
 def load_train_records(train_dir: Path) -> list[ExampleRecord]:
+    train_dir = DataStore().resolve_path("train", train_dir)
     records_path = train_dir / "records.jsonl"
     if not records_path.exists():
         raise FileNotFoundError(f"missing train records: {records_path}")
@@ -16,6 +18,7 @@ def load_train_records(train_dir: Path) -> list[ExampleRecord]:
 
 
 def load_suite_records(test_dir: Path, suite: str) -> list[ExampleRecord]:
+    test_dir = DataStore().resolve_path("eval", test_dir)
     manifest_path = test_dir / "manifest.json"
     if manifest_path.exists():
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))

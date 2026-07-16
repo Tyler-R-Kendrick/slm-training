@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import shutil
 import subprocess
 import tempfile
 import uuid
@@ -134,6 +133,8 @@ def cmd_snapshot_eval(args: argparse.Namespace) -> int:
 
 
 def cmd_init(args: argparse.Namespace) -> int:
+    from slm_training.runtime.telemetry import run_trace
+
     if args.track == "twotower":
         recipe = dict(TWOTOWER_E53_RECIPE)
         base_id = args.base_model_id or TWOTOWER_BASE_ID
@@ -152,33 +153,40 @@ def cmd_init(args: argparse.Namespace) -> int:
             raise ValueError(f"unapproved base revision for {base_id}: {base_revision}")
     recipe.update(_json_object(args.recipe_json))
     recipe_sha = content_sha(recipe)
-    manifest = RunManifest(
-        run_id=args.run_id,
-        track=args.track,
-        parent_ids=(),
-        base_model_id=base_id,
-        base_model_revision=base_revision,
-        architecture_sha=content_sha({"track": args.track, "recipe": recipe}),
-        tokenizer_sha=content_sha(
-            {"base": base_id, "revision": base_revision, "kind": "tokenizer"}
-        ),
-        parameter_shapes_sha=content_sha(
-            {"track": args.track, "recipe_sha": recipe_sha}
-        ),
-        data_snapshot_sha=args.data_snapshot_sha,
-        eval_snapshot_sha=args.eval_snapshot_sha,
-        recipe_sha=recipe_sha,
-        code_sha=_git_sha(),
-        seed=args.seed,
-        hardware=_json_object(args.hardware_json),
-        artifact_uris=(),
-        metrics={},
-        lifecycle_state="running",
-        initialization="scratch",
-        recipe=recipe,
-        created_at=utc_now(),
+    trace = run_trace(
+        args.run_id,
+        "lineage.init",
+        run_dir=Path("outputs/runs") / args.run_id,
     )
-    path = _store(args).create_run(manifest)
+    with trace:
+        manifest = RunManifest(
+            run_id=args.run_id,
+            track=args.track,
+            parent_ids=(),
+            base_model_id=base_id,
+            base_model_revision=base_revision,
+            architecture_sha=content_sha({"track": args.track, "recipe": recipe}),
+            tokenizer_sha=content_sha(
+                {"base": base_id, "revision": base_revision, "kind": "tokenizer"}
+            ),
+            parameter_shapes_sha=content_sha(
+                {"track": args.track, "recipe_sha": recipe_sha}
+            ),
+            data_snapshot_sha=args.data_snapshot_sha,
+            eval_snapshot_sha=args.eval_snapshot_sha,
+            recipe_sha=recipe_sha,
+            code_sha=_git_sha(),
+            seed=args.seed,
+            hardware=_json_object(args.hardware_json),
+            artifact_uris=(),
+            metrics={},
+            lifecycle_state="running",
+            initialization="scratch",
+            recipe=recipe,
+            created_at=utc_now(),
+            trace_id=trace.trace_id,
+        )
+        path = _store(args).create_run(manifest)
     print(json.dumps({"manifest_sha": manifest.sha, "run_dir": str(path)}, indent=2))
     return 0
 
@@ -912,19 +920,32 @@ def _persist_molt_trace(
     bucket: str,
     source: Path | None,
     run_root: Path,
+    destination: Path | None = None,
+    trace_id: str | None = None,
 ) -> Path:
-    destination = run_root / run_id / "rl_traces.jsonl"
+    destination = destination or run_root / run_id / "rl_traces.jsonl"
     destination.parent.mkdir(parents=True, exist_ok=True)
+
+    def persist(path: Path) -> None:
+        validate_molt_trace_file(path, run_id=run_id)
+        with path.open(encoding="utf-8") as reader, destination.open(
+            "w", encoding="utf-8"
+        ) as writer:
+            for line in reader:
+                if not line.strip():
+                    continue
+                row = json.loads(line)
+                row["trace_id"] = trace_id
+                writer.write(json.dumps(row, sort_keys=True) + "\n")
+
     if source:
-        validate_molt_trace_file(source, run_id=run_id)
-        shutil.copyfile(source, destination)
+        persist(source)
         return destination
     remote = f"{bucket}/checkpoints/{run_id}/molt_rl/rl_traces.jsonl"
     with tempfile.TemporaryDirectory(prefix=f"molt-traces-{run_id}-") as raw:
         downloaded = Path(raw) / "rl_traces.jsonl"
         subprocess.run(["hf", "buckets", "cp", remote, str(downloaded)], check=True)
-        validate_molt_trace_file(downloaded, run_id=run_id)
-        shutil.copyfile(downloaded, destination)
+        persist(downloaded)
     return destination
 
 
@@ -952,12 +973,21 @@ def cmd_reconcile_molt(args: argparse.Namespace) -> int:
         summary=args.summary,
     )
     validate_molt_train_summary(summary, run_id=manifest.run_id)
-    trace_path = _persist_molt_trace(
-        run_id=manifest.run_id,
-        bucket=args.checkpoint_bucket,
-        source=args.trace,
-        run_root=args.run_root,
-    )
+    from slm_training.runtime.telemetry import run_trace
+
+    with run_trace(
+        manifest.run_id,
+        "rl.reconcile",
+        run_dir=args.run_root / manifest.run_id,
+    ) as trace:
+        trace_path = _persist_molt_trace(
+            run_id=manifest.run_id,
+            bucket=args.checkpoint_bucket,
+            source=args.trace,
+            run_root=args.run_root,
+            destination=trace.domain_path("molt", "rl_traces.jsonl"),
+            trace_id=trace.trace_id,
+        )
     artifact_uris = tuple(
         dict.fromkeys(
             (
@@ -975,6 +1005,7 @@ def cmd_reconcile_molt(args: argparse.Namespace) -> int:
         recipe=recipe,
         artifact_uris=artifact_uris,
         legacy_kind="hardware_smoke",
+        trace_id=trace.trace_id,
     )
     if updated.lifecycle_state == "running":
         updated = store.transition_run(updated.run_id, "screened")
@@ -1251,9 +1282,9 @@ def build_parser() -> argparse.ArgumentParser:
     evaluate.add_argument("--run-id", required=True)
     evaluate.add_argument("--report-id")
     evaluate.add_argument(
-        "--train-dir", type=Path, default=Path("outputs/train_data/v1")
+        "--train-dir", type=Path, default=Path("outputs/data/train/v1")
     )
-    evaluate.add_argument("--test-dir", type=Path, default=Path("outputs/test_data/v1"))
+    evaluate.add_argument("--test-dir", type=Path, default=Path("outputs/data/eval/v1"))
     evaluate.add_argument("--run-root", type=Path, default=Path("outputs/runs"))
     evaluate.add_argument("--device", default="cpu")
     evaluate.add_argument("--scoreboard")

@@ -96,7 +96,7 @@ def _micro_variant(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--train-dir", type=Path, default=Path("outputs/train_data/v1"))
+    parser.add_argument("--train-dir", type=Path, default=Path("outputs/data/train/v1"))
     parser.add_argument("--device", default="auto")
     parser.add_argument("--steps", type=int, default=20)
     parser.add_argument("--gen-rounds", type=int, default=3)

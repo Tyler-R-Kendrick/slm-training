@@ -78,8 +78,8 @@ intersections must not drop `.` / whitespace inside quoted placeholders.
 
 ```bash
 # Diagnostic ceiling (gold-as-prediction must score ~1.0)
-python -m scripts.diagnose_eval --train-dir outputs/train_data/v1 \
-  --test-dir outputs/test_data/v1
+python -m scripts.diagnose_eval --train-dir outputs/data/train/v1 \
+  --test-dir outputs/data/eval/v1
 
 # Historical V2 matrix (CLI default is v3; prefer v4/v5 for ship claims)
 python -m scripts.run_quality_matrix --matrix v2 --steps 800 --device cpu
@@ -118,12 +118,12 @@ python -m scripts.build_train_data --source all --version v1_curriculum \
   --synthesizer quality --curriculum
 
 python -m scripts.build_test_data --source both --version v1 \
-  --train-manifest outputs/train_data/v1/manifest.json
+  --train-manifest outputs/data/train/v1/manifest.json
 
 # Migrate legacy v1 tokenizer checkpoints (optional; fresh train preferred)
 python -m scripts.migrate_checkpoint \
   --checkpoint outputs/runs/legacy/checkpoints/last.pt \
-  --train-records outputs/train_data/v1/records.jsonl \
+  --train-records outputs/data/train/v1/records.jsonl \
   --output outputs/runs/legacy_v2/checkpoints/last.pt
 
 # Run full matrix (scratch CPU). Use --no-design-md-context when seeding from
@@ -142,7 +142,7 @@ python -m scripts.run_quality_matrix --matrix v2 --only E11,E12,E15 --steps 800
 # Online RL alone (after an SFT checkpoint)
 python -m scripts.train_rl \
   --checkpoint outputs/runs/qx_e9b_fidelity_antileak/checkpoints/last.pt \
-  --train-records outputs/train_data/v1/records.jsonl \
+  --train-records outputs/data/train/v1/records.jsonl \
   --out-dir outputs/runs/grpo --steps 50 --group-size 4
 
 # Cycle telemetry (train + generate spans)

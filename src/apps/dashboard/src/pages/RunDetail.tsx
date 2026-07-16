@@ -197,6 +197,7 @@ export function RunDetail({ runId, navigate }: { runId: string; navigate: (to: s
       </div>
 
       <Grid min="180px">
+        <StatTile label="Trace ID" value={data.trace?.trace_id?.slice(0, 12) ?? data.manifest?.trace_id?.slice(0, 12) ?? "—"} sub={data.trace?.trace_id ? "W3C correlated" : undefined} />
         <StatTile label="Steps" value={fmt(ts.steps)} accent="moss" sub={ts.stopped_on ? `stop: ${ts.stopped_on}` : undefined} />
         <StatTile label="Last loss" value={fmt(ts.last_loss, 4)} />
         <StatTile label="Best weighted NLL" value={fmt(ts.best_weighted_nll, 4)} accent="ember" />

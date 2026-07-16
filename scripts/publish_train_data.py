@@ -4,53 +4,27 @@
 from __future__ import annotations
 
 import argparse
-import json
 from pathlib import Path
+
+from slm_training.data.store import DataStore
 
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--version", required=True)
-    parser.add_argument("--source-root", type=Path, default=Path("outputs/train_data"))
+    parser.add_argument("--source-root", type=Path, default=Path("outputs/data/train"))
     parser.add_argument(
         "--destination-root",
         type=Path,
-        default=Path("src/slm_training/resources/train_data"),
+        default=Path("src/slm_training/resources/data/train"),
     )
     args = parser.parse_args(argv)
-    if not args.version.replace("_", "").replace("-", "").replace(".", "").isalnum():
-        raise SystemExit("invalid version")
-
-    source = args.source_root / args.version
-    destination = args.destination_root / args.version
-    if not (source / "records.jsonl").is_file() or not (
-        source / "manifest.json"
-    ).is_file():
-        raise SystemExit(f"incomplete corpus: {source}")
-
-    manifest = json.loads((source / "manifest.json").read_text())
-    if not manifest.get("record_count") and not manifest.get("records"):
-        raise SystemExit("manifest has no record count")
-
-    destination.mkdir(parents=True, exist_ok=True)
-    for name in ("records.jsonl", "manifest.json", "stats.json"):
-        source_file = source / name
-        if source_file.is_file():
-            # Keep published artifacts byte-stable and git-diff clean even if
-            # a generator leaves multiple trailing blank lines.
-            payload = source_file.read_bytes().rstrip(b"\n") + b"\n"
-            (destination / name).write_bytes(payload)
-    print(
-        json.dumps(
-            {
-                "version": args.version,
-                "destination": str(destination),
-                "record_count": manifest.get("record_count"),
-                "manifest_sha": manifest.get("manifest_sha256"),
-            },
-            indent=2,
-        )
+    store = DataStore(
+        local_root=args.source_root.parent,
+        published_root=args.destination_root.parent,
     )
+    ref = store.publish("train", args.version)
+    print(ref.path)
     return 0
 
 

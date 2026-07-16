@@ -1,10 +1,10 @@
 {
-  "version": "remediated",
-  "kind": "train_data",
+  "version": "remediated_unique",
+  "kind": "train",
   "source": "all",
-  "records": "outputs/train_data/remediated/records.jsonl",
-  "stats": "outputs/train_data/remediated/stats.json",
-  "record_count": 585,
+  "records": "records.jsonl",
+  "stats": "stats.json",
+  "record_count": 198,
   "ids": [
     "aww_app_01",
     "aww_app_01_aug_dir",
@@ -2603,5 +2603,24 @@
     "ffe052e4f0016591efc4681b6bf1f9736b56ea68fdb9f7171bdd307b577f243a"
   ],
   "content_fingerprint": "928ec8d4921954c7736d2386fe7abf88bbef75523a7cfe404792f45ddcd5d4ba",
-  "built_at": "2026-07-13T16:51:25.943358+00:00"
+  "built_at": "2026-07-13T16:51:25.943358+00:00",
+  "deduplication": "one record per unique openui target",
+  "source_manifest_sha256": null,
+  "manifest_sha256": "02e2e59d1e2450ab235b39c1512d33cf693c09235315616980e4275f3da677e8",
+  "schema_version": 2,
+  "dataset_id": "remediated_unique",
+  "immutable": true,
+  "trace_id": null,
+  "artifacts": [
+    {
+      "path": "records.jsonl",
+      "sha256": "7b852d37a3bc8044e0add9c8f9ed282f3045a218951e8825062f5028e097bda6",
+      "size": 1023586
+    },
+    {
+      "path": "stats.json",
+      "sha256": "c560846326494577e7ac155e255e053dc29738a6ffb01e79b05d7167e400ecd3",
+      "size": 1017
+    }
+  ]
 }

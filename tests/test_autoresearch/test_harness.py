@@ -423,7 +423,7 @@ def test_compile_is_typed_and_diagnosis_routes_bad_data() -> None:
     spec = experiment(
         knobs=ExperimentKnobs(
             data_source="existing",
-            derive_from="outputs/train_data/old/records.jsonl",
+            derive_from="outputs/data/train/old/records.jsonl",
             min_quality_score=0.7,
             steps=20,
         )

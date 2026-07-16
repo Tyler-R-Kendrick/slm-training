@@ -63,7 +63,7 @@ def test_build_train_data_writes_artifacts(tmp_path: Path) -> None:
     assert (out_dir / "manifest.json").exists()
     assert (out_dir / "records.jsonl").exists()
     assert (out_dir / "stats.json").exists()
-    assert (out_dir / "synthesis_telemetry.jsonl").exists()
+    assert result["manifest"]["synthesis_telemetry_sha256"]
     stats = json.loads((out_dir / "stats.json").read_text(encoding="utf-8"))
     assert stats["record_count"] >= 2
     assert stats["error_count"] == 0

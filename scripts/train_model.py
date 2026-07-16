@@ -15,13 +15,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--train-dir",
         type=Path,
-        default=Path("outputs/train_data/v1"),
+        default=Path("outputs/data/train/v1"),
     )
     parser.add_argument("--run-root", type=Path, default=Path("outputs/runs"))
     parser.add_argument(
         "--train-version",
         default=None,
-        help="Use a published source-controlled corpus version from src/slm_training/resources/train_data.",
+        help="Use a published source-controlled corpus version from src/slm_training/resources/data/train.",
     )
     parser.add_argument("--run-id", default="latest")
     parser.add_argument(
@@ -462,10 +462,15 @@ def main(argv: list[str] | None = None) -> int:
         help="Plan bucket sync without uploading (debug / no-write environments).",
     )
     args = parser.parse_args(argv)
+    from slm_training.data.store import DataStore
+
+    data_store = DataStore()
     if args.train_version:
-        args.train_dir = (
-            Path("src/slm_training/resources/train_data") / args.train_version
-        )
+        args.train_dir = data_store.resolve("train", args.train_version).path
+    else:
+        args.train_dir = data_store.resolve_path("train", args.train_dir)
+    if args.test_dir is not None:
+        args.test_dir = data_store.resolve_path("eval", args.test_dir)
     if (args.eval_every > 0 or args.loss_eval_every > 0) and not args.test_dir:
         parser.error(
             "--test-dir is required when --eval-every or --loss-eval-every is enabled"
@@ -513,8 +518,7 @@ def main(argv: list[str] | None = None) -> int:
             "reduce-overhead" if want_fast and accel.backend == "cuda" else "default"
         )
 
-    summary = train(
-        ModelBuildConfig(
+    config = ModelBuildConfig(
             train_dir=args.train_dir,
             test_dir=args.test_dir,
             suite=args.eval_suite,
@@ -640,8 +644,20 @@ def main(argv: list[str] | None = None) -> int:
                 else False
             ),
             checkpoint_bucket_dry_run=bool(args.checkpoint_bucket_dry_run),
-        )
     )
+    from slm_training.runtime.telemetry import run_trace
+
+    with run_trace(
+        args.run_id,
+        "train",
+        run_dir=config.run_dir,
+        attributes={"slm.data.path": args.train_dir.as_posix()},
+    ) as trace:
+        summary = train(config)
+        summary["trace_id"] = trace.trace_id
+        summary_path = config.run_dir / "train_summary.json"
+        if summary_path.is_file():
+            summary_path.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(summary, indent=2))
     return 0
 

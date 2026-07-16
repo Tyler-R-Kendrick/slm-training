@@ -22,7 +22,7 @@ class TestDataConfig:
     rico_path: Path | None = Path("src/slm_training/resources/rico/semantic_test.jsonl")
     # fixture | rico | both
     source: str = "both"
-    output_root: Path = Path("outputs/test_data")
+    output_root: Path = Path("outputs/data/eval")
     version: str = "v0"
     suites: tuple[str, ...] = DEFAULT_SUITES
     train_manifest: Path | None = None

@@ -163,7 +163,7 @@ JOB_SPECS: dict[str, JobSpec] = {
             ),
             "version": Slug(),
             "base_version": PathTemplate(
-                "--derive-from", "outputs/train_data/{value}/records.jsonl"
+                "--derive-from", "outputs/data/train/{value}/records.jsonl"
             ),
             "synthesizer": Choice("quality", "template", "layout", "frontier", "none"),
             "namespace_augment": Flag(),
@@ -180,7 +180,7 @@ JOB_SPECS: dict[str, JobSpec] = {
             "source": Choice("both", "rico", "fixture", "awwwards"),
             "version": Slug(),
             "train_version": PathTemplate(
-                "--train-manifest", "outputs/train_data/{value}/manifest.json"
+                "--train-manifest", "outputs/data/train/{value}/manifest.json"
             ),
         },
     ),
@@ -188,7 +188,7 @@ JOB_SPECS: dict[str, JobSpec] = {
         "scripts.evaluate_model",
         summary="Evaluate a checkpoint (optionally with ship gates)",
         params={
-            "test_version": PathTemplate("--test-dir", "outputs/test_data/{value}"),
+            "test_version": PathTemplate("--test-dir", "outputs/data/eval/{value}"),
             "run_id": Slug(),
             "suite": Choice("smoke", "held_out", "adversarial", "ood", "rico_held"),
             "ship_gates": Flag(),

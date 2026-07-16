@@ -57,7 +57,7 @@ variants) that collides. Stats report `structure_reserved_rejected`.
 ```bash
 python -m scripts.build_train_data --source all --version v1
 python -m scripts.build_test_data --source both --version v1 \
-  --train-manifest outputs/train_data/v1/manifest.json
+  --train-manifest outputs/data/train/v1/manifest.json
 ```
 
 ## Tokenizer v2 checkpoint migration
@@ -69,7 +69,7 @@ from train records and remap shared token rows:
 ```bash
 python -m scripts.migrate_checkpoint \
   --checkpoint outputs/runs/legacy_run/checkpoints/last.pt \
-  --train-records outputs/train_data/v1/records.jsonl \
+  --train-records outputs/data/train/v1/records.jsonl \
   --output outputs/runs/legacy_run_v2/checkpoints/last.pt
 ```
 

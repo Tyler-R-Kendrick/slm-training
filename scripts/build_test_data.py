@@ -50,13 +50,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--output-root",
         type=Path,
-        default=Path("outputs/test_data"),
+        default=Path("outputs/data/eval"),
     )
     parser.add_argument("--version", default="v1")
     parser.add_argument(
         "--train-manifest",
         type=Path,
-        default=Path("outputs/train_data/v1/manifest.json"),
+        default=Path("outputs/data/train/v1/manifest.json"),
         help="Train manifest used for leakage checks (required).",
     )
     parser.add_argument(

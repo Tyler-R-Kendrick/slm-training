@@ -22,6 +22,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from slm_training.data.store import DataStore
 from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
     evaluate_ship_gates,
@@ -208,12 +209,13 @@ class Readers:
         self.model_card = self.root / "docs" / "MODEL_CARD.md"
         self.outputs = self.root / "outputs"
         self.fixtures = self.root / "src" / "slm_training" / "resources"
-        self.published_train_root = self.fixtures / "train_data"
+        self.data_store = DataStore(self.root)
+        self.published_train_root = self.data_store.published_root / "train"
         self.dashboard_snapshot = self.root / "src" / "slm_training" / "web" / "static" / "dashboard_snapshot.json"
         self.lineage = LineageStore(self.outputs / "lineage")
         self.deployments = DeploymentRegistry(self.outputs / "lineage" / "deployments")
         self.comparisons = BlindedComparisonStore(
-            self.outputs / "annotations" / "comparisons.jsonl"
+            self.data_store.local_root / "annotation" / "comparisons.jsonl"
         )
         self.persist_insights = persist_insights
 
@@ -279,6 +281,16 @@ class Readers:
                         "created_at": manifest.get("created_at"),
                         "metrics": manifest.get("metrics", {}),
                         "artifact_uris": manifest.get("artifact_uris", []),
+                        "trace_id": manifest.get("trace_id")
+                        or (
+                            _read_json(
+                                self.outputs
+                                / "runs"
+                                / current.parent.name
+                                / "trace.json"
+                            )
+                            or {}
+                        ).get("trace_id"),
                     }
                 )
         if live:
@@ -331,6 +343,7 @@ class Readers:
             "gates": _read_json(run_dir / "gates.json"),
             "telemetry": _read_json(run_dir / "train_telemetry.json"),
             "matrix_result": _read_json(run_dir / "matrix_result.json"),
+            "trace": _read_json(run_dir / "trace.json"),
         }
         lineage_manifest = None
         try:
@@ -405,7 +418,19 @@ class Readers:
                 "traces": [],
                 "provenance": "missing",
             }
-        path = self.outputs / "runs" / run_id / "rl_traces.jsonl"
+        run_dir = self.outputs / "runs" / run_id
+        trace_ref = _read_json(run_dir / "trace.json") or {}
+        bundle_value = str(trace_ref.get("bundle") or "")
+        bundle = Path(bundle_value)
+        if bundle_value and not bundle.is_absolute():
+            bundle = self.root / bundle
+        path = (
+            bundle / "domain" / "molt" / "rl_traces.jsonl"
+            if bundle_value
+            else Path("/__missing_trace_bundle__")
+        )
+        if not path.is_file():
+            path = run_dir / "rl_traces.jsonl"
         traces: list[dict[str, Any]] = []
         total = 0
         invalid = 0
@@ -534,17 +559,11 @@ class Readers:
     # ---- training / test data -------------------------------------------------
 
     def train_data(self, version: str | None = None) -> dict[str, Any]:
-        train_root = self.outputs / "train_data"
-        generated_versions = (
-            sorted(p.name for p in train_root.iterdir() if p.is_dir())
-            if train_root.exists()
-            else []
+        refs = self.data_store.versions("train")
+        generated_versions = sorted(
+            ref.dataset_id for ref in refs if ref.storage in {"local", "legacy"}
         )
-        published_versions = (
-            sorted(p.name for p in self.published_train_root.iterdir() if p.is_dir())
-            if self.published_train_root.exists()
-            else []
-        )
+        published_versions = sorted(ref.dataset_id for ref in refs if ref.storage == "git")
         versions = [
             "examples",
             *sorted(set(generated_versions) | set(published_versions)),
@@ -565,12 +584,17 @@ class Readers:
             chosen = "remediated_roots_judged"
         else:
             chosen = published_versions[-1]
-        live = chosen in generated_versions
-        vdir = (train_root if live else self.published_train_root) / chosen
+        ref = self.data_store.resolve("train", chosen)
+        live = ref.storage in {"local", "legacy"}
+        vdir = ref.path
         stats = _read_json(vdir / "stats.json") or {}
         manifest = _read_json(vdir / "manifest.json") or {}
         return {
             "provenance": "live" if live else "committed",
+            "storage": ref.storage,
+            "path": ref.path.relative_to(self.root).as_posix(),
+            "fingerprint": ref.fingerprint,
+            "trace_id": manifest.get("trace_id"),
             "versions": versions,
             "version": chosen,
             "stats": stats,
@@ -592,13 +616,13 @@ class Readers:
     ) -> dict[str, Any]:
         if not re.fullmatch(r"[A-Za-z0-9._,-]{1,64}", version):
             return {"version": version, "count": 0, "offset": 0, "records": []}
-        published_path = self.published_train_root / version / "records.jsonl"
-        generated_path = self.outputs / "train_data" / version / "records.jsonl"
-        path = (
-            self.fixtures / "train_seeds.jsonl"
-            if version == "examples"
-            else generated_path if generated_path.exists() else published_path
-        )
+        if version == "examples":
+            path = self.fixtures / "train_seeds.jsonl"
+        else:
+            try:
+                path = self.data_store.resolve("train", version).path / "records.jsonl"
+            except (FileNotFoundError, ValueError):
+                path = Path("/__missing__")
         rows = _read_jsonl(path, limit=None)
         if split:
             rows = [r for r in rows if r.get("split") == split]
@@ -637,7 +661,7 @@ class Readers:
         return {"fixture_counts": counts, "record_count": counts.get("train_seeds")}
 
     def test_data(self) -> dict[str, Any]:
-        test_root = self.outputs / "test_data"
+        test_root = self.data_store.local_root / "eval"
         if test_root.exists():
             versions = sorted(p.name for p in test_root.iterdir() if p.is_dir())
             if versions:
@@ -679,8 +703,8 @@ class Readers:
     # ---- annotations / comparisons -------------------------------------------
 
     def annotations_summary(self) -> dict[str, Any]:
-        ann = self.outputs / "annotations"
-        prefs = self.outputs / "preferences"
+        ann = self.data_store.local_root / "annotation"
+        prefs = self.data_store.local_root / "preference"
         return {
             "feedback": _count_lines(ann / "feedback.jsonl"),
             "bad_outputs": _count_lines(ann / "bad_outputs.jsonl"),

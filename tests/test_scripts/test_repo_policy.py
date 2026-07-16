@@ -1,11 +1,26 @@
 from pathlib import Path
 
 from scripts.repo_policy import (
+    MAX_PUBLISHED_DATA_BYTES,
     pre_tool_decision,
     raw_mv_paths,
     validate_skill_mirrors,
     validate_top_level,
+    validate_published_data_sizes,
 )
+
+
+def test_published_data_size_cap(tmp_path) -> None:
+    relative = "src/slm_training/resources/data/train/huge/records.jsonl"
+    path = tmp_path / relative
+    path.parent.mkdir(parents=True)
+    path.write_bytes(b"x")
+    assert validate_published_data_sizes([relative], root=tmp_path) == []
+    with path.open("r+b") as handle:
+        handle.truncate(MAX_PUBLISHED_DATA_BYTES)
+    assert validate_published_data_sizes([relative], root=tmp_path) == [
+        f"published data file exceeds 50 MiB Git cap: {relative}"
+    ]
 
 
 def test_top_level_allowlist_rejects_sprawl() -> None:

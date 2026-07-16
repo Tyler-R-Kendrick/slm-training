@@ -10,6 +10,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterator
 
+from slm_training.runtime.telemetry.trace import RunTrace, current_trace, run_trace
+
 
 @dataclass
 class SpanStats:
@@ -120,3 +122,15 @@ def timed(name: str) -> Iterator[None]:
         return
     with tel.span(name):
         yield
+
+
+__all__ = [
+    "CycleTelemetry",
+    "RunTrace",
+    "bind_telemetry",
+    "current_trace",
+    "get_telemetry",
+    "run_trace",
+    "set_telemetry",
+    "timed",
+]

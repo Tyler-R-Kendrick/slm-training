@@ -21,7 +21,7 @@ def main(argv: list[str] | None = None) -> int:
 
     build = sub.add_parser("build-pairs", help="Build preference pairs from train records")
     build.add_argument("--train-records", type=Path, required=True)
-    build.add_argument("--out", type=Path, default=Path("outputs/preferences/pairs.jsonl"))
+    build.add_argument("--out", type=Path, default=Path("outputs/data/preference/pairs.jsonl"))
     build.add_argument(
         "--soft-corrupt",
         action="store_true",

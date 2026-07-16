@@ -1145,7 +1145,7 @@ export function Playground() {
     <div className="pg-page">
       <div className="page-head">
         <h1 className="page-title">Playground</h1>
-        <p className="page-sub">Grade, repair, and retain browser-reviewed OpenUI samples. Swipe right to keep or left to reject; arrows browse and Tab changes view. Feedback flows to <span className="mono">outputs/annotations/</span>.</p>
+        <p className="page-sub">Grade, repair, and retain browser-reviewed OpenUI samples. Swipe right to keep or left to reject; arrows browse and Tab changes view. Feedback flows to <span className="mono">outputs/data/annotation/</span>.</p>
         <div className="pg-legend" aria-label="Model source legend">
           <span className="pg-source training">Training model · candidate under evaluation</span>
           <span className="pg-source baseline">Browser baseline · on-device reference</span>

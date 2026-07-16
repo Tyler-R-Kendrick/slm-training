@@ -1755,13 +1755,13 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--train-dir", type=Path, default=Path("outputs/train_data/v1"))
+    parser.add_argument("--train-dir", type=Path, default=Path("outputs/data/train/v1"))
     parser.add_argument(
         "--curriculum-dir",
         type=Path,
-        default=Path("outputs/train_data/v1_curriculum"),
+        default=Path("outputs/data/train/v1_curriculum"),
     )
-    parser.add_argument("--test-dir", type=Path, default=Path("outputs/test_data/v1"))
+    parser.add_argument("--test-dir", type=Path, default=Path("outputs/data/eval/v1"))
     parser.add_argument("--run-root", type=Path, default=Path("outputs/runs"))
     parser.add_argument(
         "--docs-out",
@@ -1855,7 +1855,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--namespace-dir",
         type=Path,
-        default=Path("outputs/train_data/v1_namespace"),
+        default=Path("outputs/data/train/v1_namespace"),
     )
     parser.add_argument(
         "--matrix",
@@ -1887,8 +1887,8 @@ def main(argv: list[str] | None = None) -> int:
     # snapshot; use the requested corpus unless a curriculum path was also
     # explicitly selected.
     if (
-        args.train_dir != Path("outputs/train_data/v1")
-        and args.curriculum_dir == Path("outputs/train_data/v1_curriculum")
+        args.train_dir != Path("outputs/data/train/v1")
+        and args.curriculum_dir == Path("outputs/data/train/v1_curriculum")
     ):
         args.curriculum_dir = args.train_dir
     args.suites = tuple(

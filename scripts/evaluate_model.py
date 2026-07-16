@@ -59,7 +59,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--test-dir",
         type=Path,
-        default=Path("outputs/test_data/v1"),
+        default=Path("outputs/data/eval/v1"),
     )
     parser.add_argument("--suite", default="smoke")
     parser.add_argument(
@@ -78,7 +78,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--train-dir",
         type=Path,
-        default=Path("outputs/train_data/v1"),
+        default=Path("outputs/data/train/v1"),
         help="Used to rebuild vocab when loading TwoTower without sidecar tokenizer.",
     )
     parser.add_argument(
@@ -302,6 +302,11 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     args = parser.parse_args(argv)
+    from slm_training.data.store import DataStore
+
+    data_store = DataStore()
+    args.train_dir = data_store.resolve_path("train", args.train_dir)
+    args.test_dir = data_store.resolve_path("eval", args.test_dir)
 
     if args.no_design_md_context and args.design_md_context:
         raise SystemExit(
@@ -372,13 +377,16 @@ def main(argv: list[str] | None = None) -> int:
         args.suites = ",".join(DEFAULT_SHIP_GATES.keys())
 
     if args.suites:
+        from slm_training.runtime.telemetry import run_trace
+
         suites = [s.strip() for s in args.suites.split(",") if s.strip()]
-        scoreboard = evaluate_suites(
-            config,
-            suites,
-            checkpoint=args.checkpoint,
-            write_gates=args.ship_gates,
-        )
+        with run_trace(args.run_id, "eval", run_dir=config.run_dir):
+            scoreboard = evaluate_suites(
+                config,
+                suites,
+                checkpoint=args.checkpoint,
+                write_gates=args.ship_gates,
+            )
         print(json.dumps({k: v for k, v in scoreboard.items()}, indent=2))
         if args.ship_gates:
             gates = scoreboard.get("gates") or write_ship_gates(
@@ -397,7 +405,10 @@ def main(argv: list[str] | None = None) -> int:
                 return code
         return 0
 
-    metrics = evaluate(config, checkpoint=args.checkpoint)
+    from slm_training.runtime.telemetry import run_trace
+
+    with run_trace(args.run_id, "eval", run_dir=config.run_dir):
+        metrics = evaluate(config, checkpoint=args.checkpoint)
     summary = {k: v for k, v in metrics.items() if k != "details"}
     print(json.dumps(summary, indent=2))
     return _check_fail_unders(metrics, args)

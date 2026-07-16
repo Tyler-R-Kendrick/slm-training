@@ -19,12 +19,12 @@ from slm_training.harnesses.preference import PreferencePair, write_pairs
 
 Rating = Literal["up", "down"]
 
-DEFAULT_FEEDBACK_PATH = Path("outputs/annotations/feedback.jsonl")
+DEFAULT_FEEDBACK_PATH = Path("outputs/data/annotation/feedback.jsonl")
 DEFAULT_HUMAN_TRAIN_PATH = Path("src/slm_training/resources/annotations/human_train.jsonl")
-DEFAULT_HUMAN_PAIRS_PATH = Path("outputs/preferences/human_pairs.jsonl")
-DEFAULT_BAD_OUTPUTS_PATH = Path("outputs/annotations/bad_outputs.jsonl")
+DEFAULT_HUMAN_PAIRS_PATH = Path("outputs/data/preference/human_pairs.jsonl")
+DEFAULT_BAD_OUTPUTS_PATH = Path("outputs/data/annotation/bad_outputs.jsonl")
 DEFAULT_GENERATION_ATTEMPTS_PATH = Path(
-    "outputs/annotations/generation_attempts.jsonl"
+    "outputs/data/annotation/generation_attempts.jsonl"
 )
 
 _WRITE_LOCK = threading.RLock()

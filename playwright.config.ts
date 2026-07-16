@@ -6,7 +6,7 @@ export default defineConfig({
   expect: { timeout: 15_000 },
   fullyParallel: false,
   retries: 0,
-  reporter: [["list"], ["html", { open: "never", outputFolder: "outputs/annotations/playwright-report" }]],
+  reporter: [["list"], ["html", { open: "never", outputFolder: "outputs/data/annotation/playwright-report" }]],
   use: {
     baseURL: process.env.PLAYGROUND_URL || "http://127.0.0.1:8765",
     trace: "on-first-retry",
@@ -22,5 +22,5 @@ export default defineConfig({
     reuseExistingServer: true,
     timeout: 180_000,
   },
-  outputDir: "outputs/annotations/test-results",
+  outputDir: "outputs/data/annotation/test-results",
 });

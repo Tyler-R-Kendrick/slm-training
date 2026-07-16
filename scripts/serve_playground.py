@@ -49,7 +49,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--annotations-path",
         type=Path,
-        default=Path("outputs/annotations/feedback.jsonl"),
+        default=Path("outputs/data/annotation/feedback.jsonl"),
         help="Append-only JSONL for thumbs + notes",
     )
     parser.add_argument(
@@ -60,18 +60,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--human-pairs-path",
         type=Path,
-        default=Path("outputs/preferences/human_pairs.jsonl"),
+        default=Path("outputs/data/preference/human_pairs.jsonl"),
     )
     parser.add_argument(
         "--bad-outputs-path",
         type=Path,
-        default=Path("outputs/annotations/bad_outputs.jsonl"),
+        default=Path("outputs/data/annotation/bad_outputs.jsonl"),
         help="Append-only JSONL for invalid model outputs (negative training)",
     )
     parser.add_argument(
         "--generation-attempts-path",
         type=Path,
-        default=Path("outputs/annotations/generation_attempts.jsonl"),
+        default=Path("outputs/data/annotation/generation_attempts.jsonl"),
         help="Append-only JSONL for every server and browser model attempt",
     )
     args = parser.parse_args(argv)

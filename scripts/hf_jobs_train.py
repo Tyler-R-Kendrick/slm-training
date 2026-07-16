@@ -46,7 +46,7 @@ def build_entrypoint_script(
     if not skip_eval:
         ckpt = f"outputs/runs/{run_id}/checkpoints/last.pt"
         eval_block = f"""
-python -m scripts.evaluate_model --train-dir outputs/train_data/v1 --test-dir outputs/test_data/v1 --run-id {shlex.quote(run_id)} --ship-gates
+python -m scripts.evaluate_model --train-dir outputs/data/train/v1 --test-dir outputs/data/eval/v1 --run-id {shlex.quote(run_id)} --ship-gates
 python -m scripts.export_cactus --checkpoint {shlex.quote(ckpt)} --out-dir outputs/cactus/bundle
 python -m scripts.bench_cactus --checkpoint {shlex.quote(ckpt)} --with-design-md
 """.rstrip()
@@ -86,11 +86,11 @@ python -m pip install -e '.[torch,hf,rico,dev]'
 (cd src/apps/design_md_bridge && npm ci)
 
 python -m scripts.build_train_data --source all --version v1 --synthesizer quality --max-openui-chars 600 --max-components 10
-python -m scripts.build_test_data --source both --version v1 --train-manifest outputs/train_data/v1/manifest.json
+python -m scripts.build_test_data --source both --version v1 --train-manifest outputs/data/train/v1/manifest.json
 
 echo "[hf-jobs] train run_id={shlex.quote(run_id)} steps={int(steps)}"
 python -m scripts.train_model \\
-  --train-dir outputs/train_data/v1 \\
+  --train-dir outputs/data/train/v1 \\
   --run-id {shlex.quote(run_id)} \\
   --steps {int(steps)} \\
   --device auto \\

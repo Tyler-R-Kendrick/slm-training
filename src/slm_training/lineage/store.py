@@ -146,6 +146,7 @@ class LineageStore:
         hardware: dict[str, Any] | None = None,
         artifact_uris: tuple[str, ...] | None = None,
         legacy_kind: str | None = None,
+        trace_id: str | None = None,
     ) -> RunManifest:
         """Append orchestration metadata without changing lifecycle state."""
         current = self.load_run(run_id)
@@ -156,6 +157,7 @@ class LineageStore:
             hardware=hardware or current.hardware,
             artifact_uris=artifact_uris or current.artifact_uris,
             legacy_kind=legacy_kind or current.legacy_kind,  # type: ignore[arg-type]
+            trace_id=trace_id or current.trace_id,
         )
         rel = f"revisions/{updated.lifecycle_state}-metadata-{updated.sha}.json"
         run_dir = self.root / "runs" / run_id

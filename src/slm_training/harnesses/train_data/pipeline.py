@@ -37,7 +37,7 @@ class TrainDataConfig:
     source: str = "all"
     # Reuse a previously built records.jsonl as roots for deterministic variants.
     derive_from: Path | None = None
-    output_root: Path = Path("outputs/train_data")
+    output_root: Path = Path("outputs/data/train")
     version: str = "v1"
     synthesizer: str = "quality"
     require_split: str = "train"
@@ -67,7 +67,7 @@ class TrainDataConfig:
     semantic_cluster_cap: int | None = None
     # P12 producer inputs. ProgramSpecs fall back to deterministic generation
     # when the configured file has not been materialized yet.
-    programspec_path: Path | None = Path("outputs/progspec/programs.jsonl")
+    programspec_path: Path | None = Path("outputs/data/programspec/programs.jsonl")
     programspec_count: int = 16
     programspec_seed: int = 0
     include_language_contract: bool = True

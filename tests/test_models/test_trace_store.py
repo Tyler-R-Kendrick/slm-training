@@ -98,7 +98,7 @@ def test_trace_store_append_only(tmp_path: Path) -> None:
     assert tid1 != tid2
     assert len(store) == 2
     rows = list(store.iter_traces())
-    assert [r["trace_id"] for r in rows] == [tid1, tid2]
+    assert [r["trajectory_id"] for r in rows] == [tid1, tid2]
 
     # Re-opening the store keeps existing traces (append-only contract).
     reopened = TraceStore(tmp_path / "traces")

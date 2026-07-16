@@ -97,8 +97,8 @@ def run_seed(args: argparse.Namespace, seed: int) -> dict[str, Any]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--train-dir", type=Path, default=Path("outputs/train_data/v1"))
-    parser.add_argument("--test-dir", type=Path, default=Path("outputs/test_data/v1"))
+    parser.add_argument("--train-dir", type=Path, default=Path("outputs/data/train/v1"))
+    parser.add_argument("--test-dir", type=Path, default=Path("outputs/data/eval/v1"))
     parser.add_argument("--run-root", type=Path, default=Path("outputs/runs"))
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--context-backend", choices=("scratch", "hf"), default="scratch")

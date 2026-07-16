@@ -17,10 +17,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-depth", type=int, default=5)
     parser.add_argument("--max-width", type=int, default=4)
     parser.add_argument(
-        "--output", type=Path, default=Path("outputs/progspec/programs.jsonl")
+        "--output", type=Path, default=Path("outputs/data/programspec/programs.jsonl")
     )
     parser.add_argument(
-        "--coverage", type=Path, default=Path("outputs/progspec/coverage.json")
+        "--coverage", type=Path, default=Path("outputs/data/programspec/coverage.json")
     )
     args = parser.parse_args(argv)
 

@@ -52,6 +52,7 @@ ALLOWED_TRACKED_IGNORED = {
     ".agents/skills/huggingface-community-evals/examples/.env.example",
     ".env.example",
 }
+MAX_PUBLISHED_DATA_BYTES = 50 * 1024 * 1024
 
 
 def validate_top_level(paths: Iterable[str]) -> list[str]:
@@ -93,6 +94,22 @@ def validate_skill_mirrors(root: Path = ROOT) -> list[str]:
     return errors
 
 
+def validate_published_data_sizes(
+    paths: Iterable[str], *, root: Path = ROOT
+) -> list[str]:
+    prefix = "src/slm_training/resources/data/"
+    errors = []
+    for relative in paths:
+        path = root / relative
+        if (
+            relative.startswith(prefix)
+            and path.is_file()
+            and path.stat().st_size >= MAX_PUBLISHED_DATA_BYTES
+        ):
+            errors.append(f"published data file exceeds 50 MiB Git cap: {relative}")
+    return errors
+
+
 def _git(args: list[str], *, root: Path = ROOT) -> str:
     return subprocess.run(
         ["git", *args],
@@ -112,7 +129,9 @@ def repository_paths(*, root: Path = ROOT) -> list[str]:
 
 
 def validate_repository(*, root: Path = ROOT) -> list[str]:
-    errors = validate_top_level(repository_paths(root=root))
+    paths = repository_paths(root=root)
+    errors = validate_top_level(paths)
+    errors.extend(validate_published_data_sizes(paths, root=root))
     ignored = _git(["ls-files", "-ci", "--exclude-standard"], root=root).splitlines()
     errors.extend(
         f"tracked ignored artifact: {path}"

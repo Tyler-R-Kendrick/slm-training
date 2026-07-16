@@ -1,9 +1,9 @@
 {
   "version": "remediated_roots",
-  "kind": "train_data",
+  "kind": "train",
   "source": "all",
-  "records": "outputs/train_data/remediated_roots/records.jsonl",
-  "stats": "outputs/train_data/remediated_roots/stats.json",
+  "records": "records.jsonl",
+  "stats": "stats.json",
   "record_count": 108,
   "ids": [
     "lc_boolean_literal_generation_8b640c734d09",
@@ -808,7 +808,7 @@
   },
   "governance": {},
   "mixture": null,
-  "synthesis_telemetry": "outputs/train_data/remediated_roots/synthesis_telemetry.jsonl",
+  "synthesis_telemetry": "synthesis_telemetry.jsonl",
   "synthesis_telemetry_sha256": "1a5bf23c83e177d206f579ca0aff7ff03defe942539087fd041ebe53cbecbfbe",
   "diffusion_online": {
     "policies": [
@@ -839,5 +839,21 @@
     ],
     "max_length": null
   },
-  "built_at": "2026-07-15T18:32:46.653329+00:00"
+  "built_at": "2026-07-15T18:32:46.653329+00:00",
+  "schema_version": 2,
+  "dataset_id": "remediated_roots",
+  "immutable": true,
+  "trace_id": null,
+  "artifacts": [
+    {
+      "path": "records.jsonl",
+      "sha256": "1d00dad6ea07292bc63a73c526d86bfbdbfc0064f3a2bc5d73a1b324f8e6f42b",
+      "size": 690248
+    },
+    {
+      "path": "stats.json",
+      "sha256": "2c8e448bca67dc315dbe302aad6d8cfe45173301a27207e2b6a2ca90ad27f0e1",
+      "size": 10724
+    }
+  ]
 }

@@ -66,9 +66,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--train-dir",
         type=Path,
-        default=Path("outputs/train_data/v1_curriculum"),
+        default=Path("outputs/data/train/v1_curriculum"),
     )
-    parser.add_argument("--test-dir", type=Path, default=Path("outputs/test_data/v1"))
+    parser.add_argument("--test-dir", type=Path, default=Path("outputs/data/eval/v1"))
     parser.add_argument("--run-root", type=Path, default=Path("outputs/runs"))
     parser.add_argument("--run-id", default="phase_abc_complete")
     parser.add_argument("--device", default="cpu")

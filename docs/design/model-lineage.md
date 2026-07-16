@@ -74,19 +74,19 @@ are present. The 19-example remediated corpus remains screening-only.
 ## Cycle CLI
 
 ```bash
-model-cycle snapshot-data --snapshot-id train-v1 --source outputs/train_data/v1
+model-cycle snapshot-data --snapshot-id train-v1 --source outputs/data/train/v1
 model-cycle snapshot-eval --snapshot-id eval-v1 \
-  --suite smoke=outputs/test_data/v1/smoke.jsonl \
-  --suite held_out=outputs/test_data/v1/held_out.jsonl \
-  --suite adversarial=outputs/test_data/v1/adversarial.jsonl \
-  --suite ood=outputs/test_data/v1/ood.jsonl \
-  --suite rico_held=outputs/test_data/v1/rico_held.jsonl \
+  --suite smoke=outputs/data/eval/v1/smoke.jsonl \
+  --suite held_out=outputs/data/eval/v1/held_out.jsonl \
+  --suite adversarial=outputs/data/eval/v1/adversarial.jsonl \
+  --suite ood=outputs/data/eval/v1/ood.jsonl \
+  --suite rico_held=outputs/data/eval/v1/rico_held.jsonl \
   --human-feedback-holdout src/slm_training/resources/annotations/human_holdout.jsonl
 
 model-cycle init --track twotower --run-id tt-baseline \
   --data-snapshot-sha <sha> --eval-snapshot-sha <sha>
 model-cycle branch --parent tt-baseline --run-id tt-cycle-001
-model-cycle train --run-id tt-cycle-001 --train-dir outputs/train_data/v1 \
+model-cycle train --run-id tt-cycle-001 --train-dir outputs/data/train/v1 \
   --target-token-count <snapshot-target-tokens> --token-rung 0.5
 model-cycle evaluate --run-id tt-cycle-001 --weighted-nll <value> \
   --warm-p95-seconds <windows-p95>

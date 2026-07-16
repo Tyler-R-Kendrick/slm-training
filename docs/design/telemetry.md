@@ -12,6 +12,27 @@ wall-time share. Artifacts:
 | `docs/design/cycle-telemetry.json` | `scripts/bench_telemetry.py` scratch profile |
 | `outputs/runs/<id>/run_insights.json` | deterministic loss/collapse analysis, phase guidance, and optional generated hypotheses |
 
+Every new run also has `outputs/runs/<id>/trace.json`, which points to one
+central W3C-correlated bundle:
+
+```text
+outputs/traces/<trace-id>/
+  manifest.json
+  signals/traces/<service-instance>.otlp.jsonl
+  signals/logs/<service-instance>.otlp.jsonl
+  domain/<kind>/*.jsonl
+```
+
+The signal shards use OTLP JSON encoding and standard service resource
+attributes. Logs carry the current trace and span IDs. Detailed decode canvases,
+Molt rollouts, and synthesis rows remain linked domain JSONL instead of being
+placed in network telemetry bodies. Run-local telemetry files are derived
+summaries; the trace bundle owns the raw correlated signals.
+
+Set `OTEL_EXPORTER_OTLP_ENDPOINT` (or a signal-specific endpoint) to mirror the
+same JSON payloads through OTLP/HTTP. Local persistence remains authoritative if
+the remote endpoint is missing or unavailable.
+
 ## Spans
 
 **Train:** `batch_build`, `forward` → nested `context_encode` + `denoiser_forward`,

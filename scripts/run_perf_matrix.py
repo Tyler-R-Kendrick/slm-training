@@ -561,7 +561,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--test-dir",
         type=Path,
-        default=Path("outputs/test_data/v1"),
+        default=Path("outputs/data/eval/v1"),
     )
     parser.add_argument("--suite", default="smoke")
     parser.add_argument("--limit", type=int, default=8)

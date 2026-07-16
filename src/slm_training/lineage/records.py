@@ -95,6 +95,7 @@ class RunManifest:
     recipe: Mapping[str, Any]
     created_at: str
     legacy_kind: Literal["legacy_evidence", "hardware_smoke"] | None = None
+    trace_id: str | None = None
 
     def __post_init__(self) -> None:
         if self.initialization in {"parent", "process"} and len(self.parent_ids) != 1:

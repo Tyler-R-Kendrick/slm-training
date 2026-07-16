@@ -1,9 +1,9 @@
 {
   "version": "remediated_roots_judged",
-  "kind": "train_data",
+  "kind": "train",
   "source": "existing",
-  "records": "src/slm_training/resources/train_data/remediated_roots_judged/records.jsonl",
-  "stats": "src/slm_training/resources/train_data/remediated_roots_judged/stats.json",
+  "records": "records.jsonl",
+  "stats": "stats.json",
   "record_count": 255,
   "ids": [
     "lc_assignment",
@@ -1395,7 +1395,7 @@
   },
   "governance": {},
   "mixture": null,
-  "synthesis_telemetry": "src/slm_training/resources/train_data/remediated_roots_judged/synthesis_telemetry.jsonl",
+  "synthesis_telemetry": "synthesis_telemetry.jsonl",
   "synthesis_telemetry_sha256": "5774f75e668bd70e85ee244b504f24df6ab8b49dbf2456a51e166c8786b9e20a",
   "diffusion_online": {
     "policies": [
@@ -1426,5 +1426,26 @@
     ],
     "max_length": null
   },
-  "built_at": "2026-07-16T04:18:50.180248+00:00"
+  "built_at": "2026-07-16T04:18:50.180248+00:00",
+  "schema_version": 2,
+  "dataset_id": "remediated_roots_judged",
+  "immutable": true,
+  "trace_id": null,
+  "artifacts": [
+    {
+      "path": "records.jsonl",
+      "sha256": "bf722ce159ae387a0b9a5e1af46236c234693d80fae178c5835c3442ce0497b5",
+      "size": 1767718
+    },
+    {
+      "path": "stats.json",
+      "sha256": "11ae882dcb57db72f26fd707e835e2a2d9b9133b5138ef329aabdab98bce843f",
+      "size": 2843
+    },
+    {
+      "path": "synthesis_telemetry.jsonl",
+      "sha256": "5774f75e668bd70e85ee244b504f24df6ab8b49dbf2456a51e166c8786b9e20a",
+      "size": 1405
+    }
+  ]
 }

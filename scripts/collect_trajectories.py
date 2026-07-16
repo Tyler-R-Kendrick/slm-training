@@ -27,7 +27,8 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Explicit records.jsonl (alternative to --test-dir/--suite).",
     )
-    parser.add_argument("--out", type=Path, default=Path("outputs/traces/latest"))
+    parser.add_argument("--out", type=Path, default=None)
+    parser.add_argument("--run-id", default="trajectory-latest")
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--seed", type=int, default=0)
@@ -86,7 +87,17 @@ def main(argv: list[str] | None = None) -> int:
 
     policy_sha = checkpoint_sha(args.checkpoint)
     decode_hash = decode_config_hash(model.config)
-    store = TraceStore(args.out)
+    from slm_training.runtime.telemetry import run_trace
+
+    trace_context = run_trace(args.run_id, "trajectory.collect")
+    trace_context.__enter__()
+    output = args.out or trace_context.domain_path("decode")
+    store = TraceStore(
+        output,
+        run_id=args.run_id,
+        trace_id=trace_context.trace_id,
+        span_id=trace_context.span_id,
+    )
 
     appended = 0
     accepted = 0
@@ -134,7 +145,8 @@ def main(argv: list[str] | None = None) -> int:
     print(
         json.dumps(
             {
-                "out": str(args.out),
+                "out": str(output),
+                "trace_id": trace_context.trace_id,
                 "traces": appended,
                 "accepted": accepted,
                 "accept_rate": round(accepted / appended, 4) if appended else None,
@@ -144,6 +156,7 @@ def main(argv: list[str] | None = None) -> int:
             indent=2,
         )
     )
+    trace_context.__exit__(None, None, None)
     return 0
 
 
