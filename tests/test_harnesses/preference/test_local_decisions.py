@@ -7,6 +7,7 @@ import pytest
 from scripts.train_preference import main
 from slm_training.harnesses.preference.local_decisions import (
     DecisionEventV1,
+    decision_event_manifest,
     events_from_trace,
     load_decision_events,
     split_for_group,
@@ -85,6 +86,29 @@ def test_build_local_events_cli(tmp_path, capsys) -> None:
     traces = tmp_path / "traces.jsonl"
     traces.write_text(json.dumps(_trace()) + "\n", encoding="utf-8")
     out = tmp_path / "events.jsonl"
-    assert main(["build-local-events", "--traces", str(traces), "--out", str(out)]) == 0
+    source = tmp_path / "source-manifest.json"
+    source.write_text('{"content_fingerprint":"source-sha"}')
+    manifest = tmp_path / "manifest.json"
+    assert main(
+        [
+            "build-local-events", "--traces", str(traces), "--out", str(out),
+            "--manifest-out", str(manifest), "--dataset-id", "events-v1",
+            "--source-record-manifest", str(source),
+        ]
+    ) == 0
     assert len(load_decision_events(out)) == 1
+    data = json.loads(manifest.read_text())
+    assert data["record_count"] == 1
+    assert data["source_record_fingerprint"] == "source-sha"
+    assert data["policy_checkpoint_sha"] == "checkpoint-sha"
     assert json.loads(capsys.readouterr().out)["events"] == 1
+
+
+def test_manifest_rejects_mixed_policy_identities() -> None:
+    first = events_from_trace(_trace())[0]
+    data = first.to_dict()
+    data["event_id"] = "other"
+    data["policy_checkpoint_sha"] = "other-checkpoint"
+    second = DecisionEventV1.from_dict(data)
+    with pytest.raises(ValueError, match="mixes policy identities"):
+        decision_event_manifest([first, second], dataset_id="mixed")

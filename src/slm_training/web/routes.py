@@ -137,6 +137,11 @@ def data_train_records(
     )
 
 
+@observability_router.get("/data/preference")
+def data_preference(request: Request) -> dict[str, Any]:
+    return _readers(request).preference_data()
+
+
 @observability_router.get("/data/test")
 def data_test(request: Request) -> dict[str, Any]:
     return _readers(request).test_data()

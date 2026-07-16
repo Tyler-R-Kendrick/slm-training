@@ -13,6 +13,9 @@ from typing import Any, Literal
 from slm_training.harnesses.model_build import ModelBuildConfig, build_model, train
 from slm_training.harnesses.model_build.data import load_train_records
 from slm_training.harnesses.model_build.eval_runner import evaluate_suites
+from slm_training.harnesses.model_build.eval_policy import (
+    STRICT_COMPILER_TREE_POLICY,
+)
 from slm_training.runtime.telemetry import run_trace
 from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
@@ -1244,8 +1247,6 @@ def _strict_compiler_tree_policy() -> dict[str, Any]:
     """Canonical honest compiler-tree evaluation policy for matched campaigns."""
     runtime_fields = frozenset(
         {
-            "allow_unconstrained_fallback",
-            "compiler_decode_mode",
             "compiler_search_backtrack_limit",
             "compiler_search_local_nogoods",
             "compiler_search_mode",
@@ -1253,27 +1254,12 @@ def _strict_compiler_tree_policy() -> dict[str, Any]:
             "compiler_search_stagnation_patience",
             "compiler_search_trigger",
             "compiler_search_width",
-            "design_md_in_context",
-            "grammar_finalize_validate",
-            "grammar_ltr_primary",
-            "honest_slot_contract",
-            "schema_in_context",
-            "slot_contract_constrained_decode",
-            "slot_contract_in_context",
+            *STRICT_COMPILER_TREE_POLICY,
         }
     )
     return dict(
         runtime_override_fields=runtime_fields,
-        output_tokenizer="lexer",
-        grammar_ltr_primary=True,
-        grammar_finalize_validate=True,
-        compiler_decode_mode="tree",
-        schema_in_context=True,
-        slot_contract_in_context=True,
-        slot_contract_constrained_decode=True,
-        honest_slot_contract=True,
-        design_md_in_context=False,
-        allow_unconstrained_fallback=False,
+        **STRICT_COMPILER_TREE_POLICY,
     )
 
 
@@ -1730,36 +1716,43 @@ def _maybe_preference(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> 
 
 def _maybe_local_preference(
     exp: Experiment, ckpt: Path, args: argparse.Namespace
-) -> Path:
+) -> tuple[Path, dict[str, Any] | None]:
     objective = exp.local_preference_objective
     if objective is None:
-        return ckpt
+        return ckpt, None
     if args.decision_events is None:
         raise ValueError(f"{exp.eid} requires --decision-events")
     from slm_training.harnesses.preference.local_train import train_local_from_paths
 
     tethered = bool(exp.local_preference_reference_tether)
     out_dir = args.run_root / exp.run_id / "local_preference"
-    summary = train_local_from_paths(
-        ckpt,
-        args.decision_events,
-        out_dir=out_dir,
-        objective=objective,
-        reference_checkpoint=ckpt if tethered else None,
-        steps=args.pref_steps,
-        device=args.device,
-        lr=args.local_pref_lr,
-        epsilon=2.0,
-        tau=1.0,
-        non_target_tether=0.4 if tethered else 0.0,
-        target_tether=0.05 if tethered else 0.0,
-        target_grace=1.0,
-        balanced=bool(exp.local_preference_balanced),
-        seed=args.seed,
-    )
+    with run_trace(exp.run_id, "local_preference.train", run_dir=out_dir) as trace:
+        summary = train_local_from_paths(
+            ckpt,
+            args.decision_events,
+            out_dir=out_dir,
+            objective=objective,
+            reference_checkpoint=ckpt if tethered else None,
+            steps=args.pref_steps,
+            device=args.device,
+            lr=args.local_pref_lr,
+            epsilon=2.0,
+            tau=1.0,
+            non_target_tether=0.4 if tethered else 0.0,
+            target_tether=0.05 if tethered else 0.0,
+            target_grace=1.0,
+            balanced=bool(exp.local_preference_balanced),
+            seed=args.seed,
+        )
+        summary["trace_id"] = trace.trace_id
+        summary["traceparent"] = trace.traceparent
+        summary["trace_bundle"] = trace.bundle.as_posix()
+        (out_dir / "local_preference_summary.json").write_text(
+            json.dumps(summary, indent=2) + "\n", encoding="utf-8"
+        )
     trained = Path(summary["checkpoint"])
     dest = args.run_root / exp.run_id / "checkpoints" / "last.pt"
-    return _copy_checkpoint(trained, dest)
+    return _copy_checkpoint(trained, dest), summary
 
 
 def _maybe_rl(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> Path:
@@ -2002,7 +1995,7 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
             ckpt = Path(summary["checkpoint"])
 
     ckpt = _maybe_preference(exp, ckpt, args)
-    ckpt = _maybe_local_preference(exp, ckpt, args)
+    ckpt, local_preference_summary = _maybe_local_preference(exp, ckpt, args)
     ckpt = _maybe_rl(exp, ckpt, args)
     ckpt = _maybe_trust_gate(exp, ckpt, args)
     ckpt = _maybe_survival_gate(exp, ckpt, args)
@@ -2056,6 +2049,7 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
             exp.local_preference_reference_tether
         ),
         "local_preference_balanced": exp.local_preference_balanced,
+        "local_preference_summary": local_preference_summary,
         **_summarize_board(board),
     }
     (run_dir / "matrix_result.json").write_text(

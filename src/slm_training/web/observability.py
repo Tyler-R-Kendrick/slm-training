@@ -773,6 +773,38 @@ class Readers:
             "records": rows[start : start + limit],
         }
 
+    def preference_data(self) -> dict[str, Any]:
+        """Committed exact-state and pairwise corpora consumed by trainers."""
+        root = self.data_store.published_root / "preference"
+        rows: list[dict[str, Any]] = []
+        if root.is_dir():
+            for directory in sorted(path for path in root.iterdir() if path.is_dir()):
+                manifest = _read_json(directory / "manifest.json") or {}
+                if manifest.get("kind") != "decision_event_corpus":
+                    continue
+                splits = manifest.get("splits") or {}
+                evidence = manifest.get("evidence_kinds") or {}
+                set_valued = int(manifest.get("set_valued_events") or 0)
+                rows.append(
+                    {
+                        "dataset_id": manifest.get("dataset_id") or directory.name,
+                        "kind": "exact-state decisions",
+                        "records": int(manifest.get("record_count") or 0),
+                        "train": int(splits.get("train") or 0),
+                        "held_out": int(splits.get("held_out") or 0),
+                        "evidence": " · ".join(
+                            f"{key}:{value}"
+                            for key, value in evidence.items()
+                            if int(value or 0) > 0
+                        ),
+                        "usage": "E249–E254" if set_valued else "E249–E251",
+                        "fingerprint": str(
+                            manifest.get("content_fingerprint") or ""
+                        )[:12],
+                    }
+                )
+        return {"provenance": "committed", "rows": rows}
+
     def _fixture_data(self) -> dict[str, Any]:
         """Cold-start corpus health from committed fixtures."""
         sources = {
