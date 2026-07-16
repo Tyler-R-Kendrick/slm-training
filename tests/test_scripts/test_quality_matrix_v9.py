@@ -41,13 +41,29 @@ def test_v9_uses_parent_read_only_without_training(tmp_path, monkeypatch) -> Non
         assert checkpoint == parent
         assert write_gates is True
         return {
+            "checkpoint_sha256": "abc123",
+            "evaluated_at": "2026-07-16T00:00:00+00:00",
+            "agentv": {
+                "format": "AgentEvals JSONL",
+                "sdk": "@agentv/core",
+                "summary": {"total": 1, "passed": 1, "failed": 0},
+            },
             "suites": {
                 "smoke": {
                     "n": 1,
                     "parse_rate": 1.0,
+                    "syntax_parse_rate": 1.0,
+                    "meaningful_program_rate": 1.0,
                     "placeholder_fidelity": 1.0,
                     "structural_similarity": 1.0,
                     "reward_score": 1.0,
+                    "latency_ms_p50": 2.0,
+                    "latency_ms_p95": 3.0,
+                    "fallback_count": 0,
+                    "decode_timeout_count": 0,
+                    "constrained_fallback_rate": 0.0,
+                    "evaluation_policy": {"compiler_decode_mode": "tree"},
+                    "decode_stats": {"compiler_candidates_sum": 4.0},
                 }
             }
         }
@@ -65,5 +81,27 @@ def test_v9_uses_parent_read_only_without_training(tmp_path, monkeypatch) -> Non
     ) == 0
     result = json.loads((run_root / "qx_e240_compiler_tree_control" / "matrix_result.json").read_text())
     assert result["initialization"] == "eval_only"
+    assert result["training_executed"] is False
     assert result["checkpoint"] == str(parent)
+    assert result["design_md_in_context"] is False
+    assert result["compiler_search_mode"] == "greedy"
+    assert result["checkpoint_sha256"] == "abc123"
+    assert len(result["trace_id"]) == 32
+    assert result["traceparent"].startswith(f"00-{result['trace_id']}-")
+    assert Path(result["trace_bundle"]).is_dir()
+    trace_reference = json.loads(
+        (run_root / "qx_e240_compiler_tree_control" / "trace.json").read_text()
+    )
+    assert trace_reference["trace_id"] == result["trace_id"]
+    assert result["agentv"]["summary"]["passed"] == 1
+    assert result["suites"]["smoke"]["meaningful_program_rate"] == 1.0
+    assert result["suites"]["smoke"]["latency_ms_p95"] == 3.0
+    assert result["suites"]["smoke"]["decode_stats"] == {
+        "compiler_candidates_sum": 4.0
+    }
     assert not (run_root / "qx_e240_compiler_tree_control" / "checkpoints").exists()
+
+    summary = json.loads((tmp_path / "results.json").read_text())
+    assert summary["training_executed"] is False
+    assert summary["steps"] == 0
+    assert summary["design_md_in_context"] is False

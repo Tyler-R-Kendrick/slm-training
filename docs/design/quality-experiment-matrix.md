@@ -1079,6 +1079,10 @@ scoreboards, AgentV evidence, and applicability boundary:
 [`lattice-recursive-search.md`](lattice-recursive-search.md) and
 [`iter-e240-e245-lattice-search-20260716.json`](iter-e240-e245-lattice-search-20260716.json).
 
+The trace-backed E240 control, including exact suite metrics, aggregate decode
+telemetry, checkpoint lineage, and the four gate failures, is recorded separately
+in [iter-e240-greedy-tree-control-20260716.md](iter-e240-greedy-tree-control-20260716.md).
+
 ## V10 exact-state local preference (proposed, unrun)
 
 The full 25-paper audit, source manifest, objective definition, and honesty boundary
