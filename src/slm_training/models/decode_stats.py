@@ -42,6 +42,8 @@ class DecodeStats:
     binder_component_plan_choice_changes: int = 0
     binder_topology_applications: int = 0
     binder_topology_choice_changes: int = 0
+    binder_arity_applications: int = 0
+    binder_arity_choice_changes: int = 0
     forced_spans: int = 0
     forced_tokens: int = 0
     trie_nodes: int = 0
@@ -58,7 +60,21 @@ class DecodeStats:
     compiler_lattice_trajectory_triggers: int = 0
     compiler_lattice_trajectories: int = 0
     compiler_lattice_unique_proposals: int = 0
+    compiler_lattice_recurrences: int = 0
+    compiler_lattice_stagnation_triggers: int = 0
+    compiler_lattice_bottom_triggers: int = 0
+    compiler_lattice_always_triggers: int = 0
+    compiler_lattice_abstentions: int = 0
+    compiler_lattice_budget_exhaustions: int = 0
+    compiler_lattice_false_hard_eliminations: int = 0
+    compiler_lattice_max_rollback_depth: int = 0
+    compiler_lattice_valid_trajectories: int = 0
+    compiler_lattice_unique_valid_asts: int = 0
+    compiler_lattice_verifier_calls: int = 0
+    compiler_lattice_invalid_selected_over_valid: int = 0
+    compiler_lattice_selector_regret: float = 0.0
     compiler_lattice_last_signature: str = ""
+    compiler_lattice_termination_reason: str = ""
     template_fastpath_count: int = 0
     template_fallback_count: int = 0
     root_invariant_bypass_count: int = 0
@@ -169,6 +185,8 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "binder_component_plan_choice_changes",
         "binder_topology_applications",
         "binder_topology_choice_changes",
+        "binder_arity_applications",
+        "binder_arity_choice_changes",
         "forced_spans",
         "forced_tokens",
         "trie_nodes",
@@ -185,6 +203,19 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "compiler_lattice_trajectory_triggers",
         "compiler_lattice_trajectories",
         "compiler_lattice_unique_proposals",
+        "compiler_lattice_recurrences",
+        "compiler_lattice_stagnation_triggers",
+        "compiler_lattice_bottom_triggers",
+        "compiler_lattice_always_triggers",
+        "compiler_lattice_abstentions",
+        "compiler_lattice_budget_exhaustions",
+        "compiler_lattice_false_hard_eliminations",
+        "compiler_lattice_max_rollback_depth",
+        "compiler_lattice_valid_trajectories",
+        "compiler_lattice_unique_valid_asts",
+        "compiler_lattice_verifier_calls",
+        "compiler_lattice_invalid_selected_over_valid",
+        "compiler_lattice_selector_regret",
         "constrained_dead_ends",
         "constrained_dead_end_last_position",
         "constrained_dead_end_forced_rank",

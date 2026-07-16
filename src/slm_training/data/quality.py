@@ -96,6 +96,10 @@ def _semantic_request(record: ExampleRecord) -> str:
         return edit["instruction"]
     if isinstance(record.meta.get("repair"), dict):
         return ""
+    # Scope-graded rows embed DSL source, not prose intent; their contract
+    # (echo / canonicalization equality) is judged separately.
+    if isinstance(record.meta.get("scope_slice"), dict):
+        return ""
     return record.prompt
 
 
@@ -269,6 +273,14 @@ def independent_judge(record: ExampleRecord) -> dict[str, Any]:
         and lowered_prompt.startswith("emit the openui construct:")
     ):
         reasons.append("prompt_under_specified_for_layout")
+    if (
+        isinstance(record.meta.get("scope_slice"), dict)
+        and record.meta.get("task") == "identity"
+    ):
+        # Identity anchors must echo the embedded source byte-for-byte.
+        _, marker, embedded = prompt.partition("---INPUT---\n")
+        if not marker or embedded != openui:
+            reasons.append("identity_echo_mismatch")
     if not prompt or not openui:
         reasons.append("judge_missing_prompt_or_output")
     if record.target_kind == "document":

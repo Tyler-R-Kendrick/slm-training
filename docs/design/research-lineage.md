@@ -461,14 +461,16 @@ gain, or ship status is inherited, and V8 rows E200-E207/C5-C8 remain unrun.
 
 ## Lattice-guided recursive compiler search (V9)
 
-The shared tiny-reasoner review and its 25 academic references are normalized in
-[`lattice-recursive-search.md`](lattice-recursive-search.md). V9 treats the
+The shared tiny-reasoner review and its 25 academic references, plus its video and
+community-reproduction context, are normalized as R0-R26 in
+[`lattice-recursive-sources.json`](../../src/slm_training/resources/autoresearch/lattice-recursive-sources.json)
+and summarized in [`lattice-recursive-search.md`](lattice-recursive-search.md). V9 treats the
 existing compiler completion forest as the hard partial-information state, keeps
 neural scores soft, and plans bounded rollback plus selectively triggered
 PTRM/GRAM-style trajectories. The controller is **Adapted**: it does not reproduce
 LDT, TRM, PTRM, or GRAM training, and their reported results do not transfer.
 
-Rows E240-E247 are plan-only hypotheses until the standard quality suites,
+Rows E240-E247 are implemented but remain unrun hypotheses until the standard quality suites,
 AgentEvals, AgentV bundle, measured-results JSON, and markdown scoreboard exist.
 
 ## Contract-conditioned scope diffusion (X16-X21)

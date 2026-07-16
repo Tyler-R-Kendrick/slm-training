@@ -394,6 +394,18 @@ def main(argv: list[str] | None = None) -> int:
         help="Bias legal binder references by active declaration topology.",
     )
     parser.add_argument(
+        "--binder-arity-loss-weight",
+        type=float,
+        default=0.0,
+        help="Grammar-binder reference-count plan CE weight.",
+    )
+    parser.add_argument(
+        "--binder-arity-decode-weight",
+        type=float,
+        default=0.0,
+        help="Bias legal reference-list continue/stop paths by planned arity.",
+    )
+    parser.add_argument(
         "--no-design-md-context",
         action="store_true",
         help="Do not concatenate DESIGN.md into the context tower prompt.",
@@ -730,6 +742,8 @@ def main(argv: list[str] | None = None) -> int:
             ),
             binder_topology_loss_weight=args.binder_topology_loss_weight,
             binder_topology_decode_weight=args.binder_topology_decode_weight,
+            binder_arity_loss_weight=args.binder_arity_loss_weight,
+            binder_arity_decode_weight=args.binder_arity_decode_weight,
             fidelity_loss_weight=args.fidelity_loss_weight,
             grammar_ltr_primary=args.grammar_ltr_primary,
             grammar_ltr_repair=args.grammar_ltr_repair,

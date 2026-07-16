@@ -1,7 +1,8 @@
 # Lattice-guided recursive compiler search
 
-**Status:** architecture and plan-only experiment campaign. No training, evaluation,
-benchmark, or ship-gate result is claimed here.
+**Status:** inference controller implemented and E240-E245 evaluated on CPU on
+2026-07-16. E246-E247 were not run because the predeclared continuation rule
+failed. No checkpoint was trained, copied, promoted, or synced.
 
 ## Research question
 
@@ -46,9 +47,9 @@ This preserves the compiler as verifier. A learned conflict or quality score may
 prioritize exploration, but cannot create a legal branch, discard all legal
 branches, or bypass final OpenUI validation.
 
-## Planned campaign (V9)
+## Campaign design (V9)
 
-The registered rows are hypotheses, not results. The matched controls separate the
+The registered runnable rows are hypotheses, not results. The matched controls separate the
 value of rollback from stochastic width and semantic diversity.
 
 | ID | Planned condition | Falsifier |
@@ -68,7 +69,15 @@ sizes, and the repository ship gates. Required diagnostics include valid/abstain
 invalid rates, compiler coverage, bottoms, rollbacks, nogood hits, stagnation
 triggers, trajectories, unique AST candidates, selector regret, denoiser calls,
 and wall latency. Any execution must update the quality matrix JSON and markdown;
-this change only registers the recipes.
+the implementation itself does not establish a quality gain.
+
+PTRM/GRAM modes fork complete bounded continuations from the last stable compiler
+prefix while copying the decision trail and local nogoods. Every terminal candidate
+is validated; GRAM mode deduplicates valid terminals by AST fingerprint. Selection
+never reads gold and is lexicographic: hard validity, honest slot-contract
+satisfaction, model score, then shorter serialization. Telemetry records trigger
+reason, recurrence and rollback depth, abstention/exhaustion, verifier calls, valid
+trajectories, unique valid ASTs, selector regret, and any invalid-over-valid choice.
 
 ## Source inventory and applicability
 
@@ -79,13 +88,13 @@ paraphrases of the papers' abstracts/method sections. No PDFs are committed.
 | --- | --- | --- |
 | R0 | *Can Tiny Models Actually Reason?*, shared video/discussion | Motivating synthesis only; not academic evidence. Its proposed stack is decomposed and checked against the primary papers below. |
 | R1 | Patrick Cousot and Radhia Cousot, “Abstract Interpretation: A Unified Lattice Model for Static Analysis of Programs by Construction or Approximation of Fixpoints,” POPL 1977, [DOI](https://doi.org/10.1145/512950.512973) | Establishes sound abstraction and lattice fixpoint reasoning. **Adapted:** compiler candidates form a finite partial-information state; this is not a proved Galois connection for all OpenUI programs. |
-| R2 | Patrick Cousot, Radhia Cousot, and Laurent Mauborgne, “Logical Abstract Domains and Interpretations,” 2010, [Springer](https://doi.org/10.1007/978-3-642-15187-3_3) | Relates logical interpretation to abstract domains. **Adjacent:** motivates separating hard logical facts from heuristic ranking; no logical-domain construction is reproduced. |
+| R2 | Patrick Cousot, Radhia Cousot, and Laurent Mauborgne, “The Reduced Product of Abstract Domains and the Combination of Decision Procedures,” FoSSaCS 2011, [DOI](https://doi.org/10.1007/978-3-642-19805-2_31) | Relates reduced products of abstract domains to combinations of decision procedures. **Adjacent:** motivates combining compiler domains while keeping hard deductions separate from heuristic ranking; no formal reduced product is reproduced. |
 | R3 | Guan Wang et al., “Hierarchical Reasoning Model,” 2025, [arXiv:2506.21734](https://arxiv.org/abs/2506.21734) | Dual-timescale recurrent reasoning. **Adjacent:** no HRM hierarchy or training objective is added. |
 | R4 | Zirui Ren and Ziming Liu, “Are Your Reasoning Models Reasoning or Guessing? A Mechanistic Analysis of Hierarchical Reasoning Models,” 2026, [arXiv:2601.10679](https://arxiv.org/abs/2601.10679) | Questions whether HRM mechanisms match their biological narrative. **Boundary:** reinforces behavior-based ablations instead of architectural labels. |
 | R5 | Alexia Jolicoeur-Martineau, “Less is More: Recursive Reasoning with Tiny Networks,” 2025, [arXiv:2510.04871](https://arxiv.org/abs/2510.04871) | Reuses a small shared network for iterative answer/latent refinement. **Adapted:** repeated calls use the existing denoiser and explicit compiler state; no TRM training recipe is claimed. |
 | R6 | Amin Sghaier, Ali Parviz, and Alexia Jolicoeur-Martineau, “Probabilistic Tiny Recursive Model,” 2026, [arXiv:2605.19943](https://arxiv.org/abs/2605.19943) | Introduces probabilistic recursive trajectories to escape bad basins. **Adapted:** seeded score perturbations are confined to compiler-valid alternatives and triggered only by bottom/stagnation. |
 | R7 | Liam Davis et al., “Lattice Deduction Transformers,” 2026, [arXiv:2605.08605](https://arxiv.org/abs/2605.08605) | Alternates recurrent neural steps with monotone lattice projection and search; trains on its own search states. **Adapted:** hard projection and rollback are implemented, while LDT architecture, alpha supervision, and training remain future empirical work. |
-| R8 | Davis et al., LDT reference implementation, [GitHub search](https://github.com/search?q=%22Lattice+Deduction+Transformers%22&type=repositories) | Code-level comparison target. **Adjacent:** no code or dependency is vendored; a stable author repository was not linked by the canonical arXiv record at retrieval time. |
+| R8 | Community LDT reconstruction, [GitHub](https://github.com/lcrh/lattice-deduction-transformers) | Code-level comparison target. **Adjacent:** no code or dependency is vendored. The repository describes end-to-end validation as ongoing and discloses corrected Sudoku and maze evaluation details, so it is contextual reproduction evidence rather than a stable author implementation. |
 | R9 | Junyeob Baek et al., “Generative Recursive Reasoning,” 2026, [arXiv:2605.19376](https://arxiv.org/abs/2605.19376) | Models multiple valid reasoning outcomes rather than one deterministic answer. **Adapted:** trajectory diversity is measured by validated AST fingerprints, without reproducing GRAM training. |
 | R10 | Jacob Austin et al., “Structured Denoising Diffusion Models in Discrete State-Spaces,” 2021, [arXiv:2107.03006](https://arxiv.org/abs/2107.03006) | General discrete diffusion transition processes. **Adjacent:** contextualizes iterative discrete refinement; the compiler controller is not a D3PM objective. |
 | R11 | Subham Sekhar Sahoo et al., “Simple and Effective Masked Diffusion Language Models,” 2024, [arXiv:2406.07524](https://arxiv.org/abs/2406.07524) | Simplifies absorbing-mask diffusion language modeling. **Existing adapted lineage:** TwoTower training remains unchanged. |
@@ -118,3 +127,47 @@ paraphrases of the papers' abstracts/method sections. No PDFs are committed.
    deduplication when serialization variants map to the same OpenUI program.
 5. **Bounded honesty:** every search terminates by solution, abstention, or an
    explicit backtrack/trajectory budget; invalid output is never returned as valid.
+
+The complete machine-validated R0-R26 inventory records authorship, canonical IDs,
+paraphrased summaries, applicability boundaries, and a distinct falsifiable OpenUI
+hypothesis per source in
+[`lattice-recursive-sources.json`](../../src/slm_training/resources/autoresearch/lattice-recursive-sources.json).
+
+## Measured results (2026-07-16 UTC)
+
+E240-E245 evaluated the unchanged E228 checkpoint on CPU with seed 0, honest
+slot contracts, schema and slot-contract context, no DESIGN.md context, and the
+five remediated suites (`smoke n=3`, `held_out n=5`, `adversarial n=4`,
+`ood n=4`, `rico_held n=3`). The checkpoint SHA-256 was
+`7a9be4a665e216d7f7e73883ad74ad972bbf30846896d0c29188d6482f5b093a` before
+and after the campaign. Every row emitted its suite JSON, AgentEvals JSONL,
+AgentV bundle, and `matrix_result.json` under
+`outputs/autoresearch/lattice-v9-local/<run_id>/`.
+
+The cells below are `meaningful / structure / component recall`; suite order is
+smoke, held-out, adversarial, OOD, RICO held. Parse rate was 1.0 everywhere.
+
+| Rows | Smoke | Held-out | Adversarial | OOD | RICO held | Decision |
+| --- | --- | --- | --- | --- | --- | --- |
+| E240-E243, E245 | `.333/.464/.250` | `.000/.337/.157` | `.500/.474/.458` | `.000/.375/.208` | `.667/.163/.444` | Identical outputs; four gates fail. Triggered policies never fired. |
+| E244 always-on width 4 | `.000/.057/.000` | `.000/.049/.000` | `.000/.054/.000` | `.000/.046/.000` | `.000/.017/.000` | Reject: semantic quality collapsed despite parse validity. |
+
+E244 exercised 76 verifier calls over 19 records, producing 22 valid
+trajectories and 22 unique-valid-AST counts (one per selected valid record, not
+within-record semantic diversity). It also recorded 81 bottoms, 77 rollbacks,
+53 nogoods, 166 nogood hits, four abstentions, and four budget exhaustions.
+False hard eliminations, invalid-over-valid selections, and selector regret
+were all zero. Its per-suite median latency was 52.4-68.5 seconds, versus
+3.4-10.8 seconds for the inert/control rows.
+
+The result falsifies the useful-width premise: always-on trajectory search made
+the output syntactically valid but semantically trivial, while bottom/stagnation
+triggered search never activated on this checkpoint. E246 and E247 therefore
+failed the predeclared requirement for a prior meaningful, structural,
+component-recall, or within-record AST-diversity gain without a greater-than-five
+point parse/fidelity regression. They remain registered but were intentionally
+not executed. The generalized controller and diagnostics are retained as
+research infrastructure; no quality, readiness, or ship claim follows.
+
+Machine-readable campaign evidence is in
+[`iter-e240-e245-lattice-search-20260716.json`](iter-e240-e245-lattice-search-20260716.json).

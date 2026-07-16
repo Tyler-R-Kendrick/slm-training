@@ -44,6 +44,18 @@ KNOWN_FAMILIES = (
     "web_distilled",
     "diffusion_corruption",
     "scope_contract",
+    "scope_identity_document",
+    "scope_identity_statement",
+    "scope_identity_expression",
+    "scope_identity_lexical",
+    "scope_canonical_document",
+    "scope_canonical_statement",
+    "scope_canonical_expression",
+    "scope_canonical_lexical",
+    "scope_repair_statement",
+    "scope_repair_expression",
+    "scope_repair_lexical",
+    "lexical_typed_map",
 )
 
 _SYNTH_TO_FAMILY = {
@@ -206,23 +218,37 @@ def family_stats(records: list[ExampleRecord]) -> dict[str, Any]:
 
 
 def apply_parent_cap(
-    records: list[ExampleRecord], max_records_per_parent: int | None
+    records: list[ExampleRecord],
+    max_records_per_parent: int | None,
+    *,
+    per_family: bool = False,
 ) -> tuple[list[ExampleRecord], list[dict[str, str]]]:
     """Deterministically cap records per root parent (exposure control).
 
     The root record itself (id == root_parent_id) is always preferred; the
-    remaining slots go to variants in sorted-id order.
+    remaining slots go to variants in sorted-id order. With ``per_family``
+    the cap applies within each (source family, parent) group instead, so
+    scope-graded families — which multiply per-root rows by design — do not
+    evict each other while per-family exposure stays bounded and honest.
     """
     if not max_records_per_parent or max_records_per_parent <= 0:
         return list(records), []
-    groups: dict[str, list[ExampleRecord]] = {}
+    groups: dict[str | tuple[str, str], list[ExampleRecord]] = {}
     for record in sorted(records, key=lambda r: r.id):
         root = str((record.meta or {}).get("root_parent_id") or record.id)
-        groups.setdefault(root, []).append(record)
+        if per_family:
+            family = str(
+                (record.meta or {}).get("source_family")
+                or classify_source_family(record)
+            )
+            groups.setdefault((family, root), []).append(record)
+        else:
+            groups.setdefault(root, []).append(record)
 
     kept_ids: set[str] = set()
     dropped: list[dict[str, str]] = []
-    for root, members in groups.items():
+    for key, members in groups.items():
+        root = key[1] if isinstance(key, tuple) else key
         members = sorted(members, key=lambda r: (r.id != root, r.id))
         for record in members[:max_records_per_parent]:
             kept_ids.add(record.id)

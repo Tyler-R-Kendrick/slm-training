@@ -283,6 +283,7 @@ class LarkFileBackend:
         self._prop_order_path = Path(prop_order_path) if prop_order_path else None
         self._structural_extras = structural_extras or frozenset()
         self._parser: Lark | None = None
+        self._position_parser: Lark | None = None
         self._loaded_prop_order: dict[str, list[str]] | None = None
 
     @property
@@ -324,6 +325,28 @@ class LarkFileBackend:
                 maybe_placeholders=False,
             )
         return self._parser
+
+    def parse_tree(self, source: str) -> Tree:
+        """Raw position-preserving parse tree (no transformer).
+
+        Every rule node carries ``meta.start_pos``/``meta.end_pos`` character
+        offsets into ``source`` so callers can slice exact sub-spans (scope
+        extraction). Raises :class:`ParseError` on invalid input.
+        """
+        if self._position_parser is None:
+            grammar = self._path.read_text(encoding="utf-8")
+            self._position_parser = Lark(
+                grammar,
+                start=self._start,
+                parser="lalr",
+                maybe_placeholders=False,
+                propagate_positions=True,
+            )
+        text = source if source.endswith("\n") else source + "\n"
+        try:
+            return self._position_parser.parse(text)
+        except UnexpectedInput as exc:
+            raise ParseError(str(exc)) from exc
 
     def _transform(self, tree: Tree) -> dict[str, Any]:
         transformer = _GenericTransformer(

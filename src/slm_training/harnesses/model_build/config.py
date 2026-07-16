@@ -13,6 +13,8 @@ class ModelBuildConfig:
     suite: str = "smoke"
     run_root: Path = Path("outputs/runs")
     run_id: str = "latest"
+    # None preserves legacy behavior; an explicit set limits checkpoint mutation.
+    runtime_override_fields: frozenset[str] | None = None
     steps: int = 200
     batch_size: int = 4
     lr: float = 3e-4
@@ -111,6 +113,7 @@ class ModelBuildConfig:
     compiler_search_noise: float = 0.0
     compiler_search_stagnation_patience: int = 2
     compiler_search_backtrack_limit: int = 8
+    compiler_search_local_nogoods: bool = False
     fastpath_aux_weight: float = 0.0
     fastpath_gate_threshold: float = 0.5
     # V4 critic / remask levers
@@ -194,6 +197,8 @@ class ModelBuildConfig:
     binder_component_plan_decode_weight: float | None = None
     binder_topology_loss_weight: float = 0.0
     binder_topology_decode_weight: float | None = None
+    binder_arity_loss_weight: float = 0.0
+    binder_arity_decode_weight: float | None = None
     symbol_boundary_loss_weight: float = 0.0
     remask_span: str = "token"  # token | statement
     teacher_init_embeddings: bool = False

@@ -82,6 +82,16 @@ class TrainDataConfig:
     repairs_per_program: int = 1
     include_edit_derivatives: bool = True
     include_scope_derivatives: bool = False
+    # Scope-graded families (identity anchors / canonical pairs / scoped
+    # repairs / typed lexical maps) derived per AST scope from progspec roots.
+    include_scope_corpus: bool = True
+    scope_kinds: tuple[str, ...] = ("document", "statement", "expression", "lexical")
+    scope_identity_per_scope: int = 3
+    scope_canonical_pairs_per_scope: int = 3
+    scoped_repairs_per_scope: int = 2
+    typed_lexical_per_program: int = 4
+    # Canonical-bias ranking pairs written to preference_pairs.jsonl.
+    emit_preference_pairs: bool = True
     include_design_md_contrastive: bool = True
     diffusion_online: bool = True
     governance_artifacts: bool = True
@@ -100,6 +110,8 @@ def _normalize_record(record: ExampleRecord) -> ExampleRecord:
     from slm_training.data.structure import strip_style_literals
     from slm_training.data.verify import stamp_record
 
+    if record.target_kind == "document" and record.meta.get("preserve_verbatim"):
+        return _normalize_verbatim_document(record)
     record = normalize_example_record(record)
     if record.target_kind != "document":
         primary = validate_output(
@@ -228,6 +240,83 @@ def _normalize_record(record: ExampleRecord) -> ExampleRecord:
     return stamp_record(out)
 
 
+def _write_scope_preference_pairs(out_dir: Path, scope_pairs: list) -> Path:
+    """Project canonical-bias scope pairs to the preference-pair contract."""
+    from slm_training.harnesses.preference import PreferencePair, write_pairs
+
+    pairs = [
+        PreferencePair(
+            prompt=pair.prompt,
+            chosen=pair.chosen,
+            rejected=pair.rejected,
+            chosen_score=1.0,
+            rejected_score=0.5,
+            meta={
+                "pair_corpus": "canonical_bias",
+                "rank_source": "deterministic_canonicalization",
+                "scope": pair.scope,
+                "root_id": pair.root_id,
+                "canonical_pair_id": pair.canonical_pair_id,
+                "variant_transform": pair.variant,
+            },
+        )
+        for pair in sorted(
+            scope_pairs, key=lambda item: (item.root_id, item.scope, item.prompt)
+        )
+    ]
+    path = out_dir / "preference_pairs.jsonl"
+    write_pairs(path, pairs)
+    return path
+
+
+def _normalize_verbatim_document(record: ExampleRecord) -> ExampleRecord:
+    """Admit an identity-anchor document without mutating its target.
+
+    The program must still parse, but the stored ``openui`` stays
+    byte-identical to what the producer emitted — no style-strip, no
+    re-serialization. The stamp records the skipped serialization so the
+    audit trail stays honest.
+    """
+    from slm_training.data.verify import stamp_record
+
+    program = validate(record.openui)
+    meta = dict(record.meta)
+    root_id = str(meta.get("parent_id") or record.id)
+    meta.setdefault("task", "generation")
+    meta.setdefault("determinacy", "deterministic")
+    meta.setdefault("program_family_id", f"{record.source}:{root_id}")
+    meta.setdefault("lineage_id", root_id)
+    meta.setdefault("split_group_id", root_id)
+    meta["parser"] = "openuidev/lang-core"
+    meta["structure_only"] = True
+    meta["serialization"] = "preserved_verbatim"
+    out = ExampleRecord(
+        id=record.id,
+        prompt=record.prompt.strip(),
+        openui=record.openui,
+        placeholders=list(program.placeholders)
+        or extract_placeholders(record.openui),
+        split=record.split,
+        source=record.source,
+        meta=meta,
+        design_md=record.design_md,
+        target_kind=record.target_kind,
+        target_category=record.target_category,
+        accepted_outputs=list(record.accepted_outputs),
+    )
+    try:
+        from slm_training.dsl.design_md import attach_default_design_md
+
+        out = attach_default_design_md(out)
+    except Exception:  # noqa: BLE001
+        pass
+    from slm_training.data.quality import independent_judge
+
+    judge = independent_judge(out)
+    out.meta["independent_judge_passed"] = bool(judge["ok"])
+    return stamp_record(out)
+
+
 def _with_source(record: ExampleRecord, source: str) -> ExampleRecord:
     return ExampleRecord(
         id=record.id,
@@ -315,15 +404,9 @@ def _program_repair_records(spec: Any, limit: int) -> list[ExampleRecord]:
     return records
 
 
-def _records_from_progspec(
-    config: TrainDataConfig,
-) -> tuple[list[ExampleRecord], list[dict]]:
-    from slm_training.data.progspec import (
-        ProgramGenerator,
-        ProgramSpec,
-        emit_record,
-    )
-    from slm_training.data.verify import VerificationContext, stamp_record
+def _load_progspecs(config: TrainDataConfig) -> tuple[list, list[dict]]:
+    """Load committed ProgramSpecs or fall back to deterministic generation."""
+    from slm_training.data.progspec import ProgramGenerator, ProgramSpec
 
     errors: list[dict] = []
     specs: list[ProgramSpec] = []
@@ -350,7 +433,16 @@ def _records_from_progspec(
                     f"{len(specs)}/{config.programspec_count} requested roots"
                 }
             )
+    return specs, errors
 
+
+def _records_from_progspec(
+    config: TrainDataConfig,
+) -> tuple[list[ExampleRecord], list[dict]]:
+    from slm_training.data.progspec import emit_record
+    from slm_training.data.verify import VerificationContext, stamp_record
+
+    specs, errors = _load_progspecs(config)
     out: list[ExampleRecord] = []
     for spec in sorted(specs, key=lambda item: item.id):
         if spec.split != config.require_split:
@@ -393,6 +485,47 @@ def _records_from_language_contract(
     from slm_training.data.language_contract import iter_positives
 
     return list(iter_positives(config.require_split)), []
+
+
+def _records_from_scope_corpus(
+    config: TrainDataConfig,
+) -> tuple[list[ExampleRecord], list[dict], list]:
+    """Scope-graded families (identity / canonical / repair / typed) per root."""
+    if not config.include_scope_corpus:
+        return [], [], []
+    from slm_training.harnesses.train_data.scope_corpus import (
+        ScopeCorpusConfig,
+        build_scope_corpus,
+    )
+
+    specs, errors = _load_progspecs(config)
+    corpus_config = ScopeCorpusConfig(
+        scopes=tuple(config.scope_kinds),
+        identity_per_scope=config.scope_identity_per_scope,
+        canonical_pairs_per_scope=config.scope_canonical_pairs_per_scope,
+        repairs_per_scope=config.scoped_repairs_per_scope,
+        typed_per_program=config.typed_lexical_per_program,
+    )
+    records: list[ExampleRecord] = []
+    pairs: list = []
+    for spec in sorted(specs, key=lambda item: item.id):
+        if spec.split != config.require_split:
+            continue
+        try:
+            spec_records, spec_pairs = build_scope_corpus(
+                root_id=spec.id,
+                openui=spec.canonical_openui,
+                split=spec.split,
+                split_group_id=spec.split_group_id,
+                program_family_id=spec.program_family_id,
+                lineage_id=spec.lineage_id,
+                config=corpus_config,
+            )
+            records.extend(spec_records)
+            pairs.extend(spec_pairs)
+        except (ParseError, RuntimeError, ValueError) as exc:
+            errors.append({"id": f"scope_corpus:{spec.id}", "error": str(exc)})
+    return records, errors, pairs
 
 
 def _records_from_deconstruct(
@@ -830,8 +963,14 @@ def build_train_data(
         records, source_errors = _records_from_existing(config)
         seeds.extend(records)
         errors.extend(source_errors)
+    scope_preference_pairs: list = []
     if source in {"programspec", "integrated", "all"}:
         records, source_errors = _records_from_progspec(config)
+        seeds.extend(records)
+        errors.extend(source_errors)
+        records, source_errors, scope_preference_pairs = _records_from_scope_corpus(
+            config
+        )
         seeds.extend(records)
         errors.extend(source_errors)
     if source in {"language_contract", "integrated", "all", "existing"}:
@@ -1058,7 +1197,14 @@ def build_train_data(
         )
 
     deduped, parent_cap_dropped = apply_parent_cap(
-        deduped, config.max_records_per_parent
+        deduped,
+        config.max_records_per_parent,
+        # Scope-graded families multiply per-root rows by design; when they
+        # are part of the build, cap within each (family, parent) group so
+        # they bound exposure without evicting one another. Builds without
+        # scope-corpus rows keep the original cross-family semantics.
+        per_family=config.include_scope_corpus
+        and source in {"programspec", "integrated", "all"},
     )
     deduped.sort(key=lambda r: r.id)
     source_families = family_stats(deduped)
@@ -1080,6 +1226,12 @@ def build_train_data(
     out_dir.mkdir(parents=True, exist_ok=True)
     records_path = out_dir / "records.jsonl"
     write_jsonl(records_path, deduped)
+
+    preference_pairs_path: Path | None = None
+    if config.emit_preference_pairs and scope_preference_pairs:
+        preference_pairs_path = _write_scope_preference_pairs(
+            out_dir, scope_preference_pairs
+        )
 
     governance_paths: dict[str, Path] = {}
     if config.governance_artifacts:
@@ -1176,7 +1328,17 @@ def build_train_data(
             "edit_derivatives": bool(config.include_edit_derivatives),
             "scope_derivatives": bool(config.include_scope_derivatives),
             "design_md_contrastive": bool(config.include_design_md_contrastive),
+            "scope_corpus": bool(config.include_scope_corpus),
+            "scope_kinds": list(config.scope_kinds),
+            "scope_identity_per_scope": config.scope_identity_per_scope,
+            "scope_canonical_pairs_per_scope": config.scope_canonical_pairs_per_scope,
+            "scoped_repairs_per_scope": config.scoped_repairs_per_scope,
+            "typed_lexical_per_program": config.typed_lexical_per_program,
         },
+        "preference_pairs": len(scope_preference_pairs),
+        "preference_pairs_path": (
+            str(preference_pairs_path) if preference_pairs_path else None
+        ),
         "mixture": mixture_payload,
         "mean_quality_score": (
             round(sum(quality_scores) / len(quality_scores), 4)

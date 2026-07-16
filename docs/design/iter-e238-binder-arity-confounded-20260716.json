@@ -1,0 +1,56 @@
+{
+  "campaign": "E238 binder-reference arity",
+  "date": "2026-07-16",
+  "status": "completed_invalidated_optional_head_rng_confound",
+  "implementation": {
+    "target_source": "grammar-token-role binder reference counts",
+    "decode_scope": "compiler completion paths differing on reference continue versus stop",
+    "can_change_legality": false,
+    "literal_cases_added": false
+  },
+  "train": {
+    "run_id": "e238-binder-arity-32step",
+    "device": "cpu",
+    "steps": 32,
+    "batch_size": 4,
+    "learning_rate": 0.0003,
+    "seed": 0,
+    "train_version": "e230_diverse_judged_roots_v2",
+    "record_count": 126,
+    "arity_loss_first": 4.4211015701,
+    "arity_loss_last": 2.9894509315,
+    "arity_accuracy_first": 0.0,
+    "arity_accuracy_last": 0.2647058964,
+    "arity_rows_first": 17,
+    "arity_rows_last": 34,
+    "last_loss": 25.1977539063,
+    "wall_ms": 158834.415,
+    "trace_id": "976c4bc6e0e8ed011cdd629649ef828f",
+    "checkpoint_sha256": "2f9accc592787d93b0462e06b4ec8db9f40b83fe4e2292e0e3a60595fe3ff7a4",
+    "checkpoint_sync": false
+  },
+  "evaluation_weight_1": {
+    "trace_id": "787bf5856083ba125554cecf589caef2",
+    "parse_rate": {"smoke": 0.6666666667, "held_out": 0.6, "adversarial": 0.75, "ood": 0.5, "rico_held": 0.6666666667},
+    "meaningful_program_rate_all_suites": 0.0,
+    "failed_thresholds": 10,
+    "arity_applications": 708,
+    "arity_choice_changes": 3,
+    "latency_ms_p95_range": [41314.06, 43004.5],
+    "agentv": {"total": 5, "passed": 0, "failed": 5, "execution_errors": 0, "mean_score": 0.5}
+  },
+  "ablation_arity_weight_0": {
+    "trace_id": "711e8d0c83152c45072ecca4fe4ae98f",
+    "aggregate_metrics_identical_to_weight_1": true,
+    "failed_thresholds": 10,
+    "agentv_passed": 0
+  },
+  "confound": {
+    "cause": "optional auxiliary head initialization advanced global torch RNG and shifted later stochastic training draws",
+    "pre_fix_rng_states_equal": false,
+    "post_fix_rng_states_equal": true,
+    "resolution": "stable isolated auxiliary-module initialization seeds",
+    "causal_training_claim_valid": false
+  },
+  "conclusion": "E238 cannot evaluate arity training causally. Decode reranking changed three choices without aggregate benefit. Rerun after RNG isolation."
+}

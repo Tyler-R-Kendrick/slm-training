@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import random
 from dataclasses import dataclass, field
-from typing import Callable, Mapping, TypeVar
+from typing import Callable, Generic, Mapping, TypeVar
 
 from slm_training.dsl.grammar.fastpath.compiler_draft import (
     CompletionForest,
@@ -50,11 +50,7 @@ def rank_forest(
 ) -> RankedForest:
     """Filter only explicit nogoods, then order by soft score."""
     scores = scores or {}
-    live = [
-        path
-        for path in forest.paths
-        if (prefix, path_key(path)) not in nogoods
-    ]
+    live = [path for path in forest.paths if (prefix, path_key(path)) not in nogoods]
     live.sort(
         key=lambda path: (-float(scores.get(path_key(path), 0.0)), path_key(path))
     )
@@ -105,10 +101,7 @@ def trajectory_orders(
         rng = random.Random(f"{seed}:{ranked.signature}:{trajectory}")
         decorated = [
             (
-                -(
-                    float(score)
-                    + (rng.uniform(-noise, noise) if noise > 0 else 0.0)
-                ),
+                -(float(score) + (rng.uniform(-noise, noise) if noise > 0 else 0.0)),
                 path_key(path),
                 path,
             )
@@ -133,6 +126,50 @@ def deduplicate_semantic_candidates(
         seen.add(key)
         unique.append(candidate)
     return tuple(unique)
+
+
+@dataclass(frozen=True)
+class TrajectoryCandidate(Generic[T]):
+    """One terminal continuation ranked without access to gold output."""
+
+    value: T
+    valid: bool
+    contract_satisfied: bool
+    model_score: float
+    simplicity: int
+    fingerprint: str = ""
+
+
+def select_trajectory_candidate(
+    candidates: tuple[TrajectoryCandidate[T], ...], *, semantic_dedup: bool
+) -> tuple[TrajectoryCandidate[T] | None, int]:
+    """Select valid > contract-satisfying > model score > simple, never gold."""
+    if semantic_dedup:
+        seen: set[str] = set()
+        live: list[TrajectoryCandidate[T]] = []
+        for candidate in candidates:
+            key = candidate.fingerprint if candidate.valid else ""
+            if key and key in seen:
+                continue
+            if key:
+                seen.add(key)
+            live.append(candidate)
+    else:
+        live = list(candidates)
+    if not live:
+        return None, 0
+    selected = max(
+        live,
+        key=lambda row: (
+            row.valid,
+            row.contract_satisfied,
+            row.model_score,
+            -row.simplicity,
+        ),
+    )
+    return selected, len(
+        {row.fingerprint for row in live if row.valid and row.fingerprint}
+    )
 
 
 @dataclass(frozen=True)
@@ -161,13 +198,16 @@ class LatticeSearchState:
             )
         return chosen
 
-    def rollback(self) -> tuple[list[int], CompletionPath] | None:
-        """Reject the latest choice and return its next live alternative."""
+    def rollback(
+        self, *, local_nogoods: bool = True
+    ) -> tuple[list[int], CompletionPath | None] | None:
+        """Reject the latest conflicting choice and restore its stable prefix."""
         if self.backtracks >= self.backtrack_limit:
             return None
         while self.decisions:
             decision = self.decisions.pop()
-            self.nogoods.add((decision.prefix, path_key(decision.chosen)))
+            if local_nogoods:
+                self.nogoods.add((decision.prefix, path_key(decision.chosen)))
             self.backtracks += 1
             alternative = next(
                 (
@@ -178,10 +218,12 @@ class LatticeSearchState:
                 None,
             )
             if alternative is not None:
+                if local_nogoods:
+                    # Reproject at the stable prefix so the compiler, not this
+                    # trail, proves that the remaining alternative is live.
+                    return list(decision.prefix), None
                 remaining = tuple(
-                    path
-                    for path in decision.alternatives
-                    if path != alternative
+                    path for path in decision.alternatives if path != alternative
                 )
                 if remaining:
                     self.decisions.append(
@@ -200,9 +242,11 @@ __all__ = [
     "RankedForest",
     "SearchDecision",
     "StagnationTracker",
+    "TrajectoryCandidate",
     "deduplicate_semantic_candidates",
     "path_key",
     "rank_forest",
     "refine_hard_paths",
+    "select_trajectory_candidate",
     "trajectory_orders",
 ]
