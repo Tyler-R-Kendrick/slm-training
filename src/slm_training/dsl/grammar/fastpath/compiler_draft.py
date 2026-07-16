@@ -206,6 +206,35 @@ def _schema_enum_ids(
     return ids
 
 
+def _schema_slot_type(
+    state: Any, schema: dict[str, Any]
+) -> str | None:
+    active = _active_call(state)
+    if active is None:
+        return None
+    component, index = active
+    definition = (schema.get("$defs") or {}).get(component) or {}
+    properties = definition.get("properties") or {}
+    names = list(properties)
+    if index >= len(names):
+        return None
+    value = properties.get(names[index]) or {}
+    return str(value.get("type")) if value.get("type") else None
+
+
+def _schema_type_terminals(schema_type: str | None) -> frozenset[str] | None:
+    """Map generated JSON-schema value types to grammar start terminals."""
+    return {
+        "string": frozenset({"STRING"}),
+        "number": frozenset({"NUMBER"}),
+        "integer": frozenset({"NUMBER"}),
+        "boolean": frozenset({"BOOL"}),
+        "null": frozenset({"NULL"}),
+        "array": frozenset({"LSQB"}),
+        "object": frozenset({"LBRACE"}),
+    }.get(schema_type)
+
+
 def build_completion_forest(
     tokenizer: Any,
     prefix_ids: list[int],
@@ -258,6 +287,21 @@ def build_completion_forest(
     enum_ids = _schema_enum_ids(tokenizer, engine, schema) if schema else None
     if enum_ids is not None:
         candidates = set(enum_ids)
+    schema_type = _schema_slot_type(engine, schema) if schema else None
+    type_terminals = _schema_type_terminals(schema_type)
+    if type_terminals is not None and enum_ids is None:
+        typed_ids = allowed_id_set(tokenizer, type_terminals) or set()
+        candidates &= typed_ids
+        if schema_type == "string" and slot_contract:
+            try:
+                from slm_training.models.grammar import contract_allowed_token_ids
+
+                candidates |= set(
+                    contract_allowed_token_ids(tokenizer, prefix_ids, slot_contract)
+                    or set()
+                )
+            except Exception:  # noqa: BLE001
+                pass
 
     if slot_contract and "STRING" in terminals:
         try:
