@@ -1,0 +1,30 @@
+{
+  "iteration": "E149",
+  "date": "2026-07-15",
+  "objective": "Test constrained decoding without LTR primary or repair.",
+  "recipe": {
+    "checkpoint": "outputs/runs/iter-e147-judge-gated-control-20260715/e147-judge-gated-control/checkpoints/last.pt",
+    "train_dir": "src/slm_training/resources/train_data/remediated_roots_judged",
+    "backend": "hf",
+    "device": "cpu",
+    "suite": "smoke",
+    "n": 1,
+    "grammar_ltr_primary": false,
+    "grammar_ltr_repair": false,
+    "decode_timeout_seconds": 20,
+    "max_attempts": 3
+  },
+  "result": {
+    "parse_rate": 0.0,
+    "structural_similarity": 0.0,
+    "placeholder_validity": 0.0,
+    "decode_timeout_count": 1,
+    "latency_ms_p50": 20000.93,
+    "tokens_emitted": 547,
+    "probes": 1,
+    "selection_trace_events": 64,
+    "agentv_passed": 0,
+    "agentv_failed": 5
+  },
+  "conclusion": "Disabling both LTR primary and repair does not recover the run. The timeout and parse failure are broader than the LTR paths."
+}
