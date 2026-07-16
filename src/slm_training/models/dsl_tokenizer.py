@@ -16,16 +16,19 @@ from __future__ import annotations
 
 import ast
 import json
+import random
 import re
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import Iterable
 
+from slm_training.data.contract import RuntimeSymbol
 from slm_training.dsl.openui_tokens import STRUCTURAL_TOKENS
 
 # Bump when serialization / vocab layout changes.
 DSL_TOKENIZER_VERSION = 2
+SYMBOL_TABLE_VERSION = 3
 
 PAD = "<pad>"
 BOS = "<bos>"
@@ -254,6 +257,11 @@ class SymbolTable:
     # Maps surface binder name -> bind slot (first-occurrence order).
     binders: dict[str, int] = field(default_factory=dict)
     states: dict[str, int] = field(default_factory=dict)
+    runtime_symbols: list[RuntimeSymbol] = field(default_factory=list)
+
+    def _record(self, symbol: RuntimeSymbol) -> None:
+        if not any(item.surface == symbol.surface for item in self.runtime_symbols):
+            self.runtime_symbols.append(symbol)
 
     def placeholder_slot(self, ph: str) -> int | None:
         key = ph if ph.startswith(":") else f":{ph}"
@@ -270,6 +278,7 @@ class SymbolTable:
         if len(self.placeholders) >= max_slots:
             return None
         self.placeholders.append(key)
+        self._record(RuntimeSymbol(surface=key, role="external_entity"))
         return len(self.placeholders) - 1
 
     def ensure_binder(self, name: str, *, max_slots: int) -> int | None:
@@ -283,12 +292,14 @@ class SymbolTable:
                     return None
                 self.binders = {key: value + 1 for key, value in self.binders.items()}
             self.binders[name] = 0
+            self._record(RuntimeSymbol(surface=name, role="alpha_binder"))
             return 0
         used = set(self.binders.values())
         slot = next((candidate for candidate in range(max_slots) if candidate not in used), None)
         if slot is None:
             return None
         self.binders[name] = slot
+        self._record(RuntimeSymbol(surface=name, role="alpha_binder"))
         return slot
 
     def ensure_state(self, name: str, *, max_slots: int) -> int | None:
@@ -299,7 +310,14 @@ class SymbolTable:
             return None
         slot = len(self.states)
         self.states[key] = slot
+        self._record(RuntimeSymbol(surface=key, role="state"))
         return slot
+
+    def symbol_for_surface(self, surface: str) -> RuntimeSymbol | None:
+        return next(
+            (symbol for symbol in self.runtime_symbols if symbol.surface == surface),
+            None,
+        )
 
     def binder_name(self, slot: int) -> str:
         for name, s in self.binders.items():
@@ -320,20 +338,34 @@ class SymbolTable:
 
     def to_dict(self) -> dict:
         return {
+            "version": SYMBOL_TABLE_VERSION,
             "placeholders": list(self.placeholders),
             "binders": dict(self.binders),
             "states": dict(self.states),
+            "runtime_symbols": [symbol.to_dict() for symbol in self.runtime_symbols],
         }
 
     @classmethod
     def from_dict(cls, data: dict | None) -> SymbolTable:
         if not data:
             return cls()
-        return cls(
+        table = cls(
             placeholders=list(data.get("placeholders") or []),
             binders={str(k): int(v) for k, v in (data.get("binders") or {}).items()},
             states={str(k): int(v) for k, v in (data.get("states") or {}).items()},
+            runtime_symbols=[
+                RuntimeSymbol.from_dict(item)
+                for item in data.get("runtime_symbols") or ()
+            ],
         )
+        # v2 tables had no typed metadata. Reconstruct it deterministically.
+        for surface in table.placeholders:
+            table._record(RuntimeSymbol(surface=surface, role="external_entity"))
+        for surface in table.binders:
+            table._record(RuntimeSymbol(surface=surface, role="alpha_binder"))
+        for surface in table.states:
+            table._record(RuntimeSymbol(surface=surface, role="state"))
+        return table
 
     @classmethod
     def from_placeholders(
@@ -346,6 +378,52 @@ class SymbolTable:
         for raw in placeholders or []:
             table.ensure_placeholder(raw, max_slots=max_slots)
         return table
+
+    @classmethod
+    def from_runtime_symbols(
+        cls,
+        symbols: Iterable[RuntimeSymbol],
+        *,
+        sym_slots: int = DEFAULT_SYM_SLOTS,
+        bind_slots: int = DEFAULT_BIND_SLOTS,
+        state_slots: int = DEFAULT_STATE_SLOTS,
+    ) -> SymbolTable:
+        table = cls()
+        for symbol in symbols:
+            table._record(symbol)
+            if symbol.role == "external_entity":
+                table.ensure_placeholder(symbol.surface, max_slots=sym_slots)
+            elif symbol.role == "state":
+                table.ensure_state(symbol.surface, max_slots=state_slots)
+            else:
+                table.ensure_binder(symbol.surface, max_slots=bind_slots)
+        return table
+
+    def active_token_ids(self, tokenizer: DSLNativeTokenizer) -> set[int]:
+        """Reserved vocabulary rows that are meaningful for this request."""
+        ids = {tokenizer.sym_id(i) for i in range(len(self.placeholders))}
+        ids.update(tokenizer.bind_id(i) for i in self.binders.values())
+        ids.update(tokenizer.state_id(i) for i in self.states.values())
+        return ids
+
+    def permuted(self, seed: int) -> SymbolTable:
+        """Training-only slot permutation; root binder remains slot zero."""
+        rng = random.Random(seed)
+        placeholders = list(self.placeholders)
+        rng.shuffle(placeholders)
+        binder_names = [name for name in self.binders if name != "root"]
+        rng.shuffle(binder_names)
+        binders = {"root": 0} if "root" in self.binders else {}
+        start = 1 if binders else 0
+        binders.update({name: start + i for i, name in enumerate(binder_names)})
+        state_names = list(self.states)
+        rng.shuffle(state_names)
+        return SymbolTable(
+            placeholders=placeholders,
+            binders=binders,
+            states={name: i for i, name in enumerate(state_names)},
+            runtime_symbols=list(self.runtime_symbols),
+        )
 
 
 @dataclass

@@ -2,6 +2,7 @@
 set -eu
 
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+unset $(git rev-parse --local-env-vars)
 cd "$root"
 if [ -x .venv/bin/python ]; then
   exec .venv/bin/python -m scripts.check_changed "$@"

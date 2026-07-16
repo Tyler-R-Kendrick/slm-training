@@ -6,13 +6,69 @@ import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Iterable, Literal
 
 from slm_training.data.structure import strip_style_literals
 from slm_training.dsl.placeholders import extract_placeholders, merge_placeholders
 from slm_training.dsl.schema import ExampleRecord
 
 _BINDER_RE = re.compile(r"(?m)^([a-z_][A-Za-z0-9_]*)\s*=")
+
+
+@dataclass(frozen=True)
+class RuntimeSymbol:
+    """A request-visible symbol whose surface form is not global vocabulary."""
+
+    surface: str
+    role: Literal["alpha_binder", "external_entity", "state", "fresh_binder"]
+    namespace: tuple[str, ...] = ()
+    semantic_type: str | None = None
+    scope: str | None = None
+    signature: str | None = None
+    description: str | None = None
+
+    def __post_init__(self) -> None:
+        if not self.surface.strip():
+            raise ValueError("runtime symbol surface must be non-empty")
+        if self.role not in {
+            "alpha_binder",
+            "external_entity",
+            "state",
+            "fresh_binder",
+        }:
+            raise ValueError(f"unknown runtime symbol role {self.role!r}")
+        if self.role == "external_entity" and not self.surface.startswith(":"):
+            raise ValueError("external_entity surfaces must start with ':'")
+        if self.role == "state" and not self.surface.startswith("$"):
+            raise ValueError("state surfaces must start with '$'")
+
+    def to_dict(self) -> dict[str, Any]:
+        data = {
+            "surface": self.surface,
+            "role": self.role,
+            "namespace": list(self.namespace),
+        }
+        for key in ("semantic_type", "scope", "signature", "description"):
+            value = getattr(self, key)
+            if value is not None:
+                data[key] = value
+        return data
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> RuntimeSymbol:
+        return cls(
+            surface=str(data["surface"]),
+            role=str(data["role"]),  # type: ignore[arg-type]
+            namespace=tuple(str(part) for part in data.get("namespace") or ()),
+            semantic_type=_optional_str(data.get("semantic_type")),
+            scope=_optional_str(data.get("scope")),
+            signature=_optional_str(data.get("signature")),
+            description=_optional_str(data.get("description")),
+        )
+
+
+def _optional_str(value: Any) -> str | None:
+    return None if value is None else str(value)
 
 
 @dataclass(frozen=True)
@@ -23,6 +79,7 @@ class GenerationRequest:
     slot_contract: tuple[str, ...] = ()
     schema: str | None = None
     design_md: str | None = None
+    runtime_symbols: tuple[RuntimeSymbol, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.prompt.strip():
@@ -30,6 +87,27 @@ class GenerationRequest:
         for slot in self.slot_contract:
             if not slot.startswith(":"):
                 raise ValueError(f"slot_contract entries must start with ':', got {slot!r}")
+        seen: set[str] = set()
+        for symbol in self.runtime_symbols:
+            if symbol.surface in seen:
+                raise ValueError(f"duplicate or conflicting runtime symbol {symbol.surface!r}")
+            seen.add(symbol.surface)
+            if symbol.surface in self.slot_contract and symbol.role != "external_entity":
+                raise ValueError(
+                    f"slot_contract surface {symbol.surface!r} conflicts with role {symbol.role!r}"
+                )
+
+    def effective_runtime_symbols(self) -> tuple[RuntimeSymbol, ...]:
+        """Merge typed symbols with the legacy placeholder inventory."""
+        explicit = {symbol.surface: symbol for symbol in self.runtime_symbols}
+        return (
+            *self.runtime_symbols,
+            *(
+                RuntimeSymbol(surface=slot, role="external_entity")
+                for slot in self.slot_contract
+                if slot not in explicit
+            ),
+        )
 
     @classmethod
     def from_record(
@@ -64,6 +142,8 @@ class GenerationRequest:
             data["schema"] = self.schema
         if self.design_md is not None:
             data["design_md"] = self.design_md
+        if self.runtime_symbols:
+            data["runtime_symbols"] = [symbol.to_dict() for symbol in self.runtime_symbols]
         return data
 
     @classmethod
@@ -73,6 +153,10 @@ class GenerationRequest:
             slot_contract=tuple(data.get("slot_contract") or ()),
             schema=None if data.get("schema") is None else str(data["schema"]),
             design_md=None if data.get("design_md") is None else str(data["design_md"]),
+            runtime_symbols=tuple(
+                RuntimeSymbol.from_dict(item)
+                for item in data.get("runtime_symbols") or ()
+            ),
         )
 
 

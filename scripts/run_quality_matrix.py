@@ -116,6 +116,15 @@ class Experiment:
     speculative_successor: bool = False
     speculative_fanout: int = 2
     speculative_overlap: bool = False
+    # V8 dynamic-symbol / constraint-system levers.
+    runtime_symbol_features: str = "none"
+    symbol_slot_augmentation: bool = False
+    semantic_candidate_masks: bool = False
+    constraint_graph_mode: str = "off"
+    grammar_completion_bounds: bool = False
+    grammar_equivalence_cache: bool = False
+    grammar_active_symbol_bitsets: bool = False
+    compact_active_canvas: bool = True
 
 
 def _base_experiments(
@@ -1167,6 +1176,38 @@ def _v7_experiments(
     ]
 
 
+def _v8_experiments(
+    train_dir: Path,
+    *,
+    design_md_in_context: bool = True,
+) -> list[Experiment]:
+    """E200-E207: request-conditioned symbols and constraint-aware diffusion."""
+    base = dict(
+        output_tokenizer="lexer",
+        use_symbol_table=True,
+        factorized_embeddings=True,
+        mask_pattern="diffusion",
+        slot_contract_in_context=True,
+        slot_contract_constrained_decode=True,
+        honest_slot_contract=True,
+        grammar_ltr_repair=True,
+        grammar_ltr_primary=False,
+        unmask_mode="cluster",
+        cluster_verify=True,
+        design_md_in_context=design_md_in_context,
+    )
+    return [
+        Experiment("E200", "qx_e200_symbol_control", "Current fixed-row DSL symbol control", train_dir, **base),
+        Experiment("E201", "qx_e201_alpha_shuffle", "Slot permutation and alpha-renaming augmentation", train_dir, symbol_slot_augmentation=True, **base),
+        Experiment("E202", "qx_e202_surface_symbols", "Request-conditioned surface features for all symbol roles", train_dir, runtime_symbol_features="surface", **base),
+        Experiment("E203", "qx_e203_role_gated", "Binder-invariant, entity/state-aware symbol features", train_dir, runtime_symbol_features="role_gated", **base),
+        Experiment("E204", "qx_e204_semantic_masks", "Role-gated features plus active semantic candidate masks", train_dir, runtime_symbol_features="role_gated", semantic_candidate_masks=True, **base),
+        Experiment("E205", "qx_e205_constraint_graph", "Hybrid grammar/attention constraint graph scheduling", train_dir, runtime_symbol_features="role_gated", semantic_candidate_masks=True, constraint_graph_mode="hybrid", **base),
+        Experiment("E206", "qx_e206_fixed_canvas", "Complete V8 stack on fixed padded canvases", train_dir, runtime_symbol_features="role_gated", semantic_candidate_masks=True, constraint_graph_mode="hybrid", grammar_completion_bounds=True, grammar_equivalence_cache=True, grammar_active_symbol_bitsets=True, compact_active_canvas=False, **base),
+        Experiment("E207", "qx_e207_compact_canvas", "Complete V8 stack on compact active canvases", train_dir, runtime_symbol_features="role_gated", semantic_candidate_masks=True, constraint_graph_mode="hybrid", grammar_completion_bounds=True, grammar_equivalence_cache=True, grammar_active_symbol_bitsets=True, compact_active_canvas=True, **base),
+    ]
+
+
 def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
     return ModelBuildConfig(
         train_dir=exp.train_dir,
@@ -1242,6 +1283,30 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         mask_pattern=str(getattr(exp, "mask_pattern", "random") or "random"),
         remask_span=str(getattr(exp, "remask_span", "token") or "token"),
         teacher_init_embeddings=bool(getattr(exp, "teacher_init_embeddings", False)),
+        runtime_symbol_features=str(
+            getattr(exp, "runtime_symbol_features", "none") or "none"
+        ),
+        symbol_slot_augmentation=bool(
+            getattr(exp, "symbol_slot_augmentation", False)
+        ),
+        semantic_candidate_masks=bool(
+            getattr(exp, "semantic_candidate_masks", False)
+        ),
+        constraint_graph_mode=str(
+            getattr(exp, "constraint_graph_mode", "off") or "off"
+        ),
+        grammar_completion_bounds=bool(
+            getattr(exp, "grammar_completion_bounds", False)
+        ),
+        grammar_equivalence_cache=bool(
+            getattr(exp, "grammar_equivalence_cache", False)
+        ),
+        grammar_active_symbol_bitsets=bool(
+            getattr(exp, "grammar_active_symbol_bitsets", False)
+        ),
+        compact_active_canvas=bool(
+            getattr(exp, "compact_active_canvas", True)
+        ),
         stability_min_persistence=int(
             getattr(exp, "stability_min_persistence", 0) or 0
         ),
@@ -1794,9 +1859,14 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--matrix",
-        choices=("legacy", "v2", "v3", "v4", "v5", "v6", "v7", "all"),
+        choices=("legacy", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "all"),
         default="v3",
-        help="Experiment set: legacy (E0–E10), v2 (E11–E17), v3 (E18–E29), v4 (E30–E36), v5 (E40–E46), v6 (E50–E55), v7 (E70–E75), or all.",
+        help="Experiment set through v8 dynamic-symbol rows E200-E207, or all.",
+    )
+    parser.add_argument(
+        "--list",
+        action="store_true",
+        help="Print selected experiment definitions without running them.",
     )
     parser.add_argument("--gen-steps", type=int, default=8)
     parser.add_argument(
@@ -1829,11 +1899,12 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(f"unknown suites: {','.join(unknown_suites)}")
     if not args.suites:
         parser.error("--suites must select at least one suite")
-    if args.matrix in {"v4", "v5", "v6", "v7", "all"}:
+    if args.matrix in {"v4", "v5", "v6", "v7", "v8", "all"}:
         if args.parent is None and not args.scratch_control:
-            parser.error(
-                "modern matrices require --parent or explicit --scratch-control"
-            )
+            if not args.list:
+                parser.error(
+                    "modern matrices require --parent or explicit --scratch-control"
+                )
 
     needs_curriculum = args.only is None or any(
         x in (args.only or "")
@@ -1852,7 +1923,10 @@ def main(argv: list[str] | None = None) -> int:
             "E75",
         )
     )
-    if args.build_curriculum or (not args.curriculum_dir.exists() and needs_curriculum):
+    if not args.list and (
+        args.build_curriculum
+        or (not args.curriculum_dir.exists() and needs_curriculum)
+    ):
         from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
 
         build_train_data(
@@ -1866,7 +1940,7 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     needs_namespace = args.only is None or any(x in (args.only or "") for x in ("E14",))
-    if needs_namespace and not args.namespace_dir.exists():
+    if not args.list and needs_namespace and not args.namespace_dir.exists():
         from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
 
         build_train_data(
@@ -1942,9 +2016,31 @@ def main(argv: list[str] | None = None) -> int:
                 seed_checkpoint=args.seed_checkpoint,
             )
         )
+    if args.matrix in {"v8", "all"}:
+        experiments.extend(
+            _v8_experiments(
+                args.train_dir,
+                design_md_in_context=design_md,
+            )
+        )
     if args.only:
         wanted = {x.strip().upper() for x in args.only.split(",") if x.strip()}
         experiments = [e for e in experiments if e.eid in wanted]
+    if args.list:
+        print(
+            json.dumps(
+                [
+                    {
+                        "id": exp.eid,
+                        "run_id": exp.run_id,
+                        "description": exp.description,
+                    }
+                    for exp in experiments
+                ],
+                indent=2,
+            )
+        )
+        return 0
 
     classified: list[Experiment] = []
     for exp in experiments:

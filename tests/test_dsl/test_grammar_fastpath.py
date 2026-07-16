@@ -279,6 +279,32 @@ def test_allowed_id_set_expands_components() -> None:
     assert tok.token_to_id["="] not in allowed
 
 
+def test_cached_native_masks_intersect_active_symbols() -> None:
+    from slm_training.dsl.grammar.fastpath.token_map import allowed_id_set
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tok = DSLNativeTokenizer.build()
+    terminals = frozenset({"STRING"})
+    active = {tok.sym_id(1)}
+    uncached = allowed_id_set(tok, terminals)
+    cached = allowed_id_set(
+        tok,
+        terminals,
+        active_dynamic_ids=active,
+        use_cache=True,
+    )
+    assert uncached is not None and cached is not None
+    assert tok.sym_id(1) in cached
+    assert tok.sym_id(0) not in cached
+    assert cached - tok.kind_ids("sym") == uncached - tok.kind_ids("sym")
+
+
+def test_completion_bound_is_conservative() -> None:
+    engine = OpenUIIncrementalEngine()
+    assert engine.minimum_completion_tokens("root = Stack([])") == 0
+    assert engine.minimum_completion_tokens("root = ") is None
+
+
 def test_dsl_native_terminal_map_covers_v05_surface() -> None:
     from slm_training.dsl.grammar.fastpath.token_map import allowed_id_set
     from slm_training.models.dsl_tokenizer import DSLNativeTokenizer

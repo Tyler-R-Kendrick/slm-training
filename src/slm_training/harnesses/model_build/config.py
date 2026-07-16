@@ -171,6 +171,14 @@ class ModelBuildConfig:
     symbol_boundary_loss_weight: float = 0.0
     remask_span: str = "token"  # token | statement
     teacher_init_embeddings: bool = False
+    runtime_symbol_features: str = "none"  # none | surface | role_gated
+    symbol_slot_augmentation: bool = False
+    semantic_candidate_masks: bool = False
+    constraint_graph_mode: str = "off"  # off | grammar | hybrid
+    grammar_completion_bounds: bool = False
+    grammar_equivalence_cache: bool = False
+    grammar_active_symbol_bitsets: bool = False
+    compact_active_canvas: bool = True
     # Inference-speed levers (P/Q/R-series)
     grammar_incremental_state: bool = True
     grammar_verify_chosen_only: bool = False

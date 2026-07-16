@@ -46,6 +46,10 @@ class PerfExperiment:
     grammar_finalize_on_last_attempt_only: bool = False
     parallel_unmask: str = "adaptive"
     compiler_decode_mode: str = "off"
+    grammar_equivalence_cache: bool = False
+    grammar_active_symbol_bitsets: bool = False
+    grammar_completion_bounds: bool = False
+    compact_active_canvas: bool = True
     # When True, disable P1 incremental state (legacy O(T^2) grammar path).
     legacy_grammar_state: bool = False
     # Disable Q1/Q2 for ablation baselines.
@@ -278,6 +282,37 @@ def experiments() -> list[PerfExperiment]:
             grammar_ltr_repair=True,
             generate_max_attempts=1,
         ),
+        PerfExperiment(
+            "C5",
+            "perf_c5_terminal_equivalence",
+            "Cached terminal-equivalence token classes",
+            grammar_equivalence_cache=True,
+        ),
+        PerfExperiment(
+            "C6",
+            "perf_c6_active_symbol_bitsets",
+            "Static grammar classes intersected with request-active symbols",
+            grammar_equivalence_cache=True,
+            grammar_active_symbol_bitsets=True,
+        ),
+        PerfExperiment(
+            "C7",
+            "perf_c7_completion_compact",
+            "Conservative completion bounds with compact active canvases",
+            grammar_completion_bounds=True,
+            compact_active_canvas=True,
+            grammar_ltr_primary=False,
+        ),
+        PerfExperiment(
+            "C8",
+            "perf_c8_constraint_system",
+            "Combined grammar cache, active symbols, bounds, and compact canvas",
+            grammar_equivalence_cache=True,
+            grammar_active_symbol_bitsets=True,
+            grammar_completion_bounds=True,
+            compact_active_canvas=True,
+            grammar_ltr_primary=False,
+        ),
     ]
 
 
@@ -307,6 +342,10 @@ def _apply(model: TwoTowerModel, exp: PerfExperiment) -> None:
     )
     cfg.parallel_unmask = str(exp.parallel_unmask)
     cfg.compiler_decode_mode = str(exp.compiler_decode_mode)
+    cfg.grammar_equivalence_cache = bool(exp.grammar_equivalence_cache)
+    cfg.grammar_active_symbol_bitsets = bool(exp.grammar_active_symbol_bitsets)
+    cfg.grammar_completion_bounds = bool(exp.grammar_completion_bounds)
+    cfg.compact_active_canvas = bool(exp.compact_active_canvas)
     if exp.use_dynamic_quant:
         model.apply_dynamic_quant()
     if exp.use_compile:
@@ -543,15 +582,31 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=Path("docs/design/perf-matrix-results.json"),
     )
+    parser.add_argument(
+        "--list",
+        action="store_true",
+        help="Print selected experiment definitions without running them.",
+    )
     args = parser.parse_args(argv)
-
-    bridge = _bridge_available()
-    pipeline_ok = _quality_pipeline_ok()
-    prompts = _load_prompts(args.test_dir, args.suite, args.limit)
     wanted = {x.strip().upper() for x in args.only.split(",") if x.strip()}
     rows_def = experiments()
     if wanted:
         rows_def = [e for e in rows_def if e.eid in wanted]
+    if args.list:
+        print(
+            json.dumps(
+                [
+                    {"id": row.eid, "run_id": row.run_id, "description": row.description}
+                    for row in rows_def
+                ],
+                indent=2,
+            )
+        )
+        return 0
+
+    bridge = _bridge_available()
+    pipeline_ok = _quality_pipeline_ok()
+    prompts = _load_prompts(args.test_dir, args.suite, args.limit)
 
     # Vacuous if the quality pipeline itself is broken (missing bridge deps, etc.).
     vacuous = (not pipeline_ok) and bridge

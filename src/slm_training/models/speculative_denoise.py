@@ -52,6 +52,8 @@ def build_dependency_clusters(
     threshold: float = 0.08,
     max_size: int = 4,
     conf: torch.Tensor | None = None,
+    explicit_edges: set[tuple[int, int]] | None = None,
+    use_attention: bool = True,
 ) -> list[list[int]]:
     """
     Greedy dependency clustering of candidate commit positions (DAPD/DAWN-lite).
@@ -88,7 +90,16 @@ def build_dependency_clusters(
             best_pos: int | None = None
             best_coup = float(threshold)
             for t in unassigned:
-                c = max(float(coup[t, m].item()) for m in members)
+                linked = explicit_edges is not None and any(
+                    (min(t, m), max(t, m)) in explicit_edges for m in members
+                )
+                c = (
+                    max(float(coup[t, m].item()) for m in members)
+                    if use_attention
+                    else 0.0
+                )
+                if linked:
+                    c = max(c, float(threshold))
                 if c >= best_coup:
                     best_coup = c
                     best_pos = t
@@ -98,6 +109,42 @@ def build_dependency_clusters(
             unassigned.discard(best_pos)
         clusters.append(sorted(members))
     return clusters
+
+
+def build_constraint_edges(token_ids: list[int], tokenizer: Any) -> set[tuple[int, int]]:
+    """Cheap OpenUI graph: statements, repeated symbols, and delimiter pairs."""
+    edges: set[tuple[int, int]] = set()
+    try:
+        spans = tokenizer.statement_spans(token_ids)
+    except Exception:  # noqa: BLE001
+        spans = []
+    for start, end in spans:
+        positions = list(range(start, end))
+        for left, right in zip(positions, positions[1:]):
+            edges.add((left, right))
+    by_symbol: dict[int, list[int]] = {}
+    for pos, token_id in enumerate(token_ids):
+        try:
+            if tokenizer.is_sym_id(token_id) or tokenizer.is_bind_id(token_id) or tokenizer.is_state_id(token_id):
+                by_symbol.setdefault(int(token_id), []).append(pos)
+        except Exception:  # noqa: BLE001
+            continue
+    for positions in by_symbol.values():
+        for left, right in zip(positions, positions[1:]):
+            edges.add((min(left, right), max(left, right)))
+    open_to_close = {"(": ")", "[": "]", "{": "}"}
+    stacks: dict[str, list[int]] = {key: [] for key in open_to_close}
+    for pos, token_id in enumerate(token_ids):
+        token = getattr(tokenizer, "id_to_token", {}).get(int(token_id), "")
+        if token in stacks:
+            stacks[token].append(pos)
+            continue
+        for opener, closer in open_to_close.items():
+            if token == closer and stacks[opener]:
+                left = stacks[opener].pop()
+                edges.add((left, pos))
+                break
+    return edges
 
 
 def order_clusters(

@@ -1,0 +1,1165 @@
+{
+  "schema_version": 1,
+  "retrieved_at": "2026-07-15T00:00:00Z",
+  "source_scope": "Public ChatGPT share 6a581866-f47c-83ea-9b5b-caf16c293259; metadata verified against canonical arXiv and ACL records.",
+  "sources": [
+    {
+      "source_id": "acl-D18-1192",
+      "kind": "web",
+      "title": "Mapping Language to Code in Programmatic Context",
+      "uri": "https://aclanthology.org/D18-1192/",
+      "published_at": "2018",
+      "summary": "Introduces a code-generation model that combines natural-language intent with programmatic context, including locally available identifiers; relevant as adjacent evidence for request-scoped symbol inventories.",
+      "metadata": {
+        "authors": [
+          "Uri Alon",
+          "Meital Zilberstein",
+          "Omer Levy",
+          "Eran Yahav"
+        ],
+        "acl_id": "D18-1192",
+        "category": "dynamic_symbols",
+        "feedback_claim": "programmatic context should expose locally valid names to generation",
+        "repo_relevance": "request-local external entities and binder inventories",
+        "implementation_status": "Adjacent",
+        "limitations": "Autoregressive code generation and its reported results do not transfer directly to OpenUI diffusion."
+      }
+    },
+    {
+      "source_id": "arxiv-1506.03134",
+      "kind": "web",
+      "title": "Pointer Networks",
+      "uri": "https://arxiv.org/abs/1506.03134",
+      "published_at": "2015-06-09T23:38:16Z",
+      "summary": "We introduce a new neural architecture to learn the conditional probability of an output sequence with elements that are discrete tokens corresponding to positions in an input sequence. Such problems cannot be trivially addressed by existent approaches such as sequence-to-sequence and Neural Turing Machines, because the number of target classes in each step of the output depends on the length of the input, which is variable. Problems such as sorting variable sized sequences, and various combinatorial optimization problems belong to this class. Our model solves the problem of variable size outp",
+      "metadata": {
+        "authors": [
+          "Oriol Vinyals",
+          "Meire Fortunato",
+          "Navdeep Jaitly"
+        ],
+        "arxiv_id": "1506.03134",
+        "category": "dynamic_symbols",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "runtime symbols and alpha-equivalence",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-1603.06393",
+      "kind": "web",
+      "title": "Incorporating Copying Mechanism in Sequence-to-Sequence Learning",
+      "uri": "https://arxiv.org/abs/1603.06393",
+      "published_at": "2016-03-21T11:35:08Z",
+      "summary": "We address an important problem in sequence-to-sequence (Seq2Seq) learning referred to as copying, in which certain segments in the input sequence are selectively replicated in the output sequence. A similar phenomenon is observable in human language communication. For example, humans tend to repeat entity names or even long phrases in conversation. The challenge with regard to copying in Seq2Seq is that new machinery is needed to decide when to perform the operation. In this paper, we incorporate copying into neural network-based Seq2Seq learning and propose a new model called CopyNet with en",
+      "metadata": {
+        "authors": [
+          "Jiatao Gu",
+          "Zhengdong Lu",
+          "Hang Li",
+          "Victor O. K. Li"
+        ],
+        "arxiv_id": "1603.06393",
+        "category": "dynamic_symbols",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "runtime symbols and alpha-equivalence",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-1711.09573",
+      "kind": "web",
+      "title": "Code Completion with Neural Attention and Pointer Networks",
+      "uri": "https://arxiv.org/abs/1711.09573",
+      "published_at": "2017-11-27T08:17:16Z",
+      "summary": "Intelligent code completion has become an essential research task to accelerate modern software development. To facilitate effective code completion for dynamically-typed programming languages, we apply neural language models by learning from large codebases, and develop a tailored attention mechanism for code completion. However, standard neural language models even with attention mechanism cannot correctly predict the out-of-vocabulary (OoV) words that restrict the code completion performance. In this paper, inspired by the prevalence of locally repeated terms in program source code, and the",
+      "metadata": {
+        "authors": [
+          "Jian Li",
+          "Yue Wang",
+          "Michael R. Lyu",
+          "Irwin King"
+        ],
+        "arxiv_id": "1711.09573",
+        "category": "dynamic_symbols",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "runtime symbols and alpha-equivalence",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2107.03006",
+      "kind": "web",
+      "title": "Structured Denoising Diffusion Models in Discrete State-Spaces",
+      "uri": "https://arxiv.org/abs/2107.03006",
+      "published_at": "2021-07-07T04:11:00Z",
+      "summary": "Denoising diffusion probabilistic models (DDPMs) (Ho et al. 2020) have shown impressive results on image and waveform generation in continuous state spaces. Here, we introduce Discrete Denoising Diffusion Probabilistic Models (D3PMs), diffusion-like generative models for discrete data that generalize the multinomial diffusion model of Hoogeboom et al. 2021, by going beyond corruption processes with uniform transition probabilities. This includes corruption with transition matrices that mimic Gaussian kernels in continuous space, matrices based on nearest neighbors in embedding space, and matri",
+      "metadata": {
+        "authors": [
+          "Jacob Austin",
+          "Daniel D. Johnson",
+          "Jonathan Ho",
+          "Daniel Tarlow",
+          "Rianne van den Berg"
+        ],
+        "arxiv_id": "2107.03006",
+        "category": "diffusion_sampling",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "parallel denoising, correction, scheduling, and cache efficiency",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2305.13971",
+      "kind": "web",
+      "title": "Grammar-Constrained Decoding for Structured NLP Tasks without Finetuning",
+      "uri": "https://arxiv.org/abs/2305.13971",
+      "published_at": "2023-05-23T11:54:37Z",
+      "summary": "Despite their impressive performance, large language models (LMs) still struggle with reliably generating complex output structures when not finetuned to follow the required output format exactly. To address this issue, grammar-constrained decoding (GCD) can be used to control the generation of LMs, guaranteeing that the output follows a given structure. Most existing GCD methods are, however, limited to specific tasks, such as parsing or code generation. In this work, we demonstrate that formal grammars can describe the output space for a much wider range of tasks and argue that GCD can serve",
+      "metadata": {
+        "authors": [
+          "Saibo Geng",
+          "Martin Josifoski",
+          "Maxime Peyrard",
+          "Robert West"
+        ],
+        "arxiv_id": "2305.13971",
+        "category": "grammar_constraints",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "grammar compilation, validity, and constrained decoding",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2312.08976",
+      "kind": "web",
+      "title": "Dynamic Retrieval-Augmented Generation",
+      "uri": "https://arxiv.org/abs/2312.08976",
+      "published_at": "2023-12-14T14:26:57Z",
+      "summary": "Current state-of-the-art large language models are effective in generating high-quality text and encapsulating a broad spectrum of world knowledge. These models, however, often hallucinate and lack locally relevant factual data. Retrieval-augmented approaches were introduced to overcome these problems and provide more accurate responses. Typically, the retrieved information is simply appended to the main request, restricting the context window size of the model. We propose a novel approach for the Dynamic Retrieval-Augmented Generation (DRAG), based on the entity-augmented generation, which in",
+      "metadata": {
+        "authors": [
+          "Anton Shapkin",
+          "Denis Litvinov",
+          "Yaroslav Zharov",
+          "Egor Bogomolov",
+          "Timur Galimzyanov",
+          "Timofey Bryksin"
+        ],
+        "arxiv_id": "2312.08976",
+        "category": "dynamic_symbols",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "runtime symbols and alpha-equivalence",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2403.01632",
+      "kind": "web",
+      "title": "SynCode: LLM Generation with Grammar Augmentation",
+      "uri": "https://arxiv.org/abs/2403.01632",
+      "published_at": "2024-03-03T22:38:35Z",
+      "summary": "LLMs are widely used in complex AI applications. These applications underscore the need for LLM outputs to adhere to a specific format, for their integration with other components in the systems. Typically the format rules e.g., for data serialization formats such as JSON, YAML, or Code in Programming Language are expressed as context-free grammar (CFG). Due to the hallucinations and unreliability of LLMs, instructing LLMs to adhere to specified syntax becomes an increasingly important challenge. We present SynCode, a novel framework for efficient and general syntactical decoding with LLMs, to",
+      "metadata": {
+        "authors": [
+          "Shubham Ugare",
+          "Tarun Suresh",
+          "Hangoo Kang",
+          "Sasa Misailovic",
+          "Gagandeep Singh"
+        ],
+        "arxiv_id": "2403.01632",
+        "category": "grammar_constraints",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "grammar compilation, validity, and constrained decoding",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2405.07883",
+      "kind": "web",
+      "title": "Zero-Shot Tokenizer Transfer",
+      "uri": "https://arxiv.org/abs/2405.07883",
+      "published_at": "2024-05-13T16:17:10Z",
+      "summary": "Language models (LMs) are bound to their tokenizer, which maps raw text to a sequence of vocabulary items (tokens). This restricts their flexibility: for example, LMs trained primarily on English may still perform well in other natural and programming languages, but have vastly decreased efficiency due to their English-centric tokenizer. To mitigate this, we should be able to swap the original LM tokenizer with an arbitrary one, on the fly, without degrading performance. Hence, in this work we define a new problem: Zero-Shot Tokenizer Transfer (ZeTT). The challenge at the core of ZeTT is findi",
+      "metadata": {
+        "authors": [
+          "Benjamin Minixhofer",
+          "Edoardo Maria Ponti",
+          "Ivan Vulić"
+        ],
+        "arxiv_id": "2405.07883",
+        "category": "dynamic_symbols",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "runtime symbols and alpha-equivalence",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2405.21047",
+      "kind": "web",
+      "title": "Grammar-Aligned Decoding",
+      "uri": "https://arxiv.org/abs/2405.21047",
+      "published_at": "2024-05-31T17:39:15Z",
+      "summary": "Large Language Models (LLMs) struggle with reliably generating highly structured outputs, such as program code, mathematical formulas, or well-formed markup. Constrained decoding approaches mitigate this problem by greedily restricting what tokens an LLM can output at each step to guarantee that the output matches a given constraint. Specifically, in grammar-constrained decoding (GCD), the LLM's output must follow a given grammar. In this paper, we demonstrate that GCD techniques (and in general constrained decoding techniques) can distort the LLM's distribution, leading to outputs that are gr",
+      "metadata": {
+        "authors": [
+          "Kanghee Park",
+          "Jiayu Wang",
+          "Taylor Berg-Kirkpatrick",
+          "Nadia Polikarpova",
+          "Loris D'Antoni"
+        ],
+        "arxiv_id": "2405.21047",
+        "category": "grammar_constraints",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "grammar compilation, validity, and constrained decoding",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2406.07524",
+      "kind": "web",
+      "title": "Simple and Effective Masked Diffusion Language Models",
+      "uri": "https://arxiv.org/abs/2406.07524",
+      "published_at": "2024-06-11T17:51:40Z",
+      "summary": "While diffusion models excel at generating high-quality images, prior work reports a significant performance gap between diffusion and autoregressive (AR) methods in language modeling. In this work, we show that simple masked discrete diffusion is more performant than previously thought. We apply an effective training recipe that improves the performance of masked diffusion models and derive a simplified, Rao-Blackwellized objective that results in additional improvements. Our objective has a simple form -- it is a mixture of classical masked language modeling losses -- and can be used to trai",
+      "metadata": {
+        "authors": [
+          "Subham Sekhar Sahoo",
+          "Marianne Arriola",
+          "Yair Schiff",
+          "Aaron Gokaslan",
+          "Edgar Marroquin",
+          "Justin T Chiu",
+          "Alexander Rush",
+          "Volodymyr Kuleshov"
+        ],
+        "arxiv_id": "2406.07524",
+        "category": "diffusion_sampling",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "parallel denoising, correction, scheduling, and cache efficiency",
+        "implementation_status": "Adapted",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2410.05864",
+      "kind": "web",
+      "title": "From Tokens to Words: On the Inner Lexicon of LLMs",
+      "uri": "https://arxiv.org/abs/2410.05864",
+      "published_at": "2024-10-08T09:53:35Z",
+      "summary": "Natural language is composed of words, but modern large language models (LLMs) process sub-words as input. A natural question raised by this discrepancy is whether LLMs encode words internally, and if so how. We present evidence that LLMs engage in an intrinsic detokenization process, where sub-word sequences are combined into coherent whole-word representations at their last token. Our experiments show that this process primarily takes place within the early and middle layers of the model. We further demonstrate its robustness to arbitrary splits (e.g., \"cats\" to \"ca\" and \"ts\"), typos, and im",
+      "metadata": {
+        "authors": [
+          "Guy Kaplan",
+          "Matanel Oren",
+          "Yuval Reif",
+          "Roy Schwartz"
+        ],
+        "arxiv_id": "2410.05864",
+        "category": "dynamic_symbols",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "runtime symbols and alpha-equivalence",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2410.08481",
+      "kind": "web",
+      "title": "Generation with Dynamic Vocabulary",
+      "uri": "https://arxiv.org/abs/2410.08481",
+      "published_at": "2024-10-11T03:19:15Z",
+      "summary": "We introduce a new dynamic vocabulary for language models. It can involve arbitrary text spans during generation. These text spans act as basic generation bricks, akin to tokens in the traditional static vocabularies. We show that, the ability to generate multi-tokens atomically improve both generation quality and efficiency (compared to the standard language model, the MAUVE metric is increased by 25%, the latency is decreased by 20%). The dynamic vocabulary can be deployed in a plug-and-play way, thus is attractive for various downstream applications. For example, we demonstrate that dynamic",
+      "metadata": {
+        "authors": [
+          "Yanting Liu",
+          "Tao Ji",
+          "Changzhi Sun",
+          "Yuanbin Wu",
+          "Xiaoling Wang"
+        ],
+        "arxiv_id": "2410.08481",
+        "category": "dynamic_symbols",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "runtime symbols and alpha-equivalence",
+        "implementation_status": "Adapted",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2410.17161",
+      "kind": "web",
+      "title": "Interchangeable Token Embeddings for Extendable Vocabulary and Alpha-Equivalence",
+      "uri": "https://arxiv.org/abs/2410.17161",
+      "published_at": "2024-10-22T16:34:36Z",
+      "summary": "Language models lack the notion of interchangeable tokens: symbols that are semantically equivalent yet distinct, such as bound variables in formal logic. This limitation prevents generalization to larger vocabularies and hinders the model's ability to recognize alpha-equivalence, where renaming bound variables preserves meaning. We formalize this machine learning problem and introduce alpha-covariance, a metric for evaluating robustness to such transformations. To tackle this task, we propose a dual-part token embedding strategy: a shared component ensures semantic consistency, while a random",
+      "metadata": {
+        "authors": [
+          "İlker Işık",
+          "Ramazan Gokberk Cinbis",
+          "Ebru Aydin Gol"
+        ],
+        "arxiv_id": "2410.17161",
+        "category": "dynamic_symbols",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "runtime symbols and alpha-equivalence",
+        "implementation_status": "Adapted",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2504.09246",
+      "kind": "web",
+      "title": "Type-Constrained Code Generation with Language Models",
+      "uri": "https://arxiv.org/abs/2504.09246",
+      "published_at": "2025-04-12T15:03:00Z",
+      "summary": "Large language models (LLMs) have achieved notable success in code generation. However, they still frequently produce uncompilable output because their next-token inference procedure does not model formal aspects of code. Although constrained decoding is a promising approach to alleviate this issue, it has only been applied to handle either domain-specific languages or syntactic features of general-purpose programming languages. However, LLMs frequently generate code with typing errors, which are beyond the domain of syntax and generally hard to adequately constrain. To address this challenge,",
+      "metadata": {
+        "authors": [
+          "Niels Mündler",
+          "Jingxuan He",
+          "Hao Wang",
+          "Koushik Sen",
+          "Dawn Song",
+          "Martin Vechev"
+        ],
+        "arxiv_id": "2504.09246",
+        "category": "grammar_constraints",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "grammar compilation, validity, and constrained decoding",
+        "implementation_status": "Adapted",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2505.20133",
+      "kind": "web",
+      "title": "Token Distillation: Attention-aware Input Embeddings For New Tokens",
+      "uri": "https://arxiv.org/abs/2505.20133",
+      "published_at": "2025-05-26T15:35:29Z",
+      "summary": "Current language models rely on static vocabularies determined at pretraining time, which can lead to decreased performance and increased computational cost for domains underrepresented in the original vocabulary. New tokens can be added to solve this problem, when coupled with a good initialization for their new embeddings. However, existing embedding initialization methods require expensive further training or pretraining of additional modules. In this paper, we propose Token Distillation and show that by distilling representations obtained using the original tokenization, we can quickly lea",
+      "metadata": {
+        "authors": [
+          "Konstantin Dobler",
+          "Desmond Elliott",
+          "Gerard de Melo"
+        ],
+        "arxiv_id": "2505.20133",
+        "category": "dynamic_symbols",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "runtime symbols and alpha-equivalence",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2506.01084",
+      "kind": "web",
+      "title": "zip2zip: Inference-Time Adaptive Tokenization via Online Compression",
+      "uri": "https://arxiv.org/abs/2506.01084",
+      "published_at": "2025-06-01T17:03:02Z",
+      "summary": "Tokenization efficiency plays a critical role in the performance and cost of large language models (LLMs), yet most models rely on static tokenizers optimized on general-purpose corpora. These tokenizers' fixed vocabularies often fail to adapt to domain- or language-specific inputs, leading to longer token sequences and higher computational costs. We introduce zip2zip, a novel method for achieving context-adaptive tokenization in LLMs at inference time. Leveraging an online data compression algorithm (Lempel-Ziv-Welch), zip2zip dynamically expands its active vocabulary at inference time by con",
+      "metadata": {
+        "authors": [
+          "Saibo Geng",
+          "Nathan Ranchin",
+          "Yunzhen yao",
+          "Maxime Peyrard",
+          "Chris Wendler",
+          "Michael Gastpar",
+          "Robert West"
+        ],
+        "arxiv_id": "2506.01084",
+        "category": "diffusion_sampling",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "parallel denoising, correction, scheduling, and cache efficiency",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2506.01151",
+      "kind": "web",
+      "title": "Earley-Driven Dynamic Pruning for Efficient Structured Decoding",
+      "uri": "https://arxiv.org/abs/2506.01151",
+      "published_at": "2025-06-01T20:05:30Z",
+      "summary": "Large Language Models (LLMs) have shown remarkable capabilities, yet ensuring their outputs conform to strict structural or grammatical constraints remains challenging, which is critical in function calls and domain-specific language (DSL) generation. Constrained decoding with context-free grammar is a flexible approach to guarantee LLMs' adherence to a specific format by dynamically building a token logits mask. However, creating this mask requires checking the validity of all tokens in the LLM vocabulary at every decoding step, which often incurs significant overheads in existing constrained",
+      "metadata": {
+        "authors": [
+          "Xintong Sun",
+          "Chi Wei",
+          "Minghao Tian",
+          "Shiwen Ni"
+        ],
+        "arxiv_id": "2506.01151",
+        "category": "grammar_constraints",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "grammar compilation, validity, and constrained decoding",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2506.06295",
+      "kind": "web",
+      "title": "dLLM-Cache: Accelerating Diffusion Large Language Models with Adaptive Caching",
+      "uri": "https://arxiv.org/abs/2506.06295",
+      "published_at": "2025-05-17T15:50:46Z",
+      "summary": "Autoregressive Models (ARMs) have long dominated the landscape of Large Language Models. Recently, a new paradigm has emerged in the form of diffusion-based Large Language Models (dLLMs), which generate text by iteratively denoising masked segments. This approach has shown significant advantages and potential. However, dLLMs suffer from high inference latency. Traditional ARM acceleration techniques, such as Key-Value caching, are incompatible with dLLMs due to their bidirectional attention mechanism. To address this specific challenge, our work begins with a key observation that dLLM inferenc",
+      "metadata": {
+        "authors": [
+          "Zhiyuan Liu",
+          "Yicun Yang",
+          "Yaojie Zhang",
+          "Junjie Chen",
+          "Chang Zou",
+          "Qingyan Wei",
+          "Shaobo Wang",
+          "Yichen Zhu",
+          "Linfeng Zhang"
+        ],
+        "arxiv_id": "2506.06295",
+        "category": "diffusion_sampling",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "parallel denoising, correction, scheduling, and cache efficiency",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2506.19037",
+      "kind": "web",
+      "title": "Plan for Speed: Dilated Scheduling for Masked Diffusion Language Models",
+      "uri": "https://arxiv.org/abs/2506.19037",
+      "published_at": "2025-06-23T18:49:23Z",
+      "summary": "Masked diffusion language models (MDLMs) promise fast, non-autoregressive text generation, yet existing samplers, which pick tokens to unmask based on model confidence, ignore interactions when unmasking multiple positions in parallel and effectively reduce to slow, autoregressive behavior. We propose the Dilated Unmasking Scheduler (DUS), an inference-only, planner-model-free method that partitions sequence positions into non-adjacent dilated groups and unmasks them in parallel so as to minimize an upper bound on joint entropy gain at each denoising step. By explicitly trading off the number ",
+      "metadata": {
+        "authors": [
+          "Omer Luxembourg",
+          "Haim Permuter",
+          "Eliya Nachmani"
+        ],
+        "arxiv_id": "2506.19037",
+        "category": "diffusion_sampling",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "parallel denoising, correction, scheduling, and cache efficiency",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2507.16768",
+      "kind": "web",
+      "title": "WGRAMMAR: Leverage Prior Knowledge to Accelerate Structured Decoding",
+      "uri": "https://arxiv.org/abs/2507.16768",
+      "published_at": "2025-07-22T17:13:47Z",
+      "summary": "Structured decoding enables large language models (LLMs) to generate outputs in formats required by downstream systems, such as HTML or JSON. However, existing methods suffer from efficiency bottlenecks due to grammar compilation, state tracking, and mask creation. We observe that many real-world tasks embed strong prior knowledge about output structure. Leveraging this, we propose a decomposition of constraints into static and dynamic components -- precompiling static structures offline and instantiating dynamic arguments at runtime using grammar snippets. Instead of relying on pushdown autom",
+      "metadata": {
+        "authors": [
+          "Ran Wang",
+          "Xiaoxuan Liu",
+          "Hao Ren",
+          "Gang Chen",
+          "Fanchao Qi",
+          "Maosong Sun"
+        ],
+        "arxiv_id": "2507.16768",
+        "category": "grammar_constraints",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "grammar compilation, validity, and constrained decoding",
+        "implementation_status": "Adapted",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2508.01473",
+      "kind": "web",
+      "title": "TreeDiff: AST-Guided Code Generation with Diffusion LLMs",
+      "uri": "https://arxiv.org/abs/2508.01473",
+      "published_at": "2025-08-02T19:46:09Z",
+      "summary": "Code generation is increasingly critical for real-world applications. Still, diffusion-based large language models continue to struggle with this demand. Unlike free-form text, code requires syntactic precision; even minor structural inconsistencies can render a program non-executable. Existing diffusion-based large language models rely on random token masking for corruption, leading to two key failures: they lack awareness of syntactic boundaries during the iterative denoising process, and they fail to capture the long-range hierarchical dependencies essential for program correctness. We prop",
+      "metadata": {
+        "authors": [
+          "Yiming Zeng",
+          "Jinghan Cao",
+          "Zexin Li",
+          "Yiming Chen",
+          "Tao Ren",
+          "Zhuochun Li",
+          "Dawei Xiang",
+          "Xidong Wu",
+          "Shangqian Gao",
+          "Tingting Yu"
+        ],
+        "arxiv_id": "2508.01473",
+        "category": "diffusion_sampling",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "parallel denoising, correction, scheduling, and cache efficiency",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2508.10111",
+      "kind": "web",
+      "title": "Constrained Decoding of Diffusion LLMs with Context-Free Grammars",
+      "uri": "https://arxiv.org/abs/2508.10111",
+      "published_at": "2025-08-13T18:09:09Z",
+      "summary": "Large language models (LLMs) have shown promising performance across diverse domains. Many practical applications of LLMs, such as code completion and structured data extraction, require adherence to syntactic constraints specified by a formal language. Yet, due to their probabilistic nature, LLM output is not guaranteed to adhere to such formal languages. Prior work has proposed constrained decoding as a means to restrict LLM generation to particular formal languages. However, existing works are not applicable to the emerging paradigm of diffusion LLMs, when used in practical scenarios such a",
+      "metadata": {
+        "authors": [
+          "Niels Mündler",
+          "Jasper Dekoninck",
+          "Martin Vechev"
+        ],
+        "arxiv_id": "2508.10111",
+        "category": "diffusion_sampling",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "parallel denoising, correction, scheduling, and cache efficiency",
+        "implementation_status": "Adapted",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2508.15229",
+      "kind": "web",
+      "title": "VocabTailor: Dynamic Vocabulary Selection for Downstream Tasks in Small Language Models",
+      "uri": "https://arxiv.org/abs/2508.15229",
+      "published_at": "2025-08-21T04:32:13Z",
+      "summary": "Small Language Models (SLMs) provide computational advantages in resource-constrained environments, yet memory limitations remain a critical bottleneck for edge device deployment. A substantial portion of SLMs' memory footprint stems from vocabulary-related components, particularly embeddings and language modeling (LM) heads, due to large vocabulary sizes. Existing static vocabulary pruning, while reducing memory usage, suffers from rigid, one-size-fits-all designs that cause information loss during the prefill stage and lack flexibility. In this work, we identify two key principles underlying",
+      "metadata": {
+        "authors": [
+          "Hanling Zhang",
+          "Yayu Zhou",
+          "Tongcheng Fang",
+          "Zhihang Yuan",
+          "Guohao Dai",
+          "Wanli Ouyang",
+          "Yu Wang"
+        ],
+        "arxiv_id": "2508.15229",
+        "category": "dynamic_symbols",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "runtime symbols and alpha-equivalence",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2508.15866",
+      "kind": "web",
+      "title": "Correctness-Guaranteed Code Generation via Constrained Decoding",
+      "uri": "https://arxiv.org/abs/2508.15866",
+      "published_at": "2025-08-20T20:48:18Z",
+      "summary": "Language Models (LMs) are increasingly being used for code generation, but ensuring the correctness of generated programs remains a significant challenge. Although imperfect code may be acceptable during software development with human oversight, domains such as video games and robotics require one-shot correctness for runtime-critical components. We present a constrained decoding algorithm for generating semantically correct programs that incorporates a context-sensitive parser, which, at each step, outputs a regular expression that satisfies a critical non-extensible property to guide the ge",
+      "metadata": {
+        "authors": [
+          "Lingxiao Li",
+          "Salar Rahili",
+          "Yiwei Zhao"
+        ],
+        "arxiv_id": "2508.15866",
+        "category": "grammar_constraints",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "grammar compilation, validity, and constrained decoding",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2509.00360",
+      "kind": "web",
+      "title": "ChopChop: a Programmable Framework for Semantically Constraining the Output of Language Models",
+      "uri": "https://arxiv.org/abs/2509.00360",
+      "published_at": "2025-08-30T04:51:03Z",
+      "summary": "Language models (LMs) can generate code but cannot guarantee its correctness$\\unicode{x2014}$often producing outputs that violate type safety, program invariants, or other semantic properties. Constrained decoding offers a solution by restricting generation to only produce programs that satisfy user-defined properties. However, existing methods are either limited to syntactic constraints or rely on brittle, ad hoc encodings of semantic properties over token sequences rather than program structure. We present ChopChop, the first programmable framework for constraining the output of LMs with res",
+      "metadata": {
+        "authors": [
+          "Shaan Nagy",
+          "Timothy Zhou",
+          "Nadia Polikarpova",
+          "Loris D'Antoni"
+        ],
+        "arxiv_id": "2509.00360",
+        "category": "grammar_constraints",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "grammar compilation, validity, and constrained decoding",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2510.17115",
+      "kind": "web",
+      "title": "DVAGen: Dynamic Vocabulary Augmented Generation",
+      "uri": "https://arxiv.org/abs/2510.17115",
+      "published_at": "2025-10-20T03:09:24Z",
+      "summary": "Language models trained with a fixed vocabulary struggle to generalize to novel or out-of-vocabulary words, limiting their flexibility in handling diverse token combinations. Existing dynamic vocabulary approaches attempt to address this limitation but face challenges such as fragmented codebases, lack of support for modern LLMs, and limited inference scalability. To overcome these issues, we introduce DVAGen, a fully open-source, unified framework designed for training, evaluation, and visualization of dynamic vocabulary-augmented language models. Our framework modularizes the pipeline for ea",
+      "metadata": {
+        "authors": [
+          "Wei Du",
+          "Nuowei Liu",
+          "Jie Wang",
+          "Jiahao Kuang",
+          "Tao Ji",
+          "Xiaoling Wang",
+          "Yuanbin Wu"
+        ],
+        "arxiv_id": "2510.17115",
+        "category": "dynamic_symbols",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "runtime symbols and alpha-equivalence",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2512.09106",
+      "kind": "web",
+      "title": "Learning Unmasking Policies for Diffusion Language Models",
+      "uri": "https://arxiv.org/abs/2512.09106",
+      "published_at": "2025-12-09T20:44:33Z",
+      "summary": "Diffusion (Large) Language Models (dLLMs) now match the downstream performance of their autoregressive counterparts on many tasks, while holding the promise of being more efficient during inference. One critical design aspect of dLLMs is the sampling procedure that selects which tokens to unmask at each diffusion step. Indeed, recent work has found that heuristic strategies such as confidence thresholding improve both sample quality and token throughput compared to random unmasking. However, such heuristics have downsides: they require manual tuning, and we observe that their performance degra",
+      "metadata": {
+        "authors": [
+          "Metod Jazbec",
+          "Theo X. Olausson",
+          "Louis Béthune",
+          "Pierre Ablin",
+          "Michael Kirchhof",
+          "João Monteiro",
+          "Victor Turrisi",
+          "Jason Ramapuram",
+          "Marco Cuturi"
+        ],
+        "arxiv_id": "2512.09106",
+        "category": "diffusion_sampling",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "parallel denoising, correction, scheduling, and cache efficiency",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2512.15596",
+      "kind": "web",
+      "title": "Corrective Diffusion Language Models",
+      "uri": "https://arxiv.org/abs/2512.15596",
+      "published_at": "2025-12-17T17:04:38Z",
+      "summary": "While Diffusion Language Models (DLMs) are theoretically well-suited for iterative refinement due to their non-causal structure, they often fail to reliably revise incorrect tokens in practice. The key challenge lies in the model's inability to distinguish between correct and erroneous tokens in a visible sequence. Standard masked diffusion language model (MDLM) training is restricted to the objective of unmasking, undermining the effectiveness of refinement guided by confidence. Based on this observation, we study corrective behavior in DLMs, defined as the ability to assign lower confidence ",
+      "metadata": {
+        "authors": [
+          "Shuibai Zhang",
+          "Fred Zhangzhi Peng",
+          "Yiheng Zhang",
+          "Jin Pan",
+          "Grigorios G. Chrysos"
+        ],
+        "arxiv_id": "2512.15596",
+        "category": "diffusion_sampling",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "parallel denoising, correction, scheduling, and cache efficiency",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2601.04426",
+      "kind": "web",
+      "title": "XGrammar-2: Efficient Dynamic Structured Generation Engine for Agentic LLMs",
+      "uri": "https://arxiv.org/abs/2601.04426",
+      "published_at": "2026-01-07T22:18:51Z",
+      "summary": "Modern LLM agents increasingly rely on dynamic structured generation, such as tool calling and response protocols. Unlike traditional structured generation with static structures, these workloads vary both across requests and within a request, posing new challenges to existing engines. We present XGrammar-2, a structured generation engine for dynamic agentic workloads. Our design is based on two key ideas: first-class support for tag-triggered structure switching, and fine-grained reuse across requests with different output structures. Concretely, XGrammar-2 introduces TagDispatch for dynamic ",
+      "metadata": {
+        "authors": [
+          "Linzhang Li",
+          "Yixin Dong",
+          "Guanjie Wang",
+          "Ziyi Xu",
+          "Alexander Jiang",
+          "Tianqi Chen"
+        ],
+        "arxiv_id": "2601.04426",
+        "category": "grammar_constraints",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "grammar compilation, validity, and constrained decoding",
+        "implementation_status": "Adapted",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2601.23169",
+      "kind": "web",
+      "title": "Names Don't Matter: Symbol-Invariant Transformer for Open-Vocabulary Learning",
+      "uri": "https://arxiv.org/abs/2601.23169",
+      "published_at": "2026-01-30T16:53:01Z",
+      "summary": "Current neural architectures lack a principled way to handle interchangeable tokens, i.e., symbols that are semantically equivalent yet distinguishable, such as bound variables. As a result, models trained on fixed vocabularies often struggle to generalize to unseen symbols, even when the underlying semantics remain unchanged. We propose a novel Transformer-based mechanism that is provably invariant to the renaming of interchangeable tokens. Our approach employs parallel embedding streams to isolate the contribution of each interchangeable token in the input, combined with an aggregated attent",
+      "metadata": {
+        "authors": [
+          "İlker Işık",
+          "Wenchao Li"
+        ],
+        "arxiv_id": "2601.23169",
+        "category": "dynamic_symbols",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "runtime symbols and alpha-equivalence",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2602.00612",
+      "kind": "web",
+      "title": "Lookahead-then-Verify: Reliable Constrained Decoding for Diffusion LLMs under Context-Free Grammars",
+      "uri": "https://arxiv.org/abs/2602.00612",
+      "published_at": "2026-01-31T08:58:15Z",
+      "summary": "Diffusion Large Language Models (dLLMs) have demonstrated promising generative capabilities and are increasingly used to produce formal languages defined by context-free grammars, such as source code and chemical expressions. However, as probabilistic models, they still struggle to generate syntactically valid outputs reliably. A natural and promising direction to address this issue is to adapt constrained decoding techniques to enforce grammatical correctness during generation. However, applying these techniques faces two primary obstacles. On the one hand, the non-autoregressive nature of dL",
+      "metadata": {
+        "authors": [
+          "Yitong Zhang",
+          "Yongmin Li",
+          "Yuetong Liu",
+          "Jia Li",
+          "Xiaoran Jia",
+          "Zherui Li",
+          "Ge Li"
+        ],
+        "arxiv_id": "2602.00612",
+        "category": "grammar_constraints",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "grammar compilation, validity, and constrained decoding",
+        "implementation_status": "Adapted",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2602.10583",
+      "kind": "web",
+      "title": "Flow of Spans: Generalizing Language Models to Dynamic Span-Vocabulary via GFlowNets",
+      "uri": "https://arxiv.org/abs/2602.10583",
+      "published_at": "2026-02-11T07:17:41Z",
+      "summary": "Standard autoregressive language models generate text token-by-token from a fixed vocabulary, inducing a tree-structured state space when viewing token sampling as an action, which limits flexibility and expressiveness. Recent work introduces dynamic vocabulary by sampling retrieved text spans but overlooks that the same sentence can be composed of spans of varying lengths, lacking explicit modeling of the directed acyclic graph (DAG) state space. This leads to restricted exploration of compositional paths and is biased toward the chosen path. Generative Flow Networks (GFlowNets) are powerful ",
+      "metadata": {
+        "authors": [
+          "Bo Xue",
+          "Yunchong Song",
+          "Fanghao Shao",
+          "Xuekai Zhu",
+          "Lin Chen",
+          "Luoyi Fu",
+          "Xinbing Wang",
+          "Zhouhan Lin"
+        ],
+        "arxiv_id": "2602.10583",
+        "category": "dynamic_symbols",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "runtime symbols and alpha-equivalence",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2602.11590",
+      "kind": "web",
+      "title": "Learn from Your Mistakes: Self-Correcting Masked Diffusion Models",
+      "uri": "https://arxiv.org/abs/2602.11590",
+      "published_at": "2026-02-12T05:17:31Z",
+      "summary": "Masked diffusion models (MDMs) have emerged as a promising alternative to autoregressive models, enabling parallel token generation while achieving competitive performance. Despite these advantages, MDMs face a fundamental limitation: once tokens are unmasked, they remain fixed, leading to error accumulation and ultimately degrading sample quality. We address this by proposing a framework that trains a model to perform both unmasking and correction. By reusing outputs from the MDM denoising network as inputs for corrector training, we train a model to recover from potential mistakes. During ge",
+      "metadata": {
+        "authors": [
+          "Yair Schiff",
+          "Omer Belhasin",
+          "Roy Uziel",
+          "Guanghan Wang",
+          "Marianne Arriola",
+          "Gilad Turok",
+          "Ran Zilberstein",
+          "Michael Elad",
+          "Volodymyr Kuleshov"
+        ],
+        "arxiv_id": "2602.11590",
+        "category": "diffusion_sampling",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "parallel denoising, correction, scheduling, and cache efficiency",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2602.22647",
+      "kind": "web",
+      "title": "Vectorizing the Trie: Efficient Constrained Decoding for LLM-based Generative Retrieval on Accelerators",
+      "uri": "https://arxiv.org/abs/2602.22647",
+      "published_at": "2026-02-26T06:00:56Z",
+      "summary": "Generative retrieval has emerged as a powerful paradigm for LLM-based recommendation. However, industrial recommender systems often benefit from restricting the output space to a constrained subset of items based on business logic (e.g. enforcing content freshness or product category), which standard autoregressive decoding cannot natively support. Moreover, existing constrained decoding methods that make use of prefix trees (Tries) incur severe latency penalties on hardware accelerators (TPUs/GPUs). In this work, we introduce STATIC (Sparse Transition Matrix-Accelerated Trie Index for Constra",
+      "metadata": {
+        "authors": [
+          "Zhengyang Su",
+          "Isay Katsman",
+          "Yueqi Wang",
+          "Ruining He",
+          "Lukasz Heldt",
+          "Raghunandan Keshavan",
+          "Shao-Chuan Wang",
+          "Xinyang Yi",
+          "Mingyan Gao",
+          "Onkar Dalal",
+          "Lichan Hong",
+          "Ed Chi",
+          "Ningren Han"
+        ],
+        "arxiv_id": "2602.22647",
+        "category": "grammar_constraints",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "grammar compilation, validity, and constrained decoding",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2603.03305",
+      "kind": "web",
+      "title": "The Hidden Cost of Structured Generation in LLMs: Draft-Conditioned Constrained Decoding",
+      "uri": "https://arxiv.org/abs/2603.03305",
+      "published_at": "2026-02-08T03:52:24Z",
+      "summary": "Large language models (LLMs) are increasingly used to generate executable outputs, JSON objects, and API calls, where a single syntax error can make the output unusable. Constrained decoding enforces validity token-by-token via masking and renormalization, but it can distort generation when the model assigns low probability mass to valid continuations, pushing decoding toward locally valid yet semantically incorrect trajectories. We propose \\emph{Draft-Conditioned Constrained Decoding (DCCD)}, a simple two-step, training-free inference procedure that decouples semantic planning from structural",
+      "metadata": {
+        "authors": [
+          "Avinash Reddy",
+          "Thayne T. Walker",
+          "James S. Ide",
+          "Amrit Singh Bedi"
+        ],
+        "arxiv_id": "2603.03305",
+        "category": "grammar_constraints",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "grammar compilation, validity, and constrained decoding",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2603.05540",
+      "kind": "web",
+      "title": "Attention Meets Reachability: Structural Equivalence and Efficiency in Grammar-Constrained LLM Decoding",
+      "uri": "https://arxiv.org/abs/2603.05540",
+      "published_at": "2026-03-04T11:49:55Z",
+      "summary": "We study grammar-constrained decoding (GCD) as a coupling between an autoregressive next-token distribution and a reachability oracle over a pushdown system compiled from a context-free grammar (CFG). We prove an oracle invariance theorem: language-equivalent grammars induce identical admissible next-token sets for every prefix, hence identical logit masks, yet can yield provably different compiled state spaces and online ambiguity costs. We give exact control-state blowup counts for the canonical $a^n b^n$ language under redundant nonterminal delegation, and introduce a left-to-right structur",
+      "metadata": {
+        "authors": [
+          "Faruk Alpay",
+          "Bilge Senturk"
+        ],
+        "arxiv_id": "2603.05540",
+        "category": "grammar_constraints",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "grammar compilation, validity, and constrained decoding",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2603.15340",
+      "kind": "web",
+      "title": "DOS: Dependency-Oriented Sampler for Masked Diffusion Language Models",
+      "uri": "https://arxiv.org/abs/2603.15340",
+      "published_at": "2026-03-16T14:28:39Z",
+      "summary": "Masked diffusion language models (MDLMs) have recently emerged as a new paradigm in language modeling, offering flexible generation dynamics and enabling efficient parallel decoding. However, existing decoding strategies for pre-trained MDLMs predominantly rely on token-level uncertainty criteria, while largely overlooking sequence-level information and inter-token dependencies. To address this limitation, we propose Dependency-Oriented Sampler (DOS), a training-free decoding strategy that leverages inter-token dependencies to inform token updates during generation. Specifically, DOS exploits ",
+      "metadata": {
+        "authors": [
+          "Xueyu Zhou",
+          "Yangrong Hu",
+          "Jian Huang"
+        ],
+        "arxiv_id": "2603.15340",
+        "category": "diffusion_sampling",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "parallel denoising, correction, scheduling, and cache efficiency",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2603.18489",
+      "kind": "web",
+      "title": "EntropyCache: Decoded Token Entropy Guided KV Caching for Diffusion Language Models",
+      "uri": "https://arxiv.org/abs/2603.18489",
+      "published_at": "2026-03-19T04:46:34Z",
+      "summary": "Diffusion-based large language models (dLLMs) rely on bidirectional attention, which prevents lossless KV caching and requires a full forward pass at every denoising step. Existing approximate KV caching methods reduce this cost by selectively updating cached states, but their decision overhead scales with context length or model depth. We propose EntropyCache, a training-free KV caching method that uses the maximum entropy of newly decoded token distributions as a constant-cost signal for deciding when to recompute. Our design is grounded in two empirical observations: (1) decoded token entro",
+      "metadata": {
+        "authors": [
+          "Minsoo Cheong",
+          "Donghyun Son",
+          "Woosang Lim",
+          "Sungjoo Yoo"
+        ],
+        "arxiv_id": "2603.18489",
+        "category": "diffusion_sampling",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "parallel denoising, correction, scheduling, and cache efficiency",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2603.23507",
+      "kind": "web",
+      "title": "Beyond Masks: Efficient, Flexible Diffusion Language Models via Deletion-Insertion Processes",
+      "uri": "https://arxiv.org/abs/2603.23507",
+      "published_at": "2026-03-04T12:53:17Z",
+      "summary": "While Masked Diffusion Language Models (MDLMs) relying on token masking and unmasking have shown promise in language modeling, their computational efficiency and generation flexibility remain constrained by the masking paradigm. In this paper, we propose Deletion-Insertion Diffusion language models (DID) that rigorously formulate token deletion and insertion as discrete diffusion processes, replacing the masking and unmasking processes in current MDLMs. DID improves training and inference efficiency by eliminating two major sources of computational overhead in MDLMs: the computations on non-in",
+      "metadata": {
+        "authors": [
+          "Fangyu Ding",
+          "Ding Ding",
+          "Sijin Chen",
+          "Kaibo Wang",
+          "Peng Xu",
+          "Zijin Feng",
+          "Haoli Bai",
+          "Kai Han",
+          "Youliang Yan",
+          "Binhang Yuan",
+          "Jiacheng Sun"
+        ],
+        "arxiv_id": "2603.23507",
+        "category": "diffusion_sampling",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "parallel denoising, correction, scheduling, and cache efficiency",
+        "implementation_status": "Adapted",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2605.07698",
+      "kind": "web",
+      "title": "Future Validity is the Missing Statistic: From Impossibility to $Φ$-Estimation for Grammar-Faithful Speculative Decoding",
+      "uri": "https://arxiv.org/abs/2605.07698",
+      "published_at": "2026-05-08T13:08:18Z",
+      "summary": "Grammar-constrained generation is often combined with local vocabulary masking and speculative decoding, but the resulting sampling law is not the grammar-conditional distribution users usually intend. We show that any speculative decoder with local mask access, Leviathan rejection, and rollback soundness samples from the locally projected distribution $μ^{\\mathrm{proj}}$ rather than the grammar-conditional distribution $μ^\\star$. This extends the GAD impossibility result to speculative decoding; on Dyck grammars with Qwen3-8B, the total-variation gap can reach 0.996. We identify the future-va",
+      "metadata": {
+        "authors": [
+          "Wenhua Nie",
+          "Zijie Meng",
+          "Kun Zou",
+          "Zheng Lin",
+          "Ziwei Li",
+          "Haoran Zheng",
+          "Jyh-Shing Roger Jang",
+          "Hao Zhang"
+        ],
+        "arxiv_id": "2605.07698",
+        "category": "grammar_constraints",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "grammar compilation, validity, and constrained decoding",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2605.08044",
+      "kind": "web",
+      "title": "Fast Byte Latent Transformer",
+      "uri": "https://arxiv.org/abs/2605.08044",
+      "published_at": "2026-05-08T17:35:27Z",
+      "summary": "Recent byte-level language models (LMs) match the performance of token-level models without relying on subword vocabularies, yet their utility is limited by slow, byte-by-byte autoregressive generation. We address this bottleneck in the Byte Latent Transformer (BLT) through new training and generation techniques. First, we introduce BLT Diffusion (BLT-D), a new model and our fastest BLT variant, trained with an auxiliary block-wise diffusion objective alongside the standard next-byte prediction loss. This enables an inference procedure that generates multiple bytes in parallel per decoding ste",
+      "metadata": {
+        "authors": [
+          "Julie Kallini",
+          "Artidoro Pagnoni",
+          "Tomasz Limisiewicz",
+          "Gargi Ghosh",
+          "Luke Zettlemoyer",
+          "Christopher Potts",
+          "Xiaochuang Han",
+          "Srinivasan Iyer"
+        ],
+        "arxiv_id": "2605.08044",
+        "category": "diffusion_sampling",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "parallel denoising, correction, scheduling, and cache efficiency",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2605.13076",
+      "kind": "web",
+      "title": "TruncProof: A Guardrail for LLM-based JSON Generation under Token-Length Constraints",
+      "uri": "https://arxiv.org/abs/2605.13076",
+      "published_at": "2026-05-13T06:49:08Z",
+      "summary": "The LLM-based generation of machine-readable outputs such as JSON has attracted significant attention for integration with external systems. However, existing approaches cannot strictly enforce the maximum number of tokens to be generated, leading to infinite generation or truncated outputs that cause a system malfunction. To address this limitation, we propose TruncProof, a novel grammar-constrained generation method that enables LLMs to produce grammatically valid JSONs while adhering to a predefined token limit. By leveraging the properties of LL(1) parsers, TruncProof efficiently approxima",
+      "metadata": {
+        "authors": [
+          "Yoshio Kato",
+          "Shuhei Tarashima"
+        ],
+        "arxiv_id": "2605.13076",
+        "category": "grammar_constraints",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "grammar compilation, validity, and constrained decoding",
+        "implementation_status": "Adapted",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2605.16829",
+      "kind": "web",
+      "title": "Constrained Code Generation with Discrete Diffusion",
+      "uri": "https://arxiv.org/abs/2605.16829",
+      "published_at": "2026-05-16T06:15:47Z",
+      "summary": "Discrete diffusion models are a powerful, emerging paradigm for code generation. They construct programs through iterative refinement of partially corrupted token sequences and enable parallel token refinement. Importantly, this paradigm exposes a global program state at each denoising step, which provides a natural intervention point for enforcing program-level functionality and security constraints, guiding the generation before the final code is committed. Building on this observation, the paper introduces Constrained Diffusion for Code (CDC), a training-free neurosymbolic inference framewo",
+      "metadata": {
+        "authors": [
+          "Lize Shao",
+          "Michael Cardei",
+          "Zichen Xie",
+          "Ferdinando Fioretto",
+          "Wenxi Wang"
+        ],
+        "arxiv_id": "2605.16829",
+        "category": "diffusion_sampling",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "parallel denoising, correction, scheduling, and cache efficiency",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2605.29233",
+      "kind": "web",
+      "title": "BlockBatch: Multi-Scale Consensus Decoding for Efficient Diffusion Language Model Inference",
+      "uri": "https://arxiv.org/abs/2605.29233",
+      "published_at": "2026-05-28T01:48:29Z",
+      "summary": "Diffusion language models (dLLMs) generate text by iteratively denoising multiple token positions in parallel, offering an attractive alternative to strictly autoregressive decoding. In practice, however, block-wise dLLM inference exposes a difficult granularity trade-off: small blocks preserve local conditioning but require many denoising steps, whereas large blocks expose more parallelism but can make premature commitments and accumulate cache error. Existing acceleration methods typically choose a single block size per request, leaving the complementarity among block sizes unused. We show t",
+      "metadata": {
+        "authors": [
+          "Xiaoyou Wu",
+          "Cheng-Jhih Shih",
+          "Binfei Ji",
+          "Yong Liu",
+          "Yingyan Celine Lin"
+        ],
+        "arxiv_id": "2605.29233",
+        "category": "diffusion_sampling",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "parallel denoising, correction, scheduling, and cache efficiency",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2605.29986",
+      "kind": "web",
+      "title": "Accelerating Constrained Decoding with Token Space Compression",
+      "uri": "https://arxiv.org/abs/2605.29986",
+      "published_at": "2026-05-28T14:22:20Z",
+      "summary": "To guarantee that an LLM's outputs conform to a specified structure, context-free grammar (CFG) decoding engines force the selection of next tokens that produce strings that conform to a given CFG. While current CFG-constrained decoding engines are highly optimized, the inherent costs arising from the massive per-step search space -- i.e. the entire token vocabulary -- result in intractably high overhead for more complex CFGs: precisely the situation where CFG engines are most useful. In this paper, we introduce CFGzip, an offline technique for compressing the token search space, which massive",
+      "metadata": {
+        "authors": [
+          "Michael Sullivan",
+          "Alexander Koller"
+        ],
+        "arxiv_id": "2605.29986",
+        "category": "grammar_constraints",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "grammar compilation, validity, and constrained decoding",
+        "implementation_status": "Adapted",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2605.30054",
+      "kind": "web",
+      "title": "Projectional Decoding: Towards Semantic-Aware LLM Generation",
+      "uri": "https://arxiv.org/abs/2605.30054",
+      "published_at": "2026-05-28T15:05:53Z",
+      "summary": "Large language models (LLMs) are increasingly used to generate software artifacts across many software engineering (SE) tasks, yet ensuring the semantic validity of these artifacts remains a fundamental challenge. Existing constrained decoding techniques can enforce syntactic correctness and, in some cases, specific semantic rules, but lack a general representation that bridges LLM-generated text with the reasoning required for semantic validation in SE. In this paper, we propose projectional decoding, a novel conceptual framework that integrates domain semantics directly into the generation p",
+      "metadata": {
+        "authors": [
+          "Boqi Chen",
+          "José Antonio Hernández López",
+          "Aren A. Babikian"
+        ],
+        "arxiv_id": "2605.30054",
+        "category": "grammar_constraints",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "grammar compilation, validity, and constrained decoding",
+        "implementation_status": "Adapted",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2606.00722",
+      "kind": "web",
+      "title": "EPIC: Efficient and Parallel Inference under CFG Constraints for Diffusion Language Models",
+      "uri": "https://arxiv.org/abs/2606.00722",
+      "published_at": "2026-05-30T13:20:03Z",
+      "summary": "Controlling language model outputs is essential for ensuring structural validity, reliability, and downstream usability, and diffusion language models are no exception. Recent advances in diffusion language model decoding have extended output control beyond regular constraints to context-free grammar (CFG) constraints. Existing methods, however, can be up to four times slower than unconstrained decoding. More importantly, they substantially diminish one of the key advantages of diffusion language models over autoregressive models, namely parallel decoding. This slowdown arises because sequenti",
+      "metadata": {
+        "authors": [
+          "Hyundong Jin",
+          "Yo-Sub Han"
+        ],
+        "arxiv_id": "2606.00722",
+        "category": "grammar_constraints",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "grammar compilation, validity, and constrained decoding",
+        "implementation_status": "Adapted",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2606.16908",
+      "kind": "web",
+      "title": "LESS Is More: Mutual-Stability Sampling for Diffusion Language Models",
+      "uri": "https://arxiv.org/abs/2606.16908",
+      "published_at": "2026-06-15T16:15:45Z",
+      "summary": "Diffusion large language models (dLLMs) offer a promising alternative to autoregressive decoding by iteratively refining masked sequences, enabling parallel token updates and bidirectional conditioning. Their practical efficiency, however, is limited by sampling procedures that execute a fixed number of reverse denoising steps selected before decoding, spending computation on already-stable positions and sometimes committing unstable ones too early. We present \\textsc{LESS}, a training-free, model-agnostic adaptive sampler that treats token commitment as an online stopping problem. \\textsc{LES",
+      "metadata": {
+        "authors": [
+          "Amr Mohamed",
+          "Guokan Shang",
+          "Michalis Vazirgiannis"
+        ],
+        "arxiv_id": "2606.16908",
+        "category": "diffusion_sampling",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "parallel denoising, correction, scheduling, and cache efficiency",
+        "implementation_status": "Adapted",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    },
+    {
+      "source_id": "arxiv-2607.07026",
+      "kind": "web",
+      "title": "Constrained Decoding for Diffusion Language Models via Efficient Inference over Finite Automata",
+      "uri": "https://arxiv.org/abs/2607.07026",
+      "published_at": "2026-07-08T05:48:57Z",
+      "summary": "Constrained decoding is essential for serving LLMs, ensuring that generated outputs follow specific structures such as JSON schema-formatted function calls. Existing systems are designed for autoregressive models and assume left-to-right generation, masking out invalid next tokens at each step. Diffusion language models, however, break this assumption: they sample multiple positions simultaneously from a fully-factorized mean-field distribution at each denoising step. In this paper, we present an exact and tractable algorithm for sampling from the constrained mean-field posterior under any con",
+      "metadata": {
+        "authors": [
+          "Meihua Dang",
+          "Stefano Ermon"
+        ],
+        "arxiv_id": "2607.07026",
+        "category": "grammar_constraints",
+        "feedback_claim": "candidate prior art from the public Diffusion SLM Optimization review",
+        "repo_relevance": "grammar compilation, validity, and constrained decoding",
+        "implementation_status": "Adjacent",
+        "limitations": "Reported results are paper-specific and do not transfer to OpenUI without matched local controls."
+      }
+    }
+  ]
+}

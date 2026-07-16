@@ -48,6 +48,14 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "topology_max_nodes",
         "topology_max_phases",
         "topology_structural_embeddings",
+        "runtime_symbol_features",
+        "symbol_slot_augmentation",
+        "semantic_candidate_masks",
+        "constraint_graph_mode",
+        "grammar_completion_bounds",
+        "grammar_equivalence_cache",
+        "grammar_active_symbol_bitsets",
+        "compact_active_canvas",
     }
 )
 
@@ -204,6 +212,14 @@ class ExperimentKnobs(StrictModel):
     topology_global_sync_interval: int | None = Field(default=None, ge=1, le=32)
     topology_accept_threshold: float | None = Field(default=None, ge=0, le=1)
     topology_contract_threshold: float | None = Field(default=None, ge=0, le=1)
+    runtime_symbol_features: Literal["none", "surface", "role_gated"] | None = None
+    symbol_slot_augmentation: bool | None = None
+    semantic_candidate_masks: bool | None = None
+    constraint_graph_mode: Literal["off", "grammar", "hybrid"] | None = None
+    grammar_completion_bounds: bool | None = None
+    grammar_equivalence_cache: bool | None = None
+    grammar_active_symbol_bitsets: bool | None = None
+    compact_active_canvas: bool | None = None
 
     @model_validator(mode="after")
     def validate_mixture(self) -> ExperimentKnobs:
