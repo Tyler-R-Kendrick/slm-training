@@ -41,6 +41,13 @@ class DecodeStats:
     full_projections: int = 0
     compiler_fallbacks: int = 0
     seeded_fallbacks: int = 0
+    compiler_lattice_states: int = 0
+    compiler_lattice_candidates: int = 0
+    compiler_lattice_bottoms: int = 0
+    compiler_lattice_rollbacks: int = 0
+    compiler_lattice_nogoods: int = 0
+    compiler_lattice_nogood_hits: int = 0
+    compiler_lattice_last_signature: str = ""
     template_fastpath_count: int = 0
     template_fallback_count: int = 0
     root_invariant_bypass_count: int = 0
@@ -150,6 +157,12 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "full_projections",
         "compiler_fallbacks",
         "seeded_fallbacks",
+        "compiler_lattice_states",
+        "compiler_lattice_candidates",
+        "compiler_lattice_bottoms",
+        "compiler_lattice_rollbacks",
+        "compiler_lattice_nogoods",
+        "compiler_lattice_nogood_hits",
         "constrained_dead_ends",
         "constrained_dead_end_last_position",
         "constrained_dead_end_forced_rank",

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pytest
 import torch
 
 from slm_training.dsl.grammar.fastpath.compiler_draft import (
@@ -489,6 +490,7 @@ def test_maskgit_fallback_keeps_compiler_prefix_visible() -> None:
 
 def test_compiler_decode_is_opt_in() -> None:
     assert TwoTowerConfig().compiler_decode_mode == "off"
+    assert TwoTowerConfig().compiler_search_mode == "greedy"
 
 
 def test_compiler_decode_reserves_room_beyond_predicted_length(monkeypatch) -> None:
@@ -510,3 +512,31 @@ def test_compiler_decode_reserves_room_beyond_predicted_length(monkeypatch) -> N
         "root = Stack([])"
     ]
     assert observed == [17]
+
+
+def test_lattice_search_rejects_unknown_mode() -> None:
+    model = _model()
+    model.config.compiler_search_mode = "unknown"
+    ctx, ctx_pad = model._encode_context(["card"])
+    with pytest.raises(ValueError, match="must be greedy or lattice"):
+        model._compiler_ltr_decode_one(
+            ctx, ctx_pad, 24, mode="tree", slot_contract=None
+        )
+
+
+def test_lattice_search_matches_greedy_without_conflict() -> None:
+    greedy = _model()
+    ctx, ctx_pad = greedy._encode_context(["card"])
+    expected = greedy._compiler_ltr_decode_one(
+        ctx, ctx_pad, 24, mode="tree", slot_contract=None
+    )
+    model = _model()
+    model.config.compiler_search_mode = "lattice"
+    ctx, ctx_pad = model._encode_context(["card"])
+    with collect_decode_stats() as stats:
+        ids = model._compiler_ltr_decode_one(
+            ctx, ctx_pad, 24, mode="tree", slot_contract=None
+        )
+    assert torch.equal(ids, expected)
+    assert stats.compiler_lattice_states > 0
+    assert stats.compiler_lattice_candidates >= stats.compiler_lattice_states
