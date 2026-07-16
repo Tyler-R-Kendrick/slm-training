@@ -1,0 +1,11 @@
+{
+  "experiment_id": "E128",
+  "date": "2026-07-15",
+  "kind": "quality_iteration",
+  "parent": "E127",
+  "recipe": {"device": "cpu", "steps": 64, "batch_size": 4, "context_backend": "scratch", "output_tokenizer": "compositional", "schema_in_context": true, "slot_contract_in_context": true, "slot_contract_constrained_decode": true, "grammar_ltr_primary": true, "grammar_ltr_repair": true, "ltr_loss_weight": 1.0, "fidelity_loss_weight": 1.0, "train_dir": "src/slm_training/resources/train_data/remediated_roots_judged", "record_count": 405, "honesty_mode": "scratch diagnostic; no ship claim"},
+  "training": {"run_id": "e128_judged_schema_slots_64", "last_loss": 15.02730941772461, "checkpoint": "outputs/runs/iter-e128-schema-slots-20260715/e128_judged_schema_slots_64/checkpoints/last.pt", "checkpoint_sha256": "84c8d5f65ac92f23d2e98ae9838a0d47d82ec2a1078534e67384ce8a5f956054", "telemetry": "outputs/runs/iter-e128-schema-slots-20260715/e128_judged_schema_slots_64/train_telemetry.json", "total_ms": 9892.532},
+  "feedback": {"run_id": "iter-e128-smoke-feedback", "suite": "smoke", "n": 1, "parse_rate": 0.0, "raw_syntax_validity": 0.0, "placeholder_fidelity": 0.0, "placeholder_fidelity_normalized": 0.0, "placeholder_validity": 0.0, "structural_similarity": 0.1542, "reward_score": 0.0, "latency_ms_p50": 11724.65, "decode_timeout_count": 0, "constrained_fallback_rate": 0.0, "agentv": "outputs/runs/iter-e128-schema-slots-20260715/iter-e128-smoke-feedback/agentv/openui-model-ship-gates-2026-07-16t01-10-40-109288-00-00.eval.jsonl"},
+  "finding": "Longer training with doubled LTR and fidelity loss weights regressed the placeholder signal seen in E127 and did not improve syntax.",
+  "decision": "Reject the higher-weight recipe; retain E127 as the stronger conditioning hypothesis and test data composition or lower-weight continuation instead."
+}
