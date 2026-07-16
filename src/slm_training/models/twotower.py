@@ -1588,6 +1588,24 @@ class TwoTowerModel(nn.Module):
                 if rec is not None:
                     rec.event("repair_dead_end", position=t)
                 break
+            if stats is not None and len(stats.constrained_selection_traces) < 64:
+                chosen_token = tok.id_to_token.get(int(choice), "")
+                argmax_id = int(row.argmax().item())
+                stats.constrained_selection_traces.append(
+                    {
+                        "position": int(t),
+                        "prefix_text": self._decode_ids(ids[0, :t].tolist()),
+                        "chosen_token": chosen_token,
+                        "chosen_id": int(choice),
+                        "model_argmax": tok.id_to_token.get(argmax_id, ""),
+                        "model_argmax_id": argmax_id,
+                        "legal_candidates": int(
+                            max(0, stats.constrained_last_legal_candidates)
+                        ),
+                        "forced": bool(forced is not None),
+                        "phase": "ltr_repair",
+                    }
+                )
             ids[0, t] = choice
             unknown[0, t] = False
             if stats is not None and tok.id_to_token.get(int(choice), "") == "NL":

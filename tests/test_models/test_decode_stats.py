@@ -37,3 +37,10 @@ def test_decode_stats_tracks_constrained_dead_ends() -> None:
 def test_decode_stats_aggregates_dead_end_traces() -> None:
     stats = DecodeStats(constrained_dead_end_traces=[{"position": 1}])
     assert aggregate_stats([stats])["constrained_dead_end_traces"] == [{"position": 1}]
+
+
+def test_decode_stats_aggregates_bounded_selection_traces() -> None:
+    stats = DecodeStats(constrained_selection_traces=[{"position": 2, "chosen_token": "="}])
+    assert aggregate_stats([stats])["constrained_selection_traces"] == [
+        {"position": 2, "chosen_token": "="}
+    ]
