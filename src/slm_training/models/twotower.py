@@ -3067,14 +3067,16 @@ class TwoTowerModel(nn.Module):
                     else [length] * len(predicted_lengths)
                 )
 
-        if use_grammar and self.config.grammar_ltr_primary:
+        compiler_mode = str(
+            getattr(self.config, "compiler_decode_mode", "off") or "off"
+        ).lower()
+        if use_grammar and (
+            self.config.grammar_ltr_primary or compiler_mode != "off"
+        ):
             self._set_runtime_symbol_features(feature_tables)
             self._current_runtime_table = (
                 feature_tables[0] if len(feature_tables) == 1 else None
             )
-            compiler_mode = str(
-                getattr(self.config, "compiler_decode_mode", "off") or "off"
-            ).lower()
             repair_len = min(length, max(8, int(self.config.grammar_ltr_max_tokens)))
             ids = self._greedy_ltr_decode_batch(ctx, ctx_pad, repair_len)
             texts = [self._decode_ids(ids[i]) for i in range(ids.size(0))]
