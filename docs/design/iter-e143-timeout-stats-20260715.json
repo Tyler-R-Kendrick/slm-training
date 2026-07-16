@@ -1,0 +1,33 @@
+{
+  "iteration": "E143",
+  "date": "2026-07-15",
+  "objective": "Preserve partial constrained-decoder telemetry when a diagnostic evaluation timeout interrupts generation.",
+  "recipe": {
+    "checkpoint": "outputs/runs/iter-e135-hf-context-20260715/e135_hf_context_control/checkpoints/last.pt",
+    "checkpoint_sha256": "8d28924a47d9e0b72ab15011869bce91091796592338a9548fcdcd361102d4c0",
+    "backend": "hf",
+    "device": "cpu",
+    "steps": 8,
+    "suite": "smoke",
+    "n": 1,
+    "honesty_mode": "diagnostic_subset",
+    "decode_timeout_seconds": 20,
+    "max_attempts": 3,
+    "grammar_ltr_primary": true,
+    "grammar_ltr_repair": true,
+    "skip_exact_stream_probe": true
+  },
+  "result": {
+    "parse_rate": 0.0,
+    "structural_similarity": 0.0,
+    "placeholder_validity": 0.0,
+    "decode_timeout_count": 1,
+    "decode_stats_present": true,
+    "tokens_emitted": 304,
+    "probes": 1,
+    "dfa_syncs": 6724,
+    "total_ms": 20001.503,
+    "selection_trace_events": 64
+  },
+  "conclusion": "The timeout path now preserves partial DecodeStats and bounded selection traces. The model still fails the diagnostic sample: it times out and emits an unparsable result. This is telemetry progress, not a quality pass."
+}

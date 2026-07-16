@@ -3748,13 +3748,17 @@ class TwoTowerModel(nn.Module):
     ) -> tuple[str, DecodeStats]:
         """Generate one sample and return ``(text, DecodeStats)`` phase timings."""
         with collect_decode_stats() as stats:
-            text = self.generate(
-                prompt,
-                gold=gold,
-                max_len=max_len,
-                grammar_constrained=grammar_constrained,
-                design_md=design_md,
-            )
+            try:
+                text = self.generate(
+                    prompt,
+                    gold=gold,
+                    max_len=max_len,
+                    grammar_constrained=grammar_constrained,
+                    design_md=design_md,
+                )
+            except BaseException as exc:
+                setattr(exc, "decode_stats", stats)
+                raise
         return text, stats
 
     def artifact_identity(self) -> dict[str, str]:
