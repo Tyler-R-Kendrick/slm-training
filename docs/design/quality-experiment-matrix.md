@@ -752,6 +752,12 @@ parse remains 0 and component recall is 0.25. The next lever is semantic
 component-role supervision and training-data coverage. See
 [iter-e172-schema-types-20260716.md](iter-e172-schema-types-20260716.md).
 
+E173 trained 32 steps with schema and slot-contract context. A bounded probe
+was syntactically valid but still selected a lone `TextContent` for the hero
+task (`meaningful_program_rate=0.0`); the full smoke invocation did not persist
+a scoreboard and is not claimed. The next lever is semantic component-role
+coverage/supervision. See [iter-e173-schema-context-20260716.md](iter-e173-schema-context-20260716.md).
+
 These rows are registered under `--matrix v8`; `--list` prints definitions
 without building data or starting a run. They require the lexer-native parent
 contract and unchanged honest five-suite gates. No result or champion is claimed.

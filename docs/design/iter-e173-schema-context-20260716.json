@@ -1,0 +1,41 @@
+{
+  "iteration": "E173",
+  "date": "2026-07-16",
+  "objective": "Test schema and slot-contract context as a semantic supervision control after E172.",
+  "training": {
+    "run_id": "e173-schema-context-32step",
+    "checkpoint": "outputs/runs/e173-schema-context-32step/checkpoints/last.pt",
+    "train_dir": "src/slm_training/resources/train_data/remediated_roots_judged",
+    "steps": 32,
+    "last_loss": 11.08760929107666,
+    "device": "cpu",
+    "context_backend": "hf",
+    "output_tokenizer": "lexer",
+    "schema_in_context": true,
+    "slot_contract_in_context": true,
+    "telemetry": "outputs/runs/e173-schema-context-32step/train_telemetry.json",
+    "metrics": "outputs/runs/e173-schema-context-32step/metrics.jsonl"
+  },
+  "evaluation": {
+    "kind": "bounded_probe",
+    "suite": "smoke",
+    "n": 1,
+    "eval_limit": 1,
+    "grammar_ltr_max_tokens": 256,
+    "compiler_decode_mode": "tree",
+    "allow_unconstrained_fallback": false,
+    "parse_rate": 0.0,
+    "syntax_parse_rate": 1.0,
+    "raw_syntax_validity": 1.0,
+    "structural_similarity": 0.1542,
+    "component_type_recall": 0.25,
+    "latency_ms_p50": 3896.5,
+    "decode_timeout_count": 0,
+    "compiler_fallbacks": 0,
+    "seeded_fallbacks": 0,
+    "eval": "outputs/runs/e173-probe256/eval_smoke.json",
+    "agentv": "outputs/runs/e173-probe256/agentv/openui-model-ship-gates-2026-07-16t04-34-25-135382-00-00.eval.jsonl"
+  },
+  "limitations": "The full three-record smoke invocation was terminated before persisting a scoreboard; this bounded result is not a full-suite claim.",
+  "conclusion": "Schema context produces a valid single TextContent prediction but does not recover the required hero hierarchy. Context alone is insufficient; semantic component-role supervision or data balance remains the next lever."
+}
