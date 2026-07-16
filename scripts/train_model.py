@@ -101,7 +101,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--mixture-sampling-policy",
-        choices=("with_replacement", "capacity_aware"),
+        choices=("with_replacement", "capacity_aware", "quota_capacity_aware"),
         default="with_replacement",
         help="Draw mixture rows with replacement or capacity-aware per window.",
     )

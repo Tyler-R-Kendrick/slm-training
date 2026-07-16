@@ -47,7 +47,9 @@ ORGANIC_FAMILIES = (
     "human_curated",
 )
 FEEDBACK_FAMILIES = ("human_feedback",)
-SAMPLING_POLICIES = frozenset({"with_replacement", "capacity_aware"})
+SAMPLING_POLICIES = frozenset(
+    {"with_replacement", "capacity_aware", "quota_capacity_aware"}
+)
 _COMPONENT_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s*\(")
 
 
@@ -189,6 +191,14 @@ def sample_mixture_batch(
         if usable_tasks:
             groups = sorted(usable_tasks)
             group_weights = [task_manifest.task_weights[group] for group in groups]
+            if sampling_policy == "quota_capacity_aware":
+                return _sample_quota_capacity_aware_tasks(
+                    usable_tasks,
+                    group_weights=dict(zip(groups, group_weights, strict=True)),
+                    family_weights=manifest.weights,
+                    batch_size=batch_size,
+                    rng=rng,
+                )
             if sampling_policy == "capacity_aware":
                 weighted_records: list[tuple[ExampleRecord, float]] = []
                 for group, group_weight in zip(groups, group_weights, strict=True):
@@ -256,6 +266,13 @@ def sample_mixture_batch(
         return _sample_capacity_aware(
             weighted_records, batch_size=batch_size, rng=rng
         )
+    if sampling_policy == "quota_capacity_aware":
+        return _sample_quota_capacity_aware_families(
+            usable,
+            family_weights=dict(zip(families, family_weights, strict=True)),
+            batch_size=batch_size,
+            rng=rng,
+        )
 
     out: list[ExampleRecord] = []
     for _ in range(batch_size):
@@ -286,6 +303,113 @@ def _sample_capacity_aware(
             )[0]
             record, _ = remaining.pop(index)
             out.append(record)
+    return out
+
+
+def _apportion_with_capacity(
+    total: int,
+    *,
+    weights: dict[str, float],
+    capacities: dict[str, int],
+) -> dict[str, int]:
+    """Largest-remainder quotas with deterministic capacity redistribution."""
+    quotas = {key: 0 for key in sorted(capacities)}
+    while sum(quotas.values()) < total:
+        active = [key for key in quotas if quotas[key] < capacities[key]]
+        if not active:
+            break
+        remaining = total - sum(quotas.values())
+        active_total = sum(max(0.0, weights.get(key, 0.0)) for key in active)
+        effective = {
+            key: (
+                max(0.0, weights.get(key, 0.0))
+                if active_total > 0
+                else 1.0
+            )
+            for key in active
+        }
+        effective_total = sum(effective.values())
+        ideals = {
+            key: remaining * effective[key] / effective_total for key in active
+        }
+        for key in active:
+            add = min(capacities[key] - quotas[key], int(ideals[key]))
+            if add:
+                quotas[key] += add
+        if sum(quotas.values()) >= total:
+            break
+        candidates = sorted(
+            (key for key in active if quotas[key] < capacities[key]),
+            key=lambda item: (-(ideals[item] % 1), -effective[item], item),
+        )
+        if not candidates:
+            break
+        for key in candidates[: total - sum(quotas.values())]:
+            quotas[key] += 1
+    return quotas
+
+
+def _sample_quota_capacity_aware_tasks(
+    pools: dict[str, dict[str, list[ExampleRecord]]],
+    *,
+    group_weights: dict[str, float],
+    family_weights: dict[str, float],
+    batch_size: int,
+    rng: random.Random,
+) -> list[ExampleRecord]:
+    out: list[ExampleRecord] = []
+    while len(out) < batch_size:
+        cycle_size = min(
+            batch_size - len(out),
+            sum(len(rows) for families in pools.values() for rows in families.values()),
+        )
+        group_quotas = _apportion_with_capacity(
+            cycle_size,
+            weights=group_weights,
+            capacities={
+                group: sum(len(rows) for rows in families.values())
+                for group, families in pools.items()
+            },
+        )
+        cycle: list[ExampleRecord] = []
+        for group in sorted(group_quotas):
+            families = pools[group]
+            family_quotas = _apportion_with_capacity(
+                group_quotas[group],
+                weights=family_weights,
+                capacities={family: len(rows) for family, rows in families.items()},
+            )
+            for family in sorted(family_quotas):
+                rows = list(families[family])
+                rng.shuffle(rows)
+                cycle.extend(rows[: family_quotas[family]])
+        rng.shuffle(cycle)
+        out.extend(cycle)
+    return out
+
+
+def _sample_quota_capacity_aware_families(
+    pools: dict[str, list[ExampleRecord]],
+    *,
+    family_weights: dict[str, float],
+    batch_size: int,
+    rng: random.Random,
+) -> list[ExampleRecord]:
+    out: list[ExampleRecord] = []
+    while len(out) < batch_size:
+        cycle_size = min(batch_size - len(out), sum(map(len, pools.values())))
+        quotas = _apportion_with_capacity(
+            cycle_size,
+            weights=family_weights,
+            capacities={family: len(rows) for family, rows in pools.items()},
+        )
+        cycle: list[ExampleRecord] = []
+        for family in sorted(quotas):
+            rows = list(pools[family])
+            rng.shuffle(rows)
+            cycle.extend(rows[: quotas[family]])
+        rng.shuffle(cycle)
+        out.extend(cycle)
     return out
 
 

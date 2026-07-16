@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import random
+from collections import Counter
 from pathlib import Path
 
 from slm_training.data.mixture import (
@@ -17,6 +18,7 @@ from slm_training.data.mixture import (
     mixture_hash,
     propose_from_fit,
     sample_mixture_batch,
+    task_group,
     write_mixture_manifest,
 )
 from slm_training.dsl.schema import ExampleRecord
@@ -177,6 +179,55 @@ def test_capacity_aware_sampling_is_deterministic_and_cycles() -> None:
     assert [record.id for record in first] == [record.id for record in second]
     assert len({record.id for record in first[:3]}) == 3
     assert len({record.id for record in first[3:6]}) == 3
+
+
+def test_quota_capacity_aware_sampling_preserves_task_allocation() -> None:
+    records = [
+        ExampleRecord(
+            id=f"generation-{i}",
+            prompt="generate",
+            openui='root = Button(":x")',
+            meta={"source_family": "programspec_generated", "task": "generation"},
+        )
+        for i in range(20)
+    ] + [
+        ExampleRecord(
+            id=f"repair-{i}",
+            prompt="repair",
+            openui='root = Button(":x")',
+            meta={"source_family": "corruption_repair", "task": "repair"},
+        )
+        for i in range(20)
+    ] + [
+        ExampleRecord(
+            id=f"edit-{i}",
+            prompt="edit",
+            openui='root = Button(":x")',
+            meta={"source_family": "edit_trajectory", "task": "edit"},
+        )
+        for i in range(20)
+    ]
+
+    batch = sample_mixture_batch(
+        records,
+        weights={
+            "programspec_generated": 1.0,
+            "corruption_repair": 1.0,
+            "edit_trajectory": 1.0,
+        },
+        task_weights={
+            "generation": 1.0,
+            "repair_completion_inpaint": 1.0,
+            "patch_edit": 1.0,
+        },
+        batch_size=32,
+        rng=random.Random(9),
+        sampling_policy="quota_capacity_aware",
+    )
+
+    counts = Counter(task_group(record.meta["task"]) for record in batch)
+    assert sorted(counts.values()) == [10, 11, 11]
+    assert len({record.id for record in batch}) == 32
 
 
 def test_manifest_v1_loads_without_task_policy(tmp_path: Path) -> None:
