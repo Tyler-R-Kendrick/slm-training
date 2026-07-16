@@ -136,6 +136,8 @@ class Experiment:
     component_inventory_decode_weight: float = 0.0
     component_plan_loss_weight: float = 0.0
     component_plan_decode_weight: float = 0.0
+    component_edge_loss_weight: float = 0.0
+    component_edge_decode_weight: float = 0.0
 
 
 def _base_experiments(
@@ -1307,6 +1309,12 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         ),
         component_plan_decode_weight=float(
             getattr(exp, "component_plan_decode_weight", 0.0) or 0.0
+        ),
+        component_edge_loss_weight=float(
+            getattr(exp, "component_edge_loss_weight", 0.0) or 0.0
+        ),
+        component_edge_decode_weight=float(
+            getattr(exp, "component_edge_decode_weight", 0.0) or 0.0
         ),
         trust_gate_train=bool(getattr(exp, "trust_gate", False)),
         grad_accum_steps=max(1, int(getattr(args, "grad_accum", 1) or 1)),

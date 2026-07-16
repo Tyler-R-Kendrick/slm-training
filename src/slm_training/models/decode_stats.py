@@ -36,6 +36,8 @@ class DecodeStats:
     compiler_candidates: int = 0
     component_plan_applications: int = 0
     component_plan_choice_changes: int = 0
+    component_edge_applications: int = 0
+    component_edge_choice_changes: int = 0
     forced_spans: int = 0
     forced_tokens: int = 0
     trie_nodes: int = 0
@@ -157,6 +159,8 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "compiler_candidates",
         "component_plan_applications",
         "component_plan_choice_changes",
+        "component_edge_applications",
+        "component_edge_choice_changes",
         "forced_spans",
         "forced_tokens",
         "trie_nodes",

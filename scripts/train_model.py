@@ -352,6 +352,18 @@ def main(argv: list[str] | None = None) -> int:
         help="Bias compiler-legal components by role and remaining planned count.",
     )
     parser.add_argument(
+        "--component-edge-loss-weight",
+        type=float,
+        default=0.0,
+        help="Prompt-to-resolved-AST component-edge loss weight.",
+    )
+    parser.add_argument(
+        "--component-edge-decode-weight",
+        type=float,
+        default=0.0,
+        help="Bias legal bound components by known parent edge logits.",
+    )
+    parser.add_argument(
         "--no-design-md-context",
         action="store_true",
         help="Do not concatenate DESIGN.md into the context tower prompt.",
@@ -675,6 +687,8 @@ def main(argv: list[str] | None = None) -> int:
             component_inventory_decode_weight=args.component_inventory_decode_weight,
             component_plan_loss_weight=args.component_plan_loss_weight,
             component_plan_decode_weight=args.component_plan_decode_weight,
+            component_edge_loss_weight=args.component_edge_loss_weight,
+            component_edge_decode_weight=args.component_edge_decode_weight,
             fidelity_loss_weight=args.fidelity_loss_weight,
             grammar_ltr_primary=args.grammar_ltr_primary,
             grammar_ltr_repair=args.grammar_ltr_repair,

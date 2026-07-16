@@ -177,6 +177,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Override the checkpoint's grammar-role component-plan bias.",
     )
     parser.add_argument(
+        "--component-edge-decode-weight",
+        type=float,
+        default=None,
+        help="Override the checkpoint's resolved-AST component-edge bias.",
+    )
+    parser.add_argument(
         "--compiler-search-mode",
         choices=("greedy", "lattice", "ptrm", "gram"),
         default="greedy",
@@ -392,6 +398,7 @@ def main(argv: list[str] | None = None) -> int:
         compiler_decode_mode=args.compiler_decode_mode,
         component_inventory_decode_weight=args.component_inventory_decode_weight,
         component_plan_decode_weight=args.component_plan_decode_weight,
+        component_edge_decode_weight=args.component_edge_decode_weight,
         compiler_search_mode=args.compiler_search_mode,
         compiler_search_trigger=args.compiler_search_trigger,
         compiler_search_width=max(1, args.compiler_search_width),

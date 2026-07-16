@@ -1,0 +1,68 @@
+{
+  "campaign": "E233 resolved-AST component edges",
+  "date": "2026-07-16",
+  "status": "completed_rejected_four_ship_thresholds_failed",
+  "hypothesis": "Prompt-conditioned parent-child component edges improve compiler-legal hierarchy selection beyond root and count planning.",
+  "implementation": {
+    "target_source": "official parser resolved AST parent-child component edges",
+    "decode_parent_source": "compiler token-role binder declaration and reference graph",
+    "decode_scope": "component_bound candidates admitted by the compiler forest",
+    "can_change_legality": false,
+    "literal_cases_added": false
+  },
+  "train": {
+    "run_id": "e233-component-edges-32step",
+    "path": "outputs/autoresearch/e233-component-edges/runs/e233-component-edges-32step",
+    "device": "cpu",
+    "steps": 32,
+    "batch_size": 4,
+    "learning_rate": 0.0003,
+    "seed": 0,
+    "context_backend": "hf_local_files_only",
+    "train_version": "e230_diverse_judged_roots_v2",
+    "record_count": 126,
+    "draws": 128,
+    "unique_records": 81,
+    "rico_draws": 30,
+    "human_curated_draws": 25,
+    "seen_prompt_tokens": 18490,
+    "seen_target_tokens": 7052,
+    "component_plan_loss_weight": 1.0,
+    "component_plan_decode_weight": 1.0,
+    "component_edge_loss_weight": 1.0,
+    "component_edge_decode_weight": 1.0,
+    "edge_loss_first": 1.4627423286437988,
+    "edge_loss_last": 0.3626249432563782,
+    "edge_topk_recall_first": 0.0,
+    "edge_topk_recall_last": 0.5,
+    "root_accuracy_last": 1.0,
+    "bound_topk_recall_last": 0.7083333730697632,
+    "bound_count_mae_last": 0.4357217848300934,
+    "last_loss": 21.46688461303711,
+    "wall_ms": 179080.532,
+    "trace_id": "582fb34d2260314b0540c003e3028212",
+    "checkpoint_sha256": "46141ac11750d7525140c8d987c5fad83ab430fda7a3fb28a1cf4a31f9cf2575",
+    "checkpoint_sync": false
+  },
+  "evaluation_weight_1": {
+    "trace_id": "4e82a613e3674701fe5006a0eafb34c4",
+    "suites": {
+      "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333, "structural_similarity": 0.46416666666666667, "component_type_recall": 0.25, "placeholder_fidelity": 0.5277777777777778, "reward_score": 0.8073333333333333, "edge_applications": 9, "edge_choice_changes": 0},
+      "held_out": {"n": 5, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.33686, "component_type_recall": 0.15666666666666665, "placeholder_fidelity": 0.27999999999999997, "reward_score": 0.733, "edge_applications": 15, "edge_choice_changes": 1},
+      "adversarial": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.25, "structural_similarity": 0.389525, "component_type_recall": 0.20833333333333331, "placeholder_fidelity": 0.41666666666666663, "reward_score": 0.61475, "edge_applications": 8, "edge_choice_changes": 0},
+      "ood": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.375, "component_type_recall": 0.20833333333333331, "placeholder_fidelity": 0.2583333333333333, "reward_score": 0.7265, "edge_applications": 9, "edge_choice_changes": 0},
+      "rico_held": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.6666666666666666, "structural_similarity": 0.16276666666666667, "component_type_recall": 0.4444444444444444, "placeholder_fidelity": 0.125, "reward_score": 0.6865, "edge_applications": 6, "edge_choice_changes": 0}
+    },
+    "failed_thresholds": 4,
+    "edge_applications": 47,
+    "edge_choice_changes": 1,
+    "agentv": {"total": 5, "passed": 1, "failed": 4, "execution_errors": 0, "mean_score": 0.6}
+  },
+  "ablation_edge_weight_0": {
+    "trace_id": "decd0dc84f2e2255fe95767d1a5a486e",
+    "aggregate_metrics_identical_to_weight_1": true,
+    "failed_thresholds": 4,
+    "agentv_passed": 1
+  },
+  "conclusion": "The edge target learns, but its decode intervention changes one choice without changing any aggregate metric. Retain the generalized mechanism and reject the checkpoint."
+}

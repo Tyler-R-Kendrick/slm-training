@@ -966,6 +966,15 @@ four frontier thresholds fail, and AgentV remains 1/5. Retain the generalized
 mechanism, reject the checkpoint and stronger calibration. Full evidence:
 [iter-e232-role-component-plan-20260716.md](iter-e232-role-component-plan-20260716.md).
 
+E233 derives parent→child component targets from the official parser's resolved
+AST and conditions legal bound-component ranking on the compiler token-role
+reference graph. Edge top-k recall learns from 0 to 0.50, but edge-off and
+edge-on evaluations are identical across all five suite aggregates; only 1/47
+applications changes a choice. Four frontier thresholds still fail and AgentV
+remains 1/5. Retain the generalized mechanism and reject the checkpoint. Full
+evidence:
+[iter-e233-component-edges-20260716.md](iter-e233-component-edges-20260716.md).
+
 ## V9 lattice-guided recursive compiler search (proposed, unrun)
 
 The research synthesis and implementation boundary are in

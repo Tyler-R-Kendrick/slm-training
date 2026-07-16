@@ -182,6 +182,96 @@ def _active_declaration_scope(tokenizer: Any, prefix_ids: list[int]) -> str | No
     return "root" if active == tokenizer.bind_id(0) else "bound"
 
 
+def active_parent_component_ids(
+    tokenizer: Any, prefix_ids: list[int]
+) -> tuple[int, ...]:
+    """Return known component types that reference the active declaration."""
+    _declarations, _references, active = _binder_scope(tokenizer, prefix_ids)
+    if active is None:
+        return ()
+    bind_ids = set(tokenizer.kind_ids("bind"))
+    component_ids = set(tokenizer.kind_ids("component"))
+    equal_id = int(tokenizer.token_to_id["="])
+    newline_id = tokenizer.token_to_id.get("NL")
+    statements: list[list[int]] = []
+    current: list[int] = []
+    for raw_token_id in prefix_ids:
+        token_id = int(raw_token_id)
+        if newline_id is not None and token_id == int(newline_id):
+            if current:
+                statements.append(current)
+            current = []
+        else:
+            current.append(token_id)
+    if current:
+        statements.append(current)
+
+    parents: set[int] = set()
+    for statement in statements:
+        equal_at = next(
+            (
+                index + 1
+                for index, token_id in enumerate(statement[:-1])
+                if token_id in bind_ids and statement[index + 1] == equal_id
+            ),
+            None,
+        )
+        if equal_at is None:
+            continue
+        owner_component = next(
+            (token_id for token_id in statement[equal_at + 1 :] if token_id in component_ids),
+            None,
+        )
+        if owner_component is None:
+            continue
+        references = {
+            token_id
+            for token_id in statement[equal_at + 1 :]
+            if token_id in bind_ids
+        }
+        if active in references:
+            parents.add(owner_component)
+    return tuple(sorted(parents))
+
+
+def semantic_component_edges(
+    root: Any, tokenizer: Any
+) -> tuple[tuple[int, int], ...]:
+    """Extract parent/child component-type edges from a resolved OpenUI AST."""
+    token_to_id = tokenizer.token_to_id
+    edges: list[tuple[int, int]] = []
+
+    def direct_elements(value: Any) -> list[dict[str, Any]]:
+        if isinstance(value, dict):
+            if value.get("type") == "element":
+                return [value]
+            found: list[dict[str, Any]] = []
+            for child in value.values():
+                found.extend(direct_elements(child))
+            return found
+        if isinstance(value, list):
+            found = []
+            for child in value:
+                found.extend(direct_elements(child))
+            return found
+        return []
+
+    def visit(node: Any) -> None:
+        if not isinstance(node, dict) or node.get("type") != "element":
+            return
+        parent_id = token_to_id.get(str(node.get("typeName") or ""))
+        props = node.get("props")
+        children = direct_elements(props) if isinstance(props, dict) else []
+        for child in children:
+            child_id = token_to_id.get(str(child.get("typeName") or ""))
+            if parent_id is not None and child_id is not None:
+                edges.append((int(parent_id), int(child_id)))
+            visit(child)
+
+    visit(root)
+    return tuple(edges)
+
+
 def _known_terminal_coverage(tokenizer: Any, terminals: frozenset[str]) -> bool:
     """Whether token mapping exhausts the model vocabulary for these terminals."""
     broad = {
@@ -764,11 +854,13 @@ def gold_compiler_decision_positions(
 
 
 __all__ = [
+    "active_parent_component_ids",
     "CompletionForest",
     "CompletionPath",
     "CompilerDecision",
     "Coverage",
     "build_completion_forest",
     "gold_compiler_decisions",
+    "semantic_component_edges",
     "gold_compiler_decision_positions",
 ]
