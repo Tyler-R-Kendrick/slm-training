@@ -132,6 +132,8 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
             output_tokenizer="lexer",
             component_inventory_loss_weight=1.0,
             component_inventory_decode_weight=0.75,
+            component_plan_loss_weight=1.0,
+            component_plan_decode_weight=0.5,
         ),
     )
     assert model.component_inventory_head is not None
@@ -142,17 +144,22 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     apply_runtime_overrides(loaded, ModelBuildConfig(train_dir=tmp_path))
 
     assert loaded.component_inventory_head is not None
+    assert loaded.component_plan_head is not None
     assert loaded.config.component_inventory_loss_weight == 1.0
     assert loaded.config.component_inventory_decode_weight == 0.75
+    assert loaded.config.component_plan_loss_weight == 1.0
+    assert loaded.config.component_plan_decode_weight == 0.5
 
     apply_runtime_overrides(
         loaded,
         ModelBuildConfig(
             train_dir=tmp_path,
             component_inventory_decode_weight=0.0,
+            component_plan_decode_weight=0.0,
         ),
     )
     assert loaded.config.component_inventory_decode_weight == 0.0
+    assert loaded.config.component_plan_decode_weight == 0.0
 
 
 def test_surface_syntax_repair_preserves_string_literals() -> None:

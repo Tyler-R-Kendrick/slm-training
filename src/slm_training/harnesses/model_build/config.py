@@ -185,6 +185,8 @@ class ModelBuildConfig:
     compiler_alignment_semantic_exhaustive: bool = False
     component_inventory_loss_weight: float = 0.0
     component_inventory_decode_weight: float | None = None
+    component_plan_loss_weight: float = 0.0
+    component_plan_decode_weight: float | None = None
     symbol_boundary_loss_weight: float = 0.0
     remask_span: str = "token"  # token | statement
     teacher_init_embeddings: bool = False

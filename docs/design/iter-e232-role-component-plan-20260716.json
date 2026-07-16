@@ -1,0 +1,65 @@
+{
+  "campaign": "E232 grammar-role component plan",
+  "date": "2026-07-16",
+  "status": "completed_rejected_four_ship_thresholds_failed",
+  "hypothesis": "Separating the root component from bound-component multiplicities improves compiler-legal semantic hierarchy selection.",
+  "implementation": {
+    "target_source": "gold compiler decisions classified as component_root or component_bound",
+    "root_objective": "cross entropy over component token kinds",
+    "bound_objective": "balanced Poisson count loss over component token kinds",
+    "decode": "root logits or log remaining bound count applied only to compiler-legal component candidates",
+    "can_change_legality": false,
+    "literal_cases_added": false
+  },
+  "train": {
+    "run_id": "e232-role-component-plan-32step",
+    "path": "outputs/autoresearch/e232-role-component-plan/runs/e232-role-component-plan-32step",
+    "device": "cpu",
+    "steps": 32,
+    "batch_size": 4,
+    "learning_rate": 0.0003,
+    "seed": 0,
+    "context_backend": "hf_local_files_only",
+    "train_version": "e230_diverse_judged_roots_v2",
+    "record_count": 126,
+    "draws": 128,
+    "unique_records": 81,
+    "rico_draws": 30,
+    "human_curated_draws": 25,
+    "seen_prompt_tokens": 18490,
+    "seen_target_tokens": 7052,
+    "component_plan_loss_weight": 1.0,
+    "component_plan_decode_weight": 1.0,
+    "root_accuracy_first": 0.0,
+    "root_accuracy_last": 1.0,
+    "bound_topk_recall_first": 0.0,
+    "bound_topk_recall_last": 0.7083333730697632,
+    "bound_count_mae_first": 0.6973916292190552,
+    "bound_count_mae_last": 0.43550199270248413,
+    "last_loss": 18.583507537841797,
+    "wall_ms": 154703.688,
+    "trace_id": "902e7e50a085e33630b398a0ffaebd11",
+    "checkpoint_sha256": "da42b9eab705c2b4659daea7677dca6fb35e5efc63dafb8787b1d0e6a4be208e",
+    "checkpoint_sync": false,
+    "telemetry_correction": "future Poisson telemetry includes the target-only full term; gradients are unchanged"
+  },
+  "evaluation_weight_1": {
+    "trace_id": "6c3216f0886aaaebb923d2ce099fd3c3",
+    "suites": {
+      "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333, "structural_similarity": 0.46416666666666667, "component_type_recall": 0.25, "placeholder_fidelity": 0.5277777777777778, "reward_score": 0.8073333333333333},
+      "held_out": {"n": 5, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.3335199999999999, "component_type_recall": 0.15666666666666665, "placeholder_fidelity": 0.18, "reward_score": 0.5732},
+      "adversarial": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.5, "structural_similarity": 0.474375, "component_type_recall": 0.4583333333333333, "placeholder_fidelity": 0.5416666666666666, "reward_score": 0.8115},
+      "ood": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.346875, "component_type_recall": 0.14583333333333331, "placeholder_fidelity": 0.20833333333333331, "reward_score": 0.54925},
+      "rico_held": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.6666666666666666, "structural_similarity": 0.16276666666666667, "component_type_recall": 0.4444444444444444, "placeholder_fidelity": 0.125, "reward_score": 0.6865}
+    },
+    "failed_thresholds": 4,
+    "plan_applications": 137,
+    "plan_choice_changes": 3,
+    "agentv": {"total": 5, "passed": 1, "failed": 4, "execution_errors": 0, "mean_score": 0.6}
+  },
+  "ablations": {
+    "weight_0": {"trace_id": "b08e82ba2dff83cdfe811f70956c5844", "adversarial_component_recall": 0.375, "adversarial_fidelity": 0.41666666666666663, "adversarial_reward": 0.61175},
+    "weight_4": {"trace_id": "ba2639571da1a8799e5f08277c3ffb56", "plan_choice_changes": 19, "aggregate_metrics_identical_to_weight_1": true}
+  },
+  "conclusion": "Role/count planning causally improves one adversarial result, but stronger calibration changes more branches without improving aggregate metrics. It does not solve held-out semantic hierarchy and the checkpoint is rejected."
+}
