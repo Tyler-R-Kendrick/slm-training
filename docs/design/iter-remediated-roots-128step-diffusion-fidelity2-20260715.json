@@ -1,0 +1,10 @@
+{
+  "run_id": "iter-remediated-roots-128step-diffusion-fidelity2-20260715",
+  "corpus": "remediated_roots",
+  "manifest_sha": "f8d714f122ac7f091236fd4e562935758de330534cac146abf30af13d0ac98ce",
+  "recipe": {"model": "twotower", "context_backend": "scratch", "device": "cpu", "mask_pattern": "diffusion", "steps": 128, "batch_size": 8, "ltr_loss_weight": 2.0, "fidelity_loss_weight": 2.0},
+  "telemetry": {"target_tokens": 60846, "total_ms": 33270.973},
+  "loss": {"best_weighted_nll": 4.953763951098028, "broad_mean_nll": 5.514317160954881},
+  "evaluation": {"suite": "smoke", "n": 3, "parse_rate": 0.0, "structural_similarity": 0.0, "reward_score": 0.0, "decode_timeout_count": 0, "latency_ms_p50": 2172.46, "decision": "reject"},
+  "next": "change target composition or output head/objective"
+}

@@ -1,0 +1,21 @@
+{
+  "experiment": "E98",
+  "date": "2026-07-15",
+  "kind": "strict constrained decode diagnostic",
+  "checkpoint": "outputs/runs/iter-e91-ltr512-20260715/qx_e84_ltr_primary_contract/checkpoints/last.pt",
+  "suite": "smoke",
+  "n": 1,
+  "observed": {
+    "root_invariant_bypass_count": 2,
+    "constrained_dead_ends": 0,
+    "parse_rate": 0.0,
+    "raw_syntax_validity": 0.0,
+    "structural_similarity": 0.5333,
+    "contract_precision": 0.8,
+    "contract_recall": 1.0,
+    "latency_ms_p50": 9205.65,
+    "template_fastpath_count": 0,
+    "template_fallback_count": 0
+  },
+  "decision": "retain root bypass; investigate post-root repair sequence"
+}

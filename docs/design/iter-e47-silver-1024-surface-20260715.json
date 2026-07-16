@@ -1,0 +1,10 @@
+{
+  "run_id": "iter-e47-silver-1024-surface-20260715",
+  "parent_run": "iter-e47-silver-surface-retrain-20260715",
+  "recipe": {"device": "cpu", "steps": 1024, "backend": "scratch", "suite": "smoke", "n": 3, "ltr_loss_weight": 2.0},
+  "checkpoint": "outputs/runs/iter-e47-silver-1024-surface-20260715/qx_e47_ltr_supervision/checkpoints/last.pt",
+  "metrics": {"parse_rate": 0.0, "structural_similarity": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0, "predictions": ["root", "root", "root"]},
+  "teacher_forced": {"structural_mean_nll": 3.78, "structural_legal_mean_nll": 2.02},
+  "decision": "reject longer-run-only intervention; model learns root token but collapses before root assignment",
+  "honesty": "scratch smoke result; not a ship claim"
+}

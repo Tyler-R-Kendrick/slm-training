@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 import time
 from dataclasses import dataclass, field
 from typing import Iterable
@@ -224,13 +225,40 @@ class GrammarDecodeState:
 
         stats = get_active_stats()
         t0 = time.perf_counter()
-        chunk = tokenizer.id_to_token.get(int(token_id), "")
-        if chunk == "":
+        # Native lexer ids (e.g. <BIND_0>) are not surface text. Decode the
+        # emitted id before advancing the DFA or its prefix diverges from the
+        # text that will be parsed.
+        tid = int(token_id)
+        # Keep this consistent with tokenizer.decode(..., skip_special=True).
+        # Repair starts from BOS; treating it as literal surface text poisons
+        # the cached DFA prefix and bypasses the required root-binding rule.
+        special = {
+            tokenizer.pad_id,
+            tokenizer.bos_id,
+            tokenizer.eos_id,
+            tokenizer.mask_id,
+        }
+        is_special = tid in special
+        chunk = "" if is_special else tokenizer.id_to_token.get(tid, "")
+        if chunk == "NL":
+            chunk = "\n"
+        elif chunk in {"LIT_STR", "LIT_END"}:
+            chunk = '"'
+        elif chunk.startswith("B:"):
+            try:
+                chunk = chr(int(chunk[2:], 16))
+            except ValueError:
+                pass
+        elif not is_special and (
+            chunk == "" or chunk.startswith(("<BIND_", "<SYM_", "<STATE_"))
+        ):
             chunk = tokenizer.decode([int(token_id)])
+        if not is_special and chunk == "":
+            chunk = tokenizer.id_to_token.get(int(token_id), "")
         self.prefix_text = self.prefix_text + chunk
         if stats is not None:
             stats.detok_ms += (time.perf_counter() - t0) * 1000.0
-        if self.engine is not None:
+        if self.engine is not None and chunk:
             try:
                 self.engine.advance(chunk)  # type: ignore[union-attr]
             except Exception:  # noqa: BLE001
@@ -405,7 +433,16 @@ def dfa_admits_token(
         return state.admit_memo[tid]
 
     chunk = tokenizer.id_to_token.get(tid, "")
-    if chunk == "":
+    if chunk == "NL":
+        chunk = "\n"
+    elif chunk in {"LIT_STR", "LIT_END"}:
+        chunk = '"'
+    elif chunk.startswith("B:"):
+        try:
+            chunk = chr(int(chunk[2:], 16))
+        except ValueError:
+            pass
+    elif chunk == "" or chunk.startswith(("<BIND_", "<SYM_", "<STATE_")):
         chunk = tokenizer.decode([tid])
 
     if prefix_text is None:
@@ -649,15 +686,32 @@ def pick_constrained_token(
         except Exception:  # noqa: BLE001
             allowed = None
 
+    native_contract_symbol_ids: set[int] | None = None
     if contract_allowed is not None:
         # Slot-contract inventory is authoritative inside a quoted placeholder.
         # Intersecting with broad Lark terminals can empty the set (e.g. '.') —
         # prefer the inventory, then union with DFA when both agree.
+        try:
+            from slm_training.models.dsl_tokenizer import (
+                TokenKind,
+                is_dsl_native_tokenizer,
+            )
+
+            if is_dsl_native_tokenizer(tokenizer):
+                native_contract_symbol_ids = tokenizer.kind_ids(TokenKind.SYM)
+        except Exception:  # noqa: BLE001
+            native_contract_symbol_ids = None
         if allowed is None:
-            allowed = set(contract_allowed)
+            if native_contract_symbol_ids is None:
+                allowed = set(contract_allowed)
         else:
             inter = allowed & contract_allowed
-            allowed = inter if inter else set(contract_allowed)
+            if native_contract_symbol_ids is not None:
+                # Native <SYM_i> tokens are complete STRING atoms. Restrict
+                # only that token class; punctuation/components remain legal.
+                allowed = (allowed - native_contract_symbol_ids) | inter
+            else:
+                allowed = inter if inter else set(contract_allowed)
         if not allowed:
             if stats is not None:
                 stats.pick_ms += (time.perf_counter() - pick_t0) * 1000.0
@@ -674,6 +728,44 @@ def pick_constrained_token(
         # Placeholder interiors are compositional — not exact structural.
         exact_terminals = False
 
+    # The surface DFA intentionally exposes broad NAME/STATE terminals at
+    # EOF, but the decoder's root invariant makes the first token uniquely
+    # `<BIND_0>`. Do not probe the broad terminal pool here: probing can
+    # discard the one semantically legal token and report a false dead end.
+    if not prefix_text.strip():
+        try:
+            root_id = tokenizer.bind_id(0)
+            # The lexer token map may expose NAME/STATE but omit the native
+            # binding IDs. The root invariant is stronger than that mapping:
+            # at the empty program prefix this is the only valid token.
+            if 0 <= int(root_id) < int(logits_1d.numel()):
+                if stats is not None:
+                    stats.root_invariant_bypass_count += 1
+                    stats.pick_ms += (time.perf_counter() - pick_t0) * 1000.0
+                return int(root_id)
+        except Exception:  # noqa: BLE001
+            pass
+
+    # Lexer-native quoted literals are framed as LIT_STR + BYTE* + LIT_END.
+    # The surface DFA reports the enclosing STRING terminal, but its terminal
+    # map cannot identify the byte channel from terminals alone.
+    try:
+        from slm_training.models.dsl_tokenizer import TokenKind, is_dsl_native_tokenizer
+
+        if is_dsl_native_tokenizer(tokenizer) and _incomplete_quoted_string(prefix_text):
+            literal_ids = tokenizer.kind_ids(TokenKind.BYTE)
+            literal_end = tokenizer.token_to_id.get("LIT_END")
+            if literal_end is not None:
+                literal_ids.add(literal_end)
+            allowed = (allowed or set()) | literal_ids
+            exact_terminals = False
+    except Exception:  # noqa: BLE001
+        pass
+
+    singleton_allowed = (
+        int(next(iter(allowed))) if allowed is not None and len(allowed) == 1 else None
+    )
+
     def _legal(token_id: int, *, stream: bool = True) -> bool:
         tid = int(token_id)
         if tid in {
@@ -683,8 +775,78 @@ def pick_constrained_token(
             tokenizer.unk_id,
         }:
             return False
-        if contract_allowed is not None and tid not in contract_allowed:
-            return False
+        # MaskGIT commits positions out of order, so lexical grammar alone can
+        # admit a binder before the required OpenUI root binding. Keep
+        # whitespace, otherwise require root at the first significant token.
+        if not prefix_text.strip():
+            token = tokenizer.id_to_token.get(tid, "")
+            native_root = False
+            try:
+                from slm_training.models.dsl_tokenizer import is_dsl_native_tokenizer
+
+                native_root = is_dsl_native_tokenizer(tokenizer) and tid == tokenizer.bind_id(0)
+            except Exception:  # noqa: BLE001
+                pass
+            if token not in {"root", " ", "\n", "\t", "NL"} and not native_root:
+                return False
+        # The incremental grammar treats a newline after a bare binding name
+        # as an incomplete statement boundary, but that prefix can never be
+        # continued with ``=``. Reject it before committing a dead-end newline.
+        if token := tokenizer.id_to_token.get(tid, ""):
+            line = prefix_text.rstrip().split("\n")[-1].strip()
+            # A root assignment must begin with a component expression. The
+            # lexer DFA can otherwise admit native symbols/binders here as
+            # incomplete terminals, producing an unrecoverable RHS.
+            if re.search(r"(?:^|\n)root\s*=\s*$", prefix_text):
+                try:
+                    from slm_training.models.dsl_tokenizer import (
+                        TokenKind,
+                        is_dsl_native_tokenizer,
+                    )
+
+                    if is_dsl_native_tokenizer(tokenizer):
+                        if tokenizer.kind_of(tid) != TokenKind.COMPONENT:
+                            return False
+                    elif token not in PREFERRED_COMPONENT_NAMES:
+                        return False
+                except Exception:  # noqa: BLE001
+                    if token not in PREFERRED_COMPONENT_NAMES:
+                        return False
+            if token in {"[", "LIT_STR"} and prefix_text.rstrip().endswith('"'):
+                return False
+            if token == "NL" and (
+                re.fullmatch(r"(?:[A-Za-z_]\w*|b\d+)", line)
+                or (line == "root" and "=" not in prefix_text)
+                or prefix_text.count("[") > prefix_text.count("]")
+                or prefix_text.count("(") > prefix_text.count(")")
+                or prefix_text.count('"') % 2 == 1
+            ):
+                return False
+        # EOS is a structural completion marker, not merely another DFA
+        # terminal.  The incremental grammar accepts incomplete prefixes such
+        # as ``root``/``root =`` via UnexpectedEOF; allowing EOS there strands
+        # constrained LTR on a partial program.  Require the actual parser to
+        # certify the prefix before permitting termination.
+        if tid == tokenizer.eos_id:
+            try:
+                from slm_training.dsl.parser import validate
+
+                program = validate(prefix_text.strip())
+                if not getattr(program, "serialized", None):
+                    return False
+            except Exception:  # noqa: BLE001
+                return False
+        if contract_allowed is not None:
+            if native_contract_symbol_ids is not None:
+                if tid in native_contract_symbol_ids and tid not in contract_allowed:
+                    return False
+            elif tid not in contract_allowed:
+                return False
+        # A singleton grammar admission is already a proof of lexical
+        # legality, but only after the semantic and contract guards above.
+        # Candidate probing cannot turn that one legal token into a dead end.
+        if singleton_allowed == tid:
+            return True
         # R1: when the DFA already lists this id in an exact (non-broad) accept
         # set, skip the redundant copy-probe admit — set_prefix + allowed_id_set
         # already certified it.
@@ -718,7 +880,16 @@ def pick_constrained_token(
             # Broad terminals (NAME/COMPONENT/…): only probe when the chunk
             # could glue onto / change an incomplete lexeme at the frontier.
             chunk = tokenizer.id_to_token.get(tid, "")
-            if chunk == "":
+            if chunk == "NL":
+                chunk = "\n"
+            elif chunk in {"LIT_STR", "LIT_END"}:
+                chunk = '"'
+            elif chunk.startswith("B:"):
+                try:
+                    chunk = chr(int(chunk[2:], 16))
+                except ValueError:
+                    pass
+            elif chunk == "" or chunk.startswith(("<BIND_", "<SYM_", "<STATE_")):
                 chunk = tokenizer.decode([tid])
             needs_probe = bool(chunk) and (
                 chunk[:1].isalnum() or chunk[:1] in {":", ".", "_", '"'}
@@ -734,11 +905,48 @@ def pick_constrained_token(
                 return False
         if not stream:
             return True
-        if exact_terminals:
-            return True
-        return _stream_probe_ok(
+        # Once the DFA has admitted the candidate, the optional stream probe is
+        # redundant.  In particular, broad terminals used to call the
+        # LangCore subprocess for every candidate even when
+        # ``skip_exact_stream_probe`` was enabled, making constrained decode
+        # effectively unbounded on CPU.  Keep the name for checkpoint/API
+        # compatibility, but honor it for all DFA-admitted candidates.
+        if skip_exact or exact_terminals:
+            admitted = True
+        else:
+            admitted = _stream_probe_ok(
             tokenizer, prefix_ids, tid, prefix_text=prefix_text
-        )
+            )
+        if not admitted:
+            return False
+        # Semantic arity is only decidable at a closing component delimiter.
+        # Missing or excess required arguments cannot be repaired after `)`;
+        # reject that close while preserving errors about later bindings.
+        if tokenizer.id_to_token.get(tid, "") == ")":
+            candidate_text = prefix_text + ")"
+            try:
+                from slm_training.dsl.parser import validate
+
+                validate(candidate_text)
+            except Exception as exc:  # noqa: BLE001
+                message = str(exc)
+                if (
+                    "excess-args" in message
+                    or "excess args" in message
+                    or "missing-required" in message
+                ):
+                    return False
+        return True
+
+    # Do not let the broad whitespace terminal commit a newline after a bare
+    # binding name; that prefix cannot continue to an assignment.
+    current_line = prefix_text.rstrip().split("\n")[-1].strip()
+    if re.fullmatch(r"(?:[A-Za-z_]\w*|b\d+)", current_line) or (
+        current_line == "root" and "=" not in prefix_text
+    ):
+        nl_id = tokenizer.token_to_id.get("NL")
+        if nl_id is not None:
+            logits_1d[int(nl_id)] = -float("inf")
 
     if forced_token_id is not None:
         # Force-emit comes from significant-lexeme DFA and can skip whitespace
@@ -766,6 +974,15 @@ def pick_constrained_token(
 
     # P2: verify the model-chosen token first; only expand on rejection.
     if vco and not sample:
+        argmax_id = int(logits_1d.argmax().item())
+        if _legal(argmax_id):
+            if stats is not None:
+                stats.pick_ms += (time.perf_counter() - pick_t0) * 1000.0
+            return argmax_id
+
+    # A legal model argmax is already the best constrained decision. Structural
+    # preference only breaks ties among candidates; it must not replace it.
+    if not sample:
         argmax_id = int(logits_1d.argmax().item())
         if _legal(argmax_id):
             if stats is not None:
@@ -813,14 +1030,15 @@ def pick_constrained_token(
                     if stats is not None:
                         stats.pick_ms += (time.perf_counter() - pick_t0) * 1000.0
                     return tid
+                # A structural token is only a tie-breaker. Never override a
+                # clearly higher-scoring legal NAME/BIND or literal token.
+                if best_score - score > 1.0:
+                    break
                 token = tokenizer.id_to_token.get(tid, "")
                 if token in preferred_names or token in struct:
                     if stats is not None:
                         stats.pick_ms += (time.perf_counter() - pick_t0) * 1000.0
                     return tid
-                # Outside the 1.0-logit structural window — best non-structural wins.
-                if best_score - score > 1.0:
-                    break
         if scored:
             if sample and temperature > 0:
                 scores = torch.tensor([s[0] for s in scored], dtype=logits_1d.dtype)
@@ -877,10 +1095,17 @@ def pick_constrained_token(
                     probe = text
                 else:
                     probe = f"{text}("
-                try:
-                    status = stream_check(probe)
-                except Exception:  # noqa: BLE001
-                    status = None
+                status = None
+                # `_legal` already applies the configured stream-probe policy.
+                # Do not bypass `skip_exact_stream_probe` here: this fallback
+                # ranking loop can inspect hundreds of candidates, and a
+                # direct LangCore probe per candidate makes constrained decode
+                # effectively unbounded on CPU.
+                if not skip_exact and not exact_terminals:
+                    try:
+                        status = stream_check(probe)
+                    except Exception:  # noqa: BLE001
+                        status = None
                 if (
                     token in preferred_names
                     or token in struct
@@ -908,6 +1133,8 @@ def pick_constrained_token(
                     return token_id
 
         pool = preferred if (prefer_structural and preferred) else acceptable
+        if stats is not None:
+            stats.constrained_last_legal_candidates = len(pool)
         if pool:
             if sample and temperature > 0:
                 scores = torch.tensor(
@@ -933,6 +1160,7 @@ def pick_constrained_token(
                     stats.pick_ms += (time.perf_counter() - pick_t0) * 1000.0
                 return tid
     if stats is not None:
+        stats.constrained_last_legal_candidates = 0
         stats.pick_ms += (time.perf_counter() - pick_t0) * 1000.0
     return None
 

@@ -1,0 +1,13 @@
+{
+  "runs": ["probe", "probe-seed1"],
+  "same_manifest": true,
+  "seed1_top_examples": [
+    {"id": "rico_train_13_syn_2", "source_family": "rico+template", "target_chars": 798, "token_loss_proxy": 122.6603},
+    {"id": "rico_train_122_syn_2", "source_family": "rico+template", "target_chars": 1341, "token_loss_proxy": 107.7531},
+    {"id": "rico_train_209_aug_cta", "source_family": "rico+aug", "target_chars": 354, "token_loss_proxy": 102.0121},
+    {"id": "aww_folio_01_aug_dir", "source_family": "awwwards+aug", "target_chars": 248, "token_loss_proxy": 101.6782},
+    {"id": "rico_train_53", "source_family": "rico", "target_chars": 417, "token_loss_proxy": 99.1422}
+  ],
+  "top_overlap_with_seed0": 0,
+  "decision": "do not delete or rebalance individual records; investigate broader recipe/model behavior"
+}

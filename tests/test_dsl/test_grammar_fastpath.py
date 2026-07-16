@@ -34,7 +34,9 @@ def test_engine_force_lpar_after_component() -> None:
 
 
 def test_force_next_token_id_maps_equal() -> None:
-    tok = _tok()
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tok = DSLNativeTokenizer.build()
     eng = engine_for_dsl("openui")
     assert eng is not None
     tid = force_next_token_id(eng, tok, "root")
@@ -65,6 +67,262 @@ def test_pick_constrained_honors_forced_id() -> None:
         logits, tok, prefix, forced_token_id=equal_id
     )
     assert choice == equal_id
+
+
+def test_pick_constrained_requires_root_at_first_significant_token() -> None:
+    import torch
+
+    tok = _tok()
+    logits = torch.full((tok.vocab_size,), -20.0)
+    logits[tok.token_to_id["hero"]] = 50.0
+    logits[tok.token_to_id["root"]] = 1.0
+    choice = pick_constrained_token(logits, tok, [], top_k=8)
+    assert choice == tok.token_to_id["root"]
+
+
+def test_lexer_root_round_trips_and_is_first_token_legal() -> None:
+    import torch
+
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tok = DSLNativeTokenizer.build()
+    ids = tok.encode("root = Stack([])", add_special=False)
+    assert tok.decode(ids).startswith("root =")
+    logits = torch.full((tok.vocab_size,), -20.0)
+    logits[tok.bind_id(0)] = 50.0
+    logits[tok.token_to_id["Stack"]] = 1.0
+    choice = pick_constrained_token(logits, tok, [], top_k=8)
+    assert choice == tok.bind_id(0)
+
+
+def test_grammar_state_uses_surface_text_for_lexer_ids() -> None:
+    from slm_training.models.grammar import make_grammar_state
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tok = DSLNativeTokenizer.build()
+    state = make_grammar_state()
+    state.advance_token(tok, tok.bind_id(0))
+    assert state.prefix_text == "root"
+    assert state.engine is not None
+    assert state.engine._prefix == "root"
+
+
+def test_grammar_state_ignores_bos_before_root_pick() -> None:
+    import torch
+
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+    from slm_training.models.grammar import make_grammar_state
+
+    tok = DSLNativeTokenizer.build()
+    state = make_grammar_state()
+    state.advance_token(tok, tok.bos_id)
+    assert state.prefix_text == ""
+
+    logits = torch.full((tok.vocab_size,), -20.0)
+    logits[tok.state_id(44)] = 50.0
+    choice = pick_constrained_token(
+        logits,
+        tok,
+        [tok.bos_id],
+        top_k=8,
+        state=state,
+    )
+    assert choice == tok.bind_id(0)
+
+
+def test_native_slot_contract_does_not_override_forced_assignment() -> None:
+    import torch
+
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+    from slm_training.models.grammar import force_emit_token_id, make_grammar_state
+
+    tok = DSLNativeTokenizer.build()
+    prefix = tok.encode("root", add_special=True)[:-1]
+    state = make_grammar_state()
+    forced = force_emit_token_id(tok, prefix, state=state)
+    assert forced == tok.token_to_id["="]
+
+    logits = torch.full((tok.vocab_size,), -20.0)
+    logits[tok.sym_id(0)] = 50.0
+    choice = pick_constrained_token(
+        logits,
+        tok,
+        prefix,
+        top_k=8,
+        forced_token_id=forced,
+        slot_contract=[":only.slot"],
+        state=state,
+    )
+    assert choice == tok.token_to_id["="]
+
+
+def test_native_slot_contract_does_not_replace_root_component() -> None:
+    import torch
+
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+    from slm_training.models.grammar import make_grammar_state
+
+    tok = DSLNativeTokenizer.build()
+    prefix = [tok.bos_id, tok.bind_id(0), tok.token_to_id["="]]
+    state = make_grammar_state()
+    for tid in prefix:
+        state.advance_token(tok, tid)
+    assert state.prefix_text == "root="
+    logits = torch.full((tok.vocab_size,), -20.0)
+    logits[tok.token_to_id["B:6d"]] = 60.0
+    logits[tok.sym_id(0)] = 50.0
+    logits[tok.token_to_id["TextArea"]] = 1.0
+    choice = pick_constrained_token(
+        logits,
+        tok,
+        prefix,
+        top_k=8,
+        slot_contract=[":only.slot"],
+        state=state,
+    )
+    assert choice == tok.token_to_id["TextArea"]
+
+
+def test_lexer_literal_bytes_are_grammar_admitted() -> None:
+    import torch
+
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tok = DSLNativeTokenizer.build()
+    prefix = tok.encode('root = Separator("', add_special=False)
+    byte = tok.token_to_id["B:68"]
+    logits = torch.full((tok.vocab_size,), -20.0)
+    logits[byte] = 50.0
+    choice = pick_constrained_token(logits, tok, prefix, top_k=8)
+    assert choice == byte
+
+
+def test_structural_preference_does_not_override_confident_binder() -> None:
+    import torch
+
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tok = DSLNativeTokenizer.build()
+    prefix = tok.encode("root = Stack([", add_special=False)
+    binder = tok.bind_id(1)
+    logits = torch.full((tok.vocab_size,), -20.0)
+    logits[binder] = 50.0
+    choice = pick_constrained_token(logits, tok, prefix, top_k=8)
+    assert choice == binder
+
+
+def test_lexer_newline_is_probed_as_surface_newline() -> None:
+    import torch
+
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tok = DSLNativeTokenizer.build()
+    prefix = tok.encode("root = Stack([])", add_special=False)
+    logits = torch.full((tok.vocab_size,), -20.0)
+    logits[tok.token_to_id["NL"]] = 50.0
+    choice = pick_constrained_token(logits, tok, prefix, top_k=8)
+    assert choice == tok.token_to_id["NL"]
+
+
+def test_singleton_admission_bypasses_probe(monkeypatch) -> None:
+    import torch
+
+    import slm_training.models.grammar as grammar
+
+    tok = _tok()
+    prefix = tok.encode("root", add_special=False)
+    logits = torch.full((tok.vocab_size,), -20.0)
+    logits[tok.token_to_id["="]] = 50.0
+    monkeypatch.setattr(
+        grammar,
+        "dfa_admits_token",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("singleton admission must not be probed")
+        ),
+    )
+    assert pick_constrained_token(logits, tok, prefix, top_k=8) == tok.token_to_id["="]
+
+
+def test_singleton_whitespace_admission_bypasses_probe() -> None:
+    import torch
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tok = DSLNativeTokenizer.build()
+    prefix = tok.encode("root = Stack([])", add_special=False)
+    logits = torch.full((tok.vocab_size,), -20.0)
+    logits[tok.token_to_id["NL"]] = 50.0
+    assert pick_constrained_token(logits, tok, prefix, top_k=8) == tok.token_to_id["NL"]
+
+
+def test_empty_native_prefix_selects_only_legal_root_binding() -> None:
+    import torch
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tok = DSLNativeTokenizer.build()
+    logits = torch.full((tok.vocab_size,), -20.0)
+    logits[tok.bind_id(0)] = 50.0
+    assert pick_constrained_token(logits, tok, [], top_k=8) == tok.bind_id(0)
+
+
+
+
+def test_newline_cannot_terminate_bare_root_binding() -> None:
+    import torch
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tok = DSLNativeTokenizer.build()
+    prefix = tok.encode("root", add_special=False)
+    logits = torch.full((tok.vocab_size,), -20.0)
+    logits[tok.token_to_id["NL"]] = 50.0
+    logits[tok.token_to_id["="]] = 1.0
+    assert pick_constrained_token(logits, tok, prefix, top_k=8) != tok.token_to_id["NL"]
+
+
+def test_zero_argument_required_component_is_rejected() -> None:
+    import torch
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tok = DSLNativeTokenizer.build()
+    prefix = tok.encode("root = Stack([TextContent(", add_special=False)
+    logits = torch.full((tok.vocab_size,), -20.0)
+    logits[tok.token_to_id[")"]] = 50.0
+    assert pick_constrained_token(logits, tok, prefix, top_k=8) != tok.token_to_id[")"]
+
+
+def test_zero_argument_form_with_required_fields_is_rejected() -> None:
+    import torch
+
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tok = DSLNativeTokenizer.build()
+    prefix = tok.encode("root = Form(", add_special=False)
+    logits = torch.full((tok.vocab_size,), -20.0)
+    logits[tok.token_to_id[")"]] = 50.0
+    assert pick_constrained_token(logits, tok, prefix, top_k=8) != tok.token_to_id[")"]
+
+
+def test_newline_is_rejected_inside_open_list() -> None:
+    import torch
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tok = DSLNativeTokenizer.build()
+    prefix = tok.encode("root = Stack([b1", add_special=False)
+    logits = torch.full((tok.vocab_size,), -20.0)
+    logits[tok.token_to_id["NL"]] = 50.0
+    logits[tok.token_to_id[","]] = 1.0
+    assert pick_constrained_token(logits, tok, prefix, top_k=8) != tok.token_to_id["NL"]
+
+
+def test_symbol_literal_cannot_open_adjacent_bracket() -> None:
+    import torch
+    from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
+
+    tok = DSLNativeTokenizer.build()
+    prefix = tok.encode('root = TextContent(":x"', add_special=False)
+    logits = torch.full((tok.vocab_size,), -20.0)
+    logits[tok.token_to_id["["]] = 50.0
+    logits[tok.token_to_id[")"]] = 1.0
+    assert pick_constrained_token(logits, tok, prefix, top_k=8) != tok.token_to_id["["]
 
 
 def test_admit_fill_accepts_partial_with_holes() -> None:
@@ -133,6 +391,20 @@ def test_pick_constrained_rejects_double_equal() -> None:
     logits[tok.token_to_id["Stack"]] = 1.0
     choice = pick_constrained_token(logits, tok, prefix, top_k=4)
     assert choice == tok.token_to_id["Stack"]
+
+
+def test_pick_constrained_rejects_eos_on_incomplete_prefix() -> None:
+    import torch
+
+    from slm_training.models.grammar import pick_constrained_token
+
+    tok = _tok()
+    prefix = tok.encode("root", add_special=False)
+    logits = torch.full((tok.vocab_size,), -20.0)
+    logits[tok.eos_id] = 50.0
+    logits[tok.token_to_id["="]] = 1.0
+    choice = pick_constrained_token(logits, tok, prefix, top_k=4)
+    assert choice != tok.eos_id
 
 
 def test_ensure_valid_fallback_only_when_finalize() -> None:

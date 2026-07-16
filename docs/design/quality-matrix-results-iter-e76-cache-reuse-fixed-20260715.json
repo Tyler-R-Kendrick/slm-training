@@ -1,0 +1,117 @@
+{
+  "matrix": "quality-experiment-matrix-v7",
+  "reference": "docs/design/quality-experiment-matrix.md",
+  "gate_policy": {
+    "smoke": {
+      "parse_rate": 0.66,
+      "structural_similarity": 0.35,
+      "placeholder_fidelity": 0.25,
+      "reward_score": 0.3
+    },
+    "held_out": {
+      "parse_rate": 0.4,
+      "structural_similarity": 0.3,
+      "placeholder_fidelity": 0.15
+    },
+    "adversarial": {
+      "parse_rate": 0.25,
+      "structural_similarity": 0.25
+    },
+    "ood": {
+      "parse_rate": 0.25,
+      "structural_similarity": 0.25
+    },
+    "rico_held": {
+      "parse_rate": 0.1,
+      "structural_similarity": 0.2
+    }
+  },
+  "device": "cpu",
+  "batch_size": 4,
+  "learning_rate": 0.0003,
+  "seed": 0,
+  "test_dir": "outputs/test_data/remediated",
+  "design_md_in_context": false,
+  "rico_eval_limit": 3,
+  "suites": [
+    "held_out",
+    "smoke"
+  ],
+  "steps": 256,
+  "gen_steps": 8,
+  "context_backend": "scratch",
+  "matrix_set": "v7",
+  "results": [
+    {
+      "id": "E76",
+      "run_id": "qx_e76_cache_reuse",
+      "initialization": "scratch",
+      "parent_checkpoint": null,
+      "description": "V7 champion without trust/entropy remask gates to measure successor reuse",
+      "honest_slot_contract": true,
+      "schema_in_context": true,
+      "slot_contract_in_context": true,
+      "slot_contract_constrained_decode": true,
+      "template_fill_decode": true,
+      "grammar_ltr_primary": false,
+      "grammar_ltr_repair": true,
+      "effective_gen_steps": 16,
+      "best_of_n": 1,
+      "train_dir": "outputs/train_data/v1_curriculum",
+      "train_content_fingerprint": "3445bd71a01c3941191c89f31e90ae6df4b885b7244ab51ca10c6c6de6ed4003",
+      "checkpoint": "outputs/runs/iter-e76-cache-reuse-fixed-20260715/qx_e76_cache_reuse/checkpoints/last.pt",
+      "pass": false,
+      "failures": [
+        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+        "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+        "adversarial:missing_suite",
+        "ood:missing_suite",
+        "rico_held:missing_suite"
+      ],
+      "suites": {
+        "smoke": {
+          "parse_rate": 0.6666666666666666,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.5133333333333333,
+          "reward_score": 0.4526666666666667,
+          "n": 3,
+          "speculative_stats": {
+            "generates": 6,
+            "denoiser_forwards": 113,
+            "forwards_per_generate": 18.833333333333332,
+            "speculative_batches": 60,
+            "speculative_canvases": 120,
+            "successor_hits": 46,
+            "successor_misses": 14,
+            "successor_hit_rate": 0.7666666666666667,
+            "clusters_proposed": 125,
+            "clusters_accepted": 124,
+            "clusters_rejected": 1,
+            "remasked_positions": 1402
+          }
+        },
+        "held_out": {
+          "parse_rate": 0.6,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.4725600000000001,
+          "reward_score": 0.5384,
+          "n": 5,
+          "speculative_stats": {
+            "generates": 10,
+            "denoiser_forwards": 179,
+            "forwards_per_generate": 17.9,
+            "speculative_batches": 90,
+            "speculative_canvases": 180,
+            "successor_hits": 76,
+            "successor_misses": 14,
+            "successor_hit_rate": 0.8444444444444444,
+            "clusters_proposed": 188,
+            "clusters_accepted": 187,
+            "clusters_rejected": 1,
+            "remasked_positions": 2501
+          }
+        }
+      }
+    }
+  ]
+}

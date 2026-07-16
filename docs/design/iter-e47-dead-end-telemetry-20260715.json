@@ -1,0 +1,9 @@
+{
+  "run_id": "iter-e47-dead-end-telemetry-20260715",
+  "parent_run": "iter-e47-ltr-rootfix-20260715",
+  "fix": "persist constrained_dead_ends in DecodeStats and aggregate evaluation telemetry",
+  "checkpoint": "outputs/runs/iter-e47-silver-256-ltr-rootfix-20260715/qx_e47_ltr_supervision/checkpoints/last.pt",
+  "metrics": {"parse_rate": 0.0, "structural_similarity": 0.0, "tokens_emitted_mean": 243.333, "constrained_dead_ends_sum": 8.0, "constrained_dead_ends_mean": 2.667, "fallback_rate": 0.0},
+  "decision": "keep telemetry fix; next model intervention should target the repeated post-root constrained dead ends",
+  "honesty": "scratch smoke diagnostic; not a ship claim"
+}

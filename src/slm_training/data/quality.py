@@ -11,6 +11,8 @@ from slm_training.dsl.schema import ExampleRecord
 
 _COMPONENT_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s*\(")
 _ROOT_RE = re.compile(r"(?m)^root\s*=")
+_COMPONENT_PROMPT_RE = re.compile(r"\b(?:the|a|an)\s+([A-Z][A-Za-z0-9]*)\s+component\b", re.I)
+_CONSTRUCT_PROMPT_RE = re.compile(r"construct:\s+(?:a|an|the)?\s*([^.]*)", re.I)
 
 # Preferred structural vocabulary for high-signal layouts.
 PREFERRED_COMPONENTS = frozenset(
@@ -56,6 +58,38 @@ class QualityReport:
         }
 
 
+def independent_judge(record: ExampleRecord) -> dict[str, Any]:
+    """Deterministic prompt/output contract judge before training admission."""
+    prompt = (record.prompt or "").strip()
+    openui = (record.openui or "").strip()
+    components = component_counts(openui)
+    lowered_prompt = prompt.lower()
+    reasons: list[str] = []
+    target = None
+    component_match = _COMPONENT_PROMPT_RE.search(prompt)
+    if component_match:
+        target = component_match.group(1)
+    else:
+        construct_match = _CONSTRUCT_PROMPT_RE.search(prompt)
+        if construct_match and construct_match.group(1).strip():
+            target = construct_match.group(1).strip().split()[0]
+    if target and target[:1].isupper() and target not in components:
+        reasons.append("prompt_component_missing_from_output")
+    if "boolean literal" in lowered_prompt:
+        if not re.search(r"\b(?:true|false)\b", openui):
+            reasons.append("prompt_boolean_missing_from_output")
+        if len(components) > 1:
+            reasons.append("prompt_lexical_target_wrapped_in_unrelated_layout")
+    if (
+        str((record.meta or {}).get("source_family") or "") == "language_contract"
+        and lowered_prompt.startswith("emit the openui construct:")
+    ):
+        reasons.append("prompt_under_specified_for_layout")
+    if not prompt or not openui:
+        reasons.append("judge_missing_prompt_or_output")
+    return {"ok": not reasons, "score": round(max(0.0, 1.0 - 0.5 * len(reasons)), 4), "reasons": reasons}
+
+
 def component_counts(openui: str) -> dict[str, int]:
     counts: dict[str, int] = {}
     for name in _COMPONENT_RE.findall(openui):
@@ -82,6 +116,10 @@ def assess_record(
     score = 1.0
     openui = (record.openui or "").strip()
     prompt = (record.prompt or "").strip()
+    judge = independent_judge(record)
+    if not judge["ok"]:
+        reasons.extend(str(reason) for reason in judge["reasons"])
+        score -= 0.45
 
     if not _ROOT_RE.search(openui):
         reasons.append("missing_root")
@@ -165,6 +203,11 @@ def assess_record(
         "non_placeholder_string",
         "openui_too_long",
         "too_many_components",
+        "prompt_component_missing_from_output",
+        "prompt_boolean_missing_from_output",
+        "prompt_lexical_target_wrapped_in_unrelated_layout",
+        "judge_missing_prompt_or_output",
+        "prompt_under_specified_for_layout",
     }
     ok = score >= 0.55 and not hard.intersection(reasons)
     return QualityReport(
@@ -178,6 +221,7 @@ def assess_record(
             "openui_chars": len(openui),
             "design_lint_score": design_score,
             "components": counts,
+            "independent_judge": judge,
         },
     )
 

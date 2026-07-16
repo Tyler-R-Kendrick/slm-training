@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -41,12 +41,17 @@ class TrainDataConfig:
     rico_limit: int | None = None
     max_children: int = 6
     min_quality_score: float = 0.55
+    min_verification_tier: str | None = None
     require_design_md: bool = True
     # Compact layouts train more reliably on small TwoTower models.
     max_openui_chars: int | None = None
     max_components: int | None = None
     curriculum: bool = False
     namespace_augment: bool = False
+    # Make the declared slot contract visible to production-like training
+    # prompts; this is intentionally opt-in so historical snapshots remain
+    # immutable and comparable.
+    prompt_slot_contract: bool = False
     # Exclude train records whose layout tree matches hand-authored test fixtures.
     test_seed_path: Path | None = Path("src/slm_training/resources/test_seeds.jsonl")
     # Exposure control: cap records per root parent (None = uncapped). One
@@ -845,6 +850,21 @@ def build_train_data(
             continue
         verified.append(record)
 
+    tier_rejected: list[dict] = []
+    if config.min_verification_tier:
+        tier_rank = {"Bronze": 0, "Silver": 1, "Gold": 2}
+        minimum = tier_rank.get(config.min_verification_tier, 1)
+        tiered: list[ExampleRecord] = []
+        for record in verified:
+            tier = str(record.meta.get("verification_tier") or "Bronze")
+            if tier_rank.get(tier, -1) < minimum:
+                tier_rejected.append(
+                    {"id": record.id, "verification_tier": tier}
+                )
+            else:
+                tiered.append(record)
+        verified = tiered
+
     from slm_training.data.quality import filter_quality
 
     quality_kept, quality_rejected = filter_quality(
@@ -912,6 +932,19 @@ def build_train_data(
                 )
                 continue
             _accept_record(normalized)
+
+    if config.prompt_slot_contract:
+        from slm_training.models.template_fill import ensure_prompt_inventory
+
+        deduped = [
+            replace(
+                record,
+                prompt=ensure_prompt_inventory(
+                    record.prompt, list(record.placeholders or [])
+                ),
+            )
+            for record in deduped
+        ]
         deduped.sort(key=lambda r: r.id)
 
     # Source-family lineage + exposure control (annotate before the cap so
@@ -1017,6 +1050,8 @@ def build_train_data(
         "collected_count": len(collected),
         "verifier_rejected": len(verifier_rejected),
         "verifier_rejected_samples": verifier_rejected[:20],
+        "verification_tier_rejected": len(tier_rejected),
+        "verification_tier_rejected_samples": tier_rejected[:20],
         "quality_rejected": len(quality_rejected),
         "quality_rejected_samples": quality_rejected[:20],
         "record_count": len(deduped),
@@ -1024,9 +1059,11 @@ def build_train_data(
         "errors": errors[:50],
         "synthesizer": config.synthesizer,
         "min_quality_score": config.min_quality_score,
+        "min_verification_tier": config.min_verification_tier,
         "max_openui_chars": config.max_openui_chars,
         "max_components": config.max_components,
         "curriculum": bool(config.curriculum),
+        "prompt_slot_contract": bool(config.prompt_slot_contract),
         "structure_reserved_rejected": len(structure_reserved_rejected),
         "structure_reserved_rejected_samples": structure_reserved_rejected[:20],
         "max_records_per_parent": config.max_records_per_parent,

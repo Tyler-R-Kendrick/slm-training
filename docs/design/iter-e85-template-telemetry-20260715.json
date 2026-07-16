@@ -1,0 +1,8 @@
+{
+  "run_id": "iter-e85-template-telemetry-20260715",
+  "parent_run": "iter-e82-template-fastpath-20260715",
+  "intervention": "collect DecodeStats around request-aware generation and classify template paths",
+  "metrics": {"parse_rate": 1.0, "placeholder_fidelity": 1.0, "latency_ms_p50": 2554.6069, "template_fastpath_count": 1, "template_fallback_count": 0},
+  "decision": "retain telemetry; classify E82 output as certified template",
+  "honesty": "harness validation; not a ship claim"
+}

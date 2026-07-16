@@ -1,0 +1,12 @@
+{
+  "run_id": "iter-e76-cache-reuse-20260715",
+  "parent_run": "iter-e75-20260715",
+  "intervention": "remove trust/entropy remask gates while retaining V7 cache configuration",
+  "recipe": {"device": "cpu", "steps": 256, "backend": "scratch", "suites": ["smoke", "held_out"], "n": {"smoke": 3, "held_out": 5}},
+  "metrics": {
+    "smoke": {"parse_rate": 1.0, "placeholder_fidelity": 0.0, "structural_similarity": 0.6111333333333334, "reward_score": 0.669, "speculative_batches": 0, "successor_hits": 0, "successor_misses": 0},
+    "held_out": {"parse_rate": 0.6, "placeholder_fidelity": 0.0, "structural_similarity": 0.49506000000000006, "reward_score": 0.6682, "speculative_batches": 0, "successor_hits": 0, "successor_misses": 0}
+  },
+  "decision": "reject; cache path was not exercised and placeholder fidelity failed",
+  "honesty": "scratch smoke/held-out result; not a ship claim"
+}

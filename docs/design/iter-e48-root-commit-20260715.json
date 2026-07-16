@@ -1,0 +1,10 @@
+{
+  "run_id": "iter-e48-root-commit-20260715",
+  "parent_run": "iter-e48-singleton-bypass-20260715",
+  "fix": "commit-boundary invariant replaces NL with = after bare root binding",
+  "tests": {"passed": 33, "deselected": 3},
+  "metrics": {"parse_rate": 0.0, "predictions": ["root =", "root =", "root ="], "dead_end_position_mean": 3.0, "fallback_rate": 0.0},
+  "diagnosis": "decoder now preserves the root assignment transition; checkpoint still fails at the first RHS transition",
+  "decision": "keep invariant; next inspect/teach the post-assignment component transition",
+  "honesty": "scratch smoke diagnostic; not a ship claim"
+}

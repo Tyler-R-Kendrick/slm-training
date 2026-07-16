@@ -1,0 +1,9 @@
+{
+  "run_id": "iter-e48-prefix-supervision-20260715",
+  "parent_run": "iter-e47-dead-position-20260715",
+  "intervention": "ltr_prefix_loss_weight=4.0 on first three content transitions",
+  "recipe": {"device": "cpu", "steps": 256, "backend": "scratch", "suite": "smoke", "n": 3, "ltr_loss_weight": 2.0},
+  "metrics": {"parse_rate": 0.0, "structural_similarity": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0, "predictions": ["root", "root", "root"], "latency_ms_p50": 4014.94, "structural_mean_nll": 3.9836, "structural_legal_mean_nll": 2.2243},
+  "decision": "reject prefix-loss weighting alone; keep knob and telemetry, inspect decoder choice/dead-end logits",
+  "honesty": "scratch smoke result; not a ship claim"
+}

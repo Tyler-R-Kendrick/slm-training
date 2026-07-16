@@ -86,8 +86,10 @@ def publish_agentv_evaluation(
     }
 
 
-def model_ship_gate_cases(suites: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
-    """Lower the canonical multi-suite policy to one AgentV case per suite."""
+def model_ship_gate_cases(
+    suites: dict[str, dict[str, Any]], *, include_missing_suites: bool = True
+) -> list[dict[str, Any]]:
+    """Lower ship gates to AgentV cases for a full or selected suite set."""
     from slm_training.harnesses.model_build.ship_gates import (
         DEFAULT_SHIP_GATES,
         evaluate_ship_gates,
@@ -95,7 +97,12 @@ def model_ship_gate_cases(suites: dict[str, dict[str, Any]]) -> list[dict[str, A
 
     gates = evaluate_ship_gates(suites)
     cases = []
-    for suite, thresholds in DEFAULT_SHIP_GATES.items():
+    selected = (
+        DEFAULT_SHIP_GATES
+        if include_missing_suites
+        else {suite: DEFAULT_SHIP_GATES[suite] for suite in suites if suite in DEFAULT_SHIP_GATES}
+    )
+    for suite, thresholds in selected.items():
         prefix = f"{suite}:"
         checks = {
             key: passed
@@ -124,7 +131,10 @@ def model_ship_gate_cases(suites: dict[str, dict[str, Any]]) -> list[dict[str, A
 
 
 def publish_model_evaluation(
-    run_dir: Path | str, suites: dict[str, dict[str, Any]]
+    run_dir: Path | str,
+    suites: dict[str, dict[str, Any]],
+    *,
+    include_missing_suites: bool = True,
 ) -> dict[str, Any]:
     stamp = next(
         (
@@ -138,5 +148,7 @@ def publish_model_evaluation(
         run_dir,
         name=f"openui-model-ship-gates-{stamp}",
         claim="honest_multi_suite_ship_gate",
-        cases=model_ship_gate_cases(suites),
+        cases=model_ship_gate_cases(
+            suites, include_missing_suites=include_missing_suites
+        ),
     )

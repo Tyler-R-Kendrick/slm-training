@@ -1,0 +1,11 @@
+{
+  "date": "2026-07-15",
+  "kind": "interval-loss-feedback-checkpoint-selection",
+  "recipe": {"steps": 128, "batch_size": 8, "effective_batch_size": 8, "learning_rate": 0.0006, "seed": 0, "context_backend": "scratch", "device": "cpu", "loss_eval_every": 32, "test_dir": "outputs/test_data/remediated"},
+  "loss_history": [{"step": 32, "target_tokens": 44239, "weighted_nll": 8.883002662560523}, {"step": 64, "target_tokens": 87055, "weighted_nll": 7.056898204491874}, {"step": 96, "target_tokens": 129513, "weighted_nll": 7.771065252413027}, {"step": 128, "target_tokens": 172553, "weighted_nll": 7.312290141510578}],
+  "selected_checkpoint": {"name": "best_weighted_nll.pt", "selected_step": 64, "weighted_nll": 7.056898204491874, "structural_similarity": 0.2333, "placeholder_validity": 0.2667, "component_type_recall": 0.25, "parse_rate": 0.0, "reward_score": 0.0, "agentv_persisted": true},
+  "telemetry": {"total_ms": 56979.235, "loss_suites_pct": 39.84, "effective_batch_size": 8},
+  "harness_guard": "train_model now rejects nonzero eval interval without --test-dir",
+  "decision": "select step64 checkpoint for further diagnostics; reject final step128 for generation quality",
+  "honesty": "scratch diagnostic; not a ship claim"
+}

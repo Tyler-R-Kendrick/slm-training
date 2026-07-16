@@ -1,0 +1,9 @@
+{
+  "run_id": "iter-e81-request-contract-timeout-20260715",
+  "parent_run": "iter-e80-visible-contract-20260715",
+  "intervention": "evaluate via GenerationRequest with explicit slot contract and 20s timeout",
+  "recipe": {"device": "cpu", "backend": "scratch", "suite": "smoke", "n": 1, "gen_steps": 1, "timeout_seconds": 20, "checkpoint": "outputs/runs/iter-e80-visible-contract-20260715/qx_e80_visible_contract/checkpoints/last.pt"},
+  "metrics": {"parse_rate": 0.0, "raw_syntax_validity": 0.0, "placeholder_fidelity": 0.0, "structural_similarity": 0.0, "reward_score": 0.0, "latency_ms_p50": 20001.8, "decode_timeout_count": 1, "agentv_failed": 5, "agentv_execution_errors": 0},
+  "decision": "reject; optimize contract-constrained decode latency",
+  "honesty": "bounded scratch diagnostic; not a ship claim"
+}

@@ -1,0 +1,21 @@
+{
+  "experiment": "E115",
+  "date": "2026-07-15",
+  "kind": "small-model recipe control",
+  "status": "incomplete",
+  "recipe": {
+    "d_model": 128,
+    "freeze_context": true,
+    "structural_bias": 2.5,
+    "mask_pattern": "mixed",
+    "schema_in_context": true,
+    "ltr_loss_weight": 2.0,
+    "fidelity_loss_weight": 1.5,
+    "gen_steps": 16
+  },
+  "last_observed_step": 7,
+  "metrics": "outputs/runs/iter-e115-small-e91-settings-20260715/e115_small_e91_settings/metrics.jsonl",
+  "checkpoint": null,
+  "evaluation": null,
+  "decision": "use known-completing recipe; add resource diagnostics"
+}

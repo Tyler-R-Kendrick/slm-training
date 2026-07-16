@@ -1,0 +1,11 @@
+{
+  "date": "2026-07-15",
+  "kind": "longer-training-generation-feedback",
+  "recipe": {"steps": 32, "batch_size": 8, "effective_batch_size": 8, "learning_rate": 0.0006, "seed": 0, "context_backend": "scratch", "device": "cpu", "loss_eval_every": 0},
+  "corpus": {"records": 585, "manifest_sha256": "928ec8d4921954c7736d2386fe7abf88bbef75523a7cfe404792f45ddcd5d4ba"},
+  "training": {"target_tokens": 44239, "weighted_nll": 8.883002662560523, "telemetry_persisted": true},
+  "constrained_generation": {"gen_steps": 4, "eval_limit": 1, "max_attempts": 1, "latency_ms_p50": 2935.05, "parse_rate": 0.0, "structural_similarity": 0.1125, "placeholder_validity": 0.1333, "reward_score": 0.0, "agentv_persisted": true},
+  "ltr_comparison": {"grammar_ltr_primary": true, "grammar_ltr_repair": true, "latency_ms_p50": 2956.42, "parse_rate": 0.0, "structural_similarity": 0.1125, "placeholder_validity": 0.1333, "reward_score": 0.0},
+  "decision": "test longer training at a larger bounded budget; do not promote LTR decode lever or checkpoint",
+  "honesty": "scratch diagnostics; not a ship claim"
+}

@@ -1,0 +1,8 @@
+{
+  "run_id": "iter-e47-dead-position-20260715",
+  "parent_run": "iter-e47-dead-end-telemetry-20260715",
+  "metrics": {"parse_rate": 0.0, "constrained_dead_ends": 8, "constrained_dead_end_last_position_sum": 5, "constrained_dead_end_last_position_mean": 1.667, "fallback_rate": 0.0},
+  "diagnosis": "dead ends occur at the first few output positions after root, not deep in generated programs",
+  "decision": "focus the next intervention on root-to-assignment logits/conditioning and explicit prefix supervision",
+  "honesty": "scratch smoke diagnostic; not a ship claim"
+}

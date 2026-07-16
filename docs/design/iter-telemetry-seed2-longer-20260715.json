@@ -1,0 +1,9 @@
+{
+  "date": "2026-07-15",
+  "kind": "multi-seed-feedback",
+  "recipe": {"steps": 4, "batch_size": 8, "effective_batch_size": 8, "learning_rate": 0.0006, "context_backend": "scratch"},
+  "seed2": {"weighted_nll": 30.282858774398097, "target_tokens": 5581, "loss_suites_pct": 76.54},
+  "comparison": {"seed0_nll": 27.977443108643225, "seed1_nll": 31.16450060005228},
+  "decision": "continue longer multi-seed runs; no data or recipe intervention",
+  "honesty": "scratch diagnostic; not a ship claim"
+}

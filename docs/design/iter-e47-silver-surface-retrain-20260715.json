@@ -1,0 +1,12 @@
+{
+  "run_id": "iter-e47-silver-surface-retrain-20260715",
+  "parent_run": "iter-e47-lexer-transition-20260715",
+  "checkpoint": "outputs/runs/iter-e47-silver-256-surface-20260715/qx_e47_ltr_supervision/checkpoints/last.pt",
+  "train_content_fingerprint": "de22dd439207002754ef7bb0be07a422a04d4e0a91f60f9864e9abd75e7adb06",
+  "recipe": {"device": "cpu", "steps": 256, "backend": "scratch", "suite": "smoke", "n": 3, "strict_ltr": true},
+  "metrics": {"parse_rate": 0.0, "language_validity": 0.0, "structural_similarity": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0, "fallback_rate": 0.0, "latency_ms_p50": 8846.14, "forwards_mean": 246.0},
+  "agentv": {"passed": 0, "failed": 5, "execution_errors": 0},
+  "diagnosis": "valid constrained target transitions are admitted, but the retrained checkpoint emits no complete root element; parse is a valid end-to-end language-validity gate, not a standalone structural-adherence measure",
+  "decision": "reject checkpoint; next work must improve native-surface learning or measure teacher-forced structural adherence separately",
+  "honesty": "scratch smoke result; not a ship claim"
+}

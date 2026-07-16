@@ -223,3 +223,40 @@ def test_evaluate_uses_production_request_not_gold_record(tmp_path: Path) -> Non
     assert metrics["contract_precision"] == 1.0
     assert metrics["contract_recall"] == 1.0
     assert metrics["fallback_count"] == 0
+
+
+def test_evaluate_prefers_request_api_over_stats_prompt_only(tmp_path: Path) -> None:
+    """Slot contracts must survive the single-record telemetry fast path."""
+    train_dir = tmp_path / "train"
+    test_dir = tmp_path / "test"
+    train_dir.mkdir()
+    (test_dir / "suites" / "smoke").mkdir(parents=True)
+    record = ExampleRecord(
+        id="s1",
+        prompt="CTA",
+        openui='root = Button(":prod.cta")',
+        placeholders=[":prod.cta"],
+        split="smoke",
+        meta={"suite": "smoke"},
+    )
+    write_jsonl(train_dir / "records.jsonl", [record])
+    write_jsonl(test_dir / "suites" / "smoke" / "records.jsonl", [record])
+
+    class BothApisModel:
+        def generate_with_stats(self, prompt: str):
+            raise AssertionError("prompt-only stats API dropped the slot contract")
+
+        def generate_batch_requests(self, requests: list[GenerationRequest]) -> list[str]:
+            assert requests[0].slot_contract == (":prod.cta",)
+            return [record.openui]
+
+    config = ModelBuildConfig(
+        train_dir=train_dir,
+        test_dir=test_dir,
+        suite="smoke",
+        run_root=tmp_path / "runs",
+        run_id="both-apis",
+        model_name="stub",
+    )
+    metrics = evaluate(config, model=BothApisModel())
+    assert metrics["placeholder_fidelity"] == 1.0

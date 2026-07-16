@@ -1,0 +1,48 @@
+{
+  "experiment": "E120",
+  "date": "2026-07-15",
+  "kind": "constrained-singleton-legality",
+  "honesty": "diagnostic subset; scratch checkpoint; not a ship claim",
+  "train": {
+    "run_id": "e120_unsandboxed",
+    "train_dir": "outputs/train_data/v2_prompt_contract",
+    "record_count": 1417,
+    "steps": 8,
+    "batch_size": 4,
+    "device": "cpu",
+    "context_backend": "scratch",
+    "output_tokenizer": "lexer",
+    "last_loss": 37.52415466308594,
+    "checkpoint": "outputs/runs/iter-e120-unsandboxed-20260715/e120_unsandboxed/checkpoints/last.pt",
+    "checkpoint_sha256": "2d79124f4cdd7c6a3674cdbeb10fae071250e1185227439d9b3fecd78bc4e83d",
+    "checkpoint_sync": "disabled for bounded scratch diagnostic"
+  },
+  "before": {
+    "suite": "rico_held",
+    "n": 3,
+    "parse_rate": 0.0,
+    "fallback_count": 0,
+    "constrained_dead_ends": 0,
+    "prediction": "$s44 = TextArea",
+    "finding": "BOS cache and globally applied native slot contract bypassed the root invariant"
+  },
+  "after": {
+    "suite": "rico_held",
+    "n": 1,
+    "diagnostic_subset": true,
+    "parse_rate": 0.0,
+    "raw_syntax_validity": 0.0,
+    "placeholder_fidelity": 0.375,
+    "structural_similarity": 0.0375,
+    "reward_score": 0.0,
+    "fallback_count": 0,
+    "decode_timeout_count": 0,
+    "constrained_dead_ends": 0,
+    "root_invariant_bypass_count": 5,
+    "latency_ms_p50": 7881.0,
+    "output": "outputs/runs/iter-e120-unsandboxed-20260715/e120_required_arity/eval_rico_held.json",
+    "agentv": "outputs/runs/iter-e120-unsandboxed-20260715/e120_required_arity/agentv/openui-model-ship-gates-2026-07-15t23-53-17-037970-00-00.eval.jsonl",
+    "finding": "root and required-arity invariants hold, but the eight-step model does not complete a valid program within 64 tokens"
+  },
+  "decision": "keep parse as complete semantic validity; retain guarded singleton bypass; do not promote checkpoint"
+}

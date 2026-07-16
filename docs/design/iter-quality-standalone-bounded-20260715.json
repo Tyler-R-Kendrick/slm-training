@@ -1,0 +1,10 @@
+{
+  "date": "2026-07-15",
+  "kind": "generated-quality-diagnostic-infrastructure",
+  "change": ["standalone --eval-limit", "standalone --gen-steps", "standalone --max-attempts", "standalone --skip-exact-stream-probe"],
+  "probe": {"suite": "smoke", "records": 1, "decode_steps": 1, "max_attempts": 1, "checkpoint": "iter-next-batch8-4step-finalonly-20260715"},
+  "result": "constrained path terminated; unconstrained control completed",
+  "unconstrained_control": {"seconds": 3.39, "parse_rate": 0.0, "structural_similarity": 0.0, "reward_score": 0.0, "agentv_persisted": true},
+  "quality_claim": null,
+  "next": "instrument standalone evaluation interruption state and profile decoder"
+}

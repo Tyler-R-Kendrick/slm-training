@@ -1,0 +1,14 @@
+{
+  "run_id": "accum2-lr6e4-smoke",
+  "recipe": {"grad_accum": 2, "lr": 0.0006, "steps": 2, "gen_steps": 1},
+  "data_manifest_sha": "928ec8d4921954c7736d2386fe7abf88bbef75523a7cfe404792f45ddcd5d4ba",
+  "smoke": {
+    "parse_rate": 0.0,
+    "placeholder_fidelity": 0.0,
+    "structural_similarity": 0.0,
+    "reward_score": 0.0,
+    "ship_score": 0.0
+  },
+  "telemetry": {"total_ms": 43118.504, "eval_suites_pct": 64.89, "backward_pct": 23.22},
+  "decision": "do not promote; loss-only improvement is not sufficient and this bounded generated smoke check failed"
+}

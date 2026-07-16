@@ -1,0 +1,9 @@
+{
+  "run_id": "iter-e47-ltr-rootfix-20260715",
+  "parent_run": "iter-e47-wide-topk-20260715",
+  "fix": "detect BOS before selecting the first LTR content position; lexer-native BOS-less targets start at position 0",
+  "recipe": {"device": "cpu", "steps": 256, "backend": "scratch", "suite": "smoke", "n": 3, "ltr_loss_weight": 2.0},
+  "metrics": {"parse_rate": 0.0, "structural_similarity": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0, "predictions": ["root", "root", "root"], "latency_ms_p50": 3989.76},
+  "decision": "keep the BOS-aware mask fix; it is contract-correct but insufficient alone; investigate EOS/dead-end handling and model logits after root",
+  "honesty": "scratch smoke result; not a ship claim"
+}

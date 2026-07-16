@@ -1,0 +1,10 @@
+{
+  "date": "2026-07-15",
+  "kind": "dfa-probe-benchmark",
+  "vocab_size": 699,
+  "probe_chunk_64_ms": [15.7, 17.7, 17.2],
+  "prefix_lengths": [0, 31, 57],
+  "bounded_top_k_probe": "still exceeded execution window",
+  "decision": "optimize/reuse candidate legality work before quality claims",
+  "honesty": "diagnostic only"
+}

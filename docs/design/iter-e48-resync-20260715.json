@@ -1,0 +1,10 @@
+{
+  "run_id": "iter-e48-resync-20260715",
+  "parent_run": "iter-e48-root-commit-20260715",
+  "fix": "resynchronize persistent DFA at exact decoded prefix and retry same logits before padding",
+  "tests": {"passed": 33, "deselected": 3},
+  "metrics": {"parse_rate": 0.0, "raw_syntax_validity": 0.0, "structural_similarity": 0.37443333333333334, "placeholder_fidelity": 0.0, "reward_score": 0.0, "latency_ms_p50": 35582.62, "dead_ends": 0},
+  "qualitative": "generation reaches root = Stack([...]) and subsequent bindings; later lexer-native symbol/newline behavior is noisy",
+  "decision": "keep resync fix; next constrain repeated newline commits in incomplete list/literal states",
+  "honesty": "scratch smoke diagnostic; structural improvement but not a ship result"
+}

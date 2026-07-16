@@ -1,0 +1,8 @@
+{
+  "run_id": "iter-e90-fallback-ship-gate-20260715",
+  "parent_run": "iter-e89-fallback-score-20260715",
+  "intervention": "require fallback_count == 0 in learned-quality ship gates",
+  "validation": {"tests_passed": 20, "diff_check": "clean", "e82_fallback_count": 1, "expected_gate": "fail"},
+  "decision": "retain policy correction",
+  "honesty": "harness/policy validation; not a ship claim"
+}

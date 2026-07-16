@@ -1,0 +1,177 @@
+{
+  "matrix": "quality-experiment-matrix-v7",
+  "reference": "docs/design/quality-experiment-matrix.md",
+  "gate_policy": {
+    "smoke": {
+      "parse_rate": 0.66,
+      "structural_similarity": 0.35,
+      "placeholder_fidelity": 0.25,
+      "reward_score": 0.3
+    },
+    "held_out": {
+      "parse_rate": 0.4,
+      "structural_similarity": 0.3,
+      "placeholder_fidelity": 0.15
+    },
+    "adversarial": {
+      "parse_rate": 0.25,
+      "structural_similarity": 0.25
+    },
+    "ood": {
+      "parse_rate": 0.25,
+      "structural_similarity": 0.25
+    },
+    "rico_held": {
+      "parse_rate": 0.1,
+      "structural_similarity": 0.2
+    }
+  },
+  "device": "cpu",
+  "batch_size": 4,
+  "learning_rate": 0.0003,
+  "seed": 0,
+  "test_dir": "outputs/test_data/remediated",
+  "design_md_in_context": false,
+  "rico_eval_limit": 5,
+  "suites": [
+    "adversarial",
+    "held_out",
+    "ood",
+    "rico_held",
+    "smoke"
+  ],
+  "steps": 19,
+  "gen_steps": 8,
+  "context_backend": "scratch",
+  "matrix_set": "v7",
+  "results": [
+    {
+      "id": "E73",
+      "run_id": "qx_e73_survival",
+      "initialization": "scratch",
+      "parent_checkpoint": null,
+      "description": "DSpark-lite survival head + cumulative commit budget",
+      "honest_slot_contract": true,
+      "schema_in_context": true,
+      "slot_contract_in_context": true,
+      "slot_contract_constrained_decode": true,
+      "template_fill_decode": true,
+      "grammar_ltr_primary": false,
+      "grammar_ltr_repair": true,
+      "effective_gen_steps": 16,
+      "best_of_n": 1,
+      "train_dir": "outputs/train_data/remediated",
+      "train_content_fingerprint": "928ec8d4921954c7736d2386fe7abf88bbef75523a7cfe404792f45ddcd5d4ba",
+      "checkpoint": "outputs/runs/iter_e73_19_20260715/qx_e73_survival/checkpoints/last.pt",
+      "pass": true,
+      "failures": [],
+      "suites": {
+        "smoke": {
+          "parse_rate": 1.0,
+          "placeholder_fidelity": 1.0,
+          "structural_similarity": 0.6488999999999999,
+          "reward_score": 0.969,
+          "n": 3,
+          "speculative_stats": {
+            "generates": 6,
+            "denoiser_forwards": 99,
+            "forwards_per_generate": 16.5,
+            "speculative_batches": 0,
+            "speculative_canvases": 0,
+            "successor_hits": 0,
+            "successor_misses": 0,
+            "successor_hit_rate": null,
+            "clusters_proposed": 48,
+            "clusters_accepted": 48,
+            "clusters_rejected": 0,
+            "remasked_positions": 1801
+          }
+        },
+        "held_out": {
+          "parse_rate": 0.6,
+          "placeholder_fidelity": 1.0,
+          "structural_similarity": 0.55388,
+          "reward_score": 0.9892,
+          "n": 5,
+          "speculative_stats": {
+            "generates": 10,
+            "denoiser_forwards": 165,
+            "forwards_per_generate": 16.5,
+            "speculative_batches": 0,
+            "speculative_canvases": 0,
+            "successor_hits": 0,
+            "successor_misses": 0,
+            "successor_hit_rate": null,
+            "clusters_proposed": 80,
+            "clusters_accepted": 80,
+            "clusters_rejected": 0,
+            "remasked_positions": 2911
+          }
+        },
+        "adversarial": {
+          "parse_rate": 1.0,
+          "placeholder_fidelity": 1.0,
+          "structural_similarity": 0.8263,
+          "reward_score": 0.97,
+          "n": 4,
+          "speculative_stats": {
+            "generates": 8,
+            "denoiser_forwards": 132,
+            "forwards_per_generate": 16.5,
+            "speculative_batches": 0,
+            "speculative_canvases": 0,
+            "successor_hits": 0,
+            "successor_misses": 0,
+            "successor_hit_rate": null,
+            "clusters_proposed": 64,
+            "clusters_accepted": 64,
+            "clusters_rejected": 0,
+            "remasked_positions": 2430
+          }
+        },
+        "ood": {
+          "parse_rate": 1.0,
+          "placeholder_fidelity": 1.0,
+          "structural_similarity": 0.597375,
+          "reward_score": 0.9894999999999999,
+          "n": 4,
+          "speculative_stats": {
+            "generates": 8,
+            "denoiser_forwards": 132,
+            "forwards_per_generate": 16.5,
+            "speculative_batches": 0,
+            "speculative_canvases": 0,
+            "successor_hits": 0,
+            "successor_misses": 0,
+            "successor_hit_rate": null,
+            "clusters_proposed": 64,
+            "clusters_accepted": 64,
+            "clusters_rejected": 0,
+            "remasked_positions": 2312
+          }
+        },
+        "rico_held": {
+          "parse_rate": 1.0,
+          "placeholder_fidelity": 1.0,
+          "structural_similarity": 0.7617666666666668,
+          "reward_score": 1.0,
+          "n": 3,
+          "speculative_stats": {
+            "generates": 6,
+            "denoiser_forwards": 99,
+            "forwards_per_generate": 16.5,
+            "speculative_batches": 0,
+            "speculative_canvases": 0,
+            "successor_hits": 0,
+            "successor_misses": 0,
+            "successor_hit_rate": null,
+            "clusters_proposed": 48,
+            "clusters_accepted": 48,
+            "clusters_rejected": 0,
+            "remasked_positions": 1620
+          }
+        }
+      }
+    }
+  ]
+}

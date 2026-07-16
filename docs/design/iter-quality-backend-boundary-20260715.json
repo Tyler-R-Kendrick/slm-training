@@ -1,0 +1,8 @@
+{
+  "date": "2026-07-15",
+  "kind": "grammar-backend-profile",
+  "backend": "openui-lark",
+  "probe": {"records": 1, "decode_steps": 1, "max_attempts": 1, "verify_chosen_only": true, "skip_stream_probe": true},
+  "result": "exceeded execution window before scoreboard",
+  "decision": "continue incremental DFA/state profiling; no quality or ship claim"
+}

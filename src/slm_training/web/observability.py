@@ -520,25 +520,40 @@ class Readers:
 
     def train_data(self, version: str | None = None) -> dict[str, Any]:
         train_root = self.outputs / "train_data"
-        generated_versions = (
+        live_versions = (
             sorted(p.name for p in train_root.iterdir() if p.is_dir())
             if train_root.exists()
             else []
         )
-        versions = ["examples", *generated_versions]
-        if version == "examples" or not generated_versions:
+        committed_root = self.fixtures / "train_data"
+        committed_versions = (
+            sorted(p.name for p in committed_root.iterdir() if p.is_dir())
+            if committed_root.exists()
+            else []
+        )
+        data_versions = sorted(set(committed_versions) | set(live_versions))
+        versions = ["examples", *data_versions]
+        if version == "examples" or not data_versions:
             return {
                 "provenance": "committed",
                 "versions": versions,
                 "version": "examples",
                 **self._fixture_data(),
             }
-        chosen = version if version in generated_versions else generated_versions[-1]
-        vdir = train_root / chosen
+        if version in data_versions:
+            chosen = str(version)
+        elif live_versions:
+            chosen = live_versions[-1]
+        elif "remediated_roots_judged" in committed_versions:
+            chosen = "remediated_roots_judged"
+        else:
+            chosen = committed_versions[-1]
+        live = chosen in live_versions
+        vdir = (train_root if live else committed_root) / chosen
         stats = _read_json(vdir / "stats.json") or {}
         manifest = _read_json(vdir / "manifest.json") or {}
         return {
-            "provenance": "live",
+            "provenance": "live" if live else "committed",
             "versions": versions,
             "version": chosen,
             "stats": stats,
@@ -563,7 +578,11 @@ class Readers:
         path = (
             self.fixtures / "train_seeds.jsonl"
             if version == "examples"
-            else self.outputs / "train_data" / version / "records.jsonl"
+            else (
+                self.outputs / "train_data" / version / "records.jsonl"
+                if (self.outputs / "train_data" / version / "records.jsonl").is_file()
+                else self.fixtures / "train_data" / version / "records.jsonl"
+            )
         )
         rows = _read_jsonl(path, limit=None)
         if split:

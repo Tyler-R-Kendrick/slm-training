@@ -1,0 +1,15 @@
+{
+  "change": "AgentV publication honors selected evaluation suites",
+  "full_matrix_behavior": "include all canonical suites and fail closed on missing suites",
+  "subset_behavior": "emit AgentV cases only for suites evaluated by the caller",
+  "tests": {"tests/test_evals/test_agentv.py": "3 passed"},
+  "bounded_run": {
+    "matrix": "legacy",
+    "experiment": "E1",
+    "requested_suites": ["smoke"],
+    "decode_steps": 1,
+    "status": "incomplete",
+    "progress_active": true
+  },
+  "decision": "retain scoped publication and do not infer quality from the incomplete decode"
+}

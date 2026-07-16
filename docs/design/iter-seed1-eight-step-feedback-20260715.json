@@ -1,0 +1,38 @@
+{
+  "date": "2026-07-15",
+  "kind": "loss-vs-generation-feedback",
+  "recipe": {
+    "steps": 8,
+    "batch_size": 8,
+    "effective_batch_size": 8,
+    "learning_rate": 0.0006,
+    "seed": 1,
+    "context_backend": "scratch",
+    "device": "cpu",
+    "loss_eval_every": 0,
+    "eval_limit": 1,
+    "gen_steps": 1,
+    "max_attempts": 1,
+    "grammar_constrained": false
+  },
+  "loss": {
+    "weighted_nll": 31.84144890013186,
+    "target_tokens": 12258,
+    "complete": true,
+    "loss_suites": "outputs/runs/iter-seed1-batch8-8step-finalonly-20260715/loss_suites.json"
+  },
+  "comparison": {
+    "seed0_weighted_nll": 17.40958114777779,
+    "seed0_target_tokens": 11122,
+    "interpretation": "short-run seed variance; no data or recipe change justified"
+  },
+  "unconstrained_generation": {
+    "parse_rate": 0.0,
+    "structural_similarity": 0.0,
+    "reward_score": 0.0,
+    "decode_timeout_count": 0,
+    "agentv_persisted": true
+  },
+  "decision": "do not promote; continue seed-controlled training and repair constrained generation before ship evaluation",
+  "honesty": "scratch diagnostic; not a ship claim"
+}

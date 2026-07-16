@@ -1,0 +1,10 @@
+{
+  "run_id": "iter-e47-wide-topk-20260715",
+  "parent_run": "iter-e47-silver-1024-surface-20260715",
+  "checkpoint": "outputs/runs/iter-e47-silver-1024-surface-20260715/qx_e47_ltr_supervision/checkpoints/last.pt",
+  "recipe": {"grammar_ltr_primary": true, "grammar_ltr_repair": true, "grammar_top_k": 512, "grammar_ltr_max_tokens": 128, "suite": "smoke", "n": 3},
+  "metrics": {"parse_rate": 0.0, "structural_similarity": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0, "fallback_rate": 0.0, "latency_ms_p50": 28408.38},
+  "diagnosis": "widening constrained candidate search does not recover root assignment; it increases DFA/picker cost without improving adherence",
+  "decision": "reject top-k widening; keep normal candidate budget and focus on model root-to-assignment learning",
+  "honesty": "scratch smoke diagnostic; not a ship claim"
+}

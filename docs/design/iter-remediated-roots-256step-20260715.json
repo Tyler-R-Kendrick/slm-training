@@ -1,0 +1,10 @@
+{
+  "run_id": "iter-remediated-roots-256step-20260715",
+  "corpus": "remediated_roots",
+  "manifest_sha": "f8d714f122ac7f091236fd4e562935758de330534cac146abf30af13d0ac98ce",
+  "recipe": {"model": "twotower", "context_backend": "scratch", "device": "cpu", "steps": 256, "batch_size": 8, "ltr_loss_weight": 2.0},
+  "telemetry": {"target_tokens": 121888, "total_ms": 71260.39},
+  "loss": {"best_step": 128, "best_weighted_nll": 6.450337876731057, "final_weighted_nll": 7.1709441197815185},
+  "evaluation": {"suite": "smoke", "n": 3, "parse_rate": 0.0, "structural_similarity": 0.0, "reward_score": 0.0, "decode_timeout_count": 0, "latency_ms_p50": 2115.55, "decision": "reject"},
+  "next": "inspect or change output model/tokenizer/objective"
+}

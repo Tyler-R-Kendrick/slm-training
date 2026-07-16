@@ -1,0 +1,24 @@
+{
+  "experiment": "E112",
+  "date": "2026-07-15",
+  "kind": "recipe reproduction",
+  "recipe": {
+    "d_model": 192,
+    "n_heads": 6,
+    "context_layers": 3,
+    "denoiser_layers": 6,
+    "freeze_context": true,
+    "structural_bias": 2.5,
+    "gen_steps": 16,
+    "mask_pattern": "mixed",
+    "schema_in_context": true,
+    "ltr_loss_weight": 2.0,
+    "fidelity_loss_weight": 1.5
+  },
+  "status": "incomplete",
+  "last_observed_step": 359,
+  "metrics": "outputs/runs/iter-e112-e91-recipe-20260715/e112_e91_recipe/metrics.jsonl",
+  "checkpoint": null,
+  "evaluation": null,
+  "decision": "do not compare as a quality result"
+}

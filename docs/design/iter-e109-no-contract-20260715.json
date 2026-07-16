@@ -1,0 +1,30 @@
+{
+  "experiment": "E109",
+  "date": "2026-07-15",
+  "kind": "conditioning control retrain",
+  "train": {
+    "steps": 128,
+    "record_count": 1417,
+    "target_tokens": 43146,
+    "last_loss": 7.634036540985107,
+    "slot_contract_in_context": false,
+    "slot_contract_constrained_decode": false,
+    "checkpoint": "outputs/runs/iter-e109-no-contract-20260715/e109_no_contract/checkpoints/last.pt",
+    "telemetry": "outputs/runs/iter-e109-no-contract-20260715/e109_no_contract/train_telemetry.json"
+  },
+  "eval": {
+    "suite": "smoke",
+    "n": 1,
+    "parse_rate": 0.0,
+    "raw_syntax_validity": 0.0,
+    "structural_similarity": 0.3417,
+    "contract_precision": 0.0,
+    "contract_recall": 0.0,
+    "placeholder_fidelity": 0.0,
+    "component_type_recall": 0.0,
+    "latency_ms_p50": 11804.24,
+    "agentv_total": 5,
+    "agentv_failed": 5
+  },
+  "decision": "reject; keep contract conditioning"
+}

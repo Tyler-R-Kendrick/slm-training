@@ -45,6 +45,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "slot_contract_in_context",
         "slot_contract_constrained_decode",
         "template_fill_decode",
+        "contract_template_fastpath",
         "honest_slot_contract",
         "retrieval_k",
         "best_of_n",
@@ -108,6 +109,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "use_dynamic_quant",
         "generate_max_attempts",
         "grammar_finalize_on_last_attempt_only",
+        "allow_unconstrained_fallback",
         "stability_min_persistence",
         "stability_jsd_weight",
         "unmask_mode",
@@ -263,6 +265,12 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         diffusion_length_loss_weight=float(
             getattr(config, "diffusion_length_loss_weight", 0.1) or 0.0
         ),
+        ltr_prefix_loss_weight=float(
+            getattr(config, "ltr_prefix_loss_weight", 0.0) or 0.0
+        ),
+        symbol_boundary_loss_weight=float(
+            getattr(config, "symbol_boundary_loss_weight", 0.0) or 0.0
+        ),
         remask_span=getattr(config, "remask_span", "token"),
         teacher_init_embeddings=getattr(config, "teacher_init_embeddings", False),
         grammar_incremental_state=getattr(config, "grammar_incremental_state", True),
@@ -281,6 +289,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         generate_max_attempts=int(getattr(config, "generate_max_attempts", 3) or 3),
         grammar_finalize_on_last_attempt_only=bool(
             getattr(config, "grammar_finalize_on_last_attempt_only", False)
+        ),
+        allow_unconstrained_fallback=bool(
+            getattr(config, "allow_unconstrained_fallback", True)
         ),
         stability_min_persistence=int(
             getattr(config, "stability_min_persistence", 0) or 0

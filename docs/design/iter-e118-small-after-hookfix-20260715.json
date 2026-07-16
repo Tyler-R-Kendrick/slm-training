@@ -1,0 +1,15 @@
+{
+  "experiment": "E118",
+  "date": "2026-07-15",
+  "kind": "post-hookfix control",
+  "status": "completed",
+  "hook_fix_verified": true,
+  "steps": 64,
+  "last_loss": 9.98577880859375,
+  "record_count": 1417,
+  "metrics": "outputs/runs/iter-e118-small-after-hookfix-20260715/e118_small_after_hookfix/metrics.jsonl",
+  "summary": "outputs/runs/iter-e118-small-after-hookfix-20260715/e118_small_after_hookfix/train_summary.json",
+  "checkpoint": "outputs/runs/iter-e118-small-after-hookfix-20260715/e118_small_after_hookfix/checkpoints/last.pt",
+  "evaluation": null,
+  "decision": "trainer completed; command transport detached before reporting completion; no quality claim without evaluation"
+}

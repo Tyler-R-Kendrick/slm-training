@@ -1,0 +1,16 @@
+{
+  "run_id": "iter-e41-judged-20260715",
+  "experiment": "E41",
+  "train_content_fingerprint": "b6d135be9806c708486f1f09efd5c993bafdbff99d029c1985488c57c0a11ec1",
+  "train_records": 405,
+  "prior_rejected_records": 61,
+  "suite": "smoke",
+  "n": 3,
+  "parse_rate": 0.0,
+  "structural_similarity": 0.0,
+  "reward_score": 0.0,
+  "latency_ms_p50": 28815.3,
+  "decode_timeout_count": 0,
+  "failure": "malformed lexer-native binder stream; parser produced no root element",
+  "evidence": "outputs/runs/iter-e41-judged-20260715"
+}

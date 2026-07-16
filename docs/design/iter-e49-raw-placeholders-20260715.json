@@ -1,0 +1,10 @@
+{
+  "run_id": "iter-e49-raw-placeholders-20260715",
+  "parent_run": "iter-e48-newline-guard-20260715",
+  "intervention": "lexer output with use_symbol_table=false",
+  "recipe": {"device": "cpu", "steps": 256, "backend": "scratch", "suite": "smoke", "n": 3},
+  "metrics": {"parse_rate": 0.0, "structural_similarity": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0, "latency_ms_p50": 31769.48},
+  "diagnosis": "raw placeholder spelling is substantially worse; symbol-table representation is not the sole cause of the failure",
+  "decision": "reject raw-placeholder representation; retain symbol tables and target native symbol transition handling",
+  "honesty": "scratch smoke result; not a ship claim"
+}

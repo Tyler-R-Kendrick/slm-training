@@ -89,6 +89,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--device", type=str, default="cpu")
     parser.add_argument(
+        "--output-tokenizer",
+        choices=("compositional", "lexer"),
+        default=None,
+        help="Override the checkpoint output tokenizer during evaluation.",
+    )
+    parser.add_argument(
         "--ship-gates",
         action="store_true",
         help=(
@@ -168,6 +174,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Forbid hidden gold placeholder inventory during evaluation.",
     )
     parser.add_argument(
+        "--contract-template-fastpath",
+        action="store_true",
+        help="Use the certified slot-contract template fast path during evaluation.",
+    )
+    parser.add_argument(
         "--retrieval-k",
         type=int,
         default=0,
@@ -184,6 +195,52 @@ def main(argv: list[str] | None = None) -> int:
         type=int,
         default=None,
         help="Cap rico_held eval size (CPU/matrix).",
+    )
+    parser.add_argument(
+        "--eval-limit",
+        type=int,
+        default=None,
+        help="Diagnostic-only cap for every selected suite; omit for full eval.",
+    )
+    parser.add_argument(
+        "--gen-steps",
+        type=int,
+        default=8,
+        help="Decode denoising steps; lower values are diagnostic-only.",
+    )
+    parser.add_argument(
+        "--max-attempts",
+        type=int,
+        default=3,
+        help="Maximum decode retries per record; lower values are diagnostic-only.",
+    )
+    parser.add_argument(
+        "--skip-exact-stream-probe",
+        action="store_true",
+        help="Diagnostic override: skip the blocking exact grammar stream probe.",
+    )
+    parser.add_argument(
+        "--grammar-constrained",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Override the checkpoint's grammar-constrained decode setting.",
+    )
+    parser.add_argument(
+        "--verify-chosen-only",
+        action="store_true",
+        help="Diagnostic override: verify only the model-chosen token per step.",
+    )
+    parser.add_argument(
+        "--grammar-top-k",
+        type=int,
+        default=None,
+        help="Diagnostic override for constrained candidate breadth.",
+    )
+    parser.add_argument(
+        "--decode-timeout-seconds",
+        type=float,
+        default=None,
+        help="Diagnostic per-record decode timeout; omit for unlimited evaluation.",
     )
     parser.add_argument(
         "--no-design-md-context",
@@ -227,6 +284,11 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Exit 9 if decode canvas makes ship parse gates unreachable.",
     )
+    parser.add_argument(
+        "--no-unconstrained-fallback",
+        action="store_true",
+        help="Strict mode: return constrained output instead of retrying unfiltered.",
+    )
     args = parser.parse_args(argv)
 
     if args.no_design_md_context and args.design_md_context:
@@ -247,6 +309,7 @@ def main(argv: list[str] | None = None) -> int:
         run_id=args.run_id,
         model_name=args.model,
         device=args.device,
+        output_tokenizer=args.output_tokenizer,
         context_backend=args.context_backend or "hf",
         grammar_ltr_primary=args.grammar_ltr_primary,
         grammar_ltr_repair=args.grammar_ltr_repair,
@@ -254,10 +317,23 @@ def main(argv: list[str] | None = None) -> int:
         slot_contract_in_context=args.slot_contract_in_context,
         slot_contract_constrained_decode=args.slot_contract_constrained_decode,
         honest_slot_contract=args.honest_slot_contract,
+        contract_template_fastpath=args.contract_template_fastpath,
         retrieval_k=args.retrieval_k,
         best_of_n=args.best_of_n,
         design_md_in_context=design_md_override,
         rico_eval_limit=args.rico_limit,
+        eval_limit=args.eval_limit,
+        gen_steps=args.gen_steps,
+        generate_max_attempts=max(1, args.max_attempts),
+        allow_unconstrained_fallback=not args.no_unconstrained_fallback,
+        # Preserve checkpoint settings unless an explicit override is supplied.
+        grammar_skip_exact_stream_probe=(
+            True if args.skip_exact_stream_probe else None
+        ),
+        grammar_constrained=args.grammar_constrained,
+        grammar_verify_chosen_only=(True if args.verify_chosen_only else None),
+        grammar_top_k=args.grammar_top_k,
+        decode_timeout_seconds=args.decode_timeout_seconds,
         grammar_dsl=args.grammar_dsl,
         grammar_trust_model=args.grammar_trust_model,
         grammar_sample_decode=args.grammar_sample_decode,

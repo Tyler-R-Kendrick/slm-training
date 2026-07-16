@@ -1,0 +1,10 @@
+{
+  "run_id": "iter-e48-singleton-bypass-20260715",
+  "parent_run": "iter-e48-dead-atomic-20260715",
+  "fix": "bypass stream probing for a singleton admitted DFA/contract token",
+  "tests": {"passed": 28, "deselected": 0},
+  "metrics": {"parse_rate": 0.0, "predictions": ["root", "root", "root"], "dead_ends": 12, "dead_end_position": 3.0},
+  "trace": {"prefix_tokens": ["<bos>", "<BIND_0>", "NL"], "prefix_text": "root"},
+  "decision": "keep singleton bypass; this failure has a multi-token admitted set, so probing bypass is not the cause",
+  "honesty": "scratch smoke diagnostic; not a ship claim"
+}

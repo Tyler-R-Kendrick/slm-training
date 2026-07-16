@@ -1,0 +1,37 @@
+{
+  "run_id": "iter-e42-judged-factorized-20260715",
+  "matrix": "quality-experiment-matrix-v5",
+  "experiment": "E42",
+  "description": "E41 plus kind-factorized embeddings on the independently judged corpus",
+  "device": "cpu",
+  "steps": 64,
+  "batch_size": 4,
+  "learning_rate": 0.0003,
+  "context_backend": "scratch",
+  "honest_slot_contract": false,
+  "train_dir": "outputs/train_data/remediated_roots_judged",
+  "train_content_fingerprint": "b6d135be9806c708486f1f09efd5c993bafdbff99d029c1985488c57c0a11ec1",
+  "test_dir": "outputs/test_data/remediated",
+  "suite": "smoke",
+  "n": 3,
+  "fallback_enabled": {
+    "parse_rate": 0.0,
+    "structural_similarity": 0.0,
+    "placeholder_fidelity": 0.0,
+    "reward_score": 0.0
+  },
+  "strict_constrained": {
+    "parse_rate": 0.0,
+    "raw_syntax_validity": 0.0,
+    "structural_similarity": 0.0,
+    "placeholder_fidelity": 0.0,
+    "reward_score": 0.0,
+    "constrained_fallback_rate": 1.0,
+    "latency_ms_p50": 9583.35,
+    "forwards_mean": 102.0,
+    "agentv": {"passed": 0, "failed": 5, "execution_errors": 0}
+  },
+  "checkpoint": "outputs/runs/iter-e42-judged-factorized-20260715/qx_e42_factorized/checkpoints/last.pt",
+  "decision": "reject factorized embeddings as the next intervention; improve the lexer-native training signal or constrained-path supervision",
+  "honesty": "scratch control; smoke-only; not a ship claim"
+}

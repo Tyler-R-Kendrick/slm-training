@@ -1,0 +1,9 @@
+{
+  "run_id": "iter-e88-structural-supervision-contract-20260715",
+  "parent_run": "iter-e87-root-rhs-guard-20260715",
+  "intervention": "LTR primary + fidelity loss 4 + symbol-boundary loss 2 on visible-contract corpus",
+  "recipe": {"device": "cpu", "steps": 128, "backend": "scratch", "suite": "smoke", "n": 1, "train_dir": "outputs/train_data/v2_prompt_contract"},
+  "metrics": {"parse_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.65, "reward_score": 0.997},
+  "decision": "reject as learned evidence; certified fallback was used",
+  "honesty": "bounded scratch probe; not a ship claim"
+}

@@ -66,6 +66,13 @@ def evaluate_ship_gates(
             "reward_score": metrics.get("reward_score"),
         }
         actual[suite_name] = slim
+        fallback_count = int(metrics.get("fallback_count") or 0)
+        fallback_key = f"{suite_name}:certified_fallback"
+        checks[fallback_key] = fallback_count == 0
+        if fallback_count:
+            failures.append(
+                f"{fallback_key} actual={fallback_count} need=0 for learned-quality claims"
+            )
         for metric, minimum in mins.items():
             key = f"{suite_name}:{metric}"
             value = metrics.get(metric)

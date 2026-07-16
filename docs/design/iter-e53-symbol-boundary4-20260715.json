@@ -1,0 +1,9 @@
+{
+  "run_id": "iter-e53-symbol-boundary4-20260715",
+  "parent_run": "iter-e52-adjacency-20260715",
+  "intervention": "symbol_boundary_loss_weight=4.0",
+  "recipe": {"device": "cpu", "steps": 256, "backend": "scratch", "suite": "smoke", "n": 3, "fidelity_loss_weight": 4.0},
+  "metrics": {"parse_rate": 0.0, "raw_syntax_validity": 0.6666666666666666, "structural_similarity": 0.30943333333333334, "placeholder_fidelity": 0.0, "reward_score": 0.0, "latency_ms_p50": 8273.16},
+  "decision": "reject boundary weight 4; raw syntax improves but structural recovery collapses versus E52 weight 2",
+  "honesty": "scratch smoke result; not a ship claim"
+}

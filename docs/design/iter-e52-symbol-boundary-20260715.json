@@ -1,0 +1,10 @@
+{
+  "run_id": "iter-e52-symbol-boundary-20260715",
+  "parent_run": "iter-e50-symbol-fidelity-20260715",
+  "intervention": "symbol_boundary_loss_weight=2.0 on symbol tokens and immediate neighbors",
+  "recipe": {"device": "cpu", "steps": 256, "backend": "scratch", "suite": "smoke", "n": 3, "fidelity_loss_weight": 4.0},
+  "metrics": {"parse_rate": 0.0, "structural_similarity": 0.4444333333333333, "placeholder_fidelity": 0.0, "reward_score": 0.0, "latency_ms_p50": 21291.48},
+  "diagnosis": "targeted symbol adjacency supervision improves structural recovery beyond E50 but does not yet close syntax or exact placeholder fidelity",
+  "decision": "retain boundary loss direction; next strict-evaluate E52 and inspect delimiter closure errors before further training",
+  "honesty": "scratch smoke result; not a ship claim"
+}

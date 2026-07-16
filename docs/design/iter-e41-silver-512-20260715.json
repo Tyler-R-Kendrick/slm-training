@@ -1,0 +1,26 @@
+{
+  "run_id": "iter-e41-silver-512-20260715",
+  "experiment": "E41",
+  "device": "cpu",
+  "steps": 512,
+  "batch_size": 4,
+  "learning_rate": 0.0003,
+  "context_backend": "scratch",
+  "train_dir": "outputs/train_data/remediated_roots_silver",
+  "train_content_fingerprint": "de22dd439207002754ef7bb0be07a422a04d4e0a91f60f9864e9abd75e7adb06",
+  "test_dir": "outputs/test_data/remediated",
+  "suite": "smoke",
+  "n": 3,
+  "strict_ltr": {
+    "parse_rate": 0.0,
+    "structural_similarity": 0.0,
+    "placeholder_fidelity": 0.0,
+    "reward_score": 0.0,
+    "constrained_fallback_rate": 0.0,
+    "latency_ms_p50": 4690.96,
+    "forwards_mean": 67.333,
+    "agentv": {"passed": 0, "failed": 5, "execution_errors": 0}
+  },
+  "decision": "reject more-steps-only intervention; move to lexer-native loss/target alignment",
+  "honesty": "scratch control; smoke-only; not a ship claim"
+}

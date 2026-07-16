@@ -1,0 +1,24 @@
+{
+  "run_id": "iter-e46-best-ship-constrained-feedback-20260715",
+  "parent_run": "iter-e46-qualityselect-20260715",
+  "checkpoint": "qx_e46_champion/checkpoints/best_ship_score.pt",
+  "suite": "smoke",
+  "n": 3,
+  "grammar_constrained": true,
+  "schema_in_context": true,
+  "output_tokenizer_override": "lexer",
+  "parse_rate": 0.0,
+  "structural_similarity": 0.0,
+  "reward_score": 0.0,
+  "latency_ms_p50": 38589.23,
+  "decode_timeout_count": 0,
+  "failure_breakdown": {"parse_error": 3},
+  "feedback": "malformed lexer-native binder sequence; parser produced no root element",
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "passed": 0,
+    "failed": 5,
+    "execution_errors": 0
+  },
+  "evidence": "outputs/runs/iter-e46-qualityselect-20260715/feedback_constrained/e46-best-ship-constrained"
+}

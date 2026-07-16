@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import signal
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Literal
@@ -69,12 +70,15 @@ class Experiment:
     slot_contract_constrained_decode: bool = False
     namespace_augment: bool = False
     ltr_loss_weight: float = 1.0
+    ltr_prefix_loss_weight: float = 0.0
+    symbol_boundary_loss_weight: float = 0.0
     # Eval-only overlay: decode sweep presets (E17)
     decode_sweep: str | None = None
     eval_from_checkpoint: str | None = None
     # V3 levers
     grammar_ltr_primary: bool = True
     template_fill_decode: bool = False
+    contract_template_fastpath: bool = False
     mdlm_schedule: bool = False
     remask_ratio: float = 0.0
     gen_steps_override: int | None = None
@@ -691,6 +695,144 @@ def _v5_experiments(
             design_md_in_context=design_md_in_context,
         ),
         Experiment(
+            "E47",
+            "qx_e47_ltr_supervision",
+            "E41 + doubled lexer-native LTR supervision",
+            train_v1,
+            grammar_ltr_repair=True,
+            grammar_ltr_max_tokens=length_safe,
+            grammar_ltr_primary=False,
+            ltr_loss_weight=2.0,
+            fidelity_loss_weight=1.0,
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            gen_steps_override=16,
+            output_tokenizer="lexer",
+            use_symbol_table=True,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E48",
+            "qx_e48_ltr_prefix_supervision",
+            "E47 + extra weight on first three lexer-native content transitions",
+            train_v1,
+            grammar_ltr_repair=True,
+            grammar_ltr_max_tokens=length_safe,
+            grammar_ltr_primary=False,
+            ltr_loss_weight=2.0,
+            ltr_prefix_loss_weight=4.0,
+            fidelity_loss_weight=1.0,
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            gen_steps_override=16,
+            output_tokenizer="lexer",
+            use_symbol_table=True,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E49",
+            "qx_e49_lexer_raw_placeholders",
+            "E47 with lexer-native raw placeholder spelling",
+            train_v1,
+            grammar_ltr_repair=True,
+            grammar_ltr_max_tokens=length_safe,
+            grammar_ltr_primary=False,
+            ltr_loss_weight=2.0,
+            fidelity_loss_weight=1.0,
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            gen_steps_override=16,
+            output_tokenizer="lexer",
+            use_symbol_table=False,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E50",
+            "qx_e50_symbol_fidelity",
+            "E47 with stronger native symbol fidelity supervision",
+            train_v1,
+            grammar_ltr_repair=True,
+            grammar_ltr_max_tokens=length_safe,
+            grammar_ltr_primary=False,
+            ltr_loss_weight=2.0,
+            fidelity_loss_weight=4.0,
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            gen_steps_override=16,
+            output_tokenizer="lexer",
+            use_symbol_table=True,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E51",
+            "qx_e51_symbol_fidelity8",
+            "E50 with fidelity loss weight 8",
+            train_v1,
+            grammar_ltr_repair=True,
+            grammar_ltr_max_tokens=length_safe,
+            grammar_ltr_primary=False,
+            ltr_loss_weight=2.0,
+            fidelity_loss_weight=8.0,
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            gen_steps_override=16,
+            output_tokenizer="lexer",
+            use_symbol_table=True,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E52",
+            "qx_e52_symbol_boundary",
+            "E50 + symbol boundary adjacency supervision",
+            train_v1,
+            grammar_ltr_repair=True,
+            grammar_ltr_max_tokens=length_safe,
+            grammar_ltr_primary=False,
+            symbol_boundary_loss_weight=2.0,
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            gen_steps_override=16,
+            output_tokenizer="lexer",
+            use_symbol_table=True,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E53",
+            "qx_e53_symbol_boundary4",
+            "E52 with stronger symbol boundary adjacency supervision",
+            train_v1,
+            grammar_ltr_repair=True,
+            grammar_ltr_max_tokens=length_safe,
+            grammar_ltr_primary=False,
+            ltr_loss_weight=2.0,
+            fidelity_loss_weight=4.0,
+            symbol_boundary_loss_weight=4.0,
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            gen_steps_override=16,
+            output_tokenizer="lexer",
+            use_symbol_table=True,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
+            "E54",
+            "qx_e54_symbol_boundary1",
+            "E50 + symbol boundary adjacency supervision weight 1",
+            train_v1,
+            grammar_ltr_repair=True,
+            grammar_ltr_max_tokens=length_safe,
+            grammar_ltr_primary=False,
+            ltr_loss_weight=2.0,
+            fidelity_loss_weight=4.0,
+            symbol_boundary_loss_weight=1.0,
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            gen_steps_override=16,
+            output_tokenizer="lexer",
+            use_symbol_table=True,
+            design_md_in_context=design_md_in_context,
+        ),
+        Experiment(
             "E44",
             "qx_e44_structmask",
             "E41 + mixed statement masking + statement-span remask",
@@ -1023,6 +1165,126 @@ def _v7_experiments(
             best_of_n=4,
             **v5_base,
         ),
+        Experiment(
+            "E76",
+            "qx_e76_cache_reuse",
+            "V7 champion without trust/entropy remask gates to measure successor reuse",
+            train_cur,
+            use_curriculum=True,
+            mix_curriculum=True,
+            remask_policy="stability",
+            stability_min_persistence=1,
+            unmask_mode="cluster",
+            cluster_verify=True,
+            survival_gate=True,
+            speculative_successor=True,
+            speculative_fanout=2,
+            best_of_n=1,
+            **v5_base,
+        ),
+        Experiment(
+            "E77",
+            "qx_e77_cache_bon4",
+            "E76 corrected V7 cache path with champion best-of-4 selection",
+            train_cur,
+            use_curriculum=True,
+            mix_curriculum=True,
+            remask_policy="stability",
+            stability_min_persistence=1,
+            unmask_mode="cluster",
+            cluster_verify=True,
+            survival_gate=True,
+            speculative_successor=True,
+            speculative_fanout=2,
+            best_of_n=4,
+            **v5_base,
+        ),
+        Experiment(
+            "E78",
+            "qx_e78_slot_supervision_cache",
+            "E76 corrected cache path with E75 trust and slot-aware supervision",
+            train_cur,
+            use_curriculum=True,
+            mix_curriculum=True,
+            remask_policy="stability",
+            stability_min_persistence=1,
+            unmask_mode="cluster",
+            cluster_verify=True,
+            survival_gate=True,
+            speculative_successor=True,
+            speculative_fanout=2,
+            trust_gate=True,
+            slot_aware_trust_gate=True,
+            best_of_n=4,
+            **v5_base,
+        ),
+        Experiment(
+            "E80",
+            "qx_e80_visible_contract",
+            "E77 cache path retrained on prompts with visible slot contracts",
+            train_cur,
+            use_curriculum=True,
+            mix_curriculum=True,
+            remask_policy="stability",
+            stability_min_persistence=1,
+            unmask_mode="cluster",
+            cluster_verify=True,
+            survival_gate=True,
+            speculative_successor=True,
+            speculative_fanout=2,
+            best_of_n=4,
+            **v5_base,
+        ),
+        Experiment(
+            "E82",
+            "qx_e82_contract_template_fastpath",
+            "E80 with certified contract-template fast path for latency upper bound",
+            train_cur,
+            use_curriculum=True,
+            mix_curriculum=True,
+            remask_policy="stability",
+            stability_min_persistence=1,
+            unmask_mode="cluster",
+            cluster_verify=True,
+            survival_gate=True,
+            speculative_successor=True,
+            speculative_fanout=2,
+            best_of_n=1,
+            contract_template_fastpath=True,
+            **v5_base,
+        ),
+        Experiment(
+            "E84",
+            "qx_e84_ltr_primary_contract",
+            "Visible-contract corpus with grammar LTR primary and learned decode",
+            train_cur,
+            use_curriculum=True,
+            mix_curriculum=True,
+            remask_policy="stability",
+            stability_min_persistence=1,
+            unmask_mode="cluster",
+            cluster_verify=True,
+            survival_gate=True,
+            speculative_successor=True,
+            speculative_fanout=2,
+            best_of_n=1,
+            contract_template_fastpath=False,
+            **{**v5_base, "grammar_ltr_primary": True, "grammar_ltr_repair": True},
+        ),
+        Experiment(
+            "E88",
+            "qx_e88_structural_supervision_contract",
+            "Visible-contract corpus with LTR, fidelity, and symbol-boundary supervision",
+            train_cur,
+            use_curriculum=True,
+            mix_curriculum=True,
+            remask_policy="stability",
+            stability_min_persistence=1,
+            best_of_n=1,
+            contract_template_fastpath=False,
+            symbol_boundary_loss_weight=2.0,
+            **{**v5_base, "grammar_ltr_primary": True, "grammar_ltr_repair": True, "fidelity_loss_weight": 4.0},
+        ),
     ]
 
 
@@ -1051,6 +1313,8 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         grammar_ltr_max_tokens=exp.grammar_ltr_max_tokens,
         design_md_in_context=exp.design_md_in_context,
         ltr_loss_weight=getattr(exp, "ltr_loss_weight", 1.0),
+        ltr_prefix_loss_weight=getattr(exp, "ltr_prefix_loss_weight", 0.0),
+        symbol_boundary_loss_weight=getattr(exp, "symbol_boundary_loss_weight", 0.0),
         fidelity_loss_weight=exp.fidelity_loss_weight,
         schema_in_context=exp.schema_in_context,
         slot_contract_in_context=getattr(exp, "slot_contract_in_context", False),
@@ -1058,6 +1322,7 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
             exp, "slot_contract_constrained_decode", False
         ),
         template_fill_decode=bool(getattr(exp, "template_fill_decode", False)),
+        contract_template_fastpath=bool(getattr(exp, "contract_template_fastpath", False)),
         honest_slot_contract=bool(getattr(exp, "honest_slot_contract", False)),
         retrieval_k=exp.retrieval_k,
         best_of_n=1,  # train without BoN cost; apply at eval
@@ -1175,6 +1440,13 @@ def _eval_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         "E73",
         "E74",
         "E75",
+        "E76",
+        "E77",
+        "E78",
+        "E80",
+        "E82",
+        "E84",
+        "E88",
     }
     bon = exp.best_of_n
     if exp.decode_sweep == "gen16_repair_bon4":
@@ -1194,6 +1466,7 @@ def _eval_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         grammar_ltr_repair=repair,
         grammar_ltr_primary=bool(getattr(exp, "grammar_ltr_primary", True)),
         template_fill_decode=bool(getattr(exp, "template_fill_decode", False)),
+        contract_template_fastpath=bool(getattr(exp, "contract_template_fastpath", False)),
         honest_slot_contract=bool(getattr(exp, "honest_slot_contract", False)),
         remask_ratio=float(getattr(exp, "remask_ratio", 0.0) or 0.0),
         remask_use_gate=bool(getattr(exp, "remask_use_gate", False)),
@@ -1205,7 +1478,13 @@ def _eval_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         mdlm_schedule=bool(getattr(exp, "mdlm_schedule", False)),
         suffix_rollback_window=int(getattr(exp, "suffix_rollback_window", 0) or 0),
         visible_corrupt_rate=float(getattr(exp, "visible_corrupt_rate", 0.0) or 0.0),
+        cluster_verify=bool(getattr(exp, "cluster_verify", False)),
+        survival_gate=bool(getattr(exp, "survival_gate", False)),
+        speculative_successor=bool(getattr(exp, "speculative_successor", False)),
+        speculative_fanout=int(getattr(exp, "speculative_fanout", 2) or 2),
+        speculative_overlap=bool(getattr(exp, "speculative_overlap", False)),
         rico_eval_limit=args.rico_limit,
+        eval_limit=args.eval_limit,
         run_id=exp.run_id,
     )
 
@@ -1561,6 +1840,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--eval-every", type=int, default=0)
     parser.add_argument("--rico-limit", type=int, default=32)
     parser.add_argument(
+        "--eval-limit",
+        type=int,
+        default=None,
+        help="Diagnostic-only cap per selected suite; omit for full evaluation.",
+    )
+    parser.add_argument(
         "--suites",
         default=",".join(SUITES),
         help="Comma-separated eval suites (default: all).",
@@ -1811,6 +2096,42 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     results: list[dict[str, Any]] = []
+    progress_path = args.run_root / "quality_matrix_progress.json"
+    active_experiment: Experiment | None = None
+
+    def _persist_progress(status: str, active: Experiment | None = None) -> None:
+        nonlocal active_experiment
+        if active is not None:
+            active_experiment = active
+        progress_path.parent.mkdir(parents=True, exist_ok=True)
+        progress_path.write_text(
+            json.dumps(
+                {
+                    "status": status,
+                    "matrix": args.matrix,
+                    "completed": len(results),
+                    "total": len(experiments),
+                    "active": (
+                        {"id": active.eid, "run_id": active.run_id}
+                        if active is not None
+                        else None
+                    ),
+                    "results": sorted(results, key=lambda r: r.get("id") or ""),
+                },
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+    def _mark_interrupted(signum: int, _frame: Any) -> None:
+        """Persist resumable state before the supervisor stops the matrix."""
+        _persist_progress("interrupted", active=active_experiment)
+        raise SystemExit(128 + signum)
+
+    signal.signal(signal.SIGINT, _mark_interrupted)
+    signal.signal(signal.SIGTERM, _mark_interrupted)
+
     workers = max(1, int(args.workers))
     # Seed/decode overlays that depend on another run stay sequential first.
     dependent = [
@@ -1821,8 +2142,20 @@ def main(argv: list[str] | None = None) -> int:
     independent = [e for e in experiments if e not in dependent]
 
     def _run(exp: Experiment) -> dict[str, Any]:
+        _persist_progress("running", active=exp)
         print(json.dumps({"status": "start", "id": exp.eid, "run_id": exp.run_id}))
-        result = run_one(exp, args)
+        try:
+            result = run_one(exp, args)
+        except BaseException as exc:  # noqa: BLE001 - preserve partial matrix evidence
+            if isinstance(exc, (KeyboardInterrupt, GeneratorExit)):
+                raise
+            result = {
+                "id": exp.eid,
+                "run_id": exp.run_id,
+                "pass": False,
+                "failures": [f"exception: {type(exc).__name__}: {exc}"],
+                "suites": {},
+            }
         print(json.dumps({"status": "done", "id": exp.eid, "pass": result["pass"]}))
         return result
 
@@ -1838,12 +2171,15 @@ def main(argv: list[str] | None = None) -> int:
             futs = {pool.submit(_run, exp): exp for exp in independent}
             for fut in as_completed(futs):
                 results.append(fut.result())
+                _persist_progress("running")
     else:
         for exp in independent:
             results.append(_run(exp))
+            _persist_progress("running")
 
     for exp in dependent:
         results.append(_run(exp))
+        _persist_progress("running")
 
     # Stable order by experiment id.
     results.sort(key=lambda r: r.get("id") or "")
@@ -1868,6 +2204,7 @@ def main(argv: list[str] | None = None) -> int:
     }
     out_path = args.run_root / "quality_matrix_summary.json"
     out_path.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
+    _persist_progress("complete")
     # Also mirror under docs artifacts path for the PR.
     docs_out = args.docs_out or Path("docs/design") / (
         "quality-matrix-results.json"

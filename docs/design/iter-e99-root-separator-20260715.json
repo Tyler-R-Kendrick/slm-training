@@ -1,0 +1,14 @@
+{
+  "experiment": "E99",
+  "date": "2026-07-15",
+  "kind": "strict grammar diagnostic",
+  "baseline": "E98",
+  "observed": {
+    "parse_rate": 0.0,
+    "structural_similarity": 0.3458,
+    "latency_ms_p50": 58239.16,
+    "root_invariant_bypass_count": 2,
+    "constrained_dead_ends": 0
+  },
+  "decision": "revert separator force"
+}

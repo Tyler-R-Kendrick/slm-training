@@ -1,0 +1,30 @@
+{
+  "experiment": "E103",
+  "date": "2026-07-15",
+  "kind": "repair-heavy mixture retrain",
+  "mixture": "outputs/train_data/v2_prompt_contract/mixture_repair_heavy_e103.json",
+  "train": {
+    "steps": 128,
+    "record_count": 1417,
+    "target_tokens": 37587,
+    "last_loss": 6.327186107635498,
+    "checkpoint": "outputs/runs/iter-e103-repair-heavy-20260715/e103_repair_heavy/checkpoints/last.pt",
+    "telemetry": "outputs/runs/iter-e103-repair-heavy-20260715/e103_repair_heavy/train_telemetry.json"
+  },
+  "eval": {
+    "suite": "smoke",
+    "n": 1,
+    "parse_rate": 0.0,
+    "raw_syntax_validity": 1.0,
+    "contract_precision": 0.5,
+    "contract_recall": 0.25,
+    "placeholder_fidelity": 0.25,
+    "structural_similarity": 0.1917,
+    "component_type_recall": 0.0,
+    "latency_ms_p50": 5395.91,
+    "fallback_count": 0,
+    "agentv_total": 5,
+    "agentv_failed": 5
+  },
+  "decision": "reject; filter repair quality before reweighting"
+}

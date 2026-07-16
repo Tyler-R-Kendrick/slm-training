@@ -6,6 +6,7 @@ import hashlib
 import json
 import math
 import re
+import signal
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -21,6 +22,7 @@ from slm_training.harnesses.model_build.data import (
 )
 from slm_training.harnesses.model_build.factory import build_model
 from slm_training.harnesses.model_build.plugin import GenerationRequest
+from slm_training.harnesses.model_build.ship_gates import DEFAULT_SHIP_GATES
 
 _COMPONENT_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s*\(")
 
@@ -277,11 +279,11 @@ def evaluate(
         raise ValueError("test_dir is required for evaluation")
 
     records = load_suite_records(config.test_dir, config.suite)
-    if (
-        config.suite == "rico_held"
-        and getattr(config, "rico_eval_limit", None) is not None
-    ):
-        records = records[: max(0, int(config.rico_eval_limit))]
+    suite_limit = getattr(config, "eval_limit", None)
+    if suite_limit is None and config.suite == "rico_held":
+        suite_limit = getattr(config, "rico_eval_limit", None)
+    if suite_limit is not None:
+        records = records[: max(0, int(suite_limit))]
     ckpt = checkpoint or (config.checkpoint_dir / "last.pt")
 
     if model is not None:
@@ -332,11 +334,13 @@ def evaluate(
     details: list[dict] = []
     task_cases: list[dict] = []
     failure_breakdown: dict[str, int] = {}
+    decode_stats_rows: list[object] = []
     canvas_cap = _decode_canvas_cap(plugin)
 
     batch_size = 1
     generate_batch_requests = getattr(plugin, "generate_batch_requests", None)
     generate_batch = getattr(plugin, "generate_batch", None)
+    generate_with_stats = getattr(plugin, "generate_with_stats", None)
     if callable(generate_batch_requests) or callable(generate_batch):
         batch_size = max(
             1,
@@ -344,6 +348,12 @@ def evaluate(
                 getattr(getattr(plugin, "config", None), "generate_batch_size", 8) or 8
             ),
         )
+    # Preserve per-example fallback attribution only when the plugin has no
+    # request-aware API.  Prefer GenerationRequest so slot contracts supplied
+    # by the evaluation fixture reach the model; calling generate_with_stats
+    # with only ``prompt`` silently drops that production input.
+    if callable(generate_with_stats) and not callable(generate_batch_requests):
+        batch_size = 1
 
     def _eval_schema() -> str | None:
         if not getattr(config, "schema_in_context", False):
@@ -357,10 +367,19 @@ def evaluate(
         schema = _eval_schema()
         return [GenerationRequest.from_record(r, schema=schema) for r in chunk]
 
-    def _generate_chunk(chunk: list[ExampleRecord]) -> list[str]:
+    def _generate_chunk_unbounded(chunk: list[ExampleRecord]) -> list[str]:
         """Generate without passing gold ExampleRecord to the model."""
         if callable(generate_batch_requests):
-            return generate_batch_requests(_requests_for(chunk))
+            from slm_training.models.decode_stats import collect_decode_stats
+
+            with collect_decode_stats() as stats:
+                result = generate_batch_requests(_requests_for(chunk))
+            decode_stats_rows.append(stats)
+            return result
+        if callable(generate_with_stats) and len(chunk) == 1:
+            text, stats = generate_with_stats(chunk[0].prompt)
+            decode_stats_rows.append(stats)
+            return [text]
         prompts = [r.prompt for r in chunk]
         if callable(generate_batch):
             try:
@@ -377,6 +396,29 @@ def evaluate(
             except TypeError:
                 out.append(plugin.generate(prompt, gold=None))
         return out
+
+    decode_timeout_count = 0
+
+    def _generate_chunk(chunk: list[ExampleRecord]) -> list[str]:
+        """Generate a chunk, converting an explicit diagnostic timeout to failures."""
+        nonlocal decode_timeout_count
+        seconds = float(getattr(config, "decode_timeout_seconds", 0) or 0)
+        if seconds <= 0 or not hasattr(signal, "setitimer"):
+            return _generate_chunk_unbounded(chunk)
+
+        def _alarm(_signum: int, _frame: object) -> None:
+            raise TimeoutError(f"decode exceeded {seconds:g}s")
+
+        previous = signal.signal(signal.SIGALRM, _alarm)
+        signal.setitimer(signal.ITIMER_REAL, seconds)
+        try:
+            return _generate_chunk_unbounded(chunk)
+        except TimeoutError:
+            decode_timeout_count += len(chunk)
+            return ["" for _ in chunk]
+        finally:
+            signal.setitimer(signal.ITIMER_REAL, 0)
+            signal.signal(signal.SIGALRM, previous)
 
     def _score_one(record: ExampleRecord, pred: str, latency_ms: float) -> None:
         nonlocal parse_ok, raw_syntax_ok, fidelity_sum, fidelity_norm_sum, validity_sum
@@ -488,6 +530,8 @@ def evaluate(
     metrics = {
         "suite": config.suite,
         "n": n,
+        "eval_limit": suite_limit,
+        "diagnostic_subset": suite_limit is not None,
         "parse_rate": (parse_ok / n) if n else 0.0,
         "raw_syntax_validity": (raw_syntax_ok / n) if n else 0.0,
         "contract_precision": (contract_precision_sum / n) if n else 0.0,
@@ -514,6 +558,7 @@ def evaluate(
         "model": config.model_name,
         "evaluated_at": datetime.now(timezone.utc).isoformat(),
         "failure_breakdown": failure_breakdown,
+        "decode_timeout_count": decode_timeout_count,
         "decode_canvas_cap": canvas_cap,
         "details": details,
     }
@@ -527,6 +572,24 @@ def evaluate(
         and getattr(spec_stats, "generates", 0)
     ):
         metrics["speculative_stats"] = spec_stats.as_dict()
+    if decode_stats_rows:
+        from slm_training.models.decode_stats import aggregate_stats
+
+        metrics["decode_stats"] = aggregate_stats(decode_stats_rows)
+        fastpath = int(metrics["decode_stats"].get("template_fastpath_count_sum", 0))
+        template_fallback = int(
+            metrics["decode_stats"].get("template_fallback_count_sum", 0)
+        )
+        metrics["template_fastpath_count"] = fastpath
+        metrics["template_fallback_count"] = template_fallback
+        # Keep the legacy field honest: certified template output is a
+        # fallback for learned-quality accounting, even when it is valid.
+        metrics["fallback_count"] = fastpath + template_fallback
+        retries = sum(
+            int(getattr(row, "unconstrained_retries", 0))
+            for row in decode_stats_rows
+        )
+        metrics["constrained_fallback_rate"] = retries / len(decode_stats_rows)
 
     run_dir = config.run_dir
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -589,6 +652,10 @@ def evaluate_suites(
         scoreboard["gates"] = {k: gates[k] for k in ("pass", "failures", "output")}
     from slm_training.evals.agentv import publish_model_evaluation
 
-    scoreboard["agentv"] = publish_model_evaluation(run_dir, board)
+    scoreboard["agentv"] = publish_model_evaluation(
+        run_dir,
+        board,
+        include_missing_suites=set(suites) == set(DEFAULT_SHIP_GATES),
+    )
     path.write_text(json.dumps(scoreboard, indent=2) + "\n", encoding="utf-8")
     return scoreboard

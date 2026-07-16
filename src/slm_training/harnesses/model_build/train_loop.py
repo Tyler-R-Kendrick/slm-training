@@ -108,6 +108,10 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "device": config.device,
             "model": config.model_name,
             "context_backend": getattr(config, "context_backend", None),
+            "batch_size": int(config.batch_size),
+            "grad_accum": int(getattr(config, "grad_accum_steps", 1) or 1),
+            "effective_batch_size": int(config.batch_size)
+            * int(getattr(config, "grad_accum_steps", 1) or 1),
         },
     )
     mix_curriculum = bool(getattr(config, "mix_curriculum", True))
@@ -131,6 +135,19 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             mixture_hash,
         )
 
+        min_quality = float(getattr(config, "mixture_min_quality_score", 0.0) or 0.0)
+        if min_quality > 0.0:
+            filtered = [
+                record
+                for record in records
+                if float((record.meta or {}).get("quality", {}).get("score") or 0.0)
+                >= min_quality
+            ]
+            if not filtered:
+                raise ValueError(
+                    f"mixture_min_quality_score={min_quality:g} removed all records"
+                )
+            records = filtered
         manifest = load_mixture_manifest(mixture_path)
         mixture_weights = dict(manifest.weights)
         mixture_task_weights = dict(manifest.task_weights or {}) or None
@@ -140,6 +157,8 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "task_weights": mixture_task_weights,
             "hash": mixture_hash(manifest),
             "path": str(mixture_path),
+            "min_quality_score": min_quality,
+            "filtered_record_count": len(records),
         }
         family_pools = index_family_pools(records)
         if mixture_task_weights:
@@ -197,6 +216,10 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     step = 0
     last_loss = 0.0
     micro = 0
+    accum_loss_sum = 0.0
+    accum_loss_count = 0
+    accum_batch_meta: list[dict] = []
+    accum_example_losses: list[float] = []
     seen_prompt_tokens = 0
     seen_target_tokens = 0
     best_weighted_nll = math.inf
@@ -258,6 +281,18 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             seen_prompt_tokens += int(pt)
             seen_target_tokens += int(tt)
 
+    def _batch_meta(batch: list) -> list[dict]:
+        return [
+            {
+                "id": str(record.id),
+                "source": str(record.source),
+                "source_family": str((record.meta or {}).get("source_family") or record.source),
+                "prompt_chars": len(record.prompt),
+                "target_chars": len(record.openui),
+            }
+            for record in batch
+        ]
+
     def _budget_exhausted() -> bool:
         budget = getattr(config, "target_token_budget", None)
         return (
@@ -295,6 +330,8 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         nonlocal best_ship_score
         if config.test_dir is None:
             return None
+        if eval_history and eval_history[-1].get("step") == step:
+            return eval_history[-1]
         if not force and (
             config.eval_every <= 0 or step <= 0 or step % config.eval_every != 0
         ):
@@ -362,6 +399,8 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         nonlocal best_weighted_nll
         if config.test_dir is None or not is_twotower:
             return None
+        if nll_history and nll_history[-1].get("step") == step:
+            return nll_history[-1]
         every = int(getattr(config, "loss_eval_every", 0) or 0)
         if not force and (every <= 0 or step <= 0 or step % every != 0):
             return None
@@ -445,10 +484,18 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                     optimizer.zero_grad(set_to_none=True)
                 with timed("forward"):
                     with autocast_context(config.device, enabled=use_amp):
-                        loss_t = plugin.training_loss(batch) / grad_accum
+                        raw_loss_t = plugin.training_loss(batch)
+                        loss_t = raw_loss_t / grad_accum
                 with timed("backward"):
                     scaler.scale(loss_t).backward()
                 _count_tokens(batch)
+                accum_loss_sum += float(raw_loss_t.detach().cpu())
+                accum_loss_count += 1
+                accum_batch_meta.extend(_batch_meta(batch))
+                accum_example_losses.extend(
+                    float(value)
+                    for value in (getattr(plugin, "_last_example_token_losses", None) or [])
+                )
                 micro += 1
                 if micro >= grad_accum:
                     with timed("optim_step"):
@@ -459,7 +506,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                         scaler.step(optimizer)
                         scaler.update()
                     micro = 0
-                    last_loss = float(loss_t.detach().cpu()) * grad_accum
+                    last_loss = accum_loss_sum / max(1, accum_loss_count)
+                    accum_loss_sum = 0.0
+                    accum_loss_count = 0
                     step += 1
                     row = {
                         "step": step,
@@ -472,8 +521,12 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                         "amp": use_amp,
                         "compile": use_compile,
                         "grad_accum": grad_accum,
+                        "batches": accum_batch_meta,
+                        "example_token_loss_proxy": accum_example_losses,
                         "ts": datetime.now(timezone.utc).isoformat(),
                     }
+                    accum_batch_meta = []
+                    accum_example_losses = []
                     metrics_file.write(json.dumps(row) + "\n")
                     metrics_file.flush()
                     did_eval = _maybe_eval(step)
@@ -517,9 +570,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         )
         final_loss_eval = _maybe_loss_eval(
             step,
-            force=bool(
-                config.test_dir and int(getattr(config, "loss_eval_every", 0) or 0) > 0
-            ),
+            # Cadence 0 disables intermediate checks, but never disables the
+            # final feedback artifact for a testable TwoTower run.
+            force=bool(config.test_dir),
         )
         _save_full_state_now()
 
@@ -600,6 +653,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "amp": use_amp,
             "compile": use_compile,
             "grad_accum": grad_accum,
+            "effective_batch_size": int(config.batch_size) * grad_accum,
             "num_threads": accel.num_threads,
             "note": accel.note,
         },

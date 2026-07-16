@@ -1,0 +1,15 @@
+{
+  "run_id": "iter-e82-template-fastpath-20260715",
+  "parent_run": "iter-e81-request-contract-timeout-20260715",
+  "intervention": "opt-in certified contract-template fast path",
+  "recipe": {"device": "cpu", "steps": 64, "backend": "scratch", "suite": "smoke", "n": 1, "train_dir": "outputs/train_data/v2_prompt_contract"},
+  "metrics": {
+    "smoke": {"n": 3, "parse_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.6489, "latency_ms_p50": 872.7, "decode_timeout_count": 0},
+    "held_out": {"n": 5, "parse_rate": 0.6, "placeholder_fidelity": 1.0, "structural_similarity": 0.55388, "latency_ms_p50": 22.15, "decode_timeout_count": 0},
+    "adversarial": {"n": 4, "parse_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.8263, "latency_ms_p50": 24.04, "decode_timeout_count": 0},
+    "ood": {"n": 4, "parse_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.597375, "latency_ms_p50": 34.33, "decode_timeout_count": 0},
+    "rico_held": {"n": 3, "parse_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.7617666667, "latency_ms_p50": 36.54, "decode_timeout_count": 0}
+  },
+  "decision": "retain opt-in harness upper bound; do not promote learned model quality",
+  "honesty": "bounded full-suite scratch evidence; template output is certified, not learned"
+}

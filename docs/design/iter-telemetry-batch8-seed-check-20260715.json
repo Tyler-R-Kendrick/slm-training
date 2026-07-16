@@ -1,0 +1,12 @@
+{
+  "date": "2026-07-15",
+  "kind": "telemetry-stability-check",
+  "recipe": {"batch_size": 8, "learning_rate": 0.0006, "steps": 4, "context_backend": "scratch", "dataset": "remediated"},
+  "runs": [
+    {"seed": 0, "weighted_nll": 27.977443108643225, "target_tokens": 6252, "loss_suites_pct": 53.61},
+    {"seed": 1, "weighted_nll": 31.16450060005228, "target_tokens": 5518, "loss_suites_pct": 68.53}
+  ],
+  "top5_example_loss_overlap": 0,
+  "decision": "no data reweighting or deletion; collect larger multi-seed evidence",
+  "honesty": "scratch diagnostic; not a ship claim"
+}

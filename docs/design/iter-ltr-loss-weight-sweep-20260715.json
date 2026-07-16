@@ -1,0 +1,13 @@
+{
+  "date": "2026-07-15",
+  "kind": "ltr-loss-weight-sweep",
+  "recipe": {"steps": 64, "batch_size": 8, "effective_batch_size": 8, "seed": 0, "context_backend": "scratch", "device": "cpu", "loss_eval_every": 32, "eval_limit": 1, "gen_steps": 8, "max_attempts": 1},
+  "candidates": [
+    {"ltr_loss_weight": 0.5, "weighted_nll": 7.056898204491874, "structural_similarity": 0.2333, "placeholder_validity": 0.2667, "component_type_recall": 0.25, "parse_rate": 0.0, "reward_score": 0.0},
+    {"ltr_loss_weight": 2.0, "weighted_nll": 7.294002248996842, "structural_similarity": 0.5375, "placeholder_validity": 0.2, "component_type_recall": 0.5, "parse_rate": 0.0, "reward_score": 0.0},
+    {"ltr_loss_weight": 4.0, "weighted_nll": 7.485804649919068, "structural_similarity": 0.525, "placeholder_validity": 0.2, "component_type_recall": 0.5, "parse_rate": 0.0, "reward_score": 0.0}
+  ],
+  "telemetry_persisted": true,
+  "decision": "retain ltr_loss_weight=2 as structure-oriented candidate; reject weight4 and do not promote",
+  "honesty": "scratch diagnostics; not a ship claim"
+}

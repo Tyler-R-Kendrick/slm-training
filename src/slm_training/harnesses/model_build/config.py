@@ -54,6 +54,7 @@ class ModelBuildConfig:
     slot_contract_in_context: bool = False
     slot_contract_constrained_decode: bool = False
     template_fill_decode: bool = False
+    contract_template_fastpath: bool = False
     retrieval_k: int = 0
     best_of_n: int = 1
     use_curriculum: bool = False
@@ -61,6 +62,7 @@ class ModelBuildConfig:
     mix_curriculum: bool = True
     # P1b: optional mixture manifest (JSON) for online family-weighted sampling.
     mixture_manifest: Path | None = None
+    mixture_min_quality_score: float = 0.0
     # P1d: after base training, write promoted.pt from best_weighted_nll / last.
     register_promoted: bool = False
     # Stub-only
@@ -83,6 +85,8 @@ class ModelBuildConfig:
     eval_suites: str = ""
     # Cap rico_held size during matrix / CPU evals (None = full suite).
     rico_eval_limit: int | None = None
+    # Optional cap for every eval suite; diagnostic-only when explicitly set.
+    eval_limit: int | None = None
     # Accelerator / throughput
     use_amp: bool = False
     use_compile: bool = False
@@ -148,6 +152,8 @@ class ModelBuildConfig:
     diffusion_length_buckets: tuple[int, ...] = (32, 64, 96, 128, 192, 256, 384, 512)
     diffusion_overallocate: int = 8
     diffusion_length_loss_weight: float = 0.1
+    ltr_prefix_loss_weight: float = 0.0
+    symbol_boundary_loss_weight: float = 0.0
     remask_span: str = "token"  # token | statement
     teacher_init_embeddings: bool = False
     # Inference-speed levers (P/Q/R-series)
@@ -161,7 +167,10 @@ class ModelBuildConfig:
     grammar_canvas_lookahead: int = 0
     use_dynamic_quant: bool = False
     generate_max_attempts: int = 3
+    # Diagnostic per-record generation timeout; None/0 preserves unlimited eval.
+    decode_timeout_seconds: float | None = None
     grammar_finalize_on_last_attempt_only: bool = False
+    allow_unconstrained_fallback: bool = True
     # V7 speculative denoising (docs/design/speculative-denoising.md)
     stability_min_persistence: int = 0  # E70 commit gate (0=off)
     stability_jsd_weight: float = 1.0  # E70 remask score mix

@@ -1,0 +1,10 @@
+{
+  "run_id": "iter-e79-data-contract-audit-20260715",
+  "dataset": "outputs/train_data/v1_curriculum",
+  "records": 1165,
+  "records_with_placeholders": 1089,
+  "records_with_visible_prompt_inventory": 42,
+  "records_with_placeholders_but_no_visible_inventory": 1123,
+  "decision": "make contracts visible in synthesized training prompts; retain strict fidelity gate",
+  "honesty": "data audit; not a model or ship result"
+}

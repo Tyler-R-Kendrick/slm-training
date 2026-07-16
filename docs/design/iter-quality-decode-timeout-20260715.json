@@ -1,0 +1,9 @@
+{
+  "date": "2026-07-15",
+  "kind": "evaluation-harness-timeout",
+  "default_behavior": "unlimited",
+  "unconstrained_control": {"bounded_scoreboard": true, "agentv_persisted": true, "decode_timeout_count": 0},
+  "constrained_path": {"python_signal_interrupt": false, "stack_boundary": "lark.lexer"},
+  "next": "subprocess-isolated grammar worker before enforcing constrained timeout",
+  "honesty": "diagnostic only; no ship claim"
+}

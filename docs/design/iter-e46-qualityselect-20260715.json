@@ -1,0 +1,34 @@
+{
+  "run_id": "iter-e46-qualityselect-20260715",
+  "matrix": "v5",
+  "experiment": "E46",
+  "status": "interrupted_after_first_quality_evaluation",
+  "recipe": {
+    "context_backend": "scratch",
+    "train_dir": "outputs/train_data/remediated_roots",
+    "steps_requested": 128,
+    "batch_size": 8,
+    "eval_every": 16,
+    "suites": ["smoke", "held_out"],
+    "build_curriculum": true
+  },
+  "selected_step": 16,
+  "ship_best": true,
+  "smoke": {
+    "n": 3,
+    "parse_rate": 1.0,
+    "placeholder_fidelity": 1.0,
+    "structural_similarity": 0.6489,
+    "reward_score": 0.969,
+    "decode_timeout_count": 0
+  },
+  "held_out": {
+    "n": 5,
+    "parse_rate": 0.6,
+    "placeholder_fidelity": 1.0,
+    "structural_similarity": 0.55388,
+    "reward_score": 0.9892,
+    "decode_timeout_count": 0
+  },
+  "evidence": "outputs/runs/iter-e46-qualityselect-20260715/qx_e46_champion"
+}

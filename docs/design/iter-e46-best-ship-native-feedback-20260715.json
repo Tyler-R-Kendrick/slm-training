@@ -1,0 +1,16 @@
+{
+  "run_id": "iter-e46-best-ship-native-feedback-20260715",
+  "parent_run": "iter-e46-qualityselect-20260715",
+  "suite": "smoke",
+  "n": 3,
+  "grammar_constrained": true,
+  "output_tokenizer_override": null,
+  "parse_rate": 0.0,
+  "structural_similarity": 0.0,
+  "reward_score": 0.0,
+  "latency_ms_p50": 19143.88,
+  "decode_timeout_count": 0,
+  "failure_breakdown": {"parse_error": 3},
+  "agentv": {"passed": 0, "failed": 5, "execution_errors": 0},
+  "evidence": "outputs/runs/iter-e46-qualityselect-20260715/feedback_native/e46-best-ship-native"
+}

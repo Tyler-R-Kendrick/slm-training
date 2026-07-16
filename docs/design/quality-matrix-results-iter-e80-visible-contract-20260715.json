@@ -1,0 +1,117 @@
+{
+  "matrix": "quality-experiment-matrix-v7",
+  "reference": "docs/design/quality-experiment-matrix.md",
+  "gate_policy": {
+    "smoke": {
+      "parse_rate": 0.66,
+      "structural_similarity": 0.35,
+      "placeholder_fidelity": 0.25,
+      "reward_score": 0.3
+    },
+    "held_out": {
+      "parse_rate": 0.4,
+      "structural_similarity": 0.3,
+      "placeholder_fidelity": 0.15
+    },
+    "adversarial": {
+      "parse_rate": 0.25,
+      "structural_similarity": 0.25
+    },
+    "ood": {
+      "parse_rate": 0.25,
+      "structural_similarity": 0.25
+    },
+    "rico_held": {
+      "parse_rate": 0.1,
+      "structural_similarity": 0.2
+    }
+  },
+  "device": "cpu",
+  "batch_size": 4,
+  "learning_rate": 0.0003,
+  "seed": 0,
+  "test_dir": "outputs/test_data/remediated",
+  "design_md_in_context": false,
+  "rico_eval_limit": 3,
+  "suites": [
+    "held_out",
+    "smoke"
+  ],
+  "steps": 256,
+  "gen_steps": 8,
+  "context_backend": "scratch",
+  "matrix_set": "v7",
+  "results": [
+    {
+      "id": "E80",
+      "run_id": "qx_e80_visible_contract",
+      "initialization": "scratch",
+      "parent_checkpoint": null,
+      "description": "E77 cache path retrained on prompts with visible slot contracts",
+      "honest_slot_contract": true,
+      "schema_in_context": true,
+      "slot_contract_in_context": true,
+      "slot_contract_constrained_decode": true,
+      "template_fill_decode": true,
+      "grammar_ltr_primary": false,
+      "grammar_ltr_repair": true,
+      "effective_gen_steps": 16,
+      "best_of_n": 4,
+      "train_dir": "outputs/train_data/v2_prompt_contract",
+      "train_content_fingerprint": "c3ae5b41bb41010ee2d78b5b0c9bd257295234853ce6f9645c127fdca29e8dd3",
+      "checkpoint": "outputs/runs/iter-e80-visible-contract-20260715/qx_e80_visible_contract/checkpoints/last.pt",
+      "pass": false,
+      "failures": [
+        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+        "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+        "adversarial:missing_suite",
+        "ood:missing_suite",
+        "rico_held:missing_suite"
+      ],
+      "suites": {
+        "smoke": {
+          "parse_rate": 1.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.6111333333333334,
+          "reward_score": 0.669,
+          "n": 3,
+          "speculative_stats": {
+            "generates": 24,
+            "denoiser_forwards": 404,
+            "forwards_per_generate": 16.833333333333332,
+            "speculative_batches": 240,
+            "speculative_canvases": 480,
+            "successor_hits": 232,
+            "successor_misses": 8,
+            "successor_hit_rate": 0.9666666666666667,
+            "clusters_proposed": 256,
+            "clusters_accepted": 228,
+            "clusters_rejected": 28,
+            "remasked_positions": 5468
+          }
+        },
+        "held_out": {
+          "parse_rate": 0.6,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.49506000000000006,
+          "reward_score": 0.6682,
+          "n": 5,
+          "speculative_stats": {
+            "generates": 40,
+            "denoiser_forwards": 672,
+            "forwards_per_generate": 16.8,
+            "speculative_batches": 360,
+            "speculative_canvases": 720,
+            "successor_hits": 348,
+            "successor_misses": 12,
+            "successor_hit_rate": 0.9666666666666667,
+            "clusters_proposed": 384,
+            "clusters_accepted": 380,
+            "clusters_rejected": 4,
+            "remasked_positions": 9848
+          }
+        }
+      }
+    }
+  ]
+}

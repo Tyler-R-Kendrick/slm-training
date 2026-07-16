@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 import time
 from contextlib import contextmanager
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from typing import Any, Iterator
 
 
@@ -28,6 +28,17 @@ class DecodeStats:
     attempts: int = 1
     accepted_run_tokens: int = 0  # P3 multi-token accepts beyond the first
     canvas_tokens: int = 0
+    unconstrained_retries: int = 0  # grammar decode fell back to unfiltered retry
+    template_fastpath_count: int = 0
+    template_fallback_count: int = 0
+    root_invariant_bypass_count: int = 0
+    constrained_dead_ends: int = 0  # no legal continuation found
+    constrained_dead_end_last_position: int = -1
+    constrained_dead_end_forced_rank: int = -1
+    constrained_last_legal_candidates: int = -1
+    constrained_dead_end_candidate_count: int = 0
+    constrained_dead_end_traces: list[dict[str, object]] = field(default_factory=list)
+    newline_commit_traces: list[dict[str, object]] = field(default_factory=list)
 
     def add_ms(self, field_name: str, ms: float) -> None:
         setattr(self, field_name, float(getattr(self, field_name)) + float(ms))
@@ -105,6 +116,14 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "tokens_emitted",
         "accepted_run_tokens",
         "canvas_tokens",
+        "constrained_dead_ends",
+        "constrained_dead_end_last_position",
+        "constrained_dead_end_forced_rank",
+        "constrained_last_legal_candidates",
+        "constrained_dead_end_candidate_count",
+        "template_fastpath_count",
+        "template_fallback_count",
+        "root_invariant_bypass_count",
     ]
     out: dict[str, Any] = {"n": len(rows)}
     for key in keys:
@@ -122,6 +141,12 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
 
     out["total_ms_p50"] = _nearest_rank(0.50)
     out["total_ms_p95"] = _nearest_rank(0.95)
+    out["constrained_dead_end_traces"] = [
+        trace for row in rows for trace in row.constrained_dead_end_traces
+    ]
+    out["newline_commit_traces"] = [
+        trace for row in rows for trace in row.newline_commit_traces
+    ]
     return out
 
 

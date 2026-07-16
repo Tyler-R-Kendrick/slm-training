@@ -1,0 +1,13 @@
+{
+  "experiment": "E113",
+  "date": "2026-07-15",
+  "kind": "resource-retry",
+  "recipe": "E91",
+  "batch_size": 1,
+  "status": "incomplete",
+  "last_observed_step": 17,
+  "metrics": "outputs/runs/iter-e113-e91-batch1-20260715/e113_e91_batch1/metrics.jsonl",
+  "checkpoint": null,
+  "evaluation": null,
+  "decision": "stop retries; add resource-failure diagnostics first"
+}
