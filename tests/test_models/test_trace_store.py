@@ -85,6 +85,25 @@ def test_recorder_zero_cost_when_absent() -> None:
     assert isinstance(text, str)
 
 
+def test_recorder_support_captures_exact_precommit_state() -> None:
+    model = _model()
+    model.config.grammar_ltr_primary = False
+    recorder = DecodeTraceRecorder(record_support=True)
+    model.trace_recorder = recorder
+    model.generate("Hero", gold=None, grammar_constrained=True)
+    model.trace_recorder = None
+
+    commits = [
+        commit
+        for step in recorder.steps
+        for commit in step.get("commits", [])
+        if commit.get("phase") == "maskgit"
+    ]
+    assert commits
+    assert all("pre_canvas" in commit and "raw_id" in commit for commit in commits)
+    assert all(commit["pre_canvas"][commit["t"]] == model.tokenizer.mask_id for commit in commits)
+
+
 def test_trace_store_append_only(tmp_path: Path) -> None:
     store = TraceStore(tmp_path / "traces")
     recorder = DecodeTraceRecorder()

@@ -74,7 +74,33 @@ def main(argv: list[str] | None = None) -> int:
     train.add_argument("--steps", type=int, default=50)
     train.add_argument("--device", default="cpu")
 
+    events = sub.add_parser(
+        "build-local-events", help="Mine exact local decision events from traces"
+    )
+    events.add_argument("--traces", type=Path, required=True)
+    events.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/data/preference/local_decisions.jsonl"),
+    )
+
     args = parser.parse_args(argv)
+
+    if args.cmd == "build-local-events":
+        from slm_training.harnesses.preference.local_decisions import (
+            events_from_trace,
+            load_trace_rows,
+            write_decision_events,
+        )
+
+        mined = [
+            event
+            for trace in load_trace_rows(args.traces)
+            for event in events_from_trace(trace)
+        ]
+        count = write_decision_events(args.out, mined)
+        print(json.dumps({"events": count, "out": str(args.out)}, indent=2))
+        return 0
 
     if args.cmd == "build-pairs":
         records = load_jsonl(args.train_records)
