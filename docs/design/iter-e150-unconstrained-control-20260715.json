@@ -1,0 +1,32 @@
+{
+  "iteration": "E150",
+  "date": "2026-07-15",
+  "objective": "Separate checkpoint generation failure from constrained-decoder timeout behavior.",
+  "recipe": {
+    "checkpoint": "outputs/runs/iter-e147-judge-gated-control-20260715/e147-judge-gated-control/checkpoints/last.pt",
+    "train_dir": "src/slm_training/resources/train_data/remediated_roots_judged",
+    "backend": "hf",
+    "device": "cpu",
+    "suite": "smoke",
+    "n": 1,
+    "grammar_constrained": false,
+    "decode_timeout_seconds": 20,
+    "max_attempts": 3
+  },
+  "result": {
+    "parse_rate": 0.0,
+    "structural_similarity": 0.0724,
+    "placeholder_validity": 0.3385,
+    "decode_timeout_count": 0,
+    "latency_ms_p50": 842.44,
+    "agentv_passed": 0,
+    "agentv_failed": 5,
+    "prediction_prefix": "TextContent\\\"Update a content."
+  },
+  "comparison": {
+    "constrained_timeout_count": 1,
+    "constrained_latency_ms_p50": 20000.93,
+    "constrained_parse_rate": 0.0
+  },
+  "conclusion": "The checkpoint itself generates without timeout, while constrained decoding introduces the 20-second timeout. Quality remains poor in both modes, so the next fix should target constrained candidate/probe cost and behavior rather than data admission."
+}
