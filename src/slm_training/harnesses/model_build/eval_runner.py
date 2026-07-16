@@ -594,6 +594,11 @@ def evaluate(
                 if config.grammar_ltr_repair is None
                 else bool(config.grammar_ltr_repair)
             ),
+            "compiler_decode_mode": (
+                None
+                if config.compiler_decode_mode is None
+                else str(config.compiler_decode_mode)
+            ),
             "grammar_skip_exact_stream_probe": (
                 None
                 if config.grammar_skip_exact_stream_probe is None

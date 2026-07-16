@@ -1,0 +1,9 @@
+{
+  "iteration": "E156",
+  "date": "2026-07-16",
+  "objective": "Measure a matched judged-corpus train after the singleton legal-token decoder fix.",
+  "recipe": {"train_steps": 8, "batch_size": 4, "seed": 0, "device": "cpu", "context_backend": "hf", "local_files_only": true, "suite": "smoke", "n": 3, "max_attempts": 1, "honesty_mode": "no-design-md-context"},
+  "training": {"run_id": "e156-singleton-fix", "last_loss": 27.865076065063477, "data_manifest_sha": "ef09af685063bace02797ef0138cb3e6e238159a66bb99d5c404f57f64505758", "telemetry": "outputs/runs/iter-e156-singleton-fix-20260715/e156-singleton-fix/train_telemetry.json"},
+  "feedback": {"parse_rate": 0.0, "raw_syntax_validity": 0.0, "structural_similarity": 0.2428, "placeholder_validity": 0.4, "decode_timeout_count": 0, "latency_ms_p50": 13316.42, "latency_ms_p95": 15627.68, "agentv_passed": 0, "agentv_failed": 5, "agentv": "outputs/runs/iter-e156-singleton-fix-20260715/e156-singleton-fix-feedback/agentv"},
+  "conclusion": "The singleton fix did not change parse correctness; the constrained path still emits malformed lexical sequences. Structure improved over E155, but no promotion is justified."
+}

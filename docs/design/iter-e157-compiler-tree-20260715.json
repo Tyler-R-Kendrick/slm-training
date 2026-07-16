@@ -1,0 +1,8 @@
+{
+  "iteration": "E157",
+  "date": "2026-07-16",
+  "objective": "Test the existing compiler/tree constrained decode path against the E156 checkpoint.",
+  "recipe": {"checkpoint": "outputs/runs/iter-e156-singleton-fix-20260715/e156-singleton-fix/checkpoints/last.pt", "suite": "smoke", "n": 3, "compiler_decode_mode": "tree", "max_attempts": 1, "device": "cpu", "context_backend": "hf", "local_files_only": true},
+  "feedback": {"parse_rate": 0.0, "raw_syntax_validity": 0.0, "structural_similarity": 0.2428, "placeholder_validity": 0.4, "decode_timeout_count": 0, "latency_ms_p50": 6180.02, "latency_ms_p95": 6944.79, "agentv_passed": 0, "agentv_failed": 5, "agentv": "outputs/runs/iter-e156-singleton-fix-20260715/e157-compiler-tree-feedback/agentv"},
+  "conclusion": "Tree mode reduces latency but does not improve quality: the compiler falls back on this checkpoint and parse remains zero. Evaluation now persists compiler_decode_mode so future comparisons cannot silently lose this override."
+}

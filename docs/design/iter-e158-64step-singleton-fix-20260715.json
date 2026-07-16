@@ -1,0 +1,9 @@
+{
+  "iteration": "E158",
+  "date": "2026-07-16",
+  "objective": "Test whether the E156 parse failure is primarily caused by an undertrained checkpoint.",
+  "recipe": {"train_steps": 64, "batch_size": 4, "seed": 0, "device": "cpu", "context_backend": "hf", "local_files_only": true, "suite": "smoke", "n": 3, "max_attempts": 1, "honesty_mode": "no-design-md-context"},
+  "training": {"run_id": "e158-64step-singleton-fix", "last_loss": 9.665253639221191, "data_manifest_sha": "ef09af685063bace02797ef0138cb3e6e238159a66bb99d5c404f57f64505758", "telemetry": "outputs/runs/iter-e158-64step-singleton-fix-20260715/e158-64step-singleton-fix/train_telemetry.json"},
+  "feedback": {"parse_rate": 0.0, "raw_syntax_validity": 0.0, "structural_similarity": 0.2114, "placeholder_fidelity_normalized": 0.08333333333333333, "placeholder_validity": 0.3166666666666667, "decode_timeout_count": 0, "latency_ms_p50": 5928.23, "latency_ms_p95": 6518.12, "agentv_passed": 0, "agentv_failed": 5, "agentv": "outputs/runs/iter-e158-64step-singleton-fix-20260715/e158-feedback/agentv"},
+  "conclusion": "Longer training lowers loss substantially but does not recover parse or structural quality. The bottleneck is not simply step count; next work should repair token/grammar alignment or the training objective before scaling training further."
+}

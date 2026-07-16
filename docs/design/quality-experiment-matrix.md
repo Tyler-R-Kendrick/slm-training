@@ -702,6 +702,14 @@ decision are in [data-synthesis.md](data-synthesis.md) and
 
 ## V8 dynamic-symbol and constraint-system matrix (proposed, unrun)
 
+## E156–E158 constrained decoder follow-up (CPU diagnostic, 2026-07-16)
+
+The matched judged-corpus follow-up is recorded in
+[iter-e156-singleton-fix-20260715.md](iter-e156-singleton-fix-20260715.md).
+The singleton legal-token fix and compiler/tree decode both leave parse at 0.0;
+64 training steps lower loss to 9.6653 but still leave parse at 0.0. These are
+negative diagnostic results, not ship claims or data-promotion evidence.
+
 These rows are registered under `--matrix v8`; `--list` prints definitions
 without building data or starting a run. They require the lexer-native parent
 contract and unchanged honest five-suite gates. No result or champion is claimed.
