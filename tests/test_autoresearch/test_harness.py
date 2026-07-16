@@ -1113,6 +1113,8 @@ def test_compile_resolves_canonical_published_train_version() -> None:
             component_inventory_decode_weight=0.75,
             component_plan_loss_weight=1.25,
             component_plan_decode_weight=0.5,
+            component_edge_loss_weight=1.5,
+            component_edge_decode_weight=0.25,
             compiler_decode_mode="tree",
             compiler_search_mode="ptrm",
             compiler_search_trigger="stagnation",
@@ -1144,6 +1146,8 @@ def test_compile_resolves_canonical_published_train_version() -> None:
     assert commands[0][commands[0].index("--component-inventory-decode-weight") + 1] == "0.75"
     assert commands[0][commands[0].index("--component-plan-loss-weight") + 1] == "1.25"
     assert commands[0][commands[0].index("--component-plan-decode-weight") + 1] == "0.5"
+    assert commands[0][commands[0].index("--component-edge-loss-weight") + 1] == "1.5"
+    assert commands[0][commands[0].index("--component-edge-decode-weight") + 1] == "0.25"
     assert "--schema-in-context" in commands[0]
     assert "--slot-contract-in-context" in commands[0]
     assert "--no-design-md-context" in commands[0]

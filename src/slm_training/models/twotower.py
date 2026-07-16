@@ -190,6 +190,8 @@ class TwoTowerConfig:
     # Grammar-role plan: root class plus bound-component multiplicities.
     component_plan_loss_weight: float = 0.0
     component_plan_decode_weight: float = 0.0
+    component_edge_loss_weight: float = 0.0
+    component_edge_decode_weight: float = 0.0
     symbol_boundary_loss_weight: float = 0.0
     # Extra CE weight on gold placeholder token positions (fidelity signal).
     fidelity_loss_weight: float = 0.5
@@ -502,6 +504,24 @@ class TwoTowerModel(nn.Module):
             if plan_enabled
             else None
         )
+        try:
+            component_edge_ids = tuple(sorted(tokenizer.kind_ids("component")))
+        except (AttributeError, TypeError, ValueError):
+            component_edge_ids = ()
+        edge_enabled = (
+            float(getattr(self.config, "component_edge_loss_weight", 0.0) or 0.0)
+            > 0.0
+            or float(getattr(self.config, "component_edge_decode_weight", 0.0) or 0.0)
+            > 0.0
+        )
+        self.component_edge_head = (
+            nn.Linear(
+                self.config.d_model,
+                len(component_edge_ids) * len(component_edge_ids),
+            )
+            if edge_enabled and component_edge_ids
+            else None
+        )
         # E31 BackPlay-lite: plug-in trust head over denoiser hiddens.
         self.trust_gate = FastPathGate(self.config.d_model)
         # E73 DSpark-lite: plug-in trajectory-survival head (V7).
@@ -524,6 +544,7 @@ class TwoTowerModel(nn.Module):
         self._context_token_count_cache: dict[str, int] = {}
         self._placeholder_token_ids: set[int] | None = None
         self._component_token_ids_cache: tuple[int, ...] | None = None
+        self._component_edge_cache: dict[str, tuple[tuple[int, int], ...]] = {}
         self._slot_contracts: list[list[str] | None] | None = None
         # Per-example symbol tables for lexer-native encode/decode.
         self._symbol_tables: dict[str, object] = {}
@@ -1652,6 +1673,77 @@ class TwoTowerModel(nn.Module):
                     }
                 )
 
+        edge_w = float(
+            getattr(self.config, "component_edge_loss_weight", 0.0) or 0.0
+        )
+        if edge_w > 0.0 and self.component_edge_head is not None:
+            from slm_training.dsl.grammar.fastpath.compiler_draft import (
+                semantic_component_edges,
+            )
+            from slm_training.dsl.parser import parse
+
+            component_ids = self._component_inventory_token_ids()
+            component_index = {
+                token_id: index for index, token_id in enumerate(component_ids)
+            }
+            edge_targets = torch.zeros(
+                len(batch),
+                len(component_ids),
+                len(component_ids),
+                device=ctx.device,
+            )
+            for row, record in enumerate(batch):
+                edges = self._component_edge_cache.get(record.openui)
+                if edges is None:
+                    edges = semantic_component_edges(
+                        parse(record.openui).root, self.tokenizer
+                    )
+                    self._component_edge_cache[record.openui] = edges
+                for parent_id, child_id in edges:
+                    parent = component_index.get(parent_id)
+                    child = component_index.get(child_id)
+                    if parent is not None and child is not None:
+                        edge_targets[row, parent, child] = 1.0
+
+            edge_logits = self.component_edge_head(
+                self._pool_context(ctx, ctx_pad)
+            ).view_as(edge_targets)
+            raw_edge_loss = F.binary_cross_entropy_with_logits(
+                edge_logits, edge_targets, reduction="none"
+            )
+            positive = edge_targets.bool()
+            negative = ~positive
+            positive_loss = (
+                raw_edge_loss[positive].mean()
+                if positive.any()
+                else raw_edge_loss.sum() * 0.0
+            )
+            negative_loss = raw_edge_loss[negative].mean()
+            edge_loss = positive_loss + negative_loss
+            mask_loss = mask_loss + edge_w * edge_loss
+            recalls: list[torch.Tensor] = []
+            flat_logits = edge_logits.flatten(1)
+            flat_targets = edge_targets.flatten(1)
+            for logits_row, target_row in zip(flat_logits, flat_targets, strict=True):
+                count = int(target_row.sum().item())
+                if count:
+                    top = logits_row.topk(count).indices
+                    recalls.append(target_row.index_select(0, top).mean())
+            edge_recall = (
+                torch.stack(recalls).mean()
+                if recalls
+                else edge_logits.new_zeros(())
+            )
+            self.last_training_metrics.update(
+                {
+                    "component_edge_loss": float(edge_loss.detach().cpu()),
+                    "component_edge_topk_recall": float(edge_recall.detach().cpu()),
+                    "component_edge_positive_count_mean": float(
+                        edge_targets.sum(dim=(1, 2)).mean().detach().cpu()
+                    ),
+                }
+            )
+
         aux_w = float(getattr(self.config, "fastpath_aux_weight", 0.0) or 0.0)
         if aux_w > 0.0 and getattr(self.config, "grammar_fastpath", False):
             # Keep this span visible in train telemetry: a silently skipped
@@ -2298,6 +2390,53 @@ class TwoTowerModel(nn.Module):
                 bias[position] = weight * remaining.log()
         return bias
 
+    def _component_edge_bias(
+        self,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor | None,
+        prefix: list[int],
+        candidate_ids: tuple[int, ...],
+        candidate_kinds: tuple[str, ...],
+    ) -> torch.Tensor | None:
+        weight = float(
+            getattr(self.config, "component_edge_decode_weight", 0.0) or 0.0
+        )
+        if weight <= 0.0 or self.component_edge_head is None:
+            return None
+        from slm_training.dsl.grammar.fastpath.compiler_draft import (
+            active_parent_component_ids,
+        )
+
+        parents = active_parent_component_ids(self.tokenizer, prefix)
+        if not parents:
+            return None
+        component_ids = self._component_inventory_token_ids()
+        component_index = {
+            token_id: index for index, token_id in enumerate(component_ids)
+        }
+        parent_indices = [
+            component_index[token_id]
+            for token_id in parents
+            if token_id in component_index
+        ]
+        if not parent_indices:
+            return None
+        logits = self.component_edge_head(
+            self._pool_context(ctx, ctx_pad)
+        )[0].view(len(component_ids), len(component_ids))
+        parent_index = torch.as_tensor(parent_indices, device=logits.device)
+        child_logits = logits.index_select(0, parent_index).mean(dim=0)
+        bias = logits.new_zeros(len(candidate_ids))
+        applied = False
+        for position, (token_id, kind) in enumerate(
+            zip(candidate_ids, candidate_kinds, strict=True)
+        ):
+            child = component_index.get(token_id)
+            if child is not None and kind == "component_bound":
+                bias[position] = weight * child_logits[child]
+                applied = True
+        return bias if applied else None
+
     def _select_compiler_path(
         self,
         prefix: list[int],
@@ -2377,6 +2516,17 @@ class TwoTowerModel(nn.Module):
                     stats.component_plan_choice_changes += int(
                         int(scores.argmax().item()) != before_plan
                     )
+            edge_bias = self._component_edge_bias(
+                ctx, ctx_pad, prefix, candidates, tuple(path.kind for path in paths)
+            )
+            if edge_bias is not None:
+                before_edge = int(scores.argmax().item())
+                scores = scores + edge_bias
+                if stats is not None:
+                    stats.component_edge_applications += 1
+                    stats.component_edge_choice_changes += int(
+                        int(scores.argmax().item()) != before_edge
+                    )
             if bool(getattr(self.config, "grammar_sample_decode", False)):
                 temp = float(
                     getattr(self.config, "grammar_sample_temperature", 0.8) or 0.8
@@ -2444,6 +2594,24 @@ class TwoTowerModel(nn.Module):
                             stats.component_plan_applications += 1
                             stats.component_plan_choice_changes += int(
                                 int(scores.argmax().item()) != before_plan
+                            )
+                    edge_bias = self._component_edge_bias(
+                        ctx,
+                        ctx_pad,
+                        prefix,
+                        candidate_ids,
+                        tuple(
+                            first_edge_kinds.get(token_id, "")
+                            for token_id in candidate_ids
+                        ),
+                    )
+                    if edge_bias is not None:
+                        before_edge = int(scores.argmax().item())
+                        scores = scores + edge_bias
+                        if stats is not None:
+                            stats.component_edge_applications += 1
+                            stats.component_edge_choice_changes += int(
+                                int(scores.argmax().item()) != before_edge
                             )
                 log_probs = F.log_softmax(scores, dim=0)
                 for i, token_id in enumerate(candidate_ids):

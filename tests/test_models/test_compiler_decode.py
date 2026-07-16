@@ -7,9 +7,11 @@ import torch
 
 from slm_training.dsl.grammar.fastpath.compiler_draft import (
     CompletionPath,
+    active_parent_component_ids,
     build_completion_forest,
     gold_compiler_decisions,
     gold_compiler_decision_positions,
+    semantic_component_edges,
 )
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.data.contract import GenerationRequest
@@ -604,6 +606,79 @@ def test_component_plan_bias_is_role_conditioned_and_count_aware() -> None:
     assert bound_bias_after is not None
     assert bound_bias_before[1] > bound_bias_before[0]
     assert bound_bias_after[1] < bound_bias_before[1]
+
+
+def test_component_edges_come_from_ast_and_partial_reference_graph() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    root = {
+        "type": "element",
+        "typeName": "Card",
+        "props": {
+            "children": [
+                {
+                    "type": "element",
+                    "typeName": "TextContent",
+                    "props": {"text": ":title"},
+                }
+            ]
+        },
+    }
+    card = tokenizer.token_to_id["Card"]
+    text = tokenizer.token_to_id["TextContent"]
+    assert semantic_component_edges(root, tokenizer) == ((card, text),)
+    prefix = tokenizer.encode("root = Card([title])\ntitle =", add_special=False)
+    assert active_parent_component_ids(tokenizer, prefix) == (card,)
+    assert active_parent_component_ids(tokenizer, [tokenizer.bos_id, *prefix]) == (
+        card,
+    )
+
+
+def test_component_edge_supervision_and_parent_conditioned_bias() -> None:
+    model = _model(
+        component_edge_loss_weight=1.0,
+        component_edge_decode_weight=2.0,
+    )
+    model.train()
+    record = ExampleRecord(
+        id="component-edge",
+        prompt="card with a title",
+        openui='root = Card([title])\ntitle = TextContent(":hero.title")',
+        placeholders=[":hero.title"],
+        split="train",
+        source="fixture",
+    )
+    loss = model.training_loss([record])
+    loss.backward()
+    assert torch.isfinite(loss)
+    assert model.component_edge_head is not None
+    assert model.component_edge_head.weight.grad is not None
+    assert model.component_edge_head.weight.grad.abs().sum() > 0
+    assert model.last_training_metrics["component_edge_loss"] > 0
+    assert 0 <= model.last_training_metrics["component_edge_topk_recall"] <= 1
+    assert model.last_training_metrics["component_edge_positive_count_mean"] == 1
+
+    tokenizer = model.tokenizer
+    components = model._component_inventory_token_ids()
+    component_index = {token_id: i for i, token_id in enumerate(components)}
+    card = tokenizer.token_to_id["Card"]
+    text = tokenizer.token_to_id["TextContent"]
+    with torch.no_grad():
+        model.component_edge_head.weight.zero_()
+        model.component_edge_head.bias.zero_()
+        model.component_edge_head.bias[
+            component_index[card] * len(components) + component_index[text]
+        ] = 3.0
+    ctx, ctx_pad = model._encode_context(["card with a title"])
+    prefix = tokenizer.encode("root = Card([title])\ntitle =", add_special=False)
+    bias = model._component_edge_bias(
+        ctx,
+        ctx_pad,
+        prefix,
+        (card, text),
+        ("component_bound", "component_bound"),
+    )
+    assert bias is not None
+    assert bias[1] > bias[0]
 
 
 def test_tree_verifier_packs_prefix_nodes_and_avoids_full_projection() -> None:
