@@ -125,6 +125,17 @@ receives those sources and the immutable local evidence summary, and may discove
 additional URLs. Each proposed citation must resolve to captured evidence or a
 normalized captured source.
 
+Committed source inventories can be added without network access:
+
+```bash
+python -m scripts.autoresearch research --campaign-id <id> --offline \
+  --source-manifest src/slm_training/resources/autoresearch/dynamic-symbol-sources.json
+```
+
+`--source-manifest` is repeatable. Each file is validated as strict
+`ResearchSource` records and merged by canonical URI before persistence; offline
+mode skips HF/network discovery but still loads these reviewed sources.
+
 ## Persistence and observability
 
 ```text

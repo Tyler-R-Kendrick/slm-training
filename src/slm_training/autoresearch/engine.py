@@ -145,6 +145,37 @@ def compile_commands(
             value = getattr(knobs, field)
             if value is not None:
                 train.extend([f"--{flag}", str(value)])
+    if campaign.track == "twotower":
+        symbol_fields = {
+            "runtime_symbol_features",
+            "symbol_slot_augmentation",
+            "semantic_candidate_masks",
+            "constraint_graph_mode",
+            "grammar_completion_bounds",
+            "grammar_equivalence_cache",
+            "grammar_active_symbol_bitsets",
+            "compact_active_canvas",
+        }
+        if any(getattr(knobs, field) is not None for field in symbol_fields):
+            train.extend(["--output-tokenizer", "lexer"])
+        for field, flag in {
+            "runtime_symbol_features": "runtime-symbol-features",
+            "constraint_graph_mode": "constraint-graph-mode",
+        }.items():
+            value = getattr(knobs, field)
+            if value is not None:
+                train.extend([f"--{flag}", str(value)])
+        for field, flag in {
+            "symbol_slot_augmentation": "symbol-slot-augmentation",
+            "semantic_candidate_masks": "semantic-candidate-masks",
+            "grammar_completion_bounds": "grammar-completion-bounds",
+            "grammar_equivalence_cache": "grammar-equivalence-cache",
+            "grammar_active_symbol_bitsets": "grammar-active-symbol-bitsets",
+            "compact_active_canvas": "compact-active-canvas",
+        }.items():
+            value = getattr(knobs, field)
+            if value is not None:
+                train.append(f"--{flag}" if value else f"--no-{flag}")
     if knobs.mixture_weights:
         train.extend(["--mixture-manifest", str(mixture_path)])
     commands.append(train)

@@ -231,8 +231,25 @@ class DenoiserTower(nn.Module):
         self.norm = RMSNorm(d_model)
         self.lm_head = nn.Linear(d_model, vocab_size, bias=False)
         self.max_len = max_len
+        self._runtime_symbol_features: torch.Tensor | None = None
         # Tie embeddings
         self.lm_head.weight = self.tok.weight
+
+    def set_runtime_symbol_features(self, features: torch.Tensor | None) -> None:
+        """Attach request-local vocabulary-row deltas (not checkpoint state)."""
+        self._runtime_symbol_features = features
+
+    def _features_for_batch(self, batch_size: int) -> torch.Tensor | None:
+        features = self._runtime_symbol_features
+        if features is None:
+            return None
+        if features.size(0) == batch_size:
+            return features
+        if features.size(0) == 1:
+            return features.expand(batch_size, -1, -1)
+        raise ValueError(
+            f"runtime symbol feature batch {features.size(0)} != {batch_size}"
+        )
 
     def encode(
         self,
@@ -250,6 +267,10 @@ class DenoiserTower(nn.Module):
             seq = self.max_len
         pos = torch.arange(seq, device=noisy_ids.device).unsqueeze(0).expand(bsz, -1)
         x = self.tok(noisy_ids) + self.pos(pos)
+        features = self._features_for_batch(bsz)
+        if features is not None:
+            row = torch.arange(bsz, device=noisy_ids.device).unsqueeze(1)
+            x = x + features[row, noisy_ids.clamp(0, features.size(1) - 1)]
         if self.kind is not None:
             # Clamp ids into lookup range for safety with pad overflows.
             safe = noisy_ids.clamp(min=0, max=self.kind_lookup.numel() - 1)
@@ -282,14 +303,22 @@ class DenoiserTower(nn.Module):
         candidate_ids: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Project hidden states to the full vocabulary or gathered candidates."""
+        features = self._features_for_batch(hidden.size(0))
         if candidate_ids is None:
-            return self.lm_head(hidden)
+            logits = self.lm_head(hidden)
+            if features is not None:
+                logits = logits + torch.einsum("btd,bvd->btv", hidden, features)
+            return logits
         raw_weight = self.lm_head.weight
         weight = raw_weight() if callable(raw_weight) else raw_weight
         if weight.is_quantized:
             weight = weight.dequantize()
         weight = weight.index_select(0, candidate_ids)
-        return F.linear(hidden, weight)
+        logits = F.linear(hidden, weight)
+        if features is not None:
+            selected = features.index_select(1, candidate_ids)
+            logits = logits + torch.einsum("btd,bkd->btk", hidden, selected)
+        return logits
 
     def forward(
         self,
@@ -318,7 +347,7 @@ class DenoiserTower(nn.Module):
         else:
             hidden = encoded
             attn = None
-        logits = self.lm_head(hidden)
+        logits = self.project(hidden)
         if return_attn:
             assert attn is not None
             return logits, hidden, attn

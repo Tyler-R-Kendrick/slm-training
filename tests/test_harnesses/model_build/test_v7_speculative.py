@@ -128,6 +128,18 @@ def test_build_dependency_clusters_respects_max_size() -> None:
     assert sorted(t for c in clusters for t in c) == [0, 1, 2, 3, 4]
 
 
+def test_explicit_constraint_edge_clusters_without_attention() -> None:
+    attn = _synthetic_attn(5, [])
+    clusters = build_dependency_clusters(
+        attn,
+        [1, 3, 4],
+        threshold=0.1,
+        explicit_edges={(1, 4)},
+        use_attention=False,
+    )
+    assert {1, 4} in [set(cluster) for cluster in clusters]
+
+
 def test_order_clusters_prefers_survival_and_centrality() -> None:
     attn = _synthetic_attn(4, [(0, 2, 0.4)])
     conf = torch.tensor([0.9, 0.3, 0.8, 0.5])

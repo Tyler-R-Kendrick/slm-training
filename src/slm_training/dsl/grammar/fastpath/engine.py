@@ -33,6 +33,10 @@ _TERM_TO_TEXT = {
     "LSQB": "[",
     "RSQB": "]",
     "COMMA": ",",
+    "LBRACE": "{",
+    "RBRACE": "}",
+    "DOT": ".",
+    "COLON": ":",
 }
 
 
@@ -255,6 +259,22 @@ class OpenUIIncrementalEngine:
 
     def next_terminals(self) -> frozenset[str]:
         return self._accepts
+
+    def minimum_completion_tokens(
+        self, prefix: str, *, max_steps: int = 32
+    ) -> int | None:
+        """Prove a deterministic lower bound, or return unknown on any branch."""
+        probe = OpenUIIncrementalEngine(self.grammar_path)
+        if not probe.set_prefix(prefix):
+            return None
+        for steps in range(max(0, max_steps) + 1):
+            if "$END" in probe.next_terminals():
+                return steps
+            term = probe.is_deterministic_next()
+            text = _TERM_TO_TEXT.get(term or "")
+            if text is None or steps >= max_steps or not probe.advance(text):
+                return None
+        return None
 
     def terminals_are_exact(self) -> bool:
         """True when accepts() contains only non-broad structural terminals.

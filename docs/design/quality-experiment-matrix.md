@@ -687,6 +687,32 @@ requires strict gains on both suites. Full evidence and the no-promotion
 decision are in [data-synthesis.md](data-synthesis.md) and
 [data-synthesis-results.json](data-synthesis-results.json).
 
+## V8 dynamic-symbol and constraint-system matrix (proposed, unrun)
+
+These rows are registered under `--matrix v8`; `--list` prints definitions
+without building data or starting a run. They require the lexer-native parent
+contract and unchanged honest five-suite gates. No result or champion is claimed.
+
+| ID | Isolated lever | Required diagnostics | Status |
+| --- | --- | --- | --- |
+| E200 | Current fixed-row DSL symbol control | Standard scoreboard plus active-symbol recall | proposed/unrun |
+| E201 | Slot permutation and alpha-renaming augmentation | Rename invariance and permutation robustness | proposed/unrun |
+| E202 | Surface-conditioned features for every role | Entity copy and binder rename sensitivity | proposed/unrun |
+| E203 | Role-gated features | Binder invariance with entity/state sensitivity | proposed/unrun |
+| E204 | E203 plus semantic candidate masks | Candidate recall; false hard-prunes must be zero | proposed/unrun |
+| E205 | E204 plus hybrid grammar/attention graph | Graph conflict, accept, and remask rates | proposed/unrun |
+| E206 | Complete stack, fixed padded canvas | Quality/steps/tokens control for E207 | proposed/unrun |
+| E207 | Complete stack, compact active canvas | Matched quality, active tokens, steps, latency | proposed/unrun |
+
+Preview only:
+
+```bash
+python -m scripts.run_quality_matrix --matrix v8 --list
+```
+
+Any execution must add AgentEvals/AgentV evidence, result JSON, recipe/suite sizes,
+and a matching measured-results update before the run is considered complete.
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
