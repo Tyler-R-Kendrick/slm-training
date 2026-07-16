@@ -317,6 +317,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Sample one compiler-alignment state per grammar-derived decision kind.",
     )
     parser.add_argument(
+        "--compiler-alignment-semantic-exhaustive",
+        action="store_true",
+        help="Align every grammar-derived AST-role decision; stratify structural states.",
+    )
+    parser.add_argument(
         "--no-design-md-context",
         action="store_true",
         help="Do not concatenate DESIGN.md into the context tower prompt.",
@@ -626,6 +631,9 @@ def main(argv: list[str] | None = None) -> int:
             ltr_prefix_loss_weight=args.ltr_prefix_loss_weight,
             compiler_alignment_loss_weight=args.compiler_alignment_loss_weight,
             compiler_alignment_stratified=args.compiler_alignment_stratified,
+            compiler_alignment_semantic_exhaustive=(
+                args.compiler_alignment_semantic_exhaustive
+            ),
             fidelity_loss_weight=args.fidelity_loss_weight,
             grammar_ltr_primary=args.grammar_ltr_primary,
             grammar_ltr_repair=args.grammar_ltr_repair,

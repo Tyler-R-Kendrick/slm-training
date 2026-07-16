@@ -175,6 +175,7 @@ class ModelBuildConfig:
     ltr_prefix_loss_weight: float = 0.0
     compiler_alignment_loss_weight: float = 0.0
     compiler_alignment_stratified: bool = False
+    compiler_alignment_semantic_exhaustive: bool = False
     symbol_boundary_loss_weight: float = 0.0
     remask_span: str = "token"  # token | statement
     teacher_init_embeddings: bool = False

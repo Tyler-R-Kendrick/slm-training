@@ -181,6 +181,7 @@ class TwoTowerConfig:
     ltr_prefix_loss_weight: float = 0.0
     compiler_alignment_loss_weight: float = 0.0
     compiler_alignment_stratified: bool = False
+    compiler_alignment_semantic_exhaustive: bool = False
     symbol_boundary_loss_weight: float = 0.0
     # Extra CE weight on gold placeholder token positions (fidelity signal).
     fidelity_loss_weight: float = 0.5
@@ -1259,6 +1260,11 @@ class TwoTowerModel(nn.Module):
             stratified = bool(
                 getattr(self.config, "compiler_alignment_stratified", False)
             )
+            semantic_exhaustive = bool(
+                getattr(
+                    self.config, "compiler_alignment_semantic_exhaustive", False
+                )
+            )
             aligned_canvases: list[torch.Tensor] = []
             aligned_targets: list[int] = []
             aligned_positions: list[int] = []
@@ -1284,8 +1290,17 @@ class TwoTowerModel(nn.Module):
                 if stratified:
                     by_kind: dict[str, list[Any]] = {}
                     for decision in decisions:
-                        by_kind.setdefault(decision.kind, []).append(decision)
-                    selected = [
+                        if not (semantic_exhaustive and decision.is_semantic_role):
+                            by_kind.setdefault(decision.kind, []).append(decision)
+                    selected = (
+                        [
+                            decision
+                            for decision in decisions
+                            if decision.is_semantic_role
+                        ]
+                        if semantic_exhaustive
+                        else []
+                    ) + [
                         choices[self._rng.randrange(len(choices))]
                         for choices in by_kind.values()
                     ]

@@ -367,6 +367,8 @@ def compile_commands(
             )
         if knobs.compiler_alignment_stratified:
             train.append("--compiler-alignment-stratified")
+        if knobs.compiler_alignment_semantic_exhaustive:
+            train.append("--compiler-alignment-semantic-exhaustive")
         if knobs.schema_in_context:
             train.append("--schema-in-context")
         if knobs.slot_contract_in_context:

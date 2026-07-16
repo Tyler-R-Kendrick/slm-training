@@ -41,6 +41,12 @@ class CompilerDecision:
 
     position: int
     kind: str
+    token_kind: str
+
+    @property
+    def is_semantic_role(self) -> bool:
+        """Whether this branch selects an AST role rather than serialization."""
+        return self.token_kind in {"component", "bind", "state", "builtin"}
 
 
 def _token_piece(tokenizer: Any, token_id: int) -> str:
@@ -718,7 +724,9 @@ def gold_compiler_decisions(
         path = max(matches, key=lambda candidate: len(candidate.token_ids))
         if len(set(forest.candidate_ids)) > 1:
             kind = path.kind
-            decisions.append(CompilerDecision(cursor, kind))
+            decisions.append(
+                CompilerDecision(cursor, kind, _semantic_kind(tokenizer, ids[cursor]))
+            )
         cursor += len(path.token_ids)
     return tuple(decisions)
 

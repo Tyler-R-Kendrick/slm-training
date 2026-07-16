@@ -696,6 +696,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "compiler_alignment_stratified": bool(
                 getattr(config, "compiler_alignment_stratified", False)
             ),
+            "compiler_alignment_semantic_exhaustive": bool(
+                getattr(config, "compiler_alignment_semantic_exhaustive", False)
+            ),
             "fuse_ltr_loss": bool(getattr(config, "fuse_ltr_loss", True)),
             "fidelity_loss_weight": getattr(config, "fidelity_loss_weight", 0.0),
             "fastpath_aux_weight": getattr(config, "fastpath_aux_weight", 0.0),

@@ -30,6 +30,7 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "context_backend",
         "compiler_alignment_loss_weight",
         "compiler_alignment_stratified",
+        "compiler_alignment_semantic_exhaustive",
         "compiler_decode_mode",
         "data_source",
         "design_md_context",
@@ -230,6 +231,7 @@ class ExperimentKnobs(StrictModel):
     output_tokenizer: Literal["compositional", "lexer"] | None = None
     compiler_alignment_loss_weight: float | None = Field(default=None, ge=0, le=10)
     compiler_alignment_stratified: bool | None = None
+    compiler_alignment_semantic_exhaustive: bool | None = None
     compiler_decode_mode: Literal["off", "forced", "restricted", "tree"] | None = None
     schema_in_context: bool | None = None
     slot_contract_in_context: bool | None = None

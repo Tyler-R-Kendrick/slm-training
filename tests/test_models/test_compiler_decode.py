@@ -335,6 +335,17 @@ def test_gold_decisions_follow_compiler_forest() -> None:
     } <= kinds
     assert "grammar_rsqb_root_populated" in kinds
     assert "grammar_comma" in kinds
+    decisions = gold_compiler_decisions(tokenizer, target)
+    assert all(
+        decision.is_semantic_role
+        for decision in decisions
+        if decision.kind.startswith(("component_", "bind_"))
+    )
+    assert all(
+        not decision.is_semantic_role
+        for decision in decisions
+        if decision.kind.startswith("grammar_")
+    )
     empty = tokenizer.encode("root=Stack([])", add_special=True)
     assert "grammar_rsqb_root_empty" in {
         decision.kind for decision in gold_compiler_decisions(tokenizer, empty)
