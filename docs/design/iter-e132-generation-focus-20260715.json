@@ -1,0 +1,12 @@
+{
+  "experiment_id": "E132",
+  "date": "2026-07-15",
+  "kind": "mixture_iteration",
+  "parent": "E131",
+  "mixture": {"task_weights": {"generation": 0.6, "patch_edit": 0.2, "repair_completion_inpaint": 0.2}, "source_weights": {"edit_trajectory": 1.0, "corruption_repair": 1.0, "fixture": 0.1, "programspec_generated": 1.0, "renderer_visual": 1.0, "web_distilled": 1.0}, "manifest": "outputs/mixtures/e132_generation_focus.json"},
+  "recipe": {"device": "cpu", "steps": 32, "batch_size": 4, "seed": 0, "context_backend": "scratch", "output_tokenizer": "compositional", "schema_in_context": true, "slot_contract_in_context": true, "slot_contract_constrained_decode": true, "grammar_ltr_primary": true, "grammar_ltr_repair": true, "ltr_loss_weight": 0.5, "fidelity_loss_weight": 0.5, "record_count": 405, "honesty_mode": "scratch diagnostic; no ship claim"},
+  "training": {"run_id": "e132_generation_focus", "last_loss": 12.550130844116211, "checkpoint": "outputs/runs/iter-e132-generation-focus-20260715/e132_generation_focus/checkpoints/last.pt", "checkpoint_sha256": "f53276c69ce2776b2443387b4a640c20f26be712538fcedfc1c91a0993616a0f", "telemetry": "outputs/runs/iter-e132-generation-focus-20260715/e132_generation_focus/train_telemetry.json"},
+  "feedback": {"run_id": "iter-e132-three-smoke", "suite": "smoke", "n": 3, "parse_rate": 0.0, "placeholder_fidelity": 0.0, "placeholder_validity": 0.0, "structural_similarity": 0.17416666666666666, "reward_score": 0.0, "latency_ms_p50": 9094.18, "latency_ms_p95": 10756.91, "decode_timeout_count": 0, "agentv": "outputs/runs/iter-e132-generation-focus-20260715/iter-e132-three-smoke/agentv/openui-model-ship-gates-2026-07-16t01-18-58-973413-00-00.eval.jsonl"},
+  "finding": "Generation-focused task weighting did not improve the three-prompt smoke result; task imbalance alone is not the observed root cause.",
+  "decision": "Reject this mixture for promotion. Investigate model architecture/representation or the synthesis prompt-to-target contract next."
+}
