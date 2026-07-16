@@ -62,6 +62,12 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "grammar_fastpath_mode",
         "grammar_draft_window",
         "compiler_decode_mode",
+        "compiler_search_mode",
+        "compiler_search_trigger",
+        "compiler_search_width",
+        "compiler_search_noise",
+        "compiler_search_stagnation_patience",
+        "compiler_search_backtrack_limit",
         "fastpath_aux_weight",
         "fastpath_gate_threshold",
         "suffix_rollback_window",
@@ -258,6 +264,12 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         compiler_decode_mode=str(
             getattr(config, "compiler_decode_mode", "off") or "off"
         ),
+        compiler_search_mode=str(getattr(config, "compiler_search_mode", "greedy") or "greedy"),
+        compiler_search_trigger=str(getattr(config, "compiler_search_trigger", "stagnation") or "stagnation"),
+        compiler_search_width=max(1, int(getattr(config, "compiler_search_width", 1) or 1)),
+        compiler_search_noise=max(0.0, float(getattr(config, "compiler_search_noise", 0.0) or 0.0)),
+        compiler_search_stagnation_patience=max(1, int(getattr(config, "compiler_search_stagnation_patience", 2) or 2)),
+        compiler_search_backtrack_limit=max(0, int(getattr(config, "compiler_search_backtrack_limit", 8) or 0)),
         fastpath_aux_weight=getattr(config, "fastpath_aux_weight", 0.0),
         fastpath_gate_threshold=float(
             getattr(config, "fastpath_gate_threshold", 0.5) or 0.5

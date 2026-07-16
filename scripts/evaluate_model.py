@@ -165,6 +165,20 @@ def main(argv: list[str] | None = None) -> int:
         help="Compiler-drafted decode hierarchy (decode-only; default: off).",
     )
     parser.add_argument(
+        "--compiler-search-mode",
+        choices=("greedy", "lattice", "ptrm", "gram"),
+        default="greedy",
+    )
+    parser.add_argument(
+        "--compiler-search-trigger",
+        choices=("bottom", "stagnation", "always"),
+        default="stagnation",
+    )
+    parser.add_argument("--compiler-search-width", type=int, default=1)
+    parser.add_argument("--compiler-search-noise", type=float, default=0.0)
+    parser.add_argument("--compiler-search-stagnation-patience", type=int, default=2)
+    parser.add_argument("--compiler-search-backtrack-limit", type=int, default=8)
+    parser.add_argument(
         "--schema-in-context",
         action="store_true",
         help="Override: inject compact schema into context.",
@@ -364,6 +378,14 @@ def main(argv: list[str] | None = None) -> int:
         grammar_verify_chosen_only=(True if args.verify_chosen_only else None),
         grammar_top_k=args.grammar_top_k,
         compiler_decode_mode=args.compiler_decode_mode,
+        compiler_search_mode=args.compiler_search_mode,
+        compiler_search_trigger=args.compiler_search_trigger,
+        compiler_search_width=max(1, args.compiler_search_width),
+        compiler_search_noise=max(0.0, args.compiler_search_noise),
+        compiler_search_stagnation_patience=max(
+            1, args.compiler_search_stagnation_patience
+        ),
+        compiler_search_backtrack_limit=max(0, args.compiler_search_backtrack_limit),
         decode_timeout_seconds=args.decode_timeout_seconds,
         grammar_dsl=args.grammar_dsl,
         grammar_trust_model=args.grammar_trust_model,

@@ -38,3 +38,17 @@ def test_compiler_decode_mode_activates_primary_ltr_path() -> None:
 
     assert model.config.compiler_decode_mode == "tree"
     assert model.config.grammar_ltr_primary is True
+
+
+def test_compiler_search_overrides_are_typed() -> None:
+    model = SimpleNamespace(
+        config=SimpleNamespace(compiler_search_mode="greedy", compiler_search_width=1)
+    )
+    config = ModelBuildConfig(
+        train_dir=Path("."),
+        compiler_search_mode="gram",
+        compiler_search_width=8,
+    )
+    apply_runtime_overrides(model, config)
+    assert model.config.compiler_search_mode == "gram"
+    assert model.config.compiler_search_width == 8

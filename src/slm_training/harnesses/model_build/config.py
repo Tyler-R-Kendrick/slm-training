@@ -105,6 +105,12 @@ class ModelBuildConfig:
     grammar_fastpath_mode: str = "hybrid"  # force | mask | hybrid
     grammar_draft_window: int = 8
     compiler_decode_mode: str = "off"  # off | forced | restricted | tree
+    compiler_search_mode: str = "greedy"  # greedy | lattice | ptrm | gram
+    compiler_search_trigger: str = "stagnation"  # bottom | stagnation | always
+    compiler_search_width: int = 1
+    compiler_search_noise: float = 0.0
+    compiler_search_stagnation_patience: int = 2
+    compiler_search_backtrack_limit: int = 8
     fastpath_aux_weight: float = 0.0
     fastpath_gate_threshold: float = 0.5
     # V4 critic / remask levers

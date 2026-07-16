@@ -432,6 +432,17 @@ def compile_commands(
             evaluate.extend(["--compiler-decode-mode", knobs.compiler_decode_mode])
             if knobs.compiler_decode_mode != "off":
                 evaluate.append("--grammar-ltr-primary")
+        for name in (
+            "compiler_search_mode",
+            "compiler_search_trigger",
+            "compiler_search_width",
+            "compiler_search_noise",
+            "compiler_search_stagnation_patience",
+            "compiler_search_backtrack_limit",
+        ):
+            value = getattr(knobs, name)
+            if value is not None:
+                evaluate.extend([f"--{name.replace('_', '-')}", str(value)])
         if knobs.allow_unconstrained_fallback is False:
             evaluate.append("--no-unconstrained-fallback")
         if knobs.schema_in_context:

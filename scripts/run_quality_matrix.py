@@ -125,6 +125,13 @@ class Experiment:
     grammar_equivalence_cache: bool = False
     grammar_active_symbol_bitsets: bool = False
     compact_active_canvas: bool = True
+    compiler_decode_mode: str = "off"
+    compiler_search_mode: str = "greedy"
+    compiler_search_trigger: str = "stagnation"
+    compiler_search_width: int = 1
+    compiler_search_noise: float = 0.0
+    compiler_search_stagnation_patience: int = 2
+    compiler_search_backtrack_limit: int = 8
 
 
 def _base_experiments(
@@ -1208,6 +1215,21 @@ def _v8_experiments(
     ]
 
 
+def _v9_experiments(train_dir: Path) -> list[Experiment]:
+    """E240-E247: plan-only compiler-lattice search campaign."""
+    base = dict(initialization="eval_only", output_tokenizer="lexer", grammar_ltr_primary=True, compiler_decode_mode="tree")
+    return [
+        Experiment("E240", "qx_e240_compiler_tree_control", "Corrected greedy compiler-tree control", train_dir, **base),
+        Experiment("E241", "qx_e241_lattice_rollback", "Hard/soft lattice with bounded rollback", train_dir, compiler_search_mode="lattice", **base),
+        Experiment("E242", "qx_e242_stagnation_nogood", "Stagnation-triggered localized nogoods", train_dir, compiler_search_mode="lattice", compiler_search_stagnation_patience=2, **base),
+        Experiment("E243", "qx_e243_ptrm_triggered_w4", "PTRM-style width 4 triggered by stagnation", train_dir, compiler_search_mode="ptrm", compiler_search_trigger="stagnation", compiler_search_width=4, compiler_search_noise=1.0, **base),
+        Experiment("E244", "qx_e244_ptrm_always_w4", "Always-on PTRM-style width 4 matched control", train_dir, compiler_search_mode="ptrm", compiler_search_trigger="always", compiler_search_width=4, compiler_search_noise=1.0, **base),
+        Experiment("E245", "qx_e245_gram_diverse_w4", "GRAM-style semantic diversity at width 4", train_dir, compiler_search_mode="gram", compiler_search_trigger="stagnation", compiler_search_width=4, compiler_search_noise=1.0, **base),
+        Experiment("E246", "qx_e246_lattice_full_w4", "Full lattice stack at width 4", train_dir, compiler_search_mode="gram", compiler_search_trigger="stagnation", compiler_search_width=4, compiler_search_noise=1.0, compiler_search_backtrack_limit=8, **base),
+        Experiment("E247", "qx_e247_lattice_full_w8", "Full lattice stack width 8 scaling row", train_dir, compiler_search_mode="gram", compiler_search_trigger="stagnation", compiler_search_width=8, compiler_search_noise=1.0, compiler_search_backtrack_limit=8, **base),
+    ]
+
+
 def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
     return ModelBuildConfig(
         train_dir=exp.train_dir,
@@ -1263,6 +1285,13 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         grammar_fastpath_mode=str(
             getattr(exp, "grammar_fastpath_mode", "hybrid") or "hybrid"
         ),
+        compiler_decode_mode=str(getattr(exp, "compiler_decode_mode", "off") or "off"),
+        compiler_search_mode=str(getattr(exp, "compiler_search_mode", "greedy") or "greedy"),
+        compiler_search_trigger=str(getattr(exp, "compiler_search_trigger", "stagnation") or "stagnation"),
+        compiler_search_width=max(1, int(getattr(exp, "compiler_search_width", 1) or 1)),
+        compiler_search_noise=max(0.0, float(getattr(exp, "compiler_search_noise", 0.0) or 0.0)),
+        compiler_search_stagnation_patience=max(1, int(getattr(exp, "compiler_search_stagnation_patience", 2) or 2)),
+        compiler_search_backtrack_limit=max(0, int(getattr(exp, "compiler_search_backtrack_limit", 8) or 0)),
         trust_gate_train=bool(getattr(exp, "trust_gate", False)),
         grad_accum_steps=max(1, int(getattr(args, "grad_accum", 1) or 1)),
         eval_every=args.eval_every,
@@ -1859,9 +1888,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--matrix",
-        choices=("legacy", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "all"),
+        choices=("legacy", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9", "all"),
         default="v3",
-        help="Experiment set through v8 dynamic-symbol rows E200-E207, or all.",
+        help="Experiment set through v9 compiler-lattice rows E240-E247, or all.",
     )
     parser.add_argument(
         "--list",
@@ -1899,7 +1928,7 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(f"unknown suites: {','.join(unknown_suites)}")
     if not args.suites:
         parser.error("--suites must select at least one suite")
-    if args.matrix in {"v4", "v5", "v6", "v7", "v8", "all"}:
+    if args.matrix in {"v4", "v5", "v6", "v7", "v8", "v9", "all"}:
         if args.parent is None and not args.scratch_control:
             if not args.list:
                 parser.error(
@@ -2023,6 +2052,8 @@ def main(argv: list[str] | None = None) -> int:
                 design_md_in_context=design_md,
             )
         )
+    if args.matrix in {"v9", "all"}:
+        experiments.extend(_v9_experiments(args.train_dir))
     if args.only:
         wanted = {x.strip().upper() for x in args.only.split(",") if x.strip()}
         experiments = [e for e in experiments if e.eid in wanted]
