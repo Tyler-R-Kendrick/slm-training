@@ -733,6 +733,12 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "component_edge_decode_weight": getattr(
                 config, "component_edge_decode_weight", 0.0
             ),
+            "binder_component_plan_loss_weight": getattr(
+                config, "binder_component_plan_loss_weight", 0.0
+            ),
+            "binder_component_plan_decode_weight": getattr(
+                config, "binder_component_plan_decode_weight", 0.0
+            ),
             "fuse_ltr_loss": bool(getattr(config, "fuse_ltr_loss", True)),
             "fidelity_loss_weight": getattr(config, "fidelity_loss_weight", 0.0),
             "fastpath_aux_weight": getattr(config, "fastpath_aux_weight", 0.0),

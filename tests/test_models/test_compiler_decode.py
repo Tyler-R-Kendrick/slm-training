@@ -7,6 +7,7 @@ import torch
 
 from slm_training.dsl.grammar.fastpath.compiler_draft import (
     CompletionPath,
+    active_declaration_binder_id,
     active_parent_component_ids,
     build_completion_forest,
     gold_compiler_decisions,
@@ -631,6 +632,7 @@ def test_component_edges_come_from_ast_and_partial_reference_graph() -> None:
     assert active_parent_component_ids(tokenizer, [tokenizer.bos_id, *prefix]) == (
         card,
     )
+    assert active_declaration_binder_id(tokenizer, prefix) == tokenizer.bind_id(1)
 
 
 def test_component_edge_supervision_and_parent_conditioned_bias() -> None:
@@ -679,6 +681,57 @@ def test_component_edge_supervision_and_parent_conditioned_bias() -> None:
     ctx, ctx_pad = model._encode_context(["card with a title"])
     prefix = tokenizer.encode("root = Card([title])\ntitle =", add_special=False)
     bias = model._component_edge_bias(
+        ctx,
+        ctx_pad,
+        prefix,
+        (card, text),
+        ("component_bound", "component_bound"),
+    )
+    assert bias is not None
+    assert bias[1] > bias[0]
+
+
+def test_binder_component_plan_supervises_instances_and_biases_legal_choices() -> None:
+    model = _model(
+        binder_component_plan_loss_weight=1.0,
+        binder_component_plan_decode_weight=2.0,
+    )
+    model.train()
+    record = ExampleRecord(
+        id="binder-component-plan",
+        prompt="card with title and body",
+        openui=(
+            'root = Card([title, body])\n'
+            'title = TextContent(":hero.title")\n'
+            'body = TextContent(":hero.body")'
+        ),
+        placeholders=[":hero.title", ":hero.body"],
+        split="train",
+        source="fixture",
+    )
+    loss = model.training_loss([record])
+    loss.backward()
+    assert torch.isfinite(loss)
+    assert model.binder_component_plan_head is not None
+    assert model.binder_component_plan_head.weight.grad is not None
+    assert model.binder_component_plan_head.weight.grad.abs().sum() > 0
+    assert model.last_training_metrics["binder_component_plan_rows"] == 2
+    assert model.last_training_metrics["binder_component_plan_loss"] > 0
+
+    tokenizer = model.tokenizer
+    binders = model._binder_component_token_ids()
+    components = model._component_inventory_token_ids()
+    card = tokenizer.token_to_id["Card"]
+    text = tokenizer.token_to_id["TextContent"]
+    binder = binders.index(tokenizer.bind_id(1))
+    child = components.index(text)
+    with torch.no_grad():
+        model.binder_component_plan_head.weight.zero_()
+        model.binder_component_plan_head.bias.zero_()
+        model.binder_component_plan_head.bias[binder * len(components) + child] = 3.0
+    ctx, ctx_pad = model._encode_context(["card with title and body"])
+    prefix = tokenizer.encode("root = Card([title])\ntitle =", add_special=False)
+    bias = model._binder_component_plan_bias(
         ctx,
         ctx_pad,
         prefix,

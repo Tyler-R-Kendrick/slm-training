@@ -102,6 +102,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "component_inventory_decode_weight",
         "component_plan_decode_weight",
         "component_edge_decode_weight",
+        "binder_component_plan_decode_weight",
         "remask_span",
         "teacher_init_embeddings",
         "runtime_symbol_features",
@@ -332,6 +333,12 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         ),
         component_edge_decode_weight=float(
             getattr(config, "component_edge_decode_weight", 0.0) or 0.0
+        ),
+        binder_component_plan_loss_weight=float(
+            getattr(config, "binder_component_plan_loss_weight", 0.0) or 0.0
+        ),
+        binder_component_plan_decode_weight=float(
+            getattr(config, "binder_component_plan_decode_weight", 0.0) or 0.0
         ),
         symbol_boundary_loss_weight=float(
             getattr(config, "symbol_boundary_loss_weight", 0.0) or 0.0
