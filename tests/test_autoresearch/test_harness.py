@@ -699,6 +699,25 @@ def test_scope_diffusion_source_manifest_is_complete() -> None:
     }
 
 
+def test_dsl_program_source_manifest_is_complete() -> None:
+    from scripts.autoresearch import _load_sources
+
+    path = Path("src/slm_training/resources/autoresearch/dsl-program-sources.json")
+    rows = _load_sources(path)
+    assert len(rows) == 24
+    assert len({row.uri for row in rows}) == 24
+    assert sum(row.uri.startswith("https://arxiv.org/abs/") for row in rows) == 21
+    assert all(row.metadata.get("category") == "dsl_program" for row in rows)
+    assert all(row.metadata.get("implementation_status") == "Adjacent" for row in rows)
+    assert all(row.metadata.get("limitations") for row in rows)
+    # No overlap with the earlier committed manifests (dedupe honesty).
+    for other in ("dynamic-symbol-sources.json", "scope-diffusion-sources.json"):
+        other_rows = _load_sources(
+            Path("src/slm_training/resources/autoresearch") / other
+        )
+        assert not {row.uri for row in rows} & {row.uri for row in other_rows}
+
+
 class FakeResponses:
     def create(self, **kwargs):
         assert kwargs["store"] is False

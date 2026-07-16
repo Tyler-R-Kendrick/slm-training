@@ -1,0 +1,412 @@
+{
+  "schema_version": 1,
+  "retrieved_at": "2026-07-16T00:00:00Z",
+  "source_scope": "Prior-art sweep for the DSL diffusion SLM research program (Tracks A-G: emptiness wall, semantic-choice representation, binding/macros, tree-native denoising, measurement, DSL packs, self-improvement). Metadata verified against canonical arXiv/venue records; entries already committed in dynamic-symbol-sources.json, scope-diffusion-sources.json, or research-lineage.md are deliberately omitted.",
+  "sources": [
+    {
+      "source_id": "arxiv-1805.04793",
+      "kind": "web",
+      "title": "Coarse-to-Fine Decoding for Neural Semantic Parsing",
+      "uri": "https://arxiv.org/abs/1805.04793",
+      "published_at": "2018-05-12",
+      "summary": "Generates an abstract meaning sketch with arguments and variable names removed, then fills details in a second decoding stage; the closest autoregressive precedent for template-marker sketching with deferred identifier expansion.",
+      "metadata": {
+        "authors": ["Li Dong", "Mirella Lapata"],
+        "arxiv_id": "1805.04793",
+        "category": "dsl_program",
+        "feedback_claim": "sketch-then-fill with identifiers removed is established for AR semantic parsing; the diffusion variant is the open part",
+        "repo_relevance": "Track B choice-sequence codec; template markers with deterministic fill",
+        "implementation_status": "Adjacent",
+        "limitations": "Two-stage autoregressive decoder; reported results do not transfer to masked-diffusion OpenUI decoding."
+      }
+    },
+    {
+      "source_id": "arxiv-2305.19234",
+      "kind": "web",
+      "title": "Grammar Prompting for Domain-Specific Language Generation with Large Language Models",
+      "uri": "https://arxiv.org/abs/2305.19234",
+      "published_at": "2023-05-30",
+      "summary": "An LLM predicts a minimal per-example BNF grammar and then generates under it; externalizes grammar to help DSL generation with a frozen large model rather than a trained tiny model.",
+      "metadata": {
+        "authors": ["Bailin Wang", "Zi Wang", "Xuezhi Wang", "Yuan Cao", "Rif A. Saurous", "Yoon Kim"],
+        "arxiv_id": "2305.19234",
+        "category": "dsl_program",
+        "feedback_claim": "externalized grammar for DSL generation is claimed in-context; the trained-tiny-model variant is not",
+        "repo_relevance": "Track G latent-DSL generator; direct collision to differentiate against",
+        "implementation_status": "Adjacent",
+        "limitations": "In-context method on frozen large models; no small-model training or diffusion decoding."
+      }
+    },
+    {
+      "source_id": "arxiv-2305.07759",
+      "kind": "web",
+      "title": "TinyStories: How Small Can Language Models Be and Still Speak Coherent English?",
+      "uri": "https://arxiv.org/abs/2305.07759",
+      "published_at": "2023-05-12",
+      "summary": "Sub-10M-parameter transformers produce coherent, near-grammatical text when the language distribution is restricted; empirical anchor that tiny models suffice on narrow languages.",
+      "metadata": {
+        "authors": ["Ronen Eldan", "Yuanzhi Li"],
+        "arxiv_id": "2305.07759",
+        "category": "dsl_program",
+        "feedback_claim": "restricting the language shrinks the required model; no paper answers the externalized-grammar capacity question directly",
+        "repo_relevance": "Track E bits-per-semantic-decision capacity study",
+        "implementation_status": "Adjacent",
+        "limitations": "Natural-language autoregressive study; no grammar externalization or structured-validity metric."
+      }
+    },
+    {
+      "source_id": "arxiv-2006.08381",
+      "kind": "web",
+      "title": "DreamCoder: Growing generalizable, interpretable knowledge with wake-sleep Bayesian program learning",
+      "uri": "https://arxiv.org/abs/2006.08381",
+      "published_at": "2020-06-15",
+      "summary": "Wake-sleep library learning: compresses solved programs into reusable abstractions that become new DSL primitives; the canonical precedent for macro/library induction.",
+      "metadata": {
+        "authors": ["Kevin Ellis", "Catherine Wong", "Maxwell Nye", "Mathias Sable-Meyer", "Luc Cary", "Lucas Morales", "Luke Hewitt", "Armando Solar-Lezama", "Joshua B. Tenenbaum"],
+        "arxiv_id": "2006.08381",
+        "category": "dsl_program",
+        "feedback_claim": "libraries of repeated spans can be induced by compression and reused as primitives",
+        "repo_relevance": "Track C macro-token induction; Track G DSL invention",
+        "implementation_status": "Adjacent",
+        "limitations": "Enumerative synthesis with a neural guide, not token-level SLM training; results do not transfer."
+      }
+    },
+    {
+      "source_id": "arxiv-2310.19791",
+      "kind": "web",
+      "title": "LILO: Learning Interpretable Libraries by Compressing and Documenting Code",
+      "uri": "https://arxiv.org/abs/2310.19791",
+      "published_at": "2023-10-30",
+      "summary": "LLM synthesis plus Stitch compression plus auto-documentation to grow a reusable code library; modern LLM-era library learning.",
+      "metadata": {
+        "authors": ["Gabriel Grand", "Lionel Wong", "Maddy Bowers", "Theo X. Olausson", "Muxin Liu", "Joshua B. Tenenbaum", "Jacob Andreas"],
+        "arxiv_id": "2310.19791",
+        "category": "dsl_program",
+        "feedback_claim": "compression-selected abstractions remain usable by an LLM when named and documented",
+        "repo_relevance": "Track C macro-token minting policy",
+        "implementation_status": "Adjacent",
+        "limitations": "Operates on lambda-calculus style program corpora with a large frozen LLM; no vocabulary-level integration."
+      }
+    },
+    {
+      "source_id": "arxiv-2211.16605",
+      "kind": "web",
+      "title": "Top-Down Synthesis for Library Learning (Stitch)",
+      "uri": "https://arxiv.org/abs/2211.16605",
+      "published_at": "2022-11-29",
+      "summary": "Corpus-guided top-down search that finds compressive abstractions orders of magnitude faster than deductive refactoring; the practical engine for macro induction over program corpora.",
+      "metadata": {
+        "authors": ["Matthew Bowers", "Theo X. Olausson", "Lionel Wong", "Gabriel Grand", "Joshua B. Tenenbaum", "Kevin Ellis", "Armando Solar-Lezama"],
+        "arxiv_id": "2211.16605",
+        "category": "dsl_program",
+        "feedback_claim": "MDL-driven span abstraction is tractable at corpus scale",
+        "repo_relevance": "Track C macro-token induction pass over OpenUI corpora",
+        "implementation_status": "Adjacent",
+        "limitations": "Lambda-abstraction domain; OpenUI macro mining needs its own span/argument definition."
+      }
+    },
+    {
+      "source_id": "arxiv-2510.03178",
+      "kind": "web",
+      "title": "When Names Disappear: Revealing What LLMs Actually Understand About Code",
+      "uri": "https://arxiv.org/abs/2510.03178",
+      "published_at": "2025-10-03",
+      "summary": "Negative result: removing or anonymizing identifier names causes large performance drops in code LLMs, showing heavy reliance on name semantics rather than structure.",
+      "metadata": {
+        "authors": ["(see arXiv record)"],
+        "arxiv_id": "2510.03178",
+        "category": "dsl_program",
+        "feedback_claim": "identifier anonymization degrades code models; a direct threat to symbol-token and canonicalization tracks",
+        "repo_relevance": "Track C names-disappear control experiment (C4)",
+        "implementation_status": "Adjacent",
+        "limitations": "Studied on general-purpose code LLMs; whether the threat applies to placeholder-routed OpenUI must be tested locally (C4)."
+      }
+    },
+    {
+      "source_id": "arxiv-2401.02948",
+      "kind": "web",
+      "title": "Hashing Modulo Context-Sensitive Alpha-Equivalence",
+      "uri": "https://arxiv.org/abs/2401.02948",
+      "published_at": "2024-01-05",
+      "summary": "Shows naive De Bruijn plus hashing fails to identify common subterms under context-sensitive alpha-equivalence and gives a correct scheme; a known pitfall for canonicalization and repeated-span detection.",
+      "metadata": {
+        "authors": ["Lasse Blaauwbroek", "Miroslav Olsak", "Herman Geuvers"],
+        "arxiv_id": "2401.02948",
+        "category": "dsl_program",
+        "feedback_claim": "canonical subterm sharing needs context-sensitive alpha-equivalence, not plain De Bruijn hashing",
+        "repo_relevance": "Track C relative-index refs (C1) and Track D e-graph canonicalizer (D2)",
+        "implementation_status": "Adjacent",
+        "limitations": "Formal hashing result; no learning component."
+      }
+    },
+    {
+      "source_id": "arxiv-2410.17891",
+      "kind": "web",
+      "title": "Scaling Diffusion Language Models via Adaptation from Autoregressive Models (DiffuGPT / DiffuLLaMA)",
+      "uri": "https://arxiv.org/abs/2410.17891",
+      "published_at": "2024-10-23",
+      "summary": "Converts pretrained autoregressive LMs into masked diffusion LMs cheaply; adaptation can beat from-scratch diffusion training at comparable budgets.",
+      "metadata": {
+        "authors": ["Shansan Gong", "Shivam Agarwal", "Yizhe Zhang", "Jiacheng Ye", "Lin Zheng", "Mukai Li", "Chenxin An", "Peilin Zhao", "Wei Bi", "Jiawei Han", "Hao Peng", "Lingpeng Kong"],
+        "arxiv_id": "2410.17891",
+        "category": "dsl_program",
+        "feedback_claim": "AR-to-diffusion adaptation is a mandatory baseline against from-scratch tiny diffusion training",
+        "repo_relevance": "Track B adaptation baseline (B4)",
+        "implementation_status": "Adjacent",
+        "limitations": "Billion-scale general LMs; transfer to 135M-scale DSL-specific adaptation is untested."
+      }
+    },
+    {
+      "source_id": "arxiv-2503.05179",
+      "kind": "web",
+      "title": "Sketch-of-Thought: Efficient LLM Reasoning with Adaptive Cognitive-Inspired Sketching",
+      "uri": "https://arxiv.org/abs/2503.05179",
+      "published_at": "2025-03-07",
+      "summary": "Prompt-level compressed symbolic reasoning traces cut reasoning tokens by up to ~80% with little accuracy loss; NL-symbolic sketching with a frozen large model, not a trained latent DSL.",
+      "metadata": {
+        "authors": ["Simon A. Aytes", "Jinheon Baek", "Sung Ju Hwang"],
+        "arxiv_id": "2503.05179",
+        "category": "dsl_program",
+        "feedback_claim": "compressed symbolic reasoning traces preserve accuracy; the trained-tiny-model constrained-decoding variant is unclaimed",
+        "repo_relevance": "Track G sketch-of-thought reasoning harness (G4)",
+        "implementation_status": "Adjacent",
+        "limitations": "Prompting method; no grammar constraint, training, or deterministic expansion."
+      }
+    },
+    {
+      "source_id": "arxiv-2211.10435",
+      "kind": "web",
+      "title": "PAL: Program-aided Language Models",
+      "uri": "https://arxiv.org/abs/2211.10435",
+      "published_at": "2022-11-18",
+      "summary": "Reason by emitting a program and delegating execution to an interpreter; the canonical baseline for formal-language reasoning traces.",
+      "metadata": {
+        "authors": ["Luyu Gao", "Aman Madaan", "Shuyan Zhou", "Uri Alon", "Pengfei Liu", "Yiming Yang", "Jamie Callan", "Graham Neubig"],
+        "arxiv_id": "2211.10435",
+        "category": "dsl_program",
+        "feedback_claim": "reason-in-formal-language plus deterministic execution is the baseline G4 must beat",
+        "repo_relevance": "Track G reasoning-harness baselines",
+        "implementation_status": "Adjacent",
+        "limitations": "Python-emitting frozen LLM; no DSL invention or tiny-model component."
+      }
+    },
+    {
+      "source_id": "arxiv-2211.12588",
+      "kind": "web",
+      "title": "Program of Thoughts Prompting: Disentangling Computation from Reasoning for Numerical Reasoning Tasks",
+      "uri": "https://arxiv.org/abs/2211.12588",
+      "published_at": "2022-11-22",
+      "summary": "Separates reasoning text from executable computation; companion baseline to PAL for checkable-answer evaluation.",
+      "metadata": {
+        "authors": ["Wenhu Chen", "Xueguang Ma", "Xinyi Wang", "William W. Cohen"],
+        "arxiv_id": "2211.12588",
+        "category": "dsl_program",
+        "feedback_claim": "execution-delegated reasoning baseline for G4",
+        "repo_relevance": "Track G reasoning-harness baselines",
+        "implementation_status": "Adjacent",
+        "limitations": "Prompting method on frozen LLMs."
+      }
+    },
+    {
+      "source_id": "arxiv-2310.17680",
+      "kind": "web",
+      "title": "CodeFusion: A Pre-trained Diffusion Model for Code Generation",
+      "uri": "https://arxiv.org/abs/2310.17680",
+      "published_at": "2023-10-26",
+      "summary": "A 75M-parameter diffusion code model competitive with far larger autoregressive systems on constrained code targets (Bash, Python, Excel CF); the closest tiny-diffusion-for-small-language precedent.",
+      "metadata": {
+        "authors": ["Mukul Singh", "Jose Cambronero", "Sumit Gulwani", "Vu Le", "Carina Negreanu", "Gust Verbruggen"],
+        "arxiv_id": "2310.17680",
+        "category": "dsl_program",
+        "feedback_claim": "tiny diffusion models can be competitive on narrow code languages",
+        "repo_relevance": "program-level motivation for the DSL diffusion SLM bet",
+        "implementation_status": "Adjacent",
+        "limitations": "Encoder-decoder continuous-embedding diffusion; no grammar externalization; results do not transfer."
+      }
+    },
+    {
+      "source_id": "arxiv-2310.16834",
+      "kind": "web",
+      "title": "Discrete Diffusion Modeling by Estimating the Ratios of the Data Distribution (SEDD)",
+      "uri": "https://arxiv.org/abs/2310.16834",
+      "published_at": "2023-10-25",
+      "summary": "Score-entropy discrete diffusion objective; with MDLM (already in lineage) one of the two standard objective backbones for masked-diffusion LMs.",
+      "metadata": {
+        "authors": ["Aaron Lou", "Chenlin Meng", "Stefano Ermon"],
+        "arxiv_id": "2310.16834",
+        "category": "dsl_program",
+        "feedback_claim": "alternative training objective if MDLM-style weighted CE underperforms",
+        "repo_relevance": "training-objective option for Track B/D rows",
+        "implementation_status": "Adjacent",
+        "limitations": "Not implemented; current stack uses the MDLM-style schedule already tagged Adapted."
+      }
+    },
+    {
+      "source_id": "arxiv-2304.08467",
+      "kind": "web",
+      "title": "Learning to Compress Prompts with Gist Tokens",
+      "uri": "https://arxiv.org/abs/2304.08467",
+      "published_at": "2023-04-17",
+      "summary": "Trains single tokens that stand in for longer spans via attention masking; learned lossy span compression, the mechanism precedent for one-token-per-bound-span.",
+      "metadata": {
+        "authors": ["Jesse Mu", "Xiang Lisa Li", "Noah Goodman"],
+        "arxiv_id": "2304.08467",
+        "category": "dsl_program",
+        "feedback_claim": "single tokens can carry span semantics; our variant differs by deterministic lossless expansion",
+        "repo_relevance": "Track C macro tokens (C3)",
+        "implementation_status": "Adjacent",
+        "limitations": "Learned lossy compression for prompts; no deterministic expansion or grammar coupling."
+      }
+    },
+    {
+      "source_id": "arxiv-2410.07722",
+      "kind": "web",
+      "title": "DyVo: Dynamic Vocabularies for Learned Sparse Retrieval with Entities",
+      "uri": "https://arxiv.org/abs/2410.07722",
+      "published_at": "2024-10-10",
+      "summary": "Extends a model's vocabulary at inference with per-entity embeddings built on the fly; the closest architectural analogue to per-example symbol-token embeddings.",
+      "metadata": {
+        "authors": ["Thong Nguyen", "Shubham Chatterjee", "Sean MacAvaney", "Iain Mackie", "Jeff Dalton", "Andrew Yates"],
+        "arxiv_id": "2410.07722",
+        "category": "dsl_program",
+        "feedback_claim": "dynamic per-entity embeddings are viable without retraining the base vocabulary",
+        "repo_relevance": "Track C dynamic pseudo-embeddings (C2)",
+        "implementation_status": "Adjacent",
+        "limitations": "Sparse-retrieval setting; generation-side dynamic vocab for diffusion decoding is untested."
+      }
+    },
+    {
+      "source_id": "arxiv-1808.01400",
+      "kind": "web",
+      "title": "code2seq: Generating Sequences from Structured Representations of Code",
+      "uri": "https://arxiv.org/abs/1808.01400",
+      "published_at": "2018-08-04",
+      "summary": "Represents code as sampled AST paths, abstracting surface tokens into structure; precedent for AST-scope-aware encodings.",
+      "metadata": {
+        "authors": ["Uri Alon", "Shaked Brody", "Omer Levy", "Eran Yahav"],
+        "arxiv_id": "1808.01400",
+        "category": "dsl_program",
+        "feedback_claim": "structure-first code representations generalize better than surface tokens",
+        "repo_relevance": "Track B/C structural representation design",
+        "implementation_status": "Adjacent",
+        "limitations": "Encoder-side representation for seq2seq; not a generation-side codec."
+      }
+    },
+    {
+      "source_id": "arxiv-2003.07914",
+      "kind": "web",
+      "title": "Big Code != Big Vocabulary: Open-Vocabulary Models for Source Code",
+      "uri": "https://arxiv.org/abs/2003.07914",
+      "published_at": "2020-03-17",
+      "summary": "Identifier proliferation blows up code vocabularies; BPE plus caching mitigations. Frames the problem the symbol-token scheme attacks.",
+      "metadata": {
+        "authors": ["Rafael-Michael Karampatsis", "Hlib Babii", "Romain Robbes", "Charles Sutton", "Andrea Janes"],
+        "arxiv_id": "2003.07914",
+        "category": "dsl_program",
+        "feedback_claim": "open identifier vocabulary is the core cost the SYM/BIND scheme avoids",
+        "repo_relevance": "motivation for Track C symbol tables",
+        "implementation_status": "Adjacent",
+        "limitations": "Autoregressive code LM study; mitigation via subwords, not symbol externalization."
+      }
+    },
+    {
+      "source_id": "doi-10.1016-0004-3702-90-90007-M",
+      "kind": "web",
+      "title": "Tensor Product Variable Binding and the Representation of Symbolic Structures in Connectionist Systems",
+      "uri": "https://doi.org/10.1016/0004-3702(90)90007-M",
+      "published_at": "1990",
+      "summary": "Foundational role-filler binding formalism for representing symbolic structure in neural systems; theoretical grounding for scoped symbol slots.",
+      "metadata": {
+        "authors": ["Paul Smolensky"],
+        "category": "dsl_program",
+        "feedback_claim": "binding is representable but expensive in distributed systems; externalizing it to a verifier is a defensible design",
+        "repo_relevance": "Track C design rationale",
+        "implementation_status": "Adjacent",
+        "limitations": "Theory; no direct implementation planned."
+      }
+    },
+    {
+      "source_id": "arxiv-2012.05208",
+      "kind": "web",
+      "title": "On the Binding Problem in Artificial Neural Networks",
+      "uri": "https://arxiv.org/abs/2012.05208",
+      "published_at": "2020-12-09",
+      "summary": "Survey of why neural networks struggle to bind values to variables and slots; motivates delegating binding consistency to the deterministic verifier/decoder rather than the tiny model.",
+      "metadata": {
+        "authors": ["Klaus Greff", "Sjoerd van Steenkiste", "Juergen Schmidhuber"],
+        "arxiv_id": "2012.05208",
+        "category": "dsl_program",
+        "feedback_claim": "tiny models should not be asked to solve binding; externalize it",
+        "repo_relevance": "Track C scope externalization (C1)",
+        "implementation_status": "Adjacent",
+        "limitations": "Survey; no method to reproduce."
+      }
+    },
+    {
+      "source_id": "arxiv-2408.06292",
+      "kind": "web",
+      "title": "The AI Scientist: Towards Fully Automated Open-Ended Scientific Discovery",
+      "uri": "https://arxiv.org/abs/2408.06292",
+      "published_at": "2024-08-12",
+      "summary": "Automated ideation-code-experiment-writeup loop; template for autoresearch harness evolution with human oversight retained.",
+      "metadata": {
+        "authors": ["Chris Lu", "Cong Lu", "Robert Tjarko Lange", "Jakob Foerster", "Jeff Clune", "David Ha"],
+        "arxiv_id": "2408.06292",
+        "category": "dsl_program",
+        "feedback_claim": "full-loop automated research is feasible with verifiable gates",
+        "repo_relevance": "Track G recipe evolution (G2); existing autoresearch loop stays the owner",
+        "implementation_status": "Adjacent",
+        "limitations": "General ML-paper domain; this repo's typed hypothesis/feedback contract is stricter."
+      }
+    },
+    {
+      "source_id": "web-alphaevolve-2025",
+      "kind": "web",
+      "title": "AlphaEvolve: A coding agent for scientific and algorithmic discovery",
+      "uri": "https://deepmind.google/discover/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/",
+      "published_at": "2025-05-14",
+      "summary": "LLM-guided evolutionary search over programs/configurations with automated evaluation; mechanism precedent for population-based recipe evolution.",
+      "metadata": {
+        "authors": ["Google DeepMind"],
+        "category": "dsl_program",
+        "feedback_claim": "population search over programs with hard evaluators discovers non-obvious recipes",
+        "repo_relevance": "Track G recipe-evolution harness (G2)",
+        "implementation_status": "Adjacent",
+        "limitations": "Closed system at large compute scale; only the population/evaluator pattern transfers."
+      }
+    },
+    {
+      "source_id": "web-shinkaevolve-2025",
+      "kind": "web",
+      "title": "ShinkaEvolve: Towards Open-Ended and Sample-Efficient Program Evolution",
+      "uri": "https://github.com/SakanaAI/ShinkaEvolve",
+      "published_at": "2025-09",
+      "summary": "Open-source sample-efficient LLM program-evolution framework; practical starting point for a bounded recipe-evolution harness.",
+      "metadata": {
+        "authors": ["Sakana AI"],
+        "category": "dsl_program",
+        "feedback_claim": "sample-efficient evolution is feasible at small budgets",
+        "repo_relevance": "Track G recipe-evolution harness (G2)",
+        "implementation_status": "Adjacent",
+        "limitations": "General program evolution; gating by frozen benchmarks and honest ship gates is repo-specific."
+      }
+    },
+    {
+      "source_id": "arxiv-2503.09790",
+      "kind": "web",
+      "title": "Constrained Language Generation with Discrete Diffusion Models",
+      "uri": "https://arxiv.org/abs/2503.09790",
+      "published_at": "2025-03-12",
+      "summary": "Imposes formal constraints at each discrete-diffusion denoising step; with arXiv:2508.10111 (already Adapted in the fastpath) evidence that grammar-constrained diffusion is an actively contested niche.",
+      "metadata": {
+        "authors": ["(see arXiv record)"],
+        "arxiv_id": "2503.09790",
+        "category": "dsl_program",
+        "feedback_claim": "constraint-at-every-step diffusion decoding is feasible and published",
+        "repo_relevance": "Track A decode-time levers; positioning for novelty claims",
+        "implementation_status": "Adjacent",
+        "limitations": "Not integrated; the fastpath admit/emptiness stand-in remains the local implementation."
+      }
+    }
+  ]
+}
