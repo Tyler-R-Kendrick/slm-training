@@ -1,0 +1,26 @@
+{
+  "iteration": "E154",
+  "date": "2026-07-15",
+  "objective": "Bound constrained decode work by limiting generation to one attempt.",
+  "recipe": {
+    "checkpoint": "outputs/runs/iter-e147-judge-gated-control-20260715/e147-judge-gated-control/checkpoints/last.pt",
+    "suite": "smoke",
+    "n": 1,
+    "grammar_ltr_primary": true,
+    "grammar_ltr_repair": true,
+    "max_attempts": 1,
+    "decode_timeout_seconds": 20
+  },
+  "result": {
+    "parse_rate": 0.0,
+    "structural_similarity": 0.1917,
+    "placeholder_validity": 0.4,
+    "decode_timeout_count": 0,
+    "latency_ms_p50": 14319.44,
+    "tokens_emitted": 230,
+    "denoiser_ms": 9650.357,
+    "pick_ms": 3517.841,
+    "dfa_sync_count": 2260
+  },
+  "conclusion": "One attempt removes the timeout and improves structural/placeholder metrics, but does not produce a parseable program. Retries were multiplying full-canvas constrained work."
+}

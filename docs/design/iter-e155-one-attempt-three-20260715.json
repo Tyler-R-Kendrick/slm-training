@@ -1,0 +1,25 @@
+{
+  "iteration": "E155",
+  "date": "2026-07-15",
+  "objective": "Verify the one-attempt constrained policy across three smoke records.",
+  "recipe": {
+    "checkpoint": "outputs/runs/iter-e147-judge-gated-control-20260715/e147-judge-gated-control/checkpoints/last.pt",
+    "suite": "smoke",
+    "n": 3,
+    "grammar_ltr_primary": true,
+    "grammar_ltr_repair": true,
+    "max_attempts": 1,
+    "decode_timeout_seconds": 20
+  },
+  "result": {
+    "parse_rate": 0.0,
+    "structural_similarity": 0.2066666667,
+    "placeholder_validity": 0.2666666667,
+    "decode_timeout_count": 0,
+    "latency_ms_p50": 7551.26,
+    "latency_ms_p95": 10390.04,
+    "agentv_passed": 0,
+    "agentv_failed": 5
+  },
+  "conclusion": "The one-attempt policy removes timeouts across three records and improves structural similarity, but all three predictions remain unparsable. Keep it as the bounded diagnostic default while parse correctness is repaired separately."
+}
