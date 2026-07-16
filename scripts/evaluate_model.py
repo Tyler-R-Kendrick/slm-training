@@ -171,6 +171,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Override the checkpoint's compiler-legal component inventory bias.",
     )
     parser.add_argument(
+        "--component-plan-decode-weight",
+        type=float,
+        default=None,
+        help="Override the checkpoint's grammar-role component-plan bias.",
+    )
+    parser.add_argument(
         "--compiler-search-mode",
         choices=("greedy", "lattice", "ptrm", "gram"),
         default="greedy",
@@ -385,6 +391,7 @@ def main(argv: list[str] | None = None) -> int:
         grammar_top_k=args.grammar_top_k,
         compiler_decode_mode=args.compiler_decode_mode,
         component_inventory_decode_weight=args.component_inventory_decode_weight,
+        component_plan_decode_weight=args.component_plan_decode_weight,
         compiler_search_mode=args.compiler_search_mode,
         compiler_search_trigger=args.compiler_search_trigger,
         compiler_search_width=max(1, args.compiler_search_width),

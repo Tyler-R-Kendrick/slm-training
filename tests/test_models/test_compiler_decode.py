@@ -532,6 +532,79 @@ def test_component_inventory_bias_only_scores_compiler_legal_components() -> Non
     assert bias.tolist() == [-2.0, 0.0, 6.0]
 
 
+def test_component_plan_supervises_root_role_and_bound_counts() -> None:
+    model = _model(component_plan_loss_weight=1.0)
+    model.train()
+    record = ExampleRecord(
+        id="component-plan",
+        prompt="card with two labels",
+        openui=(
+            'root = Card([title, body])\n'
+            'title = TextContent(":hero.title")\n'
+            'body = TextContent(":hero.body")'
+        ),
+        placeholders=[":hero.title", ":hero.body"],
+        split="train",
+        source="fixture",
+    )
+
+    loss = model.training_loss([record])
+    loss.backward()
+
+    assert torch.isfinite(loss)
+    assert model.component_plan_head is not None
+    assert model.component_plan_head.weight.grad is not None
+    metrics = model.last_training_metrics
+    assert metrics["component_plan_loss"] > 0.0
+    assert 0.0 <= metrics["component_plan_root_accuracy"] <= 1.0
+    assert 0.0 <= metrics["component_plan_bound_topk_recall"] <= 1.0
+    assert metrics["component_plan_bound_count_mae"] >= 0.0
+
+
+def test_component_plan_bias_is_role_conditioned_and_count_aware() -> None:
+    model = _model(component_plan_decode_weight=2.0)
+    assert model.component_plan_head is not None
+    tokenizer = model.tokenizer
+    card = tokenizer.token_to_id["Card"]
+    text = tokenizer.token_to_id["TextContent"]
+    stack = tokenizer.token_to_id["Stack"]
+    with torch.no_grad():
+        model.component_plan_head.weight.zero_()
+        model.component_plan_head.bias.zero_()
+        vocab = tokenizer.vocab_size
+        model.component_plan_head.bias[card] = 3.0
+        model.component_plan_head.bias[vocab + text] = 4.0
+    ctx, ctx_pad = model._encode_context(["card with labels"])
+
+    root_bias = model._component_plan_bias(
+        ctx,
+        ctx_pad,
+        [],
+        (stack, card),
+        ("component_root", "component_root"),
+    )
+    bound_bias_before = model._component_plan_bias(
+        ctx,
+        ctx_pad,
+        [card],
+        (card, text),
+        ("component_bound", "component_bound"),
+    )
+    bound_bias_after = model._component_plan_bias(
+        ctx,
+        ctx_pad,
+        [card, text],
+        (card, text),
+        ("component_bound", "component_bound"),
+    )
+
+    assert root_bias is not None and root_bias.tolist() == [0.0, 6.0]
+    assert bound_bias_before is not None
+    assert bound_bias_after is not None
+    assert bound_bias_before[1] > bound_bias_before[0]
+    assert bound_bias_after[1] < bound_bias_before[1]
+
+
 def test_tree_verifier_packs_prefix_nodes_and_avoids_full_projection() -> None:
     model = _model()
     model.config.structural_bias = 0.0
