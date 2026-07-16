@@ -31,6 +31,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
     cfg = getattr(model, "config", None)
     if cfg is None:
         return model
+    allowed = config.runtime_override_fields
     for key in (
         "grammar_constrained",
         "grammar_top_k",
@@ -143,6 +144,8 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "speculative_fanout",
         "speculative_overlap",
     ):
+        if allowed is not None and key not in allowed:
+            continue
         if hasattr(config, key) and hasattr(cfg, key):
             value = getattr(config, key)
             if value is not None:
@@ -150,6 +153,8 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
     # Preserve checkpoint DESIGN.md conditioning unless caller sets an explicit bool.
     # Eval defaults must not force-enable gold DESIGN.md on no-design-md checkpoints.
     dm = getattr(config, "design_md_in_context", None)
+    if allowed is not None and "design_md_in_context" not in allowed:
+        dm = None
     if dm is not None and hasattr(cfg, "design_md_in_context"):
         cfg.design_md_in_context = bool(dm)
     # Decode quality defaults often wanted at eval time.
