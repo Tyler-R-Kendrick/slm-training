@@ -13,6 +13,7 @@ from typing import Any, Literal
 from slm_training.harnesses.model_build import ModelBuildConfig, build_model, train
 from slm_training.harnesses.model_build.data import load_train_records
 from slm_training.harnesses.model_build.eval_runner import evaluate_suites
+from slm_training.runtime.telemetry import run_trace
 from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
     evaluate_ship_gates,
@@ -1852,12 +1853,39 @@ def _maybe_survival_gate(exp: Experiment, ckpt: Path, args: argparse.Namespace) 
 def _summarize_board(board: dict[str, Any]) -> dict[str, Any]:
     suites = board.get("suites") or {}
     gates = evaluate_ship_gates(suites)
+
+    def durable_decode_stats(metrics: dict[str, Any]) -> dict[str, Any]:
+        """Persist aggregate telemetry, not per-token high-cardinality traces."""
+        durable: dict[str, Any] = {}
+        for key, value in (metrics.get("decode_stats") or {}).items():
+            if isinstance(value, (bool, int, float, str)) or value is None:
+                durable[key] = value
+            elif (
+                isinstance(value, dict)
+                and len(value) <= 32
+                and all(
+                    isinstance(item, (bool, int, float, str)) or item is None
+                    for item in value.values()
+                )
+            ):
+                durable[key] = value
+        return durable
+
     slim = {
         name: {
             "parse_rate": m.get("parse_rate"),
+            "syntax_parse_rate": m.get("syntax_parse_rate"),
+            "meaningful_program_rate": m.get("meaningful_program_rate"),
             "placeholder_fidelity": m.get("placeholder_fidelity"),
             "structural_similarity": m.get("structural_similarity"),
             "reward_score": m.get("reward_score"),
+            "latency_ms_p50": m.get("latency_ms_p50"),
+            "latency_ms_p95": m.get("latency_ms_p95"),
+            "fallback_count": m.get("fallback_count"),
+            "decode_timeout_count": m.get("decode_timeout_count"),
+            "constrained_fallback_rate": m.get("constrained_fallback_rate"),
+            "evaluation_policy": m.get("evaluation_policy"),
+            "decode_stats": durable_decode_stats(m),
             "n": m.get("n"),
             # V7 decode telemetry (present when speculative levers are on).
             **(
@@ -1871,6 +1899,13 @@ def _summarize_board(board: dict[str, Any]) -> dict[str, Any]:
     return {
         "pass": gates.get("pass"),
         "failures": gates.get("failures"),
+        "checkpoint_sha256": board.get("checkpoint_sha256"),
+        "evaluated_at": board.get("evaluated_at"),
+        "agentv": {
+            "format": (board.get("agentv") or {}).get("format"),
+            "sdk": (board.get("agentv") or {}).get("sdk"),
+            "summary": (board.get("agentv") or {}).get("summary"),
+        },
         "suites": slim,
     }
 
@@ -1972,25 +2007,40 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
     ckpt = _maybe_trust_gate(exp, ckpt, args)
     ckpt = _maybe_survival_gate(exp, ckpt, args)
     eval_cfg = _eval_cfg(exp, args)
-    board = evaluate_suites(
-        eval_cfg,
-        args.suites,
-        checkpoint=ckpt,
-        write_gates=True,
-    )
+    with run_trace(exp.run_id, "eval", run_dir=run_dir) as trace:
+        board = evaluate_suites(
+            eval_cfg,
+            args.suites,
+            checkpoint=ckpt,
+            write_gates=True,
+        )
     result = {
         "id": exp.eid,
         "run_id": exp.run_id,
         "initialization": exp.initialization,
+        "training_executed": exp.initialization != "eval_only",
         "parent_checkpoint": exp.parent_checkpoint,
         "description": exp.description,
         "honest_slot_contract": eval_cfg.honest_slot_contract,
+        "design_md_in_context": eval_cfg.design_md_in_context,
         "schema_in_context": eval_cfg.schema_in_context,
         "slot_contract_in_context": eval_cfg.slot_contract_in_context,
         "slot_contract_constrained_decode": (eval_cfg.slot_contract_constrained_decode),
         "template_fill_decode": eval_cfg.template_fill_decode,
         "grammar_ltr_primary": eval_cfg.grammar_ltr_primary,
         "grammar_ltr_repair": eval_cfg.grammar_ltr_repair,
+        "grammar_finalize_validate": eval_cfg.grammar_finalize_validate,
+        "allow_unconstrained_fallback": eval_cfg.allow_unconstrained_fallback,
+        "compiler_decode_mode": eval_cfg.compiler_decode_mode,
+        "compiler_search_mode": eval_cfg.compiler_search_mode,
+        "compiler_search_trigger": eval_cfg.compiler_search_trigger,
+        "compiler_search_width": eval_cfg.compiler_search_width,
+        "compiler_search_noise": eval_cfg.compiler_search_noise,
+        "compiler_search_stagnation_patience": (
+            eval_cfg.compiler_search_stagnation_patience
+        ),
+        "compiler_search_backtrack_limit": eval_cfg.compiler_search_backtrack_limit,
+        "compiler_search_local_nogoods": eval_cfg.compiler_search_local_nogoods,
         "effective_gen_steps": eval_cfg.gen_steps,
         "best_of_n": eval_cfg.best_of_n,
         "train_dir": str(exp.train_dir),
@@ -1998,6 +2048,9 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
             (exp.train_dir / "manifest.json").read_text(encoding="utf-8")
         ).get("content_fingerprint"),
         "checkpoint": str(ckpt),
+        "trace_id": trace.trace_id,
+        "traceparent": trace.traceparent,
+        "trace_bundle": trace.bundle.as_posix(),
         "local_preference_objective": exp.local_preference_objective,
         "local_preference_reference_tether": (
             exp.local_preference_reference_tether
@@ -2474,6 +2527,12 @@ def main(argv: list[str] | None = None) -> int:
     # Stable order by experiment id.
     results.sort(key=lambda r: r.get("id") or "")
 
+    training_executed = any(result.get("training_executed") for result in results)
+    design_policies = {
+        result.get("design_md_in_context")
+        for result in results
+        if "design_md_in_context" in result
+    }
     out = {
         "matrix": f"quality-experiment-matrix-{args.matrix}",
         "reference": "docs/design/quality-experiment-matrix.md",
@@ -2483,10 +2542,13 @@ def main(argv: list[str] | None = None) -> int:
         "learning_rate": args.lr,
         "seed": args.seed,
         "test_dir": str(args.test_dir),
-        "design_md_in_context": not args.no_design_md_context,
+        "design_md_in_context": (
+            design_policies.pop() if len(design_policies) == 1 else None
+        ),
+        "training_executed": training_executed,
         "rico_eval_limit": args.rico_limit,
         "suites": sorted(args.suites),
-        "steps": args.steps,
+        "steps": args.steps if training_executed else 0,
         "gen_steps": args.gen_steps,
         "context_backend": args.context_backend,
         "matrix_set": args.matrix,
