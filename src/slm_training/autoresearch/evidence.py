@@ -125,6 +125,17 @@ def summarize_evidence(path: Path, raw: bytes) -> tuple[str, dict[str, float]]:
         try:
             value = json.loads(text)
             _collect_metrics(value, metrics)
+            if (
+                "hypothesizer_feedback" in path.parts
+                and isinstance(value, dict)
+            ):
+                actions = value.get("recommended_actions") or []
+                return (
+                    "hypothesis="
+                    f"{value.get('hypothesis', '')} | status={value.get('outcome_status', '')} "
+                    f"| diagnosis={value.get('diagnosis_target', '')} | actions="
+                    + "; ".join(map(str, actions))
+                )[:6000], dict(sorted(metrics.items())[:100])
             if path.name == "run_insights.json" and isinstance(value, dict):
                 lines = []
                 for item in value.get("insights") or []:

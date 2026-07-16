@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import subprocess
 from pathlib import Path
@@ -12,6 +13,7 @@ from slm_training.autoresearch.schemas import (
     EvidenceSnapshot,
     ExperimentOutcome,
     ExperimentSpec,
+    HypothesisFeedback,
     HypothesisMatrix,
     ResearchSource,
     utc_now,
@@ -62,6 +64,8 @@ def validate_hypothesis_matrix(
     evidence: EvidenceSnapshot,
     sources: list[ResearchSource],
     prior_experiments: tuple[ExperimentSpec, ...] = (),
+    feedback: tuple[HypothesisFeedback, ...] = (),
+    previous_matrix: HypothesisMatrix | None = None,
 ) -> None:
     if matrix.campaign_id != campaign.campaign_id:
         raise ValueError("hypothesis matrix campaign_id does not match campaign")
@@ -70,6 +74,16 @@ def validate_hypothesis_matrix(
     if len(matrix.hypotheses) < campaign.min_hypotheses:
         raise ValueError(
             f"hypothesis matrix requires at least {campaign.min_hypotheses} candidates"
+        )
+    expected_feedback = {item.feedback_id for item in feedback}
+    if set(matrix.feedback_ids) != expected_feedback:
+        raise ValueError("hypothesis matrix must acknowledge all supplied feedback")
+    if feedback and (
+        previous_matrix is None
+        or matrix.predecessor_matrix_id != previous_matrix.matrix_id
+    ):
+        raise ValueError(
+            "feedback-informed matrix must identify its predecessor matrix"
         )
     prior_signatures = {
         json.dumps(
@@ -132,6 +146,58 @@ def validate_hypothesis_matrix(
         raise ValueError(
             "hypothesis matrix requires at least one regime-transition candidate"
         )
+
+
+def create_hypothesis_feedback(
+    matrix: HypothesisMatrix,
+    outcome: ExperimentOutcome,
+    diagnosis: Diagnosis,
+) -> HypothesisFeedback:
+    """Turn one completed matrix experiment into bounded hypothesizer feedback."""
+    candidates = {
+        item.experiment.experiment_id: item for item in matrix.hypotheses
+    }
+    candidate = candidates.get(outcome.experiment_id)
+    if candidate is None:
+        raise ValueError("outcome experiment is not a matrix member")
+    if outcome.campaign_id != matrix.campaign_id:
+        raise ValueError("outcome campaign does not match hypothesis matrix")
+    if diagnosis.experiment_id != outcome.experiment_id:
+        raise ValueError("diagnosis experiment does not match outcome")
+    if outcome.status not in {"completed", "failed", "stopped"}:
+        raise ValueError("hypothesizer feedback requires a terminal outcome")
+    signature = json.dumps(
+        candidate.experiment.knobs.model_dump(exclude_none=True, mode="json"),
+        sort_keys=True,
+    )
+    identity = {
+        "matrix_id": matrix.matrix_id,
+        "experiment_id": outcome.experiment_id,
+        "outcome_status": outcome.status,
+        "metrics": outcome.metrics,
+        "data_metrics": outcome.data_metrics,
+        "diagnosis_target": diagnosis.target,
+        "diagnosis_evidence": diagnosis.evidence,
+        "recommended_actions": diagnosis.recommended_actions,
+    }
+    feedback_id = "feedback-" + hashlib.sha256(
+        json.dumps(identity, sort_keys=True).encode("utf-8")
+    ).hexdigest()[:16]
+    return HypothesisFeedback(
+        feedback_id=feedback_id,
+        campaign_id=matrix.campaign_id,
+        matrix_id=matrix.matrix_id,
+        experiment_id=outcome.experiment_id,
+        hypothesis=candidate.experiment.hypothesis,
+        knob_signature=signature,
+        outcome_status=outcome.status,
+        metrics=outcome.metrics,
+        data_metrics=outcome.data_metrics,
+        diagnosis_target=diagnosis.target,
+        diagnosis_evidence=diagnosis.evidence,
+        recommended_actions=diagnosis.recommended_actions,
+        created_at=outcome.finished_at or outcome.started_at or matrix.created_at,
+    )
 
 
 def compile_commands(

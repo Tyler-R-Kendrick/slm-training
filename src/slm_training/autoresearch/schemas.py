@@ -80,13 +80,6 @@ class CampaignSpec(StrictModel):
     created_at: str = Field(default_factory=utc_now)
     notes: str = ""
 
-    @model_validator(mode="after")
-    def validate_hypothesis_budget(self) -> CampaignSpec:
-        if self.min_hypotheses > self.budget.max_experiments:
-            raise ValueError("min_hypotheses cannot exceed max_experiments")
-        return self
-
-
 class ResearchSource(StrictModel):
     source_id: str
     kind: Literal[
@@ -341,6 +334,10 @@ class HypothesisMatrix(StrictModel):
     campaign_id: str
     evidence_snapshot_id: str
     hypotheses: tuple[HypothesisCandidate, ...] = Field(min_length=5)
+    recommended_experiment_id: str
+    selection_rationale: str = Field(min_length=12)
+    predecessor_matrix_id: str | None = None
+    feedback_ids: tuple[str, ...] = ()
     created_at: str = Field(default_factory=utc_now)
 
     @model_validator(mode="after")
@@ -361,7 +358,31 @@ class HypothesisMatrix(StrictModel):
         hypotheses = [experiment.hypothesis.casefold() for experiment in experiments]
         if len(hypotheses) != len(set(hypotheses)):
             raise ValueError("hypothesis matrix hypotheses must be distinct")
+        if self.recommended_experiment_id not in ids:
+            raise ValueError("recommended experiment must be a matrix member")
+        if len(self.feedback_ids) != len(set(self.feedback_ids)):
+            raise ValueError("hypothesis matrix feedback ids must be unique")
         return self
+
+
+class HypothesisFeedback(StrictModel):
+    """Outcome evidence supplied to the next hypothesizer iteration."""
+
+    feedback_id: str = Field(pattern=r"^feedback-[0-9a-f]{16}$")
+    campaign_id: str
+    matrix_id: str
+    experiment_id: str
+    hypothesis: str
+    knob_signature: str
+    outcome_status: Literal["completed", "failed", "stopped"]
+    metrics: dict[str, float] = Field(default_factory=dict)
+    data_metrics: dict[str, float] = Field(default_factory=dict)
+    diagnosis_target: Literal[
+        "data", "researcher", "model", "infrastructure", "none"
+    ]
+    diagnosis_evidence: tuple[str, ...]
+    recommended_actions: tuple[str, ...]
+    created_at: str = Field(default_factory=utc_now)
 
 
 class ExperimentOutcome(StrictModel):
@@ -412,6 +433,23 @@ class ResearcherBenchmarkReport(StrictModel):
     valid_spec_rate: float = Field(ge=0, le=1)
     novel_rate: float = Field(ge=0, le=1)
     actionable_rate: float = Field(ge=0, le=1)
+    pass_threshold: float = Field(ge=0, le=1)
+    passed: bool
+    human_approved: bool = False
+    promotable: bool = False
+    agentv: dict[str, Any] = Field(default_factory=dict)
+    created_at: str = Field(default_factory=utc_now)
+
+
+class HypothesizerBenchmarkReport(StrictModel):
+    benchmark_id: str
+    hypothesizer_id: str
+    cases: int = Field(ge=1)
+    valid_matrix_rate: float = Field(ge=0, le=1)
+    grounded_rate: float = Field(ge=0, le=1)
+    novel_rate: float = Field(ge=0, le=1)
+    actionable_rate: float = Field(ge=0, le=1)
+    feedback_lineage_rate: float = Field(ge=0, le=1)
     pass_threshold: float = Field(ge=0, le=1)
     passed: bool
     human_approved: bool = False

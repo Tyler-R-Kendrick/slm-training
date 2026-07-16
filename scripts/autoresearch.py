@@ -9,12 +9,14 @@ import os
 from pathlib import Path
 from slm_training.autoresearch.engine import (
     compile_commands,
+    create_hypothesis_feedback,
     diagnose_outcome,
     execute_commands,
     validate_experiment,
     validate_hypothesis_matrix,
 )
 from slm_training.autoresearch.evidence import collect_evidence
+from slm_training.autoresearch.hypothesizer_eval import evaluate_hypothesizer
 from slm_training.autoresearch.literature import (
     HuggingFacePapersClient,
     categorical_discovery_source,
@@ -34,9 +36,11 @@ from slm_training.autoresearch.rl_gate import assess_rl_readiness, write_rl_read
 from slm_training.autoresearch.schemas import (
     CampaignBudget,
     CampaignSpec,
+    Diagnosis,
     EvidenceSnapshot,
     ExperimentOutcome,
     ExperimentSpec,
+    HypothesisFeedback,
     HypothesisMatrix,
     ResearcherRun,
     ResearchSource,
@@ -194,7 +198,9 @@ def _load_sources(path: Path | None) -> list[ResearchSource]:
     ]
 
 
-def _load_memo(store: CampaignStore, path: Path | None) -> str:
+def _load_memo(
+    store: CampaignStore, path: Path | None, *, required: bool = True
+) -> str:
     if path:
         text = path.read_text(encoding="utf-8")
         try:
@@ -213,7 +219,9 @@ def _load_memo(store: CampaignStore, path: Path | None) -> str:
         run = ResearcherRun.model_validate_json(candidate.read_text(encoding="utf-8"))
         if run.status == "completed":
             return run.memo
-    raise FileNotFoundError(f"no completed researcher run for {store.campaign_id}")
+    if required:
+        raise FileNotFoundError(f"no completed researcher run for {store.campaign_id}")
+    return ""
 
 
 def cmd_propose(args: argparse.Namespace) -> int:
@@ -311,18 +319,26 @@ def cmd_hypothesize(args: argparse.Namespace) -> int:
             else None
         )
     sources = _load_sources(source_path)
+    previous_matrix = _latest_formed_matrix(store, required=False)
+    feedback = _hypothesis_feedback(store, previous_matrix)
+    if previous_matrix is not None and not feedback:
+        raise ValueError(
+            "latest hypothesis matrix has no terminal feedback; run a matrix member "
+            "before forming its successor"
+        )
     if args.provider == "agent":
         if not args.matrix:
             raise ValueError("--provider agent requires --matrix")
         result = AgentHypothesisProvider(args.matrix).propose(
-            campaign, evidence, sources
+            campaign, evidence, sources, feedback
         )
     else:
         result = OpenAIHypothesizer(model=args.model).propose(
             campaign,
             evidence,
             sources,
-            _load_memo(store, args.memo),
+            _load_memo(store, args.memo, required=False),
+            feedback,
         )
     validate_hypothesis_matrix(
         campaign,
@@ -330,6 +346,8 @@ def cmd_hypothesize(args: argparse.Namespace) -> int:
         evidence,
         list(result.sources),
         prior_experiments=_finished_experiments(store),
+        feedback=feedback,
+        previous_matrix=previous_matrix,
     )
 
     proposed = {
@@ -337,15 +355,6 @@ def cmd_hypothesize(args: argparse.Namespace) -> int:
         for row in _events(store)
         if row.get("event_type") == "experiment_proposed"
     }
-    new_ids = {
-        item.experiment.experiment_id for item in result.matrix.hypotheses
-    } - proposed
-    if len(proposed) + len(new_ids) > campaign.budget.max_experiments:
-        raise ValueError(
-            "hypothesis matrix exceeds campaign experiment budget: "
-            f"{len(proposed) + len(new_ids)}/{campaign.budget.max_experiments}"
-        )
-
     matrix_path = store.write_artifact("hypothesis_matrices", result.matrix)
     source_out = store.write_artifact(
         "hypothesis_sources",
@@ -360,6 +369,7 @@ def cmd_hypothesize(args: argparse.Namespace) -> int:
         artifact_sha256=matrix_path.stem,
         detail={
             "count": len(result.matrix.hypotheses),
+            "recommended_experiment_id": result.matrix.recommended_experiment_id,
             "sources_sha": source_out.stem,
             "telemetry_sha": telemetry_path.stem,
         },
@@ -378,7 +388,11 @@ def cmd_hypothesize(args: argparse.Namespace) -> int:
             )
     print(
         json.dumps(
-            {"hypothesis_matrix": str(matrix_path), "experiments": experiment_paths},
+            {
+                "hypothesis_matrix": str(matrix_path),
+                "recommended_experiment_id": result.matrix.recommended_experiment_id,
+                "experiments": experiment_paths,
+            },
             indent=2,
         )
     )
@@ -408,20 +422,47 @@ def _finished_experiments(store: CampaignStore) -> tuple[ExperimentSpec, ...]:
     return tuple(found.values())
 
 
+def _latest_formed_matrix(
+    store: CampaignStore, *, required: bool = True
+) -> HypothesisMatrix | None:
+    formed = [
+        row
+        for row in _events(store)
+        if row.get("event_type") == "hypothesis_matrix_formed"
+    ]
+    if not formed:
+        if required:
+            raise FileNotFoundError(
+                f"no formed hypothesis matrix for {store.campaign_id}"
+            )
+        return None
+    digest = str(formed[-1]["artifact_sha256"])
+    path = store.root / "artifacts" / "hypothesis_matrices" / f"{digest}.json"
+    return HypothesisMatrix.model_validate_json(path.read_text(encoding="utf-8"))
+
+
+def _hypothesis_feedback(
+    store: CampaignStore, previous_matrix: HypothesisMatrix | None
+) -> tuple[HypothesisFeedback, ...]:
+    if previous_matrix is None:
+        return ()
+    rows = []
+    for path in sorted(
+        (store.root / "artifacts" / "hypothesizer_feedback").glob("*.json")
+    ):
+        item = HypothesisFeedback.model_validate_json(path.read_text(encoding="utf-8"))
+        if item.matrix_id == previous_matrix.matrix_id:
+            rows.append(item)
+    return tuple(rows)
+
+
 def _require_hypothesis_matrix(
     store: CampaignStore, campaign: CampaignSpec, experiment: ExperimentSpec
 ) -> HypothesisMatrix:
-    path = _artifact(store, "hypothesis_matrices", None)
-    matrix = HypothesisMatrix.model_validate_json(path.read_text(encoding="utf-8"))
+    matrix = _latest_formed_matrix(store)
+    assert matrix is not None
     if matrix.campaign_id != campaign.campaign_id:
         raise ValueError("latest hypothesis matrix belongs to a different campaign")
-    formed = any(
-        row.get("event_type") == "hypothesis_matrix_formed"
-        and row.get("artifact_sha256") == path.stem
-        for row in _events(store)
-    )
-    if not formed:
-        raise ValueError("hypothesis matrix has no validated formation event")
     if len(matrix.hypotheses) < campaign.min_hypotheses:
         raise ValueError(
             f"run requires at least {campaign.min_hypotheses} formed hypotheses"
@@ -457,10 +498,33 @@ def cmd_validate(args: argparse.Namespace) -> int:
 def cmd_run(args: argparse.Namespace) -> int:
     store = _store(args)
     campaign = store.load_campaign()
-    experiment = ExperimentSpec.model_validate_json(
-        args.experiment.read_text(encoding="utf-8")
-    )
+    matrix = _latest_formed_matrix(store)
+    assert matrix is not None
+    if args.experiment:
+        experiment = ExperimentSpec.model_validate_json(
+            args.experiment.read_text(encoding="utf-8")
+        )
+    else:
+        experiment = next(
+            item.experiment
+            for item in matrix.hypotheses
+            if item.experiment.experiment_id == matrix.recommended_experiment_id
+        )
     _require_hypothesis_matrix(store, campaign, experiment)
+    started = {
+        str(row.get("experiment_id"))
+        for row in _events(store)
+        if row.get("event_type") == "experiment_started"
+    }
+    if (
+        args.execute
+        and experiment.experiment_id not in started
+        and len(started) >= campaign.budget.max_experiments
+    ):
+        raise ValueError(
+            f"campaign execution budget exhausted: {len(started)}/"
+            f"{campaign.budget.max_experiments}"
+        )
     commands = compile_commands(campaign, experiment, output_root=args.root)
     plan_path = store.write_artifact(
         "execution_plans", {"commands": commands, "execute": args.execute}
@@ -474,6 +538,13 @@ def cmd_run(args: argparse.Namespace) -> int:
     if not args.execute:
         print(json.dumps({"execute": False, "commands": commands}, indent=2))
         return 0
+    if experiment.experiment_id not in started:
+        store.append_event(
+            "experiment_started",
+            experiment_id=experiment.experiment_id,
+            status="running",
+            detail={"hypothesis_matrix_id": matrix.matrix_id},
+        )
     outcome = execute_commands(
         experiment,
         commands,
@@ -496,6 +567,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         status=diagnosis.target,
         artifact_sha256=diagnosis_path.stem,
     )
+    _record_hypothesis_feedback(store, matrix, outcome, diagnosis)
     if args.trackio:
         try:
             TrackioSink(
@@ -531,8 +603,38 @@ def cmd_diagnose(args: argparse.Namespace) -> int:
         status=diagnosis.target,
         artifact_sha256=path.stem,
     )
+    matrix = _latest_formed_matrix(store, required=False)
+    if matrix is not None and any(
+        item.experiment.experiment_id == outcome.experiment_id
+        for item in matrix.hypotheses
+    ):
+        _record_hypothesis_feedback(store, matrix, outcome, diagnosis)
     print(diagnosis.model_dump_json(indent=2))
     return 0
+
+
+def _record_hypothesis_feedback(
+    store: CampaignStore,
+    matrix: HypothesisMatrix,
+    outcome: ExperimentOutcome,
+    diagnosis: Diagnosis,
+) -> Path:
+    feedback = create_hypothesis_feedback(matrix, outcome, diagnosis)
+    path = store.write_artifact("hypothesizer_feedback", feedback)
+    already_recorded = any(
+        row.get("event_type") == "hypothesizer_feedback_recorded"
+        and row.get("artifact_sha256") == path.stem
+        for row in _events(store)
+    )
+    if not already_recorded:
+        store.append_event(
+            "hypothesizer_feedback_recorded",
+            experiment_id=outcome.experiment_id,
+            status=feedback.diagnosis_target,
+            artifact_sha256=path.stem,
+            detail={"feedback_id": feedback.feedback_id, "matrix_id": matrix.matrix_id},
+        )
+    return path
 
 
 def cmd_validate_rl(args: argparse.Namespace) -> int:
@@ -548,6 +650,21 @@ def cmd_evaluate_researcher(args: argparse.Namespace) -> int:
         args.predictions,
         run_dir=args.run_dir,
         researcher_id=args.researcher_id,
+        pass_threshold=args.pass_threshold,
+        human_approved=args.human_approve,
+    )
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(report.model_dump_json(indent=2) + "\n", encoding="utf-8")
+    print(report.model_dump_json(indent=2))
+    return 0 if report.passed else 2
+
+
+def cmd_evaluate_hypothesizer(args: argparse.Namespace) -> int:
+    report = evaluate_hypothesizer(
+        args.cases,
+        args.predictions,
+        run_dir=args.run_dir,
+        hypothesizer_id=args.hypothesizer_id,
         pass_threshold=args.pass_threshold,
         human_approved=args.human_approve,
     )
@@ -667,7 +784,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     run = sub.add_parser("run")
     run.add_argument("--campaign-id", required=True)
-    run.add_argument("--experiment", type=Path, required=True)
+    run.add_argument(
+        "--experiment",
+        type=Path,
+        help="Exact matrix member; defaults to the matrix recommendation.",
+    )
     run.add_argument("--execute", action="store_true")
     run.add_argument("--trackio", action="store_true")
     run.set_defaults(func=cmd_run)
@@ -698,6 +819,26 @@ def build_parser() -> argparse.ArgumentParser:
     benchmark.add_argument("--human-approve", action="store_true")
     benchmark.add_argument("--output", type=Path, required=True)
     benchmark.set_defaults(func=cmd_evaluate_researcher)
+
+    hypothesis_benchmark = sub.add_parser("evaluate-hypothesizer")
+    hypothesis_benchmark.add_argument(
+        "--cases",
+        type=Path,
+        default=Path(
+            "src/slm_training/resources/autoresearch/hypothesizer_cases.json"
+        ),
+    )
+    hypothesis_benchmark.add_argument("--predictions", type=Path, required=True)
+    hypothesis_benchmark.add_argument(
+        "--run-dir",
+        type=Path,
+        default=Path("outputs/autoresearch/hypothesizer_eval"),
+    )
+    hypothesis_benchmark.add_argument("--hypothesizer-id", required=True)
+    hypothesis_benchmark.add_argument("--pass-threshold", type=float, default=0.8)
+    hypothesis_benchmark.add_argument("--human-approve", action="store_true")
+    hypothesis_benchmark.add_argument("--output", type=Path, required=True)
+    hypothesis_benchmark.set_defaults(func=cmd_evaluate_hypothesizer)
 
     status = sub.add_parser("status")
     status.add_argument("--campaign-id", required=True)

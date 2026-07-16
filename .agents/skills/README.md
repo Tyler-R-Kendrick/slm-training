@@ -13,6 +13,8 @@ Codex and GitHub Copilot also load project skills from **`.agents/skills/`**.
 | `dashboard-openui-parity` | Keep each dashboard page's interpreted-mode `static/openui/*.openui` program at parity with its compiled React page |
 | `honest-ship-eval` | Multi-suite honest ship gates vs fixture demo |
 | `running-experiment-matrices` | Quality / grammar / perf / phase matrices |
+| `openui-autoresearch` | Evidence-grounded research, hypothesis matrices, feedback, execution, and RL readiness |
+| `improve-openui-harnesses` | Harness-family owners, invariants, outputs, improvement checks, and anti-sprawl rules |
 | `playwright-cli` | Browser / playground automation |
 | `frontier-describe` | Train-only frozen paraphrase / ladder / edit / vision artifacts |
 | `organize-repository` | Canonical file placement, deduplication, and `git mv` workflow |

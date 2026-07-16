@@ -12,6 +12,7 @@ from slm_training.autoresearch.schemas import (
     CampaignSpec,
     EvidenceSnapshot,
     ExperimentSpec,
+    HypothesisFeedback,
     HypothesisMatrix,
     ResearchSource,
 )
@@ -101,6 +102,7 @@ class AgentHypothesisProvider:
         campaign: CampaignSpec,
         evidence: EvidenceSnapshot,
         sources: list[ResearchSource],
+        feedback: tuple[HypothesisFeedback, ...] = (),
     ) -> HypothesisProviderResult:
         matrix = HypothesisMatrix.model_validate_json(
             self.matrix_path.read_text(encoding="utf-8")
@@ -112,6 +114,7 @@ class AgentHypothesisProvider:
                 "provider": "agent_hypothesizer",
                 "matrix_path": str(self.matrix_path),
                 "evidence_snapshot_id": evidence.snapshot_id,
+                "feedback_count": len(feedback),
             },
         )
 
@@ -263,17 +266,46 @@ class OpenAIHypothesizer:
         campaign: CampaignSpec,
         evidence: EvidenceSnapshot,
         sources: list[ResearchSource],
-        memo: str,
+        memo: str = "",
+        feedback: tuple[HypothesisFeedback, ...] = (),
     ) -> HypothesisProviderResult:
-        if not memo.strip():
-            raise ValueError("hypothesizer requires a persisted research memo")
         context = _research_context(campaign, evidence, sources)
+        discovery = None
+        discovery_prompt = ""
+        if not memo.strip():
+            discovery_prompt = (
+                "Research this OpenUI training campaign using primary sources. "
+                "Reconcile the captured evidence, prior traces, prior outcomes, and "
+                "failed hypotheses. Return a cited memo that identifies mechanisms "
+                "and untried, falsifiable experiment directions; do not emit code or "
+                f"commands.\n\nCAMPAIGN AND EVIDENCE:\n{context}\n\n"
+                "PRIOR HYPOTHESIS FEEDBACK:\n"
+                f"{json.dumps([item.model_dump(mode='json') for item in feedback], sort_keys=True)}"
+            )
+            discovery = self.client.responses.create(
+                model=self.model,
+                store=False,
+                input=discovery_prompt,
+                tools=[{"type": "web_search"}],
+            )
+            memo = str(getattr(discovery, "output_text", ""))
+            if not memo.strip():
+                raise ValueError("hypothesizer discovery returned an empty memo")
+            sources = list({
+                item.uri: item
+                for item in [*sources, *_extract_web_sources(discovery)]
+            }.values())
+            context = _research_context(campaign, evidence, sources)
         prompt = (
             f"Return one HypothesisMatrix with at least {campaign.min_hypotheses} "
             "distinct, executable ExperimentSpecs. Synthesize primary research, prior "
             "run results, and prior traces when present. Cite only supplied URIs or "
             "evidence paths and change only typed knobs. Seek high-information, "
             "falsifiable ideas not represented by prior knob-value signatures.\n\n"
+            "Set recommended_experiment_id to the highest-information safe candidate "
+            "and explain the choice in selection_rationale. When feedback is supplied, "
+            "copy every feedback_id into feedback_ids and set predecessor_matrix_id "
+            "to the matrix_id shared by that feedback.\n\n"
             "For every hypothesis, apply arXiv:2606.01444 as an engineering audit: "
             "state the old schema, proposed schema, what old evidence transports, the "
             "transport/reachability analysis, claimed residual, preservation checks, "
@@ -285,6 +317,8 @@ class OpenAIHypothesizer:
             "fixed_regime_search. Never request RL without an approved readiness "
             "report and never emit shell or code.\n\n"
             f"CAMPAIGN AND EVIDENCE:\n{context}\n\n"
+            "PRIOR HYPOTHESIS FEEDBACK:\n"
+            f"{json.dumps([item.model_dump(mode='json') for item in feedback], sort_keys=True)}\n\n"
             f"RESEARCH MEMO:\n{memo[:120_000]}"
         )
         response = self.client.responses.parse(
@@ -305,10 +339,17 @@ class OpenAIHypothesizer:
                 "requested_model": self.model,
                 "model": getattr(response, "model", None),
                 "response_id": getattr(response, "id", None),
+                "discovery_response_id": getattr(discovery, "id", None),
+                "discovery_prompt_sha256": (
+                    hashlib.sha256(discovery_prompt.encode("utf-8")).hexdigest()
+                    if discovery_prompt
+                    else None
+                ),
                 "usage": _dump(getattr(response, "usage", None)),
                 "trace": _dump(response),
                 "store": False,
                 "evidence_snapshot_id": evidence.snapshot_id,
+                "feedback_ids": [item.feedback_id for item in feedback],
                 "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
             },
         )

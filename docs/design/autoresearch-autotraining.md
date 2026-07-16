@@ -1,8 +1,9 @@
 # Autoresearch and autotraining harness
 
-**Status:** pluggable researcher and five-candidate hypothesizer harnesses implemented;
-no live upstream researcher, model, paid GPU, or provider run in this change. The
-committed researcher fixture benchmark is wiring evidence, not a model-quality claim.
+**Status:** pluggable researcher and feedback-driven five-candidate hypothesizer
+harnesses implemented; no live upstream researcher, model, paid GPU, or provider run
+in this change. The committed researcher fixture benchmark is wiring evidence, not a
+model-quality claim.
 
 ## Goal and boundary
 
@@ -17,9 +18,12 @@ Research and proposal compilation are separate stages:
    and returns a cited memo, normalized sources, trajectory, and telemetry in a
    `ResearcherRun`;
 2. the shared hypothesizer treats that memo as untrusted evidence and produces a
-   strict `HypothesisMatrix` with at least five `ExperimentSpec` candidates; normal
-   validation then enforces citations, campaign identity, distinct knob-value
-   signatures, allowlisted knobs, experiment budget, and the RL lock.
+   strict `HypothesisMatrix` with at least five `ExperimentSpec` candidates plus one
+   recommended experiment; normal validation enforces citations, campaign identity,
+   distinct knob-value signatures, allowlisted knobs, experiment budget, and RL lock;
+3. each terminal outcome and diagnosis becomes typed `HypothesisFeedback`. The next
+   matrix must name its predecessor and acknowledge every supplied feedback ID, while
+   older feedback is recaptured as prior-campaign evidence.
 
 The registry in `src/slm_training/autoresearch/researchers.py` initially provides
 two invocation adapters. Both run in a separately installed upstream checkout and
@@ -52,7 +56,7 @@ repo lineage + HF Daily Papers + web + prior artifacts
                immutable EvidenceSnapshot
                          |
                          v
-       researcher -> cited memo/trajectory -> hypothesizer (>=5 candidates)
+       researcher -> cited memo/trajectory -> hypothesizer (>=5 + recommendation)
                                                    |
                                                    v
                                   typed HypothesisMatrix -> validation
@@ -69,6 +73,9 @@ repo lineage + HF Daily Papers + web + prior artifacts
                                              ^                       |
                                              |                       v
                                       data repair <---- diagnosis ----> model repair
+                                             ^              |
+                                             |              v
+                                  next matrix <--- typed hypothesis feedback
                                                                   |
                                                                   v
                                       full competence + AgentV + reward variance
@@ -96,9 +103,12 @@ unknown fields forbidden:
   trajectory, timing, and non-secret process telemetry;
 - `ExperimentSpec` requires a hypothesis, expected effect, falsification and stop
   criteria, citations, parent, and typed `ExperimentKnobs`;
-- `HypothesisMatrix` requires at least five distinct candidates. Each candidate
-  records how research, prior traces, and prior results informed it plus a typed
-  `CategoricalNoveltyAudit`;
+- `HypothesisMatrix` requires at least five distinct candidates, a recommended
+  member, selection rationale, and feedback/predecessor lineage when revising. Each
+  candidate records how research, prior traces, and prior results informed it plus a
+  typed `CategoricalNoveltyAudit`;
+- `HypothesisFeedback` records the tested hypothesis/signature, terminal metrics,
+  diagnosis evidence, and recommended actions without inventing causal support;
 - `ExperimentOutcome` and `Diagnosis` route failures to data, researcher, model, or
   infrastructure remediation;
 - `RLReadinessReport` is the only accepted RL capability token.
@@ -198,6 +208,8 @@ outputs/autoresearch/<campaign>/
     research_sources/<content-sha>.json  # normalized citation-valid source set
     experiments/<content-sha>.json       # compiler output after validation
     hypothesis_matrices/<content-sha>.json # >=5 candidates + novelty audits
+    hypothesizer_feedback/<content-sha>.json # terminal outcome + diagnosis lesson
+    hypothesizer_telemetry/<content-sha>.json
   runs/<experiment>/...
 ```
 
@@ -210,6 +222,35 @@ source fingerprint and provider/runtime metadata. If source metrics change, stal
 enrichment is rejected rather than attached to new evidence. A browser result that
 cannot be persisted may be shown for the current UI session but is not autoresearch
 evidence until the action endpoint writes it successfully.
+
+## Standard hypothesis loop
+
+`research` captures repository evidence and sources first. `hypothesize` uses a
+completed isolated-researcher memo when one exists. If none exists, the OpenAI
+hypothesizer performs its own `store=False` web-research pass before structured
+matrix generation; discovered URLs join the captured source set and remain subject
+to normal citation validation.
+
+```bash
+python -m scripts.autoresearch init --campaign-id <id> \
+  --objective "<falsifiable objective>" --primary-metric <metric>
+python -m scripts.autoresearch research --campaign-id <id>
+python -m scripts.autoresearch hypothesize --campaign-id <id>
+python -m scripts.autoresearch run --campaign-id <id>          # inspect recommendation
+python -m scripts.autoresearch run --campaign-id <id> --execute
+```
+
+`run` defaults to the matrix recommendation but still accepts `--experiment` for an
+exact matrix member. It cannot run a legacy standalone proposal. After execution it
+persists the outcome, diagnosis, and feedback inside the same campaign tree. A later
+`hypothesize` receives feedback from the latest matrix, must link that predecessor,
+and cannot repeat any finished knob signature. Matrix candidates are reviewable
+plans; only uniquely started experiments consume `max_experiments`.
+
+This is bounded self-improvement by accumulated evidence and policy iteration. It is
+not online weight training or permission to edit implementation, frozen evaluations,
+promotion policy, or ship gates. Hypothesizer implementation changes still require
+held-out evaluation and human approval before being treated as promoted behavior.
 
 ## Isolated researcher setup
 
@@ -302,6 +343,23 @@ validity, grounded citations, distinct bounded knob signatures, and actionable
 expected-knob/stop coverage. It publishes AgentEvals JSONL through the pinned AgentV
 SDK. Promotion requires every score to clear the threshold, all cases to pass, and a
 separate human approval. Frozen benchmark cases are evaluation-only.
+
+Hypothesizer changes use the parallel frozen matrix evaluation in
+`src/slm_training/resources/autoresearch/hypothesizer_cases.json`. It measures valid
+five-candidate matrices, grounded evidence-role use, a regime-transition candidate
+audit, an actionable recommendation, and exact feedback/predecessor lineage:
+
+```bash
+python -m scripts.autoresearch evaluate-hypothesizer \
+  --predictions <hypothesis-matrices.jsonl> \
+  --hypothesizer-id <policy-id> \
+  --run-dir outputs/autoresearch/hypothesizer_eval/<policy-id> \
+  --output docs/design/autoresearch-hypothesizer-benchmark.json
+```
+
+This publishes AgentV evidence. Passing still is not promotion: a human must approve
+the policy, and every benchmark run must update matching JSON and measured-results
+markdown. Never train or tune a hypothesizer on the frozen cases.
 
 ### Measured fixture benchmark (2026-07-14 CDT)
 

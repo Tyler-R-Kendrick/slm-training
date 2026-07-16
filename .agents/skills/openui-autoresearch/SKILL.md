@@ -42,21 +42,27 @@ readiness.
    python -m scripts.autoresearch research --campaign-id <id>
    ```
 
-3. Propose through one of two paths:
+3. Form a matrix through one of two paths:
 
-   - `--provider agent --proposal <json>` for code-capable agent work.
-   - `--provider openai` for the Responses web-search + Structured Outputs path.
+   - `hypothesize --provider agent --matrix <json>` for code-capable agent work.
+   - `hypothesize --provider openai` for the Responses research + Structured
+     Outputs path. It uses a completed researcher memo when available and otherwise
+     performs its own `store=False` research pass.
 
-4. Validate before execution. Citations must resolve to the captured evidence or
-   source set, and every knob must be campaign-allowed.
+4. Validate before execution. The matrix needs at least five distinct candidates,
+   one recommended member, grounded citations, evidence-role coverage, categorical
+   novelty audits, and only campaign-allowed knobs.
 
-5. Run without `--execute` first to inspect the compiled command plan. `--execute`
+5. Run without `--execute` first to inspect the recommended candidate's compiled
+   command plan. `--experiment` may select another exact matrix member; `--execute`
    runs only typed, locally compiled commands.
 
-6. Persist the outcome and diagnose it. If data validity, leakage, or quality is
-   bad, derive a new immutable snapshot with `--source existing --derive-from` and
-   rerun matched controls. If a valid experiment repeatedly fails, improve the
-   researcher policy and rerun the frozen researcher benchmark.
+6. Persist the outcome and diagnosis. The harness writes typed hypothesizer feedback;
+   the next matrix must link its predecessor, acknowledge that feedback, and avoid
+   finished knob signatures. If data validity, leakage, or quality is bad, derive a
+   new immutable snapshot with `--source existing --derive-from` and rerun matched
+   controls. Improve provider code only through `evaluate-hypothesizer`, frozen
+   evaluation, and human approval; never train on its frozen cases.
 
 7. Sync only after the local bundle is complete:
 
