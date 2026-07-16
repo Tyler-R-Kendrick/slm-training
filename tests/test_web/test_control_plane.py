@@ -173,6 +173,70 @@ def test_run_detail_missing_is_graceful(ro_client: TestClient) -> None:
     assert detail["gates"] is None
 
 
+def test_research_evidence_and_autoresearch_run_are_current(tmp_path) -> None:
+    design = tmp_path / "docs" / "design"
+    design.mkdir(parents=True)
+    run_dir = (
+        tmp_path / "outputs" / "autoresearch" / "e9-current" / "runs" / "e9-run"
+    )
+    run_dir.mkdir(parents=True)
+    suites = {
+        "smoke": {
+            "n": 3,
+            "parse_rate": 1.0,
+            "meaningful_program_rate": 0.25,
+            "structural_similarity": 0.4,
+            "placeholder_fidelity": 0.5,
+            "reward_score": 0.6,
+        }
+    }
+    (design / "iter-e9-current-20260716.json").write_text(
+        json.dumps(
+            {
+                "campaign": "E9 current experiment",
+                "date_utc": "2026-07-16",
+                "run_id": "e9-run",
+                "train_result": {"trace_id": "a" * 32},
+                "suites": suites,
+                "ship_gates": {"pass": False},
+                "agentv": {"total": 5, "passed": 1},
+                "scoreboard": "outputs/autoresearch/e9-current/runs/e9-run/scoreboard.json",
+            }
+        ),
+        encoding="utf-8",
+    )
+    (run_dir / "train_summary.json").write_text(
+        json.dumps({"run_id": "e9-run", "steps": 12, "last_loss": 1.25}),
+        encoding="utf-8",
+    )
+    (run_dir / "train_telemetry.json").write_text(
+        json.dumps({"spans": {"forward": {"pct": 75.0}}}), encoding="utf-8"
+    )
+    (run_dir / "trace.json").write_text(
+        json.dumps({"trace_id": "a" * 32}), encoding="utf-8"
+    )
+    (run_dir / "gates.json").write_text(
+        json.dumps({"pass": False, "failures": ["smoke:meaningful_program_rate"]}),
+        encoding="utf-8",
+    )
+
+    readers = Readers(tmp_path)
+    research = readers.scoreboard("research")
+    assert research["results"][0]["run_id"] == "e9-run"
+    assert research["results"][0]["agentv"] == {"total": 5, "passed": 1}
+    assert any(row["run_id"] == "e9-run" for row in readers.runs()["runs"])
+    detail = readers.run("e9-run")
+    assert detail["provenance"] == "live"
+    assert detail["train_summary"]["steps"] == 12
+    assert detail["telemetry"]["spans"]["forward"]["pct"] == 75.0
+    assert detail["trace"]["trace_id"] == "a" * 32
+    assert detail["scoreboard"]["suites"] == suites
+    # Headline comparisons use meaningful output, not syntax-only parse success.
+    comparisons, _ = readers._performance_rows([])
+    current = next(row for row in comparisons if row["run_id"] == "e9-run")
+    assert current["parse"] == 0.25
+
+
 def test_rl_traces_are_paginated_and_malformed_rows_are_skipped(tmp_path) -> None:
     path = tmp_path / "outputs" / "runs" / "molt-smoke" / "rl_traces.jsonl"
     path.parent.mkdir(parents=True)

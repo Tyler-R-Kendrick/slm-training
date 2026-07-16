@@ -101,7 +101,7 @@ export function Overview({ navigate }: { navigate: (to: string) => void }) {
             { key: "run_id", label: "Run" },
             { key: "matrix", label: "Matrix" },
             { key: "gate_status", label: "Gate" },
-            { key: "parse", label: "Parse", align: "right" },
+            { key: "parse", label: "Meaningful", align: "right" },
             { key: "fidelity", label: "Fidelity", align: "right" },
             { key: "structure", label: "Structure", align: "right" },
             { key: "reward", label: "Reward", align: "right" },

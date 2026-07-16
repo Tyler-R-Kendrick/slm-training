@@ -45,6 +45,7 @@ SCOREBOARD_FILES: dict[str, str] = {
     "perf": "perf-matrix-results.json",
     "phase": "phase-abc-results.json",
 }
+RESEARCH_SCOREBOARD_KIND = "research"
 
 # Suite ordering used across the UI (matches ALLOWED_SPLITS eval order).
 SUITE_ORDER = ("smoke", "held_out", "adversarial", "ood", "rico_held")
@@ -175,7 +176,11 @@ def _suite_metrics(suites: Any) -> tuple[dict[str, float], int]:
         weight = max(1, int(suite.get("n") or 0))
         sample_count += int(suite.get("n") or 0)
         for key in keys:
-            value = suite.get(key)
+            value = (
+                suite.get("meaningful_program_rate", suite.get(key))
+                if key == "parse_rate"
+                else suite.get(key)
+            )
             if isinstance(value, (int, float)):
                 totals[key] += float(value) * weight
                 weights[key] += weight
@@ -221,7 +226,77 @@ class Readers:
 
     # ---- scoreboards (experiment / perf matrices) -----------------------------
 
+    def _research_results(self) -> list[dict[str, Any]]:
+        """Normalize current per-iteration evidence into the dashboard contract."""
+        results: list[dict[str, Any]] = []
+        for path in self.docs_design.glob("iter-*.json"):
+            payload = _read_json(path)
+            if not isinstance(payload, dict):
+                continue
+            evaluation = payload.get("evaluation")
+            evaluation = evaluation if isinstance(evaluation, dict) else {}
+            suites = payload.get("suites") or evaluation.get("suites")
+            if not isinstance(suites, dict):
+                continue
+            train_result = payload.get("train_result")
+            train_result = train_result if isinstance(train_result, dict) else {}
+            run_id = (
+                payload.get("run_id")
+                or train_result.get("run_id")
+                or evaluation.get("run_id")
+            )
+            if not isinstance(run_id, str) or not _RUN_ID_RE.fullmatch(run_id):
+                continue
+            gates = payload.get("ship_gates") or evaluation.get("ship_gates")
+            gates = gates if isinstance(gates, dict) else {}
+            agentv = payload.get("agentv") or evaluation.get("agentv")
+            agentv = agentv if isinstance(agentv, dict) else {}
+            scoreboard_path = payload.get("scoreboard") or evaluation.get("scoreboard")
+            run_dir = (
+                str(Path(scoreboard_path).parent)
+                if isinstance(scoreboard_path, str)
+                else None
+            )
+            results.append(
+                {
+                    "id": run_id,
+                    "run_id": run_id,
+                    "description": payload.get("campaign")
+                    or payload.get("conclusion")
+                    or payload.get("status")
+                    or path.stem,
+                    "date": payload.get("date_utc") or payload.get("date"),
+                    "pass": gates.get("pass"),
+                    "suites": suites,
+                    "agentv": agentv,
+                    "trace_id": train_result.get("trace_id"),
+                    "run_dir": run_dir,
+                    "source": f"docs/design/{path.name}",
+                }
+            )
+
+        def order(row: dict[str, Any]) -> tuple[str, int, str]:
+            match = re.search(r"[Ee](\d+)", str(row.get("id") or ""))
+            return (
+                str(row.get("date") or ""),
+                int(match.group(1)) if match else -1,
+                str(row.get("id") or ""),
+            )
+
+        return sorted(results, key=order, reverse=True)
+
     def scoreboard(self, kind: str) -> dict[str, Any]:
+        if kind == RESEARCH_SCOREBOARD_KIND:
+            results = self._research_results()
+            return {
+                "kind": kind,
+                "provenance": "committed",
+                "reference": "docs/design/iter-*.json",
+                "meta": {"latest": results[0].get("date") if results else None},
+                "count": len(results),
+                "passed": sum(row.get("pass") is True for row in results),
+                "results": results,
+            }
         filename = SCOREBOARD_FILES.get(kind)
         if filename is None:
             return {"kind": kind, "provenance": "unknown", "results": [], "meta": {}}
@@ -248,7 +323,7 @@ class Readers:
 
     def scoreboards(self) -> list[dict[str, Any]]:
         index: list[dict[str, Any]] = []
-        for kind in SCOREBOARD_FILES:
+        for kind in (*SCOREBOARD_FILES, RESEARCH_SCOREBOARD_KIND):
             board = self.scoreboard(kind)
             index.append(
                 {
@@ -293,15 +368,13 @@ class Readers:
                         ).get("trace_id"),
                     }
                 )
-        if live:
-            return {"provenance": "live", "runs": live}
-        # Cold start: synthesize runs from committed matrix rows and the published
-        # experiment snapshot generated from completed local runs.
+        # Add committed evidence even when lineage exists: most experiment runs are
+        # intentionally not promotable and therefore have no lineage manifest.
         snapshot = _read_json(self.dashboard_snapshot) or {}
         derived: list[dict[str, Any]] = []
         for row in _results_of(snapshot.get("runs")):
             derived.append({**row, "provenance": "committed-snapshot"})
-        for kind in ("quality", "grammar", "perf"):
+        for kind in ("quality", "grammar", "perf", RESEARCH_SCOREBOARD_KIND):
             for row in self.scoreboard(kind)["results"]:
                 derived.append(
                     {
@@ -312,17 +385,51 @@ class Readers:
                         "description": row.get("description"),
                         "checkpoint": row.get("checkpoint"),
                         "lifecycle_state": None,
+                        "provenance": (
+                            "live"
+                            if self._run_dir(
+                                str(row.get("run_id") or row.get("id") or ""), row
+                            ).is_dir()
+                            else "committed"
+                        ),
                     }
                 )
-        return {"provenance": "committed", "runs": derived}
+        known = {row.get("run_id") for row in live}
+        for row in derived:
+            if row.get("run_id") not in known:
+                live.append(row)
+                known.add(row.get("run_id"))
+        return {
+            "provenance": (
+                "live" if any(row.get("provenance") == "live" for row in live) else "committed"
+            ),
+            "runs": live,
+        }
 
     def _scoreboard_row(self, run_id: str) -> dict[str, Any] | None:
         """Find the matrix row (with suites) whose run_id or experiment id matches."""
-        for kind in ("quality", "grammar", "perf"):
+        for kind in (RESEARCH_SCOREBOARD_KIND, "quality", "grammar", "perf"):
             for row in self.scoreboard(kind)["results"]:
                 if run_id in (row.get("run_id"), row.get("id")):
                     return {"matrix": kind, **row}
         return None
+
+    def _run_dir(self, run_id: str, scoreboard: dict[str, Any] | None = None) -> Path:
+        candidates: list[Path] = []
+        declared = (scoreboard or {}).get("run_dir")
+        if isinstance(declared, str):
+            candidates.append(self.root / declared)
+        candidates.extend(
+            [
+                self.outputs / "runs" / run_id,
+                *self.outputs.glob(f"runs/*/{run_id}"),
+                *self.outputs.glob(f"autoresearch/*/runs/{run_id}"),
+            ]
+        )
+        for candidate in candidates:
+            if candidate.is_dir():
+                return candidate
+        return self.outputs / "runs" / run_id
 
     def run(self, run_id: str) -> dict[str, Any]:
         if not _RUN_ID_RE.fullmatch(run_id):
@@ -337,7 +444,8 @@ class Readers:
                 "matrix_result": None,
                 "insights": None,
             }
-        run_dir = self.outputs / "runs" / run_id
+        scoreboard = self._scoreboard_row(run_id)
+        run_dir = self._run_dir(run_id, scoreboard)
         live = {
             "train_summary": _read_json(run_dir / "train_summary.json"),
             "gates": _read_json(run_dir / "gates.json"),
@@ -354,7 +462,6 @@ class Readers:
         # Attach the matching committed scoreboard row so the detail view is useful
         # even on a cold outputs/; derive a gate matrix from its suites when no live
         # gates.json exists.
-        scoreboard = self._scoreboard_row(run_id)
         artifacts = dict(live)
         if (
             artifacts["gates"] is None
@@ -383,7 +490,7 @@ class Readers:
         if not _RUN_ID_RE.fullmatch(run_id):
             raise ValueError("invalid run id")
         return save_enrichment(
-            self.outputs / "runs" / run_id,
+            self._run_dir(run_id, self._scoreboard_row(run_id)),
             run_id=run_id,
             submission=submission,
             scoreboard=self._scoreboard_row(run_id),
@@ -394,8 +501,8 @@ class Readers:
             raise ValueError("invalid run id")
         if not os.getenv("OPENAI_API_KEY"):
             raise RuntimeError("OpenAI fallback is not configured")
-        run_dir = self.outputs / "runs" / run_id
         scoreboard = self._scoreboard_row(run_id)
+        run_dir = self._run_dir(run_id, scoreboard)
         report = load_run_insights(run_dir, run_id=run_id, scoreboard=scoreboard)
         submission = enrich_with_openai(report)
         return save_enrichment(
@@ -418,7 +525,7 @@ class Readers:
                 "traces": [],
                 "provenance": "missing",
             }
-        run_dir = self.outputs / "runs" / run_id
+        run_dir = self._run_dir(run_id, self._scoreboard_row(run_id))
         trace_ref = _read_json(run_dir / "trace.json") or {}
         bundle_value = str(trace_ref.get("bundle") or "")
         bundle = Path(bundle_value)
@@ -536,12 +643,21 @@ class Readers:
         return {"checkpoints": roster, "deployment": self.deployment_state()}
 
     def gates_for_run(self, run_id: str) -> dict[str, Any]:
-        gates = _read_json(self.outputs / "runs" / run_id / "gates.json")
+        if not _RUN_ID_RE.fullmatch(run_id):
+            return {
+                "provenance": "missing",
+                "policy": DEFAULT_SHIP_GATES,
+                "actual": {},
+                "gates": {},
+                "failures": ["invalid_run_id"],
+                "pass": False,
+            }
+        gates = _read_json(self._run_dir(run_id, self._scoreboard_row(run_id)) / "gates.json")
         if gates is not None:
             return {"provenance": "live", **gates}
         # Cold start: find the run's suites in the committed scoreboards and
         # evaluate the default policy so the UI always has a gate matrix.
-        for kind in ("quality", "grammar"):
+        for kind in (RESEARCH_SCOREBOARD_KIND, "quality", "grammar"):
             for row in self.scoreboard(kind)["results"]:
                 if run_id in (row.get("run_id"), row.get("id")):
                     suites = row.get("suites") or {}
@@ -955,8 +1071,13 @@ class Readers:
             else None
         )
         rows: list[dict[str, Any]] = []
-        for kind in ("quality", "grammar"):
+        seen: set[str] = set()
+        for kind in (RESEARCH_SCOREBOARD_KIND, "quality", "grammar"):
             for row in self.scoreboard(kind)["results"]:
+                run_id = str(row.get("run_id") or row.get("id") or "")
+                if not run_id or run_id in seen:
+                    continue
+                seen.add(run_id)
                 metrics, sample_count = _suite_metrics(row.get("suites"))
                 if not metrics:
                     continue

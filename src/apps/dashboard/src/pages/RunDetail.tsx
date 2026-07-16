@@ -178,7 +178,8 @@ export function RunDetail({ runId, navigate }: { runId: string; navigate: (to: s
 
   const evalRows = Object.entries(finalEval).map(([suite, m]: [string, any]) => ({
     suite,
-    parse_rate: m?.parse_rate,
+    syntax_rate: m?.syntax_parse_rate ?? m?.parse_rate,
+    meaningful_rate: m?.meaningful_program_rate ?? m?.parse_rate,
     structural_similarity: m?.structural_similarity,
     placeholder_fidelity: m?.placeholder_fidelity,
     reward_score: m?.reward_score,
@@ -250,7 +251,8 @@ export function RunDetail({ runId, navigate }: { runId: string; navigate: (to: s
             <DataTable
               columns={[
                 { key: "suite", label: "suite" },
-                { key: "parse_rate", label: "parse", align: "right" },
+                { key: "syntax_rate", label: "syntax", align: "right" },
+                { key: "meaningful_rate", label: "meaningful", align: "right" },
                 { key: "structural_similarity", label: "struct", align: "right" },
                 { key: "placeholder_fidelity", label: "fidelity", align: "right" },
                 { key: "reward_score", label: "reward", align: "right" },
@@ -259,7 +261,8 @@ export function RunDetail({ runId, navigate }: { runId: string; navigate: (to: s
               rows={evalRows}
               render={{
                 suite: (r) => <span className="mono">{r.suite}</span>,
-                parse_rate: (r) => fmt(r.parse_rate, 2),
+                syntax_rate: (r) => fmt(r.syntax_rate, 2),
+                meaningful_rate: (r) => fmt(r.meaningful_rate, 2),
                 structural_similarity: (r) => fmt(r.structural_similarity, 2),
                 placeholder_fidelity: (r) => fmt(r.placeholder_fidelity, 2),
                 reward_score: (r) => fmt(r.reward_score, 2),
