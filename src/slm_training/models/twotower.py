@@ -257,6 +257,11 @@ class TwoTowerConfig:
     compiler_search_noise: float = 0.0
     compiler_search_stagnation_patience: int = 2
     compiler_search_backtrack_limit: int = 8
+    # A4 minimum-content decode contract (compiler-tree decode only):
+    #   0  -> off (empty layouts remain legal completions);
+    #   >0 -> require at least this many components before EOS is admitted;
+    #   -1 -> auto: derive the floor from the resolved slot-contract inventory.
+    decode_min_content: int = 0
     fastpath_aux_weight: float = 0.0
     fastpath_gate_threshold: float = 0.5
     # E31: train/use FastPathGate trust head for remask.
@@ -606,6 +611,24 @@ class TwoTowerModel(nn.Module):
         if getattr(self.config, "grammar_trust_model", False):
             return 0.0
         return float(self.config.structural_bias or 0.0)
+
+    def _effective_min_content(self, slot_contract: list[str] | None) -> int:
+        """A4 minimum-content floor for the compiler-tree completion forest.
+
+        ``decode_min_content`` == -1 derives the floor from the resolved
+        slot-contract inventory (one component per distinct content slot, capped
+        so it never demands more than the prompt implies); >0 uses the fixed
+        value; 0 disables the contract.
+        """
+        raw = int(getattr(self.config, "decode_min_content", 0) or 0)
+        if raw >= 0:
+            return raw
+        if not slot_contract:
+            return 0
+        # Distinct placeholder roots ≈ the number of content-bearing components
+        # the prompt asks for; the empty layout binds none of them.
+        roots = {str(slot).split(".", 1)[0] for slot in slot_contract if slot}
+        return len(roots)
 
     def _pick_kwargs(self) -> dict[str, object]:
         trust = bool(getattr(self.config, "grammar_trust_model", False))
@@ -3178,6 +3201,7 @@ class TwoTowerModel(nn.Module):
                     max_path_tokens=int(
                         getattr(self.config, "grammar_draft_window", 8) or 8
                     ),
+                    min_content=self._effective_min_content(slot_contract),
                 )
             # Partial coverage still contains individually grammar-admitted
             # paths. Tree/restricted modes must consume those paths; falling

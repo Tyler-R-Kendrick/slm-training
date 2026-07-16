@@ -111,6 +111,7 @@ class ModelBuildConfig:
     compiler_search_noise: float = 0.0
     compiler_search_stagnation_patience: int = 2
     compiler_search_backtrack_limit: int = 8
+    decode_min_content: int = 0  # A4: 0 off | >0 floor | -1 auto-from-inventory
     fastpath_aux_weight: float = 0.0
     fastpath_gate_threshold: float = 0.5
     # V4 critic / remask levers
