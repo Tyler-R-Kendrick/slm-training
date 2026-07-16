@@ -1109,6 +1109,8 @@ def test_compile_resolves_canonical_published_train_version() -> None:
             compiler_alignment_margin=1.0,
             compiler_alignment_stratified=True,
             compiler_alignment_semantic_exhaustive=True,
+            component_inventory_loss_weight=1.0,
+            component_inventory_decode_weight=0.75,
             compiler_decode_mode="tree",
             compiler_search_mode="ptrm",
             compiler_search_trigger="stagnation",
@@ -1136,6 +1138,8 @@ def test_compile_resolves_canonical_published_train_version() -> None:
     assert "--compiler-alignment-stratified" in commands[0]
     assert commands[0][commands[0].index("--compiler-alignment-margin") + 1] == "1.0"
     assert "--compiler-alignment-semantic-exhaustive" in commands[0]
+    assert commands[0][commands[0].index("--component-inventory-loss-weight") + 1] == "1.0"
+    assert commands[0][commands[0].index("--component-inventory-decode-weight") + 1] == "0.75"
     assert "--schema-in-context" in commands[0]
     assert "--slot-contract-in-context" in commands[0]
     assert "--no-design-md-context" in commands[0]

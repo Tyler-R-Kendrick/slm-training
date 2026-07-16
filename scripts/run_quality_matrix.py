@@ -132,6 +132,8 @@ class Experiment:
     compiler_search_noise: float = 0.0
     compiler_search_stagnation_patience: int = 2
     compiler_search_backtrack_limit: int = 8
+    component_inventory_loss_weight: float = 0.0
+    component_inventory_decode_weight: float = 0.0
 
 
 def _base_experiments(
@@ -1292,6 +1294,12 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         compiler_search_noise=max(0.0, float(getattr(exp, "compiler_search_noise", 0.0) or 0.0)),
         compiler_search_stagnation_patience=max(1, int(getattr(exp, "compiler_search_stagnation_patience", 2) or 2)),
         compiler_search_backtrack_limit=max(0, int(getattr(exp, "compiler_search_backtrack_limit", 8) or 0)),
+        component_inventory_loss_weight=float(
+            getattr(exp, "component_inventory_loss_weight", 0.0) or 0.0
+        ),
+        component_inventory_decode_weight=float(
+            getattr(exp, "component_inventory_decode_weight", 0.0) or 0.0
+        ),
         trust_gate_train=bool(getattr(exp, "trust_gate", False)),
         grad_accum_steps=max(1, int(getattr(args, "grad_accum", 1) or 1)),
         eval_every=args.eval_every,

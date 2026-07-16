@@ -183,6 +183,10 @@ class TwoTowerConfig:
     compiler_alignment_margin: float = 0.0
     compiler_alignment_stratified: bool = False
     compiler_alignment_semantic_exhaustive: bool = False
+    # Prompt-level multi-label component inventory derived from gold token kinds.
+    component_inventory_loss_weight: float = 0.0
+    # Bias only compiler-legal component candidates with the learned inventory.
+    component_inventory_decode_weight: float = 0.0
     symbol_boundary_loss_weight: float = 0.0
     # Extra CE weight on gold placeholder token positions (fidelity signal).
     fidelity_loss_weight: float = 0.5
@@ -471,6 +475,19 @@ class TwoTowerModel(nn.Module):
             if str(getattr(self.config, "mask_pattern", "random")) == "diffusion"
             else None
         )
+        inventory_enabled = (
+            float(getattr(self.config, "component_inventory_loss_weight", 0.0) or 0.0)
+            > 0.0
+            or float(
+                getattr(self.config, "component_inventory_decode_weight", 0.0) or 0.0
+            )
+            > 0.0
+        )
+        self.component_inventory_head = (
+            nn.Linear(self.config.d_model, tokenizer.vocab_size)
+            if inventory_enabled
+            else None
+        )
         # E31 BackPlay-lite: plug-in trust head over denoiser hiddens.
         self.trust_gate = FastPathGate(self.config.d_model)
         # E73 DSpark-lite: plug-in trajectory-survival head (V7).
@@ -492,6 +509,7 @@ class TwoTowerModel(nn.Module):
         ] = {}
         self._context_token_count_cache: dict[str, int] = {}
         self._placeholder_token_ids: set[int] | None = None
+        self._component_token_ids_cache: tuple[int, ...] | None = None
         self._slot_contracts: list[list[str] | None] | None = None
         # Per-example symbol tables for lexer-native encode/decode.
         self._symbol_tables: dict[str, object] = {}
@@ -1071,6 +1089,7 @@ class TwoTowerModel(nn.Module):
 
     def training_loss(self, batch: list[ExampleRecord]) -> torch.Tensor:
         self.train()
+        self.last_training_metrics = {}
         cache_on = bool(getattr(self.config, "cache_context", True))
         prompts: list[str] = []
         cache_keys: list[str] = []
@@ -1448,6 +1467,68 @@ class TwoTowerModel(nn.Module):
                     for kind, loss in sorted(kind_losses.items())
                 },
             }
+
+        inventory_w = float(
+            getattr(self.config, "component_inventory_loss_weight", 0.0) or 0.0
+        )
+        if inventory_w > 0.0 and self.component_inventory_head is not None:
+            component_ids = self._component_inventory_token_ids()
+            if component_ids:
+                index = torch.as_tensor(
+                    component_ids, device=target_ids.device, dtype=torch.long
+                )
+                inventory_logits = self.component_inventory_head(
+                    self._pool_context(ctx, ctx_pad)
+                ).index_select(1, index)
+                inventory_targets = torch.stack(
+                    [
+                        index[:, None]
+                        .eq(row[None, :])
+                        .any(dim=1)
+                        .to(inventory_logits.dtype)
+                        for row in target_ids
+                    ]
+                )
+                positive_count = inventory_targets.sum(dim=1).clamp_min(1.0)
+                negative_count = (1.0 - inventory_targets).sum(dim=1).clamp_min(1.0)
+                raw = F.binary_cross_entropy_with_logits(
+                    inventory_logits, inventory_targets, reduction="none"
+                )
+                positive_loss = (raw * inventory_targets).sum(dim=1) / positive_count
+                negative_loss = (raw * (1.0 - inventory_targets)).sum(
+                    dim=1
+                ) / negative_count
+                inventory_loss = (positive_loss + negative_loss).mean()
+                mask_loss = mask_loss + inventory_w * inventory_loss
+
+                recalls: list[torch.Tensor] = []
+                for row, count in zip(
+                    inventory_targets, positive_count.to(torch.long), strict=True
+                ):
+                    top = inventory_logits[len(recalls)].topk(int(count.item())).indices
+                    recalls.append(row.index_select(0, top).sum() / count)
+                positive_scores = (
+                    inventory_logits * inventory_targets
+                ).sum(dim=1) / positive_count
+                negative_scores = (
+                    inventory_logits * (1.0 - inventory_targets)
+                ).sum(dim=1) / negative_count
+                self.last_training_metrics.update(
+                    {
+                        "component_inventory_loss": float(
+                            inventory_loss.detach().cpu()
+                        ),
+                        "component_inventory_topk_recall": float(
+                            torch.stack(recalls).mean().detach().cpu()
+                        ),
+                        "component_inventory_score_margin": float(
+                            (positive_scores - negative_scores).mean().detach().cpu()
+                        ),
+                        "component_inventory_positive_count_mean": float(
+                            positive_count.float().mean().detach().cpu()
+                        ),
+                    }
+                )
 
         aux_w = float(getattr(self.config, "fastpath_aux_weight", 0.0) or 0.0)
         if aux_w > 0.0 and getattr(self.config, "grammar_fastpath", False):
@@ -2011,6 +2092,46 @@ class TwoTowerModel(nn.Module):
             scores = scores + boost
         return scores
 
+    def _component_inventory_token_ids(self) -> tuple[int, ...]:
+        if self._component_token_ids_cache is not None:
+            return self._component_token_ids_cache
+        try:
+            from slm_training.models.dsl_tokenizer import TokenKind
+
+            ids = tuple(sorted(int(i) for i in self.tokenizer.kind_ids(TokenKind.COMPONENT)))
+        except Exception:  # noqa: BLE001
+            ids = ()
+        self._component_token_ids_cache = ids
+        return ids
+
+    def _component_inventory_bias(
+        self,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor | None,
+        candidate_ids: tuple[int, ...],
+    ) -> torch.Tensor | None:
+        weight = float(
+            getattr(self.config, "component_inventory_decode_weight", 0.0) or 0.0
+        )
+        if weight <= 0.0 or self.component_inventory_head is None:
+            return None
+        component_ids = set(self._component_inventory_token_ids())
+        if not component_ids.intersection(candidate_ids):
+            return None
+        inventory = self.component_inventory_head(
+            self._pool_context(ctx, ctx_pad)
+        )[0]
+        bias = inventory.new_zeros(len(candidate_ids))
+        component_positions = [
+            (position, token_id)
+            for position, token_id in enumerate(candidate_ids)
+            if token_id in component_ids
+        ]
+        if component_positions:
+            positions, token_ids = zip(*component_positions, strict=True)
+            bias[list(positions)] = weight * inventory[list(token_ids)]
+        return bias
+
     def _select_compiler_path(
         self,
         prefix: list[int],
@@ -2076,6 +2197,9 @@ class TwoTowerModel(nn.Module):
             hidden = self._denoiser_hidden(canvas, ctx, ctx_pad)
             candidates = tuple(int(path.token_ids[0]) for path in paths)
             scores = self._project_candidates(hidden[0, len(prefix)], candidates)
+            inventory_bias = self._component_inventory_bias(ctx, ctx_pad, candidates)
+            if inventory_bias is not None:
+                scores = scores + inventory_bias
             if bool(getattr(self.config, "grammar_sample_decode", False)):
                 temp = float(
                     getattr(self.config, "grammar_sample_temperature", 0.8) or 0.8
@@ -2120,6 +2244,11 @@ class TwoTowerModel(nn.Module):
                 scores = self._project_candidates(
                     hidden[row, len(parent)], candidate_ids
                 )
+                inventory_bias = self._component_inventory_bias(
+                    ctx, ctx_pad, candidate_ids
+                )
+                if inventory_bias is not None:
+                    scores = scores + inventory_bias
                 log_probs = F.log_softmax(scores, dim=0)
                 for i, token_id in enumerate(candidate_ids):
                     edge_scores[(parent, token_id)] = float(log_probs[i].item())

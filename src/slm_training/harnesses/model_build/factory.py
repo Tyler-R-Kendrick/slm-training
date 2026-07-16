@@ -309,6 +309,12 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         compiler_alignment_semantic_exhaustive=bool(
             getattr(config, "compiler_alignment_semantic_exhaustive", False)
         ),
+        component_inventory_loss_weight=float(
+            getattr(config, "component_inventory_loss_weight", 0.0) or 0.0
+        ),
+        component_inventory_decode_weight=float(
+            getattr(config, "component_inventory_decode_weight", 0.0) or 0.0
+        ),
         symbol_boundary_loss_weight=float(
             getattr(config, "symbol_boundary_loss_weight", 0.0) or 0.0
         ),

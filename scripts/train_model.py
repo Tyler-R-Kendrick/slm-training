@@ -328,6 +328,18 @@ def main(argv: list[str] | None = None) -> int:
         help="Align every grammar-derived AST-role decision; stratify structural states.",
     )
     parser.add_argument(
+        "--component-inventory-loss-weight",
+        type=float,
+        default=0.0,
+        help="Multi-label prompt-to-gold-component inventory loss weight.",
+    )
+    parser.add_argument(
+        "--component-inventory-decode-weight",
+        type=float,
+        default=0.0,
+        help="Bias only compiler-legal component candidates with inventory logits.",
+    )
+    parser.add_argument(
         "--no-design-md-context",
         action="store_true",
         help="Do not concatenate DESIGN.md into the context tower prompt.",
@@ -647,6 +659,8 @@ def main(argv: list[str] | None = None) -> int:
             compiler_alignment_semantic_exhaustive=(
                 args.compiler_alignment_semantic_exhaustive
             ),
+            component_inventory_loss_weight=args.component_inventory_loss_weight,
+            component_inventory_decode_weight=args.component_inventory_decode_weight,
             fidelity_loss_weight=args.fidelity_loss_weight,
             grammar_ltr_primary=args.grammar_ltr_primary,
             grammar_ltr_repair=args.grammar_ltr_repair,

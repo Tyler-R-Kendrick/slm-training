@@ -373,6 +373,20 @@ def compile_commands(
             train.append("--compiler-alignment-stratified")
         if knobs.compiler_alignment_semantic_exhaustive:
             train.append("--compiler-alignment-semantic-exhaustive")
+        if knobs.component_inventory_loss_weight is not None:
+            train.extend(
+                [
+                    "--component-inventory-loss-weight",
+                    str(knobs.component_inventory_loss_weight),
+                ]
+            )
+        if knobs.component_inventory_decode_weight is not None:
+            train.extend(
+                [
+                    "--component-inventory-decode-weight",
+                    str(knobs.component_inventory_decode_weight),
+                ]
+            )
         if knobs.schema_in_context:
             train.append("--schema-in-context")
         if knobs.slot_contract_in_context:

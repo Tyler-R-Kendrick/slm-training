@@ -32,6 +32,8 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "compiler_alignment_margin",
         "compiler_alignment_stratified",
         "compiler_alignment_semantic_exhaustive",
+        "component_inventory_loss_weight",
+        "component_inventory_decode_weight",
         "compiler_decode_mode",
         "compiler_search_mode",
         "compiler_search_trigger",
@@ -240,6 +242,8 @@ class ExperimentKnobs(StrictModel):
     compiler_alignment_margin: float | None = Field(default=None, ge=0, le=20)
     compiler_alignment_stratified: bool | None = None
     compiler_alignment_semantic_exhaustive: bool | None = None
+    component_inventory_loss_weight: float | None = Field(default=None, ge=0, le=20)
+    component_inventory_decode_weight: float | None = Field(default=None, ge=0, le=20)
     compiler_decode_mode: Literal["off", "forced", "restricted", "tree"] | None = None
     compiler_search_mode: Literal["greedy", "lattice", "ptrm", "gram"] | None = None
     compiler_search_trigger: Literal["bottom", "stagnation", "always"] | None = None
