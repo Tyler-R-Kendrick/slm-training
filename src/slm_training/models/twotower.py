@@ -1906,7 +1906,13 @@ class TwoTowerModel(nn.Module):
                         getattr(self.config, "grammar_draft_window", 8) or 8
                     ),
                 )
-            if forest.coverage != "complete" or not forest.paths:
+            # Partial coverage still contains individually grammar-admitted
+            # paths. Tree/restricted modes must consume those paths; falling
+            # back merely because the vocabulary is not exhaustive discards
+            # the deterministic symbolic constraint at exactly the branch
+            # points it is meant to protect. Fall back only when no legal path
+            # exists at all.
+            if not forest.paths:
                 if mode == "forced" and forest.paths:
                     canvas = self._compiler_canvas(prefix, length)
                     logits = self._denoiser_forward(canvas, ctx, ctx_pad)
@@ -1931,6 +1937,14 @@ class TwoTowerModel(nn.Module):
                     continue
                 if stats is not None:
                     stats.compiler_fallbacks += 1
+                # Tree/restricted modes must never append an unconstrained
+                # suffix after the symbolic forest reaches a dead end. The
+                # prefix is grammar-admitted; return it as-is and let the
+                # evaluator report incompleteness instead of manufacturing
+                # illegal structure with MaskGIT.
+                if mode in {"tree", "restricted"}:
+                    break
+                if stats is not None:
                     stats.seeded_fallbacks += 1
                 before_forwards = int(self.speculative_stats.denoiser_forwards)
                 text = self._generate_maskgit_one(
@@ -2805,10 +2819,16 @@ class TwoTowerModel(nn.Module):
             self._current_runtime_table = (
                 feature_tables[0] if len(feature_tables) == 1 else None
             )
+            compiler_mode = str(
+                getattr(self.config, "compiler_decode_mode", "off") or "off"
+            ).lower()
             repair_len = min(length, max(8, int(self.config.grammar_ltr_max_tokens)))
             ids = self._greedy_ltr_decode_batch(ctx, ctx_pad, repair_len)
             texts = [self._decode_ids(ids[i]) for i in range(ids.size(0))]
-            if self.config.grammar_ltr_repair:
+            # Compiler modes already own constrained completion. Running the
+            # legacy repair pass afterward discards certified tree output and
+            # reintroduces the unconstrained suffix path.
+            if self.config.grammar_ltr_repair and compiler_mode == "off":
                 texts = self._repair_ltr_texts(
                     texts,
                     ctx,

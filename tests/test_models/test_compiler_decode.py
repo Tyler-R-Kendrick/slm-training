@@ -59,6 +59,9 @@ def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> 
     assert start.coverage == "complete"
     assert tokenizer.bind_id(0) in start.candidate_ids
     assert tokenizer.bind_id(1) not in start.candidate_ids
+    bos_start = build_completion_forest(tokenizer, [tokenizer.bos_id])
+    assert tokenizer.bind_id(0) in bos_start.candidate_ids
+    assert tokenizer.bind_id(1) not in bos_start.candidate_ids
 
     monkeypatch.setattr(
         compiler_draft,

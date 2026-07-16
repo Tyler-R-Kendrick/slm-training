@@ -710,6 +710,13 @@ The singleton legal-token fix and compiler/tree decode both leave parse at 0.0;
 64 training steps lower loss to 9.6653 but still leave parse at 0.0. These are
 negative diagnostic results, not ship claims or data-promotion evidence.
 
+The later symbolic-tree audit is recorded in
+[iter-e159-e165-symbolic-tree-20260715.md](iter-e159-e165-symbolic-tree-20260715.md):
+lexer-native output is required, BOS root handling and partial-forest fallback
+were repaired, and E165 reports zero seeded unconstrained fallbacks. Parse still
+fails, so the remaining lever is semantic model choice within the certified
+tree—not undertraining or weakened gates.
+
 These rows are registered under `--matrix v8`; `--list` prints definitions
 without building data or starting a run. They require the lexer-native parent
 contract and unchanged honest five-suite gates. No result or champion is claimed.
