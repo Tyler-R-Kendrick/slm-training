@@ -1,7 +1,7 @@
 {
   "campaign": "E230 diverse judged generation roots",
   "date": "2026-07-16",
-  "status": "immutable_corpus_published_train_pending",
+  "status": "completed_rejected_four_ship_gates_failed",
   "hypothesis": "Replacing derivative-heavy exposure with judge-gated diverse generation roots improves semantic component ranking without changing deterministic grammar enforcement.",
   "dataset": {
     "id": "e230_diverse_judged_roots_v2",
@@ -42,7 +42,49 @@
     "implicit_output_contract_task_sampled_as_generation": true,
     "prompt_or_output_literal_cases_added": false
   },
-  "train": null,
-  "evaluation": null,
-  "decision": "Train only after a fresh origin/main fetch and conflict reconciliation."
+  "train": {
+    "run_id": "e230-diverse-roots-32step",
+    "path": "outputs/autoresearch/e230-diverse-judged-roots/runs/e230-diverse-roots-32step",
+    "device": "cpu",
+    "steps": 32,
+    "batch_size": 4,
+    "learning_rate": 0.0003,
+    "seed": 0,
+    "context_backend": "hf_local_files_only",
+    "output_tokenizer": "lexer",
+    "compiler_alignment_loss_weight": 1.0,
+    "compiler_alignment_margin": 1.0,
+    "compiler_alignment_stratified": true,
+    "compiler_alignment_semantic_exhaustive": true,
+    "mixture_sampling_policy": "capacity_aware",
+    "seen_prompt_tokens": 18490,
+    "seen_target_tokens": 7052,
+    "draws": 128,
+    "unique_records": 81,
+    "rico_draws": 30,
+    "human_curated_draws": 25,
+    "last_loss": 19.18682289123535,
+    "component_bound_loss_last": 2.889369487762451,
+    "margin_violation_rate_last": 0.5581395626068115,
+    "wall_ms": 190595.938,
+    "trace_id": "f3e8c41f3dd49e36a3205be941724021",
+    "checkpoint_sha256": "009b1ab359a960d89ea103d92a0030da84f436c64821c1fd8fc3cc28d6033198",
+    "checkpoint_sync": false
+  },
+  "evaluation": {
+    "compiler_decode_mode": "tree",
+    "honest_slot_contract": true,
+    "allow_unconstrained_fallback": false,
+    "suites": {
+      "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333, "structural_similarity": 0.46416666666666667, "component_type_recall": 0.25, "placeholder_fidelity": 0.5277777777777778, "contract_precision": 1.0, "reward_score": 0.8073333333333333},
+      "held_out": {"n": 5, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.33686, "component_type_recall": 0.15666666666666665, "placeholder_fidelity": 0.27999999999999997, "contract_precision": 1.0, "reward_score": 0.733},
+      "adversarial": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.25, "structural_similarity": 0.3477, "component_type_recall": 0.20833333333333331, "placeholder_fidelity": 0.20833333333333331, "contract_precision": 0.5, "reward_score": 0.387},
+      "ood": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.375, "component_type_recall": 0.20833333333333331, "placeholder_fidelity": 0.2583333333333333, "contract_precision": 1.0, "reward_score": 0.7265},
+      "rico_held": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.6666666666666666, "structural_similarity": 0.16276666666666667, "component_type_recall": 0.4444444444444444, "placeholder_fidelity": 0.125, "contract_precision": 1.0, "reward_score": 0.6865}
+    },
+    "failed_gates": 4,
+    "agentv": {"total": 5, "passed": 1, "failed": 4, "execution_errors": 0, "mean_score": 0.6},
+    "incomplete_infrastructure_attempts": 2
+  },
+  "decision": "Retain the generalized corpus and sampler fixes; reject the checkpoint. Next train requires schema/AST-derived request-level component supervision, not more steps or another mixture-only change."
 }
