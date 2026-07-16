@@ -1,545 +1,28 @@
 {
   "version": "remediated_roots_judged",
   "source": "existing",
-  "derive_from": "outputs/train_data/remediated_roots/records.jsonl",
+  "derive_from": "src/slm_training/resources/train_data/remediated_roots_judged/records.jsonl",
   "seed_path": null,
   "rico_path": null,
   "rico_hf_split": null,
-  "seed_count": 108,
-  "collected_count": 480,
+  "seed_count": 405,
+  "collected_count": 530,
   "verifier_rejected": 0,
   "verifier_rejected_samples": [],
-  "quality_rejected": 61,
-  "quality_rejected_samples": [
-    {
-      "id": "lc_boolean_literal_generation_8b640c734d09",
-      "ok": false,
-      "score": 0.6,
-      "reasons": [
-        "prompt_lexical_target_wrapped_in_unrelated_layout",
-        "prompt_under_specified_for_layout"
-      ],
-      "n_components": 3,
-      "n_placeholders": 1,
-      "component_diversity": 3,
-      "openui_chars": 86,
-      "design_lint_score": null,
-      "components": {
-        "Stack": 1,
-        "Separator": 1,
-        "TextContent": 1
-      },
-      "independent_judge": {
-        "ok": false,
-        "score": 0.0,
-        "reasons": [
-          "prompt_lexical_target_wrapped_in_unrelated_layout",
-          "prompt_under_specified_for_layout"
-        ]
-      }
-    },
-    {
-      "id": "lc_component_AccordionItem_generation_8c143e0b6421",
-      "ok": false,
-      "score": 0.45,
-      "reasons": [
-        "prompt_under_specified_for_layout",
-        "unknown_components"
-      ],
-      "n_components": 4,
-      "n_placeholders": 3,
-      "component_diversity": 3,
-      "openui_chars": 167,
-      "design_lint_score": null,
-      "components": {
-        "Stack": 1,
-        "TextContent": 2,
-        "AccordionItem": 1
-      },
-      "independent_judge": {
-        "ok": false,
-        "score": 0.5,
-        "reasons": [
-          "prompt_under_specified_for_layout"
-        ]
-      }
-    },
-    {
-      "id": "lc_component_Accordion_generation_41515345ccbb",
-      "ok": false,
-      "score": 0.5,
-      "reasons": [
-        "prompt_under_specified_for_layout",
-        "unknown_components"
-      ],
-      "n_components": 5,
-      "n_placeholders": 3,
-      "component_diversity": 4,
-      "openui_chars": 204,
-      "design_lint_score": null,
-      "components": {
-        "Stack": 1,
-        "TextContent": 2,
-        "AccordionItem": 1,
-        "Accordion": 1
-      },
-      "independent_judge": {
-        "ok": false,
-        "score": 0.5,
-        "reasons": [
-          "prompt_under_specified_for_layout"
-        ]
-      }
-    },
-    {
-      "id": "lc_component_AreaChart_generation_001f93fd5f09",
-      "ok": false,
-      "score": 0.5,
-      "reasons": [
-        "prompt_under_specified_for_layout",
-        "unknown_components"
-      ],
-      "n_components": 4,
-      "n_placeholders": 1,
-      "component_diversity": 4,
-      "openui_chars": 146,
-      "design_lint_score": null,
-      "components": {
-        "Stack": 1,
-        "Series": 1,
-        "AreaChart": 1,
-        "TextContent": 1
-      },
-      "independent_judge": {
-        "ok": false,
-        "score": 0.5,
-        "reasons": [
-          "prompt_under_specified_for_layout"
-        ]
-      }
-    },
-    {
-      "id": "lc_component_BarChart_generation_f62c6e11622e",
-      "ok": false,
-      "score": 0.5,
-      "reasons": [
-        "prompt_under_specified_for_layout",
-        "unknown_components"
-      ],
-      "n_components": 4,
-      "n_placeholders": 1,
-      "component_diversity": 4,
-      "openui_chars": 143,
-      "design_lint_score": null,
-      "components": {
-        "Stack": 1,
-        "Series": 1,
-        "BarChart": 1,
-        "TextContent": 1
-      },
-      "independent_judge": {
-        "ok": false,
-        "score": 0.5,
-        "reasons": [
-          "prompt_under_specified_for_layout"
-        ]
-      }
-    },
-    {
-      "id": "lc_component_Button_generation_289107c91cae",
-      "ok": false,
-      "score": 0.6,
-      "reasons": [
-        "prompt_under_specified_for_layout"
-      ],
-      "n_components": 3,
-      "n_placeholders": 2,
-      "component_diversity": 3,
-      "openui_chars": 95,
-      "design_lint_score": null,
-      "components": {
-        "Stack": 1,
-        "Button": 1,
-        "TextContent": 1
-      },
-      "independent_judge": {
-        "ok": false,
-        "score": 0.5,
-        "reasons": [
-          "prompt_under_specified_for_layout"
-        ]
-      }
-    },
-    {
-      "id": "lc_component_Buttons_generation_b8934500d02b",
-      "ok": false,
-      "score": 0.65,
-      "reasons": [
-        "prompt_under_specified_for_layout"
-      ],
-      "n_components": 4,
-      "n_placeholders": 2,
-      "component_diversity": 4,
-      "openui_chars": 126,
-      "design_lint_score": null,
-      "components": {
-        "Stack": 1,
-        "Button": 1,
-        "Buttons": 1,
-        "TextContent": 1
-      },
-      "independent_judge": {
-        "ok": false,
-        "score": 0.5,
-        "reasons": [
-          "prompt_under_specified_for_layout"
-        ]
-      }
-    },
-    {
-      "id": "lc_component_Callout_generation_fb9544f275db",
-      "ok": false,
-      "score": 0.6,
-      "reasons": [
-        "prompt_under_specified_for_layout"
-      ],
-      "n_components": 3,
-      "n_placeholders": 3,
-      "component_diversity": 3,
-      "openui_chars": 126,
-      "design_lint_score": null,
-      "components": {
-        "Stack": 1,
-        "Callout": 1,
-        "TextContent": 1
-      },
-      "independent_judge": {
-        "ok": false,
-        "score": 0.5,
-        "reasons": [
-          "prompt_under_specified_for_layout"
-        ]
-      }
-    },
-    {
-      "id": "lc_component_CardHeader_generation_814c37010fde",
-      "ok": false,
-      "score": 0.6,
-      "reasons": [
-        "prompt_under_specified_for_layout"
-      ],
-      "n_components": 3,
-      "n_placeholders": 1,
-      "component_diversity": 3,
-      "openui_chars": 95,
-      "design_lint_score": null,
-      "components": {
-        "Stack": 1,
-        "CardHeader": 1,
-        "TextContent": 1
-      },
-      "independent_judge": {
-        "ok": false,
-        "score": 0.5,
-        "reasons": [
-          "prompt_under_specified_for_layout"
-        ]
-      }
-    },
-    {
-      "id": "lc_component_Card_generation_8b7cad779b4f",
-      "ok": false,
-      "score": 0.6,
-      "reasons": [
-        "prompt_under_specified_for_layout"
-      ],
-      "n_components": 4,
-      "n_placeholders": 2,
-      "component_diversity": 3,
-      "openui_chars": 116,
-      "design_lint_score": null,
-      "components": {
-        "Stack": 1,
-        "TextContent": 2,
-        "Card": 1
-      },
-      "independent_judge": {
-        "ok": false,
-        "score": 0.5,
-        "reasons": [
-          "prompt_under_specified_for_layout"
-        ]
-      }
-    },
-    {
-      "id": "lc_component_Carousel_generation_e74e9388c285",
-      "ok": false,
-      "score": 0.45,
-      "reasons": [
-        "prompt_under_specified_for_layout",
-        "unknown_components"
-      ],
-      "n_components": 4,
-      "n_placeholders": 2,
-      "component_diversity": 3,
-      "openui_chars": 130,
-      "design_lint_score": null,
-      "components": {
-        "Stack": 1,
-        "TextContent": 2,
-        "Carousel": 1
-      },
-      "independent_judge": {
-        "ok": false,
-        "score": 0.5,
-        "reasons": [
-          "prompt_under_specified_for_layout"
-        ]
-      }
-    },
-    {
-      "id": "lc_component_CheckBoxGroup_generation_3aa2e9b5eb9d",
-      "ok": false,
-      "score": 0.5,
-      "reasons": [
-        "prompt_under_specified_for_layout",
-        "unknown_components"
-      ],
-      "n_components": 4,
-      "n_placeholders": 3,
-      "component_diversity": 4,
-      "openui_chars": 198,
-      "design_lint_score": null,
-      "components": {
-        "Stack": 1,
-        "CheckBoxItem": 1,
-        "CheckBoxGroup": 1,
-        "TextContent": 1
-      },
-      "independent_judge": {
-        "ok": false,
-        "score": 0.5,
-        "reasons": [
-          "prompt_under_specified_for_layout"
-        ]
-      }
-    },
-    {
-      "id": "lc_component_CheckBoxItem_generation_e8cc70c5bed9",
-      "ok": false,
-      "score": 0.6,
-      "reasons": [
-        "prompt_under_specified_for_layout"
-      ],
-      "n_components": 3,
-      "n_placeholders": 3,
-      "component_diversity": 3,
-      "openui_chars": 141,
-      "design_lint_score": null,
-      "components": {
-        "Stack": 1,
-        "CheckBoxItem": 1,
-        "TextContent": 1
-      },
-      "independent_judge": {
-        "ok": false,
-        "score": 0.5,
-        "reasons": [
-          "prompt_under_specified_for_layout"
-        ]
-      }
-    },
-    {
-      "id": "lc_component_CodeBlock_generation_22df0d14cfd5",
-      "ok": false,
-      "score": 0.45,
-      "reasons": [
-        "prompt_under_specified_for_layout",
-        "unknown_components"
-      ],
-      "n_components": 3,
-      "n_placeholders": 2,
-      "component_diversity": 3,
-      "openui_chars": 117,
-      "design_lint_score": null,
-      "components": {
-        "Stack": 1,
-        "CodeBlock": 1,
-        "TextContent": 1
-      },
-      "independent_judge": {
-        "ok": false,
-        "score": 0.5,
-        "reasons": [
-          "prompt_under_specified_for_layout"
-        ]
-      }
-    },
-    {
-      "id": "lc_component_Col_generation_1bea1e50e909",
-      "ok": false,
-      "score": 0.45,
-      "reasons": [
-        "prompt_under_specified_for_layout",
-        "unknown_components"
-      ],
-      "n_components": 3,
-      "n_placeholders": 3,
-      "component_diversity": 3,
-      "openui_chars": 99,
-      "design_lint_score": null,
-      "components": {
-        "Stack": 1,
-        "Col": 1,
-        "TextContent": 1
-      },
-      "independent_judge": {
-        "ok": false,
-        "score": 0.5,
-        "reasons": [
-          "prompt_under_specified_for_layout"
-        ]
-      }
-    },
-    {
-      "id": "lc_component_DatePicker_generation_5bb066195ed5",
-      "ok": false,
-      "score": 0.6,
-      "reasons": [
-        "prompt_under_specified_for_layout"
-      ],
-      "n_components": 3,
-      "n_placeholders": 1,
-      "component_diversity": 3,
-      "openui_chars": 101,
-      "design_lint_score": null,
-      "components": {
-        "Stack": 1,
-        "DatePicker": 1,
-        "TextContent": 1
-      },
-      "independent_judge": {
-        "ok": false,
-        "score": 0.5,
-        "reasons": [
-          "prompt_under_specified_for_layout"
-        ]
-      }
-    },
-    {
-      "id": "lc_component_FormControl_generation_7121b34926ca",
-      "ok": false,
-      "score": 0.6,
-      "reasons": [
-        "prompt_under_specified_for_layout"
-      ],
-      "n_components": 3,
-      "n_placeholders": 3,
-      "component_diversity": 3,
-      "openui_chars": 124,
-      "design_lint_score": null,
-      "components": {
-        "Stack": 1,
-        "FormControl": 1,
-        "TextContent": 1
-      },
-      "independent_judge": {
-        "ok": false,
-        "score": 0.5,
-        "reasons": [
-          "prompt_under_specified_for_layout"
-        ]
-      }
-    },
-    {
-      "id": "lc_component_Form_generation_f3d0bbd95397",
-      "ok": false,
-      "score": 0.65,
-      "reasons": [
-        "prompt_under_specified_for_layout"
-      ],
-      "n_components": 6,
-      "n_placeholders": 3,
-      "component_diversity": 6,
-      "openui_chars": 225,
-      "design_lint_score": null,
-      "components": {
-        "Stack": 1,
-        "Button": 1,
-        "Buttons": 1,
-        "FormControl": 1,
-        "Form": 1,
-        "TextContent": 1
-      },
-      "independent_judge": {
-        "ok": false,
-        "score": 0.5,
-        "reasons": [
-          "prompt_under_specified_for_layout"
-        ]
-      }
-    },
-    {
-      "id": "lc_component_HorizontalBarChart_generation_b14e632819c4",
-      "ok": false,
-      "score": 0.5,
-      "reasons": [
-        "prompt_under_specified_for_layout",
-        "unknown_components"
-      ],
-      "n_components": 4,
-      "n_placeholders": 1,
-      "component_diversity": 4,
-      "openui_chars": 173,
-      "design_lint_score": null,
-      "components": {
-        "Stack": 1,
-        "Series": 1,
-        "HorizontalBarChart": 1,
-        "TextContent": 1
-      },
-      "independent_judge": {
-        "ok": false,
-        "score": 0.5,
-        "reasons": [
-          "prompt_under_specified_for_layout"
-        ]
-      }
-    },
-    {
-      "id": "lc_component_ImageBlock_generation_d8e1f6fe640b",
-      "ok": false,
-      "score": 0.6,
-      "reasons": [
-        "prompt_under_specified_for_layout"
-      ],
-      "n_components": 3,
-      "n_placeholders": 2,
-      "component_diversity": 3,
-      "openui_chars": 105,
-      "design_lint_score": null,
-      "components": {
-        "Stack": 1,
-        "ImageBlock": 1,
-        "TextContent": 1
-      },
-      "independent_judge": {
-        "ok": false,
-        "score": 0.5,
-        "reasons": [
-          "prompt_under_specified_for_layout"
-        ]
-      }
-    }
-  ],
-  "record_count": 405,
+  "verification_tier_rejected": 0,
+  "verification_tier_rejected_samples": [],
+  "quality_rejected": 0,
+  "quality_rejected_samples": [],
+  "record_count": 498,
   "error_count": 0,
   "errors": [],
   "synthesizer": "none",
   "min_quality_score": 0.55,
+  "min_verification_tier": null,
   "max_openui_chars": null,
   "max_components": null,
   "curriculum": false,
+  "prompt_slot_contract": false,
   "structure_reserved_rejected": 0,
   "structure_reserved_rejected_samples": [],
   "max_records_per_parent": null,
@@ -555,73 +38,74 @@
     "programspec_path": "outputs/progspec/programs.jsonl",
     "programspec_count": 16,
     "programspec_seed": 0,
-    "language_contract": false,
+    "language_contract": true,
     "deconstruct_path": "src/slm_training/resources/deconstruct/pipeline.jsonl",
     "render_path": "src/slm_training/resources/render/sample_program.json",
     "frontier_artifacts": false,
     "repairs_per_program": 1,
-    "edit_derivatives": true,
-    "design_md_contrastive": true
+    "edit_derivatives": false,
+    "scope_derivatives": false,
+    "design_md_contrastive": false
   },
   "mixture": null,
-  "mean_quality_score": 0.9663,
+  "mean_quality_score": 0.9661,
   "placeholder_vocab_size": 136,
-  "with_design_md": 405,
+  "with_design_md": 498,
   "component_histogram": {
-    "Accordion": 9,
-    "AccordionItem": 13,
-    "AreaChart": 9,
-    "BarChart": 4,
-    "Button": 67,
-    "Buttons": 18,
-    "Callout": 14,
-    "Card": 37,
-    "CardHeader": 14,
-    "Carousel": 9,
-    "CheckBoxGroup": 9,
-    "CheckBoxItem": 13,
-    "CodeBlock": 9,
-    "Col": 13,
-    "DatePicker": 9,
-    "Form": 14,
-    "FormControl": 18,
-    "HorizontalBarChart": 9,
-    "Image": 9,
-    "ImageBlock": 24,
-    "ImageGallery": 9,
-    "Input": 29,
-    "Label": 9,
-    "LineChart": 9,
-    "MarkDownRenderer": 9,
-    "Modal": 14,
-    "PieChart": 9,
-    "Point": 12,
-    "RadarChart": 4,
-    "RadialChart": 4,
-    "RadioGroup": 9,
-    "RadioItem": 13,
-    "ScatterChart": 9,
-    "ScatterSeries": 13,
-    "Select": 9,
-    "SelectItem": 13,
-    "Separator": 13,
-    "Series": 24,
-    "SingleStackedBarChart": 4,
-    "Slice": 4,
-    "Slider": 17,
-    "Stack": 494,
-    "Steps": 9,
-    "StepsItem": 13,
-    "SwitchGroup": 9,
-    "SwitchItem": 18,
-    "TabItem": 13,
-    "Table": 9,
-    "Tabs": 9,
-    "Tag": 9,
-    "TagBlock": 9,
-    "TextArea": 9,
-    "TextCallout": 9,
-    "TextContent": 403
+    "Accordion": 11,
+    "AccordionItem": 16,
+    "AreaChart": 11,
+    "BarChart": 5,
+    "Button": 81,
+    "Buttons": 22,
+    "Callout": 17,
+    "Card": 45,
+    "CardHeader": 17,
+    "Carousel": 11,
+    "CheckBoxGroup": 11,
+    "CheckBoxItem": 16,
+    "CodeBlock": 11,
+    "Col": 16,
+    "DatePicker": 11,
+    "Form": 17,
+    "FormControl": 22,
+    "HorizontalBarChart": 11,
+    "Image": 11,
+    "ImageBlock": 29,
+    "ImageGallery": 11,
+    "Input": 35,
+    "Label": 11,
+    "LineChart": 11,
+    "MarkDownRenderer": 11,
+    "Modal": 17,
+    "PieChart": 11,
+    "Point": 15,
+    "RadarChart": 5,
+    "RadialChart": 5,
+    "RadioGroup": 11,
+    "RadioItem": 16,
+    "ScatterChart": 11,
+    "ScatterSeries": 16,
+    "Select": 11,
+    "SelectItem": 16,
+    "Separator": 16,
+    "Series": 30,
+    "SingleStackedBarChart": 5,
+    "Slice": 5,
+    "Slider": 21,
+    "Stack": 605,
+    "Steps": 11,
+    "StepsItem": 16,
+    "SwitchGroup": 11,
+    "SwitchItem": 22,
+    "TabItem": 16,
+    "Table": 11,
+    "Tabs": 11,
+    "Tag": 11,
+    "TagBlock": 11,
+    "TextArea": 11,
+    "TextCallout": 11,
+    "TextContent": 498
   },
-  "built_at": "2026-07-15T19:44:31.092737+00:00"
+  "built_at": "2026-07-16T03:19:16.497908+00:00"
 }
