@@ -145,6 +145,15 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     assert loaded.config.component_inventory_loss_weight == 1.0
     assert loaded.config.component_inventory_decode_weight == 0.75
 
+    apply_runtime_overrides(
+        loaded,
+        ModelBuildConfig(
+            train_dir=tmp_path,
+            component_inventory_decode_weight=0.0,
+        ),
+    )
+    assert loaded.config.component_inventory_decode_weight == 0.0
+
 
 def test_surface_syntax_repair_preserves_string_literals() -> None:
     damaged = (

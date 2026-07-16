@@ -99,6 +99,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "diffusion_length_buckets",
         "diffusion_overallocate",
         "diffusion_length_loss_weight",
+        "component_inventory_decode_weight",
         "remask_span",
         "teacher_init_embeddings",
         "runtime_symbol_features",

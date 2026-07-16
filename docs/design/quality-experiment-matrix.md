@@ -949,6 +949,15 @@ checkpoint, and require request-level schema/AST component supervision next.
 Full evidence:
 [iter-e230-diverse-judged-roots-20260716.md](iter-e230-diverse-judged-roots-20260716.md).
 
+E231 adds grammar-derived request-level component-inventory supervision and
+biases only compiler-legal component candidates. The auxiliary target learns
+strongly (top-k recall 0.0000 → 0.9167), but a full bias-off ablation has
+identical aggregate metrics and component choices. Strict evaluation keeps
+syntax 1.0 yet fails six thresholds across four suites; AgentV remains 1/5.
+Retain the generalized instrumentation and causal override, reject the checkpoint
+and the pooled inventory as a sufficient semantic solution. Full evidence:
+[iter-e231-component-inventory-20260716.md](iter-e231-component-inventory-20260716.md).
+
 ## V9 lattice-guided recursive compiler search (proposed, unrun)
 
 The research synthesis and implementation boundary are in
