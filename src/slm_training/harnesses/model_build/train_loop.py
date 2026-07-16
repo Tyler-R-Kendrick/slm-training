@@ -46,6 +46,14 @@ def _ship_score(metrics: dict) -> float | None:
     return total / weight if weight else None
 
 
+def _clip_optimizer_parameter_groups(optimizer, max_norm: float) -> None:
+    """Clip independent optimizer groups without coupling auxiliary heads."""
+    import torch
+
+    for group in optimizer.param_groups:
+        torch.nn.utils.clip_grad_norm_(group["params"], max_norm)
+
+
 def train(config: ModelBuildConfig, model=None) -> dict:
     from slm_training.runtime.accel import (
         autocast_context,
@@ -542,9 +550,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 if micro >= grad_accum:
                     with timed("optim_step"):
                         scaler.unscale_(optimizer)
-                        torch.nn.utils.clip_grad_norm_(
-                            list(plugin.trainable_parameters()), 1.0
-                        )
+                        _clip_optimizer_parameter_groups(optimizer, 1.0)
                         scaler.step(optimizer)
                         scaler.update()
                     micro = 0
@@ -600,7 +606,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
 
             with timed("optim_step"):
                 scaler.unscale_(optimizer)
-                torch.nn.utils.clip_grad_norm_(list(plugin.trainable_parameters()), 1.0)
+                _clip_optimizer_parameter_groups(optimizer, 1.0)
                 scaler.step(optimizer)
                 scaler.update()
             micro = 0

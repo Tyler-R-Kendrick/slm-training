@@ -16,6 +16,9 @@ from slm_training.harnesses.model_build.factory import (
     _resolve_freeze_context,
     apply_runtime_overrides,
 )
+from slm_training.harnesses.model_build.train_loop import (
+    _clip_optimizer_parameter_groups,
+)
 from slm_training.harnesses.test_data import TestDataConfig, build_test_data
 from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
 from slm_training.models.tokenizer import OpenUITokenizer, tokenize_text
@@ -239,8 +242,11 @@ def test_auxiliary_heads_do_not_change_base_optimizer_updates() -> None:
     arity_optimizer = torch.optim.AdamW(arity.optimizer_parameter_groups())
     for candidate in (baseline, arity):
         for name, parameter in candidate.named_parameters():
-            if parameter.requires_grad and not name.startswith("binder_arity_head."):
-                parameter.grad = torch.ones_like(parameter)
+            if parameter.requires_grad:
+                scale = 100.0 if name.startswith("binder_arity_head.") else 1.0
+                parameter.grad = torch.full_like(parameter, scale)
+    _clip_optimizer_parameter_groups(baseline_optimizer, 1.0)
+    _clip_optimizer_parameter_groups(arity_optimizer, 1.0)
     baseline_optimizer.step()
     arity_optimizer.step()
     arity_state = dict(arity.named_parameters())
