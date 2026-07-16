@@ -23,6 +23,8 @@ from slm_training.models.decode_stats import collect_decode_stats
 from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
 from slm_training.models.grammar import make_grammar_state
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
+from slm_training.harnesses.distill.trace_store import DecodeTraceRecorder
+from slm_training.harnesses.preference.local_decisions import events_from_trace
 
 
 def _model(**config_overrides) -> TwoTowerModel:
@@ -903,6 +905,63 @@ def test_tree_verifier_packs_prefix_nodes_and_avoids_full_projection() -> None:
     assert "first_edge_score" in stats.constrained_selection_traces[0][
         "top_candidates"
     ][0]
+
+
+def test_tree_verifier_records_exact_branch_support_for_event_mining(
+    monkeypatch,
+) -> None:
+    model = _model()
+    model.config.structural_bias = 0.0
+    tokenizer = model.tokenizer
+    prefix = [tokenizer.bos_id, *tokenizer.encode("root=", add_special=False)]
+    paths = (
+        CompletionPath(
+            (tokenizer.token_to_id["Card"], tokenizer.token_to_id["("]),
+            "component",
+        ),
+        CompletionPath(
+            (tokenizer.token_to_id["Stack"], tokenizer.token_to_id["("]),
+            "component",
+        ),
+    )
+    ctx, ctx_pad = model._encode_context(["card"])
+    original_project = model.denoiser.project
+
+    def project(hidden, candidate_ids=None):
+        scores = original_project(hidden, candidate_ids)
+        if candidate_ids is None:
+            scores = scores.clone()
+            scores[tokenizer.mask_id] = scores.max() + 100.0
+        return scores
+
+    monkeypatch.setattr(model.denoiser, "project", project)
+    recorder = DecodeTraceRecorder(record_support=True)
+    model.trace_recorder = recorder
+    selected = model._select_compiler_path(prefix, paths, ctx, ctx_pad, 24, tree=True)
+    model.trace_recorder = None
+
+    trace = recorder.finalize(
+        record_id="record-1",
+        context_text="card",
+        policy_checkpoint_sha="checkpoint-sha",
+        tokenizer_sha="tokenizer-sha",
+        decode_config_hash="decode-sha",
+        seed=0,
+    )
+    trace["trajectory_id"] = "trajectory-1"
+    commits = [commit for step in trace["steps"] for commit in step["commits"]]
+    assert commits
+    assert commits[0]["id"] == selected[0]
+    assert commits[0]["raw_id"] == tokenizer.mask_id
+    assert set(commits[0]["allowed_id_set"]) == {
+        tokenizer.token_to_id["Card"],
+        tokenizer.token_to_id["Stack"],
+    }
+    assert commits[0]["pre_canvas"][: len(prefix)] == prefix
+    events = events_from_trace(trace)
+    assert len(events) == 1
+    assert events[0].good_token_ids == (selected[0],)
+    assert events[0].bad_token_ids == (tokenizer.mask_id,)
 
 
 def test_maskgit_fallback_keeps_compiler_prefix_visible() -> None:

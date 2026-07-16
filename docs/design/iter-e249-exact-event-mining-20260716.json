@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "run_kind": "telemetry",
+  "status": "prerequisite_complete",
+  "experiment": "E249 event-mining prerequisite",
+  "date": "2026-07-16",
+  "device": "cpu",
+  "seed": 0,
+  "training_executed": false,
+  "evaluation_executed": false,
+  "policy_checkpoint_sha": "7a9be4a665e216d7f7e73883ad74ad972bbf30846896d0c29188d6482f5b093a",
+  "source_record_fingerprint": "9f72d85b6cc7118e0f69e010d0debdd2b40ede514e03178dded8e164daaae9bb",
+  "decode_config_hash": "8c2a2ae5cb5c4ad0ab44de74a172fc2c887fbdc7e5e7e20ede953184a0c3fe5b",
+  "decode_policy": "strict_compiler_tree",
+  "output_kind": "document",
+  "full_collection": {
+    "trace_id": "f8186cf6d911344416a8b6ee3a9a2f71",
+    "records": 65,
+    "accepted_records": 65,
+    "compiler_commits": 2368,
+    "decision_events": 2035,
+    "event_groups": 65,
+    "train_events": 1716,
+    "train_groups": 54,
+    "held_out_events": 319,
+    "held_out_groups": 11,
+    "constraint_shadow_events": 2035,
+    "counterfactual_events": 0,
+    "set_valued_events": 0
+  },
+  "diagnostics": [
+    {
+      "trace_id": "f5a341d29dc48083a202cdcf851e9b00",
+      "valid": false,
+      "records": 8,
+      "decision_events": 0,
+      "finding": "The selected source rows were statements or expressions, so the production generator correctly did not enter document compiler-tree decoding."
+    },
+    {
+      "trace_id": "e46fa63f138aeb4edd37b05817ed7f76",
+      "valid": true,
+      "records": 8,
+      "accepted_records": 8,
+      "compiler_commits": 156,
+      "decision_events": 132
+    }
+  ],
+  "committed_corpus": {
+    "dataset_id": "e249_constraint_shadows_v1",
+    "path": "src/slm_training/resources/data/preference/e249_constraint_shadows_v1/events.jsonl",
+    "manifest": "src/slm_training/resources/data/preference/e249_constraint_shadows_v1/manifest.json",
+    "content_fingerprint": "8d9b18827e47ba24c67c6482bbd5d36308cd648acd4cad61b2eeb1428c90d97c"
+  },
+  "honesty": {
+    "ship_claim": false,
+    "quality_claim": false,
+    "agentv_required": false,
+    "reason": "This was generation telemetry and corpus construction, not an evaluation. Constraint shadows prove lexical legality only and do not provide semantic preference labels."
+  },
+  "decision": "Use this immutable corpus for E249-E251 only. Keep E252-E254 fail-closed until same-state counterfactual verification produces set-valued evidence."
+}

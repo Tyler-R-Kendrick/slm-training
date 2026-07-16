@@ -208,3 +208,69 @@ def write_decision_events(path: Path | str, events: Iterable[DecisionEventV1]) -
         os.fsync(handle.fileno())
     os.replace(tmp, path)
     return len(rows)
+
+
+def decision_event_manifest(
+    events: Iterable[DecisionEventV1],
+    *,
+    dataset_id: str,
+    records_path: str = "events.jsonl",
+    source_trace_ids: Iterable[str] = (),
+    source_record_fingerprint: str | None = None,
+) -> dict[str, Any]:
+    """Build an immutable, identity-homogeneous event-corpus manifest."""
+    rows = sorted(events, key=lambda event: event.event_id)
+    if not rows:
+        raise ValueError("decision event corpus must not be empty")
+    identities = {
+        (
+            event.policy_checkpoint_sha,
+            event.tokenizer_sha,
+            event.decode_config_hash,
+        )
+        for event in rows
+    }
+    if len(identities) != 1:
+        raise ValueError("decision event corpus mixes policy identities")
+    checkpoint_sha, tokenizer_sha, decode_hash = identities.pop()
+    split_counts = {
+        split: sum(event.split == split for event in rows)
+        for split in ("train", "held_out")
+    }
+    split_groups = {
+        split: len({event.group_id for event in rows if event.split == split})
+        for split in ("train", "held_out")
+    }
+    payload: dict[str, Any] = {
+        "schema_version": 1,
+        "kind": "decision_event_corpus",
+        "dataset_id": dataset_id,
+        "immutable": True,
+        "records": records_path,
+        "record_count": len(rows),
+        "group_count": len({event.group_id for event in rows}),
+        "content_fingerprint": _sha([event.to_dict() for event in rows]),
+        "policy_checkpoint_sha": checkpoint_sha,
+        "tokenizer_sha": tokenizer_sha,
+        "decode_config_hash": decode_hash,
+        "evidence_kinds": {
+            kind: sum(event.evidence_kind == kind for event in rows)
+            for kind in ("constraint_shadow", "counterfactual")
+        },
+        "splits": split_counts,
+        "split_groups": split_groups,
+        "set_valued_events": sum(
+            len(event.good_token_ids) > 1 or len(event.bad_token_ids) > 1
+            for event in rows
+        ),
+        "source_trace_ids": sorted(set(source_trace_ids)),
+    }
+    if source_record_fingerprint is not None:
+        payload["source_record_fingerprint"] = source_record_fingerprint
+    return payload
+
+
+def write_decision_event_manifest(path: Path | str, manifest: dict[str, Any]) -> None:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")

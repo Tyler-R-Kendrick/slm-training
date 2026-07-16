@@ -208,6 +208,7 @@ export function Data({ navigate: _navigate }: { navigate: (to: string) => void }
   const [version, setVersion] = useState<string | null>(null);
   const train = usePoll<any>(version ? `/api/data/train?version=${version}` : "/api/data/train", 3000);
   const test = usePoll<any>("/api/data/test", 0);
+  const preference = usePoll<any>("/api/data/preference", 3000);
 
   const v = train.data?.version;
   const stats = train.data?.stats;
@@ -243,6 +244,22 @@ export function Data({ navigate: _navigate }: { navigate: (to: string) => void }
 
       <Card title="Training examples" right={<span className="hint">search · filter · inspect</span>}>
         <TrainingDataBrowser version={v} />
+      </Card>
+
+      <Card title="Preference and decision data" right={<ProvenanceBadge provenance={preference.data?.provenance} />}>
+        <DataTable
+          columns={[
+            { key: "dataset_id", label: "dataset" },
+            { key: "kind", label: "kind" },
+            { key: "records", label: "events", align: "right" },
+            { key: "train", label: "train", align: "right" },
+            { key: "held_out", label: "held-out", align: "right" },
+            { key: "evidence", label: "evidence" },
+            { key: "usage", label: "used by" },
+            { key: "fingerprint", label: "fingerprint" },
+          ]}
+          rows={preference.data?.rows ?? []}
+        />
       </Card>
 
       <Card title="Create a training dataset" right={<span className="hint">recommended settings included</span>}>

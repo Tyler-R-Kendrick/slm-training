@@ -3027,6 +3027,7 @@ class TwoTowerModel(nn.Module):
         if len(paths) == 1:
             return tuple(paths[0].token_ids)
         stats = get_active_stats()
+        recorder = getattr(self, "trace_recorder", None)
         if stats is not None:
             stats.compiler_candidates += len(paths)
 
@@ -3037,11 +3038,11 @@ class TwoTowerModel(nn.Module):
             *,
             first_edge_scores: list[float] | None = None,
         ) -> None:
-            if stats is None or len(stats.constrained_selection_traces) >= 64:
-                return
-            ranked = sorted(range(len(paths)), key=scores.__getitem__, reverse=True)[:5]
-            stats.constrained_selection_traces.append(
-                {
+            if stats is not None and len(stats.constrained_selection_traces) < 64:
+                ranked = sorted(
+                    range(len(paths)), key=scores.__getitem__, reverse=True
+                )[:5]
+                stats.constrained_selection_traces.append({
                     "position": len(prefix),
                     "prefix_text": self.tokenizer.decode(prefix),
                     "chosen_token": self.tokenizer.id_to_token.get(
@@ -3068,8 +3069,7 @@ class TwoTowerModel(nn.Module):
                         }
                         for index in ranked
                     ],
-                }
-            )
+                })
 
         if not tree:
             canvas = self._compiler_canvas(prefix, length)
@@ -3289,6 +3289,37 @@ class TwoTowerModel(nn.Module):
             edge_scores.get((tuple(prefix), int(path.token_ids[0])), 0.0)
             for path in paths
         ]
+        if recorder is not None:
+            parent_rows = {parent: row for row, parent in enumerate(parents)}
+            commits: list[dict[str, object]] = []
+            parent = tuple(prefix)
+            for token_id in paths[chosen].token_ids:
+                allowed = tuple(sorted(children.get(parent, ())))
+                if len(allowed) > 1:
+                    row = parent_rows[parent]
+                    raw_scores = self.denoiser.project(hidden[row, len(parent)])
+                    raw_id = int(raw_scores.argmax().item())
+                    log_probs = F.log_softmax(raw_scores.float(), dim=-1)
+                    commit: dict[str, object] = {
+                        "t": len(parent),
+                        "id": int(token_id),
+                        "raw_id": raw_id,
+                        "lp": float(log_probs[int(token_id)].item()),
+                        "pre_canvas": self._compiler_canvas(
+                            list(parent), length
+                        )[0].tolist(),
+                        "phase": "compiler_tree",
+                    }
+                    if recorder.record_support:
+                        commit["allowed_id_set"] = list(allowed)
+                    commits.append(commit)
+                parent = (*parent, int(token_id))
+            if commits:
+                recorder.step(
+                    f"compiler_tree:{len(prefix)}",
+                    canvas=self._compiler_canvas(prefix, length)[0].tolist(),
+                    commits=commits,
+                )
         record_choice(
             chosen,
             path_scores,

@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "kind": "decision_event_corpus",
+  "dataset_id": "e249_constraint_shadows_v1",
+  "immutable": true,
+  "records": "events.jsonl",
+  "record_count": 2035,
+  "group_count": 65,
+  "content_fingerprint": "8d9b18827e47ba24c67c6482bbd5d36308cd648acd4cad61b2eeb1428c90d97c",
+  "policy_checkpoint_sha": "7a9be4a665e216d7f7e73883ad74ad972bbf30846896d0c29188d6482f5b093a",
+  "tokenizer_sha": "8dbf8142068860eed06463fa2e0013bb298267a305bcfd85a0c24df0f7f61efe",
+  "decode_config_hash": "8c2a2ae5cb5c4ad0ab44de74a172fc2c887fbdc7e5e7e20ede953184a0c3fe5b",
+  "evidence_kinds": {
+    "constraint_shadow": 2035,
+    "counterfactual": 0
+  },
+  "splits": {
+    "train": 1716,
+    "held_out": 319
+  },
+  "split_groups": {
+    "train": 54,
+    "held_out": 11
+  },
+  "set_valued_events": 0,
+  "source_trace_ids": [
+    "f8186cf6d911344416a8b6ee3a9a2f71"
+  ],
+  "source_record_fingerprint": "9f72d85b6cc7118e0f69e010d0debdd2b40ede514e03178dded8e164daaae9bb"
+}

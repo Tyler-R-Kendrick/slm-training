@@ -240,6 +240,10 @@ export const toolProvider: Record<string, QueryFn> = {
     const d: any = await getJSON("/api/data/test");
     return { provenance: d.provenance, rows: Object.entries(d.suites ?? {}).map(([label, value]) => ({ label, value })) };
   },
+  data_preference: async () => {
+    const d: any = await getJSON("/api/data/preference");
+    return { provenance: d.provenance, rows: d.rows ?? [] };
+  },
   data_records: async (args) => {
     const v = args.version ? String(args.version) : "";
     if (!v) return { count: 0, rows: [] };
