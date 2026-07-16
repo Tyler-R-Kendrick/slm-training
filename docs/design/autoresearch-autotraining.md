@@ -347,7 +347,9 @@ schema/slot context, and DESIGN.md context through typed knobs; the compiler
 passes the shared settings to train and evaluation rather than relying on CLI
 defaults. Cache locality and checkpoint synchronization are typed as well;
 CPU/scratch candidates must set `sync_checkpoints=false` explicitly when their
-checkpoint is diagnostic-only.
+checkpoint is diagnostic-only. Compiled stages use the active Python interpreter;
+an unavailable executable is persisted as a typed failed outcome instead of
+escaping the campaign ledger.
 
 ## Researcher improvement
 

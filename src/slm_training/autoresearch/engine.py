@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import subprocess
+import sys
 from pathlib import Path
 from slm_training.autoresearch.rl_gate import assert_rl_ready
 from slm_training.autoresearch.schemas import (
@@ -230,7 +231,7 @@ def compile_commands(
     commands: list[list[str]] = []
     if knobs.data_source:
         build = [
-            "python",
+            sys.executable,
             "-m",
             "scripts.build_train_data",
             "--source",
@@ -266,7 +267,7 @@ def compile_commands(
     if knobs.mixture_weights:
         commands.append(
             [
-                "python",
+                sys.executable,
                 "-m",
                 "scripts.autoresearch",
                 "materialize-mixture",
@@ -284,7 +285,7 @@ def compile_commands(
             "causal_lm proposals must use the agent-driven model_cycle lineage workflow"
         )
     train = [
-        "python",
+        sys.executable,
         "-m",
         "scripts.train_model",
         "--run-root",
@@ -394,7 +395,7 @@ def compile_commands(
         train.extend(["--mixture-manifest", str(mixture_path)])
     commands.append(train)
     evaluate = [
-        "python",
+        sys.executable,
         "-m",
         "scripts.evaluate_model",
         "--test-dir",
@@ -467,6 +468,27 @@ def execute_commands(
                 data_metrics=data_metrics,
                 command=tuple(" ".join(item) for item in commands),
                 error=f"stage exceeded wall-time limit: {' '.join(command)}",
+                stage_telemetry=tuple(stages),
+                started_at=started,
+                finished_at=utc_now(),
+            )
+        except OSError as exc:
+            stages.append(
+                {
+                    "command": command,
+                    "launch_error": str(exc),
+                    "stdout": "",
+                    "stderr": "",
+                }
+            )
+            return ExperimentOutcome(
+                experiment_id=experiment.experiment_id,
+                campaign_id=experiment.campaign_id,
+                status="failed",
+                metrics=metrics,
+                data_metrics=data_metrics,
+                command=tuple(" ".join(item) for item in commands),
+                error=f"stage could not start: {' '.join(command)}: {exc}",
                 stage_telemetry=tuple(stages),
                 started_at=started,
                 finished_at=utc_now(),

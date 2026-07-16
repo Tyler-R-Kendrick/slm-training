@@ -13,6 +13,7 @@ from slm_training.autoresearch.engine import (
     compile_commands,
     create_hypothesis_feedback,
     diagnose_outcome,
+    execute_commands,
     validate_experiment,
     validate_hypothesis_matrix,
 )
@@ -1075,7 +1076,12 @@ def test_compile_is_typed_and_diagnosis_routes_bad_data() -> None:
     )
     validate_experiment(campaign(), spec, evidence(), [source()])
     commands = compile_commands(campaign(), spec)
-    assert commands[0][:4] == ["python", "-m", "scripts.build_train_data", "--source"]
+    assert commands[0][:4] == [
+        sys.executable,
+        "-m",
+        "scripts.build_train_data",
+        "--source",
+    ]
     assert all(isinstance(command, list) for command in commands)
     diagnosis = diagnose_outcome(
         ExperimentOutcome(
@@ -1120,6 +1126,14 @@ def test_compile_resolves_canonical_published_train_version() -> None:
     assert "--local-files-only" in commands[0]
     assert "--no-sync-checkpoints" in commands[0]
     assert commands[-1][commands[-1].index("--compiler-decode-mode") + 1] == "tree"
+
+
+def test_execute_records_process_launch_failure() -> None:
+    outcome = execute_commands(experiment(), [["/__missing_executable__"]])
+
+    assert outcome.status == "failed"
+    assert "stage could not start" in str(outcome.error)
+    assert outcome.stage_telemetry[0]["launch_error"]
 
 
 def test_train_version_and_data_build_are_mutually_exclusive() -> None:
