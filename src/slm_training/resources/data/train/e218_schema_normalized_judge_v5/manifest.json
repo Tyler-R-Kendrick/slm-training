@@ -2,8 +2,8 @@
   "version": "e218_schema_normalized_judge_v5",
   "kind": "train_data",
   "source": "existing",
-  "records": "src/slm_training/resources/train_data/e218_schema_normalized_judge_v5/records.jsonl",
-  "stats": "src/slm_training/resources/train_data/e218_schema_normalized_judge_v5/stats.json",
+  "records": "src/slm_training/resources/data/train/e218_schema_normalized_judge_v5/records.jsonl",
+  "stats": "src/slm_training/resources/data/train/e218_schema_normalized_judge_v5/stats.json",
   "record_count": 480,
   "ids": [
     "lc_boolean_literal_edit_61a8cc3d261a",
@@ -2330,12 +2330,12 @@
     }
   },
   "governance": {
-    "croissant.json": "src/slm_training/resources/train_data/e218_schema_normalized_judge_v5/governance/croissant.json",
-    "data_card.json": "src/slm_training/resources/train_data/e218_schema_normalized_judge_v5/governance/data_card.json",
-    "dataset.spdx.json": "src/slm_training/resources/train_data/e218_schema_normalized_judge_v5/governance/dataset.spdx.json"
+    "croissant.json": "src/slm_training/resources/data/train/e218_schema_normalized_judge_v5/governance/croissant.json",
+    "data_card.json": "src/slm_training/resources/data/train/e218_schema_normalized_judge_v5/governance/data_card.json",
+    "dataset.spdx.json": "src/slm_training/resources/data/train/e218_schema_normalized_judge_v5/governance/dataset.spdx.json"
   },
-  "mixture": "src/slm_training/resources/train_data/e218_schema_normalized_judge_v5/mixture.json",
-  "synthesis_telemetry": "src/slm_training/resources/train_data/e218_schema_normalized_judge_v5/synthesis_telemetry.jsonl",
+  "mixture": "src/slm_training/resources/data/train/e218_schema_normalized_judge_v5/mixture.json",
+  "synthesis_telemetry": "src/slm_training/resources/data/train/e218_schema_normalized_judge_v5/synthesis_telemetry.jsonl",
   "synthesis_telemetry_sha256": "4dbb4471245755a58945e28b5119bfc48d35072535b8e80718ae0bcd6e880b51",
   "diffusion_online": {
     "policies": [

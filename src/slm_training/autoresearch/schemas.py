@@ -36,6 +36,7 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "seed",
         "steps",
         "synthesizer",
+        "train_version",
         "topology_actions",
         "topology_bounded_buffer",
         "topology_critic_decode",
@@ -174,6 +175,9 @@ class ResearcherRun(StrictModel):
 
 
 class ExperimentKnobs(StrictModel):
+    train_version: str | None = Field(
+        default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    )
     data_source: (
         Literal[
             "rico",
@@ -232,6 +236,8 @@ class ExperimentKnobs(StrictModel):
 
     @model_validator(mode="after")
     def validate_mixture(self) -> ExperimentKnobs:
+        if self.train_version and self.data_source:
+            raise ValueError("choose train_version or data_source, not both")
         if self.mixture_weights is not None:
             if not self.mixture_weights or any(
                 v <= 0 for v in self.mixture_weights.values()

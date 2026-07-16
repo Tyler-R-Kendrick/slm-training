@@ -1089,6 +1089,26 @@ def test_compile_is_typed_and_diagnosis_routes_bad_data() -> None:
     assert "immutable data snapshot" in diagnosis.recommended_actions[0]
 
 
+def test_compile_resolves_canonical_published_train_version() -> None:
+    spec = experiment(
+        knobs=ExperimentKnobs(train_version="e218_schema_normalized_judge_v5", steps=32)
+    )
+
+    commands = compile_commands(campaign(), spec)
+
+    assert "--train-version" in commands[0]
+    assert "e218_schema_normalized_judge_v5" in commands[0]
+    assert "--train-dir" not in commands[0]
+    assert "--train-version" in commands[-1]
+
+
+def test_train_version_and_data_build_are_mutually_exclusive() -> None:
+    with pytest.raises(ValidationError, match="train_version or data_source"):
+        ExperimentKnobs(
+            train_version="published", data_source="existing", derive_from="old.jsonl"
+        )
+
+
 def test_compile_grammar_topology_campaign_uses_typed_knobs() -> None:
     grammar_campaign = campaign().model_copy(update={"track": "grammar_diffusion"})
     spec = experiment(

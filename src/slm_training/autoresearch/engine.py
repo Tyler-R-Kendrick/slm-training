@@ -260,7 +260,7 @@ def compile_commands(
         ):
             build.append("--scope-derivatives")
         commands.append(build)
-    else:
+    elif not knobs.train_version:
         train_dir = Path("outputs/data/train/v1")
     mixture_path = root / "mixture.json"
     if knobs.mixture_weights:
@@ -287,8 +287,6 @@ def compile_commands(
         "python",
         "-m",
         "scripts.train_model",
-        "--train-dir",
-        str(train_dir),
         "--run-root",
         str(root.parent),
         "--run-id",
@@ -306,6 +304,10 @@ def compile_commands(
         "--device",
         "cpu" if campaign.budget.max_gpu_hours == 0 else "auto",
     ]
+    if knobs.train_version:
+        train.extend(["--train-version", knobs.train_version])
+    else:
+        train.extend(["--train-dir", str(train_dir)])
     if campaign.track == "grammar_diffusion":
         train.extend(["--model", "grammar_diffusion"])
         boolean_knobs = {
@@ -370,22 +372,23 @@ def compile_commands(
     if knobs.mixture_weights:
         train.extend(["--mixture-manifest", str(mixture_path)])
     commands.append(train)
-    commands.append(
-        [
-            "python",
-            "-m",
-            "scripts.evaluate_model",
-            "--train-dir",
-            str(train_dir),
-            "--test-dir",
-            "outputs/data/eval/v1",
-            "--run-root",
-            str(root.parent),
-            "--run-id",
-            root.name,
-            "--ship-gates",
-        ]
-    )
+    evaluate = [
+        "python",
+        "-m",
+        "scripts.evaluate_model",
+        "--test-dir",
+        "outputs/data/eval/v1",
+        "--run-root",
+        str(root.parent),
+        "--run-id",
+        root.name,
+        "--ship-gates",
+    ]
+    if knobs.train_version:
+        evaluate.extend(["--train-version", knobs.train_version])
+    else:
+        evaluate.extend(["--train-dir", str(train_dir)])
+    commands.append(evaluate)
     if campaign.track == "grammar_diffusion":
         commands[-1].extend(["--model", "grammar_diffusion"])
     return commands

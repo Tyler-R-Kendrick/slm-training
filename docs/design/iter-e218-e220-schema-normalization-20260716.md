@@ -48,6 +48,13 @@ sync. Last loss is 13.2406 over 17,674 prompt and 6,236 target tokens; wall time
 116.24 s. Alignment loss falls 74.2605 → 3.9909. Checkpoint SHA is
 `48ba5a7a…9e112`.
 
+Regenerated shared run insights expose a data-policy confound: E219's 128 draws
+covered 54 unique records but only 29.90 effective records (23.36% of available
+draw capacity). The semantic-balanced mixture drew 73 human-curated rows from a
+15-record family; two records appeared eight times each. This is deterministic
+telemetry evidence, not a causal conclusion, but it makes a matched
+task-balanced mixture the next test before adding more synthesized rows.
+
 E220 is the same one-example smoke diagnostic as E216, with compiler tree decode
 and no unconstrained fallback:
 
@@ -70,7 +77,8 @@ are in [the result JSON](iter-e218-e220-schema-normalization-20260716.json).
 
 ## Next hypothesis
 
-Measure prompt-requested generated-schema role coverage across admitted records,
-then derive schema-valid positives for underrepresented requested component-role
-sets. Keep a frozen nearby counterexample set for G11, but never use invalid
-outputs as training targets.
+Run a matched task-balanced mixture that reduces concentrated repeats while
+preserving judged quality. Then measure prompt-requested generated-schema role
+coverage and derive schema-valid positives only for underrepresented requested
+component-role sets. Keep a frozen nearby counterexample set for G11, but never
+use invalid outputs as training targets.

@@ -38,7 +38,7 @@
     "id": "E218",
     "version": "e218_schema_normalized_judge_v5",
     "derive_from": "src/slm_training/resources/train_data/e177_semantic_judge_v2/records.jsonl",
-    "path": "src/slm_training/resources/train_data/e218_schema_normalized_judge_v5/records.jsonl",
+    "path": "src/slm_training/resources/data/train/e218_schema_normalized_judge_v5/records.jsonl",
     "immutable": true,
     "source_records": 496,
     "rejected_records": 16,
@@ -75,7 +75,15 @@
     "alignment_loss_first": 74.26045989990234,
     "alignment_loss_last": 3.9909169673919678,
     "root_children_reference_loss_first": 68.46022033691406,
-    "root_children_reference_loss_last": 3.5993118286132812
+    "root_children_reference_loss_last": 3.5993118286132812,
+    "data_exposure": {
+      "total_draws": 128,
+      "unique_records": 54,
+      "effective_records": 29.9,
+      "effective_ratio": 0.2336,
+      "max_repeat": 8,
+      "human_curated_draws": 73
+    }
   },
   "evaluation": {
     "id": "E220",
@@ -103,6 +111,6 @@
     "agentv_passed": 0,
     "agentv_failed": 5
   },
-  "conclusion": "Corrected admission restores 33 valid records and keeps deterministic syntax at 1.0, but E220 exactly matches E216's semantic metrics: component recall 0.25 and meaningful parse 0.0. Data admission is now sounder; it does not solve semantic coverage at this budget. No checkpoint is promotable.",
-  "next_hypothesis": "Measure prompt-requested generated-schema role coverage across admitted records and derive schema-valid positives for underrepresented requested component-role sets; retain a frozen nearby counterexample set for G11 without using invalid outputs as training targets."
+  "conclusion": "Corrected admission restores 33 valid records and keeps deterministic syntax at 1.0, but E220 exactly matches E216's semantic metrics: component recall 0.25 and meaningful parse 0.0. E219 also concentrated 128 draws into only 29.9 effective records, so exposure policy is now a stronger measured confound than corpus size alone. No checkpoint is promotable.",
+  "next_hypothesis": "Run a matched task-balanced mixture that reduces concentrated repeats while preserving judged quality, then measure prompt-requested generated-schema role coverage before synthesizing additional positives."
 }

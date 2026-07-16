@@ -337,6 +337,12 @@ When diagnosis targets data, change one filter, producer, or mixture lever; buil
 new immutable snapshot; hold seed/token/evaluation snapshot constant; and compare a
 matched control. Never edit a prior snapshot or train on the feedback eval holdout.
 
+For an already published immutable corpus, set the typed `train_version` knob.
+The compiler resolves it through the canonical `DataStore`, passes
+`--train-version` to both train and evaluation, and automatically uses that
+version's committed `mixture.json` unless the experiment supplies an explicit
+typed mixture override.
+
 ## Researcher improvement
 
 Researcher changes are evaluated on
