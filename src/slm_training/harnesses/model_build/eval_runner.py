@@ -419,7 +419,10 @@ def evaluate(
         signal.setitimer(signal.ITIMER_REAL, seconds)
         try:
             return _generate_chunk_unbounded(chunk)
-        except TimeoutError:
+        except TimeoutError as exc:
+            stats = getattr(exc, "decode_stats", None)
+            if stats is not None:
+                decode_stats_rows.append(stats)
             decode_timeout_count += len(chunk)
             return ["" for _ in chunk], []
         finally:

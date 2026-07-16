@@ -234,6 +234,41 @@ def test_evaluate_supports_single_record_generation_with_stats(tmp_path: Path) -
     assert metrics["decode_stats"]["tokens_emitted_sum"] == 1.0
 
 
+def test_evaluate_persists_stats_when_generation_times_out(tmp_path: Path) -> None:
+    train_dir = tmp_path / "train"
+    test_dir = tmp_path / "test"
+    train_dir.mkdir()
+    (test_dir / "suites" / "smoke").mkdir(parents=True)
+    record = ExampleRecord(
+        id="timeout-1",
+        prompt="Copy value",
+        openui='root = TextContent(":copy.value")',
+        split="smoke",
+        meta={"suite": "smoke"},
+    )
+    write_jsonl(train_dir / "records.jsonl", [record])
+    write_jsonl(test_dir / "suites" / "smoke" / "records.jsonl", [record])
+
+    class TimeoutModel:
+        def generate_with_stats(self, prompt: str) -> tuple[str, DecodeStats]:
+            error = TimeoutError("decode exceeded")
+            error.decode_stats = DecodeStats(tokens_emitted=7)  # type: ignore[attr-defined]
+            raise error
+
+    config = ModelBuildConfig(
+        train_dir=train_dir,
+        test_dir=test_dir,
+        suite="smoke",
+        run_root=tmp_path / "runs",
+        run_id="timeout-generation",
+        model_name="twotower",
+        decode_timeout_seconds=1,
+    )
+    metrics = evaluate(config, model=TimeoutModel(), publish_agentv=False)
+    assert metrics["decode_timeout_count"] == 1
+    assert metrics["decode_stats"]["tokens_emitted_sum"] == 7.0
+
+
 def test_evaluate_uses_production_request_not_gold_record(tmp_path: Path) -> None:
     train_dir = tmp_path / "train"
     test_dir = tmp_path / "test"
