@@ -556,6 +556,7 @@ def test_component_plan_supervises_root_role_and_bound_counts() -> None:
     assert model.component_plan_head.weight.grad is not None
     metrics = model.last_training_metrics
     assert metrics["component_plan_loss"] > 0.0
+    assert metrics["component_plan_bound_loss"] >= 0.0
     assert 0.0 <= metrics["component_plan_root_accuracy"] <= 1.0
     assert 0.0 <= metrics["component_plan_bound_topk_recall"] <= 1.0
     assert metrics["component_plan_bound_count_mae"] >= 0.0

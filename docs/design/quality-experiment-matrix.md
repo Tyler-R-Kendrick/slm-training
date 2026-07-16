@@ -958,6 +958,14 @@ Retain the generalized instrumentation and causal override, reject the checkpoin
 and the pooled inventory as a sufficient semantic solution. Full evidence:
 [iter-e231-component-inventory-20260716.md](iter-e231-component-inventory-20260716.md).
 
+E232 derives separate root-component and bound-component count targets from the
+compiler's grammar-role decisions. The planner learns both targets and causally
+improves adversarial recall/fidelity, but only 3/137 applications change a choice;
+weight 4 changes 19 choices with no aggregate gain. Syntax remains 1.0, the same
+four frontier thresholds fail, and AgentV remains 1/5. Retain the generalized
+mechanism, reject the checkpoint and stronger calibration. Full evidence:
+[iter-e232-role-component-plan-20260716.md](iter-e232-role-component-plan-20260716.md).
+
 ## V9 lattice-guided recursive compiler search (proposed, unrun)
 
 The research synthesis and implementation boundary are in

@@ -1598,7 +1598,11 @@ class TwoTowerModel(nn.Module):
                 )
                 bound_rates = F.softplus(bound_logits)
                 bound_raw = F.poisson_nll_loss(
-                    bound_rates, bound_targets, log_input=False, reduction="none"
+                    bound_rates,
+                    bound_targets,
+                    log_input=False,
+                    full=True,
+                    reduction="none",
                 )
                 bound_positive = bound_targets.gt(0)
                 bound_negative = ~bound_positive
