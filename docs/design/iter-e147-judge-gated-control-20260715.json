@@ -1,0 +1,44 @@
+{
+  "iteration": "E147",
+  "date": "2026-07-15",
+  "objective": "Measure a short control train using the source-controlled judge-gated corpus.",
+  "recipe": {
+    "train_dir": "src/slm_training/resources/train_data/remediated_roots_judged",
+    "record_count": 498,
+    "model": "twotower",
+    "backend": "hf",
+    "device": "cpu",
+    "steps": 8,
+    "batch_size": 4,
+    "seed": 0,
+    "output_tokenizer": "compositional",
+    "honesty_mode": "no-design-md-context"
+  },
+  "train_result": {
+    "last_loss": 26.79869842529297,
+    "seen_prompt_tokens": 5820,
+    "seen_target_tokens": 1848,
+    "telemetry_total_ms": 10924.108,
+    "data_manifest_sha": "ef09af685063bace02797ef0138cb3e6e238159a66bb99d5c404f57f64505758"
+  },
+  "eval_result": {
+    "suite": "smoke",
+    "n": 1,
+    "parse_rate": 0.0,
+    "structural_similarity": 0.0,
+    "placeholder_validity": 0.0,
+    "decode_timeout_count": 1,
+    "latency_ms_p50": 20000.96,
+    "tokens_emitted": 498,
+    "probes": 1,
+    "agentv_passed": 0,
+    "agentv_failed": 5
+  },
+  "comparison": {
+    "previous_iteration": "E145",
+    "previous_last_loss": 39.09016799926758,
+    "loss_delta": -12.29146957397461,
+    "quality_change": "no improvement observed in one-record diagnostic"
+  },
+  "conclusion": "The rebuilt judge-gated corpus lowers short-run training loss but does not yet fix generated parse quality or timeout behavior. This is a negative quality result, not a promotion."
+}
