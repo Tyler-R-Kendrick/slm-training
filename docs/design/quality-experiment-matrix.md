@@ -931,6 +931,14 @@ precision 1.0, recovered populated layouts, and reduced failed gates to four;
 AgentV remains 1/5, so the local checkpoint is diagnostic only. Full evidence:
 [iter-e228-candidate-margin-alignment-20260716.md](iter-e228-candidate-margin-alignment-20260716.md).
 
+E229 resumed E228 bit-exactly to total step 64 after a clean latest-main audit.
+An initial syntax regression exposed tokenizer-frame leakage, not undertraining:
+quote-equivalent lexer tokens were admitted inside `LIT_STR + BYTE* + LIT_END`.
+A token-kind-derived frame restriction restored syntax 1.0 on all suites without
+literal cases. Corrected evaluation still fails the same four gates and regresses
+several quality metrics, falsifying more duration for this recipe. Full evidence:
+[iter-e229-margin-continuation-20260716.md](iter-e229-margin-continuation-20260716.md).
+
 ## V9 lattice-guided recursive compiler search (proposed, unrun)
 
 The research synthesis and implementation boundary are in

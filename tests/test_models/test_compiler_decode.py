@@ -227,6 +227,43 @@ def test_completion_forest_enforces_generated_schema_arity(monkeypatch) -> None:
     assert set(complete.candidate_ids) == {tokenizer.token_to_id[")"]}
 
 
+def test_completion_forest_enforces_lexer_literal_frame() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    contract = [":value", ":label"]
+    prefix = tokenizer.encode(
+        'root=RadioItem(":value",":label",', add_special=False
+    )
+    outside = build_completion_forest(tokenizer, prefix, slot_contract=contract)
+    assert tokenizer.token_to_id["LIT_STR"] in outside.candidate_ids
+    assert tokenizer.token_to_id["LIT_END"] not in outside.candidate_ids
+
+    inside = build_completion_forest(
+        tokenizer,
+        [*prefix, tokenizer.token_to_id["LIT_STR"]],
+        slot_contract=contract,
+    )
+    from slm_training.models.dsl_tokenizer import TokenKind
+
+    expected = tokenizer.kind_ids(TokenKind.BYTE) | {
+        tokenizer.token_to_id["LIT_END"]
+    }
+    assert set(inside.candidate_ids) <= expected
+    assert tokenizer.token_to_id["LIT_END"] in inside.candidate_ids
+    assert set(inside.candidate_ids) & tokenizer.kind_ids(TokenKind.BYTE)
+    assert not (set(inside.candidate_ids) & tokenizer.kind_ids(TokenKind.SYM))
+
+    closed = build_completion_forest(
+        tokenizer,
+        [
+            *prefix,
+            tokenizer.token_to_id["LIT_STR"],
+            tokenizer.token_to_id["LIT_END"],
+        ],
+        slot_contract=contract,
+    )
+    assert set(closed.candidate_ids) == {tokenizer.token_to_id[")"]}
+
+
 def test_completion_forest_encodes_generated_enum_with_literal_channel(
     monkeypatch,
 ) -> None:
