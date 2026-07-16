@@ -1,0 +1,12 @@
+{
+  "experiment_id": "E134",
+  "date": "2026-07-15",
+  "kind": "representation_probe",
+  "parent": "E133",
+  "recipe": {"context_backend": "hf", "hf_model": "HuggingFaceTB/SmolLM2-135M", "local_files_only": true, "steps_requested": 1, "device": "cpu", "train_dir": "src/slm_training/resources/train_data/remediated_roots_judged", "record_count": 405},
+  "status": "not_started",
+  "failure": "HF context initialization failed before training: transformers is not installed; no local SmolLM2 cache is available.",
+  "evidence": "ImportError: HF context tower requires transformers. Install with: pip install -e '[hf]'",
+  "decision": "Do not treat scratch results as HF-context evidence. Keep HF control explicitly deferred until the optional dependency and pinned model are available.",
+  "honesty": "environment_probe; no checkpoint or ship claim"
+}
