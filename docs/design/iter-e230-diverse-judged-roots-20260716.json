@@ -1,0 +1,48 @@
+{
+  "campaign": "E230 diverse judged generation roots",
+  "date": "2026-07-16",
+  "status": "immutable_corpus_published_train_pending",
+  "hypothesis": "Replacing derivative-heavy exposure with judge-gated diverse generation roots improves semantic component ranking without changing deterministic grammar enforcement.",
+  "dataset": {
+    "id": "e230_diverse_judged_roots_v2",
+    "path": "src/slm_training/resources/data/train/e230_diverse_judged_roots_v2",
+    "source": "all",
+    "synthesizer": "none",
+    "repair_derivatives": false,
+    "edit_derivatives": false,
+    "semantic_cluster_cap": 2,
+    "seed_count": 192,
+    "record_count": 126,
+    "independent_judge_passed": 126,
+    "verifier_rejected": 15,
+    "quality_rejected": 2,
+    "held_out_structure_rejected": 4,
+    "semantic_cluster_dropped": 22,
+    "semantic_clusters": 115,
+    "semantic_cluster_p95": 2,
+    "semantic_cluster_max": 2,
+    "structural_families": 108,
+    "placeholder_vocab_size": 196,
+    "mean_quality_score": 0.9937,
+    "task_pool_rows": 126,
+    "families": {
+      "human_curated": 17,
+      "language_contract": 62,
+      "programspec_generated": 13,
+      "renderer_visual": 1,
+      "rico_real": 32,
+      "web_distilled": 1
+    },
+    "records_sha256": "6c4796159ac0dfccde327586f86b142ac0ff451170a7f757992754b32a65e29d",
+    "content_fingerprint": "9f72d85b6cc7118e0f69e010d0debdd2b40ede514e03178dded8e164daaae9bb",
+    "trace_id": "d722ac10571ce461019c4de8b9732a1f"
+  },
+  "pipeline_corrections": {
+    "rico_prompt_provenance_moved_to_metadata": true,
+    "implicit_output_contract_task_sampled_as_generation": true,
+    "prompt_or_output_literal_cases_added": false
+  },
+  "train": null,
+  "evaluation": null,
+  "decision": "Train only after a fresh origin/main fetch and conflict reconciliation."
+}

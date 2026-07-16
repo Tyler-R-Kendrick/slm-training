@@ -243,12 +243,9 @@ def _prompt_for_screen(screen: dict[str, Any], meta: dict[str, Any]) -> str:
     structure = ", ".join(parts) or "UI widgets"
     # Deterministic role hint for the model (sorted unique roles).
     role_hint = ", ".join(sorted(set(roles)))
-    idx = screen.get("screen_index")
-    split_src = screen.get("split_src") or "train"
     return (
         f"Build a {direction} mobile OpenUI layout with {structure} "
-        f"(roles: {role_hint}) using placeholders only "
-        f"(RICO {split_src} screen {idx})."
+        f"(roles: {role_hint}) using placeholders only."
     )
 
 

@@ -34,6 +34,28 @@ def test_screen_to_openui_builds_stack() -> None:
     assert all(p.startswith(":") for p in placeholders)
 
 
+def test_screen_prompt_keeps_provenance_in_metadata_only() -> None:
+    record = screen_to_record(
+        {
+            "split_src": "train",
+            "screen_index": 42,
+            "elements": [
+                {
+                    "component_label": "Text Button",
+                    "resource_id": "app:id/submit",
+                    "clickable": True,
+                    "bounds": [0, 0, 100, 40],
+                }
+            ],
+        }
+    )
+
+    assert "RICO" not in record.prompt
+    assert "screen 42" not in record.prompt
+    assert record.meta["rico_split"] == "train"
+    assert record.meta["rico_screen_index"] == 42
+
+
 @pytest.mark.skipif(
     not bridge_available(),
     reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",

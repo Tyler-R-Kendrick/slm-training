@@ -1,0 +1,521 @@
+{
+  "version": "e230_diverse_judged_roots_v2",
+  "source": "all",
+  "derive_from": null,
+  "seed_path": "src/slm_training/resources/train_seeds.jsonl",
+  "rico_path": "src/slm_training/resources/rico/semantic_train.jsonl",
+  "rico_hf_split": null,
+  "seed_count": 192,
+  "collected_count": 192,
+  "verifier_rejected": 15,
+  "verifier_rejected_samples": [
+    {
+      "id": "aww_app_01",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_contact_01",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_creative_01",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_docs_01",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_edu_01",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_events_01",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_finance_01",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_folio_01",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_health_01",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_ops_01",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_saas_01",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_shop_01",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "program_67fb4bc094c372bd",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "rico_train_209",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "rico_train_53",
+      "failing_gate": "G11",
+      "governance_status": null
+    }
+  ],
+  "verification_tier_rejected": 0,
+  "verification_tier_rejected_samples": [],
+  "quality_rejected": 2,
+  "quality_rejected_samples": [
+    {
+      "id": "program_6154681f3a809853",
+      "ok": false,
+      "score": 0.6,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 4,
+      "n_placeholders": 0,
+      "component_diversity": 4,
+      "openui_chars": 175,
+      "design_lint_score": 0.99,
+      "components": {
+        "Stack": 1,
+        "Separator": 1,
+        "Series": 1,
+        "SingleStackedBarChart": 1
+      },
+      "independent_judge": {
+        "ok": true,
+        "score": 1.0,
+        "reasons": []
+      }
+    },
+    {
+      "id": "program_7a100aea1fb8dbba",
+      "ok": false,
+      "score": 0.6,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 4,
+      "n_placeholders": 0,
+      "component_diversity": 4,
+      "openui_chars": 150,
+      "design_lint_score": 0.99,
+      "components": {
+        "Stack": 1,
+        "Point": 1,
+        "RadarChart": 1,
+        "RadialChart": 1
+      },
+      "independent_judge": {
+        "ok": true,
+        "score": 1.0,
+        "reasons": []
+      }
+    }
+  ],
+  "record_count": 126,
+  "error_count": 0,
+  "errors": [],
+  "synthesizer": "none",
+  "min_quality_score": 0.55,
+  "min_verification_tier": null,
+  "max_openui_chars": null,
+  "max_components": null,
+  "curriculum": false,
+  "prompt_slot_contract": false,
+  "structure_reserved_rejected": 4,
+  "structure_reserved_rejected_samples": [
+    {
+      "id": "rico_train_169",
+      "source": "rico",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_card_stack_01",
+      "source": "fixture",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_metrics_01",
+      "source": "fixture",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_tabs_01",
+      "source": "fixture",
+      "reason": "test_fixture_structure"
+    }
+  ],
+  "max_records_per_parent": null,
+  "parent_cap_dropped": 0,
+  "parent_cap_dropped_samples": [],
+  "fuzzy_dedup": false,
+  "fuzzy_dropped": 0,
+  "fuzzy_dropped_samples": [],
+  "semantic_cluster_cap": 2,
+  "semantic_dropped": 22,
+  "semantic_dropped_samples": [
+    {
+      "id": "rico_train_177",
+      "cluster": "eb5fae75e28ca8ff|7a73ce917d1d8770035c6e080a763e3e7d6ae6d34b13d0ca096974e03866493d|55f7b13b16cd6524",
+      "source_family": "rico_real",
+      "reason": "semantic_cluster_cap"
+    },
+    {
+      "id": "rico_train_186",
+      "cluster": "eb5fae75e28ca8ff|7a73ce917d1d8770035c6e080a763e3e7d6ae6d34b13d0ca096974e03866493d|55f7b13b16cd6524",
+      "source_family": "rico_real",
+      "reason": "semantic_cluster_cap"
+    },
+    {
+      "id": "rico_train_26",
+      "cluster": "0b5c48ac91820075|a1316cadf58bf63b1ab1bd0580ee2aaae67c9992b38652c38850ad316d340825|76688596bd25f24f",
+      "source_family": "rico_real",
+      "reason": "semantic_cluster_cap"
+    },
+    {
+      "id": "rico_train_41",
+      "cluster": "0b5c48ac91820075|a1316cadf58bf63b1ab1bd0580ee2aaae67c9992b38652c38850ad316d340825|76688596bd25f24f",
+      "source_family": "rico_real",
+      "reason": "semantic_cluster_cap"
+    },
+    {
+      "id": "rico_train_160",
+      "cluster": "eb5fae75e28ca8ff|cbabdb080a38daced059165de73eb3feba4fc9107329c39b4c0d53d577b41454|9776103d5b62d413",
+      "source_family": "rico_real",
+      "reason": "semantic_cluster_cap"
+    },
+    {
+      "id": "rico_train_178",
+      "cluster": "eb5fae75e28ca8ff|cbabdb080a38daced059165de73eb3feba4fc9107329c39b4c0d53d577b41454|9776103d5b62d413",
+      "source_family": "rico_real",
+      "reason": "semantic_cluster_cap"
+    },
+    {
+      "id": "rico_train_165",
+      "cluster": "eb5fae75e28ca8ff|dd7b5a44ae7efe4b3991b7fc4b5d5cdd3bcc045537be8bcd385c50ac29013cb4|3ad20df6736b8925",
+      "source_family": "rico_real",
+      "reason": "semantic_cluster_cap"
+    },
+    {
+      "id": "rico_train_174",
+      "cluster": "eb5fae75e28ca8ff|dd7b5a44ae7efe4b3991b7fc4b5d5cdd3bcc045537be8bcd385c50ac29013cb4|3ad20df6736b8925",
+      "source_family": "rico_real",
+      "reason": "semantic_cluster_cap"
+    },
+    {
+      "id": "rico_train_68",
+      "cluster": "eb5fae75e28ca8ff|dd7b5a44ae7efe4b3991b7fc4b5d5cdd3bcc045537be8bcd385c50ac29013cb4|3ad20df6736b8925",
+      "source_family": "rico_real",
+      "reason": "semantic_cluster_cap"
+    },
+    {
+      "id": "rico_train_124",
+      "cluster": "eb5fae75e28ca8ff|1420bb0af927fc3cb28fb5f0af4d01dbe58d758be0898e82a2b9ef085bda6fe9|9776103d5b62d413",
+      "source_family": "rico_real",
+      "reason": "semantic_cluster_cap"
+    },
+    {
+      "id": "rico_train_130",
+      "cluster": "eb5fae75e28ca8ff|1420bb0af927fc3cb28fb5f0af4d01dbe58d758be0898e82a2b9ef085bda6fe9|9776103d5b62d413",
+      "source_family": "rico_real",
+      "reason": "semantic_cluster_cap"
+    },
+    {
+      "id": "rico_train_14",
+      "cluster": "eb5fae75e28ca8ff|1420bb0af927fc3cb28fb5f0af4d01dbe58d758be0898e82a2b9ef085bda6fe9|9776103d5b62d413",
+      "source_family": "rico_real",
+      "reason": "semantic_cluster_cap"
+    },
+    {
+      "id": "rico_train_141",
+      "cluster": "eb5fae75e28ca8ff|1420bb0af927fc3cb28fb5f0af4d01dbe58d758be0898e82a2b9ef085bda6fe9|9776103d5b62d413",
+      "source_family": "rico_real",
+      "reason": "semantic_cluster_cap"
+    },
+    {
+      "id": "rico_train_142",
+      "cluster": "eb5fae75e28ca8ff|1420bb0af927fc3cb28fb5f0af4d01dbe58d758be0898e82a2b9ef085bda6fe9|9776103d5b62d413",
+      "source_family": "rico_real",
+      "reason": "semantic_cluster_cap"
+    },
+    {
+      "id": "rico_train_146",
+      "cluster": "eb5fae75e28ca8ff|1420bb0af927fc3cb28fb5f0af4d01dbe58d758be0898e82a2b9ef085bda6fe9|9776103d5b62d413",
+      "source_family": "rico_real",
+      "reason": "semantic_cluster_cap"
+    },
+    {
+      "id": "rico_train_156",
+      "cluster": "eb5fae75e28ca8ff|1420bb0af927fc3cb28fb5f0af4d01dbe58d758be0898e82a2b9ef085bda6fe9|9776103d5b62d413",
+      "source_family": "rico_real",
+      "reason": "semantic_cluster_cap"
+    },
+    {
+      "id": "rico_train_188",
+      "cluster": "eb5fae75e28ca8ff|1420bb0af927fc3cb28fb5f0af4d01dbe58d758be0898e82a2b9ef085bda6fe9|9776103d5b62d413",
+      "source_family": "rico_real",
+      "reason": "semantic_cluster_cap"
+    },
+    {
+      "id": "rico_train_208",
+      "cluster": "eb5fae75e28ca8ff|1420bb0af927fc3cb28fb5f0af4d01dbe58d758be0898e82a2b9ef085bda6fe9|9776103d5b62d413",
+      "source_family": "rico_real",
+      "reason": "semantic_cluster_cap"
+    },
+    {
+      "id": "rico_train_42",
+      "cluster": "eb5fae75e28ca8ff|1420bb0af927fc3cb28fb5f0af4d01dbe58d758be0898e82a2b9ef085bda6fe9|9776103d5b62d413",
+      "source_family": "rico_real",
+      "reason": "semantic_cluster_cap"
+    },
+    {
+      "id": "rico_train_48",
+      "cluster": "eb5fae75e28ca8ff|1420bb0af927fc3cb28fb5f0af4d01dbe58d758be0898e82a2b9ef085bda6fe9|9776103d5b62d413",
+      "source_family": "rico_real",
+      "reason": "semantic_cluster_cap"
+    }
+  ],
+  "producer_inputs": {
+    "programspec_path": "outputs/data/programspec/programs.jsonl",
+    "programspec_count": 16,
+    "programspec_seed": 0,
+    "language_contract": true,
+    "deconstruct_path": "src/slm_training/resources/deconstruct/pipeline.jsonl",
+    "render_path": "src/slm_training/resources/render/sample_program.json",
+    "frontier_artifacts": false,
+    "repairs_per_program": 0,
+    "edit_derivatives": false,
+    "scope_derivatives": false,
+    "design_md_contrastive": false
+  },
+  "mixture": {
+    "manifest": {
+      "mixture_id": "e230_diverse_judged_roots_v2-base",
+      "weights": {
+        "abstraction_ladder": 0.06,
+        "awwwards_real": 0.04,
+        "corruption_repair": 0.06,
+        "diffusion_corruption": 0.02,
+        "edit_trajectory": 0.06,
+        "frontier_described": 0.01,
+        "frontier_product": 0.01,
+        "frontier_semantic": 0.01,
+        "frontier_simplified": 0.01,
+        "frontier_user": 0.01,
+        "gold_correction": 0.015,
+        "human_curated": 0.08,
+        "human_feedback": 0.06,
+        "language_contract": 0.08,
+        "layout_augment": 0.025,
+        "namespace_augment": 0.015,
+        "programspec_generated": 0.12,
+        "prompt_paraphrase": 0.03,
+        "renderer_visual": 0.05,
+        "rico_real": 0.12,
+        "scope_contract": 0.02,
+        "self_distilled_repair": 0.02,
+        "self_distilled_success": 0.02,
+        "stress_adversarial": 0.025,
+        "web_distilled": 0.03
+      },
+      "task_weights": {
+        "generation": 0.2,
+        "noop_adversarial": 0.2,
+        "patch_edit": 0.2,
+        "repair_completion_inpaint": 0.2,
+        "state_behavior": 0.2
+      },
+      "notes": "P12 deterministic build; P11-owned weights.",
+      "version": 2
+    },
+    "hash": "93a8f6522b03eb05da55b1171d9aa320c8bbd1e13b57fd48efd24ed000bcaaf4",
+    "diagnostics": {
+      "records": 126,
+      "family_counts": {
+        "human_curated": 17,
+        "language_contract": 62,
+        "programspec_generated": 13,
+        "renderer_visual": 1,
+        "rico_real": 32,
+        "web_distilled": 1
+      },
+      "task_counts": {
+        "edit": 1,
+        "generation": 125
+      },
+      "task_group_counts": {
+        "generation": 125,
+        "patch_edit": 1
+      },
+      "unclassified_tasks": 0,
+      "unique_program_families": 77,
+      "unique_structural_families": 108,
+      "observed_component_counts": {
+        "Accordion": 2,
+        "AccordionItem": 3,
+        "AreaChart": 2,
+        "BarChart": 1,
+        "Button": 25,
+        "Buttons": 4,
+        "Callout": 3,
+        "Card": 111,
+        "CardHeader": 3,
+        "Carousel": 2,
+        "CheckBoxGroup": 2,
+        "CheckBoxItem": 3,
+        "CodeBlock": 2,
+        "Col": 3,
+        "DatePicker": 2,
+        "Form": 3,
+        "FormControl": 4,
+        "HorizontalBarChart": 1,
+        "Image": 2,
+        "ImageBlock": 5,
+        "ImageGallery": 2,
+        "Input": 8,
+        "Label": 2,
+        "LineChart": 2,
+        "MarkDownRenderer": 2,
+        "Modal": 3,
+        "PieChart": 2,
+        "Point": 3,
+        "RadarChart": 1,
+        "RadialChart": 1,
+        "RadioGroup": 2,
+        "RadioItem": 3,
+        "ScatterChart": 2,
+        "ScatterSeries": 3,
+        "Select": 2,
+        "SelectItem": 3,
+        "Separator": 2,
+        "Series": 6,
+        "SingleStackedBarChart": 1,
+        "Slice": 1,
+        "Slider": 2,
+        "Stack": 81,
+        "Steps": 2,
+        "StepsItem": 3,
+        "SwitchGroup": 2,
+        "SwitchItem": 4,
+        "TabItem": 3,
+        "Table": 2,
+        "Tabs": 2,
+        "Tag": 2,
+        "TagBlock": 2,
+        "TextArea": 2,
+        "TextCallout": 2,
+        "TextContent": 266
+      },
+      "configured_but_absent_families": [
+        "abstraction_ladder",
+        "awwwards_real",
+        "corruption_repair",
+        "diffusion_corruption",
+        "edit_trajectory",
+        "frontier_described",
+        "frontier_product",
+        "frontier_semantic",
+        "frontier_simplified",
+        "frontier_user",
+        "gold_correction",
+        "human_feedback",
+        "layout_augment",
+        "namespace_augment",
+        "prompt_paraphrase",
+        "scope_contract",
+        "self_distilled_repair",
+        "self_distilled_success",
+        "stress_adversarial"
+      ],
+      "present_but_unweighted_families": []
+    }
+  },
+  "mean_quality_score": 0.9937,
+  "placeholder_vocab_size": 196,
+  "with_design_md": 65,
+  "component_histogram": {
+    "Accordion": 2,
+    "AccordionItem": 3,
+    "AreaChart": 2,
+    "BarChart": 1,
+    "Button": 25,
+    "Buttons": 4,
+    "Callout": 3,
+    "Card": 111,
+    "CardHeader": 3,
+    "Carousel": 2,
+    "CheckBoxGroup": 2,
+    "CheckBoxItem": 3,
+    "CodeBlock": 2,
+    "Col": 3,
+    "DatePicker": 2,
+    "Form": 3,
+    "FormControl": 4,
+    "HorizontalBarChart": 1,
+    "Image": 2,
+    "ImageBlock": 5,
+    "ImageGallery": 2,
+    "Input": 8,
+    "Label": 2,
+    "LineChart": 2,
+    "MarkDownRenderer": 2,
+    "Modal": 3,
+    "PieChart": 2,
+    "Point": 3,
+    "RadarChart": 1,
+    "RadialChart": 1,
+    "RadioGroup": 2,
+    "RadioItem": 3,
+    "ScatterChart": 2,
+    "ScatterSeries": 3,
+    "Select": 2,
+    "SelectItem": 3,
+    "Separator": 2,
+    "Series": 6,
+    "SingleStackedBarChart": 1,
+    "Slice": 1,
+    "Slider": 2,
+    "Stack": 81,
+    "Steps": 2,
+    "StepsItem": 3,
+    "SwitchGroup": 2,
+    "SwitchItem": 4,
+    "TabItem": 3,
+    "Table": 2,
+    "Tabs": 2,
+    "Tag": 2,
+    "TagBlock": 2,
+    "TextArea": 2,
+    "TextCallout": 2,
+    "TextContent": 266
+  },
+  "built_at": "2026-07-16T16:30:33.716638+00:00"
+}
