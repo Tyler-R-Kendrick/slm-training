@@ -23,6 +23,13 @@ fidelity **0.0**, structural similarity **0.0**, reward **0.0**, and one decode
 timeout at 5,001 ms. This is a valid negative diagnostic result, not evidence
 that the model passed or that the parser is wrong.
 
+A later completed E121c matrix artifact emitted all five suite rows before the
+same CPU budget was exhausted. It recorded parse rates from 0.667 to 1.0 and
+structural similarity from 0.3512 to 0.6529, but placeholder fidelity was
+**0.0 in every suite**, so the ship gate still failed. The artifact is kept as
+durable negative evidence at
+`quality-matrix-results-iter-e121c-e53-judged-20260715.json`.
+
 During the run, evaluation exposed and fixed three harness defects: a duplicate
 `--output-tokenizer` CLI registration, a missing `(predictions, evidence)` tuple
 return from the `generate_with_stats` path, and silent replacement of an
