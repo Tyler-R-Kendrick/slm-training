@@ -403,6 +403,18 @@ def test_topology_composite_keeps_quality_structure_trace_and_efficiency(
                     "production_head_accuracy": 0.7,
                     "arity_head_accuracy": 0.6,
                     "critic_ece": 0.1,
+                    "scope_kind": "statement",
+                    "scope_family": "local_repair",
+                    "scope_gate_accuracy": 0.75,
+                    "scope_summary_definitions_mae": 0.1,
+                    "scope_summary_uses_mae": 0.2,
+                    "scope_summary_slots_mae": 0.3,
+                    "scope_summary_realized_size_mae": 0.4,
+                    "failure_cone_tp": 2,
+                    "failure_cone_fp": 1,
+                    "failure_cone_fn": 2,
+                    "failure_cone_predicted_size": 3,
+                    "failure_cone_target_size": 4,
                 }
                 for _ in records
             ]
@@ -421,3 +433,9 @@ def test_topology_composite_keeps_quality_structure_trace_and_efficiency(
     assert metrics["topology_efficiency_score"] == 0.75
     assert 0.0 < metrics["topology_composite"] <= 1.0
     assert metrics["topology_telemetry"]["production_head_accuracy"] == 0.7
+    scope_metrics = metrics["scope_contract_metrics"]
+    assert scope_metrics["sample_count"] == 1
+    assert scope_metrics["scope_gate_accuracy"] == 0.75
+    assert abs(scope_metrics["failure_cone_precision"] - 2 / 3) < 1e-9
+    assert scope_metrics["failure_cone_recall"] == 0.5
+    assert scope_metrics["by_scope_kind"]["statement"]["sample_count"] == 1

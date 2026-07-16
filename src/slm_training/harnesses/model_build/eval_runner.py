@@ -39,6 +39,60 @@ def _nearest_rank(sorted_values: list[float], fraction: float) -> float | None:
     return sorted_values[index]
 
 
+def _aggregate_scope_contract_metrics(
+    rows: list[dict[str, Any]],
+) -> dict[str, Any] | None:
+    scoped = [row for row in rows if "scope_kind" in row]
+    if not scoped:
+        return None
+
+    mean_keys = (
+        "scope_gate_accuracy",
+        "scope_summary_definitions_mae",
+        "scope_summary_uses_mae",
+        "scope_summary_slots_mae",
+        "scope_summary_realized_size_mae",
+        "failure_cone_predicted_size",
+        "failure_cone_target_size",
+    )
+
+    def summarize(group: list[dict[str, Any]]) -> dict[str, Any]:
+        summary: dict[str, Any] = {"sample_count": len(group)}
+        for key in mean_keys:
+            values = [float(row[key]) for row in group if isinstance(row.get(key), (int, float))]
+            if values:
+                summary[f"{key}_mean" if key.endswith("_size") else key] = sum(values) / len(values)
+        tp = sum(int(row.get("failure_cone_tp", 0)) for row in group)
+        fp = sum(int(row.get("failure_cone_fp", 0)) for row in group)
+        fn = sum(int(row.get("failure_cone_fn", 0)) for row in group)
+        precision = tp / (tp + fp) if tp + fp else None
+        recall = tp / (tp + fn) if tp + fn else None
+        summary.update(
+            {
+                "failure_cone_precision": precision,
+                "failure_cone_recall": recall,
+                "failure_cone_f1": (
+                    2.0 * precision * recall / (precision + recall)
+                    if precision is not None and recall is not None and precision + recall
+                    else None
+                ),
+            }
+        )
+        return summary
+
+    result = summarize(scoped)
+    for field, output_key in (
+        ("scope_kind", "by_scope_kind"),
+        ("scope_family", "by_scope_family"),
+    ):
+        labels = sorted({str(row[field]) for row in scoped})
+        result[output_key] = {
+            label: summarize([row for row in scoped if str(row[field]) == label])
+            for label in labels
+        }
+    return result
+
+
 def _sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -727,6 +781,9 @@ def evaluate(
 
     metrics["ast_node_f1"] = _available_mean("ast_node_f1")
     metrics["ast_edge_f1"] = _available_mean("ast_edge_f1")
+    scope_contract_metrics = _aggregate_scope_contract_metrics(topology_evidence)
+    if scope_contract_metrics is not None:
+        metrics["scope_contract_metrics"] = scope_contract_metrics
     if topology_evidence and all(
         all(
             key in row

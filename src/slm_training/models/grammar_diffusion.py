@@ -1281,7 +1281,7 @@ class GrammarDiffusionModel(nn.Module):
     @torch.inference_mode()
     def score_topology_targets(
         self, records: list[ExampleRecord]
-    ) -> list[dict[str, float]]:
+    ) -> list[dict[str, Any]]:
         """Teacher-forced topology-head metrics, kept separate from generation."""
         if not records:
             return []
@@ -1388,11 +1388,11 @@ class GrammarDiffusionModel(nn.Module):
             arity_logits,
             critic,
             _confidence,
-            _scope_summary,
-            _scope_gate,
-            _failure_cone,
+            scope_summary,
+            scope_gate,
+            failure_cone,
         ) = outputs
-        evidence: list[dict[str, float]] = []
+        evidence: list[dict[str, Any]] = []
         for batch_index, row in enumerate(rows):
             width = len(row)
             action_gold = torch.tensor(
@@ -1446,15 +1446,70 @@ class GrammarDiffusionModel(nn.Module):
             critic_ece = float(
                 (critic[batch_index, :width] - critic_gold).abs().mean().item()
             )
-            evidence.append(
-                {
-                    "action_macro_f1": sum(class_f1) / max(1, len(class_f1)),
-                    "production_head_accuracy": production_accuracy,
-                    "arity_head_accuracy": arity_accuracy,
-                    "critic_ece": critic_ece,
-                    "production_oov_rate": oov_rates[batch_index],
-                }
+            row_evidence: dict[str, Any] = {
+                "action_macro_f1": sum(class_f1) / max(1, len(class_f1)),
+                "production_head_accuracy": production_accuracy,
+                "arity_head_accuracy": arity_accuracy,
+                "critic_ece": critic_ece,
+                "production_oov_rate": oov_rates[batch_index],
+            }
+            contract = (records[batch_index].meta or {}).get("scope_contract")
+            scoped = torch.tensor(
+                [node.scope_bucket > 0 for node in row], device=self.device_name
             )
+            if (
+                isinstance(contract, dict)
+                and scoped.any()
+                and scope_summary is not None
+                and scope_gate is not None
+            ):
+                summary_gold = torch.tensor(
+                    [node.scope_summary_target for node in row],
+                    device=self.device_name,
+                )
+                summary_mae = (
+                    scope_summary[batch_index, :width][scoped]
+                    .sub(summary_gold[scoped])
+                    .abs()
+                    .mean(0)
+                )
+                gate_gold = torch.tensor(
+                    [node.scope_gate_target for node in row],
+                    device=self.device_name,
+                )
+                gate_pred = scope_gate[batch_index, :width][scoped].ge(0.5)
+                row_evidence.update(
+                    {
+                        "scope_kind": str(contract.get("kind") or "unknown"),
+                        "scope_family": str(
+                            (records[batch_index].meta or {}).get("scope_family")
+                            or "unknown"
+                        ),
+                        "scope_gate_accuracy": float(
+                            gate_pred.eq(gate_gold[scoped].ge(0.5)).float().mean().item()
+                        ),
+                        "scope_summary_definitions_mae": float(summary_mae[0].item()),
+                        "scope_summary_uses_mae": float(summary_mae[1].item()),
+                        "scope_summary_slots_mae": float(summary_mae[2].item()),
+                        "scope_summary_realized_size_mae": float(summary_mae[3].item()),
+                    }
+                )
+                if failure_cone is not None:
+                    cone_gold = torch.tensor(
+                        [node.failure_cone_target for node in row],
+                        device=self.device_name,
+                    )[scoped].ge(0.5)
+                    cone_pred = failure_cone[batch_index, :width][scoped].ge(0.5)
+                    row_evidence.update(
+                        {
+                            "failure_cone_tp": int((cone_pred & cone_gold).sum().item()),
+                            "failure_cone_fp": int((cone_pred & ~cone_gold).sum().item()),
+                            "failure_cone_fn": int((~cone_pred & cone_gold).sum().item()),
+                            "failure_cone_predicted_size": int(cone_pred.sum().item()),
+                            "failure_cone_target_size": int(cone_gold.sum().item()),
+                        }
+                    )
+            evidence.append(row_evidence)
         return evidence
 
     def _legal_ids(self, node_type: str, *, leaf_only: bool = False) -> list[int]:

@@ -479,6 +479,8 @@ negative results count; undocumented or JSON-only runs do not.
 X16-X21 are registered and runnable but deliberately **unrun**. They must not be
 added to `grammar-matrix-results.json` until a real matrix invocation has emitted
 AgentEvals/AgentV evidence and both durable JSON and measured markdown.
+Their v1 scope diagnostics are `scope_contract_metrics` overall and grouped by
+scope kind/family; they do not implement parser-exit or identity-level symbol F1.
 
 Artifacts: `outputs/runs/grammar_matrix_summary.json`,
 [`docs/design/grammar-matrix-results.json`](grammar-matrix-results.json),
