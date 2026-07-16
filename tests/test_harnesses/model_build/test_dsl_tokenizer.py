@@ -264,6 +264,25 @@ def test_fixture_seeds_round_trip(tok: DSLNativeTokenizer) -> None:
         assert "Stack" in text or "Card" in text or "TextContent" in text or "Button" in text
 
 
+def test_canonicalize_is_idempotent_per_example(tok: DSLNativeTokenizer) -> None:
+    """B2 (SLM-22): the decode collapse is a fixed point per fresh symbol table."""
+    path = Path("src/slm_training/resources/train_seeds.jsonl")
+    if not path.is_file():
+        pytest.skip("fixtures missing")
+    import json
+
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        src = json.loads(line)["openui"]
+        first = tok.canonicalize(src, SymbolTable())
+        second = tok.canonicalize(first, SymbolTable())
+        assert second == first
+        assert tok.encode(first, table=SymbolTable()) == tok.encode(
+            second, table=SymbolTable()
+        )
+
+
 def test_compositional_still_longer_on_placeholders() -> None:
     """Sanity: v2 compositional tokenization still spells placeholders."""
     tokens = tokenize_text('TextContent(":smoke.hero.title")')
