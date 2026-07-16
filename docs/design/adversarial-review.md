@@ -52,15 +52,21 @@ Rubber-duck / red-team audit of what shipped under `twotower_v1_ship` and the su
 
 All evaluated suites must be checked. Defaults (CLI `--ship-gates`):
 
-| Suite | meaningful program | structural | placeholder_fidelity | reward |
-| --- | --- | --- | --- | --- |
-| smoke | ≥ 0.66 | ≥ 0.35 | ≥ 0.25 | ≥ 0.30 |
-| held_out | ≥ 0.40 | ≥ 0.30 | ≥ 0.15 | — |
-| adversarial | ≥ 0.25 | ≥ 0.25 | — | — |
-| ood | ≥ 0.25 | ≥ 0.25 | — | — |
-| rico_held | ≥ 0.10 | ≥ 0.20 | — | — |
+| Suite | meaningful program | structural | component recall | placeholder_fidelity | reward |
+| --- | --- | --- | --- | --- | --- |
+| smoke | ≥ 0.66 | ≥ 0.35 | ≥ 0.35 | ≥ 0.25 | ≥ 0.30 |
+| held_out | ≥ 0.40 | ≥ 0.30 | ≥ 0.30 | ≥ 0.15 | — |
+| adversarial | ≥ 0.25 | ≥ 0.25 | ≥ 0.20 | — | — |
+| ood | ≥ 0.25 | ≥ 0.25 | ≥ 0.20 | — | — |
+| rico_held | ≥ 0.10 | ≥ 0.20 | ≥ 0.15 | — | — |
 
 Smoke is a **canary**, not proof of generalization. Ship pass requires held_out + adversarial + ood + rico_held bars as well.
+
+`component_type_recall` is the **semantic-density floor** (E2): the fraction of
+the gold's component types the prediction recovers. It collapses toward 0 for
+the trivial/empty program, so a compression- or decode-driven change cannot
+green these gates with shorter-but-emptier output on syntax alone. The floors
+sit at or below the structural bars and only make the policy stricter.
 
 `parse_rate` now means syntactic OpenUI parse and is reported separately.
 `meaningful_program_rate` is the learned-quality gate above; historical

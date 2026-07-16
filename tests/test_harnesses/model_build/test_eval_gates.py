@@ -139,6 +139,50 @@ def test_ship_gates_fail_when_hard_suites_miss() -> None:
     assert set(DEFAULT_SHIP_GATES) >= {"smoke", "rico_held"}
 
 
+def _full_suite_metrics(**overrides: float) -> dict[str, dict[str, float]]:
+    """Every policy suite passing every default bar, before overrides."""
+    base = {
+        suite: {
+            "n": 32,
+            "meaningful_program_rate": 0.9,
+            "syntax_parse_rate": 1.0,
+            "structural_similarity": 0.9,
+            "component_type_recall": 0.9,
+            "placeholder_fidelity": 0.9,
+            "reward_score": 0.9,
+        }
+        for suite in DEFAULT_SHIP_GATES
+    }
+    for suite in base:
+        base[suite].update(overrides)
+    return base
+
+
+def test_semantic_density_floor_present_for_every_suite() -> None:
+    # E2: the density floor must guard every policy suite, not just smoke.
+    for suite, mins in DEFAULT_SHIP_GATES.items():
+        assert "component_type_recall" in mins, suite
+        assert mins["component_type_recall"] <= mins["structural_similarity"]
+
+
+def test_ship_gates_fail_on_shorter_but_emptier_output() -> None:
+    # Valid + structural + high placeholder/reward, but component recall
+    # collapses (the shorter-but-emptier failure mode) → gates must fail.
+    suites = _full_suite_metrics(component_type_recall=0.0)
+    result = evaluate_ship_gates(suites)
+    assert result["pass"] is False
+    assert any(":component_type_recall" in f for f in result["failures"])
+    # The metric is surfaced in `actual` for transparency.
+    assert result["actual"]["smoke"]["component_type_recall"] == 0.0
+
+
+def test_ship_gates_pass_when_density_met() -> None:
+    # Sanity: the density floor does not block a genuinely populated run.
+    result = evaluate_ship_gates(_full_suite_metrics())
+    assert result["pass"] is True
+    assert not result["failures"]
+
+
 def test_evaluate_suites_scoreboard(tmp_path: Path) -> None:
     train_dir = tmp_path / "train"
     test_dir = tmp_path / "test"
