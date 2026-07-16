@@ -81,6 +81,7 @@ summary and the full card whenever a checkpoint is created or promoted.
 | E237 detached topology | `e237-detached-topology-32step` | `outputs/autoresearch/e237-detached-topology/runs/…` (local) | Detaching already-frozen context is a no-op and exactly reproduces E236; 12 thresholds fail — rejected, not ship |
 | E238 binder arity (invalidated) | `e238-binder-arity-32step` | `outputs/autoresearch/e238-binder-arity/runs/…` (local) | Optional-head RNG shifted matched training draws; ten thresholds fail and the run is confounded — not ship |
 | E239 isolated binder arity | `e239d-binder-arity-fully-isolated-32step` | `outputs/autoresearch/e239-binder-arity-corrected/runs/…` (local) | 104/104 shared tensors match the control; 29 changed choices do not produce meaningful programs; 11 thresholds fail — rejected, not ship |
+| E249 exact-event CE plus margin | `qx_e249_local_ce_margin` | `outputs/autoresearch/e249-local-ce-margin/runs/…` (local) | Held-out lexical wins improve sharply, but structure/reward regress on every suite and AgentV is 0/5 — rejected, not ship |
 | Matrix honest champion | V6 E53 family | `outputs/runs/` + matrix docs | Scratch + limited `rico_held` — not production HF ship |
 | P13 matched E50 controls | fixture + integrated E50 | `/tmp/slm17-e50-*-honest/` (local scratch) | Integrated fidelity +0.04 held / +0.0333 RICO; parse 0.0, not ship |
 | Frozen X2 baseline | `gx_x2_codec` seeds 0/1/2 | `/tmp/slm-training-fixed-baseline/outputs/topology_baseline/` | Fixed-canvas comparison scored zero on all suites; not ship |

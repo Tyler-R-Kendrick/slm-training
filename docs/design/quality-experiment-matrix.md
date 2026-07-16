@@ -1098,7 +1098,7 @@ split contains at least one same-state-verified multi-good or multi-bad event.
 | ID | Isolated lever | Required diagnostics | Status |
 | --- | --- | --- | --- |
 | E248 | Unchanged parent control | Standard five-suite scoreboard | measured; matched control; 4 gates failed |
-| E249 | Exact-event CE plus margin | Event win/margin and per-kind recurrence | ready; immutable events mined; training unrun |
+| E249 | Exact-event CE plus margin | Event win/margin and per-kind recurrence | measured; lexical objective generalized; semantic quality regressed; rejected |
 | E250 | Bad-token unlikelihood | Bad probability mass and held-out recurrence | proposed/unrun |
 | E251 | Single-pair clipped FTPO | Active weight, chosen/margin win, drift | proposed/unrun |
 | E252 | Verifier-backed set FTPO | Set coverage, evidence source, held-out recurrence | proposed/unrun |
@@ -1138,6 +1138,15 @@ corpus. These events certify grammar legality, not semantic preference. E252-E25
 remain fail-closed because no counterfactual set-valued evidence exists. Full
 telemetry and diagnostics:
 [iter-e249-exact-event-mining-20260716.md](iter-e249-exact-event-mining-20260716.md).
+
+E249 then moved all 319 held-out constraint shadows strongly in the requested
+direction (chosen win `0→0.7649`, margin win `0→0.6489`) while structural
+similarity and reward regressed on every suite. Syntax remained 1.0, eight ship
+thresholds failed, and AgentV passed 0/5. This falsifies constraint shadows as
+semantic preference labels: keep their legality guarantee in deterministic
+decoding and require counterfactual semantic evidence before another local
+preference train. Full evidence:
+[iter-e249-local-ce-margin-20260716.md](iter-e249-local-ce-margin-20260716.md).
 
 ## Verifier-guided repair (mixed status)
 
