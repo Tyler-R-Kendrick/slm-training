@@ -157,6 +157,13 @@ def _normalize_record(record: ExampleRecord) -> ExampleRecord:
         out = attach_default_design_md(out)
     except Exception:  # noqa: BLE001
         pass
+    from slm_training.data.quality import independent_judge
+
+    # Feed the deterministic prompt/output judge into the authoritative
+    # verification context; otherwise G11 is recorded as "skip" and the
+    # training admission gate cannot distinguish judged from unjudged rows.
+    judge = independent_judge(out)
+    out.meta["independent_judge_passed"] = bool(judge["ok"])
     # Re-run F2 after F1 projection even when a producer supplied an earlier stamp.
     return stamp_record(out)
 
