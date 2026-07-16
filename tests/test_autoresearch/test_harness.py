@@ -1101,6 +1101,8 @@ def test_compile_resolves_canonical_published_train_version() -> None:
             schema_in_context=True,
             slot_contract_in_context=True,
             design_md_context=False,
+            local_files_only=True,
+            sync_checkpoints=False,
         )
     )
 
@@ -1115,6 +1117,8 @@ def test_compile_resolves_canonical_published_train_version() -> None:
     assert "--schema-in-context" in commands[0]
     assert "--slot-contract-in-context" in commands[0]
     assert "--no-design-md-context" in commands[0]
+    assert "--local-files-only" in commands[0]
+    assert "--no-sync-checkpoints" in commands[0]
     assert commands[-1][commands[-1].index("--compiler-decode-mode") + 1] == "tree"
 
 

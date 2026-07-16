@@ -34,6 +34,7 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "design_md_context",
         "derive_from",
         "lr",
+        "local_files_only",
         "max_records_per_parent",
         "min_quality_score",
         "mixture_weights",
@@ -41,6 +42,7 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "seed",
         "schema_in_context",
         "slot_contract_in_context",
+        "sync_checkpoints",
         "steps",
         "synthesizer",
         "train_version",
@@ -222,6 +224,8 @@ class ExperimentKnobs(StrictModel):
     schema_in_context: bool | None = None
     slot_contract_in_context: bool | None = None
     design_md_context: bool | None = None
+    local_files_only: bool | None = None
+    sync_checkpoints: bool | None = None
     topology_actions: bool | None = None
     topology_structural_embeddings: bool | None = None
     topology_heterogeneous_noise: bool | None = None

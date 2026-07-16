@@ -345,7 +345,9 @@ typed mixture override. Matched TwoTower studies can also pin lexer/compositiona
 output, compiler-alignment weight and stratification, compiler decode mode,
 schema/slot context, and DESIGN.md context through typed knobs; the compiler
 passes the shared settings to train and evaluation rather than relying on CLI
-defaults.
+defaults. Cache locality and checkpoint synchronization are typed as well;
+CPU/scratch candidates must set `sync_checkpoints=false` explicitly when their
+checkpoint is diagnostic-only.
 
 ## Researcher improvement
 

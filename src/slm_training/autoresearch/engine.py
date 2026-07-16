@@ -308,6 +308,10 @@ def compile_commands(
         train.extend(["--train-version", knobs.train_version])
     else:
         train.extend(["--train-dir", str(train_dir)])
+    if knobs.local_files_only:
+        train.append("--local-files-only")
+    if knobs.sync_checkpoints is not None:
+        train.append("--sync-checkpoints" if knobs.sync_checkpoints else "--no-sync-checkpoints")
     if campaign.track == "grammar_diffusion":
         train.extend(["--model", "grammar_diffusion"])
         boolean_knobs = {
@@ -409,6 +413,8 @@ def compile_commands(
     if campaign.track == "grammar_diffusion":
         commands[-1].extend(["--model", "grammar_diffusion"])
     elif campaign.track == "twotower":
+        if knobs.local_files_only:
+            evaluate.append("--local-files-only")
         if knobs.output_tokenizer:
             evaluate.extend(["--output-tokenizer", knobs.output_tokenizer])
         if knobs.compiler_decode_mode:
