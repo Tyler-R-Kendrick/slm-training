@@ -237,6 +237,39 @@ def test_research_evidence_and_autoresearch_run_are_current(tmp_path) -> None:
     assert current["parse"] == 0.25
 
 
+def test_research_evidence_accepts_nested_train_and_evaluation(tmp_path) -> None:
+    design = tmp_path / "docs" / "design"
+    design.mkdir(parents=True)
+    suites = {"smoke": {"n": 3, "meaningful_program_rate": 1 / 3}}
+    (design / "iter-e230-diverse-roots-20260716.json").write_text(
+        json.dumps(
+            {
+                "campaign": "E230 diverse judged generation roots",
+                "date": "2026-07-16",
+                "train": {
+                    "run_id": "e230-diverse-roots-32step",
+                    "path": "outputs/autoresearch/e230/runs/e230-diverse-roots-32step",
+                    "trace_id": "b" * 32,
+                },
+                "evaluation": {
+                    "suites": suites,
+                    "failed_gates": 4,
+                    "agentv": {"total": 5, "passed": 1},
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = Readers(tmp_path).scoreboard("research")["results"][0]
+    assert result["run_id"] == "e230-diverse-roots-32step"
+    assert result["pass"] is False
+    assert result["suites"] == suites
+    assert result["agentv"] == {"total": 5, "passed": 1}
+    assert result["trace_id"] == "b" * 32
+    assert result["run_dir"].endswith("e230-diverse-roots-32step")
+
+
 def test_rl_traces_are_paginated_and_malformed_rows_are_skipped(tmp_path) -> None:
     path = tmp_path / "outputs" / "runs" / "molt-smoke" / "rl_traces.jsonl"
     path.parent.mkdir(parents=True)
