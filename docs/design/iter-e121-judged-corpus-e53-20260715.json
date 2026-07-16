@@ -1,0 +1,65 @@
+{
+  "experiment": "E121",
+  "date": "2026-07-16",
+  "kind": "judged-corpus-e53-scratch-iteration",
+  "honesty": "diagnostic subset; CPU scratch checkpoint; not a ship claim",
+  "train": {
+    "run_id": "qx_e53_honest_v5_champion",
+    "train_dir": "src/slm_training/resources/train_data/remediated_roots_judged",
+    "record_count": 405,
+    "steps": 8,
+    "trust_gate_steps": 30,
+    "batch_size": 4,
+    "device": "cpu",
+    "context_backend": "scratch",
+    "output_tokenizer": "lexer",
+    "last_loss": 92.6578598022461,
+    "weighted_nll": 31.142864597131606,
+    "checkpoint": "outputs/runs/iter-e121d-e53-judged-20260715/qx_e53_honest_v5_champion/checkpoints/last.pt",
+    "checkpoint_sha256": "79ec3b36752d3afa40d6a9093a5a994fef5bc126d6bd2ef657b454a06e59e6f5",
+    "checkpoint_sync": "disabled for bounded scratch diagnostic"
+  },
+  "evaluation": {
+    "full_matrix": {
+      "suites": ["smoke", "held_out", "adversarial", "ood", "rico_held"],
+      "rico_limit": 3,
+      "eval_limit": 3,
+      "status": "timed_out",
+      "failure": "CPU constrained E53 best_of_n=4 evaluation exceeded the 120 second diagnostic wall limit before suite rows were written"
+    },
+    "smoke_diagnostic": {
+      "suite": "smoke",
+      "n": 1,
+      "gen_steps": 2,
+      "best_of_n": 1,
+      "decode_timeout_seconds": 5,
+      "skip_exact_stream_probe": true,
+      "verify_chosen_only": true,
+      "parse_rate": 0.0,
+      "placeholder_fidelity": 0.0,
+      "structural_similarity": 0.0,
+      "reward_score": 0.0,
+      "decode_timeout_count": 1,
+      "latency_ms_p50": 5001.01,
+      "failure_breakdown": {"parse_error": 1},
+      "prediction": "",
+      "output": "outputs/runs/iter-e121d-e53-judged-20260715/iter-e121d-smoke-timeout-diagnostic/eval_smoke.json",
+      "agentv": "outputs/runs/iter-e121d-e53-judged-20260715/iter-e121d-smoke-timeout-diagnostic/agentv/openui-model-ship-gates-2026-07-16t00-42-40-127838-00-00.eval.jsonl"
+    }
+  },
+  "telemetry": {
+    "train_telemetry": "outputs/runs/iter-e121d-e53-judged-20260715/qx_e53_honest_v5_champion/train_telemetry.json",
+    "total_ms": 25993.296,
+    "dominant_phase": "loss_suites",
+    "dominant_phase_pct": 44.35,
+    "forward_pct": 15.58,
+    "backward_pct": 15.99,
+    "agentv_loss_eval": "outputs/runs/iter-e121d-e53-judged-20260715/qx_e53_honest_v5_champion/agentv/openui-loss-suites-loss-suites-step-8.eval.jsonl"
+  },
+  "harness_fixes": [
+    "Explicit --train-dir now wins over the stale default curriculum directory for modern curriculum rows.",
+    "evaluate_model duplicate --output-tokenizer registration removed.",
+    "generate_with_stats evaluation path now returns predictions and evidence as a tuple."
+  ],
+  "decision": "Do not promote. The judged corpus was used and persisted telemetry is valid, but the scratch model timed out under constrained generation and produced no valid smoke program. Next iteration should isolate decode latency or use a longer training run before any ship claim."
+}

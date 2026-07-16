@@ -26,6 +26,7 @@ from slm_training.harnesses.model_build.ship_gates import (
 )
 from slm_training.harnesses.preference import composite_reward
 from slm_training.dsl.production_codec import ProductionCodec
+from slm_training.models.decode_stats import DecodeStats
 
 
 def test_structural_similarity_identical() -> None:
@@ -197,6 +198,40 @@ def test_evaluate_suites_scoreboard(tmp_path: Path) -> None:
     assert loaded["checkpoint_source"] == "checkpoint"
     assert loaded["suites"]["smoke"]["checkpoint_sha256"] == loaded["checkpoint_sha256"]
     assert (tmp_path / "runs" / "gates" / "scoreboard.json").exists()
+
+
+def test_evaluate_supports_single_record_generation_with_stats(tmp_path: Path) -> None:
+    train_dir = tmp_path / "train"
+    test_dir = tmp_path / "test"
+    train_dir.mkdir()
+    (test_dir / "suites" / "smoke").mkdir(parents=True)
+    gold = 'root = TextContent(":copy.value")'
+    record = ExampleRecord(
+        id="stats-1",
+        prompt="Copy value",
+        openui=gold,
+        split="smoke",
+        meta={"suite": "smoke"},
+    )
+    write_jsonl(train_dir / "records.jsonl", [record])
+    write_jsonl(test_dir / "suites" / "smoke" / "records.jsonl", [record])
+
+    class StatsModel:
+        def generate_with_stats(self, prompt: str) -> tuple[str, DecodeStats]:
+            assert prompt == "Copy value"
+            return gold, DecodeStats(tokens_emitted=1)
+
+    config = ModelBuildConfig(
+        train_dir=train_dir,
+        test_dir=test_dir,
+        suite="smoke",
+        run_root=tmp_path / "runs",
+        run_id="stats-generation",
+        model_name="twotower",
+    )
+    metrics = evaluate(config, model=StatsModel(), publish_agentv=False)
+    assert metrics["parse_rate"] == 1.0
+    assert metrics["decode_stats"]["tokens_emitted_sum"] == 1.0
 
 
 def test_evaluate_uses_production_request_not_gold_record(tmp_path: Path) -> None:
