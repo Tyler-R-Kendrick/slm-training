@@ -1,0 +1,16 @@
+{
+  "experiment_id": "E125",
+  "date": "2026-07-15",
+  "kind": "decode_profile",
+  "parent": "E124",
+  "checkpoint": "outputs/runs/iter-e123b-judged-20260715/e123_judged_32step_b/checkpoints/last.pt",
+  "device": "cpu",
+  "prompt_count": 1,
+  "variants": [
+    {"name": "copy_probes", "grammar_copy_probes": true, "seconds_per_generation": 12.3434, "dfa_syncs": 585, "pick_ms": 2947.431, "dfa_sync_ms": 166.278, "output_parseable": false},
+    {"name": "no_copy_probes", "grammar_copy_probes": false, "seconds_per_generation": 11.8646, "dfa_syncs": 574, "pick_ms": 2722.751, "dfa_sync_ms": 172.638, "output_parseable": false}
+  ],
+  "finding": "Disabling copy-based probes improves this one-call profile by about 4 percent, but both outputs remain invalid and the absolute latency remains high.",
+  "decision": "Keep copy probes enabled by default; the marginal result does not justify a serving default change. Retain the profile switch for future decoder work.",
+  "honesty": "diagnostic_only; no ship gate claim"
+}
