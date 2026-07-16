@@ -42,6 +42,8 @@ class DecodeStats:
     binder_component_plan_choice_changes: int = 0
     binder_topology_applications: int = 0
     binder_topology_choice_changes: int = 0
+    binder_arity_applications: int = 0
+    binder_arity_choice_changes: int = 0
     forced_spans: int = 0
     forced_tokens: int = 0
     trie_nodes: int = 0
@@ -169,6 +171,8 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "binder_component_plan_choice_changes",
         "binder_topology_applications",
         "binder_topology_choice_changes",
+        "binder_arity_applications",
+        "binder_arity_choice_changes",
         "forced_spans",
         "forced_tokens",
         "trie_nodes",

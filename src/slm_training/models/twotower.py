@@ -197,6 +197,8 @@ class TwoTowerConfig:
     binder_component_plan_decode_weight: float = 0.0
     binder_topology_loss_weight: float = 0.0
     binder_topology_decode_weight: float = 0.0
+    binder_arity_loss_weight: float = 0.0
+    binder_arity_decode_weight: float = 0.0
     symbol_boundary_loss_weight: float = 0.0
     # Extra CE weight on gold placeholder token positions (fidelity signal).
     fidelity_loss_weight: float = 0.5
@@ -570,6 +572,20 @@ class TwoTowerModel(nn.Module):
                 len(binder_plan_ids) * len(binder_plan_ids),
             )
             if binder_topology_enabled and binder_plan_ids
+            else None
+        )
+        binder_arity_enabled = (
+            float(getattr(self.config, "binder_arity_loss_weight", 0.0) or 0.0)
+            > 0.0
+            or float(getattr(self.config, "binder_arity_decode_weight", 0.0) or 0.0)
+            > 0.0
+        )
+        self.binder_arity_head = (
+            nn.Linear(
+                self.config.d_model,
+                len(binder_plan_ids) * (len(binder_plan_ids) + 1),
+            )
+            if binder_arity_enabled and binder_plan_ids
             else None
         )
         # E31 BackPlay-lite: plug-in trust head over denoiser hiddens.
@@ -1795,6 +1811,52 @@ class TwoTowerModel(nn.Module):
                 }
             )
 
+        binder_arity_w = float(
+            getattr(self.config, "binder_arity_loss_weight", 0.0) or 0.0
+        )
+        if binder_arity_w > 0.0 and self.binder_arity_head is not None:
+            from slm_training.dsl.grammar.fastpath.compiler_draft import (
+                binder_reference_arities,
+            )
+
+            binder_ids = self._binder_component_token_ids()
+            binder_index = {token_id: index for index, token_id in enumerate(binder_ids)}
+            arity_logits = self.binder_arity_head(
+                self._pool_context(ctx, ctx_pad).detach()
+            ).view(len(batch), len(binder_ids), len(binder_ids) + 1)
+            arity_losses: list[torch.Tensor] = []
+            arity_hits: list[torch.Tensor] = []
+            for row in range(len(batch)):
+                target_key = tuple(int(token_id) for token_id in target_ids[row].tolist())
+                for binder_id, count in binder_reference_arities(
+                    self.tokenizer, target_key
+                ):
+                    binder = binder_index.get(binder_id)
+                    if binder is None:
+                        continue
+                    target = min(int(count), len(binder_ids))
+                    scores = arity_logits[row, binder]
+                    target_tensor = torch.as_tensor([target], device=ctx.device)
+                    arity_losses.append(F.cross_entropy(scores[None, :], target_tensor))
+                    arity_hits.append(scores.argmax().eq(target_tensor[0]).float())
+            arity_loss = (
+                torch.stack(arity_losses).mean()
+                if arity_losses
+                else arity_logits.sum() * 0.0
+            )
+            mask_loss = mask_loss + binder_arity_w * arity_loss
+            self.last_training_metrics.update(
+                {
+                    "binder_arity_loss": float(arity_loss.detach().cpu()),
+                    "binder_arity_accuracy": float(
+                        torch.stack(arity_hits).mean().detach().cpu()
+                        if arity_hits
+                        else 0.0
+                    ),
+                    "binder_arity_rows": len(arity_losses),
+                }
+            )
+
         edge_alignment_w = float(
             getattr(self.config, "component_edge_alignment_loss_weight", 0.0)
             or 0.0
@@ -2834,6 +2896,50 @@ class TwoTowerModel(nn.Module):
                 applied = True
         return bias if applied else None
 
+    def _binder_arity_path_bias(
+        self,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor | None,
+        prefix: list[int],
+        paths: tuple,
+    ) -> list[float] | None:
+        weight = float(
+            getattr(self.config, "binder_arity_decode_weight", 0.0) or 0.0
+        )
+        if weight <= 0.0 or self.binder_arity_head is None:
+            return None
+        from slm_training.dsl.grammar.fastpath.compiler_draft import (
+            active_declaration_binder_id,
+            active_declaration_reference_count,
+        )
+
+        binder_ids = self._binder_component_token_ids()
+        binder_index = {token_id: index for index, token_id in enumerate(binder_ids)}
+        parent = binder_index.get(active_declaration_binder_id(self.tokenizer, prefix))
+        emitted = active_declaration_reference_count(self.tokenizer, prefix)
+        if parent is None or emitted is None:
+            return None
+        continues = [
+            any(int(token_id) in binder_index for token_id in path.token_ids)
+            for path in paths
+        ]
+        if not any(continues) or all(continues):
+            return None
+        logits = self.binder_arity_head(
+            self._pool_context(ctx, ctx_pad)
+        )[0].view(len(binder_ids), len(binder_ids) + 1)[parent]
+        split = min(int(emitted) + 1, logits.numel())
+        stop_score = torch.logsumexp(logits[:split], dim=0)
+        continue_score = (
+            torch.logsumexp(logits[split:], dim=0)
+            if split < logits.numel()
+            else logits.new_tensor(-1e4)
+        )
+        return [
+            weight * float(continue_score if continues[index] else stop_score)
+            for index in range(len(paths))
+        ]
+
     def _select_compiler_path(
         self,
         prefix: list[int],
@@ -3085,6 +3191,18 @@ class TwoTowerModel(nn.Module):
                     branches += 1
                 parent = (*parent, int(token_id))
             path_scores.append(score / max(1, branches))
+        arity_bias = self._binder_arity_path_bias(ctx, ctx_pad, prefix, paths)
+        if arity_bias is not None:
+            before_arity = max(range(len(paths)), key=path_scores.__getitem__)
+            path_scores = [
+                score + arity_bias[index]
+                for index, score in enumerate(path_scores)
+            ]
+            if stats is not None:
+                stats.binder_arity_applications += 1
+                stats.binder_arity_choice_changes += int(
+                    max(range(len(paths)), key=path_scores.__getitem__) != before_arity
+                )
         if bool(getattr(self.config, "grammar_sample_decode", False)):
             temp = float(
                 getattr(self.config, "grammar_sample_temperature", 0.8) or 0.8
