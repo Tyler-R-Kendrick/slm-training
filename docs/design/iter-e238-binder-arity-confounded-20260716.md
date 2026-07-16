@@ -33,10 +33,14 @@ the training comparison. Ablation trace: `711e8d0c83152c45072ecca4fe4ae98f`.
 Post-run audit found a harness confound: optional heads consumed global Torch
 RNG during initialization. Enabling an auxiliary head therefore changed later
 masking/dropout draws even when its context and loss were isolated. A direct
-state-hash reproduction differed with arity off versus on. Auxiliary modules
-now initialize under isolated stable seeds; the post-fix hashes match. E238 is
-invalid evidence about the arity training objective and must not be compared
-causally with prior checkpoints. E239 reruns the corrected matched experiment.
+state-hash reproduction differed with arity off versus on. Follow-up matched
+runs also exposed coupling through combined backward traversal, optimizer
+layout, and global gradient clipping. Auxiliary modules now initialize under
+isolated stable seeds, backpropagate detached losses separately, use independent
+optimizer groups, and clip each group independently. E238 is invalid evidence
+about the arity training objective and must not be compared causally with prior
+checkpoints. E239 confirms all 104 shared tensors are bit-exact after these
+generalized corrections.
 
 Machine-readable evidence:
 [iter-e238-binder-arity-confounded-20260716.json](iter-e238-binder-arity-confounded-20260716.json).

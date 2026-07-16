@@ -1020,6 +1020,17 @@ choices. Auxiliary modules now use isolated stable seeds, and E239 is the
 corrected rerun. Full evidence:
 [iter-e238-binder-arity-confounded-20260716.md](iter-e238-binder-arity-confounded-20260716.md).
 
+E239 removes every observed optional-head coupling: isolated initialization,
+detached auxiliary backward, separate optimizer groups, and per-group clipping.
+The matched candidate/control checkpoints have 104/104 bit-exact shared tensors.
+The arity target learns and 1,606 applications change 29 legal choices, improving
+smoke syntax 0→0.3333 and structure 0.1591→0.2591. Meaningful-program rate is
+still 0 on all five suites, however; both on/off settings fail 11 thresholds and
+AgentV is 0/5. Retain the generalized mechanism and isolation invariants, reject
+the checkpoint, and correct pathological long compiler-tree trajectories before
+wider search. Full evidence:
+[iter-e239-binder-arity-isolated-20260716.md](iter-e239-binder-arity-isolated-20260716.md).
+
 ## V9 lattice-guided recursive compiler search (proposed, unrun)
 
 The research synthesis and implementation boundary are in
