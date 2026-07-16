@@ -370,6 +370,18 @@ def main(argv: list[str] | None = None) -> int:
         help="Bias legal bound components by known parent edge logits.",
     )
     parser.add_argument(
+        "--binder-component-plan-loss-weight",
+        type=float,
+        default=0.0,
+        help="Grammar-binder instance component-plan CE weight.",
+    )
+    parser.add_argument(
+        "--binder-component-plan-decode-weight",
+        type=float,
+        default=0.0,
+        help="Bias legal bound components by active binder instance plan.",
+    )
+    parser.add_argument(
         "--no-design-md-context",
         action="store_true",
         help="Do not concatenate DESIGN.md into the context tower prompt.",
@@ -698,6 +710,12 @@ def main(argv: list[str] | None = None) -> int:
                 args.component_edge_alignment_loss_weight
             ),
             component_edge_decode_weight=args.component_edge_decode_weight,
+            binder_component_plan_loss_weight=(
+                args.binder_component_plan_loss_weight
+            ),
+            binder_component_plan_decode_weight=(
+                args.binder_component_plan_decode_weight
+            ),
             fidelity_loss_weight=args.fidelity_loss_weight,
             grammar_ltr_primary=args.grammar_ltr_primary,
             grammar_ltr_repair=args.grammar_ltr_repair,

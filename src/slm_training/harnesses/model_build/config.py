@@ -190,6 +190,8 @@ class ModelBuildConfig:
     component_edge_loss_weight: float = 0.0
     component_edge_alignment_loss_weight: float = 0.0
     component_edge_decode_weight: float | None = None
+    binder_component_plan_loss_weight: float = 0.0
+    binder_component_plan_decode_weight: float | None = None
     symbol_boundary_loss_weight: float = 0.0
     remask_span: str = "token"  # token | statement
     teacher_init_embeddings: bool = False

@@ -193,6 +193,8 @@ class TwoTowerConfig:
     component_edge_loss_weight: float = 0.0
     component_edge_alignment_loss_weight: float = 0.0
     component_edge_decode_weight: float = 0.0
+    binder_component_plan_loss_weight: float = 0.0
+    binder_component_plan_decode_weight: float = 0.0
     symbol_boundary_loss_weight: float = 0.0
     # Extra CE weight on gold placeholder token positions (fidelity signal).
     fidelity_loss_weight: float = 0.5
@@ -528,6 +530,30 @@ class TwoTowerModel(nn.Module):
             if edge_enabled and component_edge_ids
             else None
         )
+        try:
+            binder_plan_ids = tuple(sorted(tokenizer.kind_ids("bind")))
+        except (AttributeError, TypeError, ValueError):
+            binder_plan_ids = ()
+        binder_plan_enabled = (
+            float(
+                getattr(self.config, "binder_component_plan_loss_weight", 0.0)
+                or 0.0
+            )
+            > 0.0
+            or float(
+                getattr(self.config, "binder_component_plan_decode_weight", 0.0)
+                or 0.0
+            )
+            > 0.0
+        )
+        self.binder_component_plan_head = (
+            nn.Linear(
+                self.config.d_model,
+                len(binder_plan_ids) * len(component_edge_ids),
+            )
+            if binder_plan_enabled and binder_plan_ids and component_edge_ids
+            else None
+        )
         # E31 BackPlay-lite: plug-in trust head over denoiser hiddens.
         self.trust_gate = FastPathGate(self.config.d_model)
         # E73 DSpark-lite: plug-in trajectory-survival head (V7).
@@ -550,6 +576,7 @@ class TwoTowerModel(nn.Module):
         self._context_token_count_cache: dict[str, int] = {}
         self._placeholder_token_ids: set[int] | None = None
         self._component_token_ids_cache: tuple[int, ...] | None = None
+        self._binder_token_ids_cache: tuple[int, ...] | None = None
         self._component_edge_cache: dict[str, tuple[tuple[int, int], ...]] = {}
         self._slot_contracts: list[list[str] | None] | None = None
         # Per-example symbol tables for lexer-native encode/decode.
@@ -1846,6 +1873,88 @@ class TwoTowerModel(nn.Module):
                 }
             )
 
+        binder_plan_w = float(
+            getattr(self.config, "binder_component_plan_loss_weight", 0.0) or 0.0
+        )
+        if binder_plan_w > 0.0 and self.binder_component_plan_head is not None:
+            from slm_training.dsl.grammar.fastpath.compiler_draft import (
+                active_declaration_binder_id,
+                gold_compiler_decisions,
+            )
+
+            binder_ids = self._binder_component_token_ids()
+            component_ids = self._component_inventory_token_ids()
+            binder_index = {token_id: index for index, token_id in enumerate(binder_ids)}
+            component_index = {
+                token_id: index for index, token_id in enumerate(component_ids)
+            }
+            plan_logits = self.binder_component_plan_head(
+                self._pool_context(ctx, ctx_pad)
+            ).view(len(batch), len(binder_ids), len(component_ids))
+            plan_losses: list[torch.Tensor] = []
+            plan_hits: list[torch.Tensor] = []
+            candidate_counts: list[int] = []
+            for row, record in enumerate(batch):
+                target_key = tuple(int(token_id) for token_id in target_ids[row].tolist())
+                contract_key = tuple(record.placeholders or ())
+                cache_key = (target_key, contract_key)
+                decisions = self._compiler_decision_cache.get(cache_key)
+                if decisions is None:
+                    decisions = gold_compiler_decisions(
+                        self.tokenizer,
+                        target_key,
+                        slot_contract=list(contract_key),
+                    )
+                    self._compiler_decision_cache[cache_key] = decisions
+                for decision in decisions:
+                    if decision.kind != "component_bound":
+                        continue
+                    position = int(decision.position)
+                    binder_id = active_declaration_binder_id(
+                        self.tokenizer, list(target_key[:position])
+                    )
+                    binder = binder_index.get(binder_id)
+                    child = component_index.get(int(target_ids[row, position]))
+                    candidates = [
+                        component_index[token_id]
+                        for token_id in decision.candidate_ids
+                        if token_id in component_index
+                    ]
+                    if binder is None or child is None or child not in candidates:
+                        continue
+                    candidate_tensor = torch.as_tensor(candidates, device=ctx.device)
+                    scores = plan_logits[row, binder].index_select(0, candidate_tensor)
+                    target = torch.as_tensor(
+                        [candidates.index(child)], device=ctx.device
+                    )
+                    plan_losses.append(F.cross_entropy(scores[None, :], target))
+                    plan_hits.append(scores.argmax().eq(target[0]).float())
+                    candidate_counts.append(len(candidates))
+            binder_plan_loss = (
+                torch.stack(plan_losses).mean()
+                if plan_losses
+                else plan_logits.sum() * 0.0
+            )
+            mask_loss = mask_loss + binder_plan_w * binder_plan_loss
+            self.last_training_metrics.update(
+                {
+                    "binder_component_plan_loss": float(
+                        binder_plan_loss.detach().cpu()
+                    ),
+                    "binder_component_plan_accuracy": float(
+                        torch.stack(plan_hits).mean().detach().cpu()
+                        if plan_hits
+                        else 0.0
+                    ),
+                    "binder_component_plan_rows": len(plan_losses),
+                    "binder_component_plan_candidate_count_mean": (
+                        sum(candidate_counts) / len(candidate_counts)
+                        if candidate_counts
+                        else 0.0
+                    ),
+                }
+            )
+
         aux_w = float(getattr(self.config, "fastpath_aux_weight", 0.0) or 0.0)
         if aux_w > 0.0 and getattr(self.config, "grammar_fastpath", False):
             # Keep this span visible in train telemetry: a silently skipped
@@ -2420,6 +2529,16 @@ class TwoTowerModel(nn.Module):
         self._component_token_ids_cache = ids
         return ids
 
+    def _binder_component_token_ids(self) -> tuple[int, ...]:
+        if self._binder_token_ids_cache is not None:
+            return self._binder_token_ids_cache
+        try:
+            ids = tuple(sorted(int(i) for i in self.tokenizer.kind_ids("bind")))
+        except Exception:  # noqa: BLE001
+            ids = ()
+        self._binder_token_ids_cache = ids
+        return ids
+
     def _component_inventory_bias(
         self,
         ctx: torch.Tensor,
@@ -2539,6 +2658,48 @@ class TwoTowerModel(nn.Module):
                 applied = True
         return bias if applied else None
 
+    def _binder_component_plan_bias(
+        self,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor | None,
+        prefix: list[int],
+        candidate_ids: tuple[int, ...],
+        candidate_kinds: tuple[str, ...],
+    ) -> torch.Tensor | None:
+        weight = float(
+            getattr(self.config, "binder_component_plan_decode_weight", 0.0)
+            or 0.0
+        )
+        if weight <= 0.0 or self.binder_component_plan_head is None:
+            return None
+        from slm_training.dsl.grammar.fastpath.compiler_draft import (
+            active_declaration_binder_id,
+        )
+
+        binder_id = active_declaration_binder_id(self.tokenizer, prefix)
+        binder_ids = self._binder_component_token_ids()
+        try:
+            binder = binder_ids.index(int(binder_id))
+        except (TypeError, ValueError):
+            return None
+        component_ids = self._component_inventory_token_ids()
+        component_index = {
+            token_id: index for index, token_id in enumerate(component_ids)
+        }
+        logits = self.binder_component_plan_head(
+            self._pool_context(ctx, ctx_pad)
+        )[0].view(len(binder_ids), len(component_ids))[binder]
+        bias = logits.new_zeros(len(candidate_ids))
+        applied = False
+        for position, (token_id, kind) in enumerate(
+            zip(candidate_ids, candidate_kinds, strict=True)
+        ):
+            child = component_index.get(token_id)
+            if child is not None and kind == "component_bound":
+                bias[position] = weight * logits[child]
+                applied = True
+        return bias if applied else None
+
     def _select_compiler_path(
         self,
         prefix: list[int],
@@ -2629,6 +2790,17 @@ class TwoTowerModel(nn.Module):
                     stats.component_edge_choice_changes += int(
                         int(scores.argmax().item()) != before_edge
                     )
+            binder_bias = self._binder_component_plan_bias(
+                ctx, ctx_pad, prefix, candidates, tuple(path.kind for path in paths)
+            )
+            if binder_bias is not None:
+                before_binder = int(scores.argmax().item())
+                scores = scores + binder_bias
+                if stats is not None:
+                    stats.binder_component_plan_applications += 1
+                    stats.binder_component_plan_choice_changes += int(
+                        int(scores.argmax().item()) != before_binder
+                    )
             if bool(getattr(self.config, "grammar_sample_decode", False)):
                 temp = float(
                     getattr(self.config, "grammar_sample_temperature", 0.8) or 0.8
@@ -2714,6 +2886,24 @@ class TwoTowerModel(nn.Module):
                             stats.component_edge_applications += 1
                             stats.component_edge_choice_changes += int(
                                 int(scores.argmax().item()) != before_edge
+                            )
+                    binder_bias = self._binder_component_plan_bias(
+                        ctx,
+                        ctx_pad,
+                        prefix,
+                        candidate_ids,
+                        tuple(
+                            first_edge_kinds.get(token_id, "")
+                            for token_id in candidate_ids
+                        ),
+                    )
+                    if binder_bias is not None:
+                        before_binder = int(scores.argmax().item())
+                        scores = scores + binder_bias
+                        if stats is not None:
+                            stats.binder_component_plan_applications += 1
+                            stats.binder_component_plan_choice_changes += int(
+                                int(scores.argmax().item()) != before_binder
                             )
                 log_probs = F.log_softmax(scores, dim=0)
                 for i, token_id in enumerate(candidate_ids):

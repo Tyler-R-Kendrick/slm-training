@@ -984,6 +984,15 @@ parent versus 14 aligned rows, motivating binder-level instance topology next.
 Retain the generalized objective and reject the checkpoint. Full evidence:
 [iter-e234-edge-decision-alignment-20260716.md](iter-e234-edge-decision-alignment-20260716.md).
 
+E235 indexes component targets by the compiler grammar's binder instances, so
+all 30 final bound rows receive direct supervision instead of E234's 14 aligned
+and 16 unknown-parent split. Binder accuracy learns from 0 to 0.40 and changes
+4/16 applied legal choices, but binder-on and binder-off suite aggregates remain
+identical. Syntax stays 1.0, nine thresholds across four suites fail, and AgentV
+remains 1/5. Retain the generalized binder planner, reject the checkpoint, and
+model binder topology/arity next. Full evidence:
+[iter-e235-binder-instance-plan-20260716.md](iter-e235-binder-instance-plan-20260716.md).
+
 ## V9 lattice-guided recursive compiler search (proposed, unrun)
 
 The research synthesis and implementation boundary are in

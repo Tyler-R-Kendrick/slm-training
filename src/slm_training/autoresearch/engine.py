@@ -416,6 +416,20 @@ def compile_commands(
                     str(knobs.component_edge_decode_weight),
                 ]
             )
+        if knobs.binder_component_plan_loss_weight is not None:
+            train.extend(
+                [
+                    "--binder-component-plan-loss-weight",
+                    str(knobs.binder_component_plan_loss_weight),
+                ]
+            )
+        if knobs.binder_component_plan_decode_weight is not None:
+            train.extend(
+                [
+                    "--binder-component-plan-decode-weight",
+                    str(knobs.binder_component_plan_decode_weight),
+                ]
+            )
         if knobs.schema_in_context:
             train.append("--schema-in-context")
         if knobs.slot_contract_in_context:

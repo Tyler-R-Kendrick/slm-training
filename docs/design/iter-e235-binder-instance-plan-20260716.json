@@ -1,0 +1,72 @@
+{
+  "campaign": "E235 binder-instance component plan",
+  "date": "2026-07-16",
+  "status": "completed_rejected_nine_ship_thresholds_failed",
+  "hypothesis": "A prompt-conditioned component plan indexed by grammar-native binder instances improves hierarchy selection without partial-prefix parent recovery.",
+  "implementation": {
+    "target_source": "gold component_bound compiler decisions indexed by grammar binder slot",
+    "objective": "cross entropy over compiler-legal component candidates",
+    "decode_scope": "active declaration binder and compiler-legal candidates",
+    "can_change_legality": false,
+    "literal_cases_added": false
+  },
+  "train": {
+    "run_id": "e235-binder-instance-plan-32step",
+    "path": "outputs/autoresearch/e235-binder-instance-plan/runs/e235-binder-instance-plan-32step",
+    "device": "cpu",
+    "steps": 32,
+    "batch_size": 4,
+    "learning_rate": 0.0003,
+    "seed": 0,
+    "context_backend": "hf_local_files_only",
+    "train_version": "e230_diverse_judged_roots_v2",
+    "record_count": 126,
+    "draws": 128,
+    "unique_records": 81,
+    "rico_draws": 30,
+    "human_curated_draws": 25,
+    "seen_prompt_tokens": 18490,
+    "seen_target_tokens": 7052,
+    "binder_component_plan_loss_weight": 1.0,
+    "binder_component_plan_decode_weight": 1.0,
+    "component_edge_loss_weight": 0.0,
+    "component_edge_alignment_loss_weight": 0.0,
+    "component_edge_decode_weight": 0.0,
+    "binder_plan_loss_first": 3.8573129,
+    "binder_plan_loss_last": 2.2583120,
+    "binder_plan_accuracy_first": 0.0,
+    "binder_plan_accuracy_last": 0.4,
+    "binder_plan_rows_last": 30,
+    "legal_candidate_count_mean_last": 32.0,
+    "root_accuracy_last": 1.0,
+    "bound_topk_recall_last": 0.708333,
+    "bound_count_mae_last": 0.439011,
+    "last_loss": 23.598827,
+    "wall_ms": 160564,
+    "trace_id": "d76289e4b6ed374ceef711488142ed45",
+    "checkpoint_sha256": "83adbccd0f05cb4afcf9debd446e15270fd1ee62d3ed4c153e52646950073ca8",
+    "checkpoint_sync": false
+  },
+  "evaluation_weight_1": {
+    "trace_id": "0997d84c79bd74bbc69b7baf9460a7f8",
+    "suites": {
+      "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.3333333333, "structural_similarity": 0.4122333333, "component_type_recall": 0.1666666667, "placeholder_fidelity": 0.1111111111, "reward_score": 0.2496666667, "binder_applications": 3, "binder_choice_changes": 1},
+      "held_out": {"n": 5, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.2739, "component_type_recall": 0.04, "placeholder_fidelity": 0.0333333333, "reward_score": 0.1398, "binder_applications": 3, "binder_choice_changes": 1},
+      "adversarial": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.25, "structural_similarity": 0.355625, "component_type_recall": 0.2083333333, "placeholder_fidelity": 0.2083333333, "reward_score": 0.387, "binder_applications": 6, "binder_choice_changes": 2},
+      "ood": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.236875, "component_type_recall": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0, "binder_applications": 0, "binder_choice_changes": 0},
+      "rico_held": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.6666666667, "structural_similarity": 0.1370666667, "component_type_recall": 0.3333333333, "placeholder_fidelity": 0.0833333333, "reward_score": 0.4576666667, "binder_applications": 4, "binder_choice_changes": 0}
+    },
+    "failed_thresholds": 9,
+    "failed_suites": 4,
+    "binder_applications": 16,
+    "binder_choice_changes": 4,
+    "agentv": {"total": 5, "passed": 1, "failed": 4, "execution_errors": 0, "mean_score": 0.6}
+  },
+  "ablation_binder_weight_0": {
+    "trace_id": "2070f18ae0dd27dc959e7c3ae84569b4",
+    "aggregate_metrics_identical_to_weight_1": true,
+    "failed_thresholds": 9,
+    "agentv_passed": 1
+  },
+  "conclusion": "Binder-indexed supervision covers every bound row and changes four legal component choices, but no suite aggregate. Retain the generalized mechanism, reject the checkpoint, and model grammar-derived binder topology and arity next."
+}

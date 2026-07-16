@@ -182,6 +182,14 @@ def _active_declaration_scope(tokenizer: Any, prefix_ids: list[int]) -> str | No
     return "root" if active == tokenizer.bind_id(0) else "bound"
 
 
+def active_declaration_binder_id(
+    tokenizer: Any, prefix_ids: list[int]
+) -> int | None:
+    """Return the grammar-native binder for the active declaration."""
+    _declarations, _references, active = _binder_scope(tokenizer, prefix_ids)
+    return active
+
+
 def active_parent_component_ids(
     tokenizer: Any, prefix_ids: list[int]
 ) -> tuple[int, ...]:
@@ -854,6 +862,7 @@ def gold_compiler_decision_positions(
 
 
 __all__ = [
+    "active_declaration_binder_id",
     "active_parent_component_ids",
     "CompletionForest",
     "CompletionPath",
