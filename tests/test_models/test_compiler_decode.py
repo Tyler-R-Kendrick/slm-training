@@ -401,6 +401,24 @@ def test_compiler_alignment_loss_trains_gold_semantic_states() -> None:
     assert model.last_training_metrics["compiler_alignment_candidate_count_mean"] > 1
 
 
+def test_compiler_alignment_margin_reports_legal_branch_violations() -> None:
+    model = _model()
+    model.config.compiler_alignment_loss_weight = 1.0
+    model.config.compiler_alignment_margin = 100.0
+    record = ExampleRecord(
+        id="alignment-margin",
+        prompt="card",
+        openui='root = Card([title])\ntitle = TextContent(":hero.title")',
+        placeholders=[":hero.title"],
+        split="train",
+        source="fixture",
+    )
+    loss = model.training_loss([record])
+    assert torch.isfinite(loss)
+    assert model.last_training_metrics["compiler_alignment_margin_loss"] > 0.0
+    assert model.last_training_metrics["compiler_alignment_margin_violation_rate"] == 1.0
+
+
 def test_compiler_alignment_can_stratify_grammar_decision_kinds() -> None:
     model = _model()
     model.config.compiler_alignment_loss_weight = 1.0

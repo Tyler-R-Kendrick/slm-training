@@ -174,6 +174,7 @@ class ModelBuildConfig:
     diffusion_length_loss_weight: float = 0.1
     ltr_prefix_loss_weight: float = 0.0
     compiler_alignment_loss_weight: float = 0.0
+    compiler_alignment_margin: float = 0.0
     compiler_alignment_stratified: bool = False
     compiler_alignment_semantic_exhaustive: bool = False
     symbol_boundary_loss_weight: float = 0.0

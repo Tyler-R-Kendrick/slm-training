@@ -29,6 +29,7 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "allow_unconstrained_fallback",
         "context_backend",
         "compiler_alignment_loss_weight",
+        "compiler_alignment_margin",
         "compiler_alignment_stratified",
         "compiler_alignment_semantic_exhaustive",
         "compiler_decode_mode",
@@ -230,6 +231,7 @@ class ExperimentKnobs(StrictModel):
     context_backend: Literal["scratch", "hf"] | None = None
     output_tokenizer: Literal["compositional", "lexer"] | None = None
     compiler_alignment_loss_weight: float | None = Field(default=None, ge=0, le=10)
+    compiler_alignment_margin: float | None = Field(default=None, ge=0, le=20)
     compiler_alignment_stratified: bool | None = None
     compiler_alignment_semantic_exhaustive: bool | None = None
     compiler_decode_mode: Literal["off", "forced", "restricted", "tree"] | None = None

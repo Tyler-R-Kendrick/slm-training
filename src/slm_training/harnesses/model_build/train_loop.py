@@ -703,6 +703,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "compiler_alignment_loss_weight": getattr(
                 config, "compiler_alignment_loss_weight", 0.0
             ),
+            "compiler_alignment_margin": getattr(
+                config, "compiler_alignment_margin", 0.0
+            ),
             "compiler_alignment_stratified": bool(
                 getattr(config, "compiler_alignment_stratified", False)
             ),

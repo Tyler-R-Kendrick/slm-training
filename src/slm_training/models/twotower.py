@@ -180,6 +180,7 @@ class TwoTowerConfig:
     # Extra weight on the first content transitions (root -> assignment).
     ltr_prefix_loss_weight: float = 0.0
     compiler_alignment_loss_weight: float = 0.0
+    compiler_alignment_margin: float = 0.0
     compiler_alignment_stratified: bool = False
     compiler_alignment_semantic_exhaustive: bool = False
     symbol_boundary_loss_weight: float = 0.0
@@ -1344,32 +1345,52 @@ class TwoTowerModel(nn.Module):
                         else None
                     ),
                 )
-                alignment_losses = torch.stack(
-                    [
+                margin = float(
+                    getattr(self.config, "compiler_alignment_margin", 0.0) or 0.0
+                )
+                cross_entropy_losses: list[torch.Tensor] = []
+                margin_losses: list[torch.Tensor] = []
+                for index, (position, target, candidates) in enumerate(
+                    zip(
+                        aligned_positions,
+                        aligned_targets,
+                        aligned_candidate_ids,
+                        strict=True,
+                    )
+                ):
+                    candidate_logits = aligned_logits[index, position][
+                        torch.tensor(
+                            candidates,
+                            device=aligned_logits.device,
+                            dtype=torch.long,
+                        )
+                    ]
+                    gold_index = candidates.index(int(target))
+                    cross_entropy_losses.append(
                         F.cross_entropy(
-                            aligned_logits[index, position][
-                                torch.tensor(
-                                    candidates,
-                                    device=aligned_logits.device,
-                                    dtype=torch.long,
-                                )
-                            ].unsqueeze(0),
+                            candidate_logits.unsqueeze(0),
                             torch.tensor(
-                                [candidates.index(int(target))],
+                                [gold_index],
                                 device=aligned_logits.device,
                                 dtype=torch.long,
                             ),
                         )
-                        for index, (position, target, candidates) in enumerate(
-                            zip(
-                                aligned_positions,
-                                aligned_targets,
-                                aligned_candidate_ids,
-                                strict=True,
-                            )
+                    )
+                    alternatives = torch.cat(
+                        (candidate_logits[:gold_index], candidate_logits[gold_index + 1 :])
+                    )
+                    margin_losses.append(
+                        F.relu(
+                            margin
+                            - candidate_logits[gold_index]
+                            + alternatives.max()
                         )
-                    ]
-                )
+                        if margin > 0.0
+                        else candidate_logits[gold_index] * 0.0
+                    )
+                cross_entropy_tensor = torch.stack(cross_entropy_losses)
+                margin_tensor = torch.stack(margin_losses)
+                alignment_losses = cross_entropy_tensor + margin_tensor
                 alignment_loss = alignment_losses.mean()
                 mask_loss = mask_loss + alignment_w * alignment_loss
                 kind_losses = {
@@ -1402,6 +1423,21 @@ class TwoTowerModel(nn.Module):
                 ),
                 "compiler_alignment_candidate_count_max": max(
                     map(len, aligned_candidate_ids), default=0
+                ),
+                "compiler_alignment_cross_entropy": (
+                    float(cross_entropy_tensor.mean().detach().cpu())
+                    if aligned_canvases
+                    else 0.0
+                ),
+                "compiler_alignment_margin_loss": (
+                    float(margin_tensor.mean().detach().cpu())
+                    if aligned_canvases
+                    else 0.0
+                ),
+                "compiler_alignment_margin_violation_rate": (
+                    float(margin_tensor.gt(0).float().mean().detach().cpu())
+                    if aligned_canvases
+                    else 0.0
                 ),
                 **{
                     f"compiler_alignment_{kind}_rows": count
