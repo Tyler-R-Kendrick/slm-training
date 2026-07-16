@@ -12,14 +12,20 @@ from slm_training.autoresearch.engine import (
     diagnose_outcome,
     execute_commands,
     validate_experiment,
+    validate_hypothesis_matrix,
 )
 from slm_training.autoresearch.evidence import collect_evidence
-from slm_training.autoresearch.literature import HuggingFacePapersClient
+from slm_training.autoresearch.literature import (
+    HuggingFacePapersClient,
+    categorical_discovery_source,
+)
 from slm_training.autoresearch.persistence import sync_campaign
 from slm_training.autoresearch.providers import (
+    AgentHypothesisProvider,
     AgentProposalProvider,
     FixtureResearchProvider,
     OpenAIProposalCompiler,
+    OpenAIHypothesizer,
     OpenAIResearchProvider,
 )
 from slm_training.autoresearch.researchers import RESEARCHERS, get_researcher
@@ -31,6 +37,7 @@ from slm_training.autoresearch.schemas import (
     EvidenceSnapshot,
     ExperimentOutcome,
     ExperimentSpec,
+    HypothesisMatrix,
     ResearcherRun,
     ResearchSource,
 )
@@ -61,6 +68,7 @@ def cmd_init(args: argparse.Namespace) -> int:
         primary_metric=args.primary_metric,
         track=args.track,
         researcher_mode=args.researcher_mode,
+        min_hypotheses=args.min_hypotheses,
         evidence_roots=tuple(str(path) for path in args.evidence_root),
         budget=CampaignBudget(
             max_experiments=args.max_experiments,
@@ -90,7 +98,7 @@ def _capture(
 
 
 def _research_sources(args: argparse.Namespace) -> list[ResearchSource]:
-    sources: list[ResearchSource] = []
+    sources: list[ResearchSource] = [categorical_discovery_source()]
     for manifest in args.source_manifest or ():
         sources.extend(_load_sources(manifest))
     if not args.offline:
@@ -285,6 +293,149 @@ def cmd_propose(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_hypothesize(args: argparse.Namespace) -> int:
+    store = _store(args)
+    campaign = store.load_campaign()
+    evidence_path = _artifact(store, "evidence", args.evidence)
+    evidence = EvidenceSnapshot.model_validate_json(
+        evidence_path.read_text(encoding="utf-8")
+    )
+    source_path = args.sources
+    if source_path is None:
+        candidates = list(
+            (store.root / "artifacts" / "research_sources").glob("*.json")
+        )
+        source_path = (
+            max(candidates, key=lambda path: path.stat().st_mtime_ns)
+            if candidates
+            else None
+        )
+    sources = _load_sources(source_path)
+    if args.provider == "agent":
+        if not args.matrix:
+            raise ValueError("--provider agent requires --matrix")
+        result = AgentHypothesisProvider(args.matrix).propose(
+            campaign, evidence, sources
+        )
+    else:
+        result = OpenAIHypothesizer(model=args.model).propose(
+            campaign,
+            evidence,
+            sources,
+            _load_memo(store, args.memo),
+        )
+    validate_hypothesis_matrix(
+        campaign,
+        result.matrix,
+        evidence,
+        list(result.sources),
+        prior_experiments=_finished_experiments(store),
+    )
+
+    proposed = {
+        str(row.get("experiment_id"))
+        for row in _events(store)
+        if row.get("event_type") == "experiment_proposed"
+    }
+    new_ids = {
+        item.experiment.experiment_id for item in result.matrix.hypotheses
+    } - proposed
+    if len(proposed) + len(new_ids) > campaign.budget.max_experiments:
+        raise ValueError(
+            "hypothesis matrix exceeds campaign experiment budget: "
+            f"{len(proposed) + len(new_ids)}/{campaign.budget.max_experiments}"
+        )
+
+    matrix_path = store.write_artifact("hypothesis_matrices", result.matrix)
+    source_out = store.write_artifact(
+        "hypothesis_sources",
+        {"sources": [item.model_dump(mode="json") for item in result.sources]},
+    )
+    telemetry_path = store.write_artifact("hypothesizer_telemetry", result.telemetry)
+    if result.research_memo:
+        store.write_artifact("research_memos", {"text": result.research_memo})
+    store.append_event(
+        "hypothesis_matrix_formed",
+        status="planned",
+        artifact_sha256=matrix_path.stem,
+        detail={
+            "count": len(result.matrix.hypotheses),
+            "sources_sha": source_out.stem,
+            "telemetry_sha": telemetry_path.stem,
+        },
+    )
+    experiment_paths = []
+    for candidate in result.matrix.hypotheses:
+        experiment_path = store.write_artifact("experiments", candidate.experiment)
+        experiment_paths.append(str(experiment_path))
+        if candidate.experiment.experiment_id not in proposed:
+            store.append_event(
+                "experiment_proposed",
+                experiment_id=candidate.experiment.experiment_id,
+                status="planned",
+                artifact_sha256=experiment_path.stem,
+                detail={"hypothesis_matrix_sha": matrix_path.stem},
+            )
+    print(
+        json.dumps(
+            {"hypothesis_matrix": str(matrix_path), "experiments": experiment_paths},
+            indent=2,
+        )
+    )
+    return 0
+
+
+def _events(store: CampaignStore) -> list[dict]:
+    path = store.root / "events.jsonl"
+    return (
+        [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+        if path.exists()
+        else []
+    )
+
+
+def _finished_experiments(store: CampaignStore) -> tuple[ExperimentSpec, ...]:
+    finished = {
+        str(row.get("experiment_id"))
+        for row in _events(store)
+        if row.get("event_type") == "experiment_finished"
+    }
+    found = {}
+    for path in (store.root / "artifacts" / "experiments").glob("*.json"):
+        experiment = ExperimentSpec.model_validate_json(path.read_text(encoding="utf-8"))
+        if experiment.experiment_id in finished:
+            found[experiment.experiment_id] = experiment
+    return tuple(found.values())
+
+
+def _require_hypothesis_matrix(
+    store: CampaignStore, campaign: CampaignSpec, experiment: ExperimentSpec
+) -> HypothesisMatrix:
+    path = _artifact(store, "hypothesis_matrices", None)
+    matrix = HypothesisMatrix.model_validate_json(path.read_text(encoding="utf-8"))
+    if matrix.campaign_id != campaign.campaign_id:
+        raise ValueError("latest hypothesis matrix belongs to a different campaign")
+    formed = any(
+        row.get("event_type") == "hypothesis_matrix_formed"
+        and row.get("artifact_sha256") == path.stem
+        for row in _events(store)
+    )
+    if not formed:
+        raise ValueError("hypothesis matrix has no validated formation event")
+    if len(matrix.hypotheses) < campaign.min_hypotheses:
+        raise ValueError(
+            f"run requires at least {campaign.min_hypotheses} formed hypotheses"
+        )
+    matches = [
+        item.experiment
+        for item in matrix.hypotheses
+        if item.experiment.experiment_id == experiment.experiment_id
+    ]
+    if not matches or matches[0] != experiment:
+        raise ValueError("experiment is not an exact member of the latest hypothesis matrix")
+    return matrix
+
+
 def cmd_validate(args: argparse.Namespace) -> int:
     store = _store(args)
     campaign = store.load_campaign()
@@ -309,6 +460,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     experiment = ExperimentSpec.model_validate_json(
         args.experiment.read_text(encoding="utf-8")
     )
+    _require_hypothesis_matrix(store, campaign, experiment)
     commands = compile_commands(campaign, experiment, output_root=args.root)
     plan_path = store.write_artifact(
         "execution_plans", {"commands": commands, "execute": args.execute}
@@ -450,6 +602,7 @@ def build_parser() -> argparse.ArgumentParser:
         default="twotower",
     )
     init.add_argument("--researcher-mode", default="agent")
+    init.add_argument("--min-hypotheses", type=int, default=5)
     init.add_argument(
         "--evidence-root", type=Path, action="append", default=[Path("outputs")]
     )
@@ -494,6 +647,16 @@ def build_parser() -> argparse.ArgumentParser:
     propose.add_argument("--sources", type=Path)
     propose.add_argument("--model", default="gpt-5.6-sol")
     propose.set_defaults(func=cmd_propose)
+
+    hypothesize = sub.add_parser("hypothesize")
+    hypothesize.add_argument("--campaign-id", required=True)
+    hypothesize.add_argument("--provider", choices=("agent", "openai"), default="openai")
+    hypothesize.add_argument("--matrix", type=Path)
+    hypothesize.add_argument("--memo", type=Path)
+    hypothesize.add_argument("--evidence", type=Path)
+    hypothesize.add_argument("--sources", type=Path)
+    hypothesize.add_argument("--model", default="gpt-5.6-sol")
+    hypothesize.set_defaults(func=cmd_hypothesize)
 
     validate = sub.add_parser("validate")
     validate.add_argument("--campaign-id", required=True)

@@ -12,6 +12,7 @@ from slm_training.autoresearch.schemas import (
     CampaignSpec,
     EvidenceSnapshot,
     ExperimentSpec,
+    HypothesisMatrix,
     ResearchSource,
 )
 
@@ -19,6 +20,14 @@ from slm_training.autoresearch.schemas import (
 @dataclass(frozen=True)
 class ProviderResult:
     experiment: ExperimentSpec
+    sources: tuple[ResearchSource, ...] = ()
+    telemetry: dict[str, Any] = field(default_factory=dict)
+    research_memo: str = ""
+
+
+@dataclass(frozen=True)
+class HypothesisProviderResult:
+    matrix: HypothesisMatrix
     sources: tuple[ResearchSource, ...] = ()
     telemetry: dict[str, Any] = field(default_factory=dict)
     research_memo: str = ""
@@ -76,6 +85,32 @@ class FixtureResearchProvider:
             sources=tuple(sources),
             telemetry={
                 "provider": "fixture",
+                "evidence_snapshot_id": evidence.snapshot_id,
+            },
+        )
+
+
+class AgentHypothesisProvider:
+    """Load a coding-agent-authored hypothesis matrix without executing code."""
+
+    def __init__(self, matrix_path: Path | str) -> None:
+        self.matrix_path = Path(matrix_path)
+
+    def propose(
+        self,
+        campaign: CampaignSpec,
+        evidence: EvidenceSnapshot,
+        sources: list[ResearchSource],
+    ) -> HypothesisProviderResult:
+        matrix = HypothesisMatrix.model_validate_json(
+            self.matrix_path.read_text(encoding="utf-8")
+        )
+        return HypothesisProviderResult(
+            matrix=matrix,
+            sources=tuple(sources),
+            telemetry={
+                "provider": "agent_hypothesizer",
+                "matrix_path": str(self.matrix_path),
                 "evidence_snapshot_id": evidence.snapshot_id,
             },
         )
@@ -196,6 +231,77 @@ class OpenAIProposalCompiler:
             research_memo=memo,
             telemetry={
                 "provider": "openai_proposal_compiler",
+                "requested_model": self.model,
+                "model": getattr(response, "model", None),
+                "response_id": getattr(response, "id", None),
+                "usage": _dump(getattr(response, "usage", None)),
+                "trace": _dump(response),
+                "store": False,
+                "evidence_snapshot_id": evidence.snapshot_id,
+                "prompt_sha256": hashlib.sha256(prompt.encode("utf-8")).hexdigest(),
+            },
+        )
+
+
+class OpenAIHypothesizer:
+    """Compile research and prior evidence into a diverse experiment matrix."""
+
+    def __init__(self, *, model: str = "gpt-5.6-sol", client: Any | None = None) -> None:
+        if client is None:
+            try:
+                from openai import OpenAI
+            except ImportError as exc:  # pragma: no cover - dependency error
+                raise RuntimeError(
+                    "install slm-training[research] for OpenAI research"
+                ) from exc
+            client = OpenAI()
+        self.client = client
+        self.model = model
+
+    def propose(
+        self,
+        campaign: CampaignSpec,
+        evidence: EvidenceSnapshot,
+        sources: list[ResearchSource],
+        memo: str,
+    ) -> HypothesisProviderResult:
+        if not memo.strip():
+            raise ValueError("hypothesizer requires a persisted research memo")
+        context = _research_context(campaign, evidence, sources)
+        prompt = (
+            f"Return one HypothesisMatrix with at least {campaign.min_hypotheses} "
+            "distinct, executable ExperimentSpecs. Synthesize primary research, prior "
+            "run results, and prior traces when present. Cite only supplied URIs or "
+            "evidence paths and change only typed knobs. Seek high-information, "
+            "falsifiable ideas not represented by prior knob-value signatures.\n\n"
+            "For every hypothesis, apply arXiv:2606.01444 as an engineering audit: "
+            "state the old schema, proposed schema, what old evidence transports, the "
+            "transport/reachability analysis, claimed residual, preservation checks, "
+            "adversarial stress tests, and "
+            "worthiness criteria. Status must remain candidate: category theory does "
+            "not prove discovery before a verified post-transition result exists. "
+            "Use regime_transition_candidate only for a genuine new type, relation, "
+            "verifier, grammar production, or tool class; otherwise label it "
+            "fixed_regime_search. Never request RL without an approved readiness "
+            "report and never emit shell or code.\n\n"
+            f"CAMPAIGN AND EVIDENCE:\n{context}\n\n"
+            f"RESEARCH MEMO:\n{memo[:120_000]}"
+        )
+        response = self.client.responses.parse(
+            model=self.model,
+            store=False,
+            input=prompt,
+            text_format=HypothesisMatrix,
+        )
+        matrix = response.output_parsed
+        if not isinstance(matrix, HypothesisMatrix):
+            matrix = HypothesisMatrix.model_validate(matrix)
+        return HypothesisProviderResult(
+            matrix=matrix,
+            sources=tuple(sources),
+            research_memo=memo,
+            telemetry={
+                "provider": "openai_hypothesizer",
                 "requested_model": self.model,
                 "model": getattr(response, "model", None),
                 "response_id": getattr(response, "id", None),

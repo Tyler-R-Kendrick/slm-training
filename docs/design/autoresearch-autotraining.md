@@ -1,8 +1,8 @@
 # Autoresearch and autotraining harness
 
-**Status:** pluggable researcher harness implemented; no live upstream researcher,
-model, paid GPU, or provider run in this change. The committed researcher fixture
-benchmark is wiring evidence, not a model-quality claim.
+**Status:** pluggable researcher and five-candidate hypothesizer harnesses implemented;
+no live upstream researcher, model, paid GPU, or provider run in this change. The
+committed researcher fixture benchmark is wiring evidence, not a model-quality claim.
 
 ## Goal and boundary
 
@@ -16,9 +16,10 @@ Research and proposal compilation are separate stages:
 1. a swappable `Researcher` implementation receives a bounded `ResearchRequest`
    and returns a cited memo, normalized sources, trajectory, and telemetry in a
    `ResearcherRun`;
-2. the shared proposal compiler treats that memo as untrusted evidence and produces
-   one strict `ExperimentSpec`; normal validation then enforces citations, campaign
-   identity, allowlisted knobs, experiment budget, and the RL lock.
+2. the shared hypothesizer treats that memo as untrusted evidence and produces a
+   strict `HypothesisMatrix` with at least five `ExperimentSpec` candidates; normal
+   validation then enforces citations, campaign identity, distinct knob-value
+   signatures, allowlisted knobs, experiment budget, and the RL lock.
 
 The registry in `src/slm_training/autoresearch/researchers.py` initially provides
 two invocation adapters. Both run in a separately installed upstream checkout and
@@ -51,7 +52,10 @@ repo lineage + HF Daily Papers + web + prior artifacts
                immutable EvidenceSnapshot
                          |
                          v
-       researcher -> cited memo/trajectory -> proposal compiler
+       researcher -> cited memo/trajectory -> hypothesizer (>=5 candidates)
+                                                   |
+                                                   v
+                                  typed HypothesisMatrix -> validation
                                                    |
                                                    v
                                       typed ExperimentSpec -> validation
@@ -92,6 +96,9 @@ unknown fields forbidden:
   trajectory, timing, and non-secret process telemetry;
 - `ExperimentSpec` requires a hypothesis, expected effect, falsification and stop
   criteria, citations, parent, and typed `ExperimentKnobs`;
+- `HypothesisMatrix` requires at least five distinct candidates. Each candidate
+  records how research, prior traces, and prior results informed it plus a typed
+  `CategoricalNoveltyAudit`;
 - `ExperimentOutcome` and `Diagnosis` route failures to data, researcher, model, or
   infrastructure remediation;
 - `RLReadinessReport` is the only accepted RL capability token.
@@ -125,6 +132,48 @@ receives those sources and the immutable local evidence summary, and may discove
 additional URLs. Each proposed citation must resolve to captured evidence or a
 normalized captured source.
 
+## Five-hypothesis gate and categorical novelty
+
+Every campaign defaults to `min_hypotheses=5`; the value may be raised but not
+lowered. `hypothesize` forms the matrix in one structured response, persists it as
+a content-addressed artifact, and writes each member as an executable
+`ExperimentSpec`. Candidates must differ by their complete knob/value signature,
+not merely by prose or by the name of a changed field. A signature already present
+in a finished campaign experiment is rejected. If captured research, prior-result,
+or prior-trace evidence exists, the matrix must cite and explain use of each
+available class. `run` fails closed unless its exact spec is a member of the latest
+matrix with at least the campaign minimum.
+
+This planning matrix does not replace the stable E/X/P/Q/R matrices. After a
+candidate demonstrates a lever, register the stable ID, matched control, JSON, and
+markdown through the normal matrix workflow.
+
+The novelty audit is an **Adapted** engineering use of Wang and Buehler,
+[*Self-Revising Discovery Systems for Science: A Categorical Framework for
+Agentic Artificial Intelligence*](https://arxiv.org/abs/2606.01444) (2026):
+
+- a regime schema types artifacts, operations, grammar, verifiers, and tools;
+- fixed-regime iteration is search, not discovery;
+- a verified transition maps the old schema into a new schema, preserves old
+  artifacts and provenance, and transports them by left Kan extension;
+- accepted post-transition artifacts outside the transported image are residual
+  content. If no old operation reaches a new type, the empty comma category makes
+  the transported fiber empty, so an accepted artifact there is forced residual;
+- worthiness still needs a gate: paired evidence must pay for the new complexity
+  (the paper uses MDL/AIC examples), survive stress tests, and preserve old accepted
+  evidence or explicitly record recoding cost.
+
+The implementation deliberately separates a **candidate audit** from a proof of
+discovery. Before running an experiment there is no accepted post-transition state,
+preservation map, or observed residual. Therefore `CategoricalNoveltyAudit.status`
+can only be `candidate`. Its schema checks a declared regime extension has a truly
+new element and that claimed residual elements are outside declared transport; it
+also requires a reachability analysis, preservation checks, stress tests, and
+worthiness criteria. This proves non-reachability only inside the declared finite
+schema and assumptions. It cannot prove global literature novelty, scientific truth,
+or SOTA. Those remain empirical claims requiring captured research, matched controls,
+honest suites, and the repository's normal gates.
+
 Committed source inventories can be added without network access:
 
 ```bash
@@ -148,6 +197,7 @@ outputs/autoresearch/<campaign>/
     researcher_runs/<content-sha>.json   # pin + memo + trajectory + telemetry
     research_sources/<content-sha>.json  # normalized citation-valid source set
     experiments/<content-sha>.json       # compiler output after validation
+    hypothesis_matrices/<content-sha>.json # >=5 candidates + novelty audits
   runs/<experiment>/...
 ```
 
@@ -303,6 +353,7 @@ python -m scripts.autoresearch init \
   --campaign-id openui-sft-001 \
   --objective "Improve minimum-suite structure without parse regression" \
   --primary-metric min_suite.structural_similarity \
+  --min-hypotheses 5 \
   --researcher-mode open-deep-research
 
 # Topology campaigns use the same evidence/compiler boundary.
@@ -320,8 +371,8 @@ python -m scripts.autoresearch research \
   --researcher-python /path/open_deep_research/.venv/bin/python \
   --researcher-config open-deep-research.json
 
-python -m scripts.autoresearch propose \
-  --campaign-id openui-sft-001 --compiler openai
+python -m scripts.autoresearch hypothesize \
+  --campaign-id openui-sft-001 --provider openai
 
 # Swap the researcher without changing the evidence, memo, or compiler contracts.
 python -m scripts.autoresearch research \
@@ -331,15 +382,17 @@ python -m scripts.autoresearch research \
   --researcher-python /path/OpenResearcher/.venv/bin/python \
   --researcher-config open-researcher.json
 
-# Agent-authored specs remain a non-provider path.
-python -m scripts.autoresearch propose \
-  --campaign-id openui-sft-001 --provider agent --proposal proposal.json
+# Agent-authored matrices remain a non-provider path.
+python -m scripts.autoresearch hypothesize \
+  --campaign-id openui-sft-001 --provider agent --matrix hypothesis-matrix.json
 python -m scripts.autoresearch run \
   --campaign-id openui-sft-001 --experiment <artifact.json>
 python -m scripts.autoresearch sync --campaign-id openui-sft-001
 ```
 
-The run command is a dry plan unless `--execute` is supplied; sync is a dry plan
+The legacy single-spec `propose` command remains available for proposal inspection,
+but it does not satisfy the matrix gate and cannot unlock `run`. The run command is
+a dry plan unless `--execute` is supplied; sync is a dry plan
 unless `--push` is supplied. No experiment was executed here. Future training,
 evaluation, benchmark, profile, or decision-bearing telemetry is incomplete until
 its JSON and matching markdown are committed under `docs/design/`.

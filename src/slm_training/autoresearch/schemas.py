@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from typing import Any, Literal
 
@@ -72,11 +73,18 @@ class CampaignSpec(StrictModel):
     researcher_mode: str = Field(
         default="agent", pattern=r"^[a-z0-9][a-z0-9._-]{0,127}$"
     )
+    min_hypotheses: int = Field(default=5, ge=5, le=100)
     evidence_roots: tuple[str, ...] = ("outputs",)
     allowed_knobs: frozenset[str] = DEFAULT_ALLOWED_KNOBS
     budget: CampaignBudget = Field(default_factory=CampaignBudget)
     created_at: str = Field(default_factory=utc_now)
     notes: str = ""
+
+    @model_validator(mode="after")
+    def validate_hypothesis_budget(self) -> CampaignSpec:
+        if self.min_hypotheses > self.budget.max_experiments:
+            raise ValueError("min_hypotheses cannot exceed max_experiments")
+        return self
 
 
 class ResearchSource(StrictModel):
@@ -276,6 +284,83 @@ class ExperimentSpec(StrictModel):
             raise ValueError("experiment must change at least one allowlisted knob")
         if self.requires_rl and not self.rl_readiness_report:
             raise ValueError("RL experiments require an approved readiness report")
+        return self
+
+
+class EvidenceUse(StrictModel):
+    role: Literal["research", "prior_trace", "prior_result"]
+    citation: str = Field(min_length=1)
+    contribution: str = Field(min_length=8)
+
+
+class CategoricalNoveltyAudit(StrictModel):
+    """Pre-run audit inspired by arXiv:2606.01444; never a discovery proof."""
+
+    transition_kind: Literal["fixed_regime_search", "regime_transition_candidate"]
+    old_schema_elements: tuple[str, ...] = Field(min_length=1)
+    proposed_schema_elements: tuple[str, ...] = Field(min_length=1)
+    transported_elements: tuple[str, ...] = Field(min_length=1)
+    transport_analysis: tuple[str, ...] = Field(min_length=1)
+    residual_elements: tuple[str, ...] = Field(min_length=1)
+    preservation_checks: tuple[str, ...] = Field(min_length=1)
+    stress_tests: tuple[str, ...] = Field(min_length=1)
+    worthiness_criteria: tuple[str, ...] = Field(min_length=1)
+    status: Literal["candidate"] = "candidate"
+
+    @model_validator(mode="after")
+    def validate_transition(self) -> CategoricalNoveltyAudit:
+        if set(self.residual_elements) & set(self.transported_elements):
+            raise ValueError("residual elements must lie outside declared transport")
+        if self.transition_kind == "regime_transition_candidate" and set(
+            self.proposed_schema_elements
+        ) <= set(self.old_schema_elements):
+            raise ValueError(
+                "regime transition candidate requires a proposed schema extension"
+            )
+        return self
+
+
+class HypothesisCandidate(StrictModel):
+    experiment: ExperimentSpec
+    evidence_uses: tuple[EvidenceUse, ...] = Field(min_length=1)
+    novelty: CategoricalNoveltyAudit
+
+    @model_validator(mode="after")
+    def validate_evidence_citations(self) -> HypothesisCandidate:
+        citations = set(self.experiment.citations)
+        missing = {item.citation for item in self.evidence_uses} - citations
+        if missing:
+            raise ValueError(
+                f"evidence uses must cite the experiment sources: {sorted(missing)}"
+            )
+        return self
+
+
+class HypothesisMatrix(StrictModel):
+    matrix_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+    campaign_id: str
+    evidence_snapshot_id: str
+    hypotheses: tuple[HypothesisCandidate, ...] = Field(min_length=5)
+    created_at: str = Field(default_factory=utc_now)
+
+    @model_validator(mode="after")
+    def validate_distinct_hypotheses(self) -> HypothesisMatrix:
+        experiments = [item.experiment for item in self.hypotheses]
+        ids = [item.experiment_id for item in experiments]
+        if len(ids) != len(set(ids)):
+            raise ValueError("hypothesis matrix experiment ids must be unique")
+        signatures = [
+            json.dumps(
+                experiment.knobs.model_dump(exclude_none=True, mode="json"),
+                sort_keys=True,
+            )
+            for experiment in experiments
+        ]
+        if len(signatures) != len(set(signatures)):
+            raise ValueError("hypothesis matrix knob signatures must be distinct")
+        hypotheses = [experiment.hypothesis.casefold() for experiment in experiments]
+        if len(hypotheses) != len(set(hypotheses)):
+            raise ValueError("hypothesis matrix hypotheses must be distinct")
         return self
 
 

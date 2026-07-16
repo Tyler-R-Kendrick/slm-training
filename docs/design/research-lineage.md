@@ -471,6 +471,7 @@ quality gain, or ship status is recorded by this implementation-only change.
 
 | System / paper | Fidelity and role here | Integration |
 | --- | --- | --- |
+| Wang and Buehler, *Self-Revising Discovery Systems for Science: A Categorical Framework for Agentic Artificial Intelligence*, [arXiv:2606.01444](https://arxiv.org/abs/2606.01444) | **Adapted** — schema transitions, preservation, Kan transport, residuals, and MDL-style worthiness become a typed pre-run audit. We do not claim the paper proves a proposed OpenUI idea globally novel; verified discovery requires accepted post-run evidence that does not yet exist at hypothesis time | `HypothesisMatrix` / `CategoricalNoveltyAudit`, matrix validation, and the execution gate in [`autoresearch/`](../../src/slm_training/autoresearch/) and [`scripts/autoresearch.py`](../../scripts/autoresearch.py) |
 | LangChain, [Open Deep Research](https://github.com/langchain-ai/open_deep_research) | **Adapted system integration** — its configurable LangGraph researcher produces an untrusted cited memo and trajectory; it does not author executable commands or bypass proposal validation | Isolated invocation adapter pinned to `b764481fca7f0dbf00b2c70239bd97cea59d1059` in [`autoresearch/researchers.py`](../../src/slm_training/autoresearch/researchers.py) |
 | Li et al., *OpenResearcher: A Fully Open Pipeline for Long-Horizon Deep Research Trajectory Synthesis*, [arXiv:2603.20278](https://arxiv.org/abs/2603.20278), [code](https://github.com/TIGER-AI-Lab/OpenResearcher) | **Adapted system integration** — the released search/browse trajectory runner is another memo producer. We do not adopt its training recipe, model weights, corpus, benchmark claims, or GPU topology | Isolated invocation adapter pinned to `785fd6ba5fcbc068daa4a2f07bbe0964f2983c86`; upstream code is not vendored |
 
@@ -583,6 +584,7 @@ smallest constrained intervention whose verifier and frozen suites can falsify i
 | V7 champion | E75 | `scripts/run_quality_matrix.py --matrix v7` |
 | Compiler-drafted decode | `compiler_decode_mode=forced|restricted|tree` | `dsl/grammar/fastpath/compiler_draft.py`, `models/twotower.py` |
 | Evidence-grounded autoresearch | `--researcher`, typed `ResearcherRun` / `ExperimentKnobs` | `scripts/autoresearch.py`, `src/slm_training/autoresearch/` |
+| Five-candidate hypothesis matrix | `hypothesize`, `min_hypotheses>=5`, categorical candidate audit | `scripts/autoresearch.py`, `autoresearch/schemas.py`, `autoresearch/engine.py` |
 
 ---
 
