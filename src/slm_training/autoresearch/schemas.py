@@ -27,13 +27,20 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
     {
         "batch_size",
         "context_backend",
+        "compiler_alignment_loss_weight",
+        "compiler_alignment_stratified",
+        "compiler_decode_mode",
         "data_source",
+        "design_md_context",
         "derive_from",
         "lr",
         "max_records_per_parent",
         "min_quality_score",
         "mixture_weights",
+        "output_tokenizer",
         "seed",
+        "schema_in_context",
+        "slot_contract_in_context",
         "steps",
         "synthesizer",
         "train_version",
@@ -208,6 +215,13 @@ class ExperimentKnobs(StrictModel):
     lr: float | None = Field(default=None, gt=0, le=1)
     seed: int | None = Field(default=None, ge=0)
     context_backend: Literal["scratch", "hf"] | None = None
+    output_tokenizer: Literal["compositional", "lexer"] | None = None
+    compiler_alignment_loss_weight: float | None = Field(default=None, ge=0, le=10)
+    compiler_alignment_stratified: bool | None = None
+    compiler_decode_mode: Literal["off", "forced", "restricted", "tree"] | None = None
+    schema_in_context: bool | None = None
+    slot_contract_in_context: bool | None = None
+    design_md_context: bool | None = None
     topology_actions: bool | None = None
     topology_structural_embeddings: bool | None = None
     topology_heterogeneous_noise: bool | None = None

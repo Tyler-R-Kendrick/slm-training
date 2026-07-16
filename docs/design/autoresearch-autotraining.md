@@ -341,7 +341,11 @@ For an already published immutable corpus, set the typed `train_version` knob.
 The compiler resolves it through the canonical `DataStore`, passes
 `--train-version` to both train and evaluation, and automatically uses that
 version's committed `mixture.json` unless the experiment supplies an explicit
-typed mixture override.
+typed mixture override. Matched TwoTower studies can also pin lexer/compositional
+output, compiler-alignment weight and stratification, compiler decode mode,
+schema/slot context, and DESIGN.md context through typed knobs; the compiler
+passes the shared settings to train and evaluation rather than relying on CLI
+defaults.
 
 ## Researcher improvement
 

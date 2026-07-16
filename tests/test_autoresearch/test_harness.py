@@ -1091,7 +1091,17 @@ def test_compile_is_typed_and_diagnosis_routes_bad_data() -> None:
 
 def test_compile_resolves_canonical_published_train_version() -> None:
     spec = experiment(
-        knobs=ExperimentKnobs(train_version="e218_schema_normalized_judge_v5", steps=32)
+        knobs=ExperimentKnobs(
+            train_version="e218_schema_normalized_judge_v5",
+            steps=32,
+            output_tokenizer="lexer",
+            compiler_alignment_loss_weight=1.0,
+            compiler_alignment_stratified=True,
+            compiler_decode_mode="tree",
+            schema_in_context=True,
+            slot_contract_in_context=True,
+            design_md_context=False,
+        )
     )
 
     commands = compile_commands(campaign(), spec)
@@ -1100,6 +1110,12 @@ def test_compile_resolves_canonical_published_train_version() -> None:
     assert "e218_schema_normalized_judge_v5" in commands[0]
     assert "--train-dir" not in commands[0]
     assert "--train-version" in commands[-1]
+    assert commands[0][commands[0].index("--output-tokenizer") + 1] == "lexer"
+    assert "--compiler-alignment-stratified" in commands[0]
+    assert "--schema-in-context" in commands[0]
+    assert "--slot-contract-in-context" in commands[0]
+    assert "--no-design-md-context" in commands[0]
+    assert commands[-1][commands[-1].index("--compiler-decode-mode") + 1] == "tree"
 
 
 def test_train_version_and_data_build_are_mutually_exclusive() -> None:

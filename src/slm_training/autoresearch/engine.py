@@ -349,8 +349,25 @@ def compile_commands(
             "grammar_active_symbol_bitsets",
             "compact_active_canvas",
         }
-        if any(getattr(knobs, field) is not None for field in symbol_fields):
+        if knobs.output_tokenizer:
+            train.extend(["--output-tokenizer", knobs.output_tokenizer])
+        elif any(getattr(knobs, field) is not None for field in symbol_fields):
             train.extend(["--output-tokenizer", "lexer"])
+        if knobs.compiler_alignment_loss_weight is not None:
+            train.extend(
+                [
+                    "--compiler-alignment-loss-weight",
+                    str(knobs.compiler_alignment_loss_weight),
+                ]
+            )
+        if knobs.compiler_alignment_stratified:
+            train.append("--compiler-alignment-stratified")
+        if knobs.schema_in_context:
+            train.append("--schema-in-context")
+        if knobs.slot_contract_in_context:
+            train.append("--slot-contract-in-context")
+        if knobs.design_md_context is False:
+            train.append("--no-design-md-context")
         for field, flag in {
             "runtime_symbol_features": "runtime-symbol-features",
             "constraint_graph_mode": "constraint-graph-mode",
@@ -391,6 +408,17 @@ def compile_commands(
     commands.append(evaluate)
     if campaign.track == "grammar_diffusion":
         commands[-1].extend(["--model", "grammar_diffusion"])
+    elif campaign.track == "twotower":
+        if knobs.output_tokenizer:
+            evaluate.extend(["--output-tokenizer", knobs.output_tokenizer])
+        if knobs.compiler_decode_mode:
+            evaluate.extend(["--compiler-decode-mode", knobs.compiler_decode_mode])
+        if knobs.schema_in_context:
+            evaluate.append("--schema-in-context")
+        if knobs.slot_contract_in_context:
+            evaluate.append("--slot-contract-in-context")
+        if knobs.design_md_context is False:
+            evaluate.append("--no-design-md-context")
     return commands
 
 
