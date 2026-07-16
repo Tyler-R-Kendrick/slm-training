@@ -1,0 +1,304 @@
+{
+  "schema_version": 1,
+  "retrieved_at": "2026-07-16T00:00:00Z",
+  "source_scope": "All 25 distinct academic works and 8 implementation/documentation sources cited by public ChatGPT share 6a593158-85c4-83ea-80b1-b6fb893b26bc. Canonical paper metadata was verified against arXiv or OpenReview; alternate URLs from the share are preserved in metadata.",
+  "sources": [
+    {
+      "source_id": "arxiv-1908.04319",
+      "kind": "web",
+      "title": "Neural Text Generation with Unlikelihood Training",
+      "uri": "https://arxiv.org/abs/1908.04319",
+      "published_at": "2019-08-12",
+      "summary": "Penalizes undesirable generations directly, including repetitive or otherwise disfavored tokens.",
+      "metadata": {"authors": ["Sean Welleck", "Ilia Kulikov", "Stephen Roller", "Emily Dinan", "Kyunghyun Cho", "Jason Weston"], "category": "local_preference", "local_decision_takeaway": "Use bad-token unlikelihood as the simplest localized control.", "repo_relevance": "E250 bad-token control", "implementation_status": "Adapted", "limitations": "The paper studies autoregressive text, not masked OpenUI decisions."}
+    },
+    {
+      "source_id": "arxiv-2305.18290",
+      "kind": "web",
+      "title": "Direct Preference Optimization: Your Language Model is Secretly a Reward Model",
+      "uri": "https://arxiv.org/abs/2305.18290",
+      "published_at": "2023-05-29",
+      "summary": "Optimizes pairwise preferences against a reference policy without a separately trained reward model.",
+      "metadata": {"authors": ["Rafael Rafailov", "Archit Sharma", "Eric Mitchell", "Stefano Ermon", "Christopher D. Manning", "Chelsea Finn"], "category": "local_preference", "local_decision_takeaway": "Keep reference locality explicit when adapting preferences to one decision.", "repo_relevance": "Existing surrogate DPO and E253 reference control", "implementation_status": "Adapted", "limitations": "The local TwoTower objective is not textbook sequence-level DPO."}
+    },
+    {
+      "source_id": "arxiv-2309.08600",
+      "kind": "web",
+      "title": "Sparse Autoencoders Find Highly Interpretable Features in Language Models",
+      "uri": "https://arxiv.org/abs/2309.08600",
+      "published_at": "2023-09-15",
+      "summary": "Uses sparse autoencoders to decompose polysemantic language-model activations into interpretable features.",
+      "metadata": {"authors": ["Hoagy Cunningham", "Aidan Ewart", "Logan Riggs", "Robert Huben", "Lee Sharkey"], "category": "representation_intervention", "local_decision_takeaway": "SAEs may diagnose states but should not replace explicit verifier evidence.", "repo_relevance": "Deferred structural-slop forensics", "implementation_status": "Adjacent", "limitations": "No SAE is trained or used as an oracle here."}
+    },
+    {
+      "source_id": "arxiv-2402.09353",
+      "kind": "web",
+      "title": "DoRA: Weight-Decomposed Low-Rank Adaptation",
+      "uri": "https://arxiv.org/abs/2402.09353",
+      "published_at": "2024-02-14",
+      "summary": "Decomposes pretrained weights into magnitude and direction for parameter-efficient adaptation.",
+      "metadata": {"authors": ["Shih-Yang Liu", "Chien-Yi Wang", "Hongxu Yin", "Pavlo Molchanov", "Yu-Chiang Frank Wang", "Kwang-Ting Cheng", "Min-Hung Chen"], "category": "adapter_actuator", "local_decision_takeaway": "Adapter choice is an actuator, not the decision-event objective.", "repo_relevance": "Future causal-track actuator", "implementation_status": "Adjacent", "limitations": "The initial TwoTower implementation updates its existing trainable parameters."}
+    },
+    {
+      "source_id": "arxiv-2404.02948",
+      "kind": "web",
+      "title": "PiSSA: Principal Singular Values and Singular Vectors Adaptation of Large Language Models",
+      "uri": "https://arxiv.org/abs/2404.02948",
+      "published_at": "2024-04-03",
+      "summary": "Initializes low-rank adaptation from principal singular components of pretrained weights.",
+      "metadata": {"authors": ["Fanxu Meng", "Zhaohui Wang", "Muhan Zhang"], "category": "adapter_actuator", "local_decision_takeaway": "Initialization is separable from the localized preference objective.", "repo_relevance": "Future causal-track rank and initialization ablation", "implementation_status": "Adjacent", "limitations": "No PiSSA adapter is introduced."}
+    },
+    {
+      "source_id": "arxiv-2404.03592",
+      "kind": "web",
+      "title": "ReFT: Representation Finetuning for Language Models",
+      "uri": "https://arxiv.org/abs/2404.03592",
+      "published_at": "2024-04-04",
+      "summary": "Adapts models through learned interventions on hidden representations rather than weight updates alone.",
+      "metadata": {"authors": ["Zhengxuan Wu", "Aryaman Arora", "Zheng Wang", "Atticus Geiger", "Dan Jurafsky", "Christopher D. Manning", "Christopher Potts"], "category": "representation_intervention", "local_decision_takeaway": "Representation interventions are a later actuator after explicit event supervision works.", "repo_relevance": "Deferred state intervention", "implementation_status": "Adjacent", "limitations": "No representation intervention is implemented."}
+    },
+    {
+      "source_id": "arxiv-2404.11999",
+      "kind": "web",
+      "title": "Token-level Direct Preference Optimization",
+      "uri": "https://arxiv.org/abs/2404.11999",
+      "published_at": "2024-04-18",
+      "summary": "Attributes preference updates to response tokens instead of weighting every token uniformly.",
+      "metadata": {"authors": ["Yongcheng Zeng", "Guoqing Liu", "Weiyu Ma", "Ning Yang", "Haifeng Zhang", "Jun Wang"], "category": "local_preference", "local_decision_takeaway": "Train on the exact decision position rather than an entire generated program.", "repo_relevance": "DecisionEventV1 and E251-E254", "implementation_status": "Adapted", "limitations": "OpenUI decisions are masked-token states rather than autoregressive response tokens."}
+    },
+    {
+      "source_id": "arxiv-2406.04093",
+      "kind": "web",
+      "title": "Scaling and Evaluating Sparse Autoencoders",
+      "uri": "https://arxiv.org/abs/2406.04093",
+      "published_at": "2024-06-06",
+      "summary": "Studies scaling laws and evaluation criteria for sparse autoencoders over language-model activations.",
+      "metadata": {"authors": ["Leo Gao", "Tom Dupré la Tour", "Henk Tillman", "Gabriel Goh", "Rajan Troll", "Alec Radford", "Ilya Sutskever", "Jan Leike", "Jeffrey Wu"], "category": "representation_intervention", "local_decision_takeaway": "Any future SAE must have explicit coverage and causal evaluation.", "repo_relevance": "Deferred SAE audit", "implementation_status": "Adjacent", "limitations": "No SAE evaluation is run."}
+    },
+    {
+      "source_id": "arxiv-2408.05147",
+      "kind": "web",
+      "title": "Gemma Scope: Open Sparse Autoencoders Everywhere All At Once on Gemma 2",
+      "uri": "https://arxiv.org/abs/2408.05147",
+      "published_at": "2024-08-09",
+      "summary": "Releases and evaluates broad sparse-autoencoder suites across Gemma 2 layers and sites.",
+      "metadata": {"authors": ["Tom Lieberum", "Senthooran Rajamanoharan", "Arthur Conmy", "Lewis Smith", "Nicolas Sonnerat", "Vikrant Varma", "János Kramár", "Anca Dragan", "Rohin Shah", "Neel Nanda"], "category": "representation_intervention", "local_decision_takeaway": "Layer-wide SAE coverage is substantial infrastructure and is not a first intervention.", "repo_relevance": "Deferred SAE discovery", "implementation_status": "Adjacent", "limitations": "Gemma Scope artifacts do not apply to TwoTower."}
+    },
+    {
+      "source_id": "arxiv-2410.02355",
+      "kind": "web",
+      "title": "AlphaEdit: Null-Space Constrained Knowledge Editing for Language Models",
+      "uri": "https://arxiv.org/abs/2410.02355",
+      "published_at": "2024-10-03",
+      "summary": "Projects model edits into a null space intended to preserve previously learned knowledge.",
+      "metadata": {"authors": ["Junfeng Fang", "Houcheng Jiang", "Kun Wang", "Yunshan Ma", "Shi Jie", "Xiang Wang", "Xiangnan He", "Tat-seng Chua"], "category": "locality_preservation", "local_decision_takeaway": "Preservation must be measured, not inferred from a localized target.", "repo_relevance": "Reference-logit locality metrics", "implementation_status": "Adjacent", "limitations": "MSE tethering is not AlphaEdit or a null-space projection."}
+    },
+    {
+      "source_id": "arxiv-2410.04350",
+      "kind": "web",
+      "title": "TIS-DPO: Token-level Importance Sampling for Direct Preference Optimization With Estimated Weights",
+      "uri": "https://arxiv.org/abs/2410.04350",
+      "published_at": "2024-10-06",
+      "summary": "Estimates token importance so preference optimization focuses on decisions most responsible for response quality.",
+      "metadata": {"authors": ["Aiwei Liu", "Haoping Bai", "Zhiyun Lu", "Yanchao Sun", "Xiang Kong", "Simon Wang", "Jiulong Shan", "Albin Madappally Jose", "Xiaojiang Liu", "Lijie Wen", "Philip S. Yu", "Meng Cao"], "category": "local_preference", "local_decision_takeaway": "Event evidence supplies explicit importance instead of uniform token weighting.", "repo_relevance": "Evidence-weighted set FTPO", "implementation_status": "Adapted", "limitations": "The implementation does not reproduce TIS-DPO estimators."}
+    },
+    {
+      "source_id": "arxiv-2501.12948",
+      "kind": "web",
+      "title": "DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning",
+      "uri": "https://arxiv.org/abs/2501.12948",
+      "published_at": "2025-01-22",
+      "summary": "Demonstrates large-scale reinforcement learning with verifiable rewards and staged post-training.",
+      "metadata": {"authors": ["DeepSeek-AI"], "category": "verifiable_training", "alternate_urls": ["https://doi.org/10.1038/s41586-025-09422-z"], "local_decision_takeaway": "Keep local correction before any separately gated RLVR stage.", "repo_relevance": "Deferred RLVR stage", "implementation_status": "Adjacent", "limitations": "No RL or reasoning claim is made."}
+    },
+    {
+      "source_id": "arxiv-2501.17148",
+      "kind": "web",
+      "title": "AxBench: Steering LLMs? Even Simple Baselines Outperform Sparse Autoencoders",
+      "uri": "https://arxiv.org/abs/2501.17148",
+      "published_at": "2025-01-28",
+      "summary": "Benchmarks representation steering and finds that simple baselines can outperform sparse-autoencoder methods.",
+      "metadata": {"authors": ["Zhengxuan Wu", "Aryaman Arora", "Atticus Geiger", "Zheng Wang", "Jing Huang", "Dan Jurafsky", "Christopher D. Manning", "Christopher Potts"], "category": "representation_intervention", "local_decision_takeaway": "Require SAE methods to beat direct supervised baselines.", "repo_relevance": "Reason to defer SAE steering", "implementation_status": "Adjacent", "limitations": "The benchmark targets causal LLM steering."}
+    },
+    {
+      "source_id": "arxiv-2502.18878",
+      "kind": "web",
+      "title": "Learning to Generate Structured Output with Schema Reinforcement Learning",
+      "uri": "https://arxiv.org/abs/2502.18878",
+      "published_at": "2025-02-26",
+      "summary": "Uses schema-verifiable rewards to improve structured JSON generation.",
+      "metadata": {"authors": ["Yaxi Lu", "Haolun Li", "Xin Cong", "Zhong Zhang", "Yesai Wu", "Yankai Lin", "Zhiyuan Liu", "Fangming Liu", "Maosong Sun"], "category": "verifiable_training", "local_decision_takeaway": "OpenUI grammar and contract verifiers can ground decision labels.", "repo_relevance": "Counterfactual event verification", "implementation_status": "Adjacent", "limitations": "No schema-RL loop is implemented."}
+    },
+    {
+      "source_id": "arxiv-2505.20417",
+      "kind": "web",
+      "title": "SCAR: Shapley Credit Assignment for More Efficient RLHF",
+      "uri": "https://arxiv.org/abs/2505.20417",
+      "published_at": "2025-05-26",
+      "summary": "Uses Shapley-style credit assignment to distribute sparse preference rewards over response decisions.",
+      "metadata": {"authors": ["Meng Cao", "Shuyuan Zhang", "Xiao-Wen Chang", "Doina Precup"], "category": "credit_assignment", "local_decision_takeaway": "Delayed failures need causal or counterfactual attribution rather than guessed blame.", "repo_relevance": "Fail-closed event attribution", "implementation_status": "Adjacent", "limitations": "No Shapley estimator is implemented."}
+    },
+    {
+      "source_id": "arxiv-2505.23363",
+      "kind": "web",
+      "title": "Discriminative Policy Optimization for Token-Level Reward Models",
+      "uri": "https://arxiv.org/abs/2505.23363",
+      "published_at": "2025-05-29",
+      "summary": "Trains token-level reward models to distinguish good and bad process decisions.",
+      "metadata": {"authors": ["Hongzhan Chen", "Tao Yang", "Shiping Gao", "Ruijun Chen", "Xiaojun Quan", "Hongtao Tian", "Ting Yao"], "category": "credit_assignment", "local_decision_takeaway": "Keep verifier evidence separate from the policy objective.", "repo_relevance": "Future learned event scorer", "implementation_status": "Adjacent", "limitations": "No reward model is trained."}
+    },
+    {
+      "source_id": "arxiv-2506.08712",
+      "kind": "web",
+      "title": "ConfPO: Exploiting Policy Model Confidence for Critical Token Selection in Large Language Model Preference Optimization",
+      "uri": "https://arxiv.org/abs/2506.08712",
+      "published_at": "2025-06-10",
+      "summary": "Selects preference-critical tokens using policy confidence without an auxiliary model.",
+      "metadata": {"authors": ["Hee Suk Yoon", "Eunseop Yoon", "Mark A. Hasegawa-Johnson", "Sungwoong Kim", "Chang D. Yoo"], "category": "local_preference", "alternate_urls": ["https://openreview.net/forum?id=ZG7bkp6ScT&noteId=XY1caOo1pn"], "local_decision_takeaway": "Decode confidence is a useful event-selection signal but not proof of blame.", "repo_relevance": "Trace confidence and selection telemetry", "implementation_status": "Adapted", "limitations": "Confidence alone never creates semantic labels."}
+    },
+    {
+      "source_id": "arxiv-2506.14574",
+      "kind": "web",
+      "title": "TGDPO: Harnessing Token-Level Reward Guidance for Enhancing Direct Preference Optimization",
+      "uri": "https://arxiv.org/abs/2506.14574",
+      "published_at": "2025-06-17",
+      "summary": "Adds token-level reward guidance so DPO updates vary with the local importance of each decision.",
+      "metadata": {"authors": ["Mingkang Zhu", "Xi Chen", "Zhongdao Wang", "Bei Yu", "Hengshuang Zhao", "Jiaya Jia"], "category": "local_preference", "alternate_urls": ["https://openreview.net/forum?id=TKHWvyzR1t&noteId=qVh7eZusC7"], "local_decision_takeaway": "Weight exact decision pairs with explicit verifier evidence.", "repo_relevance": "Evidence-weighted set FTPO", "implementation_status": "Adapted", "limitations": "The implementation does not reproduce TGDPO's reward model or derivation."}
+    },
+    {
+      "source_id": "arxiv-2510.15061",
+      "kind": "web",
+      "title": "Antislop: A Comprehensive Framework for Identifying and Eliminating Repetitive Patterns in Language Models",
+      "uri": "https://arxiv.org/abs/2510.15061",
+      "published_at": "2025-10-16",
+      "summary": "Mines repetitive failure onsets and applies localized preference optimization to reduce them.",
+      "metadata": {"authors": ["Samuel Paech", "Allen Roush", "Judah Goldfeder", "Ravid Shwartz-Ziv"], "category": "local_preference", "local_decision_takeaway": "Mine on-policy failure onset and train only the exact decision state.", "repo_relevance": "DecisionEventV1, FTPO, and iterative remine design", "implementation_status": "Adapted", "limitations": "TwoTower structural decisions are not natural-language phrase onsets."}
+    },
+    {
+      "source_id": "arxiv-2602.00513",
+      "kind": "web",
+      "title": "Minerva: Reinforcement Learning with Verifiable Rewards for Cyber Threat Intelligence LLMs",
+      "uri": "https://arxiv.org/abs/2602.00513",
+      "published_at": "2026-01-31",
+      "summary": "Applies verifiable-reward reinforcement learning to structured cyber-threat outputs.",
+      "metadata": {"authors": ["Md Tanvirul Alam", "Aritran Piplai", "Ionut Cardei", "Nidhi Rastogi", "Peter J Worth"], "category": "verifiable_training", "local_decision_takeaway": "Machine-checkable structure is useful supervision but does not remove the RL readiness gate.", "repo_relevance": "Deferred OpenUI RLVR", "implementation_status": "Adjacent", "limitations": "No Minerva recipe or CTI task is reproduced."}
+    },
+    {
+      "source_id": "arxiv-2603.15965",
+      "kind": "web",
+      "title": "MoLoRA: Composable Specialization via Per-Token Adapter Routing",
+      "uri": "https://arxiv.org/abs/2603.15965",
+      "published_at": "2026-03-16",
+      "summary": "Routes tokens across specialized low-rank adapters for composable behavior.",
+      "metadata": {"authors": ["Shrey Shah", "Justin Wagle"], "category": "adapter_actuator", "local_decision_takeaway": "Routing belongs after interventions demonstrate separable value.", "repo_relevance": "Deferred causal adapter routing", "implementation_status": "Adjacent", "limitations": "No routing or adapter bank is added."}
+    },
+    {
+      "source_id": "arxiv-2605.12288",
+      "kind": "web",
+      "title": "TokenRatio: Principled Token-Level Preference Optimization via Ratio Matching",
+      "uri": "https://arxiv.org/abs/2605.12288",
+      "published_at": "2026-05-12",
+      "summary": "Formulates token-level preference optimization through ratio matching at generation decisions.",
+      "metadata": {"authors": ["Truong Nguyen", "Tien-Phat Nguyen", "Linh Ngo Van", "Duy Minh Ho Nguyen", "Khoa Doan", "Trung Le"], "category": "local_preference", "local_decision_takeaway": "Compare good and bad actions at the same state, never across mismatched contexts.", "repo_relevance": "Exact-state event validation", "implementation_status": "Adapted", "limitations": "The implemented clipped-margin loss is not TokenRatio."}
+    },
+    {
+      "source_id": "arxiv-2605.31183",
+      "kind": "web",
+      "title": "Steering LLMs? Actually, Sparse Autoencoders Can Outperform Simple Baselines",
+      "uri": "https://arxiv.org/abs/2605.31183",
+      "published_at": "2026-05-29",
+      "summary": "Revisits SAE steering and reports settings where properly evaluated SAEs outperform simple baselines.",
+      "metadata": {"authors": ["Mikkel Godsk Jørgensen", "Lars Kai Hansen"], "category": "representation_intervention", "local_decision_takeaway": "SAE value is empirical and requires matched direct-supervision controls.", "repo_relevance": "Deferred SAE comparison", "implementation_status": "Adjacent", "limitations": "Conflicting SAE evidence is documented rather than resolved here."}
+    },
+    {
+      "source_id": "arxiv-2606.11262",
+      "kind": "web",
+      "title": "PermDoRA -- Understanding Adapter Interference in Language Models: Limits of Parameter-Space Geometry",
+      "uri": "https://arxiv.org/abs/2606.11262",
+      "published_at": "2026-06-09",
+      "summary": "Studies interference among modular adapters and the limits of parameter-space separation heuristics.",
+      "metadata": {"authors": ["Gowtham Sivaramakrishnan", "Sarvesha Kumar Kombaiah Seetha", "Kishan Gupta Balaji", "Santhosh Baradwaj Vaduvur Ranganathan"], "category": "adapter_actuator", "local_decision_takeaway": "Do not assume multiple localized adapters compose without interference tests.", "repo_relevance": "Deferred adapter composition", "implementation_status": "Adjacent", "limitations": "The first campaign has no adapter composition."}
+    },
+    {
+      "source_id": "arxiv-2606.26783",
+      "kind": "web",
+      "title": "Reproducibility Study of AlphaEdit: Null-Space Constrained Knowledge Editing for Language Models",
+      "uri": "https://arxiv.org/abs/2606.26783",
+      "published_at": "2026-06-25",
+      "summary": "Re-evaluates AlphaEdit and tests whether its preservation claims reproduce across settings.",
+      "metadata": {"authors": ["Ananth K Suresh", "Arya Hariharan"], "category": "locality_preservation", "local_decision_takeaway": "Locality claims need direct held-out measurements and reproduction controls.", "repo_relevance": "Reference-drift metrics and falsification", "implementation_status": "Adjacent", "limitations": "No knowledge-editing benchmark is reproduced."}
+    },
+    {
+      "source_id": "hf-peft-trainable-tokens",
+      "kind": "web",
+      "title": "PEFT Trainable Tokens",
+      "uri": "https://huggingface.co/docs/peft/package_reference/trainable_tokens",
+      "published_at": "2026-07-16",
+      "summary": "Documents selective token-embedding updates in Hugging Face PEFT.",
+      "metadata": {"category": "implementation", "local_decision_takeaway": "Selective parameters are an actuator, not an event definition.", "repo_relevance": "Deferred causal-track option", "implementation_status": "Adjacent", "limitations": "Not used by TwoTower."}
+    },
+    {
+      "source_id": "hf-peft-lora",
+      "kind": "web",
+      "title": "PEFT LoRA",
+      "uri": "https://huggingface.co/docs/peft/main/en/package_reference/lora",
+      "published_at": "2026-07-16",
+      "summary": "Documents LoRA configuration and adapter lifecycle in Hugging Face PEFT.",
+      "metadata": {"category": "implementation", "local_decision_takeaway": "A removable causal intervention can reuse the existing PEFT path later.", "repo_relevance": "Existing causal plugin", "implementation_status": "Adjacent", "limitations": "No new LoRA path is created."}
+    },
+    {
+      "source_id": "github-transformerlens",
+      "kind": "web",
+      "title": "TransformerLens",
+      "uri": "https://github.com/TransformerLensOrg/TransformerLens",
+      "published_at": "2026-07-16",
+      "summary": "Provides activation inspection and mechanistic-interpretability tooling for transformer models.",
+      "metadata": {"category": "implementation", "local_decision_takeaway": "Use only if explicit event telemetry cannot answer a later representation question.", "repo_relevance": "Deferred forensics", "implementation_status": "Adjacent", "limitations": "Not integrated."}
+    },
+    {
+      "source_id": "github-saelens",
+      "kind": "web",
+      "title": "SAELens",
+      "uri": "https://github.com/decoderesearch/SAELens",
+      "published_at": "2026-07-16",
+      "summary": "Provides training and analysis utilities for sparse autoencoders over language models.",
+      "metadata": {"category": "implementation", "local_decision_takeaway": "SAE infrastructure remains deferred behind direct baselines.", "repo_relevance": "Deferred SAE tooling", "implementation_status": "Adjacent", "limitations": "Not integrated."}
+    },
+    {
+      "source_id": "github-nnsight",
+      "kind": "web",
+      "title": "NNsight",
+      "uri": "https://github.com/ndif-team/nnsight",
+      "published_at": "2026-07-16",
+      "summary": "Supports tracing and intervention over neural-network computations.",
+      "metadata": {"category": "implementation", "local_decision_takeaway": "Generic intervention tooling is unnecessary for the first exact-logit objective.", "repo_relevance": "Deferred representation experiments", "implementation_status": "Adjacent", "limitations": "Not integrated."}
+    },
+    {
+      "source_id": "github-pyreft",
+      "kind": "web",
+      "title": "pyreft",
+      "uri": "https://github.com/stanfordnlp/pyreft",
+      "published_at": "2026-07-16",
+      "summary": "Implements representation-finetuning interventions for language models.",
+      "metadata": {"category": "implementation", "local_decision_takeaway": "Representation editing remains a later actuator comparison.", "repo_relevance": "Deferred ReFT implementation", "implementation_status": "Adjacent", "limitations": "Not integrated."}
+    },
+    {
+      "source_id": "github-auto-antislop",
+      "kind": "web",
+      "title": "Auto-Antislop",
+      "uri": "https://github.com/sam-paech/auto-antislop",
+      "published_at": "2026-04-25",
+      "summary": "Mines repetitive failure onsets and trains a clipped final-token preference objective with reference-logit tethers.",
+      "metadata": {"revision": "8fb98fdf019e6fcc20164f9bdec41f9008fcd632", "license": "No license file found at reviewed revision; do not copy source.", "category": "implementation", "local_decision_takeaway": "Borrow the documented objective behavior through an independent implementation.", "repo_relevance": "FTPO loss and locality telemetry", "implementation_status": "Adapted", "limitations": "Its causal final-token path is specialized to a masked TwoTower state."}
+    },
+    {
+      "source_id": "github-antidoom",
+      "kind": "web",
+      "title": "Antidoom",
+      "uri": "https://github.com/Liquid4All/antidoom",
+      "published_at": "2026-07-07",
+      "summary": "Provides token-aware repetition mining, balanced single-token event data, and localized preference training.",
+      "metadata": {"revision": "bd6a126476e18554b0cacaea3fd9f258fdde1f97", "license": "Apache-2.0", "category": "implementation", "local_decision_takeaway": "Validate exact token surfaces and balance event families without silent truncation.", "repo_relevance": "DecisionEventV1 validation and balanced sampler", "implementation_status": "Adapted", "limitations": "OpenUI structural decisions use token IDs and verifiers rather than text-surface repetition alone."}
+    }
+  ]
+}

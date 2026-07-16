@@ -162,6 +162,20 @@ of [XGrammar](https://arxiv.org/abs/2411.15100). Implementation and exact gates:
 | **Code** | [`harnesses/preference/train.py`](../../src/slm_training/harnesses/preference/train.py) (`dpo_loss`), pair builders in [`harnesses/preference/`](../../src/slm_training/harnesses/preference/) |
 | **CLI** | `scripts/train_preference.py` |
 
+### Exact-state local decision preference
+
+| | |
+| --- | --- |
+| **Papers** | [Unlikelihood](https://arxiv.org/abs/1908.04319), [Token-level DPO](https://arxiv.org/abs/2404.11999), [TIS-DPO](https://arxiv.org/abs/2410.04350), [ConfPO](https://arxiv.org/abs/2506.08712), [TGDPO](https://arxiv.org/abs/2506.14574), [Antislop](https://arxiv.org/abs/2510.15061), [TokenRatio](https://arxiv.org/abs/2605.12288) |
+| **Fidelity** | **Adapted** — exact masked-token states, verifier-backed good/bad action sets, clipped logit margins, and optional frozen-reference tethering; not sequence DPO or a faithful reproduction of any cited objective |
+| **Code** | Existing preference/trace owners; detailed boundary and full 25-paper audit in [`local-decision-interventions.md`](local-decision-interventions.md) |
+| **Matrix** | Proposed/unrun V10 rows E248-E254 in [`quality-experiment-matrix.md`](quality-experiment-matrix.md) |
+
+SAE/ReFT discovery, removable LoRA/DoRA/PiSSA actuators, adapter routing, iterative
+remine, and RLVR are **Adjacent**. The first TwoTower implementation is a localized
+loss with a global full-parameter update. It makes no locality or ship claim until
+the registered controls run under unchanged gates.
+
 ### GRPO-lite
 
 | | |
