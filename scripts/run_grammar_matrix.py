@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run grammar topology diffusion experiments (X9-X15).
+"""Run grammar topology diffusion experiments (X9-X21).
 
 Staged ablations with 3 seeds and successive halving on smoke → held_out → adversarial.
 See docs/design/quality-experiment-matrix.md (X matrix section).
@@ -93,6 +93,10 @@ class GrammarExperiment:
     topology_heterogeneous_noise: bool = True
     topology_critic_decode: bool = True
     topology_bounded_buffer: bool = True
+    scope_contracts: bool = False
+    scope_independent_noise: bool = False
+    scope_local_oracle: bool = False
+    scope_contract_negatives: bool = False
 
 
 def _x_experiments(
@@ -100,8 +104,10 @@ def _x_experiments(
     train_cur: Path,
     *,
     design_md_in_context: bool = True,
+    scope_dir: Path | None = None,
 ) -> list[GrammarExperiment]:
-    """Runnable honest controls plus X9-X15 topology ablations."""
+    """Runnable honest controls plus X9-X21 topology ablations."""
+    scope = scope_dir or train_v1
     base = dict(
         train_dir=train_v1,
         design_md_in_context=design_md_in_context,
@@ -220,6 +226,105 @@ def _x_experiments(
             context_layers=3,
             denoiser_layers=6,
         ),
+        GrammarExperiment(
+            "X16",
+            "gx_x16_scope_corpus",
+            "X9 + shared scope-derivative corpus",
+            scope,
+            model_name="grammar_diffusion",
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            topology_actions=False,
+            topology_structural_embeddings=False,
+            topology_heterogeneous_noise=False,
+            topology_critic_decode=False,
+            topology_bounded_buffer=False,
+            design_md_in_context=design_md_in_context,
+        ),
+        GrammarExperiment(
+            "X17",
+            "gx_x17_scope_contracts",
+            "X16 + contract embeddings and summary/local-gate heads",
+            scope,
+            model_name="grammar_diffusion",
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            topology_actions=False,
+            topology_structural_embeddings=False,
+            topology_heterogeneous_noise=False,
+            topology_critic_decode=False,
+            topology_bounded_buffer=False,
+            scope_contracts=True,
+            design_md_in_context=design_md_in_context,
+        ),
+        GrammarExperiment(
+            "X18",
+            "gx_x18_scope_noise",
+            "X17 + independently noised concurrent scopes",
+            scope,
+            model_name="grammar_diffusion",
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            topology_actions=False,
+            topology_structural_embeddings=False,
+            topology_heterogeneous_noise=False,
+            topology_critic_decode=False,
+            topology_bounded_buffer=False,
+            scope_contracts=True,
+            scope_independent_noise=True,
+            design_md_in_context=design_md_in_context,
+        ),
+        GrammarExperiment(
+            "X19",
+            "gx_x19_scope_oracle",
+            "X18 + local-gate and failure-cone supervision",
+            scope,
+            model_name="grammar_diffusion",
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            topology_actions=False,
+            topology_structural_embeddings=False,
+            topology_heterogeneous_noise=False,
+            topology_critic_decode=False,
+            topology_bounded_buffer=False,
+            scope_contracts=True,
+            scope_independent_noise=True,
+            scope_local_oracle=True,
+            design_md_in_context=design_md_in_context,
+        ),
+        GrammarExperiment(
+            "X20",
+            "gx_x20_scope_negatives",
+            "X19 + boundary and local/global contract negatives",
+            scope,
+            model_name="grammar_diffusion",
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            topology_actions=False,
+            topology_structural_embeddings=False,
+            topology_heterogeneous_noise=False,
+            topology_critic_decode=False,
+            topology_bounded_buffer=False,
+            scope_contracts=True,
+            scope_independent_noise=True,
+            scope_local_oracle=True,
+            scope_contract_negatives=True,
+            design_md_in_context=design_md_in_context,
+        ),
+        GrammarExperiment(
+            "X21",
+            "gx_x21_scoped_topology",
+            "X20 + actions, structural state, critic, buffer, and global sync",
+            scope,
+            model_name="grammar_diffusion",
+            slot_contract_in_context=True,
+            slot_contract_constrained_decode=True,
+            scope_contracts=True,
+            scope_independent_noise=True,
+            scope_local_oracle=True,
+            scope_contract_negatives=True,
+            design_md_in_context=design_md_in_context,
+        ),
     ]
 
 
@@ -274,6 +379,10 @@ def _train_cfg(exp: GrammarExperiment, args: argparse.Namespace) -> ModelBuildCo
         topology_heterogeneous_noise=exp.topology_heterogeneous_noise,
         topology_critic_decode=exp.topology_critic_decode,
         topology_bounded_buffer=exp.topology_bounded_buffer,
+        scope_contracts=exp.scope_contracts,
+        scope_independent_noise=exp.scope_independent_noise,
+        scope_local_oracle=exp.scope_local_oracle,
+        scope_contract_negatives=exp.scope_contract_negatives,
         eval_every=args.eval_every,
         eval_suite="smoke",
         eval_suites="smoke,held_out" if args.eval_every else "",
@@ -604,6 +713,11 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=Path("outputs/train_data/v1_curriculum"),
     )
+    parser.add_argument(
+        "--scope-dir",
+        type=Path,
+        default=Path("outputs/train_data/v1_scope"),
+    )
     parser.add_argument("--test-dir", type=Path, default=Path("outputs/test_data/v1"))
     parser.add_argument("--run-root", type=Path, default=Path("outputs/runs"))
     parser.add_argument("--device", default="cpu")
@@ -671,6 +785,16 @@ def main(argv: list[str] | None = None) -> int:
         help="Build curriculum train corpus before running.",
     )
     parser.add_argument(
+        "--build-scope",
+        action="store_true",
+        help="Build the shared ScopeDiff corpus before running selected rows.",
+    )
+    parser.add_argument(
+        "--describe",
+        action="store_true",
+        help="Print selected experiment definitions and exit without writes or runs.",
+    )
+    parser.add_argument(
         "--compile",
         action="store_true",
         help="Enable torch.compile on train experiments.",
@@ -685,6 +809,38 @@ def main(argv: list[str] | None = None) -> int:
     seed_list = [int(s.strip()) for s in args.seeds.split(",") if s.strip()]
     if not seed_list:
         seed_list = list(DEFAULT_SEEDS)
+
+    design_md = not args.no_design_md_context
+    experiments = _x_experiments(
+        args.train_dir,
+        args.curriculum_dir,
+        design_md_in_context=design_md,
+        scope_dir=args.scope_dir,
+    )
+    if args.only:
+        wanted = {x.strip().upper() for x in args.only.split(",") if x.strip()}
+        legacy = sorted(wanted & LEGACY_FIXED_IDS)
+        if legacy:
+            raise ValueError(
+                f"{legacy} are frozen fixed-canvas rows; rerun them from the "
+                "source_commit recorded in docs/design/grammar-matrix-results.json"
+            )
+        experiments = [e for e in experiments if e.xid in wanted]
+
+    if args.describe:
+        print(
+            json.dumps(
+                [
+                    {
+                        **vars(experiment),
+                        "train_dir": str(experiment.train_dir),
+                    }
+                    for experiment in experiments
+                ],
+                indent=2,
+            )
+        )
+        return 0
 
     needs_curriculum = args.only is None or any(
         x in (args.only or "") for x in ("X6", "X15")
@@ -701,22 +857,18 @@ def main(argv: list[str] | None = None) -> int:
                 curriculum=True,
             )
         )
+    if args.build_scope:
+        from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
 
-    design_md = not args.no_design_md_context
-    experiments = _x_experiments(
-        args.train_dir,
-        args.curriculum_dir,
-        design_md_in_context=design_md,
-    )
-    if args.only:
-        wanted = {x.strip().upper() for x in args.only.split(",") if x.strip()}
-        legacy = sorted(wanted & LEGACY_FIXED_IDS)
-        if legacy:
-            raise ValueError(
-                f"{legacy} are frozen fixed-canvas rows; rerun them from the "
-                "source_commit recorded in docs/design/grammar-matrix-results.json"
+        build_train_data(
+            TrainDataConfig(
+                source="programspec",
+                output_root=args.scope_dir.parent,
+                version=args.scope_dir.name,
+                synthesizer="quality",
+                include_scope_derivatives=True,
             )
-        experiments = [e for e in experiments if e.xid in wanted]
+        )
 
     candidates = [(exp, seed) for exp in experiments for seed in seed_list]
 

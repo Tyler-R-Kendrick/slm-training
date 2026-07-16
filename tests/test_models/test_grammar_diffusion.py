@@ -9,6 +9,7 @@ import pytest
 torch = pytest.importorskip("torch")
 
 from slm_training.dsl.schema import ExampleRecord
+from slm_training.data.progspec import ProgramSpec, derive_scope_records
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.harnesses.model_build.factory import build_model
 from slm_training.harnesses.model_build.plugin import GenerationRequest
@@ -215,6 +216,41 @@ def test_factory_builds_grammar_diffusion() -> None:
     )
 
 
+def test_scope_contract_heads_train_only_when_enabled() -> None:
+    spec = ProgramSpec.from_openui(
+        id="scope",
+        openui=CTA,
+        facts={},
+        program_family_id="scope-family",
+        lineage_id="scope-lineage",
+        split_group_id="scope-group",
+    )
+    record = next(
+        row
+        for row in derive_scope_records(spec)
+        if row.meta["scope_family"] == "local_valid_global_invalid"
+    )
+    model = GrammarDiffusionModel.from_records(
+        [record],
+        config=GrammarDiffusionConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            scope_contracts=True,
+            scope_independent_noise=True,
+            scope_local_oracle=True,
+            scope_contract_negatives=True,
+        ),
+        device="cpu",
+    )
+    loss = model.training_loss([record])
+    assert torch.isfinite(loss)
+    assert model.denoiser.scope_summary_head is not None
+    assert model.last_training_metrics["scope_summary_loss"] >= 0.0
+    assert model.last_training_metrics["scope_gate_loss"] > 0.0
+
+
 def test_topology_scoring_maps_unseen_productions_without_mutating_codec() -> None:
     records = [ExampleRecord(id="a", prompt="CTA", openui=CTA, split="train")]
     model = GrammarDiffusionModel.from_records(
@@ -274,13 +310,20 @@ def test_fixed_canvas_checkpoint_requires_explicit_migration(tmp_path: Path) -> 
     assert migrated.CHECKPOINT_FORMAT == 2
 
 
-def test_topology_matrix_rows_replace_fixed_canvas_runtime(tmp_path: Path) -> None:
+def test_topology_matrix_rows_replace_fixed_canvas_runtime(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     experiments = _x_experiments(tmp_path, tmp_path, design_md_in_context=False)
     ids = {experiment.xid for experiment in experiments}
-    assert set(f"X{index}" for index in range(9, 16)) <= ids
+    assert set(f"X{index}" for index in range(9, 22)) <= ids
     assert not {"X2", "X3", "X4", "X5", "X7", "X8"} & ids
     with pytest.raises(ValueError, match="frozen fixed-canvas"):
         grammar_matrix_main(["--only", "X2"])
+    assert grammar_matrix_main(["--only", "X16,X21", "--describe"]) == 0
+    described = capsys.readouterr().out
+    assert '"xid": "X16"' in described
+    assert '"xid": "X21"' in described
+    assert not list(tmp_path.iterdir())
 
 
 def test_extendability_checker_permissive_without_bridge() -> None:

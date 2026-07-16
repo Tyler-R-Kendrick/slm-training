@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Iterable
+from typing import Any, Iterable
 
 from slm_training.data.progspec import ProgramSpec, emit_record
 from slm_training.data.verify import VerificationContext, verify_record
@@ -115,6 +115,10 @@ class CorruptionCase:
     acceptable_repairs: tuple[str, ...]
     edit_distance: int
     preserved_nodes: tuple[str, ...]
+    ast_path: tuple[str | int, ...] = ()
+    source_span: tuple[int, int] = (0, 0)
+    failure_cone: tuple[str | int, ...] = ()
+    contract_mutation: dict[str, Any] | None = None
 
     @property
     def exact_repair(self) -> bool:
@@ -136,6 +140,10 @@ class CorruptionCase:
             "exact_repair": self.exact_repair,
             "edit_distance": self.edit_distance,
             "preserved_nodes": list(self.preserved_nodes),
+            "ast_path": list(self.ast_path),
+            "source_span": list(self.source_span),
+            "failure_cone": list(self.failure_cone),
+            "contract_mutation": self.contract_mutation,
         }
         return emit_record(
             spec,
@@ -201,6 +209,7 @@ def build_corruption(
         acceptable_repairs=canonical_repairs,
         edit_distance=_edit_distance(broken, clean),
         preserved_nodes=tuple(sorted(clean_nodes & broken_nodes)),
+        source_span=(0, len(broken)),
     )
 
 

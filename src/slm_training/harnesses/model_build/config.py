@@ -143,6 +143,10 @@ class ModelBuildConfig:
     topology_global_sync_interval: int = 4
     topology_accept_threshold: float = 0.5
     topology_contract_threshold: float = 0.25
+    scope_contracts: bool = False
+    scope_independent_noise: bool = False
+    scope_local_oracle: bool = False
+    scope_contract_negatives: bool = False
     # Cycle telemetry (train/infer span JSON)
     telemetry: bool = True
     # V5: lexer-native output tokenizer + Stage-2 levers

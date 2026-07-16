@@ -127,6 +127,12 @@ def main(argv: list[str] | None = None) -> int:
         default=True,
     )
     parser.add_argument(
+        "--scope-derivatives",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Emit split-safe ScopeDiff contract derivatives from ProgramSpecs.",
+    )
+    parser.add_argument(
         "--design-md-contrastive",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -255,6 +261,7 @@ def main(argv: list[str] | None = None) -> int:
             include_frontier_artifacts=args.frontier_artifacts,
             repairs_per_program=args.repairs_per_program,
             include_edit_derivatives=args.edit_derivatives,
+            include_scope_derivatives=args.scope_derivatives,
             include_design_md_contrastive=args.design_md_contrastive,
             diffusion_online=args.diffusion_online,
             governance_artifacts=args.governance_artifacts,

@@ -426,6 +426,14 @@ def build_model(
             topology_contract_threshold=float(
                 getattr(config, "topology_contract_threshold", 0.25)
             ),
+            scope_contracts=bool(getattr(config, "scope_contracts", False)),
+            scope_independent_noise=bool(
+                getattr(config, "scope_independent_noise", False)
+            ),
+            scope_local_oracle=bool(getattr(config, "scope_local_oracle", False)),
+            scope_contract_negatives=bool(
+                getattr(config, "scope_contract_negatives", False)
+            ),
             design_md_in_context=(
                 False
                 if config.design_md_in_context is None

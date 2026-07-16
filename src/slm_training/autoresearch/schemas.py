@@ -48,6 +48,10 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "topology_max_nodes",
         "topology_max_phases",
         "topology_structural_embeddings",
+        "scope_contracts",
+        "scope_independent_noise",
+        "scope_local_oracle",
+        "scope_contract_negatives",
         "runtime_symbol_features",
         "symbol_slot_augmentation",
         "semantic_candidate_masks",
@@ -220,6 +224,10 @@ class ExperimentKnobs(StrictModel):
     grammar_equivalence_cache: bool | None = None
     grammar_active_symbol_bitsets: bool | None = None
     compact_active_canvas: bool | None = None
+    scope_contracts: bool | None = None
+    scope_independent_noise: bool | None = None
+    scope_local_oracle: bool | None = None
+    scope_contract_negatives: bool | None = None
 
     @model_validator(mode="after")
     def validate_mixture(self) -> ExperimentKnobs:
@@ -230,6 +238,18 @@ class ExperimentKnobs(StrictModel):
                 raise ValueError("mixture weights must be non-empty and positive")
         if self.data_source == "existing" and not self.derive_from:
             raise ValueError("data_source=existing requires derive_from")
+        scope_fields = (
+            self.scope_contracts,
+            self.scope_independent_noise,
+            self.scope_local_oracle,
+            self.scope_contract_negatives,
+        )
+        if any(value is not None for value in scope_fields) and self.data_source not in {
+            "programspec",
+            "integrated",
+            "all",
+        }:
+            raise ValueError("scope knobs require ProgramSpec-backed data_source")
         return self
 
 

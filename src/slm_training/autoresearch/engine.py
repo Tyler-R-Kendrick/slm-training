@@ -72,6 +72,16 @@ def compile_commands(
             )
         if knobs.min_quality_score is not None:
             build.extend(["--min-quality-score", str(knobs.min_quality_score)])
+        if any(
+            value is not None
+            for value in (
+                knobs.scope_contracts,
+                knobs.scope_independent_noise,
+                knobs.scope_local_oracle,
+                knobs.scope_contract_negatives,
+            )
+        ):
+            build.append("--scope-derivatives")
         commands.append(build)
     else:
         train_dir = Path("outputs/train_data/v1")
@@ -127,6 +137,10 @@ def compile_commands(
             "topology_heterogeneous_noise": "topology-heterogeneous-noise",
             "topology_critic_decode": "topology-critic-decode",
             "topology_bounded_buffer": "topology-bounded-buffer",
+            "scope_contracts": "scope-contracts",
+            "scope_independent_noise": "scope-independent-noise",
+            "scope_local_oracle": "scope-local-oracle",
+            "scope_contract_negatives": "scope-contract-negatives",
         }
         for field, flag in boolean_knobs.items():
             value = getattr(knobs, field)

@@ -197,13 +197,26 @@ def test_hf_daily_papers_client_preserves_sources() -> None:
 def test_dynamic_symbol_source_manifest_is_complete() -> None:
     from scripts.autoresearch import _load_sources
 
-    path = Path(
-        "src/slm_training/resources/autoresearch/dynamic-symbol-sources.json"
-    )
+    path = Path("src/slm_training/resources/autoresearch/dynamic-symbol-sources.json")
     rows = _load_sources(path)
     assert len(rows) == 50
     assert len({row.uri for row in rows}) == 50
     assert sum(row.uri.startswith("https://arxiv.org/abs/") for row in rows) == 49
+
+
+def test_scope_diffusion_source_manifest_is_complete() -> None:
+    from scripts.autoresearch import _load_sources
+
+    path = Path("src/slm_training/resources/autoresearch/scope-diffusion-sources.json")
+    rows = _load_sources(path)
+    assert len(rows) == 19
+    assert len({row.uri for row in rows}) == 19
+    assert all(row.uri.startswith("https://arxiv.org/abs/") for row in rows)
+    assert all(row.metadata.get("scope_diff_takeaway") for row in rows)
+    assert {row.metadata.get("implementation_status") for row in rows} == {
+        "Adapted",
+        "Adjacent",
+    }
 
 
 class FakeResponses:
@@ -456,6 +469,29 @@ def test_compile_grammar_topology_campaign_uses_typed_knobs() -> None:
     assert train[train.index("--topology-max-active") + 1] == "24"
     assert train[train.index("--topology-accept-threshold") + 1] == "0.4"
     assert evaluate[evaluate.index("--model") + 1] == "grammar_diffusion"
+
+
+def test_compile_scope_campaign_builds_contract_data_and_flags() -> None:
+    grammar_campaign = campaign().model_copy(update={"track": "grammar_diffusion"})
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            data_source="programspec",
+            scope_contracts=True,
+            scope_independent_noise=True,
+            scope_local_oracle=True,
+            scope_contract_negatives=True,
+        )
+    )
+    commands = compile_commands(grammar_campaign, spec)
+    build = next(
+        command for command in commands if "scripts.build_train_data" in command
+    )
+    train = next(command for command in commands if "scripts.train_model" in command)
+    assert "--scope-derivatives" in build
+    assert "--scope-contracts" in train
+    assert "--scope-independent-noise" in train
+    assert "--scope-local-oracle" in train
+    assert "--scope-contract-negatives" in train
 
 
 def test_compile_dynamic_symbol_campaign_uses_typed_flags() -> None:

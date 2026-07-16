@@ -10,7 +10,14 @@ from pathlib import Path
 import pytest
 
 from slm_training.data.leakage import find_leakage, load_train_fingerprints
-from slm_training.data.progspec import ProgramSpec, emit_record
+from slm_training.data.progspec import (
+    ProgramSpec,
+    ScopeContract,
+    dependency_closed_failure_cone,
+    derive_scope_contracts,
+    derive_scope_records,
+    emit_record,
+)
 from slm_training.dsl import bridge_available
 from slm_training.dsl.language_contract import contract_id
 from slm_training.dsl.schema import TASK_TOKENS, ExampleRecord, write_jsonl
@@ -54,6 +61,42 @@ def _spec() -> ProgramSpec:
 def test_programspec_round_trips() -> None:
     spec = _spec()
     assert ProgramSpec.from_dict(spec.to_dict()) == spec
+
+
+def test_failure_cone_is_smallest_common_ast_ancestor() -> None:
+    assert dependency_closed_failure_cone(
+        [("props", "children", 0, "props"), ("props", "children", 1)]
+    ) == ("props", "children")
+
+
+@pytest.mark.skipif(not bridge_available(), reason="OpenUI bridge deps missing")
+def test_scope_contracts_and_records_are_stable_and_split_safe() -> None:
+    spec = ProgramSpec.from_openui(
+        id="scope_root",
+        openui=OPENUI,
+        facts={},
+        program_family_id="scope_family",
+        lineage_id="scope_lineage",
+        split_group_id="scope_group",
+    )
+    contracts = derive_scope_contracts(spec)
+    assert {contract.kind.value for contract in contracts} == {
+        "component_call",
+        "statement",
+        "child_list",
+    }
+    assert ScopeContract.from_dict(contracts[0].to_dict()) == contracts[0]
+    records = derive_scope_records(spec)
+    assert len(records) == 15
+    assert {record.meta["scope_family"] for record in records} == {
+        "reconstruction",
+        "local_repair",
+        "boundary_counterfactual",
+        "local_valid_global_invalid",
+        "heterogeneous_multi_scope",
+    }
+    assert all(record.meta["split_group_id"] == "scope_group" for record in records)
+    assert len({record.id for record in records}) == len(records)
 
 
 @pytest.mark.skipif(not bridge_available(), reason="OpenUI bridge deps missing")

@@ -73,6 +73,7 @@ class TrainDataConfig:
     include_frontier_artifacts: bool = True
     repairs_per_program: int = 1
     include_edit_derivatives: bool = True
+    include_scope_derivatives: bool = False
     include_design_md_contrastive: bool = True
     diffusion_online: bool = True
     governance_artifacts: bool = True
@@ -306,6 +307,10 @@ def _records_from_progspec(
             out.extend(_program_repair_records(spec, config.repairs_per_program))
             if config.include_edit_derivatives:
                 out.extend(_program_edit_records(spec))
+            if config.include_scope_derivatives:
+                from slm_training.data.progspec import derive_scope_records
+
+                out.extend(derive_scope_records(spec))
         except (RuntimeError, ValueError) as exc:
             errors.append({"id": spec.id, "error": str(exc)})
     return out, errors
@@ -1087,6 +1092,7 @@ def build_train_data(
             "frontier_artifacts": bool(config.include_frontier_artifacts),
             "repairs_per_program": config.repairs_per_program,
             "edit_derivatives": bool(config.include_edit_derivatives),
+            "scope_derivatives": bool(config.include_scope_derivatives),
             "design_md_contrastive": bool(config.include_design_md_contrastive),
         },
         "mixture": mixture_payload,

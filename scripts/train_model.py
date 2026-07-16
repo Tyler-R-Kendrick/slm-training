@@ -18,7 +18,11 @@ def main(argv: list[str] | None = None) -> int:
         default=Path("outputs/train_data/v1"),
     )
     parser.add_argument("--run-root", type=Path, default=Path("outputs/runs"))
-    parser.add_argument("--train-version", default=None, help="Use a published source-controlled corpus version from src/slm_training/resources/train_data.")
+    parser.add_argument(
+        "--train-version",
+        default=None,
+        help="Use a published source-controlled corpus version from src/slm_training/resources/train_data.",
+    )
     parser.add_argument("--run-id", default="latest")
     parser.add_argument(
         "--test-dir",
@@ -195,6 +199,22 @@ def main(argv: list[str] | None = None) -> int:
         "--topology-bounded-buffer",
         action=argparse.BooleanOptionalAction,
         default=True,
+    )
+    parser.add_argument(
+        "--scope-contracts", action=argparse.BooleanOptionalAction, default=False
+    )
+    parser.add_argument(
+        "--scope-independent-noise",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+    )
+    parser.add_argument(
+        "--scope-local-oracle", action=argparse.BooleanOptionalAction, default=False
+    )
+    parser.add_argument(
+        "--scope-contract-negatives",
+        action=argparse.BooleanOptionalAction,
+        default=False,
     )
     parser.add_argument("--topology-max-nodes", type=int, default=256)
     parser.add_argument("--topology-max-active", type=int, default=64)
@@ -540,6 +560,10 @@ def main(argv: list[str] | None = None) -> int:
             topology_heterogeneous_noise=args.topology_heterogeneous_noise,
             topology_critic_decode=args.topology_critic_decode,
             topology_bounded_buffer=args.topology_bounded_buffer,
+            scope_contracts=args.scope_contracts,
+            scope_independent_noise=args.scope_independent_noise,
+            scope_local_oracle=args.scope_local_oracle,
+            scope_contract_negatives=args.scope_contract_negatives,
             topology_max_nodes=args.topology_max_nodes,
             topology_max_active=args.topology_max_active,
             topology_max_arity=args.topology_max_arity,
