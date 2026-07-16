@@ -135,6 +135,22 @@ def test_manifest_v1_loads_without_task_policy(tmp_path: Path) -> None:
     assert load_mixture_manifest(path).task_weights is None
 
 
+def test_loads_canonical_pipeline_mixture_envelope(tmp_path: Path) -> None:
+    path = tmp_path / "mixture.json"
+    path.write_text(
+        '{"manifest":{"mixture_id":"canonical","version":2,'
+        '"weights":{"human_curated":1},'
+        '"task_weights":{"generation":1}},"diagnostics":{}}\n',
+        encoding="utf-8",
+    )
+
+    manifest = load_mixture_manifest(path)
+
+    assert manifest.mixture_id == "canonical"
+    assert manifest.weights == {"human_curated": 1.0}
+    assert manifest.task_weights == {"generation": 1.0}
+
+
 def test_corpus_diagnostics_reports_task_and_structure_coverage() -> None:
     rows = [
         ExampleRecord(

@@ -1,0 +1,59 @@
+{
+  "campaign": "E221 task-balanced exposure",
+  "date_utc": "2026-07-16",
+  "status": "launch_failed_before_training",
+  "hypothesis": "The committed task-balanced mixture will reduce E219 record-repeat concentration under the exact matched recipe and may improve semantic coverage.",
+  "baseline": {
+    "run_id": "e219-schema-normalized-32step",
+    "draws": 128,
+    "unique_records": 54,
+    "effective_records": 29.9,
+    "effective_ratio": 0.2336
+  },
+  "matrix": {
+    "campaign_id": "e221-task-balanced-exposure-v3",
+    "candidate_count": 5,
+    "recommended_experiment_id": "e221-canonical-task-balanced"
+  },
+  "launch_failures": [
+    {
+      "campaign_id": "e221-task-balanced-exposure",
+      "stage": "matrix_validation",
+      "error": "Frozen campaign allowlist excluded newly added local_files_only and sync_checkpoints knobs."
+    },
+    {
+      "campaign_id": "e221-task-balanced-exposure-v2",
+      "stage": "process_launch",
+      "error": "Bare python executable was unavailable; no child process started."
+    },
+    {
+      "campaign_id": "e221-task-balanced-exposure-v3",
+      "stage": "mixture_load",
+      "error": "Runtime loader expected a bare manifest while the canonical pipeline artifact used a nested manifest envelope."
+    }
+  ],
+  "recipe": {
+    "device": "cpu",
+    "steps_requested": 32,
+    "steps_completed": 0,
+    "batch_size": 4,
+    "seed": 0,
+    "context_backend": "hf_local_files_only",
+    "output_tokenizer": "lexer",
+    "compiler_alignment_loss_weight": 1.0,
+    "compiler_alignment_stratified": true,
+    "compiler_decode_mode": "tree",
+    "schema_in_context": true,
+    "slot_contract_in_context": true,
+    "design_md_in_context": false,
+    "checkpoint_sync": false
+  },
+  "honesty": {
+    "training_started": false,
+    "evaluation_started": false,
+    "checkpoint_written": false,
+    "ship_gates": false,
+    "promoted": false
+  },
+  "next_action": "Retry in a fresh campaign after validating canonical mixture envelope loading."
+}

@@ -91,6 +91,8 @@ class MixtureManifest:
 
 def load_mixture_manifest(path: Path | str) -> MixtureManifest:
     data = json.loads(Path(path).read_text(encoding="utf-8"))
+    if isinstance(data.get("manifest"), dict):
+        data = data["manifest"]
     return MixtureManifest(
         mixture_id=str(data.get("mixture_id") or Path(path).stem),
         weights={str(k): float(v) for k, v in (data.get("weights") or {}).items()},
