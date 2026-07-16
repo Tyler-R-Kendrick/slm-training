@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import lru_cache
-import re
 from typing import Any, Literal
 
 from slm_training.dsl.grammar.fastpath.engine import OpenUIIncrementalEngine
@@ -12,7 +11,6 @@ from slm_training.dsl.grammar.fastpath.force_emit import force_next_token_id
 from slm_training.dsl.grammar.fastpath.token_map import allowed_id_set
 
 Coverage = Literal["complete", "partial", "none"]
-_NAME_BEFORE_PAREN = re.compile(r"([A-Z][A-Za-z0-9_]*)\s*$")
 
 
 @dataclass(frozen=True)
@@ -135,53 +133,46 @@ def _official_schema() -> dict[str, Any] | None:
     return None
 
 
-def _active_call(prefix_text: str) -> tuple[str, int] | None:
-    """Return innermost component and positional property index."""
-    stack: list[int] = []
-    quoted = False
-    escaped = False
-    for i, char in enumerate(prefix_text):
-        if escaped:
-            escaped = False
-            continue
-        if char == "\\" and quoted:
-            escaped = True
-            continue
-        if char == '"':
-            quoted = not quoted
-            continue
-        if quoted:
-            continue
-        if char == "(":
-            stack.append(i)
-        elif char == ")" and stack:
-            stack.pop()
-    if not stack:
+def _active_call(state: Any) -> tuple[str, int] | None:
+    """Read the active call frame from Lark's parser value stack.
+
+    The grammar owns delimiter/quote handling.  This deliberately does not
+    rescan source text: reduced nested expressions are already represented by
+    Lark trees, while the live comma token identifies the current positional
+    argument.
+    """
+    parser = getattr(state, "_ip", None)
+    parser_state = getattr(parser, "parser_state", None)
+    values = list(getattr(parser_state, "value_stack", ()) or ())
+    call_index = None
+    component = None
+    for index, value in enumerate(values):
+        if str(getattr(value, "data", "")) == "call_name":
+            children = list(getattr(value, "children", ()) or ())
+            if children:
+                component = str(children[0])
+                call_index = index
+    if call_index is None or component is None:
         return None
-    open_at = stack[-1]
-    match = _NAME_BEFORE_PAREN.search(prefix_text[:open_at])
-    if match is None:
+    lpar = next(
+        (index for index in range(call_index + 1, len(values))
+         if str(getattr(values[index], "type", "")) == "LPAR"),
+        None,
+    )
+    if lpar is None:
         return None
-    tail = prefix_text[open_at + 1 :]
-    depth = 0
-    quoted = False
-    commas = 0
-    for char in tail:
-        if char == '"':
-            quoted = not quoted
-        elif not quoted and char in "([{":
-            depth += 1
-        elif not quoted and char in ")]}" and depth:
-            depth -= 1
-        elif not quoted and char == "," and depth == 0:
-            commas += 1
-    return match.group(1), commas
+    index = sum(
+        1
+        for value in values[lpar + 1 :]
+        if str(getattr(value, "type", "")) == "COMMA"
+    )
+    return component, index
 
 
 def _schema_enum_ids(
-    tokenizer: Any, prefix_text: str, schema: dict[str, Any]
+    tokenizer: Any, state: Any, schema: dict[str, Any]
 ) -> set[int] | None:
-    active = _active_call(prefix_text)
+    active = _active_call(state)
     if active is None:
         return None
     component, index = active
@@ -242,7 +233,7 @@ def build_completion_forest(
             if _semantic_kind(tokenizer, token_id) != "component"
             or _token_piece(tokenizer, token_id) in component_names
         }
-    enum_ids = _schema_enum_ids(tokenizer, prefix_text, schema) if schema else None
+    enum_ids = _schema_enum_ids(tokenizer, engine, schema) if schema else None
     if enum_ids is not None:
         candidates = set(enum_ids)
 
