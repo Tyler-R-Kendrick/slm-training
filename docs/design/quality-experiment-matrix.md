@@ -1040,6 +1040,48 @@ Listing must not create output artifacts. Any execution requires the full honest
 five-suite scoreboard, AgentEvals, AgentV, result JSON, recipe/suite sizes, and a
 measured-results update in this document.
 
+## V10 exact-state local preference (proposed, unrun)
+
+The full 25-paper audit, source manifest, objective definition, and honesty boundary
+are in [`local-decision-interventions.md`](local-decision-interventions.md). V10
+reuses the existing preference harness and append-only decode traces. It does not
+introduce an adapter/SAE trainer and does not claim that a local loss produces a
+local parameter update.
+
+All rows require one immutable `DecisionEventV1` JSONL, the same parent checkpoint,
+split, steps, learning rate, and seed. E252-E254 fail closed unless the training
+split contains at least one same-state-verified multi-good or multi-bad event.
+
+| ID | Isolated lever | Required diagnostics | Status |
+| --- | --- | --- | --- |
+| E248 | Unchanged parent control | Standard five-suite scoreboard | proposed/unrun |
+| E249 | Exact-event CE plus margin | Event win/margin and per-kind recurrence | proposed/unrun |
+| E250 | Bad-token unlikelihood | Bad probability mass and held-out recurrence | proposed/unrun |
+| E251 | Single-pair clipped FTPO | Active weight, chosen/margin win, drift | proposed/unrun |
+| E252 | Verifier-backed set FTPO | Set coverage, evidence source, held-out recurrence | proposed/unrun |
+| E253 | E252 plus frozen-reference tether | Non-target MSE, target excess MSE, unchanged decisions | proposed/unrun |
+| E254 | E253 plus balanced sampling | Source/kind/rejected-set exposure and all E253 metrics | proposed/unrun |
+
+Preview without artifacts:
+
+```bash
+python -m scripts.run_quality_matrix --matrix v10 --list
+```
+
+Execution requires a parent and mined events:
+
+```bash
+python -m scripts.run_quality_matrix --matrix v10 --only E248,E249,E250,E251 \
+  --parent <checkpoint.pt> --decision-events <local_decisions.jsonl>
+```
+
+Initial hypothesis constants are margin `epsilon=2`, temperature `tau=1`,
+non-target tether `0.4`, target tether `0.05`, and target grace `1.0`. They are
+borrowed starting points, not validated TwoTower settings. Any future execution
+must update the canonical result JSON and this measured-results ledger, publish
+AgentEvals/AgentV, preserve unchanged ship gates, and update the model card for
+every checkpoint created. No V10 row was executed by the implementation change.
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

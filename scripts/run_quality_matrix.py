@@ -143,6 +143,13 @@ class Experiment:
     binder_component_plan_decode_weight: float = 0.0
     binder_topology_loss_weight: float = 0.0
     binder_topology_decode_weight: float = 0.0
+    # V10 exact-state local preference process.
+    local_parent_control: bool = False
+    local_preference_objective: Literal[
+        "ce_margin", "unlikelihood", "ftpo_single", "ftpo_set"
+    ] | None = None
+    local_preference_reference_tether: bool = False
+    local_preference_balanced: bool = False
 
 
 def _base_experiments(
@@ -1241,6 +1248,76 @@ def _v9_experiments(train_dir: Path) -> list[Experiment]:
     ]
 
 
+def _v10_experiments(train_dir: Path) -> list[Experiment]:
+    """E248-E254: exact-state local preference campaign (proposed/unrun)."""
+    base = dict(
+        output_tokenizer="lexer",
+        grammar_ltr_primary=True,
+        compiler_decode_mode="tree",
+    )
+    return [
+        Experiment(
+            "E248",
+            "qx_e248_local_parent_control",
+            "Unchanged parent control for exact-state preference",
+            train_dir,
+            local_parent_control=True,
+            **base,
+        ),
+        Experiment(
+            "E249",
+            "qx_e249_local_ce_margin",
+            "Exact-event compiler CE plus margin",
+            train_dir,
+            local_preference_objective="ce_margin",
+            **base,
+        ),
+        Experiment(
+            "E250",
+            "qx_e250_local_unlikelihood",
+            "Exact-event bad-token unlikelihood",
+            train_dir,
+            local_preference_objective="unlikelihood",
+            **base,
+        ),
+        Experiment(
+            "E251",
+            "qx_e251_local_ftpo_single",
+            "Single-good/single-bad clipped FTPO",
+            train_dir,
+            local_preference_objective="ftpo_single",
+            **base,
+        ),
+        Experiment(
+            "E252",
+            "qx_e252_local_ftpo_set",
+            "Verifier-backed set FTPO",
+            train_dir,
+            local_preference_objective="ftpo_set",
+            **base,
+        ),
+        Experiment(
+            "E253",
+            "qx_e253_local_ftpo_tether",
+            "Set FTPO with frozen-reference logit tether",
+            train_dir,
+            local_preference_objective="ftpo_set",
+            local_preference_reference_tether=True,
+            **base,
+        ),
+        Experiment(
+            "E254",
+            "qx_e254_local_ftpo_balanced",
+            "Tethered set FTPO with balanced event sampling",
+            train_dir,
+            local_preference_objective="ftpo_set",
+            local_preference_reference_tether=True,
+            local_preference_balanced=True,
+            **base,
+        ),
+    ]
+
+
 def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
     return ModelBuildConfig(
         train_dir=exp.train_dir,
@@ -1595,6 +1672,40 @@ def _maybe_preference(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> 
     return ckpt
 
 
+def _maybe_local_preference(
+    exp: Experiment, ckpt: Path, args: argparse.Namespace
+) -> Path:
+    objective = exp.local_preference_objective
+    if objective is None:
+        return ckpt
+    if args.decision_events is None:
+        raise ValueError(f"{exp.eid} requires --decision-events")
+    from slm_training.harnesses.preference.local_train import train_local_from_paths
+
+    tethered = bool(exp.local_preference_reference_tether)
+    out_dir = args.run_root / exp.run_id / "local_preference"
+    summary = train_local_from_paths(
+        ckpt,
+        args.decision_events,
+        out_dir=out_dir,
+        objective=objective,
+        reference_checkpoint=ckpt if tethered else None,
+        steps=args.pref_steps,
+        device=args.device,
+        lr=args.local_pref_lr,
+        epsilon=2.0,
+        tau=1.0,
+        non_target_tether=0.4 if tethered else 0.0,
+        target_tether=0.05 if tethered else 0.0,
+        target_grace=1.0,
+        balanced=bool(exp.local_preference_balanced),
+        seed=args.seed,
+    )
+    trained = Path(summary["checkpoint"])
+    dest = args.run_root / exp.run_id / "checkpoints" / "last.pt"
+    return _copy_checkpoint(trained, dest)
+
+
 def _maybe_rl(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> Path:
     if not getattr(exp, "rl", False):
         return ckpt
@@ -1730,7 +1841,14 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
         )
         return result
 
-    if exp.initialization == "parent":
+    if exp.local_parent_control or exp.local_preference_objective is not None:
+        if not exp.parent_checkpoint:
+            raise ValueError(f"{exp.eid} local preference requires --parent")
+        parent = Path(exp.parent_checkpoint)
+        if not parent.is_file():
+            raise FileNotFoundError(f"{exp.eid} needs parent checkpoint {parent}")
+        ckpt = _copy_checkpoint(parent, run_dir / "checkpoints" / "last.pt")
+    elif exp.initialization == "parent":
         if not exp.parent_checkpoint:
             raise ValueError(f"{exp.eid} parent initialization requires --parent")
         parent = Path(exp.parent_checkpoint)
@@ -1788,6 +1906,7 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
             ckpt = Path(summary["checkpoint"])
 
     ckpt = _maybe_preference(exp, ckpt, args)
+    ckpt = _maybe_local_preference(exp, ckpt, args)
     ckpt = _maybe_rl(exp, ckpt, args)
     ckpt = _maybe_trust_gate(exp, ckpt, args)
     ckpt = _maybe_survival_gate(exp, ckpt, args)
@@ -1818,6 +1937,11 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
             (exp.train_dir / "manifest.json").read_text(encoding="utf-8")
         ).get("content_fingerprint"),
         "checkpoint": str(ckpt),
+        "local_preference_objective": exp.local_preference_objective,
+        "local_preference_reference_tether": (
+            exp.local_preference_reference_tether
+        ),
+        "local_preference_balanced": exp.local_preference_balanced,
         **_summarize_board(board),
     }
     (run_dir / "matrix_result.json").write_text(
@@ -1869,6 +1993,13 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--pref-steps", type=int, default=30)
     parser.add_argument("--pref-limit", type=int, default=40)
+    parser.add_argument(
+        "--decision-events",
+        type=Path,
+        default=None,
+        help="DecisionEventV1 JSONL required by V10 intervention rows.",
+    )
+    parser.add_argument("--local-pref-lr", type=float, default=5e-5)
     parser.add_argument("--rl-steps", type=int, default=30)
     parser.add_argument("--rl-group-size", type=int, default=4)
     parser.add_argument("--rl-readiness-report", type=Path, default=None)
@@ -1932,9 +2063,21 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--matrix",
-        choices=("legacy", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9", "all"),
+        choices=(
+            "legacy",
+            "v2",
+            "v3",
+            "v4",
+            "v5",
+            "v6",
+            "v7",
+            "v8",
+            "v9",
+            "v10",
+            "all",
+        ),
         default="v3",
-        help="Experiment set through v9 compiler-lattice rows E240-E247, or all.",
+        help="Experiment set through v10 local-decision rows E248-E254, or all.",
     )
     parser.add_argument(
         "--list",
@@ -1972,16 +2115,23 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(f"unknown suites: {','.join(unknown_suites)}")
     if not args.suites:
         parser.error("--suites must select at least one suite")
-    if args.matrix in {"v4", "v5", "v6", "v7", "v8", "v9", "all"}:
+    if args.matrix in {"v4", "v5", "v6", "v7", "v8", "v9", "v10", "all"}:
         if args.parent is None and not args.scratch_control:
             if not args.list:
                 parser.error(
                     "modern matrices require --parent or explicit --scratch-control"
                 )
+    if args.matrix in {"v10", "all"} and args.parent is None and not args.list:
+        parser.error("V10 exact-state rows require --parent")
 
-    needs_curriculum = args.only is None or any(
-        x in (args.only or "")
-        for x in (
+    selected_ids = (
+        {value.strip().upper() for value in args.only.split(",") if value.strip()}
+        if args.only
+        else None
+    )
+    needs_curriculum = selected_ids is None or bool(
+        selected_ids
+        & {
             "E2",
             "E8",
             "E9b",
@@ -1994,7 +2144,7 @@ def main(argv: list[str] | None = None) -> int:
             "E53",
             "E55",
             "E75",
-        )
+        }
     )
     if not args.list and (
         args.build_curriculum
@@ -2012,7 +2162,7 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
 
-    needs_namespace = args.only is None or any(x in (args.only or "") for x in ("E14",))
+    needs_namespace = selected_ids is None or "E14" in selected_ids
     if not args.list and needs_namespace and not args.namespace_dir.exists():
         from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
 
@@ -2098,9 +2248,10 @@ def main(argv: list[str] | None = None) -> int:
         )
     if args.matrix in {"v9", "all"}:
         experiments.extend(_v9_experiments(args.train_dir))
+    if args.matrix in {"v10", "all"}:
+        experiments.extend(_v10_experiments(args.train_dir))
     if args.only:
-        wanted = {x.strip().upper() for x in args.only.split(",") if x.strip()}
-        experiments = [e for e in experiments if e.eid in wanted]
+        experiments = [e for e in experiments if e.eid in selected_ids]
     if args.list:
         print(
             json.dumps(
@@ -2116,6 +2267,9 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
         return 0
+    if any(exp.local_preference_objective for exp in experiments):
+        if args.decision_events is None:
+            parser.error("V10 intervention rows require --decision-events")
 
     classified: list[Experiment] = []
     for exp in experiments:
@@ -2123,7 +2277,15 @@ def main(argv: list[str] | None = None) -> int:
             initialization = "scratch"
         elif exp.eval_from_run or exp.eval_from_checkpoint:
             initialization = "eval_only"
-        elif exp.preference or exp.rl or exp.trust_gate or exp.survival_gate:
+        elif exp.local_parent_control:
+            initialization = "eval_only"
+        elif (
+            exp.preference
+            or exp.local_preference_objective is not None
+            or exp.rl
+            or exp.trust_gate
+            or exp.survival_gate
+        ):
             initialization = "process"
         else:
             initialization = "parent"
@@ -2133,7 +2295,12 @@ def main(argv: list[str] | None = None) -> int:
                 initialization=initialization,
                 parent_checkpoint=(
                     str(args.parent)
-                    if args.parent is not None and initialization == "parent"
+                    if args.parent is not None
+                    and (
+                        initialization == "parent"
+                        or exp.local_parent_control
+                        or exp.local_preference_objective is not None
+                    )
                     else exp.parent_checkpoint
                 ),
                 seed_checkpoint=(

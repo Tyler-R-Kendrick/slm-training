@@ -164,7 +164,19 @@ def train_local_decisions(
 ) -> dict:
     if steps <= 0 or lr <= 0:
         raise ValueError("steps and learning rate must be positive")
-    train_events = [event for event in events if event.split == "train"]
+    all_train_events = [event for event in events if event.split == "train"]
+    if objective == "ce_margin":
+        train_events = [
+            event for event in all_train_events if len(event.good_token_ids) == 1
+        ]
+    elif objective == "ftpo_single":
+        train_events = [
+            event
+            for event in all_train_events
+            if len(event.good_token_ids) == 1 and len(event.bad_token_ids) == 1
+        ]
+    else:
+        train_events = all_train_events
     if objective == "ftpo_set" and not any(
         len(event.good_token_ids) > 1 or len(event.bad_token_ids) > 1
         for event in train_events
@@ -213,6 +225,7 @@ def train_local_decisions(
         "objective": objective,
         "steps": count,
         "train_events": len(train_events),
+        "excluded_train_events": len(all_train_events) - len(train_events),
         "held_out_events": len(events) - len(train_events),
         "balanced": bool(balanced),
         "reference_tethered": bool(non_target_tether > 0 or target_tether > 0),
