@@ -230,6 +230,35 @@ def test_quota_capacity_aware_sampling_preserves_task_allocation() -> None:
     assert len({record.id for record in batch}) == 32
 
 
+def test_task_sampling_infers_generation_for_unannotated_producer_roots() -> None:
+    records = [
+        ExampleRecord(
+            id="rico-root",
+            prompt="build a screen",
+            openui='root = Card([TextContent(":x")])',
+            source="rico",
+            meta={"source_family": "rico_real"},
+        ),
+        ExampleRecord(
+            id="curated-root",
+            prompt="build a button",
+            openui='root = Button(":x")',
+            meta={"source_family": "human_curated", "task": "generation"},
+        ),
+    ]
+
+    batch = sample_mixture_batch(
+        records,
+        weights={"rico_real": 1.0, "human_curated": 1.0},
+        task_weights={"generation": 1.0},
+        batch_size=2,
+        rng=random.Random(9),
+        sampling_policy="quota_capacity_aware",
+    )
+
+    assert {record.id for record in batch} == {"rico-root", "curated-root"}
+
+
 def test_manifest_v1_loads_without_task_policy(tmp_path: Path) -> None:
     path = tmp_path / "legacy.json"
     path.write_text(

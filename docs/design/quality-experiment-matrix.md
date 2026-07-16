@@ -939,6 +939,16 @@ literal cases. Corrected evaluation still fails the same four gates and regresse
 several quality metrics, falsifying more duration for this recipe. Full evidence:
 [iter-e229-margin-continuation-20260716.md](iter-e229-margin-continuation-20260716.md).
 
+E230 replaces the derivative-heavy E218 exposure with a source-controlled,
+independently judged 126-root corpus spanning RICO, human-curated, ProgramSpec,
+language-contract, renderer, and web producers. Sampler telemetry confirms 30
+RICO and 25 human draws in the matched 32-step run. Strict evaluation exactly
+matches E228 on four suites and regresses adversarial quality; the same four gates
+fail and AgentV remains 1/5. Retain the pipeline/data repair, reject the
+checkpoint, and require request-level schema/AST component supervision next.
+Full evidence:
+[iter-e230-diverse-judged-roots-20260716.md](iter-e230-diverse-judged-roots-20260716.md).
+
 ## V9 lattice-guided recursive compiler search (proposed, unrun)
 
 The research synthesis and implementation boundary are in

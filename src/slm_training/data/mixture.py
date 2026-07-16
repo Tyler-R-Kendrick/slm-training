@@ -143,12 +143,18 @@ def task_group(task: str | None) -> str | None:
     return None
 
 
+def record_task(record: ExampleRecord) -> str:
+    """Return the explicit task or the output contract's generation default."""
+    task = str((record.meta or {}).get("task") or "")
+    return task or "generation"
+
+
 def index_task_family_pools(
     records: Iterable[ExampleRecord],
 ) -> dict[str, dict[str, list[ExampleRecord]]]:
     pools: dict[str, dict[str, list[ExampleRecord]]] = {}
     for record in records:
-        group = task_group(str((record.meta or {}).get("task") or ""))
+        group = task_group(record_task(record))
         if group is None:
             continue
         family = str(
@@ -646,7 +652,7 @@ def corpus_diagnostics(
         meta = record.meta or {}
         family = str(meta.get("source_family") or classify_source_family(record))
         family_counts[family] += 1
-        task = str(meta.get("task") or "")
+        task = record_task(record)
         group = task_group(task)
         if group is None:
             unclassified += 1
