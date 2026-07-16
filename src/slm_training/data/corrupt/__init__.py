@@ -5,7 +5,9 @@ from slm_training.data.corrupt.oracle import (
     CorruptionNotApplicable,
     CorruptionOperator,
     OperatorFamily,
+    ScopedCorruption,
     build_corruption,
+    build_scoped_corruptions,
     generate_corruptions,
 )
 
@@ -14,6 +16,8 @@ __all__ = [
     "CorruptionNotApplicable",
     "CorruptionOperator",
     "OperatorFamily",
+    "ScopedCorruption",
     "build_corruption",
+    "build_scoped_corruptions",
     "generate_corruptions",
 ]

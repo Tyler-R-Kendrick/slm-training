@@ -23,6 +23,9 @@ TASK_GROUPS = {
     "patch_edit": ("patch", "edit"),
     "state_behavior": ("state", "behavior"),
     "noop_adversarial": ("noop", "adversarial"),
+    # Scope-graded identity anchors (echo pairs) sample as their own task
+    # axis so diffusion/mixture training can dial memorization separately.
+    "identity_echo": ("identity",),
 }
 DEFAULT_TASK_WEIGHTS = {group: 0.2 for group in TASK_GROUPS}
 NEW_FAMILIES = (
@@ -40,6 +43,18 @@ NEW_FAMILIES = (
     "web_distilled",
     "diffusion_corruption",
     "scope_contract",
+    "scope_identity_document",
+    "scope_identity_statement",
+    "scope_identity_expression",
+    "scope_identity_lexical",
+    "scope_canonical_document",
+    "scope_canonical_statement",
+    "scope_canonical_expression",
+    "scope_canonical_lexical",
+    "scope_repair_statement",
+    "scope_repair_expression",
+    "scope_repair_lexical",
+    "lexical_typed_map",
 )
 ORGANIC_FAMILIES = (
     "rico_real",
@@ -630,6 +645,20 @@ def default_base_weights() -> dict[str, float]:
         "self_distilled_success": 0.02,
         "self_distilled_repair": 0.02,
         "gold_correction": 0.015,
+        # Scope-graded families: canonical outputs carry the highest new
+        # weights (deliberate ranking bias toward tree-optimized targets).
+        "scope_identity_document": 0.02,
+        "scope_identity_statement": 0.02,
+        "scope_identity_expression": 0.02,
+        "scope_identity_lexical": 0.02,
+        "scope_canonical_document": 0.03,
+        "scope_canonical_statement": 0.03,
+        "scope_canonical_expression": 0.03,
+        "scope_canonical_lexical": 0.03,
+        "scope_repair_statement": 0.02,
+        "scope_repair_expression": 0.02,
+        "scope_repair_lexical": 0.02,
+        "lexical_typed_map": 0.02,
     }
 
 

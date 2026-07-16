@@ -317,3 +317,42 @@ def test_regression_handles_normalized_simplex_with_intercept() -> None:
     ]
     fit = fit_weight_regression(rows)
     assert any(abs(value) > 0.01 for value in fit["coefficients"].values())
+
+
+def test_identity_echo_task_group_samples_scope_families() -> None:
+    assert task_group("identity") == "identity_echo"
+    assert "identity_echo" in DEFAULT_TASK_WEIGHTS
+    records = [
+        ExampleRecord(
+            id=f"echo{i}",
+            prompt="Emit the OpenUI lexical for this input.\n---INPUT---\ntrue",
+            openui="true",
+            target_kind="lexical",
+            source="scope_identity_lexical",
+            meta={"task": "identity", "source_family": "scope_identity_lexical"},
+        )
+        for i in range(4)
+    ]
+    batch = sample_mixture_batch(
+        records,
+        weights={"scope_identity_lexical": 1.0},
+        batch_size=3,
+        rng=random.Random(0),
+        task_weights={"identity_echo": 1.0},
+    )
+    assert len(batch) == 3
+    assert all(r.meta["task"] == "identity" for r in batch)
+
+
+def test_scope_graded_families_carry_default_weights() -> None:
+    base = default_base_weights()
+    for family in (
+        "scope_identity_document",
+        "scope_canonical_document",
+        "scope_repair_statement",
+        "lexical_typed_map",
+    ):
+        assert family in NEW_FAMILIES
+        assert base[family] > 0
+    # Deliberate ranking bias: canonical outweighs its identity twin.
+    assert base["scope_canonical_document"] > base["scope_identity_document"]

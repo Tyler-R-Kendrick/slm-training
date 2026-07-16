@@ -25,11 +25,14 @@ TASK_TOKENS = frozenset(
         "behavior",
         "noop",
         "adversarial",
+        "identity",
     }
 )
 
-OutputKind = Literal["document", "statement", "expression", "lexical"]
-OUTPUT_KINDS = frozenset({"document", "statement", "expression", "lexical"})
+OutputKind = Literal["document", "statement", "expression", "lexical", "typed_node"]
+OUTPUT_KINDS = frozenset(
+    {"document", "statement", "expression", "lexical", "typed_node"}
+)
 
 
 @dataclass(frozen=True)
