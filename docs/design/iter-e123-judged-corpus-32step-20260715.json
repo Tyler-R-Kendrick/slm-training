@@ -1,0 +1,11 @@
+{
+  "experiment_id": "E123",
+  "date": "2026-07-15",
+  "kind": "quality_iteration",
+  "parent": "E121",
+  "recipe": {"device": "cpu", "steps": 32, "batch_size": 4, "context_backend": "scratch", "train_dir": "src/slm_training/resources/train_data/remediated_roots_judged", "record_count": 405, "honesty_mode": "scratch diagnostic; no ship claim"},
+  "training": {"run_id": "e123_judged_32step_b", "last_loss": 10.974014282226562, "checkpoint": "outputs/runs/iter-e123b-judged-20260715/e123_judged_32step_b/checkpoints/last.pt", "checkpoint_sha256": "82885e6553f52d878082865f60bd3139364a2c0a7b59a49304d63c682f2152e7", "telemetry": "outputs/runs/iter-e123b-judged-20260715/e123_judged_32step_b/train_telemetry.json", "total_ms": 41191.954, "backward_pct": 34.85, "forward_pct": 27.36},
+  "feedback": {"run_id": "iter-e123-smoke-feedback", "suite": "smoke", "n": 1, "parse_rate": 0.0, "raw_syntax_validity": 0.0, "structural_similarity": 0.1917, "reward_score": 0.0, "latency_ms_p50": 26750.02, "decode_timeout_count": 0, "constrained_fallback_rate": 1.0, "unconstrained_retries": 1, "agentv": "outputs/runs/iter-e123b-judged-20260715/iter-e123-smoke-feedback/agentv/openui-model-ship-gates-2026-07-16t00-54-52-797361-00-00.eval.jsonl"},
+  "finding": "Longer judged-corpus training reduced training loss but did not produce parseable output. Generation used an unconstrained retry and reached the canvas cap.",
+  "next_lever": "Separate generation-recipe and data-quality effects with a fixed decode diagnostic before adding more training steps."
+}
