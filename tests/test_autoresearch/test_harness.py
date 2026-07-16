@@ -699,6 +699,24 @@ def test_scope_diffusion_source_manifest_is_complete() -> None:
     }
 
 
+def test_local_decision_source_manifest_is_complete() -> None:
+    from scripts.autoresearch import _load_sources
+
+    path = Path("src/slm_training/resources/autoresearch/local-decision-sources.json")
+    manifest = json.loads(path.read_text())
+    rows = _load_sources(path)
+    papers = [row for row in rows if row.uri.startswith("https://arxiv.org/abs/")]
+    assert "6a593158-85c4-83ea-80b1-b6fb893b26bc" in manifest["source_scope"]
+    assert len(rows) == 33
+    assert len(papers) == 25
+    assert len({row.uri for row in rows}) == len(rows)
+    assert all(row.metadata.get("local_decision_takeaway") for row in rows)
+    assert {row.metadata.get("implementation_status") for row in rows} == {
+        "Adapted",
+        "Adjacent",
+    }
+
+
 class FakeResponses:
     def create(self, **kwargs):
         assert kwargs["store"] is False
