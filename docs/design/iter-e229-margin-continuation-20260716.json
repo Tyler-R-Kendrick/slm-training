@@ -1,0 +1,23 @@
+{
+  "campaign": "E229 legal-candidate margin continuation",
+  "date_utc": "2026-07-16",
+  "status": "duration_falsified_lexical_frame_fixed",
+  "training_run": true,
+  "run_id": "e229-margin-64step",
+  "resumed_from": "outputs/autoresearch/e228-candidate-margin-alignment/runs/e228-candidate-margin-matched/checkpoints/last_full_state.pt",
+  "checkpoint_sha256": "23f31fa977cc3ea36bb81e1784b9f0c99e098e366b4054a981f35df4e97cf0f4",
+  "recipe": {"device": "cpu", "steps_total": 64, "steps_resumed": 32, "batch_size": 4, "learning_rate": 0.0003, "seed": 0, "context_backend": "hf_local_files_only", "train_version": "e218_schema_normalized_judge_v5", "eval_version": "remediated", "output_tokenizer": "lexer", "compiler_alignment_loss_weight": 1.0, "compiler_alignment_margin": 1.0, "compiler_alignment_stratified": true, "compiler_alignment_semantic_exhaustive": true, "compiler_decode_mode": "tree", "schema_in_context": true, "slot_contract_in_context": true, "slot_contract_constrained_decode": true, "honest_slot_contract": true, "design_md_in_context": false, "allow_unconstrained_fallback": false, "mixture_sampling_policy": "quota_capacity_aware", "checkpoint_sync": false},
+  "train_result": {"last_loss": 9.45051097869873, "continuation_wall_ms": 132442.057, "seen_prompt_tokens_cumulative": 46730, "seen_target_tokens_cumulative": 13076, "margin_loss_last": 1.213502049446106, "margin_violation_rate_last": 0.6140350699424744, "candidate_cross_entropy_last": 1.2311162948608398, "component_bound_loss_last": 6.150684833526611, "trace_id": "6db2bd144773feefc1764dae72fbc59d"},
+  "decoder_correction": {"cause": "lexer_native_literal_frame_tokens_were_conflated_by_quote_equivalent_surface_mapping", "fix": "token_id_kind_derived_LIT_STR_BYTE_LIT_END_frame", "component_or_output_literals_added": false},
+  "suites": {
+    "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333, "structural_similarity": 0.4475, "component_type_recall": 0.16666666666666666, "placeholder_fidelity": 0.5555555555555555, "contract_precision": 0.6666666666666666, "reward_score": 0.6073333333333334},
+    "held_out": {"n": 5, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.35638000000000003, "component_type_recall": 0.15666666666666665, "placeholder_fidelity": 0.5599999999999999, "contract_precision": 1.0, "reward_score": 0.8290000000000001},
+    "adversarial": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.5, "structural_similarity": 0.43865, "component_type_recall": 0.4583333333333333, "placeholder_fidelity": 0.8333333333333333, "contract_precision": 1.0, "reward_score": 0.911},
+    "ood": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.348075, "component_type_recall": 0.14583333333333331, "placeholder_fidelity": 0.5583333333333333, "contract_precision": 1.0, "reward_score": 0.8285},
+    "rico_held": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.6666666666666666, "structural_similarity": 0.17203333333333334, "component_type_recall": 0.4444444444444444, "placeholder_fidelity": 0.25, "contract_precision": 1.0, "reward_score": 0.7360000000000001}
+  },
+  "ship_gates": {"pass": false, "failure_count": 4, "failures": ["smoke:meaningful_program_rate", "held_out:meaningful_program_rate", "ood:meaningful_program_rate", "rico_held:structural_similarity"]},
+  "agentv": {"total": 5, "passed": 1, "failed": 4, "execution_errors": 0, "mean_score": 0.6},
+  "scoreboard": "outputs/autoresearch/e229-margin-continuation/runs/e229-margin-64step/scoreboard.json",
+  "conclusion": "Corrected syntax remains deterministic, but continuing the margin recipe to 64 steps does not reduce quality gate failures and regresses several metrics."
+}

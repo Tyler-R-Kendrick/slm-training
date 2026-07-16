@@ -69,6 +69,37 @@ def allowed_id_set(
     return _allowed_id_set_compositional(tokenizer, terminals)
 
 
+def apply_literal_frame(
+    tokenizer: OpenUITokenizer,
+    prefix_ids: list[int],
+    candidates: set[int] | None,
+) -> set[int] | None:
+    """Restrict lexer-native string frames to their legal token channel."""
+    if not _is_dsl_native(tokenizer):
+        return candidates
+
+    from slm_training.models.dsl_tokenizer import TokenKind
+
+    opener = tokenizer.token_to_id.get("LIT_STR")
+    closer = tokenizer.token_to_id.get("LIT_END")
+    if opener is None or closer is None:
+        return candidates
+
+    inside = False
+    for token_id in prefix_ids:
+        if int(token_id) == int(opener) and not inside:
+            inside = True
+        elif int(token_id) == int(closer) and inside:
+            inside = False
+
+    byte_ids = set(tokenizer.kind_ids(TokenKind.BYTE))
+    if inside:
+        return byte_ids | {int(closer)}
+    if candidates is None:
+        return None
+    return set(candidates) - byte_ids - {int(closer)}
+
+
 def terminal_equivalence_classes(
     tokenizer: OpenUITokenizer,
     terminal_sets: list[frozenset[str]],

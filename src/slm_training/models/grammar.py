@@ -745,17 +745,14 @@ def pick_constrained_token(
             pass
 
     # Lexer-native quoted literals are framed as LIT_STR + BYTE* + LIT_END.
-    # The surface DFA reports the enclosing STRING terminal, but its terminal
-    # map cannot identify the byte channel from terminals alone.
+    # Restrict by token-frame state because quote-equivalent surface terminals
+    # cannot distinguish openers, closers, bytes, and complete symbol tokens.
     try:
-        from slm_training.models.dsl_tokenizer import TokenKind, is_dsl_native_tokenizer
+        from slm_training.dsl.grammar.fastpath.token_map import apply_literal_frame
+        from slm_training.models.dsl_tokenizer import is_dsl_native_tokenizer
 
-        if is_dsl_native_tokenizer(tokenizer) and _incomplete_quoted_string(prefix_text):
-            literal_ids = tokenizer.kind_ids(TokenKind.BYTE)
-            literal_end = tokenizer.token_to_id.get("LIT_END")
-            if literal_end is not None:
-                literal_ids.add(literal_end)
-            allowed = (allowed or set()) | literal_ids
+        if is_dsl_native_tokenizer(tokenizer):
+            allowed = apply_literal_frame(tokenizer, prefix_ids, allowed)
             exact_terminals = False
     except Exception:  # noqa: BLE001
         pass

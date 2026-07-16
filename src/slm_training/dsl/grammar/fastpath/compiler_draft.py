@@ -9,7 +9,10 @@ from typing import Any, Literal
 
 from slm_training.dsl.grammar.fastpath.engine import OpenUIIncrementalEngine
 from slm_training.dsl.grammar.fastpath.force_emit import force_next_token_id
-from slm_training.dsl.grammar.fastpath.token_map import allowed_id_set
+from slm_training.dsl.grammar.fastpath.token_map import (
+    allowed_id_set,
+    apply_literal_frame,
+)
 
 Coverage = Literal["complete", "partial", "none"]
 
@@ -547,6 +550,11 @@ def build_completion_forest(
         if arg_count >= maximum:
             comma_ids = allowed_id_set(tokenizer, frozenset({"COMMA"})) or set()
             candidates -= comma_ids
+
+    # Apply tokenizer framing after parser/schema filtering. LIT_STR renders as
+    # a quote, so the surface parser sees an empty completed string while the
+    # lexer-native token stream still requires BYTE* + LIT_END.
+    candidates = apply_literal_frame(tokenizer, prefix_ids, candidates) or set()
 
     inventory_complete = not (needs_schema and schema is None)
     kind_of = getattr(tokenizer, "kind_of", None)

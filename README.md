@@ -70,6 +70,7 @@ summary and the full card whenever a checkpoint is created or promoted.
 | E224–E226 semantic alignment + honest tree eval | `e224-semantic-exhaustive-matched` | `outputs/autoresearch/e224-semantic-exhaustive-alignment/runs/…` (local) | Deterministic tree reaches syntax 1.0 on all suites with honest fidelity, but meaningful-program quality fails 5 gates — not ship |
 | E227 legal-candidate alignment | `e227-candidate-set-matched` | `outputs/autoresearch/e227-candidate-set-alignment/runs/…` (local) | Candidate loss optimizes, but empty-layout collapse fails 12 gates and AgentV 0/5 — rejected, not ship |
 | E228 legal-candidate margin | `e228-candidate-margin-matched` | `outputs/autoresearch/e228-candidate-margin-alignment/runs/…` (local) | Best diagnostic: syntax/contract 1.0, failures reduced to 4, but AgentV 1/5 — not ship |
+| E229 64-step margin continuation | `e229-margin-64step` | `outputs/autoresearch/e229-margin-continuation/runs/…` (local) | Syntax restored to 1.0 after generalized literal-frame fix, but the same 4 gates fail — duration rejected, not ship |
 | Matrix honest champion | V6 E53 family | `outputs/runs/` + matrix docs | Scratch + limited `rico_held` — not production HF ship |
 | P13 matched E50 controls | fixture + integrated E50 | `/tmp/slm17-e50-*-honest/` (local scratch) | Integrated fidelity +0.04 held / +0.0333 RICO; parse 0.0, not ship |
 | Frozen X2 baseline | `gx_x2_codec` seeds 0/1/2 | `/tmp/slm-training-fixed-baseline/outputs/topology_baseline/` | Fixed-canvas comparison scored zero on all suites; not ship |
