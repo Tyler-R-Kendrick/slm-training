@@ -154,7 +154,10 @@ def test_committed_train_version_is_default_and_browsable(tmp_path) -> None:
 
 def test_run_detail_merges_scoreboard(ro_client: TestClient) -> None:
     board = ro_client.get("/api/scoreboards/quality").json()["results"]
-    run_id = board[0].get("run_id") or board[0].get("id")
+    # The committed matrix can contain metadata-only rows before the actual
+    # suite scoreboards; choose a row whose suites can produce gate output.
+    row = next(row for row in board if "suites" in row)
+    run_id = row.get("run_id") or row.get("id")
     detail = ro_client.get(f"/api/runs/{run_id}").json()
     assert detail["scoreboard"] is not None
     assert detail["scoreboard"]["matrix"] == "quality"

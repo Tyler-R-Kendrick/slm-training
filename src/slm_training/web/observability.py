@@ -343,7 +343,11 @@ class Readers:
         # gates.json exists.
         scoreboard = self._scoreboard_row(run_id)
         artifacts = dict(live)
-        if artifacts["gates"] is None and scoreboard and "suites" in scoreboard:
+        if (
+            artifacts["gates"] is None
+            and scoreboard is not None
+            and "suites" in scoreboard
+        ):
             artifacts["gates"] = evaluate_ship_gates(scoreboard["suites"])
         insights = load_run_insights(
             run_dir,

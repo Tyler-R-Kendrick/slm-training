@@ -152,3 +152,7 @@ def test_lexer_train_eval_smoke(tmp_path: Path) -> None:
     # Soft gate: training should produce finite metrics (not crash).
     assert "parse_rate" in smoke
     assert "placeholder_fidelity" in smoke
+    policy = smoke["evaluation_policy"]
+    assert policy["context_backend"] == "scratch"
+    assert policy["generate_max_attempts"] == cfg.generate_max_attempts
+    assert policy["grammar_verify_chosen_only"] == cfg.grammar_verify_chosen_only
