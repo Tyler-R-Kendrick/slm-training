@@ -1075,6 +1075,7 @@ differing only in the denoiser backbone; parallel MaskGIT decode on both rows.
 | --- | --- | ---: | --- |
 | E255 | From-scratch DenoiserTower control | 1.1M | fixture-run |
 | E256 | SmolLM2-135M AR→masked-denoiser adaptation | 135M | fixture-run |
+| E257 | C1 De Bruijn relative binder references (`bind_encoding=relative`) | 1.1M | fixture-run |
 
 ### V10 measured results (CPU, fixture-grade, 2026-07-16)
 
@@ -1097,6 +1098,19 @@ numbers. **Wiring evidence only — this fixture budget can neither confirm nor
 kill the DiffuLLaMA hypothesis**: 200 CPU steps on 108 records is far below any
 adaptation budget in the paper, so the B4 verdict requires a GPU-scale run with
 per-arm LR selection. No gate weakened; nothing promoted.
+
+**E257 (C1)** — identical recipe to E255, differing only in
+`bind_encoding=relative` (nameless `<BINDDEF>` definitions + signed
+statement-delta `<BINDREL_±k>` references; scope legality verifier-enforced).
+Fixture result: syntax parse **0.667/0.6/0.25/0.5** (smoke/held_out/
+adversarial/ood) vs **0.0** on the matched absolute control, train loss 3.27
+vs 3.75, decode p50 1–8s vs ~15s; meaningful parse 0.0 on both (failures shift
+to `empty_root_stack` — the valid-but-empty wall is Track A's target, not
+C1's). JSON:
+[quality-matrix-results-iter-v10-c1-20260716.json](quality-matrix-results-iter-v10-c1-20260716.json);
+narrative:
+[iter-e257-c1-relative-bind-20260716.md](iter-e257-c1-relative-bind-20260716.md).
+Same honesty envelope as the B4 pair.
 
 ## Verifier-guided repair (mixed status)
 

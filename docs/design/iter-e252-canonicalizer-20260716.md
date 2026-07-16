@@ -58,3 +58,15 @@ ship gate.
 - `tests/test_evals/test_canonical_match.py`: rescues an alpha-renamed correct
   prediction, counts true mismatches, agrees with surface on identity.
 - 9 tests green. No checkpoint, no scoreboard, no ship claim.
+
+## Correction (2026-07-16, C1 follow-up)
+
+The C1 round-trip property test found an alpha-invariance violation:
+`production_codec._statement_order` extracted references from statement RHS
+**including string-literal contents**, so placeholder text aliasing binder
+names (e.g. `":form.title"` vs binders `form`/`title`) made the canonical
+statement order — and therefore the canonical form — depend on the original
+binder names. Fixed by stripping string literals before reference scanning;
+regression `test_alpha_invariance_when_placeholders_alias_binder_names` in
+`tests/test_dsl/test_canonicalize.py`. Details:
+[iter-e257-c1-relative-bind-20260716.md](iter-e257-c1-relative-bind-20260716.md).

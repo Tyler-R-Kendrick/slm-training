@@ -105,6 +105,8 @@ class Experiment:
     model_name: str = "twotower"
     # V10 (B4): scratch | hf — AR→masked-denoiser adaptation backbone.
     denoiser_backend: str = "scratch"
+    # V10 (C1): absolute | relative (De Bruijn binder references).
+    bind_encoding: str = "absolute"
     # V7 levers: speculative denoising (docs/design/speculative-denoising.md)
     stability_min_persistence: int = 0
     stability_jsd_weight: float = 1.0
@@ -1244,12 +1246,15 @@ def _v9_experiments(train_dir: Path) -> list[Experiment]:
 
 
 def _v10_experiments(train_dir: Path) -> list[Experiment]:
-    """E255-E256: B4 AR→diffusion adaptation baseline (DiffuLLaMA-style).
+    """E255-E257: Track B/C representation baselines.
 
-    Matched pair differing only in the denoiser backbone: from-scratch
-    DenoiserTower vs the pretrained hf_model_name causal LM adapted into a
-    bidirectional masked denoiser. Parallel MaskGIT decode (not LTR) keeps the
-    135M-backbone eval tractable and identical across the pair.
+    E255/E256 (B4): matched pair differing only in the denoiser backbone —
+    from-scratch DenoiserTower vs the pretrained hf_model_name causal LM
+    adapted into a bidirectional masked denoiser. Parallel MaskGIT decode
+    (not LTR) keeps the 135M-backbone eval tractable and identical across
+    the pair. E257 (C1): scope-as-relative-index binder references
+    (<BINDDEF>/<BINDREL_±k>), matched against E255 on everything but
+    bind_encoding.
     """
     base = dict(
         output_tokenizer="lexer",
@@ -1259,6 +1264,7 @@ def _v10_experiments(train_dir: Path) -> list[Experiment]:
     return [
         Experiment("E255", "qx_e255_b4_scratch_control", "B4 matched from-scratch denoiser control", train_dir, **base),
         Experiment("E256", "qx_e256_b4_ar_adapt", "B4 DiffuLLaMA-style SmolLM2 AR-to-masked-denoiser adaptation", train_dir, denoiser_backend="hf", **base),
+        Experiment("E257", "qx_e257_c1_relative_bind", "C1 De Bruijn relative binder references", train_dir, bind_encoding="relative", **base),
     ]
 
 
@@ -1303,6 +1309,7 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         context_backend=args.context_backend,
         local_files_only=args.local_files_only,
         denoiser_backend=str(getattr(exp, "denoiser_backend", "scratch") or "scratch"),
+        bind_encoding=str(getattr(exp, "bind_encoding", "absolute") or "absolute"),
         grammar_constrained=True,
         grammar_ltr_primary=bool(getattr(exp, "grammar_ltr_primary", True)),
         grammar_ltr_repair=exp.grammar_ltr_repair,

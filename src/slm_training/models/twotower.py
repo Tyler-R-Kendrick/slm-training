@@ -275,6 +275,8 @@ class TwoTowerConfig:
     output_tokenizer: str = "compositional"
     # When output_tokenizer=lexer: map placeholders to <SYM_i> (E41+).
     use_symbol_table: bool = True
+    # C1: absolute (<BIND_j>) | relative (<BINDDEF>/<BINDREL_±k> De Bruijn refs).
+    bind_encoding: str = "absolute"
     # Stage-2: kind-factorized embeddings (E_tok + E_kind).
     factorized_embeddings: bool = False
     # Stage-2 training mask: random | mixed (statement spans ∪ random).
@@ -5497,7 +5499,11 @@ class TwoTowerModel(nn.Module):
         if _is_lexer_output(cfg):
             from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
 
-            tokenizer = DSLNativeTokenizer.build()
+            tokenizer = DSLNativeTokenizer.build(
+                bind_encoding=str(
+                    getattr(cfg, "bind_encoding", "absolute") or "absolute"
+                )
+            )
             # Scratch context keeps a prompt-word tokenizer (decoupled).
             ctx_texts = [r.prompt for r in records]
             context_tokenizer = OpenUITokenizer.build(ctx_texts)

@@ -303,6 +303,10 @@ def _statement_order(source: str, bindings: dict[str, Any]) -> list[str]:
         if not match:
             return
         rhs = match.group(1)
+        # Strip string literals first: placeholder text like ":form.title"
+        # must not alias binder names, or statement order (and therefore the
+        # canonical form) leaks the original names and breaks alpha-invariance.
+        rhs = re.sub(r"\"(?:\\.|[^\"\\])*\"|'(?:\\.|[^'\\])*'", "", rhs)
         for ref in re.findall(r"\b([a-z_][A-Za-z0-9_]*)\b", rhs):
             if ref in {"true", "false", "null"}:
                 continue

@@ -163,6 +163,8 @@ class ModelBuildConfig:
     # V5: lexer-native output tokenizer + Stage-2 levers
     output_tokenizer: str = "compositional"  # compositional | lexer
     use_symbol_table: bool = True
+    # C1: absolute | relative (De Bruijn <BINDDEF>/<BINDREL_±k> binder channel)
+    bind_encoding: str = "absolute"
     factorized_embeddings: bool = False
     mask_pattern: str = "random"  # random | mixed | diffusion
     statement_mask_prob: float = 0.35
