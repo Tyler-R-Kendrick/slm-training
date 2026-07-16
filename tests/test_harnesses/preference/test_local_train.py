@@ -13,6 +13,7 @@ from slm_training.harnesses.preference.local_decisions import (
     write_decision_events,
 )
 from slm_training.harnesses.preference.local_train import (
+    evaluate_local_decisions,
     event_schedule,
     local_decision_loss,
     train_local_decisions,
@@ -151,6 +152,33 @@ def test_train_local_decisions_freezes_reference() -> None:
     assert all(parameter.grad is None for parameter in reference.parameters())
 
 
+def test_evaluate_local_decisions_reports_held_out_recurrence() -> None:
+    model = _model()
+    group = "held"
+    while split_for_group(group) != "held_out":
+        group += "x"
+    event = _event(
+        good=(model.tokenizer.eos_id,),
+        bad=(model.tokenizer.mask_id,),
+    )
+    event = DecisionEventV1.from_dict(
+        {
+            **event.to_dict(),
+            "canvas_ids": [model.tokenizer.bos_id]
+            + [model.tokenizer.mask_id] * 3,
+            "event_id": f"event-{group}",
+            "group_id": group,
+            "split": "held_out",
+        }
+    )
+    report = evaluate_local_decisions(
+        model, [event], objective="ftpo_single"
+    )
+    assert report["event_count"] == 1
+    assert report["by_decision_kind"]["component"]["event_count"] == 1
+    assert "chosen_win" in report["metrics"]
+
+
 def test_ftpo_set_requires_verified_set_event() -> None:
     with pytest.raises(ValueError, match="set-valued"):
         train_local_decisions(_model(), [_event()], objective="ftpo_set", steps=1)
@@ -186,3 +214,5 @@ def test_train_local_from_paths_checks_identity_and_writes_checkpoint(tmp_path) 
     )
     assert (tmp_path / "run/model.pt").is_file()
     assert summary["source_checkpoint_sha"] == checkpoint_sha(checkpoint)
+    assert summary["held_out_before"]["event_count"] == 0
+    assert summary["held_out_after"]["event_count"] == 0

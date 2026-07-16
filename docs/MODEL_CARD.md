@@ -73,6 +73,7 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 | E237 detached topology | `e237-detached-topology-32step` | CPU HF-context gradient-routing diagnostic | `outputs/autoresearch/e237-detached-topology/runs/e237-detached-topology-32step/checkpoints/last.pt` (local) | Detaching already-frozen context is a no-op and exactly reproduces E236; twelve thresholds fail; **not promotable or ship** ([results](design/iter-e237-detached-topology-20260716.md)) |
 | E238 binder arity (invalidated) | `e238-binder-arity-32step` | CPU HF-context arity diagnostic | `outputs/autoresearch/e238-binder-arity/runs/e238-binder-arity-32step/checkpoints/last.pt` (local) | Optional-head RNG shifted matched stochastic draws; ten thresholds fail and causal training comparison is invalid; **not promotable or ship** ([results](design/iter-e238-binder-arity-confounded-20260716.md)) |
 | E239 isolated binder arity | `e239d-binder-arity-fully-isolated-32step` | CPU HF-context isolated arity diagnostic | `outputs/autoresearch/e239-binder-arity-corrected/runs/e239d-binder-arity-fully-isolated-32step/checkpoints/last.pt` (local) | 104/104 shared tensors are bit-exact against control; 29 changed choices improve smoke syntax only, meaningful rate stays 0 and eleven thresholds fail; **not promotable or ship** ([results](design/iter-e239-binder-arity-isolated-20260716.md)) |
+| E249 exact-event CE plus margin | `qx_e249_local_ce_margin` | CPU HF-context exact-state preference diagnostic | `outputs/autoresearch/e249-local-ce-margin/runs/qx_e249_local_ce_margin/checkpoints/last.pt` (local) | Held-out lexical chosen win rises 0→0.7649, but structure/reward regress on every suite and AgentV is 0/5; rejected, **not promotable or ship** ([results](design/iter-e249-local-ce-margin-20260716.md)) |
 | E174 unfrozen-context 8-step control | `e174-unfrozen-context-8step` | CPU HF-context semantic control | `outputs/runs/e174-unfrozen-context-8step/checkpoints/last.pt` (local) | Unfrozen context, loss 39.4253; bounded probe syntax 0.0 and parse 0.0; rejected control, **not promotable or ship** ([results](design/iter-e174-unfrozen-context-20260716.md)) |
 | Matrix honest champion (scratch) | `qx_e53_*` (V6 E53 family) | CPU scratch matrix clear | Primarily `outputs/runs/` (+ docs matrix JSON) | Honest `--ship-gates` on limited `rico_held` n; **not** production HF ship |
 | P13 fixture E50 control | `qx_e50_core_remask` | CPU scratch, fixture corpus | `/tmp/slm17-e50-fixture-honest/` (local) | Matched control; held 0.08 / RICO 0.0667 fidelity; parse 0.0, not ship |
@@ -270,6 +271,11 @@ Leakage: structural fingerprints + train/test isolation
 | `adversarial` (`e239d-binder-arity-fully-isolated-32step`) | 4 | 0.0000 | 0.8333 | 0.1912 | 0.0000 | No — syntax and meaningful rate 0 |
 | `ood` (`e239d-binder-arity-fully-isolated-32step`) | 4 | 0.0000 | 0.5250 | 0.1775 | 0.0000 | No — syntax and meaningful rate 0 |
 | `rico_held` (`e239d-binder-arity-fully-isolated-32step`) | 3 | 0.0000 | 0.3750 | 0.0971 | 0.0000 | No — syntax and meaningful rate 0; diagnostic n=3 |
+| `smoke` (`qx_e249_local_ce_margin`) | 3 | 1.0000 | 0.5278 | 0.1742 | 0.7653 | No — meaningful rate below gate; structure regressed vs E248 |
+| `held_out` (`qx_e249_local_ce_margin`) | 5 | 1.0000 | 0.2800 | 0.1088 | 0.6910 | No — meaningful rate 0; structure regressed vs E248 |
+| `adversarial` (`qx_e249_local_ce_margin`) | 4 | 1.0000 | 0.5417 | 0.1927 | 0.7695 | No — structure below gate and regressed vs E248 |
+| `ood` (`qx_e249_local_ce_margin`) | 4 | 1.0000 | 0.2167 | 0.1469 | 0.6720 | No — meaningful rate 0; structure regressed vs E248 |
+| `rico_held` (`qx_e249_local_ce_margin`) | 3 | 1.0000 | 0.1250 | 0.0727 | 0.6445 | No — structure below gate; diagnostic n=3 |
 
 Recipe for `restructure_cpu_scratch_v0`: device=cpu, steps=80, context=scratch,
 fixture train/test `v0`, `--no-sync-checkpoints`, LTR primary, no DESIGN.md in
@@ -436,6 +442,7 @@ suites because they contain no scope metadata. Evidence:
 | 2026-07-16 | `e237-detached-topology-32step` (E237) | `outputs/autoresearch/e237-detached-topology/runs/e237-detached-topology-32step/` (local) | 32 CPU steps; detached frozen context reproduces E236 train/eval diagnostics | No-op hypothesis rejected; 12 thresholds fail; AgentV 0/5; checkpoint SHA `edcbad06…4b59d`; no sync or promotion |
 | 2026-07-16 | `e238-binder-arity-32step` (E238) | `outputs/autoresearch/e238-binder-arity/runs/e238-binder-arity-32step/` (local) | 32 CPU steps; arity loss 4.4211→2.9895; syntax 0.5–0.75 and meaningful program 0 | Invalidated by optional-head RNG confound; 10 thresholds fail; AgentV 0/5; checkpoint SHA `2f9acccc…3ff7a4`; no sync or promotion |
 | 2026-07-16 | `e239d-binder-arity-fully-isolated-32step` (E239) | `outputs/autoresearch/e239-binder-arity-corrected/runs/e239d-binder-arity-fully-isolated-32step/` (local) | 32 CPU steps; arity loss 4.0988→2.4903, accuracy 0→0.4706; 104/104 shared tensors bit-exact | 29 decode changes but meaningful rate 0 on every suite; 11 thresholds fail; AgentV 0/5; checkpoint SHA `677e80ef…674d`; no sync or promotion |
+| 2026-07-16 | `qx_e249_local_ce_margin` (E249) | `outputs/autoresearch/e249-local-ce-margin/runs/qx_e249_local_ce_margin/` (local) | 30 CPU exact-event steps; held-out chosen win 0→0.7649 and margin win 0→0.6489; syntax 1.0 on all suites | Structure/reward regress everywhere; 8 thresholds fail; AgentV 0/5; checkpoint SHA `24285bd4…264f32c`; scratch/no sync/no promotion |
 
 Append a row for every new or replaced checkpoint. Do not delete history.
 
