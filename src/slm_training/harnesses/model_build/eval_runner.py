@@ -576,15 +576,39 @@ def evaluate(
         "evaluation_policy": {
             "context_backend": config.context_backend,
             "local_files_only": bool(config.local_files_only),
-            "grammar_constrained": bool(config.grammar_constrained),
-            "grammar_ltr_primary": bool(config.grammar_ltr_primary),
-            "grammar_ltr_repair": bool(config.grammar_ltr_repair),
-            "grammar_skip_exact_stream_probe": bool(
-                config.grammar_skip_exact_stream_probe
+            "grammar_constrained": (
+                None
+                if config.grammar_constrained is None
+                else bool(config.grammar_constrained)
             ),
-            "grammar_verify_chosen_only": bool(config.grammar_verify_chosen_only),
-            "grammar_top_k": int(config.grammar_top_k),
-            "generate_max_attempts": int(config.generate_max_attempts),
+            "grammar_ltr_primary": (
+                None
+                if config.grammar_ltr_primary is None
+                else bool(config.grammar_ltr_primary)
+            ),
+            "grammar_ltr_repair": (
+                None
+                if config.grammar_ltr_repair is None
+                else bool(config.grammar_ltr_repair)
+            ),
+            "grammar_skip_exact_stream_probe": (
+                None
+                if config.grammar_skip_exact_stream_probe is None
+                else bool(config.grammar_skip_exact_stream_probe)
+            ),
+            "grammar_verify_chosen_only": (
+                None
+                if config.grammar_verify_chosen_only is None
+                else bool(config.grammar_verify_chosen_only)
+            ),
+            "grammar_top_k": (
+                None if config.grammar_top_k is None else int(config.grammar_top_k)
+            ),
+            "generate_max_attempts": (
+                None
+                if config.generate_max_attempts is None
+                else int(config.generate_max_attempts)
+            ),
             "decode_timeout_seconds": config.decode_timeout_seconds,
             "allow_unconstrained_fallback": bool(
                 config.allow_unconstrained_fallback

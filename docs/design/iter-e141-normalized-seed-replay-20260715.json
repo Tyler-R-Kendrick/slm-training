@@ -1,0 +1,16 @@
+{
+  "experiment_id": "E141",
+  "date": "2026-07-15",
+  "kind": "normalized_three_seed_checkpoint_selection",
+  "policy": {"context_backend": "hf", "local_files_only": true, "grammar_ltr_primary": true, "grammar_ltr_repair": true, "grammar_skip_exact_stream_probe": true, "grammar_verify_chosen_only": null, "grammar_top_k": null, "generate_max_attempts": 3, "decode_timeout_seconds": 20.0, "allow_unconstrained_fallback": true, "gen_steps": 8, "grammar_ltr_max_tokens": 256},
+  "suite": "smoke",
+  "n": 3,
+  "checkpoints": [
+    {"experiment": "E140", "seed": 0, "checkpoint": "outputs/runs/iter-e135-hf-context-20260715/e135_hf_context_control/checkpoints/last.pt", "checkpoint_sha256": "8d28924a47d9e0b72ab15011869bce91091796592338a9548fcdcd361102d4c0", "parse_rate": 0.0, "placeholder_validity": 0.13333333333333333, "structural_similarity": 0.1189, "reward_score": 0.0, "decode_timeout_count": 2, "latency_ms_p50": 20000.68},
+    {"experiment": "E141", "seed": 1, "checkpoint": "outputs/runs/iter-e138-hf-seed1-20260715/e138_hf_context_seed1_8/checkpoints/last.pt", "checkpoint_sha256": "0e5dc3a8bd552960ea9ba8c3b05cdfa3511b2f5e7845085d6cd1dcd9be866414", "parse_rate": 0.0, "placeholder_validity": 0.0, "structural_similarity": 0.025, "reward_score": 0.0, "decode_timeout_count": 2, "latency_ms_p50": 20000.41},
+    {"experiment": "E141", "seed": 2, "checkpoint": "outputs/runs/iter-e139-hf-seed2-20260715/e139_hf_context_seed2_8/checkpoints/last.pt", "checkpoint_sha256": "89dff5bae8a245e54e869f1ed1a158716dec71d11500c3150e0aed1b787d6aa4", "parse_rate": 0.0, "placeholder_validity": 0.0, "structural_similarity": 0.0, "reward_score": 0.0, "decode_timeout_count": 0, "latency_ms_p50": 4066.78}
+  ],
+  "harness_change": "Evaluation-policy serialization now preserves null passthrough overrides instead of coercing them to int/bool.",
+  "finding": "Under one normalized policy, seed 0 is still the best diagnostic checkpoint but remains invalid; seed 1 and seed 2 provide no positive quality signal. None parses or earns reward.",
+  "decision": "Do not promote any seed or alter the judged corpus from this result. The next experiment should target the constrained decoder's invalid-output path and expose per-token dead-end/selection traces before further training."
+}
