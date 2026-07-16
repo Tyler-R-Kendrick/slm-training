@@ -240,22 +240,30 @@ class Readers:
                 continue
             train_result = payload.get("train_result")
             train_result = train_result if isinstance(train_result, dict) else {}
+            train = payload.get("train")
+            train = train if isinstance(train, dict) else {}
             run_id = (
                 payload.get("run_id")
                 or train_result.get("run_id")
+                or train.get("run_id")
                 or evaluation.get("run_id")
             )
             if not isinstance(run_id, str) or not _RUN_ID_RE.fullmatch(run_id):
                 continue
             gates = payload.get("ship_gates") or evaluation.get("ship_gates")
             gates = gates if isinstance(gates, dict) else {}
+            gate_pass = gates.get("pass")
+            if not isinstance(gate_pass, bool) and isinstance(
+                evaluation.get("failed_gates"), int
+            ):
+                gate_pass = evaluation["failed_gates"] == 0
             agentv = payload.get("agentv") or evaluation.get("agentv")
             agentv = agentv if isinstance(agentv, dict) else {}
             scoreboard_path = payload.get("scoreboard") or evaluation.get("scoreboard")
             run_dir = (
                 str(Path(scoreboard_path).parent)
                 if isinstance(scoreboard_path, str)
-                else None
+                else train.get("path")
             )
             results.append(
                 {
@@ -266,10 +274,10 @@ class Readers:
                     or payload.get("status")
                     or path.stem,
                     "date": payload.get("date_utc") or payload.get("date"),
-                    "pass": gates.get("pass"),
+                    "pass": gate_pass,
                     "suites": suites,
                     "agentv": agentv,
-                    "trace_id": train_result.get("trace_id"),
+                    "trace_id": train_result.get("trace_id") or train.get("trace_id"),
                     "run_dir": run_dir,
                     "source": f"docs/design/{path.name}",
                 }
