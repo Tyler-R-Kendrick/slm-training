@@ -26,6 +26,7 @@ class CampaignBudget(StrictModel):
 DEFAULT_ALLOWED_KNOBS = frozenset(
     {
         "batch_size",
+        "allow_unconstrained_fallback",
         "context_backend",
         "compiler_alignment_loss_weight",
         "compiler_alignment_stratified",
@@ -185,6 +186,7 @@ class ResearcherRun(StrictModel):
 
 
 class ExperimentKnobs(StrictModel):
+    allow_unconstrained_fallback: bool | None = None
     eval_version: str | None = Field(
         default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
     )

@@ -420,6 +420,8 @@ def compile_commands(
             evaluate.extend(["--output-tokenizer", knobs.output_tokenizer])
         if knobs.compiler_decode_mode:
             evaluate.extend(["--compiler-decode-mode", knobs.compiler_decode_mode])
+        if knobs.allow_unconstrained_fallback is False:
+            evaluate.append("--no-unconstrained-fallback")
         if knobs.schema_in_context:
             evaluate.append("--schema-in-context")
         if knobs.slot_contract_in_context:

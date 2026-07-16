@@ -353,6 +353,8 @@ escaping the campaign ledger.
 
 Evaluation datasets are selected with the typed `eval_version` knob and resolved
 through `DataStore`; campaign compilation must not assume a local `v1` directory.
+Diagnostic fallback policy is typed too, so matched constrained evaluations can
+set `allow_unconstrained_fallback=false` instead of inheriting permissive defaults.
 
 ## Researcher improvement
 

@@ -1100,6 +1100,7 @@ def test_compile_resolves_canonical_published_train_version() -> None:
         knobs=ExperimentKnobs(
             train_version="e218_schema_normalized_judge_v5",
             eval_version="remediated",
+            allow_unconstrained_fallback=False,
             steps=32,
             output_tokenizer="lexer",
             compiler_alignment_loss_weight=1.0,
@@ -1128,6 +1129,7 @@ def test_compile_resolves_canonical_published_train_version() -> None:
     assert "--local-files-only" in commands[0]
     assert "--no-sync-checkpoints" in commands[0]
     assert commands[-1][commands[-1].index("--compiler-decode-mode") + 1] == "tree"
+    assert "--no-unconstrained-fallback" in commands[-1]
 
 
 def test_execute_records_process_launch_failure() -> None:
