@@ -1,0 +1,34 @@
+[
+  {
+    "case_id": "initial-evidence-matrix",
+    "campaign_id": "initial-evidence-matrix",
+    "evidence_snapshot_id": "frozen-initial-evidence",
+    "criteria": "Form at least five grounded, distinct candidates and recommend a bounded supervised experiment.",
+    "min_hypotheses": 5,
+    "evidence": [
+      {"uri": "fixture://research/structured-generation", "role": "research"},
+      {"uri": "fixture://trace/decode-collapse", "role": "prior_trace"},
+      {"uri": "fixture://result/matched-control", "role": "prior_result"}
+    ],
+    "required_roles": ["research", "prior_trace", "prior_result"],
+    "expected_knobs": ["steps", "lr", "batch_size"],
+    "feedback_ids": [],
+    "predecessor_matrix_id": null
+  },
+  {
+    "case_id": "feedback-repair-matrix",
+    "campaign_id": "feedback-repair-matrix",
+    "evidence_snapshot_id": "frozen-feedback-evidence",
+    "criteria": "Use terminal hypothesis feedback to form a linked successor matrix without repeating the failed recipe.",
+    "min_hypotheses": 5,
+    "evidence": [
+      {"uri": "fixture://research/optimization", "role": "research"},
+      {"uri": "fixture://trace/failed-hypothesis", "role": "prior_trace"},
+      {"uri": "fixture://result/failed-hypothesis", "role": "prior_result"}
+    ],
+    "required_roles": ["research", "prior_trace", "prior_result"],
+    "expected_knobs": ["lr", "seed", "mixture_weights"],
+    "feedback_ids": ["feedback-aaaaaaaaaaaaaaaa"],
+    "predecessor_matrix_id": "matrix-before-feedback"
+  }
+]

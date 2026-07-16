@@ -1,0 +1,4 @@
+interface:
+  display_name: "Improve OpenUI Harnesses"
+  short_description: "Safely enhance each canonical training harness"
+  default_prompt: "Use $improve-openui-harnesses to improve the relevant OpenUI harness without breaking lineage, evidence, or repository placement."

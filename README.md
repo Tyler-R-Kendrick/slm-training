@@ -18,8 +18,11 @@ behind one memo/trajectory contract and trusted hypothesizer. Before execution t
 pipeline requires a persisted matrix of at least five distinct, grounded hypotheses,
 including categorical candidate-novelty audits adapted from
 [Wang and Buehler (2026)](https://arxiv.org/abs/2606.01444). Pre-run audits are not
-claims of proven discovery or SOTA. RL remains locked until a model passes the
-frozen production readiness contract.
+claims of proven discovery or SOTA. Each matrix names its recommended experiment;
+completed outcomes and diagnoses become typed feedback for the next matrix and for
+future campaign evidence. The loop improves by evidence, never by rewriting its own
+code, frozen cases, or gates. RL remains locked until a model passes the frozen
+production readiness contract.
 
 See [docs/design/model-lineage.md](docs/design/model-lineage.md) (canonical two-track cycle), [docs/design/openui-twotower.md](docs/design/openui-twotower.md), [docs/design/grammar-topology-diffusion.md](docs/design/grammar-topology-diffusion.md) (dynamic production-tree diffusion), [docs/design/research-lineage.md](docs/design/research-lineage.md) (papers → code), [docs/design/research-correction-critics.md](docs/design/research-correction-critics.md) (V4 remask / trust-gate / honest inventory; V6 CoRe/T2M), [docs/design/verifier-stack.md](docs/design/verifier-stack.md) (G0–G12 corpus gates + confidence tiers), [docs/design/abstraction-house-style.md](docs/design/abstraction-house-style.md) (L0–L5 determinacy, grounding, and canonical defaults), [docs/design/verifier-guided-repair.md](docs/design/verifier-guided-repair.md) (PDDL-Instruct / verifier-repair applicability map), [docs/design/quality-experiment-matrix.md](docs/design/quality-experiment-matrix.md) (E0–E75 + X0–X15 matrices; E34 deferred), [docs/design/speculative-denoising.md](docs/design/speculative-denoising.md) (V7 stability / dependency-cluster / survival / successor-cache decode), [docs/design/dsl-native-tokenizer.md](docs/design/dsl-native-tokenizer.md) (V5 lexer alphabet), [docs/design/grammar-fastpath.md](docs/design/grammar-fastpath.md), [docs/design/grammar-backends.md](docs/design/grammar-backends.md), [docs/design/structure-only-eval.md](docs/design/structure-only-eval.md), [docs/design/adversarial-review.md](docs/design/adversarial-review.md), [docs/design/runtime-performance.md](docs/design/runtime-performance.md), [docs/design/hf-jobs-train.md](docs/design/hf-jobs-train.md) (HF Jobs full train — not ZeroGPU), [docs/design/gpu-multi-farm-mcp.md](docs/design/gpu-multi-farm-mcp.md), and [docs/MODEL_CARD.md](docs/MODEL_CARD.md).
 
