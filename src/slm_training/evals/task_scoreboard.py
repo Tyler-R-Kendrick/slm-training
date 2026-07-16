@@ -273,6 +273,16 @@ def score_case(case: Mapping[str, Any]) -> dict[str, Any]:
         "expand_contract_success",
         "constraint_interventions",
         "steps_to_first_valid",
+        "action_macro_f1",
+        "production_accuracy",
+        "arity_accuracy",
+        "production_head_accuracy",
+        "arity_head_accuracy",
+        "critic_ece",
+        "efficiency_score",
+        "node_passes",
+        "active_peak",
+        "phases",
     ):
         if name in evidence:
             metrics[name] = _numeric_evidence(evidence, name)

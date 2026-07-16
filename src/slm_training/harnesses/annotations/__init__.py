@@ -359,12 +359,17 @@ def annotation_to_example(record: AnnotationRecord) -> ExampleRecord:
     )
 
 
+def _usable_for_training(record: AnnotationRecord) -> bool:
+    """Keep explicitly labeled fixture/demo feedback out of derived datasets."""
+    return (record.meta or {}).get("usable_for_training") is not False
+
+
 def upsert_human_train_seed(
     record: AnnotationRecord,
     path: Path | str = DEFAULT_HUMAN_TRAIN_PATH,
 ) -> Path | None:
     """Promote a thumbs-up annotation into the human SFT seed file."""
-    if record.rating != "up":
+    if record.rating != "up" or not _usable_for_training(record):
         return None
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -391,7 +396,11 @@ def export_to_train_seeds(
     feedback_path: Path | str = DEFAULT_FEEDBACK_PATH,
     out_path: Path | str = DEFAULT_HUMAN_TRAIN_PATH,
 ) -> dict[str, Any]:
-    rows = [r for r in load_annotations(feedback_path) if r.rating == "up"]
+    rows = [
+        r
+        for r in load_annotations(feedback_path)
+        if r.rating == "up" and _usable_for_training(r)
+    ]
     # Keep latest per (prompt, openui).
     dedup: dict[tuple[str, str], AnnotationRecord] = {}
     for row in rows:
@@ -406,7 +415,7 @@ def export_to_preference_pairs(
     feedback_path: Path | str = DEFAULT_FEEDBACK_PATH,
     out_path: Path | str = DEFAULT_HUMAN_PAIRS_PATH,
 ) -> dict[str, Any]:
-    rows = load_annotations(feedback_path)
+    rows = [r for r in load_annotations(feedback_path) if _usable_for_training(r)]
     by_prompt: dict[str, list[AnnotationRecord]] = {}
     for row in rows:
         by_prompt.setdefault(row.prompt.strip(), []).append(row)
@@ -453,6 +462,8 @@ def maybe_append_preference_pair(
     pairs_path: Path | str = DEFAULT_HUMAN_PAIRS_PATH,
 ) -> PreferencePair | None:
     """Append a preference pair using streaming scans and an atomic transaction."""
+    if not _usable_for_training(record):
+        return None
     opposite: Rating = "down" if record.rating == "up" else "up"
     match: AnnotationRecord | None = None
     for candidate in iter_annotations(feedback_path):
@@ -460,6 +471,7 @@ def maybe_append_preference_pair(
             candidate.prompt.strip() == record.prompt.strip()
             and candidate.rating == opposite
             and candidate.openui.strip() != record.openui.strip()
+            and _usable_for_training(candidate)
         ):
             match = candidate
     if match is None:

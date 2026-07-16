@@ -1,0 +1,21 @@
+{
+  "run_id": "iter-published-remediated-64step-ltr2-constrained-fullsmoke-20260715",
+  "checkpoint": "iter-published-remediated-64step-ltr2-20260715",
+  "corpus": "remediated",
+  "suite": "smoke",
+  "n": 3,
+  "grammar_constrained": true,
+  "decode_timeout_seconds": 10,
+  "gen_steps": 8,
+  "parse_rate": 0,
+  "structural_similarity": 0,
+  "component_type_recall": 0,
+  "placeholder_validity": 0,
+  "reward_score": 0,
+  "decode_timeout_count": 3,
+  "latency_ms_p50": 3333.79,
+  "agentv_passed": 0,
+  "agentv_failed": 1,
+  "decision": "reject",
+  "finding": "Prior smoke feedback inherited grammar_constrained=false from checkpoints trained with --no-grammar. Explicit constrained evaluation exposes timeouts on all three cases; this is the authoritative harness signal."
+}

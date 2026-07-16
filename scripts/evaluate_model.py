@@ -83,11 +83,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--model",
-        choices=("twotower", "stub"),
+        choices=("twotower", "grammar_diffusion", "stub"),
         default="twotower",
         help="Must match the checkpoint kind.",
     )
     parser.add_argument("--device", type=str, default="cpu")
+    parser.add_argument("--output-tokenizer", choices=("compositional", "lexer"), default=None, help="Override the checkpoint output tokenizer during evaluation.")
     parser.add_argument(
         "--output-tokenizer",
         choices=("compositional", "lexer"),
@@ -152,6 +153,12 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         default=None,
         help="Override checkpoint: constrained LTR repair on failed parses.",
+    )
+    parser.add_argument(
+        "--compiler-decode-mode",
+        choices=("off", "forced", "restricted", "tree"),
+        default="off",
+        help="Compiler-drafted decode hierarchy (decode-only; default: off).",
     )
     parser.add_argument(
         "--schema-in-context",
@@ -287,8 +294,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--no-unconstrained-fallback",
         action="store_true",
-        help="Strict mode: return constrained output instead of retrying unfiltered.",
+        help="Disable unconstrained retries so constrained-decode adherence is measured directly.",
     )
+
     args = parser.parse_args(argv)
 
     if args.no_design_md_context and args.design_md_context:
@@ -333,6 +341,7 @@ def main(argv: list[str] | None = None) -> int:
         grammar_constrained=args.grammar_constrained,
         grammar_verify_chosen_only=(True if args.verify_chosen_only else None),
         grammar_top_k=args.grammar_top_k,
+        compiler_decode_mode=args.compiler_decode_mode,
         decode_timeout_seconds=args.decode_timeout_seconds,
         grammar_dsl=args.grammar_dsl,
         grammar_trust_model=args.grammar_trust_model,

@@ -208,6 +208,8 @@ class Readers:
         self.model_card = self.root / "docs" / "MODEL_CARD.md"
         self.outputs = self.root / "outputs"
         self.fixtures = self.root / "src" / "slm_training" / "resources"
+        self.published_train_root = self.fixtures / "train_data"
+        self.dashboard_snapshot = self.root / "src" / "slm_training" / "web" / "static" / "dashboard_snapshot.json"
         self.lineage = LineageStore(self.outputs / "lineage")
         self.deployments = DeploymentRegistry(self.outputs / "lineage" / "deployments")
         self.comparisons = BlindedComparisonStore(
@@ -223,6 +225,11 @@ class Readers:
             return {"kind": kind, "provenance": "unknown", "results": [], "meta": {}}
         payload = _read_json(self.docs_design / filename)
         results = _results_of(payload)
+        snapshot = _read_json(self.dashboard_snapshot) or {}
+        if kind == "quality":
+            published = _results_of(snapshot.get("quality_results"))
+            known = {r.get("run_id") or r.get("id") for r in results}
+            results.extend(r for r in published if (r.get("run_id") or r.get("id")) not in known)
         meta = {k: v for k, v in (payload or {}).items() if k != "results"} if isinstance(
             payload, dict
         ) else {}
@@ -276,8 +283,12 @@ class Readers:
                 )
         if live:
             return {"provenance": "live", "runs": live}
-        # Cold start: synthesize runs from committed matrix rows.
+        # Cold start: synthesize runs from committed matrix rows and the published
+        # experiment snapshot generated from completed local runs.
+        snapshot = _read_json(self.dashboard_snapshot) or {}
         derived: list[dict[str, Any]] = []
+        for row in _results_of(snapshot.get("runs")):
+            derived.append({**row, "provenance": "committed-snapshot"})
         for kind in ("quality", "grammar", "perf"):
             for row in self.scoreboard(kind)["results"]:
                 derived.append(
@@ -520,36 +531,38 @@ class Readers:
 
     def train_data(self, version: str | None = None) -> dict[str, Any]:
         train_root = self.outputs / "train_data"
-        live_versions = (
+        generated_versions = (
             sorted(p.name for p in train_root.iterdir() if p.is_dir())
             if train_root.exists()
             else []
         )
-        committed_root = self.fixtures / "train_data"
-        committed_versions = (
-            sorted(p.name for p in committed_root.iterdir() if p.is_dir())
-            if committed_root.exists()
+        published_versions = (
+            sorted(p.name for p in self.published_train_root.iterdir() if p.is_dir())
+            if self.published_train_root.exists()
             else []
         )
-        data_versions = sorted(set(committed_versions) | set(live_versions))
-        versions = ["examples", *data_versions]
-        if version == "examples" or not data_versions:
+        versions = [
+            "examples",
+            *sorted(set(generated_versions) | set(published_versions)),
+        ]
+        if version == "examples" or not (generated_versions or published_versions):
             return {
                 "provenance": "committed",
                 "versions": versions,
                 "version": "examples",
                 **self._fixture_data(),
             }
-        if version in data_versions:
+        available = set(generated_versions) | set(published_versions)
+        if version in available:
             chosen = str(version)
-        elif live_versions:
-            chosen = live_versions[-1]
-        elif "remediated_roots_judged" in committed_versions:
+        elif generated_versions:
+            chosen = generated_versions[-1]
+        elif "remediated_roots_judged" in published_versions:
             chosen = "remediated_roots_judged"
         else:
-            chosen = committed_versions[-1]
-        live = chosen in live_versions
-        vdir = (train_root if live else committed_root) / chosen
+            chosen = published_versions[-1]
+        live = chosen in generated_versions
+        vdir = (train_root if live else self.published_train_root) / chosen
         stats = _read_json(vdir / "stats.json") or {}
         manifest = _read_json(vdir / "manifest.json") or {}
         return {
@@ -575,14 +588,12 @@ class Readers:
     ) -> dict[str, Any]:
         if not re.fullmatch(r"[A-Za-z0-9._,-]{1,64}", version):
             return {"version": version, "count": 0, "offset": 0, "records": []}
+        published_path = self.published_train_root / version / "records.jsonl"
+        generated_path = self.outputs / "train_data" / version / "records.jsonl"
         path = (
             self.fixtures / "train_seeds.jsonl"
             if version == "examples"
-            else (
-                self.outputs / "train_data" / version / "records.jsonl"
-                if (self.outputs / "train_data" / version / "records.jsonl").is_file()
-                else self.fixtures / "train_data" / version / "records.jsonl"
-            )
+            else generated_path if generated_path.exists() else published_path
         )
         rows = _read_jsonl(path, limit=None)
         if split:
@@ -633,6 +644,10 @@ class Readers:
                     for suite in SUITE_ORDER:
                         sizes[suite] = _count_lines(suites_dir / suite / "records.jsonl")
                 return {"provenance": "live", "version": versions[-1], "suites": sizes}
+        snapshot = _read_json(self.dashboard_snapshot) or {}
+        snapshot_test = snapshot.get("test_data") if isinstance(snapshot, dict) else None
+        if isinstance(snapshot_test, dict):
+            return {"provenance": "committed-snapshot", **snapshot_test, "records": None}
         # Cold start: committed fixture test seeds by split.
         rows = _read_jsonl(self.fixtures / "test_seeds.jsonl")
         sizes = {suite: 0 for suite in SUITE_ORDER}
@@ -641,6 +656,21 @@ class Readers:
             if split in sizes:
                 sizes[split] += 1
         return {"provenance": "committed", "version": None, "suites": sizes}
+
+    def test_records(
+        self, suite: str | None = None, *, query: str | None = None,
+        offset: int = 0, limit: int = 50,
+    ) -> dict[str, Any]:
+        snapshot = _read_json(self.dashboard_snapshot) or {}
+        data = snapshot.get("test_data") if isinstance(snapshot, dict) else None
+        rows = list((data or {}).get("records") or [])
+        if suite:
+            rows = [r for r in rows if r.get("suite") == suite]
+        if query:
+            needle = query.casefold()
+            rows = [r for r in rows if needle in " ".join(str(r.get(k) or "") for k in ("id", "suite", "prompt", "openui")).casefold()]
+        start = max(0, offset)
+        return {"provenance": "committed-snapshot", "version": (data or {}).get("version"), "count": len(rows), "offset": start, "limit": limit, "records": rows[start:start + limit]}
 
     # ---- annotations / comparisons -------------------------------------------
 

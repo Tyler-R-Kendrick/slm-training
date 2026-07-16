@@ -229,9 +229,8 @@ class GrammarDecodeState:
         # emitted id before advancing the DFA or its prefix diverges from the
         # text that will be parsed.
         tid = int(token_id)
-        # Keep this consistent with tokenizer.decode(..., skip_special=True).
-        # Repair starts from BOS; treating it as literal surface text poisons
-        # the cached DFA prefix and bypasses the required root-binding rule.
+        # Framing tokens are not OpenUI surface text. Feeding BOS/EOS into the
+        # incremental parser poisons the cached prefix before root decode.
         special = {
             tokenizer.pad_id,
             tokenizer.bos_id,
@@ -728,16 +727,11 @@ def pick_constrained_token(
         # Placeholder interiors are compositional — not exact structural.
         exact_terminals = False
 
-    # The surface DFA intentionally exposes broad NAME/STATE terminals at
-    # EOF, but the decoder's root invariant makes the first token uniquely
-    # `<BIND_0>`. Do not probe the broad terminal pool here: probing can
-    # discard the one semantically legal token and report a false dead end.
+    # At an empty native prefix the semantic root invariant is stronger than
+    # the broad NAME/STATE terminals exposed by the surface lexer.
     if not prefix_text.strip():
         try:
             root_id = tokenizer.bind_id(0)
-            # The lexer token map may expose NAME/STATE but omit the native
-            # binding IDs. The root invariant is stronger than that mapping:
-            # at the empty program prefix this is the only valid token.
             if 0 <= int(root_id) < int(logits_1d.numel()):
                 if stats is not None:
                     stats.root_invariant_bypass_count += 1
@@ -766,6 +760,21 @@ def pick_constrained_token(
         int(next(iter(allowed))) if allowed is not None and len(allowed) == 1 else None
     )
 
+    def _invalid_component_close(tid: int) -> bool:
+        if tokenizer.id_to_token.get(tid, "") != ")":
+            return False
+        try:
+            from slm_training.dsl.parser import validate
+
+            validate(prefix_text + ")")
+        except Exception as exc:  # noqa: BLE001
+            message = str(exc)
+            return any(
+                marker in message
+                for marker in ("excess-args", "excess args", "missing-required")
+            )
+        return False
+
     def _legal(token_id: int, *, stream: bool = True) -> bool:
         tid = int(token_id)
         if tid in {
@@ -789,39 +798,33 @@ def pick_constrained_token(
                 pass
             if token not in {"root", " ", "\n", "\t", "NL"} and not native_root:
                 return False
-        # The incremental grammar treats a newline after a bare binding name
-        # as an incomplete statement boundary, but that prefix can never be
-        # continued with ``=``. Reject it before committing a dead-end newline.
-        if token := tokenizer.id_to_token.get(tid, ""):
-            line = prefix_text.rstrip().split("\n")[-1].strip()
-            # A root assignment must begin with a component expression. The
-            # lexer DFA can otherwise admit native symbols/binders here as
-            # incomplete terminals, producing an unrecoverable RHS.
-            if re.search(r"(?:^|\n)root\s*=\s*$", prefix_text):
-                try:
-                    from slm_training.models.dsl_tokenizer import (
-                        TokenKind,
-                        is_dsl_native_tokenizer,
-                    )
+        token = tokenizer.id_to_token.get(tid, "")
+        line = prefix_text.rstrip().split("\n")[-1].strip()
+        if re.search(r"(?:^|\n)root\s*=\s*$", prefix_text):
+            try:
+                from slm_training.models.dsl_tokenizer import (
+                    TokenKind,
+                    is_dsl_native_tokenizer,
+                )
 
-                    if is_dsl_native_tokenizer(tokenizer):
-                        if tokenizer.kind_of(tid) != TokenKind.COMPONENT:
-                            return False
-                    elif token not in PREFERRED_COMPONENT_NAMES:
+                if is_dsl_native_tokenizer(tokenizer):
+                    if tokenizer.kind_of(tid) != TokenKind.COMPONENT:
                         return False
-                except Exception:  # noqa: BLE001
-                    if token not in PREFERRED_COMPONENT_NAMES:
-                        return False
-            if token in {"[", "LIT_STR"} and prefix_text.rstrip().endswith('"'):
-                return False
-            if token == "NL" and (
-                re.fullmatch(r"(?:[A-Za-z_]\w*|b\d+)", line)
-                or (line == "root" and "=" not in prefix_text)
-                or prefix_text.count("[") > prefix_text.count("]")
-                or prefix_text.count("(") > prefix_text.count(")")
-                or prefix_text.count('"') % 2 == 1
-            ):
-                return False
+                elif token not in PREFERRED_COMPONENT_NAMES:
+                    return False
+            except Exception:  # noqa: BLE001
+                if token not in PREFERRED_COMPONENT_NAMES:
+                    return False
+        if token in {"[", "LIT_STR"} and prefix_text.rstrip().endswith('"'):
+            return False
+        if token == "NL" and (
+            re.fullmatch(r"(?:[A-Za-z_]\w*|b\d+)", line)
+            or (line == "root" and "=" not in prefix_text)
+            or prefix_text.count("[") > prefix_text.count("]")
+            or prefix_text.count("(") > prefix_text.count(")")
+            or prefix_text.count('"') % 2 == 1
+        ):
+            return False
         # EOS is a structural completion marker, not merely another DFA
         # terminal.  The incremental grammar accepts incomplete prefixes such
         # as ``root``/``root =`` via UnexpectedEOF; allowing EOS there strands
@@ -842,10 +845,9 @@ def pick_constrained_token(
                     return False
             elif tid not in contract_allowed:
                 return False
-        # A singleton grammar admission is already a proof of lexical
-        # legality, but only after the semantic and contract guards above.
-        # Candidate probing cannot turn that one legal token into a dead end.
-        if singleton_allowed == tid:
+        # A singleton admission already proves lexical legality. Apply this
+        # only after special-token, semantic, and contract checks above.
+        if singleton_allowed == tid and not _invalid_component_close(tid):
             return True
         # R1: when the DFA already lists this id in an exact (non-broad) accept
         # set, skip the redundant copy-probe admit — set_prefix + allowed_id_set
@@ -911,31 +913,15 @@ def pick_constrained_token(
         # ``skip_exact_stream_probe`` was enabled, making constrained decode
         # effectively unbounded on CPU.  Keep the name for checkpoint/API
         # compatibility, but honor it for all DFA-admitted candidates.
-        if skip_exact or exact_terminals:
-            admitted = True
-        else:
-            admitted = _stream_probe_ok(
+        if not (skip_exact or exact_terminals) and not _stream_probe_ok(
             tokenizer, prefix_ids, tid, prefix_text=prefix_text
-            )
-        if not admitted:
+        ):
             return False
         # Semantic arity is only decidable at a closing component delimiter.
         # Missing or excess required arguments cannot be repaired after `)`;
         # reject that close while preserving errors about later bindings.
-        if tokenizer.id_to_token.get(tid, "") == ")":
-            candidate_text = prefix_text + ")"
-            try:
-                from slm_training.dsl.parser import validate
-
-                validate(candidate_text)
-            except Exception as exc:  # noqa: BLE001
-                message = str(exc)
-                if (
-                    "excess-args" in message
-                    or "excess args" in message
-                    or "missing-required" in message
-                ):
-                    return False
+        if _invalid_component_close(tid):
+            return False
         return True
 
     # Do not let the broad whitespace terminal commit a newline after a bare

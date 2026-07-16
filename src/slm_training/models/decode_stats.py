@@ -29,10 +29,22 @@ class DecodeStats:
     accepted_run_tokens: int = 0  # P3 multi-token accepts beyond the first
     canvas_tokens: int = 0
     unconstrained_retries: int = 0  # grammar decode fell back to unfiltered retry
+    backbone_ms: float = 0.0
+    projection_ms: float = 0.0
+    compiler_ms: float = 0.0
+    trie_ms: float = 0.0
+    compiler_candidates: int = 0
+    forced_spans: int = 0
+    forced_tokens: int = 0
+    trie_nodes: int = 0
+    restricted_projections: int = 0
+    full_projections: int = 0
+    compiler_fallbacks: int = 0
+    seeded_fallbacks: int = 0
     template_fastpath_count: int = 0
     template_fallback_count: int = 0
     root_invariant_bypass_count: int = 0
-    constrained_dead_ends: int = 0  # no legal continuation found
+    constrained_dead_ends: int = 0
     constrained_dead_end_last_position: int = -1
     constrained_dead_end_forced_rank: int = -1
     constrained_last_legal_candidates: int = -1
@@ -116,6 +128,19 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "tokens_emitted",
         "accepted_run_tokens",
         "canvas_tokens",
+        "unconstrained_retries",
+        "backbone_ms",
+        "projection_ms",
+        "compiler_ms",
+        "trie_ms",
+        "compiler_candidates",
+        "forced_spans",
+        "forced_tokens",
+        "trie_nodes",
+        "restricted_projections",
+        "full_projections",
+        "compiler_fallbacks",
+        "seeded_fallbacks",
         "constrained_dead_ends",
         "constrained_dead_end_last_position",
         "constrained_dead_end_forced_rank",

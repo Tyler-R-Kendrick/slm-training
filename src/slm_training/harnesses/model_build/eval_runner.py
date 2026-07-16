@@ -10,6 +10,7 @@ import signal
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from slm_training.data.structure import strip_style_literals
 from slm_training.dsl.placeholders import extract_placeholders
@@ -333,9 +334,14 @@ def evaluate(
     latencies: list[float] = []
     details: list[dict] = []
     task_cases: list[dict] = []
+    topology_evidence: list[dict[str, Any]] = []
+    topology_target_evidence: list[dict[str, Any]] = []
     failure_breakdown: dict[str, int] = {}
     decode_stats_rows: list[object] = []
     canvas_cap = _decode_canvas_cap(plugin)
+    score_topology_targets = getattr(plugin, "score_topology_targets", None)
+    if callable(score_topology_targets):
+        topology_target_evidence = list(score_topology_targets(records))
 
     batch_size = 1
     generate_batch_requests = getattr(plugin, "generate_batch_requests", None)
@@ -348,11 +354,7 @@ def evaluate(
                 getattr(getattr(plugin, "config", None), "generate_batch_size", 8) or 8
             ),
         )
-    # Preserve per-example fallback attribution only when the plugin has no
-    # request-aware API.  Prefer GenerationRequest so slot contracts supplied
-    # by the evaluation fixture reach the model; calling generate_with_stats
-    # with only ``prompt`` silently drops that production input.
-    if callable(generate_with_stats) and not callable(generate_batch_requests):
+    if callable(generate_with_stats):
         batch_size = 1
 
     def _eval_schema() -> str | None:
@@ -367,26 +369,26 @@ def evaluate(
         schema = _eval_schema()
         return [GenerationRequest.from_record(r, schema=schema) for r in chunk]
 
-    def _generate_chunk_unbounded(chunk: list[ExampleRecord]) -> list[str]:
+    def _generate_chunk_unbounded(
+        chunk: list[ExampleRecord],
+    ) -> tuple[list[str], list[dict[str, Any]]]:
         """Generate without passing gold ExampleRecord to the model."""
-        if callable(generate_batch_requests):
-            from slm_training.models.decode_stats import collect_decode_stats
-
-            with collect_decode_stats() as stats:
-                result = generate_batch_requests(_requests_for(chunk))
-            decode_stats_rows.append(stats)
-            return result
         if callable(generate_with_stats) and len(chunk) == 1:
             text, stats = generate_with_stats(chunk[0].prompt)
             decode_stats_rows.append(stats)
             return [text]
+        if callable(generate_batch_requests):
+            predictions = generate_batch_requests(_requests_for(chunk))
+            consume = getattr(plugin, "consume_generation_evidence", None)
+            evidence = consume() if callable(consume) else []
+            return predictions, list(evidence)
         prompts = [r.prompt for r in chunk]
         if callable(generate_batch):
             try:
-                return generate_batch(prompts)
+                return generate_batch(prompts), []
             except TypeError:
                 try:
-                    return generate_batch(prompts, golds=None)
+                    return generate_batch(prompts, golds=None), []
                 except TypeError:
                     pass
         out: list[str] = []
@@ -395,11 +397,15 @@ def evaluate(
                 out.append(plugin.generate(prompt))
             except TypeError:
                 out.append(plugin.generate(prompt, gold=None))
-        return out
+        consume = getattr(plugin, "consume_generation_evidence", None)
+        evidence = consume() if callable(consume) else []
+        return out, list(evidence)
 
     decode_timeout_count = 0
 
-    def _generate_chunk(chunk: list[ExampleRecord]) -> list[str]:
+    def _generate_chunk(
+        chunk: list[ExampleRecord],
+    ) -> tuple[list[str], list[dict[str, Any]]]:
         """Generate a chunk, converting an explicit diagnostic timeout to failures."""
         nonlocal decode_timeout_count
         seconds = float(getattr(config, "decode_timeout_seconds", 0) or 0)
@@ -415,12 +421,17 @@ def evaluate(
             return _generate_chunk_unbounded(chunk)
         except TimeoutError:
             decode_timeout_count += len(chunk)
-            return ["" for _ in chunk]
+            return ["" for _ in chunk], []
         finally:
             signal.setitimer(signal.ITIMER_REAL, 0)
             signal.signal(signal.SIGALRM, previous)
 
-    def _score_one(record: ExampleRecord, pred: str, latency_ms: float) -> None:
+    def _score_one(
+        record: ExampleRecord,
+        pred: str,
+        latency_ms: float,
+        prediction_evidence: dict[str, Any] | None = None,
+    ) -> None:
         nonlocal parse_ok, raw_syntax_ok, fidelity_sum, fidelity_norm_sum, validity_sum
         nonlocal exact_sum, struct_sum, tree_edit_sum, reward_sum, recall_sum
         nonlocal contract_precision_sum, contract_recall_sum
@@ -452,6 +463,23 @@ def evaluate(
         contract_prec = _contract_precision(scored_pred, record)
         contract_rec = _contract_recall(scored_pred, record)
         reward = _reward_for_prediction(scored_pred, record)
+        evidence = dict(prediction_evidence or {})
+        if len(topology_target_evidence) > len(topology_evidence):
+            evidence.update(topology_target_evidence[len(topology_evidence)])
+        codec = getattr(plugin, "codec", None)
+        if codec is not None:
+            from slm_training.models.grammar_diffusion import (
+                production_sequence_accuracy,
+                topology_arity_accuracy,
+            )
+
+            evidence["production_accuracy"] = production_sequence_accuracy(
+                codec, scored_pred, record.openui
+            )
+            evidence["arity_accuracy"] = topology_arity_accuracy(
+                codec, scored_pred, record.openui
+            )
+        topology_evidence.append(evidence)
         gold_dscore = _gold_design_lint_score(record)
         fidelity_sum += fid
         fidelity_norm_sum += fid_norm
@@ -486,6 +514,7 @@ def evaluate(
                 "latency_ms": round(latency_ms, 2),
                 "prediction": pred[:500],
                 "serialized": (serialized or "")[:500] if serialized else None,
+                "topology_evidence": evidence or None,
             }
         )
         task_cases.append(
@@ -495,6 +524,7 @@ def evaluate(
                 "gold": record.openui,
                 "prediction": scored_pred,
                 "abstraction_level": (record.meta or {}).get("abstraction_level"),
+                "prediction_evidence": evidence,
             }
         )
 
@@ -504,18 +534,25 @@ def evaluate(
         for start in range(0, n, batch_size):
             chunk = records[start : start + batch_size]
             t0 = time.perf_counter()
-            preds = _generate_chunk(chunk)
+            preds, evidence_rows = _generate_chunk(chunk)
             elapsed = (time.perf_counter() - t0) * 1000.0
             per = elapsed / max(1, len(chunk))
-            for record, pred in zip(chunk, preds):
+            for index, (record, pred) in enumerate(zip(chunk, preds)):
                 latencies.append(per)
-                _score_one(record, pred, per)
+                evidence = evidence_rows[index] if index < len(evidence_rows) else None
+                _score_one(record, pred, per, evidence)
     else:
         for record in records:
             t0 = time.perf_counter()
-            pred = _generate_chunk([record])[0]
+            predictions, evidence_rows = _generate_chunk([record])
+            pred = predictions[0]
             latencies.append((time.perf_counter() - t0) * 1000.0)
-            _score_one(record, pred, latencies[-1])
+            _score_one(
+                record,
+                pred,
+                latencies[-1],
+                evidence_rows[0] if evidence_rows else None,
+            )
 
     lat_sorted = sorted(latencies)
 
@@ -565,6 +602,82 @@ def evaluate(
     from slm_training.evals.task_scoreboard import build_task_scoreboard
 
     metrics["task_scoreboard"] = build_task_scoreboard(task_cases)
+    scored_details = metrics["task_scoreboard"].get("details") or []
+
+    def _available_mean(name: str) -> float | None:
+        values = [
+            float(metric["value"])
+            for row in scored_details
+            if (metric := (row.get("metrics") or {}).get(name))
+            and metric.get("value") is not None
+        ]
+        return sum(values) / len(values) if values else None
+
+    metrics["ast_node_f1"] = _available_mean("ast_node_f1")
+    metrics["ast_edge_f1"] = _available_mean("ast_edge_f1")
+    if topology_evidence and all(
+        all(
+            key in row
+            for key in (
+                "action_macro_f1",
+                "production_accuracy",
+                "arity_accuracy",
+                "critic_ece",
+                "efficiency_score",
+            )
+        )
+        for row in topology_evidence
+    ):
+
+        def mean(key: str) -> float:
+            return sum(float(row[key]) for row in topology_evidence) / len(
+                topology_evidence
+            )
+
+        quality = (
+            2.0 * float(metrics["parse_rate"])
+            + 2.0 * float(metrics["placeholder_fidelity"])
+            + float(metrics["structural_similarity"])
+            + 0.5 * float(metrics["reward_score"])
+        ) / 5.5
+        ast_node = metrics["ast_node_f1"]
+        ast_edge = metrics["ast_edge_f1"]
+        if ast_node is not None and ast_edge is not None:
+            topology = (
+                float(ast_node)
+                + float(ast_edge)
+                + float(metrics["tree_edit_similarity"])
+            ) / 3.0
+            trace = (
+                mean("action_macro_f1")
+                + mean("production_accuracy")
+                + mean("arity_accuracy")
+                + (1.0 - mean("critic_ece"))
+            ) / 4.0
+            efficiency = mean("efficiency_score")
+            metrics.update(
+                {
+                    "topology_quality_score": quality,
+                    "topology_structure_score": topology,
+                    "topology_trace_score": trace,
+                    "topology_efficiency_score": efficiency,
+                    "topology_composite": (
+                        0.45 * quality
+                        + 0.25 * topology
+                        + 0.20 * trace
+                        + 0.10 * efficiency
+                    ),
+                    "topology_telemetry": {
+                        key: mean(key)
+                        for key in topology_evidence[0]
+                        if isinstance(topology_evidence[0].get(key), (int, float))
+                        and all(
+                            isinstance(row.get(key), (int, float))
+                            for row in topology_evidence
+                        )
+                    },
+                }
+            )
     # V7: speculative-denoising decode telemetry (MaskGIT path only).
     if (
         spec_stats is not None
@@ -574,21 +687,8 @@ def evaluate(
         metrics["speculative_stats"] = spec_stats.as_dict()
     if decode_stats_rows:
         from slm_training.models.decode_stats import aggregate_stats
-
         metrics["decode_stats"] = aggregate_stats(decode_stats_rows)
-        fastpath = int(metrics["decode_stats"].get("template_fastpath_count_sum", 0))
-        template_fallback = int(
-            metrics["decode_stats"].get("template_fallback_count_sum", 0)
-        )
-        metrics["template_fastpath_count"] = fastpath
-        metrics["template_fallback_count"] = template_fallback
-        # Keep the legacy field honest: certified template output is a
-        # fallback for learned-quality accounting, even when it is valid.
-        metrics["fallback_count"] = fastpath + template_fallback
-        retries = sum(
-            int(getattr(row, "unconstrained_retries", 0))
-            for row in decode_stats_rows
-        )
+        retries = sum(int(getattr(row, "unconstrained_retries", 0)) for row in decode_stats_rows)
         metrics["constrained_fallback_rate"] = retries / len(decode_stats_rows)
 
     run_dir = config.run_dir
@@ -598,9 +698,7 @@ def evaluate(
     if publish_agentv:
         from slm_training.evals.agentv import publish_model_evaluation
 
-        metrics["agentv"] = publish_model_evaluation(
-            run_dir, {config.suite: metrics}
-        )
+        metrics["agentv"] = publish_model_evaluation(run_dir, {config.suite: metrics})
     payload = json.dumps(metrics, indent=2) + "\n"
     suite_path.write_text(payload, encoding="utf-8")
     if config.suite == "smoke":

@@ -70,14 +70,22 @@ def cmd_init(args: argparse.Namespace) -> int:
         notes=args.notes,
     )
     path = _store(args).initialize(campaign)
-    print(json.dumps({"campaign": str(path), "spec": campaign.model_dump(mode="json")}, indent=2))
+    print(
+        json.dumps(
+            {"campaign": str(path), "spec": campaign.model_dump(mode="json")}, indent=2
+        )
+    )
     return 0
 
 
-def _capture(store: CampaignStore, campaign: CampaignSpec) -> tuple[EvidenceSnapshot, Path]:
+def _capture(
+    store: CampaignStore, campaign: CampaignSpec
+) -> tuple[EvidenceSnapshot, Path]:
     evidence = collect_evidence(campaign.evidence_roots, repo_root=ROOT)
     path = store.write_artifact("evidence", evidence)
-    store.append_event("evidence_captured", artifact_sha256=path.stem, detail=evidence.source_counts)
+    store.append_event(
+        "evidence_captured", artifact_sha256=path.stem, detail=evidence.source_counts
+    )
     return evidence, path
 
 
@@ -128,7 +136,9 @@ def cmd_research(args: argparse.Namespace) -> int:
         run = researcher.run(campaign, evidence, sources)
         researcher_path = store.write_artifact("researcher_runs", run)
         store.append_event(
-            "researcher_completed" if run.status == "completed" else "researcher_failed",
+            "researcher_completed"
+            if run.status == "completed"
+            else "researcher_failed",
             status=run.status,
             artifact_sha256=researcher_path.stem,
             detail={
@@ -141,7 +151,8 @@ def cmd_research(args: argparse.Namespace) -> int:
             raise RuntimeError(run.error)
         sources = list(run.sources)
     source_path = store.write_artifact(
-        "research_sources", {"sources": [item.model_dump(mode="json") for item in sources]}
+        "research_sources",
+        {"sources": [item.model_dump(mode="json") for item in sources]},
     )
     store.append_event(
         "literature_captured",
@@ -206,11 +217,17 @@ def cmd_propose(args: argparse.Namespace) -> int:
             f"{campaign.budget.max_experiments}"
         )
     evidence_path = _artifact(store, "evidence", args.evidence)
-    evidence = EvidenceSnapshot.model_validate_json(evidence_path.read_text(encoding="utf-8"))
+    evidence = EvidenceSnapshot.model_validate_json(
+        evidence_path.read_text(encoding="utf-8")
+    )
     source_path = args.sources
     if source_path is None:
-        candidates = list((store.root / "artifacts" / "research_sources").glob("*.json"))
-        source_path = max(candidates, key=lambda p: p.stat().st_mtime_ns) if candidates else None
+        candidates = list(
+            (store.root / "artifacts" / "research_sources").glob("*.json")
+        )
+        source_path = (
+            max(candidates, key=lambda p: p.stat().st_mtime_ns) if candidates else None
+        )
     sources = _load_sources(source_path)
     if args.provider and args.compiler:
         raise ValueError("choose --provider (legacy) or --compiler, not both")
@@ -225,7 +242,9 @@ def cmd_propose(args: argparse.Namespace) -> int:
     elif mode == "fixture":
         if not args.proposal:
             raise ValueError("--provider fixture requires --proposal")
-        fixture = ExperimentSpec.model_validate_json(args.proposal.read_text(encoding="utf-8"))
+        fixture = ExperimentSpec.model_validate_json(
+            args.proposal.read_text(encoding="utf-8")
+        )
         provider = FixtureResearchProvider(fixture)
         result = provider.propose(campaign, evidence, sources)
     elif args.compiler == "openai":
@@ -262,21 +281,31 @@ def cmd_propose(args: argparse.Namespace) -> int:
 def cmd_validate(args: argparse.Namespace) -> int:
     store = _store(args)
     campaign = store.load_campaign()
-    experiment = ExperimentSpec.model_validate_json(args.experiment.read_text(encoding="utf-8"))
+    experiment = ExperimentSpec.model_validate_json(
+        args.experiment.read_text(encoding="utf-8")
+    )
     evidence_path = _artifact(store, "evidence", args.evidence)
-    evidence = EvidenceSnapshot.model_validate_json(evidence_path.read_text(encoding="utf-8"))
+    evidence = EvidenceSnapshot.model_validate_json(
+        evidence_path.read_text(encoding="utf-8")
+    )
     sources = _load_sources(args.sources)
     validate_experiment(campaign, experiment, evidence, sources)
-    print(json.dumps({"valid": True, "experiment_id": experiment.experiment_id}, indent=2))
+    print(
+        json.dumps({"valid": True, "experiment_id": experiment.experiment_id}, indent=2)
+    )
     return 0
 
 
 def cmd_run(args: argparse.Namespace) -> int:
     store = _store(args)
     campaign = store.load_campaign()
-    experiment = ExperimentSpec.model_validate_json(args.experiment.read_text(encoding="utf-8"))
+    experiment = ExperimentSpec.model_validate_json(
+        args.experiment.read_text(encoding="utf-8")
+    )
     commands = compile_commands(campaign, experiment, output_root=args.root)
-    plan_path = store.write_artifact("execution_plans", {"commands": commands, "execute": args.execute})
+    plan_path = store.write_artifact(
+        "execution_plans", {"commands": commands, "execute": args.execute}
+    )
     store.append_event(
         "execution_planned",
         experiment_id=experiment.experiment_id,
@@ -332,7 +361,9 @@ def cmd_run(args: argparse.Namespace) -> int:
 
 def cmd_diagnose(args: argparse.Namespace) -> int:
     store = _store(args)
-    outcome = ExperimentOutcome.model_validate_json(args.outcome.read_text(encoding="utf-8"))
+    outcome = ExperimentOutcome.model_validate_json(
+        args.outcome.read_text(encoding="utf-8")
+    )
     diagnosis = diagnose_outcome(outcome)
     path = store.write_artifact("diagnoses", diagnosis)
     store.append_event(
@@ -406,9 +437,15 @@ def build_parser() -> argparse.ArgumentParser:
     init.add_argument("--campaign-id", required=True)
     init.add_argument("--objective", required=True)
     init.add_argument("--primary-metric", required=True)
-    init.add_argument("--track", choices=("twotower", "causal_lm"), default="twotower")
+    init.add_argument(
+        "--track",
+        choices=("twotower", "grammar_diffusion", "causal_lm"),
+        default="twotower",
+    )
     init.add_argument("--researcher-mode", default="agent")
-    init.add_argument("--evidence-root", type=Path, action="append", default=[Path("outputs")])
+    init.add_argument(
+        "--evidence-root", type=Path, action="append", default=[Path("outputs")]
+    )
     init.add_argument("--max-experiments", type=int, default=12)
     init.add_argument("--max-gpu-hours", type=float, default=0)
     init.add_argument("--max-wall-minutes", type=int, default=240)
@@ -428,7 +465,9 @@ def build_parser() -> argparse.ArgumentParser:
     research.add_argument(
         "--paper-query",
         action="append",
-        default=["structured generation constrained decoding synthetic data small language models"],
+        default=[
+            "structured generation constrained decoding synthetic data small language models"
+        ],
     )
     research.set_defaults(func=cmd_research)
 
@@ -469,9 +508,15 @@ def build_parser() -> argparse.ArgumentParser:
     readiness.set_defaults(func=cmd_validate_rl)
 
     benchmark = sub.add_parser("evaluate-researcher")
-    benchmark.add_argument("--cases", type=Path, default=Path("src/slm_training/resources/autoresearch/researcher_cases.json"))
+    benchmark.add_argument(
+        "--cases",
+        type=Path,
+        default=Path("src/slm_training/resources/autoresearch/researcher_cases.json"),
+    )
     benchmark.add_argument("--predictions", type=Path, required=True)
-    benchmark.add_argument("--run-dir", type=Path, default=Path("outputs/autoresearch/researcher_eval"))
+    benchmark.add_argument(
+        "--run-dir", type=Path, default=Path("outputs/autoresearch/researcher_eval")
+    )
     benchmark.add_argument("--researcher-id", required=True)
     benchmark.add_argument("--pass-threshold", type=float, default=0.8)
     benchmark.add_argument("--human-approve", action="store_true")

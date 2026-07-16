@@ -309,7 +309,13 @@ def stream_check(source: str) -> dict[str, Any]:
 
 
 def library_schema() -> dict[str, Any]:
+    cache_key = "schema"
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached  # type: ignore[return-value]
     result = _invoke({"op": "schema"})
     if not result.get("ok"):
         raise RuntimeError(result.get("error") or "schema failed")
-    return dict(result.get("schema") or {})
+    value = dict(result.get("schema") or {})
+    _cache_put(cache_key, value)
+    return value

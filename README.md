@@ -17,7 +17,7 @@ pinned [Open Deep Research](https://github.com/langchain-ai/open_deep_research) 
 behind one memo/trajectory contract and trusted proposal compiler. RL remains
 locked until a model passes the frozen production readiness contract.
 
-See [docs/design/model-lineage.md](docs/design/model-lineage.md) (canonical two-track cycle), [docs/design/openui-twotower.md](docs/design/openui-twotower.md), [docs/design/research-lineage.md](docs/design/research-lineage.md) (papers → code), [docs/design/research-correction-critics.md](docs/design/research-correction-critics.md) (V4 remask / trust-gate / honest inventory; V6 CoRe/T2M), [docs/design/verifier-stack.md](docs/design/verifier-stack.md) (G0–G12 corpus gates + confidence tiers), [docs/design/abstraction-house-style.md](docs/design/abstraction-house-style.md) (L0–L5 determinacy, grounding, and canonical defaults), [docs/design/verifier-guided-repair.md](docs/design/verifier-guided-repair.md) (PDDL-Instruct / verifier-repair applicability map), [docs/design/quality-experiment-matrix.md](docs/design/quality-experiment-matrix.md) (E0–E75 + X0–X8 matrices; E34 deferred), [docs/design/speculative-denoising.md](docs/design/speculative-denoising.md) (V7 stability / dependency-cluster / survival / successor-cache decode), [docs/design/dsl-native-tokenizer.md](docs/design/dsl-native-tokenizer.md) (V5 lexer alphabet), [docs/design/grammar-fastpath.md](docs/design/grammar-fastpath.md), [docs/design/grammar-backends.md](docs/design/grammar-backends.md), [docs/design/structure-only-eval.md](docs/design/structure-only-eval.md), [docs/design/adversarial-review.md](docs/design/adversarial-review.md), [docs/design/runtime-performance.md](docs/design/runtime-performance.md), [docs/design/hf-jobs-train.md](docs/design/hf-jobs-train.md) (HF Jobs full train — not ZeroGPU), [docs/design/gpu-multi-farm-mcp.md](docs/design/gpu-multi-farm-mcp.md), and [docs/MODEL_CARD.md](docs/MODEL_CARD.md).
+See [docs/design/model-lineage.md](docs/design/model-lineage.md) (canonical two-track cycle), [docs/design/openui-twotower.md](docs/design/openui-twotower.md), [docs/design/grammar-topology-diffusion.md](docs/design/grammar-topology-diffusion.md) (dynamic production-tree diffusion), [docs/design/research-lineage.md](docs/design/research-lineage.md) (papers → code), [docs/design/research-correction-critics.md](docs/design/research-correction-critics.md) (V4 remask / trust-gate / honest inventory; V6 CoRe/T2M), [docs/design/verifier-stack.md](docs/design/verifier-stack.md) (G0–G12 corpus gates + confidence tiers), [docs/design/abstraction-house-style.md](docs/design/abstraction-house-style.md) (L0–L5 determinacy, grounding, and canonical defaults), [docs/design/verifier-guided-repair.md](docs/design/verifier-guided-repair.md) (PDDL-Instruct / verifier-repair applicability map), [docs/design/quality-experiment-matrix.md](docs/design/quality-experiment-matrix.md) (E0–E75 + X0–X15 matrices; E34 deferred), [docs/design/speculative-denoising.md](docs/design/speculative-denoising.md) (V7 stability / dependency-cluster / survival / successor-cache decode), [docs/design/dsl-native-tokenizer.md](docs/design/dsl-native-tokenizer.md) (V5 lexer alphabet), [docs/design/grammar-fastpath.md](docs/design/grammar-fastpath.md), [docs/design/grammar-backends.md](docs/design/grammar-backends.md), [docs/design/structure-only-eval.md](docs/design/structure-only-eval.md), [docs/design/adversarial-review.md](docs/design/adversarial-review.md), [docs/design/runtime-performance.md](docs/design/runtime-performance.md), [docs/design/hf-jobs-train.md](docs/design/hf-jobs-train.md) (HF Jobs full train — not ZeroGPU), [docs/design/gpu-multi-farm-mcp.md](docs/design/gpu-multi-farm-mcp.md), and [docs/MODEL_CARD.md](docs/MODEL_CARD.md).
 
 ## Model card (summary)
 
@@ -34,6 +34,9 @@ summary and the full card whenever a checkpoint is created or promoted.
 | E120 singleton diagnostic | `e120_unsandboxed/last.pt` | `outputs/runs/iter-e120-unsandboxed-20260715/…` (local) | 8-step CPU scratch; guarded singleton decode verified, `rico_held n=1` parse 0.0 — not ship |
 | Matrix honest champion | V6 E53 family | `outputs/runs/` + matrix docs | Scratch + limited `rico_held` — not production HF ship |
 | P13 matched E50 controls | fixture + integrated E50 | `/tmp/slm17-e50-*-honest/` (local scratch) | Integrated fidelity +0.04 held / +0.0333 RICO; parse 0.0, not ship |
+| Frozen X2 baseline | `gx_x2_codec` seeds 0/1/2 | `/tmp/slm-training-fixed-baseline/outputs/topology_baseline/` | Fixed-canvas comparison scored zero on all suites; not ship |
+| Topology v2 smoke | `grammar_diffusion_overfit` | pytest temporary checkpoint | n=2 parse/fidelity 0.5, topology composite 0.482; wiring only, not ship |
+| Topology X9/X14 confirmation | 6 seed checkpoints | `/tmp/slm-training-grammar-topology/outputs/topology_confirm_4bf964d/` | 200-step CPU scratch; all fail multi-suite gates, no promotion/sync |
 | Production HF ship | *(none yet)* | [HF Bucket `TKendrick/OpenUI`](https://huggingface.co/buckets/TKendrick/OpenUI) `checkpoints/<run_id>/` | Register here after first full HF sync + `--ship-gates` |
 
 **Load demo:** `python -m scripts.serve_playground` · **Full train sync:** set
@@ -167,7 +170,7 @@ DESIGN.md conditioning + linter: [`src/apps/design_md_bridge/`](src/apps/design_
 
 `serve_playground` serves a **control-plane + observability SPA** at `/` — one
 pane of glass over the whole lifecycle (data → experiments → smoke →
-checkpoints/promotion) — plus the classic annotate playground at `/playground`.
+checkpoints/promotion) — including the annotate playground at `/playground`.
 
 ```bash
 pip install -e ".[dev,torch,web]"
@@ -187,7 +190,7 @@ Surfaces (React 19 + Vite SPA, dark-first "mission control" design system):
 | `/smoke` | Smoke canary + perf & telemetry; launch wiring runs |
 | `/checkpoints` | Roster + **live configurable ship gates** + promote / deploy + blinded A/B |
 | `/runs/<id>` | Per-run detail — gate matrix, telemetry spans, `train_summary` metrics, durable-checkpoint link |
-| `/playground` | Annotate UI (React); classic vanilla page kept at `/playground/classic` |
+| `/playground` | Full annotate UI (React): staged generation, browser fallback/review, DSL repair, and feedback |
 
 **Read vs execute.** Observability views are pure reads (work on a fresh checkout
 and on read-only Vercel, falling back to committed `docs/design/*.json` /
@@ -218,8 +221,13 @@ python -m scripts.serve_playground --port 8765
 ```
 
 `/playground` is the React annotate UI inside the SPA shell (shares the dark
-design system); the original standalone vanilla page is preserved at
-`/playground/classic`. Both drive the same `/api/sample` + `/api/annotate` flow.
+design system). It owns the complete annotation flow: bounded server attempts,
+browser review/fallback, editable and validated DSL corrections, annotator/model
+identity, bearer-token support, activity history, keyboard/swipe grading, and the
+diffusion progress canvas. The retired `/playground/classic` URL redirects here.
+If both model paths are unavailable, the page shows a clearly labeled wiring
+fallback so the renderer/editor/annotation flow remains testable; uncorrected
+fallback feedback is excluded from derived training data.
 
 The demo checkpoint lives in `src/slm_training/resources/checkpoints/playground_demo/` (committed
 `last.pt` + tokenizer + meta). To regenerate it:

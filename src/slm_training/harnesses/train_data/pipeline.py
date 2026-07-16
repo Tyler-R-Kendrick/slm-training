@@ -858,9 +858,7 @@ def build_train_data(
         for record in verified:
             tier = str(record.meta.get("verification_tier") or "Bronze")
             if tier_rank.get(tier, -1) < minimum:
-                tier_rejected.append(
-                    {"id": record.id, "verification_tier": tier}
-                )
+                tier_rejected.append({"id": record.id, "verification_tier": tier})
             else:
                 tiered.append(record)
         verified = tiered

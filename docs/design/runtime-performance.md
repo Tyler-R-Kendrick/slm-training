@@ -67,6 +67,39 @@ python -m scripts.profile_generate --rounds 2
 python -m scripts.run_perf_matrix --only P0,Q9,R9,PG --limit 4
 ```
 
+## Playground load reproduction (2026-07-15)
+
+The [runtime reproduction](playground-runtime-reproduction-results.json) found
+three independent failures in the React playground path. A fresh worktree could
+throw a bridge-install error during validation, a `web`-only install could fail
+to import PyTorch despite committed ONNX artifacts, and the SPA multiplied its
+own six retries by the service's three-attempt budget while prefetching three
+samples (up to 54 server decodes). One PyTorch attempt took roughly 6–9 seconds
+on this CPU fixture host, so the amplification looked like a hung application.
+
+The web service now validates through the hybrid parser and uses committed ONNX
+artifacts only when CPU PyTorch is unavailable. The React flow performs exactly
+three numbered server attempts, then at most three browser attempts with failure
+context and durable attempt/review records; navigating away aborts the active
+pipeline and destroys any late browser session. Browser startup and inference are
+bounded, WebGPU adapters below the model's 65,536-byte workgroup-storage
+requirement are skipped, and an explicitly labeled wiring fallback keeps the
+annotation/editor flow usable when neither model backend works. That fallback is
+excluded from derived training data unless a human corrects it.
+
+The production dashboard build passed, the desktop Playwright suite passed 12/12
+in 58.5 seconds, the mobile suite passed 12/12 in 1.0 minute, and 16 focused
+backend tests passed in 0.67 seconds. Four deterministic desktop parity workflows
+also passed in 12.2 seconds. A real Windows Chrome run against the committed CPU
+checkpoint reached a valid rendered sample in 15,378 ms, enabled grading, and
+saved a renderer-validated human correction through `/api/annotate`. It recorded
+zero page errors, console errors, failed requests, or HTTP errors. In that run the
+checkpoint's three attempts produced invalid DSL, WebGPU was correctly rejected
+at 32,768 < 65,536 bytes, and ONNX WASM rejected `GatherBlockQuantized(1)`; the
+non-training wiring fallback then rendered successfully. This is fixture-demo
+runtime evidence, not an eval or ship-readiness claim; no checkpoint, suite, or
+ship gate changed.
+
 ## Kernel boundary (unchanged)
 
 ```
@@ -132,6 +165,18 @@ python -m scripts.train_model --device auto --compile --amp --grad-accum 2 \
 
 This environment's measured accel bench is recorded under `outputs/runs/accel_bench.json`.
 Fused NEON/Cactus kernels remain external (`slm_training.runtime.cactus`).
+
+### Restricted semantic projection
+
+TwoTower's denoiser now exposes a decode-only `encode` / `project` split. The
+legacy forward still computes the full tied vocabulary head, while compiler
+decode gathers only valid semantic rows. Packed trie verification batches
+prefix-visible/future-masked canvases and projects each parent's child set.
+This removes LM-head work, not backbone work; deterministic singleton spans
+are the only path that skips neural inference entirely. See the C-series in
+[`perf-experiment-matrix.md`](perf-experiment-matrix.md). The feature remains
+opt-in because the current committed checkpoint cannot provide a valid quality
+anchor.
 
 ### Local Qualcomm DirectML train (2026-07-14)
 

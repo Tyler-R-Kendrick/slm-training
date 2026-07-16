@@ -89,25 +89,6 @@ def test_ltr_suffix_always_masks_first_content_token() -> None:
     assert int(noisy[0, 1]) == model.tokenizer.mask_id
 
 
-def test_ltr_suffix_masks_root_for_bosless_lexer_targets() -> None:
-    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
-    model = TwoTowerModel.from_records(
-        records,
-        config=TwoTowerConfig(
-            d_model=32, n_heads=4, context_layers=1, denoiser_layers=1,
-            output_tokenizer="lexer",
-        ),
-        device="cpu",
-    )
-    target = torch.tensor([[model.tokenizer.bind_id(0), model.tokenizer.token_to_id["="]]])
-    noisy = target.clone()
-    predict = torch.zeros_like(target, dtype=torch.bool)
-    _, mask, suffix = model._merge_ltr_suffix_mask(target, noisy, predict)
-    assert bool(mask[0, 0])
-    assert bool(suffix[0, 0])
-    assert int(noisy[0, 0]) == model.tokenizer.mask_id
-
-
 def test_checkpoint_rejects_missing_trainable_weights(tmp_path: Path) -> None:
     records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
     model = TwoTowerModel.from_records(

@@ -32,7 +32,9 @@ def validate_experiment(
     known_citations = {source.uri for source in sources}
     known_citations.update(item.path for item in evidence.items)
     if not set(experiment.citations) & known_citations:
-        raise ValueError("experiment is ungrounded: no citation matches captured evidence")
+        raise ValueError(
+            "experiment is ungrounded: no citation matches captured evidence"
+        )
     if experiment.requires_rl:
         assert_rl_ready(experiment.rl_readiness_report)
 
@@ -65,7 +67,9 @@ def compile_commands(
         if knobs.synthesizer:
             build.extend(["--synthesizer", knobs.synthesizer])
         if knobs.max_records_per_parent:
-            build.extend(["--max-records-per-parent", str(knobs.max_records_per_parent)])
+            build.extend(
+                ["--max-records-per-parent", str(knobs.max_records_per_parent)]
+            )
         if knobs.min_quality_score is not None:
             build.extend(["--min-quality-score", str(knobs.min_quality_score)])
         commands.append(build)
@@ -87,10 +91,10 @@ def compile_commands(
                 json.dumps(knobs.mixture_weights, sort_keys=True),
             ]
         )
-    if campaign.track != "twotower":
+    if campaign.track not in {"twotower", "grammar_diffusion"}:
         raise ValueError(
-            "embedded execution currently supports twotower; causal_lm proposals "
-            "must use the agent-driven model_cycle lineage workflow"
+            "embedded execution supports twotower and grammar_diffusion; "
+            "causal_lm proposals must use the agent-driven model_cycle lineage workflow"
         )
     train = [
         "python",
@@ -115,6 +119,32 @@ def compile_commands(
         "--device",
         "cpu" if campaign.budget.max_gpu_hours == 0 else "auto",
     ]
+    if campaign.track == "grammar_diffusion":
+        train.extend(["--model", "grammar_diffusion"])
+        boolean_knobs = {
+            "topology_actions": "topology-actions",
+            "topology_structural_embeddings": "topology-structural-embeddings",
+            "topology_heterogeneous_noise": "topology-heterogeneous-noise",
+            "topology_critic_decode": "topology-critic-decode",
+            "topology_bounded_buffer": "topology-bounded-buffer",
+        }
+        for field, flag in boolean_knobs.items():
+            value = getattr(knobs, field)
+            if value is not None:
+                train.append(f"--{flag}" if value else f"--no-{flag}")
+        for field, flag in {
+            "topology_max_nodes": "topology-max-nodes",
+            "topology_max_active": "topology-max-active",
+            "topology_max_arity": "topology-max-arity",
+            "topology_max_depth": "topology-max-depth",
+            "topology_max_phases": "topology-max-phases",
+            "topology_global_sync_interval": "topology-global-sync-interval",
+            "topology_accept_threshold": "topology-accept-threshold",
+            "topology_contract_threshold": "topology-contract-threshold",
+        }.items():
+            value = getattr(knobs, field)
+            if value is not None:
+                train.extend([f"--{flag}", str(value)])
     if knobs.mixture_weights:
         train.extend(["--mixture-manifest", str(mixture_path)])
     commands.append(train)
@@ -134,6 +164,8 @@ def compile_commands(
             "--ship-gates",
         ]
     )
+    if campaign.track == "grammar_diffusion":
+        commands[-1].extend(["--model", "grammar_diffusion"])
     return commands
 
 
@@ -274,9 +306,10 @@ def diagnose_outcome(outcome: ExperimentOutcome) -> Diagnosis:
             )
         )
         confidence = 0.9
-    elif _has_metric(metrics, "primary_delta") and _metric(
-        metrics, "primary_delta", default=0
-    ) <= 0:
+    elif (
+        _has_metric(metrics, "primary_delta")
+        and _metric(metrics, "primary_delta", default=0) <= 0
+    ):
         target = "researcher"
         evidence.append("valid experiment did not improve the declared primary metric")
         actions.extend(

@@ -35,6 +35,19 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "seed",
         "steps",
         "synthesizer",
+        "topology_actions",
+        "topology_bounded_buffer",
+        "topology_critic_decode",
+        "topology_accept_threshold",
+        "topology_contract_threshold",
+        "topology_global_sync_interval",
+        "topology_heterogeneous_noise",
+        "topology_max_active",
+        "topology_max_arity",
+        "topology_max_depth",
+        "topology_max_nodes",
+        "topology_max_phases",
+        "topology_structural_embeddings",
     }
 )
 
@@ -43,7 +56,7 @@ class CampaignSpec(StrictModel):
     campaign_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
     objective: str = Field(min_length=8)
     primary_metric: str = Field(min_length=1)
-    track: Literal["twotower", "causal_lm"] = "twotower"
+    track: Literal["twotower", "grammar_diffusion", "causal_lm"] = "twotower"
     researcher_mode: str = Field(
         default="agent", pattern=r"^[a-z0-9][a-z0-9._-]{0,127}$"
     )
@@ -148,24 +161,28 @@ class ResearcherRun(StrictModel):
 
 
 class ExperimentKnobs(StrictModel):
-    data_source: Literal[
-        "rico",
-        "fixture",
-        "existing",
-        "both",
-        "awwwards",
-        "rico+awwwards",
-        "programspec",
-        "language_contract",
-        "deconstruct",
-        "render",
-        "integrated",
-        "all",
-    ] | None = None
+    data_source: (
+        Literal[
+            "rico",
+            "fixture",
+            "existing",
+            "both",
+            "awwwards",
+            "rico+awwwards",
+            "programspec",
+            "language_contract",
+            "deconstruct",
+            "render",
+            "integrated",
+            "all",
+        ]
+        | None
+    ) = None
     derive_from: str | None = None
-    synthesizer: Literal[
-        "quality", "template", "layout", "frontier", "none", "noop", "off"
-    ] | None = None
+    synthesizer: (
+        Literal["quality", "template", "layout", "frontier", "none", "noop", "off"]
+        | None
+    ) = None
     max_records_per_parent: int | None = Field(default=None, ge=1, le=100)
     min_quality_score: float | None = Field(default=None, ge=0, le=1)
     mixture_weights: dict[str, float] | None = None
@@ -174,11 +191,26 @@ class ExperimentKnobs(StrictModel):
     lr: float | None = Field(default=None, gt=0, le=1)
     seed: int | None = Field(default=None, ge=0)
     context_backend: Literal["scratch", "hf"] | None = None
+    topology_actions: bool | None = None
+    topology_structural_embeddings: bool | None = None
+    topology_heterogeneous_noise: bool | None = None
+    topology_critic_decode: bool | None = None
+    topology_bounded_buffer: bool | None = None
+    topology_max_nodes: int | None = Field(default=None, ge=16, le=1024)
+    topology_max_active: int | None = Field(default=None, ge=1, le=256)
+    topology_max_arity: int | None = Field(default=None, ge=1, le=32)
+    topology_max_depth: int | None = Field(default=None, ge=2, le=128)
+    topology_max_phases: int | None = Field(default=None, ge=2, le=256)
+    topology_global_sync_interval: int | None = Field(default=None, ge=1, le=32)
+    topology_accept_threshold: float | None = Field(default=None, ge=0, le=1)
+    topology_contract_threshold: float | None = Field(default=None, ge=0, le=1)
 
     @model_validator(mode="after")
     def validate_mixture(self) -> ExperimentKnobs:
         if self.mixture_weights is not None:
-            if not self.mixture_weights or any(v <= 0 for v in self.mixture_weights.values()):
+            if not self.mixture_weights or any(
+                v <= 0 for v in self.mixture_weights.values()
+            ):
                 raise ValueError("mixture weights must be non-empty and positive")
         if self.data_source == "existing" and not self.derive_from:
             raise ValueError("data_source=existing requires derive_from")

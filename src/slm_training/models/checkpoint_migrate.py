@@ -1,4 +1,4 @@
-"""Migrate TwoTower checkpoints across tokenizer vocabulary changes."""
+"""Explicit migrations for TwoTower vocab and grammar topology checkpoints."""
 
 from __future__ import annotations
 
@@ -70,12 +70,8 @@ def migrate_twotower_checkpoint(
     valid = {f.name for f in TwoTowerConfig.__dataclass_fields__.values()}  # type: ignore[attr-defined]
     cfg = TwoTowerConfig(**{k: v for k, v in raw_cfg.items() if k in valid})
 
-    max_prompt = max(
-        (len(new_tokenizer.encode(r.prompt)) for r in records), default=16
-    )
-    max_target = max(
-        (len(new_tokenizer.encode(r.openui)) for r in records), default=32
-    )
+    max_prompt = max((len(new_tokenizer.encode(r.prompt)) for r in records), default=16)
+    max_target = max((len(new_tokenizer.encode(r.openui)) for r in records), default=32)
     cfg.max_prompt_len = max(cfg.max_prompt_len, max_prompt + 4)
     cfg.max_target_len = max(cfg.max_target_len, max_target + 8)
 
@@ -133,4 +129,74 @@ def migrate_twotower_checkpoint(
     }
     report_path = output_checkpoint.with_suffix(".migrate.json")
     report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    return report
+
+
+def migrate_grammar_diffusion_checkpoint(
+    *,
+    source_checkpoint: Path | str,
+    output_checkpoint: Path | str,
+    device: str = "cpu",
+) -> dict:
+    """Warm-start topology checkpoint v2 from a fixed-canvas grammar checkpoint."""
+    from slm_training.models.grammar_diffusion import (
+        GrammarDiffusionConfig,
+        GrammarDiffusionModel,
+        _restore_codec,
+    )
+
+    source_checkpoint = Path(source_checkpoint)
+    output_checkpoint = Path(output_checkpoint)
+    payload = torch.load(source_checkpoint, map_location=device, weights_only=True)
+    if payload.get("kind") != "grammar_diffusion":
+        raise ValueError(
+            f"checkpoint kind {payload.get('kind')!r} is not grammar_diffusion"
+        )
+    if (
+        int(payload.get("format_version") or 1)
+        >= GrammarDiffusionModel.CHECKPOINT_FORMAT
+    ):
+        raise ValueError("grammar checkpoint is already topology format v2")
+    tokenizer_path = source_checkpoint.with_suffix(".tokenizer.json")
+    if not tokenizer_path.exists():
+        raise FileNotFoundError(
+            f"missing tokenizer next to checkpoint: {tokenizer_path}"
+        )
+    tokenizer = OpenUITokenizer.load(tokenizer_path, allow_legacy=True)
+    codec = _restore_codec(payload.get("codec") or {})
+    raw_config = dict(payload.get("config") or {})
+    valid = set(GrammarDiffusionConfig.__dataclass_fields__)
+    config = GrammarDiffusionConfig(
+        **{key: value for key, value in raw_config.items() if key in valid}
+    )
+    model = GrammarDiffusionModel(tokenizer, codec, config, device)
+    old_state = payload.get("state_dict") or {}
+    new_state = model.state_dict()
+    copied_keys: list[str] = []
+    skipped_old_keys: list[str] = []
+    initialized_keys: list[str] = []
+    for key, tensor in old_state.items():
+        if key in new_state and new_state[key].shape == tensor.shape:
+            new_state[key] = tensor
+            copied_keys.append(key)
+        else:
+            skipped_old_keys.append(key)
+    for key in new_state:
+        if key not in copied_keys:
+            initialized_keys.append(key)
+    model.load_state_dict(new_state, strict=True)
+    model.save(output_checkpoint)
+    report = {
+        "source_checkpoint": str(source_checkpoint),
+        "output_checkpoint": str(output_checkpoint),
+        "source_format_version": int(payload.get("format_version") or 1),
+        "output_format_version": GrammarDiffusionModel.CHECKPOINT_FORMAT,
+        "warm_start_only": True,
+        "copied_keys": copied_keys,
+        "skipped_old_keys": skipped_old_keys,
+        "initialized_keys": initialized_keys,
+    }
+    output_checkpoint.with_suffix(".migrate.json").write_text(
+        json.dumps(report, indent=2) + "\n", encoding="utf-8"
+    )
     return report

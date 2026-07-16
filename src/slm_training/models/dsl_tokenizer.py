@@ -737,7 +737,6 @@ class DSLNativeTokenizer:
             if kind == TokenKind.BIND:
                 slot = self.bind_slot_of(tid)
                 # Slot zero is reserved for the required OpenUI root binder.
-                # Other binders remain alpha-renamed and table-independent.
                 pieces.append("root" if (slot or 0) == 0 else _bind_surface_name(slot or 0))
                 i += 1
                 continue

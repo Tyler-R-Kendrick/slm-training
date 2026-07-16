@@ -1,26 +1,8 @@
 {
   "data_manifest_sha": "928ec8d4921954c7736d2386fe7abf88bbef75523a7cfe404792f45ddcd5d4ba",
   "target_tokens": 8845,
-  "baseline": {
-    "run_id": "baseline12",
-    "grad_accum": 1,
-    "lr": 0.0003,
-    "weighted_nll": 21.79188301535408,
-    "total_ms": 137145.075,
-    "backward_pct": 45.29,
-    "loss_suite_pct": 31.46,
-    "insights_persisted": true
-  },
-  "tuned": {
-    "run_id": "accum2-lr6e4-12",
-    "grad_accum": 2,
-    "lr": 0.0006,
-    "weighted_nll": 22.589978560742765,
-    "total_ms": 109621.601,
-    "backward_pct": 43.72,
-    "loss_suite_pct": 35.19,
-    "insights_persisted": true
-  },
+  "baseline": {"run_id":"baseline12","grad_accum":1,"lr":0.0003,"weighted_nll":21.79188301535408,"total_ms":137145.075,"backward_pct":45.29,"loss_suite_pct":31.46,"insights_persisted":true},
+  "tuned": {"run_id":"accum2-lr6e4-12","grad_accum":2,"lr":0.0006,"weighted_nll":22.589978560742765,"total_ms":109621.601,"backward_pct":43.72,"loss_suite_pct":35.19,"insights_persisted":true},
   "speedup_pct": 20.08,
   "nll_regression_pct": 3.66,
   "decision": "retain tuned accumulation as an explicit speed/quality candidate; do not make it the default without generated-quality evidence"

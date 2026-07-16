@@ -429,9 +429,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 nll_config=nll_cfg,
                 base_suite=base_suite,
             )
-            write_loss_suite_report(
-                run_dir / f"loss_suites_step_{step}.json", report
-            )
+            write_loss_suite_report(run_dir / f"loss_suites_step_{step}.json", report)
         aggregate = report.get("aggregate") or {}
         broad = (report.get("categories") or {}).get("broad") or {}
         row = {
@@ -525,6 +523,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                         "example_token_loss_proxy": accum_example_losses,
                         "ts": datetime.now(timezone.utc).isoformat(),
                     }
+                    extra_metrics = getattr(plugin, "last_training_metrics", None)
+                    if isinstance(extra_metrics, dict):
+                        row.update(extra_metrics)
                     accum_batch_meta = []
                     accum_example_losses = []
                     metrics_file.write(json.dumps(row) + "\n")
@@ -660,6 +661,20 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         "curriculum": {
             "enabled": bool(getattr(config, "use_curriculum", False)),
             "mix": mix_curriculum,
+        },
+        "recipe": {
+            "learning_rate": config.lr,
+            "seed": config.seed,
+            "steps_requested": config.steps,
+            "batch_size": config.batch_size,
+            "ltr_loss_weight": getattr(config, "ltr_loss_weight", 0.0),
+            "fuse_ltr_loss": bool(getattr(config, "fuse_ltr_loss", True)),
+            "fidelity_loss_weight": getattr(config, "fidelity_loss_weight", 0.0),
+            "fastpath_aux_weight": getattr(config, "fastpath_aux_weight", 0.0),
+            "schema_in_context": bool(getattr(config, "schema_in_context", False)),
+            "retrieval_k": getattr(config, "retrieval_k", 0),
+            "grammar_constrained": bool(getattr(config, "grammar_constrained", False)),
+            "honesty_mode": "no-design-md-context" if not getattr(config, "design_md_in_context", True) else "design-md-context",
         },
         "mixture": mixture_meta,
         "eval_history": eval_history,

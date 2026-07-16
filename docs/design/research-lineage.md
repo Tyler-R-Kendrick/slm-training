@@ -94,6 +94,21 @@ return invalid OpenUI.
 | **Config** | `mask_pattern=diffusion`, `diffusion_policies`, `diffusion_length_buckets`, `diffusion_overallocate`, `diffusion_length_loss_weight` |
 | **Docs** | [`diffusion-data-adapter.md`](diffusion-data-adapter.md) |
 
+### Grammar-topology diffusion (trans-dimensional OpenUI tree)
+
+| | |
+| --- | --- |
+| **Papers** | Stern et al., *Insertion Transformer* [arXiv:1902.03249](https://arxiv.org/abs/1902.03249); Gu et al., *Levenshtein Transformer* [arXiv:1905.11006](https://arxiv.org/abs/1905.11006); Chen et al., *Diffusion Forcing* [arXiv:2407.01392](https://arxiv.org/abs/2407.01392); *Deletion-Insertion Diffusion* [arXiv:2603.23507](https://arxiv.org/abs/2603.23507); *Multi-Block Diffusion* [arXiv:2606.29215](https://arxiv.org/abs/2606.29215) |
+| **Fidelity** | **Adapted** — synchronous typed production-tree expansion/contraction with a bounded active buffer; not a faithful implementation of any cited sequence model |
+| **Code** | [`models/grammar_diffusion.py`](../../src/slm_training/models/grammar_diffusion.py), topology metrics in [`harnesses/model_build/eval_runner.py`](../../src/slm_training/harnesses/model_build/eval_runner.py) |
+| **Config** | `topology_actions`, `topology_structural_embeddings`, `topology_heterogeneous_noise`, `topology_critic_decode`, `topology_bounded_buffer`, topology budgets |
+| **Docs** | [`grammar-topology-diffusion.md`](grammar-topology-diffusion.md), X9-X15 in [`quality-experiment-matrix.md`](quality-experiment-matrix.md) |
+
+Unlike the fixed-canvas MaskGIT/MDLM rows, a topology mask denotes a typed grammar
+work item that may materialize zero or many child nodes. Persistent IDs and
+tree-relative coordinates avoid assigning a shifted absolute position to every
+later production after insertion.
+
 ### Confidence remasking (self-correction)
 
 | | |
@@ -399,6 +414,12 @@ grammar stack remains the verifier; no draft LM is introduced.
 | Continuous latent plan channel | CCDD [arXiv:2510.03206](https://arxiv.org/html/2510.03206v1) | No long-form latent-reasoning phase in short grammar-anchored OpenUI programs |
 | Coarse-to-fine block control ("Think Coarse, Critic Fine") | BACD [arXiv:2602.09555](https://arxiv.org/html/2602.09555v1) | Same task-scale reason as CCDD; revisit if programs grow |
 | Prefix-cacheability restructuring | WeDLM [arXiv:2512.22737](https://arxiv.org/html/2512.22737v1) | Deployment-scale concern; sequences ≤256 tokens, context KV already cached |
+| Token-tree speculative verification | Miao et al., SpecInfer [arXiv:2305.09781](https://arxiv.org/abs/2305.09781), [code](https://github.com/flexflow/FlexFlow) | **Adapted**: completion paths share trie-parent canvases and one verifier batch; compiler coverage replaces SpecInfer's learned small-model drafters. The paper reports `1.5–2.8×` distributed and `2.6–3.5×` offloaded-inference speedups, but those do not transfer: our grammar/compiler verifier is not SpecInfer's distribution-preserving target-LLM sampler, and the local C-series evidence has an invalid zero-quality anchor with `compiler_decode_mode=off` by default. |
+| Static completion tree ranking | TreeRanker [arXiv:2508.02455](https://arxiv.org/abs/2508.02455) | **Adapted**: compiler-valid paths are ranked from target token scores; this implementation uses gathered semantic rows and diffusion canvases |
+| Prefix automata + inhabitable-type search | Type-Constrained Code Generation [arXiv:2504.09246](https://arxiv.org/abs/2504.09246) | **Adapted boundary**: Lark reachability, layout capability constraints, and active symbol inventories provide the current OpenUI subset; no claim of reproducing its TypeScript type-search system |
+| Hierarchical diffusion verification trees | Self Speculative Decoding for Diffusion LMs [arXiv:2510.04147](https://arxiv.org/abs/2510.04147) | **Adapted**: candidate trie parents use isolated prefix-visible/future-masked canvases; no claim of causal AR probabilities from bidirectional diffusion scores |
+| Distribution-preserving speculative sampling | Leviathan et al. [arXiv:2211.17192](https://arxiv.org/abs/2211.17192) | **Adjacent**: greedy constrained ranking is target-equivalent on complete candidate sets; exact stochastic residual sampling is not implemented |
+| Incremental constrained code decoding | Constrained FIM decoding [arXiv:2402.17988](https://arxiv.org/abs/2402.17988) | **Adapted**: incremental parsing rejects invalid prefixes early; OpenUI semantic inventories add a narrower project-specific layer |
 
 ---
 
@@ -427,12 +448,48 @@ paper-reproduction policy are documented in
 | Jukić and Titov, *Geometric Self-Distillation for Reasoning Generalization* (GeoSD), [arXiv:2607.06855](https://arxiv.org/abs/2607.06855) | **Adjacent** | Hellinger overlap weighting and a Fisher–Rao checkpoint-proximal term motivate a future self-distillation stability/OOD ablation. Current P2 uses hard accepted traces, trajectory-action loss, and anchor mixing; it has no privileged-context soft teacher, GeoSD loss, or natural-gradient update, so no GeoSD implementation claim is made. |
 | Hill, *Saturation Makes Quantization Error Additive: A Coverage Model with a Certificate*, [arXiv:2607.12266](https://arxiv.org/abs/2607.12266) | **Adjacent** | The per-layer additive/coverage model and unexplained-variance certificate motivate a future mixed-precision allocation benchmark under the ≤1 GB deployment envelope. Current exports use uniform dynamic int8 or the separate BF16 codebook sidecar; they do not measure a W4A4 layer-set lattice, fit coverage break-rates, or implement the paper's allocator/certificate. |
 | Das et al., *Recover-LoRA for Aggressive Quantization: Reclaiming Accuracy in 2-Bit Language Models via Low-Rank Adaptation with Knowledge Distillation on Synthetic Data*, [arXiv:2606.04238v1](https://arxiv.org/html/2606.04238v1) | **Adjacent** | Selective mixed precision plus synthetic logit-distillation adapters is a candidate recovery stage only if an honestly evaluated causal-LoRA checkpoint later needs ≤2-bit deployment. No current model is quantized or accuracy-recovered by this method. |
+| Zhang et al., *Is One Layer Enough? Training A Single Transformer Layer Can Match Full-Parameter RL Training*, [arXiv:2607.01232v2](https://arxiv.org/abs/2607.01232v2) | **Adjacent** | Across seven Qwen-family 1.5B–8B models and GRPO/GiGPO/Dr. GRPO, the paper defines layer contribution `(single-layer gain)/(full-RL gain)` and reports that the strongest layers cluster around 40–60% depth; some match or exceed full RL, and contribution rankings transfer across data/tasks. After—and only after—the frozen RL-readiness gate passes, this motivates a bounded middle-layer-first profile and a selected-layer control for the causal track. It is not evidence for the ≤6-layer TwoTower, GRPO-lite, or any current checkpoint, and a middle-layer heuristic must remain a hypothesis until matched against a tuned full-update baseline and all frozen suites. |
+| Yeh et al., *Tracing Agentic Failure from the Flow of Success* (OAT), [arXiv:2607.12747v1](https://arxiv.org/abs/2607.12747v1) | **Adjacent** | OAT learns a gated Neural-CDE reconstruction of normalized, LLM-embedded **successful** trajectories; reconstruction error becomes a per-step anomaly score, with top-*k* or conformal-calibrated detection. On 103 MCP-Atlas successes / 88 failures and 184 OOD Who&When failures, the paper reports better F1 than GPT-4o/GPT-5 prompting, five-seed results, `<1 GB` deployment, and much lower latency. Existing append-only researcher/decode trajectories make success-only diagnosis attractive, especially conformal thresholds and a clean calibration split, but anomaly is not causal attribution. Do not add a CDE until enough representative successful traces exist and a frozen, step-annotated failure set can show improvement over simple telemetry/rule baselines. |
+| Google DeepMind, [*DiffusionGemma model overview*](https://ai.google.dev/gemma/docs/diffusiongemma), [model card](https://ai.google.dev/gemma/docs/diffusiongemma/model_card), and [diffusion explanation](https://ai.google.dev/gemma/docs/diffusiongemma/explained) (accessed 2026-07-15; pages updated 2026-06-10) | **Adjacent** | DiffusionGemma uses an autoregressive cached-context encoder plus bidirectional 256-token canvases, uniform-state random-token corruption, self-conditioning, block-autoregressive multi-canvas generation, entropy-bounded token selection, full renoising of unselected tokens, a `0.8→0.4` temperature schedule, and two-part adaptive stopping (mean entropy `<0.005` plus unchanged top-1 predictions across two steps; maximum 48 steps). The closest low-risk borrow is a decode-only entropy/stability stopping and commit-policy ablation using our existing entropy, persistence, remask, and trace hooks. Uniform-state training, probability self-conditioning, and multi-canvas generation are larger architecture/data changes and remain deferred. Google's `>1100 tok/s` claim is H100 FP8 at low batch, while its card trails causal Gemma 4 on most listed quality tasks; neither speed nor quality transfers to this repo. |
+| Zhang et al., *Spectral Rewiring for Exploration, Purification, and Model Merging* (SAR), [arXiv:2607.03065v1](https://arxiv.org/abs/2607.03065v1) | **Adjacent** | SAR takes a paired base/RL update `ΔW`, extracts a low-rank component, projects it into the base weight's SVD coordinates, and reconstructs `W_base + U(UᵀΔW_kV)Vᵀ`. The paper reports retaining >99% of measured post-training performance with rewiring matrices as small as about 0.58% of parameters, better high-*k* exploration, reduced mixed-domain interference, and stronger expert merges. This motivates a future post-hoc merge/purification candidate beside `average`/`ties`, not a training recipe. It requires immutable compatible base/child checkpoints and full quality plus Pass@k/diversity evaluation; the authors report weaker projection compatibility when domain knowledge is missing, updates are very strong, or dense critic rewards drive off-manifold behavior. |
 
 These rows are literature intake, not experiment results. Any adoption starts with a
 frozen baseline, one bounded lever, full provenance, and the normal quality/perf
 matrix and model-card rules. An alphaXiv Autoresearch availability page may help
 construct a scratch reproduction, but generated code or reported results do not
 enter this repository without review and local evidence.
+
+### 2026-07-15 intake synthesis (documentation only)
+
+No model, training, evaluation, benchmark, reproduction, or remote-provider run was
+started for this intake. The sources suggest the following order of operations:
+
+1. **Decode-only, lowest cost:** test DiffusionGemma-style entropy-bounded commits
+   and two-signal adaptive stopping by composing existing entropy, persistence,
+   remask, and trajectory telemetry. Keep uniform-state corruption and
+   self-conditioning out of the first comparison.
+2. **Serving-only, rerun before extension:** the SpecInfer-inspired packed
+   completion tree is already implemented. Do not add another drafter or tree;
+   first rerun its existing C-series controls on an honestly evaluated lexer-native
+   checkpoint and require unchanged quality plus lower p50 and neural forwards.
+3. **Failure diagnosis after data accrues:** begin with cheap success-trace feature
+   baselines and a conformal threshold. Consider OAT's gated Neural CDE only after
+   a frozen step-annotated set proves that rules and simple sequence baselines are
+   inadequate.
+4. **RL only after readiness:** profile a small set of middle and edge layers,
+   compute the paper's contribution ratio against a tuned full-update control, and
+   proceed to selected-layer training only if the ranking is stable across frozen
+   suites. Never use this paper to bypass `RLReadinessReport`.
+5. **Post-RL consolidation:** evaluate SAR as a third immutable merge artifact only
+   when compatible base and expert checkpoints exist. Compare against `average`
+   and TIES on the full scoreboard, Pass@k/diversity, and cross-domain regression;
+   projection compactness alone is not a promotion signal.
+
+Cross-source lesson: several reported gains come from **restricting work to a
+validated subspace**—a candidate tree, confident canvas positions, normal
+trajectory dynamics, selected layers, or the base model's spectral coordinates.
+For OpenUI this is a useful experiment-selection prior, not a result: choose the
+smallest constrained intervention whose verifier and frozen suites can falsify it.
 
 ---
 
@@ -473,7 +530,7 @@ enter this repository without review and local evidence.
 | CoRe remask | E50 `remask_policy=core\|combined` | `parallel_decode.select_remask_core_indices` |
 | T2M remask-to-mask | E51 `remask_to_mask` | `models/twotower.py` |
 | Honest V5 champion | E53 | `scripts/run_quality_matrix.py --matrix v6` |
-| Grammar-diffusion honest | E54 / X2–X7 | `models/grammar_diffusion.py` |
+| Grammar-topology diffusion | E54 / X9–X15 | `models/grammar_diffusion.py` |
 | Latent critic MoE (deferred) | E34 | `research-correction-critics.md` |
 | Verifier-guided repair map | proposed E60–E65 | `verifier-guided-repair.md` |
 | Stability remask / commit gate | E70 `remask_policy=stability`, `stability_min_persistence` | `models/parallel_decode.py` (`StabilityTracker`) |
@@ -482,6 +539,7 @@ enter this repository without review and local evidence.
 | Trajectory-survival head | E73 `survival_gate` | `dsl/grammar/fastpath/survival_train.py` |
 | Successor-state cache | E74 `speculative_successor`, `speculative_fanout` | `models/speculative_denoise.py` (`SuccessorCache`) |
 | V7 champion | E75 | `scripts/run_quality_matrix.py --matrix v7` |
+| Compiler-drafted decode | `compiler_decode_mode=forced|restricted|tree` | `dsl/grammar/fastpath/compiler_draft.py`, `models/twotower.py` |
 | Evidence-grounded autoresearch | `--researcher`, typed `ResearcherRun` / `ExperimentKnobs` | `scripts/autoresearch.py`, `src/slm_training/autoresearch/` |
 
 ---
