@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Iterable, Literal
 
 from slm_training.data.structure import strip_style_literals
+from slm_training.dsl.lang_core import library_schema
 from slm_training.dsl.placeholders import extract_placeholders, merge_placeholders
 from slm_training.dsl.schema import OUTPUT_KINDS, ExampleRecord, OutputKind
 
@@ -281,6 +282,26 @@ def _split_top_level_args(inner: str) -> list[str]:
     return args
 
 
+def generated_enum_literal(component: str, prop: str, value: str | None = None) -> str:
+    """Preserve a legal enum source literal or select the generated default."""
+    spec = library_schema()["$defs"][component]["properties"][prop]
+    if value is not None:
+        try:
+            if json.loads(value) in spec["enum"]:
+                return value
+        except (json.JSONDecodeError, TypeError):
+            pass
+    return json.dumps(spec["enum"][0])
+
+
+def generated_value_literal(component: str, prop: str, value: str) -> str:
+    """Adapt one source literal to the generated property's container shape."""
+    spec = library_schema()["$defs"][component]["properties"][prop]
+    if spec.get("type") == "array" and not value.lstrip().startswith("["):
+        return f"[{value}]"
+    return value
+
+
 def _normalize_switchitem_line(line: str) -> str:
     m = re.match(r"^(\s*)(\w+)\s*=\s*SwitchItem\((.*)\)\s*$", line)
     if not m:
@@ -310,19 +331,25 @@ def _normalize_slider_line(line: str) -> str:
     indent, name, inner = m.groups()
     args = _split_top_level_args(inner)
     if len(args) >= 7:
-        return line
+        args[1] = generated_enum_literal("Slider", "variant", args[1])
+        args[5] = generated_value_literal("Slider", "defaultValue", args[5])
+        return f"{indent}{name} = Slider({', '.join(args)})"
     if len(args) == 4 and args[0].startswith('":'):
         label = args[0]
         min_v, max_v, default_v = args[1], args[2], args[3]
+        variant = generated_enum_literal("Slider", "variant")
+        default_v = generated_value_literal("Slider", "defaultValue", default_v)
         return (
-            f'{indent}{name} = Slider("{name}", "default", {min_v}, {max_v}, 1, '
+            f'{indent}{name} = Slider("{name}", {variant}, {min_v}, {max_v}, 1, '
             f"{default_v}, {label})"
         )
     if len(args) == 3 and args[0].startswith('":'):
         label, min_v, max_v = args
+        variant = generated_enum_literal("Slider", "variant")
+        default_v = generated_value_literal("Slider", "defaultValue", "50")
         return (
-            f'{indent}{name} = Slider("{name}", "default", {min_v}, {max_v}, 1, '
-            f"50, {label})"
+            f'{indent}{name} = Slider("{name}", {variant}, {min_v}, {max_v}, 1, '
+            f"{default_v}, {label})"
         )
     return line
 

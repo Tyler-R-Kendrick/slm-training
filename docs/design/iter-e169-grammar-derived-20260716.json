@@ -1,0 +1,39 @@
+{
+  "iteration": "E169",
+  "date": "2026-07-16",
+  "objective": "Matched post-rewrite evaluation of the lexer-native compiler tree after removing literal-specific candidate filters.",
+  "recipe": {
+    "checkpoint": "outputs/runs/iter-e160-lexer-32step-20260715/e160-lexer-32step/checkpoints/last.pt",
+    "checkpoint_sha256": "6c980d8eef3039b0766e4f50591ddb261bb32f30e5f1f08e209b52336325d699",
+    "suite": "smoke",
+    "n": 3,
+    "device": "cpu",
+    "context_backend": "hf",
+    "output_tokenizer": "lexer",
+    "compiler_decode_mode": "tree",
+    "grammar_ltr_primary": true,
+    "grammar_ltr_repair": true,
+    "allow_unconstrained_fallback": false,
+    "honest_slot_contract": true,
+    "grammar_ltr_max_tokens": 256
+  },
+  "metrics": {
+    "parse_rate": 0.0,
+    "meaningful_program_rate": 0.0,
+    "syntax_parse_rate": 0.3333333333333333,
+    "raw_syntax_validity": 0.3333333333333333,
+    "structural_similarity": 0.15666666666666665,
+    "placeholder_validity": 0.5222333333333333,
+    "latency_ms_p50": 13713.66,
+    "decode_timeout_count": 0,
+    "compiler_fallbacks": 2,
+    "seeded_fallbacks": 0,
+    "agentv_passed": 0,
+    "agentv_failed": 5
+  },
+  "evidence": {
+    "eval": "outputs/runs/e169-grammar-derived-20260716/eval_smoke.json",
+    "agentv": "outputs/runs/e169-grammar-derived-20260716/agentv/openui-model-ship-gates-2026-07-16t04-18-33-967239-00-00.eval.jsonl"
+  },
+  "conclusion": "Removing literal-specific filters preserved the deterministic lexical path but did not produce complete semantic programs. Lark reachability admits partial expression continuations; the model then extends them until the canvas cap or a compiler dead end. The next lever is generated AST/schema completion state, with no token/component-specific exclusions. This is a negative diagnostic result, not a ship claim."
+}

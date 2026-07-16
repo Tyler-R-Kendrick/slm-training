@@ -26,16 +26,30 @@ class CampaignBudget(StrictModel):
 DEFAULT_ALLOWED_KNOBS = frozenset(
     {
         "batch_size",
+        "allow_unconstrained_fallback",
         "context_backend",
+        "compiler_alignment_loss_weight",
+        "compiler_alignment_stratified",
+        "compiler_alignment_semantic_exhaustive",
+        "compiler_decode_mode",
         "data_source",
+        "design_md_context",
+        "eval_version",
         "derive_from",
         "lr",
+        "local_files_only",
         "max_records_per_parent",
         "min_quality_score",
         "mixture_weights",
+        "mixture_sampling_policy",
+        "output_tokenizer",
         "seed",
+        "schema_in_context",
+        "slot_contract_in_context",
+        "sync_checkpoints",
         "steps",
         "synthesizer",
+        "train_version",
         "topology_actions",
         "topology_bounded_buffer",
         "topology_critic_decode",
@@ -174,6 +188,13 @@ class ResearcherRun(StrictModel):
 
 
 class ExperimentKnobs(StrictModel):
+    allow_unconstrained_fallback: bool | None = None
+    eval_version: str | None = Field(
+        default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    )
+    train_version: str | None = Field(
+        default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    )
     data_source: (
         Literal[
             "rico",
@@ -199,11 +220,24 @@ class ExperimentKnobs(StrictModel):
     max_records_per_parent: int | None = Field(default=None, ge=1, le=100)
     min_quality_score: float | None = Field(default=None, ge=0, le=1)
     mixture_weights: dict[str, float] | None = None
+    mixture_sampling_policy: (
+        Literal["with_replacement", "capacity_aware", "quota_capacity_aware"] | None
+    ) = None
     steps: int | None = Field(default=None, ge=1, le=100_000)
     batch_size: int | None = Field(default=None, ge=1, le=1024)
     lr: float | None = Field(default=None, gt=0, le=1)
     seed: int | None = Field(default=None, ge=0)
     context_backend: Literal["scratch", "hf"] | None = None
+    output_tokenizer: Literal["compositional", "lexer"] | None = None
+    compiler_alignment_loss_weight: float | None = Field(default=None, ge=0, le=10)
+    compiler_alignment_stratified: bool | None = None
+    compiler_alignment_semantic_exhaustive: bool | None = None
+    compiler_decode_mode: Literal["off", "forced", "restricted", "tree"] | None = None
+    schema_in_context: bool | None = None
+    slot_contract_in_context: bool | None = None
+    design_md_context: bool | None = None
+    local_files_only: bool | None = None
+    sync_checkpoints: bool | None = None
     topology_actions: bool | None = None
     topology_structural_embeddings: bool | None = None
     topology_heterogeneous_noise: bool | None = None
@@ -232,6 +266,8 @@ class ExperimentKnobs(StrictModel):
 
     @model_validator(mode="after")
     def validate_mixture(self) -> ExperimentKnobs:
+        if self.train_version and self.data_source:
+            raise ValueError("choose train_version or data_source, not both")
         if self.mixture_weights is not None:
             if not self.mixture_weights or any(
                 v <= 0 for v in self.mixture_weights.values()

@@ -1,0 +1,38 @@
+{
+  "iteration": "E176",
+  "date": "2026-07-16",
+  "objective": "Test broader prompt-contract training data as a semantic component-coverage control.",
+  "training": {
+    "run_id": "e176-broad-corpus-8step",
+    "checkpoint": "outputs/runs/e176-broad-corpus-8step/checkpoints/last.pt",
+    "train_dir": "outputs/train_data/v2_prompt_contract",
+    "train_records": 1417,
+    "steps": 8,
+    "last_loss": 34.04644775390625,
+    "device": "cpu",
+    "context_backend": "hf",
+    "freeze_context": true,
+    "schema_in_context": true,
+    "no_sync_checkpoints": true,
+    "telemetry": "outputs/runs/e176-broad-corpus-8step/train_telemetry.json",
+    "metrics": "outputs/runs/e176-broad-corpus-8step/metrics.jsonl"
+  },
+  "evaluation": {
+    "kind": "bounded_probe",
+    "suite": "smoke",
+    "n": 1,
+    "compiler_decode_mode": "tree",
+    "allow_unconstrained_fallback": false,
+    "parse_rate": 0.0,
+    "syntax_parse_rate": 0.0,
+    "structural_similarity": 0.1187,
+    "component_type_recall": 0.25,
+    "latency_ms_p50": 21276.93,
+    "decode_timeout_count": 0,
+    "compiler_fallbacks": 0,
+    "seeded_fallbacks": 0,
+    "eval": "outputs/runs/e176-broad-corpus-probe/eval_smoke.json",
+    "agentv": "outputs/runs/e176-broad-corpus-probe/agentv/openui-model-ship-gates-2026-07-16t04-43-24-135143-00-00.eval.jsonl"
+  },
+  "conclusion": "The broader prompt-contract corpus regresses syntax and structure relative to the judged root corpus. Do not replace the judged corpus wholesale; add judge-gated semantic-role examples through a targeted, balanced synthesis variant."
+}

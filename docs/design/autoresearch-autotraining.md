@@ -337,6 +337,25 @@ When diagnosis targets data, change one filter, producer, or mixture lever; buil
 new immutable snapshot; hold seed/token/evaluation snapshot constant; and compare a
 matched control. Never edit a prior snapshot or train on the feedback eval holdout.
 
+For an already published immutable corpus, set the typed `train_version` knob.
+The compiler resolves it through the canonical `DataStore`, passes
+`--train-version` to both train and evaluation, and automatically uses that
+version's committed `mixture.json` unless the experiment supplies an explicit
+typed mixture override. Matched TwoTower studies can also pin lexer/compositional
+output, compiler-alignment weight and stratification, compiler decode mode,
+schema/slot context, and DESIGN.md context through typed knobs; the compiler
+passes the shared settings to train and evaluation rather than relying on CLI
+defaults. Cache locality and checkpoint synchronization are typed as well;
+CPU/scratch candidates must set `sync_checkpoints=false` explicitly when their
+checkpoint is diagnostic-only. Compiled stages use the active Python interpreter;
+an unavailable executable is persisted as a typed failed outcome instead of
+escaping the campaign ledger.
+
+Evaluation datasets are selected with the typed `eval_version` knob and resolved
+through `DataStore`; campaign compilation must not assume a local `v1` directory.
+Diagnostic fallback policy is typed too, so matched constrained evaluations can
+set `allow_unconstrained_fallback=false` instead of inheriting permissive defaults.
+
 ## Researcher improvement
 
 Researcher changes are evaluated on

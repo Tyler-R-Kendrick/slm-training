@@ -13,6 +13,7 @@ from slm_training.autoresearch.engine import (
     compile_commands,
     create_hypothesis_feedback,
     diagnose_outcome,
+    execute_commands,
     validate_experiment,
     validate_hypothesis_matrix,
 )
@@ -1075,7 +1076,12 @@ def test_compile_is_typed_and_diagnosis_routes_bad_data() -> None:
     )
     validate_experiment(campaign(), spec, evidence(), [source()])
     commands = compile_commands(campaign(), spec)
-    assert commands[0][:4] == ["python", "-m", "scripts.build_train_data", "--source"]
+    assert commands[0][:4] == [
+        sys.executable,
+        "-m",
+        "scripts.build_train_data",
+        "--source",
+    ]
     assert all(isinstance(command, list) for command in commands)
     diagnosis = diagnose_outcome(
         ExperimentOutcome(
@@ -1087,6 +1093,62 @@ def test_compile_is_typed_and_diagnosis_routes_bad_data() -> None:
     )
     assert diagnosis.target == "data"
     assert "immutable data snapshot" in diagnosis.recommended_actions[0]
+
+
+def test_compile_resolves_canonical_published_train_version() -> None:
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            train_version="e218_schema_normalized_judge_v5",
+            eval_version="remediated",
+            allow_unconstrained_fallback=False,
+            steps=32,
+            output_tokenizer="lexer",
+            compiler_alignment_loss_weight=1.0,
+            compiler_alignment_stratified=True,
+            compiler_alignment_semantic_exhaustive=True,
+            compiler_decode_mode="tree",
+            schema_in_context=True,
+            slot_contract_in_context=True,
+            design_md_context=False,
+            local_files_only=True,
+            sync_checkpoints=False,
+            mixture_sampling_policy="capacity_aware",
+        )
+    )
+
+    commands = compile_commands(campaign(), spec)
+
+    assert "--train-version" in commands[0]
+    assert "e218_schema_normalized_judge_v5" in commands[0]
+    assert "--train-dir" not in commands[0]
+    assert "--train-version" in commands[-1]
+    assert commands[-1][commands[-1].index("--test-dir") + 1] == "remediated"
+    assert commands[0][commands[0].index("--output-tokenizer") + 1] == "lexer"
+    assert "--compiler-alignment-stratified" in commands[0]
+    assert "--compiler-alignment-semantic-exhaustive" in commands[0]
+    assert "--schema-in-context" in commands[0]
+    assert "--slot-contract-in-context" in commands[0]
+    assert "--no-design-md-context" in commands[0]
+    assert "--local-files-only" in commands[0]
+    assert "--no-sync-checkpoints" in commands[0]
+    assert commands[0][commands[0].index("--mixture-sampling-policy") + 1] == "capacity_aware"
+    assert commands[-1][commands[-1].index("--compiler-decode-mode") + 1] == "tree"
+    assert "--no-unconstrained-fallback" in commands[-1]
+
+
+def test_execute_records_process_launch_failure() -> None:
+    outcome = execute_commands(experiment(), [["/__missing_executable__"]])
+
+    assert outcome.status == "failed"
+    assert "stage could not start" in str(outcome.error)
+    assert outcome.stage_telemetry[0]["launch_error"]
+
+
+def test_train_version_and_data_build_are_mutually_exclusive() -> None:
+    with pytest.raises(ValidationError, match="train_version or data_source"):
+        ExperimentKnobs(
+            train_version="published", data_source="existing", derive_from="old.jsonl"
+        )
 
 
 def test_compile_grammar_topology_campaign_uses_typed_knobs() -> None:

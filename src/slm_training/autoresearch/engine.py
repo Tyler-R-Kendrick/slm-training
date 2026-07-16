@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import subprocess
+import sys
 from pathlib import Path
 from slm_training.autoresearch.rl_gate import assert_rl_ready
 from slm_training.autoresearch.schemas import (
@@ -230,7 +231,7 @@ def compile_commands(
     commands: list[list[str]] = []
     if knobs.data_source:
         build = [
-            "python",
+            sys.executable,
             "-m",
             "scripts.build_train_data",
             "--source",
@@ -260,13 +261,13 @@ def compile_commands(
         ):
             build.append("--scope-derivatives")
         commands.append(build)
-    else:
+    elif not knobs.train_version:
         train_dir = Path("outputs/data/train/v1")
     mixture_path = root / "mixture.json"
     if knobs.mixture_weights:
         commands.append(
             [
-                "python",
+                sys.executable,
                 "-m",
                 "scripts.autoresearch",
                 "materialize-mixture",
@@ -284,11 +285,9 @@ def compile_commands(
             "causal_lm proposals must use the agent-driven model_cycle lineage workflow"
         )
     train = [
-        "python",
+        sys.executable,
         "-m",
         "scripts.train_model",
-        "--train-dir",
-        str(train_dir),
         "--run-root",
         str(root.parent),
         "--run-id",
@@ -306,6 +305,14 @@ def compile_commands(
         "--device",
         "cpu" if campaign.budget.max_gpu_hours == 0 else "auto",
     ]
+    if knobs.train_version:
+        train.extend(["--train-version", knobs.train_version])
+    else:
+        train.extend(["--train-dir", str(train_dir)])
+    if knobs.local_files_only:
+        train.append("--local-files-only")
+    if knobs.sync_checkpoints is not None:
+        train.append("--sync-checkpoints" if knobs.sync_checkpoints else "--no-sync-checkpoints")
     if campaign.track == "grammar_diffusion":
         train.extend(["--model", "grammar_diffusion"])
         boolean_knobs = {
@@ -347,8 +354,27 @@ def compile_commands(
             "grammar_active_symbol_bitsets",
             "compact_active_canvas",
         }
-        if any(getattr(knobs, field) is not None for field in symbol_fields):
+        if knobs.output_tokenizer:
+            train.extend(["--output-tokenizer", knobs.output_tokenizer])
+        elif any(getattr(knobs, field) is not None for field in symbol_fields):
             train.extend(["--output-tokenizer", "lexer"])
+        if knobs.compiler_alignment_loss_weight is not None:
+            train.extend(
+                [
+                    "--compiler-alignment-loss-weight",
+                    str(knobs.compiler_alignment_loss_weight),
+                ]
+            )
+        if knobs.compiler_alignment_stratified:
+            train.append("--compiler-alignment-stratified")
+        if knobs.compiler_alignment_semantic_exhaustive:
+            train.append("--compiler-alignment-semantic-exhaustive")
+        if knobs.schema_in_context:
+            train.append("--schema-in-context")
+        if knobs.slot_contract_in_context:
+            train.append("--slot-contract-in-context")
+        if knobs.design_md_context is False:
+            train.append("--no-design-md-context")
         for field, flag in {
             "runtime_symbol_features": "runtime-symbol-features",
             "constraint_graph_mode": "constraint-graph-mode",
@@ -369,25 +395,43 @@ def compile_commands(
                 train.append(f"--{flag}" if value else f"--no-{flag}")
     if knobs.mixture_weights:
         train.extend(["--mixture-manifest", str(mixture_path)])
+    if knobs.mixture_sampling_policy:
+        train.extend(["--mixture-sampling-policy", knobs.mixture_sampling_policy])
     commands.append(train)
-    commands.append(
-        [
-            "python",
-            "-m",
-            "scripts.evaluate_model",
-            "--train-dir",
-            str(train_dir),
-            "--test-dir",
-            "outputs/data/eval/v1",
-            "--run-root",
-            str(root.parent),
-            "--run-id",
-            root.name,
-            "--ship-gates",
-        ]
-    )
+    evaluate = [
+        sys.executable,
+        "-m",
+        "scripts.evaluate_model",
+        "--test-dir",
+        knobs.eval_version or "v1",
+        "--run-root",
+        str(root.parent),
+        "--run-id",
+        root.name,
+        "--ship-gates",
+    ]
+    if knobs.train_version:
+        evaluate.extend(["--train-version", knobs.train_version])
+    else:
+        evaluate.extend(["--train-dir", str(train_dir)])
+    commands.append(evaluate)
     if campaign.track == "grammar_diffusion":
         commands[-1].extend(["--model", "grammar_diffusion"])
+    elif campaign.track == "twotower":
+        if knobs.local_files_only:
+            evaluate.append("--local-files-only")
+        if knobs.output_tokenizer:
+            evaluate.extend(["--output-tokenizer", knobs.output_tokenizer])
+        if knobs.compiler_decode_mode:
+            evaluate.extend(["--compiler-decode-mode", knobs.compiler_decode_mode])
+        if knobs.allow_unconstrained_fallback is False:
+            evaluate.append("--no-unconstrained-fallback")
+        if knobs.schema_in_context:
+            evaluate.append("--schema-in-context")
+        if knobs.slot_contract_in_context:
+            evaluate.append("--slot-contract-in-context")
+        if knobs.design_md_context is False:
+            evaluate.append("--no-design-md-context")
     return commands
 
 
@@ -430,6 +474,27 @@ def execute_commands(
                 data_metrics=data_metrics,
                 command=tuple(" ".join(item) for item in commands),
                 error=f"stage exceeded wall-time limit: {' '.join(command)}",
+                stage_telemetry=tuple(stages),
+                started_at=started,
+                finished_at=utc_now(),
+            )
+        except OSError as exc:
+            stages.append(
+                {
+                    "command": command,
+                    "launch_error": str(exc),
+                    "stdout": "",
+                    "stderr": "",
+                }
+            )
+            return ExperimentOutcome(
+                experiment_id=experiment.experiment_id,
+                campaign_id=experiment.campaign_id,
+                status="failed",
+                metrics=metrics,
+                data_metrics=data_metrics,
+                command=tuple(" ".join(item) for item in commands),
+                error=f"stage could not start: {' '.join(command)}: {exc}",
                 stage_telemetry=tuple(stages),
                 started_at=started,
                 finished_at=utc_now(),

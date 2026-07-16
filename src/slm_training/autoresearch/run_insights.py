@@ -8,6 +8,7 @@ import math
 import os
 import statistics
 import tempfile
+from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
@@ -15,7 +16,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 MAX_CHART_POINTS = 1000
 
 
@@ -97,6 +98,7 @@ def _fingerprint(run_dir: Path, scoreboard: dict[str, Any] | None) -> str:
     payload = {
         "schema_version": SCHEMA_VERSION,
         "metrics": _file_sha(run_dir / "metrics.jsonl"),
+        "train_summary": _file_sha(run_dir / "train_summary.json"),
         "telemetry": _file_sha(run_dir / "train_telemetry.json"),
         "matrix_result": _file_sha(run_dir / "matrix_result.json"),
         "scoreboard": scoreboard or {},
@@ -189,6 +191,42 @@ def _loss_points(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         )
     points.sort(key=lambda row: row["step"])
     return points
+
+
+def _data_exposure(
+    rows: list[dict[str, Any]], train_summary: dict[str, Any] | None
+) -> dict[str, Any] | None:
+    draws = [
+        batch
+        for row in rows
+        for batch in (row.get("batches") or ())
+        if isinstance(batch, dict) and batch.get("id")
+    ]
+    if not draws:
+        return None
+    counts = Counter(str(batch["id"]) for batch in draws)
+    family_counts = Counter(
+        str(batch.get("source_family") or batch.get("source") or "unknown")
+        for batch in draws
+    )
+    total = len(draws)
+    effective = total * total / sum(count * count for count in counts.values())
+    corpus_size = int((train_summary or {}).get("record_count") or 0)
+    capacity = min(total, corpus_size) if corpus_size else total
+    repeat_count = max(counts.values())
+    return {
+        "total_draws": total,
+        "unique_records": len(counts),
+        "corpus_records": corpus_size or None,
+        "unique_ratio": round(len(counts) / capacity, 4),
+        "effective_records": round(effective, 2),
+        "effective_ratio": round(effective / capacity, 4),
+        "max_repeat": repeat_count,
+        "max_repeat_ids": sorted(
+            record_id for record_id, count in counts.items() if count == repeat_count
+        )[:8],
+        "family_draw_counts": dict(sorted(family_counts.items())),
+    }
 
 
 def _event(
@@ -327,7 +365,11 @@ def build_run_insights(
 
     matrix_result = _read_json(run_dir / "matrix_result.json")
     telemetry = _read_json(run_dir / "train_telemetry.json")
-    points = _loss_points(_read_jsonl(run_dir / "metrics.jsonl"))
+    metric_rows = _read_jsonl(run_dir / "metrics.jsonl")
+    points = _loss_points(metric_rows)
+    data_exposure = _data_exposure(
+        metric_rows, _read_json(run_dir / "train_summary.json")
+    )
     events = _collapse_events(points)
     phases = _phases(telemetry, matrix_result, scoreboard)
     insights = [
@@ -352,6 +394,24 @@ def build_run_insights(
                 "source": "deterministic",
             }
         )
+    if data_exposure and data_exposure["effective_ratio"] < 0.75:
+        insights.append(
+            {
+                "category": "data",
+                "finding": (
+                    f"{data_exposure['total_draws']} training draws had only "
+                    f"{data_exposure['effective_records']:.2f} effective records "
+                    f"({100 * data_exposure['effective_ratio']:.1f}% of available "
+                    "draw capacity)."
+                ),
+                "suggestion": (
+                    "Test a matched mixture or sampler that reduces concentrated "
+                    "repeats while preserving quality and task coverage."
+                ),
+                "confidence": 0.9,
+                "source": "deterministic",
+            }
+        )
     critical = sum(event["severity"] == "critical" for event in events)
     status = "collapsed" if critical else "warning" if events else "healthy" if points else "unavailable"
     return {
@@ -366,6 +426,7 @@ def build_run_insights(
             "events": events,
         },
         "phases": phases,
+        "data_exposure": data_exposure,
         "insights": insights,
         "enrichment": None,
         "persistence": {"persisted": False, "path": str(run_dir / "run_insights.json")},

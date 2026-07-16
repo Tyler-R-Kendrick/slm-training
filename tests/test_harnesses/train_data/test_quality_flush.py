@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from slm_training.data.quality import assess_record
+from slm_training.data.quality import assess_record, independent_judge
 from slm_training.dsl import bridge_available, validate
 from slm_training.dsl.schema import ExampleRecord, load_jsonl
 from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
@@ -104,6 +104,56 @@ def test_independent_judge_requires_named_component() -> None:
     assert "prompt_component_missing_from_output" in report.reasons
 
 
+def test_independent_judge_reads_ordinary_component_mentions_from_schema(
+    monkeypatch,
+) -> None:
+    from slm_training.data import quality
+
+    monkeypatch.setattr(
+        quality,
+        "_official_component_names",
+        lambda: frozenset({"Button", "Buttons", "Callout", "TextContent"}),
+    )
+    record = ExampleRecord(
+        id="judge-prose",
+        prompt="Show an informational callout with a title.",
+        openui='root = Stack([text])\ntext = TextContent(":title")',
+        placeholders=[":title"],
+    )
+    report = assess_record(record, require_design_md=False)
+    assert not report.ok
+    assert "prompt_component_missing_from_output" in report.reasons
+
+    plural_record = ExampleRecord(
+        id="judge-plural",
+        prompt="Show two buttons.",
+        openui='root = Stack([a, b])\na = Button(":a")\nb = Button(":b")',
+        placeholders=[":a", ":b"],
+    )
+    assert quality.independent_judge(plural_record)["ok"]
+
+    edit_record = ExampleRecord(
+        id="judge-embedded-program",
+        prompt=(
+            "Current program:\n"
+            'root = Callout(\":title\", [label])\nlabel = Label(\":label\")'
+        ),
+        openui='root = TextContent(":title")',
+        placeholders=[":title"],
+        meta={"edit": {"instruction": "Update the title copy."}},
+    )
+    assert quality.independent_judge(edit_record)["ok"]
+
+    repair_record = ExampleRecord(
+        id="judge-repair-ast",
+        prompt='Repair this program: root = Button(":label")',
+        openui='root = TextContent(":title")',
+        placeholders=[":title"],
+        meta={"repair": {"clean_ast": {"typeName": "Button"}}},
+    )
+    assert not quality.independent_judge(repair_record)["ok"]
+
+
 def test_independent_judge_rejects_under_specified_contract_prompt() -> None:
     record = ExampleRecord(
         id="judge-contract",
@@ -115,6 +165,62 @@ def test_independent_judge_rejects_under_specified_contract_prompt() -> None:
     report = assess_record(record, require_design_md=False)
     assert not report.ok
     assert "prompt_under_specified_for_layout" in report.reasons
+
+
+def test_independent_judge_checks_generated_schema_value_roles() -> None:
+    valid = ExampleRecord(
+        id="judge-schema-valid",
+        prompt="Build an email form control with an input.",
+        openui=(
+            'root = FormControl(":label", input)\n'
+            'input = Input("email", ":placeholder")'
+        ),
+        placeholders=[":label", ":placeholder"],
+    )
+    assert independent_judge(valid)["ok"]
+
+    for value in ('":input"', "[]"):
+        invalid = ExampleRecord(
+            id="judge-schema-invalid",
+            prompt="Build an email form control with an input.",
+            openui=f'root = FormControl(":label", {value})',
+            placeholders=[":label", ":input"],
+        )
+        result = independent_judge(invalid)
+        assert not result["ok"]
+        assert "schema_value_role_mismatch:FormControl.input" in result["reasons"]
+
+    optional_omission = ExampleRecord(
+        id="judge-schema-optional-null",
+        prompt="Build a Modal component with body text.",
+        openui=(
+            'root = Modal(":title", null, [body])\n'
+            'body = TextContent(":body")'
+        ),
+        placeholders=[":title", ":body"],
+    )
+    assert independent_judge(optional_omission)["ok"]
+
+    required_null = ExampleRecord(
+        id="judge-schema-required-null",
+        prompt="Build a FormControl component.",
+        openui='root = FormControl(":label", null)',
+        placeholders=[":label"],
+    )
+    assert (
+        "schema_parser_error:null-required:FormControl.input"
+        in independent_judge(required_null)["reasons"]
+    )
+
+    invalid_enum = ExampleRecord(
+        id="judge-schema-enum",
+        prompt="Build a Slider component.",
+        openui='root = Slider("volume", "default", 0, 100)',
+    )
+    assert (
+        "schema_value_role_mismatch:Slider.variant"
+        in independent_judge(invalid_enum)["reasons"]
+    )
 
 
 def test_normalized_record_stamps_independent_judge_gate() -> None:
@@ -133,3 +239,20 @@ def test_normalized_record_stamps_independent_judge_gate() -> None:
     judge_gate = next(gate for gate in gates if gate["name"] == "independent_judge")
     assert judge_gate["status"] == "pass"
     assert stamped.meta["independent_judge_passed"] is True
+
+
+def test_pipeline_normalization_applies_generated_schema_shapes() -> None:
+    from slm_training.harnesses.train_data.pipeline import _normalize_record
+
+    record = ExampleRecord(
+        id="normalize-slider-schema",
+        prompt="Build a Slider component.",
+        openui='root = Slider("volume", "default", 0, 100, 1, 40, ":label")',
+        placeholders=[":label"],
+        design_md="# Design\n",
+    )
+    normalized = _normalize_record(record)
+    assert 'Slider("volume", "continuous", 0, 100, 1, [40], ":label")' in (
+        normalized.openui
+    )
+    assert independent_judge(normalized)["ok"]

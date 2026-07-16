@@ -7,7 +7,24 @@ import argparse
 import json
 from pathlib import Path
 
+from slm_training.data.store import DataStore
 from slm_training.harnesses.model_build import ModelBuildConfig, train
+
+
+def resolve_published_train_version(
+    version: str,
+    *,
+    root: Path | None = None,
+    store: DataStore | None = None,
+) -> tuple[Path, Path | None]:
+    """Resolve a committed corpus and its canonical online-sampling policy."""
+    train_dir = (
+        root / version
+        if root is not None
+        else (store or DataStore()).resolve("train", version).path
+    )
+    mixture = train_dir / "mixture.json"
+    return train_dir, mixture if mixture.is_file() else None
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -81,6 +98,12 @@ def main(argv: list[str] | None = None) -> int:
         type=float,
         default=0.0,
         help="Exclude judged records below this score when sampling a mixture.",
+    )
+    parser.add_argument(
+        "--mixture-sampling-policy",
+        choices=("with_replacement", "capacity_aware", "quota_capacity_aware"),
+        default="with_replacement",
+        help="Draw mixture rows with replacement or capacity-aware per window.",
     )
     parser.add_argument(
         "--register-promoted",
@@ -283,6 +306,22 @@ def main(argv: list[str] | None = None) -> int:
         help="Extra weight for the first three LTR positions (root/early structure).",
     )
     parser.add_argument(
+        "--compiler-alignment-loss-weight",
+        type=float,
+        default=0.0,
+        help="Train Lark-derived branch decisions on compiler-style masked suffixes.",
+    )
+    parser.add_argument(
+        "--compiler-alignment-stratified",
+        action="store_true",
+        help="Sample one compiler-alignment state per grammar-derived decision kind.",
+    )
+    parser.add_argument(
+        "--compiler-alignment-semantic-exhaustive",
+        action="store_true",
+        help="Align every grammar-derived AST-role decision; stratify structural states.",
+    )
+    parser.add_argument(
         "--no-design-md-context",
         action="store_true",
         help="Do not concatenate DESIGN.md into the context tower prompt.",
@@ -462,11 +501,13 @@ def main(argv: list[str] | None = None) -> int:
         help="Plan bucket sync without uploading (debug / no-write environments).",
     )
     args = parser.parse_args(argv)
-    from slm_training.data.store import DataStore
-
     data_store = DataStore()
     if args.train_version:
-        args.train_dir = data_store.resolve("train", args.train_version).path
+        args.train_dir, version_mixture = resolve_published_train_version(
+            args.train_version, store=data_store
+        )
+        if args.mixture_manifest is None:
+            args.mixture_manifest = version_mixture
     else:
         args.train_dir = data_store.resolve_path("train", args.train_dir)
     if args.test_dir is not None:
@@ -588,6 +629,11 @@ def main(argv: list[str] | None = None) -> int:
             design_md_in_context=not args.no_design_md_context,
             ltr_loss_weight=args.ltr_loss_weight,
             ltr_prefix_loss_weight=args.ltr_prefix_loss_weight,
+            compiler_alignment_loss_weight=args.compiler_alignment_loss_weight,
+            compiler_alignment_stratified=args.compiler_alignment_stratified,
+            compiler_alignment_semantic_exhaustive=(
+                args.compiler_alignment_semantic_exhaustive
+            ),
             fidelity_loss_weight=args.fidelity_loss_weight,
             grammar_ltr_primary=args.grammar_ltr_primary,
             grammar_ltr_repair=args.grammar_ltr_repair,
@@ -622,6 +668,7 @@ def main(argv: list[str] | None = None) -> int:
             full_state_checkpoint=not bool(args.no_full_state_checkpoint),
             mixture_manifest=args.mixture_manifest,
             mixture_min_quality_score=args.mixture_min_quality_score,
+            mixture_sampling_policy=args.mixture_sampling_policy,
             register_promoted=bool(args.register_promoted),
             telemetry=not bool(args.no_telemetry),
             checkpoint_bucket=(

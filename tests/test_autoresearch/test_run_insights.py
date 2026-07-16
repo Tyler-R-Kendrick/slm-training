@@ -22,8 +22,26 @@ def _write_run(root) -> None:
     run.mkdir(parents=True)
     losses = [1.0, 0.98, 1.01, 0.99, 1.0, 3.0, 3.2, 3.5, 3.9, 4.5]
     (run / "metrics.jsonl").write_text(
-        "".join(json.dumps({"step": i + 1, "loss": loss}) + "\n" for i, loss in enumerate(losses)),
+        "".join(
+            json.dumps(
+                {
+                    "step": i + 1,
+                    "loss": loss,
+                    "batches": [
+                        {
+                            "id": "repeated" if i < 8 else f"record-{i}",
+                            "source_family": "fixture",
+                        }
+                    ],
+                }
+            )
+            + "\n"
+            for i, loss in enumerate(losses)
+        ),
         encoding="utf-8",
+    )
+    (run / "train_summary.json").write_text(
+        json.dumps({"record_count": 10}), encoding="utf-8"
     )
     (run / "train_telemetry.json").write_text(
         json.dumps(
@@ -47,6 +65,8 @@ def test_run_insights_detect_collapse_and_persist(tmp_path) -> None:
     assert report["loss"]["status"] == "collapsed"
     assert {event["kind"] for event in report["loss"]["events"]} >= {"spike", "divergence"}
     assert report["phases"][0]["name"] == "forward"
+    assert report["data_exposure"]["effective_ratio"] < 0.75
+    assert any(item["category"] == "data" for item in report["insights"])
     assert "AMP/compile" in report["phases"][0]["help"]
     assert report["persistence"]["persisted"] is True
     assert (run / "run_insights.json").is_file()

@@ -47,6 +47,9 @@ ORGANIC_FAMILIES = (
     "human_curated",
 )
 FEEDBACK_FAMILIES = ("human_feedback",)
+SAMPLING_POLICIES = frozenset(
+    {"with_replacement", "capacity_aware", "quota_capacity_aware"}
+)
 _COMPONENT_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s*\(")
 
 
@@ -91,6 +94,8 @@ class MixtureManifest:
 
 def load_mixture_manifest(path: Path | str) -> MixtureManifest:
     data = json.loads(Path(path).read_text(encoding="utf-8"))
+    if isinstance(data.get("manifest"), dict):
+        data = data["manifest"]
     return MixtureManifest(
         mixture_id=str(data.get("mixture_id") or Path(path).stem),
         weights={str(k): float(v) for k, v in (data.get("weights") or {}).items()},
@@ -162,10 +167,13 @@ def sample_mixture_batch(
     pools: dict[str, list[ExampleRecord]] | None = None,
     task_weights: dict[str, float] | None = None,
     task_pools: dict[str, dict[str, list[ExampleRecord]]] | None = None,
+    sampling_policy: str = "with_replacement",
 ) -> list[ExampleRecord]:
     """Online weighted per-family draw (uses loop RNG for bit-exact resume)."""
     if batch_size <= 0:
         return []
+    if sampling_policy not in SAMPLING_POLICIES:
+        raise ValueError(f"unknown mixture sampling policy: {sampling_policy!r}")
     pools = pools or index_family_pools(records)
     manifest = MixtureManifest(mixture_id="runtime", weights=weights).normalized()
     if task_weights:
@@ -183,6 +191,38 @@ def sample_mixture_batch(
         if usable_tasks:
             groups = sorted(usable_tasks)
             group_weights = [task_manifest.task_weights[group] for group in groups]
+            if sampling_policy == "quota_capacity_aware":
+                return _sample_quota_capacity_aware_tasks(
+                    usable_tasks,
+                    group_weights=dict(zip(groups, group_weights, strict=True)),
+                    family_weights=manifest.weights,
+                    batch_size=batch_size,
+                    rng=rng,
+                )
+            if sampling_policy == "capacity_aware":
+                weighted_records: list[tuple[ExampleRecord, float]] = []
+                for group, group_weight in zip(groups, group_weights, strict=True):
+                    family_pools = usable_tasks[group]
+                    families = sorted(family_pools)
+                    family_weights = [
+                        manifest.weights.get(family, 0.0) for family in families
+                    ]
+                    if not any(family_weights):
+                        family_weights = [1.0] * len(families)
+                    family_total = sum(family_weights)
+                    for family, family_weight in zip(
+                        families, family_weights, strict=True
+                    ):
+                        members = family_pools[family]
+                        row_weight = (
+                            group_weight * family_weight / family_total / len(members)
+                        )
+                        weighted_records.extend(
+                            (member, row_weight) for member in members
+                        )
+                return _sample_capacity_aware(
+                    weighted_records, batch_size=batch_size, rng=rng
+                )
             out: list[ExampleRecord] = []
             for _ in range(batch_size):
                 group = rng.choices(groups, weights=group_weights, k=1)[0]
@@ -204,6 +244,12 @@ def sample_mixture_batch(
     }
     if not usable:
         # Fall back to uniform over all records when no weight matches.
+        if sampling_policy == "capacity_aware":
+            return _sample_capacity_aware(
+                [(record, 1.0) for record in records],
+                batch_size=batch_size,
+                rng=rng,
+            )
         return [records[rng.randrange(len(records))] for _ in range(batch_size)]
 
     families = sorted(usable)
@@ -211,11 +257,159 @@ def sample_mixture_batch(
     total = sum(family_weights)
     family_weights = [w / total for w in family_weights]
 
+    if sampling_policy == "capacity_aware":
+        weighted_records = [
+            (member, family_weight / len(usable[family]))
+            for family, family_weight in zip(families, family_weights, strict=True)
+            for member in usable[family]
+        ]
+        return _sample_capacity_aware(
+            weighted_records, batch_size=batch_size, rng=rng
+        )
+    if sampling_policy == "quota_capacity_aware":
+        return _sample_quota_capacity_aware_families(
+            usable,
+            family_weights=dict(zip(families, family_weights, strict=True)),
+            batch_size=batch_size,
+            rng=rng,
+        )
+
     out: list[ExampleRecord] = []
     for _ in range(batch_size):
         family = rng.choices(families, weights=family_weights, k=1)[0]
         members = usable[family]
         out.append(members[rng.randrange(len(members))])
+    return out
+
+
+def _sample_capacity_aware(
+    weighted_records: list[tuple[ExampleRecord, float]],
+    *,
+    batch_size: int,
+    rng: random.Random,
+) -> list[ExampleRecord]:
+    """Weighted draws without replacement, restarting only after pool exhaustion."""
+    if not weighted_records:
+        return []
+    out: list[ExampleRecord] = []
+    while len(out) < batch_size:
+        remaining = list(weighted_records)
+        cycle_size = min(batch_size - len(out), len(remaining))
+        for _ in range(cycle_size):
+            index = rng.choices(
+                range(len(remaining)),
+                weights=[weight for _, weight in remaining],
+                k=1,
+            )[0]
+            record, _ = remaining.pop(index)
+            out.append(record)
+    return out
+
+
+def _apportion_with_capacity(
+    total: int,
+    *,
+    weights: dict[str, float],
+    capacities: dict[str, int],
+) -> dict[str, int]:
+    """Largest-remainder quotas with deterministic capacity redistribution."""
+    quotas = {key: 0 for key in sorted(capacities)}
+    while sum(quotas.values()) < total:
+        active = [key for key in quotas if quotas[key] < capacities[key]]
+        if not active:
+            break
+        remaining = total - sum(quotas.values())
+        active_total = sum(max(0.0, weights.get(key, 0.0)) for key in active)
+        effective = {
+            key: (
+                max(0.0, weights.get(key, 0.0))
+                if active_total > 0
+                else 1.0
+            )
+            for key in active
+        }
+        effective_total = sum(effective.values())
+        ideals = {
+            key: remaining * effective[key] / effective_total for key in active
+        }
+        for key in active:
+            add = min(capacities[key] - quotas[key], int(ideals[key]))
+            if add:
+                quotas[key] += add
+        if sum(quotas.values()) >= total:
+            break
+        candidates = sorted(
+            (key for key in active if quotas[key] < capacities[key]),
+            key=lambda item: (-(ideals[item] % 1), -effective[item], item),
+        )
+        if not candidates:
+            break
+        for key in candidates[: total - sum(quotas.values())]:
+            quotas[key] += 1
+    return quotas
+
+
+def _sample_quota_capacity_aware_tasks(
+    pools: dict[str, dict[str, list[ExampleRecord]]],
+    *,
+    group_weights: dict[str, float],
+    family_weights: dict[str, float],
+    batch_size: int,
+    rng: random.Random,
+) -> list[ExampleRecord]:
+    out: list[ExampleRecord] = []
+    while len(out) < batch_size:
+        cycle_size = min(
+            batch_size - len(out),
+            sum(len(rows) for families in pools.values() for rows in families.values()),
+        )
+        group_quotas = _apportion_with_capacity(
+            cycle_size,
+            weights=group_weights,
+            capacities={
+                group: sum(len(rows) for rows in families.values())
+                for group, families in pools.items()
+            },
+        )
+        cycle: list[ExampleRecord] = []
+        for group in sorted(group_quotas):
+            families = pools[group]
+            family_quotas = _apportion_with_capacity(
+                group_quotas[group],
+                weights=family_weights,
+                capacities={family: len(rows) for family, rows in families.items()},
+            )
+            for family in sorted(family_quotas):
+                rows = list(families[family])
+                rng.shuffle(rows)
+                cycle.extend(rows[: family_quotas[family]])
+        rng.shuffle(cycle)
+        out.extend(cycle)
+    return out
+
+
+def _sample_quota_capacity_aware_families(
+    pools: dict[str, list[ExampleRecord]],
+    *,
+    family_weights: dict[str, float],
+    batch_size: int,
+    rng: random.Random,
+) -> list[ExampleRecord]:
+    out: list[ExampleRecord] = []
+    while len(out) < batch_size:
+        cycle_size = min(batch_size - len(out), sum(map(len, pools.values())))
+        quotas = _apportion_with_capacity(
+            cycle_size,
+            weights=family_weights,
+            capacities={family: len(rows) for family, rows in pools.items()},
+        )
+        cycle: list[ExampleRecord] = []
+        for family in sorted(quotas):
+            rows = list(pools[family])
+            rng.shuffle(rows)
+            cycle.extend(rows[: quotas[family]])
+        rng.shuffle(cycle)
+        out.extend(cycle)
     return out
 
 

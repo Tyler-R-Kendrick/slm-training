@@ -728,6 +728,133 @@ were repaired, and E165 reports zero seeded unconstrained fallbacks. Parse still
 fails, so the remaining lever is semantic model choice within the certified
 tree—not undertraining or weakened gates.
 
+E166–E168 further separate syntax from meaningful-program quality:
+`syntax_parse_rate=0.6667`, `meaningful_program_rate=0.0`, and zero compiler or
+seeded fallbacks in E168. See
+[iter-e166-e168-semantic-boundary-20260715.md](iter-e166-e168-semantic-boundary-20260715.md).
+
+E169 removed the literal-specific compiler filters and reran the matched E160
+lexer checkpoint: syntax fell to 0.3333 with meaningful parse still 0.0 and
+zero seeded unconstrained fallbacks. The negative result shows that Lark
+reachability permits partial expression continuations; the next lever is
+generated AST/schema completion state, not more steps or case-specific bans.
+See [iter-e169-grammar-derived-20260716.md](iter-e169-grammar-derived-20260716.md).
+
+E170 reads the active call frame from Lark parser state instead of source-text
+scanning. It is quality-neutral on the matched checkpoint
+(`syntax_parse_rate=0.3333`, `meaningful_program_rate=0.0`, zero seeded
+fallbacks), so the next step is generated-AST/schema completion state. See
+[iter-e170-lark-state-20260716.md](iter-e170-lark-state-20260716.md).
+
+E172 maps generated schema value types to Lark terminal categories. Syntax
+validity improves to 0.6667 and compiler fallbacks fall to 1, while meaningful
+parse remains 0 and component recall is 0.25. The next lever is semantic
+component-role supervision and training-data coverage. See
+[iter-e172-schema-types-20260716.md](iter-e172-schema-types-20260716.md).
+
+E173 trained 32 steps with schema and slot-contract context. A bounded probe
+was syntactically valid but still selected a lone `TextContent` for the hero
+task (`meaningful_program_rate=0.0`); the full smoke invocation did not persist
+a scoreboard and is not claimed. The next lever is semantic component-role
+coverage/supervision. See [iter-e173-schema-context-20260716.md](iter-e173-schema-context-20260716.md).
+
+E174 tested an unfrozen HF context tower for 8 steps. Loss rose to 39.4253 and
+the bounded syntax probe fell to 0.0, so the control is rejected; retain frozen
+context while improving semantic data coverage. See
+[iter-e174-unfrozen-context-20260716.md](iter-e174-unfrozen-context-20260716.md).
+
+E175 added retrieval k=4 to frozen schema-context training. The bounded probe
+had syntax 0.0 and meaningful parse 0.0, so retrieval is rejected; semantic
+role coverage/supervision remains the next lever. See
+[iter-e175-retrieval-20260716.md](iter-e175-retrieval-20260716.md).
+
+E176 trained on the broader 1,417-record prompt-contract corpus. The bounded
+probe remained parse/syntax 0.0 and structure fell to 0.1187, so the broad
+corpus is rejected as a replacement. Add targeted judge-gated semantic-role
+examples instead. See [iter-e176-broad-corpus-20260716.md](iter-e176-broad-corpus-20260716.md).
+
+E177–E180 separate data admission, schema structure, and semantic selection.
+The corrected E177 judge rejects two mismatched pairs and publishes 496 records
+with telemetry for future runs, but its matched 32-step train does not improve
+the bounded probe. E178 adds generated-schema required/max arity; E179 stops the
+legacy repair path from overwriting compiler output; E180 constrains the symbolic
+root binding to generated component kinds. E180 raises syntax validity from 0.0
+to 1.0 and cuts p50 from 7538.12 ms to 3712.78 ms, while meaningful parse remains
+0.0 because component recall is only 0.25. Continue with balanced semantic-role
+supervision, not syntax special cases or weakened gates. See
+[iter-e177-e180-semantic-compiler-20260716.md](iter-e177-e180-semantic-compiler-20260716.md).
+
+E181–E194 test the next generalized layer. A committed balanced mixture lowers
+the matched 32-step loss but leaves quality unchanged. Root score telemetry
+falsifies complete-path length bias and identifies learned semantic ranking as
+the failure. Component-only compiler-state alignment recovers the `Stack` root;
+random alignment across all grammar branches regresses it and is rejected.
+Grammar-derived AST completeness, lexer-surface synchronization, nested call
+frames, binder scope, and schema-scoped symbols replace tactical output-string
+repairs. The best E194 diagnostic still has meaningful parse 0.0 (structure
+0.3600, component recall 0.25), so no checkpoint is promoted. Next: stratified
+component/binder alignment derived from parser decision kinds. See
+[iter-e181-e194-compiler-alignment-20260716.md](iter-e181-e194-compiler-alignment-20260716.md).
+
+E195–E199 stratify compiler alignment by tokenizer/parser-derived decision kind.
+E195 is an invalid control because `--train-version` did not load its online
+mixture; that resolver is fixed for future runs. The matched E196 train covers
+component, binder, structural, symbol, and literal decisions on every eligible
+row. E199 restores syntax 1.0 with zero compiler fallbacks after enum restriction
+is tied to parser slot progress, but meaningful parse and component recall remain
+0.0 because the forward binder receives a primitive declaration. No checkpoint
+is promoted. Next: generated schema/AST reference-role propagation. See
+[iter-e195-e199-stratified-alignment-20260716.md](iter-e195-e199-stratified-alignment-20260716.md).
+
+E200–E204 generalize the next failure into grammar/schema roles. A canonical
+audit found all 1,916 declarations in the 496-record judged corpus have
+component-valued RHS ASTs. The decoder now derives declaration, generated
+`children`, and content-slot candidate roles from typed Lark tokens, generated
+schema properties, and the centralized content contract. E204 improves
+component recall to 0.25 and placeholder validity to 0.70 with zero fallback,
+but recursively extends legal children until the token cap; syntax and
+meaningful parse remain 0.0. E201 is not promotable. Full evidence:
+[iter-e200-e204-layout-role-compiler-20260716.md](iter-e200-e204-layout-role-compiler-20260716.md).
+
+E205–E207 split structural alignment by active Lark terminal instead of one
+tokenizer-level `struct` bucket. A bounded 64-record audit found 134 list-close
+and 69 list-extend decisions; the matched E205 train supervises each grammar
+terminal class. E207 adds generated-schema enum completion paths through the
+typed literal channel. Syntax reaches 1.0, structure 0.3125, and compiler
+fallback falls to zero, but empty bound stacks keep meaningful parse and
+component recall at 0.0. E205 is not promotable. Full evidence:
+[iter-e205-e207-lark-terminal-alignment-20260716.md](iter-e205-e207-lark-terminal-alignment-20260716.md).
+
+E208–E213 test contextual grammar-decision alignment. The committed corpus has
+496/496 populated roots, versus 156 populated and 12 empty bound containers.
+Occupancy-only E208 and root/bound-scoped E210 still emit empty roots. E212
+derives binder signatures from declaration/reference role, typed scope, and the
+active generated-schema slot; root-children reference loss falls from 61.4179
+to 1.0285 and E213 recovers a populated root plus normalized fidelity 0.50.
+Required `FormControl` input semantics still fail, leaving syntax/meaningful
+parse 0.0. No checkpoint is promotable. Full evidence:
+[iter-e208-e213-contextual-decisions-20260716.md](iter-e208-e213-contextual-decisions-20260716.md).
+
+E214–E216 test the next generalized data hypothesis. G11 now parses outputs and
+checks resolved AST property values against generated schema roles; no component
+names are special-cased. It rejects 49/496 E177 candidates and commits
+the 447 accepted records as immutable E214 data with synthesis telemetry. The
+matched E215 train reaches E216 syntax 1.0 with zero fallback or constrained dead
+ends, eliminating E213's invalid `FormControl.input` failure. Meaningful parse
+remains 0.0 because component recall is only 0.25, so this is a negative ship
+result and E215 is not promotable. A later audit below supersedes the claim that
+all 49 rejects were invalid. Full evidence:
+[iter-e214-e216-schema-role-judge-20260716.md](iter-e214-e216-schema-role-judge-20260716.md).
+
+Post-audit correction: E214 overfiltered 27 legal optional positional `null`
+omissions. E218 moves canonical schema normalization before G11, derives Slider
+enum/array shapes and language-contract `anyOf` values from generated schema, and
+restores 33 records versus E214. The matched E219/E220 control preserves syntax
+1.0 but exactly matches E216's component recall 0.25 and meaningful parse 0.0.
+The data fix is retained for future runs; semantic quality did not improve and no
+checkpoint is promotable. Full evidence:
+[iter-e218-e220-schema-normalization-20260716.md](iter-e218-e220-schema-normalization-20260716.md).
+
 These rows are registered under `--matrix v8`; `--list` prints definitions
 without building data or starting a run. They require the lexer-native parent
 contract and unchanged honest five-suite gates. No result or champion is claimed.

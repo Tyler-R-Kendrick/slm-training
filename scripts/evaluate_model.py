@@ -82,6 +82,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Used to rebuild vocab when loading TwoTower without sidecar tokenizer.",
     )
     parser.add_argument(
+        "--train-version",
+        default=None,
+        help="Use a published source-controlled corpus from src/slm_training/resources/train_data.",
+    )
+    parser.add_argument(
         "--model",
         choices=("twotower", "grammar_diffusion", "stub"),
         default="twotower",
@@ -305,7 +310,10 @@ def main(argv: list[str] | None = None) -> int:
     from slm_training.data.store import DataStore
 
     data_store = DataStore()
-    args.train_dir = data_store.resolve_path("train", args.train_dir)
+    if args.train_version:
+        args.train_dir = data_store.resolve("train", args.train_version).path
+    else:
+        args.train_dir = data_store.resolve_path("train", args.train_dir)
     args.test_dir = data_store.resolve_path("eval", args.test_dir)
 
     if args.no_design_md_context and args.design_md_context:

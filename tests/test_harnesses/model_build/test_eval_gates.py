@@ -105,7 +105,7 @@ def test_meaningful_parse_requires_component_recall() -> None:
             'root = Stack([title, notify, volume], "column")\n'
             'title = TextContent(":t")\n'
             'notify = SwitchItem(":n", ":d", "x")\n'
-            'volume = Slider("volume", "default", 0, 100, 1, 40, ":v")'
+            'volume = Slider("volume", "continuous", 0, 100, 1, [40], ":v")'
         ),
         placeholders=[":t", ":n", ":d", ":v"],
     )

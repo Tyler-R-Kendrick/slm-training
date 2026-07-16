@@ -8,6 +8,7 @@ import random
 import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Any
 
 import torch
 import torch.nn as nn
@@ -178,6 +179,9 @@ class TwoTowerConfig:
     ltr_loss_weight: float = 0.5
     # Extra weight on the first content transitions (root -> assignment).
     ltr_prefix_loss_weight: float = 0.0
+    compiler_alignment_loss_weight: float = 0.0
+    compiler_alignment_stratified: bool = False
+    compiler_alignment_semantic_exhaustive: bool = False
     symbol_boundary_loss_weight: float = 0.0
     # Extra CE weight on gold placeholder token positions (fidelity signal).
     fidelity_loss_weight: float = 0.5
@@ -475,6 +479,9 @@ class TwoTowerModel(nn.Module):
         # Train-time caches (formatted context string keyed by record id).
         self._context_text_cache: dict[str, str] = {}
         self._target_ids_cache: dict[str, list[int]] = {}
+        self._compiler_decision_cache: dict[
+            tuple[tuple[int, ...], tuple[str, ...]], tuple[Any, ...]
+        ] = {}
         self._context_token_count_cache: dict[str, int] = {}
         self._placeholder_token_ids: set[int] | None = None
         self._slot_contracts: list[list[str] | None] | None = None
@@ -534,6 +541,7 @@ class TwoTowerModel(nn.Module):
     def clear_train_caches(self) -> None:
         self._context_text_cache.clear()
         self._target_ids_cache.clear()
+        self._compiler_decision_cache.clear()
         self._context_token_count_cache.clear()
         if is_hf_context(self.context) and hasattr(
             self.context, "clear_backbone_cache"
@@ -1240,6 +1248,146 @@ class TwoTowerModel(nn.Module):
                 ltr_loss = mask_loss * 0.0
             mask_loss = mask_loss + ltr_w * ltr_loss
 
+        alignment_w = float(
+            getattr(self.config, "compiler_alignment_loss_weight", 0.0) or 0.0
+        )
+        aligned_rows = 0
+        if alignment_w > 0.0:
+            from slm_training.dsl.grammar.fastpath.compiler_draft import (
+                gold_compiler_decisions,
+            )
+
+            stratified = bool(
+                getattr(self.config, "compiler_alignment_stratified", False)
+            )
+            semantic_exhaustive = bool(
+                getattr(
+                    self.config, "compiler_alignment_semantic_exhaustive", False
+                )
+            )
+            aligned_canvases: list[torch.Tensor] = []
+            aligned_targets: list[int] = []
+            aligned_positions: list[int] = []
+            aligned_context_rows: list[int] = []
+            aligned_kinds: list[str] = []
+            kind_rows: dict[str, int] = {}
+            for row, record in enumerate(batch):
+                target_key = tuple(
+                    int(token_id) for token_id in target_ids[row].tolist()
+                )
+                contract_key = tuple(record.placeholders or ())
+                key = (target_key, contract_key)
+                decisions = self._compiler_decision_cache.get(key)
+                if decisions is None:
+                    decisions = gold_compiler_decisions(
+                        self.tokenizer,
+                        target_key,
+                        slot_contract=list(contract_key),
+                    )
+                    self._compiler_decision_cache[key] = decisions
+                if not decisions:
+                    continue
+                if stratified:
+                    by_kind: dict[str, list[Any]] = {}
+                    for decision in decisions:
+                        if not (semantic_exhaustive and decision.is_semantic_role):
+                            by_kind.setdefault(decision.kind, []).append(decision)
+                    selected = (
+                        [
+                            decision
+                            for decision in decisions
+                            if decision.is_semantic_role
+                        ]
+                        if semantic_exhaustive
+                        else []
+                    ) + [
+                        choices[self._rng.randrange(len(choices))]
+                        for choices in by_kind.values()
+                    ]
+                else:
+                    selected = [decisions[self._rng.randrange(len(decisions))]]
+                for decision in selected:
+                    cut = int(decision.position)
+                    canvas = target_ids[row].clone()
+                    canvas[cut:] = self.tokenizer.mask_id
+                    canvas[target_ids[row].eq(self.tokenizer.pad_id)] = (
+                        self.tokenizer.pad_id
+                    )
+                    aligned_canvases.append(canvas)
+                    aligned_targets.append(int(target_ids[row, cut]))
+                    aligned_positions.append(cut)
+                    aligned_context_rows.append(row)
+                    aligned_kinds.append(decision.kind)
+                    kind_rows[decision.kind] = kind_rows.get(decision.kind, 0) + 1
+            aligned_rows = len(aligned_canvases)
+            if aligned_canvases:
+                row_index = torch.tensor(
+                    aligned_context_rows, device=ctx.device, dtype=torch.long
+                )
+                aligned_noisy = torch.stack(aligned_canvases)
+                aligned_logits = self.denoiser(
+                    aligned_noisy,
+                    ctx.index_select(0, row_index),
+                    pad_id=self.tokenizer.pad_id,
+                    ctx_pad_mask=(
+                        ctx_pad.index_select(0, row_index)
+                        if ctx_pad is not None
+                        else None
+                    ),
+                )
+                position_index = torch.tensor(
+                    aligned_positions,
+                    device=aligned_logits.device,
+                    dtype=torch.long,
+                )
+                batch_index = torch.arange(
+                    aligned_rows, device=aligned_logits.device
+                )
+                target_tensor = torch.tensor(
+                    aligned_targets,
+                    device=aligned_logits.device,
+                    dtype=target_ids.dtype,
+                )
+                alignment_losses = F.cross_entropy(
+                    aligned_logits[batch_index, position_index],
+                    target_tensor,
+                    reduction="none",
+                )
+                alignment_loss = alignment_losses.mean()
+                mask_loss = mask_loss + alignment_w * alignment_loss
+                kind_losses = {
+                    kind: float(
+                        alignment_losses[
+                            torch.as_tensor(
+                                [item == kind for item in aligned_kinds],
+                                device=alignment_losses.device,
+                            )
+                        ]
+                        .mean()
+                        .detach()
+                        .cpu()
+                    )
+                    for kind in kind_rows
+                }
+            else:
+                kind_losses = {}
+            self.last_training_metrics = {
+                "compiler_alignment_rows": aligned_rows,
+                "compiler_alignment_loss": (
+                    float(alignment_loss.detach().cpu())
+                    if aligned_canvases
+                    else 0.0
+                ),
+                **{
+                    f"compiler_alignment_{kind}_rows": count
+                    for kind, count in sorted(kind_rows.items())
+                },
+                **{
+                    f"compiler_alignment_{kind}_loss": loss
+                    for kind, loss in sorted(kind_losses.items())
+                },
+            }
+
         aux_w = float(getattr(self.config, "fastpath_aux_weight", 0.0) or 0.0)
         if aux_w > 0.0 and getattr(self.config, "grammar_fastpath", False):
             # Keep this span visible in train telemetry: a silently skipped
@@ -1819,6 +1967,49 @@ class TwoTowerModel(nn.Module):
         if stats is not None:
             stats.compiler_candidates += len(paths)
 
+        def record_choice(
+            chosen: int,
+            scores: list[float],
+            phase: str,
+            *,
+            first_edge_scores: list[float] | None = None,
+        ) -> None:
+            if stats is None or len(stats.constrained_selection_traces) >= 64:
+                return
+            ranked = sorted(
+                range(len(paths)), key=scores.__getitem__, reverse=True
+            )[:5]
+            stats.constrained_selection_traces.append(
+                {
+                    "position": len(prefix),
+                    "prefix_text": self.tokenizer.decode(prefix),
+                    "chosen_token": self.tokenizer.id_to_token.get(
+                        int(paths[chosen].token_ids[0]), ""
+                    ),
+                    "legal_candidates": len(paths),
+                    "forced": False,
+                    "phase": phase,
+                    "top_candidates": [
+                        {
+                            "token": self.tokenizer.id_to_token.get(
+                                int(paths[index].token_ids[0]), ""
+                            ),
+                            "score": round(float(scores[index]), 6),
+                            **(
+                                {
+                                    "first_edge_score": round(
+                                        float(first_edge_scores[index]), 6
+                                    )
+                                }
+                                if first_edge_scores is not None
+                                else {}
+                            ),
+                        }
+                        for index in ranked
+                    ],
+                }
+            )
+
         if not tree:
             canvas = self._compiler_canvas(prefix, length)
             hidden = self._denoiser_hidden(canvas, ctx, ctx_pad)
@@ -1831,6 +2022,11 @@ class TwoTowerModel(nn.Module):
                 chosen = int(torch.multinomial(F.softmax(scores / temp, dim=0), 1))
             else:
                 chosen = int(scores.argmax().item())
+            record_choice(
+                chosen,
+                [float(score) for score in scores.detach().cpu().tolist()],
+                "compiler_restricted",
+            )
             return tuple(paths[chosen].token_ids)
 
         # Prefix trie: each distinct parent canvas is encoded once, and all of
@@ -1888,6 +2084,16 @@ class TwoTowerModel(nn.Module):
             chosen = int(torch.multinomial(probs, 1).item())
         else:
             chosen = max(range(len(paths)), key=path_scores.__getitem__)
+        first_edge_scores = [
+            edge_scores.get((tuple(prefix), int(path.token_ids[0])), 0.0)
+            for path in paths
+        ]
+        record_choice(
+            chosen,
+            path_scores,
+            "compiler_tree",
+            first_edge_scores=first_edge_scores,
+        )
         return tuple(paths[chosen].token_ids)
 
     def _compiler_ltr_decode_one(
@@ -2891,7 +3097,8 @@ class TwoTowerModel(nn.Module):
             )
             ensure_attempts = (
                 0
-                if (bool(self.config.grammar_ltr_repair) and max_attempts <= 1)
+                if compiler_mode != "off"
+                or (bool(self.config.grammar_ltr_repair) and max_attempts <= 1)
                 else max_attempts
             )
             certified: list[str] = []

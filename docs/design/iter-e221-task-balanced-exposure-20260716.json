@@ -1,0 +1,112 @@
+{
+  "campaign": "E221 task-balanced exposure",
+  "date_utc": "2026-07-16",
+  "status": "trained_evaluated_exposure_falsified_ship_gates_failed",
+  "hypothesis": "The committed task-balanced mixture will reduce E219 record-repeat concentration under the exact matched recipe and may improve semantic coverage.",
+  "baseline": {
+    "run_id": "e219-schema-normalized-32step",
+    "draws": 128,
+    "unique_records": 54,
+    "effective_records": 29.9,
+    "effective_ratio": 0.2336
+  },
+  "matrix": {
+    "campaign_id": "e221-task-balanced-exposure-v4",
+    "candidate_count": 5,
+    "recommended_experiment_id": "e221-canonical-task-balanced"
+  },
+  "launch_failures": [
+    {
+      "campaign_id": "e221-task-balanced-exposure",
+      "stage": "matrix_validation",
+      "error": "Frozen campaign allowlist excluded newly added local_files_only and sync_checkpoints knobs."
+    },
+    {
+      "campaign_id": "e221-task-balanced-exposure-v2",
+      "stage": "process_launch",
+      "error": "Bare python executable was unavailable; no child process started."
+    },
+    {
+      "campaign_id": "e221-task-balanced-exposure-v3",
+      "stage": "mixture_load",
+      "error": "Runtime loader expected a bare manifest while the canonical pipeline artifact used a nested manifest envelope."
+    },
+    {
+      "campaign_id": "e221-task-balanced-exposure-v4",
+      "stage": "evaluation_data_resolution",
+      "error": "The typed compiler targeted nonexistent outputs/data/eval/v1 instead of a canonical published eval version."
+    }
+  ],
+  "recipe": {
+    "device": "cpu",
+    "steps_requested": 32,
+    "steps_completed": 32,
+    "batch_size": 4,
+    "seed": 0,
+    "context_backend": "hf_local_files_only",
+    "output_tokenizer": "lexer",
+    "compiler_alignment_loss_weight": 1.0,
+    "compiler_alignment_stratified": true,
+    "compiler_decode_mode": "tree",
+    "schema_in_context": true,
+    "slot_contract_in_context": true,
+    "design_md_in_context": false,
+    "checkpoint_sync": false
+  },
+  "train_result": {
+    "run_id": "e221-canonical-task-balanced",
+    "campaign_id": "e221-task-balanced-exposure-v4",
+    "last_loss": 14.17477035522461,
+    "wall_ms": 129912.372,
+    "seen_prompt_tokens": 21709,
+    "seen_target_tokens": 6185,
+    "checkpoint": "outputs/autoresearch/e221-task-balanced-exposure-v4/runs/e221-canonical-task-balanced/checkpoints/last.pt",
+    "checkpoint_sha256": "85f0fb0cd3d0790e07f8fddcd5f85e934ee70644fd31c05944c44542488bd7cd",
+    "trace_id": "a60239c3e972db82dd2f4ee0f86ff9f4",
+    "data_exposure": {
+      "draws": 128,
+      "unique_records": 80,
+      "effective_records": 29.68,
+      "effective_ratio": 0.2319,
+      "max_repeat": 18,
+      "max_repeat_id": "render_sample_edit_268f71ed9621"
+    }
+  },
+  "evaluation": {
+    "eval_version": "remediated",
+    "record_count": 19,
+    "evaluated_at": "2026-07-16T13:53:17.490354+00:00",
+    "policy": {
+      "output_tokenizer": "lexer",
+      "compiler_decode_mode": "tree",
+      "schema_in_context": true,
+      "slot_contract_in_context": true,
+      "design_md_in_context": false,
+      "local_files_only": true,
+      "allow_unconstrained_fallback": false
+    },
+    "suites": {
+      "smoke": {"n": 3, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333, "structural_similarity": 0.20973333333333333, "component_type_recall": 0.16666666666666666, "placeholder_fidelity": 0.0, "reward_score": 0.4326666666666667},
+      "held_out": {"n": 5, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.16674, "component_type_recall": 0.05, "placeholder_fidelity": 0.0, "reward_score": 0.3822},
+      "adversarial": {"n": 4, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.25, "structural_similarity": 0.34924999999999995, "component_type_recall": 0.25, "placeholder_fidelity": 0.0, "reward_score": 0.15925},
+      "ood": {"n": 4, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.25265000000000004, "component_type_recall": 0.20833333333333331, "placeholder_fidelity": 0.0, "reward_score": 0.15925},
+      "rico_held": {"n": 3, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.09006666666666667, "component_type_recall": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0}
+    },
+    "fallback_count": 0,
+    "ship_gates": {"pass": false, "failure_count": 9},
+    "agentv": {"total": 5, "passed": 1, "failed": 4, "execution_errors": 0, "mean_score": 0.6},
+    "scoreboard": "outputs/autoresearch/e221-task-balanced-exposure-v4/runs/e221-canonical-task-balanced/scoreboard.json",
+    "note": "This strict evaluation supersedes the earlier permissive policy mismatch. Constrained fallback rate remains decoder-path telemetry; fallback_count is zero and unconstrained fallback was disabled."
+  },
+  "honesty": {
+    "training_started": true,
+    "evaluation_started": true,
+    "evaluation_completed": true,
+    "checkpoint_written": true,
+    "checkpoint_synced": false,
+    "ship_gates": false,
+    "promoted": false
+  },
+  "conclusion": "Task balancing increased unique records but did not improve effective exposure because an undersized renderer cell was repeated 18 times. The exposure hypothesis is falsified; future sampler work must account for cell capacity rather than only task and family weights.",
+  "next_action": "Test a generalized capacity-aware sampler that limits replacement concentration according to cell capacity, after reconciling the branch with latest main."
+}

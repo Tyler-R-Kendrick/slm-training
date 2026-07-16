@@ -1,0 +1,29 @@
+{
+  "campaign": "E224 semantic-exhaustive alignment",
+  "date_utc": "2026-07-16",
+  "status": "alignment_executed_hypothesis_falsified_ship_gates_failed",
+  "hypothesis": "Aligning every grammar-derived AST-role decision will improve meaningful semantics beyond E223 one-per-kind alignment.",
+  "matrix": {"campaign_id": "e224-semantic-exhaustive-alignment", "matrix_id": "e224-matrix-1", "candidate_count": 5, "recommended_experiment_id": "e224-semantic-exhaustive-matched"},
+  "recipe": {"device": "cpu", "steps": 32, "batch_size": 4, "learning_rate": 0.0003, "seed": 0, "context_backend": "hf_local_files_only", "train_version": "e218_schema_normalized_judge_v5", "eval_version": "remediated", "output_tokenizer": "lexer", "compiler_alignment_loss_weight": 1.0, "compiler_alignment_stratified": true, "compiler_alignment_semantic_exhaustive": true, "compiler_decode_mode": "tree", "schema_in_context": true, "slot_contract_in_context": true, "design_md_in_context": false, "allow_unconstrained_fallback": false, "mixture_sampling_policy": "quota_capacity_aware", "checkpoint_sync": false},
+  "train_result": {"run_id": "e224-semantic-exhaustive-matched", "last_loss": 15.978597640991211, "wall_ms": 158526.771, "seen_prompt_tokens": 22924, "seen_target_tokens": 6401, "alignment_rows": 1901, "semantic_alignment_rows": 1123, "baseline_alignment_rows": 1421, "baseline_semantic_alignment_rows": 643, "checkpoint": "outputs/autoresearch/e224-semantic-exhaustive-alignment/runs/e224-semantic-exhaustive-matched/checkpoints/last.pt", "checkpoint_sha256": "c9f38df18bd9156250e0bf5cc72a143d83f9b53cb38f90ac19078545622bb8ef", "trace_id": "391a0d48746b259ab3f9b1a6208b9907"},
+  "exposure": {"draws": 128, "unique_records": 103, "unique_ratio": 0.8047, "effective_records": 81.11, "effective_ratio": 0.6337, "max_repeat": 4},
+  "evaluation": {
+    "evaluated_at": "2026-07-16T14:29:37.995649+00:00",
+    "identical_to_e223": true,
+    "suites": {
+      "smoke": {"n": 3, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.30943333333333334, "component_type_recall": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0},
+      "held_out": {"n": 5, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.25139999999999996, "component_type_recall": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0},
+      "adversarial": {"n": 4, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.29050000000000004, "component_type_recall": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0},
+      "ood": {"n": 4, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.236875, "component_type_recall": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0},
+      "rico_held": {"n": 3, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.09006666666666667, "component_type_recall": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0}
+    },
+    "fallback_count": 0,
+    "constrained_fallback_rate": 0.0,
+    "ship_gates": {"pass": false, "failure_count": 12},
+    "agentv": {"total": 5, "passed": 0, "failed": 5, "execution_errors": 0, "mean_score": 0.5},
+    "scoreboard": "outputs/autoresearch/e224-semantic-exhaustive-alignment/runs/e224-semantic-exhaustive-matched/scoreboard.json"
+  },
+  "honesty": {"training_completed": true, "evaluation_completed": true, "checkpoint_written": true, "checkpoint_synced": false, "ship_gates": false, "promoted": false},
+  "conclusion": "Semantic alignment coverage increased materially and changed checkpoint weights, but strict outputs and metrics were unchanged. Independent per-state coverage is not the missing semantic lever.",
+  "next_action": "Diagnose coupled AST-decision objectives and decode expressivity before proposing another train; do not increase per-state alignment quantity again."
+}

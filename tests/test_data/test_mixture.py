@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import random
+from collections import Counter
 from pathlib import Path
 
 from slm_training.data.mixture import (
@@ -17,6 +18,7 @@ from slm_training.data.mixture import (
     mixture_hash,
     propose_from_fit,
     sample_mixture_batch,
+    task_group,
     write_mixture_manifest,
 )
 from slm_training.dsl.schema import ExampleRecord
@@ -126,6 +128,108 @@ def test_task_balanced_sampling_ignores_row_count_skew() -> None:
     assert 430 < generation < 570
 
 
+def test_capacity_aware_sampling_limits_repeats_to_pool_cycles() -> None:
+    records = [
+        ExampleRecord(
+            id=f"generation-{i}",
+            prompt="generate",
+            openui='root = Button(":x")',
+            meta={"source_family": "programspec_generated", "task": "generation"},
+        )
+        for i in range(20)
+    ] + [
+        ExampleRecord(
+            id="single-repair",
+            prompt="repair",
+            openui='root = Button(":x")',
+            meta={"source_family": "corruption_repair", "task": "repair"},
+        )
+    ]
+
+    batch = sample_mixture_batch(
+        records,
+        weights={"programspec_generated": 0.5, "corruption_repair": 0.5},
+        task_weights={"generation": 0.5, "repair_completion_inpaint": 0.5},
+        batch_size=21,
+        rng=random.Random(9),
+        sampling_policy="capacity_aware",
+    )
+
+    assert len({record.id for record in batch}) == 21
+    assert sum(record.id == "single-repair" for record in batch) == 1
+
+
+def test_capacity_aware_sampling_is_deterministic_and_cycles() -> None:
+    records = [_rec(f"r{i}", "rico_real") for i in range(3)]
+    first = sample_mixture_batch(
+        records,
+        weights={"rico_real": 1.0},
+        batch_size=7,
+        rng=random.Random(4),
+        sampling_policy="capacity_aware",
+    )
+    second = sample_mixture_batch(
+        records,
+        weights={"rico_real": 1.0},
+        batch_size=7,
+        rng=random.Random(4),
+        sampling_policy="capacity_aware",
+    )
+
+    assert [record.id for record in first] == [record.id for record in second]
+    assert len({record.id for record in first[:3]}) == 3
+    assert len({record.id for record in first[3:6]}) == 3
+
+
+def test_quota_capacity_aware_sampling_preserves_task_allocation() -> None:
+    records = [
+        ExampleRecord(
+            id=f"generation-{i}",
+            prompt="generate",
+            openui='root = Button(":x")',
+            meta={"source_family": "programspec_generated", "task": "generation"},
+        )
+        for i in range(20)
+    ] + [
+        ExampleRecord(
+            id=f"repair-{i}",
+            prompt="repair",
+            openui='root = Button(":x")',
+            meta={"source_family": "corruption_repair", "task": "repair"},
+        )
+        for i in range(20)
+    ] + [
+        ExampleRecord(
+            id=f"edit-{i}",
+            prompt="edit",
+            openui='root = Button(":x")',
+            meta={"source_family": "edit_trajectory", "task": "edit"},
+        )
+        for i in range(20)
+    ]
+
+    batch = sample_mixture_batch(
+        records,
+        weights={
+            "programspec_generated": 1.0,
+            "corruption_repair": 1.0,
+            "edit_trajectory": 1.0,
+        },
+        task_weights={
+            "generation": 1.0,
+            "repair_completion_inpaint": 1.0,
+            "patch_edit": 1.0,
+        },
+        batch_size=32,
+        rng=random.Random(9),
+        sampling_policy="quota_capacity_aware",
+    )
+
+    counts = Counter(task_group(record.meta["task"]) for record in batch)
+    assert sorted(counts.values()) == [10, 11, 11]
+    assert len({record.id for record in batch}) == 32
+
+
 def test_manifest_v1_loads_without_task_policy(tmp_path: Path) -> None:
     path = tmp_path / "legacy.json"
     path.write_text(
@@ -133,6 +237,22 @@ def test_manifest_v1_loads_without_task_policy(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     assert load_mixture_manifest(path).task_weights is None
+
+
+def test_loads_canonical_pipeline_mixture_envelope(tmp_path: Path) -> None:
+    path = tmp_path / "mixture.json"
+    path.write_text(
+        '{"manifest":{"mixture_id":"canonical","version":2,'
+        '"weights":{"human_curated":1},'
+        '"task_weights":{"generation":1}},"diagnostics":{}}\n',
+        encoding="utf-8",
+    )
+
+    manifest = load_mixture_manifest(path)
+
+    assert manifest.mixture_id == "canonical"
+    assert manifest.weights == {"human_curated": 1.0}
+    assert manifest.task_weights == {"generation": 1.0}
 
 
 def test_corpus_diagnostics_reports_task_and_structure_coverage() -> None:

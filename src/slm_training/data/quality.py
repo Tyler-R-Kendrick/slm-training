@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any
 
 from slm_training.dsl.placeholders import extract_placeholders
@@ -42,6 +43,169 @@ PREFERRED_COMPONENTS = frozenset(
 )
 
 
+@lru_cache(maxsize=1)
+def _official_schema() -> dict[str, Any]:
+    """Return the generated OpenUI schema, with an offline empty fallback."""
+    try:
+        from slm_training.dsl import lang_core
+
+        schema = lang_core.library_schema()
+        if isinstance(schema, dict):
+            return schema
+    except Exception:  # noqa: BLE001
+        pass
+    return {}
+
+
+@lru_cache(maxsize=1)
+def _official_component_names() -> frozenset[str]:
+    """Return the generated OpenUI component inventory, with an offline fallback."""
+    schema = _official_schema()
+    names = set(schema.get("properties") or schema.get("components") or ())
+    return frozenset(str(name) for name in names) or PREFERRED_COMPONENTS
+
+
+def _prompt_component_mentions(prompt: str) -> frozenset[str]:
+    """Find maximal schema component names mentioned in ordinary prompt prose."""
+    normalized = re.sub(r"[^a-z0-9]+", " ", prompt.lower()).strip()
+    names = _official_component_names()
+    occupied: list[tuple[int, int]] = []
+    found: set[str] = set()
+    phrases = []
+    for name in names:
+        # In ordinary prose, "buttons" means plural Button. Explicit requests such
+        # as "the Buttons component" are resolved separately by the exact matcher.
+        if name.endswith("s") and name[:-1] in names:
+            continue
+        phrase = re.sub(r"(?<!^)(?=[A-Z])", " ", name).lower()
+        phrases.append((name, phrase))
+    for name, phrase in sorted(phrases, key=lambda item: len(item[1]), reverse=True):
+        for match in re.finditer(rf"\b{re.escape(phrase)}s?\b", normalized):
+            span = match.span()
+            if any(span[0] < end and start < span[1] for start, end in occupied):
+                continue
+            occupied.append(span)
+            found.add(name)
+    return frozenset(found)
+
+
+def _semantic_request(record: ExampleRecord) -> str:
+    """Return the authored request, excluding embedded edit-program context."""
+    edit = record.meta.get("edit")
+    if isinstance(edit, dict) and isinstance(edit.get("instruction"), str):
+        return edit["instruction"]
+    if isinstance(record.meta.get("repair"), dict):
+        return ""
+    return record.prompt
+
+
+def _ast_component_names(value: Any) -> frozenset[str]:
+    """Collect component types from a generated OpenUI AST."""
+    found: set[str] = set()
+    if isinstance(value, dict):
+        type_name = value.get("typeName")
+        if isinstance(type_name, str):
+            found.add(type_name)
+        for child in value.values():
+            found.update(_ast_component_names(child))
+    elif isinstance(value, list):
+        for child in value:
+            found.update(_ast_component_names(child))
+    return frozenset(found)
+
+
+def _matches_schema_value(
+    value: Any, spec: dict[str, Any], definitions: dict[str, Any]
+) -> bool:
+    enum = spec.get("enum")
+    if isinstance(enum, list):
+        return value in enum
+    if "anyOf" in spec:
+        return any(
+            _matches_schema_value(value, branch, definitions)
+            for branch in spec["anyOf"]
+            if isinstance(branch, dict)
+        )
+    reference = spec.get("$ref")
+    if isinstance(reference, str):
+        expected = reference.rsplit("/", 1)[-1]
+        return isinstance(value, dict) and value.get("typeName") == expected
+    expected_type = spec.get("type")
+    if expected_type == "array":
+        if not isinstance(value, list):
+            return False
+        item_spec = spec.get("items")
+        return not isinstance(item_spec, dict) or all(
+            _matches_schema_value(item, item_spec, definitions) for item in value
+        )
+    if expected_type == "object":
+        return isinstance(value, dict)
+    if expected_type == "string":
+        return isinstance(value, str)
+    if expected_type == "boolean":
+        return isinstance(value, bool)
+    if expected_type == "integer":
+        return isinstance(value, int) and not isinstance(value, bool)
+    if expected_type == "number":
+        return isinstance(value, (int, float)) and not isinstance(value, bool)
+    return True
+
+
+def _schema_semantic_reasons(openui: str) -> list[str]:
+    """Judge resolved AST property roles against the generated component schema."""
+    schema = _official_schema()
+    definitions = schema.get("$defs") or {}
+    if not definitions:
+        return []
+    try:
+        from slm_training.dsl import lang_core
+
+        program = lang_core.parse(openui)
+    except Exception:  # noqa: BLE001
+        return ["judge_schema_parse_failed"]
+    reasons: set[str] = set()
+    for error in program.meta.get("errors") or ():
+        if not isinstance(error, dict):
+            continue
+        code = str(error.get("code") or "unknown")
+        component = str(error.get("component") or "unknown")
+        path = str(error.get("path") or "").strip("/").replace("/", ".")
+        reasons.add(f"schema_parser_error:{code}:{component}.{path}".rstrip("."))
+    root = program.root
+    if root is None:
+        return sorted(reasons) or ["judge_schema_parse_failed"]
+
+    def visit(value: Any) -> None:
+        if isinstance(value, dict):
+            component = value.get("typeName")
+            props = value.get("props")
+            definition = definitions.get(component) if isinstance(component, str) else None
+            if isinstance(definition, dict) and isinstance(props, dict):
+                property_specs = definition.get("properties") or {}
+                required = set(definition.get("required") or ())
+                for name in required:
+                    if props.get(name) is None:
+                        reasons.add(f"schema_required_value_missing:{component}.{name}")
+                for name, prop_value in props.items():
+                    # Positional null is the language's omission sentinel for an
+                    # optional prop that precedes a later required prop.
+                    if prop_value is None and name not in required:
+                        continue
+                    spec = property_specs.get(name)
+                    if isinstance(spec, dict) and not _matches_schema_value(
+                        prop_value, spec, definitions
+                    ):
+                        reasons.add(f"schema_value_role_mismatch:{component}.{name}")
+            for child in value.values():
+                visit(child)
+        elif isinstance(value, list):
+            for child in value:
+                visit(child)
+
+    visit(root)
+    return sorted(reasons)
+
+
 @dataclass(frozen=True)
 class QualityReport:
     ok: bool
@@ -63,7 +227,8 @@ def independent_judge(record: ExampleRecord) -> dict[str, Any]:
     prompt = (record.prompt or "").strip()
     openui = (record.openui or "").strip()
     components = component_counts(openui)
-    lowered_prompt = prompt.lower()
+    request = _semantic_request(record)
+    lowered_prompt = request.lower()
     reasons: list[str] = []
     if record.target_kind != "document":
         from slm_training.dsl.parser import ParseError, validate_output
@@ -78,15 +243,21 @@ def independent_judge(record: ExampleRecord) -> dict[str, Any]:
                 )
         except (ParseError, ValueError, RuntimeError) as exc:
             reasons.append(f"invalid_output_contract:{exc}")
+    repair = record.meta.get("repair")
+    repair_ast = repair.get("clean_ast") if isinstance(repair, dict) else None
+    targets = set(_ast_component_names(repair_ast))
+    targets.update(_prompt_component_mentions(request))
     target = None
-    component_match = _COMPONENT_PROMPT_RE.search(prompt)
+    component_match = _COMPONENT_PROMPT_RE.search(request)
     if component_match:
         target = component_match.group(1)
     else:
-        construct_match = _CONSTRUCT_PROMPT_RE.search(prompt)
+        construct_match = _CONSTRUCT_PROMPT_RE.search(request)
         if construct_match and construct_match.group(1).strip():
             target = construct_match.group(1).strip().split()[0]
-    if target and target[:1].isupper() and target not in components:
+    if (target and target[:1].isupper() and target not in components) or (
+        targets - set(components)
+    ):
         reasons.append("prompt_component_missing_from_output")
     if "boolean literal" in lowered_prompt:
         if not re.search(r"\b(?:true|false)\b", openui):
@@ -100,6 +271,8 @@ def independent_judge(record: ExampleRecord) -> dict[str, Any]:
         reasons.append("prompt_under_specified_for_layout")
     if not prompt or not openui:
         reasons.append("judge_missing_prompt_or_output")
+    if record.target_kind == "document":
+        reasons.extend(_schema_semantic_reasons(openui))
     return {"ok": not reasons, "score": round(max(0.0, 1.0 - 0.5 * len(reasons)), 4), "reasons": reasons}
 
 

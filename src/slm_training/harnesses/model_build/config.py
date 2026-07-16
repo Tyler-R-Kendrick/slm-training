@@ -63,6 +63,7 @@ class ModelBuildConfig:
     # P1b: optional mixture manifest (JSON) for online family-weighted sampling.
     mixture_manifest: Path | None = None
     mixture_min_quality_score: float = 0.0
+    mixture_sampling_policy: str = "with_replacement"
     # P1d: after base training, write promoted.pt from best_weighted_nll / last.
     register_promoted: bool = False
     # Stub-only
@@ -172,6 +173,9 @@ class ModelBuildConfig:
     diffusion_overallocate: int = 8
     diffusion_length_loss_weight: float = 0.1
     ltr_prefix_loss_weight: float = 0.0
+    compiler_alignment_loss_weight: float = 0.0
+    compiler_alignment_stratified: bool = False
+    compiler_alignment_semantic_exhaustive: bool = False
     symbol_boundary_loss_weight: float = 0.0
     remask_span: str = "token"  # token | statement
     teacher_init_embeddings: bool = False

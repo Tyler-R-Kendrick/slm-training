@@ -320,6 +320,7 @@ def evaluate(
     n = len(records)
     document_n = sum(record.target_kind == "document" for record in records)
     parse_ok = 0
+    syntax_parse_ok = 0
     raw_syntax_ok = 0
     fidelity_sum = 0.0
     fidelity_norm_sum = 0.0
@@ -436,7 +437,7 @@ def evaluate(
         latency_ms: float,
         prediction_evidence: dict[str, Any] | None = None,
     ) -> None:
-        nonlocal parse_ok, raw_syntax_ok, fidelity_sum, fidelity_norm_sum, validity_sum
+        nonlocal parse_ok, syntax_parse_ok, raw_syntax_ok, fidelity_sum, fidelity_norm_sum, validity_sum
         nonlocal exact_sum, struct_sum, tree_edit_sum, reward_sum, recall_sum
         nonlocal contract_precision_sum, contract_recall_sum
         evidence = dict(prediction_evidence or {})
@@ -488,7 +489,9 @@ def evaluate(
             failure_breakdown[bucket] = failure_breakdown.get(bucket, 0) + 1
         if ok:
             parse_ok += 1
-        if _raw_syntax_valid(scored_pred):
+        syntax_ok = _raw_syntax_valid(scored_pred)
+        if syntax_ok:
+            syntax_parse_ok += 1
             raw_syntax_ok += 1
         fid = _placeholder_fidelity(scored_pred, record)
         fid_norm = _placeholder_fidelity_normalized(scored_pred, record)
@@ -531,6 +534,7 @@ def evaluate(
             {
                 "id": record.id,
                 "parse_ok": ok,
+                "syntax_parse_valid": syntax_ok,
                 "raw_syntax_valid": _raw_syntax_valid(scored_pred),
                 "error": error,
                 "placeholder_fidelity": fid,
@@ -663,6 +667,10 @@ def evaluate(
             "grammar_ltr_max_tokens": int(config.grammar_ltr_max_tokens),
         },
         "parse_rate": (parse_ok / document_n) if document_n else 0.0,
+        "meaningful_program_rate": (parse_ok / document_n) if document_n else 0.0,
+        "syntax_parse_rate": (
+            (syntax_parse_ok / document_n) if document_n else 0.0
+        ),
         "raw_syntax_validity": (raw_syntax_ok / document_n) if document_n else 0.0,
         "contract_precision": (contract_precision_sum / document_n) if document_n else 0.0,
         "contract_recall": (contract_recall_sum / document_n) if document_n else 0.0,

@@ -85,6 +85,10 @@ class _Builder:
     def _arg(self, prop: str, schema: dict, prefix: str) -> str:
         if not isinstance(schema, dict):
             schema = {}
+        branches = schema.get("anyOf")
+        if isinstance(branches, list):
+            branch = next((item for item in branches if isinstance(item, dict)), {})
+            return self._arg(prop, branch, prefix)
         if "enum" in schema:
             return f'"{schema["enum"][0]}"'
         kind = schema.get("type")

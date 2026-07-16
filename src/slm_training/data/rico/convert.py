@@ -6,6 +6,7 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
+from slm_training.data.contract import generated_enum_literal, generated_value_literal
 from slm_training.data.rico.labels import MAPPABLE_LABELS
 from slm_training.dsl.schema import ExampleRecord
 
@@ -157,7 +158,12 @@ def screen_to_openui(
         elif role == "slider":
             ph = f":{name}.label"
             placeholders.append(ph)
-            lines.append(f'{name} = Slider("{name}", "default", 0, 100, 1, 50, "{ph}")')
+            variant = generated_enum_literal("Slider", "variant")
+            default_value = generated_value_literal("Slider", "defaultValue", "50")
+            lines.append(
+                f'{name} = Slider("{name}", {variant}, 0, 100, 1, '
+                f'{default_value}, "{ph}")'
+            )
         elif role == "datepicker":
             lines.append(f'{name} = DatePicker("{name}")')
         elif role == "checkbox":

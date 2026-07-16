@@ -1,0 +1,13 @@
+{
+  "mixture_id": "e218-schema-normalized-semantic-balanced",
+  "weights": {
+    "corruption_repair": 0.15,
+    "edit_trajectory": 0.15,
+    "human_curated": 0.5,
+    "programspec_generated": 0.1,
+    "renderer_visual": 0.05,
+    "web_distilled": 0.05
+  },
+  "notes": "Matched E212/E215 control: preserve semantic-balanced family weights after generated-schema normalization and corrected G11 admission.",
+  "version": 2
+}

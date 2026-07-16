@@ -35,6 +35,35 @@ _BIAS_CACHE: dict[tuple[int, float, str, str], object] = {}
 _ACTIVE_DSL: str | None = None
 
 
+def _token_surface_piece(tokenizer: OpenUITokenizer, token_id: int) -> str:
+    """Decode one token into the partial source consumed by the grammar."""
+    tid = int(token_id)
+    if tid in {
+        tokenizer.pad_id,
+        tokenizer.bos_id,
+        tokenizer.eos_id,
+        tokenizer.mask_id,
+    }:
+        return ""
+    raw = tokenizer.id_to_token.get(tid, "")
+    if raw == "NL":
+        return "\n"
+    if raw in {"LIT_STR", "LIT_END"}:
+        return '"'
+    if raw.startswith("B:"):
+        try:
+            return chr(int(raw[2:], 16))
+        except ValueError:
+            return raw
+    kind_of = getattr(tokenizer, "kind_of", None)
+    kind = getattr(kind_of(tid), "value", "") if callable(kind_of) else ""
+    if kind in {"sym", "bind", "state", "lit"} or not raw:
+        decoded = tokenizer.decode([tid])
+        if decoded:
+            return decoded
+    return raw
+
+
 def set_active_dsl(dsl: str | None) -> None:
     """Select grammar backend id used by stream_check / structural priors."""
     global _ACTIVE_DSL, _STREAM_CACHE, _STRUCT_ID_CACHE, _BIAS_CACHE
@@ -228,32 +257,7 @@ class GrammarDecodeState:
         # Native lexer ids (e.g. <BIND_0>) are not surface text. Decode the
         # emitted id before advancing the DFA or its prefix diverges from the
         # text that will be parsed.
-        tid = int(token_id)
-        # Framing tokens are not OpenUI surface text. Feeding BOS/EOS into the
-        # incremental parser poisons the cached prefix before root decode.
-        special = {
-            tokenizer.pad_id,
-            tokenizer.bos_id,
-            tokenizer.eos_id,
-            tokenizer.mask_id,
-        }
-        is_special = tid in special
-        chunk = "" if is_special else tokenizer.id_to_token.get(tid, "")
-        if chunk == "NL":
-            chunk = "\n"
-        elif chunk in {"LIT_STR", "LIT_END"}:
-            chunk = '"'
-        elif chunk.startswith("B:"):
-            try:
-                chunk = chr(int(chunk[2:], 16))
-            except ValueError:
-                pass
-        elif not is_special and (
-            chunk == "" or chunk.startswith(("<BIND_", "<SYM_", "<STATE_"))
-        ):
-            chunk = tokenizer.decode([int(token_id)])
-        if not is_special and chunk == "":
-            chunk = tokenizer.id_to_token.get(int(token_id), "")
+        chunk = _token_surface_piece(tokenizer, int(token_id))
         self.prefix_text = self.prefix_text + chunk
         if stats is not None:
             stats.detok_ms += (time.perf_counter() - t0) * 1000.0
@@ -431,18 +435,7 @@ def dfa_admits_token(
     if state is not None and tid in state.admit_memo:
         return state.admit_memo[tid]
 
-    chunk = tokenizer.id_to_token.get(tid, "")
-    if chunk == "NL":
-        chunk = "\n"
-    elif chunk in {"LIT_STR", "LIT_END"}:
-        chunk = '"'
-    elif chunk.startswith("B:"):
-        try:
-            chunk = chr(int(chunk[2:], 16))
-        except ValueError:
-            pass
-    elif chunk == "" or chunk.startswith(("<BIND_", "<SYM_", "<STATE_")):
-        chunk = tokenizer.decode([tid])
+    chunk = _token_surface_piece(tokenizer, tid)
 
     if prefix_text is None:
         if state is not None:

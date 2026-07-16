@@ -280,6 +280,15 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         ltr_prefix_loss_weight=float(
             getattr(config, "ltr_prefix_loss_weight", 0.0) or 0.0
         ),
+        compiler_alignment_loss_weight=float(
+            getattr(config, "compiler_alignment_loss_weight", 0.0) or 0.0
+        ),
+        compiler_alignment_stratified=bool(
+            getattr(config, "compiler_alignment_stratified", False)
+        ),
+        compiler_alignment_semantic_exhaustive=bool(
+            getattr(config, "compiler_alignment_semantic_exhaustive", False)
+        ),
         symbol_boundary_loss_weight=float(
             getattr(config, "symbol_boundary_loss_weight", 0.0) or 0.0
         ),

@@ -13,6 +13,7 @@ from slm_training.data.language_contract import (
 )
 from slm_training.data.language_contract.corpus import NEGATIVE_GATES
 from slm_training.data.contract import GenerationRequest
+from slm_training.data.quality import independent_judge
 from slm_training.data.verify import Gate, GateStatus, evaluate_gate, verify_record
 from slm_training.dsl.lang_core import bridge_available
 from slm_training.dsl.parser import lexical_tokens, validate_output
@@ -90,6 +91,16 @@ def test_all_contract_units_use_compact_gold_when_possible() -> None:
         )
         for record in records
     )
+
+
+def test_component_positives_match_generated_schema_roles() -> None:
+    for record in iter_positives():
+        schema_reasons = [
+            reason
+            for reason in independent_judge(record)["reasons"]
+            if reason.startswith("schema_") or reason == "judge_schema_parse_failed"
+        ]
+        assert schema_reasons == [], f"{record.id}: {schema_reasons}"
 
 
 def test_every_negative_fails_its_expected_gate() -> None:
