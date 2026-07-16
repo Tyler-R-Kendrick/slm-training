@@ -768,6 +768,11 @@ had syntax 0.0 and meaningful parse 0.0, so retrieval is rejected; semantic
 role coverage/supervision remains the next lever. See
 [iter-e175-retrieval-20260716.md](iter-e175-retrieval-20260716.md).
 
+E176 trained on the broader 1,417-record prompt-contract corpus. The bounded
+probe remained parse/syntax 0.0 and structure fell to 0.1187, so the broad
+corpus is rejected as a replacement. Add targeted judge-gated semantic-role
+examples instead. See [iter-e176-broad-corpus-20260716.md](iter-e176-broad-corpus-20260716.md).
+
 These rows are registered under `--matrix v8`; `--list` prints definitions
 without building data or starting a run. They require the lexer-native parent
 contract and unchanged honest five-suite gates. No result or champion is claimed.
