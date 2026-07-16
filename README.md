@@ -54,6 +54,7 @@ summary and the full card whenever a checkpoint is created or promoted.
 | E139 HF context seed-2 8-step control | `e139_hf_context_seed2_8/last.pt` | `outputs/runs/iter-e139-hf-seed2-20260715/…` (local) | Same recipe as E135 but seed 2: placeholder validity/structure/parse 0.0 with two timeouts — not ship |
 | E173 schema-context 32-step control | `e173-schema-context-32step/last.pt` | `outputs/runs/e173-schema-context-32step/…` (local) | Schema/slot context enabled; bounded syntax probe 1.0 but meaningful parse 0.0 — not ship |
 | E174 unfrozen-context 8-step control | `e174-unfrozen-context-8step/last.pt` | `outputs/runs/e174-unfrozen-context-8step/…` (local) | Unfrozen context regressed bounded syntax to 0.0; rejected control — not ship |
+| E175 retrieval 8-step control | `e175-retrieval-8step/last.pt` | `outputs/runs/e175-retrieval-8step/…` (local) | Retrieval k=4 regressed bounded syntax/parse to 0.0; rejected control — not ship |
 | Matrix honest champion | V6 E53 family | `outputs/runs/` + matrix docs | Scratch + limited `rico_held` — not production HF ship |
 | P13 matched E50 controls | fixture + integrated E50 | `/tmp/slm17-e50-*-honest/` (local scratch) | Integrated fidelity +0.04 held / +0.0333 RICO; parse 0.0, not ship |
 | Frozen X2 baseline | `gx_x2_codec` seeds 0/1/2 | `/tmp/slm-training-fixed-baseline/outputs/topology_baseline/` | Fixed-canvas comparison scored zero on all suites; not ship |

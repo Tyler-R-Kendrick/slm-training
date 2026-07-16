@@ -763,6 +763,11 @@ the bounded syntax probe fell to 0.0, so the control is rejected; retain frozen
 context while improving semantic data coverage. See
 [iter-e174-unfrozen-context-20260716.md](iter-e174-unfrozen-context-20260716.md).
 
+E175 added retrieval k=4 to frozen schema-context training. The bounded probe
+had syntax 0.0 and meaningful parse 0.0, so retrieval is rejected; semantic
+role coverage/supervision remains the next lever. See
+[iter-e175-retrieval-20260716.md](iter-e175-retrieval-20260716.md).
+
 These rows are registered under `--matrix v8`; `--list` prints definitions
 without building data or starting a run. They require the lexer-native parent
 contract and unchanged honest five-suite gates. No result or champion is claimed.

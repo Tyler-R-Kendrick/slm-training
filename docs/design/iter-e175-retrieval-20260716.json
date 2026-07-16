@@ -1,0 +1,38 @@
+{
+  "iteration": "E175",
+  "date": "2026-07-16",
+  "objective": "Test retrieval-conditioned semantic supervision with frozen HF context and schema context.",
+  "training": {
+    "run_id": "e175-retrieval-8step",
+    "checkpoint": "outputs/runs/e175-retrieval-8step/checkpoints/last.pt",
+    "steps": 8,
+    "last_loss": 27.97077751159668,
+    "device": "cpu",
+    "context_backend": "hf",
+    "freeze_context": true,
+    "schema_in_context": true,
+    "retrieval_k": 4,
+    "no_sync_checkpoints": true,
+    "telemetry": "outputs/runs/e175-retrieval-8step/train_telemetry.json",
+    "metrics": "outputs/runs/e175-retrieval-8step/metrics.jsonl"
+  },
+  "evaluation": {
+    "kind": "bounded_probe",
+    "suite": "smoke",
+    "suite_n": 1,
+    "compiler_decode_mode": "tree",
+    "allow_unconstrained_fallback": false,
+    "parse_rate": 0.0,
+    "syntax_parse_rate": 0.0,
+    "structural_similarity": 0.3163,
+    "component_type_recall": 0.25,
+    "latency_ms_p50": 7915.64,
+    "decode_timeout_count": 0,
+    "compiler_fallbacks": 0,
+    "seeded_fallbacks": 0,
+    "eval": "outputs/runs/e175-retrieval-probe/eval_smoke.json",
+    "agentv": "outputs/runs/e175-retrieval-probe/agentv/openui-model-ship-gates-2026-07-16t04-41-21-086221-00-00.eval.jsonl"
+  },
+  "harness_note": "The first invocation correctly refused post-train HF bucket sync without HF_TOKEN; rerun used --no-sync-checkpoints for local scratch classification.",
+  "conclusion": "Retrieval k=4 did not improve semantic component selection and lowered bounded syntax validity. Reject this control; improve semantic role coverage/supervision in the corpus."
+}
