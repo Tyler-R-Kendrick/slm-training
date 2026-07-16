@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import hashlib
+import random
 from dataclasses import dataclass, field
-from typing import Mapping
+from typing import Callable, Mapping, TypeVar
 
 from slm_training.dsl.grammar.fastpath.compiler_draft import (
     CompletionForest,
@@ -13,6 +14,7 @@ from slm_training.dsl.grammar.fastpath.compiler_draft import (
 
 PathKey = tuple[int, ...]
 Nogood = tuple[tuple[int, ...], PathKey]
+T = TypeVar("T")
 
 
 def path_key(path: CompletionPath) -> PathKey:
@@ -72,6 +74,65 @@ def refine_hard_paths(
     if any(path_key(path) not in allowed for path in projected):
         raise ValueError("hard refinement cannot add candidates")
     return projected
+
+
+@dataclass
+class StagnationTracker:
+    """Detect repeated hard states without prefix progress."""
+
+    patience: int = 2
+    last: tuple[str, int] | None = None
+    repeats: int = 0
+
+    def observe(self, signature: str, progress: int) -> bool:
+        current = (signature, int(progress))
+        self.repeats = self.repeats + 1 if current == self.last else 0
+        self.last = current
+        return self.repeats >= max(1, int(self.patience))
+
+
+def trajectory_orders(
+    ranked: RankedForest,
+    *,
+    width: int,
+    noise: float,
+    seed: int,
+) -> tuple[tuple[CompletionPath, ...], ...]:
+    """Return seeded soft permutations without changing hard membership."""
+    width = max(1, int(width))
+    orders: list[tuple[CompletionPath, ...]] = []
+    for trajectory in range(width):
+        rng = random.Random(f"{seed}:{ranked.signature}:{trajectory}")
+        decorated = [
+            (
+                -(
+                    float(score)
+                    + (rng.uniform(-noise, noise) if noise > 0 else 0.0)
+                ),
+                path_key(path),
+                path,
+            )
+            for path, score in zip(ranked.paths, ranked.scores, strict=True)
+        ]
+        order = tuple(row[2] for row in sorted(decorated))
+        if order not in orders:
+            orders.append(order)
+    return tuple(orders)
+
+
+def deduplicate_semantic_candidates(
+    candidates: tuple[T, ...], fingerprint: Callable[[T], str]
+) -> tuple[T, ...]:
+    """Keep the first validated candidate for each semantic fingerprint."""
+    seen: set[str] = set()
+    unique: list[T] = []
+    for candidate in candidates:
+        key = str(fingerprint(candidate))
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(candidate)
+    return tuple(unique)
 
 
 @dataclass(frozen=True)
@@ -138,7 +199,10 @@ __all__ = [
     "PathKey",
     "RankedForest",
     "SearchDecision",
+    "StagnationTracker",
+    "deduplicate_semantic_candidates",
     "path_key",
     "rank_forest",
     "refine_hard_paths",
+    "trajectory_orders",
 ]

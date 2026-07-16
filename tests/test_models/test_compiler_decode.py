@@ -518,7 +518,7 @@ def test_lattice_search_rejects_unknown_mode() -> None:
     model = _model()
     model.config.compiler_search_mode = "unknown"
     ctx, ctx_pad = model._encode_context(["card"])
-    with pytest.raises(ValueError, match="must be greedy or lattice"):
+    with pytest.raises(ValueError, match="must be greedy, lattice, ptrm, or gram"):
         model._compiler_ltr_decode_one(
             ctx, ctx_pad, 24, mode="tree", slot_contract=None
         )
@@ -540,3 +540,25 @@ def test_lattice_search_matches_greedy_without_conflict() -> None:
     assert torch.equal(ids, expected)
     assert stats.compiler_lattice_states > 0
     assert stats.compiler_lattice_candidates >= stats.compiler_lattice_states
+
+
+def test_ptrm_trajectory_policy_is_seed_reproducible() -> None:
+    model = _model()
+    model.config.compiler_search_mode = "ptrm"
+    model.config.compiler_search_trigger = "always"
+    model.config.compiler_search_width = 4
+    model.config.compiler_search_noise = 1.0
+    ctx, ctx_pad = model._encode_context(["card"])
+    with collect_decode_stats() as left_stats:
+        left = model._compiler_ltr_decode_one(
+            ctx, ctx_pad, 24, mode="tree", slot_contract=None
+        )
+    with collect_decode_stats() as right_stats:
+        right = model._compiler_ltr_decode_one(
+            ctx, ctx_pad, 24, mode="tree", slot_contract=None
+        )
+    assert torch.equal(left, right)
+    assert left_stats.compiler_lattice_trajectory_triggers > 0
+    assert left_stats.compiler_lattice_trajectories == (
+        right_stats.compiler_lattice_trajectories
+    )

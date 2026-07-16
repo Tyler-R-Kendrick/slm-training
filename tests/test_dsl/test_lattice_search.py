@@ -8,8 +8,11 @@ from slm_training.dsl.grammar.fastpath.compiler_draft import (
 )
 from slm_training.dsl.grammar.fastpath.lattice_search import (
     LatticeSearchState,
+    StagnationTracker,
+    deduplicate_semantic_candidates,
     rank_forest,
     refine_hard_paths,
+    trajectory_orders,
 )
 
 
@@ -72,3 +75,28 @@ def test_backtracking_is_bounded() -> None:
     )
     assert state.rollback() == ([1], second)
     assert state.rollback() is None
+
+
+def test_stagnation_requires_same_state_without_progress() -> None:
+    tracker = StagnationTracker(patience=1)
+    assert not tracker.observe("state", 4)
+    assert not tracker.observe("state", 5)
+    assert tracker.observe("state", 5)
+
+
+def test_trajectories_are_seeded_and_never_add_illegal_paths() -> None:
+    paths = _paths()
+    ranked = rank_forest(CompletionForest(paths, "complete"))
+    left = trajectory_orders(ranked, width=8, noise=2.0, seed=7)
+    right = trajectory_orders(ranked, width=8, noise=2.0, seed=7)
+    assert left == right
+    assert left
+    assert all(set(order) == set(paths) for order in left)
+
+
+def test_semantic_deduplication_keeps_first_candidate() -> None:
+    candidates = ("root = Card()", "root=Card()", "root = Stack([])")
+    unique = deduplicate_semantic_candidates(
+        candidates, lambda text: "card" if "Card" in text else "stack"
+    )
+    assert unique == ("root = Card()", "root = Stack([])")

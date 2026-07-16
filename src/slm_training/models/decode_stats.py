@@ -47,6 +47,9 @@ class DecodeStats:
     compiler_lattice_rollbacks: int = 0
     compiler_lattice_nogoods: int = 0
     compiler_lattice_nogood_hits: int = 0
+    compiler_lattice_trajectory_triggers: int = 0
+    compiler_lattice_trajectories: int = 0
+    compiler_lattice_unique_proposals: int = 0
     compiler_lattice_last_signature: str = ""
     template_fastpath_count: int = 0
     template_fallback_count: int = 0
@@ -163,6 +166,9 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "compiler_lattice_rollbacks",
         "compiler_lattice_nogoods",
         "compiler_lattice_nogood_hits",
+        "compiler_lattice_trajectory_triggers",
+        "compiler_lattice_trajectories",
+        "compiler_lattice_unique_proposals",
         "constrained_dead_ends",
         "constrained_dead_end_last_position",
         "constrained_dead_end_forced_rank",
