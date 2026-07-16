@@ -971,6 +971,13 @@ def pick_constrained_token(
             return int(forced_token_id)
         forced_token_id = None
 
+    # The post-filtered DFA set is authoritative. Do not let an invalid model
+    # argmax or an empty probe expansion erase a proven singleton choice.
+    if singleton_allowed is not None and _legal(singleton_allowed):
+        if stats is not None:
+            stats.pick_ms += (time.perf_counter() - pick_t0) * 1000.0
+        return singleton_allowed
+
     # P2: verify the model-chosen token first; only expand on rejection.
     if vco and not sample:
         argmax_id = int(logits_1d.argmax().item())
