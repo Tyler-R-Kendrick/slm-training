@@ -1,7 +1,8 @@
 {
   "campaign": "E225 compiler-tree evaluation invariant",
   "date_utc": "2026-07-16",
-  "status": "evaluator_fixed_tree_path_active_ship_gates_failed",
+  "status": "superseded_by_e226_request_dispatch_fix",
+  "superseded_by": "iter-e226-honest-compiler-policy-20260716.json",
   "training_run": false,
   "checkpoint_run_id": "e224-semantic-exhaustive-matched",
   "checkpoint_sha256": "c9f38df18bd9156250e0bf5cc72a143d83f9b53cb38f90ac19078545622bb8ef",

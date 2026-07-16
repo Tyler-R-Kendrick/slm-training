@@ -343,8 +343,10 @@ def main(argv: list[str] | None = None) -> int:
         grammar_ltr_repair=args.grammar_ltr_repair,
         schema_in_context=args.schema_in_context,
         slot_contract_in_context=args.slot_contract_in_context,
-        slot_contract_constrained_decode=args.slot_contract_constrained_decode,
-        honest_slot_contract=args.honest_slot_contract,
+        slot_contract_constrained_decode=(
+            args.slot_contract_constrained_decode or args.ship_gates
+        ),
+        honest_slot_contract=(args.honest_slot_contract or args.ship_gates),
         contract_template_fastpath=args.contract_template_fastpath,
         retrieval_k=args.retrieval_k,
         best_of_n=args.best_of_n,

@@ -11,6 +11,7 @@ from slm_training.dsl.grammar.fastpath.compiler_draft import (
     gold_compiler_decision_positions,
 )
 from slm_training.dsl.schema import ExampleRecord
+from slm_training.data.contract import GenerationRequest
 from slm_training.models.blocks import DenoiserTower
 from slm_training.models.decode_stats import collect_decode_stats
 from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
@@ -299,6 +300,11 @@ def test_completion_forest_tracks_forward_binder_scope() -> None:
     ]
     forest = build_completion_forest(tokenizer, unresolved)
     assert tokenizer.eos_id not in forest.candidate_ids
+    postfix_ids = {
+        tokenizer.token_to_id[token]
+        for token in ("[", ".", "?", "+", "-", "*", "/", "%", ">", "<")
+    }
+    assert not (set(forest.candidate_ids) & postfix_ids)
 
     resolved = [
         tokenizer.bos_id,
@@ -328,7 +334,6 @@ def test_gold_decisions_follow_compiler_forest() -> None:
     kinds = {decision.kind for decision in gold_compiler_decisions(tokenizer, target)}
     assert {
         "bind_declaration_root",
-        "bind_declaration_bound",
         "bind_reference_root_children",
         "component_root",
         "component_bound",
@@ -411,7 +416,7 @@ def test_compiler_alignment_can_stratify_grammar_decision_kinds() -> None:
     metrics = model.last_training_metrics
     assert metrics["compiler_alignment_rows"] > 1
     assert metrics["compiler_alignment_bind_declaration_root_rows"] == 1
-    assert metrics["compiler_alignment_bind_declaration_bound_rows"] == 1
+    assert "compiler_alignment_bind_declaration_bound_rows" not in metrics
     assert metrics["compiler_alignment_bind_reference_root_children_rows"] == 1
     assert metrics["compiler_alignment_component_root_rows"] == 1
     assert metrics["compiler_alignment_component_bound_rows"] == 1
@@ -479,3 +484,24 @@ def test_maskgit_fallback_keeps_compiler_prefix_visible() -> None:
 
 def test_compiler_decode_is_opt_in() -> None:
     assert TwoTowerConfig().compiler_decode_mode == "off"
+
+
+def test_compiler_decode_reserves_room_beyond_predicted_length(monkeypatch) -> None:
+    model = _model()
+    model.config.compiler_decode_mode = "tree"
+    model.config.grammar_ltr_primary = True
+    model.config.grammar_draft_window = 5
+    monkeypatch.setattr(model, "_predict_target_lengths", lambda *_: [12])
+    observed: list[int] = []
+
+    def decode(_ctx, _ctx_pad, length: int) -> torch.Tensor:
+        observed.append(length)
+        return torch.full((1, length), model.tokenizer.eos_id, dtype=torch.long)
+
+    monkeypatch.setattr(model, "_greedy_ltr_decode_batch", decode)
+    monkeypatch.setattr(model, "_decode_ids", lambda _ids: "root = Stack([])")
+    monkeypatch.setattr(model, "_ensure_valid_openui", lambda text, *_a, **_k: text)
+    assert model.generate_batch_requests([GenerationRequest(prompt="card")]) == [
+        "root = Stack([])"
+    ]
+    assert observed == [17]

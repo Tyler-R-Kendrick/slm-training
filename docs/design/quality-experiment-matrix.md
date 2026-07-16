@@ -879,6 +879,16 @@ python -m scripts.run_quality_matrix --matrix v8 --list
 Any execution must add AgentEvals/AgentV evidence, result JSON, recipe/suite sizes,
 and a matching measured-results update before the run is considered complete.
 
+E226 corrects the E225 evaluation contract without training a new checkpoint.
+Telemetry now wraps the production request API, ship evals enforce the visible
+slot contract, and compiler completion derives document boundaries from Lark plus
+the generated AST. The existing E224 checkpoint reaches syntax parse 1.0 and
+contract precision 1.0 on all five suites with zero fallback/full projection.
+Meaningful-program rate remains 0/0/0/0/0.3333 and five honest gates fail, so
+the next lever is topology/component branch supervision rather than grammar or
+sampler repair. Full evidence:
+[iter-e226-honest-compiler-policy-20260716.md](iter-e226-honest-compiler-policy-20260716.md).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

@@ -24,6 +24,7 @@ from slm_training.harnesses.model_build.data import (
 from slm_training.harnesses.model_build.factory import build_model
 from slm_training.harnesses.model_build.plugin import GenerationRequest
 from slm_training.harnesses.model_build.ship_gates import DEFAULT_SHIP_GATES
+from slm_training.models.decode_stats import collect_decode_stats
 
 _COMPONENT_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s*\(")
 
@@ -375,15 +376,17 @@ def evaluate(
         chunk: list[ExampleRecord],
     ) -> tuple[list[str], list[dict[str, Any]]]:
         """Generate without passing gold ExampleRecord to the model."""
+        if callable(generate_batch_requests):
+            with collect_decode_stats() as stats:
+                predictions = generate_batch_requests(_requests_for(chunk))
+            decode_stats_rows.append(stats)
+            consume = getattr(plugin, "consume_generation_evidence", None)
+            evidence = consume() if callable(consume) else []
+            return predictions, list(evidence)
         if callable(generate_with_stats) and len(chunk) == 1:
             text, stats = generate_with_stats(chunk[0].prompt)
             decode_stats_rows.append(stats)
             return [text], []
-        if callable(generate_batch_requests):
-            predictions = generate_batch_requests(_requests_for(chunk))
-            consume = getattr(plugin, "consume_generation_evidence", None)
-            evidence = consume() if callable(consume) else []
-            return predictions, list(evidence)
         prompts = [r.prompt for r in chunk]
         if callable(generate_batch):
             try:
@@ -641,6 +644,12 @@ def evaluate(
                 if config.compiler_decode_mode is None
                 else str(config.compiler_decode_mode)
             ),
+            "schema_in_context": bool(config.schema_in_context),
+            "slot_contract_in_context": bool(config.slot_contract_in_context),
+            "slot_contract_constrained_decode": bool(
+                config.slot_contract_constrained_decode
+            ),
+            "honest_slot_contract": bool(config.honest_slot_contract),
             "grammar_skip_exact_stream_probe": (
                 None
                 if config.grammar_skip_exact_stream_probe is None
@@ -666,7 +675,7 @@ def evaluate(
             "gen_steps": int(config.gen_steps),
             "grammar_ltr_max_tokens": int(config.grammar_ltr_max_tokens),
         },
-        "parse_rate": (parse_ok / document_n) if document_n else 0.0,
+        "parse_rate": (syntax_parse_ok / document_n) if document_n else 0.0,
         "meaningful_program_rate": (parse_ok / document_n) if document_n else 0.0,
         "syntax_parse_rate": (
             (syntax_parse_ok / document_n) if document_n else 0.0
@@ -738,7 +747,7 @@ def evaluate(
             )
 
         quality = (
-            2.0 * float(metrics["parse_rate"])
+            2.0 * float(metrics["meaningful_program_rate"])
             + 2.0 * float(metrics["placeholder_fidelity"])
             + float(metrics["structural_similarity"])
             + 0.5 * float(metrics["reward_score"])

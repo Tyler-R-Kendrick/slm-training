@@ -315,6 +315,48 @@ def test_evaluate_uses_production_request_not_gold_record(tmp_path: Path) -> Non
     assert metrics["fallback_count"] == 0
 
 
+def test_evaluate_keeps_production_request_when_model_also_exposes_stats(
+    tmp_path: Path,
+) -> None:
+    train_dir = tmp_path / "train"
+    test_dir = tmp_path / "test"
+    train_dir.mkdir()
+    (test_dir / "suites" / "smoke").mkdir(parents=True)
+    gold = 'root = Button(":prod.cta")'
+    record = ExampleRecord(
+        id="request-stats",
+        prompt="CTA",
+        openui=gold,
+        placeholders=[":prod.cta"],
+        split="smoke",
+        meta={"suite": "smoke"},
+    )
+    write_jsonl(train_dir / "records.jsonl", [record])
+    write_jsonl(test_dir / "suites" / "smoke" / "records.jsonl", [record])
+
+    class RequestAndStatsModel:
+        def generate_batch_requests(
+            self, requests: list[GenerationRequest]
+        ) -> list[str]:
+            assert requests[0].slot_contract == (":prod.cta",)
+            return [gold]
+
+        def generate_with_stats(self, prompt: str) -> tuple[str, DecodeStats]:
+            raise AssertionError("request-aware generation must take precedence")
+
+    config = ModelBuildConfig(
+        train_dir=train_dir,
+        test_dir=test_dir,
+        suite="smoke",
+        run_root=tmp_path / "runs",
+        run_id="request-and-stats",
+        model_name="stub",
+    )
+    metrics = evaluate(config, model=RequestAndStatsModel(), publish_agentv=False)
+    assert metrics["placeholder_fidelity"] == 1.0
+    assert metrics["decode_stats"]["n"] == 1
+
+
 def test_topology_composite_keeps_quality_structure_trace_and_efficiency(
     tmp_path: Path,
 ) -> None:

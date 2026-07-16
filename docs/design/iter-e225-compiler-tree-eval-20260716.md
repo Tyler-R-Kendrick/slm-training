@@ -1,7 +1,7 @@
 # E225 — compiler-tree evaluation invariant
 
-Status: **evaluator fixed; existing E224 checkpoint reevaluated; tree path proven
-active; eight ship gates failed; no training or checkpoint promotion**.
+Status: **superseded by E226 after the telemetry path was found to drop the
+production request contract; retained as intermediate diagnostic evidence**.
 
 E221–E224 scoreboards persisted `compiler_decode_mode=tree`, but decode telemetry
 showed zero compiler candidates and all selection traces came from
@@ -33,7 +33,6 @@ Compared with the superseded E224 evaluation, tree decoding materially improves
 structure and component recall and reduces failed gates from 12 to eight. It
 still fails syntax because generated content properties use schema-invalid fixed
 strings instead of required placeholders, and some declaration boundaries are
-malformed. AgentV passed 0/5 with no execution errors. This proves the symbolic
-tree is now applied and isolates the next decoder defects to schema-conditioned
-content choices and parser-state boundary advancement, rather than model
-undertraining or sampler policy.
+malformed. AgentV passed 0/5 with no execution errors. The tree activation result
+stands, but the syntax/fidelity diagnosis was invalidated by request dispatch.
+The corrected result is [E226](iter-e226-honest-compiler-policy-20260716.md).

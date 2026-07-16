@@ -68,6 +68,7 @@ def report(run_id: str, *, seed: int = 0, rung: float = 3.0) -> EvaluationReport
         category_nll={"binding": 0.9, "structural": 0.9, "repair": 0.9},
         metrics={
             "parse_rate": 0.8,
+            "meaningful_program_rate": 0.8,
             "placeholder_fidelity": 0.7,
             "request_coverage": 0.7,
             "structural_similarity": 0.8,

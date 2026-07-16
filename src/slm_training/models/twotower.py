@@ -2218,6 +2218,17 @@ class TwoTowerModel(nn.Module):
                     tree=mode == "tree",
                 )
             room = length - len(prefix)
+            if room <= int(getattr(self.config, "grammar_draft_window", 8) or 8):
+                eos_path = next(
+                    (
+                        path
+                        for path in forest.paths
+                        if path.token_ids == (int(self.tokenizer.eos_id),)
+                    ),
+                    None,
+                )
+                if eos_path is not None:
+                    selected = eos_path.token_ids
             selected = selected[:room]
             if not selected:
                 break
@@ -3077,7 +3088,16 @@ class TwoTowerModel(nn.Module):
             self._current_runtime_table = (
                 feature_tables[0] if len(feature_tables) == 1 else None
             )
-            repair_len = min(length, max(8, int(self.config.grammar_ltr_max_tokens)))
+            reserve = (
+                int(getattr(self.config, "grammar_draft_window", 8) or 8)
+                if compiler_mode != "off" and max_len is None
+                else 0
+            )
+            repair_len = min(
+                length + reserve,
+                self.config.max_target_len,
+                max(8, int(self.config.grammar_ltr_max_tokens)),
+            )
             ids = self._greedy_ltr_decode_batch(ctx, ctx_pad, repair_len)
             texts = [self._decode_ids(ids[i]) for i in range(ids.size(0))]
             # Compiler modes already own constrained completion. Running the

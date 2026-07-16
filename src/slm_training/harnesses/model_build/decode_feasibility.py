@@ -35,7 +35,7 @@ def max_achievable_parse_rate(
     gold_lengths: list[int],
     canvas_cap: int,
 ) -> float:
-    """Upper bound on parse_rate when programs longer than cap cannot complete."""
+    """Upper bound on meaningful-program rate when targets exceed the cap."""
     if not gold_lengths:
         return 1.0
     fit = sum(1 for n in gold_lengths if n <= canvas_cap)
@@ -50,7 +50,7 @@ def evaluate_decode_feasibility(
     rico_limit: int | None = None,
 ) -> dict[str, Any]:
     """
-    Check whether the decode canvas can satisfy parse_rate gates per suite.
+    Check whether the decode canvas can satisfy meaningful-program gates per suite.
 
     Returns per-suite max achievable parse and config-level pass/fail.
     """
@@ -58,7 +58,7 @@ def evaluate_decode_feasibility(
     suites: dict[str, Any] = {}
     failures: list[str] = []
     for suite_name, mins in policy.items():
-        parse_gate = mins.get("parse_rate")
+        parse_gate = mins.get("meaningful_program_rate", mins.get("parse_rate"))
         if parse_gate is None:
             continue
         try:

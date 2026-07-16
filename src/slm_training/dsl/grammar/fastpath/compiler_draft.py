@@ -473,10 +473,9 @@ def build_completion_forest(
         newline_id = tokenizer.token_to_id.get("NL")
         if newline_id is not None:
             candidates.discard(int(newline_id))
-    ast_complete = _generated_ast_is_complete(
-        prefix_text
-    ) and _references_resolved(tokenizer, prefix_ids)
-    if "$END" in terminals and ast_complete:
+    ast_complete = _generated_ast_is_complete(prefix_text)
+    references_resolved = _references_resolved(tokenizer, prefix_ids)
+    if "$END" in terminals and ast_complete and references_resolved:
         candidates.add(int(tokenizer.eos_id))
     else:
         candidates.discard(int(tokenizer.eos_id))
