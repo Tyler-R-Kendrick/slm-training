@@ -1599,9 +1599,7 @@ class TwoTowerModel(nn.Module):
                         "chosen_id": int(choice),
                         "model_argmax": tok.id_to_token.get(argmax_id, ""),
                         "model_argmax_id": argmax_id,
-                        "legal_candidates": int(
-                            max(0, stats.constrained_last_legal_candidates)
-                        ),
+                        "legal_candidates": int(stats.constrained_last_legal_candidates),
                         "forced": bool(forced is not None),
                         "phase": "ltr_repair",
                     }

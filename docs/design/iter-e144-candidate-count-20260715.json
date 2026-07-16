@@ -1,0 +1,27 @@
+{
+  "iteration": "E144",
+  "date": "2026-07-15",
+  "objective": "Make constrained selection traces distinguish proven singleton legal sets from early returns that did not enumerate candidates.",
+  "recipe": {
+    "checkpoint": "outputs/runs/iter-e135-hf-context-20260715/e135_hf_context_control/checkpoints/last.pt",
+    "backend": "hf",
+    "device": "cpu",
+    "suite": "smoke",
+    "n": 1,
+    "honesty_mode": "diagnostic_subset",
+    "decode_timeout_seconds": 20,
+    "max_attempts": 3
+  },
+  "result": {
+    "parse_rate": 0.0,
+    "structural_similarity": 0.0538,
+    "decode_timeout_count": 0,
+    "selection_trace_events": 64,
+    "selection_legal_candidates_values": [-1, 0],
+    "first_divergence_position": 5,
+    "first_divergence_prefix": "root=CheckBoxItem(",
+    "first_divergence_chosen_token": "\")\\ncta = Button(\"",
+    "first_divergence_model_argmax": "="
+  },
+  "conclusion": "The trace no longer converts unknown early-return counts into zero. This replay found no proven singleton event in the captured choices; -1 means the full legal set was not enumerated, while 0 remains a true no-candidate result. Quality is still a parse failure."
+}

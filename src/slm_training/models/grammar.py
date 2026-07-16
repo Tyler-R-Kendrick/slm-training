@@ -629,6 +629,10 @@ def pick_constrained_token(
 
     stats = get_active_stats()
     pick_t0 = time.perf_counter()
+    if stats is not None:
+        # Early returns do not enumerate the full legal set; prevent a prior
+        # pick's count from being reported for this token.
+        stats.constrained_last_legal_candidates = -1
 
     if state is not None:
         prefix_text = state.sync_ids(tokenizer, prefix_ids)
@@ -766,6 +770,8 @@ def pick_constrained_token(
     singleton_allowed = (
         int(next(iter(allowed))) if allowed is not None and len(allowed) == 1 else None
     )
+    if stats is not None and singleton_allowed is not None:
+        stats.constrained_last_legal_candidates = 1
 
     def _invalid_component_close(tid: int) -> bool:
         if tokenizer.id_to_token.get(tid, "") != ")":
