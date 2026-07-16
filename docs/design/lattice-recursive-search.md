@@ -1,8 +1,8 @@
 # Lattice-guided recursive compiler search
 
-**Status:** inference controller implemented; E240-E247 remain unrun until the
-measured-results stack lands. No training, evaluation, benchmark, or ship-gate
-result is claimed here.
+**Status:** inference controller implemented and E240-E245 evaluated on CPU on
+2026-07-16. E246-E247 were not run because the predeclared continuation rule
+failed. No checkpoint was trained, copied, promoted, or synced.
 
 ## Research question
 
@@ -47,7 +47,7 @@ This preserves the compiler as verifier. A learned conflict or quality score may
 prioritize exploration, but cannot create a legal branch, discard all legal
 branches, or bypass final OpenUI validation.
 
-## Planned campaign (V9)
+## Campaign design (V9)
 
 The registered runnable rows are hypotheses, not results. The matched controls separate the
 value of rollback from stochastic width and semantic diversity.
@@ -132,3 +132,42 @@ The complete machine-validated R0-R26 inventory records authorship, canonical ID
 paraphrased summaries, applicability boundaries, and a distinct falsifiable OpenUI
 hypothesis per source in
 [`lattice-recursive-sources.json`](../../src/slm_training/resources/autoresearch/lattice-recursive-sources.json).
+
+## Measured results (2026-07-16 UTC)
+
+E240-E245 evaluated the unchanged E228 checkpoint on CPU with seed 0, honest
+slot contracts, schema and slot-contract context, no DESIGN.md context, and the
+five remediated suites (`smoke n=3`, `held_out n=5`, `adversarial n=4`,
+`ood n=4`, `rico_held n=3`). The checkpoint SHA-256 was
+`7a9be4a665e216d7f7e73883ad74ad972bbf30846896d0c29188d6482f5b093a` before
+and after the campaign. Every row emitted its suite JSON, AgentEvals JSONL,
+AgentV bundle, and `matrix_result.json` under
+`outputs/autoresearch/lattice-v9-local/<run_id>/`.
+
+The cells below are `meaningful / structure / component recall`; suite order is
+smoke, held-out, adversarial, OOD, RICO held. Parse rate was 1.0 everywhere.
+
+| Rows | Smoke | Held-out | Adversarial | OOD | RICO held | Decision |
+| --- | --- | --- | --- | --- | --- | --- |
+| E240-E243, E245 | `.333/.464/.250` | `.000/.337/.157` | `.500/.474/.458` | `.000/.375/.208` | `.667/.163/.444` | Identical outputs; four gates fail. Triggered policies never fired. |
+| E244 always-on width 4 | `.000/.057/.000` | `.000/.049/.000` | `.000/.054/.000` | `.000/.046/.000` | `.000/.017/.000` | Reject: semantic quality collapsed despite parse validity. |
+
+E244 exercised 76 verifier calls over 19 records, producing 22 valid
+trajectories and 22 unique-valid-AST counts (one per selected valid record, not
+within-record semantic diversity). It also recorded 81 bottoms, 77 rollbacks,
+53 nogoods, 166 nogood hits, four abstentions, and four budget exhaustions.
+False hard eliminations, invalid-over-valid selections, and selector regret
+were all zero. Its per-suite median latency was 52.4-68.5 seconds, versus
+3.4-10.8 seconds for the inert/control rows.
+
+The result falsifies the useful-width premise: always-on trajectory search made
+the output syntactically valid but semantically trivial, while bottom/stagnation
+triggered search never activated on this checkpoint. E246 and E247 therefore
+failed the predeclared requirement for a prior meaningful, structural,
+component-recall, or within-record AST-diversity gain without a greater-than-five
+point parse/fidelity regression. They remain registered but were intentionally
+not executed. The generalized controller and diagnostics are retained as
+research infrastructure; no quality, readiness, or ship claim follows.
+
+Machine-readable campaign evidence is in
+[`iter-e240-e245-lattice-search-20260716.json`](iter-e240-e245-lattice-search-20260716.json).

@@ -1031,7 +1031,7 @@ the checkpoint, and correct pathological long compiler-tree trajectories before
 wider search. Full evidence:
 [iter-e239-binder-arity-isolated-20260716.md](iter-e239-binder-arity-isolated-20260716.md).
 
-## V9 lattice-guided recursive compiler search (proposed, unrun)
+## V9 lattice-guided recursive compiler search (measured E240-E245)
 
 The research synthesis and implementation boundary are in
 [`lattice-recursive-search.md`](lattice-recursive-search.md). These rows keep the
@@ -1041,14 +1041,14 @@ trajectory policies. They do not reproduce those papers' training methods.
 
 | ID | Isolated lever | Required diagnostics | Status |
 | --- | --- | --- | --- |
-| E240 | Corrected greedy compiler-tree control | Standard scoreboard, coverage, fallbacks, calls | proposed/unrun |
-| E241 | Hard/soft lattice plus bounded rollback | Bottoms, rollbacks, nogoods, termination | proposed/unrun |
-| E242 | Stagnation-triggered localized nogoods | Conflict recurrence and false-prune audit | proposed/unrun |
-| E243 | Triggered PTRM-style width 4 | Triggers, trajectories, unique valid ASTs, calls | proposed/unrun |
-| E244 | Always-on PTRM-style width 4 control | Matched quality/calls against E243 | proposed/unrun |
-| E245 | GRAM-style semantic diversity width 4 | Unique validated AST fingerprints | proposed/unrun |
-| E246 | Full stack width 4 | Quality, validity, abstention, regret, latency | proposed/unrun |
-| E247 | Full stack width 8 | Width scaling benefit versus verifier/call cost | proposed/unrun |
+| E240 | Corrected greedy compiler-tree control | Standard scoreboard, coverage, fallbacks, calls | measured; fail |
+| E241 | Hard/soft lattice plus bounded rollback | Bottoms, rollbacks, nogoods, termination | measured; identical to E240; fail |
+| E242 | Stagnation-triggered localized nogoods | Conflict recurrence and false-prune audit | measured; no trigger; fail |
+| E243 | Triggered PTRM-style width 4 | Triggers, trajectories, unique valid ASTs, calls | measured; no trigger; fail |
+| E244 | Always-on PTRM-style width 4 control | Matched quality/calls against E243 | measured; semantic collapse; fail |
+| E245 | GRAM-style semantic diversity width 4 | Unique validated AST fingerprints | measured; no trigger; fail |
+| E246 | Full stack width 4 | Quality, validity, abstention, regret, latency | stopped by continuation rule |
+| E247 | Full stack width 8 | Width scaling benefit versus verifier/call cost | stopped by continuation rule |
 
 Preview only:
 
@@ -1059,6 +1059,25 @@ python -m scripts.run_quality_matrix --matrix v9 --list
 Listing must not create output artifacts. Any execution requires the full honest
 five-suite scoreboard, AgentEvals, AgentV, result JSON, recipe/suite sizes, and a
 measured-results update in this document.
+
+### Measured E240-E245 result (2026-07-16 UTC)
+
+The CPU evaluation-only campaign used the unchanged E228 checkpoint (SHA-256
+`7a9be4a665e216d7f7e73883ad74ad972bbf30846896d0c29188d6482f5b093a`), seed
+0, honest schema/slot context, and suite sizes 3/5/4/4/3. E240-E243 and E245
+were output-identical: syntax was 1.0, but smoke meaningful was 0.333,
+held-out and OOD meaningful were 0, and RICO structure was 0.163, leaving four
+gates failed. The triggered policies never activated.
+
+E244 always-on width 4 made 76 verifier calls and found only one valid AST per
+selected-valid record; meaningful rate and component recall became 0 on all
+five suites, structure fell to 0.017-0.057, and median latency rose to
+52.4-68.5 seconds. Syntax stayed 1.0 and false hard eliminations remained zero,
+but the semantic regression rejects the hypothesis. E246-E247 were not run
+because E244 failed the predeclared continuation rule. Full recipe, telemetry,
+scoreboards, AgentV evidence, and applicability boundary:
+[`lattice-recursive-search.md`](lattice-recursive-search.md) and
+[`iter-e240-e245-lattice-search-20260716.json`](iter-e240-e245-lattice-search-20260716.json).
 
 ## V10 exact-state local preference (proposed, unrun)
 
