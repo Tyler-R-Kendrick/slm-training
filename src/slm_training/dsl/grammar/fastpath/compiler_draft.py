@@ -73,6 +73,33 @@ def _at_root_value(tokenizer: Any, prefix_ids: list[int]) -> bool:
         return False
 
 
+def _binder_scope(
+    tokenizer: Any, prefix_ids: list[int]
+) -> tuple[list[int], list[int], int | None]:
+    """Return declarations, references, and the active declaration slot."""
+    bind_ids = set(tokenizer.kind_ids("bind"))
+    equal_id = int(tokenizer.token_to_id["="])
+    newline_id = tokenizer.token_to_id.get("NL")
+    declarations: list[int] = []
+    references: list[int] = []
+    declaration_positions: list[int] = []
+    for index, token_id in enumerate(prefix_ids):
+        token_id = int(token_id)
+        if token_id not in bind_ids:
+            continue
+        if index + 1 < len(prefix_ids) and int(prefix_ids[index + 1]) == equal_id:
+            declarations.append(token_id)
+            declaration_positions.append(index)
+        elif token_id not in references:
+            references.append(token_id)
+    active = None
+    if declaration_positions:
+        last = declaration_positions[-1]
+        if newline_id is None or newline_id not in prefix_ids[last + 1 :]:
+            active = declarations[-1]
+    return declarations, references, active
+
+
 def _known_terminal_coverage(tokenizer: Any, terminals: frozenset[str]) -> bool:
     """Whether token mapping exhausts the model vocabulary for these terminals."""
     broad = {
@@ -168,32 +195,58 @@ def _active_call(state: Any) -> tuple[str, int, int] | None:
     parser = getattr(state, "_ip", None)
     parser_state = getattr(parser, "parser_state", None)
     values = list(getattr(parser_state, "value_stack", ()) or ())
-    call_index = None
-    component = None
+    frames: list[tuple[int, str]] = []
     for index, value in enumerate(values):
-        if str(getattr(value, "data", "")) == "call_name":
-            children = list(getattr(value, "children", ()) or ())
-            if children:
-                component = str(children[0])
-                call_index = index
-    if call_index is None or component is None:
-        return None
-    lpar = next(
-        (index for index in range(call_index + 1, len(values))
-         if str(getattr(values[index], "type", "")) == "LPAR"),
-        None,
-    )
-    if lpar is None:
-        return None
-    tail = values[lpar + 1 :]
-    commas = [
-        index
-        for index, value in enumerate(tail)
-        if str(getattr(value, "type", "")) == "COMMA"
-    ]
-    current = tail[(commas[-1] + 1) if commas else 0 :]
-    arg_count = len(commas) + int(bool(current))
-    return component, len(commas), arg_count
+        if str(getattr(value, "data", "")) != "call_name":
+            continue
+        children = list(getattr(value, "children", ()) or ())
+        if children:
+            frames.append((index, str(children[0])))
+
+    opening = {"LPAR", "LSQB", "LBRACE"}
+    closing = {"RPAR", "RSQB", "RBRACE"}
+    for call_index, component in reversed(frames):
+        lpar = next(
+            (
+                index
+                for index in range(call_index + 1, len(values))
+                if str(getattr(values[index], "type", "")) == "LPAR"
+            ),
+            None,
+        )
+        if lpar is None:
+            continue
+        depth = 0
+        separators = 0
+        current_started = False
+        closed = False
+        for value in values[lpar + 1 :]:
+            token_type = str(getattr(value, "type", ""))
+            data = str(getattr(value, "data", ""))
+            if token_type in opening:
+                depth += 1
+                current_started = True
+            elif token_type in closing:
+                if depth == 0:
+                    if token_type == "RPAR":
+                        closed = True
+                        break
+                else:
+                    depth -= 1
+                    current_started = True
+            elif depth == 0 and token_type == "COMMA":
+                separators += 1
+                current_started = False
+            elif depth == 0 and data.startswith("__arg_list_star_"):
+                # Lark reduces ("," expr)* into one generated tree whose
+                # children are the completed expressions after separators.
+                separators += len(list(getattr(value, "children", ()) or ()))
+                current_started = True
+            elif depth == 0:
+                current_started = True
+        if not closed:
+            return component, separators, separators + int(current_started)
+    return None
 
 
 def _schema_enum_ids(
@@ -294,9 +347,16 @@ def build_completion_forest(
 
     terminals = engine.next_terminals()
     candidates = allowed_id_set(tokenizer, terminals) or set()
-    if "$END" in terminals:
+    if prefix_ids and tokenizer.id_to_token.get(int(prefix_ids[-1])) == "NL":
+        newline_id = tokenizer.token_to_id.get("NL")
+        if newline_id is not None:
+            candidates.discard(int(newline_id))
+    ast_complete = _generated_ast_is_complete(prefix_text)
+    if "$END" in terminals and ast_complete:
         candidates.add(int(tokenizer.eos_id))
-    if "$END" in terminals and _generated_ast_is_complete(prefix_text):
+    else:
+        candidates.discard(int(tokenizer.eos_id))
+    if "$END" in terminals and ast_complete:
         # Lark accepts postfix operators after any expression. Once the
         # generated AST has a complete document, retain only the grammar's
         # document-continuation terminals; this derives the boundary from the
@@ -330,10 +390,14 @@ def build_completion_forest(
             try:
                 from slm_training.models.grammar import contract_allowed_token_ids
 
-                candidates |= set(
+                contract_ids = set(
                     contract_allowed_token_ids(tokenizer, prefix_ids, slot_contract)
                     or set()
                 )
+                kind_ids = getattr(tokenizer, "kind_ids", None)
+                if callable(kind_ids):
+                    candidates -= set(kind_ids("sym"))
+                candidates |= contract_ids
             except Exception:  # noqa: BLE001
                 pass
 
@@ -349,24 +413,6 @@ def build_completion_forest(
             comma_ids = allowed_id_set(tokenizer, frozenset({"COMMA"})) or set()
             candidates -= comma_ids
 
-    if slot_contract and "STRING" in terminals:
-        try:
-            from slm_training.models.grammar import contract_allowed_token_ids
-
-            contract_ids = contract_allowed_token_ids(
-                tokenizer, prefix_ids, slot_contract
-            )
-        except Exception:  # noqa: BLE001
-            contract_ids = None
-        if contract_ids is not None:
-            kind_ids = getattr(tokenizer, "kind_ids", None)
-            if callable(kind_ids):
-                symbol_space = set(kind_ids("sym"))
-                candidates = (candidates - symbol_space) | set(contract_ids)
-            else:
-                overlap = candidates & contract_ids
-                candidates = overlap if overlap else set(contract_ids)
-
     inventory_complete = not (needs_schema and schema is None)
     kind_of = getattr(tokenizer, "kind_of", None)
     if callable(kind_of):
@@ -377,23 +423,56 @@ def build_completion_forest(
             state_ids = set(tokenizer.kind_ids(TokenKind.STATE))
             builtin_ids = set(tokenizer.kind_ids(TokenKind.BUILTIN))
             sym_ids = set(tokenizer.kind_ids(TokenKind.SYM))
-            visible_binds = [tid for tid in prefix_ids if tid in bind_ids]
+            declarations, references, active_declaration = _binder_scope(
+                tokenizer, prefix_ids
+            )
             last = prefix_ids[-1] if prefix_ids else None
             # LTR/compiler prefixes include BOS, which is not a source token.
             # Treat BOS-only as the first statement so the root binder remains
             # available to the symbolic tree.
             at_statement_start = len(prefix_ids) <= 1 or tokenizer.id_to_token.get(last) == "NL"
             if at_statement_start:
-                next_slot = min(len(set(visible_binds)), max(0, tokenizer.bind_slots - 1))
+                declared = set(declarations)
+                unresolved = [token_id for token_id in references if token_id not in declared]
+                used = declared | set(references)
+                next_slot = next(
+                    (
+                        slot
+                        for slot in range(tokenizer.bind_slots)
+                        if tokenizer.bind_id(slot) not in used
+                    ),
+                    max(0, tokenizer.bind_slots - 1),
+                )
+                next_id = unresolved[0] if unresolved else tokenizer.bind_id(next_slot)
                 candidates -= bind_ids
-                candidates.add(int(tokenizer.bind_id(next_slot)))
-            elif visible_binds:
-                candidates = (candidates - bind_ids) | (candidates & set(visible_binds))
+                candidates.add(int(next_id))
+            elif declarations:
+                declared = set(declarations)
+                reusable = declared - {int(active_declaration or -1), tokenizer.bind_id(0)}
+                unresolved = set(references) - declared
+                used = declared | set(references)
+                next_slot = next(
+                    (
+                        slot
+                        for slot in range(1, tokenizer.bind_slots)
+                        if tokenizer.bind_id(slot) not in used
+                    ),
+                    None,
+                )
+                forward = (
+                    {int(tokenizer.bind_id(next_slot))}
+                    if next_slot is not None
+                    else set()
+                )
+                scope = reusable | unresolved | forward
+                candidates = (candidates - bind_ids) | (candidates & scope)
             else:
                 candidates -= bind_ids
             # The selected 0.2.x layout contract excludes state/effect actions.
             candidates -= state_ids | builtin_ids
-            if not slot_contract and candidates & sym_ids:
+            if candidates & sym_ids and not (
+                slot_contract and schema_type == "string"
+            ):
                 candidates -= sym_ids
                 inventory_complete = False
         except Exception:  # noqa: BLE001
@@ -454,9 +533,45 @@ def build_completion_forest(
     )
 
 
+def gold_compiler_decision_positions(
+    tokenizer: Any,
+    token_ids: list[int] | tuple[int, ...],
+    *,
+    slot_contract: list[str] | None = None,
+    max_path_tokens: int = 8,
+) -> tuple[int, ...]:
+    """Replay a gold stream and return every Lark-derived branch position."""
+    ids = tuple(int(token_id) for token_id in token_ids)
+    stop_ids = {int(tokenizer.pad_id), int(tokenizer.eos_id)}
+    cursor = 1 if ids and ids[0] == int(tokenizer.bos_id) else 0
+    positions: list[int] = []
+    while cursor < len(ids) and ids[cursor] not in stop_ids:
+        forest = build_completion_forest(
+            tokenizer,
+            list(ids[:cursor]),
+            slot_contract=slot_contract,
+            max_path_tokens=max_path_tokens,
+        )
+        remaining = ids[cursor:]
+        matches = [
+            path
+            for path in forest.paths
+            if path.token_ids and remaining[: len(path.token_ids)] == path.token_ids
+        ]
+        if not matches:
+            cursor += 1
+            continue
+        path = max(matches, key=lambda candidate: len(candidate.token_ids))
+        if len(set(forest.candidate_ids)) > 1:
+            positions.append(cursor)
+        cursor += len(path.token_ids)
+    return tuple(positions)
+
+
 __all__ = [
     "CompletionForest",
     "CompletionPath",
     "Coverage",
     "build_completion_forest",
+    "gold_compiler_decision_positions",
 ]

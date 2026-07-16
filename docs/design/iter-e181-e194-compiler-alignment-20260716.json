@@ -1,0 +1,98 @@
+{
+  "campaign": "E181-E194 semantic mixture and grammar-derived compiler alignment",
+  "date_utc": "2026-07-16",
+  "honesty": {
+    "classification": "cpu diagnostic subset",
+    "ship_gates": false,
+    "promoted": false,
+    "checkpoint_sync": "disabled for scratch diagnostics",
+    "design_md_in_context": false,
+    "suite": "smoke",
+    "suite_n": 1
+  },
+  "data": {
+    "version": "e177_semantic_judge_v2",
+    "record_count": 496,
+    "manifest_sha256": "d59a94d9de0c3bfd0145faf27cc4ffab11fac73a4fc0f14e0390330aa8367803",
+    "mixture_path": "src/slm_training/resources/train_data/e177_semantic_judge_v2/mixture_semantic_balanced.json",
+    "mixture_sha256": "c141a4526c7cf3565ce21b6172b2f2d12c7f16c92d55f0f0ceca07751f4cacac",
+    "weights": {
+      "human_curated": 0.5,
+      "corruption_repair": 0.15,
+      "edit_trajectory": 0.15,
+      "programspec_generated": 0.1,
+      "renderer_visual": 0.05,
+      "web_distilled": 0.05
+    },
+    "audit": "All 496 admitted targets have Stack as the root component; the E181 128-row training sample contained 72 human-curated, 24 corruption-repair, 13 ProgramSpec, 8 renderer, 6 edit-trajectory, and 5 web-distilled rows."
+  },
+  "train_recipe": {
+    "device": "cpu",
+    "steps": 32,
+    "batch_size": 4,
+    "seed": 0,
+    "context_backend": "hf",
+    "context_model": "HuggingFaceTB/SmolLM2-135M",
+    "context_frozen": true,
+    "schema_in_context": true,
+    "grammar_constrained": true,
+    "slot_contract": true,
+    "checkpoint_sync": false
+  },
+  "checkpoints": [
+    {
+      "run_id": "e181-semantic-balanced-32step",
+      "path": "outputs/runs/e181-semantic-balanced-32step/checkpoints/last.pt",
+      "sha256": "40a9949b13cb81a4f0eaf6f619f54e7b8726f355c563fe43d19fab3d7bb039a3",
+      "last_loss": 5.511813163757324,
+      "wall_ms": 19510.028,
+      "compiler_alignment": "disabled"
+    },
+    {
+      "run_id": "e184-compiler-aligned-32step",
+      "path": "outputs/runs/e184-compiler-aligned-32step/checkpoints/last.pt",
+      "sha256": "fcf8e1434dfdaee4b115b999d163872f11f99877db93927c71ff820020b5d410",
+      "last_loss": 10.015336990356445,
+      "wall_ms": 96041.609,
+      "compiler_alignment": "component decision only, weight 1.0",
+      "alignment_rows": 128,
+      "alignment_loss_mean": 12.638803783804178,
+      "alignment_loss_first": 77.05826568603516,
+      "alignment_loss_last": 3.1029772758483887
+    },
+    {
+      "run_id": "e191-full-compiler-aligned-32step",
+      "path": "outputs/runs/e191-full-compiler-aligned-32step/checkpoints/last.pt",
+      "sha256": "453208f977d95b1c97d1c776558ddfa8fae000151fbf99a4ef3440f443deeda0",
+      "last_loss": 14.84979248046875,
+      "wall_ms": 157691.152,
+      "compiler_alignment": "all Lark-derived branch decisions, weight 1.0",
+      "alignment_rows": 128,
+      "alignment_loss_mean": 15.434305347502232,
+      "alignment_loss_first": 67.21212768554688,
+      "alignment_loss_last": 7.757227420806885
+    }
+  ],
+  "evaluations": [
+    {"id":"E181","run":"e181-semantic-balanced-probe","checkpoint":"E181","raw_syntax":1.0,"meaningful_parse":0.0,"structure":0.1542,"component_recall":0.25,"reward":0.607,"latency_p50_ms":3348.46},
+    {"id":"E182","run":"e182-root-choice-telemetry-probe","checkpoint":"E181","raw_syntax":1.0,"meaningful_parse":0.0,"structure":0.1542,"component_recall":0.25,"reward":0.607,"latency_p50_ms":3293.09},
+    {"id":"E183","run":"e183-root-edge-vs-path-probe","checkpoint":"E181","raw_syntax":0.0,"meaningful_parse":0.0,"structure":0.1917,"component_recall":0.25,"reward":0.0,"latency_p50_ms":3366.47,"recipe_exception":"slot-contract and no-fallback flags were accidentally omitted; root-score telemetry remains diagnostic, but the scoreboard is not comparable"},
+    {"id":"E185","run":"e185-compiler-aligned-probe","checkpoint":"E184","raw_syntax":0.0,"meaningful_parse":0.0,"structure":0.0,"component_recall":0.0,"reward":0.0,"latency_p50_ms":2981.03},
+    {"id":"E186","run":"e186-ast-complete-eos-probe","checkpoint":"E184","raw_syntax":0.0,"meaningful_parse":0.0,"structure":0.2125,"component_recall":0.0,"reward":0.0,"latency_p50_ms":3714.35},
+    {"id":"E187","run":"e187-literal-state-sync-probe","checkpoint":"E184","raw_syntax":0.0,"meaningful_parse":0.0,"structure":0.435,"component_recall":0.25,"reward":0.0,"latency_p50_ms":6783.38},
+    {"id":"E188","run":"e188-slot-contract-compiler-probe","checkpoint":"E184","raw_syntax":0.0,"meaningful_parse":0.0,"structure":0.1917,"component_recall":0.0,"reward":0.0,"latency_p50_ms":3619.08},
+    {"id":"E189","run":"e189-nesting-aware-schema-probe","checkpoint":"E184","raw_syntax":1.0,"meaningful_parse":0.0,"structure":0.15,"component_recall":0.25,"reward":0.637,"latency_p50_ms":12890.9},
+    {"id":"E190","run":"e190-forward-binder-scope-probe","checkpoint":"E184","raw_syntax":1.0,"meaningful_parse":0.0,"structure":0.15,"component_recall":0.25,"reward":0.637,"latency_p50_ms":12921.91},
+    {"id":"E192","run":"e192-full-alignment-probe","checkpoint":"E191","raw_syntax":1.0,"meaningful_parse":0.0,"structure":0.1542,"component_recall":0.25,"reward":0.607,"latency_p50_ms":9284.52},
+    {"id":"E193","run":"e193-e184-generalized-compiler-probe","checkpoint":"E184","raw_syntax":0.0,"meaningful_parse":0.0,"structure":0.1615,"component_recall":0.25,"reward":0.0,"latency_p50_ms":17916.32},
+    {"id":"E194","run":"e194-schema-symbol-scope-probe","checkpoint":"E184","raw_syntax":0.0,"meaningful_parse":0.0,"structure":0.36,"component_recall":0.25,"reward":0.0,"latency_p50_ms":6311.35}
+  ],
+  "conclusions": [
+    "Changing only the online source mixture reduced training loss and wall time but did not change the E181 quality scoreboard.",
+    "First-edge and complete-path root scores agreed in E183, falsifying path-length bias; the learned ranker preferred TextContent over Stack.",
+    "Component-only compiler alignment in E184 recovered Stack as the root, but did not produce a complete meaningful program.",
+    "All-branch random alignment in E191 regressed the root to TextContent and is rejected.",
+    "Grammar-derived AST completeness, nested call frames, forward binder scope, typed lexer surfaces, and schema-scoped symbols replace case-specific string repairs, but semantic binder/component ranking remains the limiting factor."
+  ],
+  "next_hypothesis": "Stratify compiler-alignment supervision by grammar-derived decision kind so component and binder decisions are both represented per batch, instead of sampling one arbitrary branch per row."
+}

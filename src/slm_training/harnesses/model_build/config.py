@@ -172,6 +172,7 @@ class ModelBuildConfig:
     diffusion_overallocate: int = 8
     diffusion_length_loss_weight: float = 0.1
     ltr_prefix_loss_weight: float = 0.0
+    compiler_alignment_loss_weight: float = 0.0
     symbol_boundary_loss_weight: float = 0.0
     remask_span: str = "token"  # token | statement
     teacher_init_embeddings: bool = False

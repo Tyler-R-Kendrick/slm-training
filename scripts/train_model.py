@@ -283,6 +283,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Extra weight for the first three LTR positions (root/early structure).",
     )
     parser.add_argument(
+        "--compiler-alignment-loss-weight",
+        type=float,
+        default=0.0,
+        help="Train Lark-derived branch decisions on compiler-style masked suffixes.",
+    )
+    parser.add_argument(
         "--no-design-md-context",
         action="store_true",
         help="Do not concatenate DESIGN.md into the context tower prompt.",
@@ -588,6 +594,7 @@ def main(argv: list[str] | None = None) -> int:
             design_md_in_context=not args.no_design_md_context,
             ltr_loss_weight=args.ltr_loss_weight,
             ltr_prefix_loss_weight=args.ltr_prefix_loss_weight,
+            compiler_alignment_loss_weight=args.compiler_alignment_loss_weight,
             fidelity_loss_weight=args.fidelity_loss_weight,
             grammar_ltr_primary=args.grammar_ltr_primary,
             grammar_ltr_repair=args.grammar_ltr_repair,

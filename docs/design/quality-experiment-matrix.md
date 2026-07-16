@@ -784,6 +784,18 @@ to 1.0 and cuts p50 from 7538.12 ms to 3712.78 ms, while meaningful parse remain
 supervision, not syntax special cases or weakened gates. See
 [iter-e177-e180-semantic-compiler-20260716.md](iter-e177-e180-semantic-compiler-20260716.md).
 
+E181–E194 test the next generalized layer. A committed balanced mixture lowers
+the matched 32-step loss but leaves quality unchanged. Root score telemetry
+falsifies complete-path length bias and identifies learned semantic ranking as
+the failure. Component-only compiler-state alignment recovers the `Stack` root;
+random alignment across all grammar branches regresses it and is rejected.
+Grammar-derived AST completeness, lexer-surface synchronization, nested call
+frames, binder scope, and schema-scoped symbols replace tactical output-string
+repairs. The best E194 diagnostic still has meaningful parse 0.0 (structure
+0.3600, component recall 0.25), so no checkpoint is promoted. Next: stratified
+component/binder alignment derived from parser decision kinds. See
+[iter-e181-e194-compiler-alignment-20260716.md](iter-e181-e194-compiler-alignment-20260716.md).
+
 These rows are registered under `--matrix v8`; `--list` prints definitions
 without building data or starting a run. They require the lexer-native parent
 contract and unchanged honest five-suite gates. No result or champion is claimed.
