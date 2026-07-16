@@ -686,7 +686,9 @@ def test_scope_diffusion_source_manifest_is_complete() -> None:
     from scripts.autoresearch import _load_sources
 
     path = Path("src/slm_training/resources/autoresearch/scope-diffusion-sources.json")
+    manifest = json.loads(path.read_text())
     rows = _load_sources(path)
+    assert "6a583787-8e9c-83ea-94e2-c36b0f4d093e" in manifest["source_scope"]
     assert len(rows) == 19
     assert len({row.uri for row in rows}) == 19
     assert all(row.uri.startswith("https://arxiv.org/abs/") for row in rows)

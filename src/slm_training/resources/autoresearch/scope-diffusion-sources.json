@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "retrieved_at": "2026-07-15T00:00:00Z",
-  "source_scope": "The 19 papers cited by the public ChatGPT ScopeDiff discussion; metadata verified against canonical arXiv records.",
+  "source_scope": "The 19 papers cited by public ChatGPT share 6a583787-8e9c-83ea-94e2-c36b0f4d093e; metadata verified against canonical arXiv records.",
   "sources": [
     {
       "source_id": "arxiv-1902.03249",
