@@ -271,7 +271,8 @@ def independent_judge(record: ExampleRecord) -> dict[str, Any]:
         reasons.append("prompt_under_specified_for_layout")
     if not prompt or not openui:
         reasons.append("judge_missing_prompt_or_output")
-    reasons.extend(_schema_semantic_reasons(openui))
+    if record.target_kind == "document":
+        reasons.extend(_schema_semantic_reasons(openui))
     return {"ok": not reasons, "score": round(max(0.0, 1.0 - 0.5 * len(reasons)), 4), "reasons": reasons}
 
 
