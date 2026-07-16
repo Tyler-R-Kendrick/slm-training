@@ -742,6 +742,55 @@ def test_binder_component_plan_supervises_instances_and_biases_legal_choices() -
     assert bias[1] > bias[0]
 
 
+def test_binder_topology_supervises_and_biases_legal_references() -> None:
+    model = _model(
+        binder_topology_loss_weight=1.0,
+        binder_topology_decode_weight=2.0,
+    )
+    model.train()
+    record = ExampleRecord(
+        id="binder-topology",
+        prompt="card with title and body",
+        openui=(
+            'root = Card([title, body])\n'
+            'title = TextContent(":hero.title")\n'
+            'body = TextContent(":hero.body")'
+        ),
+        placeholders=[":hero.title", ":hero.body"],
+        split="train",
+        source="fixture",
+    )
+    loss = model.training_loss([record])
+    loss.backward()
+    assert torch.isfinite(loss)
+    assert model.binder_topology_head is not None
+    assert model.binder_topology_head.weight.grad is not None
+    assert model.binder_topology_head.weight.grad.abs().sum() > 0
+    assert model.last_training_metrics["binder_topology_rows"] > 0
+    assert model.last_training_metrics["binder_topology_loss"] > 0
+
+    tokenizer = model.tokenizer
+    binders = model._binder_component_token_ids()
+    root = binders.index(tokenizer.bind_id(0))
+    child = binders.index(tokenizer.bind_id(2))
+    with torch.no_grad():
+        model.binder_topology_head.weight.zero_()
+        model.binder_topology_head.bias.zero_()
+        model.binder_topology_head.bias[root * len(binders) + child] = 3.0
+    ctx, ctx_pad = model._encode_context(["card with title and body"])
+    prefix = tokenizer.encode("root = Card([title,", add_special=False)
+    candidates = (tokenizer.bind_id(1), tokenizer.bind_id(2))
+    bias = model._binder_topology_bias(
+        ctx,
+        ctx_pad,
+        prefix,
+        candidates,
+        ("bind_reference_root_children", "bind_reference_root_children"),
+    )
+    assert bias is not None
+    assert bias[1] > bias[0]
+
+
 def test_tree_verifier_packs_prefix_nodes_and_avoids_full_projection() -> None:
     model = _model()
     model.config.structural_bias = 0.0

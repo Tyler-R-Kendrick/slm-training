@@ -430,6 +430,17 @@ def compile_commands(
                     str(knobs.binder_component_plan_decode_weight),
                 ]
             )
+        if knobs.binder_topology_loss_weight is not None:
+            train.extend(
+                ["--binder-topology-loss-weight", str(knobs.binder_topology_loss_weight)]
+            )
+        if knobs.binder_topology_decode_weight is not None:
+            train.extend(
+                [
+                    "--binder-topology-decode-weight",
+                    str(knobs.binder_topology_decode_weight),
+                ]
+            )
         if knobs.schema_in_context:
             train.append("--schema-in-context")
         if knobs.slot_contract_in_context:

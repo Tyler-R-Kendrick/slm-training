@@ -195,6 +195,8 @@ class TwoTowerConfig:
     component_edge_decode_weight: float = 0.0
     binder_component_plan_loss_weight: float = 0.0
     binder_component_plan_decode_weight: float = 0.0
+    binder_topology_loss_weight: float = 0.0
+    binder_topology_decode_weight: float = 0.0
     symbol_boundary_loss_weight: float = 0.0
     # Extra CE weight on gold placeholder token positions (fidelity signal).
     fidelity_loss_weight: float = 0.5
@@ -552,6 +554,22 @@ class TwoTowerModel(nn.Module):
                 len(binder_plan_ids) * len(component_edge_ids),
             )
             if binder_plan_enabled and binder_plan_ids and component_edge_ids
+            else None
+        )
+        binder_topology_enabled = (
+            float(getattr(self.config, "binder_topology_loss_weight", 0.0) or 0.0)
+            > 0.0
+            or float(
+                getattr(self.config, "binder_topology_decode_weight", 0.0) or 0.0
+            )
+            > 0.0
+        )
+        self.binder_topology_head = (
+            nn.Linear(
+                self.config.d_model,
+                len(binder_plan_ids) * len(binder_plan_ids),
+            )
+            if binder_topology_enabled and binder_plan_ids
             else None
         )
         # E31 BackPlay-lite: plug-in trust head over denoiser hiddens.
@@ -1955,6 +1973,84 @@ class TwoTowerModel(nn.Module):
                 }
             )
 
+        binder_topology_w = float(
+            getattr(self.config, "binder_topology_loss_weight", 0.0) or 0.0
+        )
+        if binder_topology_w > 0.0 and self.binder_topology_head is not None:
+            from slm_training.dsl.grammar.fastpath.compiler_draft import (
+                active_declaration_binder_id,
+                gold_compiler_decisions,
+            )
+
+            binder_ids = self._binder_component_token_ids()
+            binder_index = {token_id: index for index, token_id in enumerate(binder_ids)}
+            topology_logits = self.binder_topology_head(
+                self._pool_context(ctx, ctx_pad)
+            ).view(len(batch), len(binder_ids), len(binder_ids))
+            topology_losses: list[torch.Tensor] = []
+            topology_hits: list[torch.Tensor] = []
+            topology_candidate_counts: list[int] = []
+            for row, record in enumerate(batch):
+                target_key = tuple(int(token_id) for token_id in target_ids[row].tolist())
+                contract_key = tuple(record.placeholders or ())
+                cache_key = (target_key, contract_key)
+                decisions = self._compiler_decision_cache.get(cache_key)
+                if decisions is None:
+                    decisions = gold_compiler_decisions(
+                        self.tokenizer,
+                        target_key,
+                        slot_contract=list(contract_key),
+                    )
+                    self._compiler_decision_cache[cache_key] = decisions
+                for decision in decisions:
+                    if not decision.kind.startswith("bind_reference"):
+                        continue
+                    position = int(decision.position)
+                    parent_id = active_declaration_binder_id(
+                        self.tokenizer, list(target_key[:position])
+                    )
+                    parent = binder_index.get(parent_id)
+                    child = binder_index.get(int(target_ids[row, position]))
+                    candidates = [
+                        binder_index[token_id]
+                        for token_id in decision.candidate_ids
+                        if token_id in binder_index
+                    ]
+                    if parent is None or child is None or child not in candidates:
+                        continue
+                    candidate_tensor = torch.as_tensor(candidates, device=ctx.device)
+                    scores = topology_logits[row, parent].index_select(
+                        0, candidate_tensor
+                    )
+                    target = torch.as_tensor(
+                        [candidates.index(child)], device=ctx.device
+                    )
+                    topology_losses.append(F.cross_entropy(scores[None, :], target))
+                    topology_hits.append(scores.argmax().eq(target[0]).float())
+                    topology_candidate_counts.append(len(candidates))
+            topology_loss = (
+                torch.stack(topology_losses).mean()
+                if topology_losses
+                else topology_logits.sum() * 0.0
+            )
+            mask_loss = mask_loss + binder_topology_w * topology_loss
+            self.last_training_metrics.update(
+                {
+                    "binder_topology_loss": float(topology_loss.detach().cpu()),
+                    "binder_topology_accuracy": float(
+                        torch.stack(topology_hits).mean().detach().cpu()
+                        if topology_hits
+                        else 0.0
+                    ),
+                    "binder_topology_rows": len(topology_losses),
+                    "binder_topology_candidate_count_mean": (
+                        sum(topology_candidate_counts) / len(topology_candidate_counts)
+                        if topology_candidate_counts
+                        else 0.0
+                    ),
+                }
+            )
+
         aux_w = float(getattr(self.config, "fastpath_aux_weight", 0.0) or 0.0)
         if aux_w > 0.0 and getattr(self.config, "grammar_fastpath", False):
             # Keep this span visible in train telemetry: a silently skipped
@@ -2700,6 +2796,42 @@ class TwoTowerModel(nn.Module):
                 applied = True
         return bias if applied else None
 
+    def _binder_topology_bias(
+        self,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor | None,
+        prefix: list[int],
+        candidate_ids: tuple[int, ...],
+        candidate_kinds: tuple[str, ...],
+    ) -> torch.Tensor | None:
+        weight = float(
+            getattr(self.config, "binder_topology_decode_weight", 0.0) or 0.0
+        )
+        if weight <= 0.0 or self.binder_topology_head is None:
+            return None
+        from slm_training.dsl.grammar.fastpath.compiler_draft import (
+            active_declaration_binder_id,
+        )
+
+        binder_ids = self._binder_component_token_ids()
+        binder_index = {token_id: index for index, token_id in enumerate(binder_ids)}
+        parent = binder_index.get(active_declaration_binder_id(self.tokenizer, prefix))
+        if parent is None:
+            return None
+        logits = self.binder_topology_head(
+            self._pool_context(ctx, ctx_pad)
+        )[0].view(len(binder_ids), len(binder_ids))[parent]
+        bias = logits.new_zeros(len(candidate_ids))
+        applied = False
+        for position, (token_id, kind) in enumerate(
+            zip(candidate_ids, candidate_kinds, strict=True)
+        ):
+            child = binder_index.get(token_id)
+            if child is not None and kind.startswith("bind_reference"):
+                bias[position] = weight * logits[child]
+                applied = True
+        return bias if applied else None
+
     def _select_compiler_path(
         self,
         prefix: list[int],
@@ -2800,6 +2932,17 @@ class TwoTowerModel(nn.Module):
                     stats.binder_component_plan_applications += 1
                     stats.binder_component_plan_choice_changes += int(
                         int(scores.argmax().item()) != before_binder
+                    )
+            topology_bias = self._binder_topology_bias(
+                ctx, ctx_pad, prefix, candidates, tuple(path.kind for path in paths)
+            )
+            if topology_bias is not None:
+                before_topology = int(scores.argmax().item())
+                scores = scores + topology_bias
+                if stats is not None:
+                    stats.binder_topology_applications += 1
+                    stats.binder_topology_choice_changes += int(
+                        int(scores.argmax().item()) != before_topology
                     )
             if bool(getattr(self.config, "grammar_sample_decode", False)):
                 temp = float(
@@ -2904,6 +3047,24 @@ class TwoTowerModel(nn.Module):
                             stats.binder_component_plan_applications += 1
                             stats.binder_component_plan_choice_changes += int(
                                 int(scores.argmax().item()) != before_binder
+                            )
+                    topology_bias = self._binder_topology_bias(
+                        ctx,
+                        ctx_pad,
+                        prefix,
+                        candidate_ids,
+                        tuple(
+                            first_edge_kinds.get(token_id, "")
+                            for token_id in candidate_ids
+                        ),
+                    )
+                    if topology_bias is not None:
+                        before_topology = int(scores.argmax().item())
+                        scores = scores + topology_bias
+                        if stats is not None:
+                            stats.binder_topology_applications += 1
+                            stats.binder_topology_choice_changes += int(
+                                int(scores.argmax().item()) != before_topology
                             )
                 log_probs = F.log_softmax(scores, dim=0)
                 for i, token_id in enumerate(candidate_ids):
