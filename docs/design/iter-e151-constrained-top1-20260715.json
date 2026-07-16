@@ -1,0 +1,23 @@
+{
+  "iteration": "E151",
+  "date": "2026-07-15",
+  "objective": "Test whether reducing constrained grammar candidate top-k bounds timeout cost.",
+  "recipe": {
+    "checkpoint": "outputs/runs/iter-e147-judge-gated-control-20260715/e147-judge-gated-control/checkpoints/last.pt",
+    "suite": "smoke",
+    "n": 1,
+    "grammar_top_k": 1,
+    "decode_timeout_seconds": 20
+  },
+  "result": {
+    "parse_rate": 0.0,
+    "decode_timeout_count": 1,
+    "latency_ms_p50": 20000.31,
+    "tokens_emitted": 517,
+    "denoiser_ms": 13675.806,
+    "dfa_sync_ms": 1937.05,
+    "pick_ms": 4825.657,
+    "dfa_sync_count": 4959
+  },
+  "conclusion": "Top-k=1 does not prevent the timeout; repeated denoiser and picker work, not candidate breadth alone, dominates the constrained path."
+}

@@ -1,0 +1,23 @@
+{
+  "iteration": "E153",
+  "date": "2026-07-15",
+  "objective": "Test the existing grammar-trust-model policy knob against the constrained timeout.",
+  "recipe": {
+    "checkpoint": "outputs/runs/iter-e147-judge-gated-control-20260715/e147-judge-gated-control/checkpoints/last.pt",
+    "suite": "smoke",
+    "n": 1,
+    "grammar_trust_model": true,
+    "decode_timeout_seconds": 20
+  },
+  "result": {
+    "parse_rate": 0.0,
+    "decode_timeout_count": 1,
+    "latency_ms_p50": 20001.4,
+    "tokens_emitted": 486,
+    "denoiser_ms": 14322.091,
+    "dfa_sync_ms": 1947.189,
+    "pick_ms": 4711.596,
+    "dfa_sync_count": 5160
+  },
+  "conclusion": "Trust-model mode does not reduce timeout or recover parseability."
+}
