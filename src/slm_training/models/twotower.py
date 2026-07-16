@@ -4752,6 +4752,13 @@ class TwoTowerModel(nn.Module):
                     t = idx % length
                     if not unknown[b, t]:
                         continue
+                    decision_trace = None
+                    if rec is not None and getattr(rec, "record_support", False):
+                        decision_trace = {
+                            "pre_canvas": [int(value) for value in ids[b].tolist()],
+                            "raw_id": int(pred[b, t].item()),
+                            "raw_logit": float(logits[b, t, pred[b, t]].item()),
+                        }
                     candidate = _propose(b, t)
                     if candidate is None:
                         continue
@@ -4785,6 +4792,11 @@ class TwoTowerModel(nn.Module):
                                 "constrained": bool(use_grammar or forced is not None),
                                 "phase": "maskgit",
                             }
+                            if decision_trace is not None:
+                                commit.update(decision_trace)
+                                commit["selected_logit"] = float(
+                                    logits[b, t, int(candidate)].item()
+                                )
                             if (
                                 getattr(rec, "record_support", False)
                                 and use_grammar

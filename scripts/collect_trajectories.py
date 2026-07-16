@@ -108,6 +108,9 @@ def main(argv: list[str] | None = None) -> int:
                 record_support=bool(args.record_support),
             )
             model.trace_recorder = recorder
+            context_text = model._context_prompts(
+                [record.prompt], golds=[None], design_mds=[None]
+            )[0]
             try:
                 text = model.generate(record.prompt, gold=None, design_md=None)
             finally:
@@ -136,6 +139,8 @@ def main(argv: list[str] | None = None) -> int:
                 policy_checkpoint=str(args.checkpoint),
                 decode_config_hash=decode_hash,
                 tokenizer_version=getattr(model.tokenizer, "version", None),
+                tokenizer_sha=model.artifact_identity()["tokenizer_sha"],
+                context_text=context_text,
                 seed=int(args.seed),
             )
             store.append(trace)
