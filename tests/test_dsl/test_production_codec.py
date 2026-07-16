@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
+
+import pytest
 
 from slm_training.data.contract import (
     GenerationRequest,
@@ -28,6 +31,8 @@ from slm_training.dsl.production_codec import (
     encode_openui,
     roundtrip_openui,
 )
+from slm_training.dsl.lang_core import ParseError, bridge_available
+from slm_training.dsl.lang_core import parse as lang_core_parse
 from slm_training.dsl.schema import ExampleRecord, load_jsonl
 
 HERO = (
@@ -249,3 +254,109 @@ def test_v05_codec_handles_arithmetic_without_runtime_statements() -> None:
     assert program.tokens[0] == V05
     assert "1 + 2 * 3" in decoded
     assert __import__("slm_training.dsl", fromlist=["parse"]).parse(decoded).root
+
+
+# --- B2 (SLM-22): training targets are fixed points of the decode collapse ---
+
+DEAD_BINDING = 'root = Card(":card.title")\norphan = Button(":cta.label")'
+
+MODAL = (
+    'root = Stack([dialog], "column")\n'
+    'body = TextContent(":modal.body")\n'
+    'dialog = Modal(":modal.title", true, [body])'
+)
+
+# Binder "hero" also appears inside placeholder string literals; statement
+# order must come from the parsed AST, not from name matches in surface text.
+NAME_IN_LITERAL = (
+    'root = Stack([title, hero], "column")\n'
+    'title = TextContent(":smoke.hero.kicker")\n'
+    'head = CardHeader(":smoke.hero.title", ":smoke.hero.subtitle")\n'
+    'hero = Card([head])'
+)
+
+V05_STATE_FIRST = (
+    '$count = 0\n'
+    'root = Stack([hello], "column")\n'
+    'hello = TextContent(@Count($count) > 0 ? ":a" : ":b")'
+)
+
+
+def _fixture_records() -> list[ExampleRecord]:
+    records: list[ExampleRecord] = []
+    for path in (
+        "src/slm_training/resources/train_seeds.jsonl",
+        "src/slm_training/resources/test_seeds.jsonl",
+    ):
+        records.extend(load_jsonl(path))
+    return records
+
+
+def test_dead_binding_keeps_root_binding() -> None:
+    _, decoded = roundtrip_openui(DEAD_BINDING)
+    bindings = dict(line.split(" = ", 1) for line in decoded.splitlines())
+    assert bindings["root"].startswith("Card(")
+
+
+def test_positional_prop_order_survives_roundtrip() -> None:
+    _, decoded = roundtrip_openui(MODAL)
+    assert 'Modal(":modal.title", true, [v0])' in decoded
+
+
+def test_forward_reference_to_root_fails_closed() -> None:
+    source = 'root = Card(":card.title")\necho = Stack([root], "column")'
+    with pytest.raises(ParseError, match="forward reference"):
+        encode_openui(source)
+
+
+def test_token_stream_is_fixed_point_of_decode() -> None:
+    for source in (HERO, DEAD_BINDING, MODAL, NAME_IN_LITERAL, V05_STATE_FIRST):
+        program = encode_openui(source)
+        decoded = decode_productions(program.tokens, program.slot_contract)
+        reencoded = encode_openui(decoded, slot_contract=program.slot_contract)
+        assert reencoded.tokens == program.tokens, source
+
+
+def test_fixture_corpus_token_streams_are_canonical_fixed_points() -> None:
+    for record in _fixture_records():
+        contract = canonical_slot_contract(
+            record.openui, declared=record.placeholders
+        )
+        program = encode_openui(record.openui, slot_contract=contract)
+        decoded = decode_productions(program.tokens, program.slot_contract)
+        reencoded = encode_openui(decoded, slot_contract=program.slot_contract)
+        assert reencoded.tokens == program.tokens, record.id
+
+
+def _strip_statement_ids(node: Any) -> Any:
+    if isinstance(node, dict):
+        return {
+            key: _strip_statement_ids(value)
+            for key, value in node.items()
+            if key != "statementId"
+        }
+    if isinstance(node, list):
+        return [_strip_statement_ids(item) for item in node]
+    return node
+
+
+@pytest.mark.skipif(
+    not bridge_available(),
+    reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
+)
+def test_fixture_corpus_roundtrip_is_langcore_canonical_equal() -> None:
+    """encode→decode must preserve the official lang-core resolved structure.
+
+    The official serializer keeps binder names, so equality is checked on the
+    resolved root AST with statementId erased — the codec's deterministic
+    alpha-renaming must never change what the official parser resolves.
+    """
+    for record in _fixture_records():
+        contract = canonical_slot_contract(
+            record.openui, declared=record.placeholders
+        )
+        program = encode_openui(record.openui, slot_contract=contract)
+        decoded = decode_productions(program.tokens, program.slot_contract)
+        expected = _strip_statement_ids(lang_core_parse(record.openui).root)
+        actual = _strip_statement_ids(lang_core_parse(decoded).root)
+        assert actual == expected, record.id

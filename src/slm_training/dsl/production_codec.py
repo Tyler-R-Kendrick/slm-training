@@ -288,33 +288,84 @@ def _parse_bindings(source: str) -> dict[str, Any]:
     return bindings
 
 
-def _statement_order(source: str, bindings: dict[str, Any]) -> list[str]:
-    order: list[str] = []
-    seen: set[str] = set()
+def _ordered_prop_values(type_name: str, props: dict[str, Any]) -> list[Any]:
+    """Prop values in declared positional order (absent middle props -> None).
 
-    def visit_ref(name: str) -> None:
+    The decoder reconstructs a positional surface, so emission must follow the
+    declared prop order exactly — otherwise the parser reassigns values to the
+    wrong props on reparse (e.g. Modal children landing in ``title``).
+    """
+    order = list(_prop_order().get(type_name) or [])
+    unknown = [key for key in props if key != "_args" and key not in order]
+    if unknown:
+        raise ParseError(
+            f"component {type_name!r} props outside positional order: {unknown}"
+        )
+    present = [i for i, key in enumerate(order) if key in props]
+    last = present[-1] if present else -1
+    values: list[Any] = [props.get(key) for key in order[: last + 1]]
+    values.extend(props.get("_args") or [])
+    return values
+
+
+def _expr_refs(node: Any) -> list[str]:
+    """Statement refs in emission order (mirrors ``_encode_expr`` traversal)."""
+    refs: list[str] = []
+
+    def walk(value: Any) -> None:
+        if isinstance(value, list):
+            for item in value:
+                walk(item)
+            return
+        if not isinstance(value, dict):
+            return
+        kind = value.get("type")
+        if kind == "ref":
+            refs.append(str(value["name"]))
+            return
+        if kind == "element":
+            props = dict(value.get("props") or {})
+            for item in _ordered_prop_values(str(value.get("typeName") or ""), props):
+                walk(item)
+            return
+        if kind == "call":
+            name = str(value.get("name") or "")
+            props = map_positional_props(
+                name, list(value.get("args") or []), _prop_order()
+            )
+            for item in _ordered_prop_values(name, props):
+                walk(item)
+
+    walk(node)
+    return refs
+
+
+def _statement_order(bindings: dict[str, Any]) -> list[str]:
+    """Emission order: root's dependencies (DFS), remaining statements, root last.
+
+    Refs are read from the parsed statement ASTs rather than surface text so
+    the order is invariant under binder renaming: the decoder's alpha-renamed
+    output re-encodes to the identical production stream, and the decoder's
+    "last statement is root" naming convention always holds.
+    """
+    order: list[str] = []
+    seen: set[str] = {"root"}
+
+    def visit(name: str) -> None:
         if name in seen:
             return
         seen.add(name)
-        match = re.search(
-            rf"(?m)^{re.escape(name)}\s*=\s*(.+?)\s*$",
-            source,
-        )
-        if not match:
-            return
-        rhs = match.group(1)
-        for ref in re.findall(r"\b([a-z_][A-Za-z0-9_]*)\b", rhs):
-            if ref in {"true", "false", "null"}:
-                continue
-            if re.search(rf"(?m)^{re.escape(ref)}\s*=", source):
-                visit_ref(ref)
+        for ref in _expr_refs(bindings[name]):
+            if ref in bindings:
+                visit(ref)
         order.append(name)
 
-    visit_ref("root")
-    for match in _STMT_RE.finditer(source):
-        name = match.group(1)
-        if name not in seen:
-            visit_ref(name)
+    for ref in _expr_refs(bindings["root"]):
+        if ref in bindings:
+            visit(ref)
+    for name in bindings:
+        visit(name)
+    order.append("root")
     return order
 
 
@@ -468,15 +519,20 @@ def encode_openui(
         else canonical_slot_contract(scrubbed)
     )
     slot_index = {ph: i for i, ph in enumerate(contract)}
-    stmt_order = _statement_order(scrubbed, bindings)
+    stmt_order = _statement_order(bindings)
     stmt_index = {name: i for i, name in enumerate(stmt_order)}
 
     tokens: list[str] = []
-    for name in stmt_order:
+    for position, name in enumerate(stmt_order):
         tokens.append(STMT)
         expr = _resolve_binding(bindings, name)
         tokens.extend(
-            _encode_expr(expr, slot_index=slot_index, stmt_index=stmt_index)
+            _encode_expr(
+                expr,
+                slot_index=slot_index,
+                stmt_index=stmt_index,
+                stmt_limit=position,
+            )
         )
     return ProductionProgram(tokens=tuple(tokens), slot_contract=tuple(contract))
 
@@ -716,13 +772,13 @@ def _decode_v05(
                 out.append(piece)
         return "".join(out)
 
+    # Preserve stream order: the v0.5 encoder keeps source statement order, so
+    # reordering here would break encode→decode→encode token idempotence.
     lines = [
         f"{name} = {pretty(tokens)}"
         for name, (_, tokens) in zip(binder_names, sections)
     ]
-    root_lines = [line for line in lines if line.startswith(f"{root_name} = ")]
-    other_lines = [line for line in lines if not line.startswith(f"{root_name} = ")]
-    return "\n".join(root_lines + other_lines)
+    return "\n".join(lines)
 
 
 def roundtrip_openui(
@@ -755,6 +811,7 @@ def _encode_expr(
     *,
     slot_index: dict[str, int],
     stmt_index: dict[str, int],
+    stmt_limit: int | None = None,
 ) -> list[str]:
     if node is None:
         return [_literal_token(None)]
@@ -773,14 +830,27 @@ def _encode_expr(
     if isinstance(node, list):
         out = [LIST_OPEN]
         for item in node:
-            out.extend(_encode_expr(item, slot_index=slot_index, stmt_index=stmt_index))
+            out.extend(
+                _encode_expr(
+                    item,
+                    slot_index=slot_index,
+                    stmt_index=stmt_index,
+                    stmt_limit=stmt_limit,
+                )
+            )
         out.append(LIST_CLOSE)
         return out
     if isinstance(node, dict) and node.get("type") == "ref":
         name = str(node["name"])
         if name not in stmt_index:
             raise ParseError(f"unbound ref {name!r}")
-        return [f"{REF_PREFIX}{stmt_index[name]}"]
+        index = stmt_index[name]
+        if stmt_limit is not None and index >= stmt_limit:
+            raise ParseError(
+                f"forward reference {name!r} is not representable in the "
+                "production stream"
+            )
+        return [f"{REF_PREFIX}{index}"]
     if isinstance(node, dict) and node.get("type") == "element":
         type_name = str(node.get("typeName") or "")
         props = dict(node.get("props") or {})
@@ -791,6 +861,7 @@ def _encode_expr(
                 props,
                 slot_index=slot_index,
                 stmt_index=stmt_index,
+                stmt_limit=stmt_limit,
             )
         )
         tokens.append(CLOSE)
@@ -807,6 +878,7 @@ def _encode_expr(
                 props,
                 slot_index=slot_index,
                 stmt_index=stmt_index,
+                stmt_limit=stmt_limit,
             )
         )
         tokens.append(CLOSE)
@@ -820,38 +892,20 @@ def _encode_component_props(
     *,
     slot_index: dict[str, int],
     stmt_index: dict[str, int],
+    stmt_limit: int | None = None,
 ) -> list[str]:
-    order = list(_prop_order().get(type_name) or [])
     tokens: list[str] = []
-    emitted_children = False
-
-    if "children" in props and props["children"] is not None:
-        tokens.extend(
-            _encode_expr(
-                props["children"],
-                slot_index=slot_index,
-                stmt_index=stmt_index,
-            )
-        )
-        emitted_children = True
-
-    for key in order:
-        if key == "children" and emitted_children:
-            continue
-        if key not in props:
-            continue
-        value = props[key]
+    for value in _ordered_prop_values(type_name, props):
         if value is None:
             tokens.append(_literal_token(None))
             continue
         tokens.extend(
-            _encode_expr(value, slot_index=slot_index, stmt_index=stmt_index)
-        )
-
-    extra = props.get("_args") or []
-    for value in extra:
-        tokens.extend(
-            _encode_expr(value, slot_index=slot_index, stmt_index=stmt_index)
+            _encode_expr(
+                value,
+                slot_index=slot_index,
+                stmt_index=stmt_index,
+                stmt_limit=stmt_limit,
+            )
         )
     return tokens
 
