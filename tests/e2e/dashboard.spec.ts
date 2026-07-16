@@ -29,6 +29,36 @@ test.describe("mission control dashboard", () => {
     await expect(page.locator(".pg-card")).toBeVisible();
   });
 
+  test("training data exhausts record pages and exposes complete details", async ({ page }) => {
+    const records = [
+      { id: "row-1", prompt: "First prompt", openui: 'TextContent("first")', source: "fixture", split: "train", meta: { quality: 1 } },
+      { id: "row-2", prompt: "Second prompt", openui: 'TextContent("second")', source: "fixture", split: "train", meta: { quality: 2 } },
+      { id: "row-3", prompt: "Third prompt", openui: 'TextContent("third")', source: "generated", split: "train", meta: { quality: 3 } },
+    ];
+    await page.route("**/api/data/train/v1/records?**", (route) => {
+      const url = new URL(route.request().url());
+      const query = (url.searchParams.get("q") || "").toLowerCase();
+      const filtered = query ? records.filter((record) => JSON.stringify(record).toLowerCase().includes(query)) : records;
+      const offset = Number(url.searchParams.get("offset") || 0);
+      route.fulfill({ json: {
+        version: "v1", count: filtered.length, offset, limit: 500,
+        sources: ["fixture", "generated"], records: filtered.slice(offset, offset + 2),
+      } });
+    });
+    await page.route("**/api/data/train", (route) => route.fulfill({ json: {
+      version: "v1", versions: ["v1"], record_count: 3, storage: "committed", stats: { record_count: 3 },
+    } }));
+    await page.route("**/api/data/test", (route) => route.fulfill({ json: { suites: {} } }));
+
+    await page.goto("/data");
+    await expect(page.locator(".data-browser-count")).toHaveText("Showing all 3 of 3");
+    await expect(page.getByRole("button", { name: "View" })).toHaveCount(3);
+    await page.getByPlaceholder("id, prompt, source, or OpenUI").fill("Third");
+    await expect(page.locator(".data-browser-count")).toHaveText("Showing all 1 of 1");
+    await page.getByRole("button", { name: "View" }).click();
+    await expect(page.locator(".record-detail")).toContainText('"quality": 3');
+  });
+
   test("retired classic URL redirects to the React playground", async ({ page }) => {
     await page.goto("/playground/classic");
     await expect(page).toHaveURL(/\/playground$/);
@@ -56,24 +86,4 @@ test.describe("mission control dashboard", () => {
     await expect(page.getByText("The final batch coincides with a loss spike.")).toBeVisible();
   });
 
-  test("run detail charts loss, marks collapse, and explains phase improvements", async ({ page }) => {
-    await page.route("**/api/runs/demo/rl-traces**", (route) => route.fulfill({ json: { traces: [], total: 0, count: 0, invalid_rows: 0 } }));
-    await page.route("**/api/runs/demo", (route) => route.fulfill({ json: {
-      run_id: "demo",
-      provenance: "live",
-      train_summary: { steps: 6, last_loss: 3, finished_at: "2026-07-15T00:00:00Z" },
-      scoreboard: {}, manifest: null, gates: null, telemetry: null, matrix_result: null,
-      insights: {
-        run_id: "demo", source_fingerprint: "a".repeat(64), enrichment: { generated: { summary: "The final batch coincides with a loss spike.", causes: [] } },
-        loss: { status: "collapsed", points: [{ step: 1, loss: 1 }, { step: 5, loss: 1 }, { step: 6, loss: 3 }], events: [{ kind: "spike", step: 6, loss: 3, severity: "critical", finding: "Loss spiked above its rolling baseline.", suggestion: "Test a lower learning rate." }] },
-        phases: [{ label: "denoiser", value: 72, help: "Profile model forwards first, then rerun quality guardrails." }],
-      },
-    } }));
-    await page.goto("/runs/demo");
-    await expect(page.getByText("Loss over time")).toBeVisible();
-    await expect(page.locator(".loss-line")).toBeVisible();
-    await expect(page.locator(".loss-marker-critical circle")).toHaveCount(1);
-    await expect(page.locator(".bar-help")).toHaveAttribute("aria-label", /rerun quality guardrails/);
-    await expect(page.getByText("The final batch coincides with a loss spike.")).toBeVisible();
-  });
 });

@@ -12,7 +12,7 @@ compPanel = Panel("Corpus composition", [Bars(train.composition)], ProvenanceBad
 suitesPanel = Panel("Eval suites", [Bars(test.rows), Hint("Ship claims require full rico_held (n≥1500).", true)], ProvenanceBadge(test.provenance))
 row1 = Row([compPanel, suitesPanel])
 
-recordsPanel = Panel("Training examples", [DataBrowser(train.version)], Note("search · filter · inspect", "hint"))
+recordsPanel = Panel("Training examples", [DataBrowser(train.version)], Note("search · scroll all · inspect details", "hint"))
 
 genPanel = Panel("Create a training dataset", [DataGenerator(train.versions)], Note("recommended settings included", "hint"))
 
