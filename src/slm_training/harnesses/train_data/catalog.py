@@ -43,6 +43,7 @@ KNOWN_FAMILIES = (
     "renderer_visual",
     "web_distilled",
     "diffusion_corruption",
+    "scope_contract",
 )
 
 _SYNTH_TO_FAMILY = {
@@ -79,6 +80,7 @@ _BASE_SOURCE_TO_FAMILY = {
     "renderer_visual": "renderer_visual",
     "web_distilled": "web_distilled",
     "diffusion_corruption": "diffusion_corruption",
+    "scope_contract": "scope_contract",
 }
 
 

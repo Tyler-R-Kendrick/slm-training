@@ -428,6 +428,12 @@ five suites. The normal ship gates remain authoritative.
 | X13 | Critic scheduling | X12 + accept/defer/contract calibration | grammar_diffusion v2 | `gx_x13_critic` |
 | X14 | Dynamic work buffer | X13 + bounded active nodes/global sync | grammar_diffusion v2 | `gx_x14_buffer` |
 | X15 | Topology champion | X14 + curriculum/capacity | grammar_diffusion v2 | `gx_x15_topology_champion` |
+| X16 | Scope corpus control | X9 + shared scope derivatives | grammar_diffusion v2 | `gx_x16_scope_corpus` |
+| X17 | Scope contracts | X16 + contract embeddings + summary/local-gate heads | grammar_diffusion v2 | `gx_x17_scope_contracts` |
+| X18 | Scope noise | X17 + independently noised scopes | grammar_diffusion v2 | `gx_x18_scope_noise` |
+| X19 | Local oracle supervision | X18 + local-gate/failure-cone targets | grammar_diffusion v2 | `gx_x19_scope_oracle` |
+| X20 | Contract negatives | X19 + boundary and local/global negatives | grammar_diffusion v2 | `gx_x20_scope_negatives` |
+| X21 | Scoped topology stack | X20 + X14 actions/buffer/global sync | grammar_diffusion v2 | `gx_x21_scoped_topology` |
 
 `grammar_diffusion` is the harness plug-in for
 `GrammarDiffusionModel` format v2 (typed production-tree diffusion). See
@@ -445,6 +451,9 @@ python -m scripts.run_grammar_matrix \
 
 # Isolated topology levers
 python -m scripts.run_grammar_matrix --only X9,X10,X11 --steps 80
+
+# Inspect planned ScopeDiff rows without data builds, training, or result writes
+python -m scripts.run_grammar_matrix --only X16,X17,X18,X19,X20,X21 --describe
 
 # Disable halving (run every experiment×seed to completion)
 python -m scripts.run_grammar_matrix --no-halving --only X9,X15 --steps 80
@@ -466,6 +475,10 @@ topology_composite = 0.45 honest_quality
 The component definitions, budgets, checkpoint boundary, and evidence rules are in
 [grammar-topology-diffusion.md](grammar-topology-diffusion.md). Evidence-complete
 negative results count; undocumented or JSON-only runs do not.
+
+X16-X21 are registered and runnable but deliberately **unrun**. They must not be
+added to `grammar-matrix-results.json` until a real matrix invocation has emitted
+AgentEvals/AgentV evidence and both durable JSON and measured markdown.
 
 Artifacts: `outputs/runs/grammar_matrix_summary.json`,
 [`docs/design/grammar-matrix-results.json`](grammar-matrix-results.json),

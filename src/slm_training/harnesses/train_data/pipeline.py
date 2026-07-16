@@ -27,8 +27,12 @@ from slm_training.harnesses.train_data.synth import PromptSynthesizer, get_synth
 class TrainDataConfig:
     seed_path: Path | None = None
     # Human thumbs-up promotions from the annotate playground.
-    human_annotations_path: Path | None = Path("src/slm_training/resources/annotations/human_train.jsonl")
-    rico_path: Path | None = Path("src/slm_training/resources/rico/semantic_train.jsonl")
+    human_annotations_path: Path | None = Path(
+        "src/slm_training/resources/annotations/human_train.jsonl"
+    )
+    rico_path: Path | None = Path(
+        "src/slm_training/resources/rico/semantic_train.jsonl"
+    )
     # rico | fixture | existing | both | awwwards | rico+awwwards | all
     source: str = "all"
     # Reuse a previously built records.jsonl as roots for deterministic variants.
@@ -67,12 +71,17 @@ class TrainDataConfig:
     programspec_count: int = 16
     programspec_seed: int = 0
     include_language_contract: bool = True
-    deconstruct_path: Path | None = Path("src/slm_training/resources/deconstruct/pipeline.jsonl")
-    render_path: Path | None = Path("src/slm_training/resources/render/sample_program.json")
+    deconstruct_path: Path | None = Path(
+        "src/slm_training/resources/deconstruct/pipeline.jsonl"
+    )
+    render_path: Path | None = Path(
+        "src/slm_training/resources/render/sample_program.json"
+    )
     frontier_artifact_root: Path | None = Path("src/slm_training/resources/frontier")
     include_frontier_artifacts: bool = True
     repairs_per_program: int = 1
     include_edit_derivatives: bool = True
+    include_scope_derivatives: bool = False
     include_design_md_contrastive: bool = True
     diffusion_online: bool = True
     governance_artifacts: bool = True
@@ -306,6 +315,10 @@ def _records_from_progspec(
             out.extend(_program_repair_records(spec, config.repairs_per_program))
             if config.include_edit_derivatives:
                 out.extend(_program_edit_records(spec))
+            if config.include_scope_derivatives:
+                from slm_training.data.progspec import derive_scope_records
+
+                out.extend(derive_scope_records(spec))
         except (RuntimeError, ValueError) as exc:
             errors.append({"id": spec.id, "error": str(exc)})
     return out, errors
@@ -705,7 +718,9 @@ def _existing_program_derivatives(
         id=root_id,
         openui=record.openui,
         facts=dict(meta.get("facts") or {}),
-        program_family_id=str(meta.get("program_family_id") or f"{record.source}:{root_id}"),
+        program_family_id=str(
+            meta.get("program_family_id") or f"{record.source}:{root_id}"
+        ),
         lineage_id=str(meta.get("lineage_id") or root_id),
         split_group_id=str(meta.get("split_group_id") or root_id),
         split=record.split,
@@ -1087,6 +1102,7 @@ def build_train_data(
             "frontier_artifacts": bool(config.include_frontier_artifacts),
             "repairs_per_program": config.repairs_per_program,
             "edit_derivatives": bool(config.include_edit_derivatives),
+            "scope_derivatives": bool(config.include_scope_derivatives),
             "design_md_contrastive": bool(config.include_design_md_contrastive),
         },
         "mixture": mixture_payload,

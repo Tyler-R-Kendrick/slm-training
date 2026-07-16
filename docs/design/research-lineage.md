@@ -445,6 +445,26 @@ The manifest currently labels 14 sources **Adapted** and 36 **Adjacent**. Those
 labels describe code lineage only. No paper result, latency multiplier, quality
 gain, or ship status is inherited, and V8 rows E200-E207/C5-C8 remain unrun.
 
+## Contract-conditioned scope diffusion (X16-X21)
+
+The public ScopeDiff discussion cited **19 papers**. Canonical arXiv metadata,
+authors, paraphrased summaries, repo mappings, limitations, and fidelity labels
+are committed in
+[`scope-diffusion-sources.json`](../../src/slm_training/resources/autoresearch/scope-diffusion-sources.json).
+The inventory labels 13 sources **Adapted** and 6 **Adjacent**; these are lineage
+labels, not reproduced results.
+
+| Research cluster | ScopeDiff use | Boundary |
+| --- | --- | --- |
+| Insertion, deletion, masked, block, and heterogeneous diffusion | Typed expansion/edit actions, independent scope noise, and a bounded active-scope buffer | **Adapted** to OpenUI topology; none of the paper objectives or benchmarks are reproduced |
+| Syntax-directed generation, typed holes, type slicing, and AST decoders | Stable scope contracts with inherited fields, synthesized summaries, and AST failure cones | **Adapted** pragmatic interfaces; not a VAE, formal hole calculus, or mechanized type slicer |
+| CFG and semantic constrained decoding | Existing OpenUI parser/verifier remains the hard authority around local wrapper proposals | **Adjacent**; no CFG-intersection, PICARD, or Synchromesh decoder is claimed |
+| Concept embeddings and sparse autoencoders | Motivation for explicit contract embeddings and falsification of latent critics | **Adjacent**; no SAE is implemented or treated as a semantic oracle |
+
+The code substrate is `data/progspec/scopes.py`, the conditional heads in
+`models/grammar_diffusion.py`, and planned matrix rows X16-X21. No X16-X21 run,
+quality gain, or ship status is recorded by this implementation-only change.
+
 ## Autoresearch systems and adjacent research directions
 
 ### Swappable deep-research systems

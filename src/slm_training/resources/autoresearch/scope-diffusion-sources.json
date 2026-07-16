@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "retrieved_at": "2026-07-15T00:00:00Z",
+  "source_scope": "The 19 papers cited by the public ChatGPT ScopeDiff discussion; metadata verified against canonical arXiv records.",
+  "sources": [
+    {
+      "source_id": "arxiv-1902.03249",
+      "kind": "web",
+      "title": "Insertion Transformer: Flexible Sequence Generation via Insertion Operations",
+      "uri": "https://arxiv.org/abs/1902.03249",
+      "published_at": "2019-02-08",
+      "summary": "Introduces insertion-based generation with arbitrary orderings and parallel insertion at several positions.",
+      "metadata": {"authors": ["Mitchell Stern", "William Chan", "Jamie Kiros", "Jakob Uszkoreit"], "arxiv_id": "1902.03249", "category": "topology_diffusion", "scope_diff_takeaway": "Treat expansion as a first-class action instead of reserving a fixed token canvas.", "repo_relevance": "TopologyAction expansion and concurrent active scopes", "implementation_status": "Adapted", "limitations": "The paper studies sequence translation rather than typed OpenUI trees."}
+    },
+    {
+      "source_id": "arxiv-1905.11006",
+      "kind": "web",
+      "title": "Levenshtein Transformer",
+      "uri": "https://arxiv.org/abs/1905.11006",
+      "published_at": "2019-05-27",
+      "summary": "Uses learned insertion and deletion operations for variable-length generation and iterative refinement.",
+      "metadata": {"authors": ["Jiatao Gu", "Changhan Wang", "Jake Zhao"], "arxiv_id": "1905.11006", "category": "topology_diffusion", "scope_diff_takeaway": "Supervise expansion, deletion, and contraction as complementary edits.", "repo_relevance": "TopologyAction edit heads", "implementation_status": "Adapted", "limitations": "Its sequence edit policy is not a typed-hole or grammar-interface model."}
+    },
+    {
+      "source_id": "arxiv-2202.04200",
+      "kind": "web",
+      "title": "MaskGIT: Masked Generative Image Transformer",
+      "uri": "https://arxiv.org/abs/2202.04200",
+      "published_at": "2022-02-08",
+      "summary": "Iteratively refines many masked positions in parallel with confidence-based scheduling.",
+      "metadata": {"authors": ["Huiwen Chang", "Han Zhang", "Lu Jiang", "Ce Liu", "William T. Freeman"], "arxiv_id": "2202.04200", "category": "masked_diffusion", "scope_diff_takeaway": "Use parallel refinement and confidence scheduling, but replace image positions with typed scopes.", "repo_relevance": "Parallel topology denoising", "implementation_status": "Adapted", "limitations": "Image-token masking assumes a fixed canvas and carries no grammar interface."}
+    },
+    {
+      "source_id": "arxiv-2406.07524",
+      "kind": "web",
+      "title": "Simple and Effective Masked Diffusion Language Models",
+      "uri": "https://arxiv.org/abs/2406.07524",
+      "published_at": "2024-06-11",
+      "summary": "Shows that a simplified masked discrete-diffusion objective and training recipe can be competitive for language modeling.",
+      "metadata": {"authors": ["Subham Sekhar Sahoo", "Marianne Arriola", "Yair Schiff", "Aaron Gokaslan", "Edgar Marroquin", "Justin T. Chiu", "Alexander Rush", "Volodymyr Kuleshov"], "arxiv_id": "2406.07524", "category": "masked_diffusion", "scope_diff_takeaway": "Keep the base denoising objective simple while adding typed contract supervision separately.", "repo_relevance": "Existing grammar diffusion loss", "implementation_status": "Adapted", "limitations": "The paper does not model changing AST topology or local semantic contracts."}
+    },
+    {
+      "source_id": "arxiv-2407.01392",
+      "kind": "web",
+      "title": "Diffusion Forcing: Next-token Prediction Meets Full-Sequence Diffusion",
+      "uri": "https://arxiv.org/abs/2407.01392",
+      "published_at": "2024-07-01",
+      "summary": "Trains sequence positions with independent noise levels to bridge causal prediction and full-sequence diffusion.",
+      "metadata": {"authors": ["Boyuan Chen", "Diego Marti Monso", "Yilun Du", "Max Simchowitz", "Russ Tedrake", "Vincent Sitzmann"], "arxiv_id": "2407.01392", "category": "noise_scheduling", "scope_diff_takeaway": "Sample independent noise for concurrently active scopes.", "repo_relevance": "Heterogeneous topology corruption", "implementation_status": "Adapted", "limitations": "The reported domains and likelihood argument do not validate OpenUI generation."}
+    },
+    {
+      "source_id": "arxiv-2503.09573",
+      "kind": "web",
+      "title": "Block Diffusion: Interpolating Between Autoregressive and Diffusion Language Models",
+      "uri": "https://arxiv.org/abs/2503.09573",
+      "published_at": "2025-03-12",
+      "summary": "Combines autoregressive blocks with within-block diffusion for flexible length and cache-friendly decoding.",
+      "metadata": {"authors": ["Marianne Arriola", "Aaron Gokaslan", "Justin T. Chiu", "Zhihan Yang", "Zhixuan Qi", "Jiaqi Han", "Subham Sekhar Sahoo", "Volodymyr Kuleshov"], "arxiv_id": "2503.09573", "category": "block_diffusion", "scope_diff_takeaway": "Bound concurrent local work and synchronize it with a stable surrounding context.", "repo_relevance": "Bounded topology buffer", "implementation_status": "Adapted", "limitations": "Token blocks are not lexical or AST scopes."}
+    },
+    {
+      "source_id": "arxiv-2603.23507",
+      "kind": "web",
+      "title": "Beyond Masks: Efficient, Flexible Diffusion Language Models via Deletion-Insertion Processes",
+      "uri": "https://arxiv.org/abs/2603.23507",
+      "published_at": "2026-03-04",
+      "summary": "Formulates deletion and insertion as discrete diffusion operations to support variable-length self-correction without padded masks.",
+      "metadata": {"authors": ["Fangyu Ding", "Ding Ding", "Sijin Chen", "Kaibo Wang", "Peng Xu", "Zijin Feng", "Haoli Bai", "Kai Han", "Youliang Yan", "Binhang Yuan", "Jiacheng Sun"], "arxiv_id": "2603.23507", "category": "topology_diffusion", "scope_diff_takeaway": "Prefer explicit variable-size edit actions to pretending every hole has a fixed capacity.", "repo_relevance": "TopologyAction insertion/deletion/contraction", "implementation_status": "Adapted", "limitations": "The repository does not reproduce the paper's score objective or dynamic program."}
+    },
+    {
+      "source_id": "arxiv-2606.29215",
+      "kind": "web",
+      "title": "Multi-Block Diffusion Language Models",
+      "uri": "https://arxiv.org/abs/2606.29215",
+      "published_at": "2026-06-28",
+      "summary": "Matches multi-block inference with bounded groups of independently noised blocks and a static buffer implementation.",
+      "metadata": {"authors": ["Yijie Jin", "Jiajun Xu", "Yuxuan Liu", "Chenkai Xu", "Yi Tu", "Jiajun Li", "Dandan Tu", "Xiaohui Yan", "Kai Yu", "Pengfei Liu", "Zhijie Deng"], "arxiv_id": "2606.29215", "category": "block_diffusion", "scope_diff_takeaway": "Train on the heterogeneous bounded work-set that decode will actually encounter.", "repo_relevance": "Active-scope buffer and independent scope noise", "implementation_status": "Adapted", "limitations": "OpenUI scopes are non-contiguous tree regions, unlike consecutive language blocks."}
+    },
+    {
+      "source_id": "arxiv-1802.08786",
+      "kind": "web",
+      "title": "Syntax-Directed Variational Autoencoder for Structured Data",
+      "uri": "https://arxiv.org/abs/1802.08786",
+      "published_at": "2018-02-24",
+      "summary": "Uses syntax-directed attributes to constrain generation with both grammatical and semantic information.",
+      "metadata": {"authors": ["Hanjun Dai", "Yingtao Tian", "Bo Dai", "Steven Skiena", "Le Song"], "arxiv_id": "1802.08786", "category": "structured_generation", "scope_diff_takeaway": "Carry inherited and synthesized scope attributes through generation.", "repo_relevance": "ScopeContract interfaces and summary heads", "implementation_status": "Adapted", "limitations": "ScopeDiff is not a VAE and does not reproduce stochastic lazy attributes."}
+    },
+    {
+      "source_id": "arxiv-1607.04180",
+      "kind": "web",
+      "title": "Hazelnut: A Bidirectionally Typed Structure Editor Calculus",
+      "uri": "https://arxiv.org/abs/1607.04180",
+      "published_at": "2016-07-14",
+      "summary": "Defines edit actions on typed incomplete terms with holes that remain statically meaningful.",
+      "metadata": {"authors": ["Cyrus Omar", "Ian Voysey", "Michael Hilton", "Jonathan Aldrich", "Matthew A. Hammer"], "arxiv_id": "1607.04180", "category": "typed_holes", "scope_diff_takeaway": "Represent holes with expected context instead of treating masks as untyped blanks.", "repo_relevance": "Typed scope contracts", "implementation_status": "Adapted", "limitations": "OpenUI contracts are pragmatic schema interfaces, not Hazelnut's formal calculus."}
+    },
+    {
+      "source_id": "arxiv-2508.10111",
+      "kind": "web",
+      "title": "Constrained Decoding of Diffusion LLMs with Context-Free Grammars",
+      "uri": "https://arxiv.org/abs/2508.10111",
+      "published_at": "2025-08-13",
+      "summary": "Reduces multi-region diffusion infilling under a CFG to additive completion and language-intersection checks.",
+      "metadata": {"authors": ["Niels Mündler", "Jasper Dekoninck", "Martin Vechev"], "arxiv_id": "2508.10111", "category": "grammar_constraints", "scope_diff_takeaway": "Use hard completion support for multiple holes when practical.", "repo_relevance": "Local wrapper oracle and final grammar verifier", "implementation_status": "Adjacent", "limitations": "The initial implementation reuses OpenUI validation and does not implement the paper's CFG intersection algorithm."}
+    },
+    {
+      "source_id": "arxiv-2607.12197",
+      "kind": "web",
+      "title": "Bidirectional Type Slicing",
+      "uri": "https://arxiv.org/abs/2607.12197",
+      "published_at": "2026-07-13",
+      "summary": "Derives minimal program slices sufficient to reproduce synthesized or expected type information, including erroneous programs.",
+      "metadata": {"authors": ["Max Carroll", "Anil Madhavapeddy", "Cyrus Omar"], "arxiv_id": "2607.12197", "category": "failure_localization", "scope_diff_takeaway": "Localize repair supervision to the smallest dependency-closed failure cone.", "repo_relevance": "AST failure-cone metadata", "implementation_status": "Adapted", "limitations": "The implemented cone is an OpenUI dependency approximation, not the paper's mechanized type-slicing theory."}
+    },
+    {
+      "source_id": "arxiv-2405.20519",
+      "kind": "web",
+      "title": "Diffusion On Syntax Trees For Program Synthesis",
+      "uri": "https://arxiv.org/abs/2405.20519",
+      "published_at": "2024-05-30",
+      "summary": "Applies iterative diffusion edits directly to grammar syntax trees while maintaining syntactic validity.",
+      "metadata": {"authors": ["Shreyas Kapur", "Erik Jenner", "Stuart Russell"], "arxiv_id": "2405.20519", "category": "tree_diffusion", "scope_diff_takeaway": "Keep the denoising state on typed syntax topology rather than raw token spans.", "repo_relevance": "grammar_diffusion topology tree", "implementation_status": "Adapted", "limitations": "The repo does not reproduce inverse-graphics execution feedback or the paper's search procedure."}
+    },
+    {
+      "source_id": "arxiv-2201.11227",
+      "kind": "web",
+      "title": "Synchromesh: Reliable code generation from pre-trained language models",
+      "uri": "https://arxiv.org/abs/2201.11227",
+      "published_at": "2022-01-26",
+      "summary": "Constrains partial program generation using syntax, scope, typing, and contextual semantic rules.",
+      "metadata": {"authors": ["Gabriel Poesia", "Oleksandr Polozov", "Vu Le", "Ashish Tiwari", "Gustavo Soares", "Christopher Meek", "Sumit Gulwani"], "arxiv_id": "2201.11227", "category": "semantic_constraints", "scope_diff_takeaway": "Separate hard local admissibility from learned proposal scores.", "repo_relevance": "Layered verifier and contract oracle", "implementation_status": "Adjacent", "limitations": "The repo does not implement Target Similarity Tuning or Synchromesh CSD."}
+    },
+    {
+      "source_id": "arxiv-2109.05093",
+      "kind": "web",
+      "title": "PICARD: Parsing Incrementally for Constrained Auto-Regressive Decoding from Language Models",
+      "uri": "https://arxiv.org/abs/2109.05093",
+      "published_at": "2021-09-10",
+      "summary": "Rejects inadmissible next tokens by incrementally parsing partial generated programs.",
+      "metadata": {"authors": ["Torsten Scholak", "Nathan Schucher", "Dzmitry Bahdanau"], "arxiv_id": "2109.05093", "category": "grammar_constraints", "scope_diff_takeaway": "Fail closed on proposals that cannot extend to a valid program.", "repo_relevance": "Existing constrained parser and local oracle", "implementation_status": "Adjacent", "limitations": "PICARD is autoregressive SQL decoding, not multi-scope diffusion."}
+    },
+    {
+      "source_id": "arxiv-2209.09056",
+      "kind": "web",
+      "title": "Concept Embedding Models: Beyond the Accuracy-Explainability Trade-Off",
+      "uri": "https://arxiv.org/abs/2209.09056",
+      "published_at": "2022-09-19",
+      "summary": "Learns high-dimensional concept representations that remain interpretable and support intervention.",
+      "metadata": {"authors": ["Mateo Espinosa Zarlenga", "Pietro Barbiero", "Gabriele Ciravegna", "Giuseppe Marra", "Francesco Giannini", "Michelangelo Diligenti", "Zohreh Shams", "Frederic Precioso", "Stefano Melacci", "Adrian Weller", "Pietro Lio", "Mateja Jamnik"], "arxiv_id": "2209.09056", "category": "concept_embeddings", "scope_diff_takeaway": "A learned contract representation may complement explicit symbolic fields.", "repo_relevance": "Contract embeddings", "implementation_status": "Adjacent", "limitations": "ScopeDiff does not implement a concept bottleneck or inherit its explainability claims."}
+    },
+    {
+      "source_id": "arxiv-2502.11356",
+      "kind": "web",
+      "title": "SAIF: A Sparse Autoencoder Framework for Interpreting and Steering Instruction Following of Language Models",
+      "uri": "https://arxiv.org/abs/2502.11356",
+      "published_at": "2025-02-17",
+      "summary": "Uses sparse-autoencoder features to analyze and steer instruction-following behavior.",
+      "metadata": {"authors": ["Zirui He", "Haiyan Zhao", "Yiran Qiao", "Fan Yang", "Ali Payani", "Jing Ma", "Mengnan Du"], "arxiv_id": "2502.11356", "category": "sparse_autoencoders", "scope_diff_takeaway": "SAE steering is a possible residual critic only after symbolic contracts are validated.", "repo_relevance": "Deferred residual critic", "implementation_status": "Adjacent", "limitations": "No SAE is implemented or treated as a semantic oracle."}
+    },
+    {
+      "source_id": "arxiv-2601.05679",
+      "kind": "web",
+      "title": "Do Sparse Autoencoders Identify Reasoning Features in Language Models?",
+      "uri": "https://arxiv.org/abs/2601.05679",
+      "published_at": "2026-01-09",
+      "summary": "Finds that apparent reasoning features can track superficial cues and argues for causal falsification before behavioral attribution.",
+      "metadata": {"authors": ["George Ma", "Zhongyuan Liang", "Irene Y. Chen", "Somayeh Sojoudi"], "arxiv_id": "2601.05679", "category": "sparse_autoencoders", "scope_diff_takeaway": "Do not make SAE activations authoritative without counterexamples and causal tests.", "repo_relevance": "Reason for deferring SAE steering", "implementation_status": "Adjacent", "limitations": "The paper evaluates different models and reasoning tasks, so only its falsification warning transfers."}
+    },
+    {
+      "source_id": "arxiv-1704.07535",
+      "kind": "web",
+      "title": "Abstract Syntax Networks for Code Generation and Semantic Parsing",
+      "uri": "https://arxiv.org/abs/1704.07535",
+      "published_at": "2017-04-25",
+      "summary": "Generates abstract syntax trees with decoder structure that follows the output grammar dynamically.",
+      "metadata": {"authors": ["Maxim Rabinovich", "Mitchell Stern", "Dan Klein"], "arxiv_id": "1704.07535", "category": "structured_generation", "scope_diff_takeaway": "Condition child generation on its parent field and schema role.", "repo_relevance": "Parent-role ScopeContract fields", "implementation_status": "Adapted", "limitations": "ScopeDiff is not an ASN modular decoder and does not inherit its benchmark results."}
+    }
+  ]
+}

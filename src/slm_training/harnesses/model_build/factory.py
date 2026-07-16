@@ -304,9 +304,7 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         grammar_active_symbol_bitsets=bool(
             getattr(config, "grammar_active_symbol_bitsets", False)
         ),
-        compact_active_canvas=bool(
-            getattr(config, "compact_active_canvas", True)
-        ),
+        compact_active_canvas=bool(getattr(config, "compact_active_canvas", True)),
         grammar_incremental_state=getattr(config, "grammar_incremental_state", True),
         grammar_verify_chosen_only=getattr(config, "grammar_verify_chosen_only", False),
         grammar_skip_exact_stream_probe=getattr(
@@ -425,6 +423,14 @@ def build_model(
             ),
             topology_contract_threshold=float(
                 getattr(config, "topology_contract_threshold", 0.25)
+            ),
+            scope_contracts=bool(getattr(config, "scope_contracts", False)),
+            scope_independent_noise=bool(
+                getattr(config, "scope_independent_noise", False)
+            ),
+            scope_local_oracle=bool(getattr(config, "scope_local_oracle", False)),
+            scope_contract_negatives=bool(
+                getattr(config, "scope_contract_negatives", False)
             ),
             design_md_in_context=(
                 False

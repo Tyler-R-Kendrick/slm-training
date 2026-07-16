@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import random
 from copy import deepcopy
@@ -337,6 +338,11 @@ class TopologyNode:
     target_arity: int = 0
     target_slot_id: int = 0
     critic_target: float = 1.0
+    scope_bucket: int = 0
+    scope_noise: float = 0.0
+    scope_summary_target: tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0)
+    scope_gate_target: float = 1.0
+    failure_cone_target: float = 0.0
 
     def clone(self) -> TopologyNode:
         return TopologyNode(
@@ -354,6 +360,11 @@ class TopologyNode:
             target_arity=self.target_arity,
             target_slot_id=self.target_slot_id,
             critic_target=self.critic_target,
+            scope_bucket=self.scope_bucket,
+            scope_noise=self.scope_noise,
+            scope_summary_target=self.scope_summary_target,
+            scope_gate_target=self.scope_gate_target,
+            failure_cone_target=self.failure_cone_target,
         )
 
 
@@ -594,6 +605,10 @@ class GrammarDiffusionConfig:
     topology_global_sync_interval: int = 4
     topology_accept_threshold: float = 0.5
     topology_contract_threshold: float = 0.25
+    scope_contracts: bool = False
+    scope_independent_noise: bool = False
+    scope_local_oracle: bool = False
+    scope_contract_negatives: bool = False
     seed: int = 0
     eval_mode_no_fallback: bool = True
 
@@ -608,6 +623,7 @@ class _TopologyCore(nn.Module):
         max_depth: int,
         max_arity: int,
         dropout: float,
+        scope_contracts: bool = False,
     ) -> None:
         super().__init__()
         self.tok = nn.Embedding(n_productions, d_model)
@@ -615,6 +631,7 @@ class _TopologyCore(nn.Module):
         self.parent_type = nn.Embedding(len(NODE_TYPES) + 1, d_model)
         self.depth = nn.Embedding(max_depth + 1, d_model)
         self.sibling = nn.Embedding(max_arity + 1, d_model)
+        self.scope_contract = nn.Embedding(257, d_model) if scope_contracts else None
         self.layers = nn.ModuleList(
             [
                 TransformerBlock(d_model, n_heads, dropout=dropout, cross_attn=True)
@@ -632,6 +649,7 @@ class _TopologyCore(nn.Module):
         parent_types: torch.Tensor,
         depths: torch.Tensor,
         siblings: torch.Tensor,
+        scope_buckets: torch.Tensor | None,
         context: torch.Tensor,
         *,
         pad_id: int,
@@ -647,6 +665,8 @@ class _TopologyCore(nn.Module):
                 + self.depth(depths.clamp_max(self.depth.num_embeddings - 1))
                 + self.sibling(siblings.clamp_max(self.sibling.num_embeddings - 1))
             )
+        if self.scope_contract is not None and scope_buckets is not None:
+            hidden = hidden + self.scope_contract(scope_buckets.clamp(0, 256))
         pad_mask = input_ids.eq(pad_id)
         for layer in self.layers:
             hidden = layer(
@@ -673,6 +693,7 @@ class GrammarDenoiser(nn.Module):
         max_arity: int = 8,
         dropout: float = 0.0,
         pad_id: int = 0,
+        scope_contracts: bool = False,
     ) -> None:
         super().__init__()
         self.core = _TopologyCore(
@@ -683,6 +704,7 @@ class GrammarDenoiser(nn.Module):
             max_depth,
             max_arity,
             dropout,
+            scope_contracts,
         )
         self.pad_id = pad_id
         self.slot_head = nn.Linear(d_model, max_slots + 1)
@@ -690,6 +712,9 @@ class GrammarDenoiser(nn.Module):
         self.arity_head = nn.Linear(d_model, max_arity + 1)
         self.critic_head = nn.Linear(d_model, 1)
         self.confidence_head = nn.Linear(d_model, 1)
+        self.scope_summary_head = nn.Linear(d_model, 4) if scope_contracts else None
+        self.scope_gate_head = nn.Linear(d_model, 1) if scope_contracts else None
+        self.failure_cone_head = nn.Linear(d_model, 1) if scope_contracts else None
 
     def forward(
         self,
@@ -698,6 +723,7 @@ class GrammarDenoiser(nn.Module):
         parent_types: torch.Tensor,
         depths: torch.Tensor,
         siblings: torch.Tensor,
+        scope_buckets: torch.Tensor | None,
         context: torch.Tensor,
         *,
         structural: bool,
@@ -709,6 +735,7 @@ class GrammarDenoiser(nn.Module):
             parent_types,
             depths,
             siblings,
+            scope_buckets,
             context,
             pad_id=self.pad_id,
             structural=structural,
@@ -721,6 +748,19 @@ class GrammarDenoiser(nn.Module):
             self.arity_head(hidden),
             torch.sigmoid(self.critic_head(hidden).squeeze(-1)),
             torch.sigmoid(self.confidence_head(hidden).squeeze(-1)),
+            self.scope_summary_head(hidden)
+            if self.scope_summary_head is not None
+            else None,
+            (
+                torch.sigmoid(self.scope_gate_head(hidden).squeeze(-1))
+                if self.scope_gate_head is not None
+                else None
+            ),
+            (
+                torch.sigmoid(self.failure_cone_head(hidden).squeeze(-1))
+                if self.failure_cone_head is not None
+                else None
+            ),
         )
 
 
@@ -736,6 +776,17 @@ def _pad_rows(
     return out
 
 
+def _pad_vector_rows(
+    rows: list[list[tuple[float, ...]]], width: int, device: str | torch.device
+) -> torch.Tensor:
+    length = max((len(row) for row in rows), default=1)
+    out = torch.zeros((len(rows), length, width), device=device)
+    for index, row in enumerate(rows):
+        if row:
+            out[index, : len(row)] = torch.tensor(row, device=device)
+    return out
+
+
 def _parent_type_ids(nodes: list[TopologyNode]) -> list[int]:
     by_id = {node.node_id: node for node in nodes}
     missing = len(NODE_TYPES)
@@ -745,6 +796,41 @@ def _parent_type_ids(nodes: list[TopologyNode]) -> list[int]:
         else missing
         for node in nodes
     ]
+
+
+def _apply_scope_contract(
+    root: TopologyNode,
+    record: ExampleRecord,
+    config: GrammarDiffusionConfig,
+    rng: random.Random,
+) -> None:
+    if not config.scope_contracts:
+        return
+    contract = (record.meta or {}).get("scope_contract")
+    if not isinstance(contract, dict):
+        return
+    encoded = json.dumps(contract, sort_keys=True, separators=(",", ":"))
+    bucket = int(hashlib.sha256(encoded.encode("utf-8")).hexdigest()[:8], 16) % 256 + 1
+    summary = (
+        min(1.0, len(contract.get("definitions") or ()) / 8.0),
+        min(1.0, len(contract.get("uses") or ()) / 8.0),
+        min(1.0, len(contract.get("synthesized_slots") or ()) / 8.0),
+        min(1.0, float(contract.get("realized_size") or 0) / 64.0),
+    )
+    gate = float((record.meta or {}).get("scope_gate_target", 1.0))
+    if gate == 0.0 and not config.scope_contract_negatives:
+        gate = 1.0
+    cone_depth = (
+        len((record.meta or {}).get("failure_cone") or ())
+        if config.scope_contract_negatives
+        else 0
+    )
+    for node in _flatten(root):
+        node.scope_bucket = bucket
+        node.scope_noise = rng.random()
+        node.scope_summary_target = summary
+        node.scope_gate_target = gate
+        node.failure_cone_target = float(cone_depth > 0 and node.depth >= cone_depth)
 
 
 def _corrupt_topology(
@@ -765,6 +851,8 @@ def _corrupt_topology(
         if config.topology_heterogeneous_noise:
             probability *= 0.5 + rng.random()
             probability *= 1.0 + min(node.depth, 8) / 16.0
+        if config.scope_independent_noise and node.scope_bucket:
+            probability *= 0.5 + node.scope_noise
         if root.node_id not in selected and rng.random() < min(1.0, probability):
             selected.add(node.node_id)
     if not selected and candidates:
@@ -869,6 +957,7 @@ class GrammarDiffusionModel(nn.Module):
             max_arity=self.config.topology_max_arity,
             dropout=self.config.dropout,
             pad_id=codec.pad_id,
+            scope_contracts=self.config.scope_contracts,
         )
         self._rng = random.Random(self.config.seed)
         self.last_training_metrics: dict[str, float] = {}
@@ -941,6 +1030,7 @@ class GrammarDiffusionModel(nn.Module):
                 )
             )
             gold = topology_from_openui(self.codec, record.openui, inventory, max_len=0)
+            _apply_scope_contract(gold, record, self.config, self._rng)
             state = _corrupt_topology(gold, self.codec, self.config, self._rng)
             rows.append(_flatten(state)[: self.config.topology_max_nodes])
         return prompts, rows
@@ -967,6 +1057,11 @@ class GrammarDiffusionModel(nn.Module):
         )
         siblings = _pad_rows(
             [[node.sibling_index for node in row] for row in rows], 0, self.device_name
+        )
+        scope_buckets = _pad_rows(
+            [[node.scope_bucket for node in row] for row in rows],
+            0,
+            self.device_name,
         )
         actions = _pad_rows(
             [[node.target_action for node in row] for row in rows],
@@ -1006,13 +1101,22 @@ class GrammarDiffusionModel(nn.Module):
             parents,
             depths,
             siblings,
+            scope_buckets,
             ctx,
             structural=self.config.topology_structural_embeddings,
             ctx_pad_mask=ctx_pad,
         )
-        prod_logits, slot_logits, action_logits, arity_logits, critic, confidence = (
-            outputs
-        )
+        (
+            prod_logits,
+            slot_logits,
+            action_logits,
+            arity_logits,
+            critic,
+            confidence,
+            scope_summary,
+            scope_gate,
+            failure_cone,
+        ) = outputs
         action_loss = F.cross_entropy(action_logits[valid], actions[valid])
         critic_loss = F.binary_cross_entropy(critic[valid], critic_targets[valid])
         expand = valid & actions.eq(int(TopologyAction.EXPAND))
@@ -1024,6 +1128,9 @@ class GrammarDiffusionModel(nn.Module):
         arity_loss = total * 0.0
         slot_loss = total * 0.0
         confidence_loss = total * 0.0
+        scope_summary_loss = total * 0.0
+        scope_gate_loss = total * 0.0
+        failure_cone_loss = total * 0.0
         production_accuracy = 0.0
         arity_accuracy = 0.0
         if expand.any():
@@ -1061,6 +1168,35 @@ class GrammarDiffusionModel(nn.Module):
                 + self.config.slot_loss_weight * slot_loss
                 + self.config.confidence_loss_weight * confidence_loss
             )
+        scoped = valid & scope_buckets.gt(0)
+        if scoped.any() and scope_summary is not None and scope_gate is not None:
+            summary_targets = _pad_vector_rows(
+                [[node.scope_summary_target for node in row] for row in rows],
+                4,
+                self.device_name,
+            )
+            gate_targets = _pad_rows(
+                [[node.scope_gate_target for node in row] for row in rows],
+                1.0,
+                self.device_name,
+            )
+            scope_summary_loss = F.mse_loss(
+                scope_summary[scoped], summary_targets[scoped]
+            )
+            scope_gate_loss = F.binary_cross_entropy(
+                scope_gate[scoped], gate_targets[scoped]
+            )
+            total = total + 0.25 * (scope_summary_loss + scope_gate_loss)
+            if self.config.scope_local_oracle and failure_cone is not None:
+                cone_targets = _pad_rows(
+                    [[node.failure_cone_target for node in row] for row in rows],
+                    0.0,
+                    self.device_name,
+                )
+                failure_cone_loss = F.binary_cross_entropy(
+                    failure_cone[scoped], cone_targets[scoped]
+                )
+                total = total + 0.25 * failure_cone_loss
         self.last_training_metrics = {
             "action_loss": float(action_loss.detach().cpu()),
             "production_loss": float(prod_loss.detach().cpu()),
@@ -1068,6 +1204,9 @@ class GrammarDiffusionModel(nn.Module):
             "slot_loss": float(slot_loss.detach().cpu()),
             "critic_loss": float(critic_loss.detach().cpu()),
             "confidence_loss": float(confidence_loss.detach().cpu()),
+            "scope_summary_loss": float(scope_summary_loss.detach().cpu()),
+            "scope_gate_loss": float(scope_gate_loss.detach().cpu()),
+            "failure_cone_loss": float(failure_cone_loss.detach().cpu()),
             "production_accuracy": production_accuracy,
             "arity_accuracy": arity_accuracy,
             "active_nodes": float(expand.sum().detach().cpu()),
@@ -1101,6 +1240,12 @@ class GrammarDiffusionModel(nn.Module):
             # codec and map only model-facing IDs to the checkpoint's <unk> row.
             eval_codec = deepcopy(self.codec)
             gold = topology_from_openui(eval_codec, record.openui, inventory, max_len=0)
+            _apply_scope_contract(
+                gold,
+                record,
+                self.config,
+                random.Random(self.config.seed + index + 9_000),
+            )
             gold_ids = [node.production_id for node in _flatten(gold)]
             oov_rates.append(
                 sum(not 0 <= pid < vocab_size for pid in gold_ids)
@@ -1148,19 +1293,33 @@ class GrammarDiffusionModel(nn.Module):
             0,
             self.device_name,
         )
+        scope_buckets = _pad_rows(
+            [[node.scope_bucket for node in row] for row in rows],
+            0,
+            self.device_name,
+        )
         outputs = self.denoiser(
             ids,
             types,
             parents,
             depths,
             siblings,
+            scope_buckets,
             ctx,
             structural=self.config.topology_structural_embeddings,
             ctx_pad_mask=ctx_pad,
         )
-        prod_logits, _slot_logits, action_logits, arity_logits, critic, _confidence = (
-            outputs
-        )
+        (
+            prod_logits,
+            _slot_logits,
+            action_logits,
+            arity_logits,
+            critic,
+            _confidence,
+            _scope_summary,
+            _scope_gate,
+            _failure_cone,
+        ) = outputs
         evidence: list[dict[str, float]] = []
         for batch_index, row in enumerate(rows):
             width = len(row)
@@ -1328,6 +1487,7 @@ class GrammarDiffusionModel(nn.Module):
                 parents,
                 depths,
                 siblings,
+                None,
                 ctx,
                 structural=self.config.topology_structural_embeddings,
                 ctx_pad_mask=ctx_pad,
@@ -1339,6 +1499,9 @@ class GrammarDiffusionModel(nn.Module):
                 arity_logits,
                 critic,
                 confidence,
+                _scope_summary,
+                _scope_gate,
+                _failure_cone,
             ) = outputs
             index_by_id = {node.node_id: index for index, node in enumerate(selected)}
             proposals: list[tuple[TopologyNode, int, int, int, float, float]] = []

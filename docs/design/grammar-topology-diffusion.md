@@ -127,6 +127,37 @@ Negative results complete an experiment only when the recipe, suite sizes,
 AgentEvals/AgentV bundle, raw JSON, markdown headline, checkpoint disposition, and
 unchanged gate result are all durable.
 
+## ScopeDiff extension (planned X16-X21)
+
+ScopeDiff adds contract-conditioned typed holes to the existing topology model.
+Each `component_call`, `statement`, or `child_list` scope receives a stable ID from
+its ProgramSpec root plus AST path. Its contract records expected schema role,
+parser boundary fingerprint, visible binders/slots, parent/cardinality coordinates,
+budgets, and synthesized definitions/uses/slots/size targets. Derivatives retain
+the root lineage and split group.
+
+One shared `scope_contract` corpus contains reconstruction, local repair, boundary
+counterfactual, local-valid/global-invalid, and heterogeneous multi-scope rows.
+Contract embeddings and summary/local-gate/failure-cone heads are conditional, so
+scope-disabled format-v2 checkpoints retain their original strict state shape.
+The current local oracle conservatively validates a complete OpenUI wrapper through
+the existing layered verifier; final G0-G12 validation remains authoritative.
+
+| ID | Cumulative lever | Status |
+| --- | --- | --- |
+| X16 | X9 plus shared scope corpus | planned, unrun |
+| X17 | X16 plus contract embeddings and summary/local-gate heads | planned, unrun |
+| X18 | X17 plus independent scope noise | planned, unrun |
+| X19 | X18 plus failure-cone supervision | planned, unrun |
+| X20 | X19 plus boundary and local/global negatives | planned, unrun |
+| X21 | X20 plus X14 actions, structural state, critic, buffer, and global sync | planned, unrun |
+
+Future runs must report local G0-G4 by scope kind, parser-exit accuracy,
+definitions/uses/slots F1, failure-cone precision/recall/size, local/global
+disagreement, accepted structure per forward, verifier calls, node passes, and the
+unchanged full-suite gates. `--describe` is the no-write inspection path. No
+training, evaluation, checkpoint, or measured-results JSON was produced here.
+
 ## Measured implementation smoke (2026-07-15 UTC)
 
 Durable summary: [grammar-topology-smoke-results.json](grammar-topology-smoke-results.json).

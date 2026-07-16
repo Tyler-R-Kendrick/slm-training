@@ -39,6 +39,7 @@ NEW_FAMILIES = (
     "renderer_visual",
     "web_distilled",
     "diffusion_corruption",
+    "scope_contract",
 )
 ORGANIC_FAMILIES = (
     "rico_real",
@@ -421,6 +422,7 @@ def default_base_weights() -> dict[str, float]:
         "renderer_visual": 0.05,
         "web_distilled": 0.03,
         "diffusion_corruption": 0.02,
+        "scope_contract": 0.02,
         "prompt_paraphrase": 0.03,
         "layout_augment": 0.025,
         "namespace_augment": 0.015,

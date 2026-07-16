@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Iterable
+from typing import Any, Iterable
 
 from slm_training.data.progspec import ProgramSpec, emit_record
 from slm_training.data.verify import VerificationContext, verify_record
@@ -93,9 +93,7 @@ _COMPONENT_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s*\(")
 _ROOT_CHILDREN_RE = re.compile(r"(?m)^root\s*=\s*Stack\(\[([^\]]*)\]")
 _SCALAR_RE = re.compile(r"\b(?:true|false|-?\d+(?:\.\d+)?)\b")
 _STRING_RE = re.compile(r'"(?:\\.|[^"\\])*"')
-_TOKEN_RE = re.compile(
-    r'\n|"(?:\\.|[^"\\])*"|[A-Za-z_][A-Za-z0-9_]*|\d+|[^\s]'
-)
+_TOKEN_RE = re.compile(r'\n|"(?:\\.|[^"\\])*"|[A-Za-z_][A-Za-z0-9_]*|\d+|[^\s]')
 
 
 class CorruptionNotApplicable(ValueError):
@@ -115,12 +113,18 @@ class CorruptionCase:
     acceptable_repairs: tuple[str, ...]
     edit_distance: int
     preserved_nodes: tuple[str, ...]
+    ast_path: tuple[str | int, ...] = ()
+    source_span: tuple[int, int] = (0, 0)
+    failure_cone: tuple[str | int, ...] = ()
+    contract_mutation: dict[str, Any] | None = None
 
     @property
     def exact_repair(self) -> bool:
         return len(self.acceptable_repairs) == 1
 
-    def to_record(self, spec: ProgramSpec, *, record_id: str | None = None) -> ExampleRecord:
+    def to_record(
+        self, spec: ProgramSpec, *, record_id: str | None = None
+    ) -> ExampleRecord:
         """Project this corruption to a split-safe repair training row."""
         if _canonical(spec.canonical_openui) != self.clean_openui:
             raise ValueError("corruption clean target does not match ProgramSpec")
@@ -136,6 +140,10 @@ class CorruptionCase:
             "exact_repair": self.exact_repair,
             "edit_distance": self.edit_distance,
             "preserved_nodes": list(self.preserved_nodes),
+            "ast_path": list(self.ast_path),
+            "source_span": list(self.source_span),
+            "failure_cone": list(self.failure_cone),
+            "contract_mutation": self.contract_mutation,
         }
         return emit_record(
             spec,
@@ -173,7 +181,9 @@ def build_corruption(
         openui=broken,
         source="repair_taxonomy",
     )
-    report = verify_record(broken_record, VerificationContext(source_kind="deterministic"))
+    report = verify_record(
+        broken_record, VerificationContext(source_kind="deterministic")
+    )
     if report.ok:
         raise CorruptionNotApplicable(
             f"{operator.value} was accepted by every deterministic verifier gate"
@@ -201,6 +211,7 @@ def build_corruption(
         acceptable_repairs=canonical_repairs,
         edit_distance=_edit_distance(broken, clean),
         preserved_nodes=tuple(sorted(clean_nodes & broken_nodes)),
+        source_span=(0, len(broken)),
     )
 
 
@@ -252,7 +263,9 @@ def _remove_line(source: str, prefix: str, operator: CorruptionOperator) -> str:
     raise CorruptionNotApplicable(f"{operator.value} requires a {prefix!r} statement")
 
 
-def _join_lines(source: str, first: str, second: str, operator: CorruptionOperator) -> str:
+def _join_lines(
+    source: str, first: str, second: str, operator: CorruptionOperator
+) -> str:
     return _replace(source, f"{first}\n{second}", f"{first} {second}", operator)
 
 
@@ -321,34 +334,48 @@ def _apply(source: str, operator: CorruptionOperator) -> tuple[str, str]:
     if operator is CorruptionOperator.BROKEN_NUMBER_BOOL:
         scalar = _SCALAR_RE.search(source)
         if not scalar:
-            raise CorruptionNotApplicable("broken_number_bool requires a number or bool")
-        return _replace(source, scalar.group(), f"{scalar.group()}x", operator), "scalar"
+            raise CorruptionNotApplicable(
+                "broken_number_bool requires a number or bool"
+            )
+        return _replace(
+            source, scalar.group(), f"{scalar.group()}x", operator
+        ), "scalar"
     if operator is CorruptionOperator.TRUNCATED_LINE:
         target = source.splitlines()[-1]
         return _truncate(source, target, operator), "last_statement"
     if operator is CorruptionOperator.CONCATENATED_STATEMENTS:
         lines = source.splitlines()
         if len(lines) < 2:
-            raise CorruptionNotApplicable("concatenated_statements requires two statements")
+            raise CorruptionNotApplicable(
+                "concatenated_statements requires two statements"
+            )
         return _join_lines(source, lines[0], lines[1], operator), "statements[0:2]"
 
     if operator is CorruptionOperator.MISSING_ASSIGNMENT:
         target = _line(source, non_root=True)
-        return _replace(source, target, target.replace(" = ", " ", 1), operator), "assignment"
+        return _replace(
+            source, target, target.replace(" = ", " ", 1), operator
+        ), "assignment"
     if operator is CorruptionOperator.TWO_STATEMENTS_PER_LINE:
         lines = source.splitlines()
         if len(lines) < 2:
-            raise CorruptionNotApplicable("two_statements_per_line requires two statements")
+            raise CorruptionNotApplicable(
+                "two_statements_per_line requires two statements"
+            )
         return _join_lines(source, lines[-2], lines[-1], operator), "statements[-2:]"
     if operator is CorruptionOperator.NAMED_WHERE_POSITIONAL:
-        return _replace(source, f"{component}(", f"{component}(value=", operator), "component.arg[0]"
+        return _replace(
+            source, f"{component}(", f"{component}(value=", operator
+        ), "component.arg[0]"
     if operator is CorruptionOperator.MALFORMED_ARRAY:
         return _replace(source, "[", "[}", operator), "array"
     if operator is CorruptionOperator.MALFORMED_OBJECT:
         return _replace(source, "[", "{", operator), "object"
     if operator is CorruptionOperator.INVALID_NESTING:
         child = _first_child(source)
-        return _replace(source, f"[{child}", f"[{{{child}}}", operator), "root.children[0]"
+        return _replace(
+            source, f"[{child}", f"[{{{child}}}", operator
+        ), "root.children[0]"
     if operator is CorruptionOperator.MISSING_ROOT:
         return _remove_line(source, "root =", operator), "root"
     if operator is CorruptionOperator.DUPLICATE_ROOT:
@@ -356,15 +383,21 @@ def _apply(source: str, operator: CorruptionOperator) -> tuple[str, str]:
         return f"{root}\n{source}", "root"
 
     if operator is CorruptionOperator.UNKNOWN_COMPONENT:
-        return _replace(source, f"{component}(", "MissingComponent(", operator), "component.type"
+        return _replace(
+            source, f"{component}(", "MissingComponent(", operator
+        ), "component.type"
     if operator is CorruptionOperator.WRONG_CAPITALIZATION:
-        return _replace(source, f"{component}(", f"{component.lower()}(", operator), "component.type"
+        return _replace(
+            source, f"{component}(", f"{component.lower()}(", operator
+        ), "component.type"
     if operator is CorruptionOperator.WRONG_ARG_COUNT:
         start = statement.index(f"{component}(") + len(component) + 1
         end = statement.rfind(")")
         if end < start:
             raise CorruptionNotApplicable("wrong_arg_count requires a complete call")
-        return _replace(source, statement, statement[:start] + statement[end:], operator), "component.args"
+        return _replace(
+            source, statement, statement[:start] + statement[end:], operator
+        ), "component.args"
     if operator is CorruptionOperator.SWAPPED_POSITIONAL_ARGS:
         arguments = re.search(r'Input\(("[^"]+"),\s*("[^"]+")', source)
         if not arguments:
@@ -380,7 +413,9 @@ def _apply(source: str, operator: CorruptionOperator) -> tuple[str, str]:
         match = _ROOT_CHILDREN_RE.search(source)
         if not match:
             raise CorruptionNotApplicable("wrong_prop_type requires root children")
-        return _replace(source, f"[{match.group(1)}]", '":bad.children"', operator), "root.children"
+        return _replace(
+            source, f"[{match.group(1)}]", '":bad.children"', operator
+        ), "root.children"
     if operator is CorruptionOperator.INVALID_ENUM:
         enum = next((value for value in ('"column"', '"row"') if value in source), "")
         if not enum:
@@ -388,19 +423,27 @@ def _apply(source: str, operator: CorruptionOperator) -> tuple[str, str]:
         return _replace(source, enum, "diagonal", operator), "enum"
     if operator is CorruptionOperator.INVALID_CHILD_TYPE:
         child = _first_child(source)
-        return _replace(source, f"[{child}", '[":bad.child"', operator), "root.children[0]"
+        return _replace(
+            source, f"[{child}", '[":bad.child"', operator
+        ), "root.children[0]"
 
     if operator is CorruptionOperator.UNDEFINED_REF:
         child = _first_child(source)
         return _replace(source, f"[{child}", "[missing", operator), "root.children[0]"
     if operator is CorruptionOperator.DUPLICATE_NAME:
-        return _replace(source, statement, f"{statement}\n{statement}", operator), "binder"
+        return _replace(
+            source, statement, f"{statement}\n{statement}", operator
+        ), "binder"
     if operator is CorruptionOperator.RENAMED_WITHOUT_REFS:
         child = _first_child(source)
         target = _binder_line(source, child)
         if not target:
-            raise CorruptionNotApplicable("renamed_without_refs requires a child binder")
-        return _replace(source, target, target.replace(f"{child} =", "renamed =", 1), operator), child
+            raise CorruptionNotApplicable(
+                "renamed_without_refs requires a child binder"
+            )
+        return _replace(
+            source, target, target.replace(f"{child} =", "renamed =", 1), operator
+        ), child
     if operator is CorruptionOperator.REFERENCE_CYCLE:
         child = _first_child(source)
         target = _binder_line(source, child)
@@ -427,7 +470,9 @@ def _apply(source: str, operator: CorruptionOperator) -> tuple[str, str]:
 
     if operator is CorruptionOperator.PATCH_UNRELATED_STATEMENTS:
         broken, _ = _apply(source, CorruptionOperator.WRONG_ARG_COUNT)
-        return _truncate(broken, broken.splitlines()[-1], operator), "unrelated_statements"
+        return _truncate(
+            broken, broken.splitlines()[-1], operator
+        ), "unrelated_statements"
     if operator is CorruptionOperator.PATCH_NONEXISTENT_OLD:
         return f"{source}\nghost = MissingComponent()", "ghost"
     if operator is CorruptionOperator.PATCH_REMOVAL_DISCONNECTS:
@@ -440,8 +485,12 @@ def _apply(source: str, operator: CorruptionOperator) -> tuple[str, str]:
         child = _first_child(source)
         target = _binder_line(source, child)
         if not target:
-            raise CorruptionNotApplicable("patch_changes_stable_names requires a child binder")
-        return _replace(source, target, target.replace(f"{child} =", "renamed =", 1), operator), child
+            raise CorruptionNotApplicable(
+                "patch_changes_stable_names requires a child binder"
+            )
+        return _replace(
+            source, target, target.replace(f"{child} =", "renamed =", 1), operator
+        ), child
     if operator is CorruptionOperator.PATCH_NONMINIMAL:
         broken, _ = _apply(source, CorruptionOperator.WRONG_ARG_COUNT)
         broken, _ = _apply(broken, CorruptionOperator.INVALID_ENUM)
