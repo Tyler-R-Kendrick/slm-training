@@ -28,6 +28,8 @@ from slm_training.models.grammar_diffusion import (
     TopologyNode,
     _refresh_layout,
     _serialize_topology,
+    production_sequence_accuracy,
+    topology_arity_accuracy,
     topology_from_openui,
 )
 from slm_training.models.checkpoint_migrate import migrate_grammar_diffusion_checkpoint
@@ -354,6 +356,10 @@ def test_topology_scoring_maps_unseen_productions_without_mutating_codec() -> No
 
     assert len(evidence) == 1
     assert evidence[0]["production_oov_rate"] > 0.0
+    assert model.codec.production_to_id == vocab_before
+
+    production_sequence_accuracy(model.codec, held_out.openui, CTA)
+    topology_arity_accuracy(model.codec, held_out.openui, CTA)
     assert model.codec.production_to_id == vocab_before
 
 

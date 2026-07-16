@@ -720,6 +720,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--test-dir", type=Path, default=Path("outputs/data/eval/v1"))
     parser.add_argument("--run-root", type=Path, default=Path("outputs/runs"))
+    parser.add_argument(
+        "--docs-output",
+        type=Path,
+        default=Path("docs/design/grammar-matrix-results.json"),
+        help="Durable measured-results JSON path.",
+    )
     parser.add_argument("--device", default="cpu")
     parser.add_argument(
         "--context-backend", choices=("scratch", "hf"), default="scratch"
@@ -935,7 +941,7 @@ def main(argv: list[str] | None = None) -> int:
     }
     out_path = args.run_root / "grammar_matrix_summary.json"
     out_path.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
-    docs_out = Path("docs/design/grammar-matrix-results.json")
+    docs_out = args.docs_output
     if docs_out.exists():
         prior = json.loads(docs_out.read_text(encoding="utf-8"))
         legacy = prior.get("legacy_fixed_canvas")

@@ -214,6 +214,10 @@ def train(config: ModelBuildConfig, model=None) -> dict:
 
     optimizer = None
     is_twotower = hasattr(plugin, "training_loss")
+    supports_loss_suites = all(
+        hasattr(plugin, name)
+        for name in ("_encode_openui", "_format_one_context", "_encode_context")
+    )
     scaler = None
     use_amp = bool(getattr(config, "use_amp", False)) and accel.amp
     grad_accum = max(1, int(getattr(config, "grad_accum_steps", 1) or 1))
@@ -425,7 +429,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     def _maybe_loss_eval(step: int, force: bool = False) -> dict | None:
         """Deterministic denoising-NLL suites (cheap teacher-forced signal)."""
         nonlocal best_weighted_nll
-        if config.test_dir is None or not is_twotower:
+        if config.test_dir is None or not is_twotower or not supports_loss_suites:
             return None
         if nll_history and nll_history[-1].get("step") == step:
             return nll_history[-1]

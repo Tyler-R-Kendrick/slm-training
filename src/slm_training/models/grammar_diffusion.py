@@ -584,9 +584,10 @@ def _serialize_topology(
 def topology_arity_accuracy(
     codec: InlineProductionCodec, prediction: str, gold: str
 ) -> float:
+    eval_codec = deepcopy(codec)
     try:
-        predicted = _flatten(topology_from_openui(codec, prediction))
-        expected = _flatten(topology_from_openui(codec, gold))
+        predicted = _flatten(topology_from_openui(eval_codec, prediction))
+        expected = _flatten(topology_from_openui(eval_codec, gold))
     except (ValueError, KeyError):
         return 0.0
     pairs = zip(predicted, expected)
@@ -602,9 +603,10 @@ def topology_arity_accuracy(
 def production_sequence_accuracy(
     codec: InlineProductionCodec, prediction: str, gold: str
 ) -> float:
+    eval_codec = deepcopy(codec)
     try:
-        left, _ = codec.encode(prediction, max_len=0)
-        right, _ = codec.encode(gold, max_len=0)
+        left, _ = eval_codec.encode(prediction, max_len=0)
+        right, _ = eval_codec.encode(gold, max_len=0)
     except (ValueError, KeyError):
         return 0.0
     return SequenceMatcher(a=left, b=right, autojunk=False).ratio()
