@@ -139,6 +139,8 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
             component_edge_decode_weight=0.4,
             binder_component_plan_loss_weight=0.9,
             binder_component_plan_decode_weight=0.3,
+            binder_topology_loss_weight=0.8,
+            binder_topology_decode_weight=0.2,
         ),
     )
     assert model.component_inventory_head is not None
@@ -152,6 +154,7 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     assert loaded.component_plan_head is not None
     assert loaded.component_edge_head is not None
     assert loaded.binder_component_plan_head is not None
+    assert loaded.binder_topology_head is not None
     assert loaded.config.component_inventory_loss_weight == 1.0
     assert loaded.config.component_inventory_decode_weight == 0.75
     assert loaded.config.component_plan_loss_weight == 1.0
@@ -161,6 +164,8 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     assert loaded.config.component_edge_decode_weight == 0.4
     assert loaded.config.binder_component_plan_loss_weight == 0.9
     assert loaded.config.binder_component_plan_decode_weight == 0.3
+    assert loaded.config.binder_topology_loss_weight == 0.8
+    assert loaded.config.binder_topology_decode_weight == 0.2
 
     apply_runtime_overrides(
         loaded,
@@ -170,12 +175,14 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
             component_plan_decode_weight=0.0,
             component_edge_decode_weight=0.0,
             binder_component_plan_decode_weight=0.0,
+            binder_topology_decode_weight=0.0,
         ),
     )
     assert loaded.config.component_inventory_decode_weight == 0.0
     assert loaded.config.component_plan_decode_weight == 0.0
     assert loaded.config.component_edge_decode_weight == 0.0
     assert loaded.config.binder_component_plan_decode_weight == 0.0
+    assert loaded.config.binder_topology_decode_weight == 0.0
 
 
 def test_surface_syntax_repair_preserves_string_literals() -> None:

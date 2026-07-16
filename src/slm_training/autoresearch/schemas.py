@@ -41,6 +41,8 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "component_edge_decode_weight",
         "binder_component_plan_loss_weight",
         "binder_component_plan_decode_weight",
+        "binder_topology_loss_weight",
+        "binder_topology_decode_weight",
         "compiler_decode_mode",
         "compiler_search_mode",
         "compiler_search_trigger",
@@ -260,6 +262,8 @@ class ExperimentKnobs(StrictModel):
     component_edge_decode_weight: float | None = Field(default=None, ge=0, le=20)
     binder_component_plan_loss_weight: float | None = Field(default=None, ge=0, le=20)
     binder_component_plan_decode_weight: float | None = Field(default=None, ge=0, le=20)
+    binder_topology_loss_weight: float | None = Field(default=None, ge=0, le=20)
+    binder_topology_decode_weight: float | None = Field(default=None, ge=0, le=20)
     compiler_decode_mode: Literal["off", "forced", "restricted", "tree"] | None = None
     compiler_search_mode: Literal["greedy", "lattice", "ptrm", "gram"] | None = None
     compiler_search_trigger: Literal["bottom", "stagnation", "always"] | None = None
