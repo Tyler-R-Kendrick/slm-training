@@ -60,7 +60,8 @@ class Experiment:
     grammar_ltr_max_tokens: int = 192
     # Eval-only overlay on a prior run (skip train if set)
     eval_from_run: str | None = None
-    design_md_in_context: bool = True
+    design_md_in_context: bool | None = True
+    runtime_override_fields: frozenset[str] | None = None
     # Absolute checkpoint seed (preferred over eval_from_run when set)
     seed_checkpoint: str | None = None
     preference: bool = False
@@ -132,6 +133,8 @@ class Experiment:
     compiler_search_noise: float = 0.0
     compiler_search_stagnation_patience: int = 2
     compiler_search_backtrack_limit: int = 8
+    grammar_finalize_validate: bool = False
+    allow_unconstrained_fallback: bool = True
     component_inventory_loss_weight: float = 0.0
     component_inventory_decode_weight: float = 0.0
     component_plan_loss_weight: float = 0.0
@@ -1234,8 +1237,40 @@ def _v8_experiments(
 
 
 def _v9_experiments(train_dir: Path) -> list[Experiment]:
-    """E240-E247: plan-only compiler-lattice search campaign."""
-    base = dict(initialization="eval_only", output_tokenizer="lexer", grammar_ltr_primary=True, compiler_decode_mode="tree")
+    """E240-E247: eval-only compiler-lattice search campaign."""
+    runtime_fields = frozenset(
+        {
+            "allow_unconstrained_fallback",
+            "compiler_decode_mode",
+            "compiler_search_backtrack_limit",
+            "compiler_search_mode",
+            "compiler_search_noise",
+            "compiler_search_stagnation_patience",
+            "compiler_search_trigger",
+            "compiler_search_width",
+            "design_md_in_context",
+            "grammar_finalize_validate",
+            "grammar_ltr_primary",
+            "honest_slot_contract",
+            "schema_in_context",
+            "slot_contract_constrained_decode",
+            "slot_contract_in_context",
+        }
+    )
+    base = dict(
+        initialization="eval_only",
+        runtime_override_fields=runtime_fields,
+        output_tokenizer="lexer",
+        grammar_ltr_primary=True,
+        grammar_finalize_validate=True,
+        compiler_decode_mode="tree",
+        schema_in_context=True,
+        slot_contract_in_context=True,
+        slot_contract_constrained_decode=True,
+        honest_slot_contract=True,
+        design_md_in_context=False,
+        allow_unconstrained_fallback=False,
+    )
     return [
         Experiment("E240", "qx_e240_compiler_tree_control", "Corrected greedy compiler-tree control", train_dir, **base),
         Experiment("E241", "qx_e241_lattice_rollback", "Hard/soft lattice with bounded rollback", train_dir, compiler_search_mode="lattice", **base),
@@ -1325,6 +1360,7 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         suite="smoke",
         run_root=args.run_root,
         run_id=exp.run_id,
+        runtime_override_fields=exp.runtime_override_fields,
         steps=args.steps,
         batch_size=args.batch_size,
         lr=args.lr,
@@ -1380,6 +1416,12 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         compiler_search_noise=max(0.0, float(getattr(exp, "compiler_search_noise", 0.0) or 0.0)),
         compiler_search_stagnation_patience=max(1, int(getattr(exp, "compiler_search_stagnation_patience", 2) or 2)),
         compiler_search_backtrack_limit=max(0, int(getattr(exp, "compiler_search_backtrack_limit", 8) or 0)),
+        grammar_finalize_validate=bool(
+            getattr(exp, "grammar_finalize_validate", False)
+        ),
+        allow_unconstrained_fallback=bool(
+            getattr(exp, "allow_unconstrained_fallback", True)
+        ),
         component_inventory_loss_weight=float(
             getattr(exp, "component_inventory_loss_weight", 0.0) or 0.0
         ),
@@ -1848,6 +1890,12 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
         if not parent.is_file():
             raise FileNotFoundError(f"{exp.eid} needs parent checkpoint {parent}")
         ckpt = _copy_checkpoint(parent, run_dir / "checkpoints" / "last.pt")
+    elif exp.initialization == "eval_only":
+        if not exp.parent_checkpoint:
+            raise ValueError(f"{exp.eid} eval-only initialization requires --parent")
+        ckpt = Path(exp.parent_checkpoint)
+        if not ckpt.is_file():
+            raise FileNotFoundError(f"{exp.eid} needs parent checkpoint {ckpt}")
     elif exp.initialization == "parent":
         if not exp.parent_checkpoint:
             raise ValueError(f"{exp.eid} parent initialization requires --parent")
@@ -2273,7 +2321,9 @@ def main(argv: list[str] | None = None) -> int:
 
     classified: list[Experiment] = []
     for exp in experiments:
-        if args.scratch_control or args.matrix in {"legacy", "v2", "v3"}:
+        if exp.initialization == "eval_only":
+            initialization = "eval_only"
+        elif args.scratch_control or args.matrix in {"legacy", "v2", "v3"}:
             initialization = "scratch"
         elif exp.eval_from_run or exp.eval_from_checkpoint:
             initialization = "eval_only"
@@ -2297,7 +2347,7 @@ def main(argv: list[str] | None = None) -> int:
                     str(args.parent)
                     if args.parent is not None
                     and (
-                        initialization == "parent"
+                        initialization in {"parent", "eval_only"}
                         or exp.local_parent_control
                         or exp.local_preference_objective is not None
                     )

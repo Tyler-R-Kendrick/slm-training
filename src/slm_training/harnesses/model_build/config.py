@@ -13,6 +13,8 @@ class ModelBuildConfig:
     suite: str = "smoke"
     run_root: Path = Path("outputs/runs")
     run_id: str = "latest"
+    # None preserves legacy behavior; an explicit set limits checkpoint mutation.
+    runtime_override_fields: frozenset[str] | None = None
     steps: int = 200
     batch_size: int = 4
     lr: float = 3e-4
