@@ -22,6 +22,8 @@ def test_v9_registers_only_planned_lattice_rows() -> None:
     assert all(row.initialization == "eval_only" for row in rows)
     assert all(row.honest_slot_contract for row in rows)
     assert all(not row.allow_unconstrained_fallback for row in rows)
+    assert rows[1].compiler_search_local_nogoods is False
+    assert all(row.compiler_search_local_nogoods for row in rows[2:])
 
 
 def test_v9_uses_parent_read_only_without_training(tmp_path, monkeypatch) -> None:

@@ -10,6 +10,7 @@ from slm_training.dsl.grammar.fastpath.lattice_search import (
     LatticeSearchState,
     StagnationTracker,
     deduplicate_semantic_candidates,
+    path_key,
     rank_forest,
     refine_hard_paths,
     trajectory_orders,
@@ -57,7 +58,7 @@ def test_bottom_rolls_back_and_records_local_nogood() -> None:
     )
     assert chosen == first
     assert rank_forest(CompletionForest((), "none")).is_bottom
-    assert state.rollback() == (prefix, second)
+    assert state.rollback() == (prefix, None)
     assert (tuple(prefix), (11,)) in state.nogoods
     reranked = rank_forest(
         CompletionForest((first, second), "complete"),
@@ -73,8 +74,21 @@ def test_backtracking_is_bounded() -> None:
     state.choose(
         [1], rank_forest(CompletionForest((first, second), "complete"))
     )
-    assert state.rollback() == ([1], second)
+    assert state.rollback(local_nogoods=False) == ([1], second)
     assert state.rollback() is None
+
+
+def test_local_nogood_reprojects_at_exact_stable_prefix() -> None:
+    first, second = _paths()
+    state = LatticeSearchState(backtrack_limit=2)
+    prefix = [1, 9]
+    state.choose(prefix, rank_forest(CompletionForest((first, second), "complete")))
+
+    restored, direct = state.rollback(local_nogoods=True) or (None, first)
+
+    assert restored == prefix
+    assert direct is None
+    assert state.nogoods == {(tuple(prefix), path_key(first))}
 
 
 def test_stagnation_requires_same_state_without_progress() -> None:

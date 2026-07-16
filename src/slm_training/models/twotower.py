@@ -259,6 +259,7 @@ class TwoTowerConfig:
     compiler_search_noise: float = 0.0
     compiler_search_stagnation_patience: int = 2
     compiler_search_backtrack_limit: int = 8
+    compiler_search_local_nogoods: bool = False
     fastpath_aux_weight: float = 0.0
     fastpath_gate_threshold: float = 0.5
     # E31: train/use FastPathGate trust head for remask.
@@ -3357,6 +3358,8 @@ class TwoTowerModel(nn.Module):
         )
         after_bottom = False
         while len(prefix) < length:
+            if stats is not None and search_mode != "greedy":
+                stats.compiler_lattice_recurrences += 1
             with timed_ms(stats, "compiler_ms"):
                 forest = build_completion_forest(
                     self.tokenizer,
@@ -3377,14 +3380,35 @@ class TwoTowerModel(nn.Module):
                 if search_mode != "greedy":
                     if stats is not None:
                         stats.compiler_lattice_bottoms += 1
-                    restored = search.rollback()
+                    restored = search.rollback(
+                        local_nogoods=bool(
+                            getattr(
+                                self.config,
+                                "compiler_search_local_nogoods",
+                                False,
+                            )
+                        )
+                    )
                     if restored is not None:
                         prefix, selected_path = restored
-                        selected = tuple(selected_path.token_ids)
+                        state = make_grammar_state()
+                        for stable_token_id in prefix[1:]:
+                            state.advance_token(self.tokenizer, stable_token_id)
+                        selected = (
+                            tuple(selected_path.token_ids)
+                            if selected_path is not None
+                            else ()
+                        )
                         if stats is not None:
                             stats.compiler_lattice_rollbacks += 1
                             stats.compiler_lattice_nogoods = len(search.nogoods)
+                            stats.compiler_lattice_max_rollback_depth = max(
+                                stats.compiler_lattice_max_rollback_depth,
+                                search.backtracks,
+                            )
                         after_bottom = True
+                        if selected_path is None:
+                            continue
                     else:
                         selected = ()
                     if selected:
@@ -3394,9 +3418,21 @@ class TwoTowerModel(nn.Module):
                         selected = selected[:room]
                         for token_id in selected:
                             prefix.append(int(token_id))
+                            state.advance_token(self.tokenizer, int(token_id))
                             if stats is not None:
                                 stats.tokens_emitted += 1
                         continue
+                    if stats is not None:
+                        stats.compiler_lattice_abstentions += 1
+                        if search.backtracks >= search.backtrack_limit:
+                            stats.compiler_lattice_budget_exhaustions += 1
+                            stats.compiler_lattice_termination_reason = (
+                                "backtrack_budget_exhausted"
+                            )
+                        else:
+                            stats.compiler_lattice_termination_reason = (
+                                "no_live_decision"
+                            )
                 if mode == "forced" and forest.paths:
                     canvas = self._compiler_canvas(prefix, length)
                     logits = self._denoiser_forward(canvas, ctx, ctx_pad)
@@ -3480,13 +3516,16 @@ class TwoTowerModel(nn.Module):
                     tree=mode == "tree",
                 )
             if search_mode != "greedy":
+                hard_signature = rank_forest(forest).signature
                 ranked = rank_forest(
                     forest,
                     {tuple(selected): 1.0},
                     prefix=tuple(prefix),
                     nogoods=frozenset(search.nogoods),
                 )
-                is_stagnant = stagnation.observe(ranked.signature, len(prefix))
+                is_stagnant = stagnation.observe(hard_signature, len(prefix))
+                if is_stagnant and stats is not None:
+                    stats.compiler_lattice_stagnation_triggers += 1
                 trigger_trajectory = search_mode in {"ptrm", "gram"} and (
                     search_trigger == "always"
                     or (search_trigger == "bottom" and after_bottom)
@@ -3534,6 +3573,10 @@ class TwoTowerModel(nn.Module):
                         )
                         if stats is not None:
                             stats.compiler_lattice_trajectory_triggers += 1
+                            if search_trigger == "always":
+                                stats.compiler_lattice_always_triggers += 1
+                            elif search_trigger == "bottom":
+                                stats.compiler_lattice_bottom_triggers += 1
                             stats.compiler_lattice_trajectories += len(orders)
                             stats.compiler_lattice_unique_proposals += len(
                                 {order[0].token_ids for order in orders if order}
@@ -3576,7 +3619,17 @@ class TwoTowerModel(nn.Module):
                 if token_id == self.tokenizer.eos_id:
                     break
             if prefix[-1] == self.tokenizer.eos_id:
+                if stats is not None and search_mode != "greedy":
+                    stats.compiler_lattice_termination_reason = "solution"
                 break
+
+        if (
+            stats is not None
+            and search_mode != "greedy"
+            and not stats.compiler_lattice_termination_reason
+        ):
+            stats.compiler_lattice_abstentions += 1
+            stats.compiler_lattice_termination_reason = "length_or_empty_selection"
 
         result = torch.full(
             (length,),

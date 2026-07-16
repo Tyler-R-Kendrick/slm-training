@@ -161,13 +161,16 @@ class LatticeSearchState:
             )
         return chosen
 
-    def rollback(self) -> tuple[list[int], CompletionPath] | None:
-        """Reject the latest choice and return its next live alternative."""
+    def rollback(
+        self, *, local_nogoods: bool = True
+    ) -> tuple[list[int], CompletionPath | None] | None:
+        """Reject the latest conflicting choice and restore its stable prefix."""
         if self.backtracks >= self.backtrack_limit:
             return None
         while self.decisions:
             decision = self.decisions.pop()
-            self.nogoods.add((decision.prefix, path_key(decision.chosen)))
+            if local_nogoods:
+                self.nogoods.add((decision.prefix, path_key(decision.chosen)))
             self.backtracks += 1
             alternative = next(
                 (
@@ -178,6 +181,10 @@ class LatticeSearchState:
                 None,
             )
             if alternative is not None:
+                if local_nogoods:
+                    # Reproject at the stable prefix so the compiler, not this
+                    # trail, proves that the remaining alternative is live.
+                    return list(decision.prefix), None
                 remaining = tuple(
                     path
                     for path in decision.alternatives
