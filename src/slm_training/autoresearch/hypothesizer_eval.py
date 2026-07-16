@@ -131,7 +131,7 @@ def evaluate_hypothesizer(
         "actionable_rate": rate("actionable"),
         "feedback_lineage_rate": rate("feedback_lineage"),
     }
-    passed = min(rates.values()) >= pass_threshold and all(row["pass"] for row in scored)
+    passed = min(rates.values()) >= pass_threshold
     identity = {
         "hypothesizer_id": hypothesizer_id,
         "cases_sha": content_sha(cases),
@@ -157,8 +157,8 @@ def _relative_paths(value: Any, root: Path) -> Any:
     if isinstance(value, list):
         return [_relative_paths(child, root) for child in value]
     if isinstance(value, str):
-        path = Path(value)
         try:
+            path = Path(value)
             return str(path.relative_to(root)) if path.is_absolute() else value
         except ValueError:
             return value

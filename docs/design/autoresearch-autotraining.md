@@ -244,8 +244,10 @@ python -m scripts.autoresearch run --campaign-id <id> --execute
 exact matrix member. It cannot run a legacy standalone proposal. After execution it
 persists the outcome, diagnosis, and feedback inside the same campaign tree. A later
 `hypothesize` receives feedback from the latest matrix, must link that predecessor,
-and cannot repeat any finished knob signature. Matrix candidates are reviewable
-plans; only uniquely started experiments consume `max_experiments`.
+and cannot repeat any finished knob signature or campaign experiment ID. Campaign-wide
+ID uniqueness prevents run budgets and outcome lineage from aliasing an older
+candidate. Matrix candidates are reviewable plans; only uniquely started experiments
+consume `max_experiments`.
 
 This is bounded self-improvement by accumulated evidence and policy iteration. It is
 not online weight training or permission to edit implementation, frozen evaluations,

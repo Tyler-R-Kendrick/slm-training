@@ -346,6 +346,11 @@ def cmd_hypothesize(args: argparse.Namespace) -> int:
         evidence,
         list(result.sources),
         prior_experiments=_finished_experiments(store),
+        prior_experiment_ids=frozenset(
+            candidate.experiment.experiment_id
+            for formed in _formed_matrices(store)
+            for candidate in formed.hypotheses
+        ),
         feedback=feedback,
         previous_matrix=previous_matrix,
     )
@@ -439,6 +444,70 @@ def _latest_formed_matrix(
     digest = str(formed[-1]["artifact_sha256"])
     path = store.root / "artifacts" / "hypothesis_matrices" / f"{digest}.json"
     return HypothesisMatrix.model_validate_json(path.read_text(encoding="utf-8"))
+
+
+def _formed_matrices(store: CampaignStore) -> tuple[HypothesisMatrix, ...]:
+    matrices = []
+    for row in _events(store):
+        if row.get("event_type") != "hypothesis_matrix_formed":
+            continue
+        digest = str(row["artifact_sha256"])
+        path = store.root / "artifacts" / "hypothesis_matrices" / f"{digest}.json"
+        matrices.append(
+            HypothesisMatrix.model_validate_json(path.read_text(encoding="utf-8"))
+        )
+    return tuple(matrices)
+
+
+def _recorded_outcome_matches(
+    store: CampaignStore, event: dict, outcome: ExperimentOutcome
+) -> bool:
+    digest = event.get("artifact_sha256")
+    if not digest:
+        return False
+    path = store.root / "artifacts" / "outcomes" / f"{digest}.json"
+    return path.exists() and ExperimentOutcome.model_validate_json(
+        path.read_text(encoding="utf-8")
+    ) == outcome
+
+
+def _matrix_for_outcome(
+    store: CampaignStore, outcome: ExperimentOutcome
+) -> HypothesisMatrix | None:
+    """Resolve matrix lineage only from the outcome's recorded run provenance."""
+    events = _events(store)
+    finished_index = next(
+        (
+            index
+            for index in range(len(events) - 1, -1, -1)
+            if events[index].get("event_type") == "experiment_finished"
+            and events[index].get("experiment_id") == outcome.experiment_id
+            and _recorded_outcome_matches(store, events[index], outcome)
+        ),
+        None,
+    )
+    if finished_index is None:
+        return None
+    matrix_id = next(
+        (
+            str(row.get("detail", {}).get("hypothesis_matrix_id"))
+            for row in reversed(events[:finished_index])
+            if row.get("event_type") == "experiment_started"
+            and row.get("experiment_id") == outcome.experiment_id
+            and row.get("detail", {}).get("hypothesis_matrix_id")
+        ),
+        None,
+    )
+    if matrix_id is None:
+        return None
+    return next(
+        (
+            matrix
+            for matrix in reversed(_formed_matrices(store))
+            if matrix.matrix_id == matrix_id
+        ),
+        None,
+    )
 
 
 def _hypothesis_feedback(
@@ -603,11 +672,8 @@ def cmd_diagnose(args: argparse.Namespace) -> int:
         status=diagnosis.target,
         artifact_sha256=path.stem,
     )
-    matrix = _latest_formed_matrix(store, required=False)
-    if matrix is not None and any(
-        item.experiment.experiment_id == outcome.experiment_id
-        for item in matrix.hypotheses
-    ):
+    matrix = _matrix_for_outcome(store, outcome)
+    if matrix is not None:
         _record_hypothesis_feedback(store, matrix, outcome, diagnosis)
     print(diagnosis.model_dump_json(indent=2))
     return 0

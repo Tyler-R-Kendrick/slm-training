@@ -362,6 +362,10 @@ class HypothesisMatrix(StrictModel):
             raise ValueError("recommended experiment must be a matrix member")
         if len(self.feedback_ids) != len(set(self.feedback_ids)):
             raise ValueError("hypothesis matrix feedback ids must be unique")
+        if self.predecessor_matrix_id is not None and not self.feedback_ids:
+            raise ValueError(
+                "matrix with a predecessor_matrix_id must acknowledge feedback_ids"
+            )
         return self
 
 

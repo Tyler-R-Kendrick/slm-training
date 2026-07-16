@@ -59,9 +59,10 @@ readiness.
 
 6. Persist the outcome and diagnosis. The harness writes typed hypothesizer feedback;
    the next matrix must link its predecessor, acknowledge that feedback, and avoid
-   finished knob signatures. If data validity, leakage, or quality is bad, derive a
-   new immutable snapshot with `--source existing --derive-from` and rerun matched
-   controls. Improve provider code only through `evaluate-hypothesizer`, frozen
+   finished knob signatures and all prior campaign experiment IDs. If data validity,
+   leakage, or quality is bad, derive a new immutable snapshot with
+   `--source existing --derive-from` and rerun matched controls. Improve provider
+   code only through `evaluate-hypothesizer`, frozen
    evaluation, and human approval; never train on its frozen cases.
 
 7. Sync only after the local bundle is complete:

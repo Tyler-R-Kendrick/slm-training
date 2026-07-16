@@ -64,6 +64,7 @@ def validate_hypothesis_matrix(
     evidence: EvidenceSnapshot,
     sources: list[ResearchSource],
     prior_experiments: tuple[ExperimentSpec, ...] = (),
+    prior_experiment_ids: frozenset[str] = frozenset(),
     feedback: tuple[HypothesisFeedback, ...] = (),
     previous_matrix: HypothesisMatrix | None = None,
 ) -> None:
@@ -75,16 +76,31 @@ def validate_hypothesis_matrix(
         raise ValueError(
             f"hypothesis matrix requires at least {campaign.min_hypotheses} candidates"
         )
+    reused_ids = sorted(
+        candidate.experiment.experiment_id
+        for candidate in matrix.hypotheses
+        if candidate.experiment.experiment_id in prior_experiment_ids
+    )
+    if reused_ids:
+        raise ValueError(
+            f"hypothesis matrix reuses campaign experiment ids: {reused_ids}"
+        )
     expected_feedback = {item.feedback_id for item in feedback}
     if set(matrix.feedback_ids) != expected_feedback:
         raise ValueError("hypothesis matrix must acknowledge all supplied feedback")
-    if feedback and (
-        previous_matrix is None
-        or matrix.predecessor_matrix_id != previous_matrix.matrix_id
-    ):
-        raise ValueError(
-            "feedback-informed matrix must identify its predecessor matrix"
-        )
+    if feedback:
+        if previous_matrix is None:
+            raise ValueError("feedback-informed matrix requires its predecessor")
+        if any(
+            item.campaign_id != campaign.campaign_id
+            or item.matrix_id != previous_matrix.matrix_id
+            for item in feedback
+        ):
+            raise ValueError("feedback does not belong to the predecessor matrix")
+        if matrix.predecessor_matrix_id != previous_matrix.matrix_id:
+            raise ValueError(
+                "feedback-informed matrix must identify its predecessor matrix"
+            )
     prior_signatures = {
         json.dumps(
             experiment.knobs.model_dump(exclude_none=True, mode="json"),

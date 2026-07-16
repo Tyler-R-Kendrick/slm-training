@@ -307,6 +307,32 @@ def test_feedback_requires_lineage_and_informs_next_matrix() -> None:
             feedback=(feedback,),
             previous_matrix=first,
         )
+    foreign = feedback.model_copy(update={"campaign_id": "other-campaign"})
+    with pytest.raises(ValueError, match="does not belong"):
+        validate_hypothesis_matrix(
+            campaign(),
+            second,
+            matrix_evidence(),
+            [],
+            feedback=(foreign,),
+            previous_matrix=first,
+        )
+
+
+def test_successor_rejects_campaign_wide_experiment_id_reuse() -> None:
+    with pytest.raises(ValueError, match="reuses campaign experiment ids"):
+        validate_hypothesis_matrix(
+            campaign(),
+            hypothesis_matrix(matrix_id="matrix-2", offset=10),
+            matrix_evidence(),
+            [],
+            prior_experiment_ids=frozenset({"hyp-10"}),
+        )
+
+
+def test_predecessor_requires_feedback_acknowledgment() -> None:
+    with pytest.raises(ValidationError, match="must acknowledge feedback_ids"):
+        hypothesis_matrix(matrix_id="matrix-2", predecessor_matrix_id="matrix-1")
 
 
 def test_candidate_floor_is_independent_of_execution_budget() -> None:
@@ -435,6 +461,35 @@ def test_terminal_outcome_persists_hypothesizer_feedback(tmp_path: Path) -> None
     assert feedback["matrix_id"] == matrix.matrix_id
     assert feedback["hypothesis"] == matrix.hypotheses[0].experiment.hypothesis
     assert path.parent.name == "hypothesizer_feedback"
+
+
+def test_outcome_matrix_resolution_uses_recorded_run_provenance(tmp_path: Path) -> None:
+    from scripts.autoresearch import _matrix_for_outcome
+
+    store = CampaignStore("test-campaign", tmp_path)
+    store.initialize(campaign())
+    first = hypothesis_matrix()
+    first_path = store.write_artifact("hypothesis_matrices", first)
+    store.append_event("hypothesis_matrix_formed", artifact_sha256=first_path.stem)
+    outcome = ExperimentOutcome(
+        experiment_id="hyp-0", campaign_id="test-campaign", status="completed"
+    )
+    outcome_path = store.write_artifact("outcomes", outcome)
+    store.append_event(
+        "experiment_started",
+        experiment_id="hyp-0",
+        detail={"hypothesis_matrix_id": first.matrix_id},
+    )
+    store.append_event(
+        "experiment_finished",
+        experiment_id="hyp-0",
+        artifact_sha256=outcome_path.stem,
+    )
+    second = hypothesis_matrix(matrix_id="matrix-2", offset=10)
+    second_path = store.write_artifact("hypothesis_matrices", second)
+    store.append_event("hypothesis_matrix_formed", artifact_sha256=second_path.stem)
+
+    assert _matrix_for_outcome(store, outcome) == first
 
 
 def test_agent_hypothesizer_persists_matrix_and_formation_event(
@@ -786,6 +841,58 @@ def test_hypothesizer_benchmark_scores_feedback_lineage(
     assert report.passed
     assert report.feedback_lineage_rate == 1.0
     assert not report.promotable
+
+
+def test_hypothesizer_benchmark_threshold_allows_partial_case_passes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from slm_training.autoresearch import hypothesizer_eval
+
+    cases = []
+    predictions = []
+    for index in range(2):
+        cases.append(
+            {
+                "case_id": f"case-{index}",
+                "campaign_id": "test-campaign",
+                "evidence_snapshot_id": "evidence-matrix",
+                "criteria": "Form a grounded candidate matrix.",
+                "evidence": [
+                    {"uri": "docs/design/research-lineage.md", "role": "research"},
+                    {"uri": "outputs/runs/prior/run_insights.json", "role": "prior_trace"},
+                    {"uri": "outputs/runs/prior/scoreboard.json", "role": "prior_result"},
+                ],
+                "required_roles": ["research", "prior_trace", "prior_result"],
+                "expected_knobs": ["steps" if index == 0 else "lr"],
+                "feedback_ids": [],
+                "predecessor_matrix_id": None,
+            }
+        )
+        predictions.append(
+            {"case_id": f"case-{index}", "matrix": hypothesis_matrix().model_dump(mode="json")}
+        )
+    cases_path = tmp_path / "cases.json"
+    cases_path.write_text(json.dumps(cases), encoding="utf-8")
+    predictions_path = tmp_path / "predictions.jsonl"
+    predictions_path.write_text(
+        "".join(json.dumps(row) + "\n" for row in predictions), encoding="utf-8"
+    )
+    monkeypatch.setattr(
+        hypothesizer_eval,
+        "publish_agentv_evaluation",
+        lambda *args, **kwargs: {"passed": True},
+    )
+
+    report = hypothesizer_eval.evaluate_hypothesizer(
+        cases_path,
+        predictions_path,
+        run_dir=tmp_path / "run",
+        hypothesizer_id="fixture-v1",
+        pass_threshold=0.5,
+    )
+
+    assert report.actionable_rate == 0.5
+    assert report.passed
 
 
 def test_frozen_hypothesizer_cases_cover_initial_and_feedback_loops() -> None:
