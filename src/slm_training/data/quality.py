@@ -65,6 +65,19 @@ def independent_judge(record: ExampleRecord) -> dict[str, Any]:
     components = component_counts(openui)
     lowered_prompt = prompt.lower()
     reasons: list[str] = []
+    if record.target_kind != "document":
+        from slm_training.dsl.parser import ParseError, validate_output
+
+        try:
+            validate_output(openui, record.target_kind, record.target_category)
+            for target_output in record.accepted_outputs:
+                validate_output(
+                    target_output.text,
+                    target_output.kind,
+                    target_output.category,
+                )
+        except (ParseError, ValueError, RuntimeError) as exc:
+            reasons.append(f"invalid_output_contract:{exc}")
     target = None
     component_match = _COMPONENT_PROMPT_RE.search(prompt)
     if component_match:
@@ -120,6 +133,31 @@ def assess_record(
     if not judge["ok"]:
         reasons.extend(str(reason) for reason in judge["reasons"])
         score -= 0.45
+
+    if record.target_kind != "document":
+        from slm_training.dsl.parser import lexical_tokens
+
+        if len(prompt) < 12:
+            reasons.append("prompt_too_short")
+            score -= 0.25
+        score = max(0.0, min(1.0, round(score, 4)))
+        return QualityReport(
+            ok=score >= 0.55 and judge["ok"],
+            score=score,
+            reasons=tuple(reasons),
+            meta={
+                "n_components": sum(component_counts(openui).values()),
+                "n_placeholders": len(
+                    list(record.placeholders) or extract_placeholders(openui)
+                ),
+                "component_diversity": len(component_counts(openui)),
+                "openui_chars": len(openui),
+                "output_symbols": len(lexical_tokens(openui)),
+                "target_kind": record.target_kind,
+                "accepted_outputs": len(record.accepted_outputs),
+                "independent_judge": judge,
+            },
+        )
 
     if not _ROOT_RE.search(openui):
         reasons.append("missing_root")

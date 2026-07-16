@@ -111,3 +111,27 @@ def test_task_evidence_metrics_are_coverage_aware() -> None:
     assert metrics["length_accuracy"]["value"] == 0.75
     assert metrics["expand_contract_success"]["value"] == 1.0
     assert metrics["steps_to_first_valid"]["value"] == 3.0
+
+
+def test_multiple_correct_outputs_reward_minimum_symbols() -> None:
+    case = {
+        "id": "bool",
+        "task": "generation",
+        "gold": "true",
+        "target_kind": "lexical",
+        "target_category": "boolean",
+        "accepted_outputs": [
+            {"text": "false", "kind": "lexical", "category": "boolean"},
+            {"text": 'root = Separator("horizontal", true)', "kind": "document"},
+        ],
+    }
+    minimal = score_case({**case, "prediction": "true"})["metrics"]
+    document = score_case(
+        {**case, "prediction": 'root = Separator("horizontal", true)'}
+    )["metrics"]
+    alternative = score_case({**case, "prediction": "false"})["metrics"]
+    assert minimal["target_correctness"]["value"] == 1.0
+    assert alternative["target_correctness"]["value"] == 1.0
+    assert document["target_correctness"]["value"] == 1.0
+    assert minimal["target_composite"]["value"] == 1.0
+    assert document["target_composite"]["value"] < 1.0

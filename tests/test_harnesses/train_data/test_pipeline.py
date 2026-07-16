@@ -99,7 +99,9 @@ def test_build_train_data_derives_from_existing_records(tmp_path: Path) -> None:
     rows = load_jsonl(Path(result["output_dir"]) / "records.jsonl")
     assert result["stats"]["source"] == "existing"
     assert result["stats"]["derive_from"] == str(roots)
-    assert {row.meta.get("derivation_source") for row in rows} == {str(roots)}
+    derived = [row for row in rows if not row.source.startswith("language_contract")]
+    assert {row.meta.get("derivation_source") for row in derived} == {str(roots)}
+    assert any(row.target_kind == "lexical" for row in rows)
     assert any(row.meta.get("synth") == "template" for row in rows)
     assert len(rows) > 2
 

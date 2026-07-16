@@ -10,7 +10,7 @@ from typing import Any, Iterable, Literal
 
 from slm_training.data.structure import strip_style_literals
 from slm_training.dsl.placeholders import extract_placeholders, merge_placeholders
-from slm_training.dsl.schema import ExampleRecord
+from slm_training.dsl.schema import OUTPUT_KINDS, ExampleRecord, OutputKind
 
 _BINDER_RE = re.compile(r"(?m)^([a-z_][A-Za-z0-9_]*)\s*=")
 
@@ -80,10 +80,14 @@ class GenerationRequest:
     schema: str | None = None
     design_md: str | None = None
     runtime_symbols: tuple[RuntimeSymbol, ...] = ()
+    output_kind: OutputKind = "document"
+    output_category: str | None = None
 
     def __post_init__(self) -> None:
         if not self.prompt.strip():
             raise ValueError("prompt must be non-empty")
+        if self.output_kind not in OUTPUT_KINDS:
+            raise ValueError(f"invalid output kind {self.output_kind!r}")
         for slot in self.slot_contract:
             if not slot.startswith(":"):
                 raise ValueError(f"slot_contract entries must start with ':', got {slot!r}")
@@ -131,6 +135,8 @@ class GenerationRequest:
             ),
             schema=schema,
             design_md=design_md,
+            output_kind=record.target_kind,
+            output_category=record.target_category,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -144,6 +150,10 @@ class GenerationRequest:
             data["design_md"] = self.design_md
         if self.runtime_symbols:
             data["runtime_symbols"] = [symbol.to_dict() for symbol in self.runtime_symbols]
+        if self.output_kind != "document":
+            data["output_kind"] = self.output_kind
+        if self.output_category is not None:
+            data["output_category"] = self.output_category
         return data
 
     @classmethod
@@ -157,6 +167,8 @@ class GenerationRequest:
                 RuntimeSymbol.from_dict(item)
                 for item in data.get("runtime_symbols") or ()
             ),
+            output_kind=str(data.get("output_kind") or "document"),  # type: ignore[arg-type]
+            output_category=_optional_str(data.get("output_category")),
         )
 
 
@@ -178,6 +190,26 @@ def normalize_example_record(record: ExampleRecord) -> ExampleRecord:
     and component signatures normalized for SwitchItem / Slider.
     """
     from slm_training.dsl.parser import ParseError, validate
+
+    if record.target_kind != "document":
+        return ExampleRecord(
+            id=record.id,
+            prompt=record.prompt.strip(),
+            openui=record.openui.strip(),
+            placeholders=list(
+                canonical_slot_contract(
+                    record.openui,
+                    declared=record.placeholders,
+                )
+            ),
+            split=record.split,
+            source=record.source,
+            meta={**dict(record.meta), "schema_normalized": True},
+            design_md=record.design_md,
+            target_kind=record.target_kind,
+            target_category=record.target_category,
+            accepted_outputs=list(record.accepted_outputs),
+        )
 
     scrubbed = strip_style_literals(record.openui or "")
     scrubbed = _normalize_component_signatures(scrubbed)
@@ -210,6 +242,9 @@ def normalize_example_record(record: ExampleRecord) -> ExampleRecord:
         source=record.source,
         meta={**dict(record.meta), "schema_normalized": True},
         design_md=record.design_md,
+        target_kind=record.target_kind,
+        target_category=record.target_category,
+        accepted_outputs=list(record.accepted_outputs),
     )
 
 

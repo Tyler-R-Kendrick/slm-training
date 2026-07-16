@@ -10,6 +10,7 @@ torch = pytest.importorskip("torch")
 
 from slm_training.dsl import bridge_available
 from slm_training.dsl.schema import ExampleRecord, write_jsonl
+from slm_training.data.contract import GenerationRequest
 from slm_training.harnesses.model_build import ModelBuildConfig, evaluate, train
 from slm_training.harnesses.model_build.factory import _resolve_freeze_context
 from slm_training.harnesses.test_data import TestDataConfig, build_test_data
@@ -19,6 +20,7 @@ from slm_training.models.twotower import (
     TwoTowerConfig,
     TwoTowerModel,
     _truncate_with_eos,
+    format_context_text,
 )
 
 pytestmark_bridge = pytest.mark.skipif(
@@ -71,6 +73,15 @@ def test_target_truncation_preserves_eos() -> None:
     assert len(truncated) == 8
     assert truncated[-1] == tok.eos_id
     assert truncated[0] == tok.bos_id
+
+
+def test_context_exposes_compact_output_contract() -> None:
+    context = format_context_text(
+        "Return a boolean",
+        output_kind="lexical",
+        output_category="boolean",
+    )
+    assert "---OUTPUT_CONTRACT---\nlexical:boolean" in context
 
 
 def test_ltr_suffix_always_masks_first_content_token() -> None:
@@ -183,6 +194,49 @@ def test_twotower_training_loss_decreases() -> None:
         losses.append(float(loss.detach()))
     assert losses[-1] < losses[0]
     assert losses[-1] < 2.0
+
+
+def test_fragment_records_reach_twotower_training_loss() -> None:
+    records = [
+        ExampleRecord(
+            id="boolean",
+            prompt="Return a boolean symbol",
+            openui="true",
+            target_kind="lexical",
+            target_category="boolean",
+        ),
+        ExampleRecord(
+            id="button",
+            prompt="Return a Button expression",
+            openui='Button(":cta")',
+            placeholders=[":cta"],
+            target_kind="expression",
+        ),
+    ]
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+        ),
+        device="cpu",
+    )
+    assert torch.isfinite(model.training_loss(records))
+
+
+def test_legacy_twotower_rejects_fragment_request() -> None:
+    model = TwoTowerModel.from_records(
+        [ExampleRecord(id="doc", prompt="CTA", openui=CTA)],
+        config=TwoTowerConfig(d_model=32, n_heads=4, context_layers=1, denoiser_layers=1),
+        device="cpu",
+    )
+    model.output_contract_version = 0
+    with pytest.raises(ValueError, match="predates compact output contracts"):
+        model.generate_batch_requests(
+            [GenerationRequest(prompt="Boolean", output_kind="lexical")]
+        )
 
 
 def test_twotower_save_load_generate(tmp_path: Path) -> None:

@@ -70,6 +70,74 @@ def test_production_codec_topology_roundtrip() -> None:
     assert actual_slot == expected_slot
 
 
+@pytest.mark.parametrize(
+    ("source", "kind"),
+    [("true", "lexical"), ("x = true", "statement"), ('Button(":x")', "expression")],
+)
+def test_production_codec_fragment_topology_roundtrip(source: str, kind: str) -> None:
+    codec = ProductionCodec.build([source], [kind])
+    inventory = [":x"]
+    expected_prod, expected_slot = codec.encode(
+        source, inventory, max_len=0, output_kind=kind
+    )
+    topology = topology_from_openui(
+        codec, source, inventory, output_kind=kind
+    )
+    actual_prod, actual_slot = _serialize_topology(codec, topology)
+    assert actual_prod == expected_prod
+    assert actual_slot == expected_slot
+    assert codec.decode(actual_prod, actual_slot, inventory).strip() == source
+
+
+def test_fragment_records_reach_grammar_diffusion_training_loss() -> None:
+    records = [
+        ExampleRecord(
+            id="boolean",
+            prompt="Return a boolean symbol",
+            openui="true",
+            target_kind="lexical",
+            target_category="boolean",
+        ),
+        ExampleRecord(
+            id="button",
+            prompt="Return a Button expression",
+            openui='Button(":cta")',
+            placeholders=[":cta"],
+            target_kind="expression",
+        ),
+    ]
+    model = GrammarDiffusionModel.from_records(
+        records,
+        config=GrammarDiffusionConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+        ),
+        device="cpu",
+    )
+    loss = model.training_loss(records)
+    assert torch.isfinite(loss)
+
+
+def test_legacy_grammar_diffusion_rejects_fragment_request() -> None:
+    model = GrammarDiffusionModel.from_records(
+        [ExampleRecord(id="doc", prompt="CTA", openui=CTA)],
+        config=GrammarDiffusionConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+        ),
+        device="cpu",
+    )
+    model.output_contract_version = 0
+    with pytest.raises(ValueError, match="predates compact output contracts"):
+        model.generate_batch_requests(
+            [GenerationRequest(prompt="Boolean", output_kind="lexical")]
+        )
+
+
 def test_runtime_layout_refresh_preserves_node_ids() -> None:
     root = TopologyNode(40, "document", 1)
     child = TopologyNode(91, "statement", 5)

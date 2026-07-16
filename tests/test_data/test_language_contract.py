@@ -12,9 +12,11 @@ from slm_training.data.language_contract import (
     iter_positives,
 )
 from slm_training.data.language_contract.corpus import NEGATIVE_GATES
+from slm_training.data.contract import GenerationRequest
 from slm_training.data.verify import Gate, GateStatus, evaluate_gate, verify_record
 from slm_training.dsl.lang_core import bridge_available
-from slm_training.dsl.schema import TASK_TOKENS
+from slm_training.dsl.parser import lexical_tokens, validate_output
+from slm_training.dsl.schema import TASK_TOKENS, ExampleRecord
 from slm_training.harnesses.model_build.eval_runner import _is_meaningful_program
 from slm_training.harnesses.train_data.catalog import classify_source_family
 
@@ -42,12 +44,52 @@ def _iter_negative_gates():
 
 def test_every_positive_validates_meaningful_and_not_quarantined() -> None:
     for record in iter_positives():
+        if record.target_kind != "document":
+            validate_output(record.openui, record.target_kind, record.target_category)
+            for target in record.accepted_outputs:
+                validate_output(target.text, target.kind, target.category)
+            continue
         meaningful, reason, _ = _is_meaningful_program(record.openui)
         assert meaningful, f"{record.id}: not meaningful ({reason})"
         report = verify_record(record)
         assert report.tier.value != "Quarantine", (
             f"{record.id}: quarantined at {report.failing_gate}"
         )
+
+
+def test_boolean_prefers_one_symbol_but_accepts_full_documents() -> None:
+    record = next(
+        row for row in iter_positives() if row.id == "lc_boolean_literal"
+    )
+    assert record.openui == "true"
+    assert record.target_kind == "lexical"
+    assert lexical_tokens(record.openui) == ["true"]
+    assert {target.kind for target in record.accepted_outputs} == {
+        "lexical",
+        "document",
+    }
+    assert any(target.text == "false" for target in record.accepted_outputs)
+
+
+def test_all_contract_units_use_compact_gold_when_possible() -> None:
+    records = list(iter_positives())
+    assert {record.target_kind for record in records} == {
+        "document",
+        "statement",
+        "expression",
+        "lexical",
+    }
+    assert all(
+        len(lexical_tokens(record.openui))
+        <= min(
+            [
+                len(lexical_tokens(target.text))
+                for target in record.accepted_outputs
+            ]
+            or [len(lexical_tokens(record.openui))]
+        )
+        for record in records
+    )
 
 
 def test_every_negative_fails_its_expected_gate() -> None:
@@ -103,3 +145,15 @@ def test_build_corpus_is_deterministic() -> None:
     second = [(r.id, r.openui) for r in build_corpus()]
     assert first == second
     assert len({rid for rid, _ in first}) == len(first)  # unique ids
+
+
+def test_output_targets_round_trip_and_reach_generation_request() -> None:
+    record = next(
+        row for row in iter_positives() if row.id == "lc_boolean_literal"
+    )
+    restored = ExampleRecord.from_dict(record.to_dict())
+    assert restored.output_targets == record.output_targets
+    request = GenerationRequest.from_record(restored)
+    assert request.output_kind == "lexical"
+    assert request.output_category == "boolean"
+    assert GenerationRequest.from_dict(request.to_dict()) == request

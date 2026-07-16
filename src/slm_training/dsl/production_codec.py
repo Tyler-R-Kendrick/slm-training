@@ -35,6 +35,12 @@ STATE_REF_PREFIX = "$@"
 BUILTIN_PREFIX = "*"
 NAME_PREFIX = "n:"
 PUNCT_PREFIX = "p:"
+FRAGMENT_MARKERS = {
+    "lexical": "!lexical",
+    "expression": "!expression",
+    "statement": "!statement",
+}
+FRAGMENT_CHUNK = "!fragment_chunk"
 
 _DIRECTIONS = frozenset({"column", "row"})
 _STMT_RE = re.compile(r"(?m)^([a-z_][A-Za-z0-9_]*)\s*=\s*(.+?)\s*$")
@@ -475,6 +481,76 @@ def encode_openui(
     return ProductionProgram(tokens=tuple(tokens), slot_contract=tuple(contract))
 
 
+def encode_output(
+    source: str,
+    *,
+    output_kind: str = "document",
+    slot_contract: Iterable[str] | None = None,
+) -> ProductionProgram:
+    """Encode a full document or a validated compact output surface."""
+    if output_kind == "document":
+        return encode_openui(source, slot_contract=slot_contract)
+    from slm_training.dsl.parser import lexical_tokens, validate_output
+
+    validate_output(source, output_kind)  # type: ignore[arg-type]
+    contract = canonical_slot_contract(source, declared=slot_contract)
+    slot_index = {placeholder: i for i, placeholder in enumerate(contract)}
+    tokens = [FRAGMENT_MARKERS[output_kind]]
+    for piece in lexical_tokens(source):
+        if piece.startswith(('"', "'")):
+            value = json.loads(piece) if piece.startswith('"') else piece[1:-1]
+            if isinstance(value, str) and is_placeholder(value):
+                tokens.append(f"{SLOT_PREFIX}{slot_index[value]}")
+            else:
+                tokens.append(_literal_token(value))
+        elif re.fullmatch(r"-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?", piece):
+            tokens.append(f"{LIT_PREFIX}{piece}")
+        elif piece in {"true", "false", "null"}:
+            tokens.append(f"{LIT_PREFIX}{piece}")
+        elif piece.startswith("@"):
+            tokens.append(f"{BUILTIN_PREFIX}{piece[1:]}")
+        elif piece[:1].isupper() and piece.isidentifier():
+            tokens.append(f"{OPEN_PREFIX}{piece}")
+        elif piece.isidentifier():
+            tokens.append(f"{NAME_PREFIX}{piece}")
+        else:
+            tokens.append(f"{PUNCT_PREFIX}{piece}")
+    return ProductionProgram(tuple(tokens), tuple(contract))
+
+
+def _decode_output_tokens(tokens: list[str], contract: tuple[str, ...]) -> str:
+    marker = tokens.pop(0)
+
+    def surface(token: str) -> str:
+        if token.startswith(SLOT_PREFIX):
+            return json.dumps(contract[int(token[len(SLOT_PREFIX) :])])
+        if token.startswith(BUILTIN_PREFIX):
+            return f"@{token[len(BUILTIN_PREFIX):]}"
+        if token.startswith(OPEN_PREFIX):
+            return token[len(OPEN_PREFIX) :]
+        if token.startswith(NAME_PREFIX):
+            return token[len(NAME_PREFIX) :]
+        if token.startswith(PUNCT_PREFIX):
+            return token[len(PUNCT_PREFIX) :]
+        if token.startswith(LIT_PREFIX):
+            return _decode_literal(token[len(LIT_PREFIX) :])
+        raise ParseError(f"unknown fragment production token: {token}")
+
+    pieces = [surface(token) for token in tokens]
+    text = ""
+    for piece in pieces:
+        if piece == ",":
+            text = text.rstrip() + ", "
+        elif piece == "=":
+            text = text.rstrip() + " = "
+        else:
+            text += piece
+    from slm_training.dsl.parser import validate_output
+
+    kind = next(kind for kind, value in FRAGMENT_MARKERS.items() if value == marker)
+    return validate_output(text.strip(), kind)  # type: ignore[arg-type]
+
+
 def decode_productions(
     tokens: Iterable[str],
     slot_contract: Iterable[str],
@@ -484,6 +560,8 @@ def decode_productions(
     """Reconstruct deterministic OpenUI source from production tokens + contract."""
     contract = tuple(slot_contract)
     stream = list(tokens)
+    if stream[:1] and stream[0] in FRAGMENT_MARKERS.values():
+        return _decode_output_tokens(stream, contract)
     if stream[:1] == [V05]:
         return _decode_v05(stream, contract, root_name=root_name)
     pos = 0
@@ -820,10 +898,15 @@ class ProductionCodec:
     _SPECIALS: tuple[str, ...] = ("<pad>", "<bos>", "<eos>", "<mask>", "<unk>")
 
     @classmethod
-    def build(cls, texts: list[str]) -> ProductionCodec:
+    def build(
+        cls, texts: list[str], output_kinds: list[str] | None = None
+    ) -> ProductionCodec:
         vocab: dict[str, int] = {tok: i for i, tok in enumerate(cls._SPECIALS)}
-        for text in texts:
-            program = encode_openui(text)
+        if output_kinds and any(kind != "document" for kind in output_kinds):
+            vocab[FRAGMENT_CHUNK] = len(vocab)
+        for index, text in enumerate(texts):
+            kind = output_kinds[index] if output_kinds else "document"
+            program = encode_output(text, output_kind=kind)
             for tok in program.tokens:
                 if tok not in vocab:
                     vocab[tok] = len(vocab)
@@ -848,13 +931,16 @@ class ProductionCodec:
         slot_inventory: list[str] | None = None,
         *,
         max_len: int = 256,
+        output_kind: str = "document",
     ) -> tuple[list[int], list[int]]:
         contract = list(
             canonical_slot_contract(openui, declared=slot_inventory)
             if slot_inventory is not None
             else canonical_slot_contract(openui)
         )
-        program = encode_openui(openui, slot_contract=contract)
+        program = encode_output(
+            openui, output_kind=output_kind, slot_contract=contract
+        )
         prod_ids = [self.bos_id]
         slot_ids = [self.slot_none_id]
         for tok in program.tokens:

@@ -23,10 +23,9 @@ from functools import lru_cache
 from typing import Any, Iterator
 
 from slm_training.bridge_utils import repo_root
-from slm_training.data.progspec.schema import ProgramSpec, emit_record
 from slm_training.dsl.language_contract import contract_id as current_contract_id
 from slm_training.dsl.lang_core import library_schema
-from slm_training.dsl.schema import ExampleRecord
+from slm_training.dsl.schema import ExampleRecord, OutputKind, OutputTarget
 
 LANGUAGE_CONTRACT_FAMILY = "language_contract"
 _SOURCE = "language_contract"
@@ -78,20 +77,10 @@ def component_names() -> list[str]:
 
 
 class _Builder:
-    """Accumulates the binder statements for one component instance."""
-
-    def __init__(self) -> None:
-        self.counter = 0
-        self.lines: list[str] = []
-
-    def fresh(self, base: str) -> str:
-        self.counter += 1
-        return f"{base.lower()}{self.counter}"
+    """Build one self-contained component expression."""
 
     def _child_any(self, prefix: str) -> str:
-        binder = self.fresh("txt")
-        self.lines.append(f'{binder} = TextContent(":{prefix}.child")')
-        return binder
+        return f'TextContent(":{prefix}.child")'
 
     def _arg(self, prop: str, schema: dict, prefix: str) -> str:
         if not isinstance(schema, dict):
@@ -144,115 +133,118 @@ class _Builder:
             else:
                 # Optional prop preceding a required one: null keeps positions aligned.
                 args.append("null")
-        binder = self.fresh(name)
-        self.lines.append(f'{binder} = {name}({", ".join(args)})')
-        return binder
+        return f'{name}({", ".join(args)})'
+
+
+def component_expression(name: str) -> str:
+    """A minimal expression that exercises every required prop of ``name``."""
+    return _Builder().build(name, "cov")
 
 
 def component_program(name: str) -> str:
-    """A minimal, meaningful program that exercises ``name`` (plus a caption)."""
-    builder = _Builder()
-    instance = builder.build(name, "cov")
-    caption = builder.fresh("cap")
-    builder.lines.append(f'{caption} = TextContent(":cov.caption")')
-    return f"root = Stack([{instance}, {caption}])\n" + "\n".join(builder.lines)
+    """A minimal complete document that exercises ``name``."""
+    return f"root = {component_expression(name)}"
 
 
 # --------------------------------------------------------------------------- #
 # Grammar / lexical production positives (beyond per-component coverage)
 # --------------------------------------------------------------------------- #
 
-_PRODUCTIONS: tuple[tuple[str, str, str, str], ...] = (
-    (
+@dataclass(frozen=True)
+class Production:
+    unit_id: str
+    category: str
+    primary: str
+    kind: OutputKind
+    description: str
+    accepted: tuple[OutputTarget, ...]
+    target_category: str | None = None
+
+
+_PRODUCTIONS: tuple[Production, ...] = (
+    Production(
         "assignment",
         "grammar",
-        "root = Stack([hero])\nhero = TextContent(\":hero.title\")",
+        "x = true",
+        "statement",
         "a single binder assignment",
+        (OutputTarget('root = Separator("horizontal", true)'),),
     ),
-    (
+    Production(
         "nested_list",
         "grammar",
-        (
-            "root = Stack([card])\n"
-            "card = Card([hero, body])\n"
-            "hero = TextContent(\":hero.title\")\n"
-            "body = TextContent(\":hero.body\")"
-        ),
-        "a nested list of references",
+        "[[true]]",
+        "expression",
+        "a nested list expression",
+        (OutputTarget("root = Stack([[TextContent(\":item\")]])"),),
     ),
-    (
+    Production(
         "multi_child",
         "grammar",
-        (
-            "root = Stack([a, b, c])\n"
-            "a = TextContent(\":a\")\n"
-            "b = TextContent(\":b\")\n"
-            "c = TextContent(\":c\")"
-        ),
-        "a multi-child list",
+        "[true, false, null]",
+        "expression",
+        "a multi-child list expression",
+        (OutputTarget("root = Stack([TextContent(\":a\"), TextContent(\":b\")])"),),
     ),
-    (
+    Production(
         "forward_reference",
         "grammar",
-        (
-            "root = Stack([panel])\n"
-            "panel = Card([leaf])\n"
-            "leaf = TextContent(\":leaf\")"
-        ),
+        "root = Stack([panel])\npanel = Card([leaf])\nleaf = TextContent(\":leaf\")",
+        "document",
         "a forward reference from the root",
+        (),
     ),
-    (
+    Production(
         "number_literal",
         "lexical",
+        "0",
+        "lexical",
+        "a number literal",
         (
-            "root = Stack([vol, cap])\n"
-            "vol = Slider(\"volume\", \"continuous\", 0, 100)\n"
-            "cap = TextContent(\":cap\")"
+            OutputTarget("1", "lexical", "number"),
+            OutputTarget('root = Slider("value", "continuous", 0, 1)'),
         ),
-        "integer number literals",
+        "number",
     ),
-    (
+    Production(
         "negative_number",
         "lexical",
-        (
-            "root = Stack([temp, cap])\n"
-            "temp = Slider(\"temp\", \"continuous\", -10, 40)\n"
-            "cap = TextContent(\":cap\")"
-        ),
+        "-1",
+        "lexical",
         "a negative number literal",
+        (OutputTarget('root = Slider("value", "continuous", -1, 1)'),),
+        "number",
     ),
-    (
+    Production(
         "boolean_literal",
         "lexical",
-        (
-            "root = Stack([sep, cap])\n"
-            "sep = Separator(\"horizontal\", true)\n"
-            "cap = TextContent(\":cap\")"
-        ),
-        "a boolean literal",
-    ),
-    (
-        "comment_line",
+        "true",
         "lexical",
+        "a boolean literal",
         (
-            "// layout header\n"
-            "root = Stack([hero])\n"
-            "hero = TextContent(\":hero.title\")"
+            OutputTarget("false", "lexical", "boolean"),
+            OutputTarget('root = Separator("horizontal", true)'),
+            OutputTarget('root = Separator("horizontal", false)'),
         ),
-        "a line comment",
+        "boolean",
     ),
-    (
+    Production(
         "enum_prop",
-        "expression",
+        "lexical",
+        '"row"',
+        "lexical",
+        "an enum-valued prop",
         (
-            "root = Stack([cta, cap], \"row\")\n"
-            "cta = Button(\":cta.label\", null, \"primary\")\n"
-            "cap = TextContent(\":cap\")"
+            OutputTarget('"column"', "lexical", "enum"),
+            OutputTarget('root = Stack([], "row")'),
+            OutputTarget('root = Stack([], "column")'),
         ),
-        "enum-valued props",
+        "enum",
     ),
 )
 
+# Comments are ignored by the output lexer and remain validator coverage only.
+_VALIDATOR_ONLY_PRODUCTIONS = ("comment_line",)
 
 # --------------------------------------------------------------------------- #
 # Negatives: each corruption targets exactly one verifier gate
@@ -389,27 +381,34 @@ def _positive_record(
     openui: str,
     description: str,
     split: str,
+    *,
+    target_kind: OutputKind,
+    target_category: str | None = None,
+    accepted_outputs: tuple[OutputTarget, ...] = (),
 ) -> ExampleRecord:
-    spec = ProgramSpec.from_openui(
+    return ExampleRecord(
         id=f"lc_{unit_id}",
+        prompt=(
+            f"Return only the shortest valid OpenUI {target_kind} for: {description}."
+        ),
         openui=openui,
-        facts={"contract_target": unit_id, "category": category},
-        program_family_id=f"{LANGUAGE_CONTRACT_FAMILY}:{unit_id}",
-        lineage_id=f"lc_{unit_id}",
-        split_group_id=f"lc_{unit_id}",
         split=split,
-    )
-    return emit_record(
-        spec,
-        prompt=f"Emit the OpenUI construct: {description}.",
-        task="generation",
         source=_SOURCE,
-        determinacy="deterministic",
-        tier="Silver",
+        target_kind=target_kind,
+        target_category=target_category,
+        accepted_outputs=list(accepted_outputs),
         meta={
             "category": category,
             "contract_target": unit_id,
             "polarity": "positive",
+            "contract_id": current_contract_id(),
+            "program_family_id": f"{LANGUAGE_CONTRACT_FAMILY}:{unit_id}",
+            "lineage_id": f"lc_{unit_id}",
+            "split_group_id": f"lc_{unit_id}",
+            "task": "generation",
+            "determinacy": "deterministic",
+            "tier": "Silver",
+            "source_kind": "deterministic",
         },
     )
 
@@ -441,15 +440,28 @@ def _negative_record(negative: Negative, split: str) -> ExampleRecord:
 
 def iter_positives(split: str = "train") -> Iterator[ExampleRecord]:
     """Grammar/lexical production positives, then one per component."""
-    for unit_id, category, openui, description in _PRODUCTIONS:
-        yield _positive_record(unit_id, category, openui, description, split)
+    for production in _PRODUCTIONS:
+        yield _positive_record(
+            production.unit_id,
+            production.category,
+            production.primary,
+            production.description,
+            split,
+            target_kind=production.kind,
+            target_category=production.target_category,
+            accepted_outputs=production.accepted,
+        )
     for name in component_names():
+        expression = component_expression(name)
         yield _positive_record(
             f"component_{name}",
             "component",
-            component_program(name),
+            expression,
             f"the {name} component",
             split,
+            target_kind="expression",
+            target_category="component",
+            accepted_outputs=(OutputTarget(f"root = {expression}"),),
         )
 
 
@@ -467,7 +479,7 @@ def coverage_report() -> dict[str, Any]:
     """Which productions / components / prop positions / gates are covered."""
     components = component_names()
     covered_components = set(components)  # one positive per component
-    production_ids = [unit_id for unit_id, *_ in _PRODUCTIONS]
+    production_ids = [item.unit_id for item in _PRODUCTIONS]
 
     required_positions = 0
     covered_positions = 0
@@ -488,7 +500,11 @@ def coverage_report() -> dict[str, Any]:
             "covered": len(covered_components),
             "uncovered": sorted(set(components) - covered_components),
         },
-        "productions": {"count": len(production_ids), "ids": production_ids},
+        "productions": {
+            "count": len(production_ids),
+            "ids": production_ids,
+            "validator_only": list(_VALIDATOR_ONLY_PRODUCTIONS),
+        },
         "required_prop_positions": {
             "total": required_positions,
             "covered": covered_positions,

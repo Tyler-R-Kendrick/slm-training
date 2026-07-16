@@ -98,10 +98,17 @@ def format_context_text(
     schema: str | None = None,
     retrieved_skeleton: str | None = None,
     slot_contract: list[str] | None = None,
+    output_kind: str | None = None,
+    output_category: str | None = None,
 ) -> str:
     """Concatenate prompt with optional schema / skeleton / slot contract / DESIGN.md."""
     prompt = (prompt or "").strip()
     parts = [prompt] if prompt else []
+    if output_kind is not None:
+        output_contract = output_kind
+        if output_category:
+            output_contract = f"{output_contract}:{output_category}"
+        parts.append(f"---OUTPUT_CONTRACT---\n{output_contract}")
     if schema and schema.strip():
         parts.append(f"---SCHEMA---\n{schema.strip()[: min(600, budget)]}")
     if retrieved_skeleton and retrieved_skeleton.strip():
@@ -388,6 +395,7 @@ class TwoTowerModel(nn.Module):
         self.tokenizer = tokenizer
         self.context_tokenizer = context_tokenizer or tokenizer
         self.config = config or TwoTowerConfig()
+        self.output_contract_version = 1
         self.device_name = str(device)
         # Seed before module construction so a configured run is reproducible.
         torch.manual_seed(self.config.seed)
@@ -589,6 +597,8 @@ class TwoTowerModel(nn.Module):
                         )
                         if getattr(self.config, "slot_contract_in_context", False)
                         else None,
+                        output_kind=r.target_kind,
+                        output_category=r.target_category,
                     )
                     if cache_on:
                         self._context_text_cache[key] = text
@@ -1062,6 +1072,8 @@ class TwoTowerModel(nn.Module):
                     slot_contract=self._resolve_slot_contract(r.prompt, r, r.design_md)
                     if getattr(self.config, "slot_contract_in_context", False)
                     else None,
+                    output_kind=r.target_kind,
+                    output_category=r.target_category,
                 )
                 if cache_on:
                     self._context_text_cache[key] = text
@@ -1250,6 +1262,8 @@ class TwoTowerModel(nn.Module):
         query_prompt: str | None = None,
         slot_contract: list[str] | None = None,
         schema: str | None = None,
+        output_kind: str | None = None,
+        output_category: str | None = None,
     ) -> str:
         if schema is None and getattr(self.config, "schema_in_context", False):
             from slm_training.harnesses.quality import compact_schema_snippet
@@ -1281,6 +1295,8 @@ class TwoTowerModel(nn.Module):
             schema=schema,
             retrieved_skeleton=skeleton,
             slot_contract=contract,
+            output_kind=output_kind,
+            output_category=output_category,
         )
 
     def _decode_ids(self, ids_1d: torch.Tensor) -> str:
@@ -2457,6 +2473,8 @@ class TwoTowerModel(nn.Module):
         *,
         slot_contracts: list[list[str] | None] | None = None,
         schemas: list[str | None] | None = None,
+        output_kinds: list[str] | None = None,
+        output_categories: list[str | None] | None = None,
     ) -> list[str]:
         out: list[str] = []
         use_contract = bool(getattr(self.config, "slot_contract_in_context", False))
@@ -2485,6 +2503,10 @@ class TwoTowerModel(nn.Module):
                     query_prompt=prompt,
                     slot_contract=contract,
                     schema=schema,
+                    output_kind=output_kinds[i] if output_kinds else None,
+                    output_category=(
+                        output_categories[i] if output_categories else None
+                    ),
                 )
             )
         return out
@@ -2654,6 +2676,12 @@ class TwoTowerModel(nn.Module):
         """
         if not requests:
             return []
+        if any(request.output_kind != "document" for request in requests) and (
+            self.output_contract_version < 1
+        ):
+            raise ValueError(
+                "checkpoint predates compact output contracts; request a document"
+            )
         honest = bool(getattr(self.config, "honest_slot_contract", False))
         prompts: list[str] = []
         slot_contracts: list[list[str] | None] = []
@@ -2667,6 +2695,17 @@ class TwoTowerModel(nn.Module):
         schemas = [r.schema for r in requests]
         design_mds = [r.design_md for r in requests]
         runtime_symbols = [list(r.effective_runtime_symbols()) for r in requests]
+        requested_output_kinds = [r.output_kind for r in requests]
+        output_kinds = (
+            requested_output_kinds if self.output_contract_version >= 1 else None
+        )
+        output_categories = (
+            [r.output_category for r in requests]
+            if self.output_contract_version >= 1
+            else None
+        )
+        if any(kind != "document" for kind in requested_output_kinds):
+            grammar_constrained = False
         n_samples = max(1, int(getattr(self.config, "best_of_n", 1) or 1))
         if n_samples > 1:
             pools: list[list[str]] = [[] for _ in requests]
@@ -2683,6 +2722,8 @@ class TwoTowerModel(nn.Module):
                         slot_contracts=slot_contracts,
                         schemas=schemas,
                         runtime_symbols=runtime_symbols,
+                        output_kinds=output_kinds,
+                        output_categories=output_categories,
                     )
                     for i, text in enumerate(sample):
                         pools[i].append(text)
@@ -2701,6 +2742,8 @@ class TwoTowerModel(nn.Module):
             slot_contracts=slot_contracts,
             schemas=schemas,
             runtime_symbols=runtime_symbols,
+            output_kinds=output_kinds,
+            output_categories=output_categories,
         )
 
     def _generate_batch_once(
@@ -2714,6 +2757,8 @@ class TwoTowerModel(nn.Module):
         slot_contracts: list[list[str] | None] | None = None,
         schemas: list[str | None] | None = None,
         runtime_symbols: list[list[RuntimeSymbol] | None] | None = None,
+        output_kinds: list[str] | None = None,
+        output_categories: list[str | None] | None = None,
     ) -> list[str]:
         use_grammar = (
             self.config.grammar_constrained
@@ -2755,6 +2800,8 @@ class TwoTowerModel(nn.Module):
             design_mds=design_mds,
             slot_contracts=slot_contracts,
             schemas=schemas,
+            output_kinds=output_kinds,
+            output_categories=output_categories,
         )
         ctx, ctx_pad = self._encode_context(ctx_prompts)
         feature_tables: list[object] = []
@@ -3866,6 +3913,7 @@ class TwoTowerModel(nn.Module):
             "kind": "twotower",
             "config": asdict(self.config),
             "gen_len": self.gen_len,
+            "output_contract_version": self.output_contract_version,
             "state_dict": self._state_dict_for_checkpoint(),
         }
         tok_path = path.with_suffix(".tokenizer.json")
@@ -3882,6 +3930,7 @@ class TwoTowerModel(nn.Module):
                     "kind": "twotower",
                     "config": asdict(self.config),
                     "gen_len": self.gen_len,
+                    "output_contract_version": self.output_contract_version,
                     "tokenizer": str(tok_path.name),
                     "context_tokenizer": ctx_tok_name,
                     "vocab_size": self.tokenizer.vocab_size,
@@ -3906,6 +3955,7 @@ class TwoTowerModel(nn.Module):
         _load_checkpoint_state(self, payload["state_dict"])
         if "gen_len" in payload:
             self.gen_len = int(payload["gen_len"])
+        self.output_contract_version = int(payload.get("output_contract_version", 0))
         tok_path = path.with_suffix(".tokenizer.json")
         if tok_path.exists():
             self.tokenizer = _load_any_tokenizer(tok_path)
@@ -3961,6 +4011,7 @@ class TwoTowerModel(nn.Module):
         _load_checkpoint_state(model, payload["state_dict"])
         if "gen_len" in payload:
             model.gen_len = int(payload["gen_len"])
+        model.output_contract_version = int(payload.get("output_contract_version", 0))
         return model
 
     @classmethod

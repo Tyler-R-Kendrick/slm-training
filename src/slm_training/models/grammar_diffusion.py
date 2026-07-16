@@ -29,10 +29,12 @@ from slm_training.models.tokenizer import OpenUITokenizer, tokenize_text
 from slm_training.models.twotower import format_context_text
 
 
-def _load_production_codec(texts: list[str]):
+def _load_production_codec(
+    texts: list[str], output_kinds: list[str] | None = None
+):
     from slm_training.dsl.production_codec import ProductionCodec
 
-    return ProductionCodec.build(texts)
+    return ProductionCodec.build(texts, output_kinds)
 
 
 def _codec_kind_from_vocab(id_to_production: dict[int, str]) -> str:
@@ -219,7 +221,10 @@ class InlineProductionCodec:
         slot_inventory: list[str] | None = None,
         *,
         max_len: int = 256,
+        output_kind: str = "document",
     ) -> tuple[list[int], list[int]]:
+        if output_kind != "document":
+            raise ValueError("inline production codec supports document outputs only")
         inventory = list(slot_inventory or extract_placeholders(openui))
         steps = self._walk(openui, inventory)
         prod_ids = [self.bos_id]
@@ -320,6 +325,9 @@ class TopologyAction(IntEnum):
 NODE_TYPES = ("document", "statement", "expression", "component", "list", "leaf")
 NODE_TYPE_ID = {name: index for index, name in enumerate(NODE_TYPES)}
 V05_MARKERS = {"r=", "$=", "q=", "m=", "a=", "="}
+FRAGMENT_MARKERS = {"!lexical", "!expression", "!statement"}
+FRAGMENT_CHUNK = "!fragment_chunk"
+FRAGMENT_FANOUT = 8
 
 
 @dataclass
@@ -369,6 +377,8 @@ class TopologyNode:
 
 
 def _node_type(token: str) -> str:
+    if token == FRAGMENT_CHUNK:
+        return "list"
     if token.startswith("+"):
         return "component"
     if token == "[":
@@ -453,6 +463,29 @@ def _topology_from_ids(
     root_pid = codec.bos_id
     index = 0
     is_v05 = bool(pairs and pairs[0][0] == v05_id)
+    is_fragment = bool(
+        pairs
+        and codec.id_to_production.get(pairs[0][0], "") in FRAGMENT_MARKERS
+    )
+    if is_fragment:
+        root = TopologyNode(0, "document", pairs[0][0])
+
+        def append_chunks(parent: TopologyNode, values: list[tuple[int, int]]) -> None:
+            direct = values[:FRAGMENT_FANOUT]
+            remainder = values[FRAGMENT_FANOUT:]
+            if remainder:
+                direct = values[: FRAGMENT_FANOUT - 1]
+            for pid, sid in direct:
+                parent.children.append(make("leaf", pid, sid))
+            if remainder:
+                chunk_id = codec.production_to_id[FRAGMENT_CHUNK]
+                chunk = make("list", chunk_id)
+                parent.children.append(chunk)
+                append_chunks(chunk, values[FRAGMENT_FANOUT - 1 :])
+
+        append_chunks(root, pairs[1:])
+        _refresh_layout(root)
+        return root
     if is_v05:
         root_pid = pairs[0][0]
         index = 1
@@ -491,8 +524,14 @@ def topology_from_openui(
     slot_inventory: list[str] | None = None,
     *,
     max_len: int = 0,
+    output_kind: str = "document",
 ) -> TopologyNode:
-    production_ids, slot_ids = codec.encode(openui, slot_inventory, max_len=max_len)
+    production_ids, slot_ids = codec.encode(
+        openui,
+        slot_inventory,
+        max_len=max_len,
+        output_kind=output_kind,
+    )
     return _topology_from_ids(codec, production_ids, slot_ids)
 
 
@@ -503,7 +542,8 @@ def _serialize_topology(
     slot_ids = [codec.slot_none_id]
     root_token = codec.id_to_production.get(root.production_id, "")
     is_v05 = root_token == "!v0.5"
-    if is_v05:
+    is_fragment = root_token in FRAGMENT_MARKERS
+    if is_v05 or is_fragment:
         production_ids.append(root.production_id)
         slot_ids.append(root.slot_id)
 
@@ -521,10 +561,21 @@ def _serialize_topology(
             slot_ids.append(codec.slot_none_id)
 
     for statement in root.children:
-        emit(statement)
-        if is_v05:
-            production_ids.append(codec.production_to_id[";"])
-            slot_ids.append(codec.slot_none_id)
+        if is_fragment:
+            def emit_fragment(node: TopologyNode) -> None:
+                token = codec.id_to_production.get(node.production_id, "")
+                if token != FRAGMENT_CHUNK:
+                    production_ids.append(node.production_id)
+                    slot_ids.append(node.slot_id)
+                for child in node.children:
+                    emit_fragment(child)
+
+            emit_fragment(statement)
+        else:
+            emit(statement)
+            if is_v05:
+                production_ids.append(codec.production_to_id[";"])
+                slot_ids.append(codec.slot_none_id)
     production_ids.append(codec.eos_id)
     slot_ids.append(codec.slot_none_id)
     return production_ids, slot_ids
@@ -933,6 +984,7 @@ class GrammarDiffusionModel(nn.Module):
         self.tokenizer = tokenizer
         self.codec = codec
         self.config = config or GrammarDiffusionConfig()
+        self.output_contract_version = 1
         self.device_name = str(device)
         backend = (self.config.context_backend or "scratch").lower()
         self.context = build_context_encoder(
@@ -995,6 +1047,8 @@ class GrammarDiffusionModel(nn.Module):
         design_md: str | None = None,
         slot_contract: list[str] | None = None,
         schema: str | None = None,
+        output_kind: str = "document",
+        output_category: str | None = None,
     ) -> str:
         if schema is None and self.config.schema_in_context:
             from slm_training.harnesses.quality import compact_schema_snippet
@@ -1010,6 +1064,8 @@ class GrammarDiffusionModel(nn.Module):
             slot_contract=(
                 slot_contract if self.config.slot_contract_in_context else None
             ),
+            output_kind=output_kind,
+            output_category=output_category,
         )
 
     def forward(self, batch: list[ExampleRecord]) -> float:
@@ -1027,9 +1083,17 @@ class GrammarDiffusionModel(nn.Module):
                     record.prompt,
                     design_md=record.design_md,
                     slot_contract=inventory,
+                    output_kind=record.target_kind,
+                    output_category=record.target_category,
                 )
             )
-            gold = topology_from_openui(self.codec, record.openui, inventory, max_len=0)
+            gold = topology_from_openui(
+                self.codec,
+                record.openui,
+                inventory,
+                max_len=0,
+                output_kind=record.target_kind,
+            )
             _apply_scope_contract(gold, record, self.config, self._rng)
             state = _corrupt_topology(gold, self.codec, self.config, self._rng)
             rows.append(_flatten(state)[: self.config.topology_max_nodes])
@@ -1233,13 +1297,21 @@ class GrammarDiffusionModel(nn.Module):
                     record.prompt,
                     design_md=record.design_md,
                     slot_contract=inventory,
+                    output_kind=record.target_kind,
+                    output_category=record.target_category,
                 )
             )
             # ProductionCodec.encode learns unseen productions. Evaluation must not
             # resize the checkpoint vocabulary, so retain their syntax in a throwaway
             # codec and map only model-facing IDs to the checkpoint's <unk> row.
             eval_codec = deepcopy(self.codec)
-            gold = topology_from_openui(eval_codec, record.openui, inventory, max_len=0)
+            gold = topology_from_openui(
+                eval_codec,
+                record.openui,
+                inventory,
+                max_len=0,
+                output_kind=record.target_kind,
+            )
             _apply_scope_contract(
                 gold,
                 record,
@@ -1391,11 +1463,17 @@ class GrammarDiffusionModel(nn.Module):
         for pid, token in self.codec.id_to_production.items():
             if pid in specials or token in {"-", "]", ";"}:
                 continue
-            if node_type == "document" and token not in {"<bos>", "!v0.5"}:
+            if node_type == "document" and token not in {
+                "<bos>",
+                "!v0.5",
+                *FRAGMENT_MARKERS,
+            }:
                 continue
             if node_type == "statement" and token not in V05_MARKERS:
                 continue
-            if node_type == "expression" and token in V05_MARKERS | {"!v0.5", "<bos>"}:
+            if node_type == "expression" and token in (
+                V05_MARKERS | FRAGMENT_MARKERS | {"!v0.5", "<bos>"}
+            ):
                 continue
             if leaf_only and _node_type(token) != "leaf":
                 continue
@@ -1433,6 +1511,7 @@ class GrammarDiffusionModel(nn.Module):
         ctx_pad: torch.Tensor,
         *,
         slot_inventory: list[str],
+        output_kind: str = "document",
     ) -> tuple[str, dict[str, Any]]:
         root = TopologyNode(0, "document", self.codec.mask_id, active=True)
         next_id = 1
@@ -1538,6 +1617,13 @@ class GrammarDiffusionModel(nn.Module):
                     node.node_type,
                     leaf_only=node.depth >= self.config.topology_max_depth,
                 )
+                if node.node_type == "document" and output_kind != "document":
+                    marker = f"!{output_kind}"
+                    marker_id = self.codec.production_to_id.get(marker)
+                    if marker_id is None:
+                        stats["budget_failure"] = "unsupported_output_contract"
+                        continue
+                    legal = [marker_id]
                 legal_logits = prod_logits[0, index, legal]
                 production_id = legal[int(legal_logits.argmax().item())]
                 token = self.codec.id_to_production.get(production_id, "")
@@ -1608,12 +1694,20 @@ class GrammarDiffusionModel(nn.Module):
                 node.slot_id = slot_id
                 token = self.codec.id_to_production.get(production_id, "")
                 if node.node_type == "expression":
-                    node.node_type = _node_type(token)
+                    node.node_type = (
+                        "list"
+                        if output_kind != "document" and token == FRAGMENT_CHUNK
+                        else "leaf"
+                        if output_kind != "document"
+                        else _node_type(token)
+                    )
                 node.active = False
                 node.children = []
                 for child_index in range(arity):
                     if node.node_type == "document":
-                        child_type = "statement"
+                        child_type = (
+                            "leaf" if output_kind != "document" else "statement"
+                        )
                     else:
                         child_type = "expression"
                     node.children.append(
@@ -1642,9 +1736,9 @@ class GrammarDiffusionModel(nn.Module):
         validation_error: str | None = None
         if text:
             try:
-                from slm_training.dsl.parser import validate
+                from slm_training.dsl.parser import validate_output
 
-                validate(text)
+                validate_output(text, output_kind)  # type: ignore[arg-type]
                 valid = True
             except Exception as exc:  # noqa: BLE001 - parser bridge exposes backend errors
                 validation_error = str(exc)[:300]
@@ -1680,12 +1774,26 @@ class GrammarDiffusionModel(nn.Module):
         self.eval()
         if not requests:
             return []
+        if any(request.output_kind != "document" for request in requests) and (
+            self.output_contract_version < 1
+        ):
+            raise ValueError(
+                "checkpoint predates compact output contracts; request a document"
+            )
         prompts = [
             self._format_context(
                 request.prompt,
                 design_md=request.design_md,
                 slot_contract=list(request.slot_contract or ()),
                 schema=request.schema,
+                output_kind=(
+                    request.output_kind if self.output_contract_version >= 1 else None
+                ),
+                output_category=(
+                    request.output_category
+                    if self.output_contract_version >= 1
+                    else None
+                ),
             )
             for request in requests
         ]
@@ -1707,6 +1815,7 @@ class GrammarDiffusionModel(nn.Module):
                 ctx[index : index + 1],
                 ctx_pad[index : index + 1],
                 slot_inventory=inventory,
+                output_kind=request.output_kind,
             )
             outputs.append(text)
             self._generation_evidence.append(evidence)
@@ -1748,6 +1857,7 @@ class GrammarDiffusionModel(nn.Module):
         payload = {
             "kind": "grammar_diffusion",
             "format_version": self.CHECKPOINT_FORMAT,
+            "output_contract_version": self.output_contract_version,
             "config": asdict(self.config),
             "codec": self._codec_payload(),
             "state_dict": {
@@ -1761,6 +1871,7 @@ class GrammarDiffusionModel(nn.Module):
                 {
                     "kind": "grammar_diffusion",
                     "format_version": self.CHECKPOINT_FORMAT,
+                    "output_contract_version": self.output_contract_version,
                     "topology": True,
                     "tokenizer": tokenizer_path.name,
                     "vocab_size": self.tokenizer.vocab_size,
@@ -1776,6 +1887,7 @@ class GrammarDiffusionModel(nn.Module):
     def load(self, path: Path | str) -> None:
         loaded = self.from_checkpoint(path, device=self.device_name)
         self.load_state_dict(loaded.state_dict(), strict=True)
+        self.output_contract_version = loaded.output_contract_version
 
     @classmethod
     def from_checkpoint(
@@ -1807,6 +1919,7 @@ class GrammarDiffusionModel(nn.Module):
         )
         codec = _restore_codec(payload.get("codec") or {})
         model = cls(tokenizer, codec, config, device)
+        model.output_contract_version = int(payload.get("output_contract_version", 0))
         model.load_state_dict(payload["state_dict"], strict=True)
         return model
 
@@ -1817,7 +1930,10 @@ class GrammarDiffusionModel(nn.Module):
         config: GrammarDiffusionConfig | None = None,
         device: str | torch.device = "cpu",
     ) -> GrammarDiffusionModel:
-        codec = _load_production_codec([record.openui for record in records])
+        codec = _load_production_codec(
+            [record.openui for record in records],
+            [record.target_kind for record in records],
+        )
         tokenizer = OpenUITokenizer.build(
             [record.prompt for record in records]
             + [record.openui for record in records]
