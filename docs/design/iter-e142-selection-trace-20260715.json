@@ -1,0 +1,14 @@
+{
+  "experiment_id": "E142",
+  "date": "2026-07-15",
+  "kind": "constrained_decoder_selection_trace",
+  "checkpoint": "outputs/runs/iter-e135-hf-context-20260715/e135_hf_context_control/checkpoints/last.pt",
+  "checkpoint_sha256": "8d28924a47d9e0b72ab15011869bce91091796592338a9548fcdcd361102d4c0",
+  "suite": "smoke",
+  "n": 1,
+  "policy": {"grammar_ltr_primary": true, "grammar_ltr_repair": true, "grammar_skip_exact_stream_probe": true, "generate_max_attempts": 3, "decode_timeout_seconds": 60.0},
+  "feedback": {"parse_rate": 0.0, "placeholder_validity": 0.4, "structural_similarity": 0.0538, "reward_score": 0.0, "decode_timeout_count": 0, "latency_ms_p50": 42742.52, "selection_trace_events": 64},
+  "first_divergence": {"position": 5, "prefix": "root=CheckBoxItem(", "chosen_token": ")\\ncta = Button(", "model_argmax": "=", "forced": false},
+  "finding": "The bounded trace captures the first malformed continuation after a valid root/component prefix; subsequent choices continue from the malformed prefix and never recover. legal_candidates is 0 on all captured choices because early picker returns do not update the last-candidate counter, so that field is currently not a trustworthy admission count.",
+  "decision": "Keep constrained decoding unchanged. First fix selection telemetry to distinguish early legal-argmax/forced/singleton returns from a true zero-candidate path, then use the trace to test the singleton bypass hypothesis."
+}

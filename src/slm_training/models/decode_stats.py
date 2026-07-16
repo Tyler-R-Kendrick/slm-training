@@ -56,6 +56,9 @@ class DecodeStats:
     constrained_last_legal_candidates: int = -1
     constrained_dead_end_candidate_count: int = 0
     constrained_dead_end_traces: list[dict[str, object]] = field(default_factory=list)
+    # Bounded prefix/choice evidence for diagnosing the first bad constrained
+    # decision without emitting an unbounded trace for long canvases.
+    constrained_selection_traces: list[dict[str, object]] = field(default_factory=list)
     newline_commit_traces: list[dict[str, object]] = field(default_factory=list)
 
     def add_ms(self, field_name: str, ms: float) -> None:
@@ -180,6 +183,9 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
     out["total_ms_p95"] = _nearest_rank(0.95)
     out["constrained_dead_end_traces"] = [
         trace for row in rows for trace in row.constrained_dead_end_traces
+    ]
+    out["constrained_selection_traces"] = [
+        trace for row in rows for trace in row.constrained_selection_traces
     ]
     out["newline_commit_traces"] = [
         trace for row in rows for trace in row.newline_commit_traces
