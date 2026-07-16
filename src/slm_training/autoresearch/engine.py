@@ -12,9 +12,26 @@ from slm_training.autoresearch.schemas import (
     EvidenceSnapshot,
     ExperimentOutcome,
     ExperimentSpec,
+    HypothesisMatrix,
     ResearchSource,
     utc_now,
 )
+
+
+RESEARCH_SOURCE_KINDS = {
+    "repo_lineage",
+    "hf_daily_paper",
+    "hf_paper_search",
+    "web",
+    "researcher",
+}
+TRACE_EVIDENCE_KINDS = {"run_insight", "telemetry", "agentv", "feedback"}
+RESULT_EVIDENCE_KINDS = {
+    "prior_run",
+    "evaluation",
+    "prior_campaign",
+    "data_snapshot",
+}
 
 
 def validate_experiment(
@@ -37,6 +54,84 @@ def validate_experiment(
         )
     if experiment.requires_rl:
         assert_rl_ready(experiment.rl_readiness_report)
+
+
+def validate_hypothesis_matrix(
+    campaign: CampaignSpec,
+    matrix: HypothesisMatrix,
+    evidence: EvidenceSnapshot,
+    sources: list[ResearchSource],
+    prior_experiments: tuple[ExperimentSpec, ...] = (),
+) -> None:
+    if matrix.campaign_id != campaign.campaign_id:
+        raise ValueError("hypothesis matrix campaign_id does not match campaign")
+    if matrix.evidence_snapshot_id != evidence.snapshot_id:
+        raise ValueError("hypothesis matrix does not match the captured evidence")
+    if len(matrix.hypotheses) < campaign.min_hypotheses:
+        raise ValueError(
+            f"hypothesis matrix requires at least {campaign.min_hypotheses} candidates"
+        )
+    prior_signatures = {
+        json.dumps(
+            experiment.knobs.model_dump(exclude_none=True, mode="json"),
+            sort_keys=True,
+        )
+        for experiment in prior_experiments
+    }
+    repeated = [
+        candidate.experiment.experiment_id
+        for candidate in matrix.hypotheses
+        if json.dumps(
+            candidate.experiment.knobs.model_dump(exclude_none=True, mode="json"),
+            sort_keys=True,
+        )
+        in prior_signatures
+    ]
+    if repeated:
+        raise ValueError(
+            f"hypothesis matrix repeats previously run knob signatures: {repeated}"
+        )
+
+    citation_roles: dict[str, set[str]] = {}
+    for source in sources:
+        roles = citation_roles.setdefault(source.uri, set())
+        if source.kind in RESEARCH_SOURCE_KINDS:
+            roles.add("research")
+        if source.kind in {"telemetry", "feedback"}:
+            roles.add("prior_trace")
+        if source.kind in {"prior_run", "data_snapshot"}:
+            roles.add("prior_result")
+    for item in evidence.items:
+        roles = citation_roles.setdefault(item.path, set())
+        if item.kind == "repo_lineage":
+            roles.add("research")
+        if item.kind in TRACE_EVIDENCE_KINDS:
+            roles.add("prior_trace")
+        if item.kind in RESULT_EVIDENCE_KINDS:
+            roles.add("prior_result")
+
+    used_roles: set[str] = set()
+    for candidate in matrix.hypotheses:
+        validate_experiment(campaign, candidate.experiment, evidence, sources)
+        for use in candidate.evidence_uses:
+            if use.role not in citation_roles.get(use.citation, set()):
+                raise ValueError(
+                    f"{use.citation} is not captured {use.role} evidence"
+                )
+            used_roles.add(use.role)
+    available_roles = set().union(*citation_roles.values()) if citation_roles else set()
+    missing_roles = available_roles - used_roles
+    if missing_roles:
+        raise ValueError(
+            f"hypothesis matrix does not use available evidence roles: {sorted(missing_roles)}"
+        )
+    if not any(
+        item.novelty.transition_kind == "regime_transition_candidate"
+        for item in matrix.hypotheses
+    ):
+        raise ValueError(
+            "hypothesis matrix requires at least one regime-transition candidate"
+        )
 
 
 def compile_commands(

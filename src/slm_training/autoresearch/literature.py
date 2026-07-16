@@ -9,6 +9,26 @@ from typing import Any
 from slm_training.autoresearch.schemas import ResearchSource, utc_now
 
 
+def categorical_discovery_source() -> ResearchSource:
+    """Reviewed source that defines the harness's candidate-novelty boundary."""
+    return ResearchSource(
+        source_id="arxiv-2606.01444",
+        kind="hf_paper_search",
+        title=(
+            "Self-Revising Discovery Systems for Science: "
+            "A Categorical Framework for Agentic Artificial Intelligence"
+        ),
+        uri="https://arxiv.org/abs/2606.01444",
+        published_at="2026-05-31",
+        summary=(
+            "Discovery is a verified regime transition that preserves old artifacts, "
+            "transports them by left Kan extension, and identifies accepted residual "
+            "content outside transport; pre-experiment novelty remains a candidate."
+        ),
+        metadata={"implementation_status": "Adapted"},
+    )
+
+
 class HuggingFacePapersClient:
     def __init__(self, *, client: Any | None = None, token: str | None = None) -> None:
         if client is None:
