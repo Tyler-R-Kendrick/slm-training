@@ -25,6 +25,8 @@ def _apply_profile_flags(model: TwoTowerModel, args: argparse.Namespace) -> None
         cfg.grammar_incremental_state = False
     if args.verify_chosen_only:
         cfg.grammar_verify_chosen_only = True
+    if args.no_copy_probes:
+        cfg.grammar_copy_probes = False
     if args.multitoken:
         cfg.grammar_multitoken_accept = True
         cfg.grammar_multitoken_max = int(args.multitoken_max)
@@ -63,6 +65,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--no-incremental", action="store_true")
     parser.add_argument("--verify-chosen-only", action="store_true")
+    parser.add_argument(
+        "--no-copy-probes",
+        action="store_true",
+        help="Disable InteractiveParser.copy()-based DFA admission probes.",
+    )
     parser.add_argument("--multitoken", action="store_true")
     parser.add_argument("--multitoken-max", type=int, default=8)
     parser.add_argument("--lookahead", type=int, default=0)
@@ -111,6 +118,7 @@ def main(argv: list[str] | None = None) -> int:
         "flags": {
             "grammar_incremental_state": bool(model.config.grammar_incremental_state),
             "grammar_verify_chosen_only": bool(model.config.grammar_verify_chosen_only),
+            "grammar_copy_probes": bool(getattr(model.config, "grammar_copy_probes", True)),
             "grammar_multitoken_accept": bool(model.config.grammar_multitoken_accept),
             "grammar_canvas_lookahead": int(model.config.grammar_canvas_lookahead),
             "grammar_ltr_primary": bool(model.config.grammar_ltr_primary),
