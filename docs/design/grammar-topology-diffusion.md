@@ -127,7 +127,7 @@ Negative results complete an experiment only when the recipe, suite sizes,
 AgentEvals/AgentV bundle, raw JSON, markdown headline, checkpoint disposition, and
 unchanged gate result are all durable.
 
-## ScopeDiff extension (planned X16-X21)
+## ScopeDiff extension (measured X16-X21)
 
 ScopeDiff adds contract-conditioned typed holes to the existing topology model.
 Each `component_call`, `statement`, or `child_list` scope receives a stable ID from
@@ -145,12 +145,12 @@ the existing layered verifier; final G0-G12 validation remains authoritative.
 
 | ID | Cumulative lever | Status |
 | --- | --- | --- |
-| X16 | X9 plus shared scope corpus | planned, unrun |
-| X17 | X16 plus contract embeddings and summary/local-gate heads | planned, unrun |
-| X18 | X17 plus independent scope noise | planned, unrun |
-| X19 | X18 plus failure-cone supervision | planned, unrun |
-| X20 | X19 plus boundary and local/global negatives | planned, unrun |
-| X21 | X20 plus X14 actions, structural state, critic, buffer, and global sync | planned, unrun |
+| X16 | X9 plus shared scope corpus | screened; eliminated after smoke |
+| X17 | X16 plus contract embeddings and summary/local-gate heads | screened; eliminated after smoke |
+| X18 | X17 plus independent scope noise | confirmed; failed ship gates |
+| X19 | X18 plus failure-cone supervision | screened; eliminated after smoke |
+| X20 | X19 plus boundary and local/global negatives | screened; eliminated after smoke |
+| X21 | X20 plus X14 actions, structural state, critic, buffer, and global sync | confirmed; failed ship gates |
 
 The v1 evaluator emits `scope_contract_metrics` overall and grouped by scope kind
 and data family: sample count, local-gate accuracy, normalized summary MAE for
@@ -160,8 +160,38 @@ diagnostics; the unchanged full-suite gates remain authoritative. Parser-exit
 classification, identity-level definitions/uses/slots F1, local/global
 disagreement, accepted structure per forward, and verifier-call counts are not yet
 implemented and must not be inferred from the v1 metrics. `--describe` is the
-no-write inspection path. No training, evaluation, checkpoint, or
-measured-results JSON was produced here.
+no-write inspection path.
+
+### Measured X16-X21 CPU matrix (2026-07-16 UTC)
+
+Durable result: [grammar-scope-matrix-results.json](grammar-scope-matrix-results.json).
+The immutable ProgramSpec build accepted 694 records, including 189
+`scope_contract` rows (fingerprint `d59c8595…2a9`), and retained 272 verifier plus
+104 quality rejections in its manifest. Screening trained X16-X21 for 80 CPU
+scratch steps at seeds 0/1/2. Smoke retained X21, X18, and X16; held-out and
+adversarial retained X21 and X18. Both survivors were restarted for 200 steps.
+
+| Row | Suite | n | Parse | Fidelity | Structure | Topology composite | Result |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| X18 median | smoke | 3 | 0.000 | 0.000 | 0.000 | unavailable | fail |
+| X18 median | held-out | 5 | 0.000 | 0.000 | 0.000 | unavailable | fail |
+| X18 median | adversarial | 4 | 0.000 | 0.000 | 0.000 | unavailable | fail |
+| X18 median | OOD | 4 | 0.000 | 0.000 | 0.000 | unavailable | fail |
+| X18 median | RICO | 32 | 0.000 | 0.000 | 0.000 | unavailable | fail |
+| X21 median | smoke | 3 | 0.000 | 0.000 | 0.115 | 0.238 | fail |
+| X21 median | held-out | 5 | 0.000 | 0.000 | 0.109 | 0.231 | fail |
+| X21 median | adversarial | 4 | 0.000 | 0.000 | 0.109 | 0.231 | fail |
+| X21 median | OOD | 4 | 0.000 | 0.000 | 0.085 | 0.228 | fail |
+| X21 median | RICO | 32 | 0.000 | 0.000 | 0.046 | 0.208 | fail |
+
+All six confirmation checkpoints failed the unchanged multi-suite gates. Six
+AgentEvals/AgentV bundles completed without execution errors; JSON-envelope checks
+passed and domain assertions passed 0/5 for every checkpoint. The generalization
+suites contain no `scope_contract` metadata, so `scope_contract_metrics` are
+unavailable for this campaign and are not inferred from training rows. Checkpoints
+remain local under `outputs/runs/gx_x{18,21}_*_confirm_200`; none were promoted or
+synced. The result falsifies the short-budget claim that scope conditioning alone
+produces valid OpenUI and does not justify SAE steering or a full HF run.
 
 ## Measured implementation smoke (2026-07-15 UTC)
 

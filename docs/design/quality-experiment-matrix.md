@@ -452,7 +452,7 @@ python -m scripts.run_grammar_matrix \
 # Isolated topology levers
 python -m scripts.run_grammar_matrix --only X9,X10,X11 --steps 80
 
-# Inspect planned ScopeDiff rows without data builds, training, or result writes
+# Inspect ScopeDiff rows without data builds, training, or result writes
 python -m scripts.run_grammar_matrix --only X16,X17,X18,X19,X20,X21 --describe
 
 # Disable halving (run every experiment×seed to completion)
@@ -476,15 +476,39 @@ The component definitions, budgets, checkpoint boundary, and evidence rules are 
 [grammar-topology-diffusion.md](grammar-topology-diffusion.md). Evidence-complete
 negative results count; undocumented or JSON-only runs do not.
 
-X16-X21 are registered and runnable but deliberately **unrun**. They must not be
-added to `grammar-matrix-results.json` until a real matrix invocation has emitted
-AgentEvals/AgentV evidence and both durable JSON and measured markdown.
-Their v1 scope diagnostics are `scope_contract_metrics` overall and grouped by
-scope kind/family; they do not implement parser-exit or identity-level symbol F1.
+X16-X21 were measured on 2026-07-16 with 80-step, three-seed CPU screening and
+200-step confirmation of X18/X21. Both confirmation rows failed every unchanged
+multi-suite ship decision; see
+[grammar-scope-matrix-results.json](grammar-scope-matrix-results.json). Their v1
+scope diagnostics are `scope_contract_metrics` overall and grouped by scope
+kind/family, but this campaign's generalization suites carry no scope metadata, so
+those diagnostics are unavailable rather than inferred. Parser-exit and
+identity-level symbol F1 remain unimplemented.
 
 Artifacts: `outputs/runs/grammar_matrix_summary.json`,
 [`docs/design/grammar-matrix-results.json`](grammar-matrix-results.json),
+[`docs/design/grammar-scope-matrix-results.json`](grammar-scope-matrix-results.json),
 `outputs/runs/baseline_reproduction_summary.json`.
+
+### Measured X16-X21 result (2026-07-16 UTC)
+
+```bash
+python -m scripts.run_grammar_matrix \
+  --only X16,X17,X18,X19,X20,X21 \
+  --scope-dir outputs/data/train/scopediff_x16x21_v1 \
+  --test-dir outputs/data/eval/scopediff_x16x21_eval_v1 \
+  --device cpu --context-backend scratch \
+  --steps 80 --seeds 0,1,2 --rico-limit 32 --confirm-steps 200 \
+  --confirm-top 2 --gen-steps 8 \
+  --docs-output docs/design/grammar-scope-matrix-results.json
+```
+
+X21 and X18 survived smoke, held-out, and adversarial halving. At 200 steps,
+median parse and placeholder fidelity were 0.0 on smoke n=3, held-out n=5,
+adversarial n=4, OOD n=4, and limited RICO n=32 for both rows. X21 retained weak
+structural signal (median 0.115 smoke and 0.046 RICO) but failed every ship
+decision. Six AgentV bundles ran five domain assertions each with 0/5 passes. The
+six local scratch checkpoints were not promoted or synced.
 
 ### Measured X9-X15 result (2026-07-15 UTC)
 
