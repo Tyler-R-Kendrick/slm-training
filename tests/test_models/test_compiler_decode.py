@@ -7,6 +7,7 @@ import torch
 from slm_training.dsl.grammar.fastpath.compiler_draft import (
     CompletionPath,
     build_completion_forest,
+    gold_compiler_decisions,
     gold_compiler_decision_positions,
 )
 from slm_training.dsl.schema import ExampleRecord
@@ -156,6 +157,11 @@ def test_completion_forest_uses_schema_property_order_for_enums(monkeypatch) -> 
         tokenizer.token_to_id["STR:row"],
         tokenizer.token_to_id["STR:column"],
     }
+    completed_enum = build_completion_forest(
+        tokenizer,
+        tokenizer.encode('root=Stack([],"column"', add_special=False),
+    )
+    assert set(completed_enum.candidate_ids) == {tokenizer.token_to_id[")"]}
 
 
 def test_completion_forest_enforces_generated_schema_arity(monkeypatch) -> None:
@@ -231,6 +237,25 @@ def test_completion_forest_tracks_forward_binder_scope() -> None:
         tokenizer.bind_id(1)
     }
 
+    unresolved = [
+        tokenizer.bos_id,
+        *tokenizer.encode('root=Stack([b1],"column")', add_special=False),
+    ]
+    forest = build_completion_forest(tokenizer, unresolved)
+    assert tokenizer.eos_id not in forest.candidate_ids
+
+    resolved = [
+        tokenizer.bos_id,
+        *tokenizer.encode(
+            'root=Stack([b1],"column")\nb1=TextContent(":hero.title")',
+            add_special=False,
+        ),
+    ]
+    forest = build_completion_forest(
+        tokenizer, resolved, slot_contract=[":hero.title"]
+    )
+    assert tokenizer.eos_id in forest.candidate_ids
+
 
 def test_gold_decisions_follow_compiler_forest() -> None:
     tokenizer = DSLNativeTokenizer.build()
@@ -243,6 +268,8 @@ def test_gold_decisions_follow_compiler_forest() -> None:
     )
     selected = {tokenizer.id_to_token[target[position]] for position in positions}
     assert {"<BIND_0>", "Card", "<BIND_1>", "TextContent"} <= selected
+    kinds = {decision.kind for decision in gold_compiler_decisions(tokenizer, target)}
+    assert {"bind", "component", "struct"} <= kinds
 
 
 def test_grammar_state_advances_lexer_literals_as_source() -> None:
@@ -274,6 +301,26 @@ def test_compiler_alignment_loss_trains_gold_semantic_states() -> None:
     assert torch.isfinite(loss)
     assert model.last_training_metrics["compiler_alignment_rows"] == 1
     assert model.last_training_metrics["compiler_alignment_loss"] > 0.0
+
+
+def test_compiler_alignment_can_stratify_grammar_decision_kinds() -> None:
+    model = _model()
+    model.config.compiler_alignment_loss_weight = 1.0
+    model.config.compiler_alignment_stratified = True
+    record = ExampleRecord(
+        id="alignment-stratified",
+        prompt="card",
+        openui='root = Card([title])\ntitle = TextContent(":hero.title")',
+        placeholders=[":hero.title"],
+        split="train",
+        source="fixture",
+    )
+    loss = model.training_loss([record])
+    assert torch.isfinite(loss)
+    metrics = model.last_training_metrics
+    assert metrics["compiler_alignment_rows"] > 1
+    assert metrics["compiler_alignment_bind_rows"] == 1
+    assert metrics["compiler_alignment_component_rows"] == 1
 
 
 def test_tree_verifier_packs_prefix_nodes_and_avoids_full_projection() -> None:

@@ -796,6 +796,16 @@ repairs. The best E194 diagnostic still has meaningful parse 0.0 (structure
 component/binder alignment derived from parser decision kinds. See
 [iter-e181-e194-compiler-alignment-20260716.md](iter-e181-e194-compiler-alignment-20260716.md).
 
+E195–E199 stratify compiler alignment by tokenizer/parser-derived decision kind.
+E195 is an invalid control because `--train-version` did not load its online
+mixture; that resolver is fixed for future runs. The matched E196 train covers
+component, binder, structural, symbol, and literal decisions on every eligible
+row. E199 restores syntax 1.0 with zero compiler fallbacks after enum restriction
+is tied to parser slot progress, but meaningful parse and component recall remain
+0.0 because the forward binder receives a primitive declaration. No checkpoint
+is promoted. Next: generated schema/AST reference-role propagation. See
+[iter-e195-e199-stratified-alignment-20260716.md](iter-e195-e199-stratified-alignment-20260716.md).
+
 These rows are registered under `--matrix v8`; `--list` prints definitions
 without building data or starting a run. They require the lexer-native parent
 contract and unchanged honest five-suite gates. No result or champion is claimed.

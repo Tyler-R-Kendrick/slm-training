@@ -8,6 +8,7 @@ import random
 import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Any
 
 import torch
 import torch.nn as nn
@@ -179,6 +180,7 @@ class TwoTowerConfig:
     # Extra weight on the first content transitions (root -> assignment).
     ltr_prefix_loss_weight: float = 0.0
     compiler_alignment_loss_weight: float = 0.0
+    compiler_alignment_stratified: bool = False
     symbol_boundary_loss_weight: float = 0.0
     # Extra CE weight on gold placeholder token positions (fidelity signal).
     fidelity_loss_weight: float = 0.5
@@ -476,7 +478,9 @@ class TwoTowerModel(nn.Module):
         # Train-time caches (formatted context string keyed by record id).
         self._context_text_cache: dict[str, str] = {}
         self._target_ids_cache: dict[str, list[int]] = {}
-        self._compiler_decision_cache: dict[tuple[int, ...], tuple[int, ...]] = {}
+        self._compiler_decision_cache: dict[
+            tuple[tuple[int, ...], tuple[str, ...]], tuple[Any, ...]
+        ] = {}
         self._context_token_count_cache: dict[str, int] = {}
         self._placeholder_token_ids: set[int] | None = None
         self._slot_contracts: list[list[str] | None] | None = None
@@ -1249,48 +1253,99 @@ class TwoTowerModel(nn.Module):
         aligned_rows = 0
         if alignment_w > 0.0:
             from slm_training.dsl.grammar.fastpath.compiler_draft import (
-                gold_compiler_decision_positions,
+                gold_compiler_decisions,
             )
 
-            aligned_noisy = target_ids.clone()
-            aligned_mask = torch.zeros_like(target_ids, dtype=torch.bool)
+            stratified = bool(
+                getattr(self.config, "compiler_alignment_stratified", False)
+            )
+            aligned_canvases: list[torch.Tensor] = []
+            aligned_targets: list[int] = []
+            aligned_positions: list[int] = []
+            aligned_context_rows: list[int] = []
+            kind_rows: dict[str, int] = {}
             for row, record in enumerate(batch):
-                key = tuple(int(token_id) for token_id in target_ids[row].tolist())
+                target_key = tuple(
+                    int(token_id) for token_id in target_ids[row].tolist()
+                )
+                contract_key = tuple(record.placeholders or ())
+                key = (target_key, contract_key)
                 decisions = self._compiler_decision_cache.get(key)
                 if decisions is None:
-                    decisions = gold_compiler_decision_positions(
+                    decisions = gold_compiler_decisions(
                         self.tokenizer,
-                        key,
-                        slot_contract=list(record.placeholders or []),
+                        target_key,
+                        slot_contract=list(contract_key),
                     )
                     self._compiler_decision_cache[key] = decisions
                 if not decisions:
                     continue
-                cut = decisions[self._rng.randrange(len(decisions))]
-                aligned_noisy[row, cut:] = self.tokenizer.mask_id
-                aligned_noisy[row, target_ids[row].eq(self.tokenizer.pad_id)] = (
-                    self.tokenizer.pad_id
+                if stratified:
+                    by_kind: dict[str, list[Any]] = {}
+                    for decision in decisions:
+                        by_kind.setdefault(decision.kind, []).append(decision)
+                    selected = [
+                        choices[self._rng.randrange(len(choices))]
+                        for choices in by_kind.values()
+                    ]
+                else:
+                    selected = [decisions[self._rng.randrange(len(decisions))]]
+                for decision in selected:
+                    cut = int(decision.position)
+                    canvas = target_ids[row].clone()
+                    canvas[cut:] = self.tokenizer.mask_id
+                    canvas[target_ids[row].eq(self.tokenizer.pad_id)] = (
+                        self.tokenizer.pad_id
+                    )
+                    aligned_canvases.append(canvas)
+                    aligned_targets.append(int(target_ids[row, cut]))
+                    aligned_positions.append(cut)
+                    aligned_context_rows.append(row)
+                    kind_rows[decision.kind] = kind_rows.get(decision.kind, 0) + 1
+            aligned_rows = len(aligned_canvases)
+            if aligned_canvases:
+                row_index = torch.tensor(
+                    aligned_context_rows, device=ctx.device, dtype=torch.long
                 )
-                aligned_mask[row, cut] = True
-                aligned_rows += 1
-            if aligned_mask.any():
+                aligned_noisy = torch.stack(aligned_canvases)
                 aligned_logits = self.denoiser(
                     aligned_noisy,
-                    ctx,
+                    ctx.index_select(0, row_index),
                     pad_id=self.tokenizer.pad_id,
-                    ctx_pad_mask=ctx_pad,
+                    ctx_pad_mask=(
+                        ctx_pad.index_select(0, row_index)
+                        if ctx_pad is not None
+                        else None
+                    ),
+                )
+                position_index = torch.tensor(
+                    aligned_positions,
+                    device=aligned_logits.device,
+                    dtype=torch.long,
+                )
+                batch_index = torch.arange(
+                    aligned_rows, device=aligned_logits.device
+                )
+                target_tensor = torch.tensor(
+                    aligned_targets,
+                    device=aligned_logits.device,
+                    dtype=target_ids.dtype,
                 )
                 alignment_loss = F.cross_entropy(
-                    aligned_logits[aligned_mask], target_ids[aligned_mask]
+                    aligned_logits[batch_index, position_index], target_tensor
                 )
                 mask_loss = mask_loss + alignment_w * alignment_loss
             self.last_training_metrics = {
                 "compiler_alignment_rows": aligned_rows,
                 "compiler_alignment_loss": (
                     float(alignment_loss.detach().cpu())
-                    if aligned_mask.any()
+                    if aligned_canvases
                     else 0.0
                 ),
+                **{
+                    f"compiler_alignment_{kind}_rows": count
+                    for kind, count in sorted(kind_rows.items())
+                },
             }
 
         aux_w = float(getattr(self.config, "fastpath_aux_weight", 0.0) or 0.0)

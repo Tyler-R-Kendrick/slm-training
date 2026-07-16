@@ -1,0 +1,117 @@
+{
+  "campaign": "E195-E199 stratified grammar-decision alignment",
+  "date_utc": "2026-07-16",
+  "honesty": {
+    "classification": "cpu diagnostic subset",
+    "ship_gates": false,
+    "promoted": false,
+    "checkpoint_sync": "disabled for scratch diagnostics",
+    "design_md_in_context": false,
+    "suite": "smoke",
+    "suite_n": 1
+  },
+  "data": {
+    "version": "e177_semantic_judge_v2",
+    "record_count": 496,
+    "manifest_sha256": "d59a94d9de0c3bfd0145faf27cc4ffab11fac73a4fc0f14e0390330aa8367803",
+    "matched_mixture": "src/slm_training/resources/train_data/e177_semantic_judge_v2/mixture_semantic_balanced.json",
+    "matched_mixture_sha256": "c141a4526c7cf3565ce21b6172b2f2d12c7f16c92d55f0f0ceca07751f4cacac"
+  },
+  "train_recipe": {
+    "device": "cpu",
+    "steps": 32,
+    "batch_size": 4,
+    "seed": 0,
+    "context_backend": "hf",
+    "context_model": "HuggingFaceTB/SmolLM2-135M",
+    "context_frozen": true,
+    "schema_in_context": true,
+    "grammar_constrained": true,
+    "compiler_alignment_loss_weight": 1.0,
+    "compiler_alignment_stratified": true,
+    "checkpoint_sync": false
+  },
+  "trains": [
+    {
+      "id": "E195",
+      "run_id": "e195-stratified-compiler-aligned-32step",
+      "path": "outputs/runs/e195-stratified-compiler-aligned-32step/checkpoints/last.pt",
+      "sha256": "f8eb684b48dc34b90223fb8ecadf1210e5b0da702d3611b18e0f18d63e5b127e",
+      "last_loss": 17.07504653930664,
+      "wall_ms": 174216.711,
+      "alignment_rows": 597,
+      "alignment_loss_mean": 14.610203579068184,
+      "alignment_loss_first": 73.1388168334961,
+      "alignment_loss_last": 5.431948661804199,
+      "decision_rows": {"component":128,"bind":128,"struct":128,"sym":128,"lit":85},
+      "valid_comparison": false,
+      "invalid_reason": "--train-version resolved the corpus but did not load an online mixture manifest; seen token counts and sampled rows differ from E191"
+    },
+    {
+      "id": "E196",
+      "run_id": "e196-stratified-compiler-aligned-matched-32step",
+      "path": "outputs/runs/e196-stratified-compiler-aligned-matched-32step/checkpoints/last.pt",
+      "sha256": "7afaf81defcfe192f0d567b1af086ed434ac57d0410008a9fede7c46886d897b",
+      "last_loss": 7.856210708618164,
+      "wall_ms": 110928.979,
+      "seen_prompt_tokens": 17848,
+      "seen_target_tokens": 5928,
+      "alignment_rows": 631,
+      "alignment_loss_mean": 14.14076878875494,
+      "alignment_loss_first": 72.1903305053711,
+      "alignment_loss_last": 2.4682915210723877,
+      "decision_rows": {"component":128,"bind":128,"struct":128,"sym":128,"lit":119},
+      "valid_comparison": true
+    }
+  ],
+  "evaluations": [
+    {
+      "id":"E197",
+      "run":"e197-stratified-alignment-probe",
+      "checkpoint":"E196",
+      "raw_syntax":0.0,
+      "meaningful_parse":0.0,
+      "structure":0.1917,
+      "component_recall":0.0,
+      "reward":0.0,
+      "latency_p50_ms":3643.38,
+      "prediction":"root = Stack([b1], \"column\"",
+      "agentv":"outputs/runs/e197-stratified-alignment-probe/agentv/openui-model-ship-gates-2026-07-16t05-54-51-298536-00-00.eval.jsonl"
+    },
+    {
+      "id":"E198",
+      "run":"e198-reference-complete-eos-probe",
+      "checkpoint":"E196",
+      "raw_syntax":0.0,
+      "meaningful_parse":0.0,
+      "structure":0.1917,
+      "component_recall":0.0,
+      "reward":0.0,
+      "latency_p50_ms":3572.64,
+      "prediction":"root = Stack([b1], \"column\"",
+      "agentv":"outputs/runs/e198-reference-complete-eos-probe/agentv/openui-model-ship-gates-2026-07-16t05-56-30-615477-00-00.eval.jsonl"
+    },
+    {
+      "id":"E199",
+      "run":"e199-enum-progress-probe",
+      "checkpoint":"E196",
+      "raw_syntax":1.0,
+      "meaningful_parse":0.0,
+      "structure":0.1917,
+      "component_recall":0.0,
+      "reward":0.0,
+      "latency_p50_ms":4304.95,
+      "prediction":"root = Stack([b1], \"column\")b1 = \"column\"",
+      "agentv":"outputs/runs/e199-enum-progress-probe/agentv/openui-model-ship-gates-2026-07-16t05-58-26-452725-00-00.eval.jsonl"
+    }
+  ],
+  "implementation": [
+    "Gold compiler decisions retain semantic kinds derived from tokenizer/parser state.",
+    "Stratified mode samples one decision per kind per record and evaluates all expanded canvases in one denoiser batch.",
+    "Published train-version resolution now automatically loads the version's canonical mixture.json unless an experiment-specific manifest is explicit.",
+    "EOS requires both an official complete AST and a resolved generated binder graph.",
+    "Generated schema enum restriction ends once the parser reports that the active value has started."
+  ],
+  "conclusion": "Stratification fixes root and first forward-binder ranking and E199 restores syntax validity without compiler fallback, but the binder declaration is assigned a primitive string, so meaningful parse remains zero. No checkpoint is promotable.",
+  "next_hypothesis": "Propagate the generated schema/AST value role attached to a binder reference into its declaration, constraining element references to component-valued declarations without matching concrete component or prompt strings."
+}

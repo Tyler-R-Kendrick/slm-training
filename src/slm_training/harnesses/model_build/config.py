@@ -173,6 +173,7 @@ class ModelBuildConfig:
     diffusion_length_loss_weight: float = 0.1
     ltr_prefix_loss_weight: float = 0.0
     compiler_alignment_loss_weight: float = 0.0
+    compiler_alignment_stratified: bool = False
     symbol_boundary_loss_weight: float = 0.0
     remask_span: str = "token"  # token | statement
     teacher_init_embeddings: bool = False

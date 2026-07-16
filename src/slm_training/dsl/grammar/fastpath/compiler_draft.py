@@ -34,6 +34,14 @@ class CompletionForest:
         return tuple(path.token_ids[0] for path in self.paths if path.token_ids)
 
 
+@dataclass(frozen=True)
+class CompilerDecision:
+    """One gold decision point classified by its tokenizer semantic kind."""
+
+    position: int
+    kind: str
+
+
 def _token_piece(tokenizer: Any, token_id: int) -> str:
     raw = tokenizer.id_to_token.get(int(token_id), "")
     if raw == "NL":
@@ -98,6 +106,12 @@ def _binder_scope(
         if newline_id is None or newline_id not in prefix_ids[last + 1 :]:
             active = declarations[-1]
     return declarations, references, active
+
+
+def _references_resolved(tokenizer: Any, prefix_ids: list[int]) -> bool:
+    """Whether every generated binder reference has a declaration."""
+    declarations, references, _active = _binder_scope(tokenizer, prefix_ids)
+    return set(references) <= set(declarations)
 
 
 def _known_terminal_coverage(tokenizer: Any, terminals: frozenset[str]) -> bool:
@@ -255,7 +269,9 @@ def _schema_enum_ids(
     active = _active_call(state)
     if active is None:
         return None
-    component, index, _ = active
+    component, index, arg_count = active
+    if arg_count > index:
+        return None
     definition = (schema.get("$defs") or {}).get(component) or {}
     properties = definition.get("properties") or {}
     names = list(properties)
@@ -351,7 +367,9 @@ def build_completion_forest(
         newline_id = tokenizer.token_to_id.get("NL")
         if newline_id is not None:
             candidates.discard(int(newline_id))
-    ast_complete = _generated_ast_is_complete(prefix_text)
+    ast_complete = _generated_ast_is_complete(
+        prefix_text
+    ) and _references_resolved(tokenizer, prefix_ids)
     if "$END" in terminals and ast_complete:
         candidates.add(int(tokenizer.eos_id))
     else:
@@ -533,18 +551,18 @@ def build_completion_forest(
     )
 
 
-def gold_compiler_decision_positions(
+def gold_compiler_decisions(
     tokenizer: Any,
     token_ids: list[int] | tuple[int, ...],
     *,
     slot_contract: list[str] | None = None,
     max_path_tokens: int = 8,
-) -> tuple[int, ...]:
-    """Replay a gold stream and return every Lark-derived branch position."""
+) -> tuple[CompilerDecision, ...]:
+    """Replay a gold stream and classify every Lark-derived branch decision."""
     ids = tuple(int(token_id) for token_id in token_ids)
     stop_ids = {int(tokenizer.pad_id), int(tokenizer.eos_id)}
     cursor = 1 if ids and ids[0] == int(tokenizer.bos_id) else 0
-    positions: list[int] = []
+    decisions: list[CompilerDecision] = []
     while cursor < len(ids) and ids[cursor] not in stop_ids:
         forest = build_completion_forest(
             tokenizer,
@@ -563,15 +581,36 @@ def gold_compiler_decision_positions(
             continue
         path = max(matches, key=lambda candidate: len(candidate.token_ids))
         if len(set(forest.candidate_ids)) > 1:
-            positions.append(cursor)
+            decisions.append(CompilerDecision(cursor, path.kind))
         cursor += len(path.token_ids)
-    return tuple(positions)
+    return tuple(decisions)
+
+
+def gold_compiler_decision_positions(
+    tokenizer: Any,
+    token_ids: list[int] | tuple[int, ...],
+    *,
+    slot_contract: list[str] | None = None,
+    max_path_tokens: int = 8,
+) -> tuple[int, ...]:
+    """Compatibility view of grammar-derived gold decision positions."""
+    return tuple(
+        decision.position
+        for decision in gold_compiler_decisions(
+            tokenizer,
+            token_ids,
+            slot_contract=slot_contract,
+            max_path_tokens=max_path_tokens,
+        )
+    )
 
 
 __all__ = [
     "CompletionForest",
     "CompletionPath",
+    "CompilerDecision",
     "Coverage",
     "build_completion_forest",
+    "gold_compiler_decisions",
     "gold_compiler_decision_positions",
 ]
