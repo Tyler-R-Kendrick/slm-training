@@ -1,0 +1,21 @@
+{
+  "campaign": "E228 legal-candidate margin alignment",
+  "date_utc": "2026-07-16",
+  "status": "quality_improved_ship_gates_failed",
+  "training_run": true,
+  "run_id": "e228-candidate-margin-matched",
+  "checkpoint_sha256": "7a9be4a665e216d7f7e73883ad74ad972bbf30846896d0c29188d6482f5b093a",
+  "recipe": {"device": "cpu", "steps": 32, "batch_size": 4, "learning_rate": 0.0003, "seed": 0, "context_backend": "hf_local_files_only", "train_version": "e218_schema_normalized_judge_v5", "eval_version": "remediated", "output_tokenizer": "lexer", "compiler_alignment_loss_weight": 1.0, "compiler_alignment_margin": 1.0, "compiler_alignment_stratified": true, "compiler_alignment_semantic_exhaustive": true, "alignment_candidate_scope": "lark_compiler_forest", "compiler_decode_mode": "tree", "schema_in_context": true, "slot_contract_in_context": true, "slot_contract_constrained_decode": true, "honest_slot_contract": true, "design_md_in_context": false, "allow_unconstrained_fallback": false, "mixture_sampling_policy": "quota_capacity_aware", "checkpoint_sync": false},
+  "train_result": {"last_loss": 14.615253448486328, "wall_ms": 122804.002, "seen_prompt_tokens": 22924, "seen_target_tokens": 6401, "margin_loss_first": 16.175373077392578, "margin_loss_last": 2.2001349925994873, "margin_violation_rate_first": 0.9130434989929199, "margin_violation_rate_last": 0.5636363625526428, "candidate_cross_entropy_last": 2.031766653060913, "component_bound_loss_last": 14.708423614501953, "trace_id": "4e45de187ef22cbbe9178656308d6761"},
+  "suites": {
+    "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333, "structural_similarity": 0.46416666666666667, "component_type_recall": 0.25, "placeholder_fidelity": 0.5277777777777778, "contract_precision": 1.0, "reward_score": 0.8073333333333333},
+    "held_out": {"n": 5, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.33686, "component_type_recall": 0.15666666666666665, "placeholder_fidelity": 0.27999999999999997, "contract_precision": 1.0, "reward_score": 0.733},
+    "adversarial": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.5, "structural_similarity": 0.474375, "component_type_recall": 0.4583333333333333, "placeholder_fidelity": 0.5416666666666666, "contract_precision": 1.0, "reward_score": 0.8115},
+    "ood": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.375, "component_type_recall": 0.20833333333333331, "placeholder_fidelity": 0.2583333333333333, "contract_precision": 1.0, "reward_score": 0.7265},
+    "rico_held": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.6666666666666666, "structural_similarity": 0.16276666666666667, "component_type_recall": 0.4444444444444444, "placeholder_fidelity": 0.125, "contract_precision": 1.0, "reward_score": 0.6865}
+  },
+  "ship_gates": {"pass": false, "failure_count": 4, "failures": ["smoke:meaningful_program_rate", "held_out:meaningful_program_rate", "ood:meaningful_program_rate", "rico_held:structural_similarity"]},
+  "agentv": {"total": 5, "passed": 1, "failed": 4, "execution_errors": 0, "mean_score": 0.6},
+  "scoreboard": "outputs/autoresearch/e228-candidate-margin-alignment/runs/e228-candidate-margin-matched/scoreboard.json",
+  "conclusion": "A grammar-derived positive margin restores populated topology and improves honest quality, but four ship gates still fail."
+}

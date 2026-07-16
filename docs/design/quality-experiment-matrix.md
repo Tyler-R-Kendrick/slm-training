@@ -924,6 +924,13 @@ insufficient; the next justified lever is a grammar-derived positive margin for
 populated-child choices over legal empty-list alternatives. Full evidence:
 [iter-e227-candidate-set-alignment-20260716.md](iter-e227-candidate-set-alignment-20260716.md).
 
+E228 adds a configurable grammar-legal positive margin to E227. After a required
+latest-main fetch and clean rebase, the matched 32-step run reduced margin
+violations from 0.9130 to 0.5636. Honest evaluation retained syntax and contract
+precision 1.0, recovered populated layouts, and reduced failed gates to four;
+AgentV remains 1/5, so the local checkpoint is diagnostic only. Full evidence:
+[iter-e228-candidate-margin-alignment-20260716.md](iter-e228-candidate-margin-alignment-20260716.md).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
