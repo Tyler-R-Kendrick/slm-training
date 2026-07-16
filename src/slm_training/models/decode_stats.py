@@ -68,6 +68,11 @@ class DecodeStats:
     compiler_lattice_budget_exhaustions: int = 0
     compiler_lattice_false_hard_eliminations: int = 0
     compiler_lattice_max_rollback_depth: int = 0
+    compiler_lattice_valid_trajectories: int = 0
+    compiler_lattice_unique_valid_asts: int = 0
+    compiler_lattice_verifier_calls: int = 0
+    compiler_lattice_invalid_selected_over_valid: int = 0
+    compiler_lattice_selector_regret: float = 0.0
     compiler_lattice_last_signature: str = ""
     compiler_lattice_termination_reason: str = ""
     template_fastpath_count: int = 0
@@ -206,6 +211,11 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "compiler_lattice_budget_exhaustions",
         "compiler_lattice_false_hard_eliminations",
         "compiler_lattice_max_rollback_depth",
+        "compiler_lattice_valid_trajectories",
+        "compiler_lattice_unique_valid_asts",
+        "compiler_lattice_verifier_calls",
+        "compiler_lattice_invalid_selected_over_valid",
+        "compiler_lattice_selector_regret",
         "constrained_dead_ends",
         "constrained_dead_end_last_position",
         "constrained_dead_end_forced_rank",

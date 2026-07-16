@@ -470,7 +470,7 @@ neural scores soft, and plans bounded rollback plus selectively triggered
 PTRM/GRAM-style trajectories. The controller is **Adapted**: it does not reproduce
 LDT, TRM, PTRM, or GRAM training, and their reported results do not transfer.
 
-Rows E240-E247 are plan-only hypotheses until the standard quality suites,
+Rows E240-E247 are implemented but remain unrun hypotheses until the standard quality suites,
 AgentEvals, AgentV bundle, measured-results JSON, and markdown scoreboard exist.
 
 ## Contract-conditioned scope diffusion (X16-X21)
