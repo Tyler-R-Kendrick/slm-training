@@ -27,8 +27,12 @@ from slm_training.harnesses.train_data.synth import PromptSynthesizer, get_synth
 class TrainDataConfig:
     seed_path: Path | None = None
     # Human thumbs-up promotions from the annotate playground.
-    human_annotations_path: Path | None = Path("src/slm_training/resources/annotations/human_train.jsonl")
-    rico_path: Path | None = Path("src/slm_training/resources/rico/semantic_train.jsonl")
+    human_annotations_path: Path | None = Path(
+        "src/slm_training/resources/annotations/human_train.jsonl"
+    )
+    rico_path: Path | None = Path(
+        "src/slm_training/resources/rico/semantic_train.jsonl"
+    )
     # rico | fixture | existing | both | awwwards | rico+awwwards | all
     source: str = "all"
     # Reuse a previously built records.jsonl as roots for deterministic variants.
@@ -67,8 +71,12 @@ class TrainDataConfig:
     programspec_count: int = 16
     programspec_seed: int = 0
     include_language_contract: bool = True
-    deconstruct_path: Path | None = Path("src/slm_training/resources/deconstruct/pipeline.jsonl")
-    render_path: Path | None = Path("src/slm_training/resources/render/sample_program.json")
+    deconstruct_path: Path | None = Path(
+        "src/slm_training/resources/deconstruct/pipeline.jsonl"
+    )
+    render_path: Path | None = Path(
+        "src/slm_training/resources/render/sample_program.json"
+    )
     frontier_artifact_root: Path | None = Path("src/slm_training/resources/frontier")
     include_frontier_artifacts: bool = True
     repairs_per_program: int = 1
@@ -710,7 +718,9 @@ def _existing_program_derivatives(
         id=root_id,
         openui=record.openui,
         facts=dict(meta.get("facts") or {}),
-        program_family_id=str(meta.get("program_family_id") or f"{record.source}:{root_id}"),
+        program_family_id=str(
+            meta.get("program_family_id") or f"{record.source}:{root_id}"
+        ),
         lineage_id=str(meta.get("lineage_id") or root_id),
         split_group_id=str(meta.get("split_group_id") or root_id),
         split=record.split,

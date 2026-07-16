@@ -244,7 +244,9 @@ class ExperimentKnobs(StrictModel):
             self.scope_local_oracle,
             self.scope_contract_negatives,
         )
-        if any(value is not None for value in scope_fields) and self.data_source not in {
+        if any(
+            value is not None for value in scope_fields
+        ) and self.data_source not in {
             "programspec",
             "integrated",
             "all",

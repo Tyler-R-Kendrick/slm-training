@@ -304,9 +304,7 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         grammar_active_symbol_bitsets=bool(
             getattr(config, "grammar_active_symbol_bitsets", False)
         ),
-        compact_active_canvas=bool(
-            getattr(config, "compact_active_canvas", True)
-        ),
+        compact_active_canvas=bool(getattr(config, "compact_active_canvas", True)),
         grammar_incremental_state=getattr(config, "grammar_incremental_state", True),
         grammar_verify_chosen_only=getattr(config, "grammar_verify_chosen_only", False),
         grammar_skip_exact_stream_probe=getattr(
