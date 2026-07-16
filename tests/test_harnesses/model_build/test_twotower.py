@@ -12,7 +12,10 @@ from slm_training.dsl import bridge_available
 from slm_training.dsl.schema import ExampleRecord, write_jsonl
 from slm_training.data.contract import GenerationRequest
 from slm_training.harnesses.model_build import ModelBuildConfig, evaluate, train
-from slm_training.harnesses.model_build.factory import _resolve_freeze_context
+from slm_training.harnesses.model_build.factory import (
+    _resolve_freeze_context,
+    apply_runtime_overrides,
+)
 from slm_training.harnesses.test_data import TestDataConfig, build_test_data
 from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
 from slm_training.models.tokenizer import OpenUITokenizer, tokenize_text
@@ -115,6 +118,41 @@ def test_checkpoint_rejects_missing_trainable_weights(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="checkpoint state mismatch"):
         TwoTowerModel.from_checkpoint(path, device="cpu")
+
+
+def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            output_tokenizer="lexer",
+            component_inventory_loss_weight=1.0,
+            component_inventory_decode_weight=0.75,
+        ),
+    )
+    assert model.component_inventory_head is not None
+    path = tmp_path / "inventory.pt"
+    model.save(path)
+
+    loaded = TwoTowerModel.from_checkpoint(path, device="cpu")
+    apply_runtime_overrides(loaded, ModelBuildConfig(train_dir=tmp_path))
+
+    assert loaded.component_inventory_head is not None
+    assert loaded.config.component_inventory_loss_weight == 1.0
+    assert loaded.config.component_inventory_decode_weight == 0.75
+
+    apply_runtime_overrides(
+        loaded,
+        ModelBuildConfig(
+            train_dir=tmp_path,
+            component_inventory_decode_weight=0.0,
+        ),
+    )
+    assert loaded.config.component_inventory_decode_weight == 0.0
 
 
 def test_surface_syntax_repair_preserves_string_literals() -> None:

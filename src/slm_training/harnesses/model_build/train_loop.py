@@ -712,6 +712,12 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "compiler_alignment_semantic_exhaustive": bool(
                 getattr(config, "compiler_alignment_semantic_exhaustive", False)
             ),
+            "component_inventory_loss_weight": getattr(
+                config, "component_inventory_loss_weight", 0.0
+            ),
+            "component_inventory_decode_weight": getattr(
+                config, "component_inventory_decode_weight", 0.0
+            ),
             "fuse_ltr_loss": bool(getattr(config, "fuse_ltr_loss", True)),
             "fidelity_loss_weight": getattr(config, "fidelity_loss_weight", 0.0),
             "fastpath_aux_weight": getattr(config, "fastpath_aux_weight", 0.0),

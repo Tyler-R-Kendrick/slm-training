@@ -165,6 +165,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Compiler-drafted decode hierarchy (decode-only; default: off).",
     )
     parser.add_argument(
+        "--component-inventory-decode-weight",
+        type=float,
+        default=None,
+        help="Override the checkpoint's compiler-legal component inventory bias.",
+    )
+    parser.add_argument(
         "--compiler-search-mode",
         choices=("greedy", "lattice", "ptrm", "gram"),
         default="greedy",
@@ -378,6 +384,7 @@ def main(argv: list[str] | None = None) -> int:
         grammar_verify_chosen_only=(True if args.verify_chosen_only else None),
         grammar_top_k=args.grammar_top_k,
         compiler_decode_mode=args.compiler_decode_mode,
+        component_inventory_decode_weight=args.component_inventory_decode_weight,
         compiler_search_mode=args.compiler_search_mode,
         compiler_search_trigger=args.compiler_search_trigger,
         compiler_search_width=max(1, args.compiler_search_width),

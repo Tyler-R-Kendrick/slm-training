@@ -20,7 +20,7 @@ from slm_training.models.grammar import make_grammar_state
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 
 
-def _model() -> TwoTowerModel:
+def _model(**config_overrides) -> TwoTowerModel:
     record = ExampleRecord(
         id="compiler",
         prompt="card",
@@ -41,6 +41,7 @@ def _model() -> TwoTowerModel:
         grammar_ltr_max_tokens=32,
         gen_steps=1,
         seed=0,
+        **config_overrides,
     )
     model = TwoTowerModel.from_records([record], config=config, device="cpu")
     model.eval()
@@ -484,6 +485,51 @@ def test_compiler_alignment_can_stratify_grammar_decision_kinds() -> None:
     assert metrics["compiler_alignment_grammar_rsqb_root_populated_rows"] == 1
     assert metrics["compiler_alignment_grammar_comma_rows"] == 1
     assert metrics["compiler_alignment_grammar_rsqb_root_populated_loss"] >= 0.0
+
+
+def test_component_inventory_supervision_trains_prompt_level_component_set() -> None:
+    model = _model(component_inventory_loss_weight=1.0)
+    model.train()
+    record = ExampleRecord(
+        id="inventory",
+        prompt="card with a title",
+        openui='root = Card([title])\ntitle = TextContent(":hero.title")',
+        placeholders=[":hero.title"],
+        split="train",
+        source="fixture",
+    )
+
+    loss = model.training_loss([record])
+    loss.backward()
+
+    assert torch.isfinite(loss)
+    assert model.component_inventory_head is not None
+    assert model.component_inventory_head.weight.grad is not None
+    assert model.component_inventory_head.weight.grad.abs().sum() > 0
+    metrics = model.last_training_metrics
+    assert metrics["component_inventory_loss"] > 0.0
+    assert 0.0 <= metrics["component_inventory_topk_recall"] <= 1.0
+    assert metrics["component_inventory_positive_count_mean"] == 2.0
+
+
+def test_component_inventory_bias_only_scores_compiler_legal_components() -> None:
+    model = _model(component_inventory_decode_weight=2.0)
+    assert model.component_inventory_head is not None
+    tokenizer = model.tokenizer
+    card = tokenizer.token_to_id["Card"]
+    stack = tokenizer.token_to_id["Stack"]
+    lparen = tokenizer.token_to_id["("]
+    with torch.no_grad():
+        model.component_inventory_head.weight.zero_()
+        model.component_inventory_head.bias.zero_()
+        model.component_inventory_head.bias[card] = 3.0
+        model.component_inventory_head.bias[stack] = -1.0
+    ctx, ctx_pad = model._encode_context(["card"])
+
+    bias = model._component_inventory_bias(ctx, ctx_pad, (stack, lparen, card))
+
+    assert bias is not None
+    assert bias.tolist() == [-2.0, 0.0, 6.0]
 
 
 def test_tree_verifier_packs_prefix_nodes_and_avoids_full_projection() -> None:
