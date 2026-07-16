@@ -208,6 +208,7 @@ def test_singleton_admission_bypasses_probe(monkeypatch) -> None:
     import torch
 
     import slm_training.models.grammar as grammar
+    from slm_training.models.decode_stats import collect_decode_stats
 
     tok = _tok()
     prefix = tok.encode("root", add_special=False)
@@ -220,7 +221,9 @@ def test_singleton_admission_bypasses_probe(monkeypatch) -> None:
             AssertionError("singleton admission must not be probed")
         ),
     )
-    assert pick_constrained_token(logits, tok, prefix, top_k=8) == tok.token_to_id["="]
+    with collect_decode_stats() as stats:
+        assert pick_constrained_token(logits, tok, prefix, top_k=8) == tok.token_to_id["="]
+    assert stats.constrained_last_legal_candidates == 1
 
 
 def test_empty_native_prefix_selects_only_legal_root_binding() -> None:

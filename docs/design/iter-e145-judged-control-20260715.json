@@ -1,0 +1,42 @@
+{
+  "iteration": "E145",
+  "date": "2026-07-15",
+  "objective": "Run a fresh short control train on the persisted judged corpus and feed decoder telemetry back into the loop.",
+  "recipe": {
+    "train_dir": "src/slm_training/resources/train_data/remediated_roots_judged",
+    "record_count": 405,
+    "model": "twotower",
+    "backend": "hf",
+    "hf_model": "HuggingFaceTB/SmolLM2-135M",
+    "device": "cpu",
+    "steps": 8,
+    "batch_size": 4,
+    "seed": 0,
+    "output_tokenizer": "compositional",
+    "honesty_mode": "no-design-md-context"
+  },
+  "train_result": {
+    "last_loss": 39.09016799926758,
+    "seen_prompt_tokens": 5457,
+    "seen_target_tokens": 1880,
+    "trainable_params": 1262466,
+    "telemetry_total_ms": 12483.353,
+    "context_encode_pct": 46.64,
+    "forward_pct": 48.78
+  },
+  "eval_result": {
+    "suite": "smoke",
+    "n": 1,
+    "parse_rate": 0.0,
+    "structural_similarity": 0.0,
+    "placeholder_validity": 0.0,
+    "decode_timeout_count": 1,
+    "latency_ms_p50": 20000.51,
+    "tokens_emitted": 234,
+    "probes": 1,
+    "selection_trace_events": 64,
+    "agentv_passed": 0,
+    "agentv_failed": 5
+  },
+  "conclusion": "The judged-corpus control does not improve the current decoder failure in an 8-step CPU train. The result is a negative control, not a ship claim. Training and AgentEvals telemetry are persisted for comparison."
+}

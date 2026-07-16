@@ -115,3 +115,21 @@ def test_independent_judge_rejects_under_specified_contract_prompt() -> None:
     report = assess_record(record, require_design_md=False)
     assert not report.ok
     assert "prompt_under_specified_for_layout" in report.reasons
+
+
+def test_normalized_record_stamps_independent_judge_gate() -> None:
+    from slm_training.harnesses.train_data.pipeline import _normalize_record
+
+    record = ExampleRecord(
+        id="judge-stamp",
+        prompt="Emit the OpenUI construct: a Button component.",
+        openui='root = Stack([button])\nbutton = Button(":label")',
+        placeholders=[":label"],
+        split="train",
+        design_md="# Design\n",
+    )
+    stamped = _normalize_record(record)
+    gates = stamped.meta["verification"]["gates"]
+    judge_gate = next(gate for gate in gates if gate["name"] == "independent_judge")
+    assert judge_gate["status"] == "pass"
+    assert stamped.meta["independent_judge_passed"] is True

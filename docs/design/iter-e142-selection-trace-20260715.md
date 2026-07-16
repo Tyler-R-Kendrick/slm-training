@@ -23,6 +23,8 @@ reported for every choice because the picker returns early on legal argmax,
 forced, or singleton decisions without updating its last-candidate counter.
 That value must not be interpreted as proof that no legal token existed.
 
-Next harness change: classify the picker return path and make candidate-count
-telemetry truthful before using this trace to evaluate the singleton-token
-bypass hypothesis.
+E144 resets the counter per pick, reports `1` for a proven singleton accept
+set, and reports `-1` when an early path did not enumerate the full legal set.
+The next replay can therefore distinguish a proven singleton from an
+unmeasured early return before evaluating the singleton-token bypass
+hypothesis.

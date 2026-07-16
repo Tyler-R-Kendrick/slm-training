@@ -1,0 +1,24 @@
+{
+  "iteration": "E146",
+  "date": "2026-07-15",
+  "objective": "Verify that the independent judge result reaches persisted verification metadata during a training-data rebuild.",
+  "recipe": {
+    "source": "existing",
+    "derive_from": "src/slm_training/resources/train_data/remediated_roots_judged/records.jsonl",
+    "synthesizer": "none",
+    "output": "/tmp/e146-data/judged_gate",
+    "min_quality_score": 0.55
+  },
+  "result": {
+    "seed_count": 405,
+    "collected_count": 530,
+    "record_count": 498,
+    "quality_rejected": 0,
+    "error_count": 0,
+    "g11_independent_judge_pass": 498,
+    "g11_independent_judge_fail": 0,
+    "g11_independent_judge_skip": 0,
+    "mean_quality_score": 0.9661
+  },
+  "conclusion": "The existing deterministic judge is now wired into the verification gate: every persisted normalized row has G11=pass. This proves admission wiring, not semantic model-quality superiority."
+}
