@@ -220,6 +220,7 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         hf_model_revision=config.hf_model_revision,
         freeze_context=freeze,
         local_files_only=config.local_files_only,
+        denoiser_backend=config.denoiser_backend,
         grammar_constrained=config.grammar_constrained,
         grammar_top_k=config.grammar_top_k,
         structural_bias=config.structural_bias,

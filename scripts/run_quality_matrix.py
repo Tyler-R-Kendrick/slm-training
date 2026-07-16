@@ -103,6 +103,8 @@ class Experiment:
     remask_to_mask: bool = True
     slot_aware_trust_gate: bool = False
     model_name: str = "twotower"
+    # V10 (B4): scratch | hf — AR→masked-denoiser adaptation backbone.
+    denoiser_backend: str = "scratch"
     # V7 levers: speculative denoising (docs/design/speculative-denoising.md)
     stability_min_persistence: int = 0
     stability_jsd_weight: float = 1.0
@@ -1241,6 +1243,25 @@ def _v9_experiments(train_dir: Path) -> list[Experiment]:
     ]
 
 
+def _v10_experiments(train_dir: Path) -> list[Experiment]:
+    """E255-E256: B4 AR→diffusion adaptation baseline (DiffuLLaMA-style).
+
+    Matched pair differing only in the denoiser backbone: from-scratch
+    DenoiserTower vs the pretrained hf_model_name causal LM adapted into a
+    bidirectional masked denoiser. Parallel MaskGIT decode (not LTR) keeps the
+    135M-backbone eval tractable and identical across the pair.
+    """
+    base = dict(
+        output_tokenizer="lexer",
+        mask_pattern="diffusion",
+        grammar_ltr_primary=False,
+    )
+    return [
+        Experiment("E255", "qx_e255_b4_scratch_control", "B4 matched from-scratch denoiser control", train_dir, **base),
+        Experiment("E256", "qx_e256_b4_ar_adapt", "B4 DiffuLLaMA-style SmolLM2 AR-to-masked-denoiser adaptation", train_dir, denoiser_backend="hf", **base),
+    ]
+
+
 def _apply_eval_checkpoint(
     experiments: list[Experiment], eval_checkpoint: Path | None
 ) -> list[Experiment]:
@@ -1281,6 +1302,7 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         denoiser_layers=exp.denoiser_layers,
         context_backend=args.context_backend,
         local_files_only=args.local_files_only,
+        denoiser_backend=str(getattr(exp, "denoiser_backend", "scratch") or "scratch"),
         grammar_constrained=True,
         grammar_ltr_primary=bool(getattr(exp, "grammar_ltr_primary", True)),
         grammar_ltr_repair=exp.grammar_ltr_repair,
@@ -1962,7 +1984,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--matrix",
-        choices=("legacy", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9", "all"),
+        choices=("legacy", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9", "v10", "all"),
         default="v3",
         help="Experiment set through v9 compiler-lattice rows E240-E247, or all.",
     )
@@ -2002,7 +2024,7 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(f"unknown suites: {','.join(unknown_suites)}")
     if not args.suites:
         parser.error("--suites must select at least one suite")
-    if args.matrix in {"v4", "v5", "v6", "v7", "v8", "v9", "all"}:
+    if args.matrix in {"v4", "v5", "v6", "v7", "v8", "v9", "v10", "all"}:
         if (
             args.parent is None
             and not args.scratch_control
@@ -2133,6 +2155,8 @@ def main(argv: list[str] | None = None) -> int:
         )
     if args.matrix in {"v9", "all"}:
         experiments.extend(_v9_experiments(args.train_dir))
+    if args.matrix in {"v10", "all"}:
+        experiments.extend(_v10_experiments(args.train_dir))
     if args.only:
         wanted = {x.strip().upper() for x in args.only.split(",") if x.strip()}
         experiments = [e for e in experiments if e.eid in wanted]

@@ -34,6 +34,9 @@ class ModelBuildConfig:
     # False for scratch POC; True by default when context_backend=hf (see factory)
     freeze_context: bool = True
     local_files_only: bool = False
+    # scratch | hf — B4: adapt the pretrained hf_model_name causal LM into the
+    # (trainable) masked denoiser instead of the from-scratch DenoiserTower.
+    denoiser_backend: str = "scratch"
     grammar_constrained: bool = True
     # Grammar / DSL backend id: openui | openui-lark | openui-langcore | toy-layout
     grammar_dsl: str = "openui"

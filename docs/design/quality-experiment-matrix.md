@@ -1060,6 +1060,44 @@ full suites) is still required, and E241/E242's conflict machinery has not been
 exercised outside unit/integration tests because greedy decode never stalls on
 this checkpoint.
 
+## V10 B4 AR→diffusion adaptation baseline (fixture-run 2026-07-16)
+
+Track B4 (DiffuGPT/DiffuLLaMA, [arXiv:2410.17891](https://arxiv.org/abs/2410.17891),
+**Adapted**: only the drop-the-causal-mask move is reused — no attention-mask
+annealing, shift operation, or their training recipe): the pretrained SmolLM2-135M
+causal LM becomes the *denoiser* tower (`denoiser_backend="hf"`,
+`models/hf_denoiser.py`) with full bidirectional visibility via an explicit 4D
+attention mask, fresh OpenUI-vocabulary embeddings (weight-tied lm_head), and the
+context tower's hiddens prepended as projected prefix states. Matched pair
+differing only in the denoiser backbone; parallel MaskGIT decode on both rows.
+
+| ID | Isolated lever | Trainable params | Status |
+| --- | --- | ---: | --- |
+| E255 | From-scratch DenoiserTower control | 1.1M | fixture-run |
+| E256 | SmolLM2-135M AR→masked-denoiser adaptation | 135M | fixture-run |
+
+### V10 measured results (CPU, fixture-grade, 2026-07-16)
+
+Recipe: `--scratch-control --steps 200 --lr 3e-4` (matrix default), batch 4, seed
+0, scratch context tower, fixture v1 corpus (108 records), no DESIGN.md context;
+suites smoke 3 / held_out 5 / adversarial 4 / ood 4 / rico_held 0 (fixture corpus
+has no RICO records; ship bar remains n=1500). AgentV published per row. JSON:
+[quality-matrix-results-iter-v10-b4-20260716.json](quality-matrix-results-iter-v10-b4-20260716.json);
+narrative: [iter-e255-e256-b4-ar-adaptation-20260716.md](iter-e255-e256-b4-ar-adaptation-20260716.md).
+
+Both rows fail the honest gates (syntax/meaningful parse 0.0 — placeholder-policy
+rejections, as across V9/V10 fixture runs). At this budget the adaptation is
+**behind** the matched scratch control on every secondary signal: train loss 8.51
+vs 3.75, structural similarity 0.09–0.16 vs 0.28–0.37, component_type_recall
+0–0.19 vs 0.22–0.75, decode latency ~2× (30–37s vs ~15s per record). An
+`--lr 3e-5` variant of E256 (separate run root,
+[quality-matrix-results-iter-v10-b4-lr3e5-20260716.json](quality-matrix-results-iter-v10-b4-lr3e5-20260716.json))
+checks the LR-destroys-pretrained-weights confound; see the iter doc for its
+numbers. **Wiring evidence only — this fixture budget can neither confirm nor
+kill the DiffuLLaMA hypothesis**: 200 CPU steps on 108 records is far below any
+adaptation budget in the paper, so the B4 verdict requires a GPU-scale run with
+per-arm LR selection. No gate weakened; nothing promoted.
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

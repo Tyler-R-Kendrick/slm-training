@@ -148,6 +148,9 @@ class TwoTowerConfig:
     # True when using a pretrained HF context tower; optional for scratch.
     freeze_context: bool = False
     local_files_only: bool = False
+    # scratch | hf — B4 DiffuLLaMA-style adaptation: reuse the pretrained
+    # hf_model_name causal LM as a bidirectional masked denoiser backbone.
+    denoiser_backend: str = "scratch"
     grammar_constrained: bool = True
     grammar_top_k: int = 16
     structural_bias: float = 1.25
@@ -476,16 +479,35 @@ class TwoTowerModel(nn.Module):
                     ]
             except Exception:  # noqa: BLE001
                 kind_ids = None
-        self.denoiser = DenoiserTower(
-            vocab_size=tokenizer.vocab_size,
-            d_model=self.config.d_model,
-            n_layers=self.config.denoiser_layers,
-            n_heads=self.config.n_heads,
-            max_len=self.config.max_target_len,
-            dropout=self.config.dropout,
-            kind_ids=kind_ids,
-            n_kinds=max(kind_ids) + 1 if kind_ids else 0,
-        )
+        denoiser_backend = str(
+            getattr(self.config, "denoiser_backend", "scratch") or "scratch"
+        ).lower()
+        if denoiser_backend in {"hf", "huggingface", "transformers"}:
+            from slm_training.models.hf_denoiser import HFDenoiserTower
+
+            self.denoiser: nn.Module = HFDenoiserTower(
+                vocab_size=tokenizer.vocab_size,
+                d_model=self.config.d_model,
+                max_len=self.config.max_target_len,
+                hf_model_name=self.config.hf_model_name,
+                hf_model_revision=self.config.hf_model_revision,
+                local_files_only=self.config.local_files_only,
+                kind_ids=kind_ids,
+                n_kinds=max(kind_ids) + 1 if kind_ids else 0,
+            )
+        elif denoiser_backend in {"scratch", "token", "local"}:
+            self.denoiser = DenoiserTower(
+                vocab_size=tokenizer.vocab_size,
+                d_model=self.config.d_model,
+                n_layers=self.config.denoiser_layers,
+                n_heads=self.config.n_heads,
+                max_len=self.config.max_target_len,
+                dropout=self.config.dropout,
+                kind_ids=kind_ids,
+                n_kinds=max(kind_ids) + 1 if kind_ids else 0,
+            )
+        else:
+            raise ValueError(f"unknown denoiser_backend {denoiser_backend!r}")
         self.length_head = (
             nn.Linear(self.config.d_model, len(self.config.diffusion_length_buckets))
             if str(getattr(self.config, "mask_pattern", "random")) == "diffusion"

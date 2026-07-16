@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pytest
 from pathlib import Path
 
 from slm_training.data.leakage import (
@@ -36,6 +37,7 @@ def test_structural_similarity_identical() -> None:
 
 def test_suite_loader_falls_back_when_manifest_path_is_checkout_relative(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     suite_dir = tmp_path / "suites" / "smoke"
     suite_dir.mkdir(parents=True)
@@ -44,6 +46,9 @@ def test_suite_loader_falls_back_when_manifest_path_is_checkout_relative(
     (tmp_path / "manifest.json").write_text(
         '{"suites":{"smoke":"outputs/data/eval/v1/suites/smoke/records.jsonl"}}\n'
     )
+    # Resolve the checkout-relative manifest path from tmp_path so the test
+    # stays hermetic even when a real outputs/data/eval/v1 has been built.
+    monkeypatch.chdir(tmp_path)
     assert load_suite_records(tmp_path, "smoke") == [record]
 
 

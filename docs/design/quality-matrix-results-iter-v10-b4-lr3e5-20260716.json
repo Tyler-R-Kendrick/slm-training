@@ -1,0 +1,188 @@
+{
+  "matrix": "quality-experiment-matrix-v10",
+  "reference": "docs/design/quality-experiment-matrix.md",
+  "gate_policy": {
+    "smoke": {
+      "meaningful_program_rate": 0.66,
+      "structural_similarity": 0.35,
+      "component_type_recall": 0.35,
+      "placeholder_fidelity": 0.25,
+      "reward_score": 0.3
+    },
+    "held_out": {
+      "meaningful_program_rate": 0.4,
+      "structural_similarity": 0.3,
+      "component_type_recall": 0.3,
+      "placeholder_fidelity": 0.15
+    },
+    "adversarial": {
+      "meaningful_program_rate": 0.25,
+      "structural_similarity": 0.25,
+      "component_type_recall": 0.2
+    },
+    "ood": {
+      "meaningful_program_rate": 0.25,
+      "structural_similarity": 0.25,
+      "component_type_recall": 0.2
+    },
+    "rico_held": {
+      "meaningful_program_rate": 0.1,
+      "structural_similarity": 0.2,
+      "component_type_recall": 0.15
+    }
+  },
+  "device": "cpu",
+  "batch_size": 4,
+  "learning_rate": 3e-05,
+  "seed": 0,
+  "test_dir": "outputs/data/eval/v1",
+  "design_md_in_context": false,
+  "rico_eval_limit": 3,
+  "suites": [
+    "adversarial",
+    "held_out",
+    "ood",
+    "rico_held",
+    "smoke"
+  ],
+  "steps": 200,
+  "gen_steps": 8,
+  "context_backend": "scratch",
+  "matrix_set": "v10",
+  "results": [
+    {
+      "id": "E256",
+      "run_id": "qx_e256_b4_ar_adapt",
+      "initialization": "scratch",
+      "parent_checkpoint": null,
+      "description": "B4 DiffuLLaMA-style SmolLM2 AR-to-masked-denoiser adaptation",
+      "honest_slot_contract": false,
+      "schema_in_context": false,
+      "slot_contract_in_context": false,
+      "slot_contract_constrained_decode": false,
+      "template_fill_decode": false,
+      "grammar_ltr_primary": false,
+      "grammar_ltr_repair": false,
+      "effective_gen_steps": 8,
+      "best_of_n": 1,
+      "train_dir": "outputs/data/train/v1",
+      "train_content_fingerprint": "79552bd716d712ad06b6e96e8c8356a1d9416140bd605f08da49d771adf99231",
+      "checkpoint": "outputs/runs_b4_lr3e5/qx_e256_b4_ar_adapt/checkpoints/last.pt",
+      "pass": false,
+      "failures": [
+        "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+        "smoke:structural_similarity actual=0.075 need>=0.35",
+        "smoke:component_type_recall actual=0.0 need>=0.35",
+        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:meaningful_program_rate actual=0.0 need>=0.4",
+        "held_out:structural_similarity actual=0.02064 need>=0.3",
+        "held_out:component_type_recall actual=0.0 need>=0.3",
+        "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+        "adversarial:meaningful_program_rate actual=0.0 need>=0.25",
+        "adversarial:structural_similarity actual=0.18124999999999997 need>=0.25",
+        "adversarial:component_type_recall actual=0.0 need>=0.2",
+        "ood:meaningful_program_rate actual=0.0 need>=0.25",
+        "ood:structural_similarity actual=0.10445 need>=0.25",
+        "ood:component_type_recall actual=0.0 need>=0.2",
+        "rico_held:meaningful_program_rate actual=0.0 need>=0.1",
+        "rico_held:structural_similarity actual=0.0 need>=0.2",
+        "rico_held:component_type_recall actual=0.0 need>=0.15"
+      ],
+      "suites": {
+        "smoke": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.075,
+          "reward_score": 0.0,
+          "n": 3,
+          "speculative_stats": {
+            "generates": 6,
+            "denoiser_forwards": 50,
+            "forwards_per_generate": 8.333333333333334,
+            "speculative_batches": 0,
+            "speculative_canvases": 0,
+            "successor_hits": 0,
+            "successor_misses": 0,
+            "successor_hit_rate": null,
+            "clusters_proposed": 0,
+            "clusters_accepted": 0,
+            "clusters_rejected": 0,
+            "remasked_positions": 0
+          }
+        },
+        "held_out": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.02064,
+          "reward_score": 0.0,
+          "n": 5,
+          "speculative_stats": {
+            "generates": 10,
+            "denoiser_forwards": 85,
+            "forwards_per_generate": 8.5,
+            "speculative_batches": 0,
+            "speculative_canvases": 0,
+            "successor_hits": 0,
+            "successor_misses": 0,
+            "successor_hit_rate": null,
+            "clusters_proposed": 0,
+            "clusters_accepted": 0,
+            "clusters_rejected": 0,
+            "remasked_positions": 0
+          }
+        },
+        "adversarial": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.18124999999999997,
+          "reward_score": 0.0,
+          "n": 4,
+          "speculative_stats": {
+            "generates": 8,
+            "denoiser_forwards": 68,
+            "forwards_per_generate": 8.5,
+            "speculative_batches": 0,
+            "speculative_canvases": 0,
+            "successor_hits": 0,
+            "successor_misses": 0,
+            "successor_hit_rate": null,
+            "clusters_proposed": 0,
+            "clusters_accepted": 0,
+            "clusters_rejected": 0,
+            "remasked_positions": 0
+          }
+        },
+        "ood": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.10445,
+          "reward_score": 0.0,
+          "n": 4,
+          "speculative_stats": {
+            "generates": 8,
+            "denoiser_forwards": 68,
+            "forwards_per_generate": 8.5,
+            "speculative_batches": 0,
+            "speculative_canvases": 0,
+            "successor_hits": 0,
+            "successor_misses": 0,
+            "successor_hit_rate": null,
+            "clusters_proposed": 0,
+            "clusters_accepted": 0,
+            "clusters_rejected": 0,
+            "remasked_positions": 0
+          }
+        },
+        "rico_held": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.0,
+          "reward_score": 0.0,
+          "n": 0
+        }
+      }
+    }
+  ],
+  "campaign_note": "V10 B4 lr-confound probe 2026-07-16: E256 (SmolLM2-135M AR-adapted denoiser) retrained identically but at lr=3e-5 (vs the matrix-default 3e-4 in quality-matrix-results-iter-v10-b4-20260716.json). Loss 9.72 vs 8.51 - the adaptation deficit at fixture budget is under-training, not only LR-driven weight destruction. Wiring evidence only."
+}
