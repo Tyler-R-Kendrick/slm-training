@@ -447,7 +447,8 @@ gain, or ship status is inherited, and V8 rows E200-E207/C5-C8 remain unrun.
 
 ## Contract-conditioned scope diffusion (X16-X21)
 
-The public ScopeDiff discussion cited **19 papers**. Canonical arXiv metadata,
+The public [ScopeDiff discussion](https://chatgpt.com/share/6a583787-8e9c-83ea-94e2-c36b0f4d093e)
+cited **19 papers**. Canonical arXiv metadata,
 authors, paraphrased summaries, repo mappings, limitations, and fidelity labels
 are committed in
 [`scope-diffusion-sources.json`](../../src/slm_training/resources/autoresearch/scope-diffusion-sources.json).
@@ -460,6 +461,22 @@ labels, not reproduced results.
 | Syntax-directed generation, typed holes, type slicing, and AST decoders | Stable scope contracts with inherited fields, synthesized summaries, and AST failure cones | **Adapted** pragmatic interfaces; not a VAE, formal hole calculus, or mechanized type slicer |
 | CFG and semantic constrained decoding | Existing OpenUI parser/verifier remains the hard authority around local wrapper proposals | **Adjacent**; no CFG-intersection, PICARD, or Synchromesh decoder is claimed |
 | Concept embeddings and sparse autoencoders | Motivation for explicit contract embeddings and falsification of latent critics | **Adjacent**; no SAE is implemented or treated as a semantic oracle |
+
+The paper-to-experiment audit below makes the derivative claim and its local
+falsification boundary explicit. Each linked paper is summarized individually in
+the manifest; grouping here avoids treating several adjacent papers as independent
+evidence for the same lever.
+
+| Papers | Derived X-row lever | Local falsification |
+| --- | --- | --- |
+| [Insertion Transformer](https://arxiv.org/abs/1902.03249), [Levenshtein Transformer](https://arxiv.org/abs/1905.11006), [Beyond Masks](https://arxiv.org/abs/2603.23507) | X16/X21 explicit expansion, deletion, contraction | Action macro-F1 and generated topology fail to improve without extra budget failures |
+| [MaskGIT](https://arxiv.org/abs/2202.04200), [MDLM](https://arxiv.org/abs/2406.07524) | X16 shared denoising objective over typed scopes | Scope data does not improve unchanged parse, fidelity, or structural gates |
+| [Diffusion Forcing](https://arxiv.org/abs/2407.01392), [Block Diffusion](https://arxiv.org/abs/2503.09573), [Multi-Block Diffusion](https://arxiv.org/abs/2606.29215) | X18/X21 independently noised scopes in a bounded active buffer | Heterogeneous noise and buffering do not improve quality per node pass |
+| [Syntax-Directed VAE](https://arxiv.org/abs/1802.08786), [Hazelnut](https://arxiv.org/abs/1607.04180), [Abstract Syntax Networks](https://arxiv.org/abs/1704.07535) | X17 inherited contract fields and synthesized summary heads | Local gate accuracy and summary error do not improve over X16 |
+| [Bidirectional Type Slicing](https://arxiv.org/abs/2607.12197), [Diffusion on Syntax Trees](https://arxiv.org/abs/2405.20519) | X19 AST failure-cone supervision | Cone precision/recall stays uninformative or downstream topology does not improve |
+| [CFG-constrained diffusion](https://arxiv.org/abs/2508.10111), [Synchromesh](https://arxiv.org/abs/2201.11227), [PICARD](https://arxiv.org/abs/2109.05093) | X20 boundary negatives and local wrapper validation | Local decisions do not reduce local-valid/global-invalid disagreement under unchanged global gates |
+| [Concept Embedding Models](https://arxiv.org/abs/2209.09056) | X17 learned contract embedding beside explicit fields | Embeddings do not improve contract metrics or downstream quality over X16 |
+| [SAIF](https://arxiv.org/abs/2502.11356), [SAE reasoning-feature audit](https://arxiv.org/abs/2601.05679) | No X-row; residual SAE critic remains deferred | Any future SAE must beat explicit contracts under causal counterexamples before it can steer decoding |
 
 The code substrate is `data/progspec/scopes.py`, the conditional heads in
 `models/grammar_diffusion.py`, and planned matrix rows X16-X21. No X16-X21 run,
