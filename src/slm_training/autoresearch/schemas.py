@@ -33,6 +33,12 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "compiler_alignment_stratified",
         "compiler_alignment_semantic_exhaustive",
         "compiler_decode_mode",
+        "compiler_search_mode",
+        "compiler_search_trigger",
+        "compiler_search_width",
+        "compiler_search_noise",
+        "compiler_search_stagnation_patience",
+        "compiler_search_backtrack_limit",
         "data_source",
         "design_md_context",
         "eval_version",
@@ -235,6 +241,12 @@ class ExperimentKnobs(StrictModel):
     compiler_alignment_stratified: bool | None = None
     compiler_alignment_semantic_exhaustive: bool | None = None
     compiler_decode_mode: Literal["off", "forced", "restricted", "tree"] | None = None
+    compiler_search_mode: Literal["greedy", "lattice", "ptrm", "gram"] | None = None
+    compiler_search_trigger: Literal["bottom", "stagnation", "always"] | None = None
+    compiler_search_width: int | None = Field(default=None, ge=1, le=64)
+    compiler_search_noise: float | None = Field(default=None, ge=0, le=100)
+    compiler_search_stagnation_patience: int | None = Field(default=None, ge=1, le=64)
+    compiler_search_backtrack_limit: int | None = Field(default=None, ge=0, le=1024)
     schema_in_context: bool | None = None
     slot_contract_in_context: bool | None = None
     design_md_context: bool | None = None

@@ -1110,6 +1110,12 @@ def test_compile_resolves_canonical_published_train_version() -> None:
             compiler_alignment_stratified=True,
             compiler_alignment_semantic_exhaustive=True,
             compiler_decode_mode="tree",
+            compiler_search_mode="ptrm",
+            compiler_search_trigger="stagnation",
+            compiler_search_width=4,
+            compiler_search_noise=1.0,
+            compiler_search_stagnation_patience=2,
+            compiler_search_backtrack_limit=8,
             schema_in_context=True,
             slot_contract_in_context=True,
             design_md_context=False,
@@ -1137,6 +1143,8 @@ def test_compile_resolves_canonical_published_train_version() -> None:
     assert "--no-sync-checkpoints" in commands[0]
     assert commands[0][commands[0].index("--mixture-sampling-policy") + 1] == "capacity_aware"
     assert commands[-1][commands[-1].index("--compiler-decode-mode") + 1] == "tree"
+    assert commands[-1][commands[-1].index("--compiler-search-mode") + 1] == "ptrm"
+    assert commands[-1][commands[-1].index("--compiler-search-width") + 1] == "4"
     assert "--grammar-ltr-primary" in commands[-1]
     assert "--no-unconstrained-fallback" in commands[-1]
     assert "--honest-slot-contract" in commands[-1]

@@ -931,6 +931,35 @@ precision 1.0, recovered populated layouts, and reduced failed gates to four;
 AgentV remains 1/5, so the local checkpoint is diagnostic only. Full evidence:
 [iter-e228-candidate-margin-alignment-20260716.md](iter-e228-candidate-margin-alignment-20260716.md).
 
+## V9 lattice-guided recursive compiler search (proposed, unrun)
+
+The research synthesis and implementation boundary are in
+[`lattice-recursive-search.md`](lattice-recursive-search.md). These rows keep the
+compiler completion forest authoritative, use model scores only to order legal
+paths, and compare bounded rollback with selectively triggered PTRM/GRAM-style
+trajectory policies. They do not reproduce those papers' training methods.
+
+| ID | Isolated lever | Required diagnostics | Status |
+| --- | --- | --- | --- |
+| E240 | Corrected greedy compiler-tree control | Standard scoreboard, coverage, fallbacks, calls | proposed/unrun |
+| E241 | Hard/soft lattice plus bounded rollback | Bottoms, rollbacks, nogoods, termination | proposed/unrun |
+| E242 | Stagnation-triggered localized nogoods | Conflict recurrence and false-prune audit | proposed/unrun |
+| E243 | Triggered PTRM-style width 4 | Triggers, trajectories, unique valid ASTs, calls | proposed/unrun |
+| E244 | Always-on PTRM-style width 4 control | Matched quality/calls against E243 | proposed/unrun |
+| E245 | GRAM-style semantic diversity width 4 | Unique validated AST fingerprints | proposed/unrun |
+| E246 | Full stack width 4 | Quality, validity, abstention, regret, latency | proposed/unrun |
+| E247 | Full stack width 8 | Width scaling benefit versus verifier/call cost | proposed/unrun |
+
+Preview only:
+
+```bash
+python -m scripts.run_quality_matrix --matrix v9 --list
+```
+
+Listing must not create output artifacts. Any execution requires the full honest
+five-suite scoreboard, AgentEvals, AgentV, result JSON, recipe/suite sizes, and a
+measured-results update in this document.
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

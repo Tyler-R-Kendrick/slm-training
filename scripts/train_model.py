@@ -348,6 +348,12 @@ def main(argv: list[str] | None = None) -> int:
         default="off",
         help="Compiler-drafted decode hierarchy used by in-run evaluations.",
     )
+    parser.add_argument("--compiler-search-mode", choices=("greedy", "lattice", "ptrm", "gram"), default="greedy")
+    parser.add_argument("--compiler-search-trigger", choices=("bottom", "stagnation", "always"), default="stagnation")
+    parser.add_argument("--compiler-search-width", type=int, default=1)
+    parser.add_argument("--compiler-search-noise", type=float, default=0.0)
+    parser.add_argument("--compiler-search-stagnation-patience", type=int, default=2)
+    parser.add_argument("--compiler-search-backtrack-limit", type=int, default=8)
     parser.add_argument(
         "--grammar-ltr-max-tokens",
         type=int,
@@ -645,6 +651,12 @@ def main(argv: list[str] | None = None) -> int:
             grammar_ltr_primary=args.grammar_ltr_primary,
             grammar_ltr_repair=args.grammar_ltr_repair,
             compiler_decode_mode=args.compiler_decode_mode,
+            compiler_search_mode=args.compiler_search_mode,
+            compiler_search_trigger=args.compiler_search_trigger,
+            compiler_search_width=max(1, args.compiler_search_width),
+            compiler_search_noise=max(0.0, args.compiler_search_noise),
+            compiler_search_stagnation_patience=max(1, args.compiler_search_stagnation_patience),
+            compiler_search_backtrack_limit=max(0, args.compiler_search_backtrack_limit),
             grammar_ltr_max_tokens=args.grammar_ltr_max_tokens,
             schema_in_context=args.schema_in_context,
             slot_contract_in_context=args.slot_contract_in_context,
