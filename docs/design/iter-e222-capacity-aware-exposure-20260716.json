@@ -1,0 +1,27 @@
+{
+  "campaign": "E222 capacity-aware exposure",
+  "date_utc": "2026-07-16",
+  "status": "sampler_confirmed_semantic_nonregression_falsified_ship_gates_failed",
+  "hypothesis": "Capacity-aware hierarchical sampling will materially increase effective record exposure without reducing strict semantic metrics against E221.",
+  "matrix": {"campaign_id": "e222-capacity-aware-exposure", "matrix_id": "e222-matrix-1", "candidate_count": 5, "recommended_experiment_id": "e222-capacity-aware-matched"},
+  "recipe": {"device": "cpu", "steps": 32, "batch_size": 4, "learning_rate": 0.0003, "seed": 0, "context_backend": "hf_local_files_only", "train_version": "e218_schema_normalized_judge_v5", "eval_version": "remediated", "output_tokenizer": "lexer", "compiler_alignment_loss_weight": 1.0, "compiler_alignment_stratified": true, "compiler_decode_mode": "tree", "schema_in_context": true, "slot_contract_in_context": true, "design_md_in_context": false, "allow_unconstrained_fallback": false, "mixture_sampling_policy": "capacity_aware", "checkpoint_sync": false},
+  "train_result": {"run_id": "e222-capacity-aware-matched", "last_loss": 11.7409029006958, "wall_ms": 144007.958, "seen_prompt_tokens": 23609, "seen_target_tokens": 6534, "checkpoint": "outputs/autoresearch/e222-capacity-aware-exposure/runs/e222-capacity-aware-matched/checkpoints/last.pt", "checkpoint_sha256": "960e13f1f49e46cebb92eaa5e09b15e00d2365566609db785c9e974ab3f348c5", "trace_id": "08e3e21930a50c48fedcc709206a456f"},
+  "exposure": {"baseline": {"run_id": "e221-canonical-task-balanced", "draws": 128, "unique_records": 80, "effective_records": 29.68, "effective_ratio": 0.2319, "max_repeat": 18}, "candidate": {"draws": 128, "unique_records": 102, "unique_ratio": 0.7969, "effective_records": 83.59, "effective_ratio": 0.6531, "max_repeat": 4, "family_draw_counts": {"corruption_repair": 57, "edit_trajectory": 43, "programspec_generated": 20, "renderer_visual": 4, "web_distilled": 4}, "task_group_draw_counts": {"repair_completion_inpaint": 57, "generation": 39, "patch_edit": 32}}, "mechanism_confirmed": true},
+  "evaluation": {
+    "evaluated_at": "2026-07-16T14:06:19.104417+00:00",
+    "suites": {
+      "smoke": {"n": 3, "syntax_parse_rate": 0.6666666666666666, "meaningful_program_rate": 0.0, "structural_similarity": 0.26613333333333333, "component_type_recall": 0.08333333333333333, "placeholder_fidelity": 0.0, "reward_score": 0.21233333333333335},
+      "held_out": {"n": 5, "syntax_parse_rate": 0.6, "meaningful_program_rate": 0.0, "structural_similarity": 0.27956, "component_type_recall": 0.10666666666666666, "placeholder_fidelity": 0.0, "reward_score": 0.2548},
+      "adversarial": {"n": 4, "syntax_parse_rate": 0.75, "meaningful_program_rate": 0.5, "structural_similarity": 0.384475, "component_type_recall": 0.4583333333333333, "placeholder_fidelity": 0.0, "reward_score": 0.47775},
+      "ood": {"n": 4, "syntax_parse_rate": 0.75, "meaningful_program_rate": 0.0, "structural_similarity": 0.371875, "component_type_recall": 0.0625, "placeholder_fidelity": 0.0, "reward_score": 0.15925},
+      "rico_held": {"n": 3, "syntax_parse_rate": 0.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.15013333333333334, "component_type_recall": 0.4444444444444444, "placeholder_fidelity": 0.0, "reward_score": 0.0}
+    },
+    "fallback_count": 0,
+    "ship_gates": {"pass": false, "failure_count": 10},
+    "agentv": {"total": 5, "passed": 1, "failed": 4, "execution_errors": 0, "mean_score": 0.6},
+    "scoreboard": "outputs/autoresearch/e222-capacity-aware-exposure/runs/e222-capacity-aware-matched/scoreboard.json"
+  },
+  "honesty": {"training_completed": true, "evaluation_completed": true, "checkpoint_written": true, "checkpoint_synced": false, "ship_gates": false, "promoted": false},
+  "conclusion": "Capacity-aware sampling materially fixed record-repeat concentration but did not preserve strict semantic quality. The mechanism is retained; the combined quality hypothesis is falsified.",
+  "next_action": "Test generalized quota-stratified capacity-aware sampling so task and family allocations are deterministic before row-level weighted draws, after fetching and reconciling latest main."
+}
