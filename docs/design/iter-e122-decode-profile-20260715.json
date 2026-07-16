@@ -1,0 +1,55 @@
+{
+  "experiment_id": "E122",
+  "date": "2026-07-15",
+  "kind": "decode_profile",
+  "parent": "E121",
+  "checkpoint": "outputs/runs/iter-e121d-e53-judged-20260715/qx_e53_honest_v5_champion/checkpoints/last.pt",
+  "device": "cpu",
+  "data": {
+    "training_corpus": "src/slm_training/resources/train_data/remediated_roots_judged",
+    "training_record_count": 405,
+    "prompt": "A hero card with title and subtitle",
+    "generations_per_variant": 1
+  },
+  "variants": [
+    {
+      "name": "incremental_verify_chosen",
+      "incremental": true,
+      "verify_chosen_only": true,
+      "dynamic_quant": false,
+      "seconds_per_generation": 19.8475,
+      "denoiser_ms": 14773.345,
+      "pick_ms": 4679.068,
+      "forwards": 38,
+      "tokens_emitted": 37,
+      "dead_ends": 1
+    },
+    {
+      "name": "incremental_no_verify",
+      "incremental": true,
+      "verify_chosen_only": false,
+      "dynamic_quant": false,
+      "seconds_per_generation": 27.0948,
+      "denoiser_ms": 22097.431,
+      "pick_ms": 4207.715,
+      "forwards": 38,
+      "tokens_emitted": 37,
+      "dead_ends": 1
+    },
+    {
+      "name": "no_incremental_verify_chosen",
+      "incremental": false,
+      "verify_chosen_only": true,
+      "dynamic_quant": false,
+      "seconds_per_generation": 29.8541,
+      "denoiser_ms": 23019.135,
+      "pick_ms": 6121.717,
+      "forwards": 38,
+      "tokens_emitted": 37,
+      "dead_ends": 1
+    }
+  ],
+  "finding": "Incremental grammar state is materially beneficial. The observed dead-end had zero legal candidates, so singleton force-emit cannot safely apply; the existing singleton path already bypasses probing when exactly one legal token exists. CPU denoiser and fallback candidate selection dominate latency.",
+  "decision": "Do not weaken legality or force a token on an empty legal set. Keep incremental state enabled and prioritize reducing scratch denoiser cost and improving dead-end recovery.",
+  "honesty": "diagnostic_only; no ship gate claim"
+}
