@@ -1002,7 +1002,7 @@ mechanism and telemetry, reject the checkpoint, and require normalized/staged
 topology learning plus explicit reference arity before retrying. Full evidence:
 [iter-e236-binder-topology-20260716.md](iter-e236-binder-topology-20260716.md).
 
-## V9 lattice-guided recursive compiler search (proposed, unrun)
+## V9 lattice-guided recursive compiler search (fixture-run 2026-07-16)
 
 The research synthesis and implementation boundary are in
 [`lattice-recursive-search.md`](lattice-recursive-search.md). These rows keep the
@@ -1012,14 +1012,14 @@ trajectory policies. They do not reproduce those papers' training methods.
 
 | ID | Isolated lever | Required diagnostics | Status |
 | --- | --- | --- | --- |
-| E240 | Corrected greedy compiler-tree control | Standard scoreboard, coverage, fallbacks, calls | proposed/unrun |
-| E241 | Hard/soft lattice plus bounded rollback | Bottoms, rollbacks, nogoods, termination | proposed/unrun |
-| E242 | Stagnation-triggered localized nogoods | Conflict recurrence and false-prune audit | proposed/unrun |
-| E243 | Triggered PTRM-style width 4 | Triggers, trajectories, unique valid ASTs, calls | proposed/unrun |
-| E244 | Always-on PTRM-style width 4 control | Matched quality/calls against E243 | proposed/unrun |
-| E245 | GRAM-style semantic diversity width 4 | Unique validated AST fingerprints | proposed/unrun |
-| E246 | Full stack width 4 | Quality, validity, abstention, regret, latency | proposed/unrun |
-| E247 | Full stack width 8 | Width scaling benefit versus verifier/call cost | proposed/unrun |
+| E240 | Corrected greedy compiler-tree control | Standard scoreboard, coverage, fallbacks, calls | fixture-run |
+| E241 | Hard/soft lattice plus bounded rollback | Bottoms, rollbacks, nogoods, termination | fixture-run |
+| E242 | Stagnation-triggered localized nogoods | Conflict recurrence and false-prune audit | fixture-run |
+| E243 | Triggered PTRM-style width 4 | Triggers, trajectories, unique valid ASTs, calls | fixture-run |
+| E244 | Always-on PTRM-style width 4 control | Matched quality/calls against E243 | fixture-run |
+| E245 | GRAM-style semantic diversity width 4 | Unique validated AST fingerprints | fixture-run |
+| E246 | Full stack width 4 | Quality, validity, abstention, regret, latency | fixture-run |
+| E247 | Full stack width 8 | Width scaling benefit versus verifier/call cost | fixture-run |
 
 Preview only:
 
@@ -1030,6 +1030,35 @@ python -m scripts.run_quality_matrix --matrix v9 --list
 Listing must not create output artifacts. Any execution requires the full honest
 five-suite scoreboard, AgentEvals, AgentV, result JSON, recipe/suite sizes, and a
 measured-results update in this document.
+
+### V9 measured results (CPU, fixture-grade, 2026-07-16)
+
+Recipe: E240 trained as an explicit `--scratch-control` row (800 steps, batch 4,
+seed 0, `--context-backend scratch`, `--no-design-md-context`, fixture v1 corpus,
+108 records); E241–E247 evaluated **eval-only from E240's frozen checkpoint** via
+`--eval-checkpoint` (shared lineage, the campaign's matched-checkpoint
+requirement). Suites: smoke 3 / held_out 5 / adversarial 4 / ood 4 / rico_held 0
+(fixture corpus has no RICO records; full 1500 remains the ship bar). AgentV
+published per row. JSON:
+[quality-matrix-results-iter-v9-lattice-20260716.json](quality-matrix-results-iter-v9-lattice-20260716.json);
+full narrative:
+[iter-e240-e247-lattice-campaign-20260716.md](iter-e240-e247-lattice-campaign-20260716.md).
+
+All eight rows fail the honest gates (syntax parse 0.0, meaningful parse 0.0):
+the 800-step scratch model emits non-placeholder string literals, which the
+strict placeholder policy rejects — a genuine fixture-scale capacity result,
+not a broken verifier (per-record errors are real placeholder-policy
+violations). Signal lives in the lattice diagnostics: stagnation-triggered rows
+(E241–E243, E245–E247) observe the forest (891 lattice states, ~29k ranked
+candidates) with **zero bottoms/rollbacks/nogoods/trajectories** and reproduce
+E240's greedy outputs byte-for-byte; always-on PTRM (E244) fires 1680 triggers /
+6640 trajectories at ~3× decode latency (24.1s vs ~8s per record) and lowers
+structural similarity on every suite (e.g. ood 0.413→0.239) — supporting
+selective over always-on stochasticity. **Wiring evidence only, not a ship
+claim**; the ship-grade campaign against local E224+ frontier checkpoints (GPU,
+full suites) is still required, and E241/E242's conflict machinery has not been
+exercised outside unit/integration tests because greedy decode never stalls on
+this checkpoint.
 
 ## Verifier-guided repair (mixed status)
 

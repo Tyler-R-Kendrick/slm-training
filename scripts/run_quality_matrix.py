@@ -1241,6 +1241,27 @@ def _v9_experiments(train_dir: Path) -> list[Experiment]:
     ]
 
 
+def _apply_eval_checkpoint(
+    experiments: list[Experiment], eval_checkpoint: Path | None
+) -> list[Experiment]:
+    """Route declared eval-only rows (V9) through one frozen checkpoint.
+
+    Rows registered with ``initialization="eval_only"`` compare decode-time
+    policies and must share identical checkpoint lineage; without an explicit
+    checkpoint source the classifier would silently retrain each row.
+    """
+    if eval_checkpoint is None:
+        return experiments
+    return [
+        replace(exp, eval_from_checkpoint=str(eval_checkpoint))
+        if exp.initialization == "eval_only"
+        and not exp.eval_from_run
+        and not exp.eval_from_checkpoint
+        else exp
+        for exp in experiments
+    ]
+
+
 def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
     return ModelBuildConfig(
         train_dir=exp.train_dir,
@@ -1921,6 +1942,15 @@ def main(argv: list[str] | None = None) -> int:
         help="Explicitly run selected rows as non-deployable scratch controls.",
     )
     parser.add_argument(
+        "--eval-checkpoint",
+        type=Path,
+        default=None,
+        help=(
+            "Frozen checkpoint for declared eval-only rows (V9 E240-E247): "
+            "evaluate decode policies over one shared lineage without training."
+        ),
+    )
+    parser.add_argument(
         "--build-curriculum",
         action="store_true",
         help="Build curriculum train corpus before running.",
@@ -1973,10 +2003,15 @@ def main(argv: list[str] | None = None) -> int:
     if not args.suites:
         parser.error("--suites must select at least one suite")
     if args.matrix in {"v4", "v5", "v6", "v7", "v8", "v9", "all"}:
-        if args.parent is None and not args.scratch_control:
+        if (
+            args.parent is None
+            and not args.scratch_control
+            and args.eval_checkpoint is None
+        ):
             if not args.list:
                 parser.error(
-                    "modern matrices require --parent or explicit --scratch-control"
+                    "modern matrices require --parent, explicit --scratch-control,"
+                    " or --eval-checkpoint"
                 )
 
     needs_curriculum = args.only is None or any(
@@ -2116,6 +2151,10 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
         return 0
+
+    if args.eval_checkpoint is not None and args.scratch_control:
+        parser.error("--eval-checkpoint and --scratch-control are mutually exclusive")
+    experiments = _apply_eval_checkpoint(experiments, args.eval_checkpoint)
 
     classified: list[Experiment] = []
     for exp in experiments:

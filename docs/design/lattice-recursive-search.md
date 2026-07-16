@@ -1,7 +1,10 @@
 # Lattice-guided recursive compiler search
 
-**Status:** architecture and plan-only experiment campaign. No training, evaluation,
-benchmark, or ship-gate result is claimed here.
+**Status:** architecture doc; campaign executed at fixture grade on 2026-07-16
+(all eight rows through the honest suites — see
+[iter-e240-e247-lattice-campaign-20260716.md](iter-e240-e247-lattice-campaign-20260716.md)).
+No ship-gate clear is claimed; the frontier-scale run on E224+ checkpoints
+remains open.
 
 ## Research question
 

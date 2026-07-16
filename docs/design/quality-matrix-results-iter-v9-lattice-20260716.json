@@ -1,0 +1,597 @@
+{
+  "matrix": "quality-experiment-matrix-v9",
+  "reference": "docs/design/quality-experiment-matrix.md",
+  "gate_policy": {
+    "smoke": {
+      "meaningful_program_rate": 0.66,
+      "structural_similarity": 0.35,
+      "placeholder_fidelity": 0.25,
+      "reward_score": 0.3
+    },
+    "held_out": {
+      "meaningful_program_rate": 0.4,
+      "structural_similarity": 0.3,
+      "placeholder_fidelity": 0.15
+    },
+    "adversarial": {
+      "meaningful_program_rate": 0.25,
+      "structural_similarity": 0.25
+    },
+    "ood": {
+      "meaningful_program_rate": 0.25,
+      "structural_similarity": 0.25
+    },
+    "rico_held": {
+      "meaningful_program_rate": 0.1,
+      "structural_similarity": 0.2
+    }
+  },
+  "device": "cpu",
+  "batch_size": 4,
+  "learning_rate": 0.0003,
+  "seed": 0,
+  "test_dir": "outputs/data/eval/v1",
+  "design_md_in_context": false,
+  "rico_eval_limit": 3,
+  "suites": [
+    "adversarial",
+    "held_out",
+    "ood",
+    "rico_held",
+    "smoke"
+  ],
+  "steps": 800,
+  "gen_steps": 8,
+  "context_backend": "scratch",
+  "matrix_set": "v9",
+  "results": [
+    {
+      "id": "E240",
+      "run_id": "qx_e240_compiler_tree_control",
+      "initialization": "scratch",
+      "parent_checkpoint": null,
+      "description": "Corrected greedy compiler-tree control",
+      "honest_slot_contract": false,
+      "schema_in_context": false,
+      "slot_contract_in_context": false,
+      "slot_contract_constrained_decode": false,
+      "template_fill_decode": false,
+      "grammar_ltr_primary": true,
+      "grammar_ltr_repair": false,
+      "effective_gen_steps": 8,
+      "best_of_n": 1,
+      "train_dir": "outputs/data/train/v1",
+      "train_content_fingerprint": "79552bd716d712ad06b6e96e8c8356a1d9416140bd605f08da49d771adf99231",
+      "checkpoint": "outputs/runs/qx_e240_compiler_tree_control/checkpoints/last.pt",
+      "pass": false,
+      "failures": [
+        "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:meaningful_program_rate actual=0.0 need>=0.4",
+        "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+        "adversarial:meaningful_program_rate actual=0.0 need>=0.25",
+        "ood:meaningful_program_rate actual=0.0 need>=0.25",
+        "rico_held:meaningful_program_rate actual=0.0 need>=0.1",
+        "rico_held:structural_similarity actual=0.0 need>=0.2"
+      ],
+      "suites": {
+        "smoke": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.35250000000000004,
+          "reward_score": 0.0,
+          "n": 3
+        },
+        "held_out": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.31494,
+          "reward_score": 0.0,
+          "n": 5
+        },
+        "adversarial": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.376975,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "ood": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.41307499999999997,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "rico_held": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.0,
+          "reward_score": 0.0,
+          "n": 0
+        }
+      }
+    },
+    {
+      "id": "E241",
+      "run_id": "qx_e241_lattice_rollback",
+      "initialization": "eval_only",
+      "parent_checkpoint": null,
+      "description": "Hard/soft lattice with bounded rollback",
+      "honest_slot_contract": false,
+      "schema_in_context": false,
+      "slot_contract_in_context": false,
+      "slot_contract_constrained_decode": false,
+      "template_fill_decode": false,
+      "grammar_ltr_primary": true,
+      "grammar_ltr_repair": false,
+      "effective_gen_steps": 8,
+      "best_of_n": 1,
+      "train_dir": "outputs/data/train/v1",
+      "train_content_fingerprint": "79552bd716d712ad06b6e96e8c8356a1d9416140bd605f08da49d771adf99231",
+      "checkpoint": "outputs/runs/qx_e241_lattice_rollback/checkpoints/last.pt",
+      "pass": false,
+      "failures": [
+        "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:meaningful_program_rate actual=0.0 need>=0.4",
+        "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+        "adversarial:meaningful_program_rate actual=0.0 need>=0.25",
+        "ood:meaningful_program_rate actual=0.0 need>=0.25",
+        "rico_held:meaningful_program_rate actual=0.0 need>=0.1",
+        "rico_held:structural_similarity actual=0.0 need>=0.2"
+      ],
+      "suites": {
+        "smoke": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.35250000000000004,
+          "reward_score": 0.0,
+          "n": 3
+        },
+        "held_out": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.31494,
+          "reward_score": 0.0,
+          "n": 5
+        },
+        "adversarial": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.376975,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "ood": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.41307499999999997,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "rico_held": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.0,
+          "reward_score": 0.0,
+          "n": 0
+        }
+      }
+    },
+    {
+      "id": "E242",
+      "run_id": "qx_e242_stagnation_nogood",
+      "initialization": "eval_only",
+      "parent_checkpoint": null,
+      "description": "Stagnation-triggered localized nogoods",
+      "honest_slot_contract": false,
+      "schema_in_context": false,
+      "slot_contract_in_context": false,
+      "slot_contract_constrained_decode": false,
+      "template_fill_decode": false,
+      "grammar_ltr_primary": true,
+      "grammar_ltr_repair": false,
+      "effective_gen_steps": 8,
+      "best_of_n": 1,
+      "train_dir": "outputs/data/train/v1",
+      "train_content_fingerprint": "79552bd716d712ad06b6e96e8c8356a1d9416140bd605f08da49d771adf99231",
+      "checkpoint": "outputs/runs/qx_e242_stagnation_nogood/checkpoints/last.pt",
+      "pass": false,
+      "failures": [
+        "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:meaningful_program_rate actual=0.0 need>=0.4",
+        "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+        "adversarial:meaningful_program_rate actual=0.0 need>=0.25",
+        "ood:meaningful_program_rate actual=0.0 need>=0.25",
+        "rico_held:meaningful_program_rate actual=0.0 need>=0.1",
+        "rico_held:structural_similarity actual=0.0 need>=0.2"
+      ],
+      "suites": {
+        "smoke": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.35250000000000004,
+          "reward_score": 0.0,
+          "n": 3
+        },
+        "held_out": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.31494,
+          "reward_score": 0.0,
+          "n": 5
+        },
+        "adversarial": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.376975,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "ood": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.41307499999999997,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "rico_held": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.0,
+          "reward_score": 0.0,
+          "n": 0
+        }
+      }
+    },
+    {
+      "id": "E243",
+      "run_id": "qx_e243_ptrm_triggered_w4",
+      "initialization": "eval_only",
+      "parent_checkpoint": null,
+      "description": "PTRM-style width 4 triggered by stagnation",
+      "honest_slot_contract": false,
+      "schema_in_context": false,
+      "slot_contract_in_context": false,
+      "slot_contract_constrained_decode": false,
+      "template_fill_decode": false,
+      "grammar_ltr_primary": true,
+      "grammar_ltr_repair": false,
+      "effective_gen_steps": 8,
+      "best_of_n": 1,
+      "train_dir": "outputs/data/train/v1",
+      "train_content_fingerprint": "79552bd716d712ad06b6e96e8c8356a1d9416140bd605f08da49d771adf99231",
+      "checkpoint": "outputs/runs/qx_e243_ptrm_triggered_w4/checkpoints/last.pt",
+      "pass": false,
+      "failures": [
+        "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:meaningful_program_rate actual=0.0 need>=0.4",
+        "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+        "adversarial:meaningful_program_rate actual=0.0 need>=0.25",
+        "ood:meaningful_program_rate actual=0.0 need>=0.25",
+        "rico_held:meaningful_program_rate actual=0.0 need>=0.1",
+        "rico_held:structural_similarity actual=0.0 need>=0.2"
+      ],
+      "suites": {
+        "smoke": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.35250000000000004,
+          "reward_score": 0.0,
+          "n": 3
+        },
+        "held_out": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.31494,
+          "reward_score": 0.0,
+          "n": 5
+        },
+        "adversarial": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.376975,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "ood": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.41307499999999997,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "rico_held": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.0,
+          "reward_score": 0.0,
+          "n": 0
+        }
+      }
+    },
+    {
+      "id": "E244",
+      "run_id": "qx_e244_ptrm_always_w4",
+      "initialization": "eval_only",
+      "parent_checkpoint": null,
+      "description": "Always-on PTRM-style width 4 matched control",
+      "honest_slot_contract": false,
+      "schema_in_context": false,
+      "slot_contract_in_context": false,
+      "slot_contract_constrained_decode": false,
+      "template_fill_decode": false,
+      "grammar_ltr_primary": true,
+      "grammar_ltr_repair": false,
+      "effective_gen_steps": 8,
+      "best_of_n": 1,
+      "train_dir": "outputs/data/train/v1",
+      "train_content_fingerprint": "79552bd716d712ad06b6e96e8c8356a1d9416140bd605f08da49d771adf99231",
+      "checkpoint": "outputs/runs/qx_e244_ptrm_always_w4/checkpoints/last.pt",
+      "pass": false,
+      "failures": [
+        "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+        "smoke:structural_similarity actual=0.3225 need>=0.35",
+        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:meaningful_program_rate actual=0.0 need>=0.4",
+        "held_out:structural_similarity actual=0.2465 need>=0.3",
+        "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+        "adversarial:meaningful_program_rate actual=0.0 need>=0.25",
+        "ood:meaningful_program_rate actual=0.0 need>=0.25",
+        "ood:structural_similarity actual=0.23877500000000002 need>=0.25",
+        "rico_held:meaningful_program_rate actual=0.0 need>=0.1",
+        "rico_held:structural_similarity actual=0.0 need>=0.2"
+      ],
+      "suites": {
+        "smoke": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.3225,
+          "reward_score": 0.0,
+          "n": 3
+        },
+        "held_out": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.2465,
+          "reward_score": 0.0,
+          "n": 5
+        },
+        "adversarial": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.300025,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "ood": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.23877500000000002,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "rico_held": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.0,
+          "reward_score": 0.0,
+          "n": 0
+        }
+      }
+    },
+    {
+      "id": "E245",
+      "run_id": "qx_e245_gram_diverse_w4",
+      "initialization": "eval_only",
+      "parent_checkpoint": null,
+      "description": "GRAM-style semantic diversity at width 4",
+      "honest_slot_contract": false,
+      "schema_in_context": false,
+      "slot_contract_in_context": false,
+      "slot_contract_constrained_decode": false,
+      "template_fill_decode": false,
+      "grammar_ltr_primary": true,
+      "grammar_ltr_repair": false,
+      "effective_gen_steps": 8,
+      "best_of_n": 1,
+      "train_dir": "outputs/data/train/v1",
+      "train_content_fingerprint": "79552bd716d712ad06b6e96e8c8356a1d9416140bd605f08da49d771adf99231",
+      "checkpoint": "outputs/runs/qx_e245_gram_diverse_w4/checkpoints/last.pt",
+      "pass": false,
+      "failures": [
+        "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:meaningful_program_rate actual=0.0 need>=0.4",
+        "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+        "adversarial:meaningful_program_rate actual=0.0 need>=0.25",
+        "ood:meaningful_program_rate actual=0.0 need>=0.25",
+        "rico_held:meaningful_program_rate actual=0.0 need>=0.1",
+        "rico_held:structural_similarity actual=0.0 need>=0.2"
+      ],
+      "suites": {
+        "smoke": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.35250000000000004,
+          "reward_score": 0.0,
+          "n": 3
+        },
+        "held_out": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.31494,
+          "reward_score": 0.0,
+          "n": 5
+        },
+        "adversarial": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.376975,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "ood": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.41307499999999997,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "rico_held": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.0,
+          "reward_score": 0.0,
+          "n": 0
+        }
+      }
+    },
+    {
+      "id": "E246",
+      "run_id": "qx_e246_lattice_full_w4",
+      "initialization": "eval_only",
+      "parent_checkpoint": null,
+      "description": "Full lattice stack at width 4",
+      "honest_slot_contract": false,
+      "schema_in_context": false,
+      "slot_contract_in_context": false,
+      "slot_contract_constrained_decode": false,
+      "template_fill_decode": false,
+      "grammar_ltr_primary": true,
+      "grammar_ltr_repair": false,
+      "effective_gen_steps": 8,
+      "best_of_n": 1,
+      "train_dir": "outputs/data/train/v1",
+      "train_content_fingerprint": "79552bd716d712ad06b6e96e8c8356a1d9416140bd605f08da49d771adf99231",
+      "checkpoint": "outputs/runs/qx_e246_lattice_full_w4/checkpoints/last.pt",
+      "pass": false,
+      "failures": [
+        "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:meaningful_program_rate actual=0.0 need>=0.4",
+        "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+        "adversarial:meaningful_program_rate actual=0.0 need>=0.25",
+        "ood:meaningful_program_rate actual=0.0 need>=0.25",
+        "rico_held:meaningful_program_rate actual=0.0 need>=0.1",
+        "rico_held:structural_similarity actual=0.0 need>=0.2"
+      ],
+      "suites": {
+        "smoke": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.35250000000000004,
+          "reward_score": 0.0,
+          "n": 3
+        },
+        "held_out": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.31494,
+          "reward_score": 0.0,
+          "n": 5
+        },
+        "adversarial": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.376975,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "ood": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.41307499999999997,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "rico_held": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.0,
+          "reward_score": 0.0,
+          "n": 0
+        }
+      }
+    },
+    {
+      "id": "E247",
+      "run_id": "qx_e247_lattice_full_w8",
+      "initialization": "eval_only",
+      "parent_checkpoint": null,
+      "description": "Full lattice stack width 8 scaling row",
+      "honest_slot_contract": false,
+      "schema_in_context": false,
+      "slot_contract_in_context": false,
+      "slot_contract_constrained_decode": false,
+      "template_fill_decode": false,
+      "grammar_ltr_primary": true,
+      "grammar_ltr_repair": false,
+      "effective_gen_steps": 8,
+      "best_of_n": 1,
+      "train_dir": "outputs/data/train/v1",
+      "train_content_fingerprint": "79552bd716d712ad06b6e96e8c8356a1d9416140bd605f08da49d771adf99231",
+      "checkpoint": "outputs/runs/qx_e247_lattice_full_w8/checkpoints/last.pt",
+      "pass": false,
+      "failures": [
+        "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:meaningful_program_rate actual=0.0 need>=0.4",
+        "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+        "adversarial:meaningful_program_rate actual=0.0 need>=0.25",
+        "ood:meaningful_program_rate actual=0.0 need>=0.25",
+        "rico_held:meaningful_program_rate actual=0.0 need>=0.1",
+        "rico_held:structural_similarity actual=0.0 need>=0.2"
+      ],
+      "suites": {
+        "smoke": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.35250000000000004,
+          "reward_score": 0.0,
+          "n": 3
+        },
+        "held_out": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.31494,
+          "reward_score": 0.0,
+          "n": 5
+        },
+        "adversarial": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.376975,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "ood": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.41307499999999997,
+          "reward_score": 0.0,
+          "n": 4
+        },
+        "rico_held": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.0,
+          "reward_score": 0.0,
+          "n": 0
+        }
+      }
+    }
+  ],
+  "campaign_note": "V9 fixture-grade wiring campaign 2026-07-16: E240 trained as an explicit scratch control (800 steps, CPU, fixture v1 corpus, 108 records); E241-E247 evaluated eval-only from E240's frozen checkpoint via --eval-checkpoint (shared lineage). rico_held n=0 (fixture corpus has no RICO records). Wiring evidence only, not a ship claim; frontier-scale campaign on E224+ checkpoints still required."
+}
