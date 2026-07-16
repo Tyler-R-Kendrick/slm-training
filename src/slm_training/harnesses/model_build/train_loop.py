@@ -224,10 +224,12 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     if is_twotower:
         import torch
 
-        optimizer = torch.optim.AdamW(
-            plugin.trainable_parameters(),
-            lr=config.lr,
+        parameters = (
+            plugin.optimizer_parameter_groups()
+            if hasattr(plugin, "optimizer_parameter_groups")
+            else plugin.trainable_parameters()
         )
+        optimizer = torch.optim.AdamW(parameters, lr=config.lr)
         scaler = grad_scaler(config.device, enabled=use_amp)
 
     # ── Token accounting / full-state resume ────────────────────────────────

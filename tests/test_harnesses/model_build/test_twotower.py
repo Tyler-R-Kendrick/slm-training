@@ -216,6 +216,39 @@ def test_optional_heads_do_not_shift_training_rng() -> None:
     assert torch.equal(baseline, state_after(component_plan_loss_weight=1.0))
 
 
+def test_auxiliary_heads_do_not_change_base_optimizer_updates() -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+
+    def model(**kwargs) -> TwoTowerModel:
+        torch.manual_seed(123)
+        return TwoTowerModel.from_records(
+            records,
+            config=TwoTowerConfig(
+                d_model=32,
+                n_heads=4,
+                context_layers=1,
+                denoiser_layers=1,
+                output_tokenizer="lexer",
+                **kwargs,
+            ),
+        )
+
+    baseline = model()
+    arity = model(binder_arity_loss_weight=1.0)
+    baseline_optimizer = torch.optim.AdamW(baseline.optimizer_parameter_groups())
+    arity_optimizer = torch.optim.AdamW(arity.optimizer_parameter_groups())
+    for candidate in (baseline, arity):
+        for name, parameter in candidate.named_parameters():
+            if parameter.requires_grad and not name.startswith("binder_arity_head."):
+                parameter.grad = torch.ones_like(parameter)
+    baseline_optimizer.step()
+    arity_optimizer.step()
+    arity_state = dict(arity.named_parameters())
+    for name, parameter in baseline.named_parameters():
+        if name in arity_state:
+            assert torch.equal(parameter, arity_state[name]), name
+
+
 def test_surface_syntax_repair_preserves_string_literals() -> None:
     damaged = (
         'root===Stack([cta, card, =])\n'

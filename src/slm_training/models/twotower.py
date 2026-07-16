@@ -714,6 +714,33 @@ class TwoTowerModel(nn.Module):
     def trainable_parameters(self):
         return (p for p in self.parameters() if p.requires_grad)
 
+    def optimizer_parameter_groups(self) -> list[dict[str, list[nn.Parameter]]]:
+        """Keep shared-model optimizer grouping invariant across aux heads."""
+        auxiliary = (
+            "length_head.",
+            "component_inventory_head.",
+            "component_plan_head.",
+            "component_edge_head.",
+            "binder_component_plan_head.",
+            "binder_topology_head.",
+            "binder_arity_head.",
+            "trust_gate.",
+            "survival_head.",
+        )
+        grouped: dict[str, list[nn.Parameter]] = {"base": []}
+        for name, parameter in self.named_parameters():
+            if not parameter.requires_grad:
+                continue
+            owner = next(
+                (prefix for prefix in auxiliary if name.startswith(prefix)), "base"
+            )
+            grouped.setdefault(owner, []).append(parameter)
+        return [
+            {"params": grouped[owner]}
+            for owner in ("base", *auxiliary)
+            if grouped.get(owner)
+        ]
+
     def _count_context_tokens(self, text: str) -> int:
         """Context token count under the active backend (capped at max_prompt_len)."""
         if is_hf_context(self.context):
