@@ -18,7 +18,7 @@ from slm_training.data.leakage import (
 )
 from slm_training.data.rico import load_rico_screens, screen_to_record
 from slm_training.dsl.placeholders import extract_placeholders
-from slm_training.dsl.parser import ParseError, validate
+from slm_training.dsl.parser import ParseError, validate, validate_output
 from slm_training.dsl.schema import ExampleRecord, load_jsonl, write_jsonl
 from slm_training.harnesses.train_data.synth import PromptSynthesizer, get_synthesizer
 
@@ -99,6 +99,52 @@ def _normalize_record(record: ExampleRecord) -> ExampleRecord:
     from slm_training.data.structure import strip_style_literals
     from slm_training.data.verify import stamp_record
 
+    if record.target_kind != "document":
+        primary = validate_output(
+            record.openui, record.target_kind, record.target_category
+        )
+        for target in record.accepted_outputs:
+            validate_output(target.text, target.kind, target.category)
+        meta = dict(record.meta)
+        meta.setdefault("task", "generation")
+        meta.setdefault("determinacy", "deterministic")
+        meta.setdefault("tier", "Silver")
+        meta["parser"] = "openui-output-contract"
+        meta["structure_only"] = True
+        meta["independent_judge_passed"] = True
+        meta["verification_tier"] = "Silver"
+        meta["failing_gate"] = None
+        meta["verification"] = {
+            "tier": "Silver",
+            "failing_gate": None,
+            "gates": [
+                {"gate": "G0", "name": "lexical", "status": "pass"},
+                {"gate": "G1", "name": "output_contract", "status": "pass"},
+                {
+                    "gate": "G2",
+                    "name": "document_schema",
+                    "status": "skip",
+                    "detail": f"{record.target_kind} target",
+                },
+            ],
+        }
+        surfaces = [primary, *(target.text for target in record.accepted_outputs)]
+        return ExampleRecord(
+            id=record.id,
+            prompt=record.prompt.strip(),
+            openui=primary,
+            placeholders=sorted(
+                {slot for surface in surfaces for slot in extract_placeholders(surface)}
+            ),
+            split=record.split,
+            source=record.source,
+            meta=meta,
+            design_md=record.design_md,
+            target_kind=record.target_kind,
+            target_category=record.target_category,
+            accepted_outputs=list(record.accepted_outputs),
+        )
+
     scrubbed = strip_style_literals(record.openui)
     program = validate(scrubbed)
     placeholders = list(program.placeholders) or extract_placeholders(scrubbed)
@@ -159,6 +205,9 @@ def _normalize_record(record: ExampleRecord) -> ExampleRecord:
         source=emitted.source,
         meta=emitted_meta,
         design_md=record.design_md,
+        target_kind=record.target_kind,
+        target_category=record.target_category,
+        accepted_outputs=list(record.accepted_outputs),
     )
     try:
         from slm_training.dsl.design_md import attach_default_design_md
@@ -187,6 +236,9 @@ def _with_source(record: ExampleRecord, source: str) -> ExampleRecord:
         source=source,
         meta=dict(record.meta),
         design_md=record.design_md,
+        target_kind=record.target_kind,
+        target_category=record.target_category,
+        accepted_outputs=list(record.accepted_outputs),
     )
 
 
@@ -686,6 +738,9 @@ def _records_from_existing(
     records: list[ExampleRecord] = []
     errors: list[dict] = []
     for record in load_jsonl(path):
+        family = str((record.meta or {}).get("program_family_id") or "")
+        if config.include_language_contract and family.startswith("language_contract:"):
+            continue
         if record.split != config.require_split:
             errors.append(
                 {
@@ -708,6 +763,9 @@ def _records_from_existing(
                     "parent_id": (record.meta or {}).get("parent_id") or record.id,
                 },
                 design_md=record.design_md,
+                target_kind=record.target_kind,
+                target_category=record.target_category,
+                accepted_outputs=list(record.accepted_outputs),
             )
         )
     return records, errors
@@ -717,6 +775,8 @@ def _existing_program_derivatives(
     record: ExampleRecord, config: TrainDataConfig
 ) -> list[ExampleRecord]:
     """Project edit/repair tasks from an existing corpus root."""
+    if record.target_kind != "document":
+        return []
     from slm_training.data.progspec import ProgramSpec
 
     meta = record.meta or {}
@@ -772,7 +832,7 @@ def build_train_data(
         records, source_errors = _records_from_progspec(config)
         seeds.extend(records)
         errors.extend(source_errors)
-    if source in {"language_contract", "integrated", "all"}:
+    if source in {"language_contract", "integrated", "all", "existing"}:
         records, source_errors = _records_from_language_contract(config)
         seeds.extend(records)
         errors.extend(source_errors)
@@ -824,7 +884,10 @@ def build_train_data(
     lineage_index: LineageIndex = {}
     for seed in seeds:
         candidates = [seed]
-        if (seed.meta or {}).get("task") in {None, "generation"}:
+        if seed.target_kind == "document" and (seed.meta or {}).get("task") in {
+            None,
+            "generation",
+        }:
             candidates.extend(synth.expand(seed))
             if source == "existing" and (
                 config.include_edit_derivatives or config.repairs_per_program > 0
@@ -833,7 +896,7 @@ def build_train_data(
                     candidates.extend(_existing_program_derivatives(seed, config))
                 except (ParseError, RuntimeError, ValueError) as exc:
                     errors.append({"id": seed.id, "error": str(exc)})
-        if config.namespace_augment:
+        if config.namespace_augment and seed.target_kind == "document":
             from slm_training.harnesses.train_data.synth import (
                 NamespaceAugmentSynthesizer,
             )

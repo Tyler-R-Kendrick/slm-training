@@ -318,6 +318,7 @@ def evaluate(
         spec_stats.reset()
 
     n = len(records)
+    document_n = sum(record.target_kind == "document" for record in records)
     parse_ok = 0
     raw_syntax_ok = 0
     fidelity_sum = 0.0
@@ -438,6 +439,39 @@ def evaluate(
         nonlocal parse_ok, raw_syntax_ok, fidelity_sum, fidelity_norm_sum, validity_sum
         nonlocal exact_sum, struct_sum, tree_edit_sum, reward_sum, recall_sum
         nonlocal contract_precision_sum, contract_recall_sum
+        evidence = dict(prediction_evidence or {})
+        if len(topology_target_evidence) > len(topology_evidence):
+            evidence.update(topology_target_evidence[len(topology_evidence)])
+        if record.target_kind != "document":
+            from slm_training.evals.task_scoreboard import score_output_targets
+
+            target_score = score_output_targets(pred, record.output_targets)
+            topology_evidence.append(evidence)
+            details.append(
+                {
+                    "id": record.id,
+                    "target_kind": record.target_kind,
+                    "target_score": target_score,
+                    "latency_ms": round(latency_ms, 2),
+                    "prediction": pred[:500],
+                    "topology_evidence": evidence or None,
+                }
+            )
+            task_cases.append(
+                {
+                    "id": record.id,
+                    "task": str((record.meta or {}).get("task") or "unknown"),
+                    "gold": record.openui,
+                    "prediction": pred,
+                    "target_kind": record.target_kind,
+                    "target_category": record.target_category,
+                    "accepted_outputs": [
+                        target.__dict__ for target in record.accepted_outputs
+                    ],
+                    "prediction_evidence": evidence,
+                }
+            )
+            return
         ok, error, serialized = _is_meaningful_program(pred, gold=record)
         scored_pred = serialized or pred
         if not ok:
@@ -466,9 +500,6 @@ def evaluate(
         contract_prec = _contract_precision(scored_pred, record)
         contract_rec = _contract_recall(scored_pred, record)
         reward = _reward_for_prediction(scored_pred, record)
-        evidence = dict(prediction_evidence or {})
-        if len(topology_target_evidence) > len(topology_evidence):
-            evidence.update(topology_target_evidence[len(topology_evidence)])
         codec = getattr(plugin, "codec", None)
         if codec is not None:
             from slm_training.models.grammar_diffusion import (
@@ -528,6 +559,11 @@ def evaluate(
                 "prediction": scored_pred,
                 "abstraction_level": (record.meta or {}).get("abstraction_level"),
                 "prediction_evidence": evidence,
+                "target_kind": record.target_kind,
+                "target_category": record.target_category,
+                "accepted_outputs": [
+                    target.__dict__ for target in record.accepted_outputs
+                ],
             }
         )
 
@@ -570,6 +606,8 @@ def evaluate(
     metrics = {
         "suite": config.suite,
         "n": n,
+        "document_n": document_n,
+        "fragment_n": n - document_n,
         "eval_limit": suite_limit,
         "diagnostic_subset": suite_limit is not None,
         # Persist the effective decode policy beside every scoreboard.  This
@@ -624,21 +662,23 @@ def evaluate(
             "gen_steps": int(config.gen_steps),
             "grammar_ltr_max_tokens": int(config.grammar_ltr_max_tokens),
         },
-        "parse_rate": (parse_ok / n) if n else 0.0,
-        "raw_syntax_validity": (raw_syntax_ok / n) if n else 0.0,
-        "contract_precision": (contract_precision_sum / n) if n else 0.0,
-        "contract_recall": (contract_recall_sum / n) if n else 0.0,
+        "parse_rate": (parse_ok / document_n) if document_n else 0.0,
+        "raw_syntax_validity": (raw_syntax_ok / document_n) if document_n else 0.0,
+        "contract_precision": (contract_precision_sum / document_n) if document_n else 0.0,
+        "contract_recall": (contract_recall_sum / document_n) if document_n else 0.0,
         "residual_mask_rate": 0.0,
         "oov_rate": 0.0,
         "fallback_count": 0,
-        "placeholder_fidelity": (fidelity_sum / n) if n else 0.0,
-        "placeholder_fidelity_normalized": (fidelity_norm_sum / n) if n else 0.0,
-        "placeholder_validity": (validity_sum / n) if n else 0.0,
-        "exact_match": (exact_sum / n) if n else 0.0,
-        "structural_similarity": (struct_sum / n) if n else 0.0,
-        "tree_edit_similarity": (tree_edit_sum / n) if n else 0.0,
-        "component_type_recall": (recall_sum / n) if n else 0.0,
-        "reward_score": (reward_sum / n) if n else 0.0,
+        "placeholder_fidelity": (fidelity_sum / document_n) if document_n else 0.0,
+        "placeholder_fidelity_normalized": (
+            fidelity_norm_sum / document_n if document_n else 0.0
+        ),
+        "placeholder_validity": (validity_sum / document_n) if document_n else 0.0,
+        "exact_match": (exact_sum / document_n) if document_n else 0.0,
+        "structural_similarity": (struct_sum / document_n) if document_n else 0.0,
+        "tree_edit_similarity": (tree_edit_sum / document_n) if document_n else 0.0,
+        "component_type_recall": (recall_sum / document_n) if document_n else 0.0,
+        "reward_score": (reward_sum / document_n) if document_n else 0.0,
         "gold_design_lint_score": gold_design_mean,
         # Alias kept for older dashboards; do not gate ship on this.
         "design_lint_score": gold_design_mean,

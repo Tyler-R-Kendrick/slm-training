@@ -1,0 +1,33 @@
+{
+  "kind": "training_data_rebuild",
+  "date": "2026-07-15",
+  "output": "src/slm_training/resources/train_data/remediated_roots_judged",
+  "recipe": {
+    "device": "cpu",
+    "source": "existing",
+    "synthesizer": "none",
+    "frontier_artifacts": false,
+    "repairs_per_program": 0,
+    "edit_derivatives": false,
+    "design_md_contrastive": false,
+    "honesty_mode": "deterministic corpus rebuild; no model or ship claim"
+  },
+  "results": {
+    "record_count_before": 498,
+    "record_count_after": 255,
+    "legacy_language_contract_derivatives_removed": 305,
+    "language_contract_records": 62,
+    "language_contract_output_kinds": {
+      "lexical": 4,
+      "expression": 56,
+      "statement": 1,
+      "document": 1
+    },
+    "language_contract_primary_output_symbols": 555,
+    "language_contract_mean_primary_output_symbols": 8.951613,
+    "verifier_rejected": 0,
+    "quality_rejected": 0,
+    "content_fingerprint": "2f5a2f0c2def4b7e5032a9c0b7fc871c6f0b95bf5f102ce94ead78a5115752d9"
+  },
+  "decision": "Use the shortest valid output as supervised gold and retain valid alternatives for correctness and preference scoring. Existing document ship gates are unchanged."
+}

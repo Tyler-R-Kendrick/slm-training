@@ -702,6 +702,17 @@ decision are in [data-synthesis.md](data-synthesis.md) and
 
 ## V8 dynamic-symbol and constraint-system matrix (proposed, unrun)
 
+## Minimal output-contract corpus rebuild (2026-07-15)
+
+The committed `remediated_roots_judged` snapshot now replaces 305 legacy
+verbose language-contract derivatives with 62 canonical shortest-output rows:
+4 lexical, 56 expression, 1 statement, and 1 unavoidable full document. The
+rebuild kept 193 unrelated records, admitted all 62 compact rows, and recorded
+zero verifier or quality rejects. Fragment correctness/efficiency is diagnostic;
+the existing document ship gates are unchanged. See
+[iter-minimal-output-contract-20260715.md](iter-minimal-output-contract-20260715.md)
+and its [JSON evidence](iter-minimal-output-contract-20260715.json).
+
 ## E156–E158 constrained decoder follow-up (CPU diagnostic, 2026-07-16)
 
 The matched judged-corpus follow-up is recorded in

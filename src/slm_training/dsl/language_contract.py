@@ -25,6 +25,7 @@ from typing import Iterable
 
 # Language spec the repo currently targets (see module docstring).
 LANG_SPEC = "openui-lang-0.2.x"
+OUTPUT_CONTRACT_VERSION = 1
 
 # src/slm_training/dsl/language_contract.py -> repo root is parents[3].
 _REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -69,6 +70,7 @@ class LanguageContract:
     grammar_sha256: str
     tokenizer_version: int
     dsl_tokenizer_version: int
+    output_contract_version: int = OUTPUT_CONTRACT_VERSION
 
     @property
     def contract_id(self) -> str:
@@ -80,6 +82,7 @@ class LanguageContract:
                 "grammar_sha256": self.grammar_sha256,
                 "tokenizer_version": self.tokenizer_version,
                 "dsl_tokenizer_version": self.dsl_tokenizer_version,
+                "output_contract_version": self.output_contract_version,
             },
             sort_keys=True,
             separators=(",", ":"),
@@ -93,6 +96,7 @@ class LanguageContract:
             "grammar_sha256": self.grammar_sha256,
             "tokenizer_version": self.tokenizer_version,
             "dsl_tokenizer_version": self.dsl_tokenizer_version,
+            "output_contract_version": self.output_contract_version,
             "contract_id": self.contract_id,
         }
 

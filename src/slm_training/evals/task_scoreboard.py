@@ -9,7 +9,8 @@ from dataclasses import dataclass
 from typing import Any
 
 from slm_training.data.leakage import norm_text
-from slm_training.dsl.parser import ParseError, validate
+from slm_training.dsl.parser import ParseError, lexical_tokens, validate, validate_output
+from slm_training.dsl.schema import OutputTarget
 
 _BINDER_RE = re.compile(r"(?m)^\s*([a-z_][A-Za-z0-9_]*)\s*=\s*(.*)$")
 _IDENT_RE = re.compile(r"\b([a-z_][A-Za-z0-9_]*)\b")
@@ -178,6 +179,59 @@ def _structure_metrics(prediction: str, gold: str) -> dict[str, dict[str, Any]]:
     return metrics
 
 
+def _output_target(value: Any, *, fallback_kind: str, fallback_category: str | None) -> OutputTarget:
+    if isinstance(value, Mapping):
+        return OutputTarget.from_dict(dict(value))
+    return OutputTarget(str(value), fallback_kind, fallback_category)  # type: ignore[arg-type]
+
+
+def score_output_targets(
+    prediction: str,
+    targets: Sequence[OutputTarget],
+) -> dict[str, float | int | str | None]:
+    """Score correctness separately from output-symbol efficiency."""
+    normalized_prediction: dict[tuple[str, str | None], str] = {}
+    matched: OutputTarget | None = None
+    for target in targets:
+        key = (target.kind, target.category)
+        if key not in normalized_prediction:
+            try:
+                normalized_prediction[key] = validate_output(
+                    prediction, target.kind, target.category
+                )
+            except (ParseError, ValueError, RuntimeError):
+                normalized_prediction[key] = ""
+        try:
+            normalized_target = validate_output(target.text, target.kind, target.category)
+        except (ParseError, ValueError, RuntimeError):
+            continue
+        if norm_text(normalized_prediction[key]) == norm_text(normalized_target):
+            matched = target
+            break
+
+    correctness = float(matched is not None)
+    prediction_tokens = len(lexical_tokens(prediction))
+    valid_target_lengths = [
+        len(lexical_tokens(target.text))
+        for target in targets
+        if lexical_tokens(target.text)
+    ]
+    minimum_tokens = min(valid_target_lengths, default=0)
+    efficiency = (
+        min(1.0, minimum_tokens / prediction_tokens)
+        if correctness and prediction_tokens
+        else 0.0
+    )
+    return {
+        "correctness": correctness,
+        "efficiency": efficiency,
+        "composite": 0.8 * correctness + 0.2 * efficiency,
+        "prediction_tokens": prediction_tokens,
+        "minimum_target_tokens": minimum_tokens,
+        "matched_kind": matched.kind if matched else None,
+    }
+
+
 def _numeric_evidence(evidence: Mapping[str, Any], key: str) -> dict[str, Any]:
     value = evidence.get(key)
     if isinstance(value, (int, float)) and not isinstance(value, bool):
@@ -230,7 +284,36 @@ def score_case(case: Mapping[str, Any]) -> dict[str, Any]:
     task = str(case.get("task") or "unknown")
     evidence = case.get("prediction_evidence")
     evidence = evidence if isinstance(evidence, Mapping) else {}
-    metrics = _structure_metrics(prediction, gold)
+    target_kind = str(case.get("target_kind") or "document")
+    target_category = case.get("target_category")
+    target_category = None if target_category is None else str(target_category)
+    targets = [OutputTarget(gold, target_kind, target_category)]  # type: ignore[arg-type]
+    targets.extend(
+        _output_target(
+            item,
+            fallback_kind=target_kind,
+            fallback_category=target_category,
+        )
+        for item in case.get("accepted_outputs") or ()
+    )
+    target_score = score_output_targets(prediction, targets)
+    if target_kind == "document":
+        metrics = _structure_metrics(prediction, gold)
+    else:
+        metrics = {
+            "language_validity": _available(target_score["correctness"]),
+        }
+    metrics.update(
+        {
+            "target_correctness": _available(target_score["correctness"]),
+            "target_efficiency": _available(target_score["efficiency"]),
+            "target_composite": _available(target_score["composite"]),
+            "output_symbol_count": _available(target_score["prediction_tokens"]),
+            "minimum_output_symbols": _available(
+                target_score["minimum_target_tokens"]
+            ),
+        }
+    )
 
     if task in {"repair", "completion", "inpaint"}:
         metrics.update(

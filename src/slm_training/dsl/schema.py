@@ -7,7 +7,7 @@ import tempfile
 import json
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Iterable, Iterator
+from typing import Any, Iterable, Iterator, Literal
 
 
 ALLOWED_SPLITS = frozenset(
@@ -28,6 +28,36 @@ TASK_TOKENS = frozenset(
     }
 )
 
+OutputKind = Literal["document", "statement", "expression", "lexical"]
+OUTPUT_KINDS = frozenset({"document", "statement", "expression", "lexical"})
+
+
+@dataclass(frozen=True)
+class OutputTarget:
+    """One accepted output surface for a record."""
+
+    text: str
+    kind: OutputKind = "document"
+    category: str | None = None
+
+    def __post_init__(self) -> None:
+        if not self.text.strip():
+            raise ValueError("output target text must be non-empty")
+        if self.kind not in OUTPUT_KINDS:
+            raise ValueError(f"invalid output target kind {self.kind!r}")
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any] | str) -> OutputTarget:
+        if isinstance(data, str):
+            return cls(text=data)
+        return cls(
+            text=str(data["text"]),
+            kind=str(data.get("kind") or "document"),  # type: ignore[arg-type]
+            category=(
+                None if data.get("category") is None else str(data["category"])
+            ),
+        )
+
 
 @dataclass
 class ExampleRecord:
@@ -39,6 +69,9 @@ class ExampleRecord:
     source: str = "fixture"
     meta: dict[str, Any] = field(default_factory=dict)
     design_md: str | None = None
+    target_kind: OutputKind = "document"
+    target_category: str | None = None
+    accepted_outputs: list[OutputTarget] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         if self.split not in ALLOWED_SPLITS:
@@ -51,14 +84,33 @@ class ExampleRecord:
             raise ValueError("prompt must be non-empty")
         if not self.openui:
             raise ValueError("openui must be non-empty")
+        if self.target_kind not in OUTPUT_KINDS:
+            raise ValueError(f"invalid target kind {self.target_kind!r}")
         if self.design_md is not None and not isinstance(self.design_md, str):
             raise ValueError("design_md must be a string or None")
+        self.accepted_outputs = [
+            item if isinstance(item, OutputTarget) else OutputTarget.from_dict(item)
+            for item in self.accepted_outputs
+        ]
         _validate_meta(self.meta)
+
+    @property
+    def output_targets(self) -> tuple[OutputTarget, ...]:
+        return (
+            OutputTarget(self.openui, self.target_kind, self.target_category),
+            *self.accepted_outputs,
+        )
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
         if data.get("design_md") is None:
             data.pop("design_md", None)
+        if data.get("target_kind") == "document":
+            data.pop("target_kind", None)
+        if data.get("target_category") is None:
+            data.pop("target_category", None)
+        if not data.get("accepted_outputs"):
+            data.pop("accepted_outputs", None)
         return data
 
     @classmethod
@@ -73,6 +125,16 @@ class ExampleRecord:
             source=str(data.get("source") or "fixture"),
             meta=dict(data.get("meta") or {}),
             design_md=None if design_md is None else str(design_md),
+            target_kind=str(data.get("target_kind") or "document"),  # type: ignore[arg-type]
+            target_category=(
+                None
+                if data.get("target_category") is None
+                else str(data["target_category"])
+            ),
+            accepted_outputs=[
+                OutputTarget.from_dict(item)
+                for item in data.get("accepted_outputs") or ()
+            ],
         )
 
 
