@@ -1,0 +1,17 @@
+{
+  "experiment_id": "E140",
+  "date": "2026-07-15",
+  "kind": "evaluation_reproducibility_and_policy_audit",
+  "checkpoint": "outputs/runs/iter-e135-hf-context-20260715/e135_hf_context_control/checkpoints/last.pt",
+  "checkpoint_sha256": "8d28924a47d9e0b72ab15011869bce91091796592338a9548fcdcd361102d4c0",
+  "suite": "smoke",
+  "n": 3,
+  "replays": [
+    {"run_id": "e140-three-smoke-local", "verify_chosen_only": true, "max_attempts": 1, "parse_rate": 0.0, "placeholder_validity": 0.45, "structural_similarity": 0.33113333333333334, "reward_score": 0.0, "decode_timeout_count": 0, "latency_ms_p50": 18945.12},
+    {"run_id": "e140-three-smoke-local-repeat", "verify_chosen_only": true, "max_attempts": 1, "parse_rate": 0.0, "placeholder_validity": 0.45, "structural_similarity": 0.33113333333333334, "reward_score": 0.0, "decode_timeout_count": 0, "latency_ms_p50": 18896.58},
+    {"run_id": "e140-three-smoke-checkpoint-policy", "verify_chosen_only": false, "max_attempts": 3, "parse_rate": 0.0, "placeholder_validity": 0.13333333333333333, "structural_similarity": 0.1189, "reward_score": 0.0, "decode_timeout_count": 2, "latency_ms_p50": 20000.68}
+  ],
+  "finding": "The seed-0 checkpoint is deterministic under a fixed evaluator policy, but quality and timeout metrics change materially when verify_chosen_only and max_attempts change. Historical E135/E138/E139 comparisons were not policy-normalized.",
+  "harness_change": "Persist effective evaluation_policy in every eval scoreboard.",
+  "decision": "Use one declared diagnostic policy for future checkpoint comparisons and do not treat the old E135 score as directly comparable until re-evaluated under that policy. Parse and reward remain zero under every replay."
+}

@@ -569,6 +569,29 @@ def evaluate(
         "n": n,
         "eval_limit": suite_limit,
         "diagnostic_subset": suite_limit is not None,
+        # Persist the effective decode policy beside every scoreboard.  This
+        # is essential for comparing historical runs: checkpoint defaults and
+        # CLI diagnostic overrides can materially change quality and timeout
+        # metrics even when the checkpoint hash is identical.
+        "evaluation_policy": {
+            "context_backend": config.context_backend,
+            "local_files_only": bool(config.local_files_only),
+            "grammar_constrained": bool(config.grammar_constrained),
+            "grammar_ltr_primary": bool(config.grammar_ltr_primary),
+            "grammar_ltr_repair": bool(config.grammar_ltr_repair),
+            "grammar_skip_exact_stream_probe": bool(
+                config.grammar_skip_exact_stream_probe
+            ),
+            "grammar_verify_chosen_only": bool(config.grammar_verify_chosen_only),
+            "grammar_top_k": int(config.grammar_top_k),
+            "generate_max_attempts": int(config.generate_max_attempts),
+            "decode_timeout_seconds": config.decode_timeout_seconds,
+            "allow_unconstrained_fallback": bool(
+                config.allow_unconstrained_fallback
+            ),
+            "gen_steps": int(config.gen_steps),
+            "grammar_ltr_max_tokens": int(config.grammar_ltr_max_tokens),
+        },
         "parse_rate": (parse_ok / n) if n else 0.0,
         "raw_syntax_validity": (raw_syntax_ok / n) if n else 0.0,
         "contract_precision": (contract_precision_sum / n) if n else 0.0,
