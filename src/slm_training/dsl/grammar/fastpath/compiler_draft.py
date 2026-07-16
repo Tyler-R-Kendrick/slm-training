@@ -133,6 +133,18 @@ def _official_schema() -> dict[str, Any] | None:
     return None
 
 
+@lru_cache(maxsize=2048)
+def _generated_ast_is_complete(prefix_text: str) -> bool:
+    """Ask the official AST parser whether the current document is complete."""
+    try:
+        from slm_training.dsl import lang_core
+
+        program = lang_core.parse(prefix_text)
+        return isinstance(program.root, dict) and bool(program.root)
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def _active_call(state: Any) -> tuple[str, int] | None:
     """Read the active call frame from Lark's parser value stack.
 
@@ -223,6 +235,16 @@ def build_completion_forest(
     candidates = allowed_id_set(tokenizer, terminals) or set()
     if "$END" in terminals:
         candidates.add(int(tokenizer.eos_id))
+    if "$END" in terminals and _generated_ast_is_complete(prefix_text):
+        # Lark accepts postfix operators after any expression. Once the
+        # generated AST has a complete document, retain only the grammar's
+        # document-continuation terminals; this derives the boundary from the
+        # parser and AST rather than enumerating punctuation or components.
+        continuation_terminals = frozenset(
+            {"$END", "_NL", "NAME", "STATE_NAME", "COMMENT", "WS_INLINE"}
+        )
+        continuation_ids = allowed_id_set(tokenizer, continuation_terminals) or set()
+        candidates &= continuation_ids | {int(tokenizer.eos_id)}
     needs_schema = bool(terminals & {"COMPONENT", "STRING"})
     schema = _official_schema() if needs_schema else None
     if schema is not None and "COMPONENT" in terminals:

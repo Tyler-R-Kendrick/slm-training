@@ -84,6 +84,22 @@ def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> 
     assert forest.paths
     assert all(path.token_ids for path in forest.paths)
 
+    complete = build_completion_forest(
+        tokenizer,
+        [tokenizer.bos_id, *tokenizer.encode(
+            'root=TextContent(":hero.title")', add_special=False
+        )],
+        slot_contract=[":hero.title"],
+    )
+    continuation_ids = set(
+        compiler_draft.allowed_id_set(
+            tokenizer,
+            frozenset({"$END", "_NL", "NAME", "STATE_NAME", "COMMENT", "WS_INLINE"}),
+        )
+        or set()
+    ) | {tokenizer.eos_id}
+    assert set(complete.candidate_ids) <= continuation_ids
+
 
 def test_completion_forest_uses_schema_property_order_for_enums(monkeypatch) -> None:
     from slm_training.dsl.grammar.fastpath import compiler_draft
