@@ -83,6 +83,9 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         default=Path("outputs/data/preference/local_decisions.jsonl"),
     )
+    events.add_argument("--manifest-out", type=Path, default=None)
+    events.add_argument("--dataset-id", default=None)
+    events.add_argument("--source-record-manifest", type=Path, default=None)
 
     local = sub.add_parser("train-local", help="Train on exact local decision events")
     local.add_argument("--checkpoint", type=Path, required=True)
@@ -109,17 +112,40 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "build-local-events":
         from slm_training.harnesses.preference.local_decisions import (
+            decision_event_manifest,
             events_from_trace,
             load_trace_rows,
             write_decision_events,
+            write_decision_event_manifest,
         )
 
+        traces = load_trace_rows(args.traces)
         mined = [
             event
-            for trace in load_trace_rows(args.traces)
+            for trace in traces
             for event in events_from_trace(trace)
         ]
         count = write_decision_events(args.out, mined)
+        if args.manifest_out is not None:
+            if not args.dataset_id:
+                parser.error("--manifest-out requires --dataset-id")
+            source_fingerprint = None
+            if args.source_record_manifest is not None:
+                source_fingerprint = json.loads(
+                    args.source_record_manifest.read_text(encoding="utf-8")
+                ).get("content_fingerprint")
+            manifest = decision_event_manifest(
+                mined,
+                dataset_id=args.dataset_id,
+                records_path=args.out.name,
+                source_trace_ids=(
+                    str(trace.get("trace_id"))
+                    for trace in traces
+                    if trace.get("trace_id")
+                ),
+                source_record_fingerprint=source_fingerprint,
+            )
+            write_decision_event_manifest(args.manifest_out, manifest)
         print(json.dumps({"events": count, "out": str(args.out)}, indent=2))
         return 0
 

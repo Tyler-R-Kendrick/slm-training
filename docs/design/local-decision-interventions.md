@@ -1,7 +1,8 @@
 # Local decision interventions for TwoTower
 
-**Status:** research intake and implementation specification. The V10 rows are
-registered but unrun; this document contains no model-quality or ship claim.
+**Status:** research intake and implementation specification. The E248 control is
+measured and the exact-event mining prerequisite is complete; intervention rows
+remain unrun. This document contains no model-quality or ship claim.
 
 ## Source and audit
 
@@ -114,5 +115,18 @@ full-vocabulary drift. End-to-end authority remains the unchanged five-suite
 scoreboard and ship gates.
 
 Falsify a row if it does not improve held-out event metrics, exceeds the matched
-reference-drift budget, or regresses any protected ship gate. No V10 row has run;
-there is no result JSON, checkpoint, model-card update, or promotion.
+reference-drift budget, or regresses any protected ship gate. No V10 intervention
+row has run; there is no intervention checkpoint, model-card update, or promotion.
+
+## Measured event-mining prerequisite
+
+The production strict compiler-tree decoder now emits exact branching states rather
+than reconstructing them from final strings. The committed
+`e249_constraint_shadows_v1` corpus contains 2,035 identity-homogeneous events from
+65 document groups, split by group into 1,716 train and 319 held-out events. Its
+manifest, source trace, diagnostics, and honesty boundary are recorded in
+[`iter-e249-exact-event-mining-20260716.md`](iter-e249-exact-event-mining-20260716.md).
+
+All events are grammar constraint shadows. They support E249-E251 as a matched
+lexical-decision experiment but do not support semantic claims. E252-E254 remain
+fail-closed because the corpus contains no counterfactual or set-valued evidence.

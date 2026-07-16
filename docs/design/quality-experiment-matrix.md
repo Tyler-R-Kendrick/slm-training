@@ -1098,7 +1098,7 @@ split contains at least one same-state-verified multi-good or multi-bad event.
 | ID | Isolated lever | Required diagnostics | Status |
 | --- | --- | --- | --- |
 | E248 | Unchanged parent control | Standard five-suite scoreboard | measured; matched control; 4 gates failed |
-| E249 | Exact-event CE plus margin | Event win/margin and per-kind recurrence | proposed/unrun |
+| E249 | Exact-event CE plus margin | Event win/margin and per-kind recurrence | ready; immutable events mined; training unrun |
 | E250 | Bad-token unlikelihood | Bad probability mass and held-out recurrence | proposed/unrun |
 | E251 | Single-pair clipped FTPO | Active weight, chosen/margin win, drift | proposed/unrun |
 | E252 | Verifier-backed set FTPO | Set coverage, evidence source, held-out recurrence | proposed/unrun |
@@ -1131,6 +1131,13 @@ on all 19 examples, four gates fail, and AgentV passes 1/5. An earlier parse-zer
 attempt was invalidated as harness policy drift; V9 and V10 now consume one
 shared strict compiler-tree policy. Full evidence:
 [iter-e248-local-parent-control-20260716.md](iter-e248-local-parent-control-20260716.md).
+
+The E249 prerequisite mined 2,035 exact production compiler-tree constraint
+shadows from 65 document groups and committed the identity-bound train/held-out
+corpus. These events certify grammar legality, not semantic preference. E252-E254
+remain fail-closed because no counterfactual set-valued evidence exists. Full
+telemetry and diagnostics:
+[iter-e249-exact-event-mining-20260716.md](iter-e249-exact-event-mining-20260716.md).
 
 ## Verifier-guided repair (mixed status)
 
