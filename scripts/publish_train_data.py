@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
 from pathlib import Path
 
 
@@ -37,7 +36,10 @@ def main(argv=None) -> int:
     for name in ("records.jsonl", "manifest.json", "stats.json"):
         source_file = source / name
         if source_file.is_file():
-            shutil.copyfile(source_file, destination / name)
+            # Keep published artifacts byte-stable and git-diff clean even if
+            # a generator leaves multiple trailing blank lines.
+            payload = source_file.read_bytes().rstrip(b"\n") + b"\n"
+            (destination / name).write_bytes(payload)
     print(
         json.dumps(
             {

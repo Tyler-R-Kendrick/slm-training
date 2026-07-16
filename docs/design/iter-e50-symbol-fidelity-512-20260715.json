@@ -1,0 +1,8 @@
+{
+  "run_id": "iter-e50-symbol-fidelity-512-20260715",
+  "parent_run": "iter-e50-symbol-fidelity-20260715",
+  "intervention": "same E50 recipe extended to 512 steps",
+  "metrics": {"parse_rate": 0.0, "structural_similarity": 0.20066666666666666, "placeholder_fidelity": 0.0, "reward_score": 0.0, "latency_ms_p50": 10104.59},
+  "decision": "reject longer training at E50 settings; 256-step E50 remains the better checkpoint, and symbol closure needs a targeted objective",
+  "honesty": "scratch smoke result; not a ship claim"
+}

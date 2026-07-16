@@ -1,0 +1,12 @@
+{
+  "run_id": "iter-e76-cache-reuse-fixed-20260715",
+  "parent_run": "iter-e76-cache-reuse-20260715",
+  "intervention": "restore decode-only V7 flags in _eval_cfg",
+  "recipe": {"device": "cpu", "steps": 256, "backend": "scratch", "suites": ["smoke", "held_out"], "n": {"smoke": 3, "held_out": 5}},
+  "metrics": {
+    "smoke": {"parse_rate": 0.6666666666666666, "placeholder_fidelity": 0.0, "structural_similarity": 0.5133333333333333, "reward_score": 0.4526666666666667, "speculative_batches": 60, "speculative_canvases": 120, "successor_hits": 46, "successor_misses": 14, "successor_hit_rate": 0.7666666666666667},
+    "held_out": {"parse_rate": 0.6, "placeholder_fidelity": 0.0, "structural_similarity": 0.47256, "reward_score": 0.5384, "speculative_batches": 90, "speculative_canvases": 180, "successor_hits": 76, "successor_misses": 14, "successor_hit_rate": 0.8444444444444444}
+  },
+  "decision": "retain harness fix; reject model promotion because placeholder fidelity is zero",
+  "honesty": "scratch smoke/held-out result; not a ship claim"
+}

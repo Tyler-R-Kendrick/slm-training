@@ -167,6 +167,9 @@ class TwoTowerConfig:
     grammar_ltr_primary: bool = False
     # Mix teacher-forced next-token CE into training (helps LTR generate).
     ltr_loss_weight: float = 0.5
+    # Extra weight on the first content transitions (root -> assignment).
+    ltr_prefix_loss_weight: float = 0.0
+    symbol_boundary_loss_weight: float = 0.0
     # Extra CE weight on gold placeholder token positions (fidelity signal).
     fidelity_loss_weight: float = 0.5
     design_md_in_context: bool = True
@@ -176,6 +179,7 @@ class TwoTowerConfig:
     slot_contract_constrained_decode: bool = False
     # E20: seed decode from a slot-contract skeleton (inventory-bound template).
     template_fill_decode: bool = False
+    contract_template_fastpath: bool = False
     # E35: derive slot inventory from prompt/DESIGN.md (never gold.placeholders).
     honest_slot_contract: bool = False
     retrieval_k: int = 0
@@ -998,6 +1002,13 @@ class TwoTowerModel(nn.Module):
             if ltr_w > 0.0 and fuse and ltr_suffix.any():
                 suffix_flat = ltr_suffix.reshape(-1)
                 weights = weights + (ltr_w * suffix_flat.float())
+                prefix_w = float(getattr(self.config, "ltr_prefix_loss_weight", 0.0) or 0.0)
+                if prefix_w > 0.0:
+                    positions = torch.arange(target_ids.size(1), device=target_ids.device)
+                    first = target_ids[:, 0].eq(self.tokenizer.bos_id)
+                    content_rank = positions.unsqueeze(0) - first.unsqueeze(1).long()
+                    prefix = (content_rank >= 0) & (content_rank < 3) & ltr_suffix
+                    weights = weights + (prefix_w * prefix.reshape(-1).float())
             if mdlm_row_w is not None:
                 # Broadcast per-row MDLM 1/t weights onto token positions.
                 seq = target_ids.size(1)
@@ -1067,6 +1078,17 @@ class TwoTowerModel(nn.Module):
                 if ph_mask.any():
                     fid_loss = F.cross_entropy(logits[ph_mask], target_ids[ph_mask])
                     mask_loss = mask_loss + fid_w * fid_loss
+                    boundary_w = float(
+                        getattr(self.config, "symbol_boundary_loss_weight", 0.0) or 0.0
+                    )
+                    if boundary_w > 0.0:
+                        boundary = ph_mask.clone()
+                        boundary[:, 1:] |= ph_mask[:, :-1]
+                        boundary[:, :-1] |= ph_mask[:, 1:]
+                        boundary &= predict_mask
+                        mask_loss = mask_loss + boundary_w * F.cross_entropy(
+                            logits[boundary], target_ids[boundary]
+                        )
 
         # Legacy second-forward LTR when fuse disabled.
         if ltr_w > 0.0 and target_ids.size(1) >= 2 and not fuse:
@@ -1074,7 +1096,8 @@ class TwoTowerModel(nn.Module):
             ltr_noisy = target_ids.clone()
             ltr_mask = torch.zeros_like(target_ids, dtype=torch.bool)
             for i in range(bsz):
-                cut = self._rng.randint(1, max(1, seq - 1))
+                first_content = 1 if int(target_ids[i, 0]) == self.tokenizer.bos_id else 0
+                cut = self._rng.randint(first_content, max(first_content, seq - 1))
                 ltr_noisy[i, cut:] = self.tokenizer.mask_id
                 for j in range(cut, seq):
                     if int(target_ids[i, j]) == self.tokenizer.pad_id:
@@ -1259,6 +1282,9 @@ class TwoTowerModel(nn.Module):
             templ = build_slot_contract_template(slot_contract)
             ser = self._canonical_valid_openui(templ)
             if ser is not None:
+                active = get_active_stats()
+                if active is not None:
+                    active.template_fallback_count += 1
                 return ser
         if (
             not self.config.grammar_ltr_repair
@@ -1339,6 +1365,12 @@ class TwoTowerModel(nn.Module):
 
         t = 0
         while t < length:
+            # Contract/template decode may leave only a few masked slots in a
+            # long padded canvas. Once the final slot is committed, stop the
+            # LTR scan instead of spending one denoiser forward per trailing
+            # known/pad position.
+            if not bool(unknown.any().item()):
+                break
             if not bool(unknown[0, t].item()):
                 if st is not None and len(st.prefix_ids) == t:
                     st.advance_token(tok, int(ids[0, t].item()))
@@ -1372,8 +1404,69 @@ class TwoTowerModel(nn.Module):
                 state=st,
                 **pick_kw,
             )
+            # Commit-boundary invariant: a bare root binding must continue with
+            # assignment, never newline. This protects the LTR path from a
+            # stale/broad picker admission that would make the next state
+            # irrecoverable.
+            if choice is not None and tok.id_to_token.get(int(choice), "") == "NL":
+                current = self._decode_ids(prefix)
+                if current.rstrip().strip() == "root" and "=" not in current:
+                    assign_id = tok.token_to_id.get("=")
+                    if assign_id is not None:
+                        choice = int(assign_id)
+            if choice is None:
+                # Recovery for a persistent-engine divergence: rebuild the
+                # incremental DFA at the exact decoded prefix and retry the
+                # same logits before declaring a grammar dead end.
+                if st is not None:
+                    current = self._decode_ids(prefix)
+                    try:
+                        st.engine.set_prefix(current)
+                        st.prefix_text = current
+                        st.prefix_ids = list(prefix)
+                        st.clear_position_memo()
+                        choice = pick_constrained_token(
+                            row,
+                            tok,
+                            prefix,
+                            top_k=self.config.grammar_top_k,
+                            slot_contract=contract,
+                            state=st,
+                            **pick_kw,
+                        )
+                    except Exception:  # noqa: BLE001
+                        choice = None
             if choice is None:
                 # No legal continuation — pad out and stop rather than emit garbage.
+                if stats is not None:
+                    stats.constrained_dead_ends += 1
+                    stats.constrained_dead_end_last_position = int(t)
+                    stats.constrained_dead_end_candidate_count += max(
+                        0, int(stats.constrained_last_legal_candidates)
+                    )
+                    stats.constrained_dead_end_traces.append(
+                        {
+                            "position": int(t),
+                            "prefix_text": self._decode_ids(ids[0, :t].tolist()),
+                            "prefix_tokens": [
+                                tok.id_to_token.get(int(token_id), "")
+                                for token_id in ids[0, :t].tolist()
+                            ],
+                            "top_tokens": [
+                                {
+                                    "token": tok.id_to_token.get(int(token_id), ""),
+                                    "logit": float(row[int(token_id)].item()),
+                                }
+                                for token_id in torch.topk(
+                                    row, k=min(8, int(row.numel()))
+                                ).indices.tolist()
+                            ],
+                        }
+                    )
+                    if forced is not None:
+                        stats.constrained_dead_end_forced_rank = int(
+                            1 + (row > row[int(forced)]).sum().item()
+                        )
                 ids[0, t:] = tok.pad_id
                 unknown[0, t:] = False
                 if rec is not None:
@@ -1381,6 +1474,18 @@ class TwoTowerModel(nn.Module):
                 break
             ids[0, t] = choice
             unknown[0, t] = False
+            if stats is not None and tok.id_to_token.get(int(choice), "") == "NL":
+                stats.newline_commit_traces.append(
+                    {
+                        "position": int(t),
+                        "prefix_text": self._decode_ids(ids[0, :t].tolist()),
+                        "prefix_tokens": [
+                            tok.id_to_token.get(int(token_id), "")
+                            for token_id in ids[0, :t].tolist()
+                        ],
+                        "phase": "ltr_repair",
+                    }
+                )
             if st is not None:
                 st.advance_token(tok, int(choice))
             if stats is not None:
@@ -2502,6 +2607,24 @@ class TwoTowerModel(nn.Module):
             schemas=schemas,
         )
         ctx, ctx_pad = self._encode_context(ctx_prompts)
+        if bool(getattr(self.config, "contract_template_fastpath", False)):
+            fast: list[str] = []
+            for contract in self._slot_contracts or []:
+                if not contract:
+                    fast = []
+                    break
+                certified = self._canonical_valid_openui(
+                    build_slot_contract_template(contract)
+                )
+                if certified is None:
+                    fast = []
+                    break
+                fast.append(certified)
+            if len(fast) == len(prompts):
+                active = get_active_stats()
+                if active is not None:
+                    active.template_fastpath_count += len(fast)
+                return fast
         row_lengths = [length] * len(prompts)
         if max_len is None:
             predicted_lengths = self._predict_target_lengths(ctx, ctx_pad)
@@ -2782,6 +2905,16 @@ class TwoTowerModel(nn.Module):
             and slot_contract
         ):
             template = build_slot_contract_template(slot_contract)
+            if bool(getattr(self.config, "contract_template_fastpath", False)):
+                certified = self._canonical_valid_openui(template)
+                if certified is not None:
+                    active = get_active_stats()
+                    if active is not None:
+                        active.template_fastpath_count += 1
+                    if rec is not None:
+                        rec.event("contract_template_fastpath")
+                        rec.end(canvas=[], text=certified)
+                    return certified
             seed = self._encode_openui(template, placeholders=list(slot_contract))[
                 :length
             ]

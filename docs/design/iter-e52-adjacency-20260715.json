@@ -1,0 +1,9 @@
+{
+  "run_id": "iter-e52-adjacency-20260715",
+  "parent_run": "iter-e52-arity-20260715",
+  "fix": "reject bracket or literal-open tokens immediately after a completed quoted literal without a separator",
+  "tests": {"passed": 25},
+  "metrics": {"parse_rate": 0.0, "raw_syntax_validity": 0.3333333333333333, "structural_similarity": 0.36, "placeholder_fidelity": 0.0, "reward_score": 0.0, "latency_ms_p50": 22247.97},
+  "decision": "keep lexical adjacency guard because raw syntax validity improved to 1/3, but do not claim quality improvement while structural similarity regresses",
+  "honesty": "strict scratch smoke result; not a ship claim"
+}

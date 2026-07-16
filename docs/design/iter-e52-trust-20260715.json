@@ -1,0 +1,8 @@
+{
+  "run_id": "iter-e52-trust-20260715",
+  "parent_run": "iter-e52-arity-20260715",
+  "intervention": "strict decode with grammar_trust_model enabled",
+  "metrics": {"parse_rate": 0.0, "raw_syntax_validity": 0.3333333333333333, "structural_similarity": 0.42473333333333335, "placeholder_fidelity": 0.0, "reward_score": 0.0, "latency_ms_p50": 8438.44},
+  "decision": "reject trust-model overlay as a quality intervention; structure is similar but syntax/fidelity remain below target",
+  "honesty": "strict scratch smoke result; not a ship claim"
+}

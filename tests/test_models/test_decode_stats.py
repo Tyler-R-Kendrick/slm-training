@@ -20,3 +20,20 @@ def test_eval_percentile_matches_decode_percentile() -> None:
     values = [10.0, 20.0]
     assert _nearest_rank(values, 0.50) == 10.0
     assert _nearest_rank(values, 0.95) == 20.0
+
+
+def test_decode_stats_merge_counts_unconstrained_retries() -> None:
+    total = DecodeStats(unconstrained_retries=1)
+    total.merge(DecodeStats(unconstrained_retries=2))
+    assert total.unconstrained_retries == 3
+
+
+def test_decode_stats_tracks_constrained_dead_ends() -> None:
+    stats = DecodeStats(constrained_dead_ends=2)
+    assert stats.as_dict()["constrained_dead_ends"] == 2
+    assert aggregate_stats([stats])["constrained_dead_ends_sum"] == 2.0
+
+
+def test_decode_stats_aggregates_dead_end_traces() -> None:
+    stats = DecodeStats(constrained_dead_end_traces=[{"position": 1}])
+    assert aggregate_stats([stats])["constrained_dead_end_traces"] == [{"position": 1}]

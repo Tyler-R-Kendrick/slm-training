@@ -1,0 +1,9 @@
+{
+  "run_id": "iter-e52-arity-20260715",
+  "parent_run": "iter-e52-strict-20260715",
+  "fix": "semantic excess-args rejection when a component closing delimiter is selected",
+  "tests": {"passed": 24},
+  "metrics": {"parse_rate": 0.0, "raw_syntax_validity": 0.0, "structural_similarity": 0.43473333333333336, "placeholder_fidelity": 0.0, "reward_score": 0.0, "latency_ms_p50": 25540.0},
+  "decision": "keep arity guard; structural recovery improves slightly, but symbol/literal adjacency remains the dominant invalidity",
+  "honesty": "strict scratch smoke result; not a ship claim"
+}

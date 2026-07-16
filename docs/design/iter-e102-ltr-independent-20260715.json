@@ -1,0 +1,34 @@
+{
+  "experiment": "E102",
+  "date": "2026-07-15",
+  "kind": "targeted retrain",
+  "train": {
+    "steps": 128,
+    "batch_size": 4,
+    "device": "cpu",
+    "context_backend": "scratch",
+    "output_tokenizer": "lexer",
+    "ltr_loss_weight": 0.5,
+    "fuse_ltr_loss": false,
+    "record_count": 1417,
+    "target_tokens": 43146,
+    "last_loss": 8.420001029968262,
+    "checkpoint": "outputs/runs/iter-e102-ltr-independent-20260715/e102_ltr_independent/checkpoints/last.pt",
+    "telemetry": "outputs/runs/iter-e102-ltr-independent-20260715/e102_ltr_independent/train_telemetry.json"
+  },
+  "eval": {
+    "suite": "smoke",
+    "n": 1,
+    "parse_rate": 0.0,
+    "raw_syntax_validity": 0.0,
+    "structural_similarity": 0.15,
+    "component_type_recall": 0.0,
+    "contract_precision": 1.0,
+    "contract_recall": 1.0,
+    "placeholder_fidelity": 1.0,
+    "latency_ms_p50": 7284.73,
+    "agentv_total": 5,
+    "agentv_failed": 5
+  },
+  "decision": "reject; investigate repair-state data and decode alignment"
+}

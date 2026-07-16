@@ -1,0 +1,8 @@
+{
+  "run_id": "iter-e52-strict-20260715",
+  "parent_run": "iter-e52-symbol-boundary-20260715",
+  "metrics": {"parse_rate": 0.0, "raw_syntax_validity": 0.0, "structural_similarity": 0.3569333333333333, "placeholder_fidelity": 0.0, "reward_score": 0.0, "latency_ms_p50": 27637.22, "dead_ends": 0},
+  "failures": ["malformed symbol/literal adjacency", "excess Stack arguments"],
+  "decision": "do not promote E52 from smoke structural gain; strict path still fails semantic validation",
+  "honesty": "strict scratch smoke result; not a ship claim"
+}

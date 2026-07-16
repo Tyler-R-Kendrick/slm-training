@@ -103,6 +103,7 @@ SUITES_BY_PREFIX = (
     ("src/apps/openui_preview/", ("tests/test_web",)),
 )
 CODE_SUFFIXES = {".c", ".css", ".html", ".js", ".json", ".mjs", ".py", ".ts", ".tsx", ".yaml", ".yml"}
+HOOK_TEST_FILE_LIMIT = 100
 
 
 def changed_files(*, staged: bool) -> list[str]:
@@ -120,6 +121,7 @@ def changed_files(*, staged: bool) -> list[str]:
 def select_tests(paths: list[str]) -> list[str]:
     """Return conservative pytest targets for repo-relative changed paths."""
     targets: set[str] = set()
+    unknown_code = False
     for path in paths:
         if path in GLOBAL_TEST_FILES:
             return ["tests"]
@@ -137,20 +139,44 @@ def select_tests(paths: list[str]) -> list[str]:
         }:
             continue
         if Path(path).suffix in CODE_SUFFIXES:
-            return ["tests"]
+            unknown_code = True
+    if targets:
+        return _remove_nested_targets(targets)
+    if unknown_code:
+        return ["tests"]
     return _remove_nested_targets(targets)
 
 
-def check(paths: list[str]) -> int:
+def select_changed_tests(paths: list[str]) -> list[str]:
+    """Prefer explicit regression files for latency-bounded local hooks."""
+    changed = {
+        path for path in paths if path.startswith("tests/") and path.endswith(".py")
+    }
+    return sorted(changed) if changed else select_tests(paths)
+
+
+def hook_test_targets(paths: list[str]) -> list[str]:
+    """Keep local hooks bounded; CI owns broad validation for large diffs."""
+    if len(paths) > HOOK_TEST_FILE_LIMIT:
+        return []
+    return select_changed_tests(paths)
+
+
+def check(paths: list[str], *, changed_tests_only: bool = False) -> int:
     policy_errors = validate_repository()
     if policy_errors:
         print("repo-policy: failed")
         for error in policy_errors:
             print(f"- {error}")
         return 1
-    tests = select_tests(paths)
+    tests = hook_test_targets(paths) if changed_tests_only else select_tests(paths)
     python_paths = [path for path in paths if path.endswith(".py") and (ROOT / path).is_file()]
     print(f"changed-check: {len(paths)} file(s), pytest targets: {', '.join(tests) or 'none'}")
+    if changed_tests_only and len(paths) > HOOK_TEST_FILE_LIMIT:
+        print(
+            f"changed-check: pytest deferred for large diff ({len(paths)} > "
+            f"{HOOK_TEST_FILE_LIMIT} files); run the listed suites manually or in CI"
+        )
     if python_paths and _run([sys.executable, "-m", "ruff", "check", *python_paths]):
         return 1
     if python_paths and _run([sys.executable, "-m", "py_compile", *python_paths]):
@@ -186,6 +212,11 @@ def _run(command: list[str]) -> int:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--staged", action="store_true", help="check only staged paths")
+    parser.add_argument(
+        "--changed-tests-only",
+        action="store_true",
+        help="prefer explicitly changed test files; intended for latency-bounded hooks",
+    )
     parser.add_argument("--list", action="store_true", help="print selected tests without running")
     parser.add_argument(
         "--hook",
@@ -195,11 +226,14 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     paths = changed_files(staged=args.staged)
     if args.list:
-        print("\n".join(select_tests(paths)))
+        selected = (
+            hook_test_targets(paths) if args.changed_tests_only else select_tests(paths)
+        )
+        print("\n".join(selected))
         return 0
     if args.hook:
         result = subprocess.run(
-            [sys.executable, "-m", "scripts.check_changed"],
+            [sys.executable, "-m", "scripts.check_changed", "--changed-tests-only"],
             cwd=ROOT,
             check=False,
             capture_output=True,
@@ -211,7 +245,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(json.dumps({"decision": "allow"}))
         return 0
-    return check(paths)
+    return check(paths, changed_tests_only=args.changed_tests_only)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,8 @@
+{
+  "run_id": "iter-e48-legal-count-20260715",
+  "parent_run": "iter-e48-dead-rank-20260715",
+  "metrics": {"parse_rate": 0.0, "constrained_dead_ends": 12, "last_legal_candidates_mean": 2.667, "dead_end_position_mean": 3.0, "fallback_rate": 0.0},
+  "diagnosis": "the picker commonly has a small legal candidate pool before the final dead end; aggregate placement needs per-dead-end samples to avoid conflating successful and failed steps",
+  "decision": "retain candidate-count telemetry and next refine it to emit per-dead-end records before model changes",
+  "honesty": "scratch smoke diagnostic; not a ship claim"
+}

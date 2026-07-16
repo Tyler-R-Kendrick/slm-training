@@ -541,7 +541,10 @@ class Readers:
             if self.published_train_root.exists()
             else []
         )
-        versions = ["examples", *sorted(set(generated_versions) | set(published_versions))]
+        versions = [
+            "examples",
+            *sorted(set(generated_versions) | set(published_versions)),
+        ]
         if version == "examples" or not (generated_versions or published_versions):
             return {
                 "provenance": "committed",
@@ -550,12 +553,20 @@ class Readers:
                 **self._fixture_data(),
             }
         available = set(generated_versions) | set(published_versions)
-        chosen = version if version in available else sorted(available)[-1]
-        vdir = (train_root / chosen) if chosen in generated_versions else (self.published_train_root / chosen)
+        if version in available:
+            chosen = str(version)
+        elif generated_versions:
+            chosen = generated_versions[-1]
+        elif "remediated_roots_judged" in published_versions:
+            chosen = "remediated_roots_judged"
+        else:
+            chosen = published_versions[-1]
+        live = chosen in generated_versions
+        vdir = (train_root if live else self.published_train_root) / chosen
         stats = _read_json(vdir / "stats.json") or {}
         manifest = _read_json(vdir / "manifest.json") or {}
         return {
-            "provenance": "live" if chosen in generated_versions else "published",
+            "provenance": "live" if live else "committed",
             "versions": versions,
             "version": chosen,
             "stats": stats,

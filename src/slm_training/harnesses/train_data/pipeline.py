@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -48,6 +48,10 @@ class TrainDataConfig:
     max_components: int | None = None
     curriculum: bool = False
     namespace_augment: bool = False
+    # Make the declared slot contract visible to production-like training
+    # prompts; this is intentionally opt-in so historical snapshots remain
+    # immutable and comparable.
+    prompt_slot_contract: bool = False
     # Exclude train records whose layout tree matches hand-authored test fixtures.
     test_seed_path: Path | None = Path("src/slm_training/resources/test_seeds.jsonl")
     # Exposure control: cap records per root parent (None = uncapped). One
@@ -926,6 +930,19 @@ def build_train_data(
                 )
                 continue
             _accept_record(normalized)
+
+    if config.prompt_slot_contract:
+        from slm_training.models.template_fill import ensure_prompt_inventory
+
+        deduped = [
+            replace(
+                record,
+                prompt=ensure_prompt_inventory(
+                    record.prompt, list(record.placeholders or [])
+                ),
+            )
+            for record in deduped
+        ]
         deduped.sort(key=lambda r: r.id)
 
     # Source-family lineage + exposure control (annotate before the cap so
@@ -1044,6 +1061,7 @@ def build_train_data(
         "max_openui_chars": config.max_openui_chars,
         "max_components": config.max_components,
         "curriculum": bool(config.curriculum),
+        "prompt_slot_contract": bool(config.prompt_slot_contract),
         "structure_reserved_rejected": len(structure_reserved_rejected),
         "structure_reserved_rejected_samples": structure_reserved_rejected[:20],
         "max_records_per_parent": config.max_records_per_parent,

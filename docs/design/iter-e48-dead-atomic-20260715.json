@@ -1,0 +1,8 @@
+{
+  "run_id": "iter-e48-dead-atomic-20260715",
+  "parent_run": "iter-e48-legal-count-20260715",
+  "metrics": {"parse_rate": 0.0, "constrained_dead_ends": 12, "dead_end_candidate_count_sum": 32, "dead_end_candidate_count_mean": 10.667, "dead_end_position_mean": 3.0, "fallback_rate": 0.0},
+  "diagnosis": "dead-end events encountered nonempty legal candidate pools earlier in the repair path; failure is likely state progression or candidate sequence quality, not an always-empty grammar state",
+  "decision": "next inspect per-step prefix and chosen-token trace around the first dead end",
+  "honesty": "scratch smoke diagnostic; not a ship claim"
+}

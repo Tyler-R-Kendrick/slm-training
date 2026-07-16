@@ -1,4 +1,4 @@
-from scripts.check_changed import select_tests
+from scripts.check_changed import hook_test_targets, select_changed_tests, select_tests
 
 
 def test_select_tests_is_scoped_and_conservative() -> None:
@@ -28,3 +28,21 @@ def test_script_changes_include_their_domain_suite() -> None:
         "tests/test_autoresearch",
         "tests/test_scripts",
     ]
+
+
+def test_hook_prefers_explicit_changed_regressions() -> None:
+    assert select_changed_tests(
+        [
+            "src/slm_training/models/grammar.py",
+            "tests/test_dsl/test_grammar_fastpath.py",
+        ]
+    ) == ["tests/test_dsl/test_grammar_fastpath.py"]
+    assert select_changed_tests(["src/slm_training/web/routes.py"]) == [
+        "tests/test_web"
+    ]
+
+
+def test_hook_defers_pytest_for_large_diffs() -> None:
+    paths = [f"docs/design/run-{i}.json" for i in range(101)]
+    paths.append("tests/test_dsl/test_parser.py")
+    assert hook_test_targets(paths) == []

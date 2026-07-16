@@ -149,7 +149,9 @@ def test_maskgit_fallback_keeps_compiler_prefix_visible() -> None:
         use_grammar=False,
         seed_ids=seed,
     )
-    assert text.startswith("b0 = Stack(")
+    # The lexer stores root as binding zero internally, but public output is
+    # canonical OpenUI and must preserve the seeded root component surface.
+    assert text.startswith("root = Stack(")
 
 
 def test_compiler_decode_is_opt_in() -> None:

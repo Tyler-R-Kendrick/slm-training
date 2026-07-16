@@ -119,6 +119,39 @@ def test_train_records_supports_browsing_filters_and_pagination(tmp_path) -> Non
     assert filtered["records"][0]["id"] == "row-3"
 
 
+def test_committed_train_version_is_default_and_browsable(tmp_path) -> None:
+    from slm_training.dsl.schema import ExampleRecord, write_jsonl
+
+    vdir = (
+        tmp_path
+        / "src"
+        / "slm_training"
+        / "resources"
+        / "train_data"
+        / "remediated_roots_judged"
+    )
+    write_jsonl(
+        vdir / "records.jsonl",
+        [
+            ExampleRecord(
+                id="judged-1",
+                prompt="A judged prompt/output pair",
+                openui='root = TextContent(":copy.value")',
+                source="judged",
+            )
+        ],
+    )
+    (vdir / "stats.json").write_text('{"record_count": 1}\n', encoding="utf-8")
+    (vdir / "manifest.json").write_text("{}\n", encoding="utf-8")
+
+    readers = Readers(tmp_path)
+    data = readers.train_data()
+    assert data["provenance"] == "committed"
+    assert data["version"] == "remediated_roots_judged"
+    assert data["record_count"] == 1
+    assert readers.train_records(data["version"])["records"][0]["id"] == "judged-1"
+
+
 def test_run_detail_merges_scoreboard(ro_client: TestClient) -> None:
     board = ro_client.get("/api/scoreboards/quality").json()["results"]
     run_id = board[0].get("run_id") or board[0].get("id")

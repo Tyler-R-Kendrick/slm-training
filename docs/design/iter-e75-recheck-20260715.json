@@ -1,0 +1,9 @@
+{
+  "run_id": "iter-e75-recheck-20260715",
+  "parent_run": "iter-e75-20260715",
+  "intervention": "re-evaluate archived E75 checkpoint using current gold-free evaluator",
+  "recipe": {"device": "cpu", "backend": "scratch", "suite": "smoke", "n": 3, "checkpoint": "outputs/runs/iter_e75_20260715/qx_e75_v7_champion/checkpoints/last.pt"},
+  "metrics": {"parse_rate": 0.0, "placeholder_fidelity": 0.0, "structural_similarity": 0.12866666666666668, "reward_score": 0.0},
+  "decision": "invalidate archived E75 promotion evidence",
+  "honesty": "reproducibility audit; not a ship claim"
+}

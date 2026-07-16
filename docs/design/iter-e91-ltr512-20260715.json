@@ -1,0 +1,9 @@
+{
+  "run_id": "iter-e91-ltr512-20260715",
+  "parent_run": "iter-e88-structural-supervision-contract-20260715",
+  "intervention": "extend visible-contract LTR-primary training from 128 to 512 steps",
+  "recipe": {"device": "cpu", "steps": 512, "backend": "scratch", "suite": "smoke", "n": 1, "strict": true, "grammar_ltr_max_tokens": 64},
+  "metrics": {"parse_rate": 0.0, "raw_syntax_validity": 0.0, "placeholder_fidelity": 1.0, "contract_precision": 0.8, "contract_recall": 1.0, "placeholder_validity": 0.92, "structural_similarity": 0.5333, "reward_score": 0.0, "latency_ms_p50": 6344.46, "decode_timeout_count": 0, "template_fastpath_count": 0, "template_fallback_count": 0},
+  "decision": "reject for ship; longer training improves fidelity/structure but not parse",
+  "honesty": "strict scratch smoke result; not a ship claim"
+}

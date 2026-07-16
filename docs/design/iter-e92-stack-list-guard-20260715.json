@@ -1,0 +1,9 @@
+{
+  "run_id": "iter-e92-stack-list-guard-20260715",
+  "parent_run": "iter-e91-ltr512-20260715",
+  "intervention": "reject literals/native symbols/punctuation inside Stack child lists",
+  "recipe": {"device": "cpu", "backend": "scratch", "suite": "smoke", "n": 1, "strict": true, "grammar_ltr_max_tokens": 64},
+  "metrics": {"parse_rate": 0.0, "placeholder_fidelity": 0.0, "structural_similarity": 0.1217, "reward_score": 0.0, "latency_ms_p50": 5783.81, "decode_timeout_count": 0},
+  "decision": "reject and remove guard",
+  "honesty": "bounded strict learned diagnostic; not a ship claim"
+}

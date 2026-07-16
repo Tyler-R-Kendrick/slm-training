@@ -1,0 +1,9 @@
+{
+  "run_id": "iter-e80-visible-contract-20260715",
+  "parent_run": "iter-e79-data-contract-audit-20260715",
+  "intervention": "train on prompts augmented with declared placeholder inventory",
+  "recipe": {"device": "cpu", "steps": 256, "backend": "scratch", "suite": "smoke", "n": 3, "train_dir": "outputs/train_data/v2_prompt_contract", "train_content_fingerprint": "c3ae5b41bb41010ee2d78b5b0c9bd257295234853ce6f9645c127fdca29e8dd3"},
+  "metrics": {"parse_rate": 1.0, "raw_syntax_validity": 1.0, "placeholder_fidelity": 0.0, "placeholder_fidelity_normalized": 0.38888888888888884, "structural_similarity": 0.6111333333333334, "reward_score": 0.669},
+  "decision": "retain dataset intervention; reject model promotion",
+  "honesty": "scratch smoke result; not a ship claim"
+}

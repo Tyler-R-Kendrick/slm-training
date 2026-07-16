@@ -1,0 +1,9 @@
+{
+  "run_id": "iter-e48-newline-guard-20260715",
+  "parent_run": "iter-e48-resync-20260715",
+  "fix": "reject NL while brackets/parentheses or quoted literals remain open",
+  "tests": {"passed": 24, "deselected": 0},
+  "metrics": {"parse_rate": 0.0, "structural_similarity": 0.3633333333333333, "placeholder_fidelity": 0.0, "reward_score": 0.0, "latency_ms_p50": 35899.01},
+  "decision": "keep structural newline guard for correctness, but reject as a quality intervention because it did not improve parse and slightly reduced structural similarity",
+  "honesty": "scratch smoke diagnostic; not a ship claim"
+}

@@ -1,0 +1,29 @@
+{
+  "experiment": "E104",
+  "date": "2026-07-15",
+  "kind": "base-mixture retrain",
+  "train": {
+    "steps": 256,
+    "record_count": 1417,
+    "target_tokens": 86188,
+    "last_loss": 3.721121311187744,
+    "checkpoint": "outputs/runs/iter-e104-base-256-20260715/e104_base_256/checkpoints/last.pt",
+    "telemetry": "outputs/runs/iter-e104-base-256-20260715/e104_base_256/train_telemetry.json"
+  },
+  "eval": {
+    "suite": "smoke",
+    "n": 1,
+    "parse_rate": 0.0,
+    "raw_syntax_validity": 0.0,
+    "structural_similarity": 0.4208,
+    "contract_precision": 1.0,
+    "contract_recall": 0.25,
+    "placeholder_fidelity": 0.25,
+    "placeholder_validity": 0.55,
+    "component_type_recall": 0.25,
+    "latency_ms_p50": 13305.51,
+    "agentv_total": 5,
+    "agentv_failed": 5
+  },
+  "decision": "reject; not an undertraining-only problem"
+}

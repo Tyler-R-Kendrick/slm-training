@@ -1,0 +1,12 @@
+{
+  "experiment": "E114",
+  "date": "2026-07-15",
+  "kind": "bounded model-size retry",
+  "status": "incomplete",
+  "recipe": {"d_model": 160, "n_heads": 5, "context_layers": 3, "denoiser_layers": 5, "batch_size": 2, "freeze_context": true},
+  "last_observed_step": 12,
+  "metrics": "outputs/runs/iter-e114-d160-20260715/e114_d160/metrics.jsonl",
+  "checkpoint": null,
+  "evaluation": null,
+  "decision": "pivot small model; add resource diagnostics"
+}

@@ -130,6 +130,7 @@ def test_curriculum_never_imports_evaluation_fixtures(tmp_path: Path) -> None:
     records = load_jsonl(Path(result["output_dir"]) / "records.jsonl")
     ids = {record.id for record in records}
     assert "train_only" in ids
+    assert any(record_id.startswith("curriculum_c_stress_") for record_id in ids)
     assert all(
         record_id == "train_only" or record_id.startswith("curriculum_c_stress_")
         for record_id in ids

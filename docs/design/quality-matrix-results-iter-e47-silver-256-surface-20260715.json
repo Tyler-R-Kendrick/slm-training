@@ -1,0 +1,98 @@
+{
+  "matrix": "quality-experiment-matrix-v5",
+  "reference": "docs/design/quality-experiment-matrix.md",
+  "gate_policy": {
+    "smoke": {
+      "parse_rate": 0.66,
+      "structural_similarity": 0.35,
+      "placeholder_fidelity": 0.25,
+      "reward_score": 0.3
+    },
+    "held_out": {
+      "parse_rate": 0.4,
+      "structural_similarity": 0.3,
+      "placeholder_fidelity": 0.15
+    },
+    "adversarial": {
+      "parse_rate": 0.25,
+      "structural_similarity": 0.25
+    },
+    "ood": {
+      "parse_rate": 0.25,
+      "structural_similarity": 0.25
+    },
+    "rico_held": {
+      "parse_rate": 0.1,
+      "structural_similarity": 0.2
+    }
+  },
+  "device": "cpu",
+  "batch_size": 4,
+  "learning_rate": 0.0003,
+  "seed": 0,
+  "test_dir": "outputs/test_data/remediated",
+  "design_md_in_context": false,
+  "rico_eval_limit": 3,
+  "suites": [
+    "smoke"
+  ],
+  "steps": 256,
+  "gen_steps": 8,
+  "context_backend": "scratch",
+  "matrix_set": "v5",
+  "results": [
+    {
+      "id": "E47",
+      "run_id": "qx_e47_ltr_supervision",
+      "initialization": "scratch",
+      "parent_checkpoint": null,
+      "description": "E41 + doubled lexer-native LTR supervision",
+      "honest_slot_contract": false,
+      "schema_in_context": false,
+      "slot_contract_in_context": true,
+      "slot_contract_constrained_decode": true,
+      "template_fill_decode": false,
+      "grammar_ltr_primary": false,
+      "grammar_ltr_repair": true,
+      "effective_gen_steps": 16,
+      "best_of_n": 1,
+      "train_dir": "outputs/train_data/remediated_roots_silver",
+      "train_content_fingerprint": "de22dd439207002754ef7bb0be07a422a04d4e0a91f60f9864e9abd75e7adb06",
+      "checkpoint": "outputs/runs/iter-e47-silver-256-surface-20260715/qx_e47_ltr_supervision/checkpoints/last.pt",
+      "pass": false,
+      "failures": [
+        "smoke:parse_rate actual=0.0 need>=0.66",
+        "smoke:structural_similarity actual=0.0 need>=0.35",
+        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:missing_suite",
+        "adversarial:missing_suite",
+        "ood:missing_suite",
+        "rico_held:missing_suite"
+      ],
+      "suites": {
+        "smoke": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.0,
+          "reward_score": 0.0,
+          "n": 3,
+          "speculative_stats": {
+            "generates": 6,
+            "denoiser_forwards": 85,
+            "forwards_per_generate": 14.166666666666666,
+            "speculative_batches": 0,
+            "speculative_canvases": 0,
+            "successor_hits": 0,
+            "successor_misses": 0,
+            "successor_hit_rate": null,
+            "clusters_proposed": 0,
+            "clusters_accepted": 0,
+            "clusters_rejected": 0,
+            "remasked_positions": 0
+          }
+        }
+      }
+    }
+  ]
+}

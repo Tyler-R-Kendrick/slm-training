@@ -73,6 +73,12 @@ def main(argv: list[str] | None = None) -> int:
         help="P1b: JSON mixture weights for online family-weighted sampling.",
     )
     parser.add_argument(
+        "--mixture-min-quality-score",
+        type=float,
+        default=0.0,
+        help="Exclude judged records below this score when sampling a mixture.",
+    )
+    parser.add_argument(
         "--register-promoted",
         action="store_true",
         help="P1d: write promoted.pt from best_weighted_nll / best_ship / last.",
@@ -209,6 +215,12 @@ def main(argv: list[str] | None = None) -> int:
         type=float,
         default=0.5,
         help="Auxiliary prefix-LM loss weight (helps LTR generate).",
+    )
+    parser.add_argument(
+        "--ltr-prefix-loss-weight",
+        type=float,
+        default=0.0,
+        help="Extra weight for the first three LTR positions (root/early structure).",
     )
     parser.add_argument(
         "--no-design-md-context",
@@ -390,6 +402,10 @@ def main(argv: list[str] | None = None) -> int:
         help="Plan bucket sync without uploading (debug / no-write environments).",
     )
     args = parser.parse_args(argv)
+    if args.train_version:
+        args.train_dir = (
+            Path("src/slm_training/resources/train_data") / args.train_version
+        )
     if (args.eval_every > 0 or args.loss_eval_every > 0) and not args.test_dir:
         parser.error(
             "--test-dir is required when --eval-every or --loss-eval-every is enabled"
@@ -495,6 +511,7 @@ def main(argv: list[str] | None = None) -> int:
             structural_bias=args.structural_bias,
             design_md_in_context=not args.no_design_md_context,
             ltr_loss_weight=args.ltr_loss_weight,
+            ltr_prefix_loss_weight=args.ltr_prefix_loss_weight,
             fidelity_loss_weight=args.fidelity_loss_weight,
             grammar_ltr_primary=args.grammar_ltr_primary,
             grammar_ltr_repair=args.grammar_ltr_repair,
@@ -528,6 +545,7 @@ def main(argv: list[str] | None = None) -> int:
             resume_from=args.resume_from,
             full_state_checkpoint=not bool(args.no_full_state_checkpoint),
             mixture_manifest=args.mixture_manifest,
+            mixture_min_quality_score=args.mixture_min_quality_score,
             register_promoted=bool(args.register_promoted),
             telemetry=not bool(args.no_telemetry),
             checkpoint_bucket=(

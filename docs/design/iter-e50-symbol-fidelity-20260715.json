@@ -1,0 +1,10 @@
+{
+  "run_id": "iter-e50-symbol-fidelity-20260715",
+  "parent_run": "iter-e49-raw-placeholders-20260715",
+  "intervention": "fidelity_loss_weight=4.0 with lexer symbol tables",
+  "recipe": {"device": "cpu", "steps": 256, "backend": "scratch", "suite": "smoke", "n": 3, "ltr_loss_weight": 2.0},
+  "metrics": {"parse_rate": 0.0, "structural_similarity": 0.4083333333333334, "placeholder_fidelity": 0.0, "reward_score": 0.0, "latency_ms_p50": 23135.94},
+  "diagnosis": "stronger symbol fidelity improves structural recovery but does not yet produce parseable programs or exact placeholder fidelity",
+  "decision": "keep fidelity weighting direction; next add native symbol sequence/closure diagnostics before increasing it further",
+  "honesty": "scratch smoke result; not a ship claim"
+}

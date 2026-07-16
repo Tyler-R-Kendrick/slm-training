@@ -182,7 +182,7 @@ def test_v05_typed_state_and_builtin_roundtrip(tok: DSLNativeTokenizer) -> None:
 def test_v05_tokenizer_ignores_line_comments(tok: DSLNativeTokenizer) -> None:
     source = 'root = Stack([]) // trailing comment\n# full-line comment\n'
     decoded = tok.decode(tok.encode(source))
-    assert decoded == "b0 = Stack([])"
+    assert decoded == "root = Stack([])"
 
 
 def test_v05_numbers_and_single_quotes_use_typed_literals(

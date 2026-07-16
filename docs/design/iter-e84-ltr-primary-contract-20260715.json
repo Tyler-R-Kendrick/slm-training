@@ -1,0 +1,9 @@
+{
+  "run_id": "iter-e84-ltr-primary-contract-20260715",
+  "parent_run": "iter-e83-learned-cap64-20260715",
+  "intervention": "grammar_ltr_primary=true on visible-contract corpus; fast path disabled",
+  "recipe": {"device": "cpu", "steps": 128, "backend": "scratch", "suite": "smoke", "n": 1, "train_dir": "outputs/train_data/v2_prompt_contract"},
+  "metrics": {"parse_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.65, "reward_score": 0.997},
+  "decision": "reject as learned evidence; output used certified template fallback",
+  "honesty": "bounded scratch probe; not a ship claim"
+}

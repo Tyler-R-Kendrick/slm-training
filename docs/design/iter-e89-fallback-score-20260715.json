@@ -1,0 +1,8 @@
+{
+  "run_id": "iter-e89-fallback-score-20260715",
+  "parent_run": "iter-e85-template-telemetry-20260715",
+  "intervention": "surface template fallback/fastpath counts in top-level eval metrics",
+  "metrics": {"parse_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.65, "reward_score": 0.997, "latency_ms_p50": 2583.66, "fallback_count": 1, "template_fastpath_count": 1, "template_fallback_count": 0},
+  "decision": "retain scoring correction; classify nonzero fallback separately",
+  "honesty": "harness validation; not a ship claim"
+}

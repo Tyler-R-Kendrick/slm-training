@@ -1,0 +1,9 @@
+{
+  "run_id": "iter-e86-strict-learned-20260715",
+  "parent_run": "iter-e83-learned-cap64-20260715",
+  "intervention": "strict learned decode: LTR primary/repair, no fallback, cap 64",
+  "recipe": {"device": "cpu", "backend": "scratch", "suite": "smoke", "n": 1, "gen_steps": 1, "timeout_seconds": 20},
+  "metrics": {"parse_rate": 0.0, "raw_syntax_validity": 0.0, "placeholder_fidelity": 0.75, "contract_precision": 0.6, "contract_recall": 0.75, "structural_similarity": 0.21, "reward_score": 0.0, "latency_ms_p50": 6692.03, "template_fastpath_count": 0, "template_fallback_count": 0, "constrained_dead_ends": 1},
+  "decision": "reject; target malformed native sequence/dead-end trace",
+  "honesty": "bounded strict learned diagnostic; not a ship claim"
+}

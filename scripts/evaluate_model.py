@@ -90,6 +90,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--device", type=str, default="cpu")
     parser.add_argument("--output-tokenizer", choices=("compositional", "lexer"), default=None, help="Override the checkpoint output tokenizer during evaluation.")
     parser.add_argument(
+        "--output-tokenizer",
+        choices=("compositional", "lexer"),
+        default=None,
+        help="Override the checkpoint output tokenizer during evaluation.",
+    )
+    parser.add_argument(
         "--ship-gates",
         action="store_true",
         help=(
@@ -173,6 +179,11 @@ def main(argv: list[str] | None = None) -> int:
         "--honest-slot-contract",
         action="store_true",
         help="Forbid hidden gold placeholder inventory during evaluation.",
+    )
+    parser.add_argument(
+        "--contract-template-fastpath",
+        action="store_true",
+        help="Use the certified slot-contract template fast path during evaluation.",
     )
     parser.add_argument(
         "--retrieval-k",
@@ -314,6 +325,7 @@ def main(argv: list[str] | None = None) -> int:
         slot_contract_in_context=args.slot_contract_in_context,
         slot_contract_constrained_decode=args.slot_contract_constrained_decode,
         honest_slot_contract=args.honest_slot_contract,
+        contract_template_fastpath=args.contract_template_fastpath,
         retrieval_k=args.retrieval_k,
         best_of_n=args.best_of_n,
         design_md_in_context=design_md_override,

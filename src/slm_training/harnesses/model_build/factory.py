@@ -45,6 +45,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "slot_contract_in_context",
         "slot_contract_constrained_decode",
         "template_fill_decode",
+        "contract_template_fastpath",
         "honest_slot_contract",
         "retrieval_k",
         "best_of_n",
@@ -267,6 +268,12 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         diffusion_overallocate=int(getattr(config, "diffusion_overallocate", 8) or 8),
         diffusion_length_loss_weight=float(
             getattr(config, "diffusion_length_loss_weight", 0.1) or 0.0
+        ),
+        ltr_prefix_loss_weight=float(
+            getattr(config, "ltr_prefix_loss_weight", 0.0) or 0.0
+        ),
+        symbol_boundary_loss_weight=float(
+            getattr(config, "symbol_boundary_loss_weight", 0.0) or 0.0
         ),
         remask_span=getattr(config, "remask_span", "token"),
         teacher_init_embeddings=getattr(config, "teacher_init_embeddings", False),

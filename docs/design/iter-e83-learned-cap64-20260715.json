@@ -1,0 +1,9 @@
+{
+  "run_id": "iter-e83-learned-cap64-20260715",
+  "parent_run": "iter-e82-template-fastpath-20260715",
+  "intervention": "disable template fast path; grammar_ltr_max_tokens=64",
+  "recipe": {"device": "cpu", "backend": "scratch", "suite": "smoke", "n": 1, "gen_steps": 1, "timeout_seconds": 20},
+  "metrics": {"parse_rate": 0.0, "raw_syntax_validity": 0.0, "contract_precision": 0.6, "contract_recall": 0.75, "placeholder_fidelity": 0.75, "placeholder_fidelity_normalized": 0.75, "structural_similarity": 0.21, "reward_score": 0.0, "latency_ms_p50": 8158.29, "decode_timeout_count": 0},
+  "decision": "reject learned cap 64; contract slots improve but structure remains invalid",
+  "honesty": "bounded scratch diagnostic; not a ship claim"
+}

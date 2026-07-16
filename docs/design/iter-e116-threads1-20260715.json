@@ -1,0 +1,12 @@
+{
+  "experiment": "E116",
+  "date": "2026-07-15",
+  "kind": "resource diagnostic",
+  "status": "incomplete",
+  "recipe": {"d_model": 128, "batch_size": 2, "freeze_context": true, "omp_threads": 1, "mkl_threads": 1, "steps_target": 64},
+  "last_observed_step": 22,
+  "metrics": "outputs/runs/iter-e116-threads1-20260715/e116_threads1/metrics.jsonl",
+  "checkpoint": null,
+  "evaluation": null,
+  "decision": "external termination; defer recipe"
+}

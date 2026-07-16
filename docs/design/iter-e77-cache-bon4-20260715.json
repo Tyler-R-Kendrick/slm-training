@@ -1,0 +1,12 @@
+{
+  "run_id": "iter-e77-cache-bon4-20260715",
+  "parent_run": "iter-e76-cache-reuse-fixed-20260715",
+  "intervention": "best_of_n=4 on corrected V7 cache/eval path",
+  "recipe": {"device": "cpu", "steps": 256, "backend": "scratch", "suites": ["smoke", "held_out"], "n": {"smoke": 3, "held_out": 5}},
+  "metrics": {
+    "smoke": {"parse_rate": 0.6666666666666666, "placeholder_fidelity": 0.0, "structural_similarity": 0.5133333333333333, "reward_score": 0.4526666666666667, "successor_hits": 184, "successor_misses": 56, "successor_hit_rate": 0.7666666666666667},
+    "held_out": {"parse_rate": 0.6, "placeholder_fidelity": 0.0, "structural_similarity": 0.47256, "reward_score": 0.5384, "successor_hits": 304, "successor_misses": 56, "successor_hit_rate": 0.8444444444444444}
+  },
+  "decision": "reject; best-of-4 does not restore placeholder fidelity",
+  "honesty": "scratch smoke/held-out result; not a ship claim"
+}

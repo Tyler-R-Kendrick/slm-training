@@ -135,6 +135,19 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             mixture_hash,
         )
 
+        min_quality = float(getattr(config, "mixture_min_quality_score", 0.0) or 0.0)
+        if min_quality > 0.0:
+            filtered = [
+                record
+                for record in records
+                if float((record.meta or {}).get("quality", {}).get("score") or 0.0)
+                >= min_quality
+            ]
+            if not filtered:
+                raise ValueError(
+                    f"mixture_min_quality_score={min_quality:g} removed all records"
+                )
+            records = filtered
         manifest = load_mixture_manifest(mixture_path)
         mixture_weights = dict(manifest.weights)
         mixture_task_weights = dict(manifest.task_weights or {}) or None
@@ -144,6 +157,8 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "task_weights": mixture_task_weights,
             "hash": mixture_hash(manifest),
             "path": str(mixture_path),
+            "min_quality_score": min_quality,
+            "filtered_record_count": len(records),
         }
         family_pools = index_family_pools(records)
         if mixture_task_weights:

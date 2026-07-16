@@ -1,0 +1,9 @@
+{
+  "run_id": "iter-e54-symbol-boundary1-20260715",
+  "parent_run": "iter-e52-adjacency-20260715",
+  "intervention": "symbol_boundary_loss_weight=1.0",
+  "recipe": {"device": "cpu", "steps": 256, "backend": "scratch", "suite": "smoke", "n": 3, "fidelity_loss_weight": 4.0},
+  "metrics": {"parse_rate": 0.0, "raw_syntax_validity": 0.3333333333333333, "structural_similarity": 0.2583666666666667, "placeholder_fidelity": 0.0, "reward_score": 0.0, "latency_ms_p50": 7749.97},
+  "decision": "reject boundary weight 1; structure regresses versus E52 weight 2",
+  "honesty": "scratch smoke result; not a ship claim"
+}

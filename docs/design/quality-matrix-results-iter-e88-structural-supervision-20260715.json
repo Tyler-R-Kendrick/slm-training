@@ -1,0 +1,80 @@
+{
+  "matrix": "quality-experiment-matrix-v7",
+  "reference": "docs/design/quality-experiment-matrix.md",
+  "gate_policy": {
+    "smoke": {
+      "parse_rate": 0.66,
+      "structural_similarity": 0.35,
+      "placeholder_fidelity": 0.25,
+      "reward_score": 0.3
+    },
+    "held_out": {
+      "parse_rate": 0.4,
+      "structural_similarity": 0.3,
+      "placeholder_fidelity": 0.15
+    },
+    "adversarial": {
+      "parse_rate": 0.25,
+      "structural_similarity": 0.25
+    },
+    "ood": {
+      "parse_rate": 0.25,
+      "structural_similarity": 0.25
+    },
+    "rico_held": {
+      "parse_rate": 0.1,
+      "structural_similarity": 0.2
+    }
+  },
+  "device": "cpu",
+  "batch_size": 4,
+  "learning_rate": 0.0003,
+  "seed": 0,
+  "test_dir": "outputs/test_data/remediated",
+  "design_md_in_context": false,
+  "rico_eval_limit": 1,
+  "suites": [
+    "smoke"
+  ],
+  "steps": 128,
+  "gen_steps": 8,
+  "context_backend": "scratch",
+  "matrix_set": "v7",
+  "results": [
+    {
+      "id": "E88",
+      "run_id": "qx_e88_structural_supervision_contract",
+      "initialization": "scratch",
+      "parent_checkpoint": null,
+      "description": "Visible-contract corpus with LTR, fidelity, and symbol-boundary supervision",
+      "honest_slot_contract": true,
+      "schema_in_context": true,
+      "slot_contract_in_context": true,
+      "slot_contract_constrained_decode": true,
+      "template_fill_decode": true,
+      "grammar_ltr_primary": true,
+      "grammar_ltr_repair": true,
+      "effective_gen_steps": 16,
+      "best_of_n": 1,
+      "train_dir": "outputs/train_data/v2_prompt_contract",
+      "train_content_fingerprint": "c3ae5b41bb41010ee2d78b5b0c9bd257295234853ce6f9645c127fdca29e8dd3",
+      "checkpoint": "outputs/runs/iter-e88-structural-supervision-20260715/qx_e88_structural_supervision_contract/checkpoints/last.pt",
+      "pass": false,
+      "failures": [
+        "held_out:missing_suite",
+        "adversarial:missing_suite",
+        "ood:missing_suite",
+        "rico_held:missing_suite"
+      ],
+      "suites": {
+        "smoke": {
+          "parse_rate": 1.0,
+          "placeholder_fidelity": 1.0,
+          "structural_similarity": 0.65,
+          "reward_score": 0.997,
+          "n": 1
+        }
+      }
+    }
+  ]
+}
