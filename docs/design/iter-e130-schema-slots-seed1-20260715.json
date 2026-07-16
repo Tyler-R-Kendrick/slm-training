@@ -1,0 +1,12 @@
+{
+  "experiment_id": "E130",
+  "date": "2026-07-15",
+  "kind": "seed_control",
+  "parent": "E127",
+  "recipe": {"device": "cpu", "steps": 32, "seed": 1, "batch_size": 4, "context_backend": "scratch", "output_tokenizer": "compositional", "schema_in_context": true, "slot_contract_in_context": true, "slot_contract_constrained_decode": true, "grammar_ltr_primary": true, "grammar_ltr_repair": true, "ltr_loss_weight": 0.5, "fidelity_loss_weight": 0.5, "train_dir": "src/slm_training/resources/train_data/remediated_roots_judged", "record_count": 405, "honesty_mode": "scratch diagnostic; no ship claim"},
+  "training": {"run_id": "e130_judged_schema_slots_seed1", "last_loss": 15.276935577392578, "checkpoint": "outputs/runs/iter-e130-schema-slots-20260715/e130_judged_schema_slots_seed1/checkpoints/last.pt", "checkpoint_sha256": "12f92ebe193982bd448c3dacec4569fc52b5694ad41aa2c41a13cb6a98959c96", "telemetry": "outputs/runs/iter-e130-schema-slots-20260715/e130_judged_schema_slots_seed1/train_telemetry.json"},
+  "feedback": {"run_id": "iter-e130-smoke-feedback", "suite": "smoke", "n": 1, "parse_rate": 0.0, "raw_syntax_validity": 0.0, "placeholder_fidelity": 0.0, "placeholder_fidelity_normalized": 0.0, "placeholder_validity": 0.0, "structural_similarity": 0.1542, "reward_score": 0.0, "latency_ms_p50": 6074.26, "decode_timeout_count": 0, "constrained_fallback_rate": 0.0, "agentv": "outputs/runs/iter-e130-schema-slots-20260715/iter-e130-smoke-feedback/agentv/openui-model-ship-gates-2026-07-16t01-15-17-597503-00-00.eval.jsonl"},
+  "corpus_audit": {"record_count": 405, "source_families": {"edit_trajectory": 279, "corruption_repair": 93, "fixture": 17, "programspec_generated": 14, "renderer_visual": 1, "web_distilled": 1}, "quality_rejected": 61, "mean_placeholders_edit_trajectory": 1.9677, "mean_placeholders_corruption_repair": 1.957},
+  "finding": "The E127 placeholder signal did not reproduce with seed 1; the apparent gain is not a stable recipe result.",
+  "decision": "Do not promote E127. Expand feedback beyond one prompt and investigate data/task composition before more recipe tuning."
+}
