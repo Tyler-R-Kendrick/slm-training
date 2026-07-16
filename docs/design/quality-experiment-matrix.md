@@ -773,6 +773,17 @@ probe remained parse/syntax 0.0 and structure fell to 0.1187, so the broad
 corpus is rejected as a replacement. Add targeted judge-gated semantic-role
 examples instead. See [iter-e176-broad-corpus-20260716.md](iter-e176-broad-corpus-20260716.md).
 
+E177–E180 separate data admission, schema structure, and semantic selection.
+The corrected E177 judge rejects two mismatched pairs and publishes 496 records
+with telemetry for future runs, but its matched 32-step train does not improve
+the bounded probe. E178 adds generated-schema required/max arity; E179 stops the
+legacy repair path from overwriting compiler output; E180 constrains the symbolic
+root binding to generated component kinds. E180 raises syntax validity from 0.0
+to 1.0 and cuts p50 from 7538.12 ms to 3712.78 ms, while meaningful parse remains
+0.0 because component recall is only 0.25. Continue with balanced semantic-role
+supervision, not syntax special cases or weakened gates. See
+[iter-e177-e180-semantic-compiler-20260716.md](iter-e177-e180-semantic-compiler-20260716.md).
+
 These rows are registered under `--matrix v8`; `--list` prints definitions
 without building data or starting a run. They require the lexer-native parent
 contract and unchanged honest five-suite gates. No result or champion is claimed.

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any
 
 from slm_training.dsl.placeholders import extract_placeholders
@@ -42,6 +43,70 @@ PREFERRED_COMPONENTS = frozenset(
 )
 
 
+@lru_cache(maxsize=1)
+def _official_component_names() -> frozenset[str]:
+    """Return the generated OpenUI component inventory, with an offline fallback."""
+    try:
+        from slm_training.dsl import lang_core
+
+        schema = lang_core.library_schema()
+        names = set(schema.get("properties") or schema.get("components") or ())
+        if names:
+            return frozenset(str(name) for name in names)
+    except Exception:  # noqa: BLE001
+        pass
+    return PREFERRED_COMPONENTS
+
+
+def _prompt_component_mentions(prompt: str) -> frozenset[str]:
+    """Find maximal schema component names mentioned in ordinary prompt prose."""
+    normalized = re.sub(r"[^a-z0-9]+", " ", prompt.lower()).strip()
+    names = _official_component_names()
+    occupied: list[tuple[int, int]] = []
+    found: set[str] = set()
+    phrases = []
+    for name in names:
+        # In ordinary prose, "buttons" means plural Button. Explicit requests such
+        # as "the Buttons component" are resolved separately by the exact matcher.
+        if name.endswith("s") and name[:-1] in names:
+            continue
+        phrase = re.sub(r"(?<!^)(?=[A-Z])", " ", name).lower()
+        phrases.append((name, phrase))
+    for name, phrase in sorted(phrases, key=lambda item: len(item[1]), reverse=True):
+        for match in re.finditer(rf"\b{re.escape(phrase)}s?\b", normalized):
+            span = match.span()
+            if any(span[0] < end and start < span[1] for start, end in occupied):
+                continue
+            occupied.append(span)
+            found.add(name)
+    return frozenset(found)
+
+
+def _semantic_request(record: ExampleRecord) -> str:
+    """Return the authored request, excluding embedded edit-program context."""
+    edit = record.meta.get("edit")
+    if isinstance(edit, dict) and isinstance(edit.get("instruction"), str):
+        return edit["instruction"]
+    if isinstance(record.meta.get("repair"), dict):
+        return ""
+    return record.prompt
+
+
+def _ast_component_names(value: Any) -> frozenset[str]:
+    """Collect component types from a generated OpenUI AST."""
+    found: set[str] = set()
+    if isinstance(value, dict):
+        type_name = value.get("typeName")
+        if isinstance(type_name, str):
+            found.add(type_name)
+        for child in value.values():
+            found.update(_ast_component_names(child))
+    elif isinstance(value, list):
+        for child in value:
+            found.update(_ast_component_names(child))
+    return frozenset(found)
+
+
 @dataclass(frozen=True)
 class QualityReport:
     ok: bool
@@ -63,7 +128,8 @@ def independent_judge(record: ExampleRecord) -> dict[str, Any]:
     prompt = (record.prompt or "").strip()
     openui = (record.openui or "").strip()
     components = component_counts(openui)
-    lowered_prompt = prompt.lower()
+    request = _semantic_request(record)
+    lowered_prompt = request.lower()
     reasons: list[str] = []
     if record.target_kind != "document":
         from slm_training.dsl.parser import ParseError, validate_output
@@ -78,15 +144,21 @@ def independent_judge(record: ExampleRecord) -> dict[str, Any]:
                 )
         except (ParseError, ValueError, RuntimeError) as exc:
             reasons.append(f"invalid_output_contract:{exc}")
+    repair = record.meta.get("repair")
+    repair_ast = repair.get("clean_ast") if isinstance(repair, dict) else None
+    targets = set(_ast_component_names(repair_ast))
+    targets.update(_prompt_component_mentions(request))
     target = None
-    component_match = _COMPONENT_PROMPT_RE.search(prompt)
+    component_match = _COMPONENT_PROMPT_RE.search(request)
     if component_match:
         target = component_match.group(1)
     else:
-        construct_match = _CONSTRUCT_PROMPT_RE.search(prompt)
+        construct_match = _CONSTRUCT_PROMPT_RE.search(request)
         if construct_match and construct_match.group(1).strip():
             target = construct_match.group(1).strip().split()[0]
-    if target and target[:1].isupper() and target not in components:
+    if (target and target[:1].isupper() and target not in components) or (
+        targets - set(components)
+    ):
         reasons.append("prompt_component_missing_from_output")
     if "boolean literal" in lowered_prompt:
         if not re.search(r"\b(?:true|false)\b", openui):

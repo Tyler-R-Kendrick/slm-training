@@ -2891,7 +2891,8 @@ class TwoTowerModel(nn.Module):
             )
             ensure_attempts = (
                 0
-                if (bool(self.config.grammar_ltr_repair) and max_attempts <= 1)
+                if compiler_mode != "off"
+                or (bool(self.config.grammar_ltr_repair) and max_attempts <= 1)
                 else max_attempts
             )
             certified: list[str] = []

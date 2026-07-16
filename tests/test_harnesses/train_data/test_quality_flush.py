@@ -104,6 +104,56 @@ def test_independent_judge_requires_named_component() -> None:
     assert "prompt_component_missing_from_output" in report.reasons
 
 
+def test_independent_judge_reads_ordinary_component_mentions_from_schema(
+    monkeypatch,
+) -> None:
+    from slm_training.data import quality
+
+    monkeypatch.setattr(
+        quality,
+        "_official_component_names",
+        lambda: frozenset({"Button", "Buttons", "Callout", "TextContent"}),
+    )
+    record = ExampleRecord(
+        id="judge-prose",
+        prompt="Show an informational callout with a title.",
+        openui='root = Stack([text])\ntext = TextContent(":title")',
+        placeholders=[":title"],
+    )
+    report = assess_record(record, require_design_md=False)
+    assert not report.ok
+    assert "prompt_component_missing_from_output" in report.reasons
+
+    plural_record = ExampleRecord(
+        id="judge-plural",
+        prompt="Show two buttons.",
+        openui='root = Stack([a, b])\na = Button(":a")\nb = Button(":b")',
+        placeholders=[":a", ":b"],
+    )
+    assert quality.independent_judge(plural_record)["ok"]
+
+    edit_record = ExampleRecord(
+        id="judge-embedded-program",
+        prompt=(
+            "Current program:\n"
+            'root = Callout(\":title\", [label])\nlabel = Label(\":label\")'
+        ),
+        openui='root = TextContent(":title")',
+        placeholders=[":title"],
+        meta={"edit": {"instruction": "Update the title copy."}},
+    )
+    assert quality.independent_judge(edit_record)["ok"]
+
+    repair_record = ExampleRecord(
+        id="judge-repair-ast",
+        prompt='Repair this program: root = Button(":label")',
+        openui='root = TextContent(":title")',
+        placeholders=[":title"],
+        meta={"repair": {"clean_ast": {"typeName": "Button"}}},
+    )
+    assert not quality.independent_judge(repair_record)["ok"]
+
+
 def test_independent_judge_rejects_under_specified_contract_prompt() -> None:
     record = ExampleRecord(
         id="judge-contract",

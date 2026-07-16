@@ -61,6 +61,18 @@ def _semantic_kind(tokenizer: Any, token_id: int) -> str:
     return "structural"
 
 
+def _at_root_value(tokenizer: Any, prefix_ids: list[int]) -> bool:
+    """Whether the symbolic first binding is awaiting its element value."""
+    try:
+        body = [int(token_id) for token_id in prefix_ids if token_id != tokenizer.bos_id]
+        return body == [
+            int(tokenizer.bind_id(0)),
+            int(tokenizer.token_to_id["="]),
+        ]
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return False
+
+
 def _known_terminal_coverage(tokenizer: Any, terminals: frozenset[str]) -> bool:
     """Whether token mapping exhausts the model vocabulary for these terminals."""
     broad = {
@@ -145,7 +157,7 @@ def _generated_ast_is_complete(prefix_text: str) -> bool:
         return False
 
 
-def _active_call(state: Any) -> tuple[str, int] | None:
+def _active_call(state: Any) -> tuple[str, int, int] | None:
     """Read the active call frame from Lark's parser value stack.
 
     The grammar owns delimiter/quote handling.  This deliberately does not
@@ -173,12 +185,15 @@ def _active_call(state: Any) -> tuple[str, int] | None:
     )
     if lpar is None:
         return None
-    index = sum(
-        1
-        for value in values[lpar + 1 :]
+    tail = values[lpar + 1 :]
+    commas = [
+        index
+        for index, value in enumerate(tail)
         if str(getattr(value, "type", "")) == "COMMA"
-    )
-    return component, index
+    ]
+    current = tail[(commas[-1] + 1) if commas else 0 :]
+    arg_count = len(commas) + int(bool(current))
+    return component, len(commas), arg_count
 
 
 def _schema_enum_ids(
@@ -187,7 +202,7 @@ def _schema_enum_ids(
     active = _active_call(state)
     if active is None:
         return None
-    component, index = active
+    component, index, _ = active
     definition = (schema.get("$defs") or {}).get(component) or {}
     properties = definition.get("properties") or {}
     names = list(properties)
@@ -212,7 +227,7 @@ def _schema_slot_type(
     active = _active_call(state)
     if active is None:
         return None
-    component, index = active
+    component, index, _ = active
     definition = (schema.get("$defs") or {}).get(component) or {}
     properties = definition.get("properties") or {}
     names = list(properties)
@@ -220,6 +235,23 @@ def _schema_slot_type(
         return None
     value = properties.get(names[index]) or {}
     return str(value.get("type")) if value.get("type") else None
+
+
+def _schema_call_arity(
+    state: Any, schema: dict[str, Any]
+) -> tuple[int, int, int, bool] | None:
+    """Return required, maximum, supplied args and current-slot progress."""
+    active = _active_call(state)
+    if active is None:
+        return None
+    component, index, arg_count = active
+    definition = (schema.get("$defs") or {}).get(component) or {}
+    names = list(definition.get("properties") or {})
+    if not names:
+        return None
+    required = set(definition.get("required") or ())
+    minimum = max((names.index(name) + 1 for name in required if name in names), default=0)
+    return minimum, len(names), arg_count, arg_count > index
 
 
 def _schema_type_terminals(schema_type: str | None) -> frozenset[str] | None:
@@ -274,7 +306,7 @@ def build_completion_forest(
         )
         continuation_ids = allowed_id_set(tokenizer, continuation_terminals) or set()
         candidates &= continuation_ids | {int(tokenizer.eos_id)}
-    needs_schema = bool(terminals & {"COMPONENT", "STRING"})
+    needs_schema = bool(terminals & {"COMPONENT", "STRING"}) or _active_call(engine) is not None
     schema = _official_schema() if needs_schema else None
     if schema is not None and "COMPONENT" in terminals:
         component_names = set(schema.get("properties") or {})
@@ -289,7 +321,9 @@ def build_completion_forest(
         candidates = set(enum_ids)
     schema_type = _schema_slot_type(engine, schema) if schema else None
     type_terminals = _schema_type_terminals(schema_type)
-    if type_terminals is not None and enum_ids is None:
+    arity = _schema_call_arity(engine, schema) if schema else None
+    current_started = arity[3] if arity is not None else False
+    if type_terminals is not None and enum_ids is None and not current_started:
         typed_ids = allowed_id_set(tokenizer, type_terminals) or set()
         candidates &= typed_ids
         if schema_type == "string" and slot_contract:
@@ -302,6 +336,18 @@ def build_completion_forest(
                 )
             except Exception:  # noqa: BLE001
                 pass
+
+    if arity is not None:
+        minimum, maximum, arg_count, current_started = arity
+        separator_ids = allowed_id_set(tokenizer, frozenset({"COMMA", "RPAR"})) or set()
+        if current_started and "RPAR" in terminals:
+            candidates &= separator_ids
+        if arg_count < minimum:
+            rpar_ids = allowed_id_set(tokenizer, frozenset({"RPAR"})) or set()
+            candidates -= rpar_ids
+        if arg_count >= maximum:
+            comma_ids = allowed_id_set(tokenizer, frozenset({"COMMA"})) or set()
+            candidates -= comma_ids
 
     if slot_contract and "STRING" in terminals:
         try:
@@ -352,6 +398,13 @@ def build_completion_forest(
                 inventory_complete = False
         except Exception:  # noqa: BLE001
             inventory_complete = False
+
+    if _at_root_value(tokenizer, prefix_ids):
+        candidates = {
+            token_id
+            for token_id in candidates
+            if _semantic_kind(tokenizer, token_id) == "component"
+        }
 
     specials = {
         int(tokenizer.pad_id),

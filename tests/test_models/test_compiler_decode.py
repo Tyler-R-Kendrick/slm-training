@@ -62,6 +62,20 @@ def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> 
     bos_start = build_completion_forest(tokenizer, [tokenizer.bos_id])
     assert tokenizer.bind_id(0) in bos_start.candidate_ids
     assert tokenizer.bind_id(1) not in bos_start.candidate_ids
+    root_value = build_completion_forest(
+        tokenizer,
+        [
+            tokenizer.bos_id,
+            tokenizer.bind_id(0),
+            tokenizer.token_to_id["="],
+        ],
+        slot_contract=[":hero.title"],
+    )
+    assert root_value.candidate_ids
+    assert all(
+        compiler_draft._semantic_kind(tokenizer, token_id) == "component"
+        for token_id in root_value.candidate_ids
+    )
 
     monkeypatch.setattr(
         compiler_draft,
@@ -124,6 +138,39 @@ def test_completion_forest_uses_schema_property_order_for_enums(monkeypatch) -> 
         tokenizer.token_to_id["STR:row"],
         tokenizer.token_to_id["STR:column"],
     }
+
+
+def test_completion_forest_enforces_generated_schema_arity(monkeypatch) -> None:
+    from slm_training.dsl.grammar.fastpath import compiler_draft
+
+    tokenizer = DSLNativeTokenizer.build()
+    monkeypatch.setattr(
+        compiler_draft,
+        "_official_schema",
+        lambda: {
+            "properties": {"SelectItem": {}},
+            "$defs": {
+                "SelectItem": {
+                    "properties": {
+                        "value": {"type": "string"},
+                        "label": {"type": "string"},
+                    },
+                    "required": ["value", "label"],
+                }
+            },
+        },
+    )
+
+    first = build_completion_forest(
+        tokenizer, tokenizer.encode('root=SelectItem(":value"', add_special=False)
+    )
+    assert set(first.candidate_ids) == {tokenizer.token_to_id[","]}
+
+    complete = build_completion_forest(
+        tokenizer,
+        tokenizer.encode('root=SelectItem(":value",":label"', add_special=False),
+    )
+    assert set(complete.candidate_ids) == {tokenizer.token_to_id[")"]}
 
 
 def test_tree_verifier_packs_prefix_nodes_and_avoids_full_projection() -> None:
