@@ -70,6 +70,7 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 | E234 edge decision alignment | `e234-edge-decision-alignment-32step` | CPU HF-context legal-decision alignment diagnostic | `outputs/autoresearch/e234-edge-decision-alignment/runs/e234-edge-decision-alignment-32step/checkpoints/last.pt` (local) | Decision accuracy learns and changes five choices, but edge on/off suite aggregates are identical and four thresholds fail; **not promotable or ship** ([results](design/iter-e234-edge-decision-alignment-20260716.md)) |
 | E235 binder-instance plan | `e235-binder-instance-plan-32step` | CPU HF-context grammar-binder planning diagnostic | `outputs/autoresearch/e235-binder-instance-plan/runs/e235-binder-instance-plan-32step/checkpoints/last.pt` (local) | Binder accuracy learns with full bound-row coverage and changes four choices, but on/off suite aggregates are identical and nine thresholds fail; **not promotable or ship** ([results](design/iter-e235-binder-instance-plan-20260716.md)) |
 | E236 binder topology | `e236-binder-topology-32step` | CPU HF-context binder-reference diagnostic | `outputs/autoresearch/e236-binder-topology/runs/e236-binder-topology-32step/checkpoints/last.pt` (local) | Topology objective fails to learn, changes zero of 38 applied choices, and semantic metrics collapse; twelve thresholds fail; **not promotable or ship** ([results](design/iter-e236-binder-topology-20260716.md)) |
+| E237 detached topology | `e237-detached-topology-32step` | CPU HF-context gradient-routing diagnostic | `outputs/autoresearch/e237-detached-topology/runs/e237-detached-topology-32step/checkpoints/last.pt` (local) | Detaching already-frozen context is a no-op and exactly reproduces E236; twelve thresholds fail; **not promotable or ship** ([results](design/iter-e237-detached-topology-20260716.md)) |
 | E174 unfrozen-context 8-step control | `e174-unfrozen-context-8step` | CPU HF-context semantic control | `outputs/runs/e174-unfrozen-context-8step/checkpoints/last.pt` (local) | Unfrozen context, loss 39.4253; bounded probe syntax 0.0 and parse 0.0; rejected control, **not promotable or ship** ([results](design/iter-e174-unfrozen-context-20260716.md)) |
 | Matrix honest champion (scratch) | `qx_e53_*` (V6 E53 family) | CPU scratch matrix clear | Primarily `outputs/runs/` (+ docs matrix JSON) | Honest `--ship-gates` on limited `rico_held` n; **not** production HF ship |
 | P13 fixture E50 control | `qx_e50_core_remask` | CPU scratch, fixture corpus | `/tmp/slm17-e50-fixture-honest/` (local) | Matched control; held 0.08 / RICO 0.0667 fidelity; parse 0.0, not ship |
@@ -252,6 +253,11 @@ Leakage: structural fingerprints + train/test isolation
 | `adversarial` (`e236-binder-topology-32step`) | 4 | 1.0 | 0.0000 | 0.2905 | 0.0000 | No — meaningful program below gate |
 | `ood` (`e236-binder-topology-32step`) | 4 | 1.0 | 0.0000 | 0.2369 | 0.0000 | No — semantic metrics collapse |
 | `rico_held` (`e236-binder-topology-32step`) | 3 | 1.0 | 0.0000 | 0.0901 | 0.0000 | No — semantic metrics collapse; diagnostic n=3 |
+| `smoke` (`e237-detached-topology-32step`) | 3 | 1.0 | 0.0000 | 0.3094 | 0.0000 | No — exact E236 reproduction |
+| `held_out` (`e237-detached-topology-32step`) | 5 | 1.0 | 0.0000 | 0.2514 | 0.0000 | No — exact E236 reproduction |
+| `adversarial` (`e237-detached-topology-32step`) | 4 | 1.0 | 0.0000 | 0.2905 | 0.0000 | No — exact E236 reproduction |
+| `ood` (`e237-detached-topology-32step`) | 4 | 1.0 | 0.0000 | 0.2369 | 0.0000 | No — exact E236 reproduction |
+| `rico_held` (`e237-detached-topology-32step`) | 3 | 1.0 | 0.0000 | 0.0901 | 0.0000 | No — exact E236 reproduction; diagnostic n=3 |
 
 Recipe for `restructure_cpu_scratch_v0`: device=cpu, steps=80, context=scratch,
 fixture train/test `v0`, `--no-sync-checkpoints`, LTR primary, no DESIGN.md in
@@ -415,6 +421,7 @@ suites because they contain no scope metadata. Evidence:
 | 2026-07-16 | `e234-edge-decision-alignment-32step` (E234) | `outputs/autoresearch/e234-edge-decision-alignment/runs/e234-edge-decision-alignment-32step/` (local) | 32 CPU steps; decision accuracy 0→0.5714; syntax 1.0 and meaningful program 0.3333/0/0.25/0/0.6667 | Edge on/off aggregates identical despite 5 changes; 4 thresholds fail; AgentV 1/5; checkpoint SHA `350b7c5c…0fc68`; no sync or promotion |
 | 2026-07-16 | `e235-binder-instance-plan-32step` (E235) | `outputs/autoresearch/e235-binder-instance-plan/runs/e235-binder-instance-plan-32step/` (local) | 32 CPU steps; binder accuracy 0→0.40 with all 30 bound rows supervised; syntax 1.0 and meaningful program 0.3333/0/0.25/0/0.6667 | Binder on/off aggregates identical despite 4 changes; 9 thresholds fail; AgentV 1/5; checkpoint SHA `83adbccd…73ca8`; no sync or promotion |
 | 2026-07-16 | `e236-binder-topology-32step` (E236) | `outputs/autoresearch/e236-binder-topology/runs/e236-binder-topology-32step/` (local) | 32 CPU steps; topology accuracy 0.5455→0.5238; syntax 1.0 but semantic metrics 0 throughout | Decode on/off identical with 0/38 choice changes; 12 thresholds fail; AgentV 0/5; checkpoint SHA `94e1d042…f8c43`; no sync or promotion |
+| 2026-07-16 | `e237-detached-topology-32step` (E237) | `outputs/autoresearch/e237-detached-topology/runs/e237-detached-topology-32step/` (local) | 32 CPU steps; detached frozen context reproduces E236 train/eval diagnostics | No-op hypothesis rejected; 12 thresholds fail; AgentV 0/5; checkpoint SHA `edcbad06…4b59d`; no sync or promotion |
 
 Append a row for every new or replaced checkpoint. Do not delete history.
 

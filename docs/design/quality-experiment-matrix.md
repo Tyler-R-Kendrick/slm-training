@@ -1002,6 +1002,15 @@ mechanism and telemetry, reject the checkpoint, and require normalized/staged
 topology learning plus explicit reference arity before retrying. Full evidence:
 [iter-e236-binder-topology-20260716.md](iter-e236-binder-topology-20260716.md).
 
+E237 detaches pooled context before the topology head to test shared-feature
+interference. Because the HF context tower is already frozen, the change is a
+no-op: train diagnostics and every suite aggregate reproduce E236, 38 decode
+applications change zero choices, twelve thresholds fail, and AgentV is 0/5.
+Retain the defensive detach for future unfrozen runs, reject the hypothesis and
+checkpoint, and reformulate topology around reference arity/stop decisions.
+Full evidence:
+[iter-e237-detached-topology-20260716.md](iter-e237-detached-topology-20260716.md).
+
 ## V9 lattice-guided recursive compiler search (proposed, unrun)
 
 The research synthesis and implementation boundary are in

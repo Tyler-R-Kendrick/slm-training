@@ -1985,7 +1985,9 @@ class TwoTowerModel(nn.Module):
             binder_ids = self._binder_component_token_ids()
             binder_index = {token_id: index for index, token_id in enumerate(binder_ids)}
             topology_logits = self.binder_topology_head(
-                self._pool_context(ctx, ctx_pad)
+                # Keep this auxiliary planner from rewriting the shared prompt
+                # representation before its own legal-decision signal is stable.
+                self._pool_context(ctx, ctx_pad).detach()
             ).view(len(batch), len(binder_ids), len(binder_ids))
             topology_losses: list[torch.Tensor] = []
             topology_hits: list[torch.Tensor] = []
