@@ -42,3 +42,13 @@ def test_vercel_entrypoint_imports_without_torch() -> None:
         ],
         check=True,
     )
+
+
+def test_vercel_entrypoint_bootstraps_src_layout(tmp_path: Path) -> None:
+    """Vercel executes the entrypoint file without adding src/ to sys.path."""
+    root = Path(__file__).parents[2]
+    subprocess.run(
+        [sys.executable, "-I", str(root / "src/slm_training/web/vercel.py")],
+        cwd=tmp_path,
+        check=True,
+    )

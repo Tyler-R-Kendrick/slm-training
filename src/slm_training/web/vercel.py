@@ -1,9 +1,18 @@
 """Vercel FastAPI entrypoint for the annotation playground."""
 
+# ruff: noqa: E402
+
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
+
+# Vercel loads this src-layout entrypoint by file path, without adding src/ to
+# sys.path. Bootstrap it before importing the application package.
+src_root = Path(__file__).resolve().parents[2]
+if str(src_root) not in sys.path:
+    sys.path.insert(0, str(src_root))
 
 import slm_training.web.service as playground_service
 from slm_training.harnesses.annotations.store import (
