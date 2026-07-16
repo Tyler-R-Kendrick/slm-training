@@ -376,7 +376,7 @@ def evaluate(
         if callable(generate_with_stats) and len(chunk) == 1:
             text, stats = generate_with_stats(chunk[0].prompt)
             decode_stats_rows.append(stats)
-            return [text]
+            return [text], []
         if callable(generate_batch_requests):
             predictions = generate_batch_requests(_requests_for(chunk))
             consume = getattr(plugin, "consume_generation_evidence", None)

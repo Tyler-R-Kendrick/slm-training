@@ -1811,6 +1811,16 @@ def main(argv: list[str] | None = None) -> int:
         help="Run deferred E34 latent MoE placeholder (normally skipped).",
     )
     args = parser.parse_args(argv)
+    # Modern curriculum rows (notably E53) use ``curriculum_dir`` as their
+    # actual training input.  If a caller explicitly supplies a different
+    # train corpus, do not silently substitute the stale default curriculum
+    # snapshot; use the requested corpus unless a curriculum path was also
+    # explicitly selected.
+    if (
+        args.train_dir != Path("outputs/train_data/v1")
+        and args.curriculum_dir == Path("outputs/train_data/v1_curriculum")
+    ):
+        args.curriculum_dir = args.train_dir
     args.suites = tuple(
         value.strip() for value in args.suites.split(",") if value.strip()
     )

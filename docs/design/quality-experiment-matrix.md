@@ -369,6 +369,27 @@ E50/E53/E55 clear honest `--ship-gates` (including rico_held n=20). Full 1500
 `rico_held` + HF context remains the production claim. Grammar-diffusion (E54/X2)
 needs longer train / capacity before competing with the TwoTower V5 stack.
 
+### E121 judged-corpus follow-up (2026-07-16)
+
+E121 reran the E53 stack against the committed `remediated_roots_judged`
+corpus (405 records), using CPU scratch, 8 train steps plus the 30-step trust
+gate, and no DESIGN.md context. The first invocation exposed a matrix
+precedence bug: E53 silently used the stale default curriculum snapshot even
+when `--train-dir` was explicit. The runner now maps an explicit train corpus
+to curriculum input unless a separate curriculum path is provided.
+
+The bounded five-suite diagnostic (`smoke`, `held_out`, `adversarial`, `ood`,
+`rico_held`, capped at n=3) exceeded the CPU wall limit under E53's `best_of_n=4`
+decode before producing suite rows. A one-record smoke diagnostic with a
+5-second per-record timeout recorded parse/fidelity/structure/reward **0.0**
+and one decode timeout at 5,001 ms. This is a negative scratch result, not a
+ship claim. The evaluator also received two fixes during this iteration: the
+duplicate `--output-tokenizer` CLI option was removed and the
+`generate_with_stats` path now returns the required predictions/evidence tuple.
+See [iter-e121-judged-corpus-e53-20260715.md](iter-e121-judged-corpus-e53-20260715.md)
+and the generated failure scoreboards
+`quality-matrix-results-iter-e121*-e53-judged-20260715.json`.
+
 Grammar X results: [grammar-matrix-results.json](grammar-matrix-results.json).
 
 ## X matrix (grammar-native diffusion ablations)
