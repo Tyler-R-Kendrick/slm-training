@@ -235,8 +235,12 @@ class TwoTowerConfig:
     # Compiler-drafted decode: off | forced | restricted | tree.
     # Decode-only; ``off`` preserves existing checkpoint behavior.
     compiler_decode_mode: str = "off"
-    # Search over compiler-valid branches: greedy | lattice.
+    # Search over compiler-valid branches: greedy | lattice | ptrm | gram.
     compiler_search_mode: str = "greedy"
+    compiler_search_trigger: str = "stagnation"  # bottom | stagnation | always
+    compiler_search_width: int = 1
+    compiler_search_noise: float = 0.0
+    compiler_search_stagnation_patience: int = 2
     compiler_search_backtrack_limit: int = 8
     fastpath_aux_weight: float = 0.0
     fastpath_gate_threshold: float = 0.5
@@ -2131,7 +2135,9 @@ class TwoTowerModel(nn.Module):
         )
         from slm_training.dsl.grammar.fastpath.lattice_search import (
             LatticeSearchState,
+            StagnationTracker,
             rank_forest,
+            trajectory_orders,
         )
 
         if mode not in {"forced", "restricted", "tree"}:
@@ -2145,8 +2151,18 @@ class TwoTowerModel(nn.Module):
         search_mode = str(
             getattr(self.config, "compiler_search_mode", "greedy") or "greedy"
         ).lower()
-        if search_mode not in {"greedy", "lattice"}:
-            raise ValueError("compiler_search_mode must be greedy or lattice")
+        if search_mode not in {"greedy", "lattice", "ptrm", "gram"}:
+            raise ValueError(
+                "compiler_search_mode must be greedy, lattice, ptrm, or gram"
+            )
+        search_trigger = str(
+            getattr(self.config, "compiler_search_trigger", "stagnation")
+            or "stagnation"
+        ).lower()
+        if search_trigger not in {"bottom", "stagnation", "always"}:
+            raise ValueError(
+                "compiler_search_trigger must be bottom, stagnation, or always"
+            )
         search = LatticeSearchState(
             backtrack_limit=max(
                 0,
@@ -2158,6 +2174,18 @@ class TwoTowerModel(nn.Module):
                 ),
             )
         )
+        stagnation = StagnationTracker(
+            patience=max(
+                1,
+                int(
+                    getattr(
+                        self.config, "compiler_search_stagnation_patience", 2
+                    )
+                    or 2
+                ),
+            )
+        )
+        after_bottom = False
         while len(prefix) < length:
             with timed_ms(stats, "compiler_ms"):
                 forest = build_completion_forest(
@@ -2176,7 +2204,7 @@ class TwoTowerModel(nn.Module):
             # points it is meant to protect. Fall back only when no legal path
             # exists at all.
             if not forest.paths:
-                if search_mode == "lattice":
+                if search_mode != "greedy":
                     if stats is not None:
                         stats.compiler_lattice_bottoms += 1
                     restored = search.rollback()
@@ -2186,6 +2214,7 @@ class TwoTowerModel(nn.Module):
                         if stats is not None:
                             stats.compiler_lattice_rollbacks += 1
                             stats.compiler_lattice_nogoods = len(search.nogoods)
+                        after_bottom = True
                     else:
                         selected = ()
                     if selected:
@@ -2280,13 +2309,66 @@ class TwoTowerModel(nn.Module):
                     length,
                     tree=mode == "tree",
                 )
-            if search_mode == "lattice":
+            if search_mode != "greedy":
                 ranked = rank_forest(
                     forest,
                     {tuple(selected): 1.0},
                     prefix=tuple(prefix),
                     nogoods=frozenset(search.nogoods),
                 )
+                is_stagnant = stagnation.observe(ranked.signature, len(prefix))
+                trigger_trajectory = search_mode in {"ptrm", "gram"} and (
+                    search_trigger == "always"
+                    or (search_trigger == "bottom" and after_bottom)
+                    or (search_trigger == "stagnation" and is_stagnant)
+                )
+                if trigger_trajectory and len(ranked.paths) > 1:
+                    orders = trajectory_orders(
+                        ranked,
+                        width=max(
+                            1,
+                            int(
+                                getattr(
+                                    self.config, "compiler_search_width", 1
+                                )
+                                or 1
+                            ),
+                        ),
+                        noise=max(
+                            0.0,
+                            float(
+                                getattr(
+                                    self.config, "compiler_search_noise", 0.0
+                                )
+                                or 0.0
+                            ),
+                        ),
+                        seed=int(getattr(self.config, "seed", 0) or 0),
+                    )
+                    if orders:
+                        # GRAM-style mode prefers a distinct semantic branch
+                        # kind; PTRM-style mode uses the first seeded trajectory.
+                        order = orders[0]
+                        if search_mode == "gram":
+                            order = max(
+                                orders,
+                                key=lambda row: len({path.kind for path in row}),
+                            )
+                        ranked = type(ranked)(
+                            order,
+                            tuple(
+                                ranked.scores[ranked.paths.index(path)]
+                                for path in order
+                            ),
+                            ranked.coverage,
+                        )
+                        if stats is not None:
+                            stats.compiler_lattice_trajectory_triggers += 1
+                            stats.compiler_lattice_trajectories += len(orders)
+                            stats.compiler_lattice_unique_proposals += len(
+                                {order[0].token_ids for order in orders if order}
+                            )
+                    after_bottom = False
                 decision = search.choose(prefix, ranked)
                 selected = tuple(decision.token_ids) if decision else ()
                 if stats is not None:
