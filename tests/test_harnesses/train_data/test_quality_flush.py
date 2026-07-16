@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from slm_training.data.quality import assess_record
+from slm_training.data.quality import assess_record, independent_judge
 from slm_training.dsl import bridge_available, validate
 from slm_training.dsl.schema import ExampleRecord, load_jsonl
 from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
@@ -165,6 +165,30 @@ def test_independent_judge_rejects_under_specified_contract_prompt() -> None:
     report = assess_record(record, require_design_md=False)
     assert not report.ok
     assert "prompt_under_specified_for_layout" in report.reasons
+
+
+def test_independent_judge_checks_generated_schema_value_roles() -> None:
+    valid = ExampleRecord(
+        id="judge-schema-valid",
+        prompt="Build an email form control with an input.",
+        openui=(
+            'root = FormControl(":label", input)\n'
+            'input = Input("email", ":placeholder")'
+        ),
+        placeholders=[":label", ":placeholder"],
+    )
+    assert independent_judge(valid)["ok"]
+
+    for value in ('":input"', "[]"):
+        invalid = ExampleRecord(
+            id="judge-schema-invalid",
+            prompt="Build an email form control with an input.",
+            openui=f'root = FormControl(":label", {value})',
+            placeholders=[":label", ":input"],
+        )
+        result = independent_judge(invalid)
+        assert not result["ok"]
+        assert "schema_value_role_mismatch:FormControl.input" in result["reasons"]
 
 
 def test_normalized_record_stamps_independent_judge_gate() -> None:

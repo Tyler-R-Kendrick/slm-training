@@ -1,0 +1,6 @@
+{"max_quality_score": 1.0, "mean_quality_score": 0.96369, "min_quality_score": 0.9, "record_count": 168, "root_parent_count": 84, "source_family": "corruption_repair", "task_counts": {"repair": 168}}
+{"max_quality_score": 1.0, "mean_quality_score": 0.96369, "min_quality_score": 0.9, "record_count": 252, "root_parent_count": 84, "source_family": "edit_trajectory", "task_counts": {"edit": 84, "generation": 84, "patch": 84}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 14, "root_parent_count": 14, "source_family": "human_curated", "task_counts": {"generation": 14}}
+{"max_quality_score": 1.0, "mean_quality_score": 0.954545, "min_quality_score": 0.95, "record_count": 11, "root_parent_count": 11, "source_family": "programspec_generated", "task_counts": {"generation": 11}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 1, "root_parent_count": 1, "source_family": "renderer_visual", "task_counts": {"edit": 1}}
+{"max_quality_score": 1.0, "mean_quality_score": 1.0, "min_quality_score": 1.0, "record_count": 1, "root_parent_count": 1, "source_family": "web_distilled", "task_counts": {"generation": 1}}

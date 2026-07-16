@@ -44,18 +44,25 @@ PREFERRED_COMPONENTS = frozenset(
 
 
 @lru_cache(maxsize=1)
-def _official_component_names() -> frozenset[str]:
-    """Return the generated OpenUI component inventory, with an offline fallback."""
+def _official_schema() -> dict[str, Any]:
+    """Return the generated OpenUI schema, with an offline empty fallback."""
     try:
         from slm_training.dsl import lang_core
 
         schema = lang_core.library_schema()
-        names = set(schema.get("properties") or schema.get("components") or ())
-        if names:
-            return frozenset(str(name) for name in names)
+        if isinstance(schema, dict):
+            return schema
     except Exception:  # noqa: BLE001
         pass
-    return PREFERRED_COMPONENTS
+    return {}
+
+
+@lru_cache(maxsize=1)
+def _official_component_names() -> frozenset[str]:
+    """Return the generated OpenUI component inventory, with an offline fallback."""
+    schema = _official_schema()
+    names = set(schema.get("properties") or schema.get("components") or ())
+    return frozenset(str(name) for name in names) or PREFERRED_COMPONENTS
 
 
 def _prompt_component_mentions(prompt: str) -> frozenset[str]:
@@ -105,6 +112,78 @@ def _ast_component_names(value: Any) -> frozenset[str]:
         for child in value:
             found.update(_ast_component_names(child))
     return frozenset(found)
+
+
+def _matches_schema_value(
+    value: Any, spec: dict[str, Any], definitions: dict[str, Any]
+) -> bool:
+    if "anyOf" in spec:
+        return any(
+            _matches_schema_value(value, branch, definitions)
+            for branch in spec["anyOf"]
+            if isinstance(branch, dict)
+        )
+    reference = spec.get("$ref")
+    if isinstance(reference, str):
+        expected = reference.rsplit("/", 1)[-1]
+        return isinstance(value, dict) and value.get("typeName") == expected
+    expected_type = spec.get("type")
+    if expected_type == "array":
+        if not isinstance(value, list):
+            return False
+        item_spec = spec.get("items")
+        return not isinstance(item_spec, dict) or all(
+            _matches_schema_value(item, item_spec, definitions) for item in value
+        )
+    if expected_type == "object":
+        return isinstance(value, dict)
+    if expected_type == "string":
+        return isinstance(value, str)
+    if expected_type == "boolean":
+        return isinstance(value, bool)
+    if expected_type in {"number", "integer"}:
+        return isinstance(value, (int, float)) and not isinstance(value, bool)
+    return True
+
+
+def _schema_semantic_reasons(openui: str) -> list[str]:
+    """Judge resolved AST property roles against the generated component schema."""
+    schema = _official_schema()
+    definitions = schema.get("$defs") or {}
+    if not definitions:
+        return []
+    try:
+        from slm_training.dsl import lang_core
+
+        root = lang_core.parse(openui).root
+    except Exception:  # noqa: BLE001
+        return ["judge_schema_parse_failed"]
+    reasons: set[str] = set()
+
+    def visit(value: Any) -> None:
+        if isinstance(value, dict):
+            component = value.get("typeName")
+            props = value.get("props")
+            definition = definitions.get(component) if isinstance(component, str) else None
+            if isinstance(definition, dict) and isinstance(props, dict):
+                property_specs = definition.get("properties") or {}
+                for name in definition.get("required") or ():
+                    if props.get(name) is None:
+                        reasons.add(f"schema_required_value_missing:{component}.{name}")
+                for name, prop_value in props.items():
+                    spec = property_specs.get(name)
+                    if isinstance(spec, dict) and not _matches_schema_value(
+                        prop_value, spec, definitions
+                    ):
+                        reasons.add(f"schema_value_role_mismatch:{component}.{name}")
+            for child in value.values():
+                visit(child)
+        elif isinstance(value, list):
+            for child in value:
+                visit(child)
+
+    visit(root)
+    return sorted(reasons)
 
 
 @dataclass(frozen=True)
@@ -172,6 +251,7 @@ def independent_judge(record: ExampleRecord) -> dict[str, Any]:
         reasons.append("prompt_under_specified_for_layout")
     if not prompt or not openui:
         reasons.append("judge_missing_prompt_or_output")
+    reasons.extend(_schema_semantic_reasons(openui))
     return {"ok": not reasons, "score": round(max(0.0, 1.0 - 0.5 * len(reasons)), 4), "reasons": reasons}
 
 

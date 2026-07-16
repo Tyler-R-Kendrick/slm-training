@@ -835,6 +835,16 @@ Required `FormControl` input semantics still fail, leaving syntax/meaningful
 parse 0.0. No checkpoint is promotable. Full evidence:
 [iter-e208-e213-contextual-decisions-20260716.md](iter-e208-e213-contextual-decisions-20260716.md).
 
+E214–E216 test the next generalized data hypothesis. G11 now parses outputs and
+checks resolved AST property values against generated schema roles; no component
+names are special-cased. It rejects 49/496 contradictory E177 records and commits
+the 447 accepted records as immutable E214 data with synthesis telemetry. The
+matched E215 train reaches E216 syntax 1.0 with zero fallback or constrained dead
+ends, eliminating E213's invalid `FormControl.input` failure. Meaningful parse
+remains 0.0 because component recall is only 0.25, so this is a negative ship
+result and E215 is not promotable. Full evidence:
+[iter-e214-e216-schema-role-judge-20260716.md](iter-e214-e216-schema-role-judge-20260716.md).
+
 These rows are registered under `--matrix v8`; `--list` prints definitions
 without building data or starting a run. They require the lexer-native parent
 contract and unchanged honest five-suite gates. No result or champion is claimed.
