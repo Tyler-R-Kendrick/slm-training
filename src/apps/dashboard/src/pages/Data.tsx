@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { postJSON, usePoll } from "../api";
+import { getJSON, postJSON, usePoll } from "../api";
 import { useCaps, jobDef } from "../caps";
 import {
   Card,
@@ -12,40 +12,59 @@ import {
   ErrorNote,
 } from "../components";
 
-const PAGE_SIZE = 20;
+const FETCH_SIZE = 500;
 
 export function TrainingDataBrowser({ version }: { version?: string }) {
-  const [page, setPage] = useState(0);
   const [query, setQuery] = useState("");
   const [source, setSource] = useState("");
   const [selected, setSelected] = useState<any>(null);
-  const params = new URLSearchParams({
-    limit: String(PAGE_SIZE),
-    offset: String(page * PAGE_SIZE),
-  });
-  if (query) params.set("q", query);
-  if (source) params.set("source", source);
-  const recs = usePoll<any>(
-    version ? `/api/data/train/${encodeURIComponent(version)}/records?${params}` : null,
-    0,
-  );
+  const [records, setRecords] = useState<any[]>([]);
+  const [sources, setSources] = useState<string[]>([]);
+  const [count, setCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setPage(0);
     setSelected(null);
     setQuery("");
     setSource("");
   }, [version]);
 
   useEffect(() => {
-    setPage(0);
     setSelected(null);
-  }, [query, source]);
+    setRecords([]);
+    setCount(0);
+    setError(null);
+    if (!version) return;
 
-  const count = recs.data?.count ?? 0;
-  const rows = recs.data?.records ?? [];
-  const start = count ? page * PAGE_SIZE + 1 : 0;
-  const end = Math.min((page + 1) * PAGE_SIZE, count);
+    let cancelled = false;
+    setLoading(true);
+    (async () => {
+      const all: any[] = [];
+      let total = 0;
+      do {
+        const params = new URLSearchParams({ limit: String(FETCH_SIZE), offset: String(all.length) });
+        if (query) params.set("q", query);
+        if (source) params.set("source", source);
+        const page = await getJSON<any>(`/api/data/train/${encodeURIComponent(version)}/records?${params}`);
+        if (cancelled) return;
+        if (!all.length) setSources(page.sources ?? []);
+        total = page.count ?? 0;
+        const batch = page.records ?? [];
+        all.push(...batch);
+        if (!batch.length) break;
+      } while (all.length < total);
+      if (!cancelled) {
+        setRecords(all);
+        setCount(total);
+      }
+    })()
+      .catch((e) => !cancelled && setError(String(e?.message ?? e)))
+      .finally(() => !cancelled && setLoading(false));
+    return () => { cancelled = true; };
+  }, [version, query, source]);
+
+  const status = loading ? `Loading ${records.length ? `${records.length} of ${count}` : "records"}…` : `Showing all ${records.length} of ${count}`;
 
   return (
     <div className="data-browser">
@@ -63,14 +82,14 @@ export function TrainingDataBrowser({ version }: { version?: string }) {
           <span>Source</span>
           <select value={source} onChange={(e) => setSource(e.target.value)}>
             <option value="">All sources</option>
-            {(recs.data?.sources ?? []).map((item: string) => (
+            {sources.map((item: string) => (
               <option key={item} value={item}>{item}</option>
             ))}
           </select>
         </label>
-        <span className="hint data-browser-count">Showing {start}–{end} of {count}</span>
+        <span className="hint data-browser-count">{status}</span>
       </div>
-      <ErrorNote error={recs.error} />
+      <ErrorNote error={error} />
       <DataTable
         columns={[
           { key: "prompt", label: "prompt" },
@@ -78,7 +97,8 @@ export function TrainingDataBrowser({ version }: { version?: string }) {
           { key: "source", label: "source" },
           { key: "view", label: "" },
         ]}
-        rows={rows}
+        rows={records}
+        maxHeight="38rem"
         render={{
           prompt: (r) => <span className="data-prompt">{r.prompt}</span>,
           target: (r) => <span className="data-target mono">{r.openui}</span>,
@@ -89,23 +109,6 @@ export function TrainingDataBrowser({ version }: { version?: string }) {
           ),
         }}
       />
-      <div className="data-browser-pages">
-        <button
-          className="btn btn-small"
-          disabled={page === 0 || recs.loading}
-          onClick={() => setPage((value) => Math.max(0, value - 1))}
-        >
-          Previous
-        </button>
-        <span className="hint">Page {page + 1}</span>
-        <button
-          className="btn btn-small"
-          disabled={end >= count || recs.loading}
-          onClick={() => setPage((value) => value + 1)}
-        >
-          Next
-        </button>
-      </div>
       {selected && (
         <div className="record-detail">
           <div className="record-detail-head">
@@ -125,6 +128,8 @@ export function TrainingDataBrowser({ version }: { version?: string }) {
               <pre>{selected.design_md}</pre>
             </>
           )}
+          <h3>Complete record</h3>
+          <pre>{JSON.stringify(selected, null, 2)}</pre>
         </div>
       )}
     </div>

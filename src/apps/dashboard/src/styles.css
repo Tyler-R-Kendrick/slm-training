@@ -207,7 +207,6 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.01em; }
 .data-browser-tools { display: grid; grid-template-columns: minmax(240px, 2fr) minmax(180px, 1fr) auto; align-items: end; gap: 0.7rem; margin-bottom: 0.7rem; }
 .data-browser-count { padding-bottom: 0.4rem; white-space: nowrap; }
 .data-prompt, .data-target { color: var(--text-dim); display: block; max-width: 42ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.data-browser-pages { display: flex; justify-content: flex-end; align-items: center; gap: 0.6rem; margin-top: 0.7rem; }
 .record-detail { margin-top: 0.9rem; padding: 0.85rem; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--bg-2); }
 .record-detail-head { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
 .record-detail h3 { margin: 0.85rem 0 0.3rem; font-size: 0.78rem; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.06em; }
