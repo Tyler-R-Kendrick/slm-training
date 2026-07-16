@@ -126,6 +126,59 @@ def test_task_balanced_sampling_ignores_row_count_skew() -> None:
     assert 430 < generation < 570
 
 
+def test_capacity_aware_sampling_limits_repeats_to_pool_cycles() -> None:
+    records = [
+        ExampleRecord(
+            id=f"generation-{i}",
+            prompt="generate",
+            openui='root = Button(":x")',
+            meta={"source_family": "programspec_generated", "task": "generation"},
+        )
+        for i in range(20)
+    ] + [
+        ExampleRecord(
+            id="single-repair",
+            prompt="repair",
+            openui='root = Button(":x")',
+            meta={"source_family": "corruption_repair", "task": "repair"},
+        )
+    ]
+
+    batch = sample_mixture_batch(
+        records,
+        weights={"programspec_generated": 0.5, "corruption_repair": 0.5},
+        task_weights={"generation": 0.5, "repair_completion_inpaint": 0.5},
+        batch_size=21,
+        rng=random.Random(9),
+        sampling_policy="capacity_aware",
+    )
+
+    assert len({record.id for record in batch}) == 21
+    assert sum(record.id == "single-repair" for record in batch) == 1
+
+
+def test_capacity_aware_sampling_is_deterministic_and_cycles() -> None:
+    records = [_rec(f"r{i}", "rico_real") for i in range(3)]
+    first = sample_mixture_batch(
+        records,
+        weights={"rico_real": 1.0},
+        batch_size=7,
+        rng=random.Random(4),
+        sampling_policy="capacity_aware",
+    )
+    second = sample_mixture_batch(
+        records,
+        weights={"rico_real": 1.0},
+        batch_size=7,
+        rng=random.Random(4),
+        sampling_policy="capacity_aware",
+    )
+
+    assert [record.id for record in first] == [record.id for record in second]
+    assert len({record.id for record in first[:3]}) == 3
+    assert len({record.id for record in first[3:6]}) == 3
+
+
 def test_manifest_v1_loads_without_task_policy(tmp_path: Path) -> None:
     path = tmp_path / "legacy.json"
     path.write_text(

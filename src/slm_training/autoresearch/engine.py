@@ -393,6 +393,8 @@ def compile_commands(
                 train.append(f"--{flag}" if value else f"--no-{flag}")
     if knobs.mixture_weights:
         train.extend(["--mixture-manifest", str(mixture_path)])
+    if knobs.mixture_sampling_policy:
+        train.extend(["--mixture-sampling-policy", knobs.mixture_sampling_policy])
     commands.append(train)
     evaluate = [
         sys.executable,

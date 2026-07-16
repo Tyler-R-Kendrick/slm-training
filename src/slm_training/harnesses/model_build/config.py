@@ -63,6 +63,7 @@ class ModelBuildConfig:
     # P1b: optional mixture manifest (JSON) for online family-weighted sampling.
     mixture_manifest: Path | None = None
     mixture_min_quality_score: float = 0.0
+    mixture_sampling_policy: str = "with_replacement"
     # P1d: after base training, write promoted.pt from best_weighted_nll / last.
     register_promoted: bool = False
     # Stub-only

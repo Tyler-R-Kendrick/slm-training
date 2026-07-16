@@ -40,6 +40,7 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "max_records_per_parent",
         "min_quality_score",
         "mixture_weights",
+        "mixture_sampling_policy",
         "output_tokenizer",
         "seed",
         "schema_in_context",
@@ -218,6 +219,7 @@ class ExperimentKnobs(StrictModel):
     max_records_per_parent: int | None = Field(default=None, ge=1, le=100)
     min_quality_score: float | None = Field(default=None, ge=0, le=1)
     mixture_weights: dict[str, float] | None = None
+    mixture_sampling_policy: Literal["with_replacement", "capacity_aware"] | None = None
     steps: int | None = Field(default=None, ge=1, le=100_000)
     batch_size: int | None = Field(default=None, ge=1, le=1024)
     lr: float | None = Field(default=None, gt=0, le=1)

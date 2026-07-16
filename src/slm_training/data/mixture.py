@@ -47,6 +47,7 @@ ORGANIC_FAMILIES = (
     "human_curated",
 )
 FEEDBACK_FAMILIES = ("human_feedback",)
+SAMPLING_POLICIES = frozenset({"with_replacement", "capacity_aware"})
 _COMPONENT_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s*\(")
 
 
@@ -164,10 +165,13 @@ def sample_mixture_batch(
     pools: dict[str, list[ExampleRecord]] | None = None,
     task_weights: dict[str, float] | None = None,
     task_pools: dict[str, dict[str, list[ExampleRecord]]] | None = None,
+    sampling_policy: str = "with_replacement",
 ) -> list[ExampleRecord]:
     """Online weighted per-family draw (uses loop RNG for bit-exact resume)."""
     if batch_size <= 0:
         return []
+    if sampling_policy not in SAMPLING_POLICIES:
+        raise ValueError(f"unknown mixture sampling policy: {sampling_policy!r}")
     pools = pools or index_family_pools(records)
     manifest = MixtureManifest(mixture_id="runtime", weights=weights).normalized()
     if task_weights:
@@ -185,6 +189,30 @@ def sample_mixture_batch(
         if usable_tasks:
             groups = sorted(usable_tasks)
             group_weights = [task_manifest.task_weights[group] for group in groups]
+            if sampling_policy == "capacity_aware":
+                weighted_records: list[tuple[ExampleRecord, float]] = []
+                for group, group_weight in zip(groups, group_weights, strict=True):
+                    family_pools = usable_tasks[group]
+                    families = sorted(family_pools)
+                    family_weights = [
+                        manifest.weights.get(family, 0.0) for family in families
+                    ]
+                    if not any(family_weights):
+                        family_weights = [1.0] * len(families)
+                    family_total = sum(family_weights)
+                    for family, family_weight in zip(
+                        families, family_weights, strict=True
+                    ):
+                        members = family_pools[family]
+                        row_weight = (
+                            group_weight * family_weight / family_total / len(members)
+                        )
+                        weighted_records.extend(
+                            (member, row_weight) for member in members
+                        )
+                return _sample_capacity_aware(
+                    weighted_records, batch_size=batch_size, rng=rng
+                )
             out: list[ExampleRecord] = []
             for _ in range(batch_size):
                 group = rng.choices(groups, weights=group_weights, k=1)[0]
@@ -206,6 +234,12 @@ def sample_mixture_batch(
     }
     if not usable:
         # Fall back to uniform over all records when no weight matches.
+        if sampling_policy == "capacity_aware":
+            return _sample_capacity_aware(
+                [(record, 1.0) for record in records],
+                batch_size=batch_size,
+                rng=rng,
+            )
         return [records[rng.randrange(len(records))] for _ in range(batch_size)]
 
     families = sorted(usable)
@@ -213,11 +247,45 @@ def sample_mixture_batch(
     total = sum(family_weights)
     family_weights = [w / total for w in family_weights]
 
+    if sampling_policy == "capacity_aware":
+        weighted_records = [
+            (member, family_weight / len(usable[family]))
+            for family, family_weight in zip(families, family_weights, strict=True)
+            for member in usable[family]
+        ]
+        return _sample_capacity_aware(
+            weighted_records, batch_size=batch_size, rng=rng
+        )
+
     out: list[ExampleRecord] = []
     for _ in range(batch_size):
         family = rng.choices(families, weights=family_weights, k=1)[0]
         members = usable[family]
         out.append(members[rng.randrange(len(members))])
+    return out
+
+
+def _sample_capacity_aware(
+    weighted_records: list[tuple[ExampleRecord, float]],
+    *,
+    batch_size: int,
+    rng: random.Random,
+) -> list[ExampleRecord]:
+    """Weighted draws without replacement, restarting only after pool exhaustion."""
+    if not weighted_records:
+        return []
+    out: list[ExampleRecord] = []
+    while len(out) < batch_size:
+        remaining = list(weighted_records)
+        cycle_size = min(batch_size - len(out), len(remaining))
+        for _ in range(cycle_size):
+            index = rng.choices(
+                range(len(remaining)),
+                weights=[weight for _, weight in remaining],
+                k=1,
+            )[0]
+            record, _ = remaining.pop(index)
+            out.append(record)
     return out
 
 

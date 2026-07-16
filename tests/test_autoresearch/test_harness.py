@@ -1111,6 +1111,7 @@ def test_compile_resolves_canonical_published_train_version() -> None:
             design_md_context=False,
             local_files_only=True,
             sync_checkpoints=False,
+            mixture_sampling_policy="capacity_aware",
         )
     )
 
@@ -1128,6 +1129,7 @@ def test_compile_resolves_canonical_published_train_version() -> None:
     assert "--no-design-md-context" in commands[0]
     assert "--local-files-only" in commands[0]
     assert "--no-sync-checkpoints" in commands[0]
+    assert commands[0][commands[0].index("--mixture-sampling-policy") + 1] == "capacity_aware"
     assert commands[-1][commands[-1].index("--compiler-decode-mode") + 1] == "tree"
     assert "--no-unconstrained-fallback" in commands[-1]
 

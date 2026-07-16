@@ -151,11 +151,24 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         manifest = load_mixture_manifest(mixture_path)
         mixture_weights = dict(manifest.weights)
         mixture_task_weights = dict(manifest.task_weights or {}) or None
+        mixture_sampling_policy = str(
+            getattr(config, "mixture_sampling_policy", "with_replacement")
+        )
+        manifest_hash = mixture_hash(manifest)
+        effective_hash = manifest_hash
+        if mixture_sampling_policy != "with_replacement":
+            import hashlib
+
+            effective_hash = hashlib.sha256(
+                f"{manifest_hash}:{mixture_sampling_policy}".encode()
+            ).hexdigest()
         mixture_meta = {
             "mixture_id": manifest.mixture_id,
             "weights": mixture_weights,
             "task_weights": mixture_task_weights,
-            "hash": mixture_hash(manifest),
+            "hash": effective_hash,
+            "manifest_hash": manifest_hash,
+            "sampling_policy": mixture_sampling_policy,
             "path": str(mixture_path),
             "min_quality_score": min_quality,
             "filtered_record_count": len(records),
@@ -177,6 +190,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 pools=family_pools,
                 task_weights=mixture_task_weights,
                 task_pools=task_family_pools,
+                sampling_policy=mixture_sampling_policy,
             )
             return batched(drawn, config.batch_size)
         if getattr(config, "use_curriculum", False):
@@ -232,6 +246,14 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     if resume_path:
         resume_path = Path(resume_path)
         payload = load_full_state(resume_path)
+        previous_mixture_hash = payload.get("mixture_hash")
+        current_mixture_hash = (mixture_meta or {}).get("hash")
+        if previous_mixture_hash and previous_mixture_hash != current_mixture_hash:
+            raise ValueError(
+                "resume_from mixture mismatch: checkpoint used "
+                f"{previous_mixture_hash[:12]}… but current policy uses "
+                f"{str(current_mixture_hash)[:12]}…"
+            )
         prev_sha = payload.get("data_manifest_sha")
         if prev_sha and manifest_sha and prev_sha != manifest_sha:
             raise ValueError(

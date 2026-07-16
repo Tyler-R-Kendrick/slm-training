@@ -100,6 +100,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Exclude judged records below this score when sampling a mixture.",
     )
     parser.add_argument(
+        "--mixture-sampling-policy",
+        choices=("with_replacement", "capacity_aware"),
+        default="with_replacement",
+        help="Draw mixture rows with replacement or capacity-aware per window.",
+    )
+    parser.add_argument(
         "--register-promoted",
         action="store_true",
         help="P1d: write promoted.pt from best_weighted_nll / best_ship / last.",
@@ -654,6 +660,7 @@ def main(argv: list[str] | None = None) -> int:
             full_state_checkpoint=not bool(args.no_full_state_checkpoint),
             mixture_manifest=args.mixture_manifest,
             mixture_min_quality_score=args.mixture_min_quality_score,
+            mixture_sampling_policy=args.mixture_sampling_policy,
             register_promoted=bool(args.register_promoted),
             telemetry=not bool(args.no_telemetry),
             checkpoint_bucket=(
