@@ -85,6 +85,21 @@ def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> 
         compiler_draft._semantic_kind(tokenizer, token_id) == "component"
         for token_id in root_value.candidate_ids
     )
+    child_value = build_completion_forest(
+        tokenizer,
+        [
+            tokenizer.bos_id,
+            *tokenizer.encode("root=Stack([b1])", add_special=False),
+            tokenizer.token_to_id["NL"],
+            tokenizer.bind_id(1),
+            tokenizer.token_to_id["="],
+        ],
+    )
+    assert child_value.candidate_ids
+    assert all(
+        compiler_draft._semantic_kind(tokenizer, token_id) == "component"
+        for token_id in child_value.candidate_ids
+    )
     children = build_completion_forest(
         tokenizer,
         [
@@ -94,6 +109,18 @@ def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> 
         slot_contract=[":hero.title"],
     )
     assert not (set(children.candidate_ids) & set(tokenizer.kind_ids("sym")))
+    assert not (set(children.candidate_ids) & set(tokenizer.kind_ids("lit")))
+    assert tokenizer.bind_id(1) in children.candidate_ids
+    assert tokenizer.token_to_id["Stack"] in children.candidate_ids
+
+    nested_children = build_completion_forest(
+        tokenizer,
+        [
+            tokenizer.bos_id,
+            *tokenizer.encode("root=Stack([Stack([", add_special=False),
+        ],
+    )
+    assert not (set(nested_children.candidate_ids) & set(tokenizer.kind_ids("lit")))
 
     monkeypatch.setattr(
         compiler_draft,
@@ -110,6 +137,7 @@ def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> 
     assert forest.coverage == "complete"
     assert tokenizer.sym_id(0) in forest.candidate_ids
     assert tokenizer.sym_id(1) not in forest.candidate_ids
+    assert set(forest.candidate_ids) == {tokenizer.sym_id(0)}
     # Every emitted edge is accepted by the grammar and has a reachable
     # continuation; candidate policy must come from parser state, not from
     # a list of forbidden punctuation or component names.
@@ -269,7 +297,7 @@ def test_gold_decisions_follow_compiler_forest() -> None:
     selected = {tokenizer.id_to_token[target[position]] for position in positions}
     assert {"<BIND_0>", "Card", "<BIND_1>", "TextContent"} <= selected
     kinds = {decision.kind for decision in gold_compiler_decisions(tokenizer, target)}
-    assert {"bind", "component", "struct"} <= kinds
+    assert {"bind", "component_root", "component_bound", "struct"} <= kinds
 
 
 def test_grammar_state_advances_lexer_literals_as_source() -> None:
@@ -320,7 +348,8 @@ def test_compiler_alignment_can_stratify_grammar_decision_kinds() -> None:
     metrics = model.last_training_metrics
     assert metrics["compiler_alignment_rows"] > 1
     assert metrics["compiler_alignment_bind_rows"] == 1
-    assert metrics["compiler_alignment_component_rows"] == 1
+    assert metrics["compiler_alignment_component_root_rows"] == 1
+    assert metrics["compiler_alignment_component_bound_rows"] == 1
 
 
 def test_tree_verifier_packs_prefix_nodes_and_avoids_full_projection() -> None:

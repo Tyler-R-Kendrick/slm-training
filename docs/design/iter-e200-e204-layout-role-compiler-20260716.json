@@ -1,0 +1,129 @@
+{
+  "campaign": "E200-E204 generated layout-role constraints",
+  "date_utc": "2026-07-16",
+  "honesty": {
+    "classification": "cpu diagnostic subset",
+    "ship_gates": false,
+    "promoted": false,
+    "checkpoint_sync": "disabled for scratch diagnostics",
+    "design_md_in_context": false,
+    "suite": "smoke",
+    "suite_n": 1
+  },
+  "corpus_audit": {
+    "version": "e177_semantic_judge_v2",
+    "record_count": 496,
+    "declaration_count": 1916,
+    "component_rhs_count": 1916,
+    "non_component_rhs_count": 0,
+    "method": "Parse every gold target with the canonical layout grammar and classify each declaration RHS by generated AST surface role; byte-fallback uppercase component names are component syntax, not literals."
+  },
+  "data": {
+    "manifest_sha256": "d59a94d9de0c3bfd0145faf27cc4ffab11fac73a4fc0f14e0390330aa8367803",
+    "mixture": "src/slm_training/resources/train_data/e177_semantic_judge_v2/mixture_semantic_balanced.json",
+    "mixture_sha256": "c141a4526c7cf3565ce21b6172b2f2d12c7f16c92d55f0f0ceca07751f4cacac"
+  },
+  "train": {
+    "id": "E201",
+    "run_id": "e201-role-stratified-compiler-aligned-32step",
+    "checkpoint": "outputs/runs/e201-role-stratified-compiler-aligned-32step/checkpoints/last.pt",
+    "checkpoint_sha256": "fd34f17eb651be9a1c54221c0ef5ca82e26d2904c88df82ecee316c3c8e5006a",
+    "device": "cpu",
+    "steps": 32,
+    "batch_size": 4,
+    "seed": 0,
+    "context_backend": "hf",
+    "context_model": "HuggingFaceTB/SmolLM2-135M",
+    "context_frozen": true,
+    "schema_in_context": true,
+    "slot_contract_in_context": true,
+    "compiler_alignment_loss_weight": 1.0,
+    "compiler_alignment_stratified": true,
+    "last_loss": 9.152117729187012,
+    "wall_ms": 112037.757,
+    "seen_prompt_tokens": 17848,
+    "seen_target_tokens": 5928,
+    "alignment_rows": 757,
+    "alignment_loss_mean": 13.584931552410126,
+    "alignment_loss_first": 69.50528717041016,
+    "alignment_loss_last": 3.833782434463501,
+    "decision_rows": {
+      "bind": 128,
+      "component_root": 128,
+      "component_bound": 126,
+      "struct": 128,
+      "sym": 128,
+      "lit": 119
+    }
+  },
+  "evaluations": [
+    {
+      "id": "E200",
+      "run": "e200-layout-declaration-role-probe",
+      "checkpoint": "E196",
+      "raw_syntax": 1.0,
+      "meaningful_parse": 0.0,
+      "structure": 0.1917,
+      "component_recall": 0.0,
+      "placeholder_validity": 0.0,
+      "reward": 0.0,
+      "latency_p50_ms": 5686.16,
+      "tokens": 20,
+      "compiler_fallbacks": 0,
+      "agentv": "outputs/runs/e200-layout-declaration-role-probe/agentv/openui-model-ship-gates-2026-07-16t06-05-37-123814-00-00.eval.jsonl"
+    },
+    {
+      "id": "E202",
+      "run": "e202-role-stratified-alignment-probe",
+      "checkpoint": "E201",
+      "raw_syntax": 0.0,
+      "meaningful_parse": 0.0,
+      "structure": 0.0467,
+      "component_recall": 0.0,
+      "placeholder_validity": 0.0,
+      "reward": 0.0,
+      "latency_p50_ms": 17477.16,
+      "tokens": 102,
+      "compiler_fallbacks": 0,
+      "agentv": "outputs/runs/e202-role-stratified-alignment-probe/agentv/openui-model-ship-gates-2026-07-16t06-08-58-439875-00-00.eval.jsonl"
+    },
+    {
+      "id": "E203",
+      "run": "e203-children-node-role-probe",
+      "checkpoint": "E201",
+      "raw_syntax": 0.0,
+      "meaningful_parse": 0.0,
+      "structure": 0.0955,
+      "component_recall": 0.25,
+      "placeholder_validity": 0.55,
+      "reward": 0.0,
+      "latency_p50_ms": 12224.9,
+      "tokens": 102,
+      "compiler_fallbacks": 0,
+      "agentv": "outputs/runs/e203-children-node-role-probe/agentv/openui-model-ship-gates-2026-07-16t06-11-01-167007-00-00.eval.jsonl"
+    },
+    {
+      "id": "E204",
+      "run": "e204-content-slot-contract-probe",
+      "checkpoint": "E201",
+      "raw_syntax": 0.0,
+      "meaningful_parse": 0.0,
+      "structure": 0.0955,
+      "component_recall": 0.25,
+      "placeholder_validity": 0.7,
+      "reward": 0.0,
+      "latency_p50_ms": 12650.16,
+      "tokens": 102,
+      "compiler_fallbacks": 0,
+      "agentv": "outputs/runs/e204-content-slot-contract-probe/agentv/openui-model-ship-gates-2026-07-16t06-12-28-525756-00-00.eval.jsonl"
+    }
+  ],
+  "implementation": [
+    "Declaration-value role is derived from the Lark token pattern typed-bind followed by equals; every declaration value is constrained to grammar component candidates.",
+    "Gold component decisions are stratified as root or bound from typed binder identity, not prompt or component strings.",
+    "The active generated schema property determines array and content roles. Children arrays accept grammar node terminals, while canonical content properties accept only the supplied slot contract.",
+    "No observed prompt, component arrangement, or prediction string is encoded."
+  ],
+  "conclusion": "The generalized declaration, children-node, and content-slot constraints behave as intended, but E201 recursively extends legal children arrays until the token cap. Syntax and meaningful parse remain zero in E204, so E201 and this hypothesis are rejected for promotion.",
+  "next_hypothesis": "Derive collection completion pressure from grammar/schema structure and learned gold AST cardinality rather than adding component-specific stopping cases; first measure close-versus-extend decisions across the committed corpus."
+}

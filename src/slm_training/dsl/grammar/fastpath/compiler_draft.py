@@ -69,14 +69,14 @@ def _semantic_kind(tokenizer: Any, token_id: int) -> str:
     return "structural"
 
 
-def _at_root_value(tokenizer: Any, prefix_ids: list[int]) -> bool:
-    """Whether the symbolic first binding is awaiting its element value."""
+def _at_declaration_value(tokenizer: Any, prefix_ids: list[int]) -> bool:
+    """Whether the layout grammar is awaiting a component declaration value."""
     try:
-        body = [int(token_id) for token_id in prefix_ids if token_id != tokenizer.bos_id]
-        return body == [
-            int(tokenizer.bind_id(0)),
-            int(tokenizer.token_to_id["="]),
-        ]
+        return (
+            len(prefix_ids) >= 2
+            and int(prefix_ids[-2]) in set(tokenizer.kind_ids("bind"))
+            and int(prefix_ids[-1]) == int(tokenizer.token_to_id["="])
+        )
     except (AttributeError, KeyError, TypeError, ValueError):
         return False
 
@@ -306,6 +306,17 @@ def _schema_slot_type(
     return str(value.get("type")) if value.get("type") else None
 
 
+def _schema_slot_name(state: Any, schema: dict[str, Any]) -> str | None:
+    """Return the generated AST property for the active positional argument."""
+    active = _active_call(state)
+    if active is None:
+        return None
+    component, index, _ = active
+    definition = (schema.get("$defs") or {}).get(component) or {}
+    names = list(definition.get("properties") or {})
+    return str(names[index]) if index < len(names) else None
+
+
 def _schema_call_arity(
     state: Any, schema: dict[str, Any]
 ) -> tuple[int, int, int, bool] | None:
@@ -398,6 +409,7 @@ def build_completion_forest(
     if enum_ids is not None:
         candidates = set(enum_ids)
     schema_type = _schema_slot_type(engine, schema) if schema else None
+    schema_slot = _schema_slot_name(engine, schema) if schema else None
     type_terminals = _schema_type_terminals(schema_type)
     arity = _schema_call_arity(engine, schema) if schema else None
     current_started = arity[3] if arity is not None else False
@@ -406,6 +418,7 @@ def build_completion_forest(
         candidates &= typed_ids
         if schema_type == "string" and slot_contract:
             try:
+                from slm_training.dsl.placeholders import CONTENT_PROPS
                 from slm_training.models.grammar import contract_allowed_token_ids
 
                 contract_ids = set(
@@ -416,8 +429,15 @@ def build_completion_forest(
                 if callable(kind_ids):
                     candidates -= set(kind_ids("sym"))
                 candidates |= contract_ids
+                if schema_slot in CONTENT_PROPS:
+                    candidates = contract_ids
             except Exception:  # noqa: BLE001
                 pass
+
+    if schema_type == "array" and schema_slot == "children" and current_started:
+        node_terminals = frozenset({"NAME", "COMPONENT", "COMMA", "RSQB", "RPAR"})
+        node_ids = allowed_id_set(tokenizer, node_terminals) or set()
+        candidates &= node_ids
 
     if arity is not None:
         minimum, maximum, arg_count, current_started = arity
@@ -496,7 +516,7 @@ def build_completion_forest(
         except Exception:  # noqa: BLE001
             inventory_complete = False
 
-    if _at_root_value(tokenizer, prefix_ids):
+    if _at_declaration_value(tokenizer, prefix_ids):
         candidates = {
             token_id
             for token_id in candidates
@@ -581,7 +601,17 @@ def gold_compiler_decisions(
             continue
         path = max(matches, key=lambda candidate: len(candidate.token_ids))
         if len(set(forest.candidate_ids)) > 1:
-            decisions.append(CompilerDecision(cursor, path.kind))
+            kind = path.kind
+            if kind == "component" and _at_declaration_value(
+                tokenizer, list(ids[:cursor])
+            ):
+                declaration = int(ids[cursor - 2])
+                kind = (
+                    "component_root"
+                    if declaration == int(tokenizer.bind_id(0))
+                    else "component_bound"
+                )
+            decisions.append(CompilerDecision(cursor, kind))
         cursor += len(path.token_ids)
     return tuple(decisions)
 

@@ -806,6 +806,16 @@ is tied to parser slot progress, but meaningful parse and component recall remai
 is promoted. Next: generated schema/AST reference-role propagation. See
 [iter-e195-e199-stratified-alignment-20260716.md](iter-e195-e199-stratified-alignment-20260716.md).
 
+E200–E204 generalize the next failure into grammar/schema roles. A canonical
+audit found all 1,916 declarations in the 496-record judged corpus have
+component-valued RHS ASTs. The decoder now derives declaration, generated
+`children`, and content-slot candidate roles from typed Lark tokens, generated
+schema properties, and the centralized content contract. E204 improves
+component recall to 0.25 and placeholder validity to 0.70 with zero fallback,
+but recursively extends legal children until the token cap; syntax and
+meaningful parse remain 0.0. E201 is not promotable. Full evidence:
+[iter-e200-e204-layout-role-compiler-20260716.md](iter-e200-e204-layout-role-compiler-20260716.md).
+
 These rows are registered under `--matrix v8`; `--list` prints definitions
 without building data or starting a run. They require the lexer-native parent
 contract and unchanged honest five-suite gates. No result or champion is claimed.
