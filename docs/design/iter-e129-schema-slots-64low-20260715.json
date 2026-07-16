@@ -1,0 +1,11 @@
+{
+  "experiment_id": "E129",
+  "date": "2026-07-15",
+  "kind": "quality_iteration",
+  "parent": "E127",
+  "recipe": {"device": "cpu", "steps": 64, "batch_size": 4, "context_backend": "scratch", "output_tokenizer": "compositional", "schema_in_context": true, "slot_contract_in_context": true, "slot_contract_constrained_decode": true, "grammar_ltr_primary": true, "grammar_ltr_repair": true, "ltr_loss_weight": 0.5, "fidelity_loss_weight": 0.5, "train_dir": "src/slm_training/resources/train_data/remediated_roots_judged", "record_count": 405, "honesty_mode": "scratch diagnostic; no ship claim"},
+  "training": {"run_id": "e129_judged_schema_slots_64_lowweights", "last_loss": 9.887205123901367, "checkpoint": "outputs/runs/iter-e129-schema-slots-20260715/e129_judged_schema_slots_64_lowweights/checkpoints/last.pt", "checkpoint_sha256": "a7b6118f76070a0c1440013be072286963c16d7f0820f682aecf044513783048", "telemetry": "outputs/runs/iter-e129-schema-slots-20260715/e129_judged_schema_slots_64_lowweights/train_telemetry.json"},
+  "feedback": {"run_id": "iter-e129-smoke-feedback", "suite": "smoke", "n": 1, "parse_rate": 0.0, "raw_syntax_validity": 0.0, "placeholder_fidelity": 0.0, "placeholder_fidelity_normalized": 0.0, "placeholder_validity": 0.0, "structural_similarity": 0.1542, "reward_score": 0.0, "latency_ms_p50": 8619.38, "decode_timeout_count": 0, "constrained_fallback_rate": 0.0, "agentv": "outputs/runs/iter-e129-schema-slots-20260715/iter-e129-smoke-feedback/agentv/openui-model-ship-gates-2026-07-16t01-12-52-721751-00-00.eval.jsonl"},
+  "finding": "The lower-weight E127 recipe did not reproduce its placeholder signal at 64 steps; longer training alone is not a reliable improvement.",
+  "decision": "Do not promote E127 from a single diagnostic example. Investigate data composition and multi-example variance before further training-length changes."
+}
