@@ -1,0 +1,12 @@
+{
+  "experiment_id": "E139",
+  "date": "2026-07-15",
+  "kind": "hf_seed_variance_control",
+  "parent": "E135",
+  "recipe": {"device": "cpu", "steps": 8, "seed": 2, "batch_size": 4, "context_backend": "hf", "hf_model": "HuggingFaceTB/SmolLM2-135M", "local_files_only": true, "freeze_context": true, "output_tokenizer": "compositional", "schema_in_context": true, "slot_contract_in_context": true, "slot_contract_constrained_decode": true, "grammar_ltr_primary": true, "grammar_ltr_repair": true, "ltr_loss_weight": 0.5, "fidelity_loss_weight": 0.5, "train_dir": "src/slm_training/resources/train_data/remediated_roots_judged", "record_count": 405, "honesty_mode": "HF diagnostic; no ship claim"},
+  "training": {"run_id": "e139_hf_context_seed2_8", "last_loss": 33.820098876953125, "checkpoint": "outputs/runs/iter-e139-hf-seed2-20260715/e139_hf_context_seed2_8/checkpoints/last.pt", "checkpoint_sha256": "89dff5bae8a245e54e869f1ed1a158716dec71d11500c3150e0aed1b787d6aa4", "telemetry": "outputs/runs/iter-e139-hf-seed2-20260715/e139_hf_context_seed2_8/train_telemetry.json"},
+  "feedback": {"run_id": "e139-three-smoke-local", "suite": "smoke", "n": 3, "parse_rate": 0.0, "raw_syntax_validity": 0.0, "placeholder_fidelity": 0.0, "placeholder_validity": 0.0, "structural_similarity": 0.0, "reward_score": 0.0, "latency_ms_p50": 20000.49, "latency_ms_p95": 20000.76, "decode_timeout_count": 2, "constrained_fallback_rate": 0.0, "agentv": "outputs/runs/iter-e139-hf-seed2-20260715/e139-three-smoke-local/agentv/openui-model-ship-gates-2026-07-16t02-00-58-468301-00-00.eval.jsonl"},
+  "comparison": {"e135_seed0_steps8_structural_similarity": 0.24223333333333333, "e135_seed0_steps8_placeholder_validity": 0.3166666666666667, "e138_seed1_steps8_structural_similarity": 0.16833333333333333, "e138_seed1_steps8_placeholder_validity": 0.0, "e139_seed2_steps8_structural_similarity": 0.0, "e139_seed2_steps8_placeholder_validity": 0.0},
+  "finding": "Across three 8-step HF seeds, all parse and reward gates fail; seed 0 is the only seed with nonzero placeholder and structure signals, while seed 2 also timed out twice.",
+  "decision": "Treat the E135 seed-0 signal as an outlier until a controlled checkpoint-selection or decoder diagnosis explains it. Do not alter judged training data or loss weights from this evidence alone."
+}
