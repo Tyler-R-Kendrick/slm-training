@@ -518,8 +518,7 @@ class TwoTowerModel(nn.Module):
             else None
         )
         plan_enabled = (
-            float(getattr(self.config, "component_plan_loss_weight", 0.0) or 0.0)
-            > 0.0
+            float(getattr(self.config, "component_plan_loss_weight", 0.0) or 0.0) > 0.0
             or float(getattr(self.config, "component_plan_decode_weight", 0.0) or 0.0)
             > 0.0
         )
@@ -536,11 +535,9 @@ class TwoTowerModel(nn.Module):
         except (AttributeError, TypeError, ValueError):
             component_edge_ids = ()
         edge_enabled = (
-            float(getattr(self.config, "component_edge_loss_weight", 0.0) or 0.0)
-            > 0.0
+            float(getattr(self.config, "component_edge_loss_weight", 0.0) or 0.0) > 0.0
             or float(
-                getattr(self.config, "component_edge_alignment_loss_weight", 0.0)
-                or 0.0
+                getattr(self.config, "component_edge_alignment_loss_weight", 0.0) or 0.0
             )
             > 0.0
             or float(getattr(self.config, "component_edge_decode_weight", 0.0) or 0.0)
@@ -562,14 +559,10 @@ class TwoTowerModel(nn.Module):
         except (AttributeError, TypeError, ValueError):
             binder_plan_ids = ()
         binder_plan_enabled = (
-            float(
-                getattr(self.config, "binder_component_plan_loss_weight", 0.0)
-                or 0.0
-            )
+            float(getattr(self.config, "binder_component_plan_loss_weight", 0.0) or 0.0)
             > 0.0
             or float(
-                getattr(self.config, "binder_component_plan_decode_weight", 0.0)
-                or 0.0
+                getattr(self.config, "binder_component_plan_decode_weight", 0.0) or 0.0
             )
             > 0.0
         )
@@ -585,11 +578,8 @@ class TwoTowerModel(nn.Module):
             else None
         )
         binder_topology_enabled = (
-            float(getattr(self.config, "binder_topology_loss_weight", 0.0) or 0.0)
-            > 0.0
-            or float(
-                getattr(self.config, "binder_topology_decode_weight", 0.0) or 0.0
-            )
+            float(getattr(self.config, "binder_topology_loss_weight", 0.0) or 0.0) > 0.0
+            or float(getattr(self.config, "binder_topology_decode_weight", 0.0) or 0.0)
             > 0.0
         )
         self.binder_topology_head = (
@@ -916,7 +906,9 @@ class TwoTowerModel(nn.Module):
                             if self._rng.random() > stmt_p:
                                 continue
                             row = target_ids[i].tolist()
-                            boundaries = [j for j, tid in enumerate(row) if tid in newline_ids]
+                            boundaries = [
+                                j for j, tid in enumerate(row) if tid in newline_ids
+                            ]
                             start = 0
                             spans: list[tuple[int, int]] = []
                             for boundary in boundaries + [seq]:
@@ -1116,7 +1108,10 @@ class TwoTowerModel(nn.Module):
                 table = SymbolTable.from_placeholders(
                     placeholders, max_slots=self.tokenizer.sym_slots
                 )
-                if bool(getattr(self.config, "symbol_slot_augmentation", False)) and self.training:
+                if (
+                    bool(getattr(self.config, "symbol_slot_augmentation", False))
+                    and self.training
+                ):
                     key_seed = sum(ord(ch) for ch in (cache_key or openui))
                     table = table.permuted(int(self.config.seed) + key_seed)
                 if cache_key is not None:
@@ -1336,9 +1331,13 @@ class TwoTowerModel(nn.Module):
             if ltr_w > 0.0 and fuse and ltr_suffix.any():
                 suffix_flat = ltr_suffix.reshape(-1)
                 weights = weights + (ltr_w * suffix_flat.float())
-                prefix_w = float(getattr(self.config, "ltr_prefix_loss_weight", 0.0) or 0.0)
+                prefix_w = float(
+                    getattr(self.config, "ltr_prefix_loss_weight", 0.0) or 0.0
+                )
                 if prefix_w > 0.0:
-                    positions = torch.arange(target_ids.size(1), device=target_ids.device)
+                    positions = torch.arange(
+                        target_ids.size(1), device=target_ids.device
+                    )
                     first = target_ids[:, 0].eq(self.tokenizer.bos_id)
                     content_rank = positions.unsqueeze(0) - first.unsqueeze(1).long()
                     prefix = (content_rank >= 0) & (content_rank < 3) & ltr_suffix
@@ -1356,8 +1355,11 @@ class TwoTowerModel(nn.Module):
             row_mask = predict_mask
             row_counts = row_mask.sum(dim=1).clamp_min(1)
             self._last_example_token_losses = (
-                (row_values * row_mask).sum(dim=1) / row_counts
-            ).detach().cpu().tolist()
+                ((row_values * row_mask).sum(dim=1) / row_counts)
+                .detach()
+                .cpu()
+                .tolist()
+            )
         else:
             mask_loss = logits.sum() * 0.0
             self._last_example_token_losses = [0.0] * len(batch)
@@ -1430,7 +1432,9 @@ class TwoTowerModel(nn.Module):
             ltr_noisy = target_ids.clone()
             ltr_mask = torch.zeros_like(target_ids, dtype=torch.bool)
             for i in range(bsz):
-                first_content = 1 if int(target_ids[i, 0]) == self.tokenizer.bos_id else 0
+                first_content = (
+                    1 if int(target_ids[i, 0]) == self.tokenizer.bos_id else 0
+                )
                 cut = self._rng.randint(first_content, max(first_content, seq - 1))
                 ltr_noisy[i, cut:] = self.tokenizer.mask_id
                 for j in range(cut, seq):
@@ -1459,9 +1463,7 @@ class TwoTowerModel(nn.Module):
                 getattr(self.config, "compiler_alignment_stratified", False)
             )
             semantic_exhaustive = bool(
-                getattr(
-                    self.config, "compiler_alignment_semantic_exhaustive", False
-                )
+                getattr(self.config, "compiler_alignment_semantic_exhaustive", False)
             )
             aligned_canvases: list[torch.Tensor] = []
             aligned_targets: list[int] = []
@@ -1567,13 +1569,14 @@ class TwoTowerModel(nn.Module):
                         )
                     )
                     alternatives = torch.cat(
-                        (candidate_logits[:gold_index], candidate_logits[gold_index + 1 :])
+                        (
+                            candidate_logits[:gold_index],
+                            candidate_logits[gold_index + 1 :],
+                        )
                     )
                     margin_losses.append(
                         F.relu(
-                            margin
-                            - candidate_logits[gold_index]
-                            + alternatives.max()
+                            margin - candidate_logits[gold_index] + alternatives.max()
                         )
                         if margin > 0.0
                         else candidate_logits[gold_index] * 0.0
@@ -1602,9 +1605,7 @@ class TwoTowerModel(nn.Module):
             self.last_training_metrics = {
                 "compiler_alignment_rows": aligned_rows,
                 "compiler_alignment_loss": (
-                    float(alignment_loss.detach().cpu())
-                    if aligned_canvases
-                    else 0.0
+                    float(alignment_loss.detach().cpu()) if aligned_canvases else 0.0
                 ),
                 "compiler_alignment_candidate_count_mean": (
                     sum(map(len, aligned_candidate_ids)) / aligned_rows
@@ -1678,12 +1679,12 @@ class TwoTowerModel(nn.Module):
                 ):
                     top = inventory_logits[len(recalls)].topk(int(count.item())).indices
                     recalls.append(row.index_select(0, top).sum() / count)
-                positive_scores = (
-                    inventory_logits * inventory_targets
-                ).sum(dim=1) / positive_count
-                negative_scores = (
-                    inventory_logits * (1.0 - inventory_targets)
-                ).sum(dim=1) / negative_count
+                positive_scores = (inventory_logits * inventory_targets).sum(
+                    dim=1
+                ) / positive_count
+                negative_scores = (inventory_logits * (1.0 - inventory_targets)).sum(
+                    dim=1
+                ) / negative_count
                 self.last_training_metrics.update(
                     {
                         "component_inventory_loss": float(
@@ -1701,9 +1702,7 @@ class TwoTowerModel(nn.Module):
                     }
                 )
 
-        plan_w = float(
-            getattr(self.config, "component_plan_loss_weight", 0.0) or 0.0
-        )
+        plan_w = float(getattr(self.config, "component_plan_loss_weight", 0.0) or 0.0)
         if plan_w > 0.0 and self.component_plan_head is not None:
             component_ids = self._component_inventory_token_ids()
             if component_ids:
@@ -1711,13 +1710,17 @@ class TwoTowerModel(nn.Module):
                     gold_compiler_decisions,
                 )
 
-                component_index = {token_id: i for i, token_id in enumerate(component_ids)}
+                component_index = {
+                    token_id: i for i, token_id in enumerate(component_ids)
+                }
                 root_targets: list[int] = []
                 bound_targets = torch.zeros(
                     len(batch), len(component_ids), device=ctx.device
                 )
                 for row, record in enumerate(batch):
-                    target_key = tuple(int(token_id) for token_id in target_ids[row].tolist())
+                    target_key = tuple(
+                        int(token_id) for token_id in target_ids[row].tolist()
+                    )
                     contract_key = tuple(record.placeholders or ())
                     cache_key = (target_key, contract_key)
                     decisions = self._compiler_decision_cache.get(cache_key)
@@ -1799,7 +1802,9 @@ class TwoTowerModel(nn.Module):
                         "component_plan_loss": float(plan_loss.detach().cpu()),
                         "component_plan_root_loss": float(root_loss.detach().cpu()),
                         "component_plan_bound_loss": float(bound_loss.detach().cpu()),
-                        "component_plan_root_accuracy": float(root_accuracy.detach().cpu()),
+                        "component_plan_root_accuracy": float(
+                            root_accuracy.detach().cpu()
+                        ),
                         "component_plan_bound_topk_recall": float(
                             bound_recall.detach().cpu()
                         ),
@@ -1809,9 +1814,7 @@ class TwoTowerModel(nn.Module):
                     }
                 )
 
-        edge_w = float(
-            getattr(self.config, "component_edge_loss_weight", 0.0) or 0.0
-        )
+        edge_w = float(getattr(self.config, "component_edge_loss_weight", 0.0) or 0.0)
         if edge_w > 0.0 and self.component_edge_head is not None:
             from slm_training.dsl.grammar.fastpath.compiler_draft import (
                 semantic_component_edges,
@@ -1866,9 +1869,7 @@ class TwoTowerModel(nn.Module):
                     top = logits_row.topk(count).indices
                     recalls.append(target_row.index_select(0, top).mean())
             edge_recall = (
-                torch.stack(recalls).mean()
-                if recalls
-                else edge_logits.new_zeros(())
+                torch.stack(recalls).mean() if recalls else edge_logits.new_zeros(())
             )
             self.last_training_metrics.update(
                 {
@@ -1927,8 +1928,7 @@ class TwoTowerModel(nn.Module):
             )
 
         edge_alignment_w = float(
-            getattr(self.config, "component_edge_alignment_loss_weight", 0.0)
-            or 0.0
+            getattr(self.config, "component_edge_alignment_loss_weight", 0.0) or 0.0
         )
         if edge_alignment_w > 0.0 and self.component_edge_head is not None:
             from slm_training.dsl.grammar.fastpath.compiler_draft import (
@@ -1948,7 +1948,9 @@ class TwoTowerModel(nn.Module):
             candidate_counts: list[int] = []
             unknown_parent_rows = 0
             for row, record in enumerate(batch):
-                target_key = tuple(int(token_id) for token_id in target_ids[row].tolist())
+                target_key = tuple(
+                    int(token_id) for token_id in target_ids[row].tolist()
+                )
                 contract_key = tuple(record.placeholders or ())
                 cache_key = (target_key, contract_key)
                 decisions = self._compiler_decision_cache.get(cache_key)
@@ -2033,7 +2035,9 @@ class TwoTowerModel(nn.Module):
 
             binder_ids = self._binder_component_token_ids()
             component_ids = self._component_inventory_token_ids()
-            binder_index = {token_id: index for index, token_id in enumerate(binder_ids)}
+            binder_index = {
+                token_id: index for index, token_id in enumerate(binder_ids)
+            }
             component_index = {
                 token_id: index for index, token_id in enumerate(component_ids)
             }
@@ -2044,7 +2048,9 @@ class TwoTowerModel(nn.Module):
             plan_hits: list[torch.Tensor] = []
             candidate_counts: list[int] = []
             for row, record in enumerate(batch):
-                target_key = tuple(int(token_id) for token_id in target_ids[row].tolist())
+                target_key = tuple(
+                    int(token_id) for token_id in target_ids[row].tolist()
+                )
                 contract_key = tuple(record.placeholders or ())
                 cache_key = (target_key, contract_key)
                 decisions = self._compiler_decision_cache.get(cache_key)
@@ -2114,7 +2120,9 @@ class TwoTowerModel(nn.Module):
             )
 
             binder_ids = self._binder_component_token_ids()
-            binder_index = {token_id: index for index, token_id in enumerate(binder_ids)}
+            binder_index = {
+                token_id: index for index, token_id in enumerate(binder_ids)
+            }
             topology_logits = self.binder_topology_head(
                 # Keep this auxiliary planner from rewriting the shared prompt
                 # representation before its own legal-decision signal is stable.
@@ -2124,7 +2132,9 @@ class TwoTowerModel(nn.Module):
             topology_hits: list[torch.Tensor] = []
             topology_candidate_counts: list[int] = []
             for row, record in enumerate(batch):
-                target_key = tuple(int(token_id) for token_id in target_ids[row].tolist())
+                target_key = tuple(
+                    int(token_id) for token_id in target_ids[row].tolist()
+                )
                 contract_key = tuple(record.placeholders or ())
                 cache_key = (target_key, contract_key)
                 decisions = self._compiler_decision_cache.get(cache_key)
@@ -2559,7 +2569,9 @@ class TwoTowerModel(nn.Module):
                         "chosen_id": int(choice),
                         "model_argmax": tok.id_to_token.get(argmax_id, ""),
                         "model_argmax_id": argmax_id,
-                        "legal_candidates": int(stats.constrained_last_legal_candidates),
+                        "legal_candidates": int(
+                            stats.constrained_last_legal_candidates
+                        ),
                         "forced": bool(forced is not None),
                         "phase": "ltr_repair",
                     }
@@ -2726,9 +2738,7 @@ class TwoTowerModel(nn.Module):
         self, hidden: torch.Tensor, candidate_ids: tuple[int, ...]
     ) -> torch.Tensor:
         stats = get_active_stats()
-        index = torch.as_tensor(
-            candidate_ids, dtype=torch.long, device=hidden.device
-        )
+        index = torch.as_tensor(candidate_ids, dtype=torch.long, device=hidden.device)
         with timed_ms(stats, "projection_ms"):
             scores = self.denoiser.project(hidden, index)
         if stats is not None:
@@ -2752,7 +2762,9 @@ class TwoTowerModel(nn.Module):
         try:
             from slm_training.models.dsl_tokenizer import TokenKind
 
-            ids = tuple(sorted(int(i) for i in self.tokenizer.kind_ids(TokenKind.COMPONENT)))
+            ids = tuple(
+                sorted(int(i) for i in self.tokenizer.kind_ids(TokenKind.COMPONENT))
+            )
         except Exception:  # noqa: BLE001
             ids = ()
         self._component_token_ids_cache = ids
@@ -2782,9 +2794,7 @@ class TwoTowerModel(nn.Module):
         component_ids = set(self._component_inventory_token_ids())
         if not component_ids.intersection(candidate_ids):
             return None
-        inventory = self.component_inventory_head(
-            self._pool_context(ctx, ctx_pad)
-        )[0]
+        inventory = self.component_inventory_head(self._pool_context(ctx, ctx_pad))[0]
         bias = inventory.new_zeros(len(candidate_ids))
         component_positions = [
             (position, token_id)
@@ -2804,9 +2814,7 @@ class TwoTowerModel(nn.Module):
         candidate_ids: tuple[int, ...],
         candidate_kinds: tuple[str, ...],
     ) -> torch.Tensor | None:
-        weight = float(
-            getattr(self.config, "component_plan_decode_weight", 0.0) or 0.0
-        )
+        weight = float(getattr(self.config, "component_plan_decode_weight", 0.0) or 0.0)
         if weight <= 0.0 or self.component_plan_head is None:
             return None
         component_ids = set(self._component_inventory_token_ids())
@@ -2834,8 +2842,7 @@ class TwoTowerModel(nn.Module):
                 bias[position] = weight * logits[0, token_id]
             elif kind == "component_bound":
                 remaining = (
-                    F.softplus(logits[1, token_id])
-                    - emitted_bound.get(token_id, 0)
+                    F.softplus(logits[1, token_id]) - emitted_bound.get(token_id, 0)
                 ).clamp_min(1e-4)
                 bias[position] = weight * remaining.log()
         return bias
@@ -2848,9 +2855,7 @@ class TwoTowerModel(nn.Module):
         candidate_ids: tuple[int, ...],
         candidate_kinds: tuple[str, ...],
     ) -> torch.Tensor | None:
-        weight = float(
-            getattr(self.config, "component_edge_decode_weight", 0.0) or 0.0
-        )
+        weight = float(getattr(self.config, "component_edge_decode_weight", 0.0) or 0.0)
         if weight <= 0.0 or self.component_edge_head is None:
             return None
         from slm_training.dsl.grammar.fastpath.compiler_draft import (
@@ -2871,9 +2876,9 @@ class TwoTowerModel(nn.Module):
         ]
         if not parent_indices:
             return None
-        logits = self.component_edge_head(
-            self._pool_context(ctx, ctx_pad)
-        )[0].view(len(component_ids), len(component_ids))
+        logits = self.component_edge_head(self._pool_context(ctx, ctx_pad))[0].view(
+            len(component_ids), len(component_ids)
+        )
         parent_index = torch.as_tensor(parent_indices, device=logits.device)
         child_logits = logits.index_select(0, parent_index).mean(dim=0)
         bias = logits.new_zeros(len(candidate_ids))
@@ -2896,8 +2901,7 @@ class TwoTowerModel(nn.Module):
         candidate_kinds: tuple[str, ...],
     ) -> torch.Tensor | None:
         weight = float(
-            getattr(self.config, "binder_component_plan_decode_weight", 0.0)
-            or 0.0
+            getattr(self.config, "binder_component_plan_decode_weight", 0.0) or 0.0
         )
         if weight <= 0.0 or self.binder_component_plan_head is None:
             return None
@@ -2915,9 +2919,9 @@ class TwoTowerModel(nn.Module):
         component_index = {
             token_id: index for index, token_id in enumerate(component_ids)
         }
-        logits = self.binder_component_plan_head(
-            self._pool_context(ctx, ctx_pad)
-        )[0].view(len(binder_ids), len(component_ids))[binder]
+        logits = self.binder_component_plan_head(self._pool_context(ctx, ctx_pad))[
+            0
+        ].view(len(binder_ids), len(component_ids))[binder]
         bias = logits.new_zeros(len(candidate_ids))
         applied = False
         for position, (token_id, kind) in enumerate(
@@ -2951,9 +2955,9 @@ class TwoTowerModel(nn.Module):
         parent = binder_index.get(active_declaration_binder_id(self.tokenizer, prefix))
         if parent is None:
             return None
-        logits = self.binder_topology_head(
-            self._pool_context(ctx, ctx_pad)
-        )[0].view(len(binder_ids), len(binder_ids))[parent]
+        logits = self.binder_topology_head(self._pool_context(ctx, ctx_pad))[0].view(
+            len(binder_ids), len(binder_ids)
+        )[parent]
         bias = logits.new_zeros(len(candidate_ids))
         applied = False
         for position, (token_id, kind) in enumerate(
@@ -3035,9 +3039,7 @@ class TwoTowerModel(nn.Module):
         ) -> None:
             if stats is None or len(stats.constrained_selection_traces) >= 64:
                 return
-            ranked = sorted(
-                range(len(paths)), key=scores.__getitem__, reverse=True
-            )[:5]
+            ranked = sorted(range(len(paths)), key=scores.__getitem__, reverse=True)[:5]
             stats.constrained_selection_traces.append(
                 {
                     "position": len(prefix),
@@ -3158,7 +3160,9 @@ class TwoTowerModel(nn.Module):
             )
             edge_scores: dict[tuple[tuple[int, ...], int], float] = {}
             first_edge_kinds = {
-                int(path.token_ids[0]): str(path.kind) for path in paths if path.token_ids
+                int(path.token_ids[0]): str(path.kind)
+                for path in paths
+                if path.token_ids
             }
             for row, parent in enumerate(parents):
                 candidate_ids = tuple(sorted(children[parent]))
@@ -3179,7 +3183,10 @@ class TwoTowerModel(nn.Module):
                         ctx_pad,
                         prefix,
                         candidate_ids,
-                        tuple(first_edge_kinds.get(token_id, "") for token_id in candidate_ids),
+                        tuple(
+                            first_edge_kinds.get(token_id, "")
+                            for token_id in candidate_ids
+                        ),
                     )
                     if plan_bias is not None:
                         before_plan = int(scores.argmax().item())
@@ -3273,9 +3280,7 @@ class TwoTowerModel(nn.Module):
                     max(range(len(paths)), key=path_scores.__getitem__) != before_arity
                 )
         if bool(getattr(self.config, "grammar_sample_decode", False)):
-            temp = float(
-                getattr(self.config, "grammar_sample_temperature", 0.8) or 0.8
-            )
+            temp = float(getattr(self.config, "grammar_sample_temperature", 0.8) or 0.8)
             probs = F.softmax(torch.tensor(path_scores) / temp, dim=0)
             chosen = int(torch.multinomial(probs, 1).item())
         else:
@@ -3300,14 +3305,22 @@ class TwoTowerModel(nn.Module):
         *,
         mode: str,
         slot_contract: list[str] | None,
+        _initial_prefix: tuple[int, ...] | None = None,
+        _search_state: object | None = None,
+        _trajectory_id: int = 0,
+        _disable_trajectory_fork: bool = False,
     ) -> torch.Tensor:
+        import copy
+
         from slm_training.dsl.grammar.fastpath.compiler_draft import (
             build_completion_forest,
         )
         from slm_training.dsl.grammar.fastpath.lattice_search import (
             LatticeSearchState,
             StagnationTracker,
+            TrajectoryCandidate,
             rank_forest,
+            select_trajectory_candidate,
             trajectory_orders,
         )
 
@@ -3317,7 +3330,11 @@ class TwoTowerModel(nn.Module):
             )
         state_rows = self._new_grammar_states(1)
         state = state_rows[0] if state_rows else make_grammar_state()
-        prefix = [int(self.tokenizer.bos_id)]
+        prefix = list(_initial_prefix or (int(self.tokenizer.bos_id),))
+        if _initial_prefix is not None:
+            state = make_grammar_state()
+            for initial_token_id in prefix[1:]:
+                state.advance_token(self.tokenizer, int(initial_token_id))
         stats = get_active_stats()
         search_mode = str(
             getattr(self.config, "compiler_search_mode", "greedy") or "greedy"
@@ -3334,30 +3351,28 @@ class TwoTowerModel(nn.Module):
             raise ValueError(
                 "compiler_search_trigger must be bottom, stagnation, or always"
             )
-        search = LatticeSearchState(
-            backtrack_limit=max(
-                0,
-                int(
-                    getattr(
-                        self.config, "compiler_search_backtrack_limit", 8
-                    )
-                    or 0
-                ),
+        search = (
+            _search_state
+            if isinstance(_search_state, LatticeSearchState)
+            else LatticeSearchState(
+                backtrack_limit=max(
+                    0,
+                    int(
+                        getattr(self.config, "compiler_search_backtrack_limit", 8) or 0
+                    ),
+                )
             )
         )
         stagnation = StagnationTracker(
             patience=max(
                 1,
                 int(
-                    getattr(
-                        self.config, "compiler_search_stagnation_patience", 2
-                    )
-                    or 2
+                    getattr(self.config, "compiler_search_stagnation_patience", 2) or 2
                 ),
             )
         )
         after_bottom = False
-        while len(prefix) < length:
+        while len(prefix) < length and prefix[-1] != self.tokenizer.eos_id:
             if stats is not None and search_mode != "greedy":
                 stats.compiler_lattice_recurrences += 1
             with timed_ms(stats, "compiler_ms"):
@@ -3505,7 +3520,9 @@ class TwoTowerModel(nn.Module):
                     state=state,
                     **self._pick_kwargs(),
                 )
-                selected = (int(choice if choice is not None else self.tokenizer.eos_id),)
+                selected = (
+                    int(choice if choice is not None else self.tokenizer.eos_id),
+                )
             else:
                 selected = self._select_compiler_path(
                     prefix,
@@ -3527,42 +3544,148 @@ class TwoTowerModel(nn.Module):
                 if is_stagnant and stats is not None:
                     stats.compiler_lattice_stagnation_triggers += 1
                 trigger_trajectory = search_mode in {"ptrm", "gram"} and (
-                    search_trigger == "always"
+                    _disable_trajectory_fork
+                    or search_trigger == "always"
                     or (search_trigger == "bottom" and after_bottom)
                     or (search_trigger == "stagnation" and is_stagnant)
                 )
                 if trigger_trajectory and len(ranked.paths) > 1:
+                    width = max(
+                        1,
+                        int(getattr(self.config, "compiler_search_width", 1) or 1),
+                    )
+                    noise = max(
+                        0.0,
+                        float(
+                            getattr(self.config, "compiler_search_noise", 0.0) or 0.0
+                        ),
+                    )
                     orders = trajectory_orders(
                         ranked,
-                        width=max(
-                            1,
-                            int(
-                                getattr(
-                                    self.config, "compiler_search_width", 1
-                                )
-                                or 1
-                            ),
+                        width=1 if _disable_trajectory_fork else width,
+                        noise=noise,
+                        seed=(
+                            int(getattr(self.config, "seed", 0) or 0)
+                            + 1009 * int(_trajectory_id)
+                            + len(prefix)
                         ),
-                        noise=max(
-                            0.0,
-                            float(
-                                getattr(
-                                    self.config, "compiler_search_noise", 0.0
-                                )
-                                or 0.0
-                            ),
-                        ),
-                        seed=int(getattr(self.config, "seed", 0) or 0),
                     )
                     if orders:
-                        # GRAM-style mode prefers a distinct semantic branch
-                        # kind; PTRM-style mode uses the first seeded trajectory.
                         order = orders[0]
-                        if search_mode == "gram":
-                            order = max(
-                                orders,
-                                key=lambda row: len({path.kind for path in row}),
+                        if not _disable_trajectory_fork:
+                            from slm_training.dsl.grammar.backends.ast_utils import (
+                                ast_fingerprint,
                             )
+                            from slm_training.dsl.parser import validate
+                            from slm_training.dsl.placeholders import (
+                                extract_placeholders,
+                            )
+
+                            candidates: list[TrajectoryCandidate[torch.Tensor]] = []
+                            for trajectory_id in range(width):
+                                branch_order = orders[trajectory_id % len(orders)]
+                                first = branch_order[0]
+                                branch_search = copy.deepcopy(search)
+                                branch_search.choose(
+                                    prefix,
+                                    type(ranked)(
+                                        branch_order,
+                                        tuple(
+                                            ranked.scores[ranked.paths.index(path)]
+                                            for path in branch_order
+                                        ),
+                                        ranked.coverage,
+                                    ),
+                                )
+                                branch_prefix = tuple(
+                                    [
+                                        *prefix,
+                                        *first.token_ids[
+                                            : max(0, length - len(prefix))
+                                        ],
+                                    ]
+                                )
+                                branch = self._compiler_ltr_decode_one(
+                                    ctx,
+                                    ctx_pad,
+                                    length,
+                                    mode=mode,
+                                    slot_contract=slot_contract,
+                                    _initial_prefix=branch_prefix,
+                                    _search_state=branch_search,
+                                    _trajectory_id=trajectory_id + 1,
+                                    _disable_trajectory_fork=True,
+                                )
+                                text = self._decode_ids(branch)
+                                canonical = self._canonical_valid_openui(
+                                    self._repair_surface_syntax(text)
+                                )
+                                if stats is not None:
+                                    stats.compiler_lattice_verifier_calls += 1
+                                fingerprint = ""
+                                if canonical is not None:
+                                    try:
+                                        fingerprint = ast_fingerprint(
+                                            validate(canonical).root
+                                        )
+                                    except Exception:  # noqa: BLE001
+                                        canonical = None
+                                placeholders = set(
+                                    extract_placeholders(canonical or text)
+                                )
+                                allowed_slots = set(slot_contract or ())
+                                contract_ok = (
+                                    not slot_contract or placeholders <= allowed_slots
+                                )
+                                candidates.append(
+                                    TrajectoryCandidate(
+                                        value=branch,
+                                        valid=canonical is not None,
+                                        contract_satisfied=contract_ok,
+                                        model_score=float(
+                                            ranked.scores[ranked.paths.index(first)]
+                                        ),
+                                        simplicity=sum(
+                                            int(token_id)
+                                            not in {
+                                                int(self.tokenizer.pad_id),
+                                                int(self.tokenizer.eos_id),
+                                            }
+                                            for token_id in branch.tolist()
+                                        ),
+                                        fingerprint=fingerprint,
+                                    )
+                                )
+                            selected_candidate, unique_valid = (
+                                select_trajectory_candidate(
+                                    tuple(candidates),
+                                    semantic_dedup=search_mode == "gram",
+                                )
+                            )
+                            if stats is not None:
+                                valid_count = sum(row.valid for row in candidates)
+                                stats.compiler_lattice_trajectory_triggers += 1
+                                stats.compiler_lattice_trajectories += len(candidates)
+                                stats.compiler_lattice_valid_trajectories += valid_count
+                                stats.compiler_lattice_unique_valid_asts += unique_valid
+                                stats.compiler_lattice_unique_proposals += len(
+                                    {tuple(row.value.tolist()) for row in candidates}
+                                )
+                                if selected_candidate is not None:
+                                    stats.compiler_lattice_invalid_selected_over_valid += int(
+                                        not selected_candidate.valid and valid_count > 0
+                                    )
+                                    stats.compiler_lattice_selector_regret += (
+                                        max(row.model_score for row in candidates)
+                                        - selected_candidate.model_score
+                                    )
+                                    stats.compiler_lattice_termination_reason = (
+                                        "trajectory_valid"
+                                        if selected_candidate.valid
+                                        else "trajectory_abstain"
+                                    )
+                            if selected_candidate is not None:
+                                return selected_candidate.value
                         ranked = type(ranked)(
                             order,
                             tuple(
@@ -3578,9 +3701,6 @@ class TwoTowerModel(nn.Module):
                             elif search_trigger == "bottom":
                                 stats.compiler_lattice_bottom_triggers += 1
                             stats.compiler_lattice_trajectories += len(orders)
-                            stats.compiler_lattice_unique_proposals += len(
-                                {order[0].token_ids for order in orders if order}
-                            )
                     after_bottom = False
                 decision = search.choose(prefix, ranked)
                 selected = tuple(decision.token_ids) if decision else ()
@@ -4466,9 +4586,7 @@ class TwoTowerModel(nn.Module):
         compiler_mode = str(
             getattr(self.config, "compiler_decode_mode", "off") or "off"
         ).lower()
-        if use_grammar and (
-            self.config.grammar_ltr_primary or compiler_mode != "off"
-        ):
+        if use_grammar and (self.config.grammar_ltr_primary or compiler_mode != "off"):
             self._set_runtime_symbol_features(feature_tables)
             self._current_runtime_table = (
                 feature_tables[0] if len(feature_tables) == 1 else None
@@ -4758,9 +4876,7 @@ class TwoTowerModel(nn.Module):
 
                 engine = engine_for_dsl(active_dsl())
                 bound = (
-                    engine.minimum_completion_tokens("")
-                    if engine is not None
-                    else None
+                    engine.minimum_completion_tokens("") if engine is not None else None
                 )
             except Exception:  # noqa: BLE001
                 bound = None

@@ -1,7 +1,8 @@
 # Lattice-guided recursive compiler search
 
-**Status:** architecture and plan-only experiment campaign. No training, evaluation,
-benchmark, or ship-gate result is claimed here.
+**Status:** inference controller implemented; E240-E247 remain unrun until the
+measured-results stack lands. No training, evaluation, benchmark, or ship-gate
+result is claimed here.
 
 ## Research question
 
@@ -48,7 +49,7 @@ branches, or bypass final OpenUI validation.
 
 ## Planned campaign (V9)
 
-The registered rows are hypotheses, not results. The matched controls separate the
+The registered runnable rows are hypotheses, not results. The matched controls separate the
 value of rollback from stochastic width and semantic diversity.
 
 | ID | Planned condition | Falsifier |
@@ -68,7 +69,15 @@ sizes, and the repository ship gates. Required diagnostics include valid/abstain
 invalid rates, compiler coverage, bottoms, rollbacks, nogood hits, stagnation
 triggers, trajectories, unique AST candidates, selector regret, denoiser calls,
 and wall latency. Any execution must update the quality matrix JSON and markdown;
-this change only registers the recipes.
+the implementation itself does not establish a quality gain.
+
+PTRM/GRAM modes fork complete bounded continuations from the last stable compiler
+prefix while copying the decision trail and local nogoods. Every terminal candidate
+is validated; GRAM mode deduplicates valid terminals by AST fingerprint. Selection
+never reads gold and is lexicographic: hard validity, honest slot-contract
+satisfaction, model score, then shorter serialization. Telemetry records trigger
+reason, recurrence and rollback depth, abstention/exhaustion, verifier calls, valid
+trajectories, unique valid ASTs, selector regret, and any invalid-over-valid choice.
 
 ## Source inventory and applicability
 
