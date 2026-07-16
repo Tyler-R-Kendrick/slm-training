@@ -270,6 +270,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Override checkpoint context tower (scratch | hf). Default: preserve checkpoint.",
     )
     parser.add_argument(
+        "--local-files-only",
+        action="store_true",
+        help="For HF context evaluation, use only locally cached model files.",
+    )
+    parser.add_argument(
         "--grammar-trust-model",
         action="store_true",
         help="Trust-the-model decode: no structural bias or structural reordering.",
@@ -318,6 +323,7 @@ def main(argv: list[str] | None = None) -> int:
         device=args.device,
         output_tokenizer=args.output_tokenizer,
         context_backend=args.context_backend or "hf",
+        local_files_only=args.local_files_only,
         grammar_ltr_primary=args.grammar_ltr_primary,
         grammar_ltr_repair=args.grammar_ltr_repair,
         schema_in_context=args.schema_in_context,

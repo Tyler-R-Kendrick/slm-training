@@ -418,7 +418,11 @@ def build_model(
         from slm_training.models.twotower import TwoTowerModel
 
         if checkpoint and checkpoint.exists():
-            loaded = TwoTowerModel.from_checkpoint(checkpoint, device=config.device)
+            loaded = TwoTowerModel.from_checkpoint(
+                checkpoint,
+                device=config.device,
+                local_files_only=config.local_files_only,
+            )
             return apply_runtime_overrides(loaded, config)
 
         tt_cfg = _twotower_config_from_build(config)
