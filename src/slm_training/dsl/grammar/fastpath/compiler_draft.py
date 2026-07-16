@@ -190,6 +190,57 @@ def active_declaration_binder_id(
     return active
 
 
+def binder_reference_arities(
+    tokenizer: Any, token_ids: list[int] | tuple[int, ...]
+) -> tuple[tuple[int, int], ...]:
+    """Return declaration binder and reference count from grammar token roles."""
+    bind_ids = set(tokenizer.kind_ids("bind"))
+    equal_id = int(tokenizer.token_to_id["="])
+    newline_id = tokenizer.token_to_id.get("NL")
+    statements: list[list[int]] = []
+    current: list[int] = []
+    for raw_token_id in token_ids:
+        token_id = int(raw_token_id)
+        if newline_id is not None and token_id == int(newline_id):
+            if current:
+                statements.append(current)
+            current = []
+        else:
+            current.append(token_id)
+    if current:
+        statements.append(current)
+
+    arities: list[tuple[int, int]] = []
+    for statement in statements:
+        declaration_at = next(
+            (
+                index
+                for index, token_id in enumerate(statement[:-1])
+                if token_id in bind_ids and statement[index + 1] == equal_id
+            ),
+            None,
+        )
+        if declaration_at is None:
+            continue
+        references = sum(
+            token_id in bind_ids
+            for token_id in statement[declaration_at + 2 :]
+        )
+        arities.append((statement[declaration_at], references))
+    return tuple(arities)
+
+
+def active_declaration_reference_count(
+    tokenizer: Any, prefix_ids: list[int]
+) -> int | None:
+    """Count binder references emitted in the active declaration statement."""
+    active = active_declaration_binder_id(tokenizer, prefix_ids)
+    if active is None:
+        return None
+    arities = binder_reference_arities(tokenizer, prefix_ids)
+    return next((count for binder, count in reversed(arities) if binder == active), 0)
+
+
 def active_parent_component_ids(
     tokenizer: Any, prefix_ids: list[int]
 ) -> tuple[int, ...]:
@@ -863,7 +914,9 @@ def gold_compiler_decision_positions(
 
 __all__ = [
     "active_declaration_binder_id",
+    "active_declaration_reference_count",
     "active_parent_component_ids",
+    "binder_reference_arities",
     "CompletionForest",
     "CompletionPath",
     "CompilerDecision",
