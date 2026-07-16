@@ -1,7 +1,7 @@
 {
   "campaign": "E224 semantic-exhaustive alignment",
   "date_utc": "2026-07-16",
-  "status": "alignment_executed_hypothesis_falsified_ship_gates_failed",
+  "status": "alignment_executed_original_evaluation_superseded_by_e225",
   "hypothesis": "Aligning every grammar-derived AST-role decision will improve meaningful semantics beyond E223 one-per-kind alignment.",
   "matrix": {"campaign_id": "e224-semantic-exhaustive-alignment", "matrix_id": "e224-matrix-1", "candidate_count": 5, "recommended_experiment_id": "e224-semantic-exhaustive-matched"},
   "recipe": {"device": "cpu", "steps": 32, "batch_size": 4, "learning_rate": 0.0003, "seed": 0, "context_backend": "hf_local_files_only", "train_version": "e218_schema_normalized_judge_v5", "eval_version": "remediated", "output_tokenizer": "lexer", "compiler_alignment_loss_weight": 1.0, "compiler_alignment_stratified": true, "compiler_alignment_semantic_exhaustive": true, "compiler_decode_mode": "tree", "schema_in_context": true, "slot_contract_in_context": true, "design_md_in_context": false, "allow_unconstrained_fallback": false, "mixture_sampling_policy": "quota_capacity_aware", "checkpoint_sync": false},
@@ -10,6 +10,9 @@
   "evaluation": {
     "evaluated_at": "2026-07-16T14:29:37.995649+00:00",
     "identical_to_e223": true,
+    "authoritative": false,
+    "superseded_by": "docs/design/iter-e225-compiler-tree-eval-20260716.json",
+    "supersession_reason": "compiler_decode_mode=tree was recorded but grammar_ltr_primary remained false and compiler candidate telemetry was zero",
     "suites": {
       "smoke": {"n": 3, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.30943333333333334, "component_type_recall": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0},
       "held_out": {"n": 5, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.25139999999999996, "component_type_recall": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0},
@@ -24,6 +27,6 @@
     "scoreboard": "outputs/autoresearch/e224-semantic-exhaustive-alignment/runs/e224-semantic-exhaustive-matched/scoreboard.json"
   },
   "honesty": {"training_completed": true, "evaluation_completed": true, "checkpoint_written": true, "checkpoint_synced": false, "ship_gates": false, "promoted": false},
-  "conclusion": "Semantic alignment coverage increased materially and changed checkpoint weights, but strict outputs and metrics were unchanged. Independent per-state coverage is not the missing semantic lever.",
-  "next_action": "Diagnose coupled AST-decision objectives and decode expressivity before proposing another train; do not increase per-state alignment quantity again."
+  "conclusion": "Semantic alignment coverage increased materially and changed checkpoint weights. The original strict evaluation is superseded because the configured tree decoder did not activate its primary path.",
+  "next_action": "Use the corrected E225 compiler-tree evaluation as authoritative before making another training decision."
 }

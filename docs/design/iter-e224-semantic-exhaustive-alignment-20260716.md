@@ -1,7 +1,12 @@
 # E224 — semantic-exhaustive alignment diagnostic
 
-Status: **training and strict evaluation completed; alignment path verified;
-hypothesis falsified; 12 ship gates failed; no checkpoint promoted**.
+Status: **training completed; original evaluation superseded by E225 because
+tree mode did not activate primary constrained decoding; no checkpoint promoted**.
+
+> Correction: the evaluation below recorded `compiler_decode_mode=tree` but
+> inherited `grammar_ltr_primary=false`, so compiler candidate telemetry was
+> zero and MaskGIT plus legacy repair produced the outputs. E225 fixes that
+> invariant and is the authoritative evaluation of this checkpoint.
 
 E223 achieved deterministic syntax and balanced high-exposure sampling but zero
 meaningful parse, component recall, fidelity, and reward. Its stratified compiler
@@ -32,7 +37,8 @@ same 22,924 prompt and 6,401 target tokens in 158.53 s; trace ID is
 `391a0d48746b259ab3f9b1a6208b9907`. Exposure exactly matched E223 at 103 unique
 and 81.11 effective records from 128 draws, with maximum repeat four.
 
-The strict five-suite scoreboard was exactly unchanged from E223:
+The original, now-superseded five-suite scoreboard was exactly unchanged from
+E223:
 
 | Suite | n | syntax | meaningful parse | structure | component recall | fidelity | reward |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -42,10 +48,12 @@ The strict five-suite scoreboard was exactly unchanged from E223:
 | ood | 4 | 1.0000 | 0.0000 | 0.2369 | 0.0000 | 0.0000 | 0.0000 |
 | rico_held | 3 | 1.0000 | 0.0000 | 0.0901 | 0.0000 | 0.0000 | 0.0000 |
 
-Every suite had zero fallback and constrained-fallback rate. Twelve gates failed
+Every suite had zero fallback and constrained-fallback rate, but also zero
+compiler candidates, which exposed the evaluator mismatch. Twelve gates failed
 and AgentV passed 0/5 with no execution errors. Increasing the number of
 independent AST-role alignment states is therefore falsified at unit weight: it
 raises optimization load without changing decoded semantics. The next diagnosis
 must test whether alignment losses are coupled across related AST decisions or
 whether the decode objective can express multi-decision semantic structure;
-another per-state quantity increase is not justified.
+another per-state quantity increase is not justified by this superseded decode.
+See [E225](iter-e225-compiler-tree-eval-20260716.md) for the corrected result.

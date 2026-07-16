@@ -1,0 +1,27 @@
+{
+  "campaign": "E225 compiler-tree evaluation invariant",
+  "date_utc": "2026-07-16",
+  "status": "evaluator_fixed_tree_path_active_ship_gates_failed",
+  "training_run": false,
+  "checkpoint_run_id": "e224-semantic-exhaustive-matched",
+  "checkpoint_sha256": "c9f38df18bd9156250e0bf5cc72a143d83f9b53cb38f90ac19078545622bb8ef",
+  "fix": {"invariant": "compiler_decode_mode != off implies grammar_ltr_primary", "surfaces": ["evaluate_model config", "runtime checkpoint overrides", "autoresearch command compiler", "TwoTower generation guard"]},
+  "recipe": {"eval_version": "remediated", "record_count": 19, "context_backend": "hf_local_files_only", "output_tokenizer": "lexer", "compiler_decode_mode": "tree", "grammar_ltr_primary": true, "schema_in_context": true, "slot_contract_in_context": true, "design_md_in_context": false, "allow_unconstrained_fallback": false},
+  "evaluation": {
+    "evaluated_at": "2026-07-16T14:40:34.884873+00:00",
+    "suites": {
+      "smoke": {"n": 3, "compiler_candidates": 904, "forced_tokens": 47, "restricted_projections": 66, "full_projections": 0, "syntax_parse_rate": 0.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.4625333333333333, "component_type_recall": 0.25, "placeholder_fidelity": 0.0},
+      "held_out": {"n": 5, "compiler_candidates": 1823, "forced_tokens": 94, "restricted_projections": 132, "full_projections": 0, "syntax_parse_rate": 0.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.45972, "component_type_recall": 0.15666666666666665, "placeholder_fidelity": 0.0},
+      "adversarial": {"n": 4, "compiler_candidates": 1133, "forced_tokens": 62, "restricted_projections": 77, "full_projections": 0, "syntax_parse_rate": 0.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.5784, "component_type_recall": 0.4583333333333333, "placeholder_fidelity": 0.0},
+      "ood": {"n": 4, "compiler_candidates": 1420, "forced_tokens": 70, "restricted_projections": 99, "full_projections": 0, "syntax_parse_rate": 0.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.305925, "component_type_recall": 0.20833333333333331, "placeholder_fidelity": 0.0},
+      "rico_held": {"n": 3, "compiler_candidates": 2733, "forced_tokens": 107, "restricted_projections": 153, "full_projections": 0, "syntax_parse_rate": 0.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.5729333333333334, "component_type_recall": 0.4444444444444444, "placeholder_fidelity": 0.0}
+    },
+    "fallback_count": 0,
+    "constrained_fallback_rate": 0.0,
+    "ship_gates": {"pass": false, "failure_count": 8},
+    "agentv": {"total": 5, "passed": 0, "failed": 5, "execution_errors": 0, "mean_score": 0.5},
+    "scoreboard": "outputs/autoresearch/e224-semantic-exhaustive-alignment/runs/e224-semantic-exhaustive-matched/scoreboard.json"
+  },
+  "conclusion": "Compiler-tree decoding is now proven active and improves structure and component recall, but schema-invalid content choices and malformed declaration boundaries keep syntax and meaningful parse at zero.",
+  "next_action": "Repair schema-conditioned content candidate restriction and parser-state advancement generically from schema and Lark state before any new training run."
+}
