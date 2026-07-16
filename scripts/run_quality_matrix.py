@@ -1240,8 +1240,8 @@ def _v8_experiments(
     ]
 
 
-def _v9_experiments(train_dir: Path) -> list[Experiment]:
-    """E240-E247: eval-only compiler-lattice search campaign."""
+def _strict_compiler_tree_policy() -> dict[str, Any]:
+    """Canonical honest compiler-tree evaluation policy for matched campaigns."""
     runtime_fields = frozenset(
         {
             "allow_unconstrained_fallback",
@@ -1262,8 +1262,7 @@ def _v9_experiments(train_dir: Path) -> list[Experiment]:
             "slot_contract_in_context",
         }
     )
-    base = dict(
-        initialization="eval_only",
+    return dict(
         runtime_override_fields=runtime_fields,
         output_tokenizer="lexer",
         grammar_ltr_primary=True,
@@ -1276,6 +1275,11 @@ def _v9_experiments(train_dir: Path) -> list[Experiment]:
         design_md_in_context=False,
         allow_unconstrained_fallback=False,
     )
+
+
+def _v9_experiments(train_dir: Path) -> list[Experiment]:
+    """E240-E247: eval-only compiler-lattice search campaign."""
+    base = dict(**_strict_compiler_tree_policy(), initialization="eval_only")
     return [
         Experiment("E240", "qx_e240_compiler_tree_control", "Corrected greedy compiler-tree control", train_dir, **base),
         Experiment("E241", "qx_e241_lattice_rollback", "Hard/soft lattice with bounded rollback", train_dir, compiler_search_mode="lattice", **base),
@@ -1290,11 +1294,7 @@ def _v9_experiments(train_dir: Path) -> list[Experiment]:
 
 def _v10_experiments(train_dir: Path) -> list[Experiment]:
     """E248-E254: exact-state local preference campaign (proposed/unrun)."""
-    base = dict(
-        output_tokenizer="lexer",
-        grammar_ltr_primary=True,
-        compiler_decode_mode="tree",
-    )
+    base = _strict_compiler_tree_policy()
     return [
         Experiment(
             "E248",
@@ -1931,7 +1931,7 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
         )
         return result
 
-    if exp.local_parent_control or exp.local_preference_objective is not None:
+    if exp.local_preference_objective is not None:
         if not exp.parent_checkpoint:
             raise ValueError(f"{exp.eid} local preference requires --parent")
         parent = Path(exp.parent_checkpoint)

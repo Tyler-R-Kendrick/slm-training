@@ -1083,7 +1083,7 @@ The trace-backed E240 control, including exact suite metrics, aggregate decode
 telemetry, checkpoint lineage, and the four gate failures, is recorded separately
 in [iter-e240-greedy-tree-control-20260716.md](iter-e240-greedy-tree-control-20260716.md).
 
-## V10 exact-state local preference (proposed, unrun)
+## V10 exact-state local preference (E248 control measured)
 
 The full 25-paper audit, source manifest, objective definition, and honesty boundary
 are in [`local-decision-interventions.md`](local-decision-interventions.md). V10
@@ -1097,7 +1097,7 @@ split contains at least one same-state-verified multi-good or multi-bad event.
 
 | ID | Isolated lever | Required diagnostics | Status |
 | --- | --- | --- | --- |
-| E248 | Unchanged parent control | Standard five-suite scoreboard | proposed/unrun |
+| E248 | Unchanged parent control | Standard five-suite scoreboard | measured; matched control; 4 gates failed |
 | E249 | Exact-event CE plus margin | Event win/margin and per-kind recurrence | proposed/unrun |
 | E250 | Bad-token unlikelihood | Bad probability mass and held-out recurrence | proposed/unrun |
 | E251 | Single-pair clipped FTPO | Active weight, chosen/margin win, drift | proposed/unrun |
@@ -1123,7 +1123,14 @@ non-target tether `0.4`, target tether `0.05`, and target grace `1.0`. They are
 borrowed starting points, not validated TwoTower settings. Any future execution
 must update the canonical result JSON and this measured-results ledger, publish
 AgentEvals/AgentV, preserve unchanged ship gates, and update the model card for
-every checkpoint created. No V10 row was executed by the implementation change.
+every checkpoint created.
+
+E248 evaluates the unchanged E228 parent without copying or training a
+checkpoint. The corrected strict policy exactly reproduces E240: syntax is 1.0
+on all 19 examples, four gates fail, and AgentV passes 1/5. An earlier parse-zero
+attempt was invalidated as harness policy drift; V9 and V10 now consume one
+shared strict compiler-tree policy. Full evidence:
+[iter-e248-local-parent-control-20260716.md](iter-e248-local-parent-control-20260716.md).
 
 ## Verifier-guided repair (mixed status)
 
