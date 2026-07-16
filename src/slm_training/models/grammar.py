@@ -991,8 +991,11 @@ def pick_constrained_token(
         # Always let the model vote: include top-k logits so whitespace etc.
         # that pass `_legal` via dfa_admits aren't dropped solely because the
         # Lark terminal set omits insignificant tokens.
-        _vals, top_idx = torch.topk(logits_1d, k=min(max(top_k, 1), vocab))
-        candidate_ids.update(int(i) for i in top_idx.tolist())
+        # Exact terminal sets are already complete legal inventories; adding
+        # top-k candidates there only creates redundant broad-token probes.
+        if not exact_terminals:
+            _vals, top_idx = torch.topk(logits_1d, k=min(max(top_k, 1), vocab))
+            candidate_ids.update(int(i) for i in top_idx.tolist())
         # Descending-logit order for early-exit (Q2).
         ordered = sorted(
             (tid for tid in candidate_ids if 0 <= tid < vocab),
