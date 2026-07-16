@@ -63,7 +63,7 @@
       "queries": [
         "scoreboard"
       ],
-      "sha256": "08090e8495b976fd7ca5ea0b26987d137affcfcbbb5597c3078b5d8cf574c8dd",
+      "sha256": "2c3c8a6fe1de277bd083d44b20562c4b1d4dc0625683003f1cd4d29e5c3a721c",
       "status": "ok"
     },
     "overview": {
@@ -84,7 +84,7 @@
       "queries": [
         "overview_insights"
       ],
-      "sha256": "592496c0f482f13e6ff35304acb5e0af17b2942e37396ed0f7c338750d9a2db1",
+      "sha256": "16c00b31fe2dc9a63decddfb27a5ec10b22803f98f8f641cd9e57e0a4a6b77cc",
       "status": "ok"
     },
     "playground": {

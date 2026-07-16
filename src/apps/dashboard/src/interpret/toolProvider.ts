@@ -144,11 +144,14 @@ export const toolProvider: Record<string, QueryFn> = {
       rows: rows.map((r: any) => ({
         id: r.id,
         run_id: r.run_id || r.id,
+        date: r.date || "—",
         description: (r.description || "").slice(0, 70),
         pass_status: r.pass === undefined ? "" : r.pass ? "pass" : "fail",
-        smoke: f(r.suites?.smoke?.parse_rate, 2),
-        held: f(r.suites?.held_out?.parse_rate, 2),
+        smoke: f(r.suites?.smoke?.meaningful_program_rate ?? r.suites?.smoke?.parse_rate, 2),
+        held: f(r.suites?.held_out?.meaningful_program_rate ?? r.suites?.held_out?.parse_rate, 2),
         struct: f(r.suites?.smoke?.structural_similarity, 2),
+        agentv: r.agentv?.total === undefined ? "—" : `${r.agentv.passed ?? 0}/${r.agentv.total}`,
+        trace: r.trace_id ? String(r.trace_id).slice(0, 12) : "—",
       })),
     };
   },

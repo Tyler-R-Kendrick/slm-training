@@ -1,10 +1,10 @@
-$kind = "quality"
+$kind = "research"
 
 board = Query("scoreboard", { kind: $kind }, { rows: [], meta: { count: 0, passed: "0/0", matrix: "quality", steps: "—", all_pass: false }, reference: "" }, 0)
 
 head = PageHead("Experiments", "Ablation matrices — each row is one lever with a stable id. Cells are per-suite metrics against ship gates. Rows are evidence, not deployable models.")
 
-kindTabs = ChipTabs($kind, ["quality", "grammar", "perf", "phase"])
+kindTabs = ChipTabs($kind, ["research", "quality", "grammar", "perf", "phase"])
 
 tExp = StatTile("Experiments", board.meta.count, null, "moss")
 tPass = StatTile("Passing", board.meta.passed, null, board.meta.all_pass ? "passed" : "")
@@ -12,7 +12,7 @@ tMatrix = StatTile("Matrix", board.meta.matrix, null, "")
 tSteps = StatTile("Steps", board.meta.steps, null, "")
 tileRow = Grid([tExp, tPass, tMatrix, tSteps], "190px")
 
-matrixCols = [{ key: "id", label: "id" }, { key: "description", label: "lever" }, { key: "pass_status", label: "gate" }, { key: "smoke", label: "smoke parse", align: "right" }, { key: "held", label: "held_out parse", align: "right" }, { key: "struct", label: "struct", align: "right" }]
+matrixCols = [{ key: "id", label: "id" }, { key: "date", label: "date" }, { key: "description", label: "experiment" }, { key: "pass_status", label: "gate" }, { key: "smoke", label: "smoke meaningful", align: "right" }, { key: "held", label: "held meaningful", align: "right" }, { key: "struct", label: "smoke struct", align: "right" }, { key: "agentv", label: "AgentV", align: "right" }, { key: "trace", label: "trace", align: "right" }]
 matrixTable = DataTable(matrixCols, board.rows, 26, "id")
 matrixRight = [ProvenanceBadge(board.provenance), " ", Note(board.reference, "hint")]
 matrixPanel = Panel($kind + " matrix", [matrixTable], matrixRight)

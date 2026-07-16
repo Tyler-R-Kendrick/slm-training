@@ -14,11 +14,11 @@ import {
   fmt,
 } from "../components";
 
-const KINDS = ["quality", "grammar", "perf", "phase"];
+const KINDS = ["research", "quality", "grammar", "perf", "phase"];
 
 export function Experiments({ navigate }: { navigate: (to: string) => void }) {
   const caps = useCaps();
-  const [kind, setKind] = useState("quality");
+  const [kind, setKind] = useState("research");
   const [jobId, setJobId] = useState<string | null>(null);
   const board = usePoll<any>(`/api/scoreboards/${kind}`, 0);
 
@@ -26,7 +26,8 @@ export function Experiments({ navigate }: { navigate: (to: string) => void }) {
   const passed = results.filter((r: any) => r.pass === true).length;
 
   function suiteMetric(row: any, suite: string, metric: string) {
-    const v = row.suites?.[suite]?.[metric];
+    const values = row.suites?.[suite] ?? {};
+    const v = values[metric] ?? (metric === "meaningful_program_rate" ? values.parse_rate : undefined);
     return v === undefined ? "—" : fmt(v, 2);
   }
 
@@ -62,11 +63,14 @@ export function Experiments({ navigate }: { navigate: (to: string) => void }) {
         <DataTable
           columns={[
             { key: "id", label: "id" },
-            { key: "description", label: "lever" },
+            { key: "date", label: "date" },
+            { key: "description", label: "experiment" },
             { key: "pass", label: "gate" },
-            { key: "smoke", label: "smoke parse", align: "right" },
-            { key: "held", label: "held_out parse", align: "right" },
-            { key: "struct", label: "struct", align: "right" },
+            { key: "smoke", label: "smoke meaningful", align: "right" },
+            { key: "held", label: "held meaningful", align: "right" },
+            { key: "struct", label: "smoke struct", align: "right" },
+            { key: "agentv", label: "AgentV", align: "right" },
+            { key: "trace", label: "trace", align: "right" },
           ]}
           rows={results}
           render={{
@@ -77,9 +81,11 @@ export function Experiments({ navigate }: { navigate: (to: string) => void }) {
             ),
             description: (r) => <span style={{ color: "var(--text-dim)" }}>{(r.description || "").slice(0, 70)}</span>,
             pass: (r) => (r.pass === undefined ? <span className="hint">—</span> : <StatusPill value={r.pass} label={r.pass ? "pass" : "fail"} />),
-            smoke: (r) => suiteMetric(r, "smoke", "parse_rate"),
-            held: (r) => suiteMetric(r, "held_out", "parse_rate"),
+            smoke: (r) => suiteMetric(r, "smoke", "meaningful_program_rate"),
+            held: (r) => suiteMetric(r, "held_out", "meaningful_program_rate"),
             struct: (r) => suiteMetric(r, "smoke", "structural_similarity"),
+            agentv: (r) => r.agentv?.total === undefined ? "—" : `${r.agentv.passed ?? 0}/${r.agentv.total}`,
+            trace: (r) => <span className="mono">{r.trace_id?.slice(0, 12) ?? "—"}</span>,
           }}
         />
       </Card>
