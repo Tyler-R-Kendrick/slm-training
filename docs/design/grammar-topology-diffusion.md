@@ -152,11 +152,16 @@ the existing layered verifier; final G0-G12 validation remains authoritative.
 | X20 | X19 plus boundary and local/global negatives | planned, unrun |
 | X21 | X20 plus X14 actions, structural state, critic, buffer, and global sync | planned, unrun |
 
-Future runs must report local G0-G4 by scope kind, parser-exit accuracy,
-definitions/uses/slots F1, failure-cone precision/recall/size, local/global
-disagreement, accepted structure per forward, verifier calls, node passes, and the
-unchanged full-suite gates. `--describe` is the no-write inspection path. No
-training, evaluation, checkpoint, or measured-results JSON was produced here.
+The v1 evaluator emits `scope_contract_metrics` overall and grouped by scope kind
+and data family: sample count, local-gate accuracy, normalized summary MAE for
+definition/use/slot counts and realized size, plus failure-cone
+precision/recall/F1 and predicted/target sizes. These are teacher-forced
+diagnostics; the unchanged full-suite gates remain authoritative. Parser-exit
+classification, identity-level definitions/uses/slots F1, local/global
+disagreement, accepted structure per forward, and verifier-call counts are not yet
+implemented and must not be inferred from the v1 metrics. `--describe` is the
+no-write inspection path. No training, evaluation, checkpoint, or
+measured-results JSON was produced here.
 
 ## Measured implementation smoke (2026-07-15 UTC)
 

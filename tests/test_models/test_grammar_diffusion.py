@@ -317,6 +317,16 @@ def test_scope_contract_heads_train_only_when_enabled() -> None:
     assert model.denoiser.scope_summary_head is not None
     assert model.last_training_metrics["scope_summary_loss"] >= 0.0
     assert model.last_training_metrics["scope_gate_loss"] > 0.0
+    evidence = model.score_topology_targets([record])
+    assert evidence[0]["scope_kind"] in {
+        "component_call",
+        "statement",
+        "child_list",
+    }
+    assert evidence[0]["scope_family"] == "local_valid_global_invalid"
+    assert 0.0 <= evidence[0]["scope_gate_accuracy"] <= 1.0
+    assert evidence[0]["scope_summary_definitions_mae"] >= 0.0
+    assert evidence[0]["failure_cone_target_size"] >= 0
 
 
 def test_topology_scoring_maps_unseen_productions_without_mutating_codec() -> None:
