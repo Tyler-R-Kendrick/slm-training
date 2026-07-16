@@ -993,6 +993,15 @@ remains 1/5. Retain the generalized binder planner, reject the checkpoint, and
 model binder topology/arity next. Full evidence:
 [iter-e235-binder-instance-plan-20260716.md](iter-e235-binder-instance-plan-20260716.md).
 
+E236 predicts parent→child binder references at compiler-classified legal
+decisions. The direct weight-1 objective does not learn (accuracy 0.5455 →
+0.5238), its 38 decode applications change zero choices, and semantic quality
+collapses to zero across all suites despite syntax 1.0. Twelve thresholds fail
+and AgentV is 0/5; the decode-off ablation is identical. Retain the generalized
+mechanism and telemetry, reject the checkpoint, and require normalized/staged
+topology learning plus explicit reference arity before retrying. Full evidence:
+[iter-e236-binder-topology-20260716.md](iter-e236-binder-topology-20260716.md).
+
 ## V9 lattice-guided recursive compiler search (proposed, unrun)
 
 The research synthesis and implementation boundary are in

@@ -1,0 +1,64 @@
+{
+  "campaign": "E236 binder-reference topology",
+  "date": "2026-07-16",
+  "status": "completed_rejected_twelve_ship_thresholds_failed",
+  "hypothesis": "Parent-conditioned prediction over compiler-legal binder references improves generated hierarchy topology.",
+  "implementation": {
+    "target_source": "gold Lark/compiler bind_reference decisions",
+    "parent_source": "grammar-native active declaration binder",
+    "objective": "cross entropy over compiler-legal binder candidates",
+    "can_change_legality": false,
+    "literal_cases_added": false
+  },
+  "train": {
+    "run_id": "e236-binder-topology-32step",
+    "path": "outputs/autoresearch/e236-binder-topology/runs/e236-binder-topology-32step",
+    "device": "cpu",
+    "steps": 32,
+    "batch_size": 4,
+    "learning_rate": 0.0003,
+    "seed": 0,
+    "context_backend": "hf_local_files_only",
+    "train_version": "e230_diverse_judged_roots_v2",
+    "record_count": 126,
+    "binder_topology_loss_weight": 1.0,
+    "binder_topology_decode_weight": 1.0,
+    "topology_loss_first": 1.1497883797,
+    "topology_loss_last": 1.3502527475,
+    "topology_accuracy_first": 0.5454545617,
+    "topology_accuracy_last": 0.5238095522,
+    "topology_rows_first": 11,
+    "topology_rows_last": 21,
+    "legal_candidate_count_mean_first": 5.0,
+    "legal_candidate_count_mean_last": 7.7619047619,
+    "root_accuracy_last": 1.0,
+    "bound_topk_recall_last": 0.7083333731,
+    "bound_count_mae_last": 0.4603077471,
+    "last_loss": 28.3277111053,
+    "wall_ms": 149421.051,
+    "trace_id": "6e771f4bdcac1e9720595da6f3d75840",
+    "checkpoint_sha256": "94e1d042c56443764639b31cccae3340f4263fa2919db5a59fa933c56fef8c43",
+    "checkpoint_sync": false
+  },
+  "evaluation_weight_1": {
+    "trace_id": "61e2e55354eaeb64023169fc8f193dd6",
+    "suites": {
+      "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.3094333333, "component_type_recall": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0, "topology_applications": 6, "topology_choice_changes": 0},
+      "held_out": {"n": 5, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.2514, "component_type_recall": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0, "topology_applications": 10, "topology_choice_changes": 0},
+      "adversarial": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.2905, "component_type_recall": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0, "topology_applications": 8, "topology_choice_changes": 0},
+      "ood": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.236875, "component_type_recall": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0, "topology_applications": 8, "topology_choice_changes": 0},
+      "rico_held": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.0900666667, "component_type_recall": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0, "topology_applications": 6, "topology_choice_changes": 0}
+    },
+    "failed_thresholds": 12,
+    "topology_applications": 38,
+    "topology_choice_changes": 0,
+    "agentv": {"total": 5, "passed": 0, "failed": 5, "execution_errors": 0, "mean_score": 0.5}
+  },
+  "ablation_topology_weight_0": {
+    "trace_id": "8add5fcc593118603b959abebbb49bd1",
+    "aggregate_metrics_identical_to_weight_1": true,
+    "failed_thresholds": 12,
+    "agentv_passed": 0
+  },
+  "conclusion": "Direct binder-reference CE at weight 1 failed to learn, changed no decode choices, and destabilized semantic quality. Retain the generalized mechanism and telemetry, reject the checkpoint, and require normalized or staged learning plus explicit reference arity before retrying."
+}
