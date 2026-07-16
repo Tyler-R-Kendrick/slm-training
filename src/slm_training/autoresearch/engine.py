@@ -365,6 +365,10 @@ def compile_commands(
                     str(knobs.compiler_alignment_loss_weight),
                 ]
             )
+        if knobs.compiler_alignment_margin is not None:
+            train.extend(
+                ["--compiler-alignment-margin", str(knobs.compiler_alignment_margin)]
+            )
         if knobs.compiler_alignment_stratified:
             train.append("--compiler-alignment-stratified")
         if knobs.compiler_alignment_semantic_exhaustive:

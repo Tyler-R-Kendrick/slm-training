@@ -312,6 +312,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Train Lark-derived branch decisions on compiler-style masked suffixes.",
     )
     parser.add_argument(
+        "--compiler-alignment-margin",
+        type=float,
+        default=0.0,
+        help="Require the gold legal branch to beat every legal alternative by this margin.",
+    )
+    parser.add_argument(
         "--compiler-alignment-stratified",
         action="store_true",
         help="Sample one compiler-alignment state per grammar-derived decision kind.",
@@ -630,6 +636,7 @@ def main(argv: list[str] | None = None) -> int:
             ltr_loss_weight=args.ltr_loss_weight,
             ltr_prefix_loss_weight=args.ltr_prefix_loss_weight,
             compiler_alignment_loss_weight=args.compiler_alignment_loss_weight,
+            compiler_alignment_margin=args.compiler_alignment_margin,
             compiler_alignment_stratified=args.compiler_alignment_stratified,
             compiler_alignment_semantic_exhaustive=(
                 args.compiler_alignment_semantic_exhaustive
