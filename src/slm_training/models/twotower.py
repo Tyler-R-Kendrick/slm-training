@@ -43,6 +43,7 @@ from slm_training.models.parallel_decode import (
     core_instability_scores,
     perturb_known_neighbors,
     select_remask_core_indices,
+    select_remask_coverage_indices,
     select_remask_indices,
     select_remask_policy_indices,
     select_remask_stability_indices,
@@ -629,6 +630,46 @@ class TwoTowerModel(nn.Module):
         # the prompt asks for; the empty layout binds none of them.
         roots = {str(slot).split(".", 1)[0] for slot in slot_contract if slot}
         return len(roots)
+
+    def _coverage_deficit(
+        self, ids: torch.Tensor, known: torch.Tensor
+    ) -> torch.Tensor:
+        """A3 per-position content-coverage deficit.
+
+        Non-content (structural filler) positions score ``1 - content_fraction``
+        per row, where ``content_fraction`` is the share of known positions that
+        hold component/symbol/content tokens. Content positions score 0 (keep
+        them). When a row is content-sparse the filler positions get a high
+        deficit and are preferentially remasked to re-decode toward content;
+        when content is already dense the deficit is near zero and the policy
+        falls back to ordinary confidence remasking. Self-contained: reads only
+        the tokenizer's compiler-derived symbol spaces, no slot contract.
+        """
+        content_ids: set[int] = set()
+        for kind in ("component", "sym", "bind"):
+            try:
+                content_ids |= set(self.tokenizer.kind_ids(kind))
+            except Exception:  # noqa: BLE001 - tokenizer without that kind
+                continue
+        deficit = torch.zeros_like(ids, dtype=torch.float32)
+        if not content_ids:
+            return deficit
+        rows, length = ids.shape
+        for b in range(rows):
+            known_positions = [
+                t for t in range(length) if bool(known[b, t].item())
+            ]
+            if not known_positions:
+                continue
+            content_hits = sum(
+                1 for t in known_positions if int(ids[b, t].item()) in content_ids
+            )
+            content_fraction = content_hits / len(known_positions)
+            row_deficit = 1.0 - content_fraction
+            for t in known_positions:
+                if int(ids[b, t].item()) not in content_ids:
+                    deficit[b, t] = row_deficit
+        return deficit
 
     def _pick_kwargs(self) -> dict[str, object]:
         trust = bool(getattr(self.config, "grammar_trust_model", False))
@@ -4375,7 +4416,7 @@ class TwoTowerModel(nn.Module):
             use_gate
             or getattr(self.config, "remask_use_entropy", False)
             or remask
-            or remask_policy in {"core", "combined", "stability"}
+            or remask_policy in {"core", "combined", "stability", "coverage"}
         )
         gate_trust = None
         entropy = None
@@ -4459,6 +4500,18 @@ class TwoTowerModel(nn.Module):
                     else None,
                     gate_threshold=gate_threshold,
                     combine_policy=remask_policy == "combined",
+                )
+            elif remask_policy == "coverage":
+                # A3: bias remasking toward filler positions when the layout is
+                # content-sparse, giving the model another pass to place missing
+                # inventory content (soft sibling of the A4 hard contract).
+                remask_flat = select_remask_coverage_indices(
+                    conf,
+                    known,
+                    remask_ratio=remask_ratio,
+                    protect_bos=True,
+                    coverage_deficit=self._coverage_deficit(ids, known),
+                    grammar_positions=remask,
                 )
             else:
                 remask_flat = select_remask_policy_indices(
