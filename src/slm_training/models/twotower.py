@@ -3309,6 +3309,7 @@ class TwoTowerModel(nn.Module):
                             list(parent), length
                         )[0].tolist(),
                         "phase": "compiler_tree",
+                        "decision_kind": str(paths[chosen].kind),
                     }
                     if recorder.record_support:
                         commit["allowed_id_set"] = list(allowed)

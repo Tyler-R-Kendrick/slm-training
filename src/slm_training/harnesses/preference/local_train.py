@@ -233,6 +233,11 @@ def train_local_decisions(
 ) -> dict:
     if steps <= 0 or lr <= 0:
         raise ValueError("steps and learning rate must be positive")
+    if any(event.evidence_kind == "constraint_shadow" for event in events):
+        raise ValueError(
+            "constraint shadows encode decoder legality, not semantic preferences; "
+            "train only on judge-backed counterfactual events"
+        )
     all_train_events = [event for event in events if event.split == "train"]
     train_events = _objective_events(all_train_events, objective)
     if objective == "ftpo_set" and not any(

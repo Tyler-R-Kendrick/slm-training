@@ -59,7 +59,22 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Persist grammar allowed_id_set on each commit (E64 support match).",
     )
+    parser.add_argument(
+        "--counterfactual-semantic",
+        action="store_true",
+        help="Replay and independently judge grammar-legal exact-state alternatives.",
+    )
+    parser.add_argument("--counterfactual-states-per-record", type=int, default=4)
+    parser.add_argument("--counterfactual-candidates", type=int, default=4)
     args = parser.parse_args(argv)
+
+    if args.counterfactual_semantic and (
+        args.decode_policy != "strict_compiler_tree" or not args.record_support
+    ):
+        parser.error(
+            "--counterfactual-semantic requires --decode-policy "
+            "strict_compiler_tree and --record-support"
+        )
 
     import torch
 
@@ -129,6 +144,13 @@ def main(argv: list[str] | None = None) -> int:
 
     appended = 0
     accepted = 0
+    counterfactual = {
+        "states": 0,
+        "candidates": 0,
+        "judge_passed": 0,
+        "verified": 0,
+        "events": 0,
+    }
     for record in records:
         for sample_index in range(max(1, int(args.samples_per_prompt))):
             recorder = DecodeTraceRecorder(
@@ -172,6 +194,23 @@ def main(argv: list[str] | None = None) -> int:
             finally:
                 model.trace_recorder = None
 
+            if args.counterfactual_semantic:
+                from slm_training.harnesses.preference.counterfactuals import (
+                    mine_semantic_counterfactuals,
+                )
+
+                mined = mine_semantic_counterfactuals(
+                    model,
+                    recorder,
+                    record,
+                    context_text,
+                    max_states=int(args.counterfactual_states_per_record),
+                    max_candidates=int(args.counterfactual_candidates),
+                    seed=int(args.seed),
+                )
+                for key, value in mined.items():
+                    counterfactual[key] += value
+
             g = grammar_score(text)
             reward = {
                 "grammar": g,
@@ -214,6 +253,7 @@ def main(argv: list[str] | None = None) -> int:
                 "policy_checkpoint_sha": policy_sha,
                 "decode_config_hash": decode_hash,
                 "decode_policy": args.decode_policy,
+                "counterfactual": counterfactual,
             },
             indent=2,
         )

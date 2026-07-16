@@ -1101,7 +1101,7 @@ split contains at least one same-state-verified multi-good or multi-bad event.
 | E249 | Exact-event CE plus margin | Event win/margin and per-kind recurrence | measured; lexical objective generalized; semantic quality regressed; rejected |
 | E250 | Bad-token unlikelihood | Bad probability mass and held-out recurrence | proposed/unrun |
 | E251 | Single-pair clipped FTPO | Active weight, chosen/margin win, drift | proposed/unrun |
-| E252 | Verifier-backed set FTPO | Set coverage, evidence source, held-out recurrence | proposed/unrun |
+| E252 | Verifier-backed set FTPO | Set coverage, evidence source, held-out recurrence | prerequisite measured; no admissible events; training unrun |
 | E253 | E252 plus frozen-reference tether | Non-target MSE, target excess MSE, unchanged decisions | proposed/unrun |
 | E254 | E253 plus balanced sampling | Source/kind/rejected-set exposure and all E253 metrics | proposed/unrun |
 
@@ -1147,6 +1147,15 @@ semantic preference labels: keep their legality guarantee in deterministic
 decoding and require counterfactual semantic evidence before another local
 preference train. Full evidence:
 [iter-e249-local-ce-margin-20260716.md](iter-e249-local-ce-margin-20260716.md).
+
+The E252 prerequisite now replays grammar-legal alternatives from one exact
+production compiler state and requires independent-judge, meaningful-program,
+and Pareto evidence before corpus admission. The bounded diagnostic produced
+zero verified candidates: both legal branches collapsed to the same off-task
+fallback and failed component recall. No corpus or checkpoint was created, and
+constraint-shadow events are now rejected by local semantic training. Full
+evidence:
+[iter-e252-counterfactual-prerequisite-20260716.md](iter-e252-counterfactual-prerequisite-20260716.md).
 
 ## Verifier-guided repair (mixed status)
 
