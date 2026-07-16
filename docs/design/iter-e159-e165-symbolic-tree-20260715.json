@@ -1,0 +1,16 @@
+{
+  "iterations": ["E159", "E160", "E161", "E162", "E163", "E164", "E165"],
+  "date": "2026-07-16",
+  "objective": "Separate output-alphabet and symbolic-tree enforcement from model training quality.",
+  "controls": {
+    "e159_lexer_checkpoint": {"parse_rate": 0.3333333333, "raw_syntax_validity": 0.6666666667, "structural_similarity": 0.3416666667, "decode_timeout_count": 1},
+    "e160_lexer_train_32": {"last_loss": 11.517501831054688, "parse_rate": 0.0, "raw_syntax_validity": 0.3333333333, "structural_similarity": 0.1255666667, "decode_timeout_count": 0},
+    "e165_tree_certified_prefix": {"parse_rate": 0.0, "raw_syntax_validity": 0.3333333333, "structural_similarity": 0.1789, "placeholder_validity": 0.5166666667, "latency_ms_p50": 1694.17, "decode_timeout_count": 0, "compiler_candidates": 938, "compiler_fallbacks": 2, "seeded_fallbacks": 0, "agentv_passed": 0, "agentv_failed": 5}
+  },
+  "evidence": {
+    "e159": "outputs/runs/iter-e159-lexer-control-20260715/e159-lexer-control/eval_smoke.json",
+    "e160": "outputs/runs/iter-e160-lexer-32step-20260715/e160-feedback/eval_smoke.json",
+    "e165": "outputs/runs/iter-e160-lexer-32step-20260715/e165-tree-no-repair-feedback/eval_smoke.json"
+  },
+  "conclusion": "Compositional output is not a valid proxy for symbolic constrained decoding. Lexer-native tokens are required. The symbolic compiler now recognizes BOS root, consumes partial grammar-admitted paths, suppresses legacy repair, and never appends an unconstrained suffix in tree/restricted mode. E165 still fails model-quality parse/structure gates, but its zero seeded fallbacks confirms the deterministic layer is actually applied; remaining failures are incomplete/low-quality model choices, not mixed unconstrained output."
+}

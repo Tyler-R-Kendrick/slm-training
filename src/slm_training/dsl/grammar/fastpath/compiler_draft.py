@@ -276,7 +276,10 @@ def build_completion_forest(
             sym_ids = set(tokenizer.kind_ids(TokenKind.SYM))
             visible_binds = [tid for tid in prefix_ids if tid in bind_ids]
             last = prefix_ids[-1] if prefix_ids else None
-            at_statement_start = not prefix_ids or tokenizer.id_to_token.get(last) == "NL"
+            # LTR/compiler prefixes include BOS, which is not a source token.
+            # Treat BOS-only as the first statement so the root binder remains
+            # available to the symbolic tree.
+            at_statement_start = len(prefix_ids) <= 1 or tokenizer.id_to_token.get(last) == "NL"
             if at_statement_start:
                 next_slot = min(len(set(visible_binds)), max(0, tokenizer.bind_slots - 1))
                 candidates -= bind_ids
