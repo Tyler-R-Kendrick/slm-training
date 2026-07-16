@@ -402,6 +402,13 @@ def compile_commands(
             train.extend(
                 ["--component-edge-loss-weight", str(knobs.component_edge_loss_weight)]
             )
+        if knobs.component_edge_alignment_loss_weight is not None:
+            train.extend(
+                [
+                    "--component-edge-alignment-loss-weight",
+                    str(knobs.component_edge_alignment_loss_weight),
+                ]
+            )
         if knobs.component_edge_decode_weight is not None:
             train.extend(
                 [

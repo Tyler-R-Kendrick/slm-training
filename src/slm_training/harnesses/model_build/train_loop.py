@@ -727,6 +727,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "component_edge_loss_weight": getattr(
                 config, "component_edge_loss_weight", 0.0
             ),
+            "component_edge_alignment_loss_weight": getattr(
+                config, "component_edge_alignment_loss_weight", 0.0
+            ),
             "component_edge_decode_weight": getattr(
                 config, "component_edge_decode_weight", 0.0
             ),

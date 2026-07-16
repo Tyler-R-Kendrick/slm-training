@@ -636,6 +636,7 @@ def test_component_edges_come_from_ast_and_partial_reference_graph() -> None:
 def test_component_edge_supervision_and_parent_conditioned_bias() -> None:
     model = _model(
         component_edge_loss_weight=1.0,
+        component_edge_alignment_loss_weight=1.0,
         component_edge_decode_weight=2.0,
     )
     model.train()
@@ -656,6 +657,13 @@ def test_component_edge_supervision_and_parent_conditioned_bias() -> None:
     assert model.last_training_metrics["component_edge_loss"] > 0
     assert 0 <= model.last_training_metrics["component_edge_topk_recall"] <= 1
     assert model.last_training_metrics["component_edge_positive_count_mean"] == 1
+    assert model.last_training_metrics["component_edge_alignment_rows"] == 1
+    assert model.last_training_metrics["component_edge_alignment_loss"] > 0
+    assert (
+        model.last_training_metrics["component_edge_alignment_unknown_parent_rows"]
+        == 0
+    )
+    assert 0 <= model.last_training_metrics["component_edge_alignment_accuracy"] <= 1
 
     tokenizer = model.tokenizer
     components = model._component_inventory_token_ids()

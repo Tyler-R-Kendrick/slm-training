@@ -191,6 +191,7 @@ class TwoTowerConfig:
     component_plan_loss_weight: float = 0.0
     component_plan_decode_weight: float = 0.0
     component_edge_loss_weight: float = 0.0
+    component_edge_alignment_loss_weight: float = 0.0
     component_edge_decode_weight: float = 0.0
     symbol_boundary_loss_weight: float = 0.0
     # Extra CE weight on gold placeholder token positions (fidelity signal).
@@ -510,6 +511,11 @@ class TwoTowerModel(nn.Module):
             component_edge_ids = ()
         edge_enabled = (
             float(getattr(self.config, "component_edge_loss_weight", 0.0) or 0.0)
+            > 0.0
+            or float(
+                getattr(self.config, "component_edge_alignment_loss_weight", 0.0)
+                or 0.0
+            )
             > 0.0
             or float(getattr(self.config, "component_edge_decode_weight", 0.0) or 0.0)
             > 0.0
@@ -1740,6 +1746,102 @@ class TwoTowerModel(nn.Module):
                     "component_edge_topk_recall": float(edge_recall.detach().cpu()),
                     "component_edge_positive_count_mean": float(
                         edge_targets.sum(dim=(1, 2)).mean().detach().cpu()
+                    ),
+                }
+            )
+
+        edge_alignment_w = float(
+            getattr(self.config, "component_edge_alignment_loss_weight", 0.0)
+            or 0.0
+        )
+        if edge_alignment_w > 0.0 and self.component_edge_head is not None:
+            from slm_training.dsl.grammar.fastpath.compiler_draft import (
+                active_parent_component_ids,
+                gold_compiler_decisions,
+            )
+
+            component_ids = self._component_inventory_token_ids()
+            component_index = {
+                token_id: index for index, token_id in enumerate(component_ids)
+            }
+            edge_logits = self.component_edge_head(
+                self._pool_context(ctx, ctx_pad)
+            ).view(len(batch), len(component_ids), len(component_ids))
+            alignment_losses: list[torch.Tensor] = []
+            alignment_hits: list[torch.Tensor] = []
+            candidate_counts: list[int] = []
+            unknown_parent_rows = 0
+            for row, record in enumerate(batch):
+                target_key = tuple(int(token_id) for token_id in target_ids[row].tolist())
+                contract_key = tuple(record.placeholders or ())
+                cache_key = (target_key, contract_key)
+                decisions = self._compiler_decision_cache.get(cache_key)
+                if decisions is None:
+                    decisions = gold_compiler_decisions(
+                        self.tokenizer,
+                        target_key,
+                        slot_contract=list(contract_key),
+                    )
+                    self._compiler_decision_cache[cache_key] = decisions
+                for decision in decisions:
+                    if decision.kind != "component_bound":
+                        continue
+                    position = int(decision.position)
+                    child = component_index.get(int(target_ids[row, position]))
+                    parents = active_parent_component_ids(
+                        self.tokenizer, list(target_key[:position])
+                    )
+                    candidates = [
+                        component_index[token_id]
+                        for token_id in decision.candidate_ids
+                        if token_id in component_index
+                    ]
+                    if child is None or child not in candidates:
+                        continue
+                    parent_indices = [
+                        component_index[token_id]
+                        for token_id in parents
+                        if token_id in component_index
+                    ]
+                    if not parent_indices:
+                        unknown_parent_rows += 1
+                        continue
+                    candidate_tensor = torch.as_tensor(candidates, device=ctx.device)
+                    parent_tensor = torch.as_tensor(parent_indices, device=ctx.device)
+                    scores = (
+                        edge_logits[row]
+                        .index_select(0, parent_tensor)
+                        .mean(dim=0)
+                        .index_select(0, candidate_tensor)
+                    )
+                    target = torch.as_tensor(
+                        [candidates.index(child)], device=ctx.device
+                    )
+                    alignment_losses.append(F.cross_entropy(scores[None, :], target))
+                    alignment_hits.append(scores.argmax().eq(target[0]).float())
+                    candidate_counts.append(len(candidates))
+            edge_alignment_loss = (
+                torch.stack(alignment_losses).mean()
+                if alignment_losses
+                else edge_logits.sum() * 0.0
+            )
+            mask_loss = mask_loss + edge_alignment_w * edge_alignment_loss
+            self.last_training_metrics.update(
+                {
+                    "component_edge_alignment_loss": float(
+                        edge_alignment_loss.detach().cpu()
+                    ),
+                    "component_edge_alignment_accuracy": float(
+                        torch.stack(alignment_hits).mean().detach().cpu()
+                        if alignment_hits
+                        else 0.0
+                    ),
+                    "component_edge_alignment_rows": len(alignment_losses),
+                    "component_edge_alignment_unknown_parent_rows": unknown_parent_rows,
+                    "component_edge_alignment_candidate_count_mean": (
+                        sum(candidate_counts) / len(candidate_counts)
+                        if candidate_counts
+                        else 0.0
                     ),
                 }
             )

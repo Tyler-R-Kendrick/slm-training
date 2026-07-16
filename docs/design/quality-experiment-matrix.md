@@ -975,6 +975,15 @@ remains 1/5. Retain the generalized mechanism and reject the checkpoint. Full
 evidence:
 [iter-e233-component-edges-20260716.md](iter-e233-component-edges-20260716.md).
 
+E234 replaces global edge BCE with parent-conditioned cross-entropy over each
+compiler decision's legal components. Decision accuracy learns from 0 to 0.5714
+and edge bias changes 5/53 choices, but edge-on and edge-off suite aggregates
+remain identical. Four frontier thresholds still fail and AgentV remains 1/5.
+The final sampled batch also has 16 bound decisions without a prefix-known
+parent versus 14 aligned rows, motivating binder-level instance topology next.
+Retain the generalized objective and reject the checkpoint. Full evidence:
+[iter-e234-edge-decision-alignment-20260716.md](iter-e234-edge-decision-alignment-20260716.md).
+
 ## V9 lattice-guided recursive compiler search (proposed, unrun)
 
 The research synthesis and implementation boundary are in

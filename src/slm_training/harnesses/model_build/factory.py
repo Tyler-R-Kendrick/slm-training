@@ -327,6 +327,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         component_edge_loss_weight=float(
             getattr(config, "component_edge_loss_weight", 0.0) or 0.0
         ),
+        component_edge_alignment_loss_weight=float(
+            getattr(config, "component_edge_alignment_loss_weight", 0.0) or 0.0
+        ),
         component_edge_decode_weight=float(
             getattr(config, "component_edge_decode_weight", 0.0) or 0.0
         ),

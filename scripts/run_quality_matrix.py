@@ -137,6 +137,7 @@ class Experiment:
     component_plan_loss_weight: float = 0.0
     component_plan_decode_weight: float = 0.0
     component_edge_loss_weight: float = 0.0
+    component_edge_alignment_loss_weight: float = 0.0
     component_edge_decode_weight: float = 0.0
 
 
@@ -1312,6 +1313,9 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         ),
         component_edge_loss_weight=float(
             getattr(exp, "component_edge_loss_weight", 0.0) or 0.0
+        ),
+        component_edge_alignment_loss_weight=float(
+            getattr(exp, "component_edge_alignment_loss_weight", 0.0) or 0.0
         ),
         component_edge_decode_weight=float(
             getattr(exp, "component_edge_decode_weight", 0.0) or 0.0
