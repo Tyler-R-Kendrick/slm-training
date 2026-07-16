@@ -445,6 +445,18 @@ The manifest currently labels 14 sources **Adapted** and 36 **Adjacent**. Those
 labels describe code lineage only. No paper result, latency multiplier, quality
 gain, or ship status is inherited, and V8 rows E200-E207/C5-C8 remain unrun.
 
+## Lattice-guided recursive compiler search (V9)
+
+The shared tiny-reasoner review and its 25 academic references are normalized in
+[`lattice-recursive-search.md`](lattice-recursive-search.md). V9 treats the
+existing compiler completion forest as the hard partial-information state, keeps
+neural scores soft, and plans bounded rollback plus selectively triggered
+PTRM/GRAM-style trajectories. The controller is **Adapted**: it does not reproduce
+LDT, TRM, PTRM, or GRAM training, and their reported results do not transfer.
+
+Rows E240-E247 are plan-only hypotheses until the standard quality suites,
+AgentEvals, AgentV bundle, measured-results JSON, and markdown scoreboard exist.
+
 ## Contract-conditioned scope diffusion (X16-X21)
 
 The public [ScopeDiff discussion](https://chatgpt.com/share/6a583787-8e9c-83ea-94e2-c36b0f4d093e)
