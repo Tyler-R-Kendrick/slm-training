@@ -604,6 +604,8 @@ def pick_constrained_token(
     temperature: float = 0.8,
     state: GrammarDecodeState | None = None,
     verify_chosen_only: bool | None = None,
+    grammar_equivalence_cache: bool = False,
+    active_dynamic_ids: set[int] | None = None,
 ) -> int | None:
     """
     Speculative constrained pick: only tokens admitted by the grammar DFA
@@ -678,7 +680,12 @@ def pick_constrained_token(
         try:
             from slm_training.dsl.grammar.fastpath.token_map import allowed_id_set
 
-            allowed = allowed_id_set(tokenizer, engine.next_terminals())
+            allowed = allowed_id_set(
+                tokenizer,
+                engine.next_terminals(),
+                active_dynamic_ids=active_dynamic_ids,
+                use_cache=grammar_equivalence_cache,
+            )
             exact_terminals = bool(
                 skip_exact and getattr(engine, "terminals_are_exact", lambda: False)()
             )

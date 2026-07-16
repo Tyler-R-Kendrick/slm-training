@@ -121,6 +121,46 @@ def main(argv: list[str] | None = None) -> int:
         default="compositional",
     )
     parser.add_argument(
+        "--runtime-symbol-features",
+        choices=("none", "surface", "role_gated"),
+        default="none",
+    )
+    parser.add_argument(
+        "--symbol-slot-augmentation",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+    )
+    parser.add_argument(
+        "--semantic-candidate-masks",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+    )
+    parser.add_argument(
+        "--constraint-graph-mode",
+        choices=("off", "grammar", "hybrid"),
+        default="off",
+    )
+    parser.add_argument(
+        "--grammar-completion-bounds",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+    )
+    parser.add_argument(
+        "--grammar-equivalence-cache",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+    )
+    parser.add_argument(
+        "--grammar-active-symbol-bitsets",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+    )
+    parser.add_argument(
+        "--compact-active-canvas",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add_argument(
         "--diffusion-policies",
         default=",".join(ModelBuildConfig.diffusion_policies),
         help="Comma-separated online policies used with --mask-pattern diffusion.",
@@ -474,6 +514,14 @@ def main(argv: list[str] | None = None) -> int:
             mask_max=args.mask_max,
             mask_pattern=args.mask_pattern,
             output_tokenizer=args.output_tokenizer,
+            runtime_symbol_features=args.runtime_symbol_features,
+            symbol_slot_augmentation=args.symbol_slot_augmentation,
+            semantic_candidate_masks=args.semantic_candidate_masks,
+            constraint_graph_mode=args.constraint_graph_mode,
+            grammar_completion_bounds=args.grammar_completion_bounds,
+            grammar_equivalence_cache=args.grammar_equivalence_cache,
+            grammar_active_symbol_bitsets=args.grammar_active_symbol_bitsets,
+            compact_active_canvas=args.compact_active_canvas,
             diffusion_policies=tuple(
                 value.strip()
                 for value in args.diffusion_policies.split(",")

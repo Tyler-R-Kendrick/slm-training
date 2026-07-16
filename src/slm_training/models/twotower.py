@@ -14,6 +14,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from slm_training.dsl.schema import ExampleRecord
+from slm_training.data.contract import RuntimeSymbol
 from slm_training.harnesses.model_build.plugin import GenerationRequest
 from slm_training.models.blocks import DenoiserTower
 from slm_training.models.context import (
@@ -49,6 +50,7 @@ from slm_training.models.parallel_decode import (
 from slm_training.models.speculative_denoise import (
     SpeculativeStats,
     SuccessorCache,
+    build_constraint_edges,
     build_dependency_clusters,
     enumerate_outcome_canvases,
     filter_by_cumulative_survival,
@@ -258,6 +260,15 @@ class TwoTowerConfig:
     remask_span: str = "token"
     # Optional teacher-init of symbol embeddings from HF context (E45).
     teacher_init_embeddings: bool = False
+    # V8 request-conditioned dynamic vocabulary; ``none`` is checkpoint-identical.
+    runtime_symbol_features: str = "none"  # none | surface | role_gated
+    symbol_slot_augmentation: bool = False
+    semantic_candidate_masks: bool = False
+    constraint_graph_mode: str = "off"  # off | grammar | hybrid
+    grammar_completion_bounds: bool = False
+    grammar_equivalence_cache: bool = False
+    grammar_active_symbol_bitsets: bool = False
+    compact_active_canvas: bool = True
     # --- Inference-speed levers (P/Q/R-series; decode-only, no retrain) ---
     # P1: reuse one DFA engine + decoded prefix text per decode row.
     grammar_incremental_state: bool = True
@@ -461,6 +472,7 @@ class TwoTowerModel(nn.Module):
         self._slot_contracts: list[list[str] | None] | None = None
         # Per-example symbol tables for lexer-native encode/decode.
         self._symbol_tables: dict[str, object] = {}
+        self._current_runtime_table: object | None = None
         self.to(device)
 
     def _effective_structural_bias(self) -> float:
@@ -479,6 +491,15 @@ class TwoTowerModel(nn.Module):
             ),
             "verify_chosen_only": bool(
                 getattr(self.config, "grammar_verify_chosen_only", False)
+            ),
+            "grammar_equivalence_cache": bool(
+                getattr(self.config, "grammar_equivalence_cache", False)
+            ),
+            "active_dynamic_ids": (
+                self._current_runtime_table.active_token_ids(self.tokenizer)
+                if bool(getattr(self.config, "grammar_active_symbol_bitsets", False))
+                and hasattr(self._current_runtime_table, "active_token_ids")
+                else None
             ),
         }
 
@@ -881,6 +902,9 @@ class TwoTowerModel(nn.Module):
                 table = SymbolTable.from_placeholders(
                     placeholders, max_slots=self.tokenizer.sym_slots
                 )
+                if bool(getattr(self.config, "symbol_slot_augmentation", False)) and self.training:
+                    key_seed = sum(ord(ch) for ch in (cache_key or openui))
+                    table = table.permuted(int(self.config.seed) + key_seed)
                 if cache_key is not None:
                     self._symbol_tables[cache_key] = table
                 return self.tokenizer.encode(
@@ -892,6 +916,95 @@ class TwoTowerModel(nn.Module):
         except Exception:  # noqa: BLE001
             pass
         return self.tokenizer.encode(openui)
+
+    def _runtime_feature_tensor(self, tables: list[object]) -> torch.Tensor | None:
+        """Build per-example deltas for reserved symbol rows from existing embeddings."""
+        mode = str(getattr(self.config, "runtime_symbol_features", "none") or "none")
+        if mode == "none" or not tables:
+            return None
+        if mode not in {"surface", "role_gated"}:
+            raise ValueError(f"unknown runtime_symbol_features mode {mode!r}")
+        from slm_training.models.dsl_tokenizer import SymbolTable
+
+        if not all(isinstance(table, SymbolTable) for table in tables):
+            return None
+        weight = self.denoiser.tok.weight
+        features = weight.new_zeros(
+            (len(tables), self.tokenizer.vocab_size, weight.size(1))
+        )
+        for row, raw_table in enumerate(tables):
+            assert isinstance(raw_table, SymbolTable)
+            targets: list[tuple[int, RuntimeSymbol]] = []
+            for slot, surface in enumerate(raw_table.placeholders):
+                symbol = raw_table.symbol_for_surface(surface) or RuntimeSymbol(
+                    surface=surface, role="external_entity"
+                )
+                targets.append((self.tokenizer.sym_id(slot), symbol))
+            for surface, slot in raw_table.binders.items():
+                symbol = raw_table.symbol_for_surface(surface) or RuntimeSymbol(
+                    surface=surface, role="alpha_binder"
+                )
+                targets.append((self.tokenizer.bind_id(slot), symbol))
+            for surface, slot in raw_table.states.items():
+                symbol = raw_table.symbol_for_surface(surface) or RuntimeSymbol(
+                    surface=surface, role="state"
+                )
+                targets.append((self.tokenizer.state_id(slot), symbol))
+            for token_id, symbol in targets:
+                if mode == "role_gated" and symbol.role in {
+                    "alpha_binder",
+                    "fresh_binder",
+                }:
+                    continue
+                text = " ".join(
+                    part
+                    for part in (
+                        symbol.surface,
+                        *symbol.namespace,
+                        symbol.semantic_type,
+                        symbol.scope,
+                        symbol.signature,
+                        symbol.description,
+                    )
+                    if part
+                )
+                byte_ids = self.tokenizer._encode_bytes(text) if text else []
+                if byte_ids:
+                    index = torch.tensor(byte_ids, device=weight.device)
+                    features[row, token_id] = weight.index_select(0, index).mean(0)
+        return features
+
+    def _set_runtime_symbol_features(self, tables: list[object]) -> torch.Tensor | None:
+        features = self._runtime_feature_tensor(tables)
+        self.denoiser.set_runtime_symbol_features(features)
+        return features
+
+    def _mask_inactive_dynamic_logits(self, logits: torch.Tensor) -> torch.Tensor:
+        """Conservatively hide undeclared entity/state rows; binders stay writable."""
+        if not bool(getattr(self.config, "semantic_candidate_masks", False)):
+            return logits
+        try:
+            from slm_training.models.dsl_tokenizer import SymbolTable, TokenKind
+
+            table = self._current_runtime_table
+            if not isinstance(table, SymbolTable):
+                return logits
+            active = table.active_token_ids(self.tokenizer)
+            dynamic = self.tokenizer.kind_ids(TokenKind.SYM) | self.tokenizer.kind_ids(
+                TokenKind.STATE
+            )
+            blocked = sorted(dynamic - active)
+            stats = get_active_stats()
+            if stats is not None:
+                stats.dynamic_mask_applications += 1
+                stats.dynamic_candidates_before += len(dynamic)
+                stats.dynamic_candidates_after += len(dynamic) - len(blocked)
+            if blocked:
+                logits = logits.clone()
+                logits[..., blocked] = float("-inf")
+        except Exception:  # noqa: BLE001
+            pass
+        return logits
 
     def _decode_openui(
         self,
@@ -991,6 +1104,9 @@ class TwoTowerModel(nn.Module):
         from slm_training.runtime.telemetry import timed
 
         with timed("denoiser_forward"):
+            self._set_runtime_symbol_features(
+                [self._symbol_tables.get(key) for key in cache_keys]
+            )
             logits = self.denoiser(
                 noisy, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
             )
@@ -2520,6 +2636,7 @@ class TwoTowerModel(nn.Module):
             slot_contracts.append(contract)
         schemas = [r.schema for r in requests]
         design_mds = [r.design_md for r in requests]
+        runtime_symbols = [list(r.effective_runtime_symbols()) for r in requests]
         n_samples = max(1, int(getattr(self.config, "best_of_n", 1) or 1))
         if n_samples > 1:
             pools: list[list[str]] = [[] for _ in requests]
@@ -2535,6 +2652,7 @@ class TwoTowerModel(nn.Module):
                         design_mds=design_mds,
                         slot_contracts=slot_contracts,
                         schemas=schemas,
+                        runtime_symbols=runtime_symbols,
                     )
                     for i, text in enumerate(sample):
                         pools[i].append(text)
@@ -2552,6 +2670,7 @@ class TwoTowerModel(nn.Module):
             design_mds=design_mds,
             slot_contracts=slot_contracts,
             schemas=schemas,
+            runtime_symbols=runtime_symbols,
         )
 
     def _generate_batch_once(
@@ -2564,6 +2683,7 @@ class TwoTowerModel(nn.Module):
         design_mds: list[str | None] | None = None,
         slot_contracts: list[list[str] | None] | None = None,
         schemas: list[str | None] | None = None,
+        runtime_symbols: list[list[RuntimeSymbol] | None] | None = None,
     ) -> list[str]:
         use_grammar = (
             self.config.grammar_constrained
@@ -2607,6 +2727,34 @@ class TwoTowerModel(nn.Module):
             schemas=schemas,
         )
         ctx, ctx_pad = self._encode_context(ctx_prompts)
+        feature_tables: list[object] = []
+        try:
+            from slm_training.models.dsl_tokenizer import SymbolTable
+
+            for i in range(len(prompts)):
+                symbols = runtime_symbols[i] if runtime_symbols else None
+                if symbols:
+                    table = SymbolTable.from_runtime_symbols(
+                        symbols,
+                        sym_slots=self.tokenizer.sym_slots,
+                        bind_slots=self.tokenizer.bind_slots,
+                        state_slots=self.tokenizer.state_slots,
+                    )
+                else:
+                    placeholders = (
+                        slot_contracts[i]
+                        if slot_contracts
+                        else list(golds[i].placeholders or [])
+                        if golds and golds[i] is not None
+                        else None
+                    )
+                    table = SymbolTable.from_placeholders(
+                        placeholders,
+                        max_slots=getattr(self.tokenizer, "sym_slots", 64),
+                    )
+                feature_tables.append(table)
+        except Exception:  # noqa: BLE001
+            feature_tables = []
         if bool(getattr(self.config, "contract_template_fastpath", False)):
             fast: list[str] = []
             for contract in self._slot_contracts or []:
@@ -2629,10 +2777,18 @@ class TwoTowerModel(nn.Module):
         if max_len is None:
             predicted_lengths = self._predict_target_lengths(ctx, ctx_pad)
             if predicted_lengths is not None:
-                row_lengths = predicted_lengths
-                length = max(row_lengths)
+                length = max(predicted_lengths)
+                row_lengths = (
+                    predicted_lengths
+                    if bool(getattr(self.config, "compact_active_canvas", True))
+                    else [length] * len(predicted_lengths)
+                )
 
         if use_grammar and self.config.grammar_ltr_primary:
+            self._set_runtime_symbol_features(feature_tables)
+            self._current_runtime_table = (
+                feature_tables[0] if len(feature_tables) == 1 else None
+            )
             repair_len = min(length, max(8, int(self.config.grammar_ltr_max_tokens)))
             ids = self._greedy_ltr_decode_batch(ctx, ctx_pad, repair_len)
             texts = [self._decode_ids(ids[i]) for i in range(ids.size(0))]
@@ -2657,6 +2813,10 @@ class TwoTowerModel(nn.Module):
             )
             certified: list[str] = []
             for i, text in enumerate(texts):
+                if feature_tables:
+                    features = self._runtime_feature_tensor([feature_tables[i]])
+                    self.denoiser.set_runtime_symbol_features(features)
+                    self._current_runtime_table = feature_tables[i]
                 contract = (
                     self._slot_contracts[i]
                     if self._slot_contracts and i < len(self._slot_contracts)
@@ -2677,12 +2837,17 @@ class TwoTowerModel(nn.Module):
         # Fall back to per-item MaskGIT for non-LTR-primary path.
         out: list[str] = []
         for i in range(len(prompts)):
+            if feature_tables:
+                features = self._runtime_feature_tensor([feature_tables[i]])
+                self.denoiser.set_runtime_symbol_features(features)
+                self._current_runtime_table = feature_tables[i]
             contract = (
                 self._slot_contracts[i]
                 if self._slot_contracts and i < len(self._slot_contracts)
                 else None
             )
             out.append(
+                # MaskGIT is per-row, so attach the matching request table only.
                 self._generate_maskgit_one(
                     ctx[i : i + 1],
                     ctx_pad[i : i + 1],
@@ -2888,6 +3053,26 @@ class TwoTowerModel(nn.Module):
         ids[0, 0] = self.tokenizer.bos_id
         unknown = ids.eq(self.tokenizer.mask_id)
 
+        if bool(getattr(self.config, "grammar_completion_bounds", False)):
+            stats_bucket = get_active_stats()
+            try:
+                from slm_training.dsl.grammar.fastpath import engine_for_dsl
+                from slm_training.models.grammar import active_dsl
+
+                engine = engine_for_dsl(active_dsl())
+                bound = (
+                    engine.minimum_completion_tokens("")
+                    if engine is not None
+                    else None
+                )
+            except Exception:  # noqa: BLE001
+                bound = None
+            if stats_bucket is not None:
+                if bound is None:
+                    stats_bucket.completion_bound_unknown += 1
+                else:
+                    stats_bucket.completion_bound_known += 1
+
         # Compiler fallback: accepted prefix is authoritative and remains
         # visible while V7 denoises the unresolved suffix in parallel.
         if seed_ids:
@@ -3005,6 +3190,7 @@ class TwoTowerModel(nn.Module):
                 if rec is not None:
                     rec.forward()
             successor_cache = None
+            logits = self._mask_inactive_dynamic_logits(logits)
             if use_grammar and self._effective_structural_bias():
                 logits = apply_structural_bias(
                     logits,
@@ -3178,6 +3364,17 @@ class TwoTowerModel(nn.Module):
                 candidates = sorted(proposals)
                 ordered: list = []
                 if candidates and attn is not None:
+                    graph_mode = str(
+                        getattr(self.config, "constraint_graph_mode", "off") or "off"
+                    ).lower()
+                    explicit_edges = (
+                        build_constraint_edges(ids[0].tolist(), self.tokenizer)
+                        if graph_mode in {"grammar", "hybrid"}
+                        else None
+                    )
+                    active_stats = get_active_stats()
+                    if active_stats is not None and explicit_edges is not None:
+                        active_stats.constraint_graph_edges += len(explicit_edges)
                     clusters = build_dependency_clusters(
                         attn[0],
                         candidates,
@@ -3188,11 +3385,13 @@ class TwoTowerModel(nn.Module):
                             1, int(getattr(self.config, "cluster_max_size", 4) or 4)
                         ),
                         conf=conf[0],
+                        explicit_edges=explicit_edges,
+                        use_attention=graph_mode != "grammar",
                     )
                     ordered = order_clusters(
                         clusters,
                         conf=conf[0],
-                        attn=attn[0],
+                        attn=attn[0] if graph_mode != "grammar" else None,
                         survival=survival_scores[0]
                         if survival_scores is not None
                         else None,

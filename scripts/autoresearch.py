@@ -90,13 +90,14 @@ def _capture(
 
 
 def _research_sources(args: argparse.Namespace) -> list[ResearchSource]:
-    if args.offline:
-        return []
-    client = HuggingFacePapersClient(token=os.environ.get("HF_TOKEN"))
     sources: list[ResearchSource] = []
-    for query in args.paper_query:
-        sources.extend(client.search(query, limit=args.hf_limit))
-    sources.extend(client.daily(days=args.hf_days, limit_per_day=args.hf_limit))
+    for manifest in args.source_manifest or ():
+        sources.extend(_load_sources(manifest))
+    if not args.offline:
+        client = HuggingFacePapersClient(token=os.environ.get("HF_TOKEN"))
+        for query in args.paper_query:
+            sources.extend(client.search(query, limit=args.hf_limit))
+        sources.extend(client.daily(days=args.hf_days, limit_per_day=args.hf_limit))
     return list({source.uri: source for source in sources}.values())
 
 
@@ -176,7 +177,13 @@ def _load_sources(path: Path | None) -> list[ResearchSource]:
     if not path:
         return []
     payload = json.loads(path.read_text(encoding="utf-8"))
-    return [ResearchSource.model_validate(item) for item in payload.get("sources", [])]
+    retrieved_at = payload.get("retrieved_at")
+    return [
+        ResearchSource.model_validate(
+            {**({"retrieved_at": retrieved_at} if retrieved_at else {}), **item}
+        )
+        for item in payload.get("sources", [])
+    ]
 
 
 def _load_memo(store: CampaignStore, path: Path | None) -> str:
@@ -457,6 +464,12 @@ def build_parser() -> argparse.ArgumentParser:
     research.add_argument("--offline", action="store_true")
     research.add_argument("--hf-days", type=int, default=7)
     research.add_argument("--hf-limit", type=int, default=20)
+    research.add_argument(
+        "--source-manifest",
+        type=Path,
+        action="append",
+        help="Committed ResearchSource JSON manifest; repeatable and offline-safe.",
+    )
     research.add_argument("--researcher", choices=tuple(RESEARCHERS))
     research.add_argument("--researcher-checkout", type=Path)
     research.add_argument("--researcher-python", type=Path)

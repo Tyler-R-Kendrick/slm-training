@@ -10,6 +10,8 @@ from typing import Any
 
 from slm_training.models.tokenizer import OpenUITokenizer
 
+_DSL_ALLOWED_CACHE: dict[tuple[int, int, frozenset[str]], frozenset[int]] = {}
+
 
 def _is_dsl_native(tokenizer: Any) -> bool:
     try:
@@ -35,6 +37,9 @@ def string_to_token_ids(tokenizer: OpenUITokenizer, text: str) -> list[int]:
 def allowed_id_set(
     tokenizer: OpenUITokenizer,
     terminals: frozenset[str],
+    *,
+    active_dynamic_ids: set[int] | None = None,
+    use_cache: bool = False,
 ) -> set[int] | None:
     """
     Expand accepts() terminal names to tokenizer ids.
@@ -44,8 +49,37 @@ def allowed_id_set(
     if not terminals:
         return None
     if _is_dsl_native(tokenizer):
-        return _allowed_id_set_dsl(tokenizer, terminals)
+        fingerprint = hash(tuple(sorted(tokenizer.token_to_id.items())))
+        key = (fingerprint, int(getattr(tokenizer, "version", 0)), terminals)
+        cached = _DSL_ALLOWED_CACHE.get(key) if use_cache else None
+        if cached is None:
+            result = _allowed_id_set_dsl(tokenizer, terminals)
+            if result is not None and use_cache:
+                _DSL_ALLOWED_CACHE[key] = frozenset(result)
+        else:
+            result = set(cached)
+        if result is not None and active_dynamic_ids is not None:
+            from slm_training.models.dsl_tokenizer import TokenKind
+
+            dynamic = tokenizer.kind_ids(TokenKind.SYM) | tokenizer.kind_ids(
+                TokenKind.STATE
+            )
+            result = (result - dynamic) | (result & active_dynamic_ids)
+        return result
     return _allowed_id_set_compositional(tokenizer, terminals)
+
+
+def terminal_equivalence_classes(
+    tokenizer: OpenUITokenizer,
+    terminal_sets: list[frozenset[str]],
+) -> dict[frozenset[int], list[frozenset[str]]]:
+    """Group parser states that induce the same token candidate set."""
+    groups: dict[frozenset[int], list[frozenset[str]]] = {}
+    for terminals in terminal_sets:
+        ids = allowed_id_set(tokenizer, terminals, use_cache=True)
+        if ids is not None:
+            groups.setdefault(frozenset(ids), []).append(terminals)
+    return groups
 
 
 def _allowed_id_set_dsl(tokenizer: Any, terminals: frozenset[str]) -> set[int] | None:

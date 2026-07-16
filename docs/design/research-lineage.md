@@ -423,6 +423,28 @@ grammar stack remains the verifier; no draft LM is introduced.
 
 ---
 
+## Dynamic symbols and constraint-aware diffusion (V8)
+
+The public “Diffusion SLM Optimization” review yielded **50 unique academic
+sources**: 49 arXiv records plus ACL `D18-1192`. Canonical metadata,
+abstract-derived summaries, authors, applicability, limitations, and fidelity
+labels are committed in
+[`dynamic-symbol-sources.json`](../../src/slm_training/resources/autoresearch/dynamic-symbol-sources.json).
+The manifest is the complete inventory; this section records the cross-paper
+synthesis rather than repeating 50 abstracts.
+
+| Research cluster | V8 use | Boundary |
+| --- | --- | --- |
+| Dynamic vocabulary, pointer/copy models, alpha-equivalence | Fixed reserved rows receive request-local surface/metadata deltas; binder names are gated out; slot permutation is train-only augmentation | **Adapted**; no vocabulary growth, hypernetwork, or retrieval encoder |
+| Static/dynamic grammar decomposition and token-space compression | Cache terminal-equivalent token sets, then intersect request-local entity/state rows | **Adapted** systems idea; reported autoregressive speedups do not transfer |
+| Future validity and truncation proofs | A deterministic Lark helper returns a conservative completion lower bound or `unknown` | **Adapted** narrow subset; no learned future-validity statistic or full CFG intersection solver |
+| Projectional/semantic decoding | A minimal graph joins statement neighbors, repeated symbols, and delimiter pairs and can be unioned with attention edges | **Adapted** scheduling aid, not a typed projectional editor or semantic proof system |
+| Diffusion correction, scheduling, caching, and variable length | Existing V7 verification/remasking plus the V8 graph and fixed-vs-compact canvas ablation | Mostly **Adjacent** until matched OpenUI runs exist |
+
+The manifest currently labels 14 sources **Adapted** and 36 **Adjacent**. Those
+labels describe code lineage only. No paper result, latency multiplier, quality
+gain, or ship status is inherited, and V8 rows E200-E207/C5-C8 remain unrun.
+
 ## Autoresearch systems and adjacent research directions
 
 ### Swappable deep-research systems

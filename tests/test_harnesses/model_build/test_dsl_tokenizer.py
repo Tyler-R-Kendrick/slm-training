@@ -5,7 +5,9 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+import torch
 
+from slm_training.data.contract import GenerationRequest, RuntimeSymbol
 from slm_training.models.dsl_tokenizer import (
     DSLNativeTokenizer,
     SymbolTable,
@@ -68,6 +70,107 @@ def test_round_trip_with_symbol_table(tok: DSLNativeTokenizer) -> None:
     ids2 = tok.encode(text, table=SymbolTable.from_placeholders(table.placeholders))
     text2 = tok.decode(ids2, table=SymbolTable.from_placeholders(table.placeholders))
     assert '":hero.title"' in text2
+
+
+def test_runtime_symbol_contract_and_v2_table_migration(tok: DSLNativeTokenizer) -> None:
+    request = GenerationRequest(
+        prompt="Hero",
+        slot_contract=(":hero.title",),
+        runtime_symbols=(
+            RuntimeSymbol(
+                surface=":hero.title",
+                role="external_entity",
+                semantic_type="copy",
+            ),
+            RuntimeSymbol(surface="$filter", role="state"),
+        ),
+    )
+    assert GenerationRequest.from_dict(request.to_dict()) == request
+    table = SymbolTable.from_dict(
+        {
+            "placeholders": [":hero.title"],
+            "binders": {"root": 0, "hero": 1},
+            "states": {"$filter": 0},
+        }
+    )
+    assert table.symbol_for_surface(":hero.title").role == "external_entity"
+    assert table.to_dict()["version"] == 3
+    assert table.active_token_ids(tok) >= {tok.sym_id(0), tok.bind_id(0), tok.state_id(0)}
+
+
+def test_symbol_permutation_preserves_root_and_surfaces() -> None:
+    table = SymbolTable.from_dict(
+        {
+            "placeholders": [":a", ":b", ":c"],
+            "binders": {"root": 0, "left": 1, "right": 2},
+            "states": {"$one": 0, "$two": 1},
+        }
+    )
+    shuffled = table.permuted(7)
+    assert shuffled.binders["root"] == 0
+    assert set(shuffled.placeholders) == set(table.placeholders)
+    assert set(shuffled.binders) == set(table.binders)
+    assert set(shuffled.states) == set(table.states)
+
+
+def test_request_features_change_only_active_rows(tok: DSLNativeTokenizer) -> None:
+    from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
+
+    model = TwoTowerModel(
+        tokenizer=tok,
+        config=TwoTowerConfig(
+            d_model=16,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            max_prompt_len=16,
+            max_target_len=16,
+            runtime_symbol_features="role_gated",
+        ),
+    )
+    table = SymbolTable.from_runtime_symbols(
+        [
+            RuntimeSymbol(surface=":hero.title", role="external_entity"),
+            RuntimeSymbol(surface="local", role="alpha_binder"),
+        ]
+    )
+    features = model._runtime_feature_tensor([table])
+    assert features is not None
+    assert torch.count_nonzero(features[0, tok.sym_id(0)]) > 0
+    assert torch.count_nonzero(features[0, tok.bind_id(0)]) == 0
+    assert torch.count_nonzero(features[0, tok.sym_id(1)]) == 0
+
+
+def test_disabled_features_are_exact_and_semantic_mask_keeps_gold(
+    tok: DSLNativeTokenizer,
+) -> None:
+    from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
+
+    model = TwoTowerModel(
+        tokenizer=tok,
+        config=TwoTowerConfig(
+            d_model=16,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            max_prompt_len=16,
+            max_target_len=16,
+            runtime_symbol_features="none",
+            semantic_candidate_masks=True,
+        ),
+    )
+    noisy = torch.tensor([[tok.bos_id, tok.mask_id]])
+    context = torch.zeros((1, 2, 16))
+    baseline = model.denoiser(noisy, context, tok.pad_id)
+    model.denoiser.set_runtime_symbol_features(None)
+    assert torch.equal(baseline, model.denoiser(noisy, context, tok.pad_id))
+
+    table = SymbolTable.from_placeholders([":hero.title"])
+    model._current_runtime_table = table
+    masked = model._mask_inactive_dynamic_logits(torch.zeros((1, 1, tok.vocab_size)))
+    assert torch.isfinite(masked[0, 0, tok.sym_id(0)])
+    assert torch.isneginf(masked[0, 0, tok.sym_id(1)])
+    assert torch.isfinite(masked[0, 0, tok.bind_id(1)])
 
 
 def test_round_trip_without_symbol_table_uses_literal_channel(

@@ -194,6 +194,18 @@ def test_hf_daily_papers_client_preserves_sources() -> None:
     assert rows[0].uri.endswith("2601.00001")
 
 
+def test_dynamic_symbol_source_manifest_is_complete() -> None:
+    from scripts.autoresearch import _load_sources
+
+    path = Path(
+        "src/slm_training/resources/autoresearch/dynamic-symbol-sources.json"
+    )
+    rows = _load_sources(path)
+    assert len(rows) == 50
+    assert len({row.uri for row in rows}) == 50
+    assert sum(row.uri.startswith("https://arxiv.org/abs/") for row in rows) == 49
+
+
 class FakeResponses:
     def create(self, **kwargs):
         assert kwargs["store"] is False
@@ -444,6 +456,31 @@ def test_compile_grammar_topology_campaign_uses_typed_knobs() -> None:
     assert train[train.index("--topology-max-active") + 1] == "24"
     assert train[train.index("--topology-accept-threshold") + 1] == "0.4"
     assert evaluate[evaluate.index("--model") + 1] == "grammar_diffusion"
+
+
+def test_compile_dynamic_symbol_campaign_uses_typed_flags() -> None:
+    spec = experiment(
+        knobs=ExperimentKnobs(
+            runtime_symbol_features="role_gated",
+            symbol_slot_augmentation=True,
+            semantic_candidate_masks=True,
+            constraint_graph_mode="hybrid",
+            grammar_equivalence_cache=True,
+            compact_active_canvas=False,
+        )
+    )
+    train = next(
+        command
+        for command in compile_commands(campaign(), spec)
+        if "scripts.train_model" in command
+    )
+    assert train[train.index("--output-tokenizer") + 1] == "lexer"
+    assert train[train.index("--runtime-symbol-features") + 1] == "role_gated"
+    assert train[train.index("--constraint-graph-mode") + 1] == "hybrid"
+    assert "--symbol-slot-augmentation" in train
+    assert "--semantic-candidate-masks" in train
+    assert "--grammar-equivalence-cache" in train
+    assert "--no-compact-active-canvas" in train
 
 
 def test_rl_readiness_is_fail_closed() -> None:

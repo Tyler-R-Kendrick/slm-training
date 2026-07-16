@@ -136,3 +136,27 @@ Do **not** jump to pure production-rule sequences or graph diffusion until the
 critic / remask stack is proven on this representation. The parallel **X matrix**
 (`grammar_diffusion`) explores production codecs under honest inventory
 contracts (E54 / X2–X7).
+
+## V8 request-conditioned symbols (implemented, experiments unrun)
+
+`GenerationRequest.runtime_symbols` distinguishes `alpha_binder`,
+`fresh_binder`, `external_entity`, and `state` roles while preserving the legacy
+`slot_contract`. Symbol-table serialization is v3 and reads v2 tables by
+deterministically reconstructing metadata; reserved token IDs do not move.
+
+`runtime_symbol_features=surface|role_gated` pools existing byte embedding rows
+for request-visible metadata and applies the resulting per-example delta at both
+input embedding and tied output projection. `role_gated` suppresses surface
+features for binders, retaining alpha-renaming invariance, while entities and
+states remain name-aware. `none` is the legacy path. Optional training slot
+permutation preserves root binder slot zero.
+
+Semantic masks conservatively hide undeclared entity/state rows but leave binder
+rows writable. The constraint graph reuses V7 clustering and ordered verification;
+it adds statement adjacency, repeated symbol identity, and matched delimiter edges
+in `grammar` or `hybrid` mode. This is not a complete type/scope solver.
+
+Primary V8 diagnostics are alpha-renaming invariance, slot-permutation robustness,
+entity exact-copy accuracy, active-symbol recall, false hard-prunes, graph
+conflicts/recovery, active canvas tokens, parse/AST equivalence, and unchanged
+honest ship gates. No V8 quality or latency result exists yet.

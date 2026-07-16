@@ -95,6 +95,14 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "diffusion_length_loss_weight",
         "remask_span",
         "teacher_init_embeddings",
+        "runtime_symbol_features",
+        "symbol_slot_augmentation",
+        "semantic_candidate_masks",
+        "constraint_graph_mode",
+        "grammar_completion_bounds",
+        "grammar_equivalence_cache",
+        "grammar_active_symbol_bitsets",
+        "compact_active_canvas",
         "block_size",
         "production_loss_weight",
         "slot_loss_weight",
@@ -277,6 +285,28 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         ),
         remask_span=getattr(config, "remask_span", "token"),
         teacher_init_embeddings=getattr(config, "teacher_init_embeddings", False),
+        runtime_symbol_features=getattr(config, "runtime_symbol_features", "none"),
+        symbol_slot_augmentation=bool(
+            getattr(config, "symbol_slot_augmentation", False)
+        ),
+        semantic_candidate_masks=bool(
+            getattr(config, "semantic_candidate_masks", False)
+        ),
+        constraint_graph_mode=str(
+            getattr(config, "constraint_graph_mode", "off") or "off"
+        ),
+        grammar_completion_bounds=bool(
+            getattr(config, "grammar_completion_bounds", False)
+        ),
+        grammar_equivalence_cache=bool(
+            getattr(config, "grammar_equivalence_cache", False)
+        ),
+        grammar_active_symbol_bitsets=bool(
+            getattr(config, "grammar_active_symbol_bitsets", False)
+        ),
+        compact_active_canvas=bool(
+            getattr(config, "compact_active_canvas", True)
+        ),
         grammar_incremental_state=getattr(config, "grammar_incremental_state", True),
         grammar_verify_chosen_only=getattr(config, "grammar_verify_chosen_only", False),
         grammar_skip_exact_stream_probe=getattr(

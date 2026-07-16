@@ -249,3 +249,21 @@ Instrumentation now also records `backbone_ms`, `projection_ms`, `compiler_ms`,
 `trie_ms`, `compiler_candidates`, `forced_spans`, `forced_tokens`, `trie_nodes`,
 `restricted_projections`, `full_projections`, `compiler_fallbacks`, and
 `seeded_fallbacks`.
+
+## C5-C8 constraint-system definitions (proposed, unrun)
+
+| ID | Lever | Acceptance boundary |
+| --- | --- | --- |
+| C5 | Cached terminal-equivalence token classes | Same allowed IDs as uncached mapping |
+| C6 | C5 plus request-active symbol bitset intersection | Gold/active symbols retained; inactive entity/state rows removed |
+| C7 | Conservative completion bounds plus compact active canvases | Unknown fallback never truncates; quality stays within guardrail |
+| C8 | Combined C5-C7 stack | Lower work only counts with a valid same-run quality anchor |
+
+Definitions can be inspected without loading a checkpoint or running a benchmark:
+
+```bash
+python -m scripts.run_perf_matrix --only C5,C6,C7,C8 --list
+```
+
+No C5-C8 latency or quality result exists. Reported speedups in CFGzip,
+XGrammar-2, WGrammar, TruncProof, or related papers are external evidence only.
