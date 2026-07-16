@@ -889,6 +889,15 @@ the next lever is topology/component branch supervision rather than grammar or
 sampler repair. Full evidence:
 [iter-e226-honest-compiler-policy-20260716.md](iter-e226-honest-compiler-policy-20260716.md).
 
+E227 matched E224 while replacing full-vocabulary compiler alignment CE with
+loss over each Lark/compiler forest's legal candidate set. The mechanism
+executed (alignment loss 15.3994 to 2.4120), but honest tree evaluation collapsed
+to empty layouts: syntax remained 1.0, meaningful-program rate was 0.0 on all
+five suites, 12 gates failed, and AgentV passed 0/5. Restricted candidate CE is
+insufficient; the next justified lever is a grammar-derived positive margin for
+populated-child choices over legal empty-list alternatives. Full evidence:
+[iter-e227-candidate-set-alignment-20260716.md](iter-e227-candidate-set-alignment-20260716.md).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

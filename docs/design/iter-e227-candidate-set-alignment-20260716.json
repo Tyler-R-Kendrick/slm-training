@@ -1,0 +1,21 @@
+{
+  "campaign": "E227 legal-candidate compiler alignment",
+  "date_utc": "2026-07-16",
+  "status": "mechanism_executed_ship_quality_regressed",
+  "training_run": true,
+  "run_id": "e227-candidate-set-matched",
+  "checkpoint_sha256": "b99bdf78f614d87670cee31324788f1655e2b0fa3e164ca76794ba4c69269577",
+  "recipe": {"device": "cpu", "steps": 32, "batch_size": 4, "learning_rate": 0.0003, "seed": 0, "context_backend": "hf_local_files_only", "train_version": "e218_schema_normalized_judge_v5", "eval_version": "remediated", "output_tokenizer": "lexer", "compiler_alignment_loss_weight": 1.0, "compiler_alignment_stratified": true, "compiler_alignment_semantic_exhaustive": true, "alignment_candidate_scope": "lark_compiler_forest", "compiler_decode_mode": "tree", "schema_in_context": true, "slot_contract_in_context": true, "slot_contract_constrained_decode": true, "honest_slot_contract": true, "design_md_in_context": false, "allow_unconstrained_fallback": false, "mixture_sampling_policy": "quota_capacity_aware", "checkpoint_sync": false},
+  "train_result": {"last_loss": 12.302959442138672, "wall_ms": 124719.238, "seen_prompt_tokens": 22924, "seen_target_tokens": 6401, "alignment_loss_first": 15.399420738220215, "alignment_loss_last": 2.412010669708252, "candidate_count_mean_last": 20.345454545454544, "candidate_count_max_last": 69, "component_bound_loss_last": 8.208547592163086, "trace_id": "03eb676f6ce45fb3175278d7cac822b0"},
+  "suites": {
+    "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.30943333333333334, "component_type_recall": 0.0, "placeholder_fidelity": 0.0, "contract_precision": 0.0, "reward_score": 0.0},
+    "held_out": {"n": 5, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.2739, "component_type_recall": 0.04, "placeholder_fidelity": 0.03333333333333333, "contract_precision": 0.2, "reward_score": 0.13979999999999998},
+    "adversarial": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.29050000000000004, "component_type_recall": 0.0, "placeholder_fidelity": 0.0, "contract_precision": 0.0, "reward_score": 0.0},
+    "ood": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.236875, "component_type_recall": 0.0, "placeholder_fidelity": 0.0, "contract_precision": 0.0, "reward_score": 0.0},
+    "rico_held": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.09006666666666667, "component_type_recall": 0.0, "placeholder_fidelity": 0.0, "contract_precision": 0.0, "reward_score": 0.0}
+  },
+  "ship_gates": {"pass": false, "failure_count": 12},
+  "agentv": {"total": 5, "passed": 0, "failed": 5, "execution_errors": 0, "mean_score": 0.5},
+  "scoreboard": "outputs/autoresearch/e227-candidate-set-alignment/runs/e227-candidate-set-matched/scoreboard.json",
+  "conclusion": "Legal-candidate alignment optimized successfully but collapsed to empty layouts and is insufficient for topology quality."
+}
