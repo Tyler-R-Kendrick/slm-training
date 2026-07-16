@@ -1,0 +1,73 @@
+{
+  "campaign": "E234 parent-conditioned edge decision alignment",
+  "date": "2026-07-16",
+  "status": "completed_rejected_four_ship_thresholds_failed",
+  "hypothesis": "Directly aligning parent-conditioned legal component decisions improves hierarchy selection beyond global edge-matrix BCE.",
+  "implementation": {
+    "target_source": "gold component_bound compiler decisions",
+    "parent_source": "partial compiler token-role binder reference graph",
+    "objective": "cross entropy over compiler-legal component candidates",
+    "global_edge_bce_weight": 0.0,
+    "can_change_legality": false,
+    "literal_cases_added": false
+  },
+  "train": {
+    "run_id": "e234-edge-decision-alignment-32step",
+    "path": "outputs/autoresearch/e234-edge-decision-alignment/runs/e234-edge-decision-alignment-32step",
+    "device": "cpu",
+    "steps": 32,
+    "batch_size": 4,
+    "learning_rate": 0.0003,
+    "seed": 0,
+    "context_backend": "hf_local_files_only",
+    "train_version": "e230_diverse_judged_roots_v2",
+    "record_count": 126,
+    "draws": 128,
+    "unique_records": 81,
+    "rico_draws": 30,
+    "human_curated_draws": 25,
+    "seen_prompt_tokens": 18490,
+    "seen_target_tokens": 7052,
+    "component_plan_loss_weight": 1.0,
+    "component_plan_decode_weight": 1.0,
+    "component_edge_loss_weight": 0.0,
+    "component_edge_alignment_loss_weight": 1.0,
+    "component_edge_decode_weight": 1.0,
+    "alignment_loss_first": 3.706092596054077,
+    "alignment_loss_last": 1.5264179706573486,
+    "alignment_accuracy_first": 0.0,
+    "alignment_accuracy_last": 0.5714285969734192,
+    "aligned_rows_last": 14,
+    "unknown_parent_rows_last": 16,
+    "legal_candidate_count_mean_last": 32.0,
+    "root_accuracy_last": 1.0,
+    "bound_topk_recall_last": 0.7083333730697632,
+    "bound_count_mae_last": 0.43308573961257935,
+    "last_loss": 22.698246002197266,
+    "wall_ms": 175116.934,
+    "trace_id": "c65bd85e448ca8b1da329f9a66abb725",
+    "checkpoint_sha256": "350b7c5c1d08a26abf0bd26ff440edb95317243c91b3f6f14e77c36d62a0fc68",
+    "checkpoint_sync": false
+  },
+  "evaluation_weight_1": {
+    "trace_id": "43dc458ea59cd8975ec58339226d2dbb",
+    "suites": {
+      "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333, "structural_similarity": 0.46416666666666667, "component_type_recall": 0.25, "placeholder_fidelity": 0.5277777777777778, "reward_score": 0.8073333333333333, "edge_applications": 9, "edge_choice_changes": 0},
+      "held_out": {"n": 5, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.33686, "component_type_recall": 0.15666666666666665, "placeholder_fidelity": 0.27999999999999997, "reward_score": 0.733, "edge_applications": 16, "edge_choice_changes": 1},
+      "adversarial": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.25, "structural_similarity": 0.361875, "component_type_recall": 0.20833333333333331, "placeholder_fidelity": 0.29166666666666663, "reward_score": 0.57425, "edge_applications": 9, "edge_choice_changes": 3},
+      "ood": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.375, "component_type_recall": 0.20833333333333331, "placeholder_fidelity": 0.2583333333333333, "reward_score": 0.7265, "edge_applications": 12, "edge_choice_changes": 0},
+      "rico_held": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.6666666666666666, "structural_similarity": 0.16276666666666667, "component_type_recall": 0.4444444444444444, "placeholder_fidelity": 0.125, "reward_score": 0.6865, "edge_applications": 7, "edge_choice_changes": 1}
+    },
+    "failed_thresholds": 4,
+    "edge_applications": 53,
+    "edge_choice_changes": 5,
+    "agentv": {"total": 5, "passed": 1, "failed": 4, "execution_errors": 0, "mean_score": 0.6}
+  },
+  "ablation_edge_weight_0": {
+    "trace_id": "f7e069c4c853243c3bfa1e84552826fa",
+    "aggregate_metrics_identical_to_weight_1": true,
+    "failed_thresholds": 4,
+    "agentv_passed": 1
+  },
+  "conclusion": "Direct legal-decision alignment learns and changes five component choices, but no suite aggregate. Retain the generalized mechanism, reject the checkpoint, and model binder-level instance topology next."
+}
