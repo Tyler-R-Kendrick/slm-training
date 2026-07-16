@@ -825,6 +825,16 @@ fallback falls to zero, but empty bound stacks keep meaningful parse and
 component recall at 0.0. E205 is not promotable. Full evidence:
 [iter-e205-e207-lark-terminal-alignment-20260716.md](iter-e205-e207-lark-terminal-alignment-20260716.md).
 
+E208–E213 test contextual grammar-decision alignment. The committed corpus has
+496/496 populated roots, versus 156 populated and 12 empty bound containers.
+Occupancy-only E208 and root/bound-scoped E210 still emit empty roots. E212
+derives binder signatures from declaration/reference role, typed scope, and the
+active generated-schema slot; root-children reference loss falls from 61.4179
+to 1.0285 and E213 recovers a populated root plus normalized fidelity 0.50.
+Required `FormControl` input semantics still fail, leaving syntax/meaningful
+parse 0.0. No checkpoint is promotable. Full evidence:
+[iter-e208-e213-contextual-decisions-20260716.md](iter-e208-e213-contextual-decisions-20260716.md).
+
 These rows are registered under `--matrix v8`; `--list` prints definitions
 without building data or starting a run. They require the lexer-native parent
 contract and unchanged honest five-suite gates. No result or champion is claimed.

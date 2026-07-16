@@ -1263,6 +1263,7 @@ class TwoTowerModel(nn.Module):
             aligned_targets: list[int] = []
             aligned_positions: list[int] = []
             aligned_context_rows: list[int] = []
+            aligned_kinds: list[str] = []
             kind_rows: dict[str, int] = {}
             for row, record in enumerate(batch):
                 target_key = tuple(
@@ -1301,6 +1302,7 @@ class TwoTowerModel(nn.Module):
                     aligned_targets.append(int(target_ids[row, cut]))
                     aligned_positions.append(cut)
                     aligned_context_rows.append(row)
+                    aligned_kinds.append(decision.kind)
                     kind_rows[decision.kind] = kind_rows.get(decision.kind, 0) + 1
             aligned_rows = len(aligned_canvases)
             if aligned_canvases:
@@ -1331,10 +1333,29 @@ class TwoTowerModel(nn.Module):
                     device=aligned_logits.device,
                     dtype=target_ids.dtype,
                 )
-                alignment_loss = F.cross_entropy(
-                    aligned_logits[batch_index, position_index], target_tensor
+                alignment_losses = F.cross_entropy(
+                    aligned_logits[batch_index, position_index],
+                    target_tensor,
+                    reduction="none",
                 )
+                alignment_loss = alignment_losses.mean()
                 mask_loss = mask_loss + alignment_w * alignment_loss
+                kind_losses = {
+                    kind: float(
+                        alignment_losses[
+                            torch.as_tensor(
+                                [item == kind for item in aligned_kinds],
+                                device=alignment_losses.device,
+                            )
+                        ]
+                        .mean()
+                        .detach()
+                        .cpu()
+                    )
+                    for kind in kind_rows
+                }
+            else:
+                kind_losses = {}
             self.last_training_metrics = {
                 "compiler_alignment_rows": aligned_rows,
                 "compiler_alignment_loss": (
@@ -1345,6 +1366,10 @@ class TwoTowerModel(nn.Module):
                 **{
                     f"compiler_alignment_{kind}_rows": count
                     for kind, count in sorted(kind_rows.items())
+                },
+                **{
+                    f"compiler_alignment_{kind}_loss": loss
+                    for kind, loss in sorted(kind_losses.items())
                 },
             }
 

@@ -326,9 +326,26 @@ def test_gold_decisions_follow_compiler_forest() -> None:
     selected = {tokenizer.id_to_token[target[position]] for position in positions}
     assert {"<BIND_0>", "Card", "<BIND_1>", "TextContent"} <= selected
     kinds = {decision.kind for decision in gold_compiler_decisions(tokenizer, target)}
-    assert {"bind", "component_root", "component_bound"} <= kinds
-    assert "grammar_rsqb" in kinds
+    assert {
+        "bind_declaration_root",
+        "bind_declaration_bound",
+        "bind_reference_root_children",
+        "component_root",
+        "component_bound",
+    } <= kinds
+    assert "grammar_rsqb_root_populated" in kinds
     assert "grammar_comma" in kinds
+    empty = tokenizer.encode("root=Stack([])", add_special=True)
+    assert "grammar_rsqb_root_empty" in {
+        decision.kind for decision in gold_compiler_decisions(tokenizer, empty)
+    }
+    bound_empty = tokenizer.encode(
+        "root=Stack([child])\nchild=Stack([])", add_special=True
+    )
+    assert "grammar_rsqb_bound_empty" in {
+        decision.kind
+        for decision in gold_compiler_decisions(tokenizer, bound_empty)
+    }
 
 
 def test_grammar_state_advances_lexer_literals_as_source() -> None:
@@ -382,11 +399,14 @@ def test_compiler_alignment_can_stratify_grammar_decision_kinds() -> None:
     assert torch.isfinite(loss)
     metrics = model.last_training_metrics
     assert metrics["compiler_alignment_rows"] > 1
-    assert metrics["compiler_alignment_bind_rows"] == 1
+    assert metrics["compiler_alignment_bind_declaration_root_rows"] == 1
+    assert metrics["compiler_alignment_bind_declaration_bound_rows"] == 1
+    assert metrics["compiler_alignment_bind_reference_root_children_rows"] == 1
     assert metrics["compiler_alignment_component_root_rows"] == 1
     assert metrics["compiler_alignment_component_bound_rows"] == 1
-    assert metrics["compiler_alignment_grammar_rsqb_rows"] == 1
+    assert metrics["compiler_alignment_grammar_rsqb_root_populated_rows"] == 1
     assert metrics["compiler_alignment_grammar_comma_rows"] == 1
+    assert metrics["compiler_alignment_grammar_rsqb_root_populated_loss"] >= 0.0
 
 
 def test_tree_verifier_packs_prefix_nodes_and_avoids_full_projection() -> None:

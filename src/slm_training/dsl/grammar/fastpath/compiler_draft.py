@@ -73,7 +73,11 @@ def _semantic_kind(tokenizer: Any, token_id: int) -> str:
 
 
 def _grammar_terminal_kind(
-    tokenizer: Any, token_id: int, terminals: tuple[str, ...]
+    tokenizer: Any,
+    token_id: int,
+    terminals: tuple[str, ...],
+    state: Any | None = None,
+    declaration_scope: str | None = None,
 ) -> str:
     """Classify structural choices by the active Lark terminal."""
     semantic = _semantic_kind(tokenizer, token_id)
@@ -87,8 +91,32 @@ def _grammar_terminal_kind(
     ]
     if not matches:
         return semantic
-    terminal = min(matches).lower().strip("_").replace("$", "end_")
-    return f"grammar_{terminal}"
+    terminal = min(matches)
+    kind = f"grammar_{terminal.lower().strip('_').replace('$', 'end_')}"
+    if terminal == "RSQB":
+        occupancy = _active_list_occupancy(state)
+        context = [part for part in (declaration_scope, occupancy) if part]
+        if context:
+            kind = "_".join((kind, *context))
+    return kind
+
+
+def _active_list_occupancy(state: Any) -> str | None:
+    """Read empty/populated state for the innermost open Lark list frame."""
+    parser = getattr(state, "_ip", None)
+    parser_state = getattr(parser, "parser_state", None)
+    values = list(getattr(parser_state, "value_stack", ()) or ())
+    nested = 0
+    for index in range(len(values) - 1, -1, -1):
+        token_type = str(getattr(values[index], "type", ""))
+        if token_type == "RSQB":
+            nested += 1
+        elif token_type == "LSQB":
+            if nested:
+                nested -= 1
+            else:
+                return "empty" if index == len(values) - 1 else "populated"
+    return None
 
 
 def _at_declaration_value(tokenizer: Any, prefix_ids: list[int]) -> bool:
@@ -134,6 +162,14 @@ def _references_resolved(tokenizer: Any, prefix_ids: list[int]) -> bool:
     """Whether every generated binder reference has a declaration."""
     declarations, references, _active = _binder_scope(tokenizer, prefix_ids)
     return set(references) <= set(declarations)
+
+
+def _active_declaration_scope(tokenizer: Any, prefix_ids: list[int]) -> str | None:
+    """Classify the live declaration by typed root/bound binder identity."""
+    _declarations, _references, active = _binder_scope(tokenizer, prefix_ids)
+    if active is None:
+        return None
+    return "root" if active == tokenizer.bind_id(0) else "bound"
 
 
 def _known_terminal_coverage(tokenizer: Any, terminals: frozenset[str]) -> bool:
@@ -367,6 +403,39 @@ def _schema_type_terminals(schema_type: str | None) -> frozenset[str] | None:
     }.get(schema_type)
 
 
+def _decision_kind(
+    tokenizer: Any,
+    token_id: int,
+    prefix_ids: list[int],
+    terminals: tuple[str, ...],
+    state: Any,
+    schema: dict[str, Any] | None,
+) -> str:
+    """Build a semantic decision signature from parser/schema roles."""
+    scope = _active_declaration_scope(tokenizer, prefix_ids)
+    kind = _grammar_terminal_kind(
+        tokenizer, token_id, terminals, state, scope
+    )
+    if kind == "component" and _at_declaration_value(tokenizer, prefix_ids):
+        return f"component_{scope}" if scope else kind
+    if kind != "bind":
+        return kind
+    last = prefix_ids[-1] if prefix_ids else None
+    at_statement_start = (
+        len(prefix_ids) <= 1 or tokenizer.id_to_token.get(last) == "NL"
+    )
+    if at_statement_start:
+        target_scope = "root" if token_id == tokenizer.bind_id(0) else "bound"
+        return f"bind_declaration_{target_scope}"
+    parts = ["bind_reference"]
+    if scope:
+        parts.append(scope)
+    slot = _schema_slot_name(state, schema) if schema else None
+    if slot:
+        parts.append("".join(char if char.isalnum() else "_" for char in slot))
+    return "_".join(parts)
+
+
 def build_completion_forest(
     tokenizer: Any,
     prefix_ids: list[int],
@@ -594,7 +663,17 @@ def build_completion_forest(
             drafted.append(int(forced))
             branch_text += _token_piece(tokenizer, forced)
         paths.append(
-            CompletionPath(tuple(drafted), _semantic_kind(tokenizer, candidate))
+            CompletionPath(
+                tuple(drafted),
+                _decision_kind(
+                    tokenizer,
+                    candidate,
+                    prefix_ids,
+                    tuple(sorted(str(term) for term in terminals)),
+                    engine,
+                    schema,
+                ),
+            )
         )
 
     if not paths:
@@ -638,18 +717,7 @@ def gold_compiler_decisions(
             continue
         path = max(matches, key=lambda candidate: len(candidate.token_ids))
         if len(set(forest.candidate_ids)) > 1:
-            kind = _grammar_terminal_kind(
-                tokenizer, int(path.token_ids[0]), forest.terminals
-            )
-            if kind == "component" and _at_declaration_value(
-                tokenizer, list(ids[:cursor])
-            ):
-                declaration = int(ids[cursor - 2])
-                kind = (
-                    "component_root"
-                    if declaration == int(tokenizer.bind_id(0))
-                    else "component_bound"
-                )
+            kind = path.kind
             decisions.append(CompilerDecision(cursor, kind))
         cursor += len(path.token_ids)
     return tuple(decisions)
