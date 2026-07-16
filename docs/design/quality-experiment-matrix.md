@@ -758,6 +758,11 @@ task (`meaningful_program_rate=0.0`); the full smoke invocation did not persist
 a scoreboard and is not claimed. The next lever is semantic component-role
 coverage/supervision. See [iter-e173-schema-context-20260716.md](iter-e173-schema-context-20260716.md).
 
+E174 tested an unfrozen HF context tower for 8 steps. Loss rose to 39.4253 and
+the bounded syntax probe fell to 0.0, so the control is rejected; retain frozen
+context while improving semantic data coverage. See
+[iter-e174-unfrozen-context-20260716.md](iter-e174-unfrozen-context-20260716.md).
+
 These rows are registered under `--matrix v8`; `--list` prints definitions
 without building data or starting a run. They require the lexer-native parent
 contract and unchanged honest five-suite gates. No result or champion is claimed.

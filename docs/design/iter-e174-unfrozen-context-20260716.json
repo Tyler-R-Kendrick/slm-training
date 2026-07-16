@@ -1,0 +1,36 @@
+{
+  "iteration": "E174",
+  "date": "2026-07-16",
+  "objective": "Test whether unfreezing the HF context tower improves semantic component grounding.",
+  "training": {
+    "run_id": "e174-unfrozen-context-8step",
+    "checkpoint": "outputs/runs/e174-unfrozen-context-8step/checkpoints/last.pt",
+    "steps": 8,
+    "last_loss": 39.42530059814453,
+    "device": "cpu",
+    "context_backend": "hf",
+    "freeze_context": false,
+    "schema_in_context": true,
+    "telemetry": "outputs/runs/e174-unfrozen-context-8step/train_telemetry.json",
+    "metrics": "outputs/runs/e174-unfrozen-context-8step/metrics.jsonl"
+  },
+  "evaluation": {
+    "kind": "bounded_probe",
+    "suite": "smoke",
+    "n": 1,
+    "eval_limit": 1,
+    "compiler_decode_mode": "tree",
+    "allow_unconstrained_fallback": false,
+    "parse_rate": 0.0,
+    "syntax_parse_rate": 0.0,
+    "structural_similarity": 0.3208,
+    "component_type_recall": 0.25,
+    "latency_ms_p50": 29935.68,
+    "decode_timeout_count": 0,
+    "compiler_fallbacks": 0,
+    "seeded_fallbacks": 0,
+    "eval": "outputs/runs/e174-unfrozen-context-probe/eval_smoke.json",
+    "agentv": "outputs/runs/e174-unfrozen-context-probe/agentv/openui-model-ship-gates-2026-07-16t04-37-45-069006-00-00.eval.jsonl"
+  },
+  "conclusion": "Unfreezing the context tower increased loss and produced malformed syntax in the bounded probe. Reject this control; retain frozen HF context while improving semantic data coverage and supervision."
+}
