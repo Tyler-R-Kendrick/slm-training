@@ -42,6 +42,7 @@ class CompilerDecision:
     position: int
     kind: str
     token_kind: str
+    candidate_ids: tuple[int, ...]
 
     @property
     def is_semantic_role(self) -> bool:
@@ -724,7 +725,12 @@ def gold_compiler_decisions(
         if len(set(forest.candidate_ids)) > 1:
             kind = path.kind
             decisions.append(
-                CompilerDecision(cursor, kind, _semantic_kind(tokenizer, ids[cursor]))
+                CompilerDecision(
+                    cursor,
+                    kind,
+                    _semantic_kind(tokenizer, ids[cursor]),
+                    tuple(sorted(set(forest.candidate_ids))),
+                )
             )
         cursor += len(path.token_ids)
     return tuple(decisions)

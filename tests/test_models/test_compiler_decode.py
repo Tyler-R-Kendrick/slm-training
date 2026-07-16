@@ -341,6 +341,10 @@ def test_gold_decisions_follow_compiler_forest() -> None:
     assert "grammar_rsqb_root_populated" in kinds
     assert "grammar_comma" in kinds
     decisions = gold_compiler_decisions(tokenizer, target)
+    assert all(len(decision.candidate_ids) > 1 for decision in decisions)
+    assert all(
+        target[decision.position] in decision.candidate_ids for decision in decisions
+    )
     assert all(
         decision.is_semantic_role
         for decision in decisions
@@ -393,6 +397,7 @@ def test_compiler_alignment_loss_trains_gold_semantic_states() -> None:
     assert torch.isfinite(loss)
     assert model.last_training_metrics["compiler_alignment_rows"] == 1
     assert model.last_training_metrics["compiler_alignment_loss"] > 0.0
+    assert model.last_training_metrics["compiler_alignment_candidate_count_mean"] > 1
 
 
 def test_compiler_alignment_can_stratify_grammar_decision_kinds() -> None:
