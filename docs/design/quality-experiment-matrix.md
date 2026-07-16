@@ -733,6 +733,13 @@ E166–E168 further separate syntax from meaningful-program quality:
 seeded fallbacks in E168. See
 [iter-e166-e168-semantic-boundary-20260715.md](iter-e166-e168-semantic-boundary-20260715.md).
 
+E169 removed the literal-specific compiler filters and reran the matched E160
+lexer checkpoint: syntax fell to 0.3333 with meaningful parse still 0.0 and
+zero seeded unconstrained fallbacks. The negative result shows that Lark
+reachability permits partial expression continuations; the next lever is
+generated AST/schema completion state, not more steps or case-specific bans.
+See [iter-e169-grammar-derived-20260716.md](iter-e169-grammar-derived-20260716.md).
+
 These rows are registered under `--matrix v8`; `--list` prints definitions
 without building data or starting a run. They require the lexer-native parent
 contract and unchanged honest five-suite gates. No result or champion is claimed.
