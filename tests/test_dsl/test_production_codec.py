@@ -155,7 +155,7 @@ def test_normalize_switchitem_and_slider_signatures() -> None:
         normalized.openui
     )
     assert (
-        'Slider("volume", "default", 0, 100, 1, 40, ":held.settings.volume")'
+        'Slider("volume", "continuous", 0, 100, 1, [40], ":held.settings.volume")'
         in normalized.openui
     )
 
@@ -166,8 +166,21 @@ def test_fixture_settings_schema_consistency() -> None:
     test_rec = normalize_example_record(ExampleRecord.from_dict(json.loads(test_line)))
     train_rec = normalize_example_record(ExampleRecord.from_dict(json.loads(train_line)))
     assert 'SwitchItem(' in test_rec.openui and '"notify"' in test_rec.openui
-    assert 'Slider("volume", "default"' in test_rec.openui
-    assert 'Slider("volume", "default"' in train_rec.openui
+    assert 'Slider("volume", "continuous"' in test_rec.openui
+    assert 'Slider("volume", "continuous"' in train_rec.openui
+
+
+def test_normalize_full_slider_signature_from_generated_schema() -> None:
+    record = ExampleRecord(
+        id="slider-drift",
+        prompt="slider",
+        openui='root = Slider("volume", "default", 0, 100, 1, 40, ":label")',
+        placeholders=[":label"],
+    )
+    normalized = normalize_example_record(record)
+    assert 'Slider("volume", "continuous", 0, 100, 1, [40], ":label")' in (
+        normalized.openui
+    )
 
 
 def test_clustered_split_keeps_structures_disjoint() -> None:

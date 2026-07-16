@@ -11,6 +11,13 @@
     "suite": "smoke",
     "suite_n": 1
   },
+  "superseded_by": "E218-E220 corrected generated-schema admission",
+  "post_audit": {
+    "false_positive_records": 27,
+    "cause": "Optional positional null omissions were incorrectly treated as typed property values.",
+    "true_invalid_records": 22,
+    "status": "E215/E216 metrics remain evidence for the 447-record corpus, but the E214 data-quality conclusion is superseded."
+  },
   "judge": {
     "gate": "G11 independent_judge",
     "implementation": "Parse with the official OpenUI parser, walk the resolved AST, and validate every present or required property against the generated schema, including anyOf, refs, arrays, objects, and scalar types.",
@@ -92,6 +99,6 @@
     "agentv_passed": 0,
     "agentv_failed": 5
   },
-  "conclusion": "The generated-schema judge removes 49 contradictory records and the matched E216 probe eliminates E213's invalid FormControl input: syntax is 1.0 with no fallback or dead end. Meaningful parse remains 0.0 because the valid minimal program recalls only one quarter of requested component types. This is evidence that syntax and meaningful parse measure different properties, not a ship result.",
-  "next_hypothesis": "Generate schema-valid positive and nearby invalid counterexample pairs from every required and anyOf generated-schema path, judge them through G11, and test whether broader reusable value-role supervision improves component recall without weakening deterministic syntax guarantees."
+  "conclusion": "E214 removed 49 records, but a later generated-required audit found that 27 were legal optional-null omissions. The E216 probe still demonstrates syntax 1.0 versus meaningful parse 0.0 on this overfiltered corpus, but E214's data-quality conclusion is superseded by E218-E220.",
+  "next_hypothesis": "Superseded by the corrected normalization and admission control in E218-E220."
 }

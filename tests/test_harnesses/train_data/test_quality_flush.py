@@ -190,6 +190,38 @@ def test_independent_judge_checks_generated_schema_value_roles() -> None:
         assert not result["ok"]
         assert "schema_value_role_mismatch:FormControl.input" in result["reasons"]
 
+    optional_omission = ExampleRecord(
+        id="judge-schema-optional-null",
+        prompt="Build a Modal component with body text.",
+        openui=(
+            'root = Modal(":title", null, [body])\n'
+            'body = TextContent(":body")'
+        ),
+        placeholders=[":title", ":body"],
+    )
+    assert independent_judge(optional_omission)["ok"]
+
+    required_null = ExampleRecord(
+        id="judge-schema-required-null",
+        prompt="Build a FormControl component.",
+        openui='root = FormControl(":label", null)',
+        placeholders=[":label"],
+    )
+    assert (
+        "schema_parser_error:null-required:FormControl.input"
+        in independent_judge(required_null)["reasons"]
+    )
+
+    invalid_enum = ExampleRecord(
+        id="judge-schema-enum",
+        prompt="Build a Slider component.",
+        openui='root = Slider("volume", "default", 0, 100)',
+    )
+    assert (
+        "schema_value_role_mismatch:Slider.variant"
+        in independent_judge(invalid_enum)["reasons"]
+    )
+
 
 def test_normalized_record_stamps_independent_judge_gate() -> None:
     from slm_training.harnesses.train_data.pipeline import _normalize_record
@@ -207,3 +239,20 @@ def test_normalized_record_stamps_independent_judge_gate() -> None:
     judge_gate = next(gate for gate in gates if gate["name"] == "independent_judge")
     assert judge_gate["status"] == "pass"
     assert stamped.meta["independent_judge_passed"] is True
+
+
+def test_pipeline_normalization_applies_generated_schema_shapes() -> None:
+    from slm_training.harnesses.train_data.pipeline import _normalize_record
+
+    record = ExampleRecord(
+        id="normalize-slider-schema",
+        prompt="Build a Slider component.",
+        openui='root = Slider("volume", "default", 0, 100, 1, 40, ":label")',
+        placeholders=[":label"],
+        design_md="# Design\n",
+    )
+    normalized = _normalize_record(record)
+    assert 'Slider("volume", "continuous", 0, 100, 1, [40], ":label")' in (
+        normalized.openui
+    )
+    assert independent_judge(normalized)["ok"]

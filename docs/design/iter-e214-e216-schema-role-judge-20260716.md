@@ -2,6 +2,11 @@
 
 Status: **diagnostic only; no checkpoint promoted; ship gates not run**.
 
+> **Correction:** E214 overfiltered 27 legal records by treating optional
+> positional `null` omissions as typed values. E215/E216 remain measured evidence
+> for the 447-record corpus, but the data-quality conclusion is superseded by
+> [E218–E220](iter-e218-e220-schema-normalization-20260716.md).
+
 ## Hypothesis and data repair
 
 The E213 failure could come from contradictory gold data rather than insufficient
@@ -29,7 +34,9 @@ post-judge rejects or build errors, mean quality 0.9648, manifest fingerprint
 `d3ad058f…e27ad`, records SHA `47867699…c458b`, and synthesis telemetry SHA
 `41c636fe…c22d`. The build used `--source existing`, `--derive-from` E177,
 `--synthesizer none`, and disabled new derivatives; it is the filtered matched
-control, not newly synthesized evidence.
+control, not newly synthesized evidence. A later audit classified only 22/49
+unique rejects as true schema violations; 27 were legal Modal/SwitchItem optional
+omissions.
 
 ## Matched train and strict diagnostic
 

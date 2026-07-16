@@ -9,8 +9,7 @@ from __future__ import annotations
 import re
 
 # Quoted literals that encode visual style, not layout structure.
-# Keep direction (column/row), field kinds (email/text), Callout variants (info),
-# and required API enums like Slider "default".
+# Keep direction (column/row), field kinds (email/text), and Callout variants (info).
 STYLE_STRING_TOKENS = frozenset(
     {
         # Stack gap scale
@@ -21,7 +20,7 @@ STYLE_STRING_TOKENS = frozenset(
         "l",
         "xl",
         "2xl",
-        # Typography / control sizes (not Slider's required "default")
+        # Typography / control sizes
         "small",
         "large",
         "small-heavy",

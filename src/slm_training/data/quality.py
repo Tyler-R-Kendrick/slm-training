@@ -117,6 +117,9 @@ def _ast_component_names(value: Any) -> frozenset[str]:
 def _matches_schema_value(
     value: Any, spec: dict[str, Any], definitions: dict[str, Any]
 ) -> bool:
+    enum = spec.get("enum")
+    if isinstance(enum, list):
+        return value in enum
     if "anyOf" in spec:
         return any(
             _matches_schema_value(value, branch, definitions)
@@ -141,7 +144,9 @@ def _matches_schema_value(
         return isinstance(value, str)
     if expected_type == "boolean":
         return isinstance(value, bool)
-    if expected_type in {"number", "integer"}:
+    if expected_type == "integer":
+        return isinstance(value, int) and not isinstance(value, bool)
+    if expected_type == "number":
         return isinstance(value, (int, float)) and not isinstance(value, bool)
     return True
 
@@ -155,10 +160,20 @@ def _schema_semantic_reasons(openui: str) -> list[str]:
     try:
         from slm_training.dsl import lang_core
 
-        root = lang_core.parse(openui).root
+        program = lang_core.parse(openui)
     except Exception:  # noqa: BLE001
         return ["judge_schema_parse_failed"]
     reasons: set[str] = set()
+    for error in program.meta.get("errors") or ():
+        if not isinstance(error, dict):
+            continue
+        code = str(error.get("code") or "unknown")
+        component = str(error.get("component") or "unknown")
+        path = str(error.get("path") or "").strip("/").replace("/", ".")
+        reasons.add(f"schema_parser_error:{code}:{component}.{path}".rstrip("."))
+    root = program.root
+    if root is None:
+        return sorted(reasons) or ["judge_schema_parse_failed"]
 
     def visit(value: Any) -> None:
         if isinstance(value, dict):
@@ -167,10 +182,15 @@ def _schema_semantic_reasons(openui: str) -> list[str]:
             definition = definitions.get(component) if isinstance(component, str) else None
             if isinstance(definition, dict) and isinstance(props, dict):
                 property_specs = definition.get("properties") or {}
-                for name in definition.get("required") or ():
+                required = set(definition.get("required") or ())
+                for name in required:
                     if props.get(name) is None:
                         reasons.add(f"schema_required_value_missing:{component}.{name}")
                 for name, prop_value in props.items():
+                    # Positional null is the language's omission sentinel for an
+                    # optional prop that precedes a later required prop.
+                    if prop_value is None and name not in required:
+                        continue
                     spec = property_specs.get(name)
                     if isinstance(spec, dict) and not _matches_schema_value(
                         prop_value, spec, definitions

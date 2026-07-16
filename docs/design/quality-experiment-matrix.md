@@ -837,13 +837,23 @@ parse 0.0. No checkpoint is promotable. Full evidence:
 
 E214–E216 test the next generalized data hypothesis. G11 now parses outputs and
 checks resolved AST property values against generated schema roles; no component
-names are special-cased. It rejects 49/496 contradictory E177 records and commits
+names are special-cased. It rejects 49/496 E177 candidates and commits
 the 447 accepted records as immutable E214 data with synthesis telemetry. The
 matched E215 train reaches E216 syntax 1.0 with zero fallback or constrained dead
 ends, eliminating E213's invalid `FormControl.input` failure. Meaningful parse
 remains 0.0 because component recall is only 0.25, so this is a negative ship
-result and E215 is not promotable. Full evidence:
+result and E215 is not promotable. A later audit below supersedes the claim that
+all 49 rejects were invalid. Full evidence:
 [iter-e214-e216-schema-role-judge-20260716.md](iter-e214-e216-schema-role-judge-20260716.md).
+
+Post-audit correction: E214 overfiltered 27 legal optional positional `null`
+omissions. E218 moves canonical schema normalization before G11, derives Slider
+enum/array shapes and language-contract `anyOf` values from generated schema, and
+restores 33 records versus E214. The matched E219/E220 control preserves syntax
+1.0 but exactly matches E216's component recall 0.25 and meaningful parse 0.0.
+The data fix is retained for future runs; semantic quality did not improve and no
+checkpoint is promotable. Full evidence:
+[iter-e218-e220-schema-normalization-20260716.md](iter-e218-e220-schema-normalization-20260716.md).
 
 These rows are registered under `--matrix v8`; `--list` prints definitions
 without building data or starting a run. They require the lexer-native parent

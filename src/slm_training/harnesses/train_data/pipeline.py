@@ -95,10 +95,12 @@ class TrainDataConfig:
 
 
 def _normalize_record(record: ExampleRecord) -> ExampleRecord:
+    from slm_training.data.contract import normalize_example_record
     from slm_training.data.progspec import ProgramSpec, emit_record
     from slm_training.data.structure import strip_style_literals
     from slm_training.data.verify import stamp_record
 
+    record = normalize_example_record(record)
     if record.target_kind != "document":
         primary = validate_output(
             record.openui, record.target_kind, record.target_category
