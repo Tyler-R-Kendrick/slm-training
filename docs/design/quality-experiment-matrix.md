@@ -740,6 +740,12 @@ reachability permits partial expression continuations; the next lever is
 generated AST/schema completion state, not more steps or case-specific bans.
 See [iter-e169-grammar-derived-20260716.md](iter-e169-grammar-derived-20260716.md).
 
+E170 reads the active call frame from Lark parser state instead of source-text
+scanning. It is quality-neutral on the matched checkpoint
+(`syntax_parse_rate=0.3333`, `meaningful_program_rate=0.0`, zero seeded
+fallbacks), so the next step is generated-AST/schema completion state. See
+[iter-e170-lark-state-20260716.md](iter-e170-lark-state-20260716.md).
+
 These rows are registered under `--matrix v8`; `--list` prints definitions
 without building data or starting a run. They require the lexer-native parent
 contract and unchanged honest five-suite gates. No result or champion is claimed.
