@@ -195,6 +195,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Override the checkpoint's grammar-binder topology bias.",
     )
     parser.add_argument(
+        "--binder-arity-decode-weight",
+        type=float,
+        default=None,
+        help="Override the checkpoint's grammar-binder arity bias.",
+    )
+    parser.add_argument(
         "--compiler-search-mode",
         choices=("greedy", "lattice", "ptrm", "gram"),
         default="greedy",
@@ -415,6 +421,7 @@ def main(argv: list[str] | None = None) -> int:
             args.binder_component_plan_decode_weight
         ),
         binder_topology_decode_weight=args.binder_topology_decode_weight,
+        binder_arity_decode_weight=args.binder_arity_decode_weight,
         compiler_search_mode=args.compiler_search_mode,
         compiler_search_trigger=args.compiler_search_trigger,
         compiler_search_width=max(1, args.compiler_search_width),

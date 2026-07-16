@@ -84,6 +84,27 @@ def main(argv: list[str] | None = None) -> int:
         default=Path("outputs/data/preference/local_decisions.jsonl"),
     )
 
+    local = sub.add_parser("train-local", help="Train on exact local decision events")
+    local.add_argument("--checkpoint", type=Path, required=True)
+    local.add_argument("--events", type=Path, required=True)
+    local.add_argument("--out-dir", type=Path, default=Path("outputs/runs/local_preference"))
+    local.add_argument(
+        "--objective",
+        choices=("ce_margin", "unlikelihood", "ftpo_single", "ftpo_set"),
+        required=True,
+    )
+    local.add_argument("--reference-checkpoint", type=Path, default=None)
+    local.add_argument("--steps", type=int, default=50)
+    local.add_argument("--lr", type=float, default=5e-5)
+    local.add_argument("--epsilon", type=float, default=2.0)
+    local.add_argument("--tau", type=float, default=1.0)
+    local.add_argument("--non-target-tether", type=float, default=0.0)
+    local.add_argument("--target-tether", type=float, default=0.0)
+    local.add_argument("--target-grace", type=float, default=1.0)
+    local.add_argument("--balanced", action="store_true")
+    local.add_argument("--seed", type=int, default=0)
+    local.add_argument("--device", default="cpu")
+
     args = parser.parse_args(argv)
 
     if args.cmd == "build-local-events":
@@ -100,6 +121,29 @@ def main(argv: list[str] | None = None) -> int:
         ]
         count = write_decision_events(args.out, mined)
         print(json.dumps({"events": count, "out": str(args.out)}, indent=2))
+        return 0
+
+    if args.cmd == "train-local":
+        from slm_training.harnesses.preference.local_train import train_local_from_paths
+
+        summary = train_local_from_paths(
+            args.checkpoint,
+            args.events,
+            out_dir=args.out_dir,
+            objective=args.objective,
+            reference_checkpoint=args.reference_checkpoint,
+            steps=args.steps,
+            device=args.device,
+            lr=args.lr,
+            epsilon=args.epsilon,
+            tau=args.tau,
+            non_target_tether=args.non_target_tether,
+            target_tether=args.target_tether,
+            target_grace=args.target_grace,
+            balanced=args.balanced,
+            seed=args.seed,
+        )
+        print(json.dumps(summary, indent=2))
         return 0
 
     if args.cmd == "build-pairs":

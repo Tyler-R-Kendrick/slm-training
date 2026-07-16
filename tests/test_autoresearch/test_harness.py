@@ -1138,6 +1138,8 @@ def test_compile_resolves_canonical_published_train_version() -> None:
             binder_component_plan_decode_weight=0.2,
             binder_topology_loss_weight=1.3,
             binder_topology_decode_weight=0.4,
+            binder_arity_loss_weight=1.2,
+            binder_arity_decode_weight=0.3,
             compiler_decode_mode="tree",
             compiler_search_mode="ptrm",
             compiler_search_trigger="stagnation",
@@ -1176,6 +1178,8 @@ def test_compile_resolves_canonical_published_train_version() -> None:
     assert commands[0][commands[0].index("--binder-component-plan-decode-weight") + 1] == "0.2"
     assert commands[0][commands[0].index("--binder-topology-loss-weight") + 1] == "1.3"
     assert commands[0][commands[0].index("--binder-topology-decode-weight") + 1] == "0.4"
+    assert commands[0][commands[0].index("--binder-arity-loss-weight") + 1] == "1.2"
+    assert commands[0][commands[0].index("--binder-arity-decode-weight") + 1] == "0.3"
     assert "--schema-in-context" in commands[0]
     assert "--slot-contract-in-context" in commands[0]
     assert "--no-design-md-context" in commands[0]

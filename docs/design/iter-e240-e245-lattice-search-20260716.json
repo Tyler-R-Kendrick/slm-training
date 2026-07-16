@@ -1,0 +1,88 @@
+{
+  "campaign": "quality-experiment-matrix-v9",
+  "evaluated_at": "2026-07-16",
+  "status": "stopped_after_e245",
+  "recipe": {
+    "mode": "evaluation_only",
+    "device": "cpu",
+    "seed": 0,
+    "checkpoint": "/home/codex/repos/slm-training/outputs/autoresearch/e228-candidate-margin-alignment/runs/e228-candidate-margin-matched/checkpoints/last.pt",
+    "checkpoint_sha256_before": "7a9be4a665e216d7f7e73883ad74ad972bbf30846896d0c29188d6482f5b093a",
+    "checkpoint_sha256_after": "7a9be4a665e216d7f7e73883ad74ad972bbf30846896d0c29188d6482f5b093a",
+    "train_dir": "src/slm_training/resources/data/train/e218_schema_normalized_judge_v5",
+    "train_content_fingerprint": "f23ac31ee8170d2acda6da72e5916e5101160c2a1f3d940aaeb280e664eeb0f7",
+    "eval_dir": "src/slm_training/resources/data/eval/remediated",
+    "honest_slot_contract": true,
+    "schema_in_context": true,
+    "slot_contract_in_context": true,
+    "design_md_in_context": false,
+    "checkpoint_written": false,
+    "checkpoint_promoted": false,
+    "checkpoint_synced": false
+  },
+  "suite_sizes": {
+    "smoke": 3,
+    "held_out": 5,
+    "adversarial": 4,
+    "ood": 4,
+    "rico_held": 3
+  },
+  "scoreboards": {
+    "control": {
+      "smoke": {"meaningful_program_rate": 0.3333333333, "structural_similarity": 0.4641666667, "component_type_recall": 0.25, "placeholder_fidelity": 0.5277777778, "parse_rate": 1.0},
+      "held_out": {"meaningful_program_rate": 0.0, "structural_similarity": 0.33686, "component_type_recall": 0.1566666667, "placeholder_fidelity": 0.28, "parse_rate": 1.0},
+      "adversarial": {"meaningful_program_rate": 0.5, "structural_similarity": 0.474375, "component_type_recall": 0.4583333333, "placeholder_fidelity": 0.5416666667, "parse_rate": 1.0},
+      "ood": {"meaningful_program_rate": 0.0, "structural_similarity": 0.375, "component_type_recall": 0.2083333333, "placeholder_fidelity": 0.2583333333, "parse_rate": 1.0},
+      "rico_held": {"meaningful_program_rate": 0.6666666667, "structural_similarity": 0.1627666667, "component_type_recall": 0.4444444444, "placeholder_fidelity": 0.125, "parse_rate": 1.0}
+    },
+    "always_on_width_4": {
+      "smoke": {"meaningful_program_rate": 0.0, "structural_similarity": 0.0575, "component_type_recall": 0.0, "placeholder_fidelity": 0.6111111111, "parse_rate": 1.0, "latency_ms_p50": 68538.89},
+      "held_out": {"meaningful_program_rate": 0.0, "structural_similarity": 0.04928, "component_type_recall": 0.0, "placeholder_fidelity": 0.38, "parse_rate": 1.0, "latency_ms_p50": 52444.87},
+      "adversarial": {"meaningful_program_rate": 0.0, "structural_similarity": 0.0541, "component_type_recall": 0.0, "placeholder_fidelity": 0.6666666667, "parse_rate": 1.0, "latency_ms_p50": 59320.38},
+      "ood": {"meaningful_program_rate": 0.0, "structural_similarity": 0.04625, "component_type_recall": 0.0, "placeholder_fidelity": 0.2583333333, "parse_rate": 1.0, "latency_ms_p50": 54352.04},
+      "rico_held": {"meaningful_program_rate": 0.0, "structural_similarity": 0.0173666667, "component_type_recall": 0.0, "placeholder_fidelity": 0.125, "parse_rate": 1.0, "latency_ms_p50": 57199.35}
+    }
+  },
+  "results": [
+    {"id": "E240", "run_id": "qx_e240_compiler_tree_control", "scoreboard": "control", "pass": false, "failed_gates": 4, "trajectory_trigger_count": 0},
+    {"id": "E241", "run_id": "qx_e241_lattice_rollback", "scoreboard": "control", "pass": false, "failed_gates": 4, "trajectory_trigger_count": 0},
+    {"id": "E242", "run_id": "qx_e242_stagnation_nogood", "scoreboard": "control", "pass": false, "failed_gates": 4, "trajectory_trigger_count": 0},
+    {"id": "E243", "run_id": "qx_e243_ptrm_triggered_w4", "scoreboard": "control", "pass": false, "failed_gates": 4, "trajectory_trigger_count": 0},
+    {
+      "id": "E244",
+      "run_id": "qx_e244_ptrm_always_w4",
+      "scoreboard": "always_on_width_4",
+      "pass": false,
+      "failed_gates": 10,
+      "telemetry": {
+        "bottoms": 81,
+        "rollbacks": 77,
+        "nogoods": 53,
+        "nogood_hits": 166,
+        "trajectory_triggers": 2982,
+        "trajectories": 3039,
+        "unique_proposals": 76,
+        "verifier_calls": 76,
+        "valid_trajectories": 22,
+        "unique_valid_asts": 22,
+        "abstentions": 4,
+        "budget_exhaustions": 4,
+        "false_hard_eliminations": 0,
+        "invalid_selected_over_valid": 0,
+        "selector_regret": 0
+      }
+    },
+    {"id": "E245", "run_id": "qx_e245_gram_diverse_w4", "scoreboard": "control", "pass": false, "failed_gates": 4, "trajectory_trigger_count": 0}
+  ],
+  "not_run": [
+    {"id": "E246", "reason": "E244 did not improve a continuation metric and caused semantic regression"},
+    {"id": "E247", "reason": "E244 did not improve a continuation metric and caused semantic regression"}
+  ],
+  "evidence": {
+    "run_root": "outputs/autoresearch/lattice-v9-local",
+    "per_row": "<run_root>/<run_id>/{matrix_result.json,eval_*.json,agentv/*.eval.jsonl,agentv/*/benchmark.json}",
+    "agentv_rows_published": 6,
+    "agentevals_rows_published": 6
+  },
+  "decision": "Reject always-on trajectory search for this checkpoint; retain the bounded controller and telemetry, and do not claim a quality or ship improvement."
+}

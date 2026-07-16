@@ -13,6 +13,7 @@ from typing import Any, Literal
 from slm_training.harnesses.model_build import ModelBuildConfig, build_model, train
 from slm_training.harnesses.model_build.data import load_train_records
 from slm_training.harnesses.model_build.eval_runner import evaluate_suites
+from slm_training.runtime.telemetry import run_trace
 from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
     evaluate_ship_gates,
@@ -60,7 +61,8 @@ class Experiment:
     grammar_ltr_max_tokens: int = 192
     # Eval-only overlay on a prior run (skip train if set)
     eval_from_run: str | None = None
-    design_md_in_context: bool = True
+    design_md_in_context: bool | None = True
+    runtime_override_fields: frozenset[str] | None = None
     # Absolute checkpoint seed (preferred over eval_from_run when set)
     seed_checkpoint: str | None = None
     preference: bool = False
@@ -132,6 +134,9 @@ class Experiment:
     compiler_search_noise: float = 0.0
     compiler_search_stagnation_patience: int = 2
     compiler_search_backtrack_limit: int = 8
+    compiler_search_local_nogoods: bool = False
+    grammar_finalize_validate: bool = False
+    allow_unconstrained_fallback: bool = True
     component_inventory_loss_weight: float = 0.0
     component_inventory_decode_weight: float = 0.0
     component_plan_loss_weight: float = 0.0
@@ -143,6 +148,15 @@ class Experiment:
     binder_component_plan_decode_weight: float = 0.0
     binder_topology_loss_weight: float = 0.0
     binder_topology_decode_weight: float = 0.0
+    # V10 exact-state local preference process.
+    local_parent_control: bool = False
+    local_preference_objective: Literal[
+        "ce_margin", "unlikelihood", "ftpo_single", "ftpo_set"
+    ] | None = None
+    local_preference_reference_tether: bool = False
+    local_preference_balanced: bool = False
+    binder_arity_loss_weight: float = 0.0
+    binder_arity_decode_weight: float = 0.0
 
 
 def _base_experiments(
@@ -1227,17 +1241,120 @@ def _v8_experiments(
 
 
 def _v9_experiments(train_dir: Path) -> list[Experiment]:
-    """E240-E247: plan-only compiler-lattice search campaign."""
-    base = dict(initialization="eval_only", output_tokenizer="lexer", grammar_ltr_primary=True, compiler_decode_mode="tree")
+    """E240-E247: eval-only compiler-lattice search campaign."""
+    runtime_fields = frozenset(
+        {
+            "allow_unconstrained_fallback",
+            "compiler_decode_mode",
+            "compiler_search_backtrack_limit",
+            "compiler_search_local_nogoods",
+            "compiler_search_mode",
+            "compiler_search_noise",
+            "compiler_search_stagnation_patience",
+            "compiler_search_trigger",
+            "compiler_search_width",
+            "design_md_in_context",
+            "grammar_finalize_validate",
+            "grammar_ltr_primary",
+            "honest_slot_contract",
+            "schema_in_context",
+            "slot_contract_constrained_decode",
+            "slot_contract_in_context",
+        }
+    )
+    base = dict(
+        initialization="eval_only",
+        runtime_override_fields=runtime_fields,
+        output_tokenizer="lexer",
+        grammar_ltr_primary=True,
+        grammar_finalize_validate=True,
+        compiler_decode_mode="tree",
+        schema_in_context=True,
+        slot_contract_in_context=True,
+        slot_contract_constrained_decode=True,
+        honest_slot_contract=True,
+        design_md_in_context=False,
+        allow_unconstrained_fallback=False,
+    )
     return [
         Experiment("E240", "qx_e240_compiler_tree_control", "Corrected greedy compiler-tree control", train_dir, **base),
         Experiment("E241", "qx_e241_lattice_rollback", "Hard/soft lattice with bounded rollback", train_dir, compiler_search_mode="lattice", **base),
-        Experiment("E242", "qx_e242_stagnation_nogood", "Stagnation-triggered localized nogoods", train_dir, compiler_search_mode="lattice", compiler_search_stagnation_patience=2, **base),
-        Experiment("E243", "qx_e243_ptrm_triggered_w4", "PTRM-style width 4 triggered by stagnation", train_dir, compiler_search_mode="ptrm", compiler_search_trigger="stagnation", compiler_search_width=4, compiler_search_noise=1.0, **base),
-        Experiment("E244", "qx_e244_ptrm_always_w4", "Always-on PTRM-style width 4 matched control", train_dir, compiler_search_mode="ptrm", compiler_search_trigger="always", compiler_search_width=4, compiler_search_noise=1.0, **base),
-        Experiment("E245", "qx_e245_gram_diverse_w4", "GRAM-style semantic diversity at width 4", train_dir, compiler_search_mode="gram", compiler_search_trigger="stagnation", compiler_search_width=4, compiler_search_noise=1.0, **base),
-        Experiment("E246", "qx_e246_lattice_full_w4", "Full lattice stack at width 4", train_dir, compiler_search_mode="gram", compiler_search_trigger="stagnation", compiler_search_width=4, compiler_search_noise=1.0, compiler_search_backtrack_limit=8, **base),
-        Experiment("E247", "qx_e247_lattice_full_w8", "Full lattice stack width 8 scaling row", train_dir, compiler_search_mode="gram", compiler_search_trigger="stagnation", compiler_search_width=8, compiler_search_noise=1.0, compiler_search_backtrack_limit=8, **base),
+        Experiment("E242", "qx_e242_stagnation_nogood", "Stagnation-visible localized conflict nogoods", train_dir, compiler_search_mode="lattice", compiler_search_local_nogoods=True, compiler_search_stagnation_patience=1, **base),
+        Experiment("E243", "qx_e243_ptrm_triggered_w4", "PTRM-style width 4 triggered by stagnation", train_dir, compiler_search_mode="ptrm", compiler_search_trigger="stagnation", compiler_search_width=4, compiler_search_noise=1.0, compiler_search_local_nogoods=True, **base),
+        Experiment("E244", "qx_e244_ptrm_always_w4", "Always-on PTRM-style width 4 matched control", train_dir, compiler_search_mode="ptrm", compiler_search_trigger="always", compiler_search_width=4, compiler_search_noise=1.0, compiler_search_local_nogoods=True, **base),
+        Experiment("E245", "qx_e245_gram_diverse_w4", "GRAM-style semantic diversity at width 4", train_dir, compiler_search_mode="gram", compiler_search_trigger="stagnation", compiler_search_width=4, compiler_search_noise=1.0, compiler_search_local_nogoods=True, **base),
+        Experiment("E246", "qx_e246_lattice_full_w4", "Full lattice stack at width 4", train_dir, compiler_search_mode="gram", compiler_search_trigger="stagnation", compiler_search_width=4, compiler_search_noise=1.0, compiler_search_backtrack_limit=8, compiler_search_local_nogoods=True, **base),
+        Experiment("E247", "qx_e247_lattice_full_w8", "Full lattice stack width 8 scaling row", train_dir, compiler_search_mode="gram", compiler_search_trigger="stagnation", compiler_search_width=8, compiler_search_noise=1.0, compiler_search_backtrack_limit=8, compiler_search_local_nogoods=True, **base),
+    ]
+
+
+def _v10_experiments(train_dir: Path) -> list[Experiment]:
+    """E248-E254: exact-state local preference campaign (proposed/unrun)."""
+    base = dict(
+        output_tokenizer="lexer",
+        grammar_ltr_primary=True,
+        compiler_decode_mode="tree",
+    )
+    return [
+        Experiment(
+            "E248",
+            "qx_e248_local_parent_control",
+            "Unchanged parent control for exact-state preference",
+            train_dir,
+            local_parent_control=True,
+            **base,
+        ),
+        Experiment(
+            "E249",
+            "qx_e249_local_ce_margin",
+            "Exact-event compiler CE plus margin",
+            train_dir,
+            local_preference_objective="ce_margin",
+            **base,
+        ),
+        Experiment(
+            "E250",
+            "qx_e250_local_unlikelihood",
+            "Exact-event bad-token unlikelihood",
+            train_dir,
+            local_preference_objective="unlikelihood",
+            **base,
+        ),
+        Experiment(
+            "E251",
+            "qx_e251_local_ftpo_single",
+            "Single-good/single-bad clipped FTPO",
+            train_dir,
+            local_preference_objective="ftpo_single",
+            **base,
+        ),
+        Experiment(
+            "E252",
+            "qx_e252_local_ftpo_set",
+            "Verifier-backed set FTPO",
+            train_dir,
+            local_preference_objective="ftpo_set",
+            **base,
+        ),
+        Experiment(
+            "E253",
+            "qx_e253_local_ftpo_tether",
+            "Set FTPO with frozen-reference logit tether",
+            train_dir,
+            local_preference_objective="ftpo_set",
+            local_preference_reference_tether=True,
+            **base,
+        ),
+        Experiment(
+            "E254",
+            "qx_e254_local_ftpo_balanced",
+            "Tethered set FTPO with balanced event sampling",
+            train_dir,
+            local_preference_objective="ftpo_set",
+            local_preference_reference_tether=True,
+            local_preference_balanced=True,
+            **base,
+        ),
     ]
 
 
@@ -1248,6 +1365,7 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         suite="smoke",
         run_root=args.run_root,
         run_id=exp.run_id,
+        runtime_override_fields=exp.runtime_override_fields,
         steps=args.steps,
         batch_size=args.batch_size,
         lr=args.lr,
@@ -1303,6 +1421,15 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         compiler_search_noise=max(0.0, float(getattr(exp, "compiler_search_noise", 0.0) or 0.0)),
         compiler_search_stagnation_patience=max(1, int(getattr(exp, "compiler_search_stagnation_patience", 2) or 2)),
         compiler_search_backtrack_limit=max(0, int(getattr(exp, "compiler_search_backtrack_limit", 8) or 0)),
+        compiler_search_local_nogoods=bool(
+            getattr(exp, "compiler_search_local_nogoods", False)
+        ),
+        grammar_finalize_validate=bool(
+            getattr(exp, "grammar_finalize_validate", False)
+        ),
+        allow_unconstrained_fallback=bool(
+            getattr(exp, "allow_unconstrained_fallback", True)
+        ),
         component_inventory_loss_weight=float(
             getattr(exp, "component_inventory_loss_weight", 0.0) or 0.0
         ),
@@ -1335,6 +1462,12 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         ),
         binder_topology_decode_weight=float(
             getattr(exp, "binder_topology_decode_weight", 0.0) or 0.0
+        ),
+        binder_arity_loss_weight=float(
+            getattr(exp, "binder_arity_loss_weight", 0.0) or 0.0
+        ),
+        binder_arity_decode_weight=float(
+            getattr(exp, "binder_arity_decode_weight", 0.0) or 0.0
         ),
         trust_gate_train=bool(getattr(exp, "trust_gate", False)),
         grad_accum_steps=max(1, int(getattr(args, "grad_accum", 1) or 1)),
@@ -1595,6 +1728,40 @@ def _maybe_preference(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> 
     return ckpt
 
 
+def _maybe_local_preference(
+    exp: Experiment, ckpt: Path, args: argparse.Namespace
+) -> Path:
+    objective = exp.local_preference_objective
+    if objective is None:
+        return ckpt
+    if args.decision_events is None:
+        raise ValueError(f"{exp.eid} requires --decision-events")
+    from slm_training.harnesses.preference.local_train import train_local_from_paths
+
+    tethered = bool(exp.local_preference_reference_tether)
+    out_dir = args.run_root / exp.run_id / "local_preference"
+    summary = train_local_from_paths(
+        ckpt,
+        args.decision_events,
+        out_dir=out_dir,
+        objective=objective,
+        reference_checkpoint=ckpt if tethered else None,
+        steps=args.pref_steps,
+        device=args.device,
+        lr=args.local_pref_lr,
+        epsilon=2.0,
+        tau=1.0,
+        non_target_tether=0.4 if tethered else 0.0,
+        target_tether=0.05 if tethered else 0.0,
+        target_grace=1.0,
+        balanced=bool(exp.local_preference_balanced),
+        seed=args.seed,
+    )
+    trained = Path(summary["checkpoint"])
+    dest = args.run_root / exp.run_id / "checkpoints" / "last.pt"
+    return _copy_checkpoint(trained, dest)
+
+
 def _maybe_rl(exp: Experiment, ckpt: Path, args: argparse.Namespace) -> Path:
     if not getattr(exp, "rl", False):
         return ckpt
@@ -1686,12 +1853,39 @@ def _maybe_survival_gate(exp: Experiment, ckpt: Path, args: argparse.Namespace) 
 def _summarize_board(board: dict[str, Any]) -> dict[str, Any]:
     suites = board.get("suites") or {}
     gates = evaluate_ship_gates(suites)
+
+    def durable_decode_stats(metrics: dict[str, Any]) -> dict[str, Any]:
+        """Persist aggregate telemetry, not per-token high-cardinality traces."""
+        durable: dict[str, Any] = {}
+        for key, value in (metrics.get("decode_stats") or {}).items():
+            if isinstance(value, (bool, int, float, str)) or value is None:
+                durable[key] = value
+            elif (
+                isinstance(value, dict)
+                and len(value) <= 32
+                and all(
+                    isinstance(item, (bool, int, float, str)) or item is None
+                    for item in value.values()
+                )
+            ):
+                durable[key] = value
+        return durable
+
     slim = {
         name: {
             "parse_rate": m.get("parse_rate"),
+            "syntax_parse_rate": m.get("syntax_parse_rate"),
+            "meaningful_program_rate": m.get("meaningful_program_rate"),
             "placeholder_fidelity": m.get("placeholder_fidelity"),
             "structural_similarity": m.get("structural_similarity"),
             "reward_score": m.get("reward_score"),
+            "latency_ms_p50": m.get("latency_ms_p50"),
+            "latency_ms_p95": m.get("latency_ms_p95"),
+            "fallback_count": m.get("fallback_count"),
+            "decode_timeout_count": m.get("decode_timeout_count"),
+            "constrained_fallback_rate": m.get("constrained_fallback_rate"),
+            "evaluation_policy": m.get("evaluation_policy"),
+            "decode_stats": durable_decode_stats(m),
             "n": m.get("n"),
             # V7 decode telemetry (present when speculative levers are on).
             **(
@@ -1705,6 +1899,13 @@ def _summarize_board(board: dict[str, Any]) -> dict[str, Any]:
     return {
         "pass": gates.get("pass"),
         "failures": gates.get("failures"),
+        "checkpoint_sha256": board.get("checkpoint_sha256"),
+        "evaluated_at": board.get("evaluated_at"),
+        "agentv": {
+            "format": (board.get("agentv") or {}).get("format"),
+            "sdk": (board.get("agentv") or {}).get("sdk"),
+            "summary": (board.get("agentv") or {}).get("summary"),
+        },
         "suites": slim,
     }
 
@@ -1730,7 +1931,20 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
         )
         return result
 
-    if exp.initialization == "parent":
+    if exp.local_parent_control or exp.local_preference_objective is not None:
+        if not exp.parent_checkpoint:
+            raise ValueError(f"{exp.eid} local preference requires --parent")
+        parent = Path(exp.parent_checkpoint)
+        if not parent.is_file():
+            raise FileNotFoundError(f"{exp.eid} needs parent checkpoint {parent}")
+        ckpt = _copy_checkpoint(parent, run_dir / "checkpoints" / "last.pt")
+    elif exp.initialization == "eval_only":
+        if not exp.parent_checkpoint:
+            raise ValueError(f"{exp.eid} eval-only initialization requires --parent")
+        ckpt = Path(exp.parent_checkpoint)
+        if not ckpt.is_file():
+            raise FileNotFoundError(f"{exp.eid} needs parent checkpoint {ckpt}")
+    elif exp.initialization == "parent":
         if not exp.parent_checkpoint:
             raise ValueError(f"{exp.eid} parent initialization requires --parent")
         parent = Path(exp.parent_checkpoint)
@@ -1788,29 +2002,45 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
             ckpt = Path(summary["checkpoint"])
 
     ckpt = _maybe_preference(exp, ckpt, args)
+    ckpt = _maybe_local_preference(exp, ckpt, args)
     ckpt = _maybe_rl(exp, ckpt, args)
     ckpt = _maybe_trust_gate(exp, ckpt, args)
     ckpt = _maybe_survival_gate(exp, ckpt, args)
     eval_cfg = _eval_cfg(exp, args)
-    board = evaluate_suites(
-        eval_cfg,
-        args.suites,
-        checkpoint=ckpt,
-        write_gates=True,
-    )
+    with run_trace(exp.run_id, "eval", run_dir=run_dir) as trace:
+        board = evaluate_suites(
+            eval_cfg,
+            args.suites,
+            checkpoint=ckpt,
+            write_gates=True,
+        )
     result = {
         "id": exp.eid,
         "run_id": exp.run_id,
         "initialization": exp.initialization,
+        "training_executed": exp.initialization != "eval_only",
         "parent_checkpoint": exp.parent_checkpoint,
         "description": exp.description,
         "honest_slot_contract": eval_cfg.honest_slot_contract,
+        "design_md_in_context": eval_cfg.design_md_in_context,
         "schema_in_context": eval_cfg.schema_in_context,
         "slot_contract_in_context": eval_cfg.slot_contract_in_context,
         "slot_contract_constrained_decode": (eval_cfg.slot_contract_constrained_decode),
         "template_fill_decode": eval_cfg.template_fill_decode,
         "grammar_ltr_primary": eval_cfg.grammar_ltr_primary,
         "grammar_ltr_repair": eval_cfg.grammar_ltr_repair,
+        "grammar_finalize_validate": eval_cfg.grammar_finalize_validate,
+        "allow_unconstrained_fallback": eval_cfg.allow_unconstrained_fallback,
+        "compiler_decode_mode": eval_cfg.compiler_decode_mode,
+        "compiler_search_mode": eval_cfg.compiler_search_mode,
+        "compiler_search_trigger": eval_cfg.compiler_search_trigger,
+        "compiler_search_width": eval_cfg.compiler_search_width,
+        "compiler_search_noise": eval_cfg.compiler_search_noise,
+        "compiler_search_stagnation_patience": (
+            eval_cfg.compiler_search_stagnation_patience
+        ),
+        "compiler_search_backtrack_limit": eval_cfg.compiler_search_backtrack_limit,
+        "compiler_search_local_nogoods": eval_cfg.compiler_search_local_nogoods,
         "effective_gen_steps": eval_cfg.gen_steps,
         "best_of_n": eval_cfg.best_of_n,
         "train_dir": str(exp.train_dir),
@@ -1818,6 +2048,14 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
             (exp.train_dir / "manifest.json").read_text(encoding="utf-8")
         ).get("content_fingerprint"),
         "checkpoint": str(ckpt),
+        "trace_id": trace.trace_id,
+        "traceparent": trace.traceparent,
+        "trace_bundle": trace.bundle.as_posix(),
+        "local_preference_objective": exp.local_preference_objective,
+        "local_preference_reference_tether": (
+            exp.local_preference_reference_tether
+        ),
+        "local_preference_balanced": exp.local_preference_balanced,
         **_summarize_board(board),
     }
     (run_dir / "matrix_result.json").write_text(
@@ -1869,6 +2107,13 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--pref-steps", type=int, default=30)
     parser.add_argument("--pref-limit", type=int, default=40)
+    parser.add_argument(
+        "--decision-events",
+        type=Path,
+        default=None,
+        help="DecisionEventV1 JSONL required by V10 intervention rows.",
+    )
+    parser.add_argument("--local-pref-lr", type=float, default=5e-5)
     parser.add_argument("--rl-steps", type=int, default=30)
     parser.add_argument("--rl-group-size", type=int, default=4)
     parser.add_argument("--rl-readiness-report", type=Path, default=None)
@@ -1932,9 +2177,21 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--matrix",
-        choices=("legacy", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9", "all"),
+        choices=(
+            "legacy",
+            "v2",
+            "v3",
+            "v4",
+            "v5",
+            "v6",
+            "v7",
+            "v8",
+            "v9",
+            "v10",
+            "all",
+        ),
         default="v3",
-        help="Experiment set through v9 compiler-lattice rows E240-E247, or all.",
+        help="Experiment set through v10 local-decision rows E248-E254, or all.",
     )
     parser.add_argument(
         "--list",
@@ -1972,16 +2229,23 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(f"unknown suites: {','.join(unknown_suites)}")
     if not args.suites:
         parser.error("--suites must select at least one suite")
-    if args.matrix in {"v4", "v5", "v6", "v7", "v8", "v9", "all"}:
+    if args.matrix in {"v4", "v5", "v6", "v7", "v8", "v9", "v10", "all"}:
         if args.parent is None and not args.scratch_control:
             if not args.list:
                 parser.error(
                     "modern matrices require --parent or explicit --scratch-control"
                 )
+    if args.matrix in {"v10", "all"} and args.parent is None and not args.list:
+        parser.error("V10 exact-state rows require --parent")
 
-    needs_curriculum = args.only is None or any(
-        x in (args.only or "")
-        for x in (
+    selected_ids = (
+        {value.strip().upper() for value in args.only.split(",") if value.strip()}
+        if args.only
+        else None
+    )
+    needs_curriculum = selected_ids is None or bool(
+        selected_ids
+        & {
             "E2",
             "E8",
             "E9b",
@@ -1994,7 +2258,7 @@ def main(argv: list[str] | None = None) -> int:
             "E53",
             "E55",
             "E75",
-        )
+        }
     )
     if not args.list and (
         args.build_curriculum
@@ -2012,7 +2276,7 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
 
-    needs_namespace = args.only is None or any(x in (args.only or "") for x in ("E14",))
+    needs_namespace = selected_ids is None or "E14" in selected_ids
     if not args.list and needs_namespace and not args.namespace_dir.exists():
         from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
 
@@ -2098,9 +2362,10 @@ def main(argv: list[str] | None = None) -> int:
         )
     if args.matrix in {"v9", "all"}:
         experiments.extend(_v9_experiments(args.train_dir))
+    if args.matrix in {"v10", "all"}:
+        experiments.extend(_v10_experiments(args.train_dir))
     if args.only:
-        wanted = {x.strip().upper() for x in args.only.split(",") if x.strip()}
-        experiments = [e for e in experiments if e.eid in wanted]
+        experiments = [e for e in experiments if e.eid in selected_ids]
     if args.list:
         print(
             json.dumps(
@@ -2116,14 +2381,27 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
         return 0
+    if any(exp.local_preference_objective for exp in experiments):
+        if args.decision_events is None:
+            parser.error("V10 intervention rows require --decision-events")
 
     classified: list[Experiment] = []
     for exp in experiments:
-        if args.scratch_control or args.matrix in {"legacy", "v2", "v3"}:
+        if exp.initialization == "eval_only":
+            initialization = "eval_only"
+        elif args.scratch_control or args.matrix in {"legacy", "v2", "v3"}:
             initialization = "scratch"
         elif exp.eval_from_run or exp.eval_from_checkpoint:
             initialization = "eval_only"
-        elif exp.preference or exp.rl or exp.trust_gate or exp.survival_gate:
+        elif exp.local_parent_control:
+            initialization = "eval_only"
+        elif (
+            exp.preference
+            or exp.local_preference_objective is not None
+            or exp.rl
+            or exp.trust_gate
+            or exp.survival_gate
+        ):
             initialization = "process"
         else:
             initialization = "parent"
@@ -2133,7 +2411,12 @@ def main(argv: list[str] | None = None) -> int:
                 initialization=initialization,
                 parent_checkpoint=(
                     str(args.parent)
-                    if args.parent is not None and initialization == "parent"
+                    if args.parent is not None
+                    and (
+                        initialization in {"parent", "eval_only"}
+                        or exp.local_parent_control
+                        or exp.local_preference_objective is not None
+                    )
                     else exp.parent_checkpoint
                 ),
                 seed_checkpoint=(
@@ -2244,6 +2527,12 @@ def main(argv: list[str] | None = None) -> int:
     # Stable order by experiment id.
     results.sort(key=lambda r: r.get("id") or "")
 
+    training_executed = any(result.get("training_executed") for result in results)
+    design_policies = {
+        result.get("design_md_in_context")
+        for result in results
+        if "design_md_in_context" in result
+    }
     out = {
         "matrix": f"quality-experiment-matrix-{args.matrix}",
         "reference": "docs/design/quality-experiment-matrix.md",
@@ -2253,10 +2542,13 @@ def main(argv: list[str] | None = None) -> int:
         "learning_rate": args.lr,
         "seed": args.seed,
         "test_dir": str(args.test_dir),
-        "design_md_in_context": not args.no_design_md_context,
+        "design_md_in_context": (
+            design_policies.pop() if len(design_policies) == 1 else None
+        ),
+        "training_executed": training_executed,
         "rico_eval_limit": args.rico_limit,
         "suites": sorted(args.suites),
-        "steps": args.steps,
+        "steps": args.steps if training_executed else 0,
         "gen_steps": args.gen_steps,
         "context_backend": args.context_backend,
         "matrix_set": args.matrix,
