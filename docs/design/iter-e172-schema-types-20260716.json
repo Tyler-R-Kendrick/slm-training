@@ -1,0 +1,36 @@
+{
+  "iteration": "E172",
+  "date": "2026-07-16",
+  "objective": "Evaluate generic generated-schema type constraints in the compiler forest.",
+  "recipe": {
+    "checkpoint": "outputs/runs/iter-e160-lexer-32step-20260715/e160-lexer-32step/checkpoints/last.pt",
+    "suite": "smoke",
+    "n": 3,
+    "device": "cpu",
+    "context_backend": "hf",
+    "output_tokenizer": "lexer",
+    "compiler_decode_mode": "tree",
+    "allow_unconstrained_fallback": false,
+    "honest_slot_contract": true,
+    "grammar_ltr_max_tokens": 256
+  },
+  "metrics": {
+    "parse_rate": 0.0,
+    "meaningful_program_rate": 0.0,
+    "syntax_parse_rate": 0.6666666666666666,
+    "raw_syntax_validity": 0.6666666666666666,
+    "structural_similarity": 0.12973333333333334,
+    "component_type_recall": 0.25,
+    "latency_ms_p50": 3834.76,
+    "decode_timeout_count": 0,
+    "compiler_fallbacks": 1,
+    "seeded_fallbacks": 0,
+    "agentv_passed": 0,
+    "agentv_failed": 5
+  },
+  "evidence": {
+    "eval": "outputs/runs/e172-schema-types-20260716/eval_smoke.json",
+    "agentv": "outputs/runs/e172-schema-types-20260716/agentv/openui-model-ship-gates-2026-07-16t04-26-24-921980-00-00.eval.jsonl"
+  },
+  "conclusion": "Mapping generated schema value types to Lark terminal categories improves lexical/syntax validity from E171 1/3 to 2/3 and reduces compiler fallbacks. Meaningful parse remains 0 and structural similarity declines, so the next lever is semantic component-role supervision/data coverage, not additional syntax exceptions."
+}

@@ -746,6 +746,12 @@ scanning. It is quality-neutral on the matched checkpoint
 fallbacks), so the next step is generated-AST/schema completion state. See
 [iter-e170-lark-state-20260716.md](iter-e170-lark-state-20260716.md).
 
+E172 maps generated schema value types to Lark terminal categories. Syntax
+validity improves to 0.6667 and compiler fallbacks fall to 1, while meaningful
+parse remains 0 and component recall is 0.25. The next lever is semantic
+component-role supervision and training-data coverage. See
+[iter-e172-schema-types-20260716.md](iter-e172-schema-types-20260716.md).
+
 These rows are registered under `--matrix v8`; `--list` prints definitions
 without building data or starting a run. They require the lexer-native parent
 contract and unchanged honest five-suite gates. No result or champion is claimed.
