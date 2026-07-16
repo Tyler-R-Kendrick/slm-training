@@ -49,7 +49,7 @@ def compile_commands(
     knobs = experiment.knobs
     root = Path(output_root) / campaign.campaign_id / "runs" / experiment.experiment_id
     version = f"autoresearch-{campaign.campaign_id}-{experiment.experiment_id}"
-    train_dir = Path("outputs/train_data") / version
+    train_dir = Path("outputs/data/train") / version
     commands: list[list[str]] = []
     if knobs.data_source:
         build = [
@@ -84,7 +84,7 @@ def compile_commands(
             build.append("--scope-derivatives")
         commands.append(build)
     else:
-        train_dir = Path("outputs/train_data/v1")
+        train_dir = Path("outputs/data/train/v1")
     mixture_path = root / "mixture.json"
     if knobs.mixture_weights:
         commands.append(
@@ -201,7 +201,7 @@ def compile_commands(
             "--train-dir",
             str(train_dir),
             "--test-dir",
-            "outputs/test_data/v1",
+            "outputs/data/eval/v1",
             "--run-root",
             str(root.parent),
             "--run-id",

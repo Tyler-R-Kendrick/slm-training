@@ -121,6 +121,7 @@ def main() -> int:
                 output_root / "rl_traces.jsonl",
                 tokenizer=AutoTokenizer.from_pretrained(model_path),
                 run_id=run_id,
+                trace_id=os.environ.get("SLM_TRACE_ID"),
             )
     if error is not None:
         raise error

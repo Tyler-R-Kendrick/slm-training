@@ -215,7 +215,9 @@ export const toolProvider: Record<string, QueryFn> = {
       version: d.version,
       versions: d.versions ?? [],
       tiles: [
-        { label: "Records", value: String(d.record_count ?? stats?.record_count ?? "—"), sub: d.version === "examples" ? "built-in examples" : d.version ? `train_data/${d.version}` : "no data", accent: "moss" },
+        { label: "Records", value: String(d.record_count ?? stats?.record_count ?? "—"), sub: d.version === "examples" ? "built-in examples" : d.path ?? "no data", accent: "moss" },
+        { label: "Storage", value: String(d.storage ?? "committed"), sub: d.fingerprint ? String(d.fingerprint).slice(0, 12) : null, accent: "" },
+        { label: "Build trace", value: d.trace_id ? String(d.trace_id).slice(0, 12) : "—", sub: d.trace_id ? "W3C trace ID" : null, accent: "" },
         { label: "Collected", value: String(stats?.collected_count ?? "—"), sub: null, accent: "" },
         { label: "Quality rejected", value: String(stats?.quality_rejected ?? "—"), sub: null, accent: stats?.quality_rejected ? "failed" : "" },
         { label: "Synthesizer", value: String(stats?.synthesizer ?? "—"), sub: null, accent: "" },

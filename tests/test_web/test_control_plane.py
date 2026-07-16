@@ -127,7 +127,8 @@ def test_committed_train_version_is_default_and_browsable(tmp_path) -> None:
         / "src"
         / "slm_training"
         / "resources"
-        / "train_data"
+        / "data"
+        / "train"
         / "remediated_roots_judged"
     )
     write_jsonl(
@@ -294,7 +295,7 @@ def test_train_data_job_renders_existing_derivative_controls() -> None:
             "repairs_per_program": 0,
         }
     )
-    assert ["--derive-from", "outputs/train_data/v1/records.jsonl"] == argv[
+    assert ["--derive-from", "outputs/data/train/v1/records.jsonl"] == argv[
         argv.index("--derive-from") : argv.index("--derive-from") + 2
     ]
     assert "--namespace-augment" in argv

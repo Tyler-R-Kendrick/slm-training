@@ -96,13 +96,13 @@ Checkpoint remains the pre-remediation fixture-upsample scratch run (not retrain
 ```bash
 python -m scripts.build_train_data --source all --version v1 --synthesizer quality
 python -m scripts.build_test_data --source both --version v1 \
-  --train-manifest outputs/train_data/v1/manifest.json \
+  --train-manifest outputs/data/train/v1/manifest.json \
   --rico-hf-split test --rico-limit 2600 --target-records 1500
 
 python -m scripts.evaluate_model \
   --suites smoke,held_out,adversarial,ood,rico_held \
-  --train-dir outputs/train_data/v1 \
-  --test-dir outputs/test_data/v1 \
+  --train-dir outputs/data/train/v1 \
+  --test-dir outputs/data/eval/v1 \
   --run-id twotower_v1_ship \
   --ship-gates
 ```

@@ -85,13 +85,13 @@ python -m scripts.build_train_data --source fixture --version v0 --synthesizer q
 
 # Test suites with strict leakage checks against the train manifest
 python -m scripts.build_test_data --source both --version v1 \
-  --train-manifest outputs/train_data/v1/manifest.json
+  --train-manifest outputs/data/train/v1/manifest.json
 
 # Full HF-context trains sync checkpoints to the OpenUI bucket
 # (https://huggingface.co/buckets/TKendrick/OpenUI). Requires HF_TOKEN.
 export HF_TOKEN=hf_...   # or: hf auth login
 python -m scripts.train_model \
-  --train-dir outputs/train_data/v1 \
+  --train-dir outputs/data/train/v1 \
   --model twotower \
   --context-backend hf \
   --steps 200 \
@@ -99,7 +99,7 @@ python -m scripts.train_model \
 # → hf://buckets/TKendrick/OpenUI/checkpoints/twotower_v1/
 
 python -m scripts.evaluate_model \
-  --test-dir outputs/test_data/v1 \
+  --test-dir outputs/data/eval/v1 \
   --model twotower \
   --run-id twotower_v1 \
   --ship-gates
@@ -130,7 +130,20 @@ python -m scripts.run_quality_matrix --matrix v6 --only E53 \
   --scratch-control
 ```
 
-Train artifacts land in `outputs/train_data/<version>/` (`records.jsonl`, `manifest.json`, `stats.json`). The flush pipeline: curated seeds + RICO + Awwwards → deterministic quality synth → per-record DESIGN.md + OpenUI validate → quality gates → stable sort by `id` + content fingerprint.
+Train artifacts land in `outputs/data/train/<version>/`; eval, preference,
+annotation, trajectory, ProgramSpec, and mixture data use sibling typed roots.
+Use `slm-data list`, `slm-data resolve train <version>`, and
+`slm-data verify train <version>`
+instead of memorizing paths. Selected immutable snapshots publish to Git with
+`slm-data publish train <version>`.
+
+Every new run writes `outputs/runs/<id>/trace.json` and OTLP JSONL signals under
+`outputs/traces/<trace-id>/`. Set `OTEL_EXPORTER_OTLP_ENDPOINT` for an optional
+remote OTLP mirror; detailed domain traces remain local and linked by trace ID.
+
+The flush pipeline remains: curated seeds + RICO + Awwwards → deterministic
+quality synth → per-record DESIGN.md + OpenUI validate → quality gates → stable
+sort by `id` + content fingerprint.
 
 Eval uses **meaningful parse** (rejects empty stacks, missing placeholders, and low gold component-type recall), strict `placeholder_fidelity` for ship gates, `structural_similarity`, and composite `reward_score` (does not credit gold DESIGN.md lint). Suites: smoke/held_out (fixtures), `rico_held`, adversarial, ood. Soft `placeholder_validity` is diagnostic only.
 
@@ -141,7 +154,7 @@ Expand `rico_held` with 1500 additional HF RICO screens (cached under `src/slm_t
 ```bash
 python -m scripts.build_test_data \
   --source both --version v1 \
-  --train-manifest outputs/train_data/v1/manifest.json \
+  --train-manifest outputs/data/train/v1/manifest.json \
   --rico-hf-split test --rico-limit 2600 --target-records 1500
 ```
 
@@ -261,7 +274,7 @@ Annotate mode (default UI): auto-generated prompts, prefetch 1–2 samples ahead
 | typing | Focus optional note |
 | swipe | Mobile: horizontal navigate, vertical grade |
 
-Annotations append to `outputs/annotations/feedback.jsonl`. Invalid model outputs are quarantined to `outputs/annotations/bad_outputs.jsonl` (never shown in the app). Thumbs-up rows promote into `src/slm_training/resources/annotations/human_train.jsonl` (merged by `build_train_data`). Opposite ratings on the same prompt also write `outputs/preferences/human_pairs.jsonl`.
+Annotations append to `outputs/data/annotation/feedback.jsonl`. Invalid model outputs are quarantined to `outputs/data/annotation/bad_outputs.jsonl` (never shown in the app). Thumbs-up rows promote into `src/slm_training/resources/annotations/human_train.jsonl` (merged by `build_train_data`). Opposite ratings on the same prompt also write `outputs/data/preference/human_pairs.jsonl`.
 
 ```bash
 python -m scripts.export_annotations status

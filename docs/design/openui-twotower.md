@@ -119,10 +119,10 @@ Prior soft gates that declared `twotower_v1_ship` a pass (smoke-only / weak held
 
 ```bash
 python -m scripts.build_test_data --source both --version v1 \
-  --train-manifest outputs/train_data/v1/manifest.json
+  --train-manifest outputs/data/train/v1/manifest.json
 python -m scripts.evaluate_model --ship-gates \
-  --train-dir outputs/train_data/v1 \
-  --test-dir outputs/test_data/v1 \
+  --train-dir outputs/data/train/v1 \
+  --test-dir outputs/data/eval/v1 \
   --run-id <run>
 ```
 

@@ -1,9 +1,9 @@
 {
   "version": "remediated_cap3",
-  "kind": "train_data",
+  "kind": "train",
   "source": "existing",
-  "records": "outputs/train_data/remediated_cap3/records.jsonl",
-  "stats": "outputs/train_data/remediated_cap3/stats.json",
+  "records": "records.jsonl",
+  "stats": "stats.json",
   "record_count": 324,
   "ids": [
     "aww_app_01_repair_2d2232bba455",
@@ -1753,7 +1753,7 @@
   },
   "governance": {},
   "mixture": null,
-  "synthesis_telemetry": "outputs/train_data/remediated_cap3/synthesis_telemetry.jsonl",
+  "synthesis_telemetry": "synthesis_telemetry.jsonl",
   "synthesis_telemetry_sha256": "8884768fb1b494a6ba179209545bf22671abc5bc18947f165d1067ffa88c96bc",
   "diffusion_online": {
     "policies": [
@@ -1784,5 +1784,21 @@
     ],
     "max_length": null
   },
-  "built_at": "2026-07-15T18:08:11.305055+00:00"
+  "built_at": "2026-07-15T18:08:11.305055+00:00",
+  "schema_version": 2,
+  "dataset_id": "remediated_cap3",
+  "immutable": true,
+  "trace_id": null,
+  "artifacts": [
+    {
+      "path": "records.jsonl",
+      "sha256": "da591852fd37b88f0dc04267b66528add02463549a47d8ce0693e4a42e6115a3",
+      "size": 2490273
+    },
+    {
+      "path": "stats.json",
+      "sha256": "941aeb40d6c579776454873911c497a7eb36617d1c9b7c8056e73206fb4d41f1",
+      "size": 10477
+    }
+  ]
 }

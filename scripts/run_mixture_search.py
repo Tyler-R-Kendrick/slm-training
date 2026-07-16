@@ -15,7 +15,7 @@ from pathlib import Path
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--out", type=Path, default=Path("outputs/mixtures"))
+    parser.add_argument("--out", type=Path, default=Path("outputs/data/mixture"))
     parser.add_argument(
         "--summary-out",
         type=Path,

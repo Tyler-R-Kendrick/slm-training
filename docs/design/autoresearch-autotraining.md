@@ -231,7 +231,7 @@ become deterministic roots:
 ```bash
 python -m scripts.build_train_data \
   --source existing \
-  --derive-from outputs/train_data/<old>/records.jsonl \
+  --derive-from outputs/data/train/<old>/records.jsonl \
   --version <new> --immutable
 ```
 

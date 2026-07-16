@@ -93,6 +93,7 @@ export-annotations = "scripts.export_annotations:main"
 sync-checkpoints = "scripts.sync_checkpoints:main"
 model-cycle = "scripts.model_cycle:main"
 autoresearch = "scripts.autoresearch:main"
+slm-data = "scripts.data_store:main"
 
 [tool.setuptools.packages.find]
 where = ["src", "."]

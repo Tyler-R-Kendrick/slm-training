@@ -90,7 +90,7 @@ hf buckets sync \
   ./outputs/runs/<run_id>/checkpoints
 
 python -m scripts.evaluate_model \
-  --test-dir outputs/test_data/v1 \
+  --test-dir outputs/data/eval/v1 \
   --run-id <run_id> \
   --ship-gates
 ```
@@ -104,8 +104,8 @@ Sidecars required next to `*.pt`: `.tokenizer.json`, `.meta.json`
 
 | Split | Source | Notes |
 | --- | --- | --- |
-| Train | `outputs/train_data/v1` (all sources + quality synth) for ship | Fixture upsample = demo only |
-| Eval | `outputs/test_data/v1` suites: smoke, held_out, adversarial, ood, `rico_held` | Ship claims need full `rico_held` (1500) when asserted |
+| Train | `outputs/data/train/v1` (all sources + quality synth) for ship | Fixture upsample = demo only |
+| Eval | `outputs/data/eval/v1` suites: smoke, held_out, adversarial, ood, `rico_held` | Ship claims need full `rico_held` (1500) when asserted |
 
 Leakage: structural fingerprints + train/test isolation
 ([adversarial-review.md](design/adversarial-review.md)).

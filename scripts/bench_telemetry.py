@@ -14,7 +14,7 @@ from slm_training.runtime.telemetry import CycleTelemetry, bind_telemetry
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--train-dir", type=Path, default=Path("outputs/train_data/v1"))
+    parser.add_argument("--train-dir", type=Path, default=Path("outputs/data/train/v1"))
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--train-steps", type=int, default=8)
     parser.add_argument("--batch-size", type=int, default=4)

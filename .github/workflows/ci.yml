@@ -45,4 +45,4 @@ jobs:
       - name: Verify documented disjoint data build
         run: |
           python -m scripts.build_train_data --source all --version ci --synthesizer none
-          python -m scripts.build_test_data --source both --version ci --train-manifest outputs/train_data/ci/manifest.json
+          python -m scripts.build_test_data --source both --version ci --train-manifest outputs/data/train/ci/manifest.json

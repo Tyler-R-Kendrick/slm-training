@@ -144,7 +144,7 @@ def create_app(
     )
     deployments = DeploymentRegistry(deployment_root or Path("outputs/lineage/deployments"))
     comparisons = BlindedComparisonStore(
-        comparisons_path or Path("outputs/annotations/comparisons.jsonl")
+        comparisons_path or Path("outputs/data/annotation/comparisons.jsonl")
     )
 
     # Control-plane capability + job runner (only wired when execution is allowed).

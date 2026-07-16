@@ -27,7 +27,7 @@ node_modules/
 .env.local
 .env.*.local
 src/slm_training/resources/annotations/human_train.jsonl
-outputs/preferences/human_pairs.jsonl
+outputs/data/preference/human_pairs.jsonl
 .playwright-cli/
 test-results/
 playwright-report/

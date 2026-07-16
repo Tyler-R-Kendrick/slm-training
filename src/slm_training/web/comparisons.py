@@ -19,7 +19,7 @@ def _now() -> str:
 
 
 class BlindedComparisonStore:
-    def __init__(self, path: Path | str = Path("outputs/annotations/comparisons.jsonl")) -> None:
+    def __init__(self, path: Path | str = Path("outputs/data/annotation/comparisons.jsonl")) -> None:
         self.path = Path(path)
         self._lock = threading.RLock()
 

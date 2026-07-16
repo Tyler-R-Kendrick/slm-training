@@ -1,7 +1,7 @@
 {
   "version": "remediated_cap3",
   "source": "existing",
-  "derive_from": "src/slm_training/resources/train_data/remediated/records.jsonl",
+  "derive_from": "src/slm_training/resources/data/train/remediated/records.jsonl",
   "seed_path": null,
   "rico_path": null,
   "rico_hf_split": null,

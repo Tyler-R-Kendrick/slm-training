@@ -42,7 +42,7 @@ def test_suite_loader_falls_back_when_manifest_path_is_checkout_relative(
     record = ExampleRecord(id="s", prompt="p", openui="root = Stack([])")
     write_jsonl(suite_dir / "records.jsonl", [record])
     (tmp_path / "manifest.json").write_text(
-        '{"suites":{"smoke":"outputs/test_data/v1/suites/smoke/records.jsonl"}}\n'
+        '{"suites":{"smoke":"outputs/data/eval/v1/suites/smoke/records.jsonl"}}\n'
     )
     assert load_suite_records(tmp_path, "smoke") == [record]
 

@@ -227,7 +227,9 @@ export function Data({ navigate: _navigate }: { navigate: (to: string) => void }
       )}
 
       <Grid min="190px">
-        <StatTile label="Records" value={train.data?.record_count ?? stats?.record_count ?? "—"} accent="moss" sub={v === "examples" ? "built-in examples" : v ? `train_data/${v}` : "no data"} />
+        <StatTile label="Records" value={train.data?.record_count ?? stats?.record_count ?? "—"} accent="moss" sub={v === "examples" ? "built-in examples" : train.data?.path ?? "no data"} />
+        <StatTile label="Storage" value={train.data?.storage ?? "committed"} sub={train.data?.fingerprint?.slice(0, 12) ?? null} />
+        <StatTile label="Build trace" value={train.data?.trace_id?.slice(0, 12) ?? "—"} sub={train.data?.trace_id ? "W3C trace ID" : null} />
         <StatTile label="Collected" value={stats?.collected_count ?? "—"} />
         <StatTile label="Quality rejected" value={stats?.quality_rejected ?? "—"} accent={stats?.quality_rejected ? "failed" : undefined} />
         <StatTile label="Synthesizer" value={stats?.synthesizer ?? "—"} />

@@ -23,8 +23,8 @@ parsed as generator source.
 Generate verified roots and a machine-readable coverage report with:
 
 ```console
-generate-progspecs --count 16 --output outputs/progspec/programs.jsonl \
-  --coverage outputs/progspec/coverage.json
+generate-progspecs --count 16 --output outputs/data/programspec/programs.jsonl \
+  --coverage outputs/data/programspec/coverage.json
 ```
 
 ## Contract boundary

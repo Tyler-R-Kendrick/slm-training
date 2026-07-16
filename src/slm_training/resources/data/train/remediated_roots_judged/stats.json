@@ -1,7 +1,7 @@
 {
   "version": "remediated_roots_judged",
   "source": "existing",
-  "derive_from": "src/slm_training/resources/train_data/remediated_roots_judged/records.jsonl",
+  "derive_from": "src/slm_training/resources/data/train/remediated_roots_judged/records.jsonl",
   "seed_path": null,
   "rico_path": null,
   "rico_hf_split": null,
@@ -35,7 +35,7 @@
   "semantic_dropped": 0,
   "semantic_dropped_samples": [],
   "producer_inputs": {
-    "programspec_path": "outputs/progspec/programs.jsonl",
+    "programspec_path": "outputs/data/programspec/programs.jsonl",
     "programspec_count": 16,
     "programspec_seed": 0,
     "language_contract": true,

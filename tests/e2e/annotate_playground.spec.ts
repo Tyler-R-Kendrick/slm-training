@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 
-const FEEDBACK = path.resolve("outputs/annotations/feedback.jsonl");
+const FEEDBACK = path.resolve("outputs/data/annotation/feedback.jsonl");
 
 function feedbackCount(): number {
   if (!fs.existsSync(FEEDBACK)) return 0;

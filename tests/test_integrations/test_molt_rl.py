@@ -256,4 +256,8 @@ def test_lineage_dry_run_paid_guard_and_reconcile(
     reconciled = store.load_run("molt-smoke")
     assert reconciled.lifecycle_state == "screened"
     assert reconciled.recipe["molt_rl"]["claim"] == "hardware_smoke"
-    assert (run_root / "molt-smoke" / "rl_traces.jsonl").is_file()
+    trace_ref = json.loads((run_root / "molt-smoke" / "trace.json").read_text())
+    assert reconciled.trace_id == trace_ref["trace_id"]
+    assert (
+        Path(trace_ref["bundle"]) / "domain" / "molt" / "rl_traces.jsonl"
+    ).is_file()

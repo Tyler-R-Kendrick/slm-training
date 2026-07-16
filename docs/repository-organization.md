@@ -11,6 +11,7 @@ Keep one obvious owner for every tracked file. Before adding a path, search with
 | Runnable entrypoints and maintenance checks | `scripts/` |
 | Tests mirroring implementation domains | `tests/` |
 | Small committed inputs and expected artifacts | `src/slm_training/resources/` |
+| Git-published immutable model data | `src/slm_training/resources/data/<kind>/<id>/` |
 | Human-authored design, operations, and measured evidence | `docs/` |
 | OpenWiki-generated agent navigation | `docs/openwiki/` |
 | Self-contained Node/frontend packages | `src/apps/` |
@@ -21,6 +22,11 @@ The repository root is an allowlist for required manifests and cross-agent
 instructions. Application code and owned resources belong below `src/`; generated
 documentation belongs below `docs/`. Do not add a new root path without
 updating this guide and `scripts/repo_policy.py` in the same reviewed change.
+
+Ignored model inputs use `outputs/data/<kind>/<id>/`; raw correlated traces and
+logs use `outputs/traces/<trace-id>/`. Do not create new sibling data or trace
+roots. Use `slm_training.data.store.DataStore` and `slm-data` for resolution,
+publication, verification, and legacy migration.
 
 ## Moves and renames
 

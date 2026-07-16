@@ -208,6 +208,7 @@ def normalize_experience(
     tokenizer: Any,
     run_id: str,
     step: int,
+    trace_id: str | None = None,
 ) -> dict[str, Any]:
     sequences = [int(item) for item in _vector(experience.sequences)]
     action_mask = [bool(item) for item in _vector(experience.action_mask)]
@@ -237,6 +238,7 @@ def normalize_experience(
         "schema_version": TRACE_SCHEMA_VERSION,
         "engine": "molt",
         "run_id": run_id,
+        "trace_id": trace_id,
         "step": step,
         "group_id": str(_first(getattr(experience, "group_ids", None)) or ""),
         "rollout_id": str(_first(getattr(experience, "rollout_ids", None)) or ""),
@@ -259,6 +261,7 @@ def normalize_rollout_dumps(
     *,
     tokenizer: Any,
     run_id: str,
+    trace_id: str | None = None,
 ) -> int:
     import torch
 
@@ -274,6 +277,7 @@ def normalize_rollout_dumps(
                 tokenizer=tokenizer,
                 run_id=run_id,
                 step=int(match.group(1)),
+                trace_id=trace_id,
             )
             for experience in experiences
         )

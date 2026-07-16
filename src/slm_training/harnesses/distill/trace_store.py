@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterator
 
-TRACE_VERSION = 1
+TRACE_VERSION = 2
 
 # Config keys that change decode behavior (used for the decode-config hash).
 _DECODE_KEYS = (
@@ -205,11 +205,24 @@ class TraceStore:
     trace (checkpoint SHA, decode-config hash, labels).
     """
 
-    def __init__(self, root: Path | str) -> None:
+    def __init__(
+        self,
+        root: Path | str,
+        *,
+        run_id: str | None = None,
+        trace_id: str | None = None,
+        span_id: str | None = None,
+    ) -> None:
+        from slm_training.runtime.telemetry import current_trace
+
+        active = current_trace()
         self.root = Path(root)
         self.root.mkdir(parents=True, exist_ok=True)
         self.traces_path = self.root / "traces.jsonl"
         self.manifest_path = self.root / "manifest.json"
+        self.run_id = run_id or (active.run_id if active else None)
+        self.trace_id = trace_id or (active.trace_id if active else None)
+        self.span_id = span_id or (active.span_id if active else None)
 
     def __len__(self) -> int:
         if not self.traces_path.exists():
@@ -222,14 +235,20 @@ class TraceStore:
         digest = hashlib.sha256(
             json.dumps(trace, sort_keys=True, default=str).encode("utf-8")
         ).hexdigest()
-        trace_id = f"{index:08d}-{digest[:12]}"
-        row = {"trace_id": trace_id, **trace}
+        trajectory_id = f"{index:08d}-{digest[:12]}"
+        row = {
+            "trajectory_id": trajectory_id,
+            "trace_id": self.trace_id,
+            "span_id": self.span_id,
+            "run_id": self.run_id,
+            **trace,
+        }
         with self.traces_path.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(row, default=str) + "\n")
             handle.flush()
             os.fsync(handle.fileno())
         self._update_manifest(count=index + 1)
-        return trace_id
+        return trajectory_id
 
     def iter_traces(self) -> Iterator[dict[str, Any]]:
         if not self.traces_path.exists():
@@ -237,7 +256,10 @@ class TraceStore:
         with self.traces_path.open("r", encoding="utf-8") as handle:
             for line in handle:
                 if line.strip():
-                    yield json.loads(line)
+                    row = json.loads(line)
+                    if row.get("version") == 1 and "trajectory_id" not in row:
+                        row["trajectory_id"] = row.pop("trace_id", None)
+                    yield row
 
     def _update_manifest(self, *, count: int) -> None:
         now = datetime.now(timezone.utc).isoformat()
@@ -247,6 +269,8 @@ class TraceStore:
             "append_only": True,
             "count": count,
             "traces": str(self.traces_path.as_posix()),
+            "run_id": self.run_id,
+            "trace_id": self.trace_id,
             "updated_at": now,
         }
         if self.manifest_path.exists():
