@@ -222,6 +222,99 @@ def _matched_quality_check(
     )
 
 
+def _scope_corpus_check(
+    train_dir: Path, records: list[ExampleRecord]
+) -> dict[str, Any]:
+    """Scope-graded family invariants: identity echo, canonical round-trip,
+    typed-render fidelity, and preference-pair consistency."""
+    from slm_training.data.scope_extract import typed_render
+    from slm_training.harnesses.train_data.scope_corpus import scope_families
+
+    failures: list[dict[str, str]] = []
+    family_counts: Counter[str] = Counter()
+    for row in records:
+        family = str(row.meta.get("source_family") or "")
+        if family not in set(scope_families()):
+            continue
+        family_counts[family] += 1
+        _, marker, embedded = row.prompt.partition("---INPUT---\n")
+        if family.startswith("scope_identity"):
+            if not marker or embedded != row.openui:
+                failures.append({"id": row.id, "error": "identity echo mismatch"})
+        elif family.startswith("scope_canonical"):
+            if not marker or embedded == row.openui:
+                failures.append({"id": row.id, "error": "canonical pair is a no-op"})
+            elif family == "scope_canonical_document":
+                try:
+                    program = validate(embedded)
+                    if (program.serialized or embedded.strip()) != row.openui:
+                        failures.append(
+                            {"id": row.id, "error": "canonical round-trip drift"}
+                        )
+                except Exception as exc:  # noqa: BLE001 - evidence for the report
+                    failures.append({"id": row.id, "error": str(exc)})
+        elif family == "lexical_typed_map":
+            lexical_map = row.meta.get("lexical_map") or {}
+            rendered = typed_render(
+                str(lexical_map.get("terminal") or ""),
+                str(lexical_map.get("surface") or ""),
+            )
+            if rendered != row.openui:
+                failures.append({"id": row.id, "error": "typed render mismatch"})
+
+    pair_failures: list[dict[str, str]] = []
+    pairs_path = train_dir / "preference_pairs.jsonl"
+    pair_count = 0
+    if pairs_path.is_file():
+        for line_number, line in enumerate(
+            pairs_path.read_text(encoding="utf-8").splitlines(), start=1
+        ):
+            if not line.strip():
+                continue
+            pair = json.loads(line)
+            pair_count += 1
+            if pair.get("chosen") == pair.get("rejected"):
+                pair_failures.append(
+                    {"id": f"pair:{line_number}", "error": "chosen == rejected"}
+                )
+            if float(pair.get("chosen_score") or 0.0) <= float(
+                pair.get("rejected_score") or 0.0
+            ):
+                pair_failures.append(
+                    {"id": f"pair:{line_number}", "error": "chosen not ranked higher"}
+                )
+
+    grouped = {
+        prefix: sum(
+            count
+            for family, count in family_counts.items()
+            if family.startswith(prefix) or family == prefix
+        )
+        for prefix in (
+            "scope_identity",
+            "scope_canonical",
+            "scope_repair",
+            "lexical_typed_map",
+        )
+    }
+    ok = (
+        all(grouped.values())
+        and pair_count > 0
+        and not failures
+        and not pair_failures
+    )
+    return _check(
+        ok,
+        {
+            "family_counts": dict(sorted(family_counts.items())),
+            "group_counts": grouped,
+            "preference_pairs": pair_count,
+            "failures": failures[:20],
+            "pair_failures": pair_failures[:20],
+        },
+    )
+
+
 def build_report(
     *,
     first_train_dir: Path,
@@ -302,6 +395,8 @@ def build_report(
             "failures": roundtrip_failures[:20],
         },
     )
+    checks["scope_corpus"] = _scope_corpus_check(first_train_dir, first_records)
+
     contract = current_contract().to_dict()
     checks["deferred_language_surface"] = _check(
         True,

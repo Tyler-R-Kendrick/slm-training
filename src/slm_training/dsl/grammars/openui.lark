@@ -61,7 +61,9 @@ COMPONENT: /[A-Z][A-Za-z0-9_]*/
 NAME: /[a-z_][A-Za-z0-9_]*/
 STRING: /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/
 NUMBER: /-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?/
-BOOL: "true" | "false"
+// Priority beats NAME: the alternation makes BOOL a regex, which would
+// otherwise lose the string-literal tie-break and lex `true` as a ref.
+BOOL.2: "true" | "false"
 NULL: "null"
 
 COMMENT: /\/\/[^\n]*/ | /#[^\n]*/

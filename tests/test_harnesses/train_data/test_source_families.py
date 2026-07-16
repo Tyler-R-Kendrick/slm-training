@@ -245,3 +245,26 @@ def test_pipeline_parent_cap(tmp_path: Path) -> None:
     # The original seed record survives the cap.
     ids = capped["manifest"]["ids"]
     assert "t1" in ids
+
+
+def test_apply_parent_cap_per_family_groups_by_family() -> None:
+    records = [
+        ExampleRecord(
+            id=f"{family}_{i}",
+            prompt=f"p {family} {i}",
+            openui=CTA,
+            split="train",
+            meta={"root_parent_id": "a", "source_family": family},
+        )
+        for family in ("scope_identity_lexical", "scope_repair_lexical")
+        for i in range(3)
+    ]
+    # Cross-family cap keeps 2 rows for the whole parent...
+    kept_global, _ = apply_parent_cap(records, 2)
+    assert len(kept_global) == 2
+    # ...per-family cap keeps 2 per (family, parent) without cross-eviction.
+    kept_family, dropped = apply_parent_cap(records, 2, per_family=True)
+    assert len(kept_family) == 4
+    families = {r.meta["source_family"] for r in kept_family}
+    assert families == {"scope_identity_lexical", "scope_repair_lexical"}
+    assert all(d["reason"] == "max_records_per_parent" for d in dropped)

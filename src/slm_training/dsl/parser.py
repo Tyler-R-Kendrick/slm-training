@@ -20,6 +20,7 @@ from slm_training.dsl.schema import OUTPUT_KINDS, OutputKind
 
 _GRAMMAR = Path(__file__).with_name("grammars") / "openui.lark"
 _NUMBER = re.compile(r"-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?\Z")
+_TYPED_NODE = re.compile(r"[A-Z][A-Za-z0-9_]*\(.+\)\Z", re.DOTALL)
 
 
 def _backend(dsl: str | None = None):
@@ -79,6 +80,15 @@ def validate_output(
             _fragment_parser().parse(text, start="statement" if kind == "statement" else "expr")
         except UnexpectedInput as exc:
             raise ParseError(str(exc)) from exc
+        return text
+    if kind == "typed_node":
+        # Typed AST-node rendering (e.g. `true` -> `Boolean(true)`), not DSL
+        # surface. The strong check — the rendering matches its source token —
+        # is enforced where pairs are emitted (data.scope_extract.typed_render).
+        if _TYPED_NODE.fullmatch(text) is None:
+            raise ParseError(
+                f"typed_node output must look like Name(value); got {text!r}"
+            )
         return text
 
     tokens = lexical_tokens(text)
