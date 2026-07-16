@@ -1,7 +1,7 @@
 {
   "campaign": "E221 task-balanced exposure",
   "date_utc": "2026-07-16",
-  "status": "trained_exposure_falsified_evaluation_path_failed",
+  "status": "trained_evaluated_exposure_falsified_ship_gates_failed",
   "hypothesis": "The committed task-balanced mixture will reduce E219 record-repeat concentration under the exact matched recipe and may improve semantic coverage.",
   "baseline": {
     "run_id": "e219-schema-normalized-32step",
@@ -72,14 +72,41 @@
       "max_repeat_id": "render_sample_edit_268f71ed9621"
     }
   },
+  "evaluation": {
+    "eval_version": "remediated",
+    "record_count": 19,
+    "evaluated_at": "2026-07-16T13:53:17.490354+00:00",
+    "policy": {
+      "output_tokenizer": "lexer",
+      "compiler_decode_mode": "tree",
+      "schema_in_context": true,
+      "slot_contract_in_context": true,
+      "design_md_in_context": false,
+      "local_files_only": true,
+      "allow_unconstrained_fallback": false
+    },
+    "suites": {
+      "smoke": {"n": 3, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333, "structural_similarity": 0.20973333333333333, "component_type_recall": 0.16666666666666666, "placeholder_fidelity": 0.0, "reward_score": 0.4326666666666667},
+      "held_out": {"n": 5, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.16674, "component_type_recall": 0.05, "placeholder_fidelity": 0.0, "reward_score": 0.3822},
+      "adversarial": {"n": 4, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.25, "structural_similarity": 0.34924999999999995, "component_type_recall": 0.25, "placeholder_fidelity": 0.0, "reward_score": 0.15925},
+      "ood": {"n": 4, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.25265000000000004, "component_type_recall": 0.20833333333333331, "placeholder_fidelity": 0.0, "reward_score": 0.15925},
+      "rico_held": {"n": 3, "syntax_parse_rate": 1.0, "meaningful_program_rate": 0.0, "structural_similarity": 0.09006666666666667, "component_type_recall": 0.0, "placeholder_fidelity": 0.0, "reward_score": 0.0}
+    },
+    "fallback_count": 0,
+    "ship_gates": {"pass": false, "failure_count": 9},
+    "agentv": {"total": 5, "passed": 1, "failed": 4, "execution_errors": 0, "mean_score": 0.6},
+    "scoreboard": "outputs/autoresearch/e221-task-balanced-exposure-v4/runs/e221-canonical-task-balanced/scoreboard.json",
+    "note": "This strict evaluation supersedes the earlier permissive policy mismatch. Constrained fallback rate remains decoder-path telemetry; fallback_count is zero and unconstrained fallback was disabled."
+  },
   "honesty": {
     "training_started": true,
-    "evaluation_started": false,
+    "evaluation_started": true,
+    "evaluation_completed": true,
     "checkpoint_written": true,
     "checkpoint_synced": false,
     "ship_gates": false,
     "promoted": false
   },
   "conclusion": "Task balancing increased unique records but did not improve effective exposure because an undersized renderer cell was repeated 18 times. The exposure hypothesis is falsified; future sampler work must account for cell capacity rather than only task and family weights.",
-  "next_action": "Evaluate the existing v4 checkpoint against canonical eval:remediated, then test a capacity-aware sampler as a new hypothesis."
+  "next_action": "Test a generalized capacity-aware sampler that limits replacement concentration according to cell capacity, after reconciling the branch with latest main."
 }

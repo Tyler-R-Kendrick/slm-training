@@ -1,7 +1,7 @@
-# E221 — task-balanced exposure launch preflight
+# E221 — task-balanced exposure diagnostic
 
-Status: **training completed; exposure hypothesis falsified; evaluation path failed;
-no checkpoint promoted**.
+Status: **training and strict five-suite evaluation completed; exposure hypothesis
+falsified; ship gates failed; no checkpoint promoted**.
 
 E219 drew 128 examples from the corrected 480-record E218 corpus but exposed
 only 29.90 effective records. E221 tests whether the committed task-balanced
@@ -30,8 +30,27 @@ renderer row was drawn 18 times. Therefore the exposure hypothesis is falsified:
 task balancing alone moves concentration into undersized task/family cells and
 does not provide capacity-aware sampling.
 
-Evaluation did not start because the typed compiler still targeted nonexistent
-`outputs/data/eval/v1`. The complete 19-record, five-suite `remediated` snapshot
-is now published as canonical `eval:remediated`, and a typed `eval_version` knob
-replaces the hardcoded path. No ship claim is made until that checkpoint is
-evaluated through the canonical snapshot.
+The campaign's initial evaluation did not start because the typed compiler
+targeted nonexistent `outputs/data/eval/v1`. The complete 19-record, five-suite
+`remediated` snapshot is now published as canonical `eval:remediated`, and a
+typed `eval_version` knob replaces the hardcoded path. The existing checkpoint
+was then evaluated against that snapshot with tree decoding, lexer output,
+schema and slot-contract context, local-only weights, and unconstrained fallback
+disabled.
+
+| Suite | n | syntax | meaningful parse | structure | component recall | fidelity | reward |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| smoke | 3 | 1.0000 | 0.3333 | 0.2097 | 0.1667 | 0.0000 | 0.4327 |
+| held_out | 5 | 1.0000 | 0.0000 | 0.1667 | 0.0500 | 0.0000 | 0.3822 |
+| adversarial | 4 | 1.0000 | 0.2500 | 0.3492 | 0.2500 | 0.0000 | 0.1593 |
+| ood | 4 | 1.0000 | 0.0000 | 0.2527 | 0.2083 | 0.0000 | 0.1593 |
+| rico_held | 3 | 1.0000 | 0.0000 | 0.0901 | 0.0000 | 0.0000 | 0.0000 |
+
+Ship gates failed nine checks; AgentV passed 1/5 suite records with no execution
+errors. `fallback_count` was zero for every suite and the persisted policy has
+`allow_unconstrained_fallback=false`. The separately reported
+`constrained_fallback_rate` therefore remains decoder-path telemetry and must not
+be interpreted as permission to emit unconstrained text. An earlier permissive
+evaluation was superseded by this strict run. The result confirms that lexical
+validity is deterministic here while meaningful structure and fidelity remain
+the quality bottlenecks.
