@@ -225,6 +225,34 @@ def test_completion_forest_enforces_generated_schema_arity(monkeypatch) -> None:
     assert set(complete.candidate_ids) == {tokenizer.token_to_id[")"]}
 
 
+def test_completion_forest_encodes_generated_enum_with_literal_channel(
+    monkeypatch,
+) -> None:
+    from slm_training.dsl.grammar.fastpath import compiler_draft
+
+    tokenizer = DSLNativeTokenizer.build()
+    schema = {
+        "$defs": {
+            "Stack": {
+                "properties": {
+                    "children": {"type": "array"},
+                    "align": {"type": "string", "enum": ["schema-only"]},
+                },
+                "required": ["children"],
+            }
+        },
+        "properties": {"Stack": {}},
+    }
+    monkeypatch.setattr(compiler_draft, "_official_schema", lambda: schema)
+    prefix = [
+        tokenizer.bos_id,
+        *tokenizer.encode("root=Stack([] ,", add_special=False),
+    ]
+    forest = build_completion_forest(tokenizer, prefix)
+    expected = tuple(tokenizer.encode('"schema-only"', add_special=False))
+    assert [path.token_ids[: len(expected)] for path in forest.paths] == [expected]
+
+
 def test_active_call_ignores_nested_array_and_call_commas() -> None:
     from slm_training.dsl.grammar.fastpath import compiler_draft
     from slm_training.dsl.grammar.fastpath.engine import OpenUIIncrementalEngine
@@ -288,16 +316,19 @@ def test_completion_forest_tracks_forward_binder_scope() -> None:
 def test_gold_decisions_follow_compiler_forest() -> None:
     tokenizer = DSLNativeTokenizer.build()
     target = tokenizer.encode(
-        'root=Card([title])\ntitle=TextContent(":hero.title")',
+        'root=Card([title,body])\ntitle=TextContent(":hero.title")\n'
+        'body=TextContent(":hero.body")',
         add_special=True,
     )
     positions = gold_compiler_decision_positions(
-        tokenizer, target, slot_contract=[":hero.title"]
+        tokenizer, target, slot_contract=[":hero.title", ":hero.body"]
     )
     selected = {tokenizer.id_to_token[target[position]] for position in positions}
     assert {"<BIND_0>", "Card", "<BIND_1>", "TextContent"} <= selected
     kinds = {decision.kind for decision in gold_compiler_decisions(tokenizer, target)}
-    assert {"bind", "component_root", "component_bound", "struct"} <= kinds
+    assert {"bind", "component_root", "component_bound"} <= kinds
+    assert "grammar_rsqb" in kinds
+    assert "grammar_comma" in kinds
 
 
 def test_grammar_state_advances_lexer_literals_as_source() -> None:
@@ -338,8 +369,12 @@ def test_compiler_alignment_can_stratify_grammar_decision_kinds() -> None:
     record = ExampleRecord(
         id="alignment-stratified",
         prompt="card",
-        openui='root = Card([title])\ntitle = TextContent(":hero.title")',
-        placeholders=[":hero.title"],
+        openui=(
+            'root = Card([title, body])\n'
+            'title = TextContent(":hero.title")\n'
+            'body = TextContent(":hero.body")'
+        ),
+        placeholders=[":hero.title", ":hero.body"],
         split="train",
         source="fixture",
     )
@@ -350,6 +385,8 @@ def test_compiler_alignment_can_stratify_grammar_decision_kinds() -> None:
     assert metrics["compiler_alignment_bind_rows"] == 1
     assert metrics["compiler_alignment_component_root_rows"] == 1
     assert metrics["compiler_alignment_component_bound_rows"] == 1
+    assert metrics["compiler_alignment_grammar_rsqb_rows"] == 1
+    assert metrics["compiler_alignment_grammar_comma_rows"] == 1
 
 
 def test_tree_verifier_packs_prefix_nodes_and_avoids_full_projection() -> None:

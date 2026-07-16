@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import Any, Literal
@@ -46,6 +47,8 @@ def _token_piece(tokenizer: Any, token_id: int) -> str:
     raw = tokenizer.id_to_token.get(int(token_id), "")
     if raw == "NL":
         return "\n"
+    if raw in {"LIT_STR", "LIT_END"}:
+        return '"'
     decoded = tokenizer.decode([int(token_id)])
     if decoded or raw.startswith(("<BIND_", "<SYM_", "<STATE_")):
         return decoded
@@ -67,6 +70,25 @@ def _semantic_kind(tokenizer: Any, token_id: int) -> str:
     if piece.startswith(":") or piece.startswith("<SYM_"):
         return "symbol"
     return "structural"
+
+
+def _grammar_terminal_kind(
+    tokenizer: Any, token_id: int, terminals: tuple[str, ...]
+) -> str:
+    """Classify structural choices by the active Lark terminal."""
+    semantic = _semantic_kind(tokenizer, token_id)
+    if semantic not in {"struct", "structural"}:
+        return semantic
+    matches = [
+        terminal
+        for terminal in terminals
+        if token_id
+        in (allowed_id_set(tokenizer, frozenset({terminal})) or set())
+    ]
+    if not matches:
+        return semantic
+    terminal = min(matches).lower().strip("_").replace("$", "end_")
+    return f"grammar_{terminal}"
 
 
 def _at_declaration_value(tokenizer: Any, prefix_ids: list[int]) -> bool:
@@ -263,9 +285,9 @@ def _active_call(state: Any) -> tuple[str, int, int] | None:
     return None
 
 
-def _schema_enum_ids(
+def _schema_enum_sequences(
     tokenizer: Any, state: Any, schema: dict[str, Any]
-) -> set[int] | None:
+) -> tuple[tuple[int, ...], ...] | None:
     active = _active_call(state)
     if active is None:
         return None
@@ -280,14 +302,12 @@ def _schema_enum_ids(
     values = (properties.get(names[index]) or {}).get("enum")
     if not values:
         return None
-    ids = set()
+    sequences: set[tuple[int, ...]] = set()
     for value in values:
-        for key in (value, f"STR:{value}"):
-            token_id = tokenizer.token_to_id.get(key)
-            if token_id is not None:
-                ids.add(int(token_id))
-                break
-    return ids
+        encoded = tokenizer.encode(json.dumps(value), add_special=False)
+        if encoded:
+            sequences.add(tuple(int(token_id) for token_id in encoded))
+    return tuple(sorted(sequences))
 
 
 def _schema_slot_type(
@@ -405,15 +425,17 @@ def build_completion_forest(
             if _semantic_kind(tokenizer, token_id) != "component"
             or _token_piece(tokenizer, token_id) in component_names
         }
-    enum_ids = _schema_enum_ids(tokenizer, engine, schema) if schema else None
-    if enum_ids is not None:
-        candidates = set(enum_ids)
+    enum_sequences = (
+        _schema_enum_sequences(tokenizer, engine, schema) if schema else None
+    )
+    if enum_sequences is not None:
+        candidates = {sequence[0] for sequence in enum_sequences if sequence}
     schema_type = _schema_slot_type(engine, schema) if schema else None
     schema_slot = _schema_slot_name(engine, schema) if schema else None
     type_terminals = _schema_type_terminals(schema_type)
     arity = _schema_call_arity(engine, schema) if schema else None
     current_started = arity[3] if arity is not None else False
-    if type_terminals is not None and enum_ids is None and not current_started:
+    if type_terminals is not None and enum_sequences is None and not current_started:
         typed_ids = allowed_id_set(tokenizer, type_terminals) or set()
         candidates &= typed_ids
         if schema_type == "string" and slot_contract:
@@ -531,25 +553,40 @@ def build_completion_forest(
     }
     paths: list[CompletionPath] = []
     max_path_tokens = max(1, int(max_path_tokens))
-    for candidate in sorted(candidates - specials):
+    candidate_sequences = (
+        enum_sequences
+        if enum_sequences is not None
+        else tuple((candidate,) for candidate in sorted(candidates - specials))
+    )
+    for sequence in candidate_sequences:
+        if not sequence:
+            continue
+        candidate = int(sequence[0])
         if candidate == int(tokenizer.eos_id):
             paths.append(CompletionPath((candidate,), "eos"))
             continue
-        piece = _token_piece(tokenizer, candidate)
         branch = OpenUIIncrementalEngine(engine.grammar_path)
         if not branch.set_prefix(prefix_text):
             continue
-        admitted = branch.probe_chunk(piece)
-        if admitted is None:
-            admitted = branch.set_prefix(prefix_text + piece)
-        elif admitted:
-            admitted = branch.advance(piece)
+        branch_text = prefix_text
+        admitted = True
+        for token_id in sequence:
+            piece = _token_piece(tokenizer, int(token_id))
+            probe = branch.probe_chunk(piece)
+            if probe is None:
+                admitted = branch.set_prefix(branch_text + piece)
+            elif probe:
+                admitted = branch.advance(piece)
+            else:
+                admitted = False
+            if not admitted:
+                break
+            branch_text += piece
         # InteractiveParser accepted the edge and exposes at least one follow
         # terminal, which is the exact CFG reachability guarantee we need.
         if not admitted or not branch.next_terminals():
             continue
-        drafted = [int(candidate)]
-        branch_text = prefix_text + piece
+        drafted = [int(token_id) for token_id in sequence]
         while len(drafted) < max_path_tokens:
             forced = force_next_token_id(branch, tokenizer, branch_text)
             if forced is None or forced in specials:
@@ -601,7 +638,9 @@ def gold_compiler_decisions(
             continue
         path = max(matches, key=lambda candidate: len(candidate.token_ids))
         if len(set(forest.candidate_ids)) > 1:
-            kind = path.kind
+            kind = _grammar_terminal_kind(
+                tokenizer, int(path.token_ids[0]), forest.terminals
+            )
             if kind == "component" and _at_declaration_value(
                 tokenizer, list(ids[:cursor])
             ):

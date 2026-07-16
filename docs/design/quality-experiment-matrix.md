@@ -816,6 +816,15 @@ but recursively extends legal children until the token cap; syntax and
 meaningful parse remain 0.0. E201 is not promotable. Full evidence:
 [iter-e200-e204-layout-role-compiler-20260716.md](iter-e200-e204-layout-role-compiler-20260716.md).
 
+E205–E207 split structural alignment by active Lark terminal instead of one
+tokenizer-level `struct` bucket. A bounded 64-record audit found 134 list-close
+and 69 list-extend decisions; the matched E205 train supervises each grammar
+terminal class. E207 adds generated-schema enum completion paths through the
+typed literal channel. Syntax reaches 1.0, structure 0.3125, and compiler
+fallback falls to zero, but empty bound stacks keep meaningful parse and
+component recall at 0.0. E205 is not promotable. Full evidence:
+[iter-e205-e207-lark-terminal-alignment-20260716.md](iter-e205-e207-lark-terminal-alignment-20260716.md).
+
 These rows are registered under `--matrix v8`; `--list` prints definitions
 without building data or starting a run. They require the lexer-native parent
 contract and unchanged honest five-suite gates. No result or champion is claimed.

@@ -1,0 +1,106 @@
+{
+  "campaign": "E205-E207 Lark-terminal alignment and schema enum paths",
+  "date_utc": "2026-07-16",
+  "honesty": {
+    "classification": "cpu diagnostic subset",
+    "ship_gates": false,
+    "promoted": false,
+    "checkpoint_sync": "disabled for scratch diagnostics",
+    "design_md_in_context": false,
+    "suite": "smoke",
+    "suite_n": 1
+  },
+  "decision_audit": {
+    "corpus": "e177_semantic_judge_v2",
+    "selection": "first 64 committed records",
+    "selection_reason": "deterministic bounded audit matching the maximum row exposure of a 32-step batch-4 train; exhaustive 496-row replay was stopped after exceeding five minutes without partial output",
+    "records": 64,
+    "decisions": 1211,
+    "kinds": {
+      "bind": 285,
+      "component_bound": 133,
+      "component_root": 64,
+      "grammar_comma": 69,
+      "grammar_nl": 173,
+      "grammar_rpar": 202,
+      "grammar_rsqb": 134,
+      "lit": 39,
+      "sym": 112
+    }
+  },
+  "train": {
+    "id": "E205",
+    "run_id": "e205-lark-terminal-stratified-32step",
+    "checkpoint": "outputs/runs/e205-lark-terminal-stratified-32step/checkpoints/last.pt",
+    "checkpoint_sha256": "34a04c836d81783728289715fdc1d92ae6632b5d05827860dac2af6563616efa",
+    "device": "cpu",
+    "steps": 32,
+    "batch_size": 4,
+    "seed": 0,
+    "context_backend": "hf",
+    "context_model": "HuggingFaceTB/SmolLM2-135M",
+    "context_frozen": true,
+    "schema_in_context": true,
+    "slot_contract_in_context": true,
+    "compiler_alignment_loss_weight": 1.0,
+    "compiler_alignment_stratified": true,
+    "last_loss": 8.199666976928711,
+    "wall_ms": 104238.522,
+    "seen_prompt_tokens": 17848,
+    "seen_target_tokens": 5928,
+    "data_manifest_sha256": "d59a94d9de0c3bfd0145faf27cc4ffab11fac73a4fc0f14e0390330aa8367803",
+    "mixture_sha256": "c141a4526c7cf3565ce21b6172b2f2d12c7f16c92d55f0f0ceca07751f4cacac",
+    "alignment_rows": 1124,
+    "alignment_loss_mean": 12.68272790312767,
+    "alignment_loss_first": 69.98541259765625,
+    "alignment_loss_last": 2.8457581996917725,
+    "decision_rows": {
+      "component_root": 128,
+      "component_bound": 126,
+      "grammar_comma": 128,
+      "grammar_nl": 128,
+      "grammar_rpar": 128,
+      "grammar_rsqb": 128
+    }
+  },
+  "evaluations": [
+    {
+      "id": "E206",
+      "run": "e206-lark-terminal-alignment-probe",
+      "raw_syntax": 0.0,
+      "meaningful_parse": 0.0,
+      "structure": 0.1917,
+      "component_recall": 0.0,
+      "placeholder_validity": 0.0,
+      "reward": 0.0,
+      "latency_p50_ms": 4019.58,
+      "tokens": 14,
+      "compiler_fallbacks": 1,
+      "prediction": "root = Stack([b1, b2], \"column\", \"m\",",
+      "agentv": "outputs/runs/e206-lark-terminal-alignment-probe/agentv/openui-model-ship-gates-2026-07-16t06-26-18-129647-00-00.eval.jsonl"
+    },
+    {
+      "id": "E207",
+      "run": "e207-schema-enum-sequence-probe",
+      "raw_syntax": 1.0,
+      "meaningful_parse": 0.0,
+      "structure": 0.3125,
+      "component_recall": 0.0,
+      "placeholder_validity": 0.0,
+      "reward": 0.0,
+      "latency_p50_ms": 6118.08,
+      "tokens": 70,
+      "compiler_fallbacks": 0,
+      "failure": "empty_root_stack",
+      "prediction": "root = Stack([b1, b2], \"column\", \"m\", \"end\", \"end\")\nb1 = Stack([], \"row\", \"m\", \"end\", \"end\")\nb2 = Stack([], \"column\", \"m\", \"end\")",
+      "agentv": "outputs/runs/e207-schema-enum-sequence-probe/agentv/openui-model-ship-gates-2026-07-16t06-31-06-070735-00-00.eval.jsonl"
+    }
+  ],
+  "implementation": [
+    "Structural gold decisions are stratified by the active Lark terminal that maps to the chosen token; terminal names come from parser state rather than output strings.",
+    "Generated schema enum values are encoded through the tokenizer and represented as exact multi-token completion paths, including typed literal byte channels.",
+    "Typed LIT_STR and LIT_END symbols advance Lark as opening and closing quote lexemes, preserving valid partial lexical symbols."
+  ],
+  "conclusion": "Terminal-derived alignment fixes close-versus-extend ranking and generated enum paths remove the compiler fallback. E207 is syntax-valid but semantically trivial with empty bound stacks, meaningful parse 0.0, and component recall 0.0. E205 is not promotable.",
+  "next_hypothesis": "Use generated reference roles and gold AST child occupancy to supervise empty-versus-populated collection decisions, without matching component or prompt strings."
+}
