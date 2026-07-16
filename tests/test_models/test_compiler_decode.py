@@ -78,6 +78,11 @@ def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> 
     assert forest.coverage == "complete"
     assert tokenizer.sym_id(0) in forest.candidate_ids
     assert tokenizer.sym_id(1) not in forest.candidate_ids
+    # Every emitted edge is accepted by the grammar and has a reachable
+    # continuation; candidate policy must come from parser state, not from
+    # a list of forbidden punctuation or component names.
+    assert forest.paths
+    assert all(path.token_ids for path in forest.paths)
 
 
 def test_completion_forest_uses_schema_property_order_for_enums(monkeypatch) -> None:

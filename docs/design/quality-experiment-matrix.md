@@ -728,6 +728,11 @@ were repaired, and E165 reports zero seeded unconstrained fallbacks. Parse still
 fails, so the remaining lever is semantic model choice within the certified
 tree—not undertraining or weakened gates.
 
+E166–E168 further separate syntax from meaningful-program quality:
+`syntax_parse_rate=0.6667`, `meaningful_program_rate=0.0`, and zero compiler or
+seeded fallbacks in E168. See
+[iter-e166-e168-semantic-boundary-20260715.md](iter-e166-e168-semantic-boundary-20260715.md).
+
 These rows are registered under `--matrix v8`; `--list` prints definitions
 without building data or starting a run. They require the lexer-native parent
 contract and unchanged honest five-suite gates. No result or champion is claimed.
