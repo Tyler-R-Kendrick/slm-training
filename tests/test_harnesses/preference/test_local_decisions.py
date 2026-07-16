@@ -74,6 +74,74 @@ def test_counterfactual_requires_same_state_proof() -> None:
         events_from_trace(trace)
 
 
+def test_counterfactual_requires_legal_good_and_bad_tokens() -> None:
+    trace = _trace()
+    trace["steps"] = []
+    trace["events"] = [
+        {
+            "kind": "counterfactual_decision",
+            "same_state_verified": True,
+            "pre_canvas": [1, 2, 2],
+            "position": 1,
+            "good_token_ids": [3],
+            "bad_token_ids": [4],
+            "legal_token_ids": [3],
+        }
+    ]
+    with pytest.raises(ValueError, match="qualified judge probe"):
+        events_from_trace(trace)
+
+
+def test_counterfactual_requires_labels_recomputed_from_judge_probe() -> None:
+    trace = _trace()
+    trace["steps"] = []
+    metrics = {
+        "placeholder_fidelity": 1.0,
+        "component_recall": 1.0,
+        "structural_similarity": 1.0,
+        "reward": 1.0,
+    }
+    probe = {
+        "kind": "counterfactual_probe",
+        "same_state_verified": True,
+        "state_hash": "state",
+        "pre_canvas": [1, 2, 2],
+        "position": 1,
+        "legal_token_ids": [3, 4],
+        "good_token_ids": [3],
+        "bad_token_ids": [4],
+        "qualified": True,
+        "verifier": {
+            "name": "independent_judge+meaningful_program+pareto_v1",
+        },
+        "candidates": [
+            {"token_id": 3, "verified": True, "metrics": metrics},
+            {
+                "token_id": 4,
+                "verified": False,
+                "metrics": {name: 0.0 for name in metrics},
+            },
+        ],
+    }
+    decision = {
+        "kind": "counterfactual_decision",
+        "same_state_verified": True,
+        "state_hash": "state",
+        "pre_canvas": [1, 2, 2],
+        "position": 1,
+        "good_token_ids": [3],
+        "bad_token_ids": [4],
+        "legal_token_ids": [3, 4],
+    }
+    trace["events"] = [probe, decision]
+
+    event = events_from_trace(trace)[0]
+    assert event.evidence_kind == "counterfactual"
+    decision["good_token_ids"] = [4]
+    with pytest.raises(ValueError, match="does not match judge probe"):
+        events_from_trace(trace)
+
+
 def test_event_rejects_cross_group_split() -> None:
     event = events_from_trace(_trace())[0]
     data = event.to_dict()
@@ -102,6 +170,27 @@ def test_build_local_events_cli(tmp_path, capsys) -> None:
     assert data["source_record_fingerprint"] == "source-sha"
     assert data["policy_checkpoint_sha"] == "checkpoint-sha"
     assert json.loads(capsys.readouterr().out)["events"] == 1
+
+
+def test_build_local_events_can_require_counterfactual_evidence(
+    tmp_path, capsys
+) -> None:
+    traces = tmp_path / "traces.jsonl"
+    traces.write_text(json.dumps(_trace()) + "\n", encoding="utf-8")
+    out = tmp_path / "events.jsonl"
+    assert main(
+        [
+            "build-local-events",
+            "--traces",
+            str(traces),
+            "--out",
+            str(out),
+            "--evidence-kind",
+            "counterfactual",
+        ]
+    ) == 0
+    assert load_decision_events(out) == []
+    assert json.loads(capsys.readouterr().out)["events"] == 0
 
 
 def test_manifest_rejects_mixed_policy_identities() -> None:

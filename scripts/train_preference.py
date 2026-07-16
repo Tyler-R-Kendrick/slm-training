@@ -86,6 +86,12 @@ def main(argv: list[str] | None = None) -> int:
     events.add_argument("--manifest-out", type=Path, default=None)
     events.add_argument("--dataset-id", default=None)
     events.add_argument("--source-record-manifest", type=Path, default=None)
+    events.add_argument(
+        "--evidence-kind",
+        choices=("all", "constraint_shadow", "counterfactual"),
+        default="all",
+        help="Filter mined events; semantic training must use counterfactual.",
+    )
 
     local = sub.add_parser("train-local", help="Train on exact local decision events")
     local.add_argument("--checkpoint", type=Path, required=True)
@@ -124,6 +130,8 @@ def main(argv: list[str] | None = None) -> int:
             event
             for trace in traces
             for event in events_from_trace(trace)
+            if args.evidence_kind == "all"
+            or event.evidence_kind == args.evidence_kind
         ]
         count = write_decision_events(args.out, mined)
         if args.manifest_out is not None:

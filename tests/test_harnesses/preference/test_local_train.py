@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+from dataclasses import replace
 
 import pytest
 
@@ -55,6 +56,13 @@ def test_ftpo_gradient_moves_good_above_bad() -> None:
     assert logits.grad[3] > 0
     assert metrics["chosen_win"] == 0.0
     assert metrics["active_weight"] == 1.0
+
+
+def test_training_rejects_constraint_shadows_as_semantic_labels() -> None:
+    model = _model()
+    shadow = replace(_event(), evidence_kind="constraint_shadow")
+    with pytest.raises(ValueError, match="decoder legality"):
+        train_local_decisions(model, [shadow], objective="ce_margin", steps=1)
 
 
 def test_reference_tether_excludes_target_tokens_within_grace() -> None:
