@@ -1,0 +1,18 @@
+{
+  "experiment_id": "E124",
+  "date": "2026-07-15",
+  "kind": "decoder_isolation",
+  "parent": "E123",
+  "checkpoint": "outputs/runs/iter-e123b-judged-20260715/e123_judged_32step_b/checkpoints/last.pt",
+  "checkpoint_sha256": "82885e6553f52d878082865f60bd3139364a2c0a7b59a49304d63c682f2152e7",
+  "device": "cpu",
+  "prompt_count": 1,
+  "variants": [
+    {"name": "constrained", "parse_rate": 0.0, "structural_similarity": 0.1917, "reward": 0.0, "latency_ms_p50": 24901.75, "fallback_rate": 1.0, "forwards": 115, "tokens_emitted": 115, "dfa_syncs": 2107, "pick_ms": 4789.948},
+    {"name": "unconstrained", "parse_rate": 0.0, "structural_similarity": 0.25, "reward": 0.0, "latency_ms_p50": 836.45, "fallback_rate": 0.0, "forwards": 0, "tokens_emitted": 0, "dfa_syncs": 59, "pick_ms": 0.545}
+  ],
+  "agentv": ["outputs/runs/iter-e124-decoder-20260715/iter-e124-constrained/agentv/openui-model-ship-gates-2026-07-16t00-58-11-608871-00-00.eval.jsonl", "outputs/runs/iter-e124-decoder-20260715/iter-e124-unconstrained/agentv/openui-model-ship-gates-2026-07-16t00-57-53-378417-00-00.eval.jsonl"],
+  "finding": "The learned distribution is invalid even without grammar, while constrained admission adds roughly 24 seconds and still falls back. This is evidence for two independent problems: model quality and candidate-admission cost.",
+  "decision": "Do not disable grammar for serving and do not force illegal candidates. Optimize candidate admission and improve training/data quality separately.",
+  "honesty": "diagnostic_only; no ship gate claim"
+}
