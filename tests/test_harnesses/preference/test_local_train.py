@@ -84,6 +84,23 @@ def test_set_objective_and_balancing_fail_closed() -> None:
     assert schedule == [event, event, event]
 
 
+def test_single_objective_filters_set_valued_events() -> None:
+    model = _model()
+    single = _event(
+        good=(model.tokenizer.eos_id,), bad=(model.tokenizer.mask_id,), group="single"
+    )
+    multiple = _event(
+        good=(model.tokenizer.eos_id, model.tokenizer.pad_id),
+        bad=(model.tokenizer.mask_id,),
+        group="multiple",
+    )
+    summary = train_local_decisions(
+        model, [single, multiple], objective="ftpo_single", steps=1
+    )
+    assert summary["train_events"] == 1
+    assert summary["excluded_train_events"] == 1
+
+
 def _model() -> TwoTowerModel:
     record = ExampleRecord(
         id="a",
