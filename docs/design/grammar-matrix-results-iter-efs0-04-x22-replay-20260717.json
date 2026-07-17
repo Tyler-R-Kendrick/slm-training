@@ -1,0 +1,225 @@
+{
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "042a0f3c00bf62e0ab2f85e7822a0e6f1a353e21",
+    "code_dirty": true,
+    "components": {
+      "matrix.grammar": "v1",
+      "evals.scoring": "v10",
+      "harness.model_build.eval": "v6",
+      "gates.ship": "openui_ship_gates_v1"
+    },
+    "stamped_at": "2026-07-19T18:53:16.296788+00:00"
+  },
+  "matrix": "grammar-experiment-matrix-x",
+  "reference": "docs/design/quality-experiment-matrix.md",
+  "gate_policy": {
+    "smoke": {
+      "meaningful_program_rate": 0.66,
+      "structural_similarity": 0.35,
+      "component_type_recall": 0.35,
+      "placeholder_fidelity": 0.25,
+      "reward_score": 0.3
+    },
+    "held_out": {
+      "meaningful_program_rate": 0.4,
+      "structural_similarity": 0.3,
+      "component_type_recall": 0.3,
+      "placeholder_fidelity": 0.15
+    },
+    "adversarial": {
+      "meaningful_program_rate": 0.25,
+      "structural_similarity": 0.25,
+      "component_type_recall": 0.2
+    },
+    "ood": {
+      "meaningful_program_rate": 0.25,
+      "structural_similarity": 0.25,
+      "component_type_recall": 0.2
+    },
+    "rico_held": {
+      "meaningful_program_rate": 0.1,
+      "structural_similarity": 0.2,
+      "component_type_recall": 0.15
+    }
+  },
+  "halving_suites": [
+    "smoke",
+    "held_out",
+    "adversarial"
+  ],
+  "seeds": [
+    0
+  ],
+  "rico_eval_limit": 3,
+  "steps": 80,
+  "gen_steps": 8,
+  "confirmation_steps": 0,
+  "context_backend": "scratch",
+  "halving_enabled": false,
+  "survivors": [
+    {
+      "id": "X22",
+      "seed": 0
+    }
+  ],
+  "results": [
+    {
+      "id": "X22",
+      "run_id": "gx_x22_kapur_tree_edit",
+      "seed": 0,
+      "model_name": "tree_edit_diffusion",
+      "description": "D3 Kapur-style baseline: all-valid tree edits + value-guided search",
+      "checkpoint": "outputs/runs/gx_x22_kapur_tree_edit/checkpoints_s0/last.pt",
+      "checkpoint_sha256": "a9cfb450e8146089cb26b6df84e90a5073627c4e59a2933d16f69034ec802ff6",
+      "pass": false,
+      "failures": [
+        "smoke:meaningful_program_rate actual=0.3333333333333333 need>=0.66",
+        "smoke:structural_similarity actual=0.32166666666666666 need>=0.35",
+        "smoke:component_type_recall actual=0.25 need>=0.35",
+        "held_out:meaningful_program_rate actual=0.2 need>=0.4",
+        "held_out:component_type_recall actual=0.15 need>=0.3",
+        "adversarial:meaningful_program_rate actual=0.0 need>=0.25",
+        "adversarial:component_type_recall actual=0.08333333333333333 need>=0.2",
+        "ood:meaningful_program_rate actual=0.0 need>=0.25",
+        "ood:component_type_recall actual=0.14583333333333331 need>=0.2",
+        "rico_held:structural_similarity actual=0.18263333333333334 need>=0.2"
+      ],
+      "suites": {
+        "smoke": {
+          "parse_rate": 1.0,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.3333333333333333,
+          "meaningful_program_v1_rate": null,
+          "binding_aware_meaningful_v2_rate_strict": null,
+          "binding_aware_meaningful_v2_rate_coverage_conditioned": null,
+          "binding_aware_meaningful_v2_coverage": null,
+          "meaningful_metric_primary": null,
+          "meaningful_metric_versions": null,
+          "placeholder_fidelity": 0.5277777777777778,
+          "structural_similarity": 0.32166666666666666,
+          "reward_score": 0.8073333333333333,
+          "ast_node_f1": 0.21666666666666667,
+          "ast_edge_f1": 0.0,
+          "tree_edit_similarity": 0.32166666666666666,
+          "topology_quality_score": null,
+          "topology_structure_score": null,
+          "topology_trace_score": null,
+          "topology_efficiency_score": null,
+          "topology_composite": null,
+          "topology_telemetry": null,
+          "n": 3
+        },
+        "held_out": {
+          "parse_rate": 1.0,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.2,
+          "meaningful_program_v1_rate": null,
+          "binding_aware_meaningful_v2_rate_strict": null,
+          "binding_aware_meaningful_v2_rate_coverage_conditioned": null,
+          "binding_aware_meaningful_v2_coverage": null,
+          "meaningful_metric_primary": null,
+          "meaningful_metric_versions": null,
+          "placeholder_fidelity": 0.24,
+          "structural_similarity": 0.33941999999999994,
+          "reward_score": 0.5936,
+          "ast_node_f1": 0.3676190476190476,
+          "ast_edge_f1": 0.18,
+          "tree_edit_similarity": 0.33941999999999994,
+          "topology_quality_score": null,
+          "topology_structure_score": null,
+          "topology_trace_score": null,
+          "topology_efficiency_score": null,
+          "topology_composite": null,
+          "topology_telemetry": null,
+          "n": 5
+        },
+        "adversarial": {
+          "parse_rate": 1.0,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.0,
+          "meaningful_program_v1_rate": null,
+          "binding_aware_meaningful_v2_rate_strict": null,
+          "binding_aware_meaningful_v2_rate_coverage_conditioned": null,
+          "binding_aware_meaningful_v2_coverage": null,
+          "meaningful_metric_primary": null,
+          "meaningful_metric_versions": null,
+          "placeholder_fidelity": 0.4583333333333333,
+          "structural_similarity": 0.301125,
+          "reward_score": 0.62725,
+          "ast_node_f1": 0.28733766233766234,
+          "ast_edge_f1": 0.0,
+          "tree_edit_similarity": 0.301125,
+          "topology_quality_score": null,
+          "topology_structure_score": null,
+          "topology_trace_score": null,
+          "topology_efficiency_score": null,
+          "topology_composite": null,
+          "topology_telemetry": null,
+          "n": 4
+        },
+        "ood": {
+          "parse_rate": 1.0,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.0,
+          "meaningful_program_v1_rate": null,
+          "binding_aware_meaningful_v2_rate_strict": null,
+          "binding_aware_meaningful_v2_rate_coverage_conditioned": null,
+          "binding_aware_meaningful_v2_coverage": null,
+          "meaningful_metric_primary": null,
+          "meaningful_metric_versions": null,
+          "placeholder_fidelity": 0.20833333333333331,
+          "structural_similarity": 0.25855,
+          "reward_score": 0.54925,
+          "ast_node_f1": 0.21031746031746032,
+          "ast_edge_f1": 0.0,
+          "tree_edit_similarity": 0.25855,
+          "topology_quality_score": null,
+          "topology_structure_score": null,
+          "topology_trace_score": null,
+          "topology_efficiency_score": null,
+          "topology_composite": null,
+          "topology_telemetry": null,
+          "n": 4
+        },
+        "rico_held": {
+          "parse_rate": 1.0,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.6666666666666666,
+          "meaningful_program_v1_rate": null,
+          "binding_aware_meaningful_v2_rate_strict": null,
+          "binding_aware_meaningful_v2_rate_coverage_conditioned": null,
+          "binding_aware_meaningful_v2_coverage": null,
+          "meaningful_metric_primary": null,
+          "meaningful_metric_versions": null,
+          "placeholder_fidelity": 0.125,
+          "structural_similarity": 0.18263333333333334,
+          "reward_score": 0.7105,
+          "ast_node_f1": 0.24338624338624337,
+          "ast_edge_f1": 0.05555555555555556,
+          "tree_edit_similarity": 0.18263333333333334,
+          "topology_quality_score": null,
+          "topology_structure_score": null,
+          "topology_trace_score": null,
+          "topology_efficiency_score": null,
+          "topology_composite": null,
+          "topology_telemetry": null,
+          "n": 3
+        }
+      }
+    }
+  ],
+  "agent_evals": {
+    "schema": "AgentEvals JSONL",
+    "record_n": 5,
+    "sha256": "d86d4ed60a41f6c75a0d6c8be8ed36b73745f56978cd1ca283ab4bc838e3ab03"
+  },
+  "agentv_bundle": {
+    "benchmark_sha256": "f130b06b44faded7fd9eef52b4f162f877c8fd35f9a3441b1a25dc388d77e621",
+    "index_sha256": "fbffc2f78df570895d3b5876db02bd346fbcb5e7117d77509f969c13da2e84a9",
+    "local_path": "outputs/runs/gx_x22_kapur_tree_edit_s0/agentv/"
+  },
+  "source_commit": "7e2f5605e8fb9a874587f14fbe113aee904c9050",
+  "training_source_commit": "7e2f5605e8fb9a874587f14fbe113aee904c9050",
+  "evaluation_source_commit": "7e2f5605e8fb9a874587f14fbe113aee904c9050"
+}
