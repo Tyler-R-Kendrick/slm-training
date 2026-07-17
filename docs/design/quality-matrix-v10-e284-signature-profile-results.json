@@ -1,0 +1,5476 @@
+{
+  "objective": "ftpo_set",
+  "probability_space": "legal_tokens",
+  "gradient_scaling": "unit_norm",
+  "train_strata": "decision_kind",
+  "held_out_strata": "decision_signature",
+  "guard_objective_directions": {
+    "loss": "min",
+    "bad_probability_mass": "min",
+    "good_probability_mass": "max",
+    "mean_margin": "max"
+  },
+  "train_event_counts": {
+    "bind_declaration_root": 33,
+    "bind_reference_bound_buttons": 1,
+    "bind_reference_bound_children": 28,
+    "bind_reference_bound_fields": 1,
+    "bind_reference_bound_input": 2,
+    "bind_reference_root_children": 21,
+    "component_bound": 27,
+    "component_root": 32,
+    "grammar_comma": 25,
+    "grammar_lsqb": 1,
+    "grammar_rpar": 27,
+    "grammar_rsqb_bound_empty": 5,
+    "grammar_rsqb_bound_populated": 13,
+    "grammar_rsqb_root_populated": 37,
+    "lit": 28,
+    "sym": 30
+  },
+  "held_out_event_counts": {
+    "bind_declaration_root@ad51c5f1712d": 6,
+    "bind_reference_bound_children@0abaa8c52d18": 1,
+    "bind_reference_bound_children@1984b657df03": 1,
+    "bind_reference_bound_children@2ee3f35e1722": 1,
+    "bind_reference_bound_children@3372dde0d406": 2,
+    "bind_reference_bound_children@657128240a93": 1,
+    "bind_reference_root_children@20976f4f6708": 2,
+    "component_bound@00120edb53c5": 1,
+    "component_bound@55ee4064759d": 3,
+    "component_bound@7797914f31d9": 1,
+    "component_bound@8dbf7e9dcd02": 1,
+    "component_bound@8f1f99155bd2": 1,
+    "component_root@1ea5d4256f53": 1,
+    "component_root@f3c9df4a2c81": 4,
+    "grammar_comma@bba1934e88a1": 6,
+    "grammar_rpar@b02b0d02ba39": 5,
+    "grammar_rsqb_bound_empty@95bf1a516a1f": 1,
+    "grammar_rsqb_bound_empty@d9f9c3deceed": 1,
+    "grammar_rsqb_bound_populated@3cf40154baf5": 5,
+    "grammar_rsqb_root_populated@0ab5ce0081dd": 7,
+    "lit@5bd36d78f798": 4,
+    "lit@65de1a885d2c": 1,
+    "lit@8bf8d5927353": 2,
+    "lit@9e3d565a1f26": 1,
+    "sym@352819703f8e": 1,
+    "sym@ace1dbd36941": 1
+  },
+  "decision_signature_counts": {
+    "train": {
+      "bind_declaration_root@ad51c5f1712d": 33,
+      "bind_reference_bound_buttons@ff381b88dfd5": 1,
+      "bind_reference_bound_children@000b01b3a945": 1,
+      "bind_reference_bound_children@0abaa8c52d18": 1,
+      "bind_reference_bound_children@16b17b0b5637": 1,
+      "bind_reference_bound_children@1984b657df03": 2,
+      "bind_reference_bound_children@2d8ae03bed52": 1,
+      "bind_reference_bound_children@2ee3f35e1722": 1,
+      "bind_reference_bound_children@3372dde0d406": 1,
+      "bind_reference_bound_children@386644cd54e0": 1,
+      "bind_reference_bound_children@3ed093ac8ab9": 1,
+      "bind_reference_bound_children@5a4ec320a9ea": 1,
+      "bind_reference_bound_children@657128240a93": 1,
+      "bind_reference_bound_children@6ae33b7ede99": 1,
+      "bind_reference_bound_children@79aa044355c5": 1,
+      "bind_reference_bound_children@81d9dc21c4b1": 1,
+      "bind_reference_bound_children@8677fcba96e3": 3,
+      "bind_reference_bound_children@94da6d1cb427": 1,
+      "bind_reference_bound_children@996d80e9d797": 1,
+      "bind_reference_bound_children@a6b9d4495186": 2,
+      "bind_reference_bound_children@b8347ef92ecd": 1,
+      "bind_reference_bound_children@ba420063896b": 1,
+      "bind_reference_bound_children@d0781bfeeaee": 1,
+      "bind_reference_bound_children@d5a50c7c52ad": 1,
+      "bind_reference_bound_children@dbbd532cca09": 1,
+      "bind_reference_bound_children@dda7ee9401c9": 1,
+      "bind_reference_bound_fields@659855897d5e": 1,
+      "bind_reference_bound_input@8d886bf439fb": 1,
+      "bind_reference_bound_input@b910bf6bf56b": 1,
+      "bind_reference_root_children@20976f4f6708": 16,
+      "bind_reference_root_children@315d56c566e0": 1,
+      "bind_reference_root_children@68f77b95c994": 1,
+      "bind_reference_root_children@d02bd8f12629": 3,
+      "component_bound@1c5d423c4da8": 2,
+      "component_bound@21c4ff772801": 1,
+      "component_bound@478160063088": 1,
+      "component_bound@4a89bb7b4c07": 1,
+      "component_bound@55ee4064759d": 3,
+      "component_bound@6b2c19d12f62": 1,
+      "component_bound@6cdf6adec072": 1,
+      "component_bound@7a187d030b9c": 1,
+      "component_bound@815014101496": 2,
+      "component_bound@82679eae29c0": 1,
+      "component_bound@84321c29ce57": 1,
+      "component_bound@9c5fb123d970": 1,
+      "component_bound@a401892728c8": 1,
+      "component_bound@af20338de51e": 1,
+      "component_bound@baa8a8bd80af": 1,
+      "component_bound@d1cc71f7760b": 1,
+      "component_bound@d6ede3919fe9": 1,
+      "component_bound@e1e9d092f14f": 4,
+      "component_bound@eda6b905b5d3": 1,
+      "component_bound@eef5d1f216ef": 1,
+      "component_root@1ea5d4256f53": 11,
+      "component_root@f3c9df4a2c81": 21,
+      "grammar_comma@bba1934e88a1": 14,
+      "grammar_comma@f9accf594cdd": 11,
+      "grammar_lsqb@41f028bfecd8": 1,
+      "grammar_rpar@b02b0d02ba39": 27,
+      "grammar_rsqb_bound_empty@8784d5606167": 1,
+      "grammar_rsqb_bound_empty@95bf1a516a1f": 1,
+      "grammar_rsqb_bound_empty@a7956f9a8332": 1,
+      "grammar_rsqb_bound_empty@bb0d0fd3f097": 1,
+      "grammar_rsqb_bound_empty@f8b1cdb829e0": 1,
+      "grammar_rsqb_bound_populated@3cf40154baf5": 11,
+      "grammar_rsqb_bound_populated@f2a10fafe612": 2,
+      "grammar_rsqb_root_populated@0ab5ce0081dd": 37,
+      "lit@18fc5811b187": 1,
+      "lit@5bd36d78f798": 23,
+      "lit@8bf8d5927353": 2,
+      "lit@9e3d565a1f26": 2,
+      "sym@0521601293c3": 4,
+      "sym@0b3afd23ce05": 1,
+      "sym@352819703f8e": 1,
+      "sym@37a79285c48d": 2,
+      "sym@3f0bb559945f": 1,
+      "sym@486fd35a5445": 1,
+      "sym@4c15a9998d86": 1,
+      "sym@5a954246a0ea": 1,
+      "sym@5e483f0cbd80": 1,
+      "sym@5f8a03339111": 1,
+      "sym@60d7ebb1861d": 1,
+      "sym@6d1552f0952a": 1,
+      "sym@880d92567c59": 1,
+      "sym@9276ff7f8a15": 1,
+      "sym@9a854d6e2b62": 1,
+      "sym@9f5854694e0d": 1,
+      "sym@ace1dbd36941": 2,
+      "sym@ad44c48065f8": 1,
+      "sym@ce2805a0b45f": 1,
+      "sym@d3e51f23f913": 1,
+      "sym@da017c129915": 1,
+      "sym@e66506e91653": 4
+    },
+    "held_out": {
+      "bind_declaration_root@ad51c5f1712d": 6,
+      "bind_reference_bound_children@0abaa8c52d18": 1,
+      "bind_reference_bound_children@1984b657df03": 1,
+      "bind_reference_bound_children@2ee3f35e1722": 1,
+      "bind_reference_bound_children@3372dde0d406": 2,
+      "bind_reference_bound_children@657128240a93": 1,
+      "bind_reference_root_children@20976f4f6708": 2,
+      "component_bound@00120edb53c5": 1,
+      "component_bound@55ee4064759d": 3,
+      "component_bound@7797914f31d9": 1,
+      "component_bound@8dbf7e9dcd02": 1,
+      "component_bound@8f1f99155bd2": 1,
+      "component_root@1ea5d4256f53": 1,
+      "component_root@f3c9df4a2c81": 4,
+      "grammar_comma@bba1934e88a1": 6,
+      "grammar_rpar@b02b0d02ba39": 5,
+      "grammar_rsqb_bound_empty@95bf1a516a1f": 1,
+      "grammar_rsqb_bound_empty@d9f9c3deceed": 1,
+      "grammar_rsqb_bound_populated@3cf40154baf5": 5,
+      "grammar_rsqb_root_populated@0ab5ce0081dd": 7,
+      "lit@5bd36d78f798": 4,
+      "lit@65de1a885d2c": 1,
+      "lit@8bf8d5927353": 2,
+      "lit@9e3d565a1f26": 1,
+      "sym@352819703f8e": 1,
+      "sym@ace1dbd36941": 1
+    }
+  },
+  "decision_signature_metadata": {
+    "bind_declaration_root@ad51c5f1712d": {
+      "decision_kind": "bind_declaration_root",
+      "legal_token_ids": [
+        30,
+        272
+      ],
+      "good_token_ids": [
+        272
+      ],
+      "bad_token_ids": [
+        30
+      ]
+    },
+    "bind_reference_bound_buttons@ff381b88dfd5": {
+      "decision_kind": "bind_reference_bound_buttons",
+      "legal_token_ids": [
+        6,
+        8,
+        9,
+        10,
+        17,
+        21,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        273,
+        275,
+        277
+      ],
+      "good_token_ids": [
+        273
+      ],
+      "bad_token_ids": [
+        8,
+        9
+      ]
+    },
+    "bind_reference_bound_children@000b01b3a945": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        276,
+        277,
+        278,
+        280,
+        282,
+        285
+      ],
+      "good_token_ids": [
+        277
+      ],
+      "bad_token_ids": [
+        273,
+        275
+      ]
+    },
+    "bind_reference_bound_children@0abaa8c52d18": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        277
+      ],
+      "good_token_ids": [
+        275
+      ],
+      "bad_token_ids": [
+        273,
+        274
+      ]
+    },
+    "bind_reference_bound_children@16b17b0b5637": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        277,
+        278
+      ],
+      "good_token_ids": [
+        274
+      ],
+      "bad_token_ids": [
+        273,
+        275
+      ]
+    },
+    "bind_reference_bound_children@1984b657df03": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        277,
+        278
+      ],
+      "good_token_ids": [
+        273
+      ],
+      "bad_token_ids": [
+        9,
+        275
+      ]
+    },
+    "bind_reference_bound_children@2d8ae03bed52": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        276,
+        278,
+        281
+      ],
+      "good_token_ids": [
+        274
+      ],
+      "bad_token_ids": [
+        273,
+        276
+      ]
+    },
+    "bind_reference_bound_children@2ee3f35e1722": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        276,
+        277,
+        278,
+        279,
+        280,
+        281,
+        282,
+        283,
+        284,
+        285,
+        287
+      ],
+      "good_token_ids": [
+        284
+      ],
+      "bad_token_ids": [
+        9,
+        275
+      ]
+    },
+    "bind_reference_bound_children@3372dde0d406": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        277
+      ],
+      "good_token_ids": [
+        273
+      ],
+      "bad_token_ids": [
+        9,
+        275
+      ]
+    },
+    "bind_reference_bound_children@386644cd54e0": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        277
+      ],
+      "good_token_ids": [
+        274
+      ],
+      "bad_token_ids": [
+        273,
+        275
+      ]
+    },
+    "bind_reference_bound_children@3ed093ac8ab9": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        276
+      ],
+      "good_token_ids": [
+        274,
+        276
+      ],
+      "bad_token_ids": [
+        273
+      ]
+    },
+    "bind_reference_bound_children@5a4ec320a9ea": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        276,
+        277,
+        278,
+        280,
+        282
+      ],
+      "good_token_ids": [
+        277
+      ],
+      "bad_token_ids": [
+        273,
+        275
+      ]
+    },
+    "bind_reference_bound_children@657128240a93": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        276,
+        277
+      ],
+      "good_token_ids": [
+        273
+      ],
+      "bad_token_ids": [
+        9,
+        274
+      ]
+    },
+    "bind_reference_bound_children@6ae33b7ede99": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        276,
+        277,
+        279,
+        281,
+        284,
+        287
+      ],
+      "good_token_ids": [
+        276
+      ],
+      "bad_token_ids": [
+        273,
+        275
+      ]
+    },
+    "bind_reference_bound_children@79aa044355c5": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        276,
+        277,
+        278,
+        280,
+        282,
+        285,
+        288
+      ],
+      "good_token_ids": [
+        278
+      ],
+      "bad_token_ids": [
+        273,
+        274
+      ]
+    },
+    "bind_reference_bound_children@81d9dc21c4b1": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        276,
+        277
+      ],
+      "good_token_ids": [
+        274
+      ],
+      "bad_token_ids": [
+        273,
+        276
+      ]
+    },
+    "bind_reference_bound_children@8677fcba96e3": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        276,
+        277,
+        278,
+        279,
+        280,
+        281,
+        282,
+        283,
+        284,
+        285,
+        286,
+        287,
+        289
+      ],
+      "good_token_ids": [
+        286
+      ],
+      "bad_token_ids": [
+        273,
+        276
+      ]
+    },
+    "bind_reference_bound_children@94da6d1cb427": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        276,
+        277,
+        279,
+        281
+      ],
+      "good_token_ids": [
+        276
+      ],
+      "bad_token_ids": [
+        273,
+        274
+      ]
+    },
+    "bind_reference_bound_children@996d80e9d797": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        276,
+        277,
+        279,
+        281,
+        284,
+        287,
+        290
+      ],
+      "good_token_ids": [
+        277
+      ],
+      "bad_token_ids": [
+        273,
+        275
+      ]
+    },
+    "bind_reference_bound_children@a6b9d4495186": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        276,
+        278
+      ],
+      "good_token_ids": [
+        275
+      ],
+      "bad_token_ids": [
+        9,
+        276
+      ]
+    },
+    "bind_reference_bound_children@b8347ef92ecd": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        276,
+        278,
+        280,
+        283,
+        286
+      ],
+      "good_token_ids": [
+        276
+      ],
+      "bad_token_ids": [
+        274,
+        275
+      ]
+    },
+    "bind_reference_bound_children@ba420063896b": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        276
+      ],
+      "good_token_ids": [
+        273,
+        276
+      ],
+      "bad_token_ids": [
+        65
+      ]
+    },
+    "bind_reference_bound_children@d0781bfeeaee": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        277,
+        279,
+        282,
+        285,
+        288
+      ],
+      "good_token_ids": [
+        274
+      ],
+      "bad_token_ids": [
+        273,
+        275
+      ]
+    },
+    "bind_reference_bound_children@d5a50c7c52ad": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        276,
+        277,
+        278,
+        279,
+        280,
+        281,
+        283,
+        285
+      ],
+      "good_token_ids": [
+        281
+      ],
+      "bad_token_ids": [
+        275,
+        276
+      ]
+    },
+    "bind_reference_bound_children@dbbd532cca09": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        277,
+        279,
+        282
+      ],
+      "good_token_ids": [
+        275
+      ],
+      "bad_token_ids": [
+        273,
+        274
+      ]
+    },
+    "bind_reference_bound_children@dda7ee9401c9": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        276,
+        277,
+        278,
+        279,
+        280,
+        281,
+        282,
+        283,
+        284,
+        286,
+        288
+      ],
+      "good_token_ids": [
+        284
+      ],
+      "bad_token_ids": [
+        273,
+        276
+      ]
+    },
+    "bind_reference_bound_fields@659855897d5e": {
+      "decision_kind": "bind_reference_bound_fields",
+      "legal_token_ids": [
+        6,
+        8,
+        9,
+        10,
+        17,
+        21,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        273,
+        274,
+        275,
+        276,
+        278
+      ],
+      "good_token_ids": [
+        276
+      ],
+      "bad_token_ids": [
+        6,
+        273
+      ]
+    },
+    "bind_reference_bound_input@8d886bf439fb": {
+      "decision_kind": "bind_reference_bound_input",
+      "legal_token_ids": [
+        6,
+        8,
+        10,
+        17,
+        21,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        273,
+        274,
+        275,
+        276,
+        278,
+        279
+      ],
+      "good_token_ids": [
+        276
+      ],
+      "bad_token_ids": [
+        8,
+        273
+      ]
+    },
+    "bind_reference_bound_input@b910bf6bf56b": {
+      "decision_kind": "bind_reference_bound_input",
+      "legal_token_ids": [
+        6,
+        8,
+        10,
+        17,
+        21,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        273,
+        274,
+        275,
+        277,
+        278
+      ],
+      "good_token_ids": [
+        275
+      ],
+      "bad_token_ids": [
+        6,
+        8
+      ]
+    },
+    "bind_reference_root_children@20976f4f6708": {
+      "decision_kind": "bind_reference_root_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273
+      ],
+      "good_token_ids": [
+        273
+      ],
+      "bad_token_ids": [
+        9,
+        48
+      ]
+    },
+    "bind_reference_root_children@315d56c566e0": {
+      "decision_kind": "bind_reference_root_children",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275
+      ],
+      "good_token_ids": [
+        275
+      ],
+      "bad_token_ids": [
+        273,
+        274
+      ]
+    },
+    "bind_reference_root_children@68f77b95c994": {
+      "decision_kind": "bind_reference_root_children",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275
+      ],
+      "good_token_ids": [
+        275
+      ],
+      "bad_token_ids": [
+        65,
+        273
+      ]
+    },
+    "bind_reference_root_children@d02bd8f12629": {
+      "decision_kind": "bind_reference_root_children",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274
+      ],
+      "good_token_ids": [
+        274
+      ],
+      "bad_token_ids": [
+        57,
+        273
+      ]
+    },
+    "component_bound@00120edb53c5": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        35
+      ],
+      "bad_token_ids": [
+        39,
+        65
+      ]
+    },
+    "component_bound@1c5d423c4da8": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        32
+      ],
+      "bad_token_ids": [
+        57,
+        65
+      ]
+    },
+    "component_bound@21c4ff772801": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        63
+      ],
+      "bad_token_ids": [
+        57,
+        65
+      ]
+    },
+    "component_bound@478160063088": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        65
+      ],
+      "bad_token_ids": [
+        54,
+        57
+      ]
+    },
+    "component_bound@4a89bb7b4c07": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        59
+      ],
+      "bad_token_ids": [
+        39,
+        65
+      ]
+    },
+    "component_bound@55ee4064759d": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        35
+      ],
+      "bad_token_ids": [
+        57,
+        65
+      ]
+    },
+    "component_bound@6b2c19d12f62": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        57
+      ],
+      "bad_token_ids": [
+        45,
+        65
+      ]
+    },
+    "component_bound@6cdf6adec072": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        65
+      ],
+      "bad_token_ids": [
+        56,
+        57
+      ]
+    },
+    "component_bound@7797914f31d9": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        65
+      ],
+      "bad_token_ids": [
+        45,
+        57
+      ]
+    },
+    "component_bound@7a187d030b9c": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        35
+      ],
+      "bad_token_ids": [
+        36,
+        65
+      ]
+    },
+    "component_bound@815014101496": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        65
+      ],
+      "bad_token_ids": [
+        52,
+        58
+      ]
+    },
+    "component_bound@82679eae29c0": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        65
+      ],
+      "bad_token_ids": [
+        48,
+        57
+      ]
+    },
+    "component_bound@84321c29ce57": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        40
+      ],
+      "bad_token_ids": [
+        57,
+        65
+      ]
+    },
+    "component_bound@8dbf7e9dcd02": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        63
+      ],
+      "bad_token_ids": [
+        58,
+        65
+      ]
+    },
+    "component_bound@8f1f99155bd2": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        65
+      ],
+      "bad_token_ids": [
+        33,
+        57
+      ]
+    },
+    "component_bound@9c5fb123d970": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        32
+      ],
+      "bad_token_ids": [
+        48,
+        65
+      ]
+    },
+    "component_bound@a401892728c8": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        65
+      ],
+      "bad_token_ids": [
+        39,
+        48
+      ]
+    },
+    "component_bound@af20338de51e": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        38
+      ],
+      "bad_token_ids": [
+        33,
+        65
+      ]
+    },
+    "component_bound@baa8a8bd80af": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        35
+      ],
+      "bad_token_ids": [
+        45,
+        65
+      ]
+    },
+    "component_bound@d1cc71f7760b": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        46
+      ],
+      "bad_token_ids": [
+        57,
+        65
+      ]
+    },
+    "component_bound@d6ede3919fe9": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        35
+      ],
+      "bad_token_ids": [
+        54,
+        57
+      ]
+    },
+    "component_bound@e1e9d092f14f": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        65
+      ],
+      "bad_token_ids": [
+        39,
+        57
+      ]
+    },
+    "component_bound@eda6b905b5d3": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        65
+      ],
+      "bad_token_ids": [
+        32,
+        57
+      ]
+    },
+    "component_bound@eef5d1f216ef": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        58
+      ],
+      "bad_token_ids": [
+        57,
+        65
+      ]
+    },
+    "component_root@1ea5d4256f53": {
+      "decision_kind": "component_root",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        57
+      ],
+      "bad_token_ids": [
+        54,
+        65
+      ]
+    },
+    "component_root@f3c9df4a2c81": {
+      "decision_kind": "component_root",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        57
+      ],
+      "bad_token_ids": [
+        58,
+        65
+      ]
+    },
+    "grammar_comma@bba1934e88a1": {
+      "decision_kind": "grammar_comma",
+      "legal_token_ids": [
+        9,
+        12
+      ],
+      "good_token_ids": [
+        12
+      ],
+      "bad_token_ids": [
+        9
+      ]
+    },
+    "grammar_comma@f9accf594cdd": {
+      "decision_kind": "grammar_comma",
+      "legal_token_ids": [
+        7,
+        12
+      ],
+      "good_token_ids": [
+        12
+      ],
+      "bad_token_ids": [
+        7
+      ]
+    },
+    "grammar_lsqb@41f028bfecd8": {
+      "decision_kind": "grammar_lsqb",
+      "legal_token_ids": [
+        6,
+        8,
+        10,
+        17,
+        21,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        273,
+        275,
+        276
+      ],
+      "good_token_ids": [
+        8
+      ],
+      "bad_token_ids": [
+        6,
+        276
+      ]
+    },
+    "grammar_rpar@b02b0d02ba39": {
+      "decision_kind": "grammar_rpar",
+      "legal_token_ids": [
+        7,
+        12
+      ],
+      "good_token_ids": [
+        7
+      ],
+      "bad_token_ids": [
+        12
+      ]
+    },
+    "grammar_rsqb_bound_empty@8784d5606167": {
+      "decision_kind": "grammar_rsqb_bound_empty",
+      "legal_token_ids": [
+        6,
+        8,
+        9,
+        10,
+        17,
+        21,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        274,
+        275,
+        276
+      ],
+      "good_token_ids": [
+        9
+      ],
+      "bad_token_ids": [
+        8,
+        274
+      ]
+    },
+    "grammar_rsqb_bound_empty@95bf1a516a1f": {
+      "decision_kind": "grammar_rsqb_bound_empty",
+      "legal_token_ids": [
+        6,
+        8,
+        9,
+        10,
+        17,
+        21,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        274,
+        276
+      ],
+      "good_token_ids": [
+        9
+      ],
+      "bad_token_ids": [
+        6,
+        8
+      ]
+    },
+    "grammar_rsqb_bound_empty@a7956f9a8332": {
+      "decision_kind": "grammar_rsqb_bound_empty",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        274,
+        275,
+        276
+      ],
+      "good_token_ids": [
+        9
+      ],
+      "bad_token_ids": [
+        274,
+        275
+      ]
+    },
+    "grammar_rsqb_bound_empty@bb0d0fd3f097": {
+      "decision_kind": "grammar_rsqb_bound_empty",
+      "legal_token_ids": [
+        6,
+        8,
+        9,
+        10,
+        17,
+        21,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        273,
+        274,
+        276,
+        277
+      ],
+      "good_token_ids": [
+        9
+      ],
+      "bad_token_ids": [
+        8,
+        273
+      ]
+    },
+    "grammar_rsqb_bound_empty@d9f9c3deceed": {
+      "decision_kind": "grammar_rsqb_bound_empty",
+      "legal_token_ids": [
+        6,
+        8,
+        9,
+        10,
+        17,
+        21,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        273,
+        274,
+        276,
+        277
+      ],
+      "good_token_ids": [
+        9
+      ],
+      "bad_token_ids": [
+        6,
+        8
+      ]
+    },
+    "grammar_rsqb_bound_empty@f8b1cdb829e0": {
+      "decision_kind": "grammar_rsqb_bound_empty",
+      "legal_token_ids": [
+        6,
+        8,
+        9,
+        10,
+        17,
+        21,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        273,
+        275,
+        276
+      ],
+      "good_token_ids": [
+        9
+      ],
+      "bad_token_ids": [
+        6,
+        8
+      ]
+    },
+    "grammar_rsqb_bound_populated@3cf40154baf5": {
+      "decision_kind": "grammar_rsqb_bound_populated",
+      "legal_token_ids": [
+        9,
+        12
+      ],
+      "good_token_ids": [
+        9
+      ],
+      "bad_token_ids": [
+        12
+      ]
+    },
+    "grammar_rsqb_bound_populated@f2a10fafe612": {
+      "decision_kind": "grammar_rsqb_bound_populated",
+      "legal_token_ids": [
+        8,
+        9,
+        12,
+        13,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29
+      ],
+      "good_token_ids": [
+        9
+      ],
+      "bad_token_ids": [
+        8,
+        12
+      ]
+    },
+    "grammar_rsqb_root_populated@0ab5ce0081dd": {
+      "decision_kind": "grammar_rsqb_root_populated",
+      "legal_token_ids": [
+        9,
+        12
+      ],
+      "good_token_ids": [
+        9
+      ],
+      "bad_token_ids": [
+        12
+      ]
+    },
+    "lit@18fc5811b187": {
+      "decision_kind": "lit",
+      "legal_token_ids": [
+        111,
+        112,
+        114,
+        115,
+        116,
+        117,
+        118,
+        119,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        139,
+        140,
+        142,
+        143,
+        144,
+        171,
+        172,
+        174,
+        176,
+        204,
+        206,
+        207
+      ],
+      "good_token_ids": [
+        111
+      ],
+      "bad_token_ids": [
+        126,
+        139
+      ]
+    },
+    "lit@5bd36d78f798": {
+      "decision_kind": "lit",
+      "legal_token_ids": [
+        86,
+        97
+      ],
+      "good_token_ids": [
+        86
+      ],
+      "bad_token_ids": [
+        97
+      ]
+    },
+    "lit@65de1a885d2c": {
+      "decision_kind": "lit",
+      "legal_token_ids": [
+        111,
+        112,
+        114,
+        115,
+        116,
+        117,
+        118,
+        119,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        139,
+        140,
+        142,
+        143,
+        144,
+        171,
+        172,
+        174,
+        176,
+        204,
+        206,
+        207
+      ],
+      "good_token_ids": [
+        111
+      ],
+      "bad_token_ids": [
+        122,
+        126
+      ]
+    },
+    "lit@8bf8d5927353": {
+      "decision_kind": "lit",
+      "legal_token_ids": [
+        86,
+        97
+      ],
+      "good_token_ids": [
+        97
+      ],
+      "bad_token_ids": [
+        86
+      ]
+    },
+    "lit@9e3d565a1f26": {
+      "decision_kind": "lit",
+      "legal_token_ids": [
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        208
+      ],
+      "good_token_ids": [
+        109
+      ],
+      "bad_token_ids": [
+        86,
+        208
+      ]
+    },
+    "sym@0521601293c3": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209
+      ],
+      "good_token_ids": [
+        208
+      ],
+      "bad_token_ids": [
+        209
+      ]
+    },
+    "sym@0b3afd23ce05": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216,
+        217
+      ],
+      "good_token_ids": [
+        216
+      ],
+      "bad_token_ids": [
+        208,
+        209
+      ]
+    },
+    "sym@352819703f8e": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216,
+        217,
+        218,
+        219
+      ],
+      "good_token_ids": [
+        217
+      ],
+      "bad_token_ids": [
+        208,
+        209
+      ]
+    },
+    "sym@37a79285c48d": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210
+      ],
+      "good_token_ids": [
+        210
+      ],
+      "bad_token_ids": [
+        208,
+        209
+      ]
+    },
+    "sym@3f0bb559945f": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        208,
+        209
+      ],
+      "good_token_ids": [
+        208
+      ],
+      "bad_token_ids": [
+        86,
+        209
+      ]
+    },
+    "sym@486fd35a5445": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210,
+        211
+      ],
+      "good_token_ids": [
+        208
+      ],
+      "bad_token_ids": [
+        209,
+        211
+      ]
+    },
+    "sym@4c15a9998d86": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214
+      ],
+      "good_token_ids": [
+        213
+      ],
+      "bad_token_ids": [
+        208,
+        209
+      ]
+    },
+    "sym@5a954246a0ea": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        208,
+        209,
+        210,
+        211,
+        212,
+        213
+      ],
+      "good_token_ids": [
+        211
+      ],
+      "bad_token_ids": [
+        208,
+        209
+      ]
+    },
+    "sym@5e483f0cbd80": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216,
+        217,
+        218
+      ],
+      "good_token_ids": [
+        212
+      ],
+      "bad_token_ids": [
+        208,
+        209
+      ]
+    },
+    "sym@5f8a03339111": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210,
+        211
+      ],
+      "good_token_ids": [
+        210
+      ],
+      "bad_token_ids": [
+        208,
+        209
+      ]
+    },
+    "sym@60d7ebb1861d": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210,
+        211
+      ],
+      "good_token_ids": [
+        211
+      ],
+      "bad_token_ids": [
+        208,
+        209
+      ]
+    },
+    "sym@6d1552f0952a": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216
+      ],
+      "good_token_ids": [
+        214
+      ],
+      "bad_token_ids": [
+        208,
+        209
+      ]
+    },
+    "sym@880d92567c59": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210,
+        211,
+        212
+      ],
+      "good_token_ids": [
+        212
+      ],
+      "bad_token_ids": [
+        208,
+        209
+      ]
+    },
+    "sym@9276ff7f8a15": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216,
+        217,
+        218
+      ],
+      "good_token_ids": [
+        213
+      ],
+      "bad_token_ids": [
+        208,
+        209
+      ]
+    },
+    "sym@9a854d6e2b62": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214
+      ],
+      "good_token_ids": [
+        212
+      ],
+      "bad_token_ids": [
+        208,
+        209
+      ]
+    },
+    "sym@9f5854694e0d": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216,
+        217,
+        218
+      ],
+      "good_token_ids": [
+        218
+      ],
+      "bad_token_ids": [
+        209,
+        216
+      ]
+    },
+    "sym@ace1dbd36941": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210
+      ],
+      "good_token_ids": [
+        208
+      ],
+      "bad_token_ids": [
+        209,
+        210
+      ]
+    },
+    "sym@ad44c48065f8": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210
+      ],
+      "good_token_ids": [
+        209
+      ],
+      "bad_token_ids": [
+        208,
+        210
+      ]
+    },
+    "sym@ce2805a0b45f": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210,
+        211,
+        212,
+        213
+      ],
+      "good_token_ids": [
+        213
+      ],
+      "bad_token_ids": [
+        208,
+        209
+      ]
+    },
+    "sym@d3e51f23f913": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216
+      ],
+      "good_token_ids": [
+        216
+      ],
+      "bad_token_ids": [
+        208,
+        209
+      ]
+    },
+    "sym@da017c129915": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216,
+        217,
+        218
+      ],
+      "good_token_ids": [
+        214
+      ],
+      "bad_token_ids": [
+        208,
+        209
+      ]
+    },
+    "sym@e66506e91653": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209
+      ],
+      "good_token_ids": [
+        209
+      ],
+      "bad_token_ids": [
+        208
+      ]
+    }
+  },
+  "held_out_signature_coverage": {
+    "covered": [
+      "bind_declaration_root@ad51c5f1712d",
+      "bind_reference_bound_children@0abaa8c52d18",
+      "bind_reference_bound_children@1984b657df03",
+      "bind_reference_bound_children@2ee3f35e1722",
+      "bind_reference_bound_children@3372dde0d406",
+      "bind_reference_bound_children@657128240a93",
+      "bind_reference_root_children@20976f4f6708",
+      "component_bound@55ee4064759d",
+      "component_root@1ea5d4256f53",
+      "component_root@f3c9df4a2c81",
+      "grammar_comma@bba1934e88a1",
+      "grammar_rpar@b02b0d02ba39",
+      "grammar_rsqb_bound_empty@95bf1a516a1f",
+      "grammar_rsqb_bound_populated@3cf40154baf5",
+      "grammar_rsqb_root_populated@0ab5ce0081dd",
+      "lit@5bd36d78f798",
+      "lit@8bf8d5927353",
+      "lit@9e3d565a1f26",
+      "sym@352819703f8e",
+      "sym@ace1dbd36941"
+    ],
+    "uncovered": [
+      "bind_reference_bound_children@3372dde0d406",
+      "component_bound@00120edb53c5",
+      "component_bound@7797914f31d9",
+      "component_bound@8dbf7e9dcd02",
+      "component_bound@8f1f99155bd2",
+      "grammar_rsqb_bound_empty@d9f9c3deceed",
+      "lit@65de1a885d2c"
+    ]
+  },
+  "train_objective_count": 64,
+  "held_out_objective_count": 104,
+  "train_minimum_norm_solver": {
+    "task_count": 64,
+    "active_task_count": 63,
+    "inactive_task_count": 1,
+    "iterations": 5000,
+    "duality_gap": 8.77545371239317e-05,
+    "converged": false,
+    "norm_sq": 0.00047976050706760695,
+    "min_task_dot": 0.0,
+    "min_active_task_dot": 0.0003981683800591551,
+    "common_descent": true,
+    "weight_by_objective": {
+      "bind_declaration_root:bad_probability_mass": 0.0,
+      "bind_declaration_root:good_probability_mass": 0.0018843152485267874,
+      "bind_declaration_root:loss": 0.0,
+      "bind_declaration_root:mean_margin": 0.0,
+      "bind_reference_bound_buttons:bad_probability_mass": 0.019284425473374694,
+      "bind_reference_bound_buttons:good_probability_mass": 0.0,
+      "bind_reference_bound_buttons:loss": 0.0,
+      "bind_reference_bound_buttons:mean_margin": 0.0011854474978594727,
+      "bind_reference_bound_children:bad_probability_mass": 0.0037973162969536815,
+      "bind_reference_bound_children:good_probability_mass": 0.005672416818711723,
+      "bind_reference_bound_children:loss": 0.0,
+      "bind_reference_bound_children:mean_margin": 0.0016918117995321207,
+      "bind_reference_bound_fields:bad_probability_mass": 0.0,
+      "bind_reference_bound_fields:good_probability_mass": 0.010059762265234251,
+      "bind_reference_bound_fields:loss": 0.0,
+      "bind_reference_bound_fields:mean_margin": 0.0,
+      "bind_reference_bound_input:bad_probability_mass": 0.0,
+      "bind_reference_bound_input:good_probability_mass": 0.0,
+      "bind_reference_bound_input:loss": 0.0,
+      "bind_reference_bound_input:mean_margin": 0.0,
+      "bind_reference_root_children:bad_probability_mass": 0.0,
+      "bind_reference_root_children:good_probability_mass": 0.0,
+      "bind_reference_root_children:loss": 0.0,
+      "bind_reference_root_children:mean_margin": 0.00017321224368608556,
+      "component_bound:bad_probability_mass": 0.0011707771017384625,
+      "component_bound:good_probability_mass": 0.003701035399223324,
+      "component_bound:loss": 0.0,
+      "component_bound:mean_margin": 0.0,
+      "component_root:bad_probability_mass": 0.0,
+      "component_root:good_probability_mass": 0.0,
+      "component_root:loss": 0.0032051821842043787,
+      "component_root:mean_margin": 0.0,
+      "grammar_comma:bad_probability_mass": 0.0,
+      "grammar_comma:good_probability_mass": 0.011642957445706424,
+      "grammar_comma:loss": 0.2570946924505871,
+      "grammar_comma:mean_margin": 0.16010061574589976,
+      "grammar_lsqb:bad_probability_mass": 0.0,
+      "grammar_lsqb:good_probability_mass": 0.007137278494285835,
+      "grammar_lsqb:loss": 0.0,
+      "grammar_lsqb:mean_margin": 0.016737396058578678,
+      "grammar_rpar:bad_probability_mass": 0.004699099376527614,
+      "grammar_rpar:good_probability_mass": 0.19211878603172622,
+      "grammar_rpar:loss": 0.0,
+      "grammar_rpar:mean_margin": 0.0023942932874915957,
+      "grammar_rsqb_bound_empty:bad_probability_mass": 0.0,
+      "grammar_rsqb_bound_empty:good_probability_mass": 0.010144015569123057,
+      "grammar_rsqb_bound_empty:loss": 0.0,
+      "grammar_rsqb_bound_empty:mean_margin": 0.0,
+      "grammar_rsqb_bound_populated:bad_probability_mass": 0.0,
+      "grammar_rsqb_bound_populated:good_probability_mass": 0.0006948774515268626,
+      "grammar_rsqb_bound_populated:loss": 0.03442881805026979,
+      "grammar_rsqb_bound_populated:mean_margin": 0.021925942355655807,
+      "grammar_rsqb_root_populated:bad_probability_mass": 0.04088342798176293,
+      "grammar_rsqb_root_populated:good_probability_mass": 0.0011648372825898612,
+      "grammar_rsqb_root_populated:loss": 0.012910353773111331,
+      "grammar_rsqb_root_populated:mean_margin": 0.17049867451217032,
+      "lit:bad_probability_mass": 0.0,
+      "lit:good_probability_mass": 0.0016863366109674243,
+      "lit:loss": 0.00034693112877549935,
+      "lit:mean_margin": 0.0005937095123244176,
+      "sym:bad_probability_mass": 0.0,
+      "sym:good_probability_mass": 0.0009712545518733479,
+      "sym:loss": 0.0,
+      "sym:mean_margin": 0.0
+    }
+  },
+  "train_alignment": {
+    "bind_declaration_root:bad_probability_mass": {
+      "dot": 0.006350182406273617,
+      "cosine": 0.07214029210620564,
+      "left_norm": 4.018782819395241,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_declaration_root:good_probability_mass": {
+      "dot": 0.0063501815848885056,
+      "cosine": 0.07214029488528106,
+      "left_norm": 4.018782144756257,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_declaration_root:loss": {
+      "dot": 0.0,
+      "cosine": 0.0,
+      "left_norm": 0.0,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_declaration_root:mean_margin": {
+      "dot": 0.2332914156248471,
+      "cosine": 0.07240084859475512,
+      "left_norm": 147.10970852845756,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_buttons:bad_probability_mass": {
+      "dot": 0.007812495016713445,
+      "cosine": 0.02291653976703499,
+      "left_norm": 15.564205040366708,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_buttons:good_probability_mass": {
+      "dot": 0.005498358098705291,
+      "cosine": 0.04833640775377559,
+      "left_norm": 5.1933175987659554,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_buttons:loss": {
+      "dot": 0.0632038227145049,
+      "cosine": 0.02366502356848992,
+      "left_norm": 121.9333871081277,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_buttons:mean_margin": {
+      "dot": 0.06280370000807264,
+      "cosine": 0.022505185825541594,
+      "left_norm": 127.4057005655141,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_children:bad_probability_mass": {
+      "dot": 0.004707528011017396,
+      "cosine": 0.04789051725645782,
+      "left_norm": 4.487759946243522,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_children:good_probability_mass": {
+      "dot": 0.0017410472981065634,
+      "cosine": 0.021075885195929296,
+      "left_norm": 3.7714727864639603,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_children:loss": {
+      "dot": 0.024919118546987307,
+      "cosine": 0.029438427001809396,
+      "left_norm": 38.64597857765879,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_children:mean_margin": {
+      "dot": 0.01537264054101027,
+      "cosine": 0.02114949747949093,
+      "left_norm": 33.184452168937234,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_fields:bad_probability_mass": {
+      "dot": 0.02759415563937133,
+      "cosine": 0.09757687355587925,
+      "left_norm": 12.910897811320591,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_fields:good_probability_mass": {
+      "dot": 0.00011333440866196376,
+      "cosine": 0.024712877425797346,
+      "left_norm": 0.20937494048251695,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_fields:loss": {
+      "dot": 0.16959506400208588,
+      "cosine": 0.05967209206564517,
+      "left_norm": 129.75621749481155,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_fields:mean_margin": {
+      "dot": 0.16973561335205964,
+      "cosine": 0.05968663819205145,
+      "left_norm": 129.83210213387102,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_input:bad_probability_mass": {
+      "dot": 0.06715502327840825,
+      "cosine": 0.1723595899930681,
+      "left_norm": 17.78808863178749,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_input:good_probability_mass": {
+      "dot": 0.058283363414719035,
+      "cosine": 0.15484256723007941,
+      "left_norm": 17.184641481242252,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_input:loss": {
+      "dot": 0.16203048269859283,
+      "cosine": 0.09810784555901376,
+      "left_norm": 75.40136709782071,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_input:mean_margin": {
+      "dot": 0.1978900112490343,
+      "cosine": 0.09989119854783478,
+      "left_norm": 90.44464994023419,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_root_children:bad_probability_mass": {
+      "dot": 0.004747970021945074,
+      "cosine": 0.07554985512367492,
+      "left_norm": 2.8691983037517907,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_root_children:good_probability_mass": {
+      "dot": 0.0047391804776994026,
+      "cosine": 0.07648704467037358,
+      "left_norm": 2.828795809967918,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_root_children:loss": {
+      "dot": 0.009271780134314164,
+      "cosine": 0.08562259358943203,
+      "left_norm": 4.943800972838426,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_root_children:mean_margin": {
+      "dot": 0.044903638195935985,
+      "cosine": 0.02144595553001345,
+      "left_norm": 95.59217912409161,
+      "right_norm": 0.021903512601175526
+    },
+    "component_bound:bad_probability_mass": {
+      "dot": 0.0023440269965215327,
+      "cosine": 0.02121628717232236,
+      "left_norm": 5.044050861662815,
+      "right_norm": 0.021903512601175526
+    },
+    "component_bound:good_probability_mass": {
+      "dot": 0.003641309096003299,
+      "cosine": 0.02085313272852091,
+      "left_norm": 7.972095114088463,
+      "right_norm": 0.021903512601175526
+    },
+    "component_bound:loss": {
+      "dot": 0.03910289915757447,
+      "cosine": 0.039749162702189846,
+      "left_norm": 44.912497509435816,
+      "right_norm": 0.021903512601175526
+    },
+    "component_bound:mean_margin": {
+      "dot": 0.032687038211606005,
+      "cosine": 0.03370160470755159,
+      "left_norm": 44.28036819545986,
+      "right_norm": 0.021903512601175526
+    },
+    "component_root:bad_probability_mass": {
+      "dot": 0.007018189446131987,
+      "cosine": 0.029002287456922834,
+      "left_norm": 11.047883030821215,
+      "right_norm": 0.021903512601175526
+    },
+    "component_root:good_probability_mass": {
+      "dot": 0.007226735836664277,
+      "cosine": 0.02941341035184445,
+      "left_norm": 11.217163008856417,
+      "right_norm": 0.021903512601175526
+    },
+    "component_root:loss": {
+      "dot": 0.0020014314461469294,
+      "cosine": 0.027057964446087927,
+      "left_norm": 3.3770059850774636,
+      "right_norm": 0.021903512601175526
+    },
+    "component_root:mean_margin": {
+      "dot": 0.10726891385717228,
+      "cosine": 0.04493145743345491,
+      "left_norm": 108.99576160211808,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_comma:bad_probability_mass": {
+      "dot": 0.012940042134394323,
+      "cosine": 0.03023299646086924,
+      "left_norm": 19.540727583293272,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_comma:good_probability_mass": {
+      "dot": 0.012940042933913914,
+      "cosine": 0.030232998323741222,
+      "left_norm": 19.540727586601424,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_comma:loss": {
+      "dot": 0.057330549202973036,
+      "cosine": 0.02190338947903045,
+      "left_norm": 119.498102579272,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_comma:mean_margin": {
+      "dot": 0.06371148606718974,
+      "cosine": 0.021921144782408173,
+      "left_norm": 132.6907771522196,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_lsqb:bad_probability_mass": {
+      "dot": 0.011417981640512444,
+      "cosine": 0.043627042205727724,
+      "left_norm": 11.94867650717199,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_lsqb:good_probability_mass": {
+      "dot": 0.004113575550468206,
+      "cosine": 0.021456505582743778,
+      "left_norm": 8.752794197404848,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_lsqb:loss": {
+      "dot": 0.22863624032045404,
+      "cosine": 0.10083939004360075,
+      "left_norm": 103.51447718507448,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_lsqb:mean_margin": {
+      "dot": 0.24820811063553894,
+      "cosine": 0.10390548199087282,
+      "left_norm": 109.05955982794117,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rpar:bad_probability_mass": {
+      "dot": 0.008790251508311371,
+      "cosine": 0.018447892584008106,
+      "left_norm": 21.754082600544717,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rpar:good_probability_mass": {
+      "dot": 0.008790250827636521,
+      "cosine": 0.01844789163649452,
+      "left_norm": 21.75408203333788,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rpar:loss": {
+      "dot": 0.04474904486189238,
+      "cosine": 0.019611249478024693,
+      "left_norm": 104.1752949240936,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rpar:mean_margin": {
+      "dot": 0.06658024901873019,
+      "cosine": 0.020838066517925694,
+      "left_norm": 145.87276941609818,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rsqb_bound_empty:bad_probability_mass": {
+      "dot": 0.0070558373675763016,
+      "cosine": 0.026251022112532132,
+      "left_norm": 12.271243594102554,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rsqb_bound_empty:good_probability_mass": {
+      "dot": 0.005528575398680728,
+      "cosine": 0.01937967993518489,
+      "left_norm": 13.024254374061158,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rsqb_bound_empty:loss": {
+      "dot": 0.0946371193982495,
+      "cosine": 0.03406382807538534,
+      "left_norm": 126.8394334465677,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rsqb_bound_empty:mean_margin": {
+      "dot": 0.10228950960990227,
+      "cosine": 0.03720213723663791,
+      "left_norm": 125.53055215226357,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rsqb_bound_populated:bad_probability_mass": {
+      "dot": 0.006412775177905166,
+      "cosine": 0.020002607809564917,
+      "left_norm": 14.636782781937073,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rsqb_bound_populated:good_probability_mass": {
+      "dot": 0.006402222752308835,
+      "cosine": 0.020026751519555925,
+      "left_norm": 14.595080817276612,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rsqb_bound_populated:loss": {
+      "dot": 0.041123202866956324,
+      "cosine": 0.01822834019484414,
+      "left_norm": 102.99734740838318,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rsqb_bound_populated:mean_margin": {
+      "dot": 0.059317249210251125,
+      "cosine": 0.018223743054267,
+      "left_norm": 148.6037101184669,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rsqb_root_populated:bad_probability_mass": {
+      "dot": 0.0066023100297420145,
+      "cosine": 0.018178984798844805,
+      "left_norm": 16.581068770060217,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rsqb_root_populated:good_probability_mass": {
+      "dot": 0.006602310254072763,
+      "cosine": 0.018178985394978177,
+      "left_norm": 16.581068789711587,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rsqb_root_populated:loss": {
+      "dot": 0.02754983739039818,
+      "cosine": 0.018178779318637425,
+      "left_norm": 69.189557856118,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rsqb_root_populated:mean_margin": {
+      "dot": 0.06089600598829925,
+      "cosine": 0.018180590975633074,
+      "left_norm": 152.9209707031511,
+      "right_norm": 0.021903512601175526
+    },
+    "lit:bad_probability_mass": {
+      "dot": 0.0005587819995074889,
+      "cosine": 0.03479263299375288,
+      "left_norm": 0.7332318887492083,
+      "right_norm": 0.021903512601175526
+    },
+    "lit:good_probability_mass": {
+      "dot": 6.221173609563405e-05,
+      "cosine": 0.04673585581137214,
+      "left_norm": 0.060772675203776945,
+      "right_norm": 0.021903512601175526
+    },
+    "lit:loss": {
+      "dot": 0.006642793348784682,
+      "cosine": 0.01969406208749419,
+      "left_norm": 15.39932456321652,
+      "right_norm": 0.021903512601175526
+    },
+    "lit:mean_margin": {
+      "dot": 0.04556801598594041,
+      "cosine": 0.019090982064199284,
+      "left_norm": 108.97279332559292,
+      "right_norm": 0.021903512601175526
+    },
+    "sym:bad_probability_mass": {
+      "dot": 0.00400976571785347,
+      "cosine": 0.03137796266369256,
+      "left_norm": 5.834188939729293,
+      "right_norm": 0.021903512601175526
+    },
+    "sym:good_probability_mass": {
+      "dot": 0.0026637760389008887,
+      "cosine": 0.022003635288409717,
+      "left_norm": 5.527000491874981,
+      "right_norm": 0.021903512601175526
+    },
+    "sym:loss": {
+      "dot": 0.05586602829018807,
+      "cosine": 0.04813275339292954,
+      "left_norm": 52.989927361469356,
+      "right_norm": 0.021903512601175526
+    },
+    "sym:mean_margin": {
+      "dot": 0.05125101887896789,
+      "cosine": 0.0546076368109006,
+      "left_norm": 42.84847346655182,
+      "right_norm": 0.021903512601175526
+    }
+  },
+  "train_regressions": [],
+  "held_out_alignment": {
+    "bind_declaration_root@ad51c5f1712d:bad_probability_mass": {
+      "dot": 0.006250053235163688,
+      "cosine": 0.07247202900633377,
+      "left_norm": 3.937309267595937,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_declaration_root@ad51c5f1712d:good_probability_mass": {
+      "dot": 0.006250052808403337,
+      "cosine": 0.07247203266106918,
+      "left_norm": 3.9373088001953227,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_declaration_root@ad51c5f1712d:loss": {
+      "dot": 0.0,
+      "cosine": 0.0,
+      "left_norm": 0.0,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_declaration_root@ad51c5f1712d:mean_margin": {
+      "dot": 0.23439742041971315,
+      "cosine": 0.07267231088158788,
+      "left_norm": 147.25501373606804,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_children@0abaa8c52d18:bad_probability_mass": {
+      "dot": 0.02675954406012084,
+      "cosine": 0.04100767703956187,
+      "left_norm": 29.792007869202983,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_children@0abaa8c52d18:good_probability_mass": {
+      "dot": 0.02701260115748299,
+      "cosine": 0.041430703217424245,
+      "left_norm": 29.76667560116879,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_children@0abaa8c52d18:loss": {
+      "dot": 0.04037665962091231,
+      "cosine": 0.02258032256215435,
+      "left_norm": 81.63689498522791,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_children@0abaa8c52d18:mean_margin": {
+      "dot": 0.006388074465147461,
+      "cosine": 0.0023243185164562806,
+      "left_norm": 125.47596982277241,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_children@1984b657df03:bad_probability_mass": {
+      "dot": 0.00820135712772044,
+      "cosine": 0.060676311997910855,
+      "left_norm": 6.170960704081405,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_children@1984b657df03:good_probability_mass": {
+      "dot": -0.0002761112894424897,
+      "cosine": -0.02446135276835514,
+      "left_norm": 0.5153353404562906,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_children@1984b657df03:loss": {
+      "dot": -0.08372735130554719,
+      "cosine": -0.02961158601828685,
+      "left_norm": 129.0897966100879,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_children@1984b657df03:mean_margin": {
+      "dot": -0.08385885469795212,
+      "cosine": -0.029622322802880022,
+      "left_norm": 129.24568407531007,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_children@2ee3f35e1722:bad_probability_mass": {
+      "dot": -0.008547708546608884,
+      "cosine": -0.04585720464676807,
+      "left_norm": 8.509976503591377,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_children@2ee3f35e1722:good_probability_mass": {
+      "dot": -2.4111659568003148e-11,
+      "cosine": -0.01702467245614675,
+      "left_norm": 6.465983189224336e-08,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_children@2ee3f35e1722:loss": {
+      "dot": -0.009699010404329304,
+      "cosine": -0.003317747329292653,
+      "left_norm": 133.46590941548902,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_children@2ee3f35e1722:mean_margin": {
+      "dot": -0.009699010404329304,
+      "cosine": -0.003317747329292653,
+      "left_norm": 133.46590941548902,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_children@3372dde0d406:bad_probability_mass": {
+      "dot": -0.00568844128159107,
+      "cosine": -0.009172325419873154,
+      "left_norm": 28.313923746855593,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_children@3372dde0d406:good_probability_mass": {
+      "dot": -0.009456968604488527,
+      "cosine": -0.015525159995248252,
+      "left_norm": 27.810070882767583,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_children@3372dde0d406:loss": {
+      "dot": -0.05176075995779964,
+      "cosine": -0.01702177984744794,
+      "left_norm": 138.82954742756695,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_children@3372dde0d406:mean_margin": {
+      "dot": -0.059380776819489625,
+      "cosine": -0.020802952702931848,
+      "left_norm": 130.31881616541568,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_children@657128240a93:bad_probability_mass": {
+      "dot": -0.002923806639175237,
+      "cosine": -0.003527242464192264,
+      "left_norm": 37.844220714587856,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_children@657128240a93:good_probability_mass": {
+      "dot": -0.0017487698237235124,
+      "cosine": -0.0021094058816674955,
+      "left_norm": 37.84937661915051,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_children@657128240a93:loss": {
+      "dot": 0.0004028816022314556,
+      "cosine": 0.0002633614597039247,
+      "left_norm": 69.84116064172545,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_bound_children@657128240a93:mean_margin": {
+      "dot": -0.120092747616531,
+      "cosine": -0.0421839481772045,
+      "left_norm": 129.97379193035422,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_root_children@20976f4f6708:bad_probability_mass": {
+      "dot": -0.0006079294589069893,
+      "cosine": -0.007767525883020895,
+      "left_norm": 3.5731949605288302,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_root_children@20976f4f6708:good_probability_mass": {
+      "dot": -0.000599885905425063,
+      "cosine": -0.007647555101228051,
+      "left_norm": 3.581230515091099,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_root_children@20976f4f6708:loss": {
+      "dot": 0.0,
+      "cosine": 0.0,
+      "left_norm": 0.0,
+      "right_norm": 0.021903512601175526
+    },
+    "bind_reference_root_children@20976f4f6708:mean_margin": {
+      "dot": -0.0021672335049642832,
+      "cosine": -0.0007431985772202042,
+      "left_norm": 133.1334142164527,
+      "right_norm": 0.021903512601175526
+    },
+    "component_bound@00120edb53c5:bad_probability_mass": {
+      "dot": -0.0029337348447393326,
+      "cosine": -0.017533836662815144,
+      "left_norm": 7.638887878510223,
+      "right_norm": 0.021903512601175526
+    },
+    "component_bound@00120edb53c5:good_probability_mass": {
+      "dot": 0.0005862708291244671,
+      "cosine": 0.03595304316797628,
+      "left_norm": 0.7444728471689288,
+      "right_norm": 0.021903512601175526
+    },
+    "component_bound@00120edb53c5:loss": {
+      "dot": 0.12777421272269932,
+      "cosine": 0.04753902398448936,
+      "left_norm": 122.70978233360343,
+      "right_norm": 0.021903512601175526
+    },
+    "component_bound@00120edb53c5:mean_margin": {
+      "dot": 0.1287160056967147,
+      "cosine": 0.047603221698990596,
+      "left_norm": 123.44754041172683,
+      "right_norm": 0.021903512601175526
+    },
+    "component_bound@55ee4064759d:bad_probability_mass": {
+      "dot": 0.004985147003698899,
+      "cosine": 0.03280721252989592,
+      "left_norm": 6.937370200355351,
+      "right_norm": 0.021903512601175526
+    },
+    "component_bound@55ee4064759d:good_probability_mass": {
+      "dot": 0.00046381034339800935,
+      "cosine": 0.029219693527415384,
+      "left_norm": 0.724687893505538,
+      "right_norm": 0.021903512601175526
+    },
+    "component_bound@55ee4064759d:loss": {
+      "dot": 0.08800536320590702,
+      "cosine": 0.032812844014674804,
+      "left_norm": 122.44794438352523,
+      "right_norm": 0.021903512601175526
+    },
+    "component_bound@55ee4064759d:mean_margin": {
+      "dot": 0.08835036276348895,
+      "cosine": 0.032820717554790525,
+      "left_norm": 122.8984762557275,
+      "right_norm": 0.021903512601175526
+    },
+    "component_bound@7797914f31d9:bad_probability_mass": {
+      "dot": 0.003256455894517221,
+      "cosine": 0.008992671228439037,
+      "left_norm": 16.532659359736048,
+      "right_norm": 0.021903512601175526
+    },
+    "component_bound@7797914f31d9:good_probability_mass": {
+      "dot": 0.005238925095558449,
+      "cosine": 0.011953857390976676,
+      "left_norm": 20.008768142635038,
+      "right_norm": 0.021903512601175526
+    },
+    "component_bound@7797914f31d9:loss": {
+      "dot": -0.003536359305475919,
+      "cosine": -0.004758021033449011,
+      "left_norm": 33.9325314118707,
+      "right_norm": 0.021903512601175526
+    },
+    "component_bound@7797914f31d9:mean_margin": {
+      "dot": 0.07276850284845662,
+      "cosine": 0.029570649509823688,
+      "left_norm": 112.34889597098999,
+      "right_norm": 0.021903512601175526
+    },
+    "component_bound@8dbf7e9dcd02:bad_probability_mass": {
+      "dot": -0.0040408087042698776,
+      "cosine": -0.008454884102003058,
+      "left_norm": 21.81960404707832,
+      "right_norm": 0.021903512601175526
+    },
+    "component_bound@8dbf7e9dcd02:good_probability_mass": {
+      "dot": 8.963446863579259e-07,
+      "cosine": 0.043625213444659715,
+      "left_norm": 0.0009380450941556129,
+      "right_norm": 0.021903512601175526
+    },
+    "component_bound@8dbf7e9dcd02:loss": {
+      "dot": 0.13452581808047884,
+      "cosine": 0.04635588676194264,
+      "left_norm": 132.49118411154623,
+      "right_norm": 0.021903512601175526
+    },
+    "component_bound@8dbf7e9dcd02:mean_margin": {
+      "dot": 0.1345266200233874,
+      "cosine": 0.046355933404281464,
+      "left_norm": 132.49184061491766,
+      "right_norm": 0.021903512601175526
+    },
+    "component_bound@8f1f99155bd2:bad_probability_mass": {
+      "dot": -0.01670219777438768,
+      "cosine": -0.03144421912116443,
+      "left_norm": 24.250407509812977,
+      "right_norm": 0.021903512601175526
+    },
+    "component_bound@8f1f99155bd2:good_probability_mass": {
+      "dot": -0.019533188456993807,
+      "cosine": -0.033459238875879684,
+      "left_norm": 26.65282917173148,
+      "right_norm": 0.021903512601175526
+    },
+    "component_bound@8f1f99155bd2:loss": {
+      "dot": -0.0327535932123417,
+      "cosine": -0.018506770368315235,
+      "left_norm": 80.80059293089145,
+      "right_norm": 0.021903512601175526
+    },
+    "component_bound@8f1f99155bd2:mean_margin": {
+      "dot": -0.13520413459288072,
+      "cosine": -0.054540891770264305,
+      "left_norm": 113.17590374680066,
+      "right_norm": 0.021903512601175526
+    },
+    "component_root@1ea5d4256f53:bad_probability_mass": {
+      "dot": 0.006474787401935248,
+      "cosine": 0.028776803593678277,
+      "left_norm": 10.272335456756574,
+      "right_norm": 0.021903512601175526
+    },
+    "component_root@1ea5d4256f53:good_probability_mass": {
+      "dot": 0.0068761315039012,
+      "cosine": 0.030040817686146904,
+      "left_norm": 10.450056950790607,
+      "right_norm": 0.021903512601175526
+    },
+    "component_root@1ea5d4256f53:loss": {
+      "dot": 0.0,
+      "cosine": 0.0,
+      "left_norm": 0.0,
+      "right_norm": 0.021903512601175526
+    },
+    "component_root@1ea5d4256f53:mean_margin": {
+      "dot": 0.061938535411407675,
+      "cosine": 0.024398783640511682,
+      "left_norm": 115.89881326613371,
+      "right_norm": 0.021903512601175526
+    },
+    "component_root@f3c9df4a2c81:bad_probability_mass": {
+      "dot": 0.006089405235288713,
+      "cosine": 0.028814767120141596,
+      "left_norm": 9.648193287728818,
+      "right_norm": 0.021903512601175526
+    },
+    "component_root@f3c9df4a2c81:good_probability_mass": {
+      "dot": 0.006180980914963567,
+      "cosine": 0.028786265155975783,
+      "left_norm": 9.802984461196779,
+      "right_norm": 0.021903512601175526
+    },
+    "component_root@f3c9df4a2c81:loss": {
+      "dot": 0.0,
+      "cosine": 0.0,
+      "left_norm": 0.0,
+      "right_norm": 0.021903512601175526
+    },
+    "component_root@f3c9df4a2c81:mean_margin": {
+      "dot": 0.1306626700726791,
+      "cosine": 0.05102150372298639,
+      "left_norm": 116.91884261709085,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_comma@bba1934e88a1:bad_probability_mass": {
+      "dot": 0.011026427055444373,
+      "cosine": 0.02805381897826311,
+      "left_norm": 17.94440454286483,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_comma@bba1934e88a1:good_probability_mass": {
+      "dot": 0.011026430879871763,
+      "cosine": 0.028053828785125932,
+      "left_norm": 17.944404493854364,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_comma@bba1934e88a1:loss": {
+      "dot": 0.05020020955745752,
+      "cosine": 0.024585332774097555,
+      "left_norm": 93.22141099243144,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_comma@bba1934e88a1:mean_margin": {
+      "dot": 0.08702304076199184,
+      "cosine": 0.026019106373329305,
+      "left_norm": 152.69615831924764,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rpar@b02b0d02ba39:bad_probability_mass": {
+      "dot": 0.003092191023350798,
+      "cosine": 0.005325287224475265,
+      "left_norm": 26.509986788682482,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rpar@b02b0d02ba39:good_probability_mass": {
+      "dot": 0.0030921882643659745,
+      "cosine": 0.0053252825241738395,
+      "left_norm": 26.50998653406495,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rpar@b02b0d02ba39:loss": {
+      "dot": 0.009170029546713636,
+      "cosine": 0.0053957149935102335,
+      "left_norm": 77.59039562392306,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rpar@b02b0d02ba39:mean_margin": {
+      "dot": 0.014583970929419598,
+      "cosine": 0.004592204103588423,
+      "left_norm": 144.99093172723303,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rsqb_bound_empty@95bf1a516a1f:bad_probability_mass": {
+      "dot": 0.02145373023569919,
+      "cosine": 0.06280636530077158,
+      "left_norm": 15.595000305664282,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rsqb_bound_empty@95bf1a516a1f:good_probability_mass": {
+      "dot": 0.016568650573871975,
+      "cosine": 0.05395100561942716,
+      "left_norm": 14.020833366700181,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rsqb_bound_empty@95bf1a516a1f:loss": {
+      "dot": 0.35379629108453425,
+      "cosine": 0.12063454165528506,
+      "left_norm": 133.89607006935688,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rsqb_bound_empty@95bf1a516a1f:mean_margin": {
+      "dot": 0.33466752623472024,
+      "cosine": 0.11750697445366391,
+      "left_norm": 130.02778435264747,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rsqb_bound_empty@d9f9c3deceed:bad_probability_mass": {
+      "dot": 0.053373409403033534,
+      "cosine": 0.17858823332059687,
+      "left_norm": 13.644522370561969,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rsqb_bound_empty@d9f9c3deceed:good_probability_mass": {
+      "dot": 0.0056876659924333176,
+      "cosine": 0.12966401828074717,
+      "left_norm": 2.002630570211104,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rsqb_bound_empty@d9f9c3deceed:loss": {
+      "dot": 0.28803621112232297,
+      "cosine": 0.10000617494558582,
+      "left_norm": 131.49417236657015,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rsqb_bound_empty@d9f9c3deceed:mean_margin": {
+      "dot": 0.28961571520081353,
+      "cosine": 0.09940713280310674,
+      "left_norm": 133.01199562693412,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rsqb_bound_populated@3cf40154baf5:bad_probability_mass": {
+      "dot": -0.0003391781975276287,
+      "cosine": -0.0027787692484661105,
+      "left_norm": 5.572648840191827,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rsqb_bound_populated@3cf40154baf5:good_probability_mass": {
+      "dot": -0.0003391780362977002,
+      "cosine": -0.0027787690698558905,
+      "left_norm": 5.572646549398905,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rsqb_bound_populated@3cf40154baf5:loss": {
+      "dot": 0.021177258784806204,
+      "cosine": 0.01062265189237104,
+      "left_norm": 91.01710695327208,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rsqb_bound_populated@3cf40154baf5:mean_margin": {
+      "dot": 0.004762824296322583,
+      "cosine": 0.0014204699328485778,
+      "left_norm": 153.08010379986897,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rsqb_root_populated@0ab5ce0081dd:bad_probability_mass": {
+      "dot": 0.0050732457321999635,
+      "cosine": 0.01030816447740674,
+      "left_norm": 22.46936464198413,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rsqb_root_populated@0ab5ce0081dd:good_probability_mass": {
+      "dot": 0.005073245132049533,
+      "cosine": 0.01030816354665284,
+      "left_norm": 22.46936401274637,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rsqb_root_populated@0ab5ce0081dd:loss": {
+      "dot": 0.021416004586902723,
+      "cosine": 0.01171059339187009,
+      "left_norm": 83.49217646223403,
+      "right_norm": 0.021903512601175526
+    },
+    "grammar_rsqb_root_populated@0ab5ce0081dd:mean_margin": {
+      "dot": 0.05127610004857924,
+      "cosine": 0.01527560090945914,
+      "left_norm": 153.25085841552414,
+      "right_norm": 0.021903512601175526
+    },
+    "lit@5bd36d78f798:bad_probability_mass": {
+      "dot": 3.3740737940867235e-06,
+      "cosine": 0.016693077618044942,
+      "left_norm": 0.00922793224497853,
+      "right_norm": 0.021903512601175526
+    },
+    "lit@5bd36d78f798:good_probability_mass": {
+      "dot": 3.3733500672534886e-06,
+      "cosine": 0.016692080574664453,
+      "left_norm": 0.009226503966528507,
+      "right_norm": 0.021903512601175526
+    },
+    "lit@5bd36d78f798:loss": {
+      "dot": 0.0,
+      "cosine": 0.0,
+      "left_norm": 0.0,
+      "right_norm": 0.021903512601175526
+    },
+    "lit@5bd36d78f798:mean_margin": {
+      "dot": 0.05128480396261012,
+      "cosine": 0.015964126350289716,
+      "left_norm": 146.66611100868775,
+      "right_norm": 0.021903512601175526
+    },
+    "lit@65de1a885d2c:bad_probability_mass": {
+      "dot": -0.0027116847869710476,
+      "cosine": -0.041234436966718656,
+      "left_norm": 3.002377997981877,
+      "right_norm": 0.021903512601175526
+    },
+    "lit@65de1a885d2c:good_probability_mass": {
+      "dot": -3.3451755885805802e-06,
+      "cosine": -0.042271870787409696,
+      "left_norm": 0.0036128812192264804,
+      "right_norm": 0.021903512601175526
+    },
+    "lit@65de1a885d2c:loss": {
+      "dot": -0.018879720372184175,
+      "cosine": -0.007068661295900326,
+      "left_norm": 121.93955852556688,
+      "right_norm": 0.021903512601175526
+    },
+    "lit@65de1a885d2c:mean_margin": {
+      "dot": -0.0188764504781255,
+      "cosine": -0.007067233837344648,
+      "left_norm": 121.9430644771331,
+      "right_norm": 0.021903512601175526
+    },
+    "lit@8bf8d5927353:bad_probability_mass": {
+      "dot": -1.011613505945026e-07,
+      "cosine": -0.014871930552641308,
+      "left_norm": 0.00031055140844586735,
+      "right_norm": 0.021903512601175526
+    },
+    "lit@8bf8d5927353:good_probability_mass": {
+      "dot": -1.0100698330709269e-07,
+      "cosine": -0.014852980081698178,
+      "left_norm": 0.0003104731407344836,
+      "right_norm": 0.021903512601175526
+    },
+    "lit@8bf8d5927353:loss": {
+      "dot": -0.047533429933684715,
+      "cosine": -0.014985640021050716,
+      "left_norm": 144.81384691007622,
+      "right_norm": 0.021903512601175526
+    },
+    "lit@8bf8d5927353:mean_margin": {
+      "dot": -0.0475334884306227,
+      "cosine": -0.014985653931592352,
+      "left_norm": 144.81389070033455,
+      "right_norm": 0.021903512601175526
+    },
+    "lit@9e3d565a1f26:bad_probability_mass": {
+      "dot": -5.277783608965661e-05,
+      "cosine": -0.023509264969858463,
+      "left_norm": 0.10249407544168343,
+      "right_norm": 0.021903512601175526
+    },
+    "lit@9e3d565a1f26:good_probability_mass": {
+      "dot": 2.427700907157772e-06,
+      "cosine": 0.042594034865221495,
+      "left_norm": 0.002602151820978561,
+      "right_norm": 0.021903512601175526
+    },
+    "lit@9e3d565a1f26:loss": {
+      "dot": 0.10894022048415931,
+      "cosine": 0.041260664754734555,
+      "left_norm": 120.54196375757736,
+      "right_norm": 0.021903512601175526
+    },
+    "lit@9e3d565a1f26:mean_margin": {
+      "dot": 0.10896162920931908,
+      "cosine": 0.04125886918082528,
+      "left_norm": 120.57089941718517,
+      "right_norm": 0.021903512601175526
+    },
+    "sym@352819703f8e:bad_probability_mass": {
+      "dot": 0.0019676837518376577,
+      "cosine": 0.03572211754089778,
+      "left_norm": 2.5148051285580646,
+      "right_norm": 0.021903512601175526
+    },
+    "sym@352819703f8e:good_probability_mass": {
+      "dot": 2.235694101101931e-20,
+      "cosine": 0.0201697014472511,
+      "left_norm": 5.060566592676158e-17,
+      "right_norm": 0.021903512601175526
+    },
+    "sym@352819703f8e:loss": {
+      "dot": 0.04359920335616166,
+      "cosine": 0.015003037413636448,
+      "left_norm": 132.67393027954893,
+      "right_norm": 0.021903512601175526
+    },
+    "sym@352819703f8e:mean_margin": {
+      "dot": 0.04359920335616166,
+      "cosine": 0.015003037413636448,
+      "left_norm": 132.67393027954893,
+      "right_norm": 0.021903512601175526
+    },
+    "sym@ace1dbd36941:bad_probability_mass": {
+      "dot": 0.006854838886994613,
+      "cosine": 0.025824651500046633,
+      "left_norm": 12.118504134515023,
+      "right_norm": 0.021903512601175526
+    },
+    "sym@ace1dbd36941:good_probability_mass": {
+      "dot": 0.006854838201899798,
+      "cosine": 0.025824636475832243,
+      "left_norm": 12.118509973635076,
+      "right_norm": 0.021903512601175526
+    },
+    "sym@ace1dbd36941:loss": {
+      "dot": 0.0,
+      "cosine": 0.0,
+      "left_norm": 0.0,
+      "right_norm": 0.021903512601175526
+    },
+    "sym@ace1dbd36941:mean_margin": {
+      "dot": 0.013824856703485476,
+      "cosine": 0.004756339582276639,
+      "left_norm": 132.70094564574399,
+      "right_norm": 0.021903512601175526
+    }
+  },
+  "held_out_regressions": [
+    "bind_reference_bound_children@1984b657df03:good_probability_mass",
+    "bind_reference_bound_children@1984b657df03:loss",
+    "bind_reference_bound_children@1984b657df03:mean_margin",
+    "bind_reference_bound_children@2ee3f35e1722:bad_probability_mass",
+    "bind_reference_bound_children@2ee3f35e1722:good_probability_mass",
+    "bind_reference_bound_children@2ee3f35e1722:loss",
+    "bind_reference_bound_children@2ee3f35e1722:mean_margin",
+    "bind_reference_bound_children@3372dde0d406:bad_probability_mass",
+    "bind_reference_bound_children@3372dde0d406:good_probability_mass",
+    "bind_reference_bound_children@3372dde0d406:loss",
+    "bind_reference_bound_children@3372dde0d406:mean_margin",
+    "bind_reference_bound_children@657128240a93:bad_probability_mass",
+    "bind_reference_bound_children@657128240a93:good_probability_mass",
+    "bind_reference_bound_children@657128240a93:mean_margin",
+    "bind_reference_root_children@20976f4f6708:bad_probability_mass",
+    "bind_reference_root_children@20976f4f6708:good_probability_mass",
+    "bind_reference_root_children@20976f4f6708:mean_margin",
+    "component_bound@00120edb53c5:bad_probability_mass",
+    "component_bound@7797914f31d9:loss",
+    "component_bound@8dbf7e9dcd02:bad_probability_mass",
+    "component_bound@8f1f99155bd2:bad_probability_mass",
+    "component_bound@8f1f99155bd2:good_probability_mass",
+    "component_bound@8f1f99155bd2:loss",
+    "component_bound@8f1f99155bd2:mean_margin",
+    "grammar_rsqb_bound_populated@3cf40154baf5:bad_probability_mass",
+    "grammar_rsqb_bound_populated@3cf40154baf5:good_probability_mass",
+    "lit@65de1a885d2c:bad_probability_mass",
+    "lit@65de1a885d2c:good_probability_mass",
+    "lit@65de1a885d2c:loss",
+    "lit@65de1a885d2c:mean_margin",
+    "lit@8bf8d5927353:bad_probability_mass",
+    "lit@8bf8d5927353:good_probability_mass",
+    "lit@8bf8d5927353:loss",
+    "lit@8bf8d5927353:mean_margin",
+    "lit@9e3d565a1f26:bad_probability_mass"
+  ],
+  "checkpoint": "/home/codex/repos/slm-training/outputs/autoresearch/e228-candidate-margin-alignment/runs/e228-candidate-margin-matched/checkpoints/last.pt",
+  "checkpoint_sha": "7a9be4a665e216d7f7e73883ad74ad972bbf30846896d0c29188d6482f5b093a",
+  "events_path": "src/slm_training/resources/data/preference/e283_signature_support_repair_v1/events.jsonl"
+}
