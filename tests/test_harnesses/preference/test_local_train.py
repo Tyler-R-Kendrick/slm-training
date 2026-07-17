@@ -16,6 +16,7 @@ from slm_training.harnesses.preference.local_decisions import (
 from slm_training.harnesses.preference.local_train import (
     _event_logits,
     _event_logits_many,
+    _gradient_alignment,
     _minimum_norm_gradient,
     _project_conflicting_gradients,
     _guard_strata_regressions,
@@ -131,6 +132,17 @@ def test_project_conflicting_gradients_removes_negative_component() -> None:
     }
     assert combined[0] is not None
     assert torch.allclose(combined[0], torch.tensor([0.25, 0.75]))
+
+
+def test_gradient_alignment_reports_cosine_and_norms() -> None:
+    report = _gradient_alignment(
+        [torch.tensor([1.0, 0.0])], [torch.tensor([-1.0, 1.0])]
+    )
+
+    assert report["dot"] == -1.0
+    assert report["left_norm"] == 1.0
+    assert report["right_norm"] == pytest.approx(2**0.5)
+    assert report["cosine"] == pytest.approx(-(2**-0.5))
 
 
 def test_minimum_norm_gradient_certifies_common_descent() -> None:
