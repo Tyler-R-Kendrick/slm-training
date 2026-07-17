@@ -21,6 +21,7 @@ POLICIES = (
     "expansion",
     "contraction",
     "reorder",
+    "macro_substitution",
 )
 DEFAULT_LENGTH_BUCKETS = (32, 64, 96, 128, 192, 256, 384, 512)
 
@@ -446,6 +447,21 @@ def corrupt_tokens(
             lo, hi = spans[0] if spans else (valid[0], valid[-1] + 1)
             noisy[lo:hi] = reversed(noisy[lo:hi])
         predict = [left != right for left, right in zip(noisy, target)]
+    elif policy == "macro_substitution":
+        # C3: substitute whole bound blocks per step — every corpus-macro
+        # token is one semantic block, so masking all macro positions makes
+        # the model restore complete idioms rather than fragments. Falls back
+        # to uniform masking when the row carries no macro tokens.
+        is_macro = getattr(tokenizer, "is_macro_id", None)
+        macro_positions = (
+            [index for index in valid if bool(is_macro(clean[index]))]
+            if callable(is_macro)
+            else []
+        )
+        if macro_positions:
+            mask_positions(macro_positions)
+        else:
+            mask_positions(rng.sample(valid, count) if count < len(valid) else valid)
 
     if not any(predict):
         mask_positions([valid[0]])

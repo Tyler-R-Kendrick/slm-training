@@ -346,4 +346,14 @@ def engine_for_dsl(dsl: str | None = None) -> OpenUIIncrementalEngine | None:
         return OpenUIIncrementalEngine()
     if key == "toy-layout":
         return OpenUIIncrementalEngine(GRAMMARS_DIR / "toy_layout.lark")
+    # F1 pack seam: any registered backend that carries a Lark grammar path
+    # gets a fastpath engine without editing this function.
+    try:
+        from slm_training.dsl.grammar.backends import get_backend
+
+        info = get_backend(key).info
+        if info.grammar_path is not None:
+            return OpenUIIncrementalEngine(info.grammar_path)
+    except KeyError:
+        pass
     return None

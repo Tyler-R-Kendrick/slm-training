@@ -46,7 +46,8 @@ def tok() -> DSLNativeTokenizer:
 
 
 def test_vocab_is_fixed_and_typed(tok: DSLNativeTokenizer) -> None:
-    assert tok.vocab_size <= 400
+    # Fixed corpus-independent vocabulary incl. 64 reserved <MACRO_i> rows (C3).
+    assert tok.vocab_size <= 480
     assert tok.kind_of(tok.token_to_id["Stack"]) == TokenKind.COMPONENT
     assert tok.kind_of(tok.token_to_id["="]) == TokenKind.STRUCT
     assert tok.kind_of(tok.sym_id(0)) == TokenKind.SYM
@@ -251,6 +252,97 @@ def test_terminal_kind_alignment(tok: DSLNativeTokenizer) -> None:
     for punct in ("=", "(", ")", "[", "]", ","):
         assert punct in tok.token_to_id
     assert NL in tok.token_to_id
+
+
+def test_macro_induction_round_trip_and_persistence(tmp_path) -> None:
+    """C3 (SLM-27): mined macros are deterministic, fixed-vocabulary only,
+    shorten the corpus, and expand back to canonical-equal programs."""
+    import json
+
+    from slm_training.data.macro_induction import (
+        MacroInductionConfig,
+        induce_macros,
+    )
+    from slm_training.dsl.canonicalize import canonical_equal, canonicalize
+    from slm_training.models.dsl_tokenizer import MACRO_EXPANDABLE_KINDS
+
+    path = Path("src/slm_training/resources/train_seeds.jsonl")
+    if not path.is_file():
+        pytest.skip("fixtures missing")
+    sources = [
+        json.loads(line)["openui"]
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ][:12]
+
+    tok = DSLNativeTokenizer.build()
+    first = induce_macros(sources, tok, MacroInductionConfig())
+    second = induce_macros(sources, DSLNativeTokenizer.build(), MacroInductionConfig())
+    assert first.expansions == second.expansions  # deterministic
+    assert first.expansions, "expected macros on the fixture corpus"
+    for expansion in first.expansions:
+        assert len(expansion) >= 2
+        for token in expansion:
+            tid = tok.token_to_id[token]
+            assert tok.id_to_kind[tid] in MACRO_EXPANDABLE_KINDS
+    assert (
+        first.stats["tokens_after_with_table"] < first.stats["tokens_before"]
+    )
+
+    tok.set_macro_expansions(first.expansions)
+    plain = DSLNativeTokenizer.build()
+    for source in sources:
+        canon = canonicalize(source)
+        table = SymbolTable()
+        ids = tok.encode(canon, add_special=False, table=table)
+        plain_ids = plain.encode(canon, add_special=False, table=SymbolTable())
+        assert len(ids) <= len(plain_ids)
+        assert canonical_equal(tok.decode(ids, table=table), canon)
+
+    saved = tmp_path / "macro_tok.json"
+    tok.save(saved)
+    loaded = DSLNativeTokenizer.load(saved)
+    assert loaded.macro_expansions == tok.macro_expansions
+    table = SymbolTable()
+    canon = canonicalize(sources[0])
+    assert loaded.encode(canon, add_special=False, table=table) == tok.encode(
+        canon, add_special=False, table=SymbolTable()
+    )
+
+
+def test_macro_expansions_fail_closed_on_dynamic_tokens(
+    tok: DSLNativeTokenizer,
+) -> None:
+    with pytest.raises(ValueError, match="non-fixed kind"):
+        tok.set_macro_expansions([("<SYM_0>", "=")])
+    with pytest.raises(ValueError, match="too short"):
+        tok.set_macro_expansions([("=",)])
+    # An orphaned macro row renders as nothing rather than fake content.
+    assert tok.decode([tok.macro_id(5)]) == ""
+
+
+def test_surface_identifiers_round_trip_and_isolate_the_lever(
+    tok: DSLNativeTokenizer,
+) -> None:
+    """C4 (SLM-28): symbol_anonymization=False keeps binder/state names as
+    byte-channel surface text (exact round trip, no table needed at decode)
+    while placeholders still ride <SYM_i> — the one-lever comparison arm."""
+    for program in (HERO, CTA, V05_PROGRAM):
+        table = SymbolTable()
+        ids = tok.encode(program, table=table, symbol_anonymization=False)
+        assert not any(tok.is_bind_id(i) for i in ids)
+        assert not any(
+            tok.kind_of(i) == TokenKind.STATE for i in ids
+        )
+        assert tok.decode(ids, table=table) == program
+    # Placeholder channel is untouched by the flag.
+    table = SymbolTable()
+    ids = tok.encode(HERO, table=table, symbol_anonymization=False)
+    assert any(tok.is_sym_id(i) for i in ids)
+    # Nameless relative refs cannot carry surface names: fail closed.
+    rel = DSLNativeTokenizer.build(bind_encoding="relative")
+    with pytest.raises(ValueError, match="relative"):
+        rel.encode(HERO, symbol_anonymization=False)
 
 
 def test_fixture_seeds_round_trip(tok: DSLNativeTokenizer) -> None:

@@ -1,0 +1,371 @@
+{
+  "matrix": "grammar-experiment-matrix-x",
+  "reference": "docs/design/quality-experiment-matrix.md",
+  "gate_policy": {
+    "smoke": {
+      "meaningful_program_rate": 0.66,
+      "structural_similarity": 0.35,
+      "component_type_recall": 0.35,
+      "placeholder_fidelity": 0.25,
+      "reward_score": 0.3
+    },
+    "held_out": {
+      "meaningful_program_rate": 0.4,
+      "structural_similarity": 0.3,
+      "component_type_recall": 0.3,
+      "placeholder_fidelity": 0.15
+    },
+    "adversarial": {
+      "meaningful_program_rate": 0.25,
+      "structural_similarity": 0.25,
+      "component_type_recall": 0.2
+    },
+    "ood": {
+      "meaningful_program_rate": 0.25,
+      "structural_similarity": 0.25,
+      "component_type_recall": 0.2
+    },
+    "rico_held": {
+      "meaningful_program_rate": 0.1,
+      "structural_similarity": 0.2,
+      "component_type_recall": 0.15
+    }
+  },
+  "halving_suites": [
+    "smoke",
+    "held_out",
+    "adversarial"
+  ],
+  "seeds": [
+    0
+  ],
+  "rico_eval_limit": 3,
+  "steps": 80,
+  "gen_steps": 8,
+  "confirmation_steps": 0,
+  "context_backend": "scratch",
+  "halving_enabled": true,
+  "survivors": [
+    {
+      "id": "X9",
+      "seed": 0
+    },
+    {
+      "id": "X22",
+      "seed": 0
+    }
+  ],
+  "results": [
+    {
+      "id": "X22",
+      "run_id": "gx_x22_kapur_tree_edit",
+      "seed": 0,
+      "model_name": "tree_edit_diffusion",
+      "description": "D3 Kapur-style baseline: all-valid tree edits + value-guided search",
+      "checkpoint": "outputs/runs/gx_x22_kapur_tree_edit/checkpoints_s0/last.pt",
+      "pass": false,
+      "failures": [
+        "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+        "smoke:structural_similarity actual=0.3225 need>=0.35",
+        "smoke:component_type_recall actual=0.0 need>=0.35",
+        "held_out:meaningful_program_rate actual=0.2 need>=0.4",
+        "held_out:component_type_recall actual=0.12857142857142856 need>=0.3",
+        "rico_held:meaningful_program_rate actual=0.0 need>=0.1",
+        "rico_held:structural_similarity actual=0.09463333333333335 need>=0.2",
+        "rico_held:component_type_recall actual=0.0 need>=0.15"
+      ],
+      "suites": {
+        "smoke": {
+          "parse_rate": 1.0,
+          "placeholder_fidelity": 0.5277777777777778,
+          "structural_similarity": 0.3225,
+          "reward_score": 0.8073333333333333,
+          "ast_node_f1": 0.35000000000000003,
+          "ast_edge_f1": 0.0,
+          "tree_edit_similarity": 0.3225,
+          "topology_quality_score": null,
+          "topology_structure_score": null,
+          "topology_trace_score": null,
+          "topology_efficiency_score": null,
+          "topology_composite": null,
+          "topology_telemetry": null,
+          "n": 3
+        },
+        "held_out": {
+          "parse_rate": 1.0,
+          "placeholder_fidelity": 0.29,
+          "structural_similarity": 0.32428,
+          "reward_score": 0.736,
+          "ast_node_f1": 0.4033333333333333,
+          "ast_edge_f1": 0.13333333333333333,
+          "tree_edit_similarity": 0.32428,
+          "topology_quality_score": null,
+          "topology_structure_score": null,
+          "topology_trace_score": null,
+          "topology_efficiency_score": null,
+          "topology_composite": null,
+          "topology_telemetry": null,
+          "n": 5
+        },
+        "adversarial": {
+          "parse_rate": 1.0,
+          "placeholder_fidelity": 0.47916666666666663,
+          "structural_similarity": 0.352525,
+          "reward_score": 0.7927500000000001,
+          "ast_node_f1": 0.4027777777777778,
+          "ast_edge_f1": 0.125,
+          "tree_edit_similarity": 0.352525,
+          "topology_quality_score": null,
+          "topology_structure_score": null,
+          "topology_trace_score": null,
+          "topology_efficiency_score": null,
+          "topology_composite": null,
+          "topology_telemetry": null,
+          "n": 4
+        },
+        "ood": {
+          "parse_rate": 1.0,
+          "placeholder_fidelity": 0.2583333333333333,
+          "structural_similarity": 0.372925,
+          "reward_score": 0.7265,
+          "ast_node_f1": 0.49783549783549785,
+          "ast_edge_f1": 0.225,
+          "tree_edit_similarity": 0.372925,
+          "topology_quality_score": null,
+          "topology_structure_score": null,
+          "topology_trace_score": null,
+          "topology_efficiency_score": null,
+          "topology_composite": null,
+          "topology_telemetry": null,
+          "n": 4
+        },
+        "rico_held": {
+          "parse_rate": 1.0,
+          "placeholder_fidelity": 0.11616161616161617,
+          "structural_similarity": 0.09463333333333335,
+          "reward_score": 0.6838666666666667,
+          "ast_node_f1": 0.12573099415204678,
+          "ast_edge_f1": 0.0,
+          "tree_edit_similarity": 0.09463333333333335,
+          "topology_quality_score": null,
+          "topology_structure_score": null,
+          "topology_trace_score": null,
+          "topology_efficiency_score": null,
+          "topology_composite": null,
+          "topology_telemetry": null,
+          "n": 3
+        }
+      }
+    },
+    {
+      "id": "X9",
+      "run_id": "gx_x9_topology_base",
+      "seed": 0,
+      "model_name": "grammar_diffusion",
+      "description": "Typed subtree collapse + synchronous expansion",
+      "checkpoint": "outputs/runs/gx_x9_topology_base/checkpoints_s0/last.pt",
+      "pass": false,
+      "failures": [
+        "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+        "smoke:structural_similarity actual=0.0 need>=0.35",
+        "smoke:component_type_recall actual=0.0 need>=0.35",
+        "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+        "smoke:reward_score actual=0.0 need>=0.3",
+        "held_out:meaningful_program_rate actual=0.0 need>=0.4",
+        "held_out:structural_similarity actual=0.0 need>=0.3",
+        "held_out:component_type_recall actual=0.0 need>=0.3",
+        "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+        "adversarial:meaningful_program_rate actual=0.0 need>=0.25",
+        "adversarial:structural_similarity actual=0.0 need>=0.25",
+        "adversarial:component_type_recall actual=0.0 need>=0.2",
+        "ood:meaningful_program_rate actual=0.0 need>=0.25",
+        "ood:structural_similarity actual=0.0 need>=0.25",
+        "ood:component_type_recall actual=0.0 need>=0.2",
+        "rico_held:meaningful_program_rate actual=0.0 need>=0.1",
+        "rico_held:structural_similarity actual=0.0 need>=0.2",
+        "rico_held:component_type_recall actual=0.0 need>=0.15"
+      ],
+      "suites": {
+        "smoke": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.0,
+          "reward_score": 0.0,
+          "ast_node_f1": null,
+          "ast_edge_f1": null,
+          "tree_edit_similarity": 0.0,
+          "topology_quality_score": null,
+          "topology_structure_score": null,
+          "topology_trace_score": null,
+          "topology_efficiency_score": null,
+          "topology_composite": null,
+          "topology_telemetry": null,
+          "n": 3
+        },
+        "held_out": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.0,
+          "reward_score": 0.0,
+          "ast_node_f1": null,
+          "ast_edge_f1": null,
+          "tree_edit_similarity": 0.0,
+          "topology_quality_score": null,
+          "topology_structure_score": null,
+          "topology_trace_score": null,
+          "topology_efficiency_score": null,
+          "topology_composite": null,
+          "topology_telemetry": null,
+          "n": 5
+        },
+        "adversarial": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.0,
+          "reward_score": 0.0,
+          "ast_node_f1": null,
+          "ast_edge_f1": null,
+          "tree_edit_similarity": 0.0,
+          "topology_quality_score": null,
+          "topology_structure_score": null,
+          "topology_trace_score": null,
+          "topology_efficiency_score": null,
+          "topology_composite": null,
+          "topology_telemetry": null,
+          "n": 4
+        },
+        "ood": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.0,
+          "reward_score": 0.0,
+          "ast_node_f1": null,
+          "ast_edge_f1": null,
+          "tree_edit_similarity": 0.0,
+          "topology_quality_score": null,
+          "topology_structure_score": null,
+          "topology_trace_score": null,
+          "topology_efficiency_score": null,
+          "topology_composite": null,
+          "topology_telemetry": null,
+          "n": 4
+        },
+        "rico_held": {
+          "parse_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.0,
+          "reward_score": 0.0,
+          "ast_node_f1": null,
+          "ast_edge_f1": null,
+          "tree_edit_similarity": 0.0,
+          "topology_quality_score": null,
+          "topology_structure_score": null,
+          "topology_trace_score": null,
+          "topology_efficiency_score": null,
+          "topology_composite": null,
+          "topology_telemetry": null,
+          "n": 3
+        }
+      }
+    }
+  ],
+  "source_commit": "ea92efeef6359991c106e1e6ce941da134da8ccd",
+  "training_source_commit": "ea92efeef6359991c106e1e6ce941da134da8ccd",
+  "evaluation_source_commit": "ea92efeef6359991c106e1e6ce941da134da8ccd",
+  "legacy_fixed_canvas": {
+    "matrix": "grammar-experiment-matrix-x",
+    "reference": "docs/design/quality-experiment-matrix.md",
+    "steps": 40,
+    "seeds": [
+      0
+    ],
+    "note": "Partial X matrix: X0 twotower baseline (40 steps, partial suites) and X2/E54 grammar_diffusion honest contract (80 steps). Full 3-seed successive-halving still recommended offline.",
+    "results": [
+      {
+        "id": "X0",
+        "run_id": "gx_x0_baseline",
+        "seed": 0,
+        "model": "twotower",
+        "honest_slot_contract": true,
+        "suites": {
+          "smoke": {
+            "parse_rate": 0.0,
+            "placeholder_fidelity": 0.0,
+            "structural_similarity": 0.057499999999999996,
+            "reward_score": 0.0,
+            "n": 3
+          },
+          "held_out": {
+            "parse_rate": 0.0,
+            "placeholder_fidelity": 0.0,
+            "structural_similarity": 0.050280000000000005,
+            "reward_score": 0.0,
+            "n": 5
+          }
+        },
+        "notes": "Corrected baseline without V5 template stack; underfit at 40 steps (partial eval)."
+      },
+      {
+        "id": "X2",
+        "run_id": "qx_e54_grammar_honest",
+        "model": "grammar_diffusion",
+        "honest_slot_contract": true,
+        "pass": false,
+        "failures": [
+          "smoke:parse_rate actual=0.0 need>=0.66",
+          "smoke:structural_similarity actual=0.0 need>=0.35",
+          "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+          "smoke:reward_score actual=0.0 need>=0.3",
+          "held_out:parse_rate actual=0.0 need>=0.4",
+          "held_out:structural_similarity actual=0.0 need>=0.3",
+          "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+          "adversarial:parse_rate actual=0.0 need>=0.25",
+          "adversarial:structural_similarity actual=0.0 need>=0.25",
+          "ood:parse_rate actual=0.0 need>=0.25",
+          "ood:structural_similarity actual=0.0 need>=0.25",
+          "rico_held:parse_rate actual=0.0 need>=0.1",
+          "rico_held:structural_similarity actual=0.0 need>=0.2"
+        ],
+        "suites": {
+          "smoke": {
+            "parse_rate": 0.0,
+            "placeholder_fidelity": 0.0,
+            "structural_similarity": 0.0,
+            "reward_score": 0.0,
+            "n": 3
+          },
+          "held_out": {
+            "parse_rate": 0.0,
+            "placeholder_fidelity": 0.0,
+            "structural_similarity": 0.0,
+            "reward_score": 0.0,
+            "n": 5
+          },
+          "adversarial": {
+            "parse_rate": 0.0,
+            "placeholder_fidelity": 0.0,
+            "structural_similarity": 0.0,
+            "reward_score": 0.0,
+            "n": 4
+          },
+          "ood": {
+            "parse_rate": 0.0,
+            "placeholder_fidelity": 0.0,
+            "structural_similarity": 0.0,
+            "reward_score": 0.0,
+            "n": 4
+          },
+          "rico_held": {
+            "parse_rate": 0.0,
+            "placeholder_fidelity": 0.0,
+            "structural_similarity": 0.0,
+            "reward_score": 0.0,
+            "n": 20
+          }
+        },
+        "notes": "Aliased from E54 grammar_diffusion honest contract run (80 steps)."
+      }
+    ],
+    "built_at": "2026-07-13T20:29:21.008135+00:00"
+  }
+}

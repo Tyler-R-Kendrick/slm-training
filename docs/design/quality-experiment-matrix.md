@@ -1550,6 +1550,73 @@ minimum support per grammar-derived signature, followed by this same profile;
 do not add token/component special cases. Full evidence:
 [iter-e276-decision-signature-alignment-20260717.md](iter-e276-decision-signature-alignment-20260717.md).
 
+## V16 C3 corpus-mined macro tokens (fixture-run 2026-07-17)
+
+Track C3 (Stitch [arXiv:2211.16605](https://arxiv.org/abs/2211.16605) /
+LILO [arXiv:2310.19791](https://arxiv.org/abs/2310.19791), **Adapted**: only
+the greedy-MDL compression objective is reused — no lambda-calculus
+anti-unification, no learned library): recurring fixed-vocabulary token spans
+are mined offline from the canonicalized training corpus
+(`data/macro_induction.py`, `net_gain = freq*(len-1) - len`) and bound to
+reserved `<MACRO_i>` ids (tokenizer v3, 64 rows). Expansion is deterministic
+and lossless at decode; the table persists in the tokenizer sidecar so train
+and decode cannot disagree. Macros never contain `<SYM_i>`/`<BIND_j>`/
+`<STATE_k>` or `NL`, sidestepping the alpha-equivalence hashing pitfall
+([arXiv:2401.02948](https://arxiv.org/abs/2401.02948)). New
+`macro_substitution` diffusion policy masks whole macro blocks.
+
+| ID | Isolated lever | Status |
+| --- | --- | --- |
+| E280 | C3 `macro_tokens=true` on the lexer/diffusion base | fixture-run |
+
+### V16 measured results (CPU, fixture-grade, 2026-07-17)
+
+Recipe: `--steps 80 --scratch-control --no-design-md-context --rico-limit 3`,
+batch 4, seed 0, lr 3e-4, fixture v1 corpus (108 records). JSON:
+[quality-matrix-results-iter-v16-c3-20260717.json](quality-matrix-results-iter-v16-c3-20260717.json);
+narrative: [iter-e280-c3-macro-tokens-20260717.md](iter-e280-c3-macro-tokens-20260717.md).
+
+Induction: 16 macros (cap), corpus 4,964 → 3,261 tokens incl. table (−34.3%),
+description length −35.5%; matched-recipe training throughput
+`seen_target_tokens` 15,417 → 10,118 (−34.4%). The 16-entry table round-trips
+through the checkpoint sidecar and evals score expanded output. All honest
+gates fail (syntax/meaningful parse 0.0, struct sim 0.05–0.17, train loss
+5.61 @80) — consistent with every 80-step fixture row. **Wiring evidence
+only**: no matched no-macro control row in this run; whether sequence
+compression buys quality is the open frontier-scale matched pair. No gate
+weakened; nothing promoted.
+
+## V17 C4 names-disappear matched pair (fixture-run 2026-07-17)
+
+Track C4 ("When Names Disappear" [arXiv:2510.03178](https://arxiv.org/abs/2510.03178)):
+does anonymizing binder/state identifiers to `<BIND_j>`/`<STATE_k>` — the
+assumption C1–C3 build on — hurt this DSL the way it hurts general code
+models? One lever (`symbol_anonymization`); placeholders keep `<SYM_i>` in
+both arms. Both arms decode unconstrained (`grammar_constrained=False`,
+per-experiment knob) because the NAME gate admits only `<BIND_j>` ids and
+would confound the comparison; surface mode + constrained decode / macros /
+relative binding fail closed.
+
+| ID | Isolated lever | Status |
+| --- | --- | --- |
+| E281 | Anonymized-symbol control (unconstrained decode) | fixture-run |
+| E282 | Surface binder/state identifiers via byte channel | fixture-run |
+
+### V17 measured results (CPU, fixture-grade, 2026-07-17)
+
+Recipe: `--steps 80 --scratch-control --no-design-md-context --rico-limit 3`,
+batch 4, seed 0, lr 3e-4, fixture v1 corpus. JSON:
+[quality-matrix-results-iter-v17-c4-20260717.json](quality-matrix-results-iter-v17-c4-20260717.json);
+narrative: [iter-e281-e282-c4-names-disappear-20260717.md](iter-e281-e282-c4-names-disappear-20260717.md).
+
+Syntax/meaningful parse 0.0 on both arms (fixture wall); structural
+similarity favors the **surface** arm on 5/5 suites (0.23/0.17/0.16/0.18/0.11
+vs 0.12/0.09/0.11/0.09/0.03) despite 1.72× longer targets at the same step
+budget. **Verdict: open** — the primary metric never leaves zero, so the
+threat is neither confirmed nor refuted; the secondary signal is a small
+adverse data point for the anonymization defense, to be settled by a
+frontier-scale replicated pair. No gate weakened; nothing promoted.
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

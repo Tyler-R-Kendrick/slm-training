@@ -195,8 +195,9 @@ def _skip(gate: Gate, detail: str) -> GateResult:
 def _grammar_backend(dsl: str | None = None) -> GrammarBackend:
     """Grammar-gate backend via the pluggable registry.
 
-    Defaults to the strict OpenUI Lark CFG (the G1 gate is a pure grammar
-    check, deliberately separate from the lang-core schema gate G2).
+    F1 pack seam: defaults to the strict OpenUI Lark CFG (the G1 gate is a
+    pure grammar check, deliberately separate from the lang-core schema gate
+    G2), but the syntactic gate can be pointed at any registered backend by id.
     """
     return get_backend(dsl or "openui-lark")
 

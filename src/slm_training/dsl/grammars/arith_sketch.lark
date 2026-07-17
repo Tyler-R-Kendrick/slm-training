@@ -1,0 +1,32 @@
+// Arithmetic sketch DSL (G4 / SLM-36): straight-line reasoning traces with
+// checkable numeric answers. The final binding must be `root` — the generic
+// transformer resolves refs into it, giving deterministic bound-span
+// expansion for free. Example:
+//   x = 3
+//   y = x * 4
+//   root = y + 2
+
+start: statement*
+
+statement: NAME "=" expr (_NL)*
+
+?expr: add
+
+?add: add "+" mul -> add_expr
+    | add "-" mul -> sub_expr
+    | mul
+
+?mul: mul "*" atom -> mul_expr
+    | mul "/" atom -> div_expr
+    | atom
+
+?atom: NUMBER
+     | NAME -> ref
+     | "(" expr ")"
+
+NAME: /[A-Za-z_][A-Za-z0-9_]*/
+NUMBER: /[0-9]+(\.[0-9]+)?/
+
+_NL: /(\r?\n)+/
+%import common.WS_INLINE
+%ignore WS_INLINE

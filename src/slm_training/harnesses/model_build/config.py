@@ -169,6 +169,11 @@ class ModelBuildConfig:
     use_symbol_table: bool = True
     # C1: absolute | relative (De Bruijn <BINDDEF>/<BINDREL_±k> binder channel)
     bind_encoding: str = "absolute"
+    # C3: corpus-mined <MACRO_i> tokens with deterministic decode expansion.
+    macro_tokens: bool = False
+    # C4: False = surface binder/state identifiers (byte channel) instead of
+    # the anonymized <BIND_j>/<STATE_k> pools; placeholders unaffected.
+    symbol_anonymization: bool = True
     factorized_embeddings: bool = False
     mask_pattern: str = "random"  # random | mixed | diffusion
     statement_mask_prob: float = 0.35

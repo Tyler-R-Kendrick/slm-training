@@ -383,6 +383,19 @@ class LarkFileBackend:
             serialized=source.strip(),
         )
 
+    def resolved_data(self, source: str) -> dict[str, Any]:
+        """Transformer output with refs resolved: {'bindings', 'root', ...}.
+
+        Unlike :meth:`parse`, the root survives even when it is not an
+        element dict (e.g. a numeric expression in the arith-sketch DSL) —
+        value-semantics packs evaluate this instead of `Program.root`.
+        """
+        text = source if source.endswith("\n") else source + "\n"
+        try:
+            return self._transform(self._lark().parse(text))
+        except UnexpectedInput as exc:
+            raise ParseError(str(exc)) from exc
+
     def validate(self, source: str) -> Program:
         program = self.parse(source)
         if program.root is None:
