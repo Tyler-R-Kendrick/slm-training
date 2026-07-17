@@ -1446,6 +1446,16 @@ cover the full metric-gradient constraint set before any training. Full
 evidence:
 [iter-e272-mgda-sgd-preflight-20260717.md](iter-e272-mgda-sgd-preflight-20260717.md).
 
+E273 differentiated all four guarded metrics for every train decision kind:
+56 objectives, 55 active. Their minimum-norm vector is effectively zero
+(`norm_sq=3.90e-8`) and still lacks common descent; twelve held-out objectives
+oppose it. Probability-mass objectives dominate the conflict. No
+metric-complete optimizer run is justified. Before changing data or model
+capacity, verify whether good/bad mass is evaluated in the wrong probability
+space: it currently uses full-vocabulary softmax although constrained decoding
+chooses only among `legal_token_ids`. Full evidence:
+[iter-e273-metric-complete-feasibility-20260717.md](iter-e273-metric-complete-feasibility-20260717.md).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
