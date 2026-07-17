@@ -742,7 +742,7 @@ def test_dsl_program_source_manifest_is_complete() -> None:
 def test_local_decision_source_manifest_is_complete() -> None:
     from scripts.autoresearch import _load_sources
 
-    allowed_status = {"Direct", "Adapted", "Adjacent", "Rejected"}
+    allowed_status = {"Faithful", "Adapted", "Surrogate", "Adjacent"}
     required_metadata = (
         "category",
         "local_decision_takeaway",
@@ -751,7 +751,7 @@ def test_local_decision_source_manifest_is_complete() -> None:
         "limitations",
     )
     path = Path("src/slm_training/resources/autoresearch/local-decision-sources.json")
-    manifest = json.loads(path.read_text())
+    manifest = json.loads(path.read_text(encoding="utf-8"))
     rows = _load_sources(path)
     papers = [row for row in rows if row.uri.startswith("https://arxiv.org/abs/")]
 
