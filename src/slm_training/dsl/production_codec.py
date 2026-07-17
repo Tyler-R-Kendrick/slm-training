@@ -781,6 +781,112 @@ def _decode_v05(
     return "\n".join(lines)
 
 
+CHOICE_STOP = "."
+
+
+def encode_choices(
+    source: str,
+    *,
+    slot_contract: Iterable[str] | None = None,
+) -> ProductionProgram:
+    """B1: pure grammar-choice stream — only semantic decisions remain.
+
+    A reversible transform of the production stream that strips every token a
+    deterministic detokenizer can reconstruct:
+
+    - statement markers (``=``) — a statement begins at each component open
+      at nesting depth zero;
+    - the two distinct close delimiters (``]`` list close, ``-`` component
+      close) collapse into one generic stop decision (``.``): at any point
+      exactly one closeable context is on top of the stack, so the concrete
+      delimiter is state, not choice.
+
+    ``[`` stays: it is the value-shape discriminator that identifies which
+    prop a value fills (the codec's prop mapping is positional-by-presence),
+    and "this statement has a children list" is a real semantic decision.
+    v0.5 sidecar programs are out of scope (raise) — fixture-first, recorded
+    in docs/design/choice-sequence-codec.md.
+    """
+    program = encode_openui(source, slot_contract=slot_contract)
+    tokens = list(program.tokens)
+    if tokens and tokens[0] == V05:
+        raise ParseError("choice-sequence codec does not support v0.5 sidecars yet")
+    choices: list[str] = []
+    for token in tokens:
+        if token == STMT:
+            continue
+        if token in (LIST_CLOSE, CLOSE):
+            choices.append(CHOICE_STOP)
+        else:
+            choices.append(token)
+    return ProductionProgram(
+        tokens=tuple(choices), slot_contract=program.slot_contract
+    )
+
+
+def choices_to_productions(tokens: Iterable[str]) -> list[str]:
+    """Deterministically re-expand a choice stream to the production stream."""
+    out: list[str] = []
+    stack: list[str] = []  # 'c' component scope, 'l' list scope
+    for token in tokens:
+        if token == CHOICE_STOP:
+            if not stack:
+                raise ParseError("choice stream closes more scopes than it opens")
+            top = stack.pop()
+            out.append(LIST_CLOSE if top == "l" else CLOSE)
+            continue
+        if token.startswith(OPEN_PREFIX):
+            if not stack:
+                out.append(STMT)  # depth-0 component open starts a statement
+            out.append(token)
+            stack.append("c")
+            continue
+        if token == LIST_OPEN:
+            out.append(token)
+            stack.append("l")
+            continue
+        out.append(token)
+    if stack:
+        raise ParseError("choice stream leaves scopes open")
+    return out
+
+
+def decode_choices(
+    tokens: Iterable[str],
+    *,
+    slot_contract: Iterable[str] | None = None,
+) -> str:
+    """Choice stream → OpenUI source via the deterministic detokenizer.
+
+    All non-lexical surface syntax is reconstructed here and certified by the
+    official lang-core serializer inside :func:`decode_productions` — the
+    model never predicts it.
+    """
+    productions = choices_to_productions(tokens)
+    # Relative refs decode transparently (the ~ sigil is detected downstream).
+    return decode_productions(productions, slot_contract=slot_contract)
+
+
+def choice_stats(source: str, **kwargs: Any) -> dict[str, float]:
+    """E2 semantic-density inputs: choices vs production vs surface size."""
+    production = encode_openui(source)
+    choices = encode_choices(source, **kwargs)
+    surface_atoms = len(re.findall(r"[A-Za-z0-9_.:]+|[^\sA-Za-z0-9_]", source))
+    return {
+        "choice_tokens": float(len(choices.tokens)),
+        "production_tokens": float(len(production.tokens)),
+        "surface_atoms": float(surface_atoms),
+        "choice_per_production": (
+            len(choices.tokens) / len(production.tokens)
+            if production.tokens
+            else 0.0
+        ),
+        "choice_per_surface_atom": (
+            len(choices.tokens) / surface_atoms if surface_atoms else 0.0
+        ),
+    }
+
+
 def roundtrip_openui(
     source: str,
     *,
