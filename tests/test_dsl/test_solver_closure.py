@@ -28,9 +28,6 @@ from slm_training.dsl.solver.support import (
     SearchCounters,
 )
 from slm_training.dsl.solver.closure import (
-    CertifiedDeduction,
-    ClosureResult,
-    WitnessRef,
     default_query_order,
     exact_closure,
 )
