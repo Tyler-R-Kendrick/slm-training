@@ -168,13 +168,17 @@ of [XGrammar](https://arxiv.org/abs/2411.15100). Implementation and exact gates:
 | --- | --- |
 | **Papers** | [Unlikelihood](https://arxiv.org/abs/1908.04319), [Token-level DPO](https://arxiv.org/abs/2404.11999), [TIS-DPO](https://arxiv.org/abs/2410.04350), [ConfPO](https://arxiv.org/abs/2506.08712), [TGDPO](https://arxiv.org/abs/2506.14574), [Antislop](https://arxiv.org/abs/2510.15061), [TokenRatio](https://arxiv.org/abs/2605.12288) |
 | **Fidelity** | **Adapted** — exact masked-token states, verifier-backed good/bad action sets, clipped logit margins, and optional frozen-reference tethering; not sequence DPO or a faithful reproduction of any cited objective |
-| **Code** | Existing preference/trace owners; detailed boundary and full 25-paper audit in [`local-decision-interventions.md`](local-decision-interventions.md) |
-| **Matrix** | Proposed/unrun V10 rows E248-E254 in [`quality-experiment-matrix.md`](quality-experiment-matrix.md) |
+| **Code** | Existing preference/trace owners; detailed boundary and full 34-paper audit in [`local-decision-interventions.md`](local-decision-interventions.md) (LDI0 contract, LDI0-01) |
+| **Matrix** | V10 in [`quality-experiment-matrix.md`](quality-experiment-matrix.md): E248 control and E249 (CE + margin) measured — E249 rejected — with E250-E254 unrun and fail-closed |
 
-SAE/ReFT discovery, removable LoRA/DoRA/PiSSA actuators, adapter routing, iterative
-remine, and RLVR are **Adjacent**. The first TwoTower implementation is a localized
-loss with a global full-parameter update. It makes no locality or ship claim until
-the registered controls run under unchanged gates.
+SAE/ReFT discovery, removable LoRA/DoRA/PiSSA/AdaLoRA actuators, PCGrad/MGDA
+multi-objective balancing, PICARD/Grammar-Aligned-Decoding/Min-p constrained
+decoding, GRPO/RLVR, and TAB-PO token-level preference are **Adjacent** — the
+LDI0-01 inventory adds them as prior art without reimplementing any. The first
+TwoTower implementation is a localized loss with a global full-parameter update. It
+makes no locality or ship claim until the registered controls run under unchanged
+gates; the measured E249-E284 chain shows stable state support is necessary but not
+sufficient for the objective.
 
 ### GRPO-lite
 

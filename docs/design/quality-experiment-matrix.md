@@ -1693,3 +1693,21 @@ self-distillation, trajectory RL) are in
 | E63 | Gate calibration | ECE / selective accuracy / abstention on `FastPathGate` | proposed |
 | E64 | Trajectory-aligned RL | MDPO/d1-style on intermediate MaskGIT states | proposed |
 | E65 | Schema generalization | Held-out schemas / rename / `toy-layout` transfer | proposed |
+
+## LDI (local decision interventions) index
+
+LDI0-01 recommits the local-decision architecture and its 34-work source inventory
+([`local-decision-interventions.md`](local-decision-interventions.md),
+[`local-decision-sources.json`](../../src/slm_training/resources/autoresearch/local-decision-sources.json)).
+The runnable local-decision experiments already live in the **V10** section above
+(E248 control and E249 measured; E250–E254 unrun / fail-closed). LDI reuses that
+campaign, the existing preference harness, and the append-only decode traces, and
+introduces no second trainer or orchestration stack.
+
+No LDI matrix rows are claimed here and no E-IDs are reserved: future LDI
+experiments draw globally unique E-IDs from the existing allocation process and are
+registered as ordinary E rows when they run.
+
+| Namespace | Scope | Status |
+| --- | --- | --- |
+| LDI0 | Evidence contract and bounded diagnostics — source inventory, separation-of-concerns invariants, E249–E284 falsification chain | inventory registered; no matrix rows claimed |
