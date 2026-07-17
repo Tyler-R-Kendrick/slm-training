@@ -14,7 +14,12 @@
     "manifest_paths_relocated": true,
     "historical_generation_contracts": 90,
     "effective_generation_rows": 119,
-    "future_generation_contract_required": true
+    "future_generation_contract_required": true,
+    "dry_normalization_validation": {
+      "records": 480,
+      "generation_contracts": 119,
+      "independent_judge_passed": 480
+    }
   },
   "training": {
     "run_id": "capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0",

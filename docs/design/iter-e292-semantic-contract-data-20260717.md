@@ -26,7 +26,9 @@ older prose judge without an exact AST contract. E292 remains immutable as the
 historical training input, but future admission now fails closed when any
 effective generation row lacks `semantic_contract`; normalization remediates
 all such rows, not only edit-derived generation rows. The next corpus version
-must therefore rebuild and judge all 119 generation rows before training.
+must therefore rebuild and judge all 119 generation rows before training. A
+full 480-record dry normalization confirmed 119/119 generation contracts and
+480/480 independent-judge passes under the strengthened gate.
 
 ## Bounded recipe
 
