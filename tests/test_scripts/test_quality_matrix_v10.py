@@ -17,6 +17,7 @@ def test_v10_registers_exact_state_ablation_rows() -> None:
         "E253",
         "E254",
         "E263",
+        "E264",
     ]
     assert rows[0].local_parent_control is True
     assert [row.local_preference_objective for row in rows[1:]] == [
@@ -27,12 +28,14 @@ def test_v10_registers_exact_state_ablation_rows() -> None:
         "ftpo_set",
         "ftpo_set",
         "ftpo_set",
+        "ftpo_set",
     ]
     by_id = {row.eid: row for row in rows}
     assert by_id["E253"].local_preference_reference_tether is True
     assert by_id["E254"].local_preference_balanced is True
     assert by_id["E263"].local_preference_reference_tether is False
     assert by_id["E263"].local_preference_balanced is False
+    assert by_id["E264"].local_preference_guarded_selection is True
     assert all(row.compiler_decode_mode == "tree" for row in rows)
 
 
