@@ -1077,6 +1077,7 @@ class ProductionCodec:
             eos_id=vocab["<eos>"],
             mask_id=vocab["<mask>"],
             unk_id=vocab["<unk>"],
+            relative_refs=relative_refs,
         )
 
     @property

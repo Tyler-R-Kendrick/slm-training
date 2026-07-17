@@ -424,6 +424,17 @@ def test_relative_refs_are_translation_invariant() -> None:
     assert base_deltas & shifted_deltas
 
 
+def test_production_codec_build_preserves_relative_refs() -> None:
+    # build(relative_refs=True) must return an instance whose encode() actually
+    # emits relative refs — not silently fall back to the absolute default.
+    codec = ProductionCodec.build([HERO], relative_refs=True)
+    assert codec.relative_refs is True
+    prod, _ = codec.encode(HERO, [":hero.title", ":hero.body"])
+    surface = {codec.id_to_production.get(pid, "") for pid in prod}
+    assert any(tok.startswith(REL_REF_PREFIX) for tok in surface)
+    assert not any(tok.startswith(REF_PREFIX) for tok in surface)
+
+
 def test_relative_ref_illegal_delta_rejected() -> None:
     # A delta that resolves before the start of scope is not legal binding —
     # enforced here, not learned.
