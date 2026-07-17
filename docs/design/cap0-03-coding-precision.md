@@ -16,6 +16,9 @@ Extended the CAP0-02 arity analyzer with mathematical infrastructure under `src/
   - `minimum_margin_trit_planes` using the strict integer predicate `2*E_max < gamma*(3^R - 1)`.
   - `ternary_ecoc_width` for plain labels and single-trit-error detection.
   - `ResidualScaleMode` enum (`GEOMETRIC_BALANCED`, `LEARNED_INDEPENDENT`, `OTHER`) plus `assert_geometric_only` guard.
+- `report.py` — CAP0-02 `ArityReport` extended with optional `CodingMetadata` carrying bound/construction name, proof status, source citation, code size/length/alphabet/minimum distance, utilization, feasible/infeasible status, and explicit constraints.
+- `suggest.py` — helper that emits robust coding arms for a state-count target while excluding the disproven `(K=6,d=4)` and `(K=3,d=6)` arms; keeps `(K=7,d=4)` and ternary `d=7`.
+- `scripts/analyze_grammar_arity.py` — `--include-coding-metadata` flag to attach CAP0-03 metadata to emitted reports.
 - Exports added to `src/slm_training/dsl/analysis/arity/__init__.py`.
 
 ## Verified
@@ -23,6 +26,8 @@ Extended the CAP0-02 arity analyzer with mathematical infrastructure under `src/
 - `ruff check` passes.
 - `python -m compileall` passes.
 - `pytest tests/test_dsl/test_arity_coding.py` passes (11 tests).
+- `pytest tests/test_dsl/test_arity_suggest.py` passes (5 tests).
+- `pytest tests/test_dsl/test_arity_analysis.py` passes (11 tests).
 - `python -m scripts.repo_policy` ok.
 - `git diff --check` clean.
 

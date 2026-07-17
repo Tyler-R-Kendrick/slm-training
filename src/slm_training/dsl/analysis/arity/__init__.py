@@ -22,7 +22,8 @@ from slm_training.dsl.analysis.arity.precision import (
     minimum_margin_trit_planes,
     ternary_ecoc_width,
 )
-from slm_training.dsl.analysis.arity.report import ArityReport, ContinuationSummary
+from slm_training.dsl.analysis.arity.report import ArityReport, CodingMetadata, ContinuationSummary
+from slm_training.dsl.analysis.arity.suggest import RobustArm, suggest_robust_arms, smallest_feasible_alphabet
 from slm_training.dsl.analysis.arity.types import (
     AnalysisBounds,
     StateAtom,
@@ -38,8 +39,10 @@ __all__ = [
     "ArityAnalyzer",
     "ArityReport",
     "CodeVerification",
+    "CodingMetadata",
     "ContinuationSummary",
     "ResidualScaleMode",
+    "RobustArm",
     "StateAtom",
     "StateSignature",
     "SupportOracle",
@@ -56,7 +59,9 @@ __all__ = [
     "minimum_distance",
     "minimum_margin_trit_planes",
     "singleton_upper_bound",
+    "smallest_feasible_alphabet",
     "smallest_injective_arity",
+    "suggest_robust_arms",
     "ternary_ecoc_width",
     "verify_code",
 ]

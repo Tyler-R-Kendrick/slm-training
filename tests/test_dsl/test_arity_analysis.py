@@ -7,6 +7,7 @@ import pytest
 from slm_training.dsl.analysis.arity import (
     AnalysisBounds,
     ArityAnalyzer,
+    CodingMetadata,
     StateAtom,
     SupportQuery,
     SupportVerdict,
@@ -87,3 +88,62 @@ def test_bounded_generation_deduplicates_identical_programs():
 def test_bounds_validation_rejects_negative_values(kwargs):
     with pytest.raises(ValueError):
         AnalysisBounds(**kwargs)
+
+
+def test_report_with_coding_metadata_serializes():
+    bounds = AnalysisBounds(max_ast_nodes=4)
+    analyzer = ArityAnalyzer("toy-layout", bounds)
+    report = analyzer.analyze([_toy_source()], include_coding_metadata=True)
+    assert report.coding_metadata is not None
+    data = report.to_dict()
+    assert "coding_metadata" in data
+    assert data["coding_metadata"]["state_count"] == report.minimized_states
+
+
+def test_coding_metadata_changes_digest():
+    bounds = AnalysisBounds(max_ast_nodes=4)
+    analyzer = ArityAnalyzer("toy-layout", bounds)
+    report_without = analyzer.analyze([_toy_source()], include_coding_metadata=False)
+    report_with = analyzer.analyze([_toy_source()], include_coding_metadata=True)
+    assert report_without.digest != report_with.digest
+
+
+def test_coding_metadata_round_trip_dict_keys():
+    metadata = CodingMetadata(
+        state_count=41,
+        dimensions=4,
+        alphabet_size=7,
+        min_distance=3,
+        feasible=True,
+        status="feasible",
+        bound_name="singleton_upper_bound",
+        bound_value=49,
+        construction="mds_7_4_2_3",
+        proof_status="local_verified_construction",
+        source_citation=None,
+        utilization=41 / 49,
+        scale_mode=None,
+        ecoc_width=None,
+        margin_planes=None,
+    )
+    report = ArityAnalyzer("toy-layout", AnalysisBounds(max_ast_nodes=4)).analyze(
+        [_toy_source()], include_coding_metadata=False
+    )
+    report_with_meta = report  # immutable; build a new one below
+    from slm_training.dsl.analysis.arity.report import ArityReport
+
+    report_with_meta = ArityReport(
+        frame_id=report.frame_id,
+        bounds=report.bounds,
+        exact=report.exact,
+        total_states=report.total_states,
+        minimized_states=report.minimized_states,
+        continuation_summaries=report.continuation_summaries,
+        version=report.version,
+        digest=report.digest,
+        coding_metadata=metadata,
+    )
+    data = report_with_meta.to_dict()["coding_metadata"]
+    assert data["alphabet_size"] == 7
+    assert data["construction"] == "mds_7_4_2_3"
+    assert data["proof_status"] == "local_verified_construction"

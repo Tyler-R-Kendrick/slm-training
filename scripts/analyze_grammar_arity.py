@@ -18,6 +18,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-ast-depth", type=int)
     parser.add_argument("--max-live-bindings", type=int, default=0)
     parser.add_argument("--out", help="Output JSON file")
+    parser.add_argument(
+        "--include-coding-metadata",
+        action="store_true",
+        help="Attach CAP0-03 coding-theory metadata to the report",
+    )
     args = parser.parse_args(argv)
 
     bounds = AnalysisBounds(
@@ -33,7 +38,7 @@ def main(argv: list[str] | None = None) -> int:
         seed_sources = [Path(args.program_file).read_text(encoding="utf-8")]
 
     analyzer = ArityAnalyzer(args.dsl, bounds)
-    report = analyzer.analyze(seed_sources)
+    report = analyzer.analyze(seed_sources, include_coding_metadata=args.include_coding_metadata)
     output = report.to_json(indent=2)
 
     if args.out:
