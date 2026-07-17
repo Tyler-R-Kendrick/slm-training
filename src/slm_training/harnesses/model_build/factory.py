@@ -457,6 +457,42 @@ def build_model(
             model.load(checkpoint)
         return model
 
+    if name in {"tree_edit_diffusion", "tree-edit-diffusion"}:
+        # D3 (SLM-31): faithful Kapur-style all-valid-states baseline (X22).
+        from slm_training.models.tree_edit_diffusion import (
+            TreeEditDiffusionConfig,
+            TreeEditDiffusionModel,
+        )
+
+        if checkpoint and checkpoint.exists():
+            return TreeEditDiffusionModel.from_checkpoint(
+                checkpoint, device=config.device
+            )
+        backend = (config.context_backend or "scratch").lower()
+        ted_cfg = TreeEditDiffusionConfig(
+            d_model=config.d_model,
+            n_heads=config.n_heads,
+            context_layers=config.context_layers,
+            denoiser_layers=config.denoiser_layers,
+            context_backend=backend,
+            hf_model_name=config.hf_model_name,
+            freeze_context=_resolve_freeze_context(backend, config.freeze_context),
+            local_files_only=config.local_files_only,
+            design_md_in_context=(
+                False
+                if config.design_md_in_context is None
+                else bool(config.design_md_in_context)
+            ),
+            design_md_budget=config.design_md_budget,
+            slot_contract_in_context=getattr(
+                config, "slot_contract_in_context", True
+            ),
+            seed=config.seed,
+        )
+        return TreeEditDiffusionModel.from_records(
+            records, config=ted_cfg, device=config.device
+        )
+
     if name in {"grammar_diffusion", "grammar-diffusion", "grammardiffusion"}:
         from slm_training.models.grammar_diffusion import (
             GrammarDiffusionConfig,

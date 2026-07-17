@@ -118,7 +118,7 @@
       "uri": "https://arxiv.org/abs/2405.20519",
       "published_at": "2024-05-30",
       "summary": "Applies iterative diffusion edits directly to grammar syntax trees while maintaining syntactic validity.",
-      "metadata": {"authors": ["Shreyas Kapur", "Erik Jenner", "Stuart Russell"], "arxiv_id": "2405.20519", "category": "tree_diffusion", "scope_diff_takeaway": "Keep the denoising state on typed syntax topology rather than raw token spans.", "repo_relevance": "grammar_diffusion topology tree", "implementation_status": "Adapted", "limitations": "The repo does not reproduce inverse-graphics execution feedback or the paper's search procedure."}
+      "metadata": {"authors": ["Shreyas Kapur", "Erik Jenner", "Stuart Russell"], "arxiv_id": "2405.20519", "category": "tree_diffusion", "scope_diff_takeaway": "Keep the denoising state on typed syntax topology rather than raw token spans.", "repo_relevance": "grammar_diffusion topology tree", "implementation_status": "Faithful (mechanism)", "limitations": "D3/SLM-31 (models/tree_edit_diffusion.py, X22) reproduces the all-valid tree-edit forward process, inverse-edit policy supervision, and value-guided search; the rendered-image observation channel is replaced by prompt conditioning because this domain has no target render at generation time."}
     },
     {
       "source_id": "arxiv-2201.11227",
