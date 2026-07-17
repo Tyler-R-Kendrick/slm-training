@@ -1969,6 +1969,15 @@ full visible contracts, unchanged targets, reproducible fingerprint
 model result. See [results](iter-e314-visible-slot-contract-20260717.md) and
 [JSON](visible-slot-contract-results-iter-e314-20260717.json).
 
+The matched 20k train worsens weighted/broad NLL to 5.0561/5.2258, leaves plan
+accuracy/recall unchanged, exactly matches E311 on four suites, and regresses
+limited-RICO structure to 0.3104. All held-out predictions still collapse to
+one `TextContent`; seven failures and AgentV 2/5 remain.
+
+**Model verdict:** reject checkpoint; retain the coverage fix and v2 data.
+See [train result](iter-e314-visible-slot-contract-train-20260717.md) and
+[JSON](visible-slot-contract-train-results-iter-e314-20260717.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

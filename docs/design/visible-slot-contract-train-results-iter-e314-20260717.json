@@ -1,0 +1,54 @@
+{
+  "id": "E314",
+  "date": "2026-07-17",
+  "train_run_id": "e314-visible-slot-contract-20k-r1",
+  "eval_run_id": "e314-visible-slot-contract-20k-honest-r1",
+  "hypothesis": "Training on the same visible slot-contract request shape used by honest evaluation reduces the Stack-plus-first-TextContent collapse.",
+  "matched_control": "e311-component-plan-token-pool-20k-r1",
+  "recipe_delta": {
+    "train_version": {
+      "control": "e307_component_prompt_v4",
+      "candidate": "e314_visible_slot_contract_v2"
+    }
+  },
+  "train": {
+    "device": "cpu",
+    "steps": 420,
+    "seen_prompt_tokens": 56791,
+    "seen_target_tokens": 20001,
+    "elapsed_wall_seconds": 125.37349819700103,
+    "trainable_params": 399836,
+    "checkpoint": "outputs/runs/e314-visible-slot-contract-20k-r1/checkpoints/last.pt",
+    "checkpoint_sha256": "f0aaf614e5b6869441c65a091b74429ab9309d508648e51c1c9b4bfcc21a1588",
+    "trace_id": "feecf06fdbe86f59f54236680b30477e",
+    "checkpoint_sync": false
+  },
+  "loss": {
+    "weighted_nll": 5.0561006493242395,
+    "binding_nll": 5.289946661729898,
+    "structural_nll": 3.9933110486893426,
+    "repair_nll": 5.8067429403464,
+    "schema_ood_nll": 5.245728696517225,
+    "broad_nll": 5.225809960860711,
+    "agentv": {"total": 1, "passed": 1}
+  },
+  "plan_final_20": {
+    "loss": 2.330756109952927,
+    "root_accuracy": 0.85,
+    "bound_topk_recall": 0.4104166693985462,
+    "bound_count_mae": 0.34163685142993927
+  },
+  "evaluation": {
+    "failure_count": 7,
+    "agentv": {"total": 5, "passed": 2, "failed": 3},
+    "held_out_predictions_all_stack_first_text": true
+  },
+  "suites": {
+    "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333, "placeholder_fidelity": 0.5277777777777778, "structural_similarity": 0.46416666666666667, "component_type_recall": 0.16666666666666666, "reward_score": 0.24966666666666668},
+    "held_out": {"n": 5, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "placeholder_fidelity": 0.27999999999999997, "structural_similarity": 0.33686, "component_type_recall": 0.0, "reward_score": 0.0},
+    "adversarial": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.5, "placeholder_fidelity": 0.5416666666666666, "structural_similarity": 0.474375, "component_type_recall": 0.375, "reward_score": 0.4245},
+    "ood": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "placeholder_fidelity": 0.2583333333333333, "structural_similarity": 0.375, "component_type_recall": 0.0, "reward_score": 0.0},
+    "rico_held": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.6666666666666666, "placeholder_fidelity": 0.5416666666666666, "structural_similarity": 0.3104, "component_type_recall": 0.3333333333333333, "reward_score": 0.5566666666666666}
+  },
+  "verdict": "Reject checkpoint while retaining the coverage fix and v2 corpus. Four suites exactly match E311, RICO structure regresses, and the held-out one-slot collapse remains."
+}
