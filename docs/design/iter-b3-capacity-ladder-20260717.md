@@ -85,3 +85,24 @@ runs both arms, nothing about quality. Parse is a meaningful primary for the cho
   fabricating one from untrained noise is prohibited.
 - The semantic-density separation (2.25× fewer target bits for choice) is real and
   scale-independent; it is the only quality-relevant claim this iteration supports.
+
+## Five-minute matched run — attempt 1 failed
+
+The first bounded lexer control used the committed 480-record
+`e218_schema_normalized_judge_v5` corpus, width 64, seed 0, batch 2, a
+5,000-target-token budget, a 200-step ceiling, and all five remediated eval
+suites (n=19). It reached step 20 / 1,944 target tokens with logged loss
+33.297, then failed while publishing the first loss-suite AgentV bundle.
+
+Root cause: the Python process wrote the AgentEvals JSONL relative to its
+isolated worktree, but the pinned AgentV SDK ran from the Git common checkout
+and resolved the same relative path there. The JSONL exists; the SDK result,
+train telemetry summary, checkpoint, and evaluation scoreboard do not. This is
+a failed infrastructure attempt, not model evidence.
+
+The shared AgentV publisher now resolves its artifact root to an absolute path
+before invoking the SDK. The matched run must restart from scratch after a new
+latest-main preflight; no missing checkpoint is inferred or reconstructed.
+
+Live machine-readable ledger:
+[iter-b3-capacity-ladder-5m-results-20260717.json](iter-b3-capacity-ladder-5m-results-20260717.json).

@@ -41,7 +41,9 @@ def publish_agentv_evaluation(
     if not slug or not cases:
         raise ValueError("AgentV evaluation requires a name and at least one case")
 
-    root = Path(run_dir) / "agentv"
+    # AgentV may execute from the Git common checkout while artifacts belong to
+    # an isolated worktree. Absolute paths keep publication attached to the run.
+    root = (Path(run_dir) / "agentv").resolve()
     root.mkdir(parents=True, exist_ok=True)
     spec_path = root / f"{slug}.eval.jsonl"
     output_dir = root / slug

@@ -1,0 +1,50 @@
+{
+  "iteration": "B3 matched five-minute capacity ladder",
+  "date": "2026-07-17",
+  "status": "in_progress",
+  "matched_recipe": {
+    "train_data": "src/slm_training/resources/data/train/e218_schema_normalized_judge_v5",
+    "train_records": 480,
+    "test_data": "src/slm_training/resources/data/eval/remediated",
+    "suite_counts": {
+      "smoke": 3,
+      "held_out": 5,
+      "adversarial": 4,
+      "ood": 4,
+      "rico_held": 3
+    },
+    "device": "cpu",
+    "context_backend": "scratch",
+    "d_model": 64,
+    "seed": 0,
+    "batch_size": 2,
+    "target_token_budget": 5000,
+    "steps_ceiling": 200,
+    "max_wall_minutes": 5.0,
+    "mask_pattern": "diffusion",
+    "grammar_ltr_primary": false,
+    "arms": [
+      "lexer",
+      "choice"
+    ]
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "arm": "lexer",
+      "status": "failed",
+      "failure_target": "infrastructure",
+      "failure": "relative AgentV artifact path resolved from Git common checkout",
+      "steps_completed": 20,
+      "seen_target_tokens": 1944,
+      "last_logged_loss": 33.29701614379883,
+      "metrics_jsonl": "outputs/ladders/b3-matched-5m-e287/runs/capacity_lexer_v1__d64_h2_c1_dn2_t5000_x1__s0/metrics.jsonl",
+      "agentevals_jsonl_written": true,
+      "agentv_result_written": false,
+      "train_telemetry_written": false,
+      "checkpoint_written": false,
+      "evaluation_written": false,
+      "evidence_valid": false
+    }
+  ]
+}
