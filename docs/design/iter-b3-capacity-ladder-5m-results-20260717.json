@@ -1,7 +1,7 @@
 {
   "iteration": "B3 matched five-minute capacity ladder",
   "date": "2026-07-17",
-  "status": "in_progress",
+    "status": "completed",
   "matched_recipe": {
     "train_data": "src/slm_training/resources/data/train/e218_schema_normalized_judge_v5",
     "train_records": 480,
@@ -124,7 +124,112 @@
             "promotable": false,
             "promotion_note": "The run originally failed open on integrity-only evidence. The invalid promoted artifacts were deleted and the gate now requires quality, rank, efficiency, or ship evidence.",
             "evidence_valid": true
+        },
+        {
+            "attempt": 3,
+            "arm": "choice",
+            "status": "completed",
+            "run_id": "capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0",
+            "run_dir": "outputs/ladders/b3-matched-5m-e287-r2/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0",
+            "steps_completed": 107,
+            "stopped_on": "token_budget",
+            "seen_target_tokens": 5022,
+            "last_loss": 13.686403274536133,
+            "weighted_nll": 7.098483934366052,
+            "weighted_nll_complete": false,
+            "missing_loss_categories": [
+                "binding"
+            ],
+            "elapsed_wall_seconds": 19.937113790016156,
+            "trainable_parameters": 308554,
+            "semantic_bits": {
+                "stream": "choice",
+                "programs": 480,
+                "decisions": 8795,
+                "bits_per_decision": 4.298155510699956,
+                "total_bits": 37802.27771660611,
+                "params_per_bit": 8.162312395913004
+            },
+            "evaluation": {
+                "smoke": {
+                    "n": 3,
+                    "parse_rate": 0.0,
+                    "meaningful_program_rate": 0.0,
+                    "placeholder_fidelity": 0.0,
+                    "structural_similarity": 0.0,
+                    "reward_score": 0.0
+                },
+                "held_out": {
+                    "n": 5,
+                    "parse_rate": 0.0,
+                    "meaningful_program_rate": 0.0,
+                    "placeholder_fidelity": 0.0,
+                    "structural_similarity": 0.0,
+                    "reward_score": 0.0
+                },
+                "adversarial": {
+                    "n": 4,
+                    "parse_rate": 0.0,
+                    "meaningful_program_rate": 0.0,
+                    "placeholder_fidelity": 0.0,
+                    "structural_similarity": 0.0,
+                    "reward_score": 0.0
+                },
+                "ood": {
+                    "n": 4,
+                    "parse_rate": 0.0,
+                    "meaningful_program_rate": 0.0,
+                    "placeholder_fidelity": 0.0,
+                    "structural_similarity": 0.0,
+                    "reward_score": 0.0
+                },
+                "rico_held": {
+                    "n": 3,
+                    "parse_rate": 0.0,
+                    "meaningful_program_rate": 0.0,
+                    "placeholder_fidelity": 0.0,
+                    "structural_similarity": 0.0,
+                    "reward_score": 0.0
+                }
+            },
+            "failure_breakdown": {
+                "parse_error": 19,
+                "empty_prediction": 19,
+                "error": "parser produced no root element"
+            },
+            "agentv": {
+                "passed": 0,
+                "total": 5
+            },
+            "telemetry": {
+                "total_ms": 16785.348,
+                "loss_suites_pct": 41.65,
+                "eval_suites_pct": 19.1,
+                "forward_pct": 12.26,
+                "backward_pct": 7.65
+            },
+            "checkpoint": "outputs/ladders/b3-matched-5m-e287-r2/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/checkpoints/last.pt",
+            "checkpoint_scope": "local scratch",
+            "promotable": false,
+            "promotion_failures": [
+                "sufficient_evidence"
+            ],
+            "evidence_valid": true
         }
     ],
-    "interim_verdict": "The lexer control is valid but fails every primary quality signal and all five AgentV rows. No arm comparison is claimed until the matched choice run completes."
+    "comparison": {
+        "matched_primary_result": "tie_at_zero",
+        "lexer_steps": 53,
+        "choice_steps": 107,
+        "target_tokens": {
+            "lexer": 5004,
+            "choice": 5022
+        },
+        "surface_to_choice_total_bit_ratio": 2.245998755123122,
+        "choice_decision_reduction_ratio": 1.794201250710631,
+        "wall_time_speedup_choice_vs_lexer": 8.289988083867742,
+        "cross_tokenizer_nll_comparable": false,
+        "winner": null
+    },
+    "verdict": "Both matched arms have zero parse, meaningful-program, fidelity, and reward across all five suites, so B3 has no quality winner. The choice result is a decoder/evaluator-path defect signal because all 19 predictions are empty despite deterministic choice detokenization; it is not evidence that syntax needs more training."
 }

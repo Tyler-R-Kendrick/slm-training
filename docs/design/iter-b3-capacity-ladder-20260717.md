@@ -138,5 +138,39 @@ loss suites 5.21%, and forward plus backward only 1.02%. This does not justify
 reducing suite coverage in the matched pair; both arms retain the same honest
 five-suite evaluation.
 
-The choice arm is still pending. Until it runs under the identical budget,
-there is no B3 representation winner and no cross-tokenizer NLL comparison.
+## Five-minute matched run — choice arm complete
+
+The choice arm completed the same 5,000-target-token recipe in 107 steps
+(5,022 tokens) and 19.94 seconds. It has 308,554 trainable parameters versus
+294,666 for lexer because the output vocabularies differ. The corpus choice
+stream contains 37,802 bits across 8,795 decisions, versus 84,904 bits across
+15,780 lexer decisions: **2.246× fewer total bits** and **1.794× fewer
+decisions** for the same 480 programs.
+
+All five choice suites nevertheless scored parse, meaningful-program,
+fidelity, structure, and reward at 0. AgentV passed 0/5 rows. Every one of the
+19 predictions was the empty string and failed with `parser produced no root
+element`. The final weighted NLL was 7.0985, but its category inventory was
+incomplete (`binding` absent), and NLL values in different tokenizer spaces
+are not directly comparable.
+
+| matched result | lexer | choice |
+| --- | ---: | ---: |
+| target tokens consumed | 5,004 | 5,022 |
+| train steps | 53 | 107 |
+| whole-arm wall time | 165.28 s | 19.94 s |
+| parse / meaningful / fidelity | 0 / 0 / 0 | 0 / 0 / 0 |
+| AgentV | 0/5 | 0/5 |
+| promoted | no | no |
+
+**B3 verdict: no quality winner.** Both primary outcomes are tied at zero.
+Choice is 8.29× faster in this single matched run and has the predicted
+information-density advantage, but neither fact establishes quality.
+
+The empty choice predictions are a deterministic-layer defect signal, not an
+undertraining diagnosis. Choice decoding currently bypasses the surface DFA
+and relies only on a fail-closed final detokenizer; an early EOS therefore
+produces an empty program. The next iteration must add a choice-native legal
+decision state derived from the production codec, including forced selection
+when only one token is legal, then reevaluate this frozen checkpoint without
+retraining.
