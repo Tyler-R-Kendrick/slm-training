@@ -1584,6 +1584,17 @@ objective. No training ran. Profile at exact decision-signature train strata
 next; do not add token/component cases or increase duration. Full evidence:
 [iter-e284-signature-support-profile-20260717.md](iter-e284-signature-support-profile-20260717.md).
 
+E285 attempted the next read-only exact-signature profile with the same frozen
+checkpoint and E283 corpus. The legacy direct invocation had no cumulative
+experiment deadline and remained incomplete beyond 25 minutes, so it was
+operator-stopped without an output artifact. It is **invalid evidence** and no
+training or checkpoint mutation occurred. The autoresearch harness now enforces
+one configurable cumulative `max_wall_minutes` budget, defaulting to and capped
+at five minutes across all compiled stages. Future comparisons must also keep
+the same declared training budget; runtime expiry is a stopped run, never a
+quality result. Full record:
+[iter-e285-exact-signature-profile-aborted-20260717.md](iter-e285-exact-signature-profile-aborted-20260717.md).
+
 ## V16 C3 corpus-mined macro tokens (fixture-run 2026-07-17)
 
 Track C3 (Stitch [arXiv:2211.16605](https://arxiv.org/abs/2211.16605) /

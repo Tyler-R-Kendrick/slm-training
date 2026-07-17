@@ -1,0 +1,27 @@
+{
+  "experiment_id": "E285",
+  "status": "aborted",
+  "evidence_valid": false,
+  "reason": "legacy_direct_invocation_had_no_cumulative_wall_clock_budget",
+  "elapsed_wall_minutes": ">25",
+  "output_artifact": null,
+  "training_performed": false,
+  "checkpoint_mutated": false,
+  "checkpoint": "/home/codex/repos/slm-training/outputs/autoresearch/e228-candidate-margin-alignment/runs/e228-candidate-margin-matched/checkpoints/last.pt",
+  "events_path": "src/slm_training/resources/data/preference/e283_signature_support_repair_v1/events.jsonl",
+  "intended_recipe": {
+    "objective": "ftpo_set",
+    "device": "cpu",
+    "metric_complete": true,
+    "probability_space": "legal_tokens",
+    "gradient_scaling": "unit_norm",
+    "train_strata": "decision_signature",
+    "held_out_strata": "decision_signature"
+  },
+  "remediation": {
+    "config_field": "CampaignBudget.max_wall_minutes",
+    "default_minutes": 5.0,
+    "maximum_minutes": 5.0,
+    "scope": "cumulative_across_compiled_experiment_stages"
+  }
+}
