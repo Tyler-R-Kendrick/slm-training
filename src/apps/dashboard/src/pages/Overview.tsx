@@ -64,7 +64,7 @@ export function Overview({ navigate }: { navigate: (to: string) => void }) {
           <JobLines data={jobsData} />
         </Card>
         <Card title="Remote dispatches" right={<span className="prov prov-committed">hf jobs / pods</span>}>
-          <DispatchLines data={dispData} />
+          <DispatchLines data={dispData} navigate={navigate} />
         </Card>
       </div>
 

@@ -322,7 +322,12 @@ const DispatchList = defineComponent({
   props: z.object({ data: any }),
   component: ({ props }: any) => {
     const d = props.data || {};
-    return <DispatchLines data={{ rows: rowsOf(d), remotes: Array.isArray(d.remotes) ? d.remotes : [] }} />;
+    return (
+      <DispatchLines
+        data={{ rows: rowsOf(d), remotes: Array.isArray(d.remotes) ? d.remotes : [] }}
+        navigate={(to) => navRef.current?.(to)}
+      />
+    );
   },
 });
 
@@ -478,7 +483,11 @@ function CheckpointConsoleImpl() {
           </select>
         }
       >
-        {!selected && <Empty>No experiment with suite metrics available.</Empty>}
+        {!selected && (
+          <Empty ctaLabel="run a smoke suite →" onCta={() => navRef.current?.("/smoke")}>
+            No experiment with suite metrics available.
+          </Empty>
+        )}
         {selected && (
           <div className="two-col">
             <div>

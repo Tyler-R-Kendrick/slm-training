@@ -50,8 +50,25 @@ export function Grid({ children, min = "220px" }: { children: React.ReactNode; m
   );
 }
 
-export function Empty({ children }: { children: React.ReactNode }) {
-  return <div className="empty">{children}</div>;
+export function Empty({
+  children,
+  ctaLabel,
+  onCta,
+}: {
+  children: React.ReactNode;
+  ctaLabel?: string;
+  onCta?: () => void;
+}) {
+  return (
+    <div className="empty">
+      {children}
+      {ctaLabel && onCta && (
+        <div style={{ marginTop: "0.5rem" }}>
+          <button className="chip" onClick={onCta}>{ctaLabel}</button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function ErrorNote({ error }: { error: string | null }) {
@@ -572,11 +589,24 @@ export interface DispatchRows {
   remotes?: { run_id?: string; url?: string }[];
 }
 
-export function DispatchLines({ data }: { data: DispatchRows }) {
+export function DispatchLines({
+  data,
+  navigate,
+}: {
+  data: DispatchRows;
+  navigate?: (to: string) => void;
+}) {
   const jobs = data.rows ?? [];
   const remotes = data.remotes ?? [];
   if (!jobs.length && !remotes.length) {
-    return <Empty>No remote (HF Jobs / pod) trains dispatched — launch one from Experiments.</Empty>;
+    return (
+      <Empty
+        ctaLabel={navigate ? "launch one from Experiments →" : undefined}
+        onCta={navigate ? () => navigate("/experiments") : undefined}
+      >
+        No remote (HF Jobs / pod) trains dispatched{navigate ? "." : " — launch one from Experiments."}
+      </Empty>
+    );
   }
   return (
     <>
