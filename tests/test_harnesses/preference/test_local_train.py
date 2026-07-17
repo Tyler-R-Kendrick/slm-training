@@ -145,6 +145,19 @@ def test_minimum_norm_gradient_certifies_common_descent() -> None:
     assert torch.allclose(combined[0], torch.tensor([0.8, 0.4]), atol=1e-6)
 
 
+def test_minimum_norm_gradient_ignores_inactive_tasks() -> None:
+    combined, report = _minimum_norm_gradient(
+        [[torch.tensor([0.0, 0.0])], [torch.tensor([1.0, 2.0])]]
+    )
+
+    assert combined[0] is not None
+    assert report["active_task_count"] == 1
+    assert report["inactive_task_count"] == 1
+    assert report["common_descent"] is True
+    assert report["weights"] == [0.0, 1.0]
+    assert torch.equal(combined[0], torch.tensor([1.0, 2.0]))
+
+
 def test_projection_requires_stratified_guard() -> None:
     with pytest.raises(ValueError, match="require the decision-kind guard"):
         train_local_decisions(

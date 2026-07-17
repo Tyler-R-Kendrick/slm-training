@@ -295,24 +295,42 @@ def _minimum_norm_gradient(
             )
             gram[left, right] = value
             gram[right, left] = value
+    diagonal = torch.diagonal(gram)
+    active = torch.nonzero(diagonal > tolerance).flatten()
     weights = torch.zeros(count, dtype=torch.float64)
-    weights[int(torch.diagonal(gram).argmin())] = 1.0
+    if not len(active):
+        return [None] * width, {
+            "task_count": count,
+            "active_task_count": 0,
+            "inactive_task_count": count,
+            "iterations": 0,
+            "converged": True,
+            "norm_sq": 0.0,
+            "min_task_dot": 0.0,
+            "min_active_task_dot": 0.0,
+            "common_descent": False,
+            "weights": weights.tolist(),
+        }
+    active_gram = gram.index_select(0, active).index_select(1, active)
+    active_weights = torch.zeros(len(active), dtype=torch.float64)
+    active_weights[int(torch.diagonal(active_gram).argmin())] = 1.0
     converged = False
     iterations = 0
     for iterations in range(1, max_iterations + 1):
-        gram_weights = gram @ weights
+        gram_weights = active_gram @ active_weights
         vertex = int(gram_weights.argmin())
-        direction = -weights
+        direction = -active_weights
         direction[vertex] += 1.0
-        gap = float(weights @ gram_weights - gram_weights[vertex])
+        gap = float(active_weights @ gram_weights - gram_weights[vertex])
         if gap <= tolerance:
             converged = True
             break
-        denominator = float(direction @ gram @ direction)
+        denominator = float(direction @ active_gram @ direction)
         if denominator <= tolerance:
             break
         step = max(0.0, min(1.0, -float(direction @ gram_weights) / denominator))
-        weights.add_(direction, alpha=step)
+        active_weights.add_(direction, alpha=step)
+    weights[active] = active_weights
     combined: list[torch.Tensor | None] = []
     for parameter_index in range(width):
         values = [
@@ -328,13 +346,19 @@ def _minimum_norm_gradient(
     task_dots = gram @ weights
     norm_sq = float(weights @ task_dots)
     min_task_dot = float(task_dots.min())
+    min_active_task_dot = float(task_dots.index_select(0, active).min())
     return combined, {
         "task_count": count,
+        "active_task_count": len(active),
+        "inactive_task_count": count - len(active),
         "iterations": iterations,
         "converged": converged,
         "norm_sq": norm_sq,
         "min_task_dot": min_task_dot,
-        "common_descent": min_task_dot > tolerance,
+        "min_active_task_dot": min_active_task_dot,
+        "common_descent": (
+            min_active_task_dot > tolerance and min_task_dot >= -tolerance
+        ),
         "weights": weights.tolist(),
     }
 
