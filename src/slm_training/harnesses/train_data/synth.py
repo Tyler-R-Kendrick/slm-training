@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import hashlib
 import re
+from collections import defaultdict
 from pathlib import Path
 from typing import Protocol
 
+from slm_training.dsl.lang_core import parse
 from slm_training.dsl.schema import ExampleRecord
 
 _ROOT_STACK_RE = re.compile(
@@ -110,6 +112,116 @@ class ComponentPromptSynthesizer:
                     "parent_id": record.id,
                     "component_inventory": dict(counts),
                     "content_concepts": concepts,
+                },
+                design_md=record.design_md,
+            )
+        ]
+
+
+class SemanticSlotSynthesizer:
+    """Rename generation slots with diverse schema-role semantics."""
+
+    _ALIASES = {
+        "text": ("title", "body", "heading", "caption", "value"),
+        "label": ("label", "action", "submit", "confirm", "create"),
+        "placeholder": ("email", "name", "search", "query", "value"),
+        "title": ("title", "heading", "name"),
+        "body": ("body", "description", "details"),
+        "description": ("description", "help", "details"),
+        "trigger": ("tab", "section", "option"),
+        "src": ("image", "photo", "thumbnail"),
+        "alt": ("alt", "image_description"),
+    }
+
+    @classmethod
+    def _slot_owners(cls, source: str) -> dict[str, tuple[str, str]]:
+        owners: dict[str, tuple[str, str]] = {}
+
+        def walk(value: object, component: str | None = None, prop: str = "") -> None:
+            if isinstance(value, dict):
+                owner = (
+                    str(value["typeName"])
+                    if value.get("type") == "element" and value.get("typeName")
+                    else component
+                )
+                props = value.get("props")
+                if isinstance(props, dict):
+                    for name, child in props.items():
+                        walk(child, owner, str(name))
+                for name, child in value.items():
+                    if name != "props":
+                        walk(child, owner, prop)
+            elif isinstance(value, list):
+                for child in value:
+                    walk(child, component, prop)
+            elif (
+                isinstance(value, str)
+                and value.startswith(":")
+                and component is not None
+            ):
+                owners.setdefault(value, (component, prop))
+
+        walk(parse(source).root)
+        return owners
+
+    @classmethod
+    def _replacement(
+        cls,
+        *,
+        record_id: str,
+        slot: str,
+        component: str,
+        prop: str,
+        occurrence: int,
+    ) -> str:
+        aliases = cls._ALIASES.get(prop.lower(), (prop.lower() or "content",))
+        digest = hashlib.sha256(f"{record_id}:{slot}".encode()).digest()
+        role = aliases[int.from_bytes(digest[:4], "big") % len(aliases)]
+        namespace = re.sub(r"(?<!^)(?=[A-Z])", "_", component).lower()
+        suffix = "" if occurrence == 1 else f"_{occurrence}"
+        return f":{namespace}.{role}{suffix}"
+
+    def expand(self, record: ExampleRecord) -> list[ExampleRecord]:
+        if str(record.meta.get("task") or "") != "generation":
+            return []
+        owners = self._slot_owners(record.openui)
+        if not owners:
+            return []
+        occurrences: defaultdict[tuple[str, str], int] = defaultdict(int)
+        replacements: dict[str, str] = {}
+        for slot in record.placeholders:
+            owner = owners.get(slot)
+            if owner is None:
+                continue
+            occurrences[owner] += 1
+            replacements[slot] = self._replacement(
+                record_id=record.id,
+                slot=slot,
+                component=owner[0],
+                prop=owner[1],
+                occurrence=occurrences[owner],
+            )
+        if not replacements or len(set(replacements.values())) != len(replacements):
+            return []
+
+        def replace(text: str) -> str:
+            for old in sorted(replacements, key=len, reverse=True):
+                text = text.replace(old, replacements[old])
+            return text
+
+        return [
+            ExampleRecord(
+                id=f"{record.id}_semantic_slots",
+                prompt=replace(record.prompt),
+                openui=replace(record.openui),
+                placeholders=[replacements.get(slot, slot) for slot in record.placeholders],
+                split=record.split,
+                source=f"{record.source}+semantic_slots",
+                meta={
+                    **record.meta,
+                    "synth": "semantic_slots",
+                    "parent_id": record.id,
+                    "slot_role_map": replacements,
                 },
                 design_md=record.design_md,
             )
@@ -373,6 +485,8 @@ def get_synthesizer(name: str) -> PromptSynthesizer:
         return TemplateSynthesizer()
     if name in {"component", "component_prompt", "inventory"}:
         return ComponentPromptSynthesizer()
+    if name in {"semantic_slot", "semantic_slots", "slot_roles"}:
+        return SemanticSlotSynthesizer()
     if name in {"layout", "layout_augment", "aug"}:
         return LayoutAugmentSynthesizer()
     if name in {"namespace", "namespace_augment", "ns"}:

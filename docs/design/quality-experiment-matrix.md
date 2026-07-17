@@ -1991,6 +1991,22 @@ unchanged checkpoint: held-out component recall remains zero and OOD recall
 0.125 still fails. See [results](iter-e315-distinct-slot-floor-20260717.md) and
 [JSON](distinct-slot-floor-results-iter-e315-20260717.json).
 
+## E316 semantic slot-role synthesis (2026-07-17)
+
+An AST-derived generation-only synthesizer broadens narrow slot/property names
+into deterministic semantic role variants without eval IDs or decoder cases.
+The immutable 795-row corpus adds 210 accepted variants, keeps 795/795 visible
+contracts, has 0/19 contamination and 0 targets over 256 tokens, reproduces at
+fingerprint `2d01f590…38a0a2`, and passes the AgentV diagnostic 1/1. A simple
+exact-tail probe improves OOD coverage/accuracy from 0.588/0.400 to
+0.882/0.600 and improves held coverage/accuracy from 0.571/0.667 to
+0.667/0.714.
+
+**Verdict:** accept E316 v1 for a matched scratch train. This is data evidence,
+not a model or ship result. See
+[results](iter-e316-semantic-slot-synthesis-20260717.md) and
+[JSON](semantic-slot-synthesis-results-iter-e316-20260717.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

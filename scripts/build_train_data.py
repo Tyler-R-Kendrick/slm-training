@@ -80,6 +80,7 @@ def main(argv: list[str] | None = None) -> int:
             "quality",
             "template",
             "component",
+            "semantic_slots",
             "layout",
             "frontier",
             "none",
@@ -88,7 +89,8 @@ def main(argv: list[str] | None = None) -> int:
         ],
         help=(
             "Deterministic synthesizer (default: quality = layout aug + templates; "
-            "component = target inventory + content-concept prompt)."
+            "component = target inventory + content-concept prompt; "
+            "semantic_slots = schema-role slot-name variants)."
         ),
     )
     parser.add_argument(

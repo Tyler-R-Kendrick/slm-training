@@ -1,0 +1,58 @@
+{
+  "id": "E316",
+  "date": "2026-07-17",
+  "status": "data_accepted_for_matched_training",
+  "hypothesis": "Diverse schema-role slot names improve slot-conditioned component selection after the E315 distinct-slot floor.",
+  "implementation": {
+    "synthesizer": "semantic_slots",
+    "scope": "generation records only",
+    "owner_extraction": "parsed AST containing component and schema property",
+    "alias_selection": "stable hash over record id and slot",
+    "literal_eval_cases_added": false,
+    "decoder_cases_added": false,
+    "original_rows_preserved": true
+  },
+  "build": {
+    "source_version": "e314_visible_slot_contract_v2",
+    "version": "e316_semantic_slots_v1",
+    "publish_path": "src/slm_training/resources/data/train/e316_semantic_slots_v1",
+    "seed_records": 592,
+    "collected_records": 808,
+    "kept_records": 795,
+    "semantic_variant_records": 210,
+    "full_visible_contract_records": 795,
+    "verifier_rejected": 13,
+    "quality_rejected": 0,
+    "errors": 0,
+    "content_fingerprint": "2d01f590b5fef819f3ca3898abb081deb4421e43ed31b0d46e4cd88ccb38a0a2",
+    "reproduction_fingerprint": "2d01f590b5fef819f3ca3898abb081deb4421e43ed31b0d46e4cd88ccb38a0a2"
+  },
+  "exact_tail_majority_probe": {
+    "note": "Coverage is the fraction of eval slot occurrences whose exact final segment occurs in train; accuracy is majority containing-component accuracy among covered slots.",
+    "e314": {
+      "smoke": {"coverage": 0.75, "covered_accuracy": 0.5},
+      "held_out": {"coverage": 0.571429, "covered_accuracy": 0.666667},
+      "adversarial": {"coverage": 0.666667, "covered_accuracy": 1.0},
+      "ood": {"coverage": 0.588235, "covered_accuracy": 0.4},
+      "rico_held": {"coverage": 1.0, "covered_accuracy": 1.0}
+    },
+    "e316": {
+      "smoke": {"coverage": 0.875, "covered_accuracy": 0.571429},
+      "held_out": {"coverage": 0.666667, "covered_accuracy": 0.714286},
+      "adversarial": {"coverage": 0.666667, "covered_accuracy": 1.0},
+      "ood": {"coverage": 0.882353, "covered_accuracy": 0.6},
+      "rico_held": {"coverage": 1.0, "covered_accuracy": 1.0}
+    }
+  },
+  "integrity": {
+    "eval_records_checked": 19,
+    "contaminated_records": 0,
+    "component_occurrence_coverage_all_suites": 1.0,
+    "component_type_coverage_all_suites": 1.0,
+    "train_target_p95_tokens": 92,
+    "train_target_max_tokens": 112,
+    "over_256_tokens": 0,
+    "agentv": {"total": 1, "passed": 1, "failed": 0}
+  },
+  "verdict": "Accept the deterministic corpus for a matched scratch train. This is data evidence, not model quality or a ship claim."
+}

@@ -16,7 +16,10 @@ from slm_training.harnesses.train_data.catalog import (
     family_stats,
     resolve_lineage,
 )
-from slm_training.harnesses.train_data.synth import ComponentPromptSynthesizer
+from slm_training.harnesses.train_data.synth import (
+    ComponentPromptSynthesizer,
+    SemanticSlotSynthesizer,
+)
 
 pytestmark_bridge = pytest.mark.skipif(
     not bridge_available(),
@@ -103,6 +106,47 @@ def test_component_prompt_synthesizer_describes_inventory_and_content() -> None:
         "Card": 1,
     }
     assert derived.meta["content_concepts"] == ["hero title", "hero body"]
+
+
+def test_semantic_slot_synthesizer_renames_generation_slots_by_schema_role() -> None:
+    record = ExampleRecord(
+        id="form",
+        prompt="Build a form for :cov.placeholder and :cov.label.",
+        openui=(
+            'root = Stack([field, submit])\n'
+            'field = Input("email", ":cov.placeholder")\n'
+            'submit = Button(":cov.label")'
+        ),
+        placeholders=[":cov.placeholder", ":cov.label"],
+        meta={"task": "generation"},
+    )
+
+    [variant] = SemanticSlotSynthesizer().expand(record)
+
+    assert variant.id == "form_semantic_slots"
+    assert all(slot not in variant.openui for slot in record.placeholders)
+    assert variant.placeholders[0].startswith(":input.")
+    assert variant.placeholders[0].rsplit(".", 1)[-1] in {
+        "email",
+        "name",
+        "search",
+        "query",
+        "value",
+    }
+    assert variant.placeholders[1].startswith(":button.")
+    assert variant.meta["slot_role_map"][":cov.placeholder"] == variant.placeholders[0]
+
+
+def test_semantic_slot_synthesizer_skips_non_generation_tasks() -> None:
+    record = ExampleRecord(
+        id="repair",
+        prompt="Repair it.",
+        openui='root = TextContent(":copy.text")',
+        placeholders=[":copy.text"],
+        meta={"task": "repair"},
+    )
+
+    assert SemanticSlotSynthesizer().expand(record) == []
 
 
 def test_resolve_lineage_walks_to_root() -> None:
