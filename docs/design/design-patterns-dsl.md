@@ -12,7 +12,7 @@ The first two targets have a *free* validity oracle:
 | DSL | Grammar | Validity oracle |
 | --- | --- | --- |
 | OpenUI | `@openuidev/lang-core` | parser + renderer (a program renders or it does not) |
-| GraphQL | graphql-core (F2, landed) | parser + schema validation against the introspection schema (`packs/graphql.py`; graphql-js byte parity is a non-goal) |
+| GraphQL | graphql-js | parser + schema validation against the introspection schema |
 | **Patterns** | (to design) | **none free — must be defined** |
 
 A "software design pattern / algorithm / data-structure" DSL describes an
@@ -72,10 +72,7 @@ Design commitments that keep it inside the existing program machinery:
 
 ## Pack contract mapping (F1)
 
-F1 (SLM-34) landed the contract: `DSLPack` in
-[`src/slm_training/dsl/packs/types.py`](../../src/slm_training/dsl/packs/types.py)
-with builtin `openui` and `toy-layout` instances and contract-invariant tests
-(`tests/test_dsl/test_packs.py`). The patterns pack supplies:
+Once F1 lands the DSL-pack contract, the patterns pack supplies:
 
 | Pack slot | Patterns DSL |
 | --- | --- |

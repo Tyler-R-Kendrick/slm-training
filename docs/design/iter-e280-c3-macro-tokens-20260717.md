@@ -1,8 +1,8 @@
-# E277 — C3 corpus-mined macro tokens with deterministic expansion (2026-07-17)
+# E280 — C3 corpus-mined macro tokens with deterministic expansion (2026-07-17)
 
 Fixture-grade wiring row for Track C3 (Linear SLM-27). Machine-readable
 evidence:
-[quality-matrix-results-iter-v13-c3-20260717.json](quality-matrix-results-iter-v13-c3-20260717.json).
+[quality-matrix-results-iter-v16-c3-20260717.json](quality-matrix-results-iter-v16-c3-20260717.json).
 Code: [`src/slm_training/data/macro_induction.py`](../../src/slm_training/data/macro_induction.py)
 (miner) and [`src/slm_training/models/dsl_tokenizer.py`](../../src/slm_training/models/dsl_tokenizer.py)
 (tokenizer v3 `<MACRO_i>` channel).
@@ -59,7 +59,7 @@ recipe (80 steps, batch 4, seed 0, lexer tokenizer, same corpus),
 
 ## Fixture result (wiring evidence only)
 
-E277 recipe: `--matrix v13 --only E277 --steps 80 --device cpu
+E280 recipe: `--matrix v16 --only E280 --steps 80 --device cpu
 --context-backend scratch --no-design-md-context --rico-limit 3
 --scratch-control`; suites smoke 3 / held_out 5 / adversarial 4 / ood 4 /
 rico_held 3.
@@ -100,7 +100,7 @@ output), which the persisted checkpoint sidecar confirms (16-entry
   no ship claim, no gate weakened, nothing promoted. The E2
   `component_type_recall` floors guard this lever at ship scale and are
   computed on expanded output, so macros cannot game them.
-- This v13 run has **no matched no-macro control row**; the
+- This v16 run has **no matched no-macro control row**; the
   `seen_target_tokens` comparison above reuses local 80-step artifacts from
   earlier same-recipe runs on the same corpus and is a throughput
   observation, not a quality comparison. A matched-pair (macro on/off) row at

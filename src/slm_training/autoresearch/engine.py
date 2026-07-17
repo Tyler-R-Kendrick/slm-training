@@ -358,6 +358,17 @@ def compile_commands(
             train.extend(["--output-tokenizer", knobs.output_tokenizer])
         elif any(getattr(knobs, field) is not None for field in symbol_fields):
             train.extend(["--output-tokenizer", "lexer"])
+        # DSL diffusion program levers (G1): typed knob -> bounded flag only.
+        if knobs.mask_pattern:
+            train.extend(["--mask-pattern", knobs.mask_pattern])
+        if knobs.bind_encoding:
+            train.extend(["--bind-encoding", knobs.bind_encoding])
+        if knobs.denoiser_backend:
+            train.extend(["--denoiser-backend", knobs.denoiser_backend])
+        if knobs.decode_min_content is not None:
+            train.extend(["--decode-min-content", str(knobs.decode_min_content)])
+        if knobs.asap_decode:
+            train.append("--asap-decode")
         if knobs.compiler_alignment_loss_weight is not None:
             train.extend(
                 [
@@ -519,12 +530,6 @@ def compile_commands(
             value = getattr(knobs, name)
             if value is not None:
                 evaluate.extend([f"--{name.replace('_', '-')}", str(value)])
-        # Track A emptiness-wall decode levers (A3 coverage remask, A4
-        # minimum-content contract). Decode-time, so they ride the eval stage.
-        if knobs.remask_policy is not None:
-            evaluate.extend(["--remask-policy", knobs.remask_policy])
-        if knobs.decode_min_content is not None:
-            evaluate.extend(["--decode-min-content", str(knobs.decode_min_content)])
         if knobs.allow_unconstrained_fallback is False:
             evaluate.append("--no-unconstrained-fallback")
         if knobs.schema_in_context:

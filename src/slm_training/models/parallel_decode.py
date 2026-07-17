@@ -561,6 +561,107 @@ def select_remask_stability_indices(
     )
 
 
+class AsapLedger:
+    """
+    A2 (ASAp for MaskGIT): adaptive removal of constraint-violating mass.
+
+    Grammar-Aligned Decoding / ASAp (Park et al., NeurIPS 2024) shows that
+    plain constraint masking + renormalization systematically distorts decode
+    toward grammatical-but-low-quality outputs: the constrained pick
+    conditions on *local* legality, never on whether the model's mass at that
+    choice actually leads anywhere. ASAp repairs this adaptively — every
+    observed violation removes the violating continuation's probability mass
+    from its prefix's proposal distribution, so repeated visits converge
+    toward the true grammar-conditioned model distribution.
+
+    The MaskGIT adaptation replaces ASAp's prefix trie with the canvas
+    position: the feedback unit is ``(position, token)``. Violations observed
+    during the unmask loop (admit-probe rejections, grammar stream
+    hard-error remasks) call :meth:`penalize` with the model probability mass
+    of the violating token; the next proposal at that position sees a
+    log-domain down-weight of exactly the removed mass via
+    :meth:`adjust_logits_row`, and :meth:`adjusted_confidence` gives the
+    unmask ordering the post-removal confidence so a position whose best
+    token keeps dying no longer looks confident.
+
+    Approximation notes (honest): positions are a coarser index than ASAp's
+    prefixes — mass removed for a token at position ``t`` under one canvas is
+    remembered even after unrelated positions change. That is deliberate: the
+    single-sequence MaskGIT loop revisits a position only a handful of times,
+    and stale penalties err toward exploring alternatives rather than
+    repeating a observed dead end (remask-don't-replace keeps this safe).
+    """
+
+    def __init__(self, *, floor: float = 1e-6) -> None:
+        self.floor = float(floor)
+        self._removed: dict[int, dict[int, float]] = {}
+        self.penalties: int = 0
+
+    def penalize(self, position: int, token_id: int, mass: float) -> None:
+        """Record ``mass`` of ``token_id`` at ``position`` as constraint-removed."""
+        t = int(position)
+        tid = int(token_id)
+        add = max(0.0, float(mass))
+        row = self._removed.setdefault(t, {})
+        row[tid] = min(1.0, row.get(tid, 0.0) + add)
+        self.penalties += 1
+
+    def removed_mass(self, position: int, token_id: int) -> float:
+        return self._removed.get(int(position), {}).get(int(token_id), 0.0)
+
+    def keep_factor(self, position: int, token_id: int) -> float:
+        """Multiplicative survival factor ``max(floor, 1 - removed_mass)``."""
+        return max(self.floor, 1.0 - self.removed_mass(position, token_id))
+
+    def has_penalties(self, position: int | None = None) -> bool:
+        if position is None:
+            return bool(self._removed)
+        return bool(self._removed.get(int(position)))
+
+    def adjust_logits_row(
+        self, logits_row: torch.Tensor, position: int
+    ) -> torch.Tensor:
+        """
+        Return ``logits_row`` with penalized token logits shifted by
+        ``log(keep_factor)`` (identity when the position has no penalties).
+        """
+        row = self._removed.get(int(position))
+        if not row:
+            return logits_row
+        out = logits_row.clone()
+        vocab = int(out.numel())
+        for tid, removed in row.items():
+            if 0 <= tid < vocab:
+                out[tid] = out[tid] + math.log(max(self.floor, 1.0 - removed))
+        return out
+
+    def adjusted_confidence(
+        self, probs: torch.Tensor, conf: torch.Tensor, unknown: torch.Tensor
+    ) -> torch.Tensor:
+        """
+        Distribution-aware unmask confidence: for masked positions with
+        penalties, confidence is the max of ``p(v) * keep_factor(v)`` instead
+        of the raw (pre-constraint) max — a position whose argmax mass was
+        observed to violate no longer outranks positions where the model and
+        the grammar agree. probs: [B, T, V]; conf/unknown: [B, T].
+        """
+        if not self._removed:
+            return conf
+        out = conf.clone()
+        length = conf.size(-1)
+        for t, row in self._removed.items():
+            if not row:
+                continue
+            for b in range(conf.size(0)):
+                if 0 <= t < length and bool(unknown[b, t].item()):
+                    p = probs[b, t].clone()
+                    for tid, removed in row.items():
+                        if 0 <= tid < p.numel():
+                            p[tid] = p[tid] * max(self.floor, 1.0 - removed)
+                    out[b, t] = p.max()
+        return out
+
+
 def perturb_known_neighbors(
     ids: torch.Tensor,
     known: torch.Tensor,

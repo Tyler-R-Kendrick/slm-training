@@ -32,11 +32,6 @@ dev = [
 grammar = [
   "lark>=1.1",
 ]
-# F2 GraphQL pack oracle (schema-aware validation; graphql-js byte-parity
-# is a stated non-goal — see docs/design/grammar-backends.md).
-graphql = [
-  "graphql-core>=3.2,<4",
-]
 # Required for TwoTower training / generation
 torch = [
   "torch>=2.2,<2.6",

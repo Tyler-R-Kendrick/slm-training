@@ -1244,6 +1244,69 @@ narrative:
 [iter-e257-c1-relative-bind-20260716.md](iter-e257-c1-relative-bind-20260716.md).
 Same honesty envelope as the B4 pair.
 
+## V12 A2 ASAp distribution-aware constrained decode (fixture-run 2026-07-17)
+
+Track A2 (Grammar-Aligned Decoding / ASAp,
+[2405.21047](https://arxiv.org/abs/2405.21047), **Adapted**: only the adaptive
+removal of observed constraint-violating mass is reused, transplanted from
+ASAp's prefix trie onto the MaskGIT canvas position — no
+sampling-until-acceptance loop, no convergence guarantee): `asap_decode`
+(`models/parallel_decode.py::AsapLedger`) removes admit-reject and grammar
+stream hard-error mass from the next proposal at that position and gives
+unmask ordering the post-removal confidence. Decode-only, eval-only row routed
+through the frozen E255 checkpoint via `--parent` — matched pair differing
+only in `asap_decode` (enforced by `tests/test_scripts/test_quality_matrix_v14.py`).
+
+| ID | Isolated lever | Baseline | Status |
+| --- | --- | --- | --- |
+| E277 | `asap_decode=True` (A2 ASAp mass removal) | E255 recorded eval | fixture-run |
+
+### V14 measured results (CPU, fixture-grade, 2026-07-17)
+
+Recipe: eval-only overlay on `qx_e255_b4_scratch_control/best_weighted_nll.pt`,
+fixture v1 corpus, suites smoke 3 / held_out 5 / adversarial 4 / ood 4 /
+rico_held 0, parallel MaskGIT decode, `--rico-limit 3`. JSON:
+[quality-matrix-results-iter-v14-a2-20260717.json](quality-matrix-results-iter-v14-a2-20260717.json);
+narrative + honesty envelope:
+[iter-e277-a2-asap-decode-20260717.md](iter-e277-a2-asap-decode-20260717.md).
+Ledger telemetry proves the lever is live: 204–334 `asap_penalties` across
+32–53 distinct positions per suite; two runs produced byte-identical metrics.
+
+## V15 C2 dynamic pseudo-embeddings (fixture-run 2026-07-17)
+
+Track C2 (DyVo [2410.07722](https://arxiv.org/abs/2410.07722), **Adapted**:
+dynamic-vocabulary embedding only): `runtime_symbol_features="replace"`
+cancels the learned `<SYM_i>`/`<BIND_j>` pool rows with deterministic
+byte-compositional vectors through the V8 delta path (weight tying and
+batching untouched; same surface → identical vector at every slot, by
+construction and by test).
+
+| ID | Isolated lever | Baseline | Status |
+| --- | --- | --- | --- |
+| E278 | `runtime_symbol_features="replace"` (C2) | E255 recorded eval | fixture-run |
+
+Recipe: scratch-control 200 CPU steps, fixture v1 corpus, matched vs E255 on
+everything but the mode. JSON:
+[quality-matrix-results-iter-v15-c2-20260717.json](quality-matrix-results-iter-v15-c2-20260717.json);
+narrative: [iter-e278-c2-pseudo-embeddings-20260717.md](iter-e278-c2-pseudo-embeddings-20260717.md).
+Honest gates fail on both rows; structural similarity dips vs control
+(0.19–0.29 vs 0.28–0.37) — an honest fixture-scale negative. The
+binding-consistency probe on the trained checkpoint reports same-surface
+hidden cosine 0.9998 vs cross-surface 0.9679 (margin +0.032):
+[binding-consistency-e278-20260717.json](binding-consistency-e278-20260717.json).
+The run also flushed a latent stale-feature leak (fixed at the source in
+`training_loss`; complementary to PR #275).
+
+Honest gates still fail on both rows (syntax/meaningful parse 0.0 — the
+fixture-scale placeholder-policy wall Track A targets at frontier scale, not
+here). Secondary signals, structural similarity E255 → E277:
+smoke 0.30 → 0.265, held_out 0.323 → 0.248, adversarial 0.281 → 0.370,
+ood 0.372 → 0.278 — decode behavior demonstrably diverges under the ledger,
+with mixed noise-level deltas at n≤5 per suite. **Wiring evidence only**: the
+fixture budget cannot decide the ASAp hypothesis; the A2 verdict requires the
+frontier checkpoints (GPU host, n=1500 RICO bar) where the A1-diagnosed
+constraint distortion actually binds.
+
 E256 then ran the repaired path across all 65 E230 document records. It
 persisted 16 independently judged counterfactual events and their full probes
 as an immutable source corpus: 14 train and two held-out events across eight
@@ -1331,7 +1394,7 @@ surface-DFA token gate is bypassed for choice ids (validation moves entirely
 to the fail-closed detokenizer); a choice-native legal-decision gate is the
 follow-up.
 
-E263 then repeated E252's matched 30-step set-FTPO recipe using the committed
+E277 then repeated E252's matched 30-step set-FTPO recipe using the committed
 E261 corpus. Broad support prevented the E252 fidelity collapse: fidelity and
 meaningful-program rates exactly matched the E248 parent, while deterministic
 syntax remained 1.0 with no fallback or timeout. The objective still failed:
@@ -1340,20 +1403,20 @@ doubled, structure regressed on all five suites, ten thresholds failed, and
 AgentV passed 0/5. The checkpoint is rejected. The next lever must guard updates
 against held-out exact-state and parent-semantic regressions, not add syntax
 training or duration. This run originally emitted E262 before concurrent B1
-claimed that ID; the measured preference result is canonically E263. Full
+claimed that ID; the measured preference result is canonically E277. Full
 evidence:
-[iter-e263-broad-gold-ast-ftpo-20260716.md](iter-e263-broad-gold-ast-ftpo-20260716.md).
+[iter-e277-broad-gold-ast-ftpo-20260716.md](iter-e277-broad-gold-ast-ftpo-20260716.md).
 
-E264 added a generalized held-out Pareto guard to that same objective. Every
+E278 added a generalized held-out Pareto guard to that same objective. Every
 five steps, held-out loss and bad-token mass had to be no worse while
 good-token mass and mean margin had to be no worse. None of steps 5–30 was
 eligible, so the harness restored step 0. All 374 restored tensors, the config,
 and tokenizer sidecars are bit-identical to E228. A current-code E248 parent
-control exactly reproduced every E264 suite metric and gate failure, proving
+control exactly reproduced every E278 suite metric and gate failure, proving
 that differences from the historical E248 report are evaluator/decoder drift,
-not a training gain. The guard is retained; the parent-equivalent E264 artifact
+not a training gain. The guard is retained; the parent-equivalent E278 artifact
 is rejected and not promoted. Full evidence:
-[iter-e264-guarded-gold-ast-ftpo-20260716.md](iter-e264-guarded-gold-ast-ftpo-20260716.md).
+[iter-e278-guarded-gold-ast-ftpo-20260716.md](iter-e278-guarded-gold-ast-ftpo-20260716.md).
 
 E265 enforced that Pareto contract on every optimizer proposal with
 optimizer-consistent backtracking. Three of 30 updates were accepted and all
@@ -1487,7 +1550,7 @@ minimum support per grammar-derived signature, followed by this same profile;
 do not add token/component special cases. Full evidence:
 [iter-e276-decision-signature-alignment-20260717.md](iter-e276-decision-signature-alignment-20260717.md).
 
-## V13 C3 corpus-mined macro tokens (fixture-run 2026-07-17)
+## V16 C3 corpus-mined macro tokens (fixture-run 2026-07-17)
 
 Track C3 (Stitch [arXiv:2211.16605](https://arxiv.org/abs/2211.16605) /
 LILO [arXiv:2310.19791](https://arxiv.org/abs/2310.19791), **Adapted**: only
@@ -1504,14 +1567,14 @@ and decode cannot disagree. Macros never contain `<SYM_i>`/`<BIND_j>`/
 
 | ID | Isolated lever | Status |
 | --- | --- | --- |
-| E277 | C3 `macro_tokens=true` on the lexer/diffusion base | fixture-run |
+| E280 | C3 `macro_tokens=true` on the lexer/diffusion base | fixture-run |
 
-### V13 measured results (CPU, fixture-grade, 2026-07-17)
+### V16 measured results (CPU, fixture-grade, 2026-07-17)
 
 Recipe: `--steps 80 --scratch-control --no-design-md-context --rico-limit 3`,
 batch 4, seed 0, lr 3e-4, fixture v1 corpus (108 records). JSON:
-[quality-matrix-results-iter-v13-c3-20260717.json](quality-matrix-results-iter-v13-c3-20260717.json);
-narrative: [iter-e277-c3-macro-tokens-20260717.md](iter-e277-c3-macro-tokens-20260717.md).
+[quality-matrix-results-iter-v16-c3-20260717.json](quality-matrix-results-iter-v16-c3-20260717.json);
+narrative: [iter-e280-c3-macro-tokens-20260717.md](iter-e280-c3-macro-tokens-20260717.md).
 
 Induction: 16 macros (cap), corpus 4,964 → 3,261 tokens incl. table (−34.3%),
 description length −35.5%; matched-recipe training throughput
@@ -1523,7 +1586,7 @@ only**: no matched no-macro control row in this run; whether sequence
 compression buys quality is the open frontier-scale matched pair. No gate
 weakened; nothing promoted.
 
-## V14 C4 names-disappear matched pair (fixture-run 2026-07-17)
+## V17 C4 names-disappear matched pair (fixture-run 2026-07-17)
 
 Track C4 ("When Names Disappear" [arXiv:2510.03178](https://arxiv.org/abs/2510.03178)):
 does anonymizing binder/state identifiers to `<BIND_j>`/`<STATE_k>` — the
@@ -1536,15 +1599,15 @@ relative binding fail closed.
 
 | ID | Isolated lever | Status |
 | --- | --- | --- |
-| E278 | Anonymized-symbol control (unconstrained decode) | fixture-run |
-| E279 | Surface binder/state identifiers via byte channel | fixture-run |
+| E281 | Anonymized-symbol control (unconstrained decode) | fixture-run |
+| E282 | Surface binder/state identifiers via byte channel | fixture-run |
 
-### V14 measured results (CPU, fixture-grade, 2026-07-17)
+### V17 measured results (CPU, fixture-grade, 2026-07-17)
 
 Recipe: `--steps 80 --scratch-control --no-design-md-context --rico-limit 3`,
 batch 4, seed 0, lr 3e-4, fixture v1 corpus. JSON:
-[quality-matrix-results-iter-v14-c4-20260717.json](quality-matrix-results-iter-v14-c4-20260717.json);
-narrative: [iter-e278-e279-c4-names-disappear-20260717.md](iter-e278-e279-c4-names-disappear-20260717.md).
+[quality-matrix-results-iter-v17-c4-20260717.json](quality-matrix-results-iter-v17-c4-20260717.json);
+narrative: [iter-e281-e282-c4-names-disappear-20260717.md](iter-e281-e282-c4-names-disappear-20260717.md).
 
 Syntax/meaningful parse 0.0 on both arms (fixture wall); structural
 similarity favors the **surface** arm on 5/5 suites (0.23/0.17/0.16/0.18/0.11

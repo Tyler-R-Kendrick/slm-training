@@ -1,0 +1,16 @@
+{
+  "name": "graphql-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Node sidecar wrapping graphql-js as the F2 GraphQL pack's validity oracle",
+  "scripts": {
+    "cli": "node cli.mjs"
+  },
+  "dependencies": {
+    "graphql": "^16.11.0"
+  },
+  "engines": {
+    "node": ">=20 <23"
+  }
+}

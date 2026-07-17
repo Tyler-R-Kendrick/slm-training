@@ -215,18 +215,6 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--compiler-search-stagnation-patience", type=int, default=2)
     parser.add_argument("--compiler-search-backtrack-limit", type=int, default=8)
     parser.add_argument(
-        "--remask-policy",
-        choices=("confidence", "core", "combined", "stability", "coverage"),
-        default=None,
-        help="Track A3: 'coverage' biases remasking toward under-covered content.",
-    )
-    parser.add_argument(
-        "--decode-min-content",
-        type=int,
-        default=None,
-        help="Track A4: 0 off | >0 floor | -1 auto-from-inventory.",
-    )
-    parser.add_argument(
         "--schema-in-context",
         action="store_true",
         help="Override: inject compact schema into context.",
@@ -442,16 +430,6 @@ def main(argv: list[str] | None = None) -> int:
             1, args.compiler_search_stagnation_patience
         ),
         compiler_search_backtrack_limit=max(0, args.compiler_search_backtrack_limit),
-        **(
-            {"remask_policy": args.remask_policy}
-            if args.remask_policy is not None
-            else {}
-        ),
-        **(
-            {"decode_min_content": args.decode_min_content}
-            if args.decode_min_content is not None
-            else {}
-        ),
         decode_timeout_seconds=args.decode_timeout_seconds,
         grammar_dsl=args.grammar_dsl,
         grammar_trust_model=args.grammar_trust_model,

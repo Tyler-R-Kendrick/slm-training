@@ -121,6 +121,19 @@ heterogeneous-noise, critic, buffer, and budget knobs. Causal-LM code or recipe
 changes stay on the agent-driven `model_cycle` path so immutable parents and base
 pins are preserved.
 
+### Program experiments route through this loop (G1, SLM-46)
+
+The DSL diffusion research program (tracks A-G) has no parallel ad-hoc loop:
+its levers are allowlisted typed knobs (`asap_decode`, `decode_min_content`,
+`denoiser_backend`, `bind_encoding`, `mask_pattern`) compiled to bounded
+`scripts/train_model.py` flags, and
+[`autoresearch/program_matrix.py`](../../src/slm_training/autoresearch/program_matrix.py)
+encodes Track A as a `HypothesisMatrix` grounded in the committed evidence
+trail (A1 diagnosis E248, A2 fixture row E259, the E3 literature manifest).
+`tests/test_autoresearch/test_program_matrix.py` submits it through the
+engine end-to-end — validation, bounded command compilation, and feedback
+acknowledgement — with the hypothesizer-eval benchmarks untouched.
+
 ## Evidence and literature order
 
 Evidence capture reads repository lineage first, then configured roots. The normal
@@ -253,25 +266,6 @@ This is bounded self-improvement by accumulated evidence and policy iteration. I
 not online weight training or permission to edit implementation, frozen evaluations,
 promotion policy, or ship gates. Hypothesizer implementation changes still require
 held-out evaluation and human approval before being treated as promoted behavior.
-
-### Program tracks as encoded matrices (G1, SLM-46)
-
-Program experiments are encoded as typed matrices in
-[`autoresearch/program_matrices.py`](../../src/slm_training/autoresearch/program_matrices.py)
-rather than run through a parallel ad-hoc loop. `track_a_matrix()` builds the
-valid-but-empty-wall attack as five authentic `ExperimentSpec`s — A3
-coverage-energy remasking (`remask_policy="coverage"`), A4 minimum-content
-decode contracts (`decode_min_content`), their combination, and A5 lattice
-search (`compiler_search_mode="lattice"`) — each grounded in a real
-`EvidenceSnapshot` over the committed E248/E250/E251/lattice iter docs. The
-A3/A4 levers became typed `ExperimentKnobs` (and `evaluate_model` CLI flags)
-in this change so the matrix compiles authentically instead of being
-differentiated by incidental seed/steps knobs. A2 (ASAp reweighting) is not
-yet a model-side lever and is deliberately left as a future row, not
-fabricated as a routable knob. The matrix passes
-`validate_hypothesis_matrix`, `compile_commands` (bounded CPU argv), and
-`create_hypothesis_feedback` end to end; the frozen hypothesizer benchmark
-(`hypothesizer_cases.json`) is untouched.
 
 ## Isolated researcher setup
 
