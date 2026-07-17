@@ -33,9 +33,11 @@ global plan remain effectively unchanged.
 
 ## Honest five-suite result
 
-The intended intervention uses slot decode weight 1.0 under the frozen E315
-policy: honest visible contract, tree compiler, distinct-slot auto content
-floor, and no unconstrained fallback.
+The authoritative intended intervention is
+`e317-slot-component-plan-20k-honest-r2`, which uses slot decode weight 1.0
+under the frozen E315 policy: honest visible contract, tree compiler,
+distinct-slot auto content floor, and no unconstrained fallback. It reproduces
+the provisional r1 metrics.
 
 | Suite | n | Parse | Fidelity | Structure | Meaningful | Component recall | Reward | Slot changes | Gate |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
