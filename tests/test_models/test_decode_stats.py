@@ -34,6 +34,13 @@ def test_decode_stats_tracks_constrained_dead_ends() -> None:
     assert aggregate_stats([stats])["constrained_dead_ends_sum"] == 2.0
 
 
+def test_decode_stats_aggregates_choice_state_cache_counts() -> None:
+    stats = DecodeStats(choice_state_cache_hits=7, choice_state_cache_misses=2)
+    summary = aggregate_stats([stats])
+    assert summary["choice_state_cache_hits_sum"] == 7.0
+    assert summary["choice_state_cache_misses_sum"] == 2.0
+
+
 def test_decode_stats_aggregates_dead_end_traces() -> None:
     stats = DecodeStats(constrained_dead_end_traces=[{"position": 1}])
     assert aggregate_stats([stats])["constrained_dead_end_traces"] == [{"position": 1}]

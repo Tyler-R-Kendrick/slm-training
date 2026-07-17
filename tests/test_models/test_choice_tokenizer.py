@@ -145,6 +145,18 @@ def test_choice_state_rejects_unavailable_slots_and_forward_refs(
     assert tok.token_to_id["&0"] not in state.allowed_ids(8)
 
 
+def test_choice_state_caches_exact_legal_sets(tok: ChoiceTokenizer) -> None:
+    tok.allowed_cache.clear()
+    tok.allowed_cache_hits = 0
+    tok.allowed_cache_misses = 0
+    state = ChoiceDecodeState(tok)
+    first = state.allowed_ids(8)
+    second = state.allowed_ids(8)
+    assert second == first
+    assert tok.allowed_cache_misses == 1
+    assert tok.allowed_cache_hits == 1
+
+
 @needs_bridge
 def test_twotower_choice_wiring(tmp_path: Path) -> None:
     """from_records builds the choice tokenizer; train/save/load round trip."""

@@ -4027,9 +4027,16 @@ class TwoTowerModel(nn.Module):
             rows = active.nonzero(as_tuple=False).flatten().tolist()
             if not rows:
                 break
+            cache_hits = tok.allowed_cache_hits
+            cache_misses = tok.allowed_cache_misses
             allowed = {
                 row: states[row].allowed_ids(length - position) for row in rows
             }
+            if stats is not None:
+                stats.choice_state_cache_hits += tok.allowed_cache_hits - cache_hits
+                stats.choice_state_cache_misses += (
+                    tok.allowed_cache_misses - cache_misses
+                )
             need_model = [row for row in rows if len(allowed[row]) > 1]
             logits = (
                 self._denoiser_forward(ids, ctx, ctx_pad)
