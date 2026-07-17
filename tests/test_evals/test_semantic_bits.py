@@ -82,3 +82,28 @@ def test_categorize_known_prefixes() -> None:
     assert categorize("@0") == "slot"
     assert categorize("&2") == "reference"
     assert categorize("$@state") == "state_ref"
+
+
+# --- B1/B3: choice stream ----------------------------------------------------
+
+
+def test_choice_stream_has_fewer_decisions_than_production() -> None:
+    production = semantic_bits(_records(), stream="production")
+    choice = semantic_bits(_records(), stream="choice")
+    # The choice stream elides exactly the grammar-forced framing tokens
+    # (one '=' per statement here), never a semantic decision.
+    assert 0 < choice["n_decisions"] < production["n_decisions"]
+    assert choice["total_bits"] < production["total_bits"]
+    assert choice["by_category"].get("production", 0) == production["by_category"].get(
+        "production", 0
+    )
+    # No structural framing left in the choice stream for these documents.
+    assert choice["by_category"].get("structural", 0) < production["by_category"].get(
+        "structural", 1
+    )
+
+
+def test_compare_includes_choice_arm() -> None:
+    cmp = compare_representations(_records())
+    assert cmp["choice"]["total_bits"] > 0
+    assert cmp["surface_to_choice_bit_ratio"] >= cmp["surface_to_production_bit_ratio"]

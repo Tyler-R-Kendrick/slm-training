@@ -22,6 +22,16 @@ def main(argv: list[str] | None = None) -> int:
         help="Comma-separated d_model widths (default: 64 for cheap CI).",
     )
     parser.add_argument("--horizons", default="1.0", help="Comma-separated horizon multipliers.")
+    parser.add_argument(
+        "--representation",
+        choices=("compositional", "lexer", "choice"),
+        default="compositional",
+        help=(
+            "Output representation for all ladder points (B3 axis). 'choice' "
+            "is accepted for planning but fails closed until the trainer "
+            "supports the B1 choice-sequence codec."
+        ),
+    )
     parser.add_argument("--base-token-budget", type=int, default=2_000)
     parser.add_argument("--steps", type=int, default=50)
     parser.add_argument("--batch-size", type=int, default=2)
@@ -54,11 +64,17 @@ def main(argv: list[str] | None = None) -> int:
     seeds = [int(x) for x in args.seeds.split(",") if x.strip()]
     ladder = (
         scratch_ladder_default(
-            base_token_budget=args.base_token_budget, widths=widths, horizons=horizons
+            base_token_budget=args.base_token_budget,
+            widths=widths,
+            horizons=horizons,
+            representation=args.representation,
         )
         if args.track == "scratch"
         else hf_ladder_default(
-            base_token_budget=args.base_token_budget, widths=widths, horizons=horizons
+            base_token_budget=args.base_token_budget,
+            widths=widths,
+            horizons=horizons,
+            representation=args.representation,
         )
     )
 
@@ -109,6 +125,35 @@ def main(argv: list[str] | None = None) -> int:
                     )
                 )
 
+    # B3 (SLM-23): corpus choice bits for this representation + params-per-bit
+    # per trained point (E1, evals/semantic_bits.py). Corpus-side only when no
+    # training ran; model-side rows need trainable_params from summaries.
+    from slm_training.dsl.schema import load_jsonl
+    from slm_training.evals.semantic_bits import semantic_bits
+
+    bits_stream = {"compositional": "surface", "lexer": "surface", "choice": "choice"}[
+        args.representation
+    ]
+    train_records_path = Path(args.train_dir) / "records.jsonl"
+    bits_report = (
+        semantic_bits(load_jsonl(train_records_path), stream=bits_stream)
+        if train_records_path.is_file()
+        else None
+    )
+    params_per_bit_rows: list[dict] = []
+    if bits_report and bits_report.get("total_bits"):
+        for summary in summaries:
+            trainable = (summary.get("track") or {}).get("trainable_params")
+            if not trainable:
+                continue
+            params_per_bit_rows.append(
+                {
+                    "run_id": summary.get("run_id"),
+                    "trainable_params": int(trainable),
+                    "params_per_bit": float(trainable) / bits_report["total_bits"],
+                }
+            )
+
     fit = fit_power_law(observations, cost_key="time") if len(observations) >= 2 else None
     eg_vals: list[float] = []
     if fit is not None:
@@ -148,7 +193,10 @@ def main(argv: list[str] | None = None) -> int:
     payload = {
         "ladder_id": ladder.ladder_id,
         "track": ladder.track,
+        "representation": args.representation,
         "n_points": len(ladder.points),
+        "semantic_bits": bits_report,
+        "params_per_bit_rows": params_per_bit_rows,
         "fit": fit,
         "eg_time": (
             {"mean": eg_stats[0], "lcb": eg_stats[1], "ucb": eg_stats[2]}

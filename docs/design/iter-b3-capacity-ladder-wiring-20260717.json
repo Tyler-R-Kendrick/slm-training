@@ -1,0 +1,87 @@
+{
+  "iter": "b3-capacity-ladder-wiring",
+  "date": "2026-07-17",
+  "linear": "SLM-23",
+  "claim": "wiring_evidence_not_ship",
+  "ladder_fixture_run": {
+    "representation": "lexer",
+    "train_dir": "src/slm_training/resources/data/train/e230_diverse_judged_roots_v2",
+    "params_per_bit_rows": [
+      {
+        "run_id": "scratch_v1__d64_h2_c1_dn2_t1000_x1_rlexer__s0",
+        "trainable_params": 254466,
+        "params_per_bit": 9.31749426161766
+      }
+    ],
+    "observations": [
+      {
+        "point_id": "d64_h2_c1_dn2_t1000_x1_rlexer",
+        "seed": 0,
+        "loss": 26.05400128850563,
+        "cost_time_s": 7.885075
+      }
+    ],
+    "semantic_bits_stream": "surface",
+    "semantic_bits_total": 27310.561493795947
+  },
+  "corpus_bits_train_e230": {
+    "scored_programs_mismatch": true,
+    "surface": {
+      "n_programs": 126,
+      "n_scored_programs": 126,
+      "n_decisions": 4890,
+      "alphabet_size": 510,
+      "total_bits": 27310.561493795947,
+      "bits_per_decision": 5.584981900571768
+    },
+    "production": {
+      "n_programs": 126,
+      "n_scored_programs": 65,
+      "n_decisions": 2906,
+      "alphabet_size": 97,
+      "total_bits": 12661.44505829197,
+      "bits_per_decision": 4.357001052406046
+    },
+    "choice": {
+      "n_programs": 126,
+      "n_scored_programs": 65,
+      "n_decisions": 2381,
+      "alphabet_size": 96,
+      "total_bits": 10680.947113270204,
+      "bits_per_decision": 4.485908069412098
+    },
+    "surface_to_production_bit_ratio": null,
+    "surface_to_choice_bit_ratio": null,
+    "decision_reduction_ratio": null
+  },
+  "corpus_bits_eval_remediated": {
+    "scored_programs_mismatch": false,
+    "surface": {
+      "n_programs": 19,
+      "n_scored_programs": 19,
+      "n_decisions": 1014,
+      "alphabet_size": 198,
+      "total_bits": 5479.375020609837,
+      "bits_per_decision": 5.403722900009701
+    },
+    "production": {
+      "n_programs": 19,
+      "n_scored_programs": 19,
+      "n_decisions": 673,
+      "alphabet_size": 51,
+      "total_bits": 2909.342995061003,
+      "bits_per_decision": 4.322946500833585
+    },
+    "choice": {
+      "n_programs": 19,
+      "n_scored_programs": 19,
+      "n_decisions": 553,
+      "alphabet_size": 50,
+      "total_bits": 2454.154498701071,
+      "bits_per_decision": 4.437892402714414
+    },
+    "surface_to_production_bit_ratio": 1.883371960580724,
+    "surface_to_choice_bit_ratio": 2.232693591014725,
+    "decision_reduction_ratio": 1.5066864784546805
+  }
+}
