@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { postJSON, useJobStream } from "./api";
+import type { HeroData } from "./hero";
 
 // --- formatting helpers ----------------------------------------------------
 export function fmt(v: any, digits = 3): string {
@@ -49,8 +50,25 @@ export function Grid({ children, min = "220px" }: { children: React.ReactNode; m
   );
 }
 
-export function Empty({ children }: { children: React.ReactNode }) {
-  return <div className="empty">{children}</div>;
+export function Empty({
+  children,
+  ctaLabel,
+  onCta,
+}: {
+  children: React.ReactNode;
+  ctaLabel?: string;
+  onCta?: () => void;
+}) {
+  return (
+    <div className="empty">
+      {children}
+      {ctaLabel && onCta && (
+        <div style={{ marginTop: "0.5rem" }}>
+          <button className="chip" onClick={onCta}>{ctaLabel}</button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function ErrorNote({ error }: { error: string | null }) {
@@ -211,7 +229,7 @@ export function DataTable({
           {filtered.map((row, i) => (
             <tr key={i}>
               {columns.map((c) => (
-                <td key={c.key} style={{ textAlign: c.align ?? "left" }}>
+                <td key={c.key} className={`cell-${c.key}`} style={{ textAlign: c.align ?? "left" }}>
                   {render && render[c.key] ? render[c.key](row) : c.direction ? <MetricCell row={row} baseline={baseline} column={c} /> : fmt(row[c.key], c.digits ?? 3)}
                 </td>
               ))}
@@ -452,5 +470,199 @@ export function JobLauncher({
         {busy ? "launching…" : execution ? "Run" : "Read-only"}
       </button>
     </div>
+  );
+}
+
+// --- mission-control hero ----------------------------------------------------
+// Shared by compiled Overview and the interpreted HeroStrip component so both
+// renderers produce identical markup from the same HeroData (see hero.ts).
+export function HeroStrip({
+  hero,
+  navigate,
+}: {
+  hero: HeroData;
+  navigate?: (to: string) => void;
+}) {
+  const ref = hero.reference;
+  const gate = hero.gate;
+  const verdictClass = gate ? (gate.pass ? "verdict-pass" : "verdict-fail") : "verdict-none";
+  const verdictText = hero.unavailable
+    ? "EVIDENCE UNAVAILABLE"
+    : gate
+      ? `GATES ${gate.pass ? "PASS" : "FAIL"} ${gate.passed}/${gate.total}`
+      : "NO GATE EVIDENCE";
+  const flight = hero.inflight;
+  return (
+    <section className={`hero hero-${gate ? (gate.pass ? "pass" : "fail") : "none"}`} aria-label="Ship status">
+      <div className="hero-verdict">
+        <span className={`verdict ${verdictClass}`}>{verdictText}</span>
+        <span className="hero-verdict-sub">ship gates · current reference</span>
+        {gate && !gate.pass && gate.failures.length > 0 && (
+          <span className="hero-failures mono">
+            failing: {gate.failures.join(", ")}
+            {gate.failure_count > gate.failures.length ? ` +${gate.failure_count - gate.failures.length} more` : ""}
+          </span>
+        )}
+      </div>
+      <div className="hero-ref">
+        {hero.unavailable ? (
+          <div className="hero-meta">The observability API is unreachable — this is missing evidence, not a clean zero state.</div>
+        ) : ref ? (
+          <>
+            <div className="hero-run">
+              <a
+                className="mono runlink"
+                href={ref.run_id ? `/runs/${encodeURIComponent(ref.run_id)}` : undefined}
+                onClick={(event) => {
+                  if (!ref.run_id || !navigate) return;
+                  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                  event.preventDefault();
+                  navigate(`/runs/${encodeURIComponent(ref.run_id)}`);
+                }}
+              >
+                {ref.run_id || "—"}
+              </a>
+              <ProvenanceBadge provenance={hero.provenance} />
+            </div>
+            <div className="hero-meta">
+              {[ref.role, ref.track, ref.evaluation_status].filter(Boolean).join(" · ")}
+            </div>
+            <div className="hero-meta">
+              {hero.deployment.selected ? `deployed: ${hero.deployment.track || "selected"}` : "nothing deployed"}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="hero-meta">No evaluated reference yet — run a smoke suite, then evaluate ship gates.</div>
+            <button className="chip" onClick={() => navigate?.("/smoke")}>run smoke →</button>
+          </>
+        )}
+      </div>
+      <div className="hero-side">
+        <div className="hero-flight">
+          <span className={`pill ${flight.jobs ? "pill-running" : "pill-idle"}`}>
+            {flight.jobs} live job{flight.jobs === 1 ? "" : "s"}
+          </span>
+          <span className={`pill ${flight.dispatches ? "pill-warning" : "pill-idle"}`}>
+            {flight.dispatches} remote
+          </span>
+          <span className="hint">{flight.execution ? "control plane online" : "read-only"}</span>
+        </div>
+        <div className="hero-ctas">
+          <button className="chip" onClick={() => navigate?.("/checkpoints")}>gates &amp; promotion →</button>
+          <button className="chip" onClick={() => navigate?.("/experiments")}>experiments →</button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// --- in-flight lists ---------------------------------------------------------
+// Plain views shared verbatim by compiled Overview and the interpreted
+// JobList / JobsBadge / DispatchList wrappers in interpret/library.tsx.
+export interface JobRows {
+  rows?: { id?: string | number; job?: string; status?: string }[];
+  execution?: boolean;
+}
+
+export function JobLines({ data }: { data: JobRows }) {
+  const [cancelling, setCancelling] = useState<string | number | null>(null);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const rows = data.rows ?? [];
+  if (!data.execution) return <Empty>Execution disabled — serve locally to run jobs.</Empty>;
+  if (!rows.length) return <Empty>No jobs running.</Empty>;
+  const cancel = async (id: string | number) => {
+    setCancelling(id);
+    setCancelError(null);
+    try {
+      await postJSON(`/api/jobs/${id}/cancel`, {});
+    } catch (e: any) {
+      setCancelError(`cancel failed: ${String(e?.message ?? e)}`);
+    } finally {
+      setCancelling(null);
+    }
+  };
+  return (
+    <>
+      {rows.map((j, i) => (
+        <div
+          className="job-line"
+          key={j.id ?? i}
+          style={{ display: "flex", justifyContent: "space-between", padding: "0.35rem 0", borderBottom: "1px solid var(--border)" }}
+        >
+          <span className="mono">{j.job}</span>
+          <span style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+            <StatusPill value={j.status} />
+            {j.id != null && (
+              <button className="chip" disabled={cancelling === j.id} onClick={() => cancel(j.id!)}>
+                {cancelling === j.id ? "cancelling…" : "cancel"}
+              </button>
+            )}
+          </span>
+        </div>
+      ))}
+      {cancelError && <ErrorNote error={cancelError} />}
+    </>
+  );
+}
+
+export function JobsBadgeView({ data }: { data: JobRows }) {
+  return data.execution ? (
+    <StatusPill value="running" label="control plane" />
+  ) : (
+    <span className="prov prov-committed">read-only</span>
+  );
+}
+
+export interface DispatchRows {
+  rows?: { id?: string | number; job?: string; status?: string; url?: string }[];
+  remotes?: { run_id?: string; url?: string }[];
+}
+
+export function DispatchLines({
+  data,
+  navigate,
+}: {
+  data: DispatchRows;
+  navigate?: (to: string) => void;
+}) {
+  const jobs = data.rows ?? [];
+  const remotes = data.remotes ?? [];
+  if (!jobs.length && !remotes.length) {
+    return (
+      <Empty
+        ctaLabel={navigate ? "launch one from Experiments →" : undefined}
+        onCta={navigate ? () => navigate("/experiments") : undefined}
+      >
+        No remote (HF Jobs / pod) trains dispatched{navigate ? "." : " — launch one from Experiments."}
+      </Empty>
+    );
+  }
+  return (
+    <>
+      {jobs.map((j, i) => (
+        <div key={j.id ?? `j${i}`} className="dispatch-row">
+          <span className="mono">{j.job}</span>
+          <span style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
+            <StatusPill value={j.status} />
+            {j.url && (
+              <a className="runlink" href={j.url} target="_blank" rel="noreferrer">
+                view remote ↗
+              </a>
+            )}
+          </span>
+        </div>
+      ))}
+      {remotes.map((r, i) => (
+        <div key={r.run_id ?? `r${i}`} className="dispatch-row">
+          <span className="mono">{r.run_id}</span>
+          {r.url && (
+            <a className="runlink" href={r.url} target="_blank" rel="noreferrer">
+              durable checkpoint ↗
+            </a>
+          )}
+        </div>
+      ))}
+    </>
   );
 }

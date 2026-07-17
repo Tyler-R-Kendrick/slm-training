@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import json
 
+from slm_training.harnesses.model_build.ship_gates import DEFAULT_SHIP_GATES
 from slm_training.lineage.records import ChampionPointer, EvaluationReport
-from slm_training.web.observability import Readers
+from slm_training.web.observability import Readers, gate_metric_keys
 
 
 def _write_evidence(root, run_id: str) -> None:
@@ -113,3 +114,24 @@ def test_live_champion_becomes_comparison_baseline(tmp_path) -> None:
     assert performance["references"][0]["evaluation_status"] == "evaluated"
     assert performance["stats"]["comparable"] == 1
     assert performance["comparisons"][0]["vs_reference"].endswith(" pp")
+
+def test_metric_surfaces_track_ship_gate_policy(tmp_path) -> None:
+    """Overview metrics derive from the ship-gate policy: changing a lever
+    (adding/dropping a gate metric) must re-shape the dashboard automatically."""
+    _write_evidence(tmp_path, "checkpoint-1")
+    payload = Readers(tmp_path).performance_insights()
+
+    lever_keys: list[str] = []
+    for mins in DEFAULT_SHIP_GATES.values():
+        for key in mins:
+            if key not in lever_keys:
+                lever_keys.append(key)
+    assert lever_keys == gate_metric_keys()
+    assert [column["key"] for column in payload["metric_columns"]] == lever_keys
+    # The semantic-density floor must be a first-class dashboard column.
+    assert "component_type_recall" in lever_keys
+
+    row = payload["comparisons"][0]
+    assert set(row["metrics"]) <= set(lever_keys)
+    # Legacy parse_rate-only rows surface under the policy's meaningful lever.
+    assert row["metrics"]["meaningful_program_rate"] == 1.0
