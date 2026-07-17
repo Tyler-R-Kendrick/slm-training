@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import tempfile
+from collections import Counter
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Iterable, Literal
@@ -90,6 +91,56 @@ class DecisionEventV1:
         if unknown:
             raise ValueError(f"unknown decision event fields: {sorted(unknown)}")
         return cls(**value)
+
+
+def decision_signature_metadata(event: DecisionEventV1) -> dict[str, object]:
+    return {
+        "decision_kind": event.decision_kind,
+        "legal_token_ids": list(event.legal_token_ids),
+        "good_token_ids": list(event.good_token_ids),
+        "bad_token_ids": list(event.bad_token_ids),
+    }
+
+
+def decision_signature(event: DecisionEventV1) -> str:
+    return f"{event.decision_kind}@{_sha(decision_signature_metadata(event))[:12]}"
+
+
+def decision_signature_support(
+    events: Iterable[DecisionEventV1], *, min_train_support: int = 1
+) -> dict[str, Any]:
+    if min_train_support < 1:
+        raise ValueError("minimum train signature support must be positive")
+    rows = list(events)
+    counts = {
+        split: Counter(
+            decision_signature(event) for event in rows if event.split == split
+        )
+        for split in ("train", "held_out")
+    }
+    metadata = {
+        decision_signature(event): decision_signature_metadata(event) for event in rows
+    }
+    held = set(counts["held_out"])
+    covered = sorted(
+        signature
+        for signature in held
+        if counts["train"][signature] >= min_train_support
+    )
+    uncovered = sorted(held - set(covered))
+    return {
+        "minimum_train_support": min_train_support,
+        "counts": {
+            split: dict(sorted(split_counts.items()))
+            for split, split_counts in counts.items()
+        },
+        "metadata": dict(sorted(metadata.items())),
+        "held_out_coverage": {
+            "covered": covered,
+            "uncovered": uncovered,
+            "passed": not uncovered,
+        },
+    }
 
 
 def _event(
@@ -308,6 +359,8 @@ def decision_event_manifest(
     source_record_fingerprint: str | None = None,
     evidence_path: str | None = None,
     evidence_rows: Iterable[dict[str, Any]] = (),
+    min_train_signature_support: int = 1,
+    require_signature_support: bool = False,
 ) -> dict[str, Any]:
     """Build an immutable, identity-homogeneous event-corpus manifest."""
     rows = sorted(events, key=lambda event: event.event_id)
@@ -332,6 +385,17 @@ def decision_event_manifest(
         split: len({event.group_id for event in rows if event.split == split})
         for split in ("train", "held_out")
     }
+    signature_support = decision_signature_support(
+        rows, min_train_support=min_train_signature_support
+    )
+    if require_signature_support and not signature_support["held_out_coverage"][
+        "passed"
+    ]:
+        missing = signature_support["held_out_coverage"]["uncovered"]
+        raise ValueError(
+            f"decision event corpus lacks train support for {len(missing)} "
+            "held-out signatures"
+        )
     payload: dict[str, Any] = {
         "schema_version": 1,
         "kind": "decision_event_corpus",
@@ -355,6 +419,7 @@ def decision_event_manifest(
             for event in rows
         ),
         "source_trace_ids": sorted(set(source_trace_ids)),
+        "decision_signature_support": signature_support,
     }
     if source_record_fingerprint is not None:
         payload["source_record_fingerprint"] = source_record_fingerprint

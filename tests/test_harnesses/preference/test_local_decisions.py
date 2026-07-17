@@ -9,6 +9,7 @@ from slm_training.harnesses.preference.local_decisions import (
     DecisionEventV1,
     counterfactual_evidence_from_traces,
     decision_event_manifest,
+    decision_signature_support,
     events_from_trace,
     load_decision_events,
     split_for_group,
@@ -209,3 +210,37 @@ def test_manifest_rejects_mixed_policy_identities() -> None:
     second = DecisionEventV1.from_dict(data)
     with pytest.raises(ValueError, match="mixes policy identities"):
         decision_event_manifest([first, second], dataset_id="mixed")
+
+
+def test_signature_support_reports_sparse_held_out_semantics() -> None:
+    base = events_from_trace(_trace())[0]
+    train_group = "train"
+    while split_for_group(train_group) != "train":
+        train_group += "x"
+    train_data = base.to_dict()
+    train_data.update(event_id="train-event", group_id=train_group, split="train")
+    train = DecisionEventV1.from_dict(train_data)
+    held_group = "held"
+    while split_for_group(held_group) != "held_out":
+        held_group += "x"
+    held_data = train.to_dict()
+    held_data.update(
+        event_id="held-event",
+        group_id=held_group,
+        split="held_out",
+        good_token_ids=[7],
+        bad_token_ids=[8],
+        legal_token_ids=[7, 8],
+    )
+    held = DecisionEventV1.from_dict(held_data)
+
+    report = decision_signature_support([train, held], min_train_support=1)
+
+    assert report["held_out_coverage"]["passed"] is False
+    assert len(report["held_out_coverage"]["uncovered"]) == 1
+    with pytest.raises(ValueError, match="lacks train support"):
+        decision_event_manifest(
+            [train, held],
+            dataset_id="sparse",
+            require_signature_support=True,
+        )

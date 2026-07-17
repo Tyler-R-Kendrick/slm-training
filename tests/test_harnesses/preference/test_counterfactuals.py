@@ -177,6 +177,26 @@ def test_state_selection_is_deterministic_and_ignores_ineligible_commits() -> No
     assert all(row["t"] < 99 for row in first)
 
 
+def test_state_selection_diversifies_semantic_signatures_within_kind() -> None:
+    commits = [
+        {
+            "phase": "compiler_tree",
+            "allowed_id_set": [1, 2, 3],
+            "pre_canvas": [position, 0],
+            "t": position,
+            "id": selected,
+            "decision_kind": "component_bound",
+        }
+        for position, selected in ((1, 1), (2, 1), (3, 2))
+    ]
+
+    selected = select_counterfactual_states(
+        commits, max_states=2, seed=7, context_key="record-a"
+    )
+
+    assert {row["id"] for row in selected} == {1, 2}
+
+
 def test_gold_counterfactual_commits_follow_grammar_decisions() -> None:
     tokenizer = DSLNativeTokenizer.build()
     target = tokenizer.encode(

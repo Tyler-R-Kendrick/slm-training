@@ -130,15 +130,25 @@ def select_counterfactual_states(
     def stable_order(*parts: object) -> str:
         return _sha([int(seed), context_hash, *parts])
 
-    strata: dict[str, dict[int, list[dict[str, Any]]]] = {}
+    strata: dict[str, dict[str, list[dict[str, Any]]]] = {}
     for commit in eligible:
         kind = str(commit.get("decision_kind") or "compiler_tree")
-        strata.setdefault(kind, {}).setdefault(depth_bucket(commit), []).append(commit)
+        signature = _sha(
+            {
+                "decision_kind": kind,
+                "legal_token_ids": sorted(
+                    {int(value) for value in commit["allowed_id_set"]}
+                ),
+                "selected_token_id": int(commit.get("id", -1)),
+            }
+        )
+        strata.setdefault(kind, {}).setdefault(signature, []).append(commit)
 
     kinds = sorted(strata, key=lambda kind: stable_order("kind", kind))
-    buckets = {
+    signatures = {
         kind: sorted(
-            strata[kind], key=lambda bucket: stable_order("bucket", kind, bucket)
+            strata[kind],
+            key=lambda signature: stable_order("signature", kind, signature),
         )
         for kind in kinds
     }
@@ -147,17 +157,18 @@ def select_counterfactual_states(
     while len(selected) < max_states:
         added = False
         for kind in kinds:
-            if round_index >= len(buckets[kind]):
+            if round_index >= len(signatures[kind]):
                 continue
-            bucket = buckets[kind][round_index]
-            rows = strata[kind][bucket]
+            signature = signatures[kind][round_index]
+            rows = strata[kind][signature]
             selected.append(
                 min(
                     rows,
                     key=lambda commit: stable_order(
                         "state",
                         kind,
-                        bucket,
+                        signature,
+                        depth_bucket(commit),
                         int(commit["t"]),
                         tuple(map(int, commit["pre_canvas"])),
                     ),

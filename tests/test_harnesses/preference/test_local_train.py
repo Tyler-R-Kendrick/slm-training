@@ -10,13 +10,14 @@ torch = pytest.importorskip("torch")
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.harnesses.preference.local_decisions import (
     DecisionEventV1,
+    decision_signature,
+    decision_signature_metadata,
     split_for_group,
     write_decision_events,
 )
 from slm_training.harnesses.preference.local_train import (
     _event_logits,
     _event_logits_many,
-    _decision_signature,
     _fresh_adamw_direction,
     _guard_objective_tensors,
     _gradient_alignment,
@@ -204,10 +205,11 @@ def test_decision_signature_is_semantic_and_stable() -> None:
     same = replace(event, event_id="other", context_text="different prompt")
     different = replace(event, legal_token_ids=(1, 2, 3))
 
-    signature, metadata = _decision_signature(event)
+    signature = decision_signature(event)
+    metadata = decision_signature_metadata(event)
 
-    assert _decision_signature(same)[0] == signature
-    assert _decision_signature(different)[0] != signature
+    assert decision_signature(same) == signature
+    assert decision_signature(different) != signature
     assert metadata == {
         "decision_kind": "component",
         "legal_token_ids": [1, 2],
