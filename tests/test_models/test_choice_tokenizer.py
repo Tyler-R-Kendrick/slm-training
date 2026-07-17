@@ -11,12 +11,15 @@ from slm_training.dsl.parser import validate
 from slm_training.dsl.schema import ExampleRecord, load_jsonl
 from slm_training.models.choice_tokenizer import (
     CHOICE_TOKENIZER_KIND,
+    DIR_PREFIX,
     LIT_PREFIX,
     LIT_STR,
+    NAME_PREFIX,
     NAME_STR,
     TERNARY_OP,
     ChoiceDecodeState,
     ChoiceTokenizer,
+    _component_contracts,
     is_choice_tokenizer,
 )
 from slm_training.models.dsl_tokenizer import SymbolTable
@@ -147,6 +150,53 @@ def test_choice_state_rejects_unavailable_slots_and_forward_refs(
     assert tok.token_to_id["@0"] in state.allowed_ids(8)
     assert tok.token_to_id["@1"] not in state.allowed_ids(8)
     assert tok.token_to_id["&0"] not in state.allowed_ids(8)
+
+
+def test_choice_state_rejects_unbound_names_as_expressions(
+    tok: ChoiceTokenizer,
+) -> None:
+    state = ChoiceDecodeState(tok)
+    name_id = next(
+        token_id
+        for token_id, token in tok.id_to_token.items()
+        if token.startswith(NAME_PREFIX)
+    )
+    assert not state.advance_id(name_id)
+    assert name_id not in state.allowed_ids(8)
+
+    object_state = ChoiceDecodeState(tok)
+    assert object_state.advance_id(tok.token_to_id["{"])
+    assert object_state.advance_id(name_id)
+
+
+def test_choice_state_derives_placeholder_fields_from_dsl_policy(
+    tok: ChoiceTokenizer,
+) -> None:
+    component, _ = next(
+        (name, contract)
+        for name, contract in _component_contracts().items()
+        if contract[1] == 1
+        and contract[0]
+        and contract[0][0].get("x-openui-placeholder")
+    )
+    open_id = tok.token_to_id[f"+{component}"]
+    slot_id = tok.token_to_id["@0"]
+    literal_id = next(
+        token_id
+        for token_id, token in tok.id_to_token.items()
+        if token.startswith(DIR_PREFIX)
+    )
+
+    without_contract = ChoiceDecodeState(tok)
+    assert open_id not in without_contract.allowed_ids(8)
+
+    with_contract = ChoiceDecodeState(tok, slot_count=1)
+    assert with_contract.advance_id(open_id)
+    assert slot_id in with_contract.allowed_ids(3)
+    assert literal_id not in with_contract.allowed_ids(3)
+    assert with_contract.advance_id(slot_id)
+    assert with_contract.advance_id(tok.token_to_id["-"])
+    assert with_contract.advance_id(tok.eos_id)
 
 
 def test_choice_state_caches_exact_legal_sets(tok: ChoiceTokenizer) -> None:

@@ -1693,3 +1693,18 @@ self-distillation, trajectory RL) are in
 | E63 | Gate calibration | ECE / selective accuracy / abstention on `FastPathGate` | proposed |
 | E64 | Trajectory-aligned RL | MDPO/d1-style on intermediate MaskGIT states | proposed |
 | E65 | Schema generalization | Held-out schemas / rename / `toy-layout` transfer | proposed |
+
+## E292 judged semantic-contract corpus (2026-07-17)
+
+E292 commits a 480-record future-run corpus whose generation prompts are
+derived from output AST contracts and independently judged for exact
+prompt/output agreement. Ninety under-specified generation prompts were
+remediated. A matched five-minute choice run stopped at 107 steps / 5,022
+target tokens; best weighted NLL improved from E291's 7.09848 to 6.50945.
+
+Initial parse0 was a deterministic decoder-policy defect, not undertraining.
+Restricting names to object keys and deriving placeholder-valued component
+fields from the DSL pack's `CONTENT_PROPS` restored parse 1.0 on all five
+suites with the same checkpoint and zero dead ends. Meaningful parse,
+placeholder fidelity, reward, and AgentV remain zero, so neither the checkpoint
+nor the data recipe is promoted. [Full E292 evidence](iter-e292-semantic-contract-data-20260717.md).
