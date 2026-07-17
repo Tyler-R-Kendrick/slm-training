@@ -1957,6 +1957,18 @@ task/data formulation next. See
 [notes](iter-e313-semantic-exhaustive-20260717.md) and
 [JSON](iter-e313-semantic-exhaustive-20260717.json).
 
+## E314 visible slot-contract data alignment (2026-07-17)
+
+E314 aligns training inputs with the honest production request shape by
+surfacing each declared slot contract in the prompt. V1 exposed and prompted a
+coverage fix for 140 partial edit/repair inventories. Corrected v2 has 592/592
+full visible contracts, unchanged targets, reproducible fingerprint
+`d099d6ae…c128f3`, 0/19 contamination, and AgentV diagnostic 1/1.
+
+**Verdict:** accept v2 as matched-training input. This is data evidence, not a
+model result. See [results](iter-e314-visible-slot-contract-20260717.md) and
+[JSON](visible-slot-contract-results-iter-e314-20260717.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

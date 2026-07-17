@@ -64,12 +64,12 @@ def normalize_placeholders(placeholders: list[str] | None) -> list[str]:
 
 
 def ensure_prompt_inventory(prompt: str, placeholders: list[str] | None) -> str:
-    """Append a visible slot inventory section if the prompt lacks placeholders."""
+    """Append the declared inventory unless the visible prompt already covers it."""
     slots = normalize_placeholders(placeholders)
     if not slots:
         return prompt
-    existing = inventory_from_prompt(prompt, heuristic=False)
-    if existing:
+    existing = set(inventory_from_prompt(prompt, heuristic=False))
+    if set(slots) <= existing:
         return prompt
     joined = ", ".join(slots)
     base = (prompt or "").rstrip()

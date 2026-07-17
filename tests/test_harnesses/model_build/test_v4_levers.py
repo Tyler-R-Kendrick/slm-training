@@ -43,6 +43,17 @@ def test_ensure_prompt_inventory_idempotent() -> None:
     assert inventory_from_prompt(once, heuristic=False) == slots
 
 
+def test_ensure_prompt_inventory_completes_partial_visible_contract() -> None:
+    prompt = 'Current program: TextContent(":old.title")'
+    completed = ensure_prompt_inventory(prompt, [":new.title", ":new.body"])
+
+    assert inventory_from_prompt(completed, heuristic=False) == [
+        ":new.title",
+        ":new.body",
+    ]
+    assert ensure_prompt_inventory(completed, [":new.title", ":new.body"]) == completed
+
+
 def test_select_remask_policy_includes_grammar_and_respects_budget() -> None:
     conf = torch.tensor([[0.9, 0.8, 0.1, 0.2, 0.05]])
     known = torch.tensor([[True, True, True, True, True]])

@@ -1,0 +1,57 @@
+{
+  "id": "E314",
+  "date": "2026-07-17",
+  "status": "data_accepted_for_matched_training",
+  "hypothesis": "Training on the same visible slot-contract request shape used by honest evaluation reduces the Stack-plus-first-TextContent collapse.",
+  "implementation": {
+    "canonical_transform": "TrainDataConfig.prompt_slot_contract",
+    "coverage_fix": "ensure_prompt_inventory appends the declared contract unless the visible prompt already covers every slot",
+    "literal_cases_added": false,
+    "targets_changed": false
+  },
+  "rejected_controls": [
+    {
+      "version": "e314_visible_slot_contract_v1",
+      "reason": "ensure_prompt_inventory returned early for any visible slot, leaving 140 edit/repair prompts with partial target contracts",
+      "committed": false
+    }
+  ],
+  "accepted": {
+    "version": "e314_visible_slot_contract_v2",
+    "publish_path": "src/slm_training/resources/data/train/e314_visible_slot_contract_v2",
+    "source_version": "e307_component_prompt_v4",
+    "record_count": 592,
+    "full_visible_contract_rows": 592,
+    "missing_visible_contract_rows": 0,
+    "target_contract_rows_equal_to_e307": true,
+    "prompt_chars_p95": 379,
+    "prompt_chars_max": 485,
+    "content_fingerprint": "d099d6ae53a01685de5134b9cffd97e7aaa6e9c5c272ebb67d08f074c1c128f3",
+    "reproduced_fingerprint": "d099d6ae53a01685de5134b9cffd97e7aaa6e9c5c272ebb67d08f074c1c128f3",
+    "verifier_rejected": 7,
+    "errors": 0,
+    "eval_records": 19,
+    "contaminated_eval_records": 0
+  },
+  "diagnostic": {
+    "component_occurrence_coverage": {
+      "smoke": 1.0,
+      "held_out": 1.0,
+      "adversarial": 1.0,
+      "ood": 1.0,
+      "rico_held": 1.0
+    },
+    "component_type_coverage": {
+      "smoke": 1.0,
+      "held_out": 1.0,
+      "adversarial": 1.0,
+      "ood": 1.0,
+      "rico_held": 1.0
+    },
+    "train_target_p95_tokens": 93,
+    "train_target_max_tokens": 112,
+    "over_256_token_budget": 0,
+    "agentv": {"total": 1, "passed": 1, "failed": 0}
+  },
+  "verdict": "Accept v2 as a deterministic, contamination-free matched-training input. This is data evidence, not a checkpoint or ship result."
+}
