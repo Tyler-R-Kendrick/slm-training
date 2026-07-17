@@ -31,6 +31,16 @@ def main(argv: list[str] | None = None) -> int:
         default="raw",
         help="Geometry used to combine metric-complete objective gradients.",
     )
+    parser.add_argument(
+        "--train-strata",
+        choices=("decision_kind", "decision_signature"),
+        default="decision_kind",
+    )
+    parser.add_argument(
+        "--held-out-strata",
+        choices=("decision_kind", "decision_signature"),
+        default="decision_kind",
+    )
     args = parser.parse_args(argv)
     report = diagnose_decision_gradient_alignment_from_paths(
         args.checkpoint,
@@ -40,6 +50,8 @@ def main(argv: list[str] | None = None) -> int:
         metric_complete=args.metric_complete,
         probability_space=args.probability_space,
         gradient_scaling=args.gradient_scaling,
+        train_strata=args.train_strata,
+        held_out_strata=args.held_out_strata,
     )
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")

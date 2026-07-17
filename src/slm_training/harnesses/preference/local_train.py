@@ -25,6 +25,7 @@ LocalObjective = Literal["ce_margin", "unlikelihood", "ftpo_single", "ftpo_set"]
 GradientCombination = Literal["proposal", "pcgrad", "mgda"]
 LocalOptimizer = Literal["adamw", "sgd"]
 GradientScaling = Literal["raw", "unit_norm"]
+ObjectiveStrata = Literal["decision_kind", "decision_signature"]
 
 _GUARD_DIRECTIONS = {
     "loss": "min",
@@ -210,6 +211,27 @@ def _guard_objective_tensors(
         "good_probability_mass": -good_mass,
         "mean_margin": -(good[:, None] - bad[None, :]).mean(),
     }
+
+
+def _decision_signature(event: DecisionEventV1) -> tuple[str, dict[str, object]]:
+    metadata: dict[str, object] = {
+        "decision_kind": event.decision_kind,
+        "legal_token_ids": list(event.legal_token_ids),
+        "good_token_ids": list(event.good_token_ids),
+        "bad_token_ids": list(event.bad_token_ids),
+    }
+    digest = hashlib.sha256(
+        json.dumps(metadata, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()[:12]
+    return f"{event.decision_kind}@{digest}", metadata
+
+
+def _objective_stratum(event: DecisionEventV1, strata: ObjectiveStrata) -> str:
+    if strata == "decision_kind":
+        return event.decision_kind
+    if strata == "decision_signature":
+        return _decision_signature(event)[0]
+    raise ValueError(f"unknown objective strata: {strata}")
 
 
 def event_schedule(
@@ -602,6 +624,8 @@ def diagnose_metric_complete_gradient_feasibility(
     objective: LocalObjective,
     probability_space: Literal["full_vocab", "legal_tokens"] = "full_vocab",
     gradient_scaling: GradientScaling = "raw",
+    train_strata: ObjectiveStrata = "decision_kind",
+    held_out_strata: ObjectiveStrata = "decision_kind",
     epsilon: float = 2.0,
     tau: float = 1.0,
 ) -> dict:
@@ -609,15 +633,23 @@ def diagnose_metric_complete_gradient_feasibility(
     trainable = list(model.trainable_parameters())
     gradients: dict[str, dict[str, list[torch.Tensor | None]]] = {}
     counts: dict[str, Counter[str]] = {}
+    signature_counts: dict[str, Counter[str]] = {}
+    signature_metadata: dict[str, dict[str, object]] = {}
     for split in ("train", "held_out"):
         selected = _objective_events(
             [event for event in events if event.split == split], objective
         )
         values: dict[str, list[torch.Tensor]] = defaultdict(list)
         counts[split] = Counter()
+        signature_counts[split] = Counter()
+        strata = train_strata if split == "train" else held_out_strata
         for event, logits in zip(
             selected, _event_logits_many(model, selected), strict=True
         ):
+            stratum = _objective_stratum(event, strata)
+            signature, metadata = _decision_signature(event)
+            signature_counts[split][signature] += 1
+            signature_metadata[signature] = metadata
             for metric, value in _guard_objective_tensors(
                 logits,
                 event,
@@ -626,8 +658,8 @@ def diagnose_metric_complete_gradient_feasibility(
                 epsilon=epsilon,
                 tau=tau,
             ).items():
-                values[f"{event.decision_kind}:{metric}"].append(value)
-            counts[split][event.decision_kind] += 1
+                values[f"{stratum}:{metric}"].append(value)
+            counts[split][stratum] += 1
         gradients[split] = {}
         keys = sorted(values)
         for index, key in enumerate(keys):
@@ -662,9 +694,20 @@ def diagnose_metric_complete_gradient_feasibility(
         "objective": objective,
         "probability_space": probability_space,
         "gradient_scaling": gradient_scaling,
+        "train_strata": train_strata,
+        "held_out_strata": held_out_strata,
         "guard_objective_directions": dict(_GUARD_DIRECTIONS),
         "train_event_counts": dict(sorted(counts["train"].items())),
         "held_out_event_counts": dict(sorted(counts["held_out"].items())),
+        "decision_signature_counts": {
+            split: dict(sorted(split_counts.items()))
+            for split, split_counts in signature_counts.items()
+        },
+        "decision_signature_metadata": dict(sorted(signature_metadata.items())),
+        "held_out_signature_coverage": {
+            "covered": sorted(signature_counts["train"] & signature_counts["held_out"]),
+            "uncovered": sorted(signature_counts["held_out"] - signature_counts["train"]),
+        },
         "train_objective_count": len(train_keys),
         "held_out_objective_count": len(held_alignment),
         "train_minimum_norm_solver": solver,
@@ -688,6 +731,8 @@ def diagnose_decision_gradient_alignment_from_paths(
     metric_complete: bool = False,
     probability_space: Literal["full_vocab", "legal_tokens"] = "full_vocab",
     gradient_scaling: GradientScaling = "raw",
+    train_strata: ObjectiveStrata = "decision_kind",
+    held_out_strata: ObjectiveStrata = "decision_kind",
 ) -> dict:
     events = load_decision_events(events_path)
     model = TwoTowerModel.from_checkpoint(checkpoint, device=device)
@@ -699,6 +744,8 @@ def diagnose_decision_gradient_alignment_from_paths(
             objective=objective,
             probability_space=probability_space,
             gradient_scaling=gradient_scaling,
+            train_strata=train_strata,
+            held_out_strata=held_out_strata,
         )
         if metric_complete
         else diagnose_decision_gradient_alignment(model, events, objective=objective)
