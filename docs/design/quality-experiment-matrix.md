@@ -1456,6 +1456,17 @@ space: it currently uses full-vocabulary softmax although constrained decoding
 chooses only among `legal_token_ids`. Full evidence:
 [iter-e273-metric-complete-feasibility-20260717.md](iter-e273-metric-complete-feasibility-20260717.md).
 
+E274 repeated the frozen-parent profile with good/bad probability conditioned
+only on each event's grammar-derived legal candidates. The train-side result
+flips from no feasible direction to strict common descent (`norm_sq=3.81e-4`,
+minimum active-task dot `3.36e-4`), proving full-vocabulary mass created a false
+Pareto conflict for constrained decisions. Training remains blocked: eleven
+held-out objectives oppose the corrected direction, and raw gradient scale
+assigns `0.9964` of the minimum-norm mixture to `lit:good_probability_mass`.
+The next diagnostic must normalize objective gradients before combining them;
+do not change duration or add token-specific cases. Full evidence:
+[iter-e274-legal-conditioned-metric-feasibility-20260717.md](iter-e274-legal-conditioned-metric-feasibility-20260717.md).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
