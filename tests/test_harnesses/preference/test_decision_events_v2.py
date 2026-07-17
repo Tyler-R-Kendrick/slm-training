@@ -16,6 +16,8 @@ from slm_training.harnesses.preference.decision_events_v2 import (
     GATE_ORDER,
     ActionOutcomeV2,
     DecisionStateV2,
+    ObjectiveView,
+    admit_semantic_corpus,
     append_action_outcomes,
     decision_state_manifest,
     materialize_constraint_shadow,
@@ -24,6 +26,7 @@ from slm_training.harnesses.preference.decision_events_v2 import (
     materialize_single_best_worst,
     materialize_thresholded,
     migrate_v1_event,
+    objective_view_support,
     write_action_outcomes,
 )
 from slm_training.harnesses.preference.local_decisions import (
@@ -298,3 +301,77 @@ def test_manifest_fingerprints_are_separate_and_order_independent() -> None:
     # The three concerns fingerprint independently.
     assert manifest["state_fingerprint"] != manifest["outcome_fingerprint"]
     assert manifest["view_fingerprint"] != manifest["state_fingerprint"]
+
+
+# --------------------------------------------------------------------------- #
+# Objective-support admission (the E284 fix).
+# --------------------------------------------------------------------------- #
+def _split_group(split: str) -> str:
+    index = 0
+    while split_for_group(f"obj{index}") != split:
+        index += 1
+    return f"obj{index}"
+
+
+def _state_for(group: str) -> DecisionStateV2:
+    return _state(group_id=group, split=split_for_group(group))
+
+
+def _view(
+    good: tuple[int, ...],
+    bad: tuple[int, ...],
+    *,
+    materializer_id: str = "pareto_v2",
+    trainable: bool = True,
+) -> ObjectiveView:
+    return ObjectiveView(
+        good_action_ids=good,
+        bad_action_ids=bad,
+        ambiguous_action_ids=(),
+        unobserved_action_ids=(),
+        weights=(),
+        materializer_id=materializer_id,
+        materializer_config_hash="cfg",
+        trainable=trainable,
+    )
+
+
+def test_objective_support_gap_matches_e284_pattern() -> None:
+    train_state = _state_for(_split_group("train"))
+    held_state = _state_for(_split_group("held_out"))
+    # State support (good-only) matches, but objective support (good+bad) differs,
+    # so a held-out objective signature is uncovered — exactly the E284 mechanism.
+    train_view = _view((4,), (9,))
+    held_view = _view((4,), (10,))
+    report = objective_view_support([(train_state, train_view), (held_state, held_view)])
+    assert report["held_out_coverage"]["passed"] is False
+    assert len(report["held_out_coverage"]["uncovered"]) == 1
+    with pytest.raises(ValueError, match="lacks train support"):
+        admit_semantic_corpus(
+            [(train_state, train_view), (held_state, held_view)], materializer_id="pareto_v2"
+        )
+
+
+def test_objective_support_passes_when_held_out_signature_is_covered() -> None:
+    view = _view((4,), (9,))
+    report = admit_semantic_corpus(
+        [(_state_for(_split_group("train")), view), (_state_for(_split_group("held_out")), view)],
+        materializer_id="pareto_v2",
+    )
+    assert report["held_out_coverage"]["passed"] is True
+
+
+def test_admission_refuses_non_trainable_constraint_shadow() -> None:
+    shadow = _view((), (), materializer_id="constraint_shadow_diagnostic_v2", trainable=False)
+    with pytest.raises(ValueError, match="non-trainable"):
+        admit_semantic_corpus(
+            [(_state_for(_split_group("train")), shadow)], materializer_id="pareto_v2"
+        )
+
+
+def test_admission_refuses_materializer_mismatch() -> None:
+    view = _view((4,), (9,), materializer_id="thresholded_v2")
+    with pytest.raises(ValueError, match="do not match the requested"):
+        admit_semantic_corpus(
+            [(_state_for(_split_group("train")), view)], materializer_id="pareto_v2"
+        )
