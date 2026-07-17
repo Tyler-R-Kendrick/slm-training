@@ -18,6 +18,7 @@ from slm_training.data.splits import clustered_train_val_split
 from slm_training.dsl.production_codec import (
     ACTION_STMT,
     CLOSE,
+    EOL,
     MUTATION_STMT,
     OPEN_PREFIX,
     QUERY_STMT,
@@ -26,13 +27,16 @@ from slm_training.dsl.production_codec import (
     ROOT_STMT,
     SLOT_PREFIX,
     STATE_STMT,
+    STMT,
     V05,
     ProductionCodec,
     build_vocab_from_corpus,
     decode_productions,
     encode_openui,
+    from_choice_stream,
     from_relative_refs,
     roundtrip_openui,
+    to_choice_stream,
     to_relative_refs,
 )
 from slm_training.dsl.lang_core import ParseError, bridge_available
@@ -445,3 +449,72 @@ def test_relative_ref_illegal_delta_rejected() -> None:
         pass
     else:  # pragma: no cover - guard
         raise AssertionError("expected ParseError for out-of-scope relative ref")
+
+
+# --- B1 (SLM-42): choice-sequence stream (semantic decisions only) ----------
+
+
+def test_choice_stream_drops_document_statement_markers() -> None:
+    program = encode_openui(HERO)
+    choices = to_choice_stream(program.tokens)
+    assert STMT in program.tokens
+    assert STMT not in choices
+    # Exactly one marker elided per statement; everything else survives.
+    assert len(choices) == len(program.tokens) - 4
+    assert from_choice_stream(choices) == program.tokens
+
+
+def test_choice_stream_v05_drops_eol_and_inverts() -> None:
+    program = encode_openui(V05_PROGRAM)
+    choices = to_choice_stream(program.tokens)
+    assert EOL in program.tokens
+    assert EOL not in choices
+    # Typed statement markers stay: statement kind is a semantic choice.
+    assert ROOT_STMT in choices and STATE_STMT in choices
+    assert from_choice_stream(choices) == program.tokens
+
+
+def test_choice_stream_is_fixed_point_through_reencode() -> None:
+    # The issue's verify clause: choices → serialize → parse → choices.
+    for source in (HERO, MODAL, NAME_IN_LITERAL, V05_PROGRAM, V05_STATE_FIRST):
+        program = encode_openui(source)
+        choices = to_choice_stream(program.tokens)
+        decoded = decode_productions(
+            from_choice_stream(choices), program.slot_contract
+        )
+        reencoded = encode_openui(decoded, slot_contract=program.slot_contract)
+        assert to_choice_stream(reencoded.tokens) == choices, source
+
+
+def test_choice_stream_composes_with_relative_refs() -> None:
+    program = encode_openui(HERO, relative_refs=True)
+    choices = to_choice_stream(program.tokens)
+    assert any(t.startswith(REL_REF_PREFIX) for t in choices)
+    decoded = decode_productions(from_choice_stream(choices), program.slot_contract)
+    assert normalize_openui_structure(decoded) == normalize_openui_structure(HERO)
+
+
+def test_fixture_corpus_choice_streams_invert() -> None:
+    for record in _fixture_records():
+        contract = canonical_slot_contract(
+            record.openui, declared=record.placeholders
+        )
+        program = encode_openui(record.openui, slot_contract=contract)
+        choices = to_choice_stream(program.tokens)
+        assert from_choice_stream(choices) == program.tokens, record.id
+
+
+def test_production_codec_choice_stream_end_to_end() -> None:
+    inventory = [":hero.title", ":hero.body"]
+    codec = ProductionCodec.build([HERO], relative_refs=True, choice_stream=True)
+    assert codec.choice_stream is True
+    prod, slot = codec.encode(HERO, inventory)
+    surface = [codec.id_to_production.get(pid, "") for pid in prod]
+    assert STMT not in surface
+    decoded = codec.decode(prod, slot, inventory)
+    assert normalize_openui_structure(decoded) == normalize_openui_structure(HERO)
+
+
+def test_choice_stream_unbalanced_frame_fails_closed() -> None:
+    with pytest.raises(ParseError):
+        from_choice_stream((f"{OPEN_PREFIX}Card", '#"x"'))
