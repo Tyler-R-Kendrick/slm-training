@@ -1271,6 +1271,15 @@ groups and one held-out group qualified, so this export is not admitted for
 training. E253/E254 remain blocked pending broader group support. Full evidence:
 [iter-e258-counterfactual-depth-probe-20260716.md](iter-e258-counterfactual-depth-probe-20260716.md).
 
+E259 doubled the uniform budget to eight states per record: 520 states and 1,528
+legal candidates produced 38 qualified events across eight decision kinds. The
+extra depth added roles but no prompt groups; support remained eight groups with
+one held-out group. This falsifies state-count scaling as the group-coverage fix,
+so the export is not admitted and E253/E254 remain blocked. The next data lever
+must derive broad exact states from grammar/AST-aligned judged trajectories, not
+probe more states from the same poor model completions. Full evidence:
+[iter-e259-expanded-counterfactual-probe-20260716.md](iter-e259-expanded-counterfactual-probe-20260716.md).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
