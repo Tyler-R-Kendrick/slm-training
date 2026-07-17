@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from types import SimpleNamespace
 
 import pytest
@@ -7,8 +8,10 @@ import torch
 
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.harnesses.preference.counterfactuals import (
+    counterfactual_state_signature,
     gold_counterfactual_commits,
     label_pareto_candidates,
+    load_counterfactual_state_targets,
     select_counterfactual_states,
     semantic_outcome,
 )
@@ -195,6 +198,41 @@ def test_state_selection_diversifies_semantic_signatures_within_kind() -> None:
     )
 
     assert {row["id"] for row in selected} == {1, 2}
+
+
+def test_state_selection_can_target_exact_grammar_metadata(tmp_path) -> None:
+    commits = [
+        {
+            "phase": "compiler_tree",
+            "allowed_id_set": [1, 2, 3],
+            "pre_canvas": [position, 0],
+            "t": position,
+            "id": selected,
+            "decision_kind": kind,
+        }
+        for position, selected, kind in (
+            (1, 1, "component_bound"),
+            (2, 2, "component_bound"),
+            (3, 3, "bind_reference_bound_children"),
+        )
+    ]
+    target = {
+        "decision_kind": "component_bound",
+        "legal_token_ids": [3, 2, 1],
+        "selected_token_id": 2,
+    }
+    path = tmp_path / "targets.json"
+    path.write_text(json.dumps({"targets": [target]}))
+
+    signatures = load_counterfactual_state_targets(path)
+    selected = select_counterfactual_states(
+        commits,
+        max_states=4,
+        target_signatures=signatures,
+    )
+
+    assert signatures == {counterfactual_state_signature(target)}
+    assert [row["t"] for row in selected] == [2]
 
 
 def test_gold_counterfactual_commits_follow_grammar_decisions() -> None:

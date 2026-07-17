@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E283",
+  "kind": "signature_support_repair",
+  "date": "2026-07-17",
+  "status": "admitted",
+  "training_executed": false,
+  "base_commit": "9dff17dbbc896a182508dd8664fc63702d4a6264",
+  "recipe": {
+    "device": "cpu",
+    "seed": 283,
+    "decode_policy": "strict_compiler_tree",
+    "state_source": "gold_ast",
+    "max_candidates": 3,
+    "minimum_train_signature_support": 1,
+    "checkpoint_sha": "7a9be4a665e216d7f7e73883ad74ad972bbf30846896d0c29188d6482f5b093a"
+  },
+  "targeting": {
+    "metadata": [
+      "decision_kind",
+      "legal_token_ids",
+      "selected_token_id"
+    ],
+    "target_count": 9,
+    "existing_train_records": 6,
+    "existing_train_states": 8,
+    "synthetic_train_records": 2,
+    "synthetic_train_states": 2
+  },
+  "synthetic_admission": {
+    "task": "generation",
+    "independent_judge_passed": 2,
+    "independent_judge_score": 1.0,
+    "meaningful_program_passed": 2,
+    "compiler_state_validated": 2,
+    "held_out_derivatives": 0,
+    "dataset": "e283_signature_support_synth_v1",
+    "content_fingerprint": "5bb8f9601bbb2d0ef7caaf905eedda40d88e1908851445ee8bdd8818c604bcbe"
+  },
+  "admitted_corpus": {
+    "dataset": "e283_signature_support_repair_v1",
+    "content_fingerprint": "f4e4f5230488a5b58950fc890e41ca4897ff73350f6241737c39f26e96650090",
+    "events": 372,
+    "train_events": 311,
+    "held_out_events": 61,
+    "train_groups": 55,
+    "held_out_groups": 11,
+    "set_valued_events": 171,
+    "train_support_signatures": 81,
+    "held_out_support_signatures": 23,
+    "covered_held_out_signatures": 23,
+    "uncovered_held_out_signatures": 0,
+    "qualified_judge_probes": 372,
+    "qualified_candidates": 915,
+    "independent_judge_passed": 597,
+    "fully_verified": 488,
+    "source_record_fingerprints": [
+      "5bb8f9601bbb2d0ef7caaf905eedda40d88e1908851445ee8bdd8818c604bcbe",
+      "9f72d85b6cc7118e0f69e010d0debdd2b40ede514e03178dded8e164daaae9bb"
+    ]
+  },
+  "rejected_intermediates": [
+    {
+      "reason": "target manifest contained only seven train-existing states",
+      "states": 0,
+      "admitted": false
+    },
+    {
+      "reason": "literal user-facing copy failed meaningful-program verification",
+      "states": 2,
+      "verified": 0,
+      "admitted": false
+    },
+    {
+      "reason": "seven-state repair still lacked two held-out signatures",
+      "uncovered_held_out_signatures": 2,
+      "partial_corpus_written": false,
+      "admitted": false
+    }
+  ],
+  "admission_gate": {
+    "passed": true,
+    "partial_write_on_failure": false
+  },
+  "artifacts": {
+    "target_manifest": "docs/design/e283-counterfactual-state-targets.json",
+    "source_dataset": "src/slm_training/resources/data/train/e283_signature_support_synth_v1",
+    "preference_dataset": "src/slm_training/resources/data/preference/e283_signature_support_repair_v1"
+  }
+}

@@ -383,6 +383,7 @@ def decision_event_manifest(
     records_path: str = "events.jsonl",
     source_trace_ids: Iterable[str] = (),
     source_record_fingerprint: str | None = None,
+    source_record_fingerprints: Iterable[str] = (),
     evidence_path: str | None = None,
     evidence_rows: Iterable[dict[str, Any]] = (),
     min_train_signature_support: int = 1,
@@ -447,8 +448,23 @@ def decision_event_manifest(
         "source_trace_ids": sorted(set(source_trace_ids)),
         "decision_signature_support": signature_support,
     }
-    if source_record_fingerprint is not None:
-        payload["source_record_fingerprint"] = source_record_fingerprint
+    source_fingerprints = sorted(
+        {
+            *(
+                [source_record_fingerprint]
+                if source_record_fingerprint is not None
+                else []
+            ),
+            *(str(value) for value in source_record_fingerprints if value),
+        }
+    )
+    if source_fingerprints:
+        payload["source_record_fingerprint"] = (
+            source_fingerprints[0]
+            if len(source_fingerprints) == 1
+            else _sha(source_fingerprints)
+        )
+        payload["source_record_fingerprints"] = source_fingerprints
     evidence = sorted(evidence_rows, key=lambda row: row["evidence_id"])
     candidates = [
         candidate

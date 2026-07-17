@@ -163,6 +163,8 @@ def test_build_local_events_cli(tmp_path, capsys) -> None:
     out = tmp_path / "events.jsonl"
     source = tmp_path / "source-manifest.json"
     source.write_text('{"content_fingerprint":"source-sha"}')
+    source_two = tmp_path / "source-manifest-two.json"
+    source_two.write_text('{"content_fingerprint":"source-sha-two"}')
     manifest = tmp_path / "manifest.json"
     evidence = tmp_path / "evidence.jsonl"
     assert main(
@@ -171,12 +173,17 @@ def test_build_local_events_cli(tmp_path, capsys) -> None:
             "--manifest-out", str(manifest), "--dataset-id", "events-v1",
             "--evidence-out", str(evidence),
             "--source-record-manifest", str(source),
+            "--source-record-manifest", str(source_two),
         ]
     ) == 0
     assert len(load_decision_events(out)) == 1
     data = json.loads(manifest.read_text())
     assert data["record_count"] == 1
-    assert data["source_record_fingerprint"] == "source-sha"
+    assert data["source_record_fingerprint"] not in {
+        "source-sha",
+        "source-sha-two",
+    }
+    assert data["source_record_fingerprints"] == ["source-sha", "source-sha-two"]
     assert data["policy_checkpoint_sha"] == "checkpoint-sha"
     assert data["judge_evidence_count"] == 0
     assert evidence.read_text() == ""
