@@ -1,0 +1,30 @@
+{
+  "id": "E312",
+  "date": "2026-07-17",
+  "checkpoint_run_id": "e311-component-plan-token-pool-20k-r1",
+  "eval_run_id": "e312-component-plan-token-pool4-honest-r1",
+  "hypothesis": "The token-pooled plan signal is useful but too weak relative to base decoder logits at decode weight 1.",
+  "matched_control": "e311-component-plan-token-pool-20k-honest-r1",
+  "recipe_delta": {
+    "component_plan_decode_weight": {"control": 1.0, "candidate": 4.0}
+  },
+  "checkpoint": {
+    "path": "outputs/runs/e311-component-plan-token-pool-20k-r1/checkpoints/last.pt",
+    "sha256": "e0e8a2951c227a928167f73c038d7897896f3812405071cb552371c9fafaae32",
+    "new_checkpoint": false
+  },
+  "evaluation": {
+    "failure_count": 7,
+    "agentv": {"total": 5, "passed": 2, "failed": 3},
+    "component_plan_applications": 32,
+    "component_plan_choice_changes": 4
+  },
+  "suites": {
+    "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333, "placeholder_fidelity": 0.5277777777777778, "structural_similarity": 0.46416666666666667, "component_type_recall": 0.16666666666666666, "reward_score": 0.24966666666666668, "plan_applications": 3, "plan_choice_changes": 0},
+    "held_out": {"n": 5, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "placeholder_fidelity": 0.27999999999999997, "structural_similarity": 0.33686, "component_type_recall": 0.0, "reward_score": 0.0, "plan_applications": 5, "plan_choice_changes": 0},
+    "adversarial": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.5, "placeholder_fidelity": 0.5416666666666666, "structural_similarity": 0.474375, "component_type_recall": 0.375, "reward_score": 0.4245, "plan_applications": 4, "plan_choice_changes": 0},
+    "ood": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "placeholder_fidelity": 0.2583333333333333, "structural_similarity": 0.375, "component_type_recall": 0.0, "reward_score": 0.0, "plan_applications": 4, "plan_choice_changes": 0},
+    "rico_held": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.6666666666666666, "placeholder_fidelity": 0.5416666666666666, "structural_similarity": 0.2678, "component_type_recall": 0.3333333333333333, "reward_score": 0.5566666666666666, "plan_applications": 16, "plan_choice_changes": 4}
+  },
+  "verdict": "Reject and stop decode-weight scaling. Weight 4 changes only limited-RICO choices, regresses RICO structure, and leaves seven failures and AgentV 2/5 unchanged."
+}

@@ -1,0 +1,61 @@
+{
+  "id": "E311",
+  "date": "2026-07-17",
+  "train_run_id": "e311-component-plan-token-pool-20k-r1",
+  "eval_run_id": "e311-component-plan-token-pool-20k-honest-r1",
+  "hypothesis": "Component-specific log-mean-exp pooling over prompt tokens preserves direct lexical evidence that a global prompt vector loses.",
+  "matched_control": "e308-component-prompt-20k-r1",
+  "recipe_delta": {
+    "component_plan_token_pool": {"control": false, "candidate": true},
+    "component_plan_loss_weight": {"control": 1.0, "candidate": 1.0},
+    "component_plan_decode_weight": {"control": 1.0, "candidate": 1.0}
+  },
+  "train": {
+    "device": "cpu",
+    "steps": 420,
+    "seen_target_tokens": 20001,
+    "elapsed_wall_seconds": 130.05660825300038,
+    "trainable_params": 399516,
+    "checkpoint": "outputs/runs/e311-component-plan-token-pool-20k-r1/checkpoints/last.pt",
+    "checkpoint_sha256": "e0e8a2951c227a928167f73c038d7897896f3812405071cb552371c9fafaae32",
+    "trace_id": "39cef561888ca455081f2d45d8499565",
+    "checkpoint_sync": false
+  },
+  "loss": {
+    "weighted_nll": 4.881891139337634,
+    "binding_nll": 6.703304164377706,
+    "structural_nll": 3.3551257689793905,
+    "repair_nll": 4.168131224314371,
+    "schema_ood_nll": 4.669554292143516,
+    "broad_nll": 4.98059059095073,
+    "agentv": {"total": 1, "passed": 1}
+  },
+  "plan_final_20": {
+    "loss": 2.3283163011074066,
+    "root_accuracy": 0.85,
+    "bound_topk_recall": 0.4104166693985462,
+    "bound_count_mae": 0.3418144777417183
+  },
+  "control_plan_final_20": {
+    "loss": 2.32859348654747,
+    "root_accuracy": 0.85,
+    "bound_topk_recall": 0.4104166693985462,
+    "bound_count_mae": 0.3439823806285858
+  },
+  "evaluation": {
+    "selected_metric_hash": "6c5b60a3b1d62f425794460cb53baa583c2d684088520d66b489379f24640f47",
+    "identical_to_e308": true,
+    "failure_count": 7,
+    "agentv": {"total": 5, "passed": 2, "failed": 3},
+    "component_plan_applications": 35,
+    "component_plan_choice_changes": 1
+  },
+  "suites": {
+    "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333, "placeholder_fidelity": 0.5277777777777778, "structural_similarity": 0.46416666666666667, "component_type_recall": 0.16666666666666666, "reward_score": 0.24966666666666668, "plan_applications": 3, "plan_choice_changes": 0},
+    "held_out": {"n": 5, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "placeholder_fidelity": 0.27999999999999997, "structural_similarity": 0.33686, "component_type_recall": 0.0, "reward_score": 0.0, "plan_applications": 5, "plan_choice_changes": 0},
+    "adversarial": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.5, "placeholder_fidelity": 0.5416666666666666, "structural_similarity": 0.474375, "component_type_recall": 0.375, "reward_score": 0.4245, "plan_applications": 4, "plan_choice_changes": 0},
+    "ood": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "placeholder_fidelity": 0.2583333333333333, "structural_similarity": 0.375, "component_type_recall": 0.0, "reward_score": 0.0, "plan_applications": 4, "plan_choice_changes": 0},
+    "rico_held": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.6666666666666666, "placeholder_fidelity": 0.5416666666666666, "structural_similarity": 0.3333333333333333, "component_type_recall": 0.3333333333333333, "reward_score": 0.5566666666666666, "plan_applications": 19, "plan_choice_changes": 1}
+  },
+  "verdict": "Reject token pooling at decode weight 1. Plan metrics and every selected suite metric remain unchanged, and the head changes only 1 of 35 legal component decisions."
+}

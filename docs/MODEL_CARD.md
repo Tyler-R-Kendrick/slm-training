@@ -107,6 +107,7 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 | E308 component-prompt plan | `e308-component-prompt-20k-r1` | CPU scratch E307 data arm | `outputs/runs/e308-component-prompt-20k-r1/checkpoints/last.pt` (local) | Weighted NLL 4.8836, but four suites equal E305 and limited RICO regresses; 7 failures / AgentV 2/5 — **not promotable or ship** ([results](design/iter-e308-component-prompt-train-20260717.md)) |
 | E309 plan-weight scaling | `e309-component-plan4-20k-r1` | CPU scratch E307 supervision arm | `outputs/runs/e309-component-plan4-20k-r1/checkpoints/last.pt` (local) | Plan weight 4 leaves head recall and all suite metrics equal E308; 7 failures / AgentV 2/5 — **not promotable or ship** ([results](design/iter-e309-component-plan-weight-20260717.md)) |
 | E310 attention-pooled plan | `e310-component-plan-attention-20k-r1` | CPU scratch E307 representation arm | `outputs/runs/e310-component-plan-attention-20k-r1/checkpoints/last.pt` (local) | Attention pooling leaves head accuracy/recall and all suite metrics equal E308/E309; 7 failures / AgentV 2/5 — **not promotable or ship** ([results](design/iter-e310-component-plan-attention-20260717.md)) |
+| E311 token-pooled plan | `e311-component-plan-token-pool-20k-r1` | CPU scratch E307 representation arm | `outputs/runs/e311-component-plan-token-pool-20k-r1/checkpoints/last.pt` (local) | E312 weight-4 decode changes only limited-RICO choices and regresses its structure; 7 failures / AgentV 2/5 — **not promotable or ship** ([E311](design/iter-e311-component-plan-token-pool-20260717.md), [E312](design/iter-e312-component-plan-token-pool-decode-20260717.md)) |
 | Production HF ship | — | — | `hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/` | **None registered yet** — fill this row after the first full HF sync |
 
 Update the table in place when a checkpoint is written or superseded. Keep
@@ -298,6 +299,11 @@ Leakage: structural fingerprints + train/test isolation
 | `adversarial` (E310 attention plan) | 4 | 1.0 | 0.5417 | 0.4744 | 0.4245 | Yes for suite thresholds; no global ship |
 | `ood` (E310 attention plan) | 4 | 1.0 | 0.2583 | 0.3750 | 0.0000 | No — meaningful/component recall 0.0 |
 | `rico_held` (E310 attention plan) | 3 | 1.0 | 0.5417 | 0.3333 | 0.5567 | Yes for limited suite thresholds; no global ship |
+| `smoke` (E311 token plan) | 3 | 1.0 | 0.5278 | 0.4642 | 0.2497 | No — meaningful 0.3333 and recall 0.1667 |
+| `held_out` (E311 token plan) | 5 | 1.0 | 0.2800 | 0.3369 | 0.0000 | No — meaningful/component recall 0.0 |
+| `adversarial` (E311 token plan) | 4 | 1.0 | 0.5417 | 0.4744 | 0.4245 | Yes for suite thresholds; no global ship |
+| `ood` (E311 token plan) | 4 | 1.0 | 0.2583 | 0.3750 | 0.0000 | No — meaningful/component recall 0.0 |
+| `rico_held` (E311 token plan) | 3 | 1.0 | 0.5417 | 0.3333 | 0.5567 | Yes for limited suite thresholds; no global ship |
 | `smoke` (`e177-semantic-judge-32step`, E180 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1542 | 0.607 | No — syntax 1.0, but meaningful component recall 0.25; not a ship evaluation |
 | `smoke` (`e181-semantic-balanced-32step`, E181 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1542 | 0.607 | No — mixture-only control did not improve quality; not a ship evaluation |
 | `smoke` (`e184-compiler-aligned-32step`, E194 diagnostic subset) | 1 | 0.0 | 0.0 | 0.3600 | 0.0 | No — root/schema constraints improved, but output remained incomplete; not a ship evaluation |
@@ -620,6 +626,8 @@ suites because they contain no scope metadata. Evidence:
 | 2026-07-17 | `e308-component-prompt-20k-r1` (E308 data arm) | `outputs/runs/e308-component-prompt-20k-r1/` (local) | 420 CPU scratch steps / 20,001 target tokens on E307 v4; NLL 4.8836; SHA `f56089052dbc804754fb0d201bd7a4d6cbd356b6d72b42959147fce9233e2b55`; explicit no-sync | Four suites equal E305, RICO regresses, 7 failures / AgentV 2/5; no promotion |
 | 2026-07-17 | `e309-component-plan4-20k-r1` (E309 supervision arm) | `outputs/runs/e309-component-plan4-20k-r1/` (local) | 420 CPU scratch steps / 20,001 target tokens; plan loss weight 4; NLL 4.8847; SHA `18da6dc916bc2a5e4b84e0e96b648eb2108c9437451e3da76662b13df6d59075`; explicit no-sync | Head recall and five-suite metrics exactly equal E308; 7 failures / AgentV 2/5; no promotion |
 | 2026-07-17 | `e310-component-plan-attention-20k-r1` (E310 representation arm) | `outputs/runs/e310-component-plan-attention-20k-r1/` (local) | 420 CPU scratch steps / 20,001 target tokens; learned plan attention pool; NLL 4.8842; SHA `7d8888e06ebad0a6cff4e41814bd2da4e13d86977e85e52b402fc8f2b6f2f7b3`; explicit no-sync | Head accuracy/recall and five-suite metrics exactly equal E308/E309; 7 failures / AgentV 2/5; no promotion |
+| 2026-07-17 | `e311-component-plan-token-pool-20k-r1` (E311 representation arm) | `outputs/runs/e311-component-plan-token-pool-20k-r1/` (local) | 420 CPU scratch steps / 20,001 target tokens; component-specific token pooling; NLL 4.8819; SHA `e0e8a2951c227a928167f73c038d7897896f3812405071cb552371c9fafaae32`; explicit no-sync | Head accuracy/recall and five-suite metrics equal E308–E310; only 1/35 legal choices changes; 7 failures / AgentV 2/5; no promotion |
+| 2026-07-17 | `e312-component-plan-token-pool4-honest-r1` (E312 eval-only) | `outputs/runs/e312-component-plan-token-pool4-honest-r1/` (local) | Unchanged E311 SHA; component-plan decode weight 4 under frozen honest policy | Changes 4/32 choices, all in limited RICO; RICO structure regresses 0.3333→0.2678; 7 failures / AgentV 2/5; no promotion |
 
 Append a row for every new or replaced checkpoint. Do not delete history.
 

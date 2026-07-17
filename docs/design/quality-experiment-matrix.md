@@ -1920,6 +1920,30 @@ direct token-to-component alignment next. See
 [results](iter-e310-component-plan-attention-20260717.md) and
 [JSON](component-plan-attention-results-iter-e310-20260717.json).
 
+## E311 component-plan token pooling (CPU scratch, 2026-07-17)
+
+Component-specific log-mean-exp pooling adds no parameters and marginally
+improves loss/MAE, but final-20 root accuracy 0.85 and bound recall 0.4104 are
+unchanged. All five selected-metric suites exactly match E308–E310: seven
+failures, AgentV 2/5. The plan bias changes only 1 of 35 legal choices.
+
+**Verdict:** reject token pooling at decode weight 1. Run an inference-only
+bias-strength diagnostic before changing the target again. See
+[results](iter-e311-component-plan-token-pool-20260717.md) and
+[JSON](component-plan-token-pool-results-iter-e311-20260717.json).
+
+## E312 token-pooled plan decode scaling (eval-only, 2026-07-17)
+
+On the unchanged E311 checkpoint, decode weight 1→4 raises plan-driven legal
+choice changes from 1/35 to 4/32. All changes remain confined to limited RICO:
+smoke/held/adversarial/OOD stay at zero, while RICO structure regresses
+0.3333→0.2678. Seven failures and AgentV 2/5 are unchanged.
+
+**Verdict:** reject and stop decode-weight scaling. Train decision-local
+semantic supervision next. See
+[results](iter-e312-component-plan-token-pool-decode-20260717.md) and
+[JSON](component-plan-token-pool-decode-results-iter-e312-20260717.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
