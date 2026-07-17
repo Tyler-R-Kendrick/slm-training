@@ -3,6 +3,18 @@
 from __future__ import annotations
 
 from slm_training.dsl.analysis.arity.analyzer import ArityAnalyzer
+from slm_training.dsl.analysis.arity.certificate import (
+    ArityCertificate,
+    ArityCertificateBundle,
+    ArityProvenance,
+    ArityResult,
+    ConstraintFrame,
+    EstimatedEvidence,
+    EvidenceKind,
+    ExactEvidence,
+    certificate_digest,
+    exact_certificate_from_report,
+)
 from slm_training.dsl.analysis.arity.coding import (
     CodeVerification,
     build_mds_7_4_2_3,
@@ -37,10 +49,18 @@ from slm_training.dsl.analysis.arity.types import (
 __all__ = [
     "AnalysisBounds",
     "ArityAnalyzer",
+    "ArityCertificate",
+    "ArityCertificateBundle",
+    "ArityProvenance",
     "ArityReport",
+    "ArityResult",
     "CodeVerification",
     "CodingMetadata",
+    "ConstraintFrame",
     "ContinuationSummary",
+    "EstimatedEvidence",
+    "EvidenceKind",
+    "ExactEvidence",
     "ResidualScaleMode",
     "RobustArm",
     "StateAtom",
@@ -53,6 +73,8 @@ __all__ = [
     "balanced_ternary_levels",
     "build_mds_7_4_2_3",
     "build_shortened_ternary_hamming_7_4_3",
+    "certificate_digest",
+    "exact_certificate_from_report",
     "gilbert_greedy_guarantees",
     "hamming_ball_volume",
     "hamming_sphere_packing_holds",

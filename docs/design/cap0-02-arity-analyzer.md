@@ -15,6 +15,11 @@ A repository-owned, Torch-free analyzer package under `src/slm_training/dsl/anal
 - `scripts/analyze_grammar_arity.py` — CLI entry point.
 - `tests/test_dsl/test_arity_analysis.py` — regression tests for reproducibility, renaming invariance, and conservative support decisions.
 
+## Related
+
+- [CAP0-03: Exact robust-code constructions](cap0-03-coding-precision.md)
+- [CAP0-04: Exact-vs-estimated certificates](cap0-04-arity-certificates.md)
+
 ## Verified
 
 - `ruff check` passes on new code.

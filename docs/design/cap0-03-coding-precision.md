@@ -21,6 +21,10 @@ Extended the CAP0-02 arity analyzer with mathematical infrastructure under `src/
 - `scripts/analyze_grammar_arity.py` — `--include-coding-metadata` flag to attach CAP0-03 metadata to emitted reports.
 - Exports added to `src/slm_training/dsl/analysis/arity/__init__.py`.
 
+## Related
+
+- [CAP0-04: Exact-vs-estimated certificates](cap0-04-arity-certificates.md)
+
 ## Verified
 
 - `ruff check` passes.
