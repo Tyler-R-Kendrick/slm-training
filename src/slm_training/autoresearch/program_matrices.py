@@ -47,6 +47,7 @@ _LATTICE_DOC = "docs/design/iter-e240-e247-lattice-campaign-20260716.md"
 
 
 def _evidence_item(rel_path: str, kind: str) -> EvidenceItem:
+    """Build an evidence item with the real sha256/size of a committed file."""
     path = repo_root() / rel_path
     data = path.read_bytes()
     return EvidenceItem(
@@ -58,6 +59,7 @@ def _evidence_item(rel_path: str, kind: str) -> EvidenceItem:
 
 
 def track_a_evidence() -> EvidenceSnapshot:
+    """Evidence snapshot over the committed Track-A iter docs."""
     return EvidenceSnapshot(
         snapshot_id="evidence-track-a",
         roots=("docs/design",),
@@ -72,6 +74,7 @@ def track_a_evidence() -> EvidenceSnapshot:
 
 
 def track_a_sources() -> tuple[ResearchSource, ...]:
+    """Captured research sources backing the Track-A citations."""
     return (
         ResearchSource(
             source_id="e248-emptiness-probe",
@@ -83,6 +86,7 @@ def track_a_sources() -> tuple[ResearchSource, ...]:
 
 
 def track_a_campaign() -> CampaignSpec:
+    """Campaign spec for the valid-but-empty-wall attack (twotower, CPU)."""
     return CampaignSpec(
         campaign_id=TRACK_A_CAMPAIGN_ID,
         objective="Lift meaningful parse off the valid-but-empty wall without "
@@ -94,6 +98,7 @@ def track_a_campaign() -> CampaignSpec:
 
 
 def _novelty(*, regime: bool, mechanism: str) -> CategoricalNoveltyAudit:
+    """Categorical novelty audit grounding one lever against the E248 residual."""
     return CategoricalNoveltyAudit(
         transition_kind=(
             "regime_transition_candidate" if regime else "fixed_regime_search"
@@ -125,6 +130,7 @@ def _candidate(
     mechanism: str,
     regime: bool,
 ) -> HypothesisCandidate:
+    """One Track-A candidate: a typed experiment plus its evidence uses."""
     citations = (
         _LINEAGE_DOC,
         _PROBE_DOC,
