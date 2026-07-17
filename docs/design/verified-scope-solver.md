@@ -46,8 +46,8 @@ transitions without inventing semantics.
 
 - **`HoleId`** — stable identifier for a single unresolved decision site in the
   program IR (a position that must be filled by a choice/subtree). Stable across
-  reversible search so certificates and nogoods can reference it. New symbol
-  (absent today).
+  reversible search so certificates and nogoods can reference it. Implemented by
+  VSS0-03 in `dsl/solver/state.py`.
 - **finite domain** — the declared, bounded set of candidate fillings for a
   `HoleId` under the current pack/compiler coverage. Finiteness within declared
   bounds is a precondition for exact closure; a domain not provably finite within
@@ -115,6 +115,44 @@ transitions without inventing semantics.
   well-formedness; the only field class where unrestricted autoregression is
   permitted, subject to canonicalization plus the applicable pack oracle
   afterward.
+
+## Implemented finite-domain state (VSS0-03 / SLM-59)
+
+[`dsl/solver/`](../../src/slm_training/dsl/solver/) now implements the Torch-free,
+model-independent hard-state carrier. It is not invoked by decode by default.
+
+| Type / operation | Implemented contract |
+| --- | --- |
+| `HoleId` | Immutable namespace, mixed string/integer path, and kind; ordered by tagged canonical JSON rather than unsafe raw mixed-type tuple comparison. |
+| `SolverBounds` | Non-negative token, node, depth, backtrack, and verifier-call bounds; every field participates in hard-state identity. |
+| `DomainValue` | A tag plus immutable canonical JSON text. `to_dict` exposes ordinary tagged JSON while construction rejects objects, non-string object keys, and non-finite floats. |
+| `HoleDomain` | Unique values and scalar metadata, both canonically ordered. An empty domain is bottom. |
+| `FiniteDomainState` | Unique canonically ordered holes; monotone `refine`, domain-wise `meet`, reversible `with_decision`, stable JSON round-trip, and compact numeric summary. |
+| `completion_forest_state` | Projects exactly one current compiler decision. Values preserve each full `CompletionPath.token_ids` plus `kind`; metadata preserves `coverage` and global support remains `UNKNOWN`. |
+
+The full SHA-256 fingerprint includes `problem_id`, `pack_id`, constraint version,
+bounds, hole IDs, domain values, and hard scalar metadata. It excludes model
+logits/scores, timestamps, process IDs, mutable caches, certificate references, and
+reversible search lineage (`decision_level` / `parent_fingerprint`). Thus two
+search trails reaching the same hard domains share an identity. A decision records
+the prior fingerprint as its parent but never changes `UNKNOWN` into
+`UNSUPPORTED`.
+
+`refine` accepts a forward-compatible `certificate_ref` argument but does not
+persist it yet: certificate schema, checking, and replay belong to VSS0-04. Meet
+requires identical problem/pack/constraint/bounds identity, the same hole IDs, and
+type-preserving matching metadata rather than inventing a merge rule. Because meet
+can combine unrelated reversible trails, it explicitly resets decision lineage to
+level zero with no parent. All mutation-like operations return new validated
+states; none embeds soft scores.
+
+The compiler adapter deliberately ignores any optional explanation evidence added
+by VSS0-02. Considered-candidate evidence is provenance, not an exhaustive support
+proof. Empty forest paths produce bottom. A singleton forest is structurally solved
+**only for that next-decision projection**; it is not a globally solved program,
+verified terminal, `SUPPORTED` claim, correctness gain, or ship claim. The
+`TopologyDomainAdapter` protocol is only a future model-independent seam and imports
+no model or Torch code.
 
 ## Reference support semantics
 
@@ -228,7 +266,9 @@ the closure.
 | `ScopeContract` / `ScopeKind` (`data/progspec/scopes.py:33`/`:18`) | AST scopes (`COMPONENT_CALL`/`STATEMENT`/`CHILD_LIST`) plus a def/use binder overlay (`definitions`/`uses`/`visible_binders`). | **Extended.** Scope def/use edges feed capsule SCC construction; scopes are **not** assumed independent. |
 | `dependency_closed_failure_cone` (`data/progspec/scopes.py:113`) | Despite the name, computes the least-common-ancestor of failing AST paths — **not** a dependency closure or SCC. | **Not reused for capsules.** Capsule SCCs are a new, distinct construction; this contract does not duplicate or overload this helper. |
 | `ChoiceTokenizer` / `ChoiceDecodeState` (`models/choice_tokenizer.py:172`/`:608`) | Grammar-closed choice IR; length-aware legality (`allowed_ids`, `exhaustive_allowed_ids`, `minimal_completion_length`). | **Retained.** The choice IR is the late-realization and verification surface. Not duplicated. |
-| `HoleId`, finite `domain`, `verification capsule`, `proof certificate` | Absent today (confirmed greenfield). | **New** dataclasses/semantics introduced by later VSS issues under this contract. |
+| `HoleId`, `SolverBounds`, `DomainValue`, `HoleDomain`, `FiniteDomainState` (`dsl/solver/state.py`) | Immutable JSON-safe finite-domain carrier with canonical hard-state identity and monotone operations. | **Implemented by VSS0-03.** Torch-free and not invoked by default; soft scores and proof artifacts remain outside the state. |
+| `completion_forest_state` (`dsl/solver/adapters.py`) | One-hole projection of full compiler completion paths plus coverage and `UNKNOWN` provenance. | **Implemented by VSS0-03.** Retains the compiler as owner; a singleton solves only the projection. |
+| `verification capsule`, `proof certificate` | Not implemented yet. | **Future VSS issues.** Capsule solving and replayable proof ownership are not duplicated here. |
 
 ## End-to-end example (partial coverage → live `UNKNOWN`)
 
@@ -298,6 +338,14 @@ the X16-X21 convention ("lineage labels, not reproduced results").
 runtime dependency, no experiment, no checkpoint, and no eval run; therefore no
 measured results and **no model or ship claim**. This document defines the
 guarantee boundary only. `python -m scripts.repo_policy` passes; documentation
-changes select no test suites (`scripts/check_changed` skips `docs/`). Later VSS
-issues implement the dataclasses and state transitions specified here behind a
-feature flag before any decode-behavior change.
+changes select no test suites (`scripts/check_changed` skips `docs/`). VSS0-03 now
+implements the carrier without decode integration; later VSS issues add proof and
+search behavior behind a feature flag before any decode-behavior change.
+
+2026-07-17 — VSS0-03 / SLM-59 implements the Torch-free finite-domain state,
+canonical SHA-256 identity, monotone refinement/meet, reversible decision lineage,
+compiler projection adapter, JSON round-trip, and focused regression coverage. It
+does not implement recursive support search, a proof checker, capsule solving,
+decode integration, or model scoring. No train, eval, benchmark, checkpoint, or
+experiment ran; this is infrastructure only and makes **no correctness, readiness,
+or ship claim**.
