@@ -112,6 +112,8 @@ class Experiment:
     denoiser_backend: str = "scratch"
     # V10 (C1): absolute | relative (De Bruijn binder references).
     bind_encoding: str = "absolute"
+    # V12 (A2): ASAp-style distribution-aware constrained MaskGIT decode.
+    asap_decode: bool = False
     # V7 levers: speculative denoising (docs/design/speculative-denoising.md)
     stability_min_persistence: int = 0
     stability_jsd_weight: float = 1.0
@@ -1371,6 +1373,29 @@ def _v11_experiments(train_dir: Path) -> list[Experiment]:
     ]
 
 
+def _v12_experiments(train_dir: Path) -> list[Experiment]:
+    """E259: Track A decode-distortion fix.
+
+    E259 (A2): ASAp-style distribution-aware constrained MaskGIT decode
+    (Park et al., NeurIPS 2024 adapted to the canvas-position unmask loop) —
+    observed constraint violations remove the violating token's mass at that
+    position from the next proposal, and unmask ordering uses post-removal
+    confidence. The lever is decode-only, so the row is eval-only: route it
+    through a frozen E255 checkpoint via ``--parent`` and compare against
+    E255's recorded eval — a matched pair differing only in ``asap_decode``.
+    """
+    base = dict(
+        output_tokenizer="lexer",
+        mask_pattern="diffusion",
+        grammar_ltr_primary=False,
+        initialization="eval_only",
+        runtime_override_fields=frozenset({"asap_decode", "grammar_ltr_primary"}),
+    )
+    return [
+        Experiment("E259", "qx_e259_a2_asap_decode", "A2 ASAp distribution-aware constrained MaskGIT decode", train_dir, asap_decode=True, **base),
+    ]
+
+
 def _apply_eval_checkpoint(
     experiments: list[Experiment], eval_checkpoint: Path | None
 ) -> list[Experiment]:
@@ -1414,6 +1439,7 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         local_files_only=args.local_files_only,
         denoiser_backend=str(getattr(exp, "denoiser_backend", "scratch") or "scratch"),
         bind_encoding=str(getattr(exp, "bind_encoding", "absolute") or "absolute"),
+        asap_decode=bool(getattr(exp, "asap_decode", False)),
         grammar_constrained=True,
         grammar_ltr_primary=bool(getattr(exp, "grammar_ltr_primary", True)),
         grammar_ltr_repair=exp.grammar_ltr_repair,
@@ -2242,11 +2268,13 @@ def main(argv: list[str] | None = None) -> int:
             "v9",
             "v10",
             "v11",
+            "v12",
             "all",
         ),
         default="v3",
-        help="Experiment set through v10 local-decision rows E248-E254 and"
-        " v11 representation rows E255-E257, or all.",
+        help="Experiment set through v10 local-decision rows E248-E254,"
+        " v11 representation rows E255-E257, v12 decode-distortion row E259,"
+        " or all.",
     )
     parser.add_argument(
         "--list",
@@ -2284,7 +2312,7 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(f"unknown suites: {','.join(unknown_suites)}")
     if not args.suites:
         parser.error("--suites must select at least one suite")
-    if args.matrix in {"v4", "v5", "v6", "v7", "v8", "v9", "v10", "v11", "all"}:
+    if args.matrix in {"v4", "v5", "v6", "v7", "v8", "v9", "v10", "v11", "v12", "all"}:
         if (
             args.parent is None
             and not args.scratch_control
@@ -2426,6 +2454,8 @@ def main(argv: list[str] | None = None) -> int:
         experiments.extend(_v10_experiments(args.train_dir))
     if args.matrix in {"v11", "all"}:
         experiments.extend(_v11_experiments(args.train_dir))
+    if args.matrix in {"v12", "all"}:
+        experiments.extend(_v12_experiments(args.train_dir))
     if args.only:
         experiments = [e for e in experiments if e.eid in selected_ids]
     if args.list:

@@ -118,6 +118,7 @@ class ModelBuildConfig:
     compiler_search_backtrack_limit: int = 8
     compiler_search_local_nogoods: bool = False
     decode_min_content: int = 0  # A4: 0 off | >0 floor | -1 auto-from-inventory
+    asap_decode: bool = False  # A2: ASAp-style constraint-mass removal in MaskGIT
     fastpath_aux_weight: float = 0.0
     fastpath_gate_threshold: float = 0.5
     # V4 critic / remask levers

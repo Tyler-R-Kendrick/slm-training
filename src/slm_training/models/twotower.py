@@ -39,6 +39,7 @@ from slm_training.models.grammar import (
     stream_check,
 )
 from slm_training.models.parallel_decode import (
+    AsapLedger,
     StabilityTracker,
     core_instability_scores,
     perturb_known_neighbors,
@@ -269,6 +270,11 @@ class TwoTowerConfig:
     #   >0 -> require at least this many components before EOS is admitted;
     #   -1 -> auto: derive the floor from the resolved slot-contract inventory.
     decode_min_content: int = 0
+    # A2: ASAp-style distribution-aware constrained MaskGIT decode. Observed
+    # constraint violations (admit rejects, grammar stream remasks) remove the
+    # violating token's probability mass at that canvas position from the next
+    # proposal, and unmask ordering uses the post-removal confidence.
+    asap_decode: bool = False
     fastpath_aux_weight: float = 0.0
     fastpath_gate_threshold: float = 0.5
     # E31: train/use FastPathGate trust head for remask.
@@ -5097,6 +5103,12 @@ class TwoTowerModel(nn.Module):
         stats = self.speculative_stats
         stats.generates += 1
         successor_cache: SuccessorCache | None = None
+        # A2 (ASAp for MaskGIT): adaptive removal of constraint-violating mass.
+        asap: AsapLedger | None = (
+            AsapLedger()
+            if use_grammar and bool(getattr(self.config, "asap_decode", False))
+            else None
+        )
         for step in range(steps):
             if not unknown.any():
                 if remask_ratio <= 0.0 or step >= steps - 1:
@@ -5155,6 +5167,13 @@ class TwoTowerModel(nn.Module):
                 except Exception:  # noqa: BLE001
                     survival_scores = None
             conf_for_unmask = conf.masked_fill(~unknown, -1.0)
+            if asap is not None and asap.has_penalties():
+                # Distribution-aware ordering: a masked position whose top
+                # mass was observed to violate must not outrank positions
+                # where model and grammar agree (post-removal confidence).
+                conf_for_unmask = asap.adjusted_confidence(
+                    probs, conf_for_unmask, unknown
+                )
             remaining = int(unknown.sum().item())
             mode = str(getattr(self.config, "parallel_unmask", "adaptive") or "topk")
             flat_idx = (
@@ -5218,9 +5237,14 @@ class TwoTowerModel(nn.Module):
                     force_emit_token_id(self.tokenizer, prefix) if use_fast else None
                 )
                 if forced is not None or use_grammar:
+                    pick_logits = logits[b, t]
+                    if asap is not None and asap.has_penalties(t):
+                        # A2: proposal sees the ledger — observed violating
+                        # mass at this position is removed in log domain.
+                        pick_logits = asap.adjust_logits_row(pick_logits, t)
                     # Speculative / constrained pick — never commit illegal tokens.
                     choice = pick_constrained_token(
-                        logits[b, t],
+                        pick_logits,
                         self.tokenizer,
                         prefix,
                         top_k=self.config.grammar_top_k,
@@ -5256,8 +5280,20 @@ class TwoTowerModel(nn.Module):
                         trial[t] = candidate
                         try:
                             if not admit_fill(engine, self.tokenizer, trial):
+                                if asap is not None:
+                                    asap.penalize(
+                                        t,
+                                        candidate,
+                                        float(probs[b, t, int(candidate)].item()),
+                                    )
                                 continue  # leave masked; try later / repair
                         except Exception:  # noqa: BLE001
+                            if asap is not None:
+                                asap.penalize(
+                                    t,
+                                    candidate,
+                                    float(probs[b, t, int(candidate)].item()),
+                                )
                             continue  # reject on admit probe failure
                     ids[b, t] = candidate
                     unknown[b, t] = False
@@ -5533,6 +5569,11 @@ class TwoTowerModel(nn.Module):
             if use_grammar and newly:
                 remask = filter_ids_by_stream(self.tokenizer, ids[0].tolist(), newly)
                 for t in remask:
+                    if asap is not None:
+                        # A2: a stream hard-error remask is an observed
+                        # violation of the token just committed here.
+                        died = int(ids[0, t].item())
+                        asap.penalize(t, died, float(probs[0, t, died].item()))
                     ids[0, t] = self.tokenizer.mask_id
                     unknown[0, t] = True
                 if rec is not None and remask:
