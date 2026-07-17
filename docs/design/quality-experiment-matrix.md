@@ -1262,6 +1262,15 @@ until evidence covers deeper semantic decisions and more held-out groups; a
 tether or sampling change is not a substitute for support. Full evidence:
 [iter-e252-ftpo-set-20260716.md](iter-e252-ftpo-set-20260716.md).
 
+E258 replaced chronological state truncation with deterministic stratification
+over compiler-derived decision kinds and relative trajectory-depth quartiles.
+Across 65 records it replayed 260 states and produced 18 qualified events across
+six decision kinds, including bound components, child references, populated-root
+closure, and symbols. The sampler hypothesis is confirmed, but only eight prompt
+groups and one held-out group qualified, so this export is not admitted for
+training. E253/E254 remain blocked pending broader group support. Full evidence:
+[iter-e258-counterfactual-depth-probe-20260716.md](iter-e258-counterfactual-depth-probe-20260716.md).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
