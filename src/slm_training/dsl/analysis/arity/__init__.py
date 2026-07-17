@@ -34,7 +34,21 @@ from slm_training.dsl.analysis.arity.precision import (
     minimum_margin_trit_planes,
     ternary_ecoc_width,
 )
+from slm_training.dsl.analysis.arity.profiles import (
+    AnalysisProfile,
+    OPENVUI_CAP_V1,
+    get_profile,
+    register_profile,
+)
 from slm_training.dsl.analysis.arity.report import ArityReport, CodingMetadata, ContinuationSummary
+from slm_training.dsl.analysis.arity.state_graph import (
+    STATE_GRAPH_VERSION,
+    GraphEdge,
+    GraphNode,
+    StateFingerprint,
+    StateGraph,
+    StateGraphReport,
+)
 from slm_training.dsl.analysis.arity.suggest import RobustArm, suggest_robust_arms, smallest_feasible_alphabet
 from slm_training.dsl.analysis.arity.types import (
     AnalysisBounds,
@@ -48,6 +62,7 @@ from slm_training.dsl.analysis.arity.types import (
 
 __all__ = [
     "AnalysisBounds",
+    "AnalysisProfile",
     "ArityAnalyzer",
     "ArityCertificate",
     "ArityCertificateBundle",
@@ -61,9 +76,16 @@ __all__ = [
     "EstimatedEvidence",
     "EvidenceKind",
     "ExactEvidence",
+    "GraphEdge",
+    "GraphNode",
+    "OPENVUI_CAP_V1",
     "ResidualScaleMode",
     "RobustArm",
+    "STATE_GRAPH_VERSION",
     "StateAtom",
+    "StateFingerprint",
+    "StateGraph",
+    "StateGraphReport",
     "StateSignature",
     "SupportOracle",
     "SupportQuery",
@@ -75,11 +97,13 @@ __all__ = [
     "build_shortened_ternary_hamming_7_4_3",
     "certificate_digest",
     "exact_certificate_from_report",
+    "get_profile",
     "gilbert_greedy_guarantees",
     "hamming_ball_volume",
     "hamming_sphere_packing_holds",
     "minimum_distance",
     "minimum_margin_trit_planes",
+    "register_profile",
     "singleton_upper_bound",
     "smallest_feasible_alphabet",
     "smallest_injective_arity",
