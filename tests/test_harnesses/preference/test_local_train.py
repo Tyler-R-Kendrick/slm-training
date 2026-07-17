@@ -16,6 +16,7 @@ from slm_training.harnesses.preference.local_decisions import (
 from slm_training.harnesses.preference.local_train import (
     _event_logits,
     _event_logits_many,
+    _fresh_adamw_direction,
     _gradient_alignment,
     _minimum_norm_gradient,
     _project_conflicting_gradients,
@@ -143,6 +144,16 @@ def test_gradient_alignment_reports_cosine_and_norms() -> None:
     assert report["left_norm"] == 1.0
     assert report["right_norm"] == pytest.approx(2**0.5)
     assert report["cosine"] == pytest.approx(-(2**-0.5))
+
+
+def test_fresh_adamw_direction_matches_first_step_geometry() -> None:
+    parameter = torch.nn.Parameter(torch.tensor([2.0, -3.0]))
+    direction = _fresh_adamw_direction(
+        [torch.tensor([4.0, -2.0])], [parameter], weight_decay=0.1
+    )
+
+    assert direction[0] is not None
+    assert torch.allclose(direction[0], torch.tensor([1.2, -1.3]))
 
 
 def test_minimum_norm_gradient_certifies_common_descent() -> None:
