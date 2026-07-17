@@ -393,6 +393,25 @@ def _gradient_alignment(
     }
 
 
+def _fresh_adamw_direction(
+    gradients: list[torch.Tensor | None],
+    parameters: list[torch.nn.Parameter],
+    *,
+    epsilon: float = 1e-8,
+    weight_decay: float = 0.01,
+) -> list[torch.Tensor | None]:
+    """Return the descent direction applied by a fresh AdamW optimizer."""
+    if len(gradients) != len(parameters):
+        raise ValueError("gradients and parameters must share a layout")
+    return [
+        gradient.detach() / (gradient.detach().abs() + epsilon)
+        + weight_decay * parameter.detach()
+        if gradient is not None
+        else None
+        for gradient, parameter in zip(gradients, parameters, strict=True)
+    ]
+
+
 def diagnose_decision_gradient_alignment(
     model: TwoTowerModel,
     events: list[DecisionEventV1],
@@ -451,6 +470,21 @@ def diagnose_decision_gradient_alignment(
     solver["weight_by_decision_kind"] = dict(
         zip(ordered_train_kinds, solver.pop("weights"), strict=True)
     )
+    adamw_direction = _fresh_adamw_direction(combined, trainable)
+    adam_direction = _fresh_adamw_direction(
+        combined, trainable, weight_decay=0.0
+    )
+    def optimizer_alignment(direction: list[torch.Tensor | None]) -> dict:
+        return {
+            "train_alignment": {
+                kind: _gradient_alignment(gradients["train"][kind], direction)
+                for kind in ordered_train_kinds
+            },
+            "held_out_alignment": {
+                kind: _gradient_alignment(gradients["held_out"][kind], direction)
+                for kind in sorted(held_kinds)
+            },
+        }
     return {
         "objective": objective,
         "by_decision_kind": {
@@ -469,6 +503,16 @@ def diagnose_decision_gradient_alignment(
         "held_out_to_train_combination": {
             kind: _gradient_alignment(gradients["held_out"][kind], combined)
             for kind in sorted(held_kinds)
+        },
+        "fresh_adamw": {
+            "epsilon": 1e-8,
+            "weight_decay": 0.01,
+            **optimizer_alignment(adamw_direction),
+        },
+        "fresh_adam": {
+            "epsilon": 1e-8,
+            "weight_decay": 0.0,
+            **optimizer_alignment(adam_direction),
         },
         "cross_kind_alignment": {
             held_kind: {
