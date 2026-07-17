@@ -3,12 +3,22 @@ import { test, expect } from "@playwright/test";
 test.describe("mission control dashboard", () => {
   test("renders overview and navigates to checkpoints", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator(".page-title")).toHaveText(/Performance insights/);
+    await expect(page.locator(".page-title")).toHaveText(/Mission control/);
+    await expect(page.locator(".verdict")).toBeVisible();
     await expect(page.locator(".tile").first()).toBeVisible();
 
     await page.locator(".nav-link", { hasText: "Checkpoints" }).click();
     await expect(page.locator(".page-title")).toHaveText(/Checkpoints/);
     await expect(page.locator(".gate-matrix")).toBeVisible({ timeout: 10_000 });
+  });
+
+  test("renderer toggle swaps interpreted for compiled Overview", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator(".mode-btn.active")).toHaveText(/Interpreted/);
+    await page.locator(".mode-btn", { hasText: "Compiled" }).click();
+    await expect(page.locator(".mode-btn.active")).toHaveText(/Compiled/);
+    await expect(page.locator(".page-title")).toHaveText(/Mission control/);
+    await expect(page.locator(".verdict")).toBeVisible();
   });
 
   test("editing a gate threshold re-evaluates live", async ({ page }) => {

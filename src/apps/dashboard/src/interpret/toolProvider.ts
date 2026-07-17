@@ -4,6 +4,7 @@
 // Numeric cells are pre-formatted to strings here so table precision matches compiled
 // mode exactly (the compiled pages format per-column via fmt(v, digits)).
 import { getJSON, postJSON } from "../api";
+import { fetchHero } from "../hero";
 
 const pct = (v: number) => `${Math.round((v || 0) * 100)}%`;
 
@@ -18,6 +19,7 @@ type QueryFn = (args: Record<string, unknown>) => Promise<unknown>;
 
 export const toolProvider: Record<string, QueryFn> = {
   // ---- Overview -----------------------------------------------------------
+  overview_hero: async () => fetchHero(),
   overview_insights: async () => {
     const d: any = await getJSON("/api/overview");
     const p = d.performance ?? {};

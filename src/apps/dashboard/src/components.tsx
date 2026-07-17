@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { postJSON, useJobStream } from "./api";
+import type { HeroData } from "./hero";
 
 // --- formatting helpers ----------------------------------------------------
 export function fmt(v: any, digits = 3): string {
@@ -452,5 +453,156 @@ export function JobLauncher({
         {busy ? "launching…" : execution ? "Run" : "Read-only"}
       </button>
     </div>
+  );
+}
+
+// --- mission-control hero ----------------------------------------------------
+// Shared by compiled Overview and the interpreted HeroStrip component so both
+// renderers produce identical markup from the same HeroData (see hero.ts).
+export function HeroStrip({
+  hero,
+  navigate,
+}: {
+  hero: HeroData;
+  navigate?: (to: string) => void;
+}) {
+  const ref = hero.reference;
+  const gate = hero.gate;
+  const verdictClass = gate ? (gate.pass ? "verdict-pass" : "verdict-fail") : "verdict-none";
+  const verdictText = gate
+    ? `GATES ${gate.pass ? "PASS" : "FAIL"} ${gate.passed}/${gate.total}`
+    : "NO GATE EVIDENCE";
+  const flight = hero.inflight;
+  return (
+    <section className={`hero hero-${gate ? (gate.pass ? "pass" : "fail") : "none"}`} aria-label="Ship status">
+      <div className="hero-verdict">
+        <span className={`verdict ${verdictClass}`}>{verdictText}</span>
+        <span className="hero-verdict-sub">ship gates · current reference</span>
+      </div>
+      <div className="hero-ref">
+        {ref ? (
+          <>
+            <div className="hero-run">
+              <a
+                className="mono runlink"
+                onClick={() => ref.run_id && navigate?.(`/runs/${encodeURIComponent(ref.run_id)}`)}
+              >
+                {ref.run_id || "—"}
+              </a>
+              <ProvenanceBadge provenance={hero.provenance} />
+            </div>
+            <div className="hero-meta">
+              {[ref.role, ref.track, ref.evaluation_status].filter(Boolean).join(" · ")}
+            </div>
+            <div className="hero-meta">
+              {hero.deployment.selected ? `deployed: ${hero.deployment.track || "selected"}` : "nothing deployed"}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="hero-meta">No evaluated reference yet — run a smoke suite, then evaluate ship gates.</div>
+            <button className="chip" onClick={() => navigate?.("/smoke")}>run smoke →</button>
+          </>
+        )}
+      </div>
+      <div className="hero-side">
+        <div className="hero-flight">
+          <span className={`pill ${flight.jobs ? "pill-running" : "pill-idle"}`}>
+            {flight.jobs} live job{flight.jobs === 1 ? "" : "s"}
+          </span>
+          <span className={`pill ${flight.dispatches ? "pill-warning" : "pill-idle"}`}>
+            {flight.dispatches} remote
+          </span>
+          <span className="hint">{flight.execution ? "control plane online" : "read-only"}</span>
+        </div>
+        <div className="hero-ctas">
+          <button className="chip" onClick={() => navigate?.("/checkpoints")}>gates &amp; promotion →</button>
+          <button className="chip" onClick={() => navigate?.("/experiments")}>experiments →</button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// --- in-flight lists ---------------------------------------------------------
+// Plain views shared verbatim by compiled Overview and the interpreted
+// JobList / JobsBadge / DispatchList wrappers in interpret/library.tsx.
+export interface JobRows {
+  rows?: { id?: string | number; job?: string; status?: string }[];
+  execution?: boolean;
+}
+
+export function JobLines({ data }: { data: JobRows }) {
+  const rows = data.rows ?? [];
+  if (!data.execution) return <Empty>Execution disabled — serve locally to run jobs.</Empty>;
+  if (!rows.length) return <Empty>No jobs running.</Empty>;
+  return (
+    <>
+      {rows.map((j, i) => (
+        <div
+          className="job-line"
+          key={j.id ?? i}
+          style={{ display: "flex", justifyContent: "space-between", padding: "0.35rem 0", borderBottom: "1px solid var(--border)" }}
+        >
+          <span className="mono">{j.job}</span>
+          <span style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+            <StatusPill value={j.status} />
+            {j.id != null && (
+              <button className="chip" onClick={() => postJSON(`/api/jobs/${j.id}/cancel`, {})}>
+                cancel
+              </button>
+            )}
+          </span>
+        </div>
+      ))}
+    </>
+  );
+}
+
+export function JobsBadgeView({ data }: { data: JobRows }) {
+  return data.execution ? (
+    <StatusPill value="running" label="control plane" />
+  ) : (
+    <span className="prov prov-committed">read-only</span>
+  );
+}
+
+export interface DispatchRows {
+  rows?: { id?: string | number; job?: string; status?: string; url?: string }[];
+  remotes?: { run_id?: string; url?: string }[];
+}
+
+export function DispatchLines({ data }: { data: DispatchRows }) {
+  const jobs = data.rows ?? [];
+  const remotes = data.remotes ?? [];
+  if (!jobs.length && !remotes.length) {
+    return <Empty>No remote (HF Jobs / pod) trains dispatched — launch one from Experiments.</Empty>;
+  }
+  return (
+    <>
+      {jobs.map((j, i) => (
+        <div key={j.id ?? `j${i}`} className="dispatch-row">
+          <span className="mono">{j.job}</span>
+          <span style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
+            <StatusPill value={j.status} />
+            {j.url && (
+              <a className="runlink" href={j.url} target="_blank" rel="noreferrer">
+                view remote ↗
+              </a>
+            )}
+          </span>
+        </div>
+      ))}
+      {remotes.map((r, i) => (
+        <div key={r.run_id ?? `r${i}`} className="dispatch-row">
+          <span className="mono">{r.run_id}</span>
+          {r.url && (
+            <a className="runlink" href={r.url} target="_blank" rel="noreferrer">
+              durable checkpoint ↗
+            </a>
+          )}
+        </div>
+      ))}
+    </>
   );
 }

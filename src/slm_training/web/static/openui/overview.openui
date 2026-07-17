@@ -1,6 +1,12 @@
 perf = Query("overview_insights", {}, { references: { rows: [], provenance: "committed" }, tiles: { rows: [] }, insights: { improvements: [], carry_forward: [], novel: [] }, comparisons: { rows: [] }, comparison_basis: "", cache: {} }, 15)
+heroData = Query("overview_hero", {}, { reference: null, provenance: "committed", gate: null, deployment: { selected: false, track: "" }, inflight: { jobs: 0, dispatches: 0, execution: false } }, 15)
+jobs = Query("overview_jobs", {}, { rows: [], count: 0, execution: false }, 10)
+disp = Query("dispatches", {}, { rows: [], remotes: [], bucket_url: "" }, 30)
 
-head = PageHead("Performance insights", "What to improve, what to carry forward, and signals that are easy to miss — anchored to the current model card and track champions.")
+head = PageHead("Mission control", "Champion status, ship-gate verdict, and what's in flight — grounded in live-vs-committed evidence from the model card and track champions.")
+
+hero = HeroStrip(heroData)
+inflight = Row([Panel("Live jobs", [JobList(jobs)], JobsBadge(jobs)), Panel("Remote dispatches", [DispatchList(disp)], Badge("hf jobs / pods", "committed"))])
 
 referenceCols = [{ key: "role", label: "Reference role" }, { key: "track", label: "Track" }, { key: "run_id", label: "Run" }, { key: "kind", label: "Kind" }, { key: "location", label: "Artifact" }, { key: "evaluation_status", label: "Evaluation" }, { key: "card_state", label: "Model-card status" }]
 referencePanel = Panel("Current model card", [DataTable(referenceCols, perf.references, 26, "run_id"), Hint(perf.comparison_basis, true)], [ProvenanceBadge(perf.references.provenance), " ", NavChip("open checkpoints →", "/checkpoints")])
@@ -18,4 +24,4 @@ cacheBadge = Badge(perf.cache.persisted ? "insights persisted" : "session insigh
 comparisonNote = "Persisted " + perf.cache.generated_at + "; regenerated only when the model-card checkpoint roster or a track champion changes."
 comparisonPanel = Panel("Experiment performance vs current reference", [DataTable(comparisonCols, perf.comparisons, 26, "run_id"), Hint(comparisonNote, true)], cacheBadge)
 
-root = Page([head, referencePanel, tileRow, insightGrid, comparisonPanel])
+root = Page([head, hero, inflight, referencePanel, tileRow, insightGrid, comparisonPanel])

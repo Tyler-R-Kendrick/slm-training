@@ -3,13 +3,18 @@ import { usePoll } from "../api";
 import {
   Card,
   DataTable,
+  DispatchLines,
   ErrorNote,
   Grid,
+  HeroStrip,
+  JobLines,
+  JobsBadgeView,
   ProvenanceBadge,
   StatTile,
   StatusPill,
   pct,
 } from "../components";
+import { useHero } from "../hero";
 
 const insightColumns = [
   { key: "finding", label: "Finding" },
@@ -18,9 +23,12 @@ const insightColumns = [
 
 export function Overview({ navigate }: { navigate: (to: string) => void }) {
   const { data, error } = usePoll<any>("/api/overview", 15000);
+  const hero = useHero(15000);
+  const { data: jobsRaw } = usePoll<any>("/api/jobs", 10000);
+  const { data: dispRaw } = usePoll<any>("/api/dispatches", 30000);
 
   if (error) return <ErrorNote error={error} />;
-  if (!data) return <div className="loading">Loading performance insights…</div>;
+  if (!data) return <div className="loading">Loading mission control…</div>;
 
   const performance = data.performance ?? {};
   const references = performance.references ?? [];
@@ -29,14 +37,35 @@ export function Overview({ navigate }: { navigate: (to: string) => void }) {
   const stats = performance.stats ?? {};
   const cache = performance.cache ?? {};
 
+  const activeJobs = (jobsRaw?.jobs ?? []).filter((j: any) => ["running", "queued"].includes(j.status));
+  const jobsData = {
+    rows: activeJobs.map((j: any) => ({ id: j.id, job: j.job_key, status: j.status })),
+    execution: !!jobsRaw?.execution,
+  };
+  const dispData = {
+    rows: (dispRaw?.jobs ?? []).map((j: any) => ({ id: j.id, job: j.job_key, status: j.status, url: j.remote_url })),
+    remotes: (dispRaw?.remotes ?? []).map((r: any) => ({ run_id: r.run_id, url: r.url })),
+  };
+
   return (
     <div>
       <div className="page-head">
-        <h1 className="page-title">Performance insights</h1>
+        <h1 className="page-title">Mission control</h1>
         <p className="page-sub">
-          What to improve, what to carry forward, and signals that are easy to miss —
-          anchored to the current model card and track champions.
+          Champion status, ship-gate verdict, and what's in flight — grounded in
+          live-vs-committed evidence from the model card and track champions.
         </p>
+      </div>
+
+      <HeroStrip hero={hero} navigate={navigate} />
+
+      <div className="two-col">
+        <Card title="Live jobs" right={<JobsBadgeView data={jobsData} />}>
+          <JobLines data={jobsData} />
+        </Card>
+        <Card title="Remote dispatches" right={<span className="prov prov-committed">hf jobs / pods</span>}>
+          <DispatchLines data={dispData} />
+        </Card>
       </div>
 
       <Card

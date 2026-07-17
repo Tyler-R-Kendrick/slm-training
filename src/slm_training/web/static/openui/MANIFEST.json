@@ -72,21 +72,29 @@
       "components": [
         "Badge",
         "DataTable",
+        "DispatchList",
         "Grid",
+        "HeroStrip",
         "Hint",
+        "JobList",
+        "JobsBadge",
         "NavChip",
         "Page",
         "PageHead",
         "Panel",
         "Pill",
         "ProvenanceBadge",
+        "Row",
         "StatTile"
       ],
       "file": "overview.openui",
       "queries": [
-        "overview_insights"
+        "dispatches",
+        "overview_hero",
+        "overview_insights",
+        "overview_jobs"
       ],
-      "sha256": "16c00b31fe2dc9a63decddfb27a5ec10b22803f98f8f641cd9e57e0a4a6b77cc",
+      "sha256": "2113cde1d1677a1791afc9a8b2c4f8dfbed301332be6dcdf7d1c6d9ebecc759b",
       "status": "ok"
     },
     "playground": {

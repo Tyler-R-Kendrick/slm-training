@@ -50,6 +50,30 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.01em; }
 .mode-btn:hover { color: var(--text); }
 .mode-btn.active { background: var(--moss-bg); border-color: var(--moss); color: var(--moss-bright); }
 
+/* ---- mission-control hero ------------------------------------------------ */
+.hero {
+  display: grid; grid-template-columns: auto 1fr auto; gap: 1.4rem; align-items: center;
+  background: var(--bg-1); border: 1px solid var(--border); border-left: 4px solid var(--border-strong);
+  border-radius: var(--radius-lg); padding: 1.1rem 1.25rem; margin-bottom: 1.15rem;
+}
+.hero-pass { border-left-color: var(--status-passed); }
+.hero-fail { border-left-color: var(--status-failed); }
+.hero-none { border-left-color: var(--status-idle); }
+.hero-verdict { display: flex; flex-direction: column; gap: 0.4rem; align-items: flex-start; }
+.hero-verdict-sub { font-family: var(--font-mono); font-size: var(--fs-label); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-mute); }
+.hero-ref { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+.hero-run { display: flex; align-items: center; gap: 0.6rem; font-size: 1.02rem; font-weight: 600; }
+.hero-run .runlink { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hero-meta { color: var(--text-dim); font-size: 0.82rem; }
+.hero-side { display: flex; flex-direction: column; gap: 0.55rem; align-items: flex-end; }
+.hero-flight { display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; justify-content: flex-end; }
+.hero-ctas { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; gap: 0.9rem; }
+  .hero-side { align-items: flex-start; }
+  .hero-flight, .hero-ctas { justify-content: flex-start; }
+}
+
 /* ---- data-freshness banner ---------------------------------------------- */
 .freshness-banner { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1.15rem; padding: 0.55rem 0.8rem; border: 1px solid color-mix(in srgb, var(--status-warning) 45%, transparent); border-radius: var(--radius-lg); background: var(--status-warning-bg); color: var(--text-dim); font-size: 0.82rem; }
 .freshness-banner .prov { flex-shrink: 0; }
