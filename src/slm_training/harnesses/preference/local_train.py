@@ -275,7 +275,7 @@ def _project_conflicting_gradients(
 def _minimum_norm_gradient(
     gradients: list[list[torch.Tensor | None]],
     *,
-    max_iterations: int = 250,
+    max_iterations: int = 5000,
     tolerance: float = 1e-10,
 ) -> tuple[list[torch.Tensor | None], dict]:
     """Find the minimum-norm convex task-gradient combination with Frank-Wolfe."""
@@ -304,6 +304,7 @@ def _minimum_norm_gradient(
             "active_task_count": 0,
             "inactive_task_count": count,
             "iterations": 0,
+            "duality_gap": 0.0,
             "converged": True,
             "norm_sq": 0.0,
             "min_task_dot": 0.0,
@@ -316,6 +317,7 @@ def _minimum_norm_gradient(
     active_weights[int(torch.diagonal(active_gram).argmin())] = 1.0
     converged = False
     iterations = 0
+    gap = float("inf")
     for iterations in range(1, max_iterations + 1):
         gram_weights = active_gram @ active_weights
         vertex = int(gram_weights.argmin())
@@ -352,6 +354,7 @@ def _minimum_norm_gradient(
         "active_task_count": len(active),
         "inactive_task_count": count - len(active),
         "iterations": iterations,
+        "duality_gap": gap,
         "converged": converged,
         "norm_sq": norm_sq,
         "min_task_dot": min_task_dot,
@@ -573,6 +576,7 @@ def train_local_decisions(
             "by_decision_kind": bool(guard_by_decision_kind),
         }
     for step, proposal in enumerate(schedule, start=1):
+        gradient_certified = True
         logits_rows = _event_logits_many(model, proposal)
         with torch.no_grad():
             reference_rows = (
@@ -631,8 +635,9 @@ def train_local_decisions(
                 combined, projection = _project_conflicting_gradients(task_gradients)
             else:
                 combined, projection = _minimum_norm_gradient(task_gradients)
+            gradient_certified = bool(projection.get("common_descent", True))
             for parameter, gradient in zip(trainable, combined, strict=True):
-                parameter.grad = gradient
+                parameter.grad = gradient if gradient_certified else None
             gradient_projection_totals.update(
                 {
                     name: int(value)
@@ -643,6 +648,23 @@ def train_local_decisions(
             gradient_solver_history.append(projection)
         else:
             loss.backward()
+        if not gradient_certified:
+            for name, value in metrics.items():
+                totals[name] += value
+            for kind in sorted({event.decision_kind for event in proposal}):
+                by_kind[kind] += 1
+            if guarded_updates:
+                selection["history"].append(
+                    {
+                        "step": step,
+                        "eligible": False,
+                        "accepted_scale": None,
+                        "metrics": best_metrics,
+                        "trials": [],
+                        "rejection_reason": "no_common_descent_certificate",
+                    }
+                )
+            continue
         if guarded_updates:
             model_state = copy.deepcopy(model.state_dict())
             optimizer_state = copy.deepcopy(optimizer.state_dict())

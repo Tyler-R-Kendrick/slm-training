@@ -1,7 +1,7 @@
 # E269 — minimum-norm decision-kind safe set FTPO
 
 Date: 2026-07-17
-Status: **in progress; one-step preflight found and repaired inactive-objective handling**
+Status: **in progress; two one-step preflights repaired solver fail-closed behavior**
 
 E269 replaces pairwise PCGrad with the minimum-norm convex gradient
 combination from Sener and Koltun's multi-objective optimization method
@@ -25,5 +25,16 @@ common descent for every active objective. Regression tests cover both a
 two-objective analytic solution and inactive-task filtering. A corrected
 one-step preflight is required before any 30-step run.
 
+The second preflight used 13 active and one inactive objective. After the
+initial 250-iteration budget, Frank-Wolfe had not converged and did not certify
+common descent (`norm_sq=5.6099`, `min_active_task_dot=-3.7646`). The proposal
+was rejected, but the harness still spent five trials probing the uncertified
+direction. The final repair raises and reports the convergence budget and
+bypasses AdamW plus held-out probing whenever no certificate exists. A final
+one-step preflight will distinguish under-convergence from a genuine absence
+of common descent; a 30-step run remains disallowed.
+
 Machine-readable invalid-preflight evidence:
 [`quality-matrix-v10-e269-one-step-inactive-objective-results.json`](quality-matrix-v10-e269-one-step-inactive-objective-results.json).
+Second-preflight evidence:
+[`quality-matrix-v10-e269-one-step-fw250-results.json`](quality-matrix-v10-e269-one-step-fw250-results.json).

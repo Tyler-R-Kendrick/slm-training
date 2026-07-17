@@ -207,6 +207,58 @@ def test_train_projects_all_decision_kinds_before_guarding() -> None:
     }
 
 
+def test_uncertified_mgda_bypasses_optimizer_and_guard_trials(monkeypatch) -> None:
+    model = _model()
+    first = _event(
+        good=(model.tokenizer.eos_id,),
+        bad=(model.tokenizer.mask_id,),
+        group="first",
+    )
+    second = replace(first, event_id="second", decision_kind="grammar_comma")
+    held_group = "held"
+    while split_for_group(held_group) != "held_out":
+        held_group += "x"
+    held = replace(first, event_id="held", group_id=held_group, split="held_out")
+    metrics = {
+        "loss": 1.0,
+        "bad_probability_mass": 0.1,
+        "good_probability_mass": 0.2,
+        "mean_margin": 1.0,
+    }
+    baseline = {
+        "metrics": metrics,
+        "by_decision_kind": {"component": {"metrics": metrics}},
+    }
+    monkeypatch.setattr(
+        "slm_training.harnesses.preference.local_train._minimum_norm_gradient",
+        lambda gradients: (
+            [None] * len(gradients[0]),
+            {"common_descent": False, "task_count": len(gradients)},
+        ),
+    )
+    before = copy.deepcopy(model.state_dict())
+
+    summary = train_local_decisions(
+        model,
+        [first, second],
+        objective="ce_margin",
+        steps=1,
+        validation_events=[held],
+        validation_baseline=baseline,
+        guarded_updates=True,
+        guard_by_decision_kind=True,
+        gradient_combination="mgda",
+    )
+
+    history = summary["validation_selection"]["history"][1]
+    assert history["rejection_reason"] == "no_common_descent_certificate"
+    assert history["trials"] == []
+    assert summary["validation_selection"]["accepted_steps"] == 0
+    assert all(
+        torch.equal(before[key], value) for key, value in model.state_dict().items()
+    )
+
+
 def test_single_objective_filters_set_valued_events() -> None:
     model = _model()
     single = _event(
