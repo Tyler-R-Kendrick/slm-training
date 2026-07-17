@@ -6,7 +6,7 @@ from scripts.run_quality_matrix import _v11_experiments, _v14_experiments
 
 def test_v14_registers_a2_asap_row_matched_to_e255() -> None:
     rows = _v14_experiments(Path("outputs/data/train/v1"))
-    assert [row.eid for row in rows] == ["E263"]
+    assert [row.eid for row in rows] == ["E277"]
     (asap_row,) = rows
     assert asap_row.asap_decode is True
     # Decode-only lever: the row is eval-only and must be routed through a

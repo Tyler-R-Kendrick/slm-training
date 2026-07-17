@@ -52,8 +52,8 @@
   "matrix_set": "v13",
   "results": [
     {
-      "id": "E264",
-      "run_id": "qx_e264_c2_pseudo_embeddings",
+      "id": "E278",
+      "run_id": "qx_e278_c2_pseudo_embeddings",
       "initialization": "scratch",
       "training_executed": true,
       "parent_checkpoint": null,
@@ -80,7 +80,7 @@
       "best_of_n": 1,
       "train_dir": "outputs/data/train/v1",
       "train_content_fingerprint": "79552bd716d712ad06b6e96e8c8356a1d9416140bd605f08da49d771adf99231",
-      "checkpoint": "outputs/runs/qx_e264_c2_pseudo_embeddings/checkpoints/last.pt",
+      "checkpoint": "outputs/runs/qx_e278_c2_pseudo_embeddings/checkpoints/last.pt",
       "trace_id": "5a6f6c66e06997cebd13899be90d5dc0",
       "traceparent": "00-5a6f6c66e06997cebd13899be90d5dc0-bba547f4e5a5675e-01",
       "trace_bundle": "outputs/traces/5a6f6c66e06997cebd13899be90d5dc0",

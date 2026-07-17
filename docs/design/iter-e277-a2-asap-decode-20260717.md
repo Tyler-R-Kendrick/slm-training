@@ -1,4 +1,4 @@
-# E263 — A2 ASAp-style distribution-aware constrained MaskGIT decode (2026-07-17)
+# E277 — A2 ASAp-style distribution-aware constrained MaskGIT decode (2026-07-17)
 
 Decode-lever wiring + fixture-grade eval overlay, not a train/ship run. Code:
 [`models/parallel_decode.py`](../../src/slm_training/models/parallel_decode.py)
@@ -42,7 +42,7 @@ convergence guarantee are inherited from the paper.
 
 ## Recipe
 
-Row E263 (`--matrix v12`) is **eval-only**: routed through the frozen E255
+Row E277 (`--matrix v12`) is **eval-only**: routed through the frozen E255
 checkpoint (`--parent .../qx_e255_b4_scratch_control/checkpoints/best_weighted_nll.pt`)
 so the pair differs only in `asap_decode` (registration test
 `tests/test_scripts/test_quality_matrix_v14.py` enforces the matched-pair
@@ -60,7 +60,7 @@ scoreboard without this override as invalid, not as a result.
 ## Results (fixture-grade, CPU, 2026-07-17)
 
 JSON: [quality-matrix-results-iter-v14-a2-20260717.json](quality-matrix-results-iter-v14-a2-20260717.json)
-(scoreboards, gates, AgentV envelope under `outputs/runs/qx_e263_a2_asap_decode/`).
+(scoreboards, gates, AgentV envelope under `outputs/runs/qx_e277_a2_asap_decode/`).
 Two runs (pre/post telemetry counters) produced byte-identical metrics —
 the eval-only overlay is deterministic.
 
@@ -70,7 +70,7 @@ penalized positions per suite — smoke 204/32, held_out 334/53, adversarial
 rejections and stream remasks constantly, so plain renormalization was
 re-proposing observed dead-end mass on every revisit; A2 removes it.
 
-| Suite (n) | Metric | E255 control | E263 A2 |
+| Suite (n) | Metric | E255 control | E277 A2 |
 | --- | --- | ---: | ---: |
 | smoke (3) | structural_similarity | 0.300 | 0.265 |
 | held_out (5) | structural_similarity | 0.323 | 0.248 |

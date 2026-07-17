@@ -148,7 +148,7 @@ def test_v13_registers_matched_c2_row() -> None:
     from scripts.run_quality_matrix import _v11_experiments, _v15_experiments
 
     rows = _v15_experiments(Path("outputs/data/train/v1"))
-    assert [row.eid for row in rows] == ["E264"]
+    assert [row.eid for row in rows] == ["E278"]
     (c2_row,) = rows
     assert c2_row.runtime_symbol_features == "replace"
     (control,) = [r for r in _v11_experiments(c2_row.train_dir) if r.eid == "E255"]

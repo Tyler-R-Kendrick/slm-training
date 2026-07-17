@@ -68,6 +68,32 @@ def test_library_schema_falls_back_to_committed_snapshot(monkeypatch) -> None:
     ]
 
 
+def test_bridge_uses_matching_git_common_checkout_dependencies(
+    tmp_path, monkeypatch
+) -> None:
+    worktree = tmp_path / "worktree"
+    common = tmp_path / "common"
+    work_bridge = worktree / "src/apps/openui_bridge"
+    common_bridge = common / "src/apps/openui_bridge"
+    for root in (work_bridge, common_bridge):
+        root.mkdir(parents=True)
+        for name in lang_core._BRIDGE_SOURCES:
+            (root / name).write_text(name)
+    (common_bridge / "node_modules/@openuidev/lang-core").mkdir(parents=True)
+    monkeypatch.delenv("OPENUI_BRIDGE_CLI", raising=False)
+    monkeypatch.setattr(lang_core, "REPO_ROOT", worktree)
+    monkeypatch.setattr(lang_core, "DEFAULT_BRIDGE_DIR", work_bridge)
+    monkeypatch.setattr(
+        lang_core, "checkout_roots", lambda root: (root, common)
+    )
+    lang_core._bridge_dir.cache_clear()
+
+    assert lang_core._bridge_dir() == common_bridge
+    assert lang_core._bridge_cli() == common_bridge / "cli.mjs"
+
+    lang_core._bridge_dir.cache_clear()
+
+
 def test_committed_schema_matches_pinned_library() -> None:
     if not lang_core.bridge_available():
         pytest.skip("OpenUI bridge dependencies are unavailable")

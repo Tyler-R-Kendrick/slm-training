@@ -4,7 +4,7 @@ The research program (Linear project "DSL Diffusion SLM Research Program",
 tracks A-G) runs through the existing hypothesizer machinery — no parallel
 ad-hoc loop. This module encodes the program's Track A (emptiness wall)
 experiments as a strict-schema :class:`HypothesisMatrix` grounded in the
-committed evidence trail (A1 diagnosis, E263 A2 fixture row, the program's
+committed evidence trail (A1 diagnosis, E277 A2 fixture row, the program's
 literature manifest), so the engine's validation, bounded command
 compilation, and feedback acknowledgement apply end-to-end.
 
@@ -60,7 +60,7 @@ def build_track_a_campaign() -> CampaignSpec:
         researcher_mode="agent",
         notes=(
             "DSL Diffusion SLM Research Program, Track A. Evidence-grounded "
-            "per E248 (A1 diagnosis) and E263 (A2 fixture row); literature "
+            "per E248 (A1 diagnosis) and E277 (A2 fixture row); literature "
             f"intake committed at {LITERATURE_MANIFEST} (E3/SLM-33)."
         ),
     )
@@ -163,7 +163,7 @@ def _candidate(
                 role="prior_result",
                 citation=RESULT_DOC,
                 contribution=(
-                    "E263 fixture row supplies the matched A2 wiring baseline."
+                    "E277 fixture row supplies the matched A2 wiring baseline."
                 ),
             ),
         ),
@@ -177,7 +177,7 @@ def _candidate(
             proposed_schema_elements=(
                 "distribution-aware decode" if regime_transition else "decode recipe",
             ),
-            transported_elements=("E255/E263 fixture scoreboards",),
+            transported_elements=("E255/E277 fixture scoreboards",),
             transport_analysis=(
                 "Fixture deltas do not transfer; the frontier run re-measures "
                 "from scratch.",
@@ -201,7 +201,7 @@ def build_track_a_matrix() -> HypothesisMatrix:
             "trackA-a2-asap",
             "Removing observed constraint-violating mass (ASAp) lifts "
             "meaningful parse where renormalized decode prefers empty programs.",
-            "A1 (E248) diagnosed decode-time empty-preference; E263 proves the "
+            "A1 (E248) diagnosed decode-time empty-preference; E277 proves the "
             "ledger fires under real decode.",
             "Higher meaningful parse at equal syntax validity.",
             ExperimentKnobs(asap_decode=True, **base),

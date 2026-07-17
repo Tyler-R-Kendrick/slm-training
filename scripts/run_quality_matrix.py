@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import signal
+import time
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Literal
@@ -164,6 +166,13 @@ class Experiment:
     ] | None = None
     local_preference_reference_tether: bool = False
     local_preference_balanced: bool = False
+    local_preference_guarded_selection: bool = False
+    local_preference_guarded_updates: bool = False
+    local_preference_guard_backtrack_steps: int = 4
+    local_preference_guard_by_decision_kind: bool = False
+    local_preference_block_by_decision_kind: bool = False
+    local_preference_gradient_combination: Literal["proposal", "pcgrad", "mgda"] = "proposal"
+    local_preference_optimizer: Literal["adamw", "sgd"] = "adamw"
     binder_arity_loss_weight: float = 0.0
     binder_arity_decode_weight: float = 0.0
 
@@ -1285,7 +1294,7 @@ def _v9_experiments(train_dir: Path) -> list[Experiment]:
 
 
 def _v10_experiments(train_dir: Path) -> list[Experiment]:
-    """E248-E254: exact-state local preference campaign (proposed/unrun)."""
+    """Exact-state local preference campaign."""
     base = _strict_compiler_tree_policy()
     return [
         Experiment(
@@ -1347,6 +1356,87 @@ def _v10_experiments(train_dir: Path) -> list[Experiment]:
             local_preference_balanced=True,
             **base,
         ),
+        Experiment(
+            "E277",
+            "qx_e277_broad_gold_ast_ftpo_set",
+            "Broad grammar/AST-aligned set FTPO",
+            train_dir,
+            local_preference_objective="ftpo_set",
+            **base,
+        ),
+        Experiment(
+            "E278",
+            "qx_e278_guarded_gold_ast_ftpo_set",
+            "Held-out Pareto-guarded gold-AST set FTPO",
+            train_dir,
+            local_preference_objective="ftpo_set",
+            local_preference_guarded_selection=True,
+            **base,
+        ),
+        Experiment(
+            "E265",
+            "qx_e265_safe_gold_ast_ftpo_set",
+            "Pareto-safe backtracked gold-AST set FTPO updates",
+            train_dir,
+            local_preference_objective="ftpo_set",
+            local_preference_guarded_updates=True,
+            **base,
+        ),
+        Experiment(
+            "E266",
+            "qx_e266_stratified_safe_gold_ast_ftpo_set",
+            "Decision-kind-stratified safe gold-AST set FTPO",
+            train_dir,
+            local_preference_objective="ftpo_set",
+            local_preference_guarded_updates=True,
+            local_preference_guard_by_decision_kind=True,
+            **base,
+        ),
+        Experiment(
+            "E267",
+            "qx_e267_block_stratified_safe_gold_ast_ftpo_set",
+            "Decision-kind block-coordinate stratified safe set FTPO",
+            train_dir,
+            local_preference_objective="ftpo_set",
+            local_preference_guarded_updates=True,
+            local_preference_guard_by_decision_kind=True,
+            local_preference_block_by_decision_kind=True,
+            **base,
+        ),
+        Experiment(
+            "E268",
+            "qx_e268_projected_stratified_safe_gold_ast_ftpo_set",
+            "Conflict-projected decision-kind stratified safe set FTPO",
+            train_dir,
+            local_preference_objective="ftpo_set",
+            local_preference_guarded_updates=True,
+            local_preference_guard_by_decision_kind=True,
+            local_preference_gradient_combination="pcgrad",
+            **base,
+        ),
+        Experiment(
+            "E269",
+            "qx_e269_mgda_stratified_safe_gold_ast_ftpo_set",
+            "Minimum-norm common-descent decision-kind safe set FTPO",
+            train_dir,
+            local_preference_objective="ftpo_set",
+            local_preference_guarded_updates=True,
+            local_preference_guard_by_decision_kind=True,
+            local_preference_gradient_combination="mgda",
+            **base,
+        ),
+        Experiment(
+            "E272",
+            "qx_e272_mgda_sgd_stratified_safe_gold_ast_ftpo_set",
+            "Minimum-norm decision-kind safe set FTPO with collinear SGD",
+            train_dir,
+            local_preference_objective="ftpo_set",
+            local_preference_guarded_updates=True,
+            local_preference_guard_by_decision_kind=True,
+            local_preference_gradient_combination="mgda",
+            local_preference_optimizer="sgd",
+            **base,
+        ),
     ]
 
 
@@ -1403,7 +1493,7 @@ def _v12_experiments(train_dir: Path) -> list[Experiment]:
 
 
 def _v14_experiments(train_dir: Path) -> list[Experiment]:
-    """E263 (A2): ASAp-style distribution-aware constrained MaskGIT decode.
+    """E277 (A2): ASAp-style distribution-aware constrained MaskGIT decode.
 
     Observed constraint violations remove the violating token's mass at that
     canvas position from the next proposal, and unmask ordering uses
@@ -1419,12 +1509,12 @@ def _v14_experiments(train_dir: Path) -> list[Experiment]:
         runtime_override_fields=frozenset({"asap_decode", "grammar_ltr_primary"}),
     )
     return [
-        Experiment("E263", "qx_e263_a2_asap_decode", "A2 ASAp distribution-aware constrained MaskGIT decode", train_dir, asap_decode=True, **base),
+        Experiment("E277", "qx_e277_a2_asap_decode", "A2 ASAp distribution-aware constrained MaskGIT decode", train_dir, asap_decode=True, **base),
     ]
 
 
 def _v15_experiments(train_dir: Path) -> list[Experiment]:
-    """E264 (C2): dynamic pseudo-embeddings for symbol tokens (SLM-26).
+    """E278 (C2): dynamic pseudo-embeddings for symbol tokens (SLM-26).
 
     ``runtime_symbol_features="replace"`` cancels the learned symbol-pool row
     with a deterministic byte-compositional vector (DyVo-style; weight tying
@@ -1436,7 +1526,7 @@ def _v15_experiments(train_dir: Path) -> list[Experiment]:
         grammar_ltr_primary=False,
     )
     return [
-        Experiment("E264", "qx_e264_c2_pseudo_embeddings", "C2 dynamic pseudo-embeddings for symbol tokens", train_dir, runtime_symbol_features="replace", **base),
+        Experiment("E278", "qx_e278_c2_pseudo_embeddings", "C2 dynamic pseudo-embeddings for symbol tokens", train_dir, runtime_symbol_features="replace", **base),
     ]
 
 
@@ -1846,7 +1936,56 @@ def _maybe_local_preference(
 
     tethered = bool(exp.local_preference_reference_tether)
     out_dir = args.run_root / exp.run_id / "local_preference"
+    summary_path = out_dir / "local_preference_summary.json"
+    if args.resume and summary_path.is_file():
+        from slm_training.harnesses.preference.local_decisions import (
+            load_decision_events,
+        )
+
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        trained = Path(str(summary.get("checkpoint") or ""))
+        expected_sha = hashlib.sha256(ckpt.read_bytes()).hexdigest()
+        events = load_decision_events(args.decision_events)
+        expected_counts = {
+            split: sum(event.split == split for event in events)
+            for split in ("train", "held_out")
+        }
+        matches = (
+            summary.get("objective") == objective
+            and int(summary.get("steps") or -1) == int(args.pref_steps)
+            and bool(summary.get("balanced"))
+            == bool(exp.local_preference_balanced)
+            and bool(summary.get("reference_tethered")) == tethered
+            and bool(summary.get("guarded_selection"))
+            == bool(exp.local_preference_guarded_selection)
+            and bool(summary.get("guarded_updates"))
+            == bool(exp.local_preference_guarded_updates)
+            and int(summary.get("guard_backtrack_steps") or 0)
+            == (
+                int(exp.local_preference_guard_backtrack_steps)
+                if exp.local_preference_guarded_updates
+                else 0
+            )
+            and bool(summary.get("guard_by_decision_kind"))
+            == bool(exp.local_preference_guard_by_decision_kind)
+            and bool(summary.get("block_by_decision_kind"))
+            == bool(exp.local_preference_block_by_decision_kind)
+            and summary.get("gradient_combination", "proposal")
+            == exp.local_preference_gradient_combination
+            and summary.get("optimizer", "adamw")
+            == exp.local_preference_optimizer
+            and summary.get("source_checkpoint_sha") == expected_sha
+            and int(summary.get("train_events", -1)) == expected_counts["train"]
+            and int(summary.get("held_out_events", -1))
+            == expected_counts["held_out"]
+            and trained.is_file()
+        )
+        if matches:
+            dest = args.run_root / exp.run_id / "checkpoints" / "last.pt"
+            return _copy_checkpoint(trained, dest), summary
+        raise RuntimeError(f"{exp.eid} resume artifacts do not match this recipe")
     with run_trace(exp.run_id, "local_preference.train", run_dir=out_dir) as trace:
+        started = time.perf_counter()
         summary = train_local_from_paths(
             ckpt,
             args.decision_events,
@@ -1863,11 +2002,36 @@ def _maybe_local_preference(
             target_grace=1.0,
             balanced=bool(exp.local_preference_balanced),
             seed=args.seed,
+            validation_every=args.local_pref_validation_every,
+            guarded_selection=bool(exp.local_preference_guarded_selection),
+            guarded_updates=bool(exp.local_preference_guarded_updates),
+            guard_backtrack_steps=int(exp.local_preference_guard_backtrack_steps),
+            guard_by_decision_kind=bool(
+                exp.local_preference_guard_by_decision_kind
+            ),
+            block_by_decision_kind=bool(
+                exp.local_preference_block_by_decision_kind
+            ),
+            gradient_combination=exp.local_preference_gradient_combination,
+            optimizer_name=exp.local_preference_optimizer,
+        )
+        summary["duration_seconds"] = time.perf_counter() - started
+        selection = summary.get("validation_selection") or {}
+        summary["validation_trials"] = sum(
+            len(item.get("trials") or [])
+            for item in selection.get("history") or []
+        )
+        summary["validation_event_forwards"] = (
+            int(summary["validation_trials"])
+            * int(summary.get("held_out_events") or 0)
+        )
+        summary["validation_batches"] = int(summary["validation_trials"]) * int(
+            summary.get("validation_batch_groups") or 0
         )
         summary["trace_id"] = trace.trace_id
         summary["traceparent"] = trace.traceparent
         summary["trace_bundle"] = trace.bundle.as_posix()
-        (out_dir / "local_preference_summary.json").write_text(
+        summary_path.write_text(
             json.dumps(summary, indent=2) + "\n", encoding="utf-8"
         )
     trained = Path(summary["checkpoint"])
@@ -2169,6 +2333,23 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
             exp.local_preference_reference_tether
         ),
         "local_preference_balanced": exp.local_preference_balanced,
+        "local_preference_guarded_selection": (
+            exp.local_preference_guarded_selection
+        ),
+        "local_preference_guarded_updates": exp.local_preference_guarded_updates,
+        "local_preference_guard_backtrack_steps": (
+            exp.local_preference_guard_backtrack_steps
+        ),
+        "local_preference_guard_by_decision_kind": (
+            exp.local_preference_guard_by_decision_kind
+        ),
+        "local_preference_block_by_decision_kind": (
+            exp.local_preference_block_by_decision_kind
+        ),
+        "local_preference_gradient_combination": (
+            exp.local_preference_gradient_combination
+        ),
+        "local_preference_optimizer": exp.local_preference_optimizer,
         "local_preference_summary": local_preference_summary,
         **_summarize_board(board),
     }
@@ -2228,6 +2409,12 @@ def main(argv: list[str] | None = None) -> int:
         help="DecisionEventV1 JSONL required by V10 intervention rows.",
     )
     parser.add_argument("--local-pref-lr", type=float, default=5e-5)
+    parser.add_argument("--local-pref-validation-every", type=int, default=5)
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Reuse completed, recipe-matching local preference stage artifacts.",
+    )
     parser.add_argument("--rl-steps", type=int, default=30)
     parser.add_argument("--rl-group-size", type=int, default=4)
     parser.add_argument("--rl-readiness-report", type=Path, default=None)
@@ -2320,7 +2507,7 @@ def main(argv: list[str] | None = None) -> int:
         default="v3",
         help="Experiment set through v10 local-decision rows E248-E254,"
         " v11 representation rows E255-E257, v12 choice-codec row E262,"
-        " v14 decode-distortion row E263, v15 pseudo-embedding row E264,"
+        " v14 decode-distortion row E277, v15 pseudo-embedding row E278,"
         " or all.",
     )
     parser.add_argument(

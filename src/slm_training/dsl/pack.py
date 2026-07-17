@@ -1,156 +1,305 @@
-"""F1 (SLM-34): the DSL pack contract.
+"""F1 (SLM-34): the DSL-pack contract.
 
-A **DSL pack** bundles everything the training / decode stack needs to target
-one DSL: ``{grammar, canonicalizer, validity oracle, typed-AST corpus
-generator, scope rules, placeholder policy, language-contract id}``. The
-grammar-backend protocol (`dsl/grammar/backends`) already carries the
-parse / validate / serialize / stream-check / token surfaces and is pluggable
-via ``SLM_GRAMMAR_DSL``; the pack contract composes a backend with the five
-responsibilities that were previously OpenUI-hardwired module imports, so a
-second DSL (F2 GraphQL, F3 patterns DSL, F4 nomenclatures, G3 latent packs)
-is a *registration*, not a codebase fork.
+A **DSL pack** bundles everything the training stack needs to treat a language
+as a first-class target, mirroring the pack-contract table in
+``docs/design/design-patterns-dsl.md`` field-for-field:
 
-Layering note: corpus generation lives in ``harnesses/train_data`` (above this
-package), so packs hold **lazy providers** — dotted-path strings resolved on
-first use — rather than direct imports. Every other member is a plain callable
-on strings, which keeps the contract trivially testable.
+==================  ========================================================
+Pack slot           Field on :class:`DslPack`
+==================  ========================================================
+grammar             ``backend`` (:class:`GrammarBackend`: parse / serialize /
+                    schema / structural tokens / stream checks)
+validity oracle     ``oracle`` (record- or source-level verdict; for OpenUI
+                    the G0–G12 gate stack in ``data/verify/stack.py``)
+typed-AST generator ``corpus_generator`` (factory returning a seeded
+                    coverage-guided generator)
+canonicalizer       ``canonicalize`` (confluent codec round-trip, NOT an
+                    e-graph — see ``dsl/canonicalize.py``)
+scope rules         ``scope_extractor`` (AST-derived scope slices)
+placeholder policy  ``placeholder_policy`` (:class:`PlaceholderPolicy`)
+==================  ========================================================
 
-Deliberately *not* moved: the existing OpenUI component owners
-(``dsl/canonicalize.py``, ``dsl/parser.py``, ``dsl/placeholders.py``,
-``dsl/language_contract.py``, ``harnesses/train_data/scope_corpus.py``) keep
-their paths — the contract wires them by reference. The unblocking value for
-F2/G3 is the explicit interface; relocating stable owners would churn every
-import site for zero behavioral gain (see `docs/repository-organization.md`:
-extend the existing owner).
+Plus honesty metadata required by F3/F4:
+
+* ``reward_label`` — what the oracle actually measures (e.g.
+  ``"well_formed_not_behavioral"``): rewards derived from the oracle must be
+  labeled with this string, never presented as behavioral correctness.
+* Slots are :class:`Protocol`-typed callables/objects, not concrete Lark
+  paths, so the F4 ontology variant (grammar → graph-walk constraint,
+  oracle → ontology reasoner) can fill the same slots.
+
+Packs may be **partial**: a slot a language genuinely does not provide yet is
+``None``, and :meth:`DslPack.require` fails closed with a message naming the
+pack and the missing slot. ``toy-layout`` is the shipped partial example.
+
+The registry here does not duplicate the grammar-backend registry
+(``dsl/grammar/backends``): the ``backend`` slot references it, and pack
+resolution follows the same ``SLM_GRAMMAR_DSL`` / ``active_dsl()`` convention.
 """
 
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
-from importlib import import_module
-from typing import Any, Callable
+import re
+from dataclasses import dataclass, fields
+from typing import Any, Callable, Iterable, Mapping, Protocol, Sequence, runtime_checkable
 
 from slm_training.dsl.grammar.backends import GrammarBackend, get_backend
+from slm_training.dsl.placeholders import (
+    CONTENT_PROPS,
+    PLACEHOLDER_RE,
+    extract_placeholders,
+    is_placeholder,
+)
 
 
-def _resolve(dotted: str) -> Callable[..., Any]:
-    """Import ``pkg.module:attr`` lazily (layering-safe provider)."""
-    module_name, _, attr = dotted.partition(":")
-    if not module_name or not attr:
-        raise ValueError(f"provider must be 'module:attr', got {dotted!r}")
-    obj = import_module(module_name)
-    for part in attr.split("."):
-        obj = getattr(obj, part)
-    if not callable(obj):
-        raise TypeError(f"provider {dotted!r} resolved to non-callable {obj!r}")
-    return obj
+class PackSlotUnavailable(NotImplementedError):
+    """A pack was asked for a slot it does not (yet) provide."""
 
 
-@dataclass(frozen=True)
-class ScopeRules:
-    """How the DSL binds and references symbols.
+@runtime_checkable
+class Canonicalizer(Protocol):
+    def __call__(self, source: str) -> str: ...
 
-    ``bind_encodings`` are the reference representations the codec supports
-    (OpenUI: absolute ``<BIND_j>`` and C1 relative ``<BINDDEF>``/``<BINDREL_±k>``);
-    ``reference_legality`` names the component that enforces scope legality —
-    per the program's externalization principle this must be a verifier, not
-    the model.
-    """
 
-    bind_encodings: tuple[str, ...]
-    reference_legality: str
-    scope_families_provider: str | None = None
+@runtime_checkable
+class ValidityOracle(Protocol):
+    """Record- or source-level validity verdict (see ``reward_label``)."""
 
-    def scope_families(self) -> tuple[str, ...]:
-        if not self.scope_families_provider:
-            return ()
-        return tuple(_resolve(self.scope_families_provider)())
+    def __call__(self, record: Any, /) -> Any: ...
 
 
 @dataclass(frozen=True)
 class PlaceholderPolicy:
-    """Content routing: identity semantics stay out of the model's scope."""
+    """How user content is kept out of the program surface.
 
-    is_placeholder: Callable[[str], bool]
-    extract: Callable[[str], list[str]]
-    merge: Callable[..., list[str]]
+    ``slot_contract`` maps a source (plus optional declared inventory) to the
+    ordered placeholder inventory used by codec slot pointers.
+    """
+
+    placeholder_re: re.Pattern[str]
+    content_props: frozenset[str]
+    slot_contract: Callable[..., tuple[str, ...]]
+    is_placeholder: Callable[[str], bool] = is_placeholder
+    extract: Callable[[str], list[str]] = extract_placeholders
 
 
 @dataclass(frozen=True)
 class DslPack:
-    """One DSL, fully described for the training / decode stack."""
+    """One language's full pack. ``None`` slots are honest gaps — use
+    :meth:`require` to fail closed with a clear message."""
 
-    id: str
-    grammar: str  # grammar-backend id (dsl/grammar/backends registry)
-    canonicalize: Callable[[str], str]
-    canonical_fingerprint: Callable[[str], str]
-    validity_oracle: Callable[[str], Any]  # raises on invalid source
-    scope_rules: ScopeRules
+    pack_id: str
+    backend: GrammarBackend
     placeholder_policy: PlaceholderPolicy
-    contract_id: Callable[[], str]
-    # Lazy 'module:attr' providers (resolve above-layer components on use).
-    corpus_generator_provider: str | None = None
-    extras: dict[str, str] = field(default_factory=dict)
+    reward_label: str
+    canonicalize: Canonicalizer | None = None
+    oracle: ValidityOracle | None = None
+    corpus_generator: Callable[..., Any] | None = None
+    scope_extractor: Callable[..., list[Any]] | None = None
+    prop_order: Callable[[], Mapping[str, Sequence[str]]] | None = None
+    incremental_engine: Callable[[], Any] | None = None
 
-    def backend(self) -> GrammarBackend:
-        return get_backend(self.grammar)
+    def filled_slots(self) -> tuple[str, ...]:
+        return tuple(
+            f.name
+            for f in fields(self)
+            if getattr(self, f.name) is not None
+        )
 
-    def corpus_generator(self) -> Callable[..., Any]:
-        if not self.corpus_generator_provider:
-            raise LookupError(f"pack {self.id!r} declares no corpus generator")
-        return _resolve(self.corpus_generator_provider)
+    def require(self, slot: str) -> Any:
+        """Return the named slot, failing closed when the pack omits it."""
+        if slot not in {f.name for f in fields(self)}:
+            raise AttributeError(f"unknown pack slot {slot!r}")
+        value = getattr(self, slot)
+        if value is None:
+            raise PackSlotUnavailable(
+                f"DSL pack {self.pack_id!r} does not provide slot {slot!r}; "
+                f"filled slots: {sorted(self.filled_slots())}"
+            )
+        return value
 
 
-_REGISTRY: dict[str, DslPack] = {}
-_DEFAULT_ID = "openui"
+_PACKS: dict[str, DslPack] = {}
+# Backend ids that resolve to the openui pack (same language, different parser).
+_ALIASES = {
+    "openui-lark": "openui",
+    "openui-langcore": "openui",
+    "lark-openui": "openui",
+    "default": "openui",
+    "auto": "openui",
+}
 
 
 def register_pack(pack: DslPack) -> DslPack:
-    _REGISTRY[pack.id] = pack
+    _PACKS[pack.pack_id] = pack
     return pack
 
 
-def list_packs() -> list[DslPack]:
-    _ensure_builtins()
-    return list(_REGISTRY.values())
+def list_packs() -> list[str]:
+    _ensure_builtin_packs()
+    return sorted(_PACKS)
 
 
-def available_packs() -> list[str]:
-    return [pack.id for pack in list_packs()]
+def _active_dsl() -> str:
+    try:
+        from slm_training.models.grammar import active_dsl
+
+        return active_dsl()
+    except Exception:  # noqa: BLE001 - torch-free contexts fall back to env
+        return os.getenv("SLM_GRAMMAR_DSL") or "openui"
 
 
 def get_pack(dsl: str | None = None) -> DslPack:
-    """Resolve a pack: explicit id > ``SLM_DSL_PACK`` > ``SLM_GRAMMAR_DSL``."""
-    _ensure_builtins()
-    key = (
-        dsl
-        or os.getenv("SLM_DSL_PACK")
-        or os.getenv("SLM_GRAMMAR_DSL")
-        or _DEFAULT_ID
-    ).strip().lower()
-    if key in {"default", "auto"}:
-        key = _DEFAULT_ID
-    if key not in _REGISTRY:
-        raise KeyError(f"unknown DSL pack {dsl!r}; known={sorted(_REGISTRY)}")
-    return _REGISTRY[key]
+    """Resolve a pack by id, following ``SLM_GRAMMAR_DSL`` when ``dsl`` is None."""
+    _ensure_builtin_packs()
+    key = (dsl or _active_dsl()).strip().lower()
+    key = _ALIASES.get(key, key)
+    if key not in _PACKS:
+        raise KeyError(f"unknown DSL pack {dsl!r}; known={sorted(_PACKS)}")
+    return _PACKS[key]
 
 
-def _ensure_builtins() -> None:
-    if _REGISTRY:
+# --------------------------------------------------------------------------
+# Builtin packs. Slot bodies import lazily to keep dsl/ importable without
+# torch and to avoid data/ <-> dsl/ import cycles.
+# --------------------------------------------------------------------------
+
+
+def _openui_canonicalize(source: str) -> str:
+    from slm_training.dsl.canonicalize import canonicalize
+
+    return canonicalize(source, dsl="openui")
+
+
+def _openui_oracle(record: Any, context: Any = None) -> Any:
+    """G0-G12 gate-stack verdict. Accepts an ExampleRecord or raw source."""
+    from slm_training.data.verify import verify_record
+    from slm_training.dsl.schema import ExampleRecord
+
+    if isinstance(record, str):
+        record = ExampleRecord(
+            id="pack-oracle",
+            prompt="pack oracle probe",
+            openui=record,
+            placeholders=extract_placeholders(record),
+            split="train",
+            source="fixture",
+        )
+    return verify_record(record, context)
+
+
+def _openui_generator(config: Any = None, *, seed: int = 0) -> Any:
+    from slm_training.data.progspec.generate import GeneratorConfig, ProgramGenerator
+
+    return ProgramGenerator(config or GeneratorConfig(), seed=seed)
+
+
+def _openui_scope_extractor(source: str, **kwargs: Any) -> list[Any]:
+    from slm_training.data.scope_extract import extract_scope_slices
+
+    return extract_scope_slices(source, dsl="openui", **kwargs)
+
+
+def _openui_prop_order() -> Mapping[str, Sequence[str]]:
+    from slm_training.dsl.production_codec import _prop_order
+
+    return _prop_order("openui")
+
+
+def _openui_engine() -> Any:
+    from slm_training.dsl.grammar.fastpath.engine import OpenUIIncrementalEngine
+
+    return OpenUIIncrementalEngine()
+
+
+def _openui_slot_contract(
+    source: str, *, declared: Iterable[str] | None = None
+) -> tuple[str, ...]:
+    from slm_training.data.contract import canonical_slot_contract
+
+    return canonical_slot_contract(source, declared=declared)
+
+
+def _toy_layout_scope_extractor(source: str, **kwargs: Any) -> list[Any]:
+    from slm_training.data.scope_extract import extract_scope_slices
+
+    return extract_scope_slices(source, dsl="toy-layout", **kwargs)
+
+
+def _toy_layout_prop_order() -> Mapping[str, Sequence[str]]:
+    backend = get_backend("toy-layout")
+    order = getattr(backend, "prop_order", None)
+    if not callable(order):  # pragma: no cover - LarkFileBackend always has it
+        raise PackSlotUnavailable("toy-layout backend exposes no prop order")
+    return order()
+
+
+def _toy_layout_engine() -> Any:
+    from slm_training.dsl.grammar.backends.types import GRAMMARS_DIR
+    from slm_training.dsl.grammar.fastpath.engine import OpenUIIncrementalEngine
+
+    return OpenUIIncrementalEngine(GRAMMARS_DIR / "toy_layout.lark")
+
+
+def _ensure_builtin_packs() -> None:
+    if _PACKS:
         return
-    from slm_training.dsl.packs.graphql import build_graphql_pack
-    from slm_training.dsl.packs.openui import build_openui_pack
+    shared_policy = PlaceholderPolicy(
+        placeholder_re=PLACEHOLDER_RE,
+        content_props=CONTENT_PROPS,
+        slot_contract=_openui_slot_contract,
+    )
+    register_pack(
+        DslPack(
+            pack_id="openui",
+            backend=get_backend("openui"),
+            placeholder_policy=shared_policy,
+            # F3 honesty: the G0-G12 stack proves well-formedness (grammar,
+            # schema, references, canonical idempotence) — NOT behavior.
+            # Runtime/behavior gates only fire when evidence is supplied.
+            reward_label="well_formed_not_behavioral",
+            canonicalize=_openui_canonicalize,
+            oracle=_openui_oracle,
+            corpus_generator=_openui_generator,
+            scope_extractor=_openui_scope_extractor,
+            prop_order=_openui_prop_order,
+            incremental_engine=_openui_engine,
+        )
+    )
+    # Partial pack: toy-layout genuinely fills grammar, scope rules,
+    # placeholder policy, prop order, and the incremental decode engine.
+    # It has no canonicalizer, oracle, or typed-AST generator yet — those
+    # slots fail closed via DslPack.require.
+    register_pack(
+        DslPack(
+            pack_id="toy-layout",
+            backend=get_backend("toy-layout"),
+            placeholder_policy=shared_policy,
+            reward_label="parse_only",
+            scope_extractor=_toy_layout_scope_extractor,
+            prop_order=_toy_layout_prop_order,
+            incremental_engine=_toy_layout_engine,
+        )
+    )
+    # F2 (SLM-43): GraphQL — graphql-js oracle, the schema IS the symbol table.
+    # Registered even when the Node bridge is absent; backend.available()
+    # reports the bridge state and oracle/canonicalize fail at call time, not
+    # registration (mirrors toy-layout's partial-pack pattern).
+    try:
+        from slm_training.dsl.graphql_pack import build_graphql_pack
 
-    register_pack(build_openui_pack())
-    register_pack(build_graphql_pack())
+        register_pack(build_graphql_pack())
+    except Exception:  # noqa: BLE001 - graphql pack is optional
+        pass
 
 
 __all__ = [
+    "Canonicalizer",
     "DslPack",
+    "PackSlotUnavailable",
     "PlaceholderPolicy",
-    "ScopeRules",
-    "available_packs",
+    "ValidityOracle",
     "get_pack",
     "list_packs",
     "register_pack",

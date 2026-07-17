@@ -1,4 +1,4 @@
-# E264 — C2 dynamic pseudo-embeddings for symbol tokens (2026-07-17)
+# E278 — C2 dynamic pseudo-embeddings for symbol tokens (2026-07-17)
 
 Representation lever + fixture-grade matched row, not a train/ship run. Code:
 [`models/twotower.py`](../../src/slm_training/models/twotower.py)
@@ -45,7 +45,7 @@ the denoiser stack — diagnostic only, no threshold, no gate.
 
 ## Recipe
 
-Row E264 (`--matrix v13`): scratch-control train, fixture v1 corpus, 200 CPU
+Row E278 (`--matrix v13`): scratch-control train, fixture v1 corpus, 200 CPU
 steps, lr 3e-4, seed 0, suites smoke 3 / held_out 5 / adversarial 4 / ood 4 /
 rico_held 0 — matched against the recorded E255 control on everything but
 `runtime_symbol_features` (registration test enforces the matched-pair
@@ -54,16 +54,16 @@ property). `NODE_OPTIONS` overridden (session env poisons the OpenUI bridge).
 ## Results (fixture-grade, CPU, 2026-07-17)
 
 JSON: [quality-matrix-results-iter-v15-c2-20260717.json](quality-matrix-results-iter-v15-c2-20260717.json);
-binding probe: [binding-consistency-e264-20260717.json](binding-consistency-e264-20260717.json).
+binding probe: [binding-consistency-e278-20260717.json](binding-consistency-e278-20260717.json).
 
-The first E264 attempt crashed with `runtime symbol feature batch 4 != 5` —
+The first E278 attempt crashed with `runtime symbol feature batch 4 != 5` —
 the stale-feature leak PR #275 diagnosed (features set for a training batch
-outliving it into a differently-sized eval forward). E264 is the first
+outliving it into a differently-sized eval forward). E278 is the first
 merged-lineage row to *activate* runtime features during training, so the
 latent defect fired immediately; fixed at the source (`training_loss` clears
 features in a `finally`), complementary to #275's loss-suite-entry fix.
 
-| Suite (n) | structural similarity E255 → E264 |
+| Suite (n) | structural similarity E255 → E278 |
 | --- | ---: |
 | smoke (3) | 0.300 → 0.189 |
 | held_out (5) | 0.323 → 0.261 |
@@ -76,7 +76,7 @@ help and mildly depress structural similarity — an honest negative at
 fixture scale, consistent with the pool rows having 200 steps of gradient
 while composed byte vectors start as untrained averages.
 
-**Binding-consistency probe** (trained E264 checkpoint, 6 surfaces across
+**Binding-consistency probe** (trained E278 checkpoint, 6 surfaces across
 fixture records): same-surface hidden cosine **0.9998** vs cross-surface
 **0.9679** — binding margin **+0.032**. The exact input-level consistency
 replace mode guarantees survives the trained denoiser stack: same symbol →

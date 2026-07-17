@@ -84,7 +84,7 @@ def test_meta_trace_kinds_share_one_store(tmp_path: Path) -> None:
         store,
         {
             "id": "E259",
-            "run_id": "qx_e263_a2_asap_decode",
+            "run_id": "qx_e277_a2_asap_decode",
             "pass": False,
             "failures": ["smoke:meaningful_program_rate actual=0.0 need>=0.66"],
             "suites": {"smoke": {"n": 3, "parse_rate": 0.0}},

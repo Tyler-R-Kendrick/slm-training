@@ -2,11 +2,36 @@ from __future__ import annotations
 
 import json
 
+import slm_training.evals.agentv as agentv_module
+
 from slm_training.evals.agentv import (
+    _agentv_runtime,
     model_ship_gate_cases,
     publish_agentv_evaluation,
     publish_model_evaluation,
 )
+
+
+def test_agentv_runtime_uses_git_common_checkout_for_worktree_sdk(
+    tmp_path, monkeypatch
+) -> None:
+    common_root = tmp_path / "repo"
+    worktree = tmp_path / "worktree"
+    runner = common_root / "scripts/run_agentv_eval.mjs"
+    sdk = common_root / "node_modules/@agentv/core/package.json"
+    runner.parent.mkdir(parents=True)
+    sdk.parent.mkdir(parents=True)
+    runner.write_text("// runner")
+    sdk.write_text("{}")
+    worktree.mkdir()
+    monkeypatch.delenv("AGENTV_RUNNER", raising=False)
+    monkeypatch.setattr(
+        agentv_module,
+        "checkout_roots",
+        lambda root: (root, common_root),
+    )
+
+    assert _agentv_runtime(worktree) == (runner, common_root)
 
 
 def test_model_ship_cases_fail_closed_on_missing_suites() -> None:

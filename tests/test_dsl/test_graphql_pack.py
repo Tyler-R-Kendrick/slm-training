@@ -1,11 +1,16 @@
-"""F2 (SLM-43): GraphQL DSL pack — the contract's second instance."""
+"""F2 (SLM-43): GraphQL DSL pack — the contract's second instance.
+
+Fits the canonical DslPack slot contract (main's F1/#290): the backend +
+graphql-js oracle register even without the Node bridge; oracle/canonicalize
+calls need the sidecar.
+"""
 
 from __future__ import annotations
 
 import pytest
 
 from slm_training.dsl.grammar.backends.graphql_js import bridge_available
-from slm_training.dsl.pack import available_packs, get_pack
+from slm_training.dsl.pack import get_pack, list_packs
 
 needs_bridge = pytest.mark.skipif(
     not bridge_available(),
@@ -18,45 +23,40 @@ VARIABLE_QUERY = "query($id: ID!) { post(id: $id) { title body } }"
 
 
 def test_graphql_pack_registers_without_bridge() -> None:
-    # Registration, resolution, contract id, and the placeholder policy are
-    # offline; only oracle/canonicalizer calls need the Node sidecar.
-    assert "graphql" in available_packs()
+    # Registration + slots are offline; only oracle/canonicalize need Node.
+    assert "graphql" in list_packs()
     pack = get_pack("graphql")
-    assert pack.grammar == "graphql"
-    cid = pack.contract_id()
-    assert cid.startswith("graphql-js-") and cid == pack.contract_id()
+    assert pack.pack_id == "graphql"
+    assert pack.reward_label == "well_formed_not_behavioral"
+    # The routed-content channel: GraphQL variables.
     policy = pack.placeholder_policy
     assert policy.is_placeholder("$id") and not policy.is_placeholder("id")
+    assert policy.slot_contract(VARIABLE_QUERY) == ("$id",)
     assert policy.extract(VARIABLE_QUERY) == ["$id"]
-    assert policy.merge(["$a"], ["$b", "$a"]) == ["$a", "$b"]
-    assert pack.scope_rules.bind_encodings == ("schema-symbol",)
-    assert "graphql-js validate" in pack.scope_rules.reference_legality
+    # Oracle + canonicalizer slots are filled; require() does not raise.
+    assert pack.require("oracle") is not None
+    assert pack.require("canonicalize") is not None
 
 
 @needs_bridge
 def test_graphql_oracle_enforces_schema_scope() -> None:
     pack = get_pack("graphql")
-    program = pack.validity_oracle(GOOD_QUERY)
+    program = pack.require("oracle")(GOOD_QUERY)
     assert program.serialized
-    # The schema is the symbol table: a field that does not exist on the
-    # parent type is a scope violation the oracle must reject.
+    # The schema is the symbol table: a field absent from the parent type is a
+    # scope violation the oracle must reject.
     with pytest.raises(Exception, match="nonexistentField"):
-        pack.validity_oracle(BAD_FIELD_QUERY)
+        pack.require("oracle")(BAD_FIELD_QUERY)
 
 
 @needs_bridge
 def test_graphql_canonicalizer_idempotent() -> None:
     pack = get_pack("graphql")
-    canonical = pack.canonicalize(GOOD_QUERY)
-    assert pack.canonicalize(canonical) == canonical
-    assert pack.canonical_fingerprint(GOOD_QUERY) == pack.canonical_fingerprint(
-        canonical
-    )
-    # Whitespace-insensitive normal form.
+    canonicalize = pack.require("canonicalize")
+    canonical = canonicalize(GOOD_QUERY)
+    assert canonicalize(canonical) == canonical
     reflowed = GOOD_QUERY.replace(" { ", " {\n").replace(" } ", "\n}\n")
-    assert pack.canonical_fingerprint(reflowed) == pack.canonical_fingerprint(
-        GOOD_QUERY
-    )
+    assert canonicalize(reflowed) == canonical
 
 
 @needs_bridge
@@ -76,16 +76,13 @@ def test_graphql_backend_stream_check_classifies_prefixes() -> None:
 @needs_bridge
 def test_graphql_generator_outputs_pass_the_packs_own_oracle() -> None:
     pack = get_pack("graphql")
-    build = pack.corpus_generator()
+    build = pack.require("corpus_generator")
     records = build(root_id="f2-fixture", depth=1)
     assert records, "generator produced no records"
-    # Typed generation: every record validates against the schema, and the
-    # canonical form is stable.
+    oracle = pack.require("oracle")
     for record in records:
-        program = pack.validity_oracle(record.openui)
+        program = oracle(record.openui)
         assert program.serialized
-        canonical = pack.canonicalize(record.openui)
-        assert pack.canonicalize(canonical) == canonical
     root_fields = {r.meta["root_field"] for r in records}
     assert {"posts", "post", "authors", "author"} <= root_fields
 
