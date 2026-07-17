@@ -124,6 +124,9 @@ Checkpoint remains the pre-remediation fixture-upsample scratch run (not retrain
   prompt-only evaluation recovers one meaningful adversarial program (0.25,
   AgentV 1/5, 14 failures), while the other four suites exactly match E294.
   This narrow signal warrants replication but does not support promotion.
+- E296 lowers dropout to 25% at the same seed. NLL improves, but the prompt-only
+  board exactly matches E294 (meaningful 0.0, AgentV 0/5, 17 failures), so
+  E295's isolated success is rate-specific and remains unreplicated.
 
 ## Re-eval commands
 

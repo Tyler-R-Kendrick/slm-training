@@ -1,0 +1,42 @@
+{
+  "iteration": "E296",
+  "date": "2026-07-17",
+  "run_id": "e296-choice-design-dropout25-r1",
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "design_md_dropout": 0.25,
+    "design_records": 480,
+    "design_records_dropped": 127,
+    "design_records_retained": 353,
+    "output_tokenizer": "choice",
+    "seed": 0,
+    "steps": 107,
+    "seen_prompt_tokens": 43969,
+    "seen_target_tokens": 5022,
+    "elapsed_wall_seconds": 32.963716331000796
+  },
+  "checkpoint": {
+    "sha256": "b3c4df4cca25905d1101ed8006f430a772a7228f894530ef98cb8fd8cfc1a1ed",
+    "bucket": null,
+    "sync_reason": "scratch diagnostic; local only"
+  },
+  "loss_suite": {
+    "complete": true,
+    "weighted_nll": 7.350332688225444,
+    "binding_nll": 8.110259706952743,
+    "structural_nll": 5.763257224786849,
+    "repair_nll": 7.899725294113159,
+    "schema_ood_nll": 7.179333487546669,
+    "broad_nll": 8.195953879882763,
+    "agentv": {"total": 1, "passed": 1, "execution_errors": 0}
+  },
+  "honest_evaluation": {
+    "run_id": "e296-choice-design-dropout25-honest-r1",
+    "meaningful_by_suite": {"smoke": 0.0, "held_out": 0.0, "adversarial": 0.0, "ood": 0.0, "rico_held": 0.0},
+    "matches_e294_headlines": true,
+    "gate_failure_count": 17,
+    "agentv": {"total": 5, "passed": 0, "failed": 5, "execution_errors": 0}
+  },
+  "verdict": "The 25% same-seed rate arm does not reproduce E295's adversarial success. No promotion; replicate 50% across seeds next."
+}

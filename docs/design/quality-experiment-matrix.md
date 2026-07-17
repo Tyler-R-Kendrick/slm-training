@@ -1742,6 +1742,15 @@ adversarial success is not broad transfer and the checkpoint is not promotable.
 See [the narrative](iter-e295-design-context-dropout-20260717.md) and
 [machine-readable results](choice-design-dropout-results-iter-e295-20260717.json).
 
+## E296 25% DESIGN-dropout rate check (CPU scratch, 2026-07-17)
+
+The same-seed 25% arm omits 127/480 DESIGN records. NLL improves to 7.3503,
+but frozen prompt-only metrics exactly match E294: meaningful 0.0, AgentV 0/5,
+17 failures. E295's single adversarial success is not a smooth rate response.
+No promotion; replicate 50% across seeds next. See
+[results](iter-e296-design-dropout-rate-20260717.md) and
+[JSON](choice-design-dropout-results-iter-e296-20260717.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
