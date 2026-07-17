@@ -16,6 +16,7 @@ from slm_training.harnesses.preference.local_decisions import (
 from slm_training.harnesses.preference.local_train import (
     _event_logits,
     _event_logits_many,
+    _project_conflicting_gradients,
     _guard_strata_regressions,
     evaluate_local_decisions,
     event_schedule,
@@ -114,6 +115,70 @@ def test_proposal_schedule_groups_events_by_decision_kind() -> None:
         ["component", "component"],
         ["grammar_comma"],
     ]
+
+
+def test_project_conflicting_gradients_removes_negative_component() -> None:
+    combined, report = _project_conflicting_gradients(
+        [[torch.tensor([1.0, 0.0])], [torch.tensor([-1.0, 1.0])]]
+    )
+
+    assert report == {
+        "task_count": 2,
+        "ordered_pair_count": 2,
+        "conflict_count": 2,
+        "projection_count": 2,
+    }
+    assert combined[0] is not None
+    assert torch.allclose(combined[0], torch.tensor([0.25, 0.75]))
+
+
+def test_projection_requires_stratified_guard() -> None:
+    with pytest.raises(ValueError, match="requires the decision-kind guard"):
+        train_local_decisions(
+            _model(), [_event()], objective="ce_margin", steps=1,
+            project_by_decision_kind=True,
+        )
+
+
+def test_train_projects_all_decision_kinds_before_guarding() -> None:
+    model = _model()
+    first = _event(
+        good=(model.tokenizer.eos_id,),
+        bad=(model.tokenizer.mask_id,),
+        group="first",
+    )
+    second = replace(
+        first,
+        event_id="second",
+        group_id="second",
+        decision_kind="grammar_comma",
+    )
+    held_group = "held"
+    while split_for_group(held_group) != "held_out":
+        held_group += "x"
+    held = replace(
+        first, event_id="held", group_id=held_group, split="held_out"
+    )
+
+    summary = train_local_decisions(
+        model,
+        [first, second],
+        objective="ce_margin",
+        steps=1,
+        validation_events=[held],
+        guarded_updates=True,
+        guard_backtrack_steps=0,
+        guard_by_decision_kind=True,
+        project_by_decision_kind=True,
+    )
+
+    assert summary["project_by_decision_kind"] is True
+    assert summary["gradient_projection"]["task_count"] == 2
+    assert summary["gradient_projection"]["ordered_pair_count"] == 2
+    assert summary["decision_kind_steps"] == {
+        "component": 1,
+        "grammar_comma": 1,
+    }
 
 
 def test_single_objective_filters_set_valued_events() -> None:
