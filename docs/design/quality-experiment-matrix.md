@@ -1573,6 +1573,17 @@ records and preference events are committed and visible to the training-data
 API. No model training ran. Full evidence:
 [iter-e283-signature-support-repair-20260717.md](iter-e283-signature-support-repair-20260717.md).
 
+E284 reran E276's frozen-parent legal-conditioned, unit-normalized profile on
+the admitted E283 corpus. The kind-level train direction still has common
+descent across all 63 active train objectives, but it opposes 35 held-out
+objectives across 13 exact decision signatures. Only 20/26 held-out objective
+signatures have an exact train counterpart; six are absent and one additional
+signature has a train-count deficit. Stable grammar-state support is therefore
+necessary but insufficient when sampled judged bad-token sets change the FTPO
+objective. No training ran. Profile at exact decision-signature train strata
+next; do not add token/component cases or increase duration. Full evidence:
+[iter-e284-signature-support-profile-20260717.md](iter-e284-signature-support-profile-20260717.md).
+
 ## V16 C3 corpus-mined macro tokens (fixture-run 2026-07-17)
 
 Track C3 (Stitch [arXiv:2211.16605](https://arxiv.org/abs/2211.16605) /
