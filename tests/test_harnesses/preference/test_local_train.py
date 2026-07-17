@@ -282,6 +282,15 @@ def test_uncertified_mgda_bypasses_optimizer_and_guard_trials(monkeypatch) -> No
     )
 
 
+def test_local_training_records_sgd_optimizer() -> None:
+    model = _model()
+    summary = train_local_decisions(
+        model, [_event()], objective="ce_margin", steps=1, optimizer_name="sgd"
+    )
+
+    assert summary["optimizer"] == "sgd"
+
+
 def test_single_objective_filters_set_valued_events() -> None:
     model = _model()
     single = _event(
