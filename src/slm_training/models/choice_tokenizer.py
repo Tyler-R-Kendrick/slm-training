@@ -20,9 +20,11 @@ coverage for a stable loss space; see
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from dataclasses import dataclass, field
+from functools import lru_cache
 from pathlib import Path
-from typing import Iterable
+from typing import Any, Iterable
 
 from slm_training.dsl.lang_core import ParseError
 from slm_training.dsl.production_codec import (
@@ -144,6 +146,27 @@ def _grammar_names() -> tuple[str, ...]:
     for props in _prop_order().values():
         names.update(props)
     return tuple(sorted(names))
+
+
+@lru_cache(maxsize=1)
+def _component_contracts() -> dict[str, tuple[tuple[dict[str, Any], ...], int]]:
+    """Positional component contracts from the pinned OpenUI JSON schema."""
+    from slm_training.dsl.lang_core import library_schema
+
+    schema = library_schema()
+    definitions = dict(schema.get("$defs") or {})
+    contracts: dict[str, tuple[tuple[dict[str, Any], ...], int]] = {}
+    for component, props in _prop_order().items():
+        definition = dict(definitions.get(component) or {})
+        properties = dict(definition.get("properties") or {})
+        positional = tuple(dict(properties.get(name) or {}) for name in props)
+        required = set(definition.get("required") or ())
+        required_args = max(
+            (index + 1 for index, name in enumerate(props) if name in required),
+            default=0,
+        )
+        contracts[component] = (positional, required_args)
+    return contracts
 
 
 @dataclass
@@ -471,6 +494,344 @@ class ChoiceTokenizer:
         )
 
 
+@dataclass
+class _ChoiceFrame:
+    kind: str
+    expr_type: str
+    close: str | None = None
+    remaining: int = 0
+    phase: str = ""
+    schemas: tuple[dict[str, Any], ...] = ()
+    required_args: int = 0
+    arg_index: int = 0
+
+
+@dataclass
+class ChoiceDecodeState:
+    """Grammar-derived pushdown state for choice-codec generation."""
+
+    tokenizer: ChoiceTokenizer
+    slot_count: int = 0
+    mode: str | None = None
+    frames: list[_ChoiceFrame] = field(default_factory=list)
+    section_types: list[str] = field(default_factory=list)
+    current_marker: str | None = None
+    valid_root_seen: bool = False
+    literal_frame: str | None = None
+    literal_size: int = 0
+    literal_is_object_key: bool = False
+
+    def clone(self) -> ChoiceDecodeState:
+        return ChoiceDecodeState(
+            tokenizer=self.tokenizer,
+            slot_count=self.slot_count,
+            mode=self.mode,
+            frames=deepcopy(self.frames),
+            section_types=list(self.section_types),
+            current_marker=self.current_marker,
+            valid_root_seen=self.valid_root_seen,
+            literal_frame=self.literal_frame,
+            literal_size=self.literal_size,
+            literal_is_object_key=self.literal_is_object_key,
+        )
+
+    def can_end(self) -> bool:
+        if self.frames or self.literal_frame is not None:
+            return False
+        if self.mode == "structural":
+            return bool(
+                self.section_types
+                and self.section_types[-1].startswith("element:")
+            )
+        return self.mode == "v05" and self.valid_root_seen
+
+    @staticmethod
+    def _schema_accepts(schema: dict[str, Any], expr_type: str) -> bool:
+        if not schema:
+            return True
+        if "anyOf" in schema:
+            return any(
+                ChoiceDecodeState._schema_accepts(dict(option), expr_type)
+                for option in schema["anyOf"]
+            )
+        ref = str(schema.get("$ref") or "")
+        if ref.startswith("#/$defs/"):
+            return expr_type == f"element:{ref.rsplit('/', 1)[-1]}"
+        expected = schema.get("type")
+        if isinstance(expected, list):
+            return any(
+                ChoiceDecodeState._schema_accepts({"type": item}, expr_type)
+                for item in expected
+            )
+        if expected == "integer":
+            expected = "number"
+        return expected is None or expr_type in {str(expected), "any"}
+
+    def _complete_expr(self, expr_type: str) -> bool:
+        if not self.frames:
+            self.section_types.append(expr_type)
+            if self.mode == "v05":
+                if self.current_marker == "r=" and expr_type.startswith("element:"):
+                    self.valid_root_seen = True
+                self.current_marker = None
+            return True
+        frame = self.frames[-1]
+        if frame.kind == "fixed":
+            frame.remaining -= 1
+            if frame.remaining == 0:
+                self.frames.pop()
+                return self._complete_expr(frame.expr_type)
+            return True
+        elif frame.kind == "object":
+            frame.phase = "key"
+            return True
+        elif frame.kind == "component":
+            if frame.arg_index >= len(frame.schemas):
+                return False
+            if not self._schema_accepts(frame.schemas[frame.arg_index], expr_type):
+                return False
+            frame.arg_index += 1
+            return True
+        return True
+
+    def _reference_type(self, token: str) -> str | None:
+        try:
+            index = int(token[len(REF_PREFIX) :])
+        except ValueError:
+            return None
+        if index < 0 or index >= len(self.section_types):
+            return None
+        return self.section_types[index]
+
+    def _accept_expression_token(self, token: str) -> bool:
+        if token.startswith(OPEN_PREFIX):
+            component = token[len(OPEN_PREFIX) :]
+            contract = _component_contracts().get(component)
+            if contract is None:
+                return False
+            schemas, required_args = contract
+            self.frames.append(
+                _ChoiceFrame(
+                    "component",
+                    f"element:{component}",
+                    close=CLOSE,
+                    schemas=schemas,
+                    required_args=required_args,
+                )
+            )
+            return True
+        if token.startswith(BUILTIN_PREFIX):
+            self.frames.append(_ChoiceFrame("variadic", "any", close=CLOSE))
+            return True
+        if token == LIST_OPEN:
+            self.frames.append(_ChoiceFrame("variadic", "array", close=LIST_CLOSE))
+            return True
+        if token == OBJ_OPEN:
+            self.frames.append(
+                _ChoiceFrame("object", "object", close=OBJ_CLOSE, phase="key")
+            )
+            return True
+        fixed_arity = {
+            TERNARY_OP: 3,
+            NOT_OP: 1,
+            NEG_OP: 1,
+            INDEX_OP: 2,
+        }
+        if token.startswith(OP_PREFIX):
+            fixed_arity[token] = 2
+        if token.startswith(MEMBER_PREFIX):
+            fixed_arity[token] = 1
+        if token in fixed_arity:
+            self.frames.append(
+                _ChoiceFrame("fixed", "other", remaining=fixed_arity[token])
+            )
+            return True
+        if token.startswith(REF_PREFIX):
+            expr_type = self._reference_type(token)
+            if expr_type is None:
+                return False
+            return self._complete_expr(expr_type)
+        if token.startswith(SLOT_PREFIX):
+            try:
+                if int(token[len(SLOT_PREFIX) :]) >= self.slot_count:
+                    return False
+            except ValueError:
+                return False
+            return self._complete_expr("string")
+        if token.startswith(STATE_REF_PREFIX):
+            return self._complete_expr("any")
+        if token.startswith((DIR_PREFIX, NAME_PREFIX)):
+            return self._complete_expr("string")
+        if token.startswith(LIT_PREFIX):
+            payload = token[len(LIT_PREFIX) :]
+            if payload.startswith('"'):
+                expr_type = "string"
+            elif payload in {"true", "false"}:
+                expr_type = "boolean"
+            elif payload == "null":
+                expr_type = "null"
+            else:
+                expr_type = "number"
+            return self._complete_expr(expr_type)
+        if token in {LIT_STR, LIT_NUM, NAME_STR, MEMBER_STR}:
+            self.literal_frame = token
+            self.literal_size = 0
+            self.literal_is_object_key = False
+            return True
+        return False
+
+    def advance_id(self, token_id: int) -> bool:
+        tok = self.tokenizer
+        token_id = int(token_id)
+        if token_id in {tok.pad_id, tok.bos_id, tok.mask_id, tok.unk_id}:
+            return False
+        token = tok.id_to_token.get(token_id, UNK)
+
+        if self.literal_frame is not None:
+            if token == LIT_END:
+                if self.literal_frame in {LIT_NUM, NAME_STR, MEMBER_STR} and not (
+                    self.literal_size
+                ):
+                    return False
+                marker = self.literal_frame
+                object_key = self.literal_is_object_key
+                self.literal_frame = None
+                self.literal_size = 0
+                self.literal_is_object_key = False
+                if object_key:
+                    self.frames[-1].phase = "value"
+                elif marker == MEMBER_STR:
+                    self.frames.append(_ChoiceFrame("fixed", "other", remaining=1))
+                else:
+                    return self._complete_expr(
+                        "string" if marker in {LIT_STR, NAME_STR} else "number"
+                    )
+                return True
+            if token.startswith(_BYTE_PREFIX):
+                self.literal_size += 1
+                return True
+            return False
+
+        if token_id == tok.eos_id:
+            return self.can_end()
+
+        if not self.frames:
+            if self.mode == "v05" and self.current_marker is None:
+                if token not in CHOICE_STMT_MARKERS:
+                    return False
+                self.current_marker = token
+                return True
+            if self.mode is None and token in CHOICE_STMT_MARKERS:
+                self.mode = "v05"
+                self.current_marker = token
+                return True
+            if self.mode is None:
+                self.mode = "structural"
+            return self._accept_expression_token(token)
+
+        frame = self.frames[-1]
+        if frame.kind in {"variadic", "component"} and token == frame.close:
+            if frame.kind == "component" and frame.arg_index < frame.required_args:
+                return False
+            self.frames.pop()
+            return self._complete_expr(frame.expr_type)
+        if frame.kind == "object" and frame.phase == "key":
+            if token == frame.close:
+                self.frames.pop()
+                self._complete_expr(frame.expr_type)
+                return True
+            if token.startswith(NAME_PREFIX):
+                frame.phase = "value"
+                return True
+            if token == NAME_STR:
+                self.literal_frame = token
+                self.literal_size = 0
+                self.literal_is_object_key = True
+                return True
+            return False
+        return self._accept_expression_token(token)
+
+    def _first_id(self, predicate: object) -> int:
+        fn = predicate
+        return min(
+            token_id
+            for token_id, token in self.tokenizer.id_to_token.items()
+            if callable(fn) and fn(token)
+        )
+
+    def _completion_id(self) -> int:
+        tok = self.tokenizer
+        if self.literal_frame is not None:
+            if self.literal_size or self.literal_frame == LIT_STR:
+                return tok.token_to_id[LIT_END]
+            return tok.token_to_id[_byte_token("0")]
+        if self.frames:
+            frame = self.frames[-1]
+            if frame.kind == "variadic":
+                return tok.token_to_id[str(frame.close)]
+            if frame.kind == "component":
+                if frame.arg_index >= frame.required_args:
+                    return tok.token_to_id[str(frame.close)]
+                schema = frame.schemas[frame.arg_index]
+                return self._minimal_schema_id(schema)
+            if frame.kind == "object" and frame.phase == "key":
+                return tok.token_to_id[str(frame.close)]
+            return tok.token_to_id[f"{LIT_PREFIX}null"]
+        if self.can_end():
+            return tok.eos_id
+        if self.mode == "v05" and self.current_marker is None:
+            return tok.token_to_id["r="]
+        return self._first_id(lambda token: token.startswith(OPEN_PREFIX))
+
+    def _minimal_schema_id(self, schema: dict[str, Any]) -> int:
+        tok = self.tokenizer
+        if "anyOf" in schema:
+            return self._minimal_schema_id(dict(schema["anyOf"][0]))
+        expected = schema.get("type")
+        if isinstance(expected, list):
+            expected = expected[0] if expected else None
+        if expected == "array":
+            return tok.token_to_id[LIST_OPEN]
+        if expected == "object":
+            return tok.token_to_id[OBJ_OPEN]
+        if expected == "string":
+            return tok.token_to_id[f'{LIT_PREFIX}""']
+        if expected in {"number", "integer"}:
+            return tok.token_to_id[f"{LIT_PREFIX}0"]
+        if expected == "boolean":
+            return tok.token_to_id[f"{LIT_PREFIX}false"]
+        ref = str(schema.get("$ref") or "")
+        if ref.startswith("#/$defs/"):
+            component = ref.rsplit("/", 1)[-1]
+            return tok.token_to_id[f"{OPEN_PREFIX}{component}"]
+        return tok.token_to_id[f"{LIT_PREFIX}null"]
+
+    def minimal_completion_length(self) -> int:
+        probe = self.clone()
+        for count in range(1, 1025):
+            token_id = probe._completion_id()
+            if not probe.advance_id(token_id):
+                return 1025
+            if token_id == probe.tokenizer.eos_id:
+                return count
+        return 1025
+
+    def allowed_ids(self, remaining_positions: int) -> set[int]:
+        allowed: set[int] = set()
+        for token_id in self.tokenizer.id_to_token:
+            probe = self.clone()
+            if not probe.advance_id(token_id):
+                continue
+            completion = (
+                0
+                if token_id == self.tokenizer.eos_id
+                else probe.minimal_completion_length()
+            )
+            if completion <= remaining_positions - 1:
+                allowed.add(token_id)
+        return allowed
+
+
 def is_choice_tokenizer(obj: object) -> bool:
     return isinstance(obj, ChoiceTokenizer)
 
@@ -479,5 +840,6 @@ __all__ = [
     "CHOICE_TOKENIZER_KIND",
     "CHOICE_TOKENIZER_VERSION",
     "ChoiceTokenizer",
+    "ChoiceDecodeState",
     "is_choice_tokenizer",
 ]

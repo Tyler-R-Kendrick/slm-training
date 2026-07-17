@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import slm_training.evals.agentv as agentv_module
 
@@ -76,6 +77,7 @@ def test_publish_agentv_evaluation_uses_sdk_and_jsonl(tmp_path) -> None:
     row = json.loads(spec.read_text(encoding="utf-8"))
     assert row["assert"] == [{"required": True, "type": "is-json"}]
     assert json.loads(row["input"])["agentv_pass"] is True
+    assert Path(published["spec"]).is_absolute()
     assert published["sdk"] == "@agentv/core"
     assert published["summary"]["passed"] == 1
     assert published["summary"]["executionErrors"] == 0

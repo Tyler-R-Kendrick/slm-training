@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
-import pytest
 from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
 
 from slm_training.data.leakage import (
     fingerprint_openui,
@@ -13,6 +15,7 @@ from slm_training.data.leakage import (
 from slm_training.dsl.schema import ExampleRecord, write_jsonl
 from slm_training.harnesses.model_build import ModelBuildConfig
 from slm_training.harnesses.model_build.eval_runner import (
+    _effective_evaluation_policy,
     _is_meaningful_program,
     component_type_recall,
     evaluate,
@@ -28,6 +31,41 @@ from slm_training.harnesses.model_build.ship_gates import (
 from slm_training.harnesses.preference import composite_reward
 from slm_training.dsl.production_codec import ProductionCodec
 from slm_training.models.decode_stats import DecodeStats
+
+
+def test_evaluation_policy_reports_loaded_checkpoint_settings() -> None:
+    config = ModelBuildConfig(
+        train_dir=Path("train"),
+        context_backend="hf",
+        grammar_constrained=None,
+        grammar_ltr_primary=None,
+    )
+    plugin = SimpleNamespace(
+        config=SimpleNamespace(
+            context_backend="scratch",
+            grammar_constrained=True,
+            grammar_ltr_primary=False,
+            grammar_ltr_repair=False,
+            compiler_decode_mode="off",
+            local_files_only=False,
+            schema_in_context=False,
+            slot_contract_in_context=False,
+            slot_contract_constrained_decode=False,
+            honest_slot_contract=False,
+            grammar_skip_exact_stream_probe=True,
+            grammar_verify_chosen_only=False,
+            grammar_top_k=16,
+            generate_max_attempts=3,
+            decode_timeout_seconds=None,
+            allow_unconstrained_fallback=True,
+            gen_steps=8,
+            grammar_ltr_max_tokens=256,
+        )
+    )
+    policy = _effective_evaluation_policy(config, plugin)
+    assert policy["context_backend"] == "scratch"
+    assert policy["grammar_constrained"] is True
+    assert policy["grammar_ltr_primary"] is False
 
 
 def test_structural_similarity_identical() -> None:

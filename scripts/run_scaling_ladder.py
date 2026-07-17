@@ -5,7 +5,16 @@ from __future__ import annotations
 
 import argparse
 import json
+import signal
+import time
 from pathlib import Path
+
+
+def _wall_minutes(value: str) -> float:
+    minutes = float(value)
+    if not 0 < minutes <= 5:
+        raise argparse.ArgumentTypeError("must be positive and at most 5")
+    return minutes
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -26,15 +35,17 @@ def main(argv: list[str] | None = None) -> int:
         "--representation",
         choices=("compositional", "lexer", "choice"),
         default="compositional",
-        help=(
-            "Output representation for all ladder points (B3 axis). 'choice' "
-            "is accepted for planning but fails closed until the trainer "
-            "supports the B1 choice-sequence codec."
-        ),
+        help="Output representation for all ladder points (B3 axis).",
     )
     parser.add_argument("--base-token-budget", type=int, default=2_000)
     parser.add_argument("--steps", type=int, default=50)
     parser.add_argument("--batch-size", type=int, default=2)
+    parser.add_argument(
+        "--max-wall-minutes",
+        type=_wall_minutes,
+        default=5.0,
+        help="Cumulative ladder-arm wall budget (default and maximum: 5).",
+    )
     parser.add_argument(
         "--capacity-arm",
         choices=("lexer", "choice"),
@@ -97,6 +108,23 @@ def main(argv: list[str] | None = None) -> int:
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
+    wall_started = time.monotonic()
+
+    def stop_on_budget(_signum, _frame) -> None:
+        stopped = {
+            "status": "stopped",
+            "reason": "wall_time_budget",
+            "max_wall_minutes": args.max_wall_minutes,
+            "elapsed_wall_seconds": time.monotonic() - wall_started,
+            "capacity_arm": args.capacity_arm,
+        }
+        (out / "ladder_stopped_wall_budget.json").write_text(
+            json.dumps(stopped, indent=2) + "\n", encoding="utf-8"
+        )
+        raise SystemExit(2)
+
+    previous_alarm = signal.signal(signal.SIGALRM, stop_on_budget)
+    signal.setitimer(signal.ITIMER_REAL, args.max_wall_minutes * 60)
     integrity = check_data_integrity(args.train_dir, args.test_dir)
 
     observations: list[ScalingObservation] = []
@@ -131,6 +159,9 @@ def main(argv: list[str] | None = None) -> int:
                     batch_size=args.batch_size,
                 )
                 cfg.device = args.device
+                cfg.max_wall_minutes = args.max_wall_minutes
+                cfg.eval_every = args.steps
+                cfg.eval_suites = "smoke,held_out,adversarial,ood,rico_held"
                 summary = train(cfg)
                 summaries.append(summary)
                 observations.append(
@@ -148,9 +179,16 @@ def main(argv: list[str] | None = None) -> int:
     from slm_training.dsl.schema import load_jsonl
     from slm_training.evals.semantic_bits import semantic_bits
 
-    bits_stream = {"compositional": "surface", "lexer": "surface", "choice": "choice"}[
-        args.representation
-    ]
+    representation = (
+        ladder.output_tokenizer
+        if ladder.output_tokenizer != "compositional"
+        else args.representation
+    )
+    bits_stream = {
+        "compositional": "surface",
+        "lexer": "surface",
+        "choice": "choice",
+    }[representation]
     train_records_path = Path(args.train_dir) / "records.jsonl"
     bits_report = (
         semantic_bits(load_jsonl(train_records_path), stream=bits_stream)
@@ -195,7 +233,7 @@ def main(argv: list[str] | None = None) -> int:
         eg_time_by_seed=eg_vals or None,
     )
 
-    if summaries:
+    if summaries and promotion.get("promotable"):
         best = min(
             summaries,
             key=lambda s: float(s.get("best_weighted_nll") or 1e9),
@@ -210,7 +248,9 @@ def main(argv: list[str] | None = None) -> int:
     payload = {
         "ladder_id": ladder.ladder_id,
         "track": ladder.track,
-        "representation": args.representation,
+        "representation": representation,
+        "max_wall_minutes": args.max_wall_minutes,
+        "elapsed_wall_seconds": time.monotonic() - wall_started,
         "n_points": len(ladder.points),
         "semantic_bits": bits_report,
         "params_per_bit_rows": params_per_bit_rows,
@@ -240,6 +280,8 @@ def main(argv: list[str] | None = None) -> int:
     (out / summary_name).write_text(
         json.dumps(payload, indent=2) + "\n", encoding="utf-8"
     )
+    signal.setitimer(signal.ITIMER_REAL, 0)
+    signal.signal(signal.SIGALRM, previous_alarm)
     print(json.dumps({"out": str(out), "fit": fit, "promotion": promotion}, indent=2))
     return 0 if promotion.get("promotable") or args.dry_fit else 1
 

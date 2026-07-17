@@ -13,7 +13,7 @@ from slm_training.harnesses.model_build.config import ModelBuildConfig
 # corpus-bit accounting, but training it requires twotower support for a
 # production-token output head — model_build_config_for_point fails closed
 # until that lands.
-TRAINABLE_REPRESENTATIONS: tuple[str, ...] = ("compositional", "lexer")
+TRAINABLE_REPRESENTATIONS: tuple[str, ...] = ("compositional", "lexer", "choice")
 
 
 @dataclass(frozen=True)

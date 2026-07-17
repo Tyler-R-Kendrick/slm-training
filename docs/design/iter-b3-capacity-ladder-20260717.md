@@ -85,3 +85,97 @@ runs both arms, nothing about quality. Parse is a meaningful primary for the cho
   fabricating one from untrained noise is prohibited.
 - The semantic-density separation (2.25× fewer target bits for choice) is real and
   scale-independent; it is the only quality-relevant claim this iteration supports.
+
+## Five-minute matched run — attempt 1 failed
+
+The first bounded lexer control used the committed 480-record
+`e218_schema_normalized_judge_v5` corpus, width 64, seed 0, batch 2, a
+5,000-target-token budget, a 200-step ceiling, and all five remediated eval
+suites (n=19). It reached step 20 / 1,944 target tokens with logged loss
+33.297, then failed while publishing the first loss-suite AgentV bundle.
+
+Root cause: the Python process wrote the AgentEvals JSONL relative to its
+isolated worktree, but the pinned AgentV SDK ran from the Git common checkout
+and resolved the same relative path there. The JSONL exists; the SDK result,
+train telemetry summary, checkpoint, and evaluation scoreboard do not. This is
+a failed infrastructure attempt, not model evidence.
+
+The shared AgentV publisher now resolves its artifact root to an absolute path
+before invoking the SDK. The matched run must restart from scratch after a new
+latest-main preflight; no missing checkpoint is inferred or reconstructed.
+
+Live machine-readable ledger:
+[iter-b3-capacity-ladder-5m-results-20260717.json](iter-b3-capacity-ladder-5m-results-20260717.json).
+
+## Five-minute matched run — lexer control complete
+
+The restarted lexer control completed the matched 5,000-target-token recipe in
+53 steps (5,004 tokens) and 165.28 seconds, below the configured five-minute
+whole-arm cap. It used CPU scratch context, width 64, seed 0, batch 2, the 480
+committed judge-approved E218 records, and all five remediated suites.
+
+| suite | n | parse | meaningful | fidelity | structure | reward |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| smoke | 3 | 0 | 0 | 0 | 0.0125 | 0 |
+| held_out | 5 | 0 | 0 | 0 | 0.1166 | 0 |
+| adversarial | 4 | 0 | 0 | 0 | 0.0346 | 0 |
+| ood | 4 | 0 | 0 | 0 | 0.0833 | 0 |
+| rico_held | 3 | 0 | 0 | 0 | 0.2528 | 0 |
+
+Weighted NLL fell to 13.1800, but it is not a substitute for the zero primary
+quality metrics. AgentV passed 0/5 rows. The local scratch checkpoint is
+therefore **not promotable and not ship**.
+
+The run also exposed a fail-open promotion policy: a single-rung ladder with
+only a passing integrity check was labeled promotable. The falsely named
+`promoted.pt` / `promoted.json` outputs were removed. Promotion now requires at
+least one quality, rank-stability, efficiency, or ship-gate evidence channel;
+integrity alone cannot promote.
+
+Telemetry identifies evaluation, not training, as the immediate throughput
+bottleneck: the final five-suite evaluation consumed 92.50% of measured time,
+loss suites 5.21%, and forward plus backward only 1.02%. This does not justify
+reducing suite coverage in the matched pair; both arms retain the same honest
+five-suite evaluation.
+
+## Five-minute matched run — choice arm complete
+
+The choice arm completed the same 5,000-target-token recipe in 107 steps
+(5,022 tokens) and 19.94 seconds. It has 308,554 trainable parameters versus
+294,666 for lexer because the output vocabularies differ. The corpus choice
+stream contains 37,802 bits across 8,795 decisions, versus 84,904 bits across
+15,780 lexer decisions: **2.246× fewer total bits** and **1.794× fewer
+decisions** for the same 480 programs.
+
+All five choice suites nevertheless scored parse, meaningful-program,
+fidelity, structure, and reward at 0. AgentV passed 0/5 rows. Every one of the
+19 predictions was the empty string and failed with `parser produced no root
+element`. The final weighted NLL was 7.0985, but its category inventory was
+incomplete (`binding` absent), and NLL values in different tokenizer spaces
+are not directly comparable.
+
+| matched result | lexer | choice |
+| --- | ---: | ---: |
+| target tokens consumed | 5,004 | 5,022 |
+| train steps | 53 | 107 |
+| whole-arm wall time | 165.28 s | 19.94 s |
+| parse / meaningful / fidelity | 0 / 0 / 0 | 0 / 0 / 0 |
+| AgentV | 0/5 | 0/5 |
+| promoted | no | no |
+
+**B3 verdict: no quality winner.** Both primary outcomes are tied at zero.
+Choice is 8.29× faster in this single matched run and has the predicted
+information-density advantage, but neither fact establishes quality.
+
+The empty choice predictions are a deterministic-layer defect signal, not an
+undertraining diagnosis. Choice decoding currently bypasses the surface DFA
+and relies only on a fail-closed final detokenizer; an early EOS therefore
+produces an empty program. The next iteration must add a choice-native legal
+decision state derived from the production codec, including forced selection
+when only one token is legal, then reevaluate this frozen checkpoint without
+retraining.
+
+E288 implemented that generalized production-codec/schema state and reevaluated
+the frozen checkpoint. Parse recovered from 0.0 to **1.0 on all five suites**
+without changing weights; meaningful-program rate and fidelity stayed 0.0.
+See [iter-e288-choice-native-gate-20260717.md](iter-e288-choice-native-gate-20260717.md).

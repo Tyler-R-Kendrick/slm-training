@@ -1,0 +1,112 @@
+{
+  "iteration": "E288 choice-native constrained decode",
+  "date": "2026-07-17",
+  "status": "completed",
+  "run_kind": "frozen-checkpoint_eval_only",
+  "run_id": "e288-choice-native-gate-r2",
+  "checkpoint": "outputs/ladders/b3-matched-5m-e287-r2/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/checkpoints/last.pt",
+  "checkpoint_sha256": "7cad143139f91369b4780878f634e7fa24434d7ccb8f9813a00f5412f3051c99",
+  "weights_changed": false,
+  "device": "cpu",
+  "max_wall_minutes": 5,
+  "test_data": "src/slm_training/resources/data/eval/remediated",
+  "honesty_mode": "no-design-md-context",
+  "decode": {
+    "output_tokenizer": "choice",
+    "grammar_constrained": true,
+    "legal_state_source": [
+      "dsl.production_codec expression grammar",
+      "pinned OpenUI library JSON schema"
+    ],
+    "singleton_model_bypass": true,
+    "completion_budget_reserved": true,
+    "unconstrained_fallback": false
+  },
+  "effective_evaluation_policy": {
+    "context_backend": "scratch",
+    "grammar_constrained": true,
+    "grammar_ltr_primary": false,
+    "compiler_decode_mode": "off",
+    "grammar_skip_exact_stream_probe": true,
+    "grammar_top_k": 16,
+    "grammar_ltr_max_tokens": 256
+  },
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.0,
+      "structural_similarity": 0.30943333333333334,
+      "reward_score": 0.0,
+      "latency_ms_p50": 6195.58,
+      "latency_ms_p95": 8543.08,
+      "forced_tokens_mean": 8.667,
+      "constrained_dead_ends_mean": 0.0
+    },
+    "held_out": {
+      "n": 5,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.0,
+      "structural_similarity": 0.2514,
+      "reward_score": 0.0,
+      "latency_ms_p50": 6006.95,
+      "latency_ms_p95": 6148.03,
+      "forced_tokens_mean": 9.6,
+      "constrained_dead_ends_mean": 0.0
+    },
+    "adversarial": {
+      "n": 4,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.0,
+      "structural_similarity": 0.2905,
+      "reward_score": 0.0,
+      "latency_ms_p50": 6152.04,
+      "latency_ms_p95": 6232.64,
+      "forced_tokens_mean": 8.0,
+      "constrained_dead_ends_mean": 0.0
+    },
+    "ood": {
+      "n": 4,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.0,
+      "structural_similarity": 0.236875,
+      "reward_score": 0.0,
+      "latency_ms_p50": 6001.06,
+      "latency_ms_p95": 6121.66,
+      "forced_tokens_mean": 8.5,
+      "constrained_dead_ends_mean": 0.0
+    },
+    "rico_held": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.0,
+      "structural_similarity": 0.09006666666666667,
+      "reward_score": 0.0,
+      "latency_ms_p50": 6073.62,
+      "latency_ms_p95": 6076.29,
+      "forced_tokens_mean": 8.0,
+      "constrained_dead_ends_mean": 0.0
+    }
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 5,
+    "execution_errors": 0
+  },
+  "comparison_to_e287_same_checkpoint": {
+    "parse_rate_before": 0.0,
+    "parse_rate_after": 1.0,
+    "meaningful_program_rate_before": 0.0,
+    "meaningful_program_rate_after": 0.0,
+    "empty_predictions_before": 19,
+    "trivial_layouts_after": 19
+  },
+  "verdict": "Structural adherence is recovered deterministically without retraining. Semantic quality remains failed on every suite, so the checkpoint is not promotable or ship-ready.",
+  "evidence_regeneration": "r2 fixes the scoreboard policy envelope to report effective loaded-checkpoint settings; quality metrics reproduce r1 exactly",
+  "output": "outputs/evals/e288-choice-native-gate-r2/e288-choice-native-gate-r2/scoreboard.json"
+}
