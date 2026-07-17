@@ -24,6 +24,7 @@ from slm_training.models.twotower import TwoTowerModel
 LocalObjective = Literal["ce_margin", "unlikelihood", "ftpo_single", "ftpo_set"]
 GradientCombination = Literal["proposal", "pcgrad", "mgda"]
 LocalOptimizer = Literal["adamw", "sgd"]
+GradientScaling = Literal["raw", "unit_norm"]
 
 _GUARD_DIRECTIONS = {
     "loss": "min",
@@ -441,6 +442,25 @@ def _gradient_alignment(
     }
 
 
+def _scale_gradient(
+    gradient: list[torch.Tensor | None], scaling: GradientScaling
+) -> list[torch.Tensor | None]:
+    if scaling == "raw":
+        return gradient
+    if scaling != "unit_norm":
+        raise ValueError(f"unknown gradient scaling: {scaling}")
+    norm_sq = sum(
+        value.detach().square().sum().double().cpu()
+        for value in gradient
+        if value is not None
+    )
+    norm = float(norm_sq.sqrt())
+    return [
+        value.detach() / norm if value is not None and norm else value
+        for value in gradient
+    ]
+
+
 def _fresh_adamw_direction(
     gradients: list[torch.Tensor | None],
     parameters: list[torch.nn.Parameter],
@@ -581,6 +601,7 @@ def diagnose_metric_complete_gradient_feasibility(
     *,
     objective: LocalObjective,
     probability_space: Literal["full_vocab", "legal_tokens"] = "full_vocab",
+    gradient_scaling: GradientScaling = "raw",
     epsilon: float = 2.0,
     tau: float = 1.0,
 ) -> dict:
@@ -619,8 +640,12 @@ def diagnose_metric_complete_gradient_feasibility(
                 )
             )
     train_keys = sorted(gradients["train"])
+    scaled_train_gradients = [
+        _scale_gradient(gradients["train"][key], gradient_scaling)
+        for key in train_keys
+    ]
     combined, solver = _minimum_norm_gradient(
-        [gradients["train"][key] for key in train_keys]
+        scaled_train_gradients
     )
     solver["weight_by_objective"] = dict(
         zip(train_keys, solver.pop("weights"), strict=True)
@@ -629,15 +654,24 @@ def diagnose_metric_complete_gradient_feasibility(
         key: _gradient_alignment(gradient, combined)
         for key, gradient in sorted(gradients["held_out"].items())
     }
+    train_alignment = {
+        key: _gradient_alignment(gradient, combined)
+        for key, gradient in sorted(gradients["train"].items())
+    }
     return {
         "objective": objective,
         "probability_space": probability_space,
+        "gradient_scaling": gradient_scaling,
         "guard_objective_directions": dict(_GUARD_DIRECTIONS),
         "train_event_counts": dict(sorted(counts["train"].items())),
         "held_out_event_counts": dict(sorted(counts["held_out"].items())),
         "train_objective_count": len(train_keys),
         "held_out_objective_count": len(held_alignment),
         "train_minimum_norm_solver": solver,
+        "train_alignment": train_alignment,
+        "train_regressions": sorted(
+            key for key, alignment in train_alignment.items() if alignment["dot"] < 0
+        ),
         "held_out_alignment": held_alignment,
         "held_out_regressions": sorted(
             key for key, alignment in held_alignment.items() if alignment["dot"] < 0
@@ -653,6 +687,7 @@ def diagnose_decision_gradient_alignment_from_paths(
     device: str = "cpu",
     metric_complete: bool = False,
     probability_space: Literal["full_vocab", "legal_tokens"] = "full_vocab",
+    gradient_scaling: GradientScaling = "raw",
 ) -> dict:
     events = load_decision_events(events_path)
     model = TwoTowerModel.from_checkpoint(checkpoint, device=device)
@@ -663,6 +698,7 @@ def diagnose_decision_gradient_alignment_from_paths(
             events,
             objective=objective,
             probability_space=probability_space,
+            gradient_scaling=gradient_scaling,
         )
         if metric_complete
         else diagnose_decision_gradient_alignment(model, events, objective=objective)
