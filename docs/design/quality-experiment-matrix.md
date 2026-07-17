@@ -1289,6 +1289,16 @@ confirmed, but training remains blocked until the identical all-record run is
 persisted and audited. Full evidence:
 [iter-e260-gold-ast-counterfactual-probe-20260716.md](iter-e260-gold-ast-counterfactual-probe-20260716.md).
 
+E261 completed that all-record run. Across 65 accepted document traces, 260
+exact gold-AST states and 736 legal candidates produced 239 independently judged
+events across 14 decision kinds and 64 prompt groups. The immutable committed
+corpus contains 200 train and 39 held-out events across 53/11 groups, including
+108 set-valued comparisons; every retained probe is same-state verified and
+pairs a gold-AST selected completion with policy-completed alternatives. The
+corpus prerequisite is satisfied and a new semantic preference experiment is
+unblocked, but model quality and ship gates remain unmeasured. Full evidence:
+[iter-e261-gold-ast-counterfactual-corpus-20260716.md](iter-e261-gold-ast-counterfactual-corpus-20260716.md).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
