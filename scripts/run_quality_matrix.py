@@ -163,6 +163,7 @@ class Experiment:
     ] | None = None
     local_preference_reference_tether: bool = False
     local_preference_balanced: bool = False
+    local_preference_guarded_selection: bool = False
     binder_arity_loss_weight: float = 0.0
     binder_arity_decode_weight: float = 0.0
 
@@ -1354,6 +1355,15 @@ def _v10_experiments(train_dir: Path) -> list[Experiment]:
             local_preference_objective="ftpo_set",
             **base,
         ),
+        Experiment(
+            "E264",
+            "qx_e264_guarded_gold_ast_ftpo_set",
+            "Held-out Pareto-guarded gold-AST set FTPO",
+            train_dir,
+            local_preference_objective="ftpo_set",
+            local_preference_guarded_selection=True,
+            **base,
+        ),
     ]
 
 
@@ -1834,6 +1844,8 @@ def _maybe_local_preference(
             and bool(summary.get("balanced"))
             == bool(exp.local_preference_balanced)
             and bool(summary.get("reference_tethered")) == tethered
+            and bool(summary.get("guarded_selection"))
+            == bool(exp.local_preference_guarded_selection)
             and summary.get("source_checkpoint_sha") == expected_sha
             and int(summary.get("train_events", -1)) == expected_counts["train"]
             and int(summary.get("held_out_events", -1))
@@ -1861,6 +1873,8 @@ def _maybe_local_preference(
             target_grace=1.0,
             balanced=bool(exp.local_preference_balanced),
             seed=args.seed,
+            validation_every=args.local_pref_validation_every,
+            guarded_selection=bool(exp.local_preference_guarded_selection),
         )
         summary["trace_id"] = trace.trace_id
         summary["traceparent"] = trace.traceparent
@@ -2167,6 +2181,9 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
             exp.local_preference_reference_tether
         ),
         "local_preference_balanced": exp.local_preference_balanced,
+        "local_preference_guarded_selection": (
+            exp.local_preference_guarded_selection
+        ),
         "local_preference_summary": local_preference_summary,
         **_summarize_board(board),
     }
@@ -2226,6 +2243,7 @@ def main(argv: list[str] | None = None) -> int:
         help="DecisionEventV1 JSONL required by V10 intervention rows.",
     )
     parser.add_argument("--local-pref-lr", type=float, default=5e-5)
+    parser.add_argument("--local-pref-validation-every", type=int, default=5)
     parser.add_argument(
         "--resume",
         action="store_true",

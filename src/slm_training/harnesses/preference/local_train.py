@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 import random
 from collections import defaultdict
@@ -20,6 +21,13 @@ from slm_training.models.twotower import TwoTowerModel
 
 
 LocalObjective = Literal["ce_margin", "unlikelihood", "ftpo_single", "ftpo_set"]
+
+_GUARD_DIRECTIONS = {
+    "loss": "min",
+    "bad_probability_mass": "min",
+    "good_probability_mass": "max",
+    "mean_margin": "max",
+}
 
 
 def _indices(values: tuple[int, ...], logits: torch.Tensor) -> torch.Tensor:
@@ -230,6 +238,10 @@ def train_local_decisions(
     target_grace: float = 1.0,
     balanced: bool = False,
     seed: int = 0,
+    validation_events: list[DecisionEventV1] | None = None,
+    validation_baseline: dict | None = None,
+    validation_every: int = 0,
+    guarded_selection: bool = False,
 ) -> dict:
     if steps <= 0 or lr <= 0:
         raise ValueError("steps and learning rate must be positive")
@@ -247,6 +259,11 @@ def train_local_decisions(
         raise ValueError("ftpo_set requires a verified set-valued training event")
     if (non_target_tether > 0 or target_tether > 0) and reference_model is None:
         raise ValueError("reference_model is required for tethered training")
+    if guarded_selection and validation_every <= 0:
+        raise ValueError("guarded selection requires positive validation_every")
+    validation = validation_events or []
+    if guarded_selection and not any(event.split == "held_out" for event in validation):
+        raise ValueError("guarded selection requires held-out decision events")
     schedule = event_schedule(
         train_events, steps=max(0, int(steps)), seed=int(seed), balanced=balanced
     )
@@ -258,7 +275,28 @@ def train_local_decisions(
     optimizer = torch.optim.AdamW(model.trainable_parameters(), lr=lr)
     totals: dict[str, float] = defaultdict(float)
     by_kind: dict[str, int] = defaultdict(int)
-    for event in schedule:
+    selection: dict | None = None
+    best_state = None
+    best_metrics: dict[str, float] = {}
+    best_step = 0
+    if guarded_selection:
+        baseline = validation_baseline or evaluate_local_decisions(
+            model,
+            validation,
+            objective=objective,
+            epsilon=epsilon,
+            tau=tau,
+        )
+        best_metrics = dict(baseline.get("metrics") or {})
+        if not all(key in best_metrics for key in _GUARD_DIRECTIONS):
+            raise ValueError("guarded selection baseline lacks required metrics")
+        best_state = copy.deepcopy(model.state_dict())
+        selection = {
+            "guard": dict(_GUARD_DIRECTIONS),
+            "baseline": best_metrics,
+            "history": [{"step": 0, "eligible": True, "metrics": best_metrics}],
+        }
+    for step, event in enumerate(schedule, start=1):
         logits = _event_logits(model, event)
         with torch.no_grad():
             reference_logits = (
@@ -283,7 +321,33 @@ def train_local_decisions(
         for name, value in metrics.items():
             totals[name] += value
         by_kind[event.decision_kind] += 1
+        if guarded_selection and (step % validation_every == 0 or step == len(schedule)):
+            report = evaluate_local_decisions(
+                model,
+                validation,
+                objective=objective,
+                epsilon=epsilon,
+                tau=tau,
+            )
+            candidate = dict(report.get("metrics") or {})
+            eligible = all(
+                candidate[key] <= best_metrics[key]
+                if direction == "min"
+                else candidate[key] >= best_metrics[key]
+                for key, direction in _GUARD_DIRECTIONS.items()
+            )
+            selection["history"].append(
+                {"step": step, "eligible": eligible, "metrics": candidate}
+            )
+            if eligible and candidate["loss"] < best_metrics["loss"]:
+                best_metrics = candidate
+                best_step = step
+                best_state = copy.deepcopy(model.state_dict())
     count = len(schedule)
+    if guarded_selection:
+        model.load_state_dict(best_state)
+        selection["selected_step"] = best_step
+        selection["restored"] = best_step != count
     return {
         "objective": objective,
         "steps": count,
@@ -292,6 +356,9 @@ def train_local_decisions(
         "held_out_events": len(events) - len(train_events),
         "balanced": bool(balanced),
         "reference_tethered": bool(non_target_tether > 0 or target_tether > 0),
+        "guarded_selection": bool(guarded_selection),
+        "validation_every": int(validation_every) if guarded_selection else 0,
+        "validation_selection": selection,
         "metrics": {name: value / count for name, value in sorted(totals.items())},
         "decision_kind_steps": dict(sorted(by_kind.items())),
     }
@@ -325,6 +392,8 @@ def train_local_from_paths(
     target_grace: float = 1.0,
     balanced: bool = False,
     seed: int = 0,
+    validation_every: int = 0,
+    guarded_selection: bool = False,
 ) -> dict:
     events = load_decision_events(events_path)
     model = TwoTowerModel.from_checkpoint(checkpoint, device=device)
@@ -355,6 +424,10 @@ def train_local_from_paths(
         target_grace=target_grace,
         balanced=balanced,
         seed=seed,
+        validation_events=events,
+        validation_baseline=held_out_before,
+        validation_every=validation_every,
+        guarded_selection=guarded_selection,
     )
     held_out_after = evaluate_local_decisions(
         model,
