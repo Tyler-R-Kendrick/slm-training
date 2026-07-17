@@ -1,8 +1,14 @@
 # Local decision interventions for TwoTower
 
-**Status:** research intake plus measured E248/E249 campaign. E249 is rejected:
-constraint-shadow ranking generalized locally but regressed semantic quality on
-every suite. This document contains no model-quality or ship claim.
+**Status:** research intake plus the measured E248–E289 local-decision campaign,
+recommitted as the LDI0 evidence contract (LDI0-01). E249 is rejected
+(constraint-shadow ranking generalized locally but regressed semantic quality on
+every suite), and the chain through E284 establishes the **current blocker**:
+stable grammar-state support is necessary but not sufficient for the FTPO
+objective, because independently judged legal alternatives produce different
+bad-token sets at the same state. This document is a contract and research
+synthesis; it ships no event-schema or trainer code, no checkpoint or adapter, and
+**no model-quality or ship claim**.
 
 ## Source and audit
 
@@ -12,9 +18,15 @@ The normal page reader returned only the application shell, so the server-render
 conversation payload was decoded and its citation records were normalized against
 primary arXiv and OpenReview pages. The reviewed inventory is committed as
 [`local-decision-sources.json`](../../src/slm_training/resources/autoresearch/local-decision-sources.json):
-25 distinct academic works and eight implementation/documentation sources. The
+34 distinct academic works and eight implementation/documentation sources. The
 DeepSeek-R1 Nature DOI and the two OpenReview URLs are retained as alternate URLs
-rather than double-counted papers.
+rather than double-counted papers. Twenty-five works came from the original share;
+LDI0-01 added nine required prior-art works, each labeled **Adjacent** —
+inventoried, not reimplemented: LoRA and AdaLoRA extend *Adapter actuators*; PCGrad
+and MGDA add *Multi-objective balancing* (trade the correction loss against the
+locality tether); PICARD, Grammar-Aligned Decoding, and Min-p add *Constrained
+decoding and sampling* (legality only, not preference); DeepSeekMath/GRPO extends
+*Verifiable training*; and TAB-PO extends *Local preference*.
 
 | Cluster | Sources | Relevance here |
 | --- | --- | --- |
@@ -45,9 +57,37 @@ than another trainer family:
 3. It has no frozen-reference locality tether or explicit drift telemetry.
 4. It has no event-family balancing or immutable event/checkpoint identity.
 
-The existing preference harness remains the training owner. The append-only decode
-trace remains the observation owner. The quality matrix remains the stable
-experiment owner.
+The existing preference harness remains the evidence and training owner. The
+append-only decode trace remains the observation owner. The quality matrix and
+autoresearch remain the bounded-experiment owner. No second orchestration or
+training stack is introduced.
+
+## Separation of concerns
+
+Evidence, objective, actuator, experiment, and promotion are distinct and
+separately owned. No single change may collapse them.
+
+- **Evidence** — exact-state decision events live in the preference harness
+  (`DecisionEventV1` in [`harnesses/preference/local_decisions.py`](../../src/slm_training/harnesses/preference/local_decisions.py)).
+  Constraint shadows certify decoder legality only; they never become semantic
+  preference labels without same-state counterfactual verification.
+- **Objective** — local losses ([`harnesses/preference/local_train.py`](../../src/slm_training/harnesses/preference/local_train.py))
+  consume events; they do not define their own event or trace format.
+- **Observation** — the append-only decode trace
+  ([`harnesses/distill/trace_store.py`](../../src/slm_training/harnesses/distill/trace_store.py))
+  owns replayable trajectories with immutable checkpoint/decode identity.
+- **Actuator** — LoRA/DoRA/PiSSA, removable TwoTower deltas, ReFT, and SAE are
+  actuator *choices*, not event schemas. SAE work stays behind matched direct
+  baselines.
+- **Experiment / promotion** — the quality matrix and autoresearch
+  ([`scripts/run_quality_matrix.py`](../../scripts/run_quality_matrix.py)) own
+  bounded experiments and gates. Hard grammar/compiler constraints remain deployed;
+  interventions aim to reduce error mass, not replace deterministic guarantees. New
+  experiments use the `LDI` campaign name in prose/config but draw globally unique
+  E-IDs from the existing allocation process — no E-ID is reserved or assumed here.
+
+The first new contract is `DecisionEventV2` / action-table evidence; the first
+actuator experiments are causal PEFT and removable TwoTower deltas.
 
 ## Decision event contract
 
@@ -115,8 +155,10 @@ full-vocabulary drift. End-to-end authority remains the unchanged five-suite
 scoreboard and ship gates.
 
 Falsify a row if it does not improve held-out event metrics, exceeds the matched
-reference-drift budget, or regresses any protected ship gate. No V10 intervention
-row has run; there is no intervention checkpoint, model-card update, or promotion.
+reference-drift budget, or regresses any protected ship gate. E248 (control) and
+E249 (CE + margin) are measured; E250–E254 remain unrun and fail-closed. There is
+no intervention checkpoint, model-card update, or promotion. Further LDI rows draw
+new globally unique E-IDs from allocation rather than reserving numbers here.
 
 ## Measured event-mining prerequisite
 
@@ -134,3 +176,32 @@ suite. Do not run E250/E251 on this corpus as quality labels. E252-E254 remain
 fail-closed because the corpus contains no counterfactual or set-valued evidence.
 Measured result:
 [`iter-e249-local-ce-margin-20260716.md`](iter-e249-local-ce-margin-20260716.md).
+
+## Measured falsification chain and current blocker
+
+E248–E289 is the authoritative measured record; per-experiment detail lives in the
+`iter-e248-*` … `iter-e289-*` notes and the V10 narrative of
+[`quality-experiment-matrix.md`](quality-experiment-matrix.md). Distilled: E249
+showed constraint-shadow events support a matched lexical-decision objective but
+regress semantic quality on every suite, and the chain through E283/E284 established
+the **current blocker** —
+
+> Stable grammar-state support is necessary but not sufficient for the FTPO
+> objective, because independently judged legal alternatives can produce different
+> bad-token sets at the same grammar state.
+
+(See [`iter-e284-signature-support-profile-20260717.md`](iter-e284-signature-support-profile-20260717.md).)
+Admitting a stable support signature therefore does not by itself imply objective-
+or action-partition support. The next contract (`DecisionEventV2` / action tables)
+plus same-state counterfactual verification target exactly this gap. No training has
+run on the corpus under a semantic objective.
+
+## Measured status
+
+2026-07-17 — LDI0-01 recommits this document as the local-decision evidence
+contract, extends the source inventory to 34 works (nine **Adjacent** additions),
+names the evidence/objective/observation/actuator/experiment owners, and records
+the E249–E284 falsification chain and current blocker. Documentation and
+source-inventory change only: no event-schema or trainer code, no checkpoint or
+adapter, no model-card quality update, and **no model or ship claim**. `python -m
+scripts.repo_policy` passes and the focused source/lineage tests are green.
