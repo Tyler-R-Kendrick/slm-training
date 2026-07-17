@@ -290,6 +290,56 @@ def _decode_canvas_cap(plugin: object) -> int | None:
     return cap if cap > 0 else None
 
 
+def _effective_evaluation_policy(
+    config: ModelBuildConfig, plugin: object
+) -> dict[str, object]:
+    """Report the loaded model's effective settings after runtime overrides."""
+    model_config = getattr(plugin, "config", None)
+
+    def value(name: str) -> object:
+        effective = getattr(model_config, name, None)
+        return effective if effective is not None else getattr(config, name, None)
+
+    def optional_bool(name: str) -> bool | None:
+        effective = value(name)
+        return None if effective is None else bool(effective)
+
+    return {
+        "context_backend": value("context_backend"),
+        "local_files_only": bool(value("local_files_only")),
+        "grammar_constrained": optional_bool("grammar_constrained"),
+        "grammar_ltr_primary": optional_bool("grammar_ltr_primary"),
+        "grammar_ltr_repair": optional_bool("grammar_ltr_repair"),
+        "compiler_decode_mode": (
+            None
+            if value("compiler_decode_mode") is None
+            else str(value("compiler_decode_mode"))
+        ),
+        "schema_in_context": bool(value("schema_in_context")),
+        "slot_contract_in_context": bool(value("slot_contract_in_context")),
+        "slot_contract_constrained_decode": bool(
+            value("slot_contract_constrained_decode")
+        ),
+        "honest_slot_contract": bool(value("honest_slot_contract")),
+        "grammar_skip_exact_stream_probe": optional_bool(
+            "grammar_skip_exact_stream_probe"
+        ),
+        "grammar_verify_chosen_only": optional_bool("grammar_verify_chosen_only"),
+        "grammar_top_k": (
+            None if value("grammar_top_k") is None else int(value("grammar_top_k"))
+        ),
+        "generate_max_attempts": (
+            None
+            if value("generate_max_attempts") is None
+            else int(value("generate_max_attempts"))
+        ),
+        "decode_timeout_seconds": value("decode_timeout_seconds"),
+        "allow_unconstrained_fallback": bool(value("allow_unconstrained_fallback")),
+        "gen_steps": int(value("gen_steps") or 0),
+        "grammar_ltr_max_tokens": int(value("grammar_ltr_max_tokens") or 0),
+    }
+
+
 def _is_meaningful_program(
     pred: str,
     *,
@@ -675,60 +725,7 @@ def evaluate(
         # is essential for comparing historical runs: checkpoint defaults and
         # CLI diagnostic overrides can materially change quality and timeout
         # metrics even when the checkpoint hash is identical.
-        "evaluation_policy": {
-            "context_backend": config.context_backend,
-            "local_files_only": bool(config.local_files_only),
-            "grammar_constrained": (
-                None
-                if config.grammar_constrained is None
-                else bool(config.grammar_constrained)
-            ),
-            "grammar_ltr_primary": (
-                None
-                if config.grammar_ltr_primary is None
-                else bool(config.grammar_ltr_primary)
-            ),
-            "grammar_ltr_repair": (
-                None
-                if config.grammar_ltr_repair is None
-                else bool(config.grammar_ltr_repair)
-            ),
-            "compiler_decode_mode": (
-                None
-                if config.compiler_decode_mode is None
-                else str(config.compiler_decode_mode)
-            ),
-            "schema_in_context": bool(config.schema_in_context),
-            "slot_contract_in_context": bool(config.slot_contract_in_context),
-            "slot_contract_constrained_decode": bool(
-                config.slot_contract_constrained_decode
-            ),
-            "honest_slot_contract": bool(config.honest_slot_contract),
-            "grammar_skip_exact_stream_probe": (
-                None
-                if config.grammar_skip_exact_stream_probe is None
-                else bool(config.grammar_skip_exact_stream_probe)
-            ),
-            "grammar_verify_chosen_only": (
-                None
-                if config.grammar_verify_chosen_only is None
-                else bool(config.grammar_verify_chosen_only)
-            ),
-            "grammar_top_k": (
-                None if config.grammar_top_k is None else int(config.grammar_top_k)
-            ),
-            "generate_max_attempts": (
-                None
-                if config.generate_max_attempts is None
-                else int(config.generate_max_attempts)
-            ),
-            "decode_timeout_seconds": config.decode_timeout_seconds,
-            "allow_unconstrained_fallback": bool(
-                config.allow_unconstrained_fallback
-            ),
-            "gen_steps": int(config.gen_steps),
-            "grammar_ltr_max_tokens": int(config.grammar_ltr_max_tokens),
-        },
+        "evaluation_policy": _effective_evaluation_policy(config, plugin),
         "parse_rate": (syntax_parse_ok / document_n) if document_n else 0.0,
         "meaningful_program_rate": (parse_ok / document_n) if document_n else 0.0,
         "syntax_parse_rate": (
