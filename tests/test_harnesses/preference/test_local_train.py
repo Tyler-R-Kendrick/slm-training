@@ -16,6 +16,7 @@ from slm_training.harnesses.preference.local_decisions import (
 from slm_training.harnesses.preference.local_train import (
     _event_logits,
     _event_logits_many,
+    _decision_signature,
     _fresh_adamw_direction,
     _guard_objective_tensors,
     _gradient_alignment,
@@ -196,6 +197,23 @@ def test_legal_token_probability_mass_ignores_unselectable_logits() -> None:
     assert legal_tokens["bad_probability_mass"].item() == pytest.approx(
         torch.sigmoid(torch.tensor(-3.0)).item()
     )
+
+
+def test_decision_signature_is_semantic_and_stable() -> None:
+    event = replace(_event(good=(1,), bad=(2,)), legal_token_ids=(1, 2))
+    same = replace(event, event_id="other", context_text="different prompt")
+    different = replace(event, legal_token_ids=(1, 2, 3))
+
+    signature, metadata = _decision_signature(event)
+
+    assert _decision_signature(same)[0] == signature
+    assert _decision_signature(different)[0] != signature
+    assert metadata == {
+        "decision_kind": "component",
+        "legal_token_ids": [1, 2],
+        "good_token_ids": [1],
+        "bad_token_ids": [2],
+    }
 
 
 def test_minimum_norm_gradient_certifies_common_descent() -> None:
