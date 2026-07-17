@@ -31,7 +31,9 @@
     }
   },
   "evaluation": {
-    "run_id": "e316-semantic-slots-20k-honest-r1",
+    "run_id": "e316-semantic-slots-20k-honest-r2",
+    "provisional_run_id": "e316-semantic-slots-20k-honest-r1",
+    "provisional_metrics_reproduced": true,
     "honesty": {
       "ship_gates": true,
       "compiler_decode_mode": "tree",

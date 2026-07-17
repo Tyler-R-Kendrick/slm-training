@@ -30,6 +30,11 @@ the causal semantic evaluation.
 
 ## Honest five-suite result
 
+The authoritative evaluation is
+`e316-semantic-slots-20k-honest-r2`, rerun with the exact frozen E315 policy:
+`honest_slot_contract=True`, constrained slot decode, and no unconstrained
+fallback. It reproduces the provisional r1 metrics exactly.
+
 | Suite | n | Parse | Fidelity | Structure | Meaningful | Component recall | Reward | Gate |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
 | smoke | 3 | 1.0 | 1.0 | 0.5464 | 0.6667 | 0.3333 | 0.6407 | Fail: recall needs 0.35 |
