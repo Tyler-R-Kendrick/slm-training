@@ -471,6 +471,20 @@ def diagnose_decision_gradient_alignment(
         zip(ordered_train_kinds, solver.pop("weights"), strict=True)
     )
     adamw_direction = _fresh_adamw_direction(combined, trainable)
+    adam_direction = _fresh_adamw_direction(
+        combined, trainable, weight_decay=0.0
+    )
+    def optimizer_alignment(direction: list[torch.Tensor | None]) -> dict:
+        return {
+            "train_alignment": {
+                kind: _gradient_alignment(gradients["train"][kind], direction)
+                for kind in ordered_train_kinds
+            },
+            "held_out_alignment": {
+                kind: _gradient_alignment(gradients["held_out"][kind], direction)
+                for kind in sorted(held_kinds)
+            },
+        }
     return {
         "objective": objective,
         "by_decision_kind": {
@@ -493,18 +507,12 @@ def diagnose_decision_gradient_alignment(
         "fresh_adamw": {
             "epsilon": 1e-8,
             "weight_decay": 0.01,
-            "train_alignment": {
-                kind: _gradient_alignment(
-                    gradients["train"][kind], adamw_direction
-                )
-                for kind in ordered_train_kinds
-            },
-            "held_out_alignment": {
-                kind: _gradient_alignment(
-                    gradients["held_out"][kind], adamw_direction
-                )
-                for kind in sorted(held_kinds)
-            },
+            **optimizer_alignment(adamw_direction),
+        },
+        "fresh_adam": {
+            "epsilon": 1e-8,
+            "weight_decay": 0.0,
+            **optimizer_alignment(adam_direction),
         },
         "cross_kind_alignment": {
             held_kind: {
