@@ -44,6 +44,16 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.01em; }
 }
 .theme-toggle:hover { color: var(--text); }
 
+/* ---- renderer mode toggle (dogfooding demo) ------------------------------ */
+.mode-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 0.25rem; margin: 0.3rem 0.3rem 0.35rem; padding: 0.2rem; background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); }
+.mode-btn { padding: 0.35rem 0.3rem; background: transparent; border: 1px solid transparent; border-radius: var(--radius); color: var(--text-mute); cursor: pointer; font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.02em; white-space: nowrap; }
+.mode-btn:hover { color: var(--text); }
+.mode-btn.active { background: var(--moss-bg); border-color: var(--moss); color: var(--moss-bright); }
+
+/* ---- data-freshness banner ---------------------------------------------- */
+.freshness-banner { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1.15rem; padding: 0.55rem 0.8rem; border: 1px solid color-mix(in srgb, var(--status-warning) 45%, transparent); border-radius: var(--radius-lg); background: var(--status-warning-bg); color: var(--text-dim); font-size: 0.82rem; }
+.freshness-banner .prov { flex-shrink: 0; }
+
 .main { padding: 1.6rem 1.9rem 4rem; overflow-x: hidden; max-width: 1500px; }
 .page-head { margin-bottom: 1.3rem; }
 .page-title { font-size: var(--fs-h1); font-weight: 800; margin: 0; }

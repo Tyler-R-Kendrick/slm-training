@@ -3,10 +3,27 @@ import { createRoot } from "react-dom/client";
 import "./styles.css";
 import { getJSON } from "./api";
 import { CapsContext, type Caps } from "./caps";
+import { Overview } from "./pages/Overview";
+import { Data } from "./pages/Data";
+import { Experiments } from "./pages/Experiments";
+import { Smoke } from "./pages/Smoke";
+import { Checkpoints } from "./pages/Checkpoints";
+import { Playground } from "./pages/Playground";
 import { RunDetail } from "./pages/RunDetail";
 import { DslView } from "./interpret/DslView";
 
 type Nav = (to: string) => void;
+
+// Compiled (hand-written React) twins of the interpreted .openui programs —
+// the ◈/◇ toggle switches renderers for the same page.
+const COMPILED: Record<string, React.ComponentType<{ navigate: Nav }>> = {
+  "/": Overview,
+  "/data": Data,
+  "/experiments": Experiments,
+  "/smoke": Smoke,
+  "/checkpoints": Checkpoints,
+  "/playground": () => <Playground />,
+};
 
 const ROUTES: { path: string; label: string; icon: string }[] = [
   { path: "/", label: "Overview", icon: "◎" },
@@ -56,9 +73,41 @@ function useTheme(): [string, () => void] {
   return [theme, () => setTheme((t) => (t === "dark" ? "light" : "dark"))];
 }
 
+type Mode = "interpreted" | "compiled";
+
+function useMode(): [Mode, (m: Mode) => void] {
+  const [mode, setMode] = useState<Mode>(() =>
+    localStorage.getItem("slm-mode") === "compiled" ? "compiled" : "interpreted",
+  );
+  useEffect(() => {
+    document.documentElement.dataset.mode = mode;
+    localStorage.setItem("slm-mode", mode);
+  }, [mode]);
+  return [mode, setMode];
+}
+
+/** Amber shell banner when every read is committed-snapshot fallback. */
+function FreshnessBanner() {
+  const [outputsPresent, setOutputsPresent] = useState<boolean | null>(null);
+  useEffect(() => {
+    getJSON<{ outputs_present?: boolean }>("/api/system")
+      .then((sys) => setOutputsPresent(sys.outputs_present !== false))
+      .catch(() => setOutputsPresent(null));
+  }, []);
+  if (outputsPresent !== false) return null;
+  return (
+    <div className="freshness-banner" role="status">
+      <span className="prov prov-committed">snapshot</span>
+      Committed snapshot data — no live <span className="mono">outputs/</span> on this host. Run{" "}
+      <span className="mono">serve_playground</span> locally for live evidence.
+    </div>
+  );
+}
+
 function App() {
   const [path, navigate] = useRouter();
   const [theme, toggleTheme] = useTheme();
+  const [mode, setMode] = useMode();
   const [caps, setCaps] = useState<Caps>({ execution: false, read_only: true, jobs: [] });
 
   useEffect(() => {
@@ -91,8 +140,13 @@ function App() {
           {ROUTES.map((r) => (
             <a
               key={r.path}
+              href={r.path}
+              aria-current={r.path === activePath ? "page" : undefined}
               className={`nav-link ${r.path === activePath ? "active" : ""}`}
-              onClick={() => navigate(r.path)}
+              onClick={(event) => {
+                event.preventDefault();
+                navigate(r.path);
+              }}
             >
               <span className="nav-icon">{r.icon}</span>
               {r.label}
@@ -104,16 +158,34 @@ function App() {
               Read-only. Serve locally with <span className="mono">serve_playground</span> for the full control plane.
             </div>
           )}
+          <div className="mode-toggle" role="group" aria-label="Page renderer">
+            {(["compiled", "interpreted"] as Mode[]).map((m) => (
+              <button
+                key={m}
+                className={`mode-btn ${mode === m ? "active" : ""}`}
+                aria-pressed={mode === m}
+                title={m === "compiled" ? "Hand-written React" : "Live OpenUI Lang program"}
+                onClick={() => setMode(m)}
+              >
+                {m === "compiled" ? "◈ Compiled" : "◇ Interpreted"}
+              </button>
+            ))}
+          </div>
+          <div className="hint" style={{ margin: "0 0.4rem 0.5rem" }}>
+            Same page, two renderers — the interpreted mode runs the OpenUI DSL this repo trains models to write.
+          </div>
           <button className="theme-toggle" onClick={toggleTheme}>
             {theme === "dark" ? "☀ Light" : "☾ Dark"}
           </button>
         </aside>
         <main className="main">
-          {runMatch ? (
-            <RunDetail runId={runMatch} navigate={navigate} />
-          ) : (
-            <DslView page={route.path} navigate={navigate} />
-          )}
+          <FreshnessBanner />
+          {(() => {
+            if (runMatch) return <RunDetail runId={runMatch} navigate={navigate} />;
+            const Compiled = COMPILED[route.path];
+            if (mode === "compiled" && Compiled) return <Compiled key={`${route.path}:compiled`} navigate={navigate} />;
+            return <DslView key={`${route.path}:interpreted`} page={route.path} navigate={navigate} />;
+          })()}
         </main>
       </div>
     </CapsContext.Provider>
