@@ -1,0 +1,170 @@
+"""ChoiceTokenizer (B1 / SLM-42): vocab closure, id round trips, model wiring."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+from slm_training.dsl.lang_core import bridge_available
+from slm_training.dsl.parser import validate
+from slm_training.dsl.schema import ExampleRecord, load_jsonl
+from slm_training.models.choice_tokenizer import (
+    CHOICE_TOKENIZER_KIND,
+    ChoiceTokenizer,
+    is_choice_tokenizer,
+)
+from slm_training.models.dsl_tokenizer import SymbolTable
+
+HERO = (
+    'root = Stack([hero], "column")\n'
+    'hero_title = TextContent(":hero.title")\n'
+    'hero_body = TextContent(":hero.body")\n'
+    "hero = Card([hero_title, hero_body])"
+)
+
+needs_bridge = pytest.mark.skipif(
+    not bridge_available(),
+    reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
+)
+
+
+@pytest.fixture(scope="module")
+def tok() -> ChoiceTokenizer:
+    return ChoiceTokenizer.build()
+
+
+def test_vocab_is_deterministic_and_grammar_closed(tok: ChoiceTokenizer) -> None:
+    again = ChoiceTokenizer.build()
+    assert again.token_to_id == tok.token_to_id
+    assert again.id_to_kind == tok.id_to_kind
+    # Specials pinned at the front.
+    assert tok.pad_id == 0 and tok.bos_id == 1 and tok.eos_id == 2
+    assert tok.mask_id == 3 and tok.unk_id == 4
+    assert tok.vocab_size < 1024
+
+
+def test_save_load_roundtrip(tok: ChoiceTokenizer, tmp_path: Path) -> None:
+    path = tmp_path / "choice.tokenizer.json"
+    tok.save(path)
+    assert f'"kind": "{CHOICE_TOKENIZER_KIND}"' in path.read_text(encoding="utf-8")
+    loaded = ChoiceTokenizer.load(path)
+    assert loaded.token_to_id == tok.token_to_id
+    assert loaded.id_to_kind == tok.id_to_kind
+    assert loaded.sym_slots == tok.sym_slots
+
+
+def test_load_rejects_foreign_sidecar(tmp_path: Path) -> None:
+    path = tmp_path / "other.json"
+    path.write_text('{"kind": "dsl_native", "token_to_id": {}}', encoding="utf-8")
+    with pytest.raises(ValueError, match="choice_codec"):
+        ChoiceTokenizer.load(path)
+
+
+def test_kind_ids_partition(tok: ChoiceTokenizer) -> None:
+    all_ids = set(range(tok.vocab_size))
+    covered: set[int] = set()
+    for kind in ("special", "struct", "component", "builtin", "lit", "byte", "sym", "bind", "state"):
+        ids = tok.kind_ids(kind)
+        assert not (ids & covered)
+        covered |= ids
+    assert covered == all_ids
+
+
+@needs_bridge
+def test_fixture_corpus_ids_are_decode_fixed_points(tok: ChoiceTokenizer) -> None:
+    records: list[ExampleRecord] = []
+    for path in (
+        "src/slm_training/resources/train_seeds.jsonl",
+        "src/slm_training/resources/test_seeds.jsonl",
+    ):
+        records.extend(load_jsonl(path))
+    for record in records:
+        table = SymbolTable.from_placeholders(
+            list(record.placeholders or []), max_slots=tok.sym_slots
+        )
+        ids = tok.encode(record.openui, add_special=True, table=table)
+        assert tok.unk_id not in ids, record.id
+        decoded = tok.decode(ids, table=table)
+        assert decoded, record.id
+        assert validate(decoded).serialized == decoded, record.id
+        fresh = SymbolTable.from_placeholders(
+            list(record.placeholders or []), max_slots=tok.sym_slots
+        )
+        assert tok.encode(decoded, add_special=True, table=fresh) == ids, record.id
+
+
+@needs_bridge
+def test_free_literals_use_byte_channel_not_unk(tok: ChoiceTokenizer) -> None:
+    source = 'root = Tabs([tab])\ntab = TabItem("one", ":tabs.one", [c])\nc = TextContent(":tabs.body")'
+    table = SymbolTable.from_placeholders([":tabs.one", ":tabs.body"], max_slots=64)
+    ids = tok.encode(source, add_special=False, table=table)
+    assert tok.unk_id not in ids
+    decoded = tok.decode(ids, table=table)
+    assert '"one"' in decoded
+
+
+@needs_bridge
+def test_unknown_component_fails_closed_at_encode(tok: ChoiceTokenizer) -> None:
+    from slm_training.dsl.lang_core import ParseError
+
+    with pytest.raises(ParseError):
+        tok.encode('root = FancyWidget(":x")')
+
+
+def test_decode_fails_closed_on_mask_unk_and_garbage(tok: ChoiceTokenizer) -> None:
+    assert tok.decode([tok.bos_id, tok.mask_id, tok.eos_id]) == ""
+    assert tok.decode([tok.bos_id, tok.unk_id, tok.eos_id]) == ""
+    assert tok.decode([tok.bos_id, tok.vocab_size + 5, tok.eos_id]) == ""
+    assert tok.decode([]) == ""
+
+
+@needs_bridge
+def test_twotower_choice_wiring(tmp_path: Path) -> None:
+    """from_records builds the choice tokenizer; train/save/load round trip."""
+    import torch  # noqa: F401 - environment guard
+
+    from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
+
+    records = [
+        ExampleRecord(
+            id="t1",
+            prompt="Hero card",
+            openui=HERO,
+            placeholders=[":hero.title", ":hero.body"],
+        ),
+        ExampleRecord(
+            id="t2",
+            prompt="CTA button",
+            openui='root = Stack([cta], "column")\ncta = Button(":cta.label")',
+            placeholders=[":cta.label"],
+        ),
+    ]
+    cfg = TwoTowerConfig(
+        output_tokenizer="choice",
+        context_backend="scratch",
+        grammar_constrained=True,  # v1 bypasses the surface DFA gate safely
+        d_model=64,
+        n_heads=4,
+        context_layers=1,
+        denoiser_layers=2,
+        max_prompt_len=64,
+        max_target_len=64,
+    )
+    model = TwoTowerModel.from_records(records, config=cfg, device="cpu")
+    assert is_choice_tokenizer(model.tokenizer)
+    assert model.context_tokenizer is not model.tokenizer
+    loss = model.training_loss(records)
+    assert float(loss.detach()) >= 0.0
+    # Generation must not crash (untrained output may fail closed to "").
+    text = model.generate("Hero card", gold=records[0])
+    assert isinstance(text, str)
+
+    ckpt = tmp_path / "choice.pt"
+    model.save(ckpt)
+    sidecar = ckpt.with_suffix(".tokenizer.json")
+    assert sidecar.is_file()
+    assert CHOICE_TOKENIZER_KIND in sidecar.read_text(encoding="utf-8")
+    reloaded = TwoTowerModel.from_checkpoint(ckpt, device="cpu")
+    assert is_choice_tokenizer(reloaded.tokenizer)
+    assert reloaded.tokenizer.token_to_id == model.tokenizer.token_to_id

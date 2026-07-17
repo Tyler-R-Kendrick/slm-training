@@ -1,91 +1,62 @@
-# Choice-sequence codec (B1, SLM-42)
+# B3 capacity ladder — choice vs surface targets (SLM-23)
 
-The endpoint of the "remove non-lexical symbols + deterministic decoder"
-hypothesis: the model predicts **only semantic decisions**; every
-reconstructible surface token is emitted by a deterministic detokenizer and
-certified by the official lang-core serializer.
+Depends on **B1** (the choice-sequence codec, SLM-42, owned on `main`:
+`dsl/production_codec.py::encode_choices`/`decode_choices` +
+`models/choice_tokenizer.py`; see
+[iter-b1-choice-sequence-codec-20260717.md](iter-b1-choice-sequence-codec-20260717.md))
+and **B2** (canonical-space alignment, SLM-22, merged). B3 is the direct
+empirical test of the program's core hypothesis: *removing non-lexical
+symbols lets a smaller model learn the grammar.*
 
-Code: [`dsl/production_codec.py`](../../src/slm_training/dsl/production_codec.py)
-(`encode_choices` / `choices_to_productions` / `decode_choices` /
-`choice_stats`). Tests: `tests/test_dsl/test_choice_codec.py`.
+Code: [`harnesses/experiments/choice_ladder.py`](../../src/slm_training/harnesses/experiments/choice_ladder.py).
+Tests: `tests/test_harnesses/experiments/test_choice_ladder.py`.
 
-## The transform
+## Instrument
 
-The grammar-native production stream already removed binder names and most
-surface syntax. The choice layer strips what remains reconstructible:
+Matched tiny models per width — one arm trained on lexer surface targets,
+one on B1 choice-decision targets (`output_tokenizer="choice"`), same
+records / steps / seed / held-out mask draw. It rides the existing TwoTower
+owner (no parallel trainer) and produces the E1 bits-per-semantic-decision
+quantity: each arm's held-out masked NLL renormalized by
+(target tokens per program ÷ decisions per program), so both arms are
+compared in **nats per semantic decision** regardless of tokenizer
+byte-framing.
 
-| Production token | Choice stream | Why |
-| --- | --- | --- |
-| `=` statement marker | *dropped* | a statement begins at every component open at nesting depth 0 — pure state |
-| `]` list close / `-` component close | one generic `.` stop | at any point exactly one closeable scope is on top of the stack; the concrete delimiter is state, not choice |
-| `+Comp @k &i ~±d ^dir #lit [` | kept verbatim | real decisions: which component, which slot filler, which referent, layout direction, literal, list-shaped prop |
+## B3 fixture ladder (measured 2026-07-17)
 
-`decode_choices` re-expands deterministically (a two-symbol scope stack),
-then runs the existing `decode_productions` path — canonical statement
-order, `v0…vn` binder pool, and official-serializer validation all reused.
-Illegal streams fail closed (`ParseError` on over-closing or unclosed
-scopes); a stop decision is a *choice about arity*, so it stays in the
-model's vocabulary — but as one symbol, not two.
-
-`choice_stats` supplies the E2 bits-per-semantic-decision inputs:
-choice-token count vs production-token count vs surface atoms (the fixture
-document: fewer decisions than production tokens, <0.5 decisions per
-surface atom).
-
-## Scope and deferrals (recorded)
-
-- **v0.5 sidecar programs** (state/query/mutation) raise — the v0.5 marker
-  stream mixes lexical fragments whose choice decomposition needs its own
-  design pass.
-- **Relative refs (C1)**: `~±d` tokens pass through the choice layer
-  untouched; wiring `bind_encoding=relative` into `encode_choices` is a
-  one-line composition once the production-codec relative transform (PR
-  #277) lands.
-- **Training half** — a tokenizer option beside
-  `OpenUITokenizer`/`DSLNativeTokenizer` emitting choice streams as model
-  targets, plus quality-matrix E-rows — is *ship-blocked by B2 (SLM-22)*:
-  loss must be computed in canonical space before a choice-target model can
-  be promoted (the E225 train/decode-mismatch lesson). The codec core lands
-  first so B2's audit has the target representation in hand.
-
-## B3 fixture ladder (SLM-23, measured 2026-07-17)
-
-`harnesses/experiments/choice_ladder.py` + the `output_tokenizer="choice"`
-training path (`models/choice_tokenizer.py`, wired into
-`TwoTowerModel.from_records`): matched tiny models per width — one arm on
-lexer surface targets, one on choice targets — same 32 fixture-v1 records
-(choice-codec-compatible subset), 8 held-out, 60 CPU steps, lr 3e-4, seed 0,
-same held-out mask draw. JSON:
+32 choice-codec-compatible fixture-v1 records, 8 held-out, 60 CPU steps,
+lr 3e-4, seed 0, widths 16/32/64. JSON:
 [choice-ladder-results-b3-20260717.json](choice-ladder-results-b3-20260717.json).
 
-| d_model | target | params | vocab | tokens/prog | held-out NLL/token | **NLL/decision** |
-| ---: | --- | ---: | ---: | ---: | ---: | ---: |
-| 16 | lexer | 27.7k | 400 | 47.0 | 13.39 | 32.94 |
-| 16 | choice | 22.2k | 55 | 21.0 | 11.16 | **12.27** |
-| 32 | lexer | 78.0k | 400 | 47.0 | 16.93 | 41.63 |
-| 32 | choice | 67.0k | 55 | 21.0 | 9.91 | **10.90** |
-| 64 | lexer | 246.1k | 400 | 47.0 | 14.00 | 34.42 |
-| 64 | choice | 224.1k | 55 | 21.0 | 9.99 | **10.99** |
+| d_model | target | tokens/prog | held-out **NLL/decision** |
+| ---: | --- | ---: | ---: |
+| 16 | lexer | 46.97 | 35.64 |
+| 16 | choice | 21.75 | **17.84** |
+| 32 | lexer | 46.97 | 43.73 |
+| 32 | choice | 21.75 | **18.26** |
+| 64 | lexer | 46.97 | 34.65 |
+| 64 | choice | 21.75 | **19.14** |
 
-At every width the choice arm spends ~3× fewer nats per semantic decision on
-held-out programs, with a 7× smaller vocabulary and 2.2× shorter targets —
-the direction the externalized-syntax hypothesis predicts, now measured
-instead of asserted. Canonical-space alignment (B2's requirement) holds by
-construction: targets derive from the canonical production stream and
-`encode(decode(ids))` is the identity (test-enforced).
+At every width the choice arm spends roughly **half** the nats per semantic
+decision on held-out programs, with 2.2× shorter targets — the direction the
+externalized-syntax hypothesis predicts, measured on the canonical B1
+tokenizer rather than asserted.
 
-**Fixture caveats (binding)**: 32 train records, 60 CPU steps, masked-NLL
-proxy — *not* meaningful parse, which stays the primary metric for any
-real B3 claim; constrained decode over choice vocabularies does not exist
-yet, so generation quality is unmeasured; the surface arm's NLL
-renormalization assumes decision count is representation-invariant (it is —
-both arms encode the same programs). The full ladder (`--matrix` rows,
-meaningful parse primary, frontier scale) remains open until B2 (SLM-22)
-lands and a choice-vocabulary constraint gate exists.
+## Caveats (binding)
+
+- Masked-NLL proxy — **not meaningful parse**, which stays the primary metric
+  for any real B3 claim; this ladder measures learnability of the target
+  representation, not generation quality.
+- Constrained decode over choice vocabularies is B1 follow-up work (the
+  surface DFA speaks surface lexemes); these rows decode unconstrained.
+- Main's choice vocabulary is corpus-independent full-grammar, so the choice
+  arm's embedding table is not smaller than a tiny-fixture lexer vocab — the
+  load-bearing quantity is *target length* (decisions per program), not vocab
+  size.
+- The full ladder (`--matrix` rows, meaningful parse primary, frontier scale)
+  remains future work.
 
 ## Honesty
 
-Codec-layer evidence only: round-trip identity (`choices → OpenUI →
-choices`), detokenizer/production-decode equality, fail-closed properties,
-and decision-surface stats. No model trained on choice targets, no E-row,
-no ship claim.
+Fixture-grade wiring + measurement only. No checkpoint promoted, no gate
+touched, no ship claim.

@@ -82,10 +82,24 @@ def _is_lexer_output(config: "TwoTowerConfig | None") -> bool:
     }
 
 
+def _is_choice_output(config: "TwoTowerConfig | None") -> bool:
+    if config is None:
+        return False
+    return str(getattr(config, "output_tokenizer", "compositional") or "").lower() in {
+        "choice",
+        "choices",
+        "choice_codec",
+    }
+
+
 def _load_any_tokenizer(path: Path | str):
-    """Load compositional or lexer-native tokenizer from JSON sidecar."""
+    """Load compositional, lexer-native, or choice-codec tokenizer from sidecar."""
     path = Path(path)
     raw = json.loads(path.read_text(encoding="utf-8"))
+    if raw.get("kind") == "choice_codec":
+        from slm_training.models.choice_tokenizer import ChoiceTokenizer
+
+        return ChoiceTokenizer.load(path)
     if raw.get("kind") == "dsl_native" or "id_to_kind" in raw:
         from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
 
@@ -281,6 +295,7 @@ class TwoTowerConfig:
     trust_gate_train: bool = False
     # V5: output-side representation
     # compositional = legacy OpenUITokenizer v2; lexer = DSLNativeTokenizer
+    # compositional | lexer | choice (B1 pure grammar-choice stream)
     output_tokenizer: str = "compositional"
     # When output_tokenizer=lexer: map placeholders to <SYM_i> (E41+).
     use_symbol_table: bool = True
@@ -1165,12 +1180,15 @@ class TwoTowerModel(nn.Module):
         if self._placeholder_token_ids is None:
             ids: set[int] = set()
             try:
+                from slm_training.models.choice_tokenizer import is_choice_tokenizer
                 from slm_training.models.dsl_tokenizer import (
                     TokenKind,
                     is_dsl_native_tokenizer,
                 )
 
-                if is_dsl_native_tokenizer(self.tokenizer):
+                if is_dsl_native_tokenizer(self.tokenizer) or is_choice_tokenizer(
+                    self.tokenizer
+                ):
                     ids |= self.tokenizer.kind_ids(TokenKind.SYM)
                     self._placeholder_token_ids = ids
                     return ids
@@ -1195,11 +1213,24 @@ class TwoTowerModel(nn.Module):
     ) -> list[int]:
         """Encode target OpenUI, optionally via lexer-native symbol table."""
         try:
+            from slm_training.models.choice_tokenizer import is_choice_tokenizer
             from slm_training.models.dsl_tokenizer import (
                 SymbolTable,
                 is_dsl_native_tokenizer,
             )
 
+            if is_choice_tokenizer(self.tokenizer):
+                # Choice codec: slot pointers resolve through the table's
+                # placeholder inventory; cache the table so decode shares it.
+                table = SymbolTable.from_placeholders(
+                    placeholders, max_slots=self.tokenizer.sym_slots
+                )
+                ids = self.tokenizer.encode(
+                    openui, table=table, placeholders=placeholders
+                )
+                if cache_key is not None:
+                    self._symbol_tables[cache_key] = table
+                return ids
             if is_dsl_native_tokenizer(self.tokenizer):
                 use_sym = bool(getattr(self.config, "use_symbol_table", True))
                 table = SymbolTable.from_placeholders(
@@ -1337,12 +1368,15 @@ class TwoTowerModel(nn.Module):
             end = token_ids.index(self.tokenizer.eos_id, 1)
             token_ids = token_ids[: end + 1]
         try:
+            from slm_training.models.choice_tokenizer import is_choice_tokenizer
             from slm_training.models.dsl_tokenizer import (
                 SymbolTable,
                 is_dsl_native_tokenizer,
             )
 
-            if is_dsl_native_tokenizer(self.tokenizer):
+            if is_dsl_native_tokenizer(self.tokenizer) or is_choice_tokenizer(
+                self.tokenizer
+            ):
                 table = None
                 if cache_key and cache_key in self._symbol_tables:
                     table = self._symbol_tables[cache_key]  # type: ignore[assignment]
@@ -1493,13 +1527,17 @@ class TwoTowerModel(nn.Module):
         if fid_w > 0.0 and predict_mask.any():
             ph_ids: set[int] = set()
             try:
+                from slm_training.models.choice_tokenizer import is_choice_tokenizer
                 from slm_training.models.dsl_tokenizer import (
                     SymbolTable,
                     TokenKind,
                     is_dsl_native_tokenizer,
                 )
 
-                if is_dsl_native_tokenizer(self.tokenizer):
+                if is_choice_tokenizer(self.tokenizer):
+                    # Choice codec always uses slot pointers for placeholders.
+                    ph_ids |= self.tokenizer.kind_ids(TokenKind.SYM)
+                elif is_dsl_native_tokenizer(self.tokenizer):
                     if bool(getattr(self.config, "use_symbol_table", True)):
                         for r in batch:
                             table = SymbolTable.from_placeholders(
@@ -4636,6 +4674,19 @@ class TwoTowerModel(nn.Module):
             if grammar_constrained is None
             else grammar_constrained
         )
+        try:
+            from slm_training.models.choice_tokenizer import is_choice_tokenizer
+
+            if use_grammar and is_choice_tokenizer(self.tokenizer):
+                # v1 (B1): choice-codec ids are grammar decisions, not surface
+                # lexemes — the surface DFA gate cannot admit them token-by-
+                # token. Bypass token-level grammar masks; decode-side
+                # validation (fail-closed detokenizer) still applies.
+                # Follow-up: a choice-native legal-decision gate via
+                # OpenUIIncrementalEngine.
+                use_grammar = False
+        except Exception:  # noqa: BLE001
+            pass
         length = max_len or self.gen_len or self.config.max_target_len
         length = max(8, min(int(length), self.config.max_target_len))
         use_contract_decode = bool(
@@ -5966,7 +6017,30 @@ class TwoTowerModel(nn.Module):
         device: str | torch.device = "cpu",
     ) -> TwoTowerModel:
         cfg = config or TwoTowerConfig()
-        if _is_lexer_output(cfg):
+        if _is_choice_output(cfg):
+            from slm_training.models.choice_tokenizer import ChoiceTokenizer
+
+            tokenizer = ChoiceTokenizer.build()
+            # Scratch context keeps a prompt-word tokenizer (decoupled).
+            context_tokenizer = OpenUITokenizer.build([r.prompt for r in records])
+            max_target = max(
+                (
+                    len(
+                        tokenizer.encode(
+                            r.openui,
+                            add_special=True,
+                            placeholders=list(r.placeholders or []),
+                        )
+                    )
+                    for r in records
+                ),
+                default=32,
+            )
+            max_prompt = max(
+                (len(context_tokenizer.encode(r.prompt)) for r in records),
+                default=16,
+            )
+        elif _is_lexer_output(cfg):
             from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
 
             tokenizer = DSLNativeTokenizer.build(
@@ -5995,22 +6069,6 @@ class TwoTowerModel(nn.Module):
             max_prompt = max(
                 (len(context_tokenizer.encode(r.prompt)) for r in records),
                 default=16,
-            )
-        elif (
-            str(getattr(cfg, "output_tokenizer", "") or "").lower() == "choice"
-        ):
-            # B1 training half: choice-stream targets (canonical-space by
-            # construction). Context stays a prompt-word tokenizer.
-            from slm_training.models.choice_tokenizer import ChoiceTokenizer
-
-            tokenizer = ChoiceTokenizer.build([r.openui for r in records])
-            context_tokenizer = OpenUITokenizer.build([r.prompt for r in records])
-            max_prompt = max(
-                (len(context_tokenizer.encode(r.prompt)) for r in records),
-                default=16,
-            )
-            max_target = max(
-                (len(tokenizer.encode(r.openui)) for r in records), default=32
             )
         else:
             texts = [r.prompt for r in records] + [r.openui for r in records]

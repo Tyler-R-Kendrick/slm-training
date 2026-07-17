@@ -1,9 +1,0 @@
-{
-  "surfaces": 6,
-  "same_surface_pairs": 40,
-  "cross_surface_pairs": 191,
-  "same_surface_cos": 0.9998,
-  "cross_surface_cos": 0.9679,
-  "binding_margin": 0.032,
-  "mode": "replace"
-}

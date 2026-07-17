@@ -1255,24 +1255,24 @@ sampling-until-acceptance loop, no convergence guarantee): `asap_decode`
 stream hard-error mass from the next proposal at that position and gives
 unmask ordering the post-removal confidence. Decode-only, eval-only row routed
 through the frozen E255 checkpoint via `--parent` — matched pair differing
-only in `asap_decode` (enforced by `tests/test_scripts/test_quality_matrix_v12.py`).
+only in `asap_decode` (enforced by `tests/test_scripts/test_quality_matrix_v14.py`).
 
 | ID | Isolated lever | Baseline | Status |
 | --- | --- | --- | --- |
-| E259 | `asap_decode=True` (A2 ASAp mass removal) | E255 recorded eval | fixture-run |
+| E263 | `asap_decode=True` (A2 ASAp mass removal) | E255 recorded eval | fixture-run |
 
-### V12 measured results (CPU, fixture-grade, 2026-07-17)
+### V14 measured results (CPU, fixture-grade, 2026-07-17)
 
 Recipe: eval-only overlay on `qx_e255_b4_scratch_control/best_weighted_nll.pt`,
 fixture v1 corpus, suites smoke 3 / held_out 5 / adversarial 4 / ood 4 /
 rico_held 0, parallel MaskGIT decode, `--rico-limit 3`. JSON:
-[quality-matrix-results-iter-v12-a2-20260717.json](quality-matrix-results-iter-v12-a2-20260717.json);
+[quality-matrix-results-iter-v14-a2-20260717.json](quality-matrix-results-iter-v14-a2-20260717.json);
 narrative + honesty envelope:
-[iter-e259-a2-asap-decode-20260717.md](iter-e259-a2-asap-decode-20260717.md).
+[iter-e263-a2-asap-decode-20260717.md](iter-e263-a2-asap-decode-20260717.md).
 Ledger telemetry proves the lever is live: 204–334 `asap_penalties` across
 32–53 distinct positions per suite; two runs produced byte-identical metrics.
 
-## V13 C2 dynamic pseudo-embeddings (fixture-run 2026-07-17)
+## V15 C2 dynamic pseudo-embeddings (fixture-run 2026-07-17)
 
 Track C2 (DyVo [2410.07722](https://arxiv.org/abs/2410.07722), **Adapted**:
 dynamic-vocabulary embedding only): `runtime_symbol_features="replace"`
@@ -1283,23 +1283,23 @@ construction and by test).
 
 | ID | Isolated lever | Baseline | Status |
 | --- | --- | --- | --- |
-| E260 | `runtime_symbol_features="replace"` (C2) | E255 recorded eval | fixture-run |
+| E264 | `runtime_symbol_features="replace"` (C2) | E255 recorded eval | fixture-run |
 
 Recipe: scratch-control 200 CPU steps, fixture v1 corpus, matched vs E255 on
 everything but the mode. JSON:
-[quality-matrix-results-iter-v13-c2-20260717.json](quality-matrix-results-iter-v13-c2-20260717.json);
-narrative: [iter-e260-c2-pseudo-embeddings-20260717.md](iter-e260-c2-pseudo-embeddings-20260717.md).
+[quality-matrix-results-iter-v15-c2-20260717.json](quality-matrix-results-iter-v15-c2-20260717.json);
+narrative: [iter-e264-c2-pseudo-embeddings-20260717.md](iter-e264-c2-pseudo-embeddings-20260717.md).
 Honest gates fail on both rows; structural similarity dips vs control
 (0.19–0.29 vs 0.28–0.37) — an honest fixture-scale negative. The
 binding-consistency probe on the trained checkpoint reports same-surface
 hidden cosine 0.9998 vs cross-surface 0.9679 (margin +0.032):
-[binding-consistency-e260-20260717.json](binding-consistency-e260-20260717.json).
+[binding-consistency-e264-20260717.json](binding-consistency-e264-20260717.json).
 The run also flushed a latent stale-feature leak (fixed at the source in
 `training_loss`; complementary to PR #275).
 
 Honest gates still fail on both rows (syntax/meaningful parse 0.0 — the
 fixture-scale placeholder-policy wall Track A targets at frontier scale, not
-here). Secondary signals, structural similarity E255 → E259:
+here). Secondary signals, structural similarity E255 → E263:
 smoke 0.30 → 0.265, held_out 0.323 → 0.248, adversarial 0.281 → 0.370,
 ood 0.372 → 0.278 — decode behavior demonstrably diverges under the ledger,
 with mixed noise-level deltas at n≤5 per suite. **Wiring evidence only**: the
@@ -1333,6 +1333,66 @@ closure, and symbols. The sampler hypothesis is confirmed, but only eight prompt
 groups and one held-out group qualified, so this export is not admitted for
 training. E253/E254 remain blocked pending broader group support. Full evidence:
 [iter-e258-counterfactual-depth-probe-20260716.md](iter-e258-counterfactual-depth-probe-20260716.md).
+
+E259 doubled the uniform budget to eight states per record: 520 states and 1,528
+legal candidates produced 38 qualified events across eight decision kinds. The
+extra depth added roles but no prompt groups; support remained eight groups with
+one held-out group. This falsifies state-count scaling as the group-coverage fix,
+so the export is not admitted and E253/E254 remain blocked. The next data lever
+must derive broad exact states from grammar/AST-aligned judged trajectories, not
+probe more states from the same poor model completions. Full evidence:
+[iter-e259-expanded-counterfactual-probe-20260716.md](iter-e259-expanded-counterfactual-probe-20260716.md).
+
+E260 tested that grammar/AST lever on 10 records. Forty exact gold-derived states
+produced 30 qualified events across 11 decision kinds and nine prompt groups,
+including six events from two stable held-out groups. Gold remained outside model
+context; retained probes pair a gold-selected completion with policy-completed
+legal alternatives and independent judge evidence. The bounded hypothesis is
+confirmed, but training remains blocked until the identical all-record run is
+persisted and audited. Full evidence:
+[iter-e260-gold-ast-counterfactual-probe-20260716.md](iter-e260-gold-ast-counterfactual-probe-20260716.md).
+
+E261 completed that all-record run. Across 65 accepted document traces, 260
+exact gold-AST states and 736 legal candidates produced 239 independently judged
+events across 14 decision kinds and 64 prompt groups. The immutable committed
+corpus contains 200 train and 39 held-out events across 53/11 groups, including
+108 set-valued comparisons; every retained probe is same-state verified and
+pairs a gold-AST selected completion with policy-completed alternatives. The
+corpus prerequisite is satisfied and a new semantic preference experiment is
+unblocked, but model quality and ship gates remain unmeasured. Full evidence:
+[iter-e261-gold-ast-counterfactual-corpus-20260716.md](iter-e261-gold-ast-counterfactual-corpus-20260716.md).
+
+## V12 B1 choice-sequence codec (registered 2026-07-17; matrix row unrun)
+
+Track B1 (SLM-42): a pure grammar-choice output stream — the model predicts
+only semantic decisions (which production, which slot filler); all non-lexical
+surface syntax is reconstructed by a deterministic detokenizer through the
+official lang-core serializer (fail-closed, so parse is a meaningful honest
+primary — the detokenizer never invents syntax for an invalid stream). New
+`--output-tokenizer choice` beside compositional/lexer; codec in
+`dsl/production_codec.py` (`encode_choices`/`decode_choices`), tokenizer in
+`models/choice_tokenizer.py` (sidecar kind `choice_codec`). B2 canonical
+alignment laws pinned in `tests/test_dsl/test_choice_codec.py`.
+
+| ID | Isolated lever | Status |
+| --- | --- | --- |
+| E262 | B1 pure grammar-choice output stream (`output_tokenizer=choice`) vs E255 lexer control (same diffusion masking, non-LTR MaskGIT decode) | registered / unrun |
+
+E2 semantic density (36 fixture seeds, measured 2026-07-17): choice stream
+carries 842 decisions / 3713.2 bits vs production 1019 / 4391.9 and surface
+1535 / 8368.0 — `surface_to_choice_bit_ratio` 2.254 (production: 1.905),
+`production_to_choice_bit_ratio` 1.183; structural/punct/name categories
+collapse to 0 (arity choices remain, honestly categorized). A fixture-scale
+CPU wiring smoke of the identical harness path (choice + matched lexer
+control) scored honest 0.0 parse on both arms at 120–2500 steps —
+wiring evidence only; the matrix row needs the standard eval corpus and
+budget. JSON + narrative:
+[iter-b1-choice-sequence-codec-20260717.json](iter-b1-choice-sequence-codec-20260717.json),
+[iter-b1-choice-sequence-codec-20260717.md](iter-b1-choice-sequence-codec-20260717.md).
+No checkpoint was created or promoted; MODEL_CARD unchanged. v1 caveat: the
+surface-DFA token gate is bypassed for choice ids (validation moves entirely
+to the fail-closed detokenizer); a choice-native legal-decision gate is the
+follow-up.
 
 ## Verifier-guided repair (mixed status)
 

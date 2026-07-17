@@ -1374,15 +1374,42 @@ def _v11_experiments(train_dir: Path) -> list[Experiment]:
 
 
 def _v12_experiments(train_dir: Path) -> list[Experiment]:
-    """E259: Track A decode-distortion fix.
+    """E262: B1 choice-sequence codec (pure grammar-choice output stream).
 
-    E259 (A2): ASAp-style distribution-aware constrained MaskGIT decode
-    (Park et al., NeurIPS 2024 adapted to the canvas-position unmask loop) —
-    observed constraint violations remove the violating token's mass at that
-    position from the next proposal, and unmask ordering uses post-removal
-    confidence. The lever is decode-only, so the row is eval-only: route it
-    through a frozen E255 checkpoint via ``--parent`` and compare against
-    E255's recorded eval — a matched pair differing only in ``asap_decode``.
+    Trains/decodes over the ``choice`` output tokenizer: the model predicts
+    only semantic decisions (which production, which slot filler) and the
+    deterministic detokenizer reconstructs all surface syntax through the
+    official lang-core serializer (fail-closed, so parse is a meaningful
+    primary — the detokenizer never invents syntax for an invalid stream).
+    Matched against E255 (v11 lexer-stream scratch control): identical
+    diffusion masking and non-LTR MaskGIT decode, differing only in the
+    output representation. v1 bypasses the surface-DFA token gate (choice
+    ids are not surface lexemes; follow-up is a choice-native legal-decision
+    gate). E2 semantic-density gates for the representation itself are
+    pinned in tests/test_dsl/test_choice_codec.py and measured in
+    docs/design/iter-b1-choice-sequence-codec-20260717.md.
+    """
+    return [
+        Experiment(
+            "E262",
+            "qx_e262_b1_choice_codec",
+            "B1 pure grammar-choice output stream (choice tokenizer)",
+            train_dir,
+            output_tokenizer="choice",
+            mask_pattern="diffusion",
+            grammar_ltr_primary=False,
+        ),
+    ]
+
+
+def _v14_experiments(train_dir: Path) -> list[Experiment]:
+    """E263 (A2): ASAp-style distribution-aware constrained MaskGIT decode.
+
+    Observed constraint violations remove the violating token's mass at that
+    canvas position from the next proposal, and unmask ordering uses
+    post-removal confidence. Decode-only, so eval-only: route through a frozen
+    E255 checkpoint via ``--parent`` — a matched pair differing only in
+    ``asap_decode``.
     """
     base = dict(
         output_tokenizer="lexer",
@@ -1392,12 +1419,12 @@ def _v12_experiments(train_dir: Path) -> list[Experiment]:
         runtime_override_fields=frozenset({"asap_decode", "grammar_ltr_primary"}),
     )
     return [
-        Experiment("E259", "qx_e259_a2_asap_decode", "A2 ASAp distribution-aware constrained MaskGIT decode", train_dir, asap_decode=True, **base),
+        Experiment("E263", "qx_e263_a2_asap_decode", "A2 ASAp distribution-aware constrained MaskGIT decode", train_dir, asap_decode=True, **base),
     ]
 
 
-def _v13_experiments(train_dir: Path) -> list[Experiment]:
-    """E260: C2 dynamic pseudo-embeddings (SLM-26).
+def _v15_experiments(train_dir: Path) -> list[Experiment]:
+    """E264 (C2): dynamic pseudo-embeddings for symbol tokens (SLM-26).
 
     ``runtime_symbol_features="replace"`` cancels the learned symbol-pool row
     with a deterministic byte-compositional vector (DyVo-style; weight tying
@@ -1409,7 +1436,7 @@ def _v13_experiments(train_dir: Path) -> list[Experiment]:
         grammar_ltr_primary=False,
     )
     return [
-        Experiment("E260", "qx_e260_c2_pseudo_embeddings", "C2 dynamic pseudo-embeddings for symbol tokens", train_dir, runtime_symbol_features="replace", **base),
+        Experiment("E264", "qx_e264_c2_pseudo_embeddings", "C2 dynamic pseudo-embeddings for symbol tokens", train_dir, runtime_symbol_features="replace", **base),
     ]
 
 
@@ -2286,13 +2313,15 @@ def main(argv: list[str] | None = None) -> int:
             "v10",
             "v11",
             "v12",
-            "v13",
+            "v14",
+            "v15",
             "all",
         ),
         default="v3",
         help="Experiment set through v10 local-decision rows E248-E254,"
-        " v11 representation rows E255-E257, v12 decode-distortion row E259,"
-        " v13 pseudo-embedding row E260, or all.",
+        " v11 representation rows E255-E257, v12 choice-codec row E262,"
+        " v14 decode-distortion row E263, v15 pseudo-embedding row E264,"
+        " or all.",
     )
     parser.add_argument(
         "--list",
@@ -2330,7 +2359,7 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(f"unknown suites: {','.join(unknown_suites)}")
     if not args.suites:
         parser.error("--suites must select at least one suite")
-    if args.matrix in {"v4", "v5", "v6", "v7", "v8", "v9", "v10", "v11", "v12", "v13", "all"}:
+    if args.matrix in {"v4", "v5", "v6", "v7", "v8", "v9", "v10", "v11", "v12", "v14", "v15", "all"}:
         if (
             args.parent is None
             and not args.scratch_control
@@ -2474,8 +2503,10 @@ def main(argv: list[str] | None = None) -> int:
         experiments.extend(_v11_experiments(args.train_dir))
     if args.matrix in {"v12", "all"}:
         experiments.extend(_v12_experiments(args.train_dir))
-    if args.matrix in {"v13", "all"}:
-        experiments.extend(_v13_experiments(args.train_dir))
+    if args.matrix in {"v14", "all"}:
+        experiments.extend(_v14_experiments(args.train_dir))
+    if args.matrix in {"v15", "all"}:
+        experiments.extend(_v15_experiments(args.train_dir))
     if args.only:
         experiments = [e for e in experiments if e.eid in selected_ids]
     if args.list:

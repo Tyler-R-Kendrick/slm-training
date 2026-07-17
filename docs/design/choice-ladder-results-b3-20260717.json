@@ -17,21 +17,21 @@
       "trainable_params": 27746,
       "vocab_size": 400,
       "tokens_per_program": 46.97,
-      "decisions_per_program": 19.1,
+      "decisions_per_program": 21.2,
       "train_loss_final": 15.7967,
-      "heldout_nll_per_token": 13.3936,
-      "heldout_nll_per_decision": 32.9362
+      "heldout_nll_per_token": 16.0845,
+      "heldout_nll_per_decision": 35.6354
     },
     {
       "d_model": 16,
       "target": "choice",
-      "trainable_params": 22226,
-      "vocab_size": 55,
-      "tokens_per_program": 21.0,
-      "decisions_per_program": 19.1,
-      "train_loss_final": 11.9636,
-      "heldout_nll_per_token": 11.1564,
-      "heldout_nll_per_decision": 12.2661
+      "trainable_params": 32242,
+      "vocab_size": 681,
+      "tokens_per_program": 21.75,
+      "decisions_per_program": 21.2,
+      "train_loss_final": 15.1817,
+      "heldout_nll_per_token": 17.391,
+      "heldout_nll_per_decision": 17.8422
     },
     {
       "d_model": 32,
@@ -39,21 +39,21 @@
       "trainable_params": 78018,
       "vocab_size": 400,
       "tokens_per_program": 46.97,
-      "decisions_per_program": 19.1,
+      "decisions_per_program": 21.2,
       "train_loss_final": 17.4632,
-      "heldout_nll_per_token": 16.9289,
-      "heldout_nll_per_decision": 41.6298
+      "heldout_nll_per_token": 19.7374,
+      "heldout_nll_per_decision": 43.7284
     },
     {
       "d_model": 32,
       "target": "choice",
-      "trainable_params": 66978,
-      "vocab_size": 55,
-      "tokens_per_program": 21.0,
-      "decisions_per_program": 19.1,
-      "train_loss_final": 9.5532,
-      "heldout_nll_per_token": 9.9098,
-      "heldout_nll_per_decision": 10.8955
+      "trainable_params": 87010,
+      "vocab_size": 681,
+      "tokens_per_program": 21.75,
+      "decisions_per_program": 21.2,
+      "train_loss_final": 17.3132,
+      "heldout_nll_per_token": 17.8026,
+      "heldout_nll_per_decision": 18.2644
     },
     {
       "d_model": 64,
@@ -61,21 +61,21 @@
       "trainable_params": 246146,
       "vocab_size": 400,
       "tokens_per_program": 46.97,
-      "decisions_per_program": 19.1,
+      "decisions_per_program": 21.2,
       "train_loss_final": 14.2307,
-      "heldout_nll_per_token": 13.9972,
-      "heldout_nll_per_decision": 34.4206
+      "heldout_nll_per_token": 15.6398,
+      "heldout_nll_per_decision": 34.6501
     },
     {
       "d_model": 64,
       "target": "choice",
-      "trainable_params": 224066,
-      "vocab_size": 55,
-      "tokens_per_program": 21.0,
-      "decisions_per_program": 19.1,
-      "train_loss_final": 8.1161,
-      "heldout_nll_per_token": 9.9921,
-      "heldout_nll_per_decision": 10.9861
+      "trainable_params": 264130,
+      "vocab_size": 681,
+      "tokens_per_program": 21.75,
+      "decisions_per_program": 21.2,
+      "train_loss_final": 11.3052,
+      "heldout_nll_per_token": 18.6551,
+      "heldout_nll_per_decision": 19.139
     }
   ]
 }
