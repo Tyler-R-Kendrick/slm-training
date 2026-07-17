@@ -1,0 +1,10 @@
+{
+  "task_id": "kv-form",
+  "description": "A trivial key/value form task used to prove G3 pack instantiation is mechanical.",
+  "components": [
+    {"name": "row", "props": ["children", "gap"]},
+    {"name": "field", "props": ["label", "value"]},
+    {"name": "text", "props": ["text", "size"]}
+  ],
+  "root_name": "root"
+}
