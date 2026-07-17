@@ -1388,6 +1388,18 @@ must construct a conflict-projected or minimum-norm combination of per-kind
 gradients, not vary duration or scalar learning rate. Full evidence:
 [iter-e267-block-stratified-ftpo-20260717.md](iter-e267-block-stratified-ftpo-20260717.md).
 
+E268 constructed all 14 grammar/AST decision-kind gradients per step and
+deterministically applied pairwise PCGrad before the unchanged stratified
+guard. It projected 2,220 of 5,460 ordered task pairs, yet every one of 30
+proposals and 150 scales regressed at least one per-kind metric. The restored
+model and full evaluation exactly match the parent; five gates fail and AgentV
+is 2/5. The local stage took 2,338.56s, 25.9x E267, so this implementation is
+also operationally rejected. Pairwise projection does not certify a common
+descent direction. The next generalized lever is a deterministic minimum-norm
+convex combination with an explicit common-descent certificate, benchmarked
+for one step before a full run. Full evidence:
+[iter-e268-projected-stratified-ftpo-20260717.md](iter-e268-projected-stratified-ftpo-20260717.md).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
