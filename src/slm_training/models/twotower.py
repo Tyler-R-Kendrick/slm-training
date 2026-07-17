@@ -3997,6 +3997,73 @@ class TwoTowerModel(nn.Module):
         """Left-to-right argmax decode (batch size 1 wrapper)."""
         return self._greedy_ltr_decode_batch(ctx, ctx_pad, length)
 
+    def _choice_ltr_decode_batch(
+        self,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor,
+        length: int,
+        contracts: list[list[str] | None],
+    ) -> torch.Tensor:
+        """Decode choice streams through their production-codec pushdown state."""
+        from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+        bsz = int(ctx.size(0))
+        tok = self.tokenizer
+        ids = torch.full(
+            (bsz, length),
+            tok.mask_id,
+            dtype=torch.long,
+            device=self.device_name,
+        )
+        ids[:, 0] = tok.bos_id
+        states = [
+            ChoiceDecodeState(tok, slot_count=len(contract or ()))
+            for contract in contracts
+        ]
+        active = torch.ones(bsz, dtype=torch.bool, device=self.device_name)
+        stats = get_active_stats()
+
+        for position in range(1, length):
+            rows = active.nonzero(as_tuple=False).flatten().tolist()
+            if not rows:
+                break
+            allowed = {
+                row: states[row].allowed_ids(length - position) for row in rows
+            }
+            need_model = [row for row in rows if len(allowed[row]) > 1]
+            logits = (
+                self._denoiser_forward(ids, ctx, ctx_pad)
+                if need_model
+                else None
+            )
+            for row in rows:
+                legal = allowed[row]
+                if not legal:
+                    active[row] = False
+                    continue
+                if len(legal) == 1:
+                    choice = next(iter(legal))
+                    if stats is not None:
+                        stats.forced_tokens += 1
+                else:
+                    assert logits is not None
+                    legal_ids = torch.tensor(
+                        sorted(legal), dtype=torch.long, device=logits.device
+                    )
+                    best = logits[row, position].index_select(0, legal_ids).argmax()
+                    choice = int(legal_ids[int(best)].item())
+                ids[row, position] = choice
+                if stats is not None:
+                    stats.tokens_emitted += 1
+                    stats.constrained_last_legal_candidates = len(legal)
+                if choice == tok.eos_id:
+                    active[row] = False
+                    if position + 1 < length:
+                        ids[row, position + 1 :] = tok.pad_id
+                else:
+                    assert states[row].advance_id(choice)
+        return ids
+
     def _greedy_ltr_decode_batch(
         self,
         ctx: torch.Tensor,
@@ -4684,16 +4751,14 @@ class TwoTowerModel(nn.Module):
             if grammar_constrained is None
             else grammar_constrained
         )
+        choice_constrained = False
         try:
             from slm_training.models.choice_tokenizer import is_choice_tokenizer
 
             if use_grammar and is_choice_tokenizer(self.tokenizer):
-                # v1 (B1): choice-codec ids are grammar decisions, not surface
-                # lexemes — the surface DFA gate cannot admit them token-by-
-                # token. Bypass token-level grammar masks; decode-side
-                # validation (fail-closed detokenizer) still applies.
-                # Follow-up: a choice-native legal-decision gate via
-                # OpenUIIncrementalEngine.
+                choice_constrained = True
+                # Choice ids are production decisions, not surface lexemes.
+                # Their dedicated pushdown state owns legality below.
                 use_grammar = False
         except Exception:  # noqa: BLE001
             pass
@@ -4764,6 +4829,18 @@ class TwoTowerModel(nn.Module):
                 feature_tables.append(table)
         except Exception:  # noqa: BLE001
             feature_tables = []
+        if choice_constrained:
+            contracts = [
+                self._slot_contracts[i]
+                if self._slot_contracts and i < len(self._slot_contracts)
+                else None
+                for i in range(len(prompts))
+            ]
+            ids = self._choice_ltr_decode_batch(ctx, ctx_pad, length, contracts)
+            return [
+                self._decode_openui(ids[i], placeholders=contracts[i])
+                for i in range(len(prompts))
+            ]
         if bool(getattr(self.config, "contract_template_fastpath", False)):
             fast: list[str] = []
             for contract in self._slot_contracts or []:

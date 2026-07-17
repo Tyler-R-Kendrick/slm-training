@@ -11,6 +11,7 @@ from slm_training.dsl.parser import validate
 from slm_training.dsl.schema import ExampleRecord, load_jsonl
 from slm_training.models.choice_tokenizer import (
     CHOICE_TOKENIZER_KIND,
+    ChoiceDecodeState,
     ChoiceTokenizer,
     is_choice_tokenizer,
 )
@@ -119,6 +120,31 @@ def test_decode_fails_closed_on_mask_unk_and_garbage(tok: ChoiceTokenizer) -> No
     assert tok.decode([]) == ""
 
 
+def test_choice_state_reserves_a_complete_root_and_forces_singletons(
+    tok: ChoiceTokenizer,
+) -> None:
+    state = ChoiceDecodeState(tok)
+    assert tok.eos_id not in state.allowed_ids(3)
+
+    component = tok.token_to_id["+CardHeader"]
+    assert component in state.allowed_ids(3)
+    assert state.advance_id(component)
+
+    close = tok.token_to_id["-"]
+    assert state.allowed_ids(2) == {close}
+    assert state.advance_id(close)
+    assert state.allowed_ids(1) == {tok.eos_id}
+
+
+def test_choice_state_rejects_unavailable_slots_and_forward_refs(
+    tok: ChoiceTokenizer,
+) -> None:
+    state = ChoiceDecodeState(tok, slot_count=1)
+    assert tok.token_to_id["@0"] in state.allowed_ids(8)
+    assert tok.token_to_id["@1"] not in state.allowed_ids(8)
+    assert tok.token_to_id["&0"] not in state.allowed_ids(8)
+
+
 @needs_bridge
 def test_twotower_choice_wiring(tmp_path: Path) -> None:
     """from_records builds the choice tokenizer; train/save/load round trip."""
@@ -143,7 +169,7 @@ def test_twotower_choice_wiring(tmp_path: Path) -> None:
     cfg = TwoTowerConfig(
         output_tokenizer="choice",
         context_backend="scratch",
-        grammar_constrained=True,  # v1 bypasses the surface DFA gate safely
+        grammar_constrained=True,
         d_model=64,
         n_heads=4,
         context_layers=1,
@@ -156,9 +182,10 @@ def test_twotower_choice_wiring(tmp_path: Path) -> None:
     assert model.context_tokenizer is not model.tokenizer
     loss = model.training_loss(records)
     assert float(loss.detach()) >= 0.0
-    # Generation must not crash (untrained output may fail closed to "").
+    # The deterministic choice state owns syntax even for an untrained model.
     text = model.generate("Hero card", gold=records[0])
-    assert isinstance(text, str)
+    assert text
+    assert validate(text).serialized == text
 
     ckpt = tmp_path / "choice.pt"
     model.save(ckpt)
