@@ -1,5 +1,5 @@
 perf = Query("smoke_perf", {}, { tiles: [], phase: [], rows: [], first_id: "" }, 0)
-quality = Query("smoke_quality", {}, { rows: [], gate_label: "gate", headline_label: "meaningful program rate" }, 0)
+quality = Query("smoke_quality", {}, { rows: [], gate_label: "gate", headline_label: "Meaningful" }, 0)
 
 head = PageHead("Smoke Runs", "The fast canary — cheap wiring runs and the strictest-gated smoke suite. Latency, throughput, and phase telemetry at a glance. Smoke parse alone is a canary, not generalization.")
 

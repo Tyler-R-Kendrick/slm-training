@@ -1,5 +1,5 @@
 perf = Query("overview_insights", {}, { references: { rows: [], provenance: "committed" }, tiles: { rows: [] }, insights: { improvements: [], carry_forward: [], novel: [] }, comparisons: { rows: [], columns: [] }, comparison_basis: "", cache: {} }, 15)
-heroData = Query("overview_hero", {}, { reference: null, provenance: "committed", gate: null, deployment: { selected: false, track: "" }, inflight: { jobs: 0, dispatches: 0, execution: false } }, 15)
+heroData = Query("overview_hero", {}, { reference: null, provenance: "committed", gate: null, deployment: { selected: false, track: "" }, inflight: { jobs: 0, dispatches: 0, execution: false }, unavailable: false }, 15)
 jobs = Query("overview_jobs", {}, { rows: [], count: 0, execution: false }, 10)
 disp = Query("dispatches", {}, { rows: [], remotes: [], bucket_url: "" }, 30)
 

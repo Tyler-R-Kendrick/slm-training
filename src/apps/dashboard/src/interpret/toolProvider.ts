@@ -5,7 +5,7 @@
 // mode exactly (the compiled pages format per-column via fmt(v, digits)).
 import { getJSON, postJSON } from "../api";
 import { fetchHero } from "../hero";
-import { smokeGate } from "../metrics";
+import { metricLabel, smokeGate } from "../metrics";
 
 const pct = (v: number) => `${Math.round((v || 0) * 100)}%`;
 
@@ -216,7 +216,7 @@ export const toolProvider: Record<string, QueryFn> = {
     return {
       provenance: d.provenance,
       gate_label: label,
-      headline_label: lever.replace(/_/g, " "),
+      headline_label: metricLabel(lever),
       rows: (d.results ?? []).map((r: any) => {
         const suite = r.suites?.smoke ?? {};
         const headline = suite[lever] ?? suite.parse_rate;
@@ -227,7 +227,7 @@ export const toolProvider: Record<string, QueryFn> = {
           fidelity: f(suite.placeholder_fidelity, 2),
           reward: f(suite.reward_score, 2),
           parse_status:
-            headline === undefined || threshold === undefined
+            headline == null || threshold == null
               ? ""
               : headline >= threshold
                 ? "pass"

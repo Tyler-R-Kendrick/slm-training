@@ -24,6 +24,8 @@ export interface HeroData {
   } | null;
   deployment: { selected: boolean; track: string };
   inflight: { jobs: number; dispatches: number; execution: boolean };
+  /** True when the core reads failed — unavailable evidence, not a zero state. */
+  unavailable: boolean;
 }
 
 export const EMPTY_HERO: HeroData = {
@@ -32,15 +34,19 @@ export const EMPTY_HERO: HeroData = {
   gate: null,
   deployment: { selected: false, track: "" },
   inflight: { jobs: 0, dispatches: 0, execution: false },
+  unavailable: false,
 };
 
 export async function fetchHero(): Promise<HeroData> {
+  // Failed reads are flagged as unavailable rather than silently rendered as
+  // a valid zero state — absence of evidence ≠ unavailable evidence.
   const [overview, jobsResp, disp]: any[] = await Promise.all([
-    getJSON<any>("/api/overview").catch(() => ({})),
-    getJSON<any>("/api/jobs").catch(() => ({ jobs: [], execution: false })),
-    getJSON<any>("/api/dispatches").catch(() => ({ jobs: [] })),
+    getJSON<any>("/api/overview").catch(() => null),
+    getJSON<any>("/api/jobs").catch(() => null),
+    getJSON<any>("/api/dispatches").catch(() => null),
   ]);
-  const p = overview.performance ?? {};
+  const unavailable = overview === null;
+  const p = overview?.performance ?? {};
   const primary = (p.references ?? [])[0] ?? null;
   const reference: HeroReference | null = primary
     ? {
@@ -71,10 +77,9 @@ export async function fetchHero(): Promise<HeroData> {
     }
   }
 
-  const dep = overview.system?.deployment ?? {};
-  const activeJobs = (jobsResp.jobs ?? []).filter((j: any) =>
-    ["running", "queued"].includes(j.status),
-  ).length;
+  const dep = overview?.system?.deployment ?? {};
+  const active = (jobs: any[]) =>
+    jobs.filter((j: any) => ["running", "queued"].includes(j.status)).length;
 
   return {
     reference,
@@ -82,10 +87,11 @@ export async function fetchHero(): Promise<HeroData> {
     gate,
     deployment: { selected: !!dep.selected, track: dep.selected?.track ?? "" },
     inflight: {
-      jobs: activeJobs,
-      dispatches: (disp.jobs ?? []).length,
-      execution: !!jobsResp.execution,
+      jobs: active(jobsResp?.jobs ?? []),
+      dispatches: active(disp?.jobs ?? []),
+      execution: !!jobsResp?.execution,
     },
+    unavailable,
   };
 }
 

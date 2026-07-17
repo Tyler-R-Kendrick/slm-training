@@ -144,6 +144,9 @@ function App() {
               aria-current={r.path === activePath ? "page" : undefined}
               className={`nav-link ${r.path === activePath ? "active" : ""}`}
               onClick={(event) => {
+                // Only intercept unmodified primary clicks — keep Ctrl/Cmd-click
+                // opening these real links in a new tab.
+                if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
                 event.preventDefault();
                 navigate(r.path);
               }}

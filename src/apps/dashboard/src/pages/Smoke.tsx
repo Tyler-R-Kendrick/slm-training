@@ -14,7 +14,7 @@ import {
   ErrorNote,
   fmt,
 } from "../components";
-import { smokeGate } from "../metrics";
+import { metricLabel, smokeGate } from "../metrics";
 
 function PhaseBreakdown({ runId, fallback }: { runId: string; fallback: any }) {
   const detail = usePoll<any>(runId ? `/api/runs/${encodeURIComponent(runId)}` : null, 0);
@@ -97,7 +97,7 @@ export function Smoke({ navigate }: { navigate: (to: string) => void }) {
         <DataTable
           columns={[
             { key: "id", label: "experiment" },
-            { key: "parse", label: gate.lever.replace(/_/g, " "), align: "right", digits: 2, help: "Headline smoke lever from the ship-gate policy." },
+            { key: "parse", label: metricLabel(gate.lever), align: "right", digits: 2, help: "Headline smoke lever from the ship-gate policy." },
             { key: "fidelity", label: "fidelity", align: "right", digits: 2, help: "Placeholder fidelity against the expected target." },
             { key: "reward", label: "reward", align: "right", digits: 2, help: "Aggregate smoke reward; higher is better." },
             { key: "gate", label: gate.label },
@@ -111,7 +111,7 @@ export function Smoke({ navigate }: { navigate: (to: string) => void }) {
             fidelity: (r) => fmt(r.fidelity, 2),
             reward: (r) => fmt(r.reward, 2),
             gate: (r) =>
-              r.parse === undefined || gate.threshold === undefined ? (
+              r.parse == null || gate.threshold == null ? (
                 <span className="hint">—</span>
               ) : (
                 <StatusPill value={r.parse >= gate.threshold} label={r.parse >= gate.threshold ? "pass" : "fail"} />

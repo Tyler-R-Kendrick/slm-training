@@ -486,9 +486,11 @@ export function HeroStrip({
   const ref = hero.reference;
   const gate = hero.gate;
   const verdictClass = gate ? (gate.pass ? "verdict-pass" : "verdict-fail") : "verdict-none";
-  const verdictText = gate
-    ? `GATES ${gate.pass ? "PASS" : "FAIL"} ${gate.passed}/${gate.total}`
-    : "NO GATE EVIDENCE";
+  const verdictText = hero.unavailable
+    ? "EVIDENCE UNAVAILABLE"
+    : gate
+      ? `GATES ${gate.pass ? "PASS" : "FAIL"} ${gate.passed}/${gate.total}`
+      : "NO GATE EVIDENCE";
   const flight = hero.inflight;
   return (
     <section className={`hero hero-${gate ? (gate.pass ? "pass" : "fail") : "none"}`} aria-label="Ship status">
@@ -503,12 +505,20 @@ export function HeroStrip({
         )}
       </div>
       <div className="hero-ref">
-        {ref ? (
+        {hero.unavailable ? (
+          <div className="hero-meta">The observability API is unreachable — this is missing evidence, not a clean zero state.</div>
+        ) : ref ? (
           <>
             <div className="hero-run">
               <a
                 className="mono runlink"
-                onClick={() => ref.run_id && navigate?.(`/runs/${encodeURIComponent(ref.run_id)}`)}
+                href={ref.run_id ? `/runs/${encodeURIComponent(ref.run_id)}` : undefined}
+                onClick={(event) => {
+                  if (!ref.run_id || !navigate) return;
+                  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                  event.preventDefault();
+                  navigate(`/runs/${encodeURIComponent(ref.run_id)}`);
+                }}
               >
                 {ref.run_id || "—"}
               </a>
@@ -556,9 +566,22 @@ export interface JobRows {
 }
 
 export function JobLines({ data }: { data: JobRows }) {
+  const [cancelling, setCancelling] = useState<string | number | null>(null);
+  const [cancelError, setCancelError] = useState<string | null>(null);
   const rows = data.rows ?? [];
   if (!data.execution) return <Empty>Execution disabled — serve locally to run jobs.</Empty>;
   if (!rows.length) return <Empty>No jobs running.</Empty>;
+  const cancel = async (id: string | number) => {
+    setCancelling(id);
+    setCancelError(null);
+    try {
+      await postJSON(`/api/jobs/${id}/cancel`, {});
+    } catch (e: any) {
+      setCancelError(`cancel failed: ${String(e?.message ?? e)}`);
+    } finally {
+      setCancelling(null);
+    }
+  };
   return (
     <>
       {rows.map((j, i) => (
@@ -571,13 +594,14 @@ export function JobLines({ data }: { data: JobRows }) {
           <span style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
             <StatusPill value={j.status} />
             {j.id != null && (
-              <button className="chip" onClick={() => postJSON(`/api/jobs/${j.id}/cancel`, {})}>
-                cancel
+              <button className="chip" disabled={cancelling === j.id} onClick={() => cancel(j.id!)}>
+                {cancelling === j.id ? "cancelling…" : "cancel"}
               </button>
             )}
           </span>
         </div>
       ))}
+      {cancelError && <ErrorNote error={cancelError} />}
     </>
   );
 }
