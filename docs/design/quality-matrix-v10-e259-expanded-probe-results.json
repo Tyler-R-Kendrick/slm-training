@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E259-expanded-counterfactual-probe",
+  "status": "measured_not_admitted_for_training",
+  "run": {
+    "run_id": "e259-counterfactual-expanded-corpus-65",
+    "trace_id": "fcb8166a47531ec9ba055f155b3ee02e",
+    "base_commit": "db1040937208af7fa1b5937f2e2b64472c020c8e",
+    "device": "cpu",
+    "seed": 258,
+    "source_document_records": 65,
+    "decode_policy": "strict_compiler_tree",
+    "states_per_record": 8,
+    "candidates_per_state": 4,
+    "state_selection": "compiler_decision_kind_round_robin_then_relative_depth_quartile"
+  },
+  "identity": {
+    "source_record_fingerprint": "9f72d85b6cc7118e0f69e010d0debdd2b40ede514e03178dded8e164daaae9bb",
+    "policy_checkpoint_sha": "7a9be4a665e216d7f7e73883ad74ad972bbf30846896d0c29188d6482f5b093a",
+    "tokenizer_sha": "8dbf8142068860eed06463fa2e0013bb298267a305bcfd85a0c24df0f7f61efe",
+    "decode_config_hash": "8c2a2ae5cb5c4ad0ab44de74a172fc2c887fbdc7e5e7e20ede953184a0c3fe5b"
+  },
+  "scoreboard": {
+    "traces": 65,
+    "accepted_traces": 65,
+    "states": 520,
+    "legal_candidates": 1528,
+    "independent_judge_passed": 403,
+    "verified_candidates": 97,
+    "qualified_events": 38,
+    "qualified_decision_kinds": 8,
+    "probed_decision_kinds": 14,
+    "probed_depth_buckets": 4,
+    "qualified_groups": 8,
+    "train_events": 33,
+    "held_out_events": 5,
+    "train_groups": 7,
+    "held_out_groups": 1,
+    "set_valued_events": 22
+  },
+  "decision": {
+    "state_count_hypothesis_confirmed": false,
+    "admit_for_training": false,
+    "ship": false,
+    "reason": "Twice as many states increased events and roles but did not add qualified prompt groups or held-out groups."
+  }
+}
