@@ -113,6 +113,7 @@ summary and the full card whenever a checkpoint is created or promoted.
 | E309 plan-weight scaling | `e309-component-plan4-20k-r1/last.pt` | `outputs/runs/e309-component-plan4-20k-r1/…` (local) | Plan weight 4 leaves head recall and every suite metric equal E308; 7 failures/AgentV 2/5 — not promoted or ship |
 | E310 attention-pooled plan | `e310-component-plan-attention-20k-r1/last.pt` | `outputs/runs/e310-component-plan-attention-20k-r1/…` (local) | Attention pooling leaves head accuracy/recall and every suite metric equal E308/E309; 7 failures/AgentV 2/5 — not promoted or ship |
 | E311 token-pooled plan | `e311-component-plan-token-pool-20k-r1/last.pt` | `outputs/runs/e311-component-plan-token-pool-20k-r1/…` (local) | E312 weight-4 decode changes only limited-RICO choices and regresses structure; 7 failures/AgentV 2/5 — not promoted or ship |
+| E313 semantic-exhaustive alignment | `e313-semantic-exhaustive-20k-r2/last.pt` | `outputs/runs/e313-semantic-exhaustive-20k-r2/…` (local) | Alignment learns, but four suites equal E311 and RICO structure regresses; 7 failures/AgentV 2/5 — not promoted or ship |
 | Production HF ship | *(none yet)* | [HF Bucket `TKendrick/OpenUI`](https://huggingface.co/buckets/TKendrick/OpenUI) `checkpoints/<run_id>/` | Register here after first full HF sync + `--ship-gates` |
 
 **Load demo:** `python -m scripts.serve_playground` · **Full train sync:** set

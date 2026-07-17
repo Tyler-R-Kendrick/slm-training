@@ -1946,12 +1946,14 @@ semantic supervision next. See
 
 ## E313 semantic-exhaustive choice alignment (CPU scratch, 2026-07-17)
 
-The first matched E311+semantic-alignment launch stopped after step 7 / 336
-target tokens: one gold token was absent from its compiler candidate tuple and
-the alignment harness raised `ValueError`. No checkpoint was written.
+The first launch exposed and prompted a guard for gold-outside-candidate rows.
+The repaired matched run aligned 6,746 rows; alignment loss fell 24.6782→3.6404
+and final-20 plan accuracy/recall improved to 0.90/0.4292. Yet weighted NLL
+worsened to 5.0604, four suites exactly match E311, limited-RICO structure
+regresses 0.3333→0.3278, and seven failures / AgentV 2/5 remain.
 
-**Status:** harness failure, not model evidence. Skip and count invalid
-alignment rows, test the guard, and relaunch the same recipe. See
+**Verdict:** reject and stop the auxiliary-supervision family. Change the
+task/data formulation next. See
 [notes](iter-e313-semantic-exhaustive-20260717.md) and
 [JSON](iter-e313-semantic-exhaustive-20260717.json).
 

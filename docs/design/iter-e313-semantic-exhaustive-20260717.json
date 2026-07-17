@@ -1,7 +1,7 @@
 {
   "campaign": "E313 semantic-exhaustive choice alignment",
   "date": "2026-07-17",
-  "status": "launch_failed_harness_gold_outside_candidates",
+  "status": "completed_rejected_seven_ship_thresholds_failed",
   "hypothesis": "Direct supervision of the actual denoiser at every semantic compiler decision improves held-out and OOD component selection.",
   "attempts": [
     {
@@ -16,7 +16,53 @@
       "last_alignment_loss": 22.18596839904785,
       "last_component_root_rows": 2,
       "last_component_bound_rows": 5
+    },
+    {
+      "run_id": "e313-semantic-exhaustive-20k-r2",
+      "device": "cpu",
+      "steps_completed": 420,
+      "seen_target_tokens": 20001,
+      "elapsed_wall_seconds": 199.41786061199855,
+      "checkpoint_written": true,
+      "checkpoint_sha256": "3495bb22c1472c830f317cce9706dfadb7558b0c9e6139cb6436dbba75a32781",
+      "trace_id": "649a072f60511f13d4a8db9914d23285",
+      "checkpoint_sync": false
     }
   ],
-  "next_action": "Skip and count gold-outside-candidate alignment rows, test the guard, and relaunch the same recipe."
+  "alignment": {
+    "rows_total": 6746,
+    "rows_mean_per_step": 16.061904761904763,
+    "gold_outside_candidate_rows": 109,
+    "first_loss": 24.678205490112305,
+    "last_loss": 3.6404101848602295,
+    "final_20_loss": 2.6818802773952486
+  },
+  "loss": {
+    "weighted_nll": 5.060388132688845,
+    "binding_nll": 7.237719575076231,
+    "structural_nll": 3.4540279808498564,
+    "repair_nll": 3.9855770130952197,
+    "schema_ood_nll": 4.751191933706122,
+    "broad_nll": 5.157710722785492,
+    "agentv": {"total": 1, "passed": 1}
+  },
+  "plan_final_20": {
+    "loss": 2.09001447558403,
+    "root_accuracy": 0.9,
+    "bound_topk_recall": 0.4291666686534882,
+    "bound_count_mae": 0.3343851163983345
+  },
+  "evaluation": {
+    "run_id": "e313-semantic-exhaustive-20k-honest-r2",
+    "failure_count": 7,
+    "agentv": {"total": 5, "passed": 2, "failed": 3}
+  },
+  "suites": {
+    "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333, "placeholder_fidelity": 0.5277777777777778, "structural_similarity": 0.46416666666666667, "component_type_recall": 0.16666666666666666, "reward_score": 0.24966666666666668},
+    "held_out": {"n": 5, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "placeholder_fidelity": 0.27999999999999997, "structural_similarity": 0.33686, "component_type_recall": 0.0, "reward_score": 0.0},
+    "adversarial": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.5, "placeholder_fidelity": 0.5416666666666666, "structural_similarity": 0.474375, "component_type_recall": 0.375, "reward_score": 0.4245},
+    "ood": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "placeholder_fidelity": 0.2583333333333333, "structural_similarity": 0.375, "component_type_recall": 0.0, "reward_score": 0.0},
+    "rico_held": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.6666666666666666, "placeholder_fidelity": 0.5416666666666666, "structural_similarity": 0.3278, "component_type_recall": 0.3333333333333333, "reward_score": 0.5566666666666666}
+  },
+  "verdict": "Reject. Semantic decision loss learns and modestly improves plan diagnostics, but four suites remain exact quality matches, limited-RICO structure regresses, seven gates fail, and AgentV remains 2/5."
 }
