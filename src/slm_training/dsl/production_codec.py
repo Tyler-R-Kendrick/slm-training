@@ -20,6 +20,7 @@ CLOSE = "-"
 DIR_PREFIX = "^"
 SLOT_PREFIX = "@"
 REF_PREFIX = "&"
+REL_REF_PREFIX = "~"
 LIT_PREFIX = "#"
 LIST_OPEN = "["
 LIST_CLOSE = "]"
@@ -523,20 +524,37 @@ def _encode_v05(
     return ProductionProgram(tokens=tuple(tokens), slot_contract=tuple(contract))
 
 
+def _with_relative_refs(
+    program: ProductionProgram, *, relative_refs: bool
+) -> ProductionProgram:
+    if not relative_refs:
+        return program
+    return ProductionProgram(
+        tokens=to_relative_refs(program.tokens),
+        slot_contract=program.slot_contract,
+    )
+
+
 def encode_openui(
     source: str,
     *,
     slot_contract: Iterable[str] | None = None,
+    relative_refs: bool = False,
     dsl: str | None = None,
 ) -> ProductionProgram:
     """Parse source and emit a compact production token sequence.
 
     ``dsl`` selects the grammar backend + prop order (default: OpenUI). The
     v0.5 typed path is OpenUI-specific and ignores non-OpenUI ``dsl`` values.
+    When ``relative_refs`` is set, statement references are emitted as
+    scope-relative De Bruijn deltas (C1) instead of absolute slot indices.
     """
     scrubbed = strip_style_literals(source or "").strip()
     if _requires_v05_codec(scrubbed):
-        return _encode_v05(scrubbed, slot_contract=slot_contract)
+        return _with_relative_refs(
+            _encode_v05(scrubbed, slot_contract=slot_contract),
+            relative_refs=relative_refs,
+        )
     _parse_program(scrubbed, dsl)
     bindings = _parse_bindings(scrubbed, dsl)
     contract = (
@@ -561,7 +579,10 @@ def encode_openui(
                 dsl=dsl,
             )
         )
-    return ProductionProgram(tokens=tuple(tokens), slot_contract=tuple(contract))
+    return _with_relative_refs(
+        ProductionProgram(tokens=tuple(tokens), slot_contract=tuple(contract)),
+        relative_refs=relative_refs,
+    )
 
 
 def encode_output(
@@ -569,10 +590,13 @@ def encode_output(
     *,
     output_kind: str = "document",
     slot_contract: Iterable[str] | None = None,
+    relative_refs: bool = False,
 ) -> ProductionProgram:
     """Encode a full document or a validated compact output surface."""
     if output_kind == "document":
-        return encode_openui(source, slot_contract=slot_contract)
+        return encode_openui(
+            source, slot_contract=slot_contract, relative_refs=relative_refs
+        )
     from slm_training.dsl.parser import lexical_tokens, validate_output
 
     validate_output(source, output_kind)  # type: ignore[arg-type]
@@ -643,6 +667,9 @@ def decode_productions(
     """Reconstruct deterministic OpenUI source from production tokens + contract."""
     contract = tuple(slot_contract)
     stream = list(tokens)
+    # De Bruijn refs (C1) are self-describing; restore absolute indices first.
+    if any(tok.startswith(REL_REF_PREFIX) for tok in stream):
+        stream = list(from_relative_refs(stream))
     if stream[:1] and stream[0] in FRAGMENT_MARKERS.values():
         return _decode_output_tokens(stream, contract)
     if stream[:1] == [V05]:
@@ -808,14 +835,170 @@ def _decode_v05(
     return "\n".join(lines)
 
 
+_V05_MARKERS = frozenset(
+    {ROOT_STMT, STATE_STMT, QUERY_STMT, MUTATION_STMT, ACTION_STMT, STMT}
+)
+
+
+def _statement_markers(stream: list[str]) -> frozenset[str]:
+    """Tokens that open a new statement (used to index De Bruijn ref distances)."""
+    if stream[:1] == [V05]:
+        return _V05_MARKERS
+    return frozenset({STMT})
+
+
+def to_relative_refs(tokens: Iterable[str]) -> tuple[str, ...]:
+    """Rewrite absolute statement refs (``&i``) as scope-relative De Bruijn deltas.
+
+    A reference token ``&i`` inside the statement at index ``cur`` becomes
+    ``~{cur - i}`` — the signed distance, in canonical statement order, from the
+    use site back to the binder's definition. This makes references
+    translation-invariant: inserting or deleting an unrelated earlier statement
+    renumbers absolute slots but leaves the local ``def→use`` distance unchanged,
+    so a diffusion edit near one binder does not perturb refs elsewhere.
+
+    Fragment streams carry no refs and are returned unchanged. See C1 /
+    ``docs/design/iter-relative-index-refs-20260717.md``.
+    """
+    stream = list(tokens)
+    markers = _statement_markers(stream)
+    out: list[str] = []
+    cur = -1
+    for tok in stream:
+        if tok in markers:
+            cur += 1
+        if tok.startswith(REF_PREFIX):
+            idx = int(tok[len(REF_PREFIX):])
+            out.append(f"{REL_REF_PREFIX}{cur - idx}")
+        else:
+            out.append(tok)
+    return tuple(out)
+
+
+def from_relative_refs(tokens: Iterable[str]) -> tuple[str, ...]:
+    """Inverse of :func:`to_relative_refs` (``~delta`` → ``&i``), verifier-enforced.
+
+    Legality is enforced here, not learned: a delta that resolves to a negative
+    (undefined) statement index raises :class:`ParseError`. The absolute-ref
+    decoders already range-check the upper bound against the decoded binder set.
+    """
+    stream = list(tokens)
+    markers = _statement_markers(stream)
+    out: list[str] = []
+    cur = -1
+    for tok in stream:
+        if tok in markers:
+            cur += 1
+        if tok.startswith(REL_REF_PREFIX):
+            delta = int(tok[len(REL_REF_PREFIX):])
+            idx = cur - delta
+            if idx < 0:
+                raise ParseError(f"relative ref {tok} resolves before scope start")
+            out.append(f"{REF_PREFIX}{idx}")
+        else:
+            out.append(tok)
+    return tuple(out)
+
+
+def _expr_spans(stream: list[str]) -> list[tuple[int, int]]:
+    """Half-open spans of consecutive top-level expressions in a document stream."""
+    spans: list[tuple[int, int]] = []
+    i = 0
+    n = len(stream)
+    while i < n:
+        start = i
+        stack: list[str] = []
+        while True:
+            if i >= n:
+                raise ParseError("unterminated expression in choice stream")
+            tok = stream[i]
+            if tok == LIST_OPEN:
+                stack.append(LIST_CLOSE)
+            elif tok.startswith(OPEN_PREFIX):
+                stack.append(CLOSE)
+            elif tok in (LIST_CLOSE, CLOSE):
+                if not stack or stack[-1] != tok:
+                    raise ParseError(f"unbalanced {tok!r} in choice stream")
+                stack.pop()
+            i += 1
+            if not stack:
+                break
+        spans.append((start, i))
+    return spans
+
+
+def to_choice_stream(tokens: Iterable[str]) -> tuple[str, ...]:
+    """Drop grammar-forced framing tokens, leaving only semantic choices (B1).
+
+    Document streams lose the ``=`` statement markers — top-level expressions
+    are self-delimiting, so the marker carries zero bits. v0.5 streams lose the
+    ``;`` terminators — the next typed statement marker is the boundary (the
+    typed markers themselves stay: statement *kind* is a semantic choice).
+    Fragment streams carry no framing and pass through unchanged.
+
+    Unlike relative refs, a choice stream is NOT self-describing — decode it
+    via :func:`from_choice_stream` / ``ProductionCodec(choice_stream=True)``,
+    never by sniffing. Composes with relative refs: convert refs first (the
+    delta arithmetic counts statement markers), then elide the framing.
+    """
+    stream = list(tokens)
+    if not stream:
+        return ()
+    if stream[0] == V05:
+        return tuple(tok for tok in stream if tok != EOL)
+    if stream[0] in FRAGMENT_MARKERS.values():
+        return tuple(stream)
+    return tuple(tok for tok in stream if tok != STMT)
+
+
+def from_choice_stream(tokens: Iterable[str]) -> tuple[str, ...]:
+    """Inverse of :func:`to_choice_stream`: reinsert the deterministic framing.
+
+    Framing is reconstructed, not predicted: document statement boundaries come
+    from walking the self-delimiting expression grammar, v0.5 boundaries from
+    the typed statement markers. A stream whose framing cannot be reconstructed
+    (unbalanced or truncated frames) raises :class:`ParseError` — fail closed.
+    """
+    stream = list(tokens)
+    if not stream:
+        return ()
+    if stream[0] in FRAGMENT_MARKERS.values():
+        return tuple(stream)
+    if stream[0] == V05:
+        out = [V05]
+        i = 1
+        n = len(stream)
+        while i < n:
+            marker = stream[i]
+            if marker not in _V05_MARKERS:
+                raise ParseError(
+                    f"expected v0.5 statement marker in choice stream, got {marker!r}"
+                )
+            out.append(marker)
+            i += 1
+            while i < n and stream[i] not in _V05_MARKERS:
+                out.append(stream[i])
+                i += 1
+            out.append(EOL)
+        return tuple(out)
+    out: list[str] = []
+    for start, end in _expr_spans(stream):
+        out.append(STMT)
+        out.extend(stream[start:end])
+    return tuple(out)
+
+
 def roundtrip_openui(
     source: str,
     *,
     slot_contract: Iterable[str] | None = None,
+    relative_refs: bool = False,
     dsl: str | None = None,
 ) -> tuple[ProductionProgram, str]:
     """Encode then decode; returns (program, reconstructed OpenUI)."""
-    program = encode_openui(source, slot_contract=slot_contract, dsl=dsl)
+    program = encode_openui(
+        source, slot_contract=slot_contract, relative_refs=relative_refs, dsl=dsl
+    )
     decoded = decode_productions(program.tokens, program.slot_contract)
     return program, decoded
 
@@ -1694,20 +1877,32 @@ class ProductionCodec:
     mask_id: int = 3
     unk_id: int = 4
     slot_none_id: int = 0
+    relative_refs: bool = False
+    choice_stream: bool = False
 
     _SPECIALS: tuple[str, ...] = ("<pad>", "<bos>", "<eos>", "<mask>", "<unk>")
 
     @classmethod
     def build(
-        cls, texts: list[str], output_kinds: list[str] | None = None
+        cls,
+        texts: list[str],
+        output_kinds: list[str] | None = None,
+        *,
+        relative_refs: bool = False,
+        choice_stream: bool = False,
     ) -> ProductionCodec:
         vocab: dict[str, int] = {tok: i for i, tok in enumerate(cls._SPECIALS)}
         if output_kinds and any(kind != "document" for kind in output_kinds):
             vocab[FRAGMENT_CHUNK] = len(vocab)
         for index, text in enumerate(texts):
             kind = output_kinds[index] if output_kinds else "document"
-            program = encode_output(text, output_kind=kind)
-            for tok in program.tokens:
+            program = encode_output(
+                text, output_kind=kind, relative_refs=relative_refs
+            )
+            tokens = (
+                to_choice_stream(program.tokens) if choice_stream else program.tokens
+            )
+            for tok in tokens:
                 if tok not in vocab:
                     vocab[tok] = len(vocab)
         inv = {i: t for t, i in vocab.items()}
@@ -1719,6 +1914,8 @@ class ProductionCodec:
             eos_id=vocab["<eos>"],
             mask_id=vocab["<mask>"],
             unk_id=vocab["<unk>"],
+            relative_refs=relative_refs,
+            choice_stream=choice_stream,
         )
 
     @property
@@ -1739,11 +1936,19 @@ class ProductionCodec:
             else canonical_slot_contract(openui)
         )
         program = encode_output(
-            openui, output_kind=output_kind, slot_contract=contract
+            openui,
+            output_kind=output_kind,
+            slot_contract=contract,
+            relative_refs=self.relative_refs,
+        )
+        tokens = (
+            to_choice_stream(program.tokens)
+            if self.choice_stream
+            else program.tokens
         )
         prod_ids = [self.bos_id]
         slot_ids = [self.slot_none_id]
-        for tok in program.tokens:
+        for tok in tokens:
             pid = self.production_to_id.get(tok)
             if pid is None:
                 pid = self.production_to_id.setdefault(tok, len(self.production_to_id))
@@ -1792,6 +1997,8 @@ class ProductionCodec:
         text = ""
         if tokens:
             try:
+                if self.choice_stream:
+                    tokens = list(from_choice_stream(tokens))
                 text = decode_productions(tokens, inventory)
             except ParseError:
                 text = ""
@@ -1822,6 +2029,7 @@ __all__ = [
     "OPEN_PREFIX",
     "OP_PREFIX",
     "REF_PREFIX",
+    "REL_REF_PREFIX",
     "ROOT_STMT",
     "SLOT_PREFIX",
     "STMT",
@@ -1838,6 +2046,10 @@ __all__ = [
     "decode_productions",
     "encode_choices",
     "encode_openui",
+    "from_choice_stream",
+    "from_relative_refs",
     "roundtrip_choices",
     "roundtrip_openui",
+    "to_choice_stream",
+    "to_relative_refs",
 ]

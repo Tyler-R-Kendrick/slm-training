@@ -4,8 +4,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from slm_training.harnesses.experiments.efficiency_gain import efficiency_gain, efficiency_gain_lcb
-from slm_training.harnesses.experiments.ladder import proportional_depths, scratch_ladder_default
+from slm_training.harnesses.experiments.ladder import (
+    capacity_ladder_pair,
+    model_build_config_for_point,
+    proportional_depths,
+    scratch_ladder_default,
+)
 from slm_training.harnesses.experiments.promotion import (
     check_category_regression,
     check_rank_stability,
@@ -26,6 +33,61 @@ def test_proportional_depths_and_scratch_ladder() -> None:
     ladder = scratch_ladder_default(base_token_budget=1000, widths=(64, 128), horizons=(1.0,))
     assert ladder.track == "scratch"
     assert len(ladder.points) == 2
+
+
+# --- B3 (SLM-23): representation axis ---------------------------------------
+
+
+def test_default_representation_keeps_legacy_point_ids() -> None:
+    ladder = scratch_ladder_default(base_token_budget=1000, widths=(64,), horizons=(1.0,))
+    point = ladder.points[0]
+    assert point.representation == "compositional"
+    assert "_r" not in point.point_id
+
+
+def test_capacity_ladder_pair_matched_arms() -> None:
+    lexer, choice = capacity_ladder_pair(
+        base_token_budget=1000, widths=(64, 128), horizons=(1.0,)
+    )
+    assert lexer.ladder_id == "capacity_lexer_v1"
+    assert choice.ladder_id == "capacity_choice_v1"
+    assert len(lexer.points) == len(choice.points)
+    for a, b in zip(lexer.points, choice.points):
+        # Same capacity/budget point, differing only in representation.
+        assert (a.d_model, a.target_token_budget) == (b.d_model, b.target_token_budget)
+        assert a.representation == "lexer" and b.representation == "choice"
+        assert a.point_id.endswith("_rlexer")
+        assert b.point_id.endswith("_rchoice")
+
+
+def test_lexer_representation_threads_into_config(tmp_path: Path) -> None:
+    (lexer_ladder,) = capacity_ladder_pair(
+        base_token_budget=1000, widths=(64,), horizons=(1.0,), representations=("lexer",)
+    )
+    cfg = model_build_config_for_point(
+        lexer_ladder.points[0],
+        lexer_ladder,
+        train_dir=tmp_path,
+        test_dir=None,
+        run_root=tmp_path / "runs",
+        seed=0,
+    )
+    assert cfg.output_tokenizer == "lexer"
+
+
+def test_choice_representation_fails_closed(tmp_path: Path) -> None:
+    (choice_ladder,) = capacity_ladder_pair(
+        base_token_budget=1000, widths=(64,), horizons=(1.0,), representations=("choice",)
+    )
+    with pytest.raises(ValueError, match="not trainable yet"):
+        model_build_config_for_point(
+            choice_ladder.points[0],
+            choice_ladder,
+            train_dir=tmp_path,
+            test_dir=None,
+            run_root=tmp_path / "runs",
+            seed=0,
+        )
 
 
 def test_power_law_fit_and_eg() -> None:

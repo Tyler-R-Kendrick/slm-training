@@ -8,6 +8,13 @@ from typing import Any, Literal, Mapping
 
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 
+# Output representations the trainer supports today. "choice" (the B1
+# choice-sequence codec, SLM-42) is a valid ladder axis for planning and
+# corpus-bit accounting, but training it requires twotower support for a
+# production-token output head — model_build_config_for_point fails closed
+# until that lands.
+TRAINABLE_REPRESENTATIONS: tuple[str, ...] = ("compositional", "lexer")
+
 
 @dataclass(frozen=True)
 class LadderPoint:
@@ -17,13 +24,19 @@ class LadderPoint:
     denoiser_layers: int
     target_token_budget: int
     horizon_multiplier: float = 1.0
+    # Output representation (B3 axis): compositional | lexer | choice.
+    representation: str = "compositional"
 
     @property
     def point_id(self) -> str:
-        return (
+        base = (
             f"d{self.d_model}_h{self.n_heads}_c{self.context_layers}_"
             f"dn{self.denoiser_layers}_t{self.target_token_budget}_x{self.horizon_multiplier:g}"
         )
+        # Default keeps legacy ids stable; the axis shows up only when used.
+        if self.representation != "compositional":
+            return f"{base}_r{self.representation}"
+        return base
 
 
 @dataclass(frozen=True)
@@ -54,6 +67,8 @@ def scratch_ladder_default(
     base_token_budget: int = 50_000,
     widths: tuple[int, ...] = (64, 96, 128, 192),
     horizons: tuple[float, ...] = (0.5, 1.0, 2.0),
+    representation: str = "compositional",
+    ladder_id: str = "scratch_v1",
 ) -> ScalingLadder:
     points: list[LadderPoint] = []
     # Constant tokens-per-trainable-param proxy: budget ∝ d_model².
@@ -71,10 +86,11 @@ def scratch_ladder_default(
                     denoiser_layers=den,
                     target_token_budget=max(1_000, int(budget * h)),
                     horizon_multiplier=h,
+                    representation=representation,
                 )
             )
     return ScalingLadder(
-        ladder_id="scratch_v1",
+        ladder_id=ladder_id,
         track="scratch",
         points=tuple(points),
         token_horizons=horizons,
@@ -87,11 +103,39 @@ def scratch_ladder_default(
     )
 
 
+def capacity_ladder_pair(
+    *,
+    base_token_budget: int = 50_000,
+    widths: tuple[int, ...] = (64, 96, 128, 192),
+    horizons: tuple[float, ...] = (1.0,),
+    representations: tuple[str, ...] = ("lexer", "choice"),
+) -> tuple[ScalingLadder, ...]:
+    """B3 (SLM-23): matched ladders differing only in output representation.
+
+    Same widths, budgets, and frozen decode per arm, so quality-vs-d_model
+    curves are comparable across representations and `params_per_bit` (E1,
+    `evals/semantic_bits.py`) can be reported at matched quality. Arms whose
+    representation is not in TRAINABLE_REPRESENTATIONS are constructible for
+    planning/bit accounting but fail closed at config creation.
+    """
+    return tuple(
+        scratch_ladder_default(
+            base_token_budget=base_token_budget,
+            widths=widths,
+            horizons=horizons,
+            representation=representation,
+            ladder_id=f"capacity_{representation}_v1",
+        )
+        for representation in representations
+    )
+
+
 def hf_ladder_default(
     *,
     base_token_budget: int = 50_000,
     widths: tuple[int, ...] = (64, 96, 128, 192),
     horizons: tuple[float, ...] = (0.5, 1.0, 2.0),
+    representation: str = "compositional",
 ) -> ScalingLadder:
     points: list[LadderPoint] = []
     for d in widths:
@@ -108,6 +152,7 @@ def hf_ladder_default(
                     denoiser_layers=den,
                     target_token_budget=max(1_000, int(budget * h)),
                     horizon_multiplier=h,
+                    representation=representation,
                 )
             )
     return ScalingLadder(
@@ -210,6 +255,13 @@ def model_build_config_for_point(
     lr: float = 3e-4,
     extra: Mapping[str, Any] | None = None,
 ) -> ModelBuildConfig:
+    if point.representation not in TRAINABLE_REPRESENTATIONS:
+        raise ValueError(
+            f"representation {point.representation!r} is not trainable yet: the "
+            f"trainer supports {TRAINABLE_REPRESENTATIONS}. The 'choice' arm "
+            "(B1 choice-sequence codec, SLM-42) needs a production-token output "
+            "head in the twotower before its ladder rows can run."
+        )
     decode = dict(ladder.decode_frozen or {})
     kwargs: dict[str, Any] = {
         "train_dir": Path(train_dir),
@@ -226,7 +278,15 @@ def model_build_config_for_point(
         "denoiser_layers": point.denoiser_layers,
         "target_token_budget": point.target_token_budget,
         "context_backend": "scratch" if ladder.track == "scratch" else "hf",
-        "output_tokenizer": ladder.output_tokenizer,
+        # B3 axis reconciliation: main's capacity_ladder encodes the arm in
+        # ladder.output_tokenizer (points stay "compositional"); #277's
+        # capacity_ladder_pair encodes it in point.representation (ladder stays
+        # "compositional"). Prefer the non-default of the two.
+        "output_tokenizer": (
+            ladder.output_tokenizer
+            if ladder.output_tokenizer != "compositional"
+            else point.representation
+        ),
         "mask_pattern": str(decode.get("mask_pattern", "random")),
         "grammar_ltr_primary": bool(decode.get("grammar_ltr_primary", False)),
         "freeze_context": bool(decode.get("freeze_context", ladder.track == "hf")),

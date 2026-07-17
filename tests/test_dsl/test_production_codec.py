@@ -18,18 +18,26 @@ from slm_training.data.splits import clustered_train_val_split
 from slm_training.dsl.production_codec import (
     ACTION_STMT,
     CLOSE,
+    EOL,
     MUTATION_STMT,
     OPEN_PREFIX,
     QUERY_STMT,
+    REF_PREFIX,
+    REL_REF_PREFIX,
     ROOT_STMT,
     SLOT_PREFIX,
     STATE_STMT,
+    STMT,
     V05,
     ProductionCodec,
     build_vocab_from_corpus,
     decode_productions,
     encode_openui,
+    from_choice_stream,
+    from_relative_refs,
     roundtrip_openui,
+    to_choice_stream,
+    to_relative_refs,
 )
 from slm_training.dsl.lang_core import ParseError, bridge_available
 from slm_training.dsl.lang_core import parse as lang_core_parse
@@ -360,3 +368,153 @@ def test_fixture_corpus_roundtrip_is_langcore_canonical_equal() -> None:
         expected = _strip_statement_ids(lang_core_parse(record.openui).root)
         actual = _strip_statement_ids(lang_core_parse(decoded).root)
         assert actual == expected, record.id
+
+
+# --- C1: relative-index (De Bruijn) references -----------------------------
+
+
+def test_relative_refs_emit_debruijn_deltas() -> None:
+    absolute = encode_openui(HERO)
+    relative = encode_openui(HERO, relative_refs=True)
+    # Same length, refs converted from absolute (&i) to relative (~delta).
+    assert len(relative.tokens) == len(absolute.tokens)
+    assert any(t.startswith(REF_PREFIX) for t in absolute.tokens)
+    assert not any(t.startswith(REF_PREFIX) for t in relative.tokens)
+    rel_refs = [t for t in relative.tokens if t.startswith(REL_REF_PREFIX)]
+    assert rel_refs
+    # HERO's refs are all backward in canonical order → positive deltas.
+    assert all(int(t[len(REL_REF_PREFIX):]) >= 1 for t in rel_refs)
+
+
+def test_relative_refs_roundtrip_document() -> None:
+    _, decoded = roundtrip_openui(HERO, relative_refs=True)
+    assert normalize_openui_structure(decoded) == normalize_openui_structure(HERO)
+
+
+def test_relative_refs_roundtrip_v05() -> None:
+    program, decoded = roundtrip_openui(V05_PROGRAM, relative_refs=True)
+    assert program.tokens[0] == V05
+    assert any(t.startswith(REL_REF_PREFIX) for t in program.tokens)
+    assert not any(t.startswith(REF_PREFIX) for t in program.tokens)
+    assert normalize_openui_structure(decoded) == normalize_openui_structure(
+        V05_PROGRAM
+    )
+
+
+def test_relative_and_absolute_decode_identically() -> None:
+    absolute = encode_openui(HERO)
+    relative = to_relative_refs(absolute.tokens)
+    assert from_relative_refs(relative) == absolute.tokens
+    assert decode_productions(relative, absolute.slot_contract) == decode_productions(
+        absolute.tokens, absolute.slot_contract
+    )
+
+
+def test_relative_refs_are_translation_invariant() -> None:
+    # Prepending an unrelated leaf renumbers absolute slots but not the local
+    # def→use distance for refs that do not cross the inserted statement.
+    base = encode_openui(HERO, relative_refs=True)
+    shifted_src = (
+        'root = Stack([extra, hero], "column")\n'
+        'extra = TextContent(":extra")\n'
+        'hero_title = TextContent(":hero.title")\n'
+        'hero_body = TextContent(":hero.body")\n'
+        'hero = Card([hero_title, hero_body])'
+    )
+    shifted = encode_openui(shifted_src, relative_refs=True)
+    # The Card→children distances (hero_title, hero_body) survive the insertion.
+    base_deltas = {t for t in base.tokens if t.startswith(REL_REF_PREFIX)}
+    shifted_deltas = {t for t in shifted.tokens if t.startswith(REL_REF_PREFIX)}
+    assert base_deltas & shifted_deltas
+
+
+def test_production_codec_build_preserves_relative_refs() -> None:
+    # build(relative_refs=True) must return an instance whose encode() actually
+    # emits relative refs — not silently fall back to the absolute default.
+    codec = ProductionCodec.build([HERO], relative_refs=True)
+    assert codec.relative_refs is True
+    prod, _ = codec.encode(HERO, [":hero.title", ":hero.body"])
+    surface = {codec.id_to_production.get(pid, "") for pid in prod}
+    assert any(tok.startswith(REL_REF_PREFIX) for tok in surface)
+    assert not any(tok.startswith(REF_PREFIX) for tok in surface)
+
+
+def test_relative_ref_illegal_delta_rejected() -> None:
+    # A delta that resolves before the start of scope is not legal binding —
+    # enforced here, not learned.
+    # Stream: one statement (cur=0) whose ref points 5 statements back → idx -5.
+    try:
+        from_relative_refs(("=", f"{REL_REF_PREFIX}5", ";"))
+    except ParseError:
+        pass
+    else:  # pragma: no cover - guard
+        raise AssertionError("expected ParseError for out-of-scope relative ref")
+
+
+# --- B1 (SLM-42): choice-sequence stream (semantic decisions only) ----------
+
+
+def test_choice_stream_drops_document_statement_markers() -> None:
+    program = encode_openui(HERO)
+    choices = to_choice_stream(program.tokens)
+    assert STMT in program.tokens
+    assert STMT not in choices
+    # Exactly one marker elided per statement; everything else survives.
+    assert len(choices) == len(program.tokens) - 4
+    assert from_choice_stream(choices) == program.tokens
+
+
+def test_choice_stream_v05_drops_eol_and_inverts() -> None:
+    program = encode_openui(V05_PROGRAM)
+    choices = to_choice_stream(program.tokens)
+    assert EOL in program.tokens
+    assert EOL not in choices
+    # Typed statement markers stay: statement kind is a semantic choice.
+    assert ROOT_STMT in choices and STATE_STMT in choices
+    assert from_choice_stream(choices) == program.tokens
+
+
+def test_choice_stream_is_fixed_point_through_reencode() -> None:
+    # The issue's verify clause: choices → serialize → parse → choices.
+    for source in (HERO, MODAL, NAME_IN_LITERAL, V05_PROGRAM, V05_STATE_FIRST):
+        program = encode_openui(source)
+        choices = to_choice_stream(program.tokens)
+        decoded = decode_productions(
+            from_choice_stream(choices), program.slot_contract
+        )
+        reencoded = encode_openui(decoded, slot_contract=program.slot_contract)
+        assert to_choice_stream(reencoded.tokens) == choices, source
+
+
+def test_choice_stream_composes_with_relative_refs() -> None:
+    program = encode_openui(HERO, relative_refs=True)
+    choices = to_choice_stream(program.tokens)
+    assert any(t.startswith(REL_REF_PREFIX) for t in choices)
+    decoded = decode_productions(from_choice_stream(choices), program.slot_contract)
+    assert normalize_openui_structure(decoded) == normalize_openui_structure(HERO)
+
+
+def test_fixture_corpus_choice_streams_invert() -> None:
+    for record in _fixture_records():
+        contract = canonical_slot_contract(
+            record.openui, declared=record.placeholders
+        )
+        program = encode_openui(record.openui, slot_contract=contract)
+        choices = to_choice_stream(program.tokens)
+        assert from_choice_stream(choices) == program.tokens, record.id
+
+
+def test_production_codec_choice_stream_end_to_end() -> None:
+    inventory = [":hero.title", ":hero.body"]
+    codec = ProductionCodec.build([HERO], relative_refs=True, choice_stream=True)
+    assert codec.choice_stream is True
+    prod, slot = codec.encode(HERO, inventory)
+    surface = [codec.id_to_production.get(pid, "") for pid in prod]
+    assert STMT not in surface
+    decoded = codec.decode(prod, slot, inventory)
+    assert normalize_openui_structure(decoded) == normalize_openui_structure(HERO)
+
+
+def test_choice_stream_unbalanced_frame_fails_closed() -> None:
+    with pytest.raises(ParseError):
+        from_choice_stream((f"{OPEN_PREFIX}Card", '#"x"'))
