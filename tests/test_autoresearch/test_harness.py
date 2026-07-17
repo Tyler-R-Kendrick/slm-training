@@ -747,10 +747,21 @@ def test_local_decision_source_manifest_is_complete() -> None:
     rows = _load_sources(path)
     papers = [row for row in rows if row.uri.startswith("https://arxiv.org/abs/")]
     assert "6a593158-85c4-83ea-80b1-b6fb893b26bc" in manifest["source_scope"]
-    assert len(rows) == 33
-    assert len(papers) == 25
+    assert len(rows) == 42
+    assert len(papers) == 34
+    # Canonical source_id and URI uniqueness (dedupe honesty).
+    assert len({row.source_id for row in rows}) == len(rows)
     assert len({row.uri for row in rows}) == len(rows)
-    assert all(row.metadata.get("local_decision_takeaway") for row in rows)
+    # Required provenance metadata is present on every row.
+    for field in (
+        "category",
+        "local_decision_takeaway",
+        "repo_relevance",
+        "implementation_status",
+        "limitations",
+    ):
+        assert all(row.metadata.get(field) for row in rows), field
+    # Implementation-status vocabulary stays honest: nothing is claimed Faithful.
     assert {row.metadata.get("implementation_status") for row in rows} == {
         "Adapted",
         "Adjacent",
