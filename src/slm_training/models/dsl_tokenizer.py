@@ -788,6 +788,7 @@ class DSLNativeTokenizer:
         skip_special: bool = True,
         *,
         table: SymbolTable | None = None,
+        preserve_trailing_newline: bool = False,
     ) -> str:
         """Pretty-print lexer-native ids back to OpenUI source."""
         table = table or SymbolTable()
@@ -867,7 +868,9 @@ class DSLNativeTokenizer:
             pieces.append(tok)
             i += 1
 
-        return self._pretty_print(pieces)
+        return self._pretty_print(
+            pieces, preserve_trailing_newline=preserve_trailing_newline
+        )
 
     def _consume_literal_body(self, ids: list[int], start: int) -> tuple[str, int]:
         chars: list[str] = []
@@ -889,7 +892,9 @@ class DSLNativeTokenizer:
         return "".join(chars), i
 
     @staticmethod
-    def _pretty_print(pieces: list[str]) -> str:
+    def _pretty_print(
+        pieces: list[str], *, preserve_trailing_newline: bool = False
+    ) -> str:
         """Join pieces with OpenUI-like spacing."""
         if not pieces:
             return ""
@@ -948,7 +953,8 @@ class DSLNativeTokenizer:
         text = "".join(out)
         # Normalize spaces introduced by " = " near newlines.
         text = re.sub(r"[ \t]+\n", "\n", text)
-        text = re.sub(r"\n+$", "", text)
+        if not preserve_trailing_newline:
+            text = re.sub(r"\n+$", "", text)
         return text
 
     def statement_spans(self, ids: list[int]) -> list[tuple[int, int]]:

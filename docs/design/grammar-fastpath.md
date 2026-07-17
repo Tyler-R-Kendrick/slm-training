@@ -43,6 +43,24 @@ Force only narrow terminals: `=` `(` `)` `[` `]` `,`. Never force `NAME` /
 - **Train aux**: `fastpath_aux_weight` (CLI `--fastpath-aux-weight`) adds
   `force_align_loss` without walking the DFA every step.
 
+## Offline compiler contract
+
+The fast path must make the same decisions in a clean worktree that has no
+OpenUI bridge `node_modules`. The official component schema is therefore
+committed as `dsl/grammars/openui_schema.json`; `lang_core.library_schema()`
+prefers the live pinned bridge and falls back to that snapshot. Run
+`python -m scripts.sync_openui_schema --check` wherever bridge dependencies are
+installed to prove exact schema and property-order parity. Property order is
+part of the positional language contract and the snapshot must not be sorted.
+
+The in-process Lark grammar is also authoritative for offline AST completion.
+Statements require a newline separator, and prefix decoding preserves a final
+newline even though user-facing final decoding trims it. This keeps partial
+lexical state distinct from final-document formatting. Compiler-tree admission
+is derived from the grammar and schema; it does not inspect parser error strings
+or match known output literals. This correction changes the language contract
+ID from `f2d0c69ba5849ef9` to `e3bf2f98f043e9a8`.
+
 ## Cactus
 
 Header sketches live under `src/slm_training/runtime/cactus/kernels/` (not compiled).

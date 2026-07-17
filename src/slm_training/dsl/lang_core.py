@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import threading
 from dataclasses import dataclass, field
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +21,9 @@ from slm_training.dsl.placeholders import extract_placeholders
 REPO_ROOT = repo_root()
 DEFAULT_BRIDGE_DIR = REPO_ROOT / "src" / "apps" / "openui_bridge"
 DEFAULT_CLI = DEFAULT_BRIDGE_DIR / "cli.mjs"
+DEFAULT_SCHEMA_SNAPSHOT = (
+    REPO_ROOT / "src" / "slm_training" / "dsl" / "grammars" / "openui_schema.json"
+)
 
 _REPL_LOCK = threading.Lock()
 _REPL_PROC: subprocess.Popen[str] | None = None
@@ -308,14 +312,30 @@ def stream_check(source: str) -> dict[str, Any]:
     return _invoke({"op": "stream_check", "source": source})
 
 
-def library_schema() -> dict[str, Any]:
+@lru_cache(maxsize=1)
+def _schema_snapshot() -> dict[str, Any]:
+    value = json.loads(DEFAULT_SCHEMA_SNAPSHOT.read_text(encoding="utf-8"))
+    if not isinstance(value, dict) or not value.get("properties") or not value.get("$defs"):
+        raise RuntimeError(f"invalid OpenUI schema snapshot: {DEFAULT_SCHEMA_SNAPSHOT}")
+    return value
+
+
+def library_schema(
+    *, refresh: bool = False, allow_snapshot: bool = True
+) -> dict[str, Any]:
+    """Return the pinned live schema, or its committed offline snapshot."""
     cache_key = "schema"
-    cached = _cache_get(cache_key)
+    cached = None if refresh else _cache_get(cache_key)
     if cached is not None:
         return cached  # type: ignore[return-value]
-    result = _invoke({"op": "schema"})
-    if not result.get("ok"):
-        raise RuntimeError(result.get("error") or "schema failed")
-    value = dict(result.get("schema") or {})
+    try:
+        result = _invoke({"op": "schema"})
+        if not result.get("ok"):
+            raise RuntimeError(result.get("error") or "schema failed")
+        value = dict(result.get("schema") or {})
+    except Exception:
+        if not allow_snapshot:
+            raise
+        value = dict(_schema_snapshot())
     _cache_put(cache_key, value)
     return value

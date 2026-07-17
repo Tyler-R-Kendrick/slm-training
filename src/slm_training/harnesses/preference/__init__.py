@@ -52,7 +52,7 @@ def layout_metrics(openui: str) -> float:
 
 def grammar_score(openui: str) -> float:
     try:
-        from slm_training.dsl import validate
+        from slm_training.dsl.parser import validate
 
         program = validate(openui)
         serialized = (program.serialized or openui).strip()
