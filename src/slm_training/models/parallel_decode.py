@@ -21,6 +21,7 @@ See ``docs/design/speculative-denoising.md``.
 from __future__ import annotations
 
 import math
+from typing import Callable, Iterable
 
 import torch
 
@@ -559,6 +560,68 @@ def select_remask_stability_indices(
         gate_threshold=gate_threshold,
         combine_policy=combine_policy,
     )
+
+
+def asap_filter_commits(
+    flat_idx: list[int],
+    probs: torch.Tensor,
+    *,
+    length: int,
+    legal_ids_fn: Callable[[int], Iterable[int] | None],
+    ledger,
+    alpha: float = 1.0,
+    defer_mass: float = 0.5,
+    last_step: bool = False,
+) -> list[int]:
+    """A2 (SLM-38): single-step ASAp commit gate for the MaskGIT unmask loop.
+
+    ``flat_idx`` are the flat indices the confidence scheduler wants to commit
+    this step. For each batch-0 candidate this computes the grammar-removed mass
+    from ``legal_ids_fn(position)`` (``probs`` is the full-vocab softmax
+    ``[B, T, V]``) and records it in ``ledger``. Positions whose removed mass
+    exceeds ``defer_mass`` are deferred — left masked for a later step, when more
+    surrounding context has committed. That is the ASAp correction realized in
+    the discrete-diffusion schedule: do not lock in a legal-but-distorted
+    (empty-ward) commit prematurely. Fail-safe guarantees:
+
+    * the single lowest-removed-mass candidate is always kept, so decode always
+      makes progress (never a dead step / no NaN from an empty commit set);
+    * on the final step nothing is deferred (decode must terminate);
+    * positions whose legality is unknown (``legal_ids_fn`` returns ``None``,
+      e.g. a broad terminal set) are kept and *not* recorded, so the ledger
+      only accumulates real measurements;
+    * non-batch-0 flat indices pass through unchanged.
+
+    Deterministic and order-preserving; a no-op when ``flat_idx`` is empty.
+    """
+    from slm_training.dsl.grammar.fastpath.gate import removed_mass
+
+    if not flat_idx:
+        return flat_idx
+    keep: set[int] = {i for i in flat_idx if i // length != 0}
+    scored: list[tuple[int, float]] = []
+    for i in flat_idx:
+        if i // length != 0:
+            continue
+        t = i % length
+        legal = legal_ids_fn(t)
+        if legal is None:
+            keep.add(i)  # unknown legality → do not defer, do not record
+            continue
+        m = removed_mass(probs[0, t], legal)
+        ledger.record(m)
+        scored.append((i, m))
+    if not scored:
+        return flat_idx
+    if last_step:
+        return flat_idx
+    for i, m in scored:
+        if m <= float(defer_mass):
+            keep.add(i)
+    if not any(i // length == 0 for i in keep):
+        # Progress guarantee: keep the single lowest-removed-mass candidate.
+        keep.add(min(scored, key=lambda pair: pair[1])[0])
+    return [i for i in flat_idx if i in keep]
 
 
 def perturb_known_neighbors(

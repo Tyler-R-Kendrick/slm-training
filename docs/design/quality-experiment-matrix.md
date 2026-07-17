@@ -1376,3 +1376,26 @@ self-distillation, trajectory RL) are in
 | E63 | Gate calibration | ECE / selective accuracy / abstention on `FastPathGate` | proposed |
 | E64 | Trajectory-aligned RL | MDPO/d1-style on intermediate MaskGIT states | proposed |
 | E65 | Schema generalization | Held-out schemas / rename / `toy-layout` transfer | proposed |
+
+## A2 distribution-aware constrained diffusion decode (E268, wired)
+
+`--matrix v13`. Single-step ASAp re-weighting (Grammar-Aligned Decoding, Park et
+al., NeurIPS 2024, arXiv:2405.21047) adapted to the MaskGIT unmask loop: the
+constraint gate records the probability mass hard masking removes
+(`AsapLedger`) and defers high-distortion commits, the direct decode-side fix
+for the A1 emptiness diagnosis (valid-but-empty layouts). Config lever
+`asap_reweight` (+ `asap_alpha`, `asap_defer_mass`), default off / byte-identical.
+Full evidence + honesty caveat:
+[iter-a2-asap-constrained-decode-20260717.md](iter-a2-asap-constrained-decode-20260717.md).
+
+| ID | Approach | Primary lever | Status |
+| --- | --- | --- | --- |
+| E268 | Single-step ASAp constrained decode | `asap_reweight` on MaskGIT unmask loop; matched to A5/E240 | wired; ledger LIVE on MaskGIT path (fixture); dormant under A5 LTR recipe; quality unrun-at-scale |
+
+Caveat: ASAp lives in the MaskGIT unmask loop, but the A5 baseline (E240)
+decodes LTR via the compiler-tree path, so E268 as-matched (differing only by
+the flag) reproduces E240 byte-for-byte and the ledger is dormant. Liveness is
+proven on the MaskGIT decode path by
+`tests/test_models/test_asap_constrained_decode.py`; a MaskGIT-decode
+configuration is required to engage the lever at scale. E-id E268 clears the
+E259-E267 range claimed by concurrent open PRs.

@@ -1,0 +1,71 @@
+{
+  "iteration": "A2 distribution-aware constrained diffusion decoding (SLM-38)",
+  "date": "2026-07-17",
+  "reference": "docs/design/iter-a2-asap-constrained-decode-20260717.md",
+  "technique": {
+    "name": "single-step ASAp re-weighting for MaskGIT",
+    "citation": "Park et al., NeurIPS 2024, 'Grammar-Aligned Decoding', arXiv:2405.21047",
+    "fidelity": "Adapted (single-step approximation, not full expected-future ASAp)",
+    "motivation": "A1 emptiness probe (SLM-20, evals/emptiness_probe.py): hard constraint masking renormalizes over grammar-legal tokens and distorts the model distribution toward valid-but-empty completions"
+  },
+  "matrix_row": {
+    "id": "E268",
+    "run_id": "qx_e268_a2_asap_reweight",
+    "matrix": "v13",
+    "status": "registered_unrun",
+    "matched_control": "E240 (A5 lattice-campaign strict compiler-tree baseline)",
+    "delta_from_control": "asap_reweight only",
+    "eid_choice_reason": "main advanced through ~E263; concurrent open PRs claimed E259-E267; E268 chosen to avoid collision",
+    "reason_unrun": "A5 recipe decodes LTR via compiler-tree (grammar_ltr_primary=True, compiler_decode_mode=tree); ASAp lives in the MaskGIT unmask loop, so under the exact matched recipe the ledger is dormant and E268 reproduces E240 byte-for-byte. Ledger liveness is proven on the MaskGIT decode path by tests instead."
+  },
+  "mechanism": {
+    "primitives_file": "src/slm_training/dsl/grammar/fastpath/gate.py",
+    "AsapLedger": "records per-position grammar-removed probability mass (positions, sum, mean, max, nonzero)",
+    "removed_mass": "1 - sum(model prob over grammar-legal ids); 1.0 fail-closed on empty legal set; clamped [0,1]",
+    "asap_reweight": "q(t) = p(t)^gamma / Z with gamma = clip(1 - alpha*M, 1e-3, 1); alpha=0 or M=0 reproduces plain renormalization; order-preserving (winning legal token unchanged, no illegal token admitted)",
+    "commit_gate_file": "src/slm_training/models/parallel_decode.py",
+    "asap_filter_commits": "defers MaskGIT commits whose removed mass exceeds asap_defer_mass; always keeps the lowest-removed-mass candidate (progress guarantee); nothing deferred on the final step; frontier-only measurement (contiguous committed left prefix)",
+    "single_step_approximation": "corrects using removed mass observed at the current position instead of a full expected-future grammaticality estimate (which full ASAp refines across samples)"
+  },
+  "config_wiring": {
+    "TwoTowerConfig": ["asap_reweight (default false)", "asap_alpha (default 1.0)", "asap_defer_mass (default 0.5)"],
+    "ModelBuildConfig": ["asap_reweight", "asap_alpha", "asap_defer_mass"],
+    "Experiment": ["asap_reweight", "asap_alpha", "asap_defer_mass"],
+    "factory_runtime_override_fields": true,
+    "decode_stats": ["asap_positions", "asap_removed_mass_sum", "asap_max_removed_mass", "asap_nonzero_removed"]
+  },
+  "fixture_wiring_smoke": {
+    "honesty": "wiring-evidence-only; ledger-liveness proof; no quality claim supported",
+    "device": "cpu",
+    "backend": "scratch (random-init tiny denoiser)",
+    "suite": "single fixture record; MaskGIT decode path (grammar_ltr_primary=false, compiler_decode_mode=off)",
+    "recipe": {"d_model": 64, "n_heads": 2, "context_layers": 1, "denoiser_layers": 2, "gen_steps": 8, "seed": 0},
+    "ledger": {
+      "asap_off": {"asap_positions": 0, "asap_removed_mass_sum": 0.0, "asap_nonzero_removed": 0},
+      "asap_on": {"asap_positions": 8, "asap_removed_mass_sum": 8.0, "asap_mean_removed_mass": 1.0, "asap_nonzero_removed": 8, "asap_max_removed_mass": 1.0}
+    },
+    "decoded_text_identical_on_off": true,
+    "interpretation": "Ledger is LIVE on the MaskGIT path (8 frontier positions measured, all nonzero). mean removed mass = 1.0 is expected at random init: the untrained denoiser puts ~zero mass on grammar-legal continuations, so the constraint removes ~all mass. The partial-distortion regime (0<M<1) and any output change require a trained checkpoint. Deferral produced no net output change at this tiny budget."
+  },
+  "meaningful_parse_primary": {
+    "asap_on": "unrun-at-scale (fixture random-init parse ~ 0)",
+    "asap_off": "unrun-at-scale (fixture random-init parse ~ 0)",
+    "note": "frontier quality verdict vs A5 baseline is unrun-at-scale; requires the frozen A5 checkpoint on a real suite AND a MaskGIT-decode configuration for ASAp to engage"
+  },
+  "tests": {
+    "tests/test_dsl/test_asap_gate.py": 12,
+    "tests/test_models/test_asap_constrained_decode.py": 3,
+    "tests/test_scripts/test_quality_matrix_v13.py": 1,
+    "new_total": 16,
+    "touched_suites_full": "439 passed, 4 skipped, 15 deselected (tests/test_dsl, tests/test_harnesses/model_build, tests/test_models, tests/test_scripts via .githooks/check-changed)"
+  },
+  "checks": {
+    "ruff": "pass (changed files)",
+    "repo_policy": "ok",
+    "check_changed": "pass"
+  },
+  "ship_gate": "n/a (decode-lever wiring; no gate change, no gate weakened)",
+  "honesty_mode": "honest wiring + measured ledger-liveness; frontier quality verdict labeled unrun-at-scale",
+  "model_card_updated": false,
+  "checkpoint_created": false
+}

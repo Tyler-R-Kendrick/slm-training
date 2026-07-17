@@ -76,6 +76,9 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "suffix_rollback_window",
         "remask_use_gate",
         "remask_use_entropy",
+        "asap_reweight",
+        "asap_alpha",
+        "asap_defer_mass",
         "remask_policy",
         "core_perturb_frac",
         "remask_to_mask",
@@ -258,6 +261,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         remask_ratio=float(getattr(config, "remask_ratio", 0.0) or 0.0),
         remask_use_gate=bool(getattr(config, "remask_use_gate", False)),
         remask_use_entropy=bool(getattr(config, "remask_use_entropy", False)),
+        asap_reweight=bool(getattr(config, "asap_reweight", False)),
+        asap_alpha=float(getattr(config, "asap_alpha", 1.0) or 0.0),
+        asap_defer_mass=float(getattr(config, "asap_defer_mass", 0.5) or 0.5),
         remask_policy=str(
             getattr(config, "remask_policy", "confidence") or "confidence"
         ),

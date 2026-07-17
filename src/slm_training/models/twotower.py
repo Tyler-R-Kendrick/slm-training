@@ -66,7 +66,7 @@ from slm_training.models.template_fill import (
     inventory_from_prompt,
     template_mask_positions,
 )
-from slm_training.dsl.grammar.fastpath.gate import FastPathGate
+from slm_training.dsl.grammar.fastpath.gate import AsapLedger, FastPathGate
 from slm_training.models.tokenizer import OpenUITokenizer
 
 
@@ -244,6 +244,13 @@ class TwoTowerConfig:
     # E33: combine grammar + gate + entropy into remask budget.
     remask_use_gate: bool = False
     remask_use_entropy: bool = False
+    # A2 (SLM-38): distribution-aware constrained decode — single-step ASAp
+    # re-weighting (Park et al., NeurIPS 2024) in the MaskGIT unmask loop.
+    # Records grammar-removed probability mass and defers high-distortion
+    # commits. Off (default) = byte-identical decode; the ledger stays dormant.
+    asap_reweight: bool = False
+    asap_alpha: float = 1.0  # correction strength in [0, 1]; 0 == plain renorm
+    asap_defer_mass: float = 0.5  # defer commits whose removed mass exceeds this
     # V6 remask policy: confidence | core | combined (CoRe-lite + E33).
     remask_policy: str = "confidence"
     # Fraction of known neighbors masked for CoRe perturbation forward (E50).
@@ -5147,6 +5154,20 @@ class TwoTowerModel(nn.Module):
             )
         stats = self.speculative_stats
         stats.generates += 1
+        # A2 (SLM-38): single-step ASAp distribution-aware constrained decode.
+        asap_on = bool(getattr(self.config, "asap_reweight", False)) and use_grammar
+        asap_ledger = AsapLedger() if asap_on else None
+        asap_alpha = float(getattr(self.config, "asap_alpha", 1.0) or 0.0)
+        asap_defer = float(getattr(self.config, "asap_defer_mass", 0.5) or 0.5)
+        asap_engine = None
+        if asap_on:
+            try:
+                from slm_training.dsl.grammar.fastpath import engine_for_dsl
+                from slm_training.models.grammar import active_dsl
+
+                asap_engine = engine_for_dsl(active_dsl())
+            except Exception:  # noqa: BLE001
+                asap_engine = None
         successor_cache: SuccessorCache | None = None
         for step in range(steps):
             if not unknown.any():
@@ -5285,6 +5306,47 @@ class TwoTowerModel(nn.Module):
                     )
                     return choice  # None → leave masked for LTR repair
                 return int(pred[b, t].item())
+
+            if asap_on and asap_engine is not None and flat_idx:
+                from slm_training.dsl.grammar.fastpath.token_map import (
+                    allowed_id_set,
+                    decode_prefix,
+                )
+                from slm_training.models.parallel_decode import asap_filter_commits
+
+                def _asap_legal(t: int) -> set[int] | None:
+                    # ASAp's renormalization is only well-defined where the left
+                    # context is a clean grammar prefix. In parallel MaskGIT the
+                    # canvas is mask-punctured, so measure removed mass only at
+                    # the decode frontier: positions whose entire left context
+                    # (1..t-1, position 0 is BOS) is already committed. Interior
+                    # positions with masked left context are legality-unknown
+                    # (return None → passthrough, not recorded).
+                    if t > 1 and bool(unknown[0, 1:t].any().item()):
+                        return None
+                    try:
+                        prefix_text = decode_prefix(
+                            self.tokenizer, ids[0, :t].tolist()
+                        )
+                        synced = asap_engine.set_prefix(prefix_text)
+                        if not synced and prefix_text.strip():
+                            return set()  # illegal prefix → no legal continuation
+                        return allowed_id_set(
+                            self.tokenizer, asap_engine.next_terminals()
+                        )
+                    except Exception:  # noqa: BLE001
+                        return None
+
+                flat_idx = asap_filter_commits(
+                    flat_idx,
+                    probs,
+                    length=length,
+                    legal_ids_fn=_asap_legal,
+                    ledger=asap_ledger,
+                    alpha=asap_alpha,
+                    defer_mass=asap_defer,
+                    last_step=(step >= steps - 1),
+                )
 
             if not cluster_mode:
                 for idx in flat_idx:
@@ -5641,6 +5703,19 @@ class TwoTowerModel(nn.Module):
                     commits=step_commits,
                     remasks=step_remasks,
                 )
+
+        if asap_ledger is not None:
+            active_stats = get_active_stats()
+            if active_stats is not None:
+                active_stats.asap_positions += asap_ledger.positions
+                active_stats.asap_removed_mass_sum += asap_ledger.removed_mass_sum
+                active_stats.asap_nonzero_removed += asap_ledger.nonzero_removed
+                active_stats.asap_max_removed_mass = max(
+                    active_stats.asap_max_removed_mass,
+                    asap_ledger.max_removed_mass,
+                )
+            # Expose the last ledger for direct inspection (tests / diagnostics).
+            self._last_asap_ledger = asap_ledger
 
         if unknown.any():
             if use_grammar:

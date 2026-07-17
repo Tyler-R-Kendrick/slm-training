@@ -662,6 +662,7 @@ smallest constrained intervention whose verifier and frozen suites can falsify i
 | Successor-state cache | E74 `speculative_successor`, `speculative_fanout` | `models/speculative_denoise.py` (`SuccessorCache`) |
 | V7 champion | E75 | `scripts/run_quality_matrix.py --matrix v7` |
 | Compiler-drafted decode | `compiler_decode_mode=forced|restricted|tree` | `dsl/grammar/fastpath/compiler_draft.py`, `models/twotower.py` |
+| Grammar-aligned decode (single-step ASAp) | A2 `asap_reweight` (+ `asap_alpha`, `asap_defer_mass`), E268 | `dsl/grammar/fastpath/gate.py` (`AsapLedger`, `asap_reweight`), `models/parallel_decode.py` (`asap_filter_commits`), `models/twotower.py` — **Adapted** from Grammar-Aligned Decoding / ASAp (Park et al., NeurIPS 2024, arXiv:2405.21047); single-step approximation, not full expected-future ASAp |
 | Evidence-grounded autoresearch | `--researcher`, typed `ResearcherRun` / `ExperimentKnobs` | `scripts/autoresearch.py`, `src/slm_training/autoresearch/` |
 | Five-candidate hypothesis matrix | `hypothesize`, `min_hypotheses>=5`, categorical candidate audit | `scripts/autoresearch.py`, `autoresearch/schemas.py`, `autoresearch/engine.py` |
 

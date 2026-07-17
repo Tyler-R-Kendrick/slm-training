@@ -89,6 +89,11 @@ class DecodeStats:
     constrained_dead_end_forced_rank: int = -1
     constrained_last_legal_candidates: int = -1
     constrained_dead_end_candidate_count: int = 0
+    # A2 (SLM-38): single-step ASAp distribution-aware constrained decode ledger.
+    asap_positions: int = 0
+    asap_removed_mass_sum: float = 0.0
+    asap_max_removed_mass: float = 0.0
+    asap_nonzero_removed: int = 0
     constrained_dead_end_traces: list[dict[str, object]] = field(default_factory=list)
     # Bounded prefix/choice evidence for diagnosing the first bad constrained
     # decision without emitting an unbounded trace for long canvases.
@@ -221,6 +226,10 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "constrained_dead_end_forced_rank",
         "constrained_last_legal_candidates",
         "constrained_dead_end_candidate_count",
+        "asap_positions",
+        "asap_removed_mass_sum",
+        "asap_max_removed_mass",
+        "asap_nonzero_removed",
         "template_fastpath_count",
         "template_fallback_count",
         "root_invariant_bypass_count",

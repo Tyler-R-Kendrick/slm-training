@@ -93,6 +93,10 @@ class Experiment:
     suffix_rollback_window: int = 0
     remask_use_gate: bool = False
     remask_use_entropy: bool = False
+    # A2 (SLM-38): single-step ASAp distribution-aware constrained decode.
+    asap_reweight: bool = False
+    asap_alpha: float = 1.0
+    asap_defer_mass: float = 0.5
     visible_corrupt_rate: float = 0.0
     trust_gate: bool = False
     grammar_fastpath_mode: str = "hybrid"
@@ -1260,6 +1264,11 @@ def _strict_compiler_tree_policy() -> dict[str, Any]:
             "compiler_search_stagnation_patience",
             "compiler_search_trigger",
             "compiler_search_width",
+            # A2 (SLM-38): ASAp decode lever applies as a decode-time override on
+            # the shared frozen checkpoint (eval-only matched rows).
+            "asap_reweight",
+            "asap_alpha",
+            "asap_defer_mass",
             *STRICT_COMPILER_TREE_POLICY,
         }
     )
@@ -1419,6 +1428,39 @@ def _v12_experiments(train_dir: Path) -> list[Experiment]:
     ]
 
 
+def _v13_experiments(train_dir: Path) -> list[Experiment]:
+    """E268 (A2, SLM-38): distribution-aware constrained diffusion decoding.
+
+    Single-step ASAp re-weighting (Grammar-Aligned Decoding, Park et al.,
+    NeurIPS 2024) adapted to the MaskGIT unmask loop: the constraint gate now
+    records the probability mass hard masking removes and defers high-distortion
+    commits, correcting the renormalization the A1 emptiness probe implicates in
+    valid-but-empty layouts. Registered matched to the A5 lattice-campaign
+    baseline (E240 strict compiler-tree policy, eval-only from the same frozen
+    checkpoint), differing **only** by ``asap_reweight``.
+
+    Honesty caveat (see docs/design/iter-a2-asap-constrained-decode-20260717.md):
+    ASAp lives in the MaskGIT unmask loop, but the A5 recipe decodes LTR through
+    the compiler-tree path (``grammar_ltr_primary=True``,
+    ``compiler_decode_mode="tree"``), so under this exact matched recipe the
+    ASAp ledger stays dormant and E268 reproduces E240 byte-for-byte. The
+    mechanism is exercised live on the MaskGIT decode path by
+    tests/test_models/test_asap_constrained_decode.py. E-id chosen E268 to clear
+    E259-E267 claimed by concurrent open PRs.
+    """
+    base = dict(**_strict_compiler_tree_policy(), initialization="eval_only")
+    return [
+        Experiment(
+            "E268",
+            "qx_e268_a2_asap_reweight",
+            "A2 single-step ASAp distribution-aware constrained decode (matched to A5/E240)",
+            train_dir,
+            asap_reweight=True,
+            **base,
+        ),
+    ]
+
+
 def _apply_eval_checkpoint(
     experiments: list[Experiment], eval_checkpoint: Path | None
 ) -> list[Experiment]:
@@ -1488,6 +1530,9 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         remask_ratio=float(getattr(exp, "remask_ratio", 0.0) or 0.0),
         remask_use_gate=bool(getattr(exp, "remask_use_gate", False)),
         remask_use_entropy=bool(getattr(exp, "remask_use_entropy", False)),
+        asap_reweight=bool(getattr(exp, "asap_reweight", False)),
+        asap_alpha=float(getattr(exp, "asap_alpha", 1.0) or 0.0),
+        asap_defer_mass=float(getattr(exp, "asap_defer_mass", 0.5) or 0.5),
         remask_policy=str(getattr(exp, "remask_policy", "confidence") or "confidence"),
         core_perturb_frac=float(getattr(exp, "core_perturb_frac", 0.25) or 0.25),
         remask_to_mask=bool(getattr(exp, "remask_to_mask", True)),
@@ -1705,6 +1750,9 @@ def _eval_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         remask_ratio=float(getattr(exp, "remask_ratio", 0.0) or 0.0),
         remask_use_gate=bool(getattr(exp, "remask_use_gate", False)),
         remask_use_entropy=bool(getattr(exp, "remask_use_entropy", False)),
+        asap_reweight=bool(getattr(exp, "asap_reweight", False)),
+        asap_alpha=float(getattr(exp, "asap_alpha", 1.0) or 0.0),
+        asap_defer_mass=float(getattr(exp, "asap_defer_mass", 0.5) or 0.5),
         remask_policy=str(getattr(exp, "remask_policy", "confidence") or "confidence"),
         core_perturb_frac=float(getattr(exp, "core_perturb_frac", 0.25) or 0.25),
         remask_to_mask=bool(getattr(exp, "remask_to_mask", True)),
@@ -1738,6 +1786,9 @@ def _apply_decode_overrides(model: Any, exp: Experiment) -> None:
         ("remask_ratio", "remask_ratio"),
         ("remask_use_gate", "remask_use_gate"),
         ("remask_use_entropy", "remask_use_entropy"),
+        ("asap_reweight", "asap_reweight"),
+        ("asap_alpha", "asap_alpha"),
+        ("asap_defer_mass", "asap_defer_mass"),
         ("remask_policy", "remask_policy"),
         ("core_perturb_frac", "core_perturb_frac"),
         ("remask_to_mask", "remask_to_mask"),
@@ -2334,12 +2385,13 @@ def main(argv: list[str] | None = None) -> int:
             "v10",
             "v11",
             "v12",
+            "v13",
             "all",
         ),
         default="v3",
         help="Experiment set through v10 local-decision rows E248-E254,"
-        " v11 representation rows E255-E257, and the v12 choice-codec row"
-        " E262, or all.",
+        " v11 representation rows E255-E257, the v12 choice-codec row E262,"
+        " and the v13 A2 ASAp distribution-aware decode row E268, or all.",
     )
     parser.add_argument(
         "--list",
@@ -2521,6 +2573,8 @@ def main(argv: list[str] | None = None) -> int:
         experiments.extend(_v11_experiments(args.train_dir))
     if args.matrix in {"v12", "all"}:
         experiments.extend(_v12_experiments(args.train_dir))
+    if args.matrix in {"v13", "all"}:
+        experiments.extend(_v13_experiments(args.train_dir))
     if args.only:
         experiments = [e for e in experiments if e.eid in selected_ids]
     if args.list:

@@ -125,6 +125,10 @@ class ModelBuildConfig:
     suffix_rollback_window: int = 0
     remask_use_gate: bool = False
     remask_use_entropy: bool = False
+    # A2 (SLM-38): single-step ASAp distribution-aware constrained decode.
+    asap_reweight: bool = False
+    asap_alpha: float = 1.0
+    asap_defer_mass: float = 0.5
     remask_policy: str = "confidence"  # confidence | core | combined
     core_perturb_frac: float = 0.25
     remask_to_mask: bool = True
