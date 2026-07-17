@@ -855,6 +855,85 @@ def test_component_plan_bias_is_role_conditioned_and_count_aware() -> None:
     assert bound_bias_after[1] < bound_bias_before[1]
 
 
+def test_slot_component_supervises_each_visible_slot_owner() -> None:
+    model = _model(slot_component_loss_weight=1.0)
+    model.train()
+    record = ExampleRecord(
+        id="slot-components",
+        prompt="email field and submit action",
+        openui=(
+            'root = Stack([field, submit])\n'
+            'field = Input("email", ":form.email")\n'
+            'submit = Button(":form.submit")'
+        ),
+        placeholders=[":form.email", ":form.submit"],
+        split="train",
+        source="fixture",
+    )
+
+    loss = model.training_loss([record])
+    loss.backward()
+
+    assert torch.isfinite(loss)
+    assert model.slot_component_head is not None
+    assert model.slot_component_head.weight.grad is not None
+    assert model.slot_component_head.weight.grad.abs().sum() > 0
+    assert model.last_training_metrics["slot_component_rows"] == 2
+    assert model.last_training_metrics["slot_component_loss"] > 0
+    assert 0 <= model.last_training_metrics["slot_component_accuracy"] <= 1
+
+
+def test_slot_component_bias_uses_next_unfilled_slot() -> None:
+    from types import MethodType
+
+    model = _model(slot_component_decode_weight=2.0)
+    assert model.slot_component_head is not None
+    tokenizer = model.tokenizer
+    component_ids = model._component_inventory_token_ids()
+    component_index = {
+        tokenizer.id_to_token[token_id]: index
+        for index, token_id in enumerate(component_ids)
+    }
+
+    def logits(self, slots, context, pad_mask, context_rows):
+        row = torch.zeros(
+            (1, len(component_ids)), dtype=context.dtype, device=context.device
+        )
+        target = "Input" if slots == [":form.email"] else "Button"
+        row[0, component_index[target]] = 3.0
+        return row
+
+    model._slot_component_logits = MethodType(logits, model)
+    ctx, ctx_pad = model._encode_context(
+        ["email field and submit action; slots :form.email, :form.submit"]
+    )
+    stack = tokenizer.token_to_id["Stack"]
+    input_id = tokenizer.token_to_id["Input"]
+    button = tokenizer.token_to_id["Button"]
+    candidates = (input_id, button)
+    kinds = ("component_bound", "component_bound")
+
+    email_bias = model._slot_component_bias(
+        ctx,
+        ctx_pad,
+        [stack],
+        candidates,
+        kinds,
+        [":form.email", ":form.submit"],
+    )
+    submit_bias = model._slot_component_bias(
+        ctx,
+        ctx_pad,
+        [stack, tokenizer.sym_id(0)],
+        candidates,
+        kinds,
+        [":form.email", ":form.submit"],
+    )
+
+    assert email_bias is not None and email_bias[0] > email_bias[1]
+    assert submit_bias is not None and submit_bias[1] > submit_bias[0]
+
+
 def test_component_edges_come_from_ast_and_partial_reference_graph() -> None:
     tokenizer = DSLNativeTokenizer.build()
     root = {

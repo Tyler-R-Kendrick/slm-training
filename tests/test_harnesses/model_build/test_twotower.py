@@ -186,6 +186,8 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
             component_plan_loss_weight=1.0,
             component_plan_decode_weight=0.5,
             component_plan_token_pool=True,
+            slot_component_loss_weight=0.6,
+            slot_component_decode_weight=0.25,
             component_edge_loss_weight=1.0,
             component_edge_alignment_loss_weight=0.8,
             component_edge_decode_weight=0.4,
@@ -206,6 +208,7 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
 
     assert loaded.component_inventory_head is not None
     assert loaded.component_plan_head is not None
+    assert loaded.slot_component_head is not None
     assert loaded.component_edge_head is not None
     assert loaded.binder_component_plan_head is not None
     assert loaded.binder_topology_head is not None
@@ -215,6 +218,8 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     assert loaded.config.component_plan_loss_weight == 1.0
     assert loaded.config.component_plan_decode_weight == 0.5
     assert loaded.config.component_plan_token_pool is True
+    assert loaded.config.slot_component_loss_weight == 0.6
+    assert loaded.config.slot_component_decode_weight == 0.25
     assert loaded.config.component_edge_loss_weight == 1.0
     assert loaded.config.component_edge_alignment_loss_weight == 0.8
     assert loaded.config.component_edge_decode_weight == 0.4
@@ -231,6 +236,7 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
             train_dir=tmp_path,
             component_inventory_decode_weight=0.0,
             component_plan_decode_weight=0.0,
+            slot_component_decode_weight=0.0,
             component_edge_decode_weight=0.0,
             binder_component_plan_decode_weight=0.0,
             binder_topology_decode_weight=0.0,
@@ -239,6 +245,7 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     )
     assert loaded.config.component_inventory_decode_weight == 0.0
     assert loaded.config.component_plan_decode_weight == 0.0
+    assert loaded.config.slot_component_decode_weight == 0.0
     assert loaded.config.component_edge_decode_weight == 0.0
     assert loaded.config.binder_component_plan_decode_weight == 0.0
     assert loaded.config.binder_topology_decode_weight == 0.0
@@ -267,6 +274,7 @@ def test_optional_heads_do_not_shift_training_rng() -> None:
     assert torch.equal(baseline, state_after(binder_arity_loss_weight=1.0))
     assert torch.equal(baseline, state_after(binder_topology_loss_weight=1.0))
     assert torch.equal(baseline, state_after(component_plan_loss_weight=1.0))
+    assert torch.equal(baseline, state_after(slot_component_loss_weight=1.0))
 
 
 def test_auxiliary_heads_do_not_change_base_optimizer_updates() -> None:

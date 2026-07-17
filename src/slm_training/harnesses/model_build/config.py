@@ -209,6 +209,8 @@ class ModelBuildConfig:
     component_plan_decode_weight: float | None = None
     component_plan_attention_pool: bool = False
     component_plan_token_pool: bool = False
+    slot_component_loss_weight: float = 0.0
+    slot_component_decode_weight: float | None = None
     component_edge_loss_weight: float = 0.0
     component_edge_alignment_loss_weight: float = 0.0
     component_edge_decode_weight: float | None = None

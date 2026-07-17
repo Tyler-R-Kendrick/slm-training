@@ -394,6 +394,18 @@ def main(argv: list[str] | None = None) -> int:
         help="Aggregate component-specific plan evidence across prompt tokens.",
     )
     parser.add_argument(
+        "--slot-component-loss-weight",
+        type=float,
+        default=0.0,
+        help="Per-visible-slot containing-component classification loss weight.",
+    )
+    parser.add_argument(
+        "--slot-component-decode-weight",
+        type=float,
+        default=0.0,
+        help="Bias compiler-legal bound components for the next unfilled slot.",
+    )
+    parser.add_argument(
         "--component-edge-loss-weight",
         type=float,
         default=0.0,
@@ -784,6 +796,8 @@ def main(argv: list[str] | None = None) -> int:
             component_plan_decode_weight=args.component_plan_decode_weight,
             component_plan_attention_pool=args.component_plan_attention_pool,
             component_plan_token_pool=args.component_plan_token_pool,
+            slot_component_loss_weight=args.slot_component_loss_weight,
+            slot_component_decode_weight=args.slot_component_decode_weight,
             component_edge_loss_weight=args.component_edge_loss_weight,
             component_edge_alignment_loss_weight=(
                 args.component_edge_alignment_loss_weight

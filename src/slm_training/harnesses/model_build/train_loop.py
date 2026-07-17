@@ -772,6 +772,12 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "component_plan_token_pool": bool(
                 getattr(config, "component_plan_token_pool", False)
             ),
+            "slot_component_loss_weight": getattr(
+                config, "slot_component_loss_weight", 0.0
+            ),
+            "slot_component_decode_weight": getattr(
+                config, "slot_component_decode_weight", 0.0
+            ),
             "component_edge_loss_weight": getattr(
                 config, "component_edge_loss_weight", 0.0
             ),
