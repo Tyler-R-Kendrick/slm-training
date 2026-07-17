@@ -164,6 +164,31 @@ def local_decision_loss(
     return loss, metrics
 
 
+def _guard_objective_tensors(
+    logits: torch.Tensor,
+    event: DecisionEventV1,
+    *,
+    objective: LocalObjective,
+    epsilon: float = 2.0,
+    tau: float = 1.0,
+) -> dict[str, torch.Tensor]:
+    """Return minimization-oriented tensors for every guarded metric."""
+    loss, _ = local_decision_loss(
+        logits, event, objective=objective, epsilon=epsilon, tau=tau
+    )
+    good_ids = _indices(event.good_token_ids, logits)
+    bad_ids = _indices(event.bad_token_ids, logits)
+    probs = F.softmax(logits, dim=-1)
+    good = logits.index_select(0, good_ids)
+    bad = logits.index_select(0, bad_ids)
+    return {
+        "loss": loss,
+        "bad_probability_mass": probs.index_select(0, bad_ids).sum(),
+        "good_probability_mass": -probs.index_select(0, good_ids).sum(),
+        "mean_margin": -(good[:, None] - bad[None, :]).mean(),
+    }
+
+
 def event_schedule(
     events: list[DecisionEventV1], *, steps: int, seed: int, balanced: bool
 ) -> list[DecisionEventV1]:
@@ -528,18 +553,86 @@ def diagnose_decision_gradient_alignment(
     }
 
 
+def diagnose_metric_complete_gradient_feasibility(
+    model: TwoTowerModel,
+    events: list[DecisionEventV1],
+    *,
+    objective: LocalObjective,
+    epsilon: float = 2.0,
+    tau: float = 1.0,
+) -> dict:
+    """Test common descent across every decision-kind guard objective."""
+    trainable = list(model.trainable_parameters())
+    gradients: dict[str, dict[str, list[torch.Tensor | None]]] = {}
+    counts: dict[str, Counter[str]] = {}
+    for split in ("train", "held_out"):
+        selected = _objective_events(
+            [event for event in events if event.split == split], objective
+        )
+        values: dict[str, list[torch.Tensor]] = defaultdict(list)
+        counts[split] = Counter()
+        for event, logits in zip(
+            selected, _event_logits_many(model, selected), strict=True
+        ):
+            for metric, value in _guard_objective_tensors(
+                logits, event, objective=objective, epsilon=epsilon, tau=tau
+            ).items():
+                values[f"{event.decision_kind}:{metric}"].append(value)
+            counts[split][event.decision_kind] += 1
+        gradients[split] = {}
+        keys = sorted(values)
+        for index, key in enumerate(keys):
+            gradients[split][key] = list(
+                torch.autograd.grad(
+                    torch.stack(values[key]).mean(),
+                    trainable,
+                    retain_graph=index + 1 < len(keys),
+                    allow_unused=True,
+                )
+            )
+    train_keys = sorted(gradients["train"])
+    combined, solver = _minimum_norm_gradient(
+        [gradients["train"][key] for key in train_keys]
+    )
+    solver["weight_by_objective"] = dict(
+        zip(train_keys, solver.pop("weights"), strict=True)
+    )
+    held_alignment = {
+        key: _gradient_alignment(gradient, combined)
+        for key, gradient in sorted(gradients["held_out"].items())
+    }
+    return {
+        "objective": objective,
+        "guard_objective_directions": dict(_GUARD_DIRECTIONS),
+        "train_event_counts": dict(sorted(counts["train"].items())),
+        "held_out_event_counts": dict(sorted(counts["held_out"].items())),
+        "train_objective_count": len(train_keys),
+        "held_out_objective_count": len(held_alignment),
+        "train_minimum_norm_solver": solver,
+        "held_out_alignment": held_alignment,
+        "held_out_regressions": sorted(
+            key for key, alignment in held_alignment.items() if alignment["dot"] < 0
+        ),
+    }
+
+
 def diagnose_decision_gradient_alignment_from_paths(
     checkpoint: Path,
     events_path: Path,
     *,
     objective: LocalObjective,
     device: str = "cpu",
+    metric_complete: bool = False,
 ) -> dict:
     events = load_decision_events(events_path)
     model = TwoTowerModel.from_checkpoint(checkpoint, device=device)
     _validate_identity(events, checkpoint, model)
-    report = diagnose_decision_gradient_alignment(
-        model, events, objective=objective
+    report = (
+        diagnose_metric_complete_gradient_feasibility(
+            model, events, objective=objective
+        )
+        if metric_complete
+        else diagnose_decision_gradient_alignment(model, events, objective=objective)
     )
     report["checkpoint"] = str(checkpoint)
     report["checkpoint_sha"] = checkpoint_sha(checkpoint)
