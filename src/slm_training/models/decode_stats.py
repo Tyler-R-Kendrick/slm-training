@@ -46,6 +46,8 @@ class DecodeStats:
     binder_arity_choice_changes: int = 0
     forced_spans: int = 0
     forced_tokens: int = 0
+    choice_state_cache_hits: int = 0
+    choice_state_cache_misses: int = 0
     trie_nodes: int = 0
     restricted_projections: int = 0
     full_projections: int = 0

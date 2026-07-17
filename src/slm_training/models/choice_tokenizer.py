@@ -183,6 +183,11 @@ class ChoiceTokenizer:
     max_int_literal: int = DEFAULT_MAX_INT_LITERAL
     # Fail-closed <unk> encodings observed (unseen component / literal / key).
     overflow_count: int = 0
+    allowed_cache: dict[tuple[object, ...], frozenset[int]] = field(
+        default_factory=dict, repr=False, compare=False
+    )
+    allowed_cache_hits: int = field(default=0, repr=False, compare=False)
+    allowed_cache_misses: int = field(default=0, repr=False, compare=False)
 
     # --- special ids -----------------------------------------------------
 
@@ -816,7 +821,37 @@ class ChoiceDecodeState:
                 return count
         return 1025
 
+    def signature(self) -> tuple[object, ...]:
+        return (
+            self.slot_count,
+            self.mode,
+            tuple(
+                (
+                    frame.kind,
+                    frame.expr_type,
+                    frame.close,
+                    frame.remaining,
+                    frame.phase,
+                    frame.required_args,
+                    frame.arg_index,
+                )
+                for frame in self.frames
+            ),
+            tuple(self.section_types),
+            self.current_marker,
+            self.valid_root_seen,
+            self.literal_frame,
+            self.literal_size,
+            self.literal_is_object_key,
+        )
+
     def allowed_ids(self, remaining_positions: int) -> set[int]:
+        key = (self.signature(), int(remaining_positions))
+        cached = self.tokenizer.allowed_cache.get(key)
+        if cached is not None:
+            self.tokenizer.allowed_cache_hits += 1
+            return set(cached)
+        self.tokenizer.allowed_cache_misses += 1
         allowed: set[int] = set()
         for token_id in self.tokenizer.id_to_token:
             probe = self.clone()
@@ -829,6 +864,9 @@ class ChoiceDecodeState:
             )
             if completion <= remaining_positions - 1:
                 allowed.add(token_id)
+        if len(self.tokenizer.allowed_cache) >= 4096:
+            self.tokenizer.allowed_cache.clear()
+        self.tokenizer.allowed_cache[key] = frozenset(allowed)
         return allowed
 
 
