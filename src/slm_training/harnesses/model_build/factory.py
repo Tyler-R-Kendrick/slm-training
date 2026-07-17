@@ -352,6 +352,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         component_plan_attention_pool=bool(
             getattr(config, "component_plan_attention_pool", False)
         ),
+        component_plan_token_pool=bool(
+            getattr(config, "component_plan_token_pool", False)
+        ),
         component_edge_loss_weight=float(
             getattr(config, "component_edge_loss_weight", 0.0) or 0.0
         ),

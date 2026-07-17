@@ -325,6 +325,7 @@ def _effective_evaluation_policy(
         "component_plan_attention_pool": bool(
             value("component_plan_attention_pool") or False
         ),
+        "component_plan_token_pool": bool(value("component_plan_token_pool") or False),
         "schema_in_context": bool(value("schema_in_context")),
         "slot_contract_in_context": bool(value("slot_contract_in_context")),
         "slot_contract_constrained_decode": bool(

@@ -185,6 +185,7 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
             component_inventory_decode_weight=0.75,
             component_plan_loss_weight=1.0,
             component_plan_decode_weight=0.5,
+            component_plan_token_pool=True,
             component_edge_loss_weight=1.0,
             component_edge_alignment_loss_weight=0.8,
             component_edge_decode_weight=0.4,
@@ -213,6 +214,7 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     assert loaded.config.component_inventory_decode_weight == 0.75
     assert loaded.config.component_plan_loss_weight == 1.0
     assert loaded.config.component_plan_decode_weight == 0.5
+    assert loaded.config.component_plan_token_pool is True
     assert loaded.config.component_edge_loss_weight == 1.0
     assert loaded.config.component_edge_alignment_loss_weight == 0.8
     assert loaded.config.component_edge_decode_weight == 0.4

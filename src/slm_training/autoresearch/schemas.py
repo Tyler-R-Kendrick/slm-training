@@ -262,6 +262,8 @@ class ExperimentKnobs(StrictModel):
     component_inventory_decode_weight: float | None = Field(default=None, ge=0, le=20)
     component_plan_loss_weight: float | None = Field(default=None, ge=0, le=20)
     component_plan_decode_weight: float | None = Field(default=None, ge=0, le=20)
+    component_plan_attention_pool: bool | None = None
+    component_plan_token_pool: bool | None = None
     component_edge_loss_weight: float | None = Field(default=None, ge=0, le=20)
     component_edge_alignment_loss_weight: float | None = Field(
         default=None, ge=0, le=20

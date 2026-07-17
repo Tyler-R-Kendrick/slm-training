@@ -50,6 +50,7 @@ def test_evaluation_policy_reports_loaded_checkpoint_settings() -> None:
             decode_min_content=-1,
             component_inventory_decode_weight=0.5,
             component_plan_decode_weight=2.0,
+            component_plan_token_pool=True,
             local_files_only=False,
             schema_in_context=False,
             slot_contract_in_context=False,
@@ -72,6 +73,7 @@ def test_evaluation_policy_reports_loaded_checkpoint_settings() -> None:
     assert policy["decode_min_content"] == -1
     assert policy["component_inventory_decode_weight"] == 0.5
     assert policy["component_plan_decode_weight"] == 2.0
+    assert policy["component_plan_token_pool"] is True
 
 
 def test_structural_similarity_identical() -> None:

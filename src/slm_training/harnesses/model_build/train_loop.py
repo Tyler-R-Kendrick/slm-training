@@ -769,6 +769,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "component_plan_attention_pool": bool(
                 getattr(config, "component_plan_attention_pool", False)
             ),
+            "component_plan_token_pool": bool(
+                getattr(config, "component_plan_token_pool", False)
+            ),
             "component_edge_loss_weight": getattr(
                 config, "component_edge_loss_weight", 0.0
             ),

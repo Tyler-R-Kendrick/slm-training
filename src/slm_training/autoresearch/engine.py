@@ -410,6 +410,10 @@ def compile_commands(
                     str(knobs.component_plan_decode_weight),
                 ]
             )
+        if knobs.component_plan_attention_pool:
+            train.append("--component-plan-attention-pool")
+        if knobs.component_plan_token_pool:
+            train.append("--component-plan-token-pool")
         if knobs.component_edge_loss_weight is not None:
             train.extend(
                 ["--component-edge-loss-weight", str(knobs.component_edge_loss_weight)]
