@@ -114,6 +114,8 @@ class Experiment:
     denoiser_backend: str = "scratch"
     # V10 (C1): absolute | relative (De Bruijn binder references).
     bind_encoding: str = "absolute"
+    # V12 (A2): ASAp-style distribution-aware constrained MaskGIT decode.
+    asap_decode: bool = False
     # V7 levers: speculative denoising (docs/design/speculative-denoising.md)
     stability_min_persistence: int = 0
     stability_jsd_weight: float = 1.0
@@ -1355,16 +1357,16 @@ def _v10_experiments(train_dir: Path) -> list[Experiment]:
             **base,
         ),
         Experiment(
-            "E263",
-            "qx_e263_broad_gold_ast_ftpo_set",
+            "E277",
+            "qx_e277_broad_gold_ast_ftpo_set",
             "Broad grammar/AST-aligned set FTPO",
             train_dir,
             local_preference_objective="ftpo_set",
             **base,
         ),
         Experiment(
-            "E264",
-            "qx_e264_guarded_gold_ast_ftpo_set",
+            "E278",
+            "qx_e278_guarded_gold_ast_ftpo_set",
             "Held-out Pareto-guarded gold-AST set FTPO",
             train_dir,
             local_preference_objective="ftpo_set",
@@ -1490,6 +1492,44 @@ def _v12_experiments(train_dir: Path) -> list[Experiment]:
     ]
 
 
+def _v14_experiments(train_dir: Path) -> list[Experiment]:
+    """E277 (A2): ASAp-style distribution-aware constrained MaskGIT decode.
+
+    Observed constraint violations remove the violating token's mass at that
+    canvas position from the next proposal, and unmask ordering uses
+    post-removal confidence. Decode-only, so eval-only: route through a frozen
+    E255 checkpoint via ``--parent`` — a matched pair differing only in
+    ``asap_decode``.
+    """
+    base = dict(
+        output_tokenizer="lexer",
+        mask_pattern="diffusion",
+        grammar_ltr_primary=False,
+        initialization="eval_only",
+        runtime_override_fields=frozenset({"asap_decode", "grammar_ltr_primary"}),
+    )
+    return [
+        Experiment("E277", "qx_e277_a2_asap_decode", "A2 ASAp distribution-aware constrained MaskGIT decode", train_dir, asap_decode=True, **base),
+    ]
+
+
+def _v15_experiments(train_dir: Path) -> list[Experiment]:
+    """E278 (C2): dynamic pseudo-embeddings for symbol tokens (SLM-26).
+
+    ``runtime_symbol_features="replace"`` cancels the learned symbol-pool row
+    with a deterministic byte-compositional vector (DyVo-style; weight tying
+    and batching untouched). Matched against E255 on everything but the mode.
+    """
+    base = dict(
+        output_tokenizer="lexer",
+        mask_pattern="diffusion",
+        grammar_ltr_primary=False,
+    )
+    return [
+        Experiment("E278", "qx_e278_c2_pseudo_embeddings", "C2 dynamic pseudo-embeddings for symbol tokens", train_dir, runtime_symbol_features="replace", **base),
+    ]
+
+
 def _apply_eval_checkpoint(
     experiments: list[Experiment], eval_checkpoint: Path | None
 ) -> list[Experiment]:
@@ -1533,6 +1573,7 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         local_files_only=args.local_files_only,
         denoiser_backend=str(getattr(exp, "denoiser_backend", "scratch") or "scratch"),
         bind_encoding=str(getattr(exp, "bind_encoding", "absolute") or "absolute"),
+        asap_decode=bool(getattr(exp, "asap_decode", False)),
         grammar_constrained=True,
         grammar_ltr_primary=bool(getattr(exp, "grammar_ltr_primary", True)),
         grammar_ltr_repair=exp.grammar_ltr_repair,
@@ -2459,12 +2500,15 @@ def main(argv: list[str] | None = None) -> int:
             "v10",
             "v11",
             "v12",
+            "v14",
+            "v15",
             "all",
         ),
         default="v3",
         help="Experiment set through v10 local-decision rows E248-E254,"
-        " v11 representation rows E255-E257, and the v12 choice-codec row"
-        " E262, or all.",
+        " v11 representation rows E255-E257, v12 choice-codec row E262,"
+        " v14 decode-distortion row E277, v15 pseudo-embedding row E278,"
+        " or all.",
     )
     parser.add_argument(
         "--list",
@@ -2502,7 +2546,7 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(f"unknown suites: {','.join(unknown_suites)}")
     if not args.suites:
         parser.error("--suites must select at least one suite")
-    if args.matrix in {"v4", "v5", "v6", "v7", "v8", "v9", "v10", "v11", "all"}:
+    if args.matrix in {"v4", "v5", "v6", "v7", "v8", "v9", "v10", "v11", "v12", "v14", "v15", "all"}:
         if (
             args.parent is None
             and not args.scratch_control
@@ -2646,6 +2690,10 @@ def main(argv: list[str] | None = None) -> int:
         experiments.extend(_v11_experiments(args.train_dir))
     if args.matrix in {"v12", "all"}:
         experiments.extend(_v12_experiments(args.train_dir))
+    if args.matrix in {"v14", "all"}:
+        experiments.extend(_v14_experiments(args.train_dir))
+    if args.matrix in {"v15", "all"}:
+        experiments.extend(_v15_experiments(args.train_dir))
     if args.only:
         experiments = [e for e in experiments if e.eid in selected_ids]
     if args.list:

@@ -71,6 +71,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "compiler_search_backtrack_limit",
         "compiler_search_local_nogoods",
         "decode_min_content",
+        "asap_decode",
         "fastpath_aux_weight",
         "fastpath_gate_threshold",
         "suffix_rollback_window",
@@ -289,6 +290,7 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
             getattr(config, "compiler_search_local_nogoods", False)
         ),
         decode_min_content=max(-1, int(getattr(config, "decode_min_content", 0) or 0)),
+        asap_decode=bool(getattr(config, "asap_decode", False)),
         fastpath_aux_weight=getattr(config, "fastpath_aux_weight", 0.0),
         fastpath_gate_threshold=float(
             getattr(config, "fastpath_gate_threshold", 0.5) or 0.5
