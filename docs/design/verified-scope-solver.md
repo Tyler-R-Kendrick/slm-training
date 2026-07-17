@@ -39,6 +39,70 @@ conflated in review discussion:
 > The E283 signature is decode-coverage instrumentation; it is **not** a
 > completion-participation verdict and never authorizes candidate removal.
 
+## Constraint evidence (VSS0-02 / SLM-58)
+
+`build_completion_forest` accepts an optional `explain: bool = False`. When
+enabled, the returned `CompletionForest` carries a `ConstraintExplanation` that
+records, **per considered candidate**, which hard-constraint stage admitted or
+rejected it. This is the reason-coded substrate the later certificate builder,
+solver hard-negative miner, and per-domain diagnostics read. It does **not**
+change candidate membership, ordering, coverage, terminals, or default decode
+cost — explanations are byte-identical instrumentation that allocate nothing
+while disabled.
+
+Evidence types ([`fastpath/compiler_draft.py`](../../src/slm_training/dsl/grammar/fastpath/compiler_draft.py)),
+immutable and JSON-serializable:
+
+```python
+class ConstraintStage(str, Enum):
+    GRAMMAR = "grammar"              # prefix parseability + terminal derivation
+    SCHEMA = "schema"                # component/enum/type/children/arity filters
+    BINDING = "binding"              # binder scope: reusable/forward/unresolved
+    SLOT_CONTRACT = "slot_contract"  # active placeholder-symbol restriction
+    DATAFLOW = "dataflow"            # layout contract: state/effect/sym exclusion
+    LITERAL_FRAME = "literal_frame"  # byte frame vs closer inside a string
+    MIN_CONTENT = "min_content"      # A4 EOS content-floor withholding
+    TERMINAL = "terminal"            # per-path CFG reachability + EOS admission
+    COVERAGE = "coverage"            # final coverage status of the forest
+
+@dataclass(frozen=True)
+class ConstraintEvidence:
+    candidate_id: int | None
+    path_token_ids: tuple[int, ...]
+    stage: ConstraintStage
+    admitted: bool
+    reason_code: str
+    details: tuple[tuple[str, str], ...] = ()
+```
+
+`ConstraintExplanation` bundles the ordered `records`, per-stage
+admitted/rejected counts, the forest `coverage`, and an
+`exhaustive_over_considered` flag (true only when `coverage == "complete"`).
+
+**Honesty rule (do not drift).** Constraint evidence is instrumentation over the
+candidates the compiler *actually enumerated*; it is **not** an exhaustive
+support proof and never authorizes candidate removal:
+
+- An `admitted` record attests **prefix legality plus CFG reachability of the
+  branch** (the *prefix legality* property above), never that the candidate
+  participates in a verified terminal. It never yields `SUPPORTED`.
+- A rejected record attributes a **considered** candidate's exclusion to one
+  stage; it says nothing about vocabulary entries the compiler never enumerated,
+  so it is not an `UNSUPPORTED` certificate either.
+- `to_dict()` always serializes `is_support_proof: false`, and
+  `exhaustive_over_considered` is false whenever coverage is `partial`/`none`.
+  Partial/none coverage means the considered candidates were not fully
+  enumerated and the record must not be serialized or read as an exhaustive
+  proof.
+- Minimum-content EOS withholding (`MIN_CONTENT` / `min_content_withheld`) is
+  recorded distinctly from a grammar rejection (`TERMINAL` / `grammar_no_end`),
+  so the content floor is never conflated with CFG illegality.
+
+Evidence is therefore an **input** to the proof certificates and solver hard
+negatives defined below, never a substitute for them. Ordering is deterministic
+and independent of model logits; fields carry only tokenizer ids and bounded
+safe metadata, never decoded prompt/user literals.
+
 ## Terms
 
 Each term is defined so subsequent issues can implement dataclasses and state
@@ -222,7 +286,8 @@ the closure.
 | Symbol (file:line) | Existing role | Disposition under this contract |
 | --- | --- | --- |
 | `CompletionForest` (`fastpath/compiler_draft.py:29`) | Frozen enumerated next-action set for a prefix, carrying a `coverage: Coverage` guarantee (`complete`/`partial`/`none`) and `candidate_ids`. | **Retained, authoritative.** The support layer sits above it; its `coverage` tag is the substrate mapping to `SUPPORTED`/`UNSUPPORTED`/`UNKNOWN`. Not duplicated. |
-| `build_completion_forest` (`fastpath/compiler_draft.py:619`) | Deterministic bounded enumerator over the Lark CFG path (prefix legality via `OpenUIIncrementalEngine`). | **Retained.** Serves as the default reference backend's enumeration primitive. Not duplicated. |
+| `build_completion_forest` (`fastpath/compiler_draft.py`) | Deterministic bounded enumerator over the Lark CFG path (prefix legality via `OpenUIIncrementalEngine`). | **Retained + instrumented.** Serves as the default reference backend's enumeration primitive; VSS0-02 adds an opt-in `explain` mode surfacing reason-coded `ConstraintEvidence` per considered candidate (instrumentation only, not a support proof). Not duplicated. |
+| `ConstraintEvidence` / `ConstraintExplanation` (`fastpath/compiler_draft.py`) | New in VSS0-02 (SLM-58): per-considered-candidate reason codes for each hard-constraint stage, plus per-stage counts and coverage. | **New, instrumentation only.** The reason-coded substrate for later proof certificates and solver hard negatives; carries no `SUPPORTED`/`UNSUPPORTED` verdict and authorizes no candidate removal. |
 | `LatticeSearchState` + `Nogood` (`fastpath/lattice_search.py:182`, `:16`) | Bounded backtracking search trail with local nogood memory (`choose`/`rollback`). | **Extended (later issue).** Reversible decisions and local nogoods gain replayable certificates; certified deductions become non-reversible. |
 | `RankedForest` / `rank_forest` (`fastpath/lattice_search.py:24`/`:44`) | Independent soft ordering over the hard compiler candidate set. | **Retained.** Grounds the invariant that learned modules rank/propose but never create legality. Not duplicated. |
 | `ScopeContract` / `ScopeKind` (`data/progspec/scopes.py:33`/`:18`) | AST scopes (`COMPONENT_CALL`/`STATEMENT`/`CHILD_LIST`) plus a def/use binder overlay (`definitions`/`uses`/`visible_binders`). | **Extended.** Scope def/use edges feed capsule SCC construction; scopes are **not** assumed independent. |
@@ -301,3 +366,14 @@ guarantee boundary only. `python -m scripts.repo_policy` passes; documentation
 changes select no test suites (`scripts/check_changed` skips `docs/`). Later VSS
 issues implement the dataclasses and state transitions specified here behind a
 feature flag before any decode-behavior change.
+
+2026-07-17 — VSS0-02 / SLM-58 adds the `explain` mode and `ConstraintEvidence` /
+`ConstraintExplanation` types to `build_completion_forest`
+(`fastpath/compiler_draft.py`) plus regression tests in
+`tests/test_models/test_compiler_decode.py`. This is **instrumentation only**:
+default (`explain=False`) candidate membership, ordering, coverage, terminals,
+and cache keys are byte-identical, and the evidence is explicitly not a support
+proof. No model, training, eval, checkpoint, or ship claim. Verified with
+`pytest tests/test_models/test_compiler_decode.py tests/test_dsl/test_choice_codec.py`
+(44 passed, 18 choice-codec tests skipped where the OpenUI npm bridge is absent)
+and `python -m scripts.repo_policy` (ok).

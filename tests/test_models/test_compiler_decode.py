@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 import torch
 
 from slm_training.dsl.grammar.fastpath.compiler_draft import (
     CompletionPath,
+    ConstraintEvidence,
+    ConstraintExplanation,
+    ConstraintStage,
     active_declaration_binder_id,
     active_declaration_reference_count,
     active_parent_component_ids,
@@ -1156,3 +1161,240 @@ def test_ptrm_trajectory_policy_is_seed_reproducible() -> None:
     assert left_stats.compiler_lattice_trajectories == (
         right_stats.compiler_lattice_trajectories
     )
+
+
+# --- Reason-coded constraint evidence (build_completion_forest explain mode) ---
+
+# Prefixes chosen to exercise every coverage status and constraint stage.
+_EXPLAIN_CORPUS = (
+    "",  # empty document -> complete coverage
+    "root=Stack([",  # schema children/component + binder stages, complete
+    "root=Card([])",  # completed document, EOS admitted
+    "root=Stack([Card",  # partial coverage (terminals remain, no admitted path)
+    "root=Stack([Button(:",  # dead-end -> none coverage
+    'root=TextContent("',  # open literal frame
+    "root=Stack([a])\na=",  # declaration value + binder scope stages
+    'root=TextContent(":hero.title")',  # completed string slot
+    "root=))",  # unparseable prefix -> none coverage
+)
+
+
+def _explain_prefix(tokenizer: DSLNativeTokenizer, source: str) -> list[int]:
+    if not source:
+        return []
+    return [tokenizer.bos_id, *tokenizer.encode(source, add_special=False)]
+
+
+@pytest.mark.parametrize("bind_encoding", ["absolute", "relative"])
+def test_explain_mode_preserves_forest_parity(bind_encoding: str) -> None:
+    # Explanations are instrumentation only: candidate membership, ordering,
+    # coverage, terminals, and paths must be byte-identical to the default path
+    # for both the absolute and relative lexer-native tokenizers.
+    tokenizer = DSLNativeTokenizer.build(bind_encoding=bind_encoding)
+    for source in _EXPLAIN_CORPUS:
+        prefix = _explain_prefix(tokenizer, source)
+        off = build_completion_forest(tokenizer, prefix)
+        on = build_completion_forest(tokenizer, prefix, explain=True)
+        assert off.explanation is None, source
+        assert isinstance(on.explanation, ConstraintExplanation), source
+        assert on.candidate_ids == off.candidate_ids, source
+        assert on.coverage == off.coverage, source
+        assert on.terminals == off.terminals, source
+        assert on.paths == off.paths, source
+        # Evidence ordering is deterministic and independent of any model state:
+        # a fresh build reproduces byte-identical serialized evidence.
+        again = build_completion_forest(tokenizer, prefix, explain=True)
+        assert again.explanation.to_dict() == on.explanation.to_dict(), source
+
+
+def test_explain_partitions_considered_candidates_with_reasons() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    for source in _EXPLAIN_CORPUS:
+        prefix = _explain_prefix(tokenizer, source)
+        forest = build_completion_forest(tokenizer, prefix, explain=True)
+        explanation = forest.explanation
+        final = set(forest.candidate_ids)
+        admitted = {
+            record.candidate_id
+            for record in explanation.records
+            if record.admitted and record.candidate_id is not None
+        }
+        # Admitted evidence exactly reconstructs the surviving candidate set.
+        assert admitted == final, source
+        for record in explanation.records:
+            # Every considered action names a stable reason code...
+            assert record.reason_code, source
+            assert isinstance(record.stage, ConstraintStage)
+            # ...and no excluded considered candidate survives into candidate_ids.
+            if record.candidate_id is not None and not record.admitted:
+                assert record.candidate_id not in final, (source, record)
+        # Aggregate summary is present and honest.
+        assert any(
+            record.stage is ConstraintStage.COVERAGE
+            for record in explanation.records
+        ), source
+        assert explanation.admitted == len(final), source
+        assert explanation.considered >= explanation.admitted, source
+        assert explanation.exhaustive_over_considered == (
+            forest.coverage == "complete"
+        ), source
+        # Considered-candidate evidence is never a semantic support proof.
+        assert explanation.to_dict()["is_support_proof"] is False, source
+
+
+def test_explain_marks_partial_and_none_coverage_non_exhaustive() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+
+    unparseable = build_completion_forest(
+        tokenizer, _explain_prefix(tokenizer, "root=))"), explain=True
+    )
+    assert unparseable.coverage == "none"
+    assert unparseable.explanation.exhaustive_over_considered is False
+    assert any(
+        record.stage is ConstraintStage.GRAMMAR
+        and record.reason_code == "prefix_unparseable"
+        for record in unparseable.explanation.records
+    )
+    assert unparseable.explanation.to_dict()["is_support_proof"] is False
+
+    partial = build_completion_forest(
+        tokenizer, _explain_prefix(tokenizer, "root=Stack([Card"), explain=True
+    )
+    assert partial.coverage == "partial"
+    assert partial.explanation.exhaustive_over_considered is False
+    # A non-complete forest can never be serialized as an exhaustive proof.
+    assert partial.explanation.to_dict()["exhaustive_over_considered"] is False
+    assert partial.explanation.to_dict()["is_support_proof"] is False
+
+
+def test_explain_distinguishes_min_content_withholding_from_grammar() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    contract = [":hero.title"]
+    prefix = _explain_prefix(tokenizer, 'root=TextContent(":hero.title")')
+    eos = int(tokenizer.eos_id)
+
+    # Content floor met: EOS is admitted and recorded as an admission.
+    met = build_completion_forest(
+        tokenizer, prefix, slot_contract=contract, explain=True
+    )
+    assert eos in met.candidate_ids
+    assert any(
+        record.candidate_id == eos and record.admitted
+        for record in met.explanation.records
+    )
+
+    # Content floor unmet: EOS is withheld with a MIN_CONTENT reason that is
+    # distinct from a grammar rejection, and details carry bounded counts only.
+    unmet = build_completion_forest(
+        tokenizer, prefix, slot_contract=contract, min_content=2, explain=True
+    )
+    assert eos not in unmet.candidate_ids
+    withheld = [
+        record
+        for record in unmet.explanation.records
+        if record.candidate_id == eos and not record.admitted
+    ]
+    assert withheld
+    assert all(record.stage is ConstraintStage.MIN_CONTENT for record in withheld)
+    assert all(record.reason_code == "min_content_withheld" for record in withheld)
+    assert not any(record.reason_code == "grammar_no_end" for record in withheld)
+    details = dict(withheld[0].details)
+    assert details.get("required") == "2"
+    assert details.get("emitted") == "1"
+
+    # A grammar-incomplete prefix withholds EOS via a grammar reason instead,
+    # so the two withholding causes are never conflated.
+    grammar = build_completion_forest(
+        tokenizer, _explain_prefix(tokenizer, "root=Sta"), explain=True
+    )
+    assert eos not in grammar.candidate_ids
+    assert any(
+        record.candidate_id == eos and record.reason_code == "grammar_no_end"
+        for record in grammar.explanation.records
+    )
+
+
+def test_explain_records_schema_binder_literal_and_slot_stages() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+
+    # Schema stage excludes non-node / unknown-component ids inside a children array.
+    children = build_completion_forest(
+        tokenizer, _explain_prefix(tokenizer, "root=Stack(["), explain=True
+    )
+    schema_rejects = {
+        record.reason_code
+        for record in children.explanation.records
+        if record.stage is ConstraintStage.SCHEMA and not record.admitted
+    }
+    assert schema_rejects
+    assert "schema_component_unknown" in schema_rejects
+
+    # Binder + dataflow stages fire on a declaration right-hand side.
+    declaration = build_completion_forest(
+        tokenizer, _explain_prefix(tokenizer, "root=Stack([a])\na="), explain=True
+    )
+    declaration_stages = {record.stage for record in declaration.explanation.records}
+    assert ConstraintStage.BINDING in declaration_stages
+    assert ConstraintStage.DATAFLOW in declaration_stages
+
+    # Literal-frame stage governs candidates inside an open string literal.
+    literal = build_completion_forest(
+        tokenizer, _explain_prefix(tokenizer, 'root=TextContent("'), explain=True
+    )
+    assert ConstraintStage.LITERAL_FRAME in {
+        record.stage for record in literal.explanation.records
+    }
+
+
+def test_explain_slot_contract_inclusion_and_exclusion() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = _explain_prefix(tokenizer, "root=TextContent(")
+
+    # Without a contract the slot-contract stage does not fire.
+    without = build_completion_forest(tokenizer, prefix, explain=True)
+    assert not any(
+        record.stage is ConstraintStage.SLOT_CONTRACT
+        for record in without.explanation.records
+    )
+
+    # With a contract, the slot-contract stage records the restriction, and
+    # explanations still do not change the candidate set for that same call.
+    with_off = build_completion_forest(
+        tokenizer, prefix, slot_contract=[":hero.title"]
+    )
+    with_on = build_completion_forest(
+        tokenizer, prefix, slot_contract=[":hero.title"], explain=True
+    )
+    assert with_on.candidate_ids == with_off.candidate_ids
+    assert any(
+        record.stage is ConstraintStage.SLOT_CONTRACT
+        and record.reason_code == "slot_contract_restricted"
+        for record in with_on.explanation.records
+    )
+
+
+def test_constraint_evidence_json_round_trip_is_stable() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    forest = build_completion_forest(
+        tokenizer, _explain_prefix(tokenizer, "root=Stack(["), explain=True
+    )
+    payload = forest.explanation.to_dict()
+    # Round-trip through JSON and the dataclass reconstructs an equal structure.
+    restored = ConstraintExplanation.from_dict(json.loads(json.dumps(payload)))
+    assert restored.to_dict() == payload
+    # Records survive individually too.
+    for record in forest.explanation.records:
+        assert ConstraintEvidence.from_dict(record.to_dict()) == record
+    # Serialized evidence carries only ids and bounded metadata (no raw literals).
+    encoded = json.dumps(payload)
+    assert '":hero.title"' not in encoded
+    assert "root=Stack" not in encoded
+
+
+def test_explain_default_off_allocates_no_explanation() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    for source in _EXPLAIN_CORPUS:
+        forest = build_completion_forest(
+            tokenizer, _explain_prefix(tokenizer, source)
+        )
+        assert forest.explanation is None, source

@@ -51,6 +51,31 @@ This preserves the compiler as verifier. A learned conflict or quality score may
 prioritize exploration, but cannot create a legal branch, discard all legal
 branches, or bypass final OpenUI validation.
 
+### Constraint evidence (reason-coded projection, VSS0-02)
+
+The hard-lattice invariant above — "candidates may be removed only by compiler
+evidence" — is made inspectable by an opt-in `explain` mode on
+`build_completion_forest`. When enabled, the returned `CompletionForest` carries
+a `ConstraintExplanation`: for every candidate the projection *actually
+considered*, a `ConstraintEvidence` record naming which hard-constraint stage
+(`grammar`, `schema`, `binding`, `slot_contract`, `dataflow`, `literal_frame`,
+`min_content`, `terminal`, `coverage`) admitted or rejected it, plus per-stage
+counts and the forest coverage status. It is instrumentation only: default
+(`explain=False`) candidate membership, ordering, coverage, terminals, and cache
+keys are byte-identical, and no per-candidate record is allocated while disabled.
+The full schema and its consumers live in
+[verified-scope-solver.md](verified-scope-solver.md#constraint-evidence-vss0-02--slm-58).
+
+**Honesty rule:** evidence about *considered* candidates is not automatically an
+exhaustive support proof. An `admitted` record attests prefix legality plus CFG
+reachability of the branch — never that the candidate survives final OpenUI
+validation — so `to_dict()` always serializes `is_support_proof: false` and
+`exhaustive_over_considered` is false whenever coverage is `partial`/`none`.
+Minimum-content EOS withholding is recorded distinctly (`min_content` /
+`min_content_withheld`) from a grammar rejection (`terminal` / `grammar_no_end`),
+matching the soft-state invariant that scores "cannot remove the last legal
+candidate or validate output."
+
 ## Campaign design (V9)
 
 The registered runnable rows are hypotheses, not results. The matched controls separate the
