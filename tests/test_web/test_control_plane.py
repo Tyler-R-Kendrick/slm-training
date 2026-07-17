@@ -148,7 +148,7 @@ def test_preference_data_lists_committed_event_corpora(tmp_path) -> None:
             "train": 9,
             "held_out": 3,
             "evidence": "constraint_shadow:12",
-            "usage": "E249–E251",
+            "usage": "decoder evidence only",
             "fingerprint": "abcdef123456",
         }
     ]

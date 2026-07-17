@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E256-counterfactual-corpus",
+  "status": "measured_admitted_for_bounded_training",
+  "run": {
+    "run_id": "e256-counterfactual-corpus-probe-126",
+    "trace_id": "277a2cb24ba7218a9e545612fb61aa95",
+    "base_commit": "aaca9529824f2e4deddb70b4789733446abfc005",
+    "device": "cpu",
+    "seed": 256,
+    "source_document_records": 65,
+    "decode_policy": "strict_compiler_tree",
+    "states_per_record": 2,
+    "candidates_per_state": 4
+  },
+  "identity": {
+    "source_record_fingerprint": "9f72d85b6cc7118e0f69e010d0debdd2b40ede514e03178dded8e164daaae9bb",
+    "policy_checkpoint_sha": "7a9be4a665e216d7f7e73883ad74ad972bbf30846896d0c29188d6482f5b093a",
+    "tokenizer_sha": "8dbf8142068860eed06463fa2e0013bb298267a305bcfd85a0c24df0f7f61efe",
+    "decode_config_hash": "8c2a2ae5cb5c4ad0ab44de74a172fc2c887fbdc7e5e7e20ede953184a0c3fe5b"
+  },
+  "scoreboard": {
+    "traces": 65,
+    "accepted_traces": 65,
+    "states": 130,
+    "legal_candidates": 390,
+    "independent_judge_passed": 108,
+    "verified_candidates": 23,
+    "qualified_events": 16,
+    "set_valued_events": 8
+  },
+  "corpus": {
+    "path": "src/slm_training/resources/data/preference/e256_counterfactual_semantic_v1",
+    "dataset_id": "e256_counterfactual_semantic_v1",
+    "record_count": 16,
+    "group_count": 8,
+    "content_fingerprint": "0c253f11a9ec096fb81663db43d9aacf3406a01b09a9d39a20e02eaa04686e53",
+    "judge_evidence_count": 16,
+    "judge_evidence_fingerprint": "4d4508c29127ef49ea93599ec4ab976e8560ebc4c83bd7354777b025102fd98f",
+    "train_events": 14,
+    "held_out_events": 2,
+    "train_groups": 7,
+    "held_out_groups": 1,
+    "held_out_group_ids": [
+      "train_cta_01"
+    ],
+    "evidence_kinds": {
+      "counterfactual": 16,
+      "constraint_shadow": 0
+    }
+  },
+  "decision": {
+    "admit_for_training": true,
+    "ship": false,
+    "reason": "The immutable corpus has independently judged set-valued evidence and a stable held-out group; semantic coverage remains limited to root binding and root component decisions."
+  }
+}

@@ -784,7 +784,7 @@ class Readers:
                     continue
                 splits = manifest.get("splits") or {}
                 evidence = manifest.get("evidence_kinds") or {}
-                set_valued = int(manifest.get("set_valued_events") or 0)
+                counterfactual = int(evidence.get("counterfactual") or 0)
                 rows.append(
                     {
                         "dataset_id": manifest.get("dataset_id") or directory.name,
@@ -797,7 +797,9 @@ class Readers:
                             for key, value in evidence.items()
                             if int(value or 0) > 0
                         ),
-                        "usage": "E249–E254" if set_valued else "E249–E251",
+                        "usage": (
+                            "E252–E254" if counterfactual else "decoder evidence only"
+                        ),
                         "fingerprint": str(
                             manifest.get("content_fingerprint") or ""
                         )[:12],
