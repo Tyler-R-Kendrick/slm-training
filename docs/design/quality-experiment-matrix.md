@@ -1344,6 +1344,17 @@ claimed that ID; the measured preference result is canonically E263. Full
 evidence:
 [iter-e263-broad-gold-ast-ftpo-20260716.md](iter-e263-broad-gold-ast-ftpo-20260716.md).
 
+E264 added a generalized held-out Pareto guard to that same objective. Every
+five steps, held-out loss and bad-token mass had to be no worse while
+good-token mass and mean margin had to be no worse. None of steps 5–30 was
+eligible, so the harness restored step 0. All 374 restored tensors, the config,
+and tokenizer sidecars are bit-identical to E228. A current-code E248 parent
+control exactly reproduced every E264 suite metric and gate failure, proving
+that differences from the historical E248 report are evaluator/decoder drift,
+not a training gain. The guard is retained; the parent-equivalent E264 artifact
+is rejected and not promoted. Full evidence:
+[iter-e264-guarded-gold-ast-ftpo-20260716.md](iter-e264-guarded-gold-ast-ftpo-20260716.md).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
