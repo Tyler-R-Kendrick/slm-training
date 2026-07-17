@@ -76,3 +76,35 @@ API or the existing Transformers.js fallback. Users can disable it. Server-side
 OpenAI enrichment is a separate opt-in fallback and is available only when
 `OPENAI_API_KEY` is configured; Responses are structured and use `store=False`.
 The deterministic report remains useful when no model is available.
+
+## Meta-trace corpus (G5, SLM-37)
+
+`harnesses/distill/meta_trace.py` formalizes the trace-capture layer for the
+future DSL-generating meta-model — schema + retention over artifacts the
+stack already writes, per the G5 scope.
+
+**Schema** (`MetaTraceRecord`, pydantic strict/frozen, `schema_version: 1`):
+identity (`run_id`, `record_id`, first-class `dsl_id`, W3C `trace_id` /
+`traceparent` from the run's `trace.json` sidecar, `source_artifacts`
+provenance), request (`prompt`, `slot_contract`), decode spec
+(`model_kind`, `checkpoint_sha`, `decode_config`, `seed`,
+`deterministic_decode`), outcome (`prediction`, optional `gold`,
+`verdicts` — per-example eval metrics joined with the run's honest-gate
+pass/failures), and an optional per-step `trajectory` slot for distill
+`TraceStore` rows.
+
+**Collector** (`harvest_run_dir`): joins each run directory's existing
+`eval_<suite>.json` details, `matrix_result.json`/`scoreboard.json` gate
+verdicts, `train_summary.json` recipe, and `trace.json` ids — degrading
+gracefully when artifacts are absent. **Retention** (`write_corpus`):
+append-only `traces.jsonl` + `manifest.json` with per-line sha256 under a
+`campaign.json`-gated tree — the campaign-store conventions, so
+`autoresearch.persistence.sync_campaign` can mirror it (dry by default;
+local tree authoritative).
+
+**Replay contract** (`replay_trace`): records carry replay-from-spec
+identity; bit-exact reproduction is asserted only for deterministic
+decoders (`tree_edit_diffusion`'s value-guided search), verified against
+the stored `checkpoint_sha` (fail closed on mismatch or on
+non-deterministic model kinds). MaskGIT decodes are replay-from-spec, not
+bit-exact — stated boundary.
