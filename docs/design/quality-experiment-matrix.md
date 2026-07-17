@@ -1882,6 +1882,20 @@ data-build evidence, not a model or ship result. See
 [results](iter-e307-component-prompt-synthesis-20260717.md) and
 [JSON](component-prompt-synthesis-results-iter-e307-20260717.json).
 
+## E308 component-prompt matched train (CPU scratch, 2026-07-17)
+
+The E304 20k-token plan recipe is retrained on E307 v4. Weighted/broad NLL
+improve 5.1647→4.8836 and 5.4165→4.9812, but binding NLL regresses
+5.5514→6.7068. Under the unchanged E305 policy, smoke/held/adversarial/OOD
+are byte-for-byte metric-identical; limited RICO regresses to meaningful
+0.6667, recall 0.3333, and reward 0.5567. Seven thresholds still fail and
+AgentV remains 2/5.
+
+**Verdict:** reject checkpoint and stop equivalent prompt expansion. Improve
+prompt-conditioned plan supervision directly. See
+[results](iter-e308-component-prompt-train-20260717.md) and
+[JSON](component-prompt-train-results-iter-e308-20260717.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

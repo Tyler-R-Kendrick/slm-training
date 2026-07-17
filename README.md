@@ -109,6 +109,7 @@ summary and the full card whenever a checkpoint is created or promoted.
 | E296 25% DESIGN-dropout arm | `e296-choice-design-dropout25-r1/last.pt` | `outputs/runs/e296-choice-design-dropout25-r1/…` (local) | Same-seed rate check improves NLL to 7.3503 but exactly matches the no-DESIGN board: meaningful 0.0, AgentV 0/5, 17 failures — not promoted or ship |
 | E297 seed-1 DESIGN-dropout arm | `e297-choice-design-dropout50-seed1-r1/last.pt` | `outputs/runs/e297-choice-design-dropout50-seed1-r1/…` (local) | Cross-seed replication NLL 7.5864. E301 concise connected decoding cuts failures 17→7 and reaches AgentV 2/5, but held/OOD meaningful remain zero — not promoted or ship |
 | E304 20k-token component plan | `e304-choice-plan-20k-r1/last.pt` | `outputs/runs/e304-choice-plan-20k-r1/…` (local) | NLL 5.1647; E305 slot-safe decode restores parse and RICO reward 0.8515, but held/OOD remain zero at 7 failures/AgentV 2/5 — not promoted or ship |
+| E308 component-prompt plan | `e308-component-prompt-20k-r1/last.pt` | `outputs/runs/e308-component-prompt-20k-r1/…` (local) | NLL 4.8836, but four suites equal E305 and limited RICO regresses; 7 failures/AgentV 2/5 — not promoted or ship |
 | Production HF ship | *(none yet)* | [HF Bucket `TKendrick/OpenUI`](https://huggingface.co/buckets/TKendrick/OpenUI) `checkpoints/<run_id>/` | Register here after first full HF sync + `--ship-gates` |
 
 **Load demo:** `python -m scripts.serve_playground` · **Full train sync:** set

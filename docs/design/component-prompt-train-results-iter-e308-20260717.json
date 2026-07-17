@@ -1,0 +1,81 @@
+{
+  "id": "E308",
+  "date": "2026-07-17",
+  "train_run_id": "e308-component-prompt-20k-r1",
+  "eval_run_id": "e308-component-prompt-20k-honest-r1",
+  "hypothesis": "Component-aligned natural prompts improve prompt-conditioned component-plan selection under the frozen E305 decode policy.",
+  "matched_control": "e304-choice-plan-20k-r1",
+  "intervention": "Replace E218 with the E307 v4 component-prompt corpus.",
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "model": "twotower",
+    "capacity": "d64-h2-c1-dn2",
+    "output_tokenizer": "choice",
+    "mask_pattern": "diffusion",
+    "batch_size": 2,
+    "seed": 0,
+    "target_token_budget": 20000,
+    "component_plan_loss_weight": 1.0,
+    "component_plan_decode_weight": 1.0,
+    "design_md_in_context": false,
+    "checkpoint_sync": false,
+    "honesty_mode": "no-design-md-context"
+  },
+  "train": {
+    "steps": 420,
+    "seen_target_tokens": 20001,
+    "seen_prompt_tokens": 49135,
+    "elapsed_wall_seconds": 146.98840859099982,
+    "trainable_params": 399516,
+    "checkpoint": "outputs/runs/e308-component-prompt-20k-r1/checkpoints/last.pt",
+    "checkpoint_sha256": "f56089052dbc804754fb0d201bd7a4d6cbd356b6d72b42959147fce9233e2b55",
+    "trace_id": "6e5e2f5ecaef4916b618af8b3372f74b",
+    "scratch_reason": "Matched CPU data intervention; explicit --no-sync-checkpoints."
+  },
+  "loss": {
+    "weighted_nll": 4.883615095969327,
+    "binding_nll": 6.706777403131127,
+    "structural_nll": 3.3550067339624676,
+    "repair_nll": 4.170329626401266,
+    "schema_ood_nll": 4.670991877789767,
+    "broad_nll": 4.981154845906542,
+    "e304_weighted_nll": 5.164741930222244,
+    "e304_broad_nll": 5.416500972308122,
+    "agentv": {
+      "total": 1,
+      "passed": 1
+    }
+  },
+  "plan_final_20": {
+    "loss": 2.32859348654747,
+    "root_accuracy": 0.85,
+    "bound_topk_recall": 0.4104166693985462,
+    "bound_count_mae": 0.3439823806285858
+  },
+  "evaluation_policy": {
+    "grammar_constrained": true,
+    "grammar_ltr_primary": true,
+    "compiler_decode_mode": "tree",
+    "decode_min_content": -1,
+    "component_plan_decode_weight": 1.0,
+    "slot_contract_constrained_decode": true,
+    "honest_slot_contract": true,
+    "allow_unconstrained_fallback": false,
+    "gen_steps": 8
+  },
+  "suites": {
+    "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333, "placeholder_fidelity": 0.5277777777777778, "structural_similarity": 0.46416666666666667, "component_type_recall": 0.16666666666666666, "reward_score": 0.24966666666666668},
+    "held_out": {"n": 5, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "placeholder_fidelity": 0.27999999999999997, "structural_similarity": 0.33686, "component_type_recall": 0.0, "reward_score": 0.0},
+    "adversarial": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.5, "placeholder_fidelity": 0.5416666666666666, "structural_similarity": 0.474375, "component_type_recall": 0.375, "reward_score": 0.4245},
+    "ood": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.0, "placeholder_fidelity": 0.2583333333333333, "structural_similarity": 0.375, "component_type_recall": 0.0, "reward_score": 0.0},
+    "rico_held": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.6666666666666666, "placeholder_fidelity": 0.5416666666666666, "structural_similarity": 0.3333333333333333, "component_type_recall": 0.3333333333333333, "reward_score": 0.5566666666666666}
+  },
+  "ship_gates": {
+    "pass": false,
+    "failure_count": 7,
+    "agentv": {"total": 5, "passed": 2, "failed": 3}
+  },
+  "matching_caveat": "The added prompt vocabulary increases trainable context-embedding parameters from 397084 to 399516 (0.61%) while architecture and all explicit recipe knobs remain fixed.",
+  "verdict": "Reject the checkpoint. Lower weighted NLL does not improve component selection; four suites are identical to E305 and limited RICO regresses."
+}
