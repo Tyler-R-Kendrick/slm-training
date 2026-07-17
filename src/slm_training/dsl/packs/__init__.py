@@ -41,11 +41,13 @@ def get_pack(dsl: str | None = None) -> DSLPack:
 def _ensure_builtins() -> None:
     if _REGISTRY:
         return
+    from slm_training.dsl.packs.arith_sketch import build_pack as _arith
     from slm_training.dsl.packs.openui import build_pack as _openui
     from slm_training.dsl.packs.toy_layout import build_pack as _toy
 
     register_pack(_openui())
     register_pack(_toy())
+    register_pack(_arith())
 
 
 __all__ = [

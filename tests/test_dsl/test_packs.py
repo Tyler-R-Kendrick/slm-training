@@ -17,7 +17,7 @@ def test_builtin_packs_registered() -> None:
         get_pack("no-such-dsl")
 
 
-@pytest.mark.parametrize("pack_id", ["openui", "toy-layout"])
+@pytest.mark.parametrize("pack_id", ["openui", "toy-layout", "arith-sketch"])
 def test_pack_contract_invariants(pack_id: str) -> None:
     """Every pack: generated corpus is valid by its own oracle, scope-clean,
     and canonicalization is an idempotent normal form."""

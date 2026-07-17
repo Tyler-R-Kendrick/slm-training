@@ -1,0 +1,338 @@
+{
+  "campaign_id": "g4_fixture_20260717",
+  "n_train": 96,
+  "n_test": 24,
+  "steps": 120,
+  "seed": 0,
+  "sketch": {
+    "answer_accuracy": 0.0,
+    "trace_validity_rate": 0.0,
+    "scores": [
+      {
+        "valid": false,
+        "correct": false,
+        "error": "invalid sketch program: Unexpected token Token('NAME', 'x') at line 2, column 12.\nExpected one of: \n\t* EQUAL\nPrevious to"
+      },
+      {
+        "valid": false,
+        "correct": false,
+        "error": "invalid sketch program: Unexpected token Token('NAME', 'x') at line 2, column 12.\nExpected one of: \n\t* EQUAL\nPrevious to"
+      },
+      {
+        "valid": false,
+        "correct": false,
+        "error": "invalid sketch program: Error trying to process rule \"start\":\n\nmaximum recursion depth exceeded"
+      },
+      {
+        "valid": false,
+        "correct": false,
+        "error": "sketch program must bind `root` to the answer"
+      },
+      {
+        "valid": false,
+        "correct": false,
+        "error": "invalid sketch program: Unexpected token Token('NAME', 'x') at line 2, column 12.\nExpected one of: \n\t* EQUAL\nPrevious to"
+      },
+      {
+        "valid": false,
+        "correct": false,
+        "error": "invalid sketch program: Error trying to process rule \"start\":\n\nmaximum recursion depth exceeded"
+      },
+      {
+        "valid": false,
+        "correct": false,
+        "error": "invalid sketch program: Unexpected token Token('NUMBER', '6') at line 1, column 9.\nExpected one of: \n\t* EQUAL\nPrevious t"
+      },
+      {
+        "valid": false,
+        "correct": false,
+        "error": "invalid sketch program: Error trying to process rule \"start\":\n\nmaximum recursion depth exceeded"
+      },
+      {
+        "valid": false,
+        "correct": false,
+        "error": "invalid sketch program: Error trying to process rule \"start\":\n\nmaximum recursion depth exceeded"
+      },
+      {
+        "valid": false,
+        "correct": false,
+        "error": "undefined reference 'y'"
+      },
+      {
+        "valid": false,
+        "correct": false,
+        "error": "invalid sketch program: Unexpected token Token('NAME', 'x') at line 2, column 12.\nExpected one of: \n\t* EQUAL\nPrevious to"
+      },
+      {
+        "valid": false,
+        "correct": false,
+        "error": "invalid sketch program: Error trying to process rule \"start\":\n\nmaximum recursion depth exceeded"
+      },
+      {
+        "valid": false,
+        "correct": false,
+        "error": "invalid sketch program: Unexpected token Token('NUMBER', '6') at line 1, column 9.\nExpected one of: \n\t* EQUAL\nPrevious t"
+      },
+      {
+        "valid": false,
+        "correct": false,
+        "error": "invalid sketch program: Unexpected token Token('NAME', 'x') at line 2, column 15.\nExpected one of: \n\t* EQUAL\nPrevious to"
+      },
+      {
+        "valid": false,
+        "correct": false,
+        "error": "sketch program must bind `root` to the answer"
+      },
+      {
+        "valid": false,
+        "correct": false,
+        "error": "invalid sketch program: Unexpected token Token('NAME', 'x') at line 2, column 15.\nExpected one of: \n\t* EQUAL\nPrevious to"
+      },
+      {
+        "valid": false,
+        "correct": false,
+        "error": "invalid sketch program: Unexpected token Token('NAME', 'x') at line 2, column 12.\nExpected one of: \n\t* EQUAL\nPrevious to"
+      },
+      {
+        "valid": false,
+        "correct": false,
+        "error": "invalid sketch program: Error trying to process rule \"start\":\n\nmaximum recursion depth exceeded"
+      },
+      {
+        "valid": false,
+        "correct": false,
+        "error": "invalid sketch program: Unexpected token Token('NUMBER', '6') at line 1, column 9.\nExpected one of: \n\t* EQUAL\nPrevious t"
+      },
+      {
+        "valid": false,
+        "correct": false,
+        "error": "invalid sketch program: Error trying to process rule \"start\":\n\nmaximum recursion depth exceeded"
+      },
+      {
+        "valid": false,
+        "correct": false,
+        "error": "sketch program must bind `root` to the answer"
+      },
+      {
+        "valid": false,
+        "correct": false,
+        "error": "invalid sketch program: Unexpected token Token('NAME', 'x') at line 2, column 15.\nExpected one of: \n\t* EQUAL\nPrevious to"
+      },
+      {
+        "valid": false,
+        "correct": false,
+        "error": "invalid sketch program: Unexpected token Token('NAME', 'x') at line 2, column 12.\nExpected one of: \n\t* EQUAL\nPrevious to"
+      },
+      {
+        "valid": false,
+        "correct": false,
+        "error": "invalid sketch program: Error trying to process rule \"start\":\n\nmaximum recursion depth exceeded"
+      }
+    ],
+    "outputs": [
+      "x = y * 6\ny = x root x",
+      "x = y * 6\ny = x root x",
+      "x = y * 6\ny = x - x",
+      "x = 9 * 6\ny = x - x",
+      "x = 9 * 6\ny = x root x",
+      "x = y * 6\ny = x - x",
+      "x = y y 6\ny = x root x",
+      "x = y * 6\ny = x - x",
+      "x = y * 6\ny = x - x",
+      "x = y * 6\nroot = x - x",
+      "x = y * 6\ny = x root x",
+      "x = y * 6\ny = x - x",
+      "x = y y 6\ny = x root x",
+      "x = y * 6\nroot = x root x",
+      "x = 9 * 6\ny = x - x",
+      "x = y * 6\nroot = x root x",
+      "x = 9 * 6\ny = x root x",
+      "x = y * 6\ny = x - x",
+      "x = y y 6\ny = x root x",
+      "x = y * 6\ny = x - x",
+      "x = 9 * 6\ny = x - x",
+      "x = y * 6\nroot = x root x",
+      "x = 9 * 6\ny = x root x",
+      "x = y * 6\ny = x - x"
+    ]
+  },
+  "direct": {
+    "answer_accuracy": 0.0,
+    "output_validity_rate": 1.0,
+    "scores": [
+      {
+        "valid": true,
+        "correct": false,
+        "value": 33.0
+      },
+      {
+        "valid": true,
+        "correct": false,
+        "value": 33.0
+      },
+      {
+        "valid": true,
+        "correct": false,
+        "value": 33.0
+      },
+      {
+        "valid": true,
+        "correct": false,
+        "value": 33.0
+      },
+      {
+        "valid": true,
+        "correct": false,
+        "value": 33.0
+      },
+      {
+        "valid": true,
+        "correct": false,
+        "value": 33.0
+      },
+      {
+        "valid": true,
+        "correct": false,
+        "value": 33.0
+      },
+      {
+        "valid": true,
+        "correct": false,
+        "value": 33.0
+      },
+      {
+        "valid": true,
+        "correct": false,
+        "value": 33.0
+      },
+      {
+        "valid": true,
+        "correct": false,
+        "value": 33.0
+      },
+      {
+        "valid": true,
+        "correct": false,
+        "value": 33.0
+      },
+      {
+        "valid": true,
+        "correct": false,
+        "value": 33.0
+      },
+      {
+        "valid": true,
+        "correct": false,
+        "value": 33.0
+      },
+      {
+        "valid": true,
+        "correct": false,
+        "value": 33.0
+      },
+      {
+        "valid": true,
+        "correct": false,
+        "value": 33.0
+      },
+      {
+        "valid": true,
+        "correct": false,
+        "value": 33.0
+      },
+      {
+        "valid": true,
+        "correct": false,
+        "value": 33.0
+      },
+      {
+        "valid": true,
+        "correct": false,
+        "value": 33.0
+      },
+      {
+        "valid": true,
+        "correct": false,
+        "value": 33.0
+      },
+      {
+        "valid": true,
+        "correct": false,
+        "value": 33.0
+      },
+      {
+        "valid": true,
+        "correct": false,
+        "value": 33.0
+      },
+      {
+        "valid": true,
+        "correct": false,
+        "value": 33.0
+      },
+      {
+        "valid": true,
+        "correct": false,
+        "value": 33.0
+      },
+      {
+        "valid": true,
+        "correct": false,
+        "value": 33.0
+      }
+    ],
+    "outputs": [
+      "33",
+      "33",
+      "33",
+      "33",
+      "33",
+      "33",
+      "33",
+      "33",
+      "33",
+      "33",
+      "33",
+      "33",
+      "33",
+      "33",
+      "33",
+      "33",
+      "33",
+      "33",
+      "33",
+      "33",
+      "33",
+      "33",
+      "33",
+      "33"
+    ]
+  },
+  "golds": [
+    23.0,
+    156.0,
+    88.0,
+    135.0,
+    30.0,
+    27.0,
+    71.0,
+    36.0,
+    110.0,
+    18.0,
+    70.0,
+    187.0,
+    82.0,
+    81.0,
+    206.0,
+    43.0,
+    46.0,
+    219.0,
+    95.0,
+    143.0,
+    104.0,
+    37.0,
+    70.0,
+    144.0
+  ],
+  "note": "fixture-scale matched pair; sketch traces score fail-closed (invalid program == wrong); decode is unconstrained parallel MaskGIT in both arms (grammar-engine integration is follow-up)"
+}
