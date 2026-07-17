@@ -154,6 +154,48 @@ verified terminal, `SUPPORTED` claim, correctness gain, or ship claim. The
 `TopologyDomainAdapter` protocol is only a future model-independent seam and imports
 no model or Torch code.
 
+## Implemented support oracle (VSS0-04 / SLM-60)
+
+[`dsl/solver/support.py`](../../src/slm_training/dsl/solver/support.py) implements
+the deterministic reference oracle — the **first** component allowed to produce
+`UNSUPPORTED` — plus a pure replay checker. It is Torch-free, is not wired into
+decode, and makes no speed or ship claim. The problem-specific parts (how a chosen
+value expands, how a terminal is verified) are injected through the `ProblemExpander`
+and `Verifier` protocols; [`openui_support.py`](../../src/slm_training/dsl/solver/openui_support.py)
+supplies the OpenUI wiring while tiny closed fixtures drive the exhaustive tests.
+
+`EnumerativeSupportOracle.check(state, query)` iteratively explores the queried
+candidate's completions (no Python recursion), deduplicates by the VSS0-03
+`FiniteDomainState.fingerprint`, enforces every `SolverBounds` budget, and returns
+one verdict with a replayable `SupportCertificate`:
+
+| Verdict | Reference behavior | Removal? |
+| --- | --- | --- |
+| `SUPPORTED` | A `Verifier` `ACCEPT` on a decoded terminal was found. Valid even if other branches stay partial; the certificate stores only the witness **digest** plus a source label (never raw text/logits/timestamps). | Candidate stays live. |
+| `UNSUPPORTED` | The candidate's whole finite completion space was exhausted with **only** `complete` coverage and no accepted terminal (`exhausted=True`, `stop_reason=None`). | **Yes — only** under a replayed `UNSUPPORTED` certificate. |
+| `UNKNOWN` | Any `partial`/`none` coverage at a required expansion, a `Verifier` `UNAVAILABLE` (missing bridge/pack capability/timeout), or any budget stop. `exhausted=False`. | **Never.** |
+
+- **Search order** — `canonical-domain-value-v1`: values are explored in the
+  canonical order `HoleDomain` guarantees, so the search is deterministic and
+  logit-independent (`build_completion_forest` takes no scores).
+- **Certificate** — schema version `1`; records the query, verdict, problem/pack/
+  constraint identity, bounds, search order, explored-state fingerprints, coverage
+  observations, verifier profile, witness digest/source, per-reason failure counts,
+  `exhausted`, and `stop_reason`.
+- **Verifier profile (fixture wiring)** — `openui/lang-core-validate/well-formed@0.2.x`:
+  a genuine `ParseError` is a hard `REJECT`; a missing lang-core bridge, timeout, or
+  other `RuntimeError` is `UNAVAILABLE` → `UNKNOWN`. A timeout/UNAVAILABLE is **never**
+  `UNSUPPORTED` (the timeout-vs-UNSAT distinction the contract requires).
+- **Replay** — `replay_support_certificate(...)` re-derives identity, reruns the
+  deterministic search, and returns structured violations (never a bare bool). It
+  rejects an `UNSUPPORTED` certificate whose `exhausted` is false, whose coverage is
+  incomplete, or that carries a budget stop; and a `SUPPORTED` certificate whose
+  witness digest does not match a re-verified witness. `UNKNOWN` is accepted as an
+  honest result but never as pruning authority.
+
+Non-goals honored: no multi-candidate closure loop, no model ranking, no SMT
+dependency, no decode/runtime flag, and no production-scale performance claim.
+
 ## Reference support semantics
 
 | Verdict | Requirement | Removal permitted? |
@@ -349,3 +391,19 @@ does not implement recursive support search, a proof checker, capsule solving,
 decode integration, or model scoring. No train, eval, benchmark, checkpoint, or
 experiment ran; this is infrastructure only and makes **no correctness, readiness,
 or ship claim**.
+
+2026-07-17 — VSS0-04 / SLM-60 implements the deterministic enumerative support
+oracle and pure certificate replay (`dsl/solver/support.py`) plus the OpenUI
+expander/verifier wiring (`dsl/solver/openui_support.py`). Correctness is pinned by
+tiny closed fixtures (`tests/test_dsl/test_solver_support.py`): SUPPORTED with a
+witness digest, UNSUPPORTED only after exhausted complete-coverage search,
+UNKNOWN for every partial-coverage/budget/unavailable condition, duplicate-state
+suppression, deterministic ordering, and replay rejection of tampered digests,
+non-exhausted `UNSUPPORTED`, incomplete coverage, and stale versions. The oracle is
+**not** wired into generation; default decode behavior is unchanged. Verifier
+`UNAVAILABLE`/timeouts never become `UNSUPPORTED`. This is a reference correctness
+implementation — no train/eval/benchmark/checkpoint ran and **no ship or
+speed claim** is made. Verified: `python -m pytest
+tests/test_dsl/test_solver_support.py tests/test_dsl/test_solver_state.py
+tests/test_models/test_compiler_decode.py -q` (92 passed) and
+`python -m scripts.repo_policy`.

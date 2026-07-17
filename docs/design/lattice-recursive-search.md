@@ -51,6 +51,21 @@ This preserves the compiler as verifier. A learned conflict or quality score may
 prioritize exploration, but cannot create a legal branch, discard all legal
 branches, or bypass final OpenUI validation.
 
+### Prefix-global extendability vs. verifier-backed support (VSS0-04)
+
+`CompletionForest` answers **prefix-global extendability**: at this decode
+position, a candidate is grammar/schema/binder-admissible and has at least one
+maximal forced continuation. That is *not* the same as **support** — whether the
+candidate participates in at least one bounded, verifier-accepted completion. The
+[`EnumerativeSupportOracle`](../../src/slm_training/dsl/solver/support.py) (VSS0-04)
+supplies the latter: it exhausts the candidate's finite completion space and only
+returns `UNSUPPORTED` when every branch had `complete` coverage and no completion
+verified — a `partial`/`none` forest, a missing verifier capability, or any budget
+stop stays `UNKNOWN`, never `UNSUPPORTED`. A forest that admits a candidate as
+extendable therefore never authorizes removal; only a replayed support certificate
+does. The oracle is not wired into decode, so this section changes no runtime
+behavior.
+
 ## Campaign design (V9)
 
 The registered runnable rows are hypotheses, not results. The matched controls separate the
