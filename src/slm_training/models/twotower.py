@@ -39,6 +39,7 @@ from slm_training.models.grammar import (
     stream_check,
 )
 from slm_training.models.parallel_decode import (
+    AsapLedger,
     StabilityTracker,
     core_instability_scores,
     perturb_known_neighbors,
@@ -81,10 +82,24 @@ def _is_lexer_output(config: "TwoTowerConfig | None") -> bool:
     }
 
 
+def _is_choice_output(config: "TwoTowerConfig | None") -> bool:
+    if config is None:
+        return False
+    return str(getattr(config, "output_tokenizer", "compositional") or "").lower() in {
+        "choice",
+        "choices",
+        "choice_codec",
+    }
+
+
 def _load_any_tokenizer(path: Path | str):
-    """Load compositional or lexer-native tokenizer from JSON sidecar."""
+    """Load compositional, lexer-native, or choice-codec tokenizer from sidecar."""
     path = Path(path)
     raw = json.loads(path.read_text(encoding="utf-8"))
+    if raw.get("kind") == "choice_codec":
+        from slm_training.models.choice_tokenizer import ChoiceTokenizer
+
+        return ChoiceTokenizer.load(path)
     if raw.get("kind") == "dsl_native" or "id_to_kind" in raw:
         from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
 
@@ -269,12 +284,18 @@ class TwoTowerConfig:
     #   >0 -> require at least this many components before EOS is admitted;
     #   -1 -> auto: derive the floor from the resolved slot-contract inventory.
     decode_min_content: int = 0
+    # A2: ASAp-style distribution-aware constrained MaskGIT decode. Observed
+    # constraint violations (admit rejects, grammar stream remasks) remove the
+    # violating token's probability mass at that canvas position from the next
+    # proposal, and unmask ordering uses the post-removal confidence.
+    asap_decode: bool = False
     fastpath_aux_weight: float = 0.0
     fastpath_gate_threshold: float = 0.5
     # E31: train/use FastPathGate trust head for remask.
     trust_gate_train: bool = False
     # V5: output-side representation
     # compositional = legacy OpenUITokenizer v2; lexer = DSLNativeTokenizer
+    # compositional | lexer | choice (B1 pure grammar-choice stream)
     output_tokenizer: str = "compositional"
     # When output_tokenizer=lexer: map placeholders to <SYM_i> (E41+).
     use_symbol_table: bool = True
@@ -308,7 +329,9 @@ class TwoTowerConfig:
     # Optional teacher-init of symbol embeddings from HF context (E45).
     teacher_init_embeddings: bool = False
     # V8 request-conditioned dynamic vocabulary; ``none`` is checkpoint-identical.
-    runtime_symbol_features: str = "none"  # none | surface | role_gated
+    # none | surface | role_gated | replace (C2: dynamic pseudo-embeddings —
+    # symbol rows become deterministic byte-compositional vectors).
+    runtime_symbol_features: str = "none"
     symbol_slot_augmentation: bool = False
     semantic_candidate_masks: bool = False
     constraint_graph_mode: str = "off"  # off | grammar | hybrid
@@ -1157,12 +1180,15 @@ class TwoTowerModel(nn.Module):
         if self._placeholder_token_ids is None:
             ids: set[int] = set()
             try:
+                from slm_training.models.choice_tokenizer import is_choice_tokenizer
                 from slm_training.models.dsl_tokenizer import (
                     TokenKind,
                     is_dsl_native_tokenizer,
                 )
 
-                if is_dsl_native_tokenizer(self.tokenizer):
+                if is_dsl_native_tokenizer(self.tokenizer) or is_choice_tokenizer(
+                    self.tokenizer
+                ):
                     ids |= self.tokenizer.kind_ids(TokenKind.SYM)
                     self._placeholder_token_ids = ids
                     return ids
@@ -1187,11 +1213,24 @@ class TwoTowerModel(nn.Module):
     ) -> list[int]:
         """Encode target OpenUI, optionally via lexer-native symbol table."""
         try:
+            from slm_training.models.choice_tokenizer import is_choice_tokenizer
             from slm_training.models.dsl_tokenizer import (
                 SymbolTable,
                 is_dsl_native_tokenizer,
             )
 
+            if is_choice_tokenizer(self.tokenizer):
+                # Choice codec: slot pointers resolve through the table's
+                # placeholder inventory; cache the table so decode shares it.
+                table = SymbolTable.from_placeholders(
+                    placeholders, max_slots=self.tokenizer.sym_slots
+                )
+                ids = self.tokenizer.encode(
+                    openui, table=table, placeholders=placeholders
+                )
+                if cache_key is not None:
+                    self._symbol_tables[cache_key] = table
+                return ids
             if is_dsl_native_tokenizer(self.tokenizer):
                 use_sym = bool(getattr(self.config, "use_symbol_table", True))
                 table = SymbolTable.from_placeholders(
@@ -1220,7 +1259,7 @@ class TwoTowerModel(nn.Module):
         mode = str(getattr(self.config, "runtime_symbol_features", "none") or "none")
         if mode == "none" or not tables:
             return None
-        if mode not in {"surface", "role_gated"}:
+        if mode not in {"surface", "role_gated", "replace"}:
             raise ValueError(f"unknown runtime_symbol_features mode {mode!r}")
         from slm_training.models.dsl_tokenizer import SymbolTable
 
@@ -1269,7 +1308,18 @@ class TwoTowerModel(nn.Module):
                 byte_ids = self.tokenizer._encode_bytes(text) if text else []
                 if byte_ids:
                     index = torch.tensor(byte_ids, device=weight.device)
-                    features[row, token_id] = weight.index_select(0, index).mean(0)
+                    composed = weight.index_select(0, index).mean(0)
+                    if mode == "replace":
+                        # C2 (SLM-26): dynamic pseudo-embedding — the delta
+                        # cancels the learned pool row, so the symbol's tied
+                        # input embedding AND output projection become the
+                        # deterministic byte-compositional vector (DyVo-style;
+                        # same embedding matrix rows, so weight tying and
+                        # batching are untouched). Same surface → identical
+                        # vector at every slot and position by construction.
+                        features[row, token_id] = composed - weight[token_id]
+                    else:
+                        features[row, token_id] = composed
         return features
 
     def _set_runtime_symbol_features(self, tables: list[object]) -> torch.Tensor | None:
@@ -1318,12 +1368,15 @@ class TwoTowerModel(nn.Module):
             end = token_ids.index(self.tokenizer.eos_id, 1)
             token_ids = token_ids[: end + 1]
         try:
+            from slm_training.models.choice_tokenizer import is_choice_tokenizer
             from slm_training.models.dsl_tokenizer import (
                 SymbolTable,
                 is_dsl_native_tokenizer,
             )
 
-            if is_dsl_native_tokenizer(self.tokenizer):
+            if is_dsl_native_tokenizer(self.tokenizer) or is_choice_tokenizer(
+                self.tokenizer
+            ):
                 table = None
                 if cache_key and cache_key in self._symbol_tables:
                     table = self._symbol_tables[cache_key]  # type: ignore[assignment]
@@ -1409,9 +1462,17 @@ class TwoTowerModel(nn.Module):
             self._set_runtime_symbol_features(
                 [self._symbol_tables.get(key) for key in cache_keys]
             )
-            logits = self.denoiser(
-                noisy, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
-            )
+            try:
+                logits = self.denoiser(
+                    noisy, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
+                )
+            finally:
+                # Request-local features must not outlive their batch: a later
+                # forward with a different batch size (loss suites, eval)
+                # would crash on the batch-dimension mismatch or silently
+                # bias it. (Same defect class as PR #275's loss-suite fix —
+                # cleared here at the source.)
+                self.denoiser.set_runtime_symbol_features(None)
         if predict_mask.any():
             flat_logits = logits.reshape(-1, logits.size(-1))
             flat_targets = target_ids.reshape(-1)
@@ -1466,13 +1527,17 @@ class TwoTowerModel(nn.Module):
         if fid_w > 0.0 and predict_mask.any():
             ph_ids: set[int] = set()
             try:
+                from slm_training.models.choice_tokenizer import is_choice_tokenizer
                 from slm_training.models.dsl_tokenizer import (
                     SymbolTable,
                     TokenKind,
                     is_dsl_native_tokenizer,
                 )
 
-                if is_dsl_native_tokenizer(self.tokenizer):
+                if is_choice_tokenizer(self.tokenizer):
+                    # Choice codec always uses slot pointers for placeholders.
+                    ph_ids |= self.tokenizer.kind_ids(TokenKind.SYM)
+                elif is_dsl_native_tokenizer(self.tokenizer):
                     if bool(getattr(self.config, "use_symbol_table", True)):
                         for r in batch:
                             table = SymbolTable.from_placeholders(
@@ -4609,6 +4674,19 @@ class TwoTowerModel(nn.Module):
             if grammar_constrained is None
             else grammar_constrained
         )
+        try:
+            from slm_training.models.choice_tokenizer import is_choice_tokenizer
+
+            if use_grammar and is_choice_tokenizer(self.tokenizer):
+                # v1 (B1): choice-codec ids are grammar decisions, not surface
+                # lexemes — the surface DFA gate cannot admit them token-by-
+                # token. Bypass token-level grammar masks; decode-side
+                # validation (fail-closed detokenizer) still applies.
+                # Follow-up: a choice-native legal-decision gate via
+                # OpenUIIncrementalEngine.
+                use_grammar = False
+        except Exception:  # noqa: BLE001
+            pass
         length = max_len or self.gen_len or self.config.max_target_len
         length = max(8, min(int(length), self.config.max_target_len))
         use_contract_decode = bool(
@@ -5097,6 +5175,12 @@ class TwoTowerModel(nn.Module):
         stats = self.speculative_stats
         stats.generates += 1
         successor_cache: SuccessorCache | None = None
+        # A2 (ASAp for MaskGIT): adaptive removal of constraint-violating mass.
+        asap: AsapLedger | None = (
+            AsapLedger()
+            if use_grammar and bool(getattr(self.config, "asap_decode", False))
+            else None
+        )
         for step in range(steps):
             if not unknown.any():
                 if remask_ratio <= 0.0 or step >= steps - 1:
@@ -5155,6 +5239,13 @@ class TwoTowerModel(nn.Module):
                 except Exception:  # noqa: BLE001
                     survival_scores = None
             conf_for_unmask = conf.masked_fill(~unknown, -1.0)
+            if asap is not None and asap.has_penalties():
+                # Distribution-aware ordering: a masked position whose top
+                # mass was observed to violate must not outrank positions
+                # where model and grammar agree (post-removal confidence).
+                conf_for_unmask = asap.adjusted_confidence(
+                    probs, conf_for_unmask, unknown
+                )
             remaining = int(unknown.sum().item())
             mode = str(getattr(self.config, "parallel_unmask", "adaptive") or "topk")
             flat_idx = (
@@ -5218,9 +5309,14 @@ class TwoTowerModel(nn.Module):
                     force_emit_token_id(self.tokenizer, prefix) if use_fast else None
                 )
                 if forced is not None or use_grammar:
+                    pick_logits = logits[b, t]
+                    if asap is not None and asap.has_penalties(t):
+                        # A2: proposal sees the ledger — observed violating
+                        # mass at this position is removed in log domain.
+                        pick_logits = asap.adjust_logits_row(pick_logits, t)
                     # Speculative / constrained pick — never commit illegal tokens.
                     choice = pick_constrained_token(
-                        logits[b, t],
+                        pick_logits,
                         self.tokenizer,
                         prefix,
                         top_k=self.config.grammar_top_k,
@@ -5256,8 +5352,20 @@ class TwoTowerModel(nn.Module):
                         trial[t] = candidate
                         try:
                             if not admit_fill(engine, self.tokenizer, trial):
+                                if asap is not None:
+                                    asap.penalize(
+                                        t,
+                                        candidate,
+                                        float(probs[b, t, int(candidate)].item()),
+                                    )
                                 continue  # leave masked; try later / repair
                         except Exception:  # noqa: BLE001
+                            if asap is not None:
+                                asap.penalize(
+                                    t,
+                                    candidate,
+                                    float(probs[b, t, int(candidate)].item()),
+                                )
                             continue  # reject on admit probe failure
                     ids[b, t] = candidate
                     unknown[b, t] = False
@@ -5533,6 +5641,11 @@ class TwoTowerModel(nn.Module):
             if use_grammar and newly:
                 remask = filter_ids_by_stream(self.tokenizer, ids[0].tolist(), newly)
                 for t in remask:
+                    if asap is not None:
+                        # A2: a stream hard-error remask is an observed
+                        # violation of the token just committed here.
+                        died = int(ids[0, t].item())
+                        asap.penalize(t, died, float(probs[0, t, died].item()))
                     ids[0, t] = self.tokenizer.mask_id
                     unknown[0, t] = True
                 if rec is not None and remask:
@@ -5590,6 +5703,12 @@ class TwoTowerModel(nn.Module):
                     commits=step_commits,
                     remasks=step_remasks,
                 )
+
+        if asap is not None:
+            active_stats = get_active_stats()
+            if active_stats is not None:
+                active_stats.asap_penalties += asap.penalties
+                active_stats.asap_positions += len(asap._removed)
 
         if unknown.any():
             if use_grammar:
@@ -5898,7 +6017,30 @@ class TwoTowerModel(nn.Module):
         device: str | torch.device = "cpu",
     ) -> TwoTowerModel:
         cfg = config or TwoTowerConfig()
-        if _is_lexer_output(cfg):
+        if _is_choice_output(cfg):
+            from slm_training.models.choice_tokenizer import ChoiceTokenizer
+
+            tokenizer = ChoiceTokenizer.build()
+            # Scratch context keeps a prompt-word tokenizer (decoupled).
+            context_tokenizer = OpenUITokenizer.build([r.prompt for r in records])
+            max_target = max(
+                (
+                    len(
+                        tokenizer.encode(
+                            r.openui,
+                            add_special=True,
+                            placeholders=list(r.placeholders or []),
+                        )
+                    )
+                    for r in records
+                ),
+                default=32,
+            )
+            max_prompt = max(
+                (len(context_tokenizer.encode(r.prompt)) for r in records),
+                default=16,
+            )
+        elif _is_lexer_output(cfg):
             from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
 
             tokenizer = DSLNativeTokenizer.build(

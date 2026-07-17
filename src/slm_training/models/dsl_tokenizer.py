@@ -24,7 +24,32 @@ from pathlib import Path
 from typing import Iterable
 
 from slm_training.data.contract import RuntimeSymbol
-from slm_training.dsl.openui_tokens import STRUCTURAL_TOKENS
+from slm_training.dsl.openui_tokens import (
+    STRUCTURAL_TOKENS as _FALLBACK_STRUCTURAL_TOKENS,
+)
+
+
+def _active_structural_tokens() -> frozenset[str]:
+    """Structural tokens routed through the active grammar backend (pack seam).
+
+    Mirrors ``models.grammar.structural_tokens``: the backend is authoritative,
+    the ``dsl.openui_tokens`` constant is the fail-open fallback (identical for
+    the default OpenUI backend, so vocab layout is unchanged).
+    """
+    import os
+
+    try:
+        from slm_training.dsl.grammar.backends import get_backend
+
+        tokens = get_backend(
+            os.getenv("SLM_GRAMMAR_DSL") or "openui"
+        ).structural_tokens()
+        return tokens or _FALLBACK_STRUCTURAL_TOKENS
+    except Exception:  # noqa: BLE001 - tokenizer must build without a backend
+        return _FALLBACK_STRUCTURAL_TOKENS
+
+
+STRUCTURAL_TOKENS = _active_structural_tokens()
 
 # Bump when serialization / vocab layout changes.
 DSL_TOKENIZER_VERSION = 2

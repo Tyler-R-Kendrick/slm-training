@@ -1244,6 +1244,69 @@ narrative:
 [iter-e257-c1-relative-bind-20260716.md](iter-e257-c1-relative-bind-20260716.md).
 Same honesty envelope as the B4 pair.
 
+## V12 A2 ASAp distribution-aware constrained decode (fixture-run 2026-07-17)
+
+Track A2 (Grammar-Aligned Decoding / ASAp,
+[2405.21047](https://arxiv.org/abs/2405.21047), **Adapted**: only the adaptive
+removal of observed constraint-violating mass is reused, transplanted from
+ASAp's prefix trie onto the MaskGIT canvas position — no
+sampling-until-acceptance loop, no convergence guarantee): `asap_decode`
+(`models/parallel_decode.py::AsapLedger`) removes admit-reject and grammar
+stream hard-error mass from the next proposal at that position and gives
+unmask ordering the post-removal confidence. Decode-only, eval-only row routed
+through the frozen E255 checkpoint via `--parent` — matched pair differing
+only in `asap_decode` (enforced by `tests/test_scripts/test_quality_matrix_v14.py`).
+
+| ID | Isolated lever | Baseline | Status |
+| --- | --- | --- | --- |
+| E277 | `asap_decode=True` (A2 ASAp mass removal) | E255 recorded eval | fixture-run |
+
+### V14 measured results (CPU, fixture-grade, 2026-07-17)
+
+Recipe: eval-only overlay on `qx_e255_b4_scratch_control/best_weighted_nll.pt`,
+fixture v1 corpus, suites smoke 3 / held_out 5 / adversarial 4 / ood 4 /
+rico_held 0, parallel MaskGIT decode, `--rico-limit 3`. JSON:
+[quality-matrix-results-iter-v14-a2-20260717.json](quality-matrix-results-iter-v14-a2-20260717.json);
+narrative + honesty envelope:
+[iter-e277-a2-asap-decode-20260717.md](iter-e277-a2-asap-decode-20260717.md).
+Ledger telemetry proves the lever is live: 204–334 `asap_penalties` across
+32–53 distinct positions per suite; two runs produced byte-identical metrics.
+
+## V15 C2 dynamic pseudo-embeddings (fixture-run 2026-07-17)
+
+Track C2 (DyVo [2410.07722](https://arxiv.org/abs/2410.07722), **Adapted**:
+dynamic-vocabulary embedding only): `runtime_symbol_features="replace"`
+cancels the learned `<SYM_i>`/`<BIND_j>` pool rows with deterministic
+byte-compositional vectors through the V8 delta path (weight tying and
+batching untouched; same surface → identical vector at every slot, by
+construction and by test).
+
+| ID | Isolated lever | Baseline | Status |
+| --- | --- | --- | --- |
+| E278 | `runtime_symbol_features="replace"` (C2) | E255 recorded eval | fixture-run |
+
+Recipe: scratch-control 200 CPU steps, fixture v1 corpus, matched vs E255 on
+everything but the mode. JSON:
+[quality-matrix-results-iter-v15-c2-20260717.json](quality-matrix-results-iter-v15-c2-20260717.json);
+narrative: [iter-e278-c2-pseudo-embeddings-20260717.md](iter-e278-c2-pseudo-embeddings-20260717.md).
+Honest gates fail on both rows; structural similarity dips vs control
+(0.19–0.29 vs 0.28–0.37) — an honest fixture-scale negative. The
+binding-consistency probe on the trained checkpoint reports same-surface
+hidden cosine 0.9998 vs cross-surface 0.9679 (margin +0.032):
+[binding-consistency-e278-20260717.json](binding-consistency-e278-20260717.json).
+The run also flushed a latent stale-feature leak (fixed at the source in
+`training_loss`; complementary to PR #275).
+
+Honest gates still fail on both rows (syntax/meaningful parse 0.0 — the
+fixture-scale placeholder-policy wall Track A targets at frontier scale, not
+here). Secondary signals, structural similarity E255 → E277:
+smoke 0.30 → 0.265, held_out 0.323 → 0.248, adversarial 0.281 → 0.370,
+ood 0.372 → 0.278 — decode behavior demonstrably diverges under the ledger,
+with mixed noise-level deltas at n≤5 per suite. **Wiring evidence only**: the
+fixture budget cannot decide the ASAp hypothesis; the A2 verdict requires the
+frontier checkpoints (GPU host, n=1500 RICO bar) where the A1-diagnosed
+constraint distortion actually binds.
+
 E256 then ran the repaired path across all 65 E230 document records. It
 persisted 16 independently judged counterfactual events and their full probes
 as an immutable source corpus: 14 train and two held-out events across eight
@@ -1298,6 +1361,194 @@ pairs a gold-AST selected completion with policy-completed alternatives. The
 corpus prerequisite is satisfied and a new semantic preference experiment is
 unblocked, but model quality and ship gates remain unmeasured. Full evidence:
 [iter-e261-gold-ast-counterfactual-corpus-20260716.md](iter-e261-gold-ast-counterfactual-corpus-20260716.md).
+
+## V12 B1 choice-sequence codec (registered 2026-07-17; matrix row unrun)
+
+Track B1 (SLM-42): a pure grammar-choice output stream — the model predicts
+only semantic decisions (which production, which slot filler); all non-lexical
+surface syntax is reconstructed by a deterministic detokenizer through the
+official lang-core serializer (fail-closed, so parse is a meaningful honest
+primary — the detokenizer never invents syntax for an invalid stream). New
+`--output-tokenizer choice` beside compositional/lexer; codec in
+`dsl/production_codec.py` (`encode_choices`/`decode_choices`), tokenizer in
+`models/choice_tokenizer.py` (sidecar kind `choice_codec`). B2 canonical
+alignment laws pinned in `tests/test_dsl/test_choice_codec.py`.
+
+| ID | Isolated lever | Status |
+| --- | --- | --- |
+| E262 | B1 pure grammar-choice output stream (`output_tokenizer=choice`) vs E255 lexer control (same diffusion masking, non-LTR MaskGIT decode) | registered / unrun |
+
+E2 semantic density (36 fixture seeds, measured 2026-07-17): choice stream
+carries 842 decisions / 3713.2 bits vs production 1019 / 4391.9 and surface
+1535 / 8368.0 — `surface_to_choice_bit_ratio` 2.254 (production: 1.905),
+`production_to_choice_bit_ratio` 1.183; structural/punct/name categories
+collapse to 0 (arity choices remain, honestly categorized). A fixture-scale
+CPU wiring smoke of the identical harness path (choice + matched lexer
+control) scored honest 0.0 parse on both arms at 120–2500 steps —
+wiring evidence only; the matrix row needs the standard eval corpus and
+budget. JSON + narrative:
+[iter-b1-choice-sequence-codec-20260717.json](iter-b1-choice-sequence-codec-20260717.json),
+[iter-b1-choice-sequence-codec-20260717.md](iter-b1-choice-sequence-codec-20260717.md).
+No checkpoint was created or promoted; MODEL_CARD unchanged. v1 caveat: the
+surface-DFA token gate is bypassed for choice ids (validation moves entirely
+to the fail-closed detokenizer); a choice-native legal-decision gate is the
+follow-up.
+
+E277 then repeated E252's matched 30-step set-FTPO recipe using the committed
+E261 corpus. Broad support prevented the E252 fidelity collapse: fidelity and
+meaningful-program rates exactly matched the E248 parent, while deterministic
+syntax remained 1.0 with no fallback or timeout. The objective still failed:
+held-out FTPO loss worsened from 2.7660 to 3.0144, bad-token mass more than
+doubled, structure regressed on all five suites, ten thresholds failed, and
+AgentV passed 0/5. The checkpoint is rejected. The next lever must guard updates
+against held-out exact-state and parent-semantic regressions, not add syntax
+training or duration. This run originally emitted E262 before concurrent B1
+claimed that ID; the measured preference result is canonically E277. Full
+evidence:
+[iter-e277-broad-gold-ast-ftpo-20260716.md](iter-e277-broad-gold-ast-ftpo-20260716.md).
+
+E278 added a generalized held-out Pareto guard to that same objective. Every
+five steps, held-out loss and bad-token mass had to be no worse while
+good-token mass and mean margin had to be no worse. None of steps 5–30 was
+eligible, so the harness restored step 0. All 374 restored tensors, the config,
+and tokenizer sidecars are bit-identical to E228. A current-code E248 parent
+control exactly reproduced every E278 suite metric and gate failure, proving
+that differences from the historical E248 report are evaluator/decoder drift,
+not a training gain. The guard is retained; the parent-equivalent E278 artifact
+is rejected and not promoted. Full evidence:
+[iter-e278-guarded-gold-ast-ftpo-20260716.md](iter-e278-guarded-gold-ast-ftpo-20260716.md).
+
+E265 enforced that Pareto contract on every optimizer proposal with
+optimizer-consistent backtracking. Three of 30 updates were accepted and all
+four aggregate held-out metrics improved, proving a safe local direction
+exists. The aggregate nevertheless hid severe per-decision-kind regressions
+(`grammar_comma` loss `1.3764→3.1417`), and full-eval fidelity/reward fell on
+most suites while five gates still failed. The naive implementation also took
+50m09s for 142 candidate scales and 5,538 held-out event forwards. Reject the
+checkpoint. The next guard must be stratified by grammar/AST decision kind and
+validation must be batched/cached without weakening the contract. Full
+evidence:
+[iter-e265-safe-gold-ast-ftpo-20260717.md](iter-e265-safe-gold-ast-ftpo-20260717.md).
+
+E266 replaced the aggregate-only contract with the same four guards applied to
+every grammar/AST `decision_kind`, and batched same-length held-out states with
+cached frozen context. All 30 proposals and 150 scales were rejected, proving
+the tested global FTPO direction has no safe per-kind Pareto update. The model
+was restored bit-identically to E228 and a same-code parent control reproduced
+every suite metric. Batching cut the local stage from 3,009.05s to 79.77s
+(37.7×) despite checking more scales. Retain the guard and batching; reject the
+artifact. The next lever is decision-kind block-coordinate proposals, not more
+global FTPO duration or a literal special case. Full evidence:
+[iter-e266-stratified-safe-ftpo-20260717.md](iter-e266-stratified-safe-ftpo-20260717.md).
+
+E267 averaged train losses within each grammar/AST `decision_kind` before
+proposing an update, testing whether E266's single-event gradients were simply
+too noisy. All 30 category blocks and 150 scales were rejected; the restored
+model is bit-identical to E228 and full evaluation exactly matches the current
+parent control. The batched stage remained practical at 90.27s. Category
+averaging therefore does not produce a safe FTPO direction. The next lever
+must construct a conflict-projected or minimum-norm combination of per-kind
+gradients, not vary duration or scalar learning rate. Full evidence:
+[iter-e267-block-stratified-ftpo-20260717.md](iter-e267-block-stratified-ftpo-20260717.md).
+
+E268 constructed all 14 grammar/AST decision-kind gradients per step and
+deterministically applied pairwise PCGrad before the unchanged stratified
+guard. It projected 2,220 of 5,460 ordered task pairs, yet every one of 30
+proposals and 150 scales regressed at least one per-kind metric. The restored
+model and full evaluation exactly match the parent; five gates fail and AgentV
+is 2/5. The local stage took 2,338.56s, 25.9x E267, so this implementation is
+also operationally rejected. Pairwise projection does not certify a common
+descent direction. The next generalized lever is a deterministic minimum-norm
+convex combination with an explicit common-descent certificate, benchmarked
+for one step before a full run. Full evidence:
+[iter-e268-projected-stratified-ftpo-20260717.md](iter-e268-projected-stratified-ftpo-20260717.md).
+
+E269 replaced PCGrad with the minimum-norm convex combination from MGDA and
+used a one-step preflight before authorizing matched compute. After repairing
+inactive zero-gradient handling and fail-closed optimizer bypass, the final
+solver found a strict common-descent direction for 13 active train objectives.
+All five scales still regressed held-out metrics in `component_bound`,
+`grammar_comma`, `lit`, and `sym`; the parent was restored and full evaluation
+retained five failures with AgentV 2/5. The 219.11s one-step cost projects to
+about 110 minutes for 30 steps, so the full run was correctly canceled. The
+next lever is train/held-out gradient-alignment and provenance diagnosis, not
+another optimizer or scalar tuning pass. Full evidence:
+[iter-e269-mgda-stratified-ftpo-20260717.md](iter-e269-mgda-stratified-ftpo-20260717.md).
+
+E270 profiled frozen-parent train and held-out FTPO gradients without an
+optimizer. Same-kind split gradients are nonnegative for every shared
+decision kind, but the full matrix exposes severe cross-kind conflicts (for
+example held-out `grammar_comma` vs train
+`grammar_rsqb_bound_populated`, cosine `-0.9941`). MGDA still produces a raw
+combined direction with positive dot product against every active held-out
+FTPO-loss gradient; `grammar_comma` is weakest at cosine `0.0032`. Therefore
+E269's rejected finite steps are an optimizer-geometry mismatch: AdamW's
+preconditioned/sign-like first update is not the raw gradient direction the
+MGDA certificate covers. The next diagnostic must certify the actual
+optimizer-transformed step before any new training. Full evidence:
+[iter-e270-preference-gradient-alignment-20260717.md](iter-e270-preference-gradient-alignment-20260717.md).
+
+E271 analytically profiled the exact fresh Adam/AdamW first-step directions
+without mutating the model. Both transforms reverse held-out
+`grammar_comma` (cosine about `-0.00913`) and train-only `grammar_lsqb`
+(`-0.00345`), while their values are nearly identical; decoupled weight decay
+is not the cause. Adam's adaptive sign-like preconditioning breaks the raw
+MGDA common-descent certificate. The next bounded training lever is a one-step
+MGDA plus SGD preflight under the unchanged stratified guard, not another
+gradient mixer or AdamW scalar tune. Full evidence:
+[iter-e271-preference-optimizer-geometry-20260717.md](iter-e271-preference-optimizer-geometry-20260717.md).
+
+E272 applied the certified MGDA raw gradient with collinear SGD under the
+unchanged strict guard. Aggregate held-out FTPO loss improved at every scale,
+but all five scales regressed nine guarded probability/margin metrics across
+six decision kinds. The parent was restored; five ship gates fail and AgentV
+is 2/5. This rules out optimizer geometry as the final blocker: the solver's
+objective is incomplete because it certifies only loss while the contract also
+guards bad mass, good mass, and mean margin per kind. The next diagnostic must
+cover the full metric-gradient constraint set before any training. Full
+evidence:
+[iter-e272-mgda-sgd-preflight-20260717.md](iter-e272-mgda-sgd-preflight-20260717.md).
+
+E273 differentiated all four guarded metrics for every train decision kind:
+56 objectives, 55 active. Their minimum-norm vector is effectively zero
+(`norm_sq=3.90e-8`) and still lacks common descent; twelve held-out objectives
+oppose it. Probability-mass objectives dominate the conflict. No
+metric-complete optimizer run is justified. Before changing data or model
+capacity, verify whether good/bad mass is evaluated in the wrong probability
+space: it currently uses full-vocabulary softmax although constrained decoding
+chooses only among `legal_token_ids`. Full evidence:
+[iter-e273-metric-complete-feasibility-20260717.md](iter-e273-metric-complete-feasibility-20260717.md).
+
+E274 repeated the frozen-parent profile with good/bad probability conditioned
+only on each event's grammar-derived legal candidates. The train-side result
+flips from no feasible direction to strict common descent (`norm_sq=3.81e-4`,
+minimum active-task dot `3.36e-4`), proving full-vocabulary mass created a false
+Pareto conflict for constrained decisions. Training remains blocked: eleven
+held-out objectives oppose the corrected direction, and raw gradient scale
+assigns `0.9964` of the minimum-norm mixture to `lit:good_probability_mass`.
+The next diagnostic must normalize objective gradients before combining them;
+do not change duration or add token-specific cases. Full evidence:
+[iter-e274-legal-conditioned-metric-feasibility-20260717.md](iter-e274-legal-conditioned-metric-feasibility-20260717.md).
+
+E275 unit-normalized every nonzero legal-conditioned metric gradient before
+minimum-norm combination, then checked the direction against the original
+unscaled objectives. All 55 active train objectives align positively and the
+single-metric weight collapse disappears. Held-out regressions fall from eleven
+to three: component-bound good/bad mass and literal loss. The direction remains
+unsafe, so no training ran. The next diagnostic must split kind-level averages
+by grammar/AST decision signatures derived from legal/good/bad sets, not add
+literal or component special cases. Full evidence:
+[iter-e275-normalized-metric-geometry-20260717.md](iter-e275-normalized-metric-geometry-20260717.md).
+
+E276 kept E275's train direction fixed and evaluated 21 held-out signatures
+derived from decision kind plus legal/good/bad token sets. Nine signatures have
+no train counterpart. Seventeen objective regressions concentrate in seven
+signatures: four are absent from train and the other three have only one to
+three train examples. Coarse kind-level averaging was hiding sparse semantic
+support. No training ran. The next lever is judged, leakage-safe synthesis with
+minimum support per grammar-derived signature, followed by this same profile;
+do not add token/component special cases. Full evidence:
+[iter-e276-decision-signature-alignment-20260717.md](iter-e276-decision-signature-alignment-20260717.md).
 
 ## Verifier-guided repair (mixed status)
 

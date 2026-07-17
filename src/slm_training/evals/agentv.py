@@ -9,6 +9,25 @@ import subprocess
 from pathlib import Path
 from typing import Any, Sequence
 
+from slm_training.bridge_utils import checkout_roots
+
+
+def _agentv_runtime(repo_root: Path) -> tuple[Path, Path]:
+    """Resolve the pinned SDK from this checkout or its Git common checkout."""
+    override = os.getenv("AGENTV_RUNNER")
+    if override:
+        runner = Path(override).resolve()
+        return runner, runner.parents[1]
+
+    for root in checkout_roots(repo_root):
+        runner = root / "scripts" / "run_agentv_eval.mjs"
+        sdk = root / "node_modules" / "@agentv" / "core" / "package.json"
+        if runner.is_file() and sdk.is_file():
+            return runner, root
+    raise RuntimeError(
+        "AgentV SDK is unavailable; run npm ci in the checkout or set AGENTV_RUNNER"
+    )
+
 
 def publish_agentv_evaluation(
     run_dir: Path | str,
@@ -53,10 +72,7 @@ def publish_agentv_evaluation(
     spec_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
 
     repo_root = Path(__file__).resolve().parents[3]
-    runner = Path(
-        os.getenv("AGENTV_RUNNER")
-        or repo_root / "scripts" / "run_agentv_eval.mjs"
-    )
+    runner, runtime_root = _agentv_runtime(repo_root)
     completed = subprocess.run(
         [
             "node",
@@ -68,7 +84,7 @@ def publish_agentv_evaluation(
             "--experiment",
             slug,
         ],
-        cwd=repo_root,
+        cwd=runtime_root,
         check=False,
         capture_output=True,
         text=True,

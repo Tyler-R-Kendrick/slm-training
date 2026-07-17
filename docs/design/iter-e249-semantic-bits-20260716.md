@@ -54,7 +54,9 @@ quantitative form of the "externalized grammar shrinks the target" hypothesis.
 This is a *representation* property (corpus information), not a model result; it
 predicts, but does not prove, that a smaller model suffices. B3 will test the
 prediction by measuring quality-vs-`d_model` for each representation and reporting
-`params_per_bit` at matched quality.
+`params_per_bit` at matched quality. The B3 capacity ladder registers those matched
+arms (surface `lexer` vs `choice`) — see
+[iter-b3-capacity-ladder-20260717.md](iter-b3-capacity-ladder-20260717.md).
 
 ## Honesty
 

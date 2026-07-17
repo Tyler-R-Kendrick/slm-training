@@ -144,12 +144,35 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--output-tokenizer",
-        choices=("compositional", "lexer"),
+        choices=("compositional", "lexer", "choice"),
         default="compositional",
     )
     parser.add_argument(
+        "--bind-encoding",
+        choices=("absolute", "relative"),
+        default="absolute",
+        help="C1: binder reference representation (relative = De Bruijn refs).",
+    )
+    parser.add_argument(
+        "--denoiser-backend",
+        choices=("scratch", "hf"),
+        default="scratch",
+        help="B4: from-scratch DenoiserTower or AR-adapted HF backbone.",
+    )
+    parser.add_argument(
+        "--decode-min-content",
+        type=int,
+        default=0,
+        help="A4: minimum components before EOS (0 off, -1 auto-from-inventory).",
+    )
+    parser.add_argument(
+        "--asap-decode",
+        action="store_true",
+        help="A2: ASAp-style constraint-mass removal in MaskGIT decode.",
+    )
+    parser.add_argument(
         "--runtime-symbol-features",
-        choices=("none", "surface", "role_gated"),
+        choices=("none", "surface", "role_gated", "replace"),
         default="none",
     )
     parser.add_argument(
@@ -669,6 +692,10 @@ def main(argv: list[str] | None = None) -> int:
             mask_max=args.mask_max,
             mask_pattern=args.mask_pattern,
             output_tokenizer=args.output_tokenizer,
+            bind_encoding=args.bind_encoding,
+            denoiser_backend=args.denoiser_backend,
+            decode_min_content=max(-1, args.decode_min_content),
+            asap_decode=bool(args.asap_decode),
             runtime_symbol_features=args.runtime_symbol_features,
             symbol_slot_augmentation=args.symbol_slot_augmentation,
             semantic_candidate_masks=args.semantic_candidate_masks,

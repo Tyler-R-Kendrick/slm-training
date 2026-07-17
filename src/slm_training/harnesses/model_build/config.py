@@ -118,6 +118,7 @@ class ModelBuildConfig:
     compiler_search_backtrack_limit: int = 8
     compiler_search_local_nogoods: bool = False
     decode_min_content: int = 0  # A4: 0 off | >0 floor | -1 auto-from-inventory
+    asap_decode: bool = False  # A2: ASAp-style constraint-mass removal in MaskGIT
     fastpath_aux_weight: float = 0.0
     fastpath_gate_threshold: float = 0.5
     # V4 critic / remask levers
@@ -164,7 +165,7 @@ class ModelBuildConfig:
     # Cycle telemetry (train/infer span JSON)
     telemetry: bool = True
     # V5: lexer-native output tokenizer + Stage-2 levers
-    output_tokenizer: str = "compositional"  # compositional | lexer
+    output_tokenizer: str = "compositional"  # compositional | lexer | choice
     use_symbol_table: bool = True
     # C1: absolute | relative (De Bruijn <BINDDEF>/<BINDREL_±k> binder channel)
     bind_encoding: str = "absolute"
@@ -208,7 +209,7 @@ class ModelBuildConfig:
     symbol_boundary_loss_weight: float = 0.0
     remask_span: str = "token"  # token | statement
     teacher_init_embeddings: bool = False
-    runtime_symbol_features: str = "none"  # none | surface | role_gated
+    runtime_symbol_features: str = "none"  # none | surface | role_gated | replace (C2)
     symbol_slot_augmentation: bool = False
     semantic_candidate_masks: bool = False
     constraint_graph_mode: str = "off"  # off | grammar | hybrid

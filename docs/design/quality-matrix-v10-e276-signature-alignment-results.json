@@ -1,0 +1,4209 @@
+{
+  "objective": "ftpo_set",
+  "probability_space": "legal_tokens",
+  "gradient_scaling": "unit_norm",
+  "train_strata": "decision_kind",
+  "held_out_strata": "decision_signature",
+  "guard_objective_directions": {
+    "loss": "min",
+    "bad_probability_mass": "min",
+    "good_probability_mass": "max",
+    "mean_margin": "max"
+  },
+  "train_event_counts": {
+    "bind_declaration_root": 19,
+    "bind_reference_bound_children": 16,
+    "bind_reference_bound_input": 1,
+    "bind_reference_root_children": 17,
+    "component_bound": 21,
+    "component_root": 18,
+    "grammar_comma": 23,
+    "grammar_lsqb": 1,
+    "grammar_rpar": 21,
+    "grammar_rsqb_bound_empty": 3,
+    "grammar_rsqb_bound_populated": 7,
+    "grammar_rsqb_root_populated": 23,
+    "lit": 15,
+    "sym": 15
+  },
+  "held_out_event_counts": {
+    "bind_declaration_root@ad51c5f1712d": 6,
+    "bind_reference_bound_children@510d19b6c905": 1,
+    "bind_reference_bound_children@66630098bf1c": 2,
+    "bind_reference_bound_children@7b0fbba7c06c": 1,
+    "bind_reference_root_children@8525528e7a62": 1,
+    "bind_reference_root_children@be6391825f43": 1,
+    "component_bound@0f79aa2eb60b": 1,
+    "component_bound@4715f0cbdb3b": 1,
+    "component_bound@4a699c4abfde": 1,
+    "component_bound@b3203e6c9753": 1,
+    "component_root@e978356aebaa": 3,
+    "grammar_comma@bba1934e88a1": 4,
+    "grammar_rpar@b02b0d02ba39": 1,
+    "grammar_rsqb_bound_empty@89f9c5808827": 1,
+    "grammar_rsqb_bound_populated@3cf40154baf5": 2,
+    "grammar_rsqb_root_populated@0ab5ce0081dd": 4,
+    "lit@5bd36d78f798": 4,
+    "lit@8bf8d5927353": 1,
+    "sym@0521601293c3": 1,
+    "sym@1754e52fdc5a": 1,
+    "sym@d429a0a6a58d": 1
+  },
+  "decision_signature_counts": {
+    "train": {
+      "bind_declaration_root@ad51c5f1712d": 19,
+      "bind_reference_bound_children@2ea48e487767": 1,
+      "bind_reference_bound_children@31dd009a87ff": 1,
+      "bind_reference_bound_children@35798c7fbc51": 1,
+      "bind_reference_bound_children@4704eb41d132": 1,
+      "bind_reference_bound_children@48d2aefb3d59": 1,
+      "bind_reference_bound_children@5c21a04e6ca4": 1,
+      "bind_reference_bound_children@69e429142d17": 1,
+      "bind_reference_bound_children@79018fb31038": 1,
+      "bind_reference_bound_children@7d8e925a0e02": 1,
+      "bind_reference_bound_children@7fe30b940fbc": 1,
+      "bind_reference_bound_children@85ace7f43480": 1,
+      "bind_reference_bound_children@a3a8f1846aaa": 1,
+      "bind_reference_bound_children@a4ef83f9e209": 1,
+      "bind_reference_bound_children@a8c0866b9b19": 1,
+      "bind_reference_bound_children@d34b2f147864": 1,
+      "bind_reference_bound_children@e5e14ebc0168": 1,
+      "bind_reference_bound_input@b9b9084610a0": 1,
+      "bind_reference_root_children@397e5fc8cba8": 6,
+      "bind_reference_root_children@7865173cc04b": 3,
+      "bind_reference_root_children@8525528e7a62": 4,
+      "bind_reference_root_children@a0b2e3a06165": 3,
+      "bind_reference_root_children@be6391825f43": 1,
+      "component_bound@0887f691a8be": 1,
+      "component_bound@0f3c28dabca2": 1,
+      "component_bound@10192b916cb9": 1,
+      "component_bound@245bb790f8c0": 1,
+      "component_bound@28d12510c5f2": 1,
+      "component_bound@2aa7aecf5cd3": 1,
+      "component_bound@3257174edd6e": 1,
+      "component_bound@375742f0fb44": 3,
+      "component_bound@46284f580fc5": 1,
+      "component_bound@4715f0cbdb3b": 2,
+      "component_bound@4bdfae405224": 1,
+      "component_bound@54a257a050bf": 1,
+      "component_bound@648ed9cc6edc": 1,
+      "component_bound@8abc2551c770": 2,
+      "component_bound@a8c3f6e10d2a": 1,
+      "component_bound@fb82b5486c53": 1,
+      "component_bound@fff549620ae0": 1,
+      "component_root@e978356aebaa": 18,
+      "grammar_comma@bba1934e88a1": 13,
+      "grammar_comma@f9accf594cdd": 10,
+      "grammar_lsqb@abb65dff71b3": 1,
+      "grammar_rpar@b02b0d02ba39": 21,
+      "grammar_rsqb_bound_empty@4874b389b9da": 1,
+      "grammar_rsqb_bound_empty@7dbadb62b4c7": 1,
+      "grammar_rsqb_bound_empty@eafc3cd4f37e": 1,
+      "grammar_rsqb_bound_populated@3cf40154baf5": 6,
+      "grammar_rsqb_bound_populated@4abd0ce07f63": 1,
+      "grammar_rsqb_root_populated@0ab5ce0081dd": 23,
+      "lit@5b9a7c7d1328": 2,
+      "lit@5bd36d78f798": 10,
+      "lit@8bf8d5927353": 3,
+      "sym@0521601293c3": 3,
+      "sym@1cd63b9c656f": 1,
+      "sym@1faa316469f2": 1,
+      "sym@20fe5bbdd17c": 1,
+      "sym@2cef3c557137": 1,
+      "sym@37a79285c48d": 2,
+      "sym@48ff02cc1d97": 1,
+      "sym@d93d1b1c1e05": 1,
+      "sym@dc1bdea5d6bd": 2,
+      "sym@efb2f2cc5db2": 1,
+      "sym@f74667656f4f": 1
+    },
+    "held_out": {
+      "bind_declaration_root@ad51c5f1712d": 6,
+      "bind_reference_bound_children@510d19b6c905": 1,
+      "bind_reference_bound_children@66630098bf1c": 2,
+      "bind_reference_bound_children@7b0fbba7c06c": 1,
+      "bind_reference_root_children@8525528e7a62": 1,
+      "bind_reference_root_children@be6391825f43": 1,
+      "component_bound@0f79aa2eb60b": 1,
+      "component_bound@4715f0cbdb3b": 1,
+      "component_bound@4a699c4abfde": 1,
+      "component_bound@b3203e6c9753": 1,
+      "component_root@e978356aebaa": 3,
+      "grammar_comma@bba1934e88a1": 4,
+      "grammar_rpar@b02b0d02ba39": 1,
+      "grammar_rsqb_bound_empty@89f9c5808827": 1,
+      "grammar_rsqb_bound_populated@3cf40154baf5": 2,
+      "grammar_rsqb_root_populated@0ab5ce0081dd": 4,
+      "lit@5bd36d78f798": 4,
+      "lit@8bf8d5927353": 1,
+      "sym@0521601293c3": 1,
+      "sym@1754e52fdc5a": 1,
+      "sym@d429a0a6a58d": 1
+    }
+  },
+  "decision_signature_metadata": {
+    "bind_declaration_root@ad51c5f1712d": {
+      "decision_kind": "bind_declaration_root",
+      "legal_token_ids": [
+        30,
+        272
+      ],
+      "good_token_ids": [
+        272
+      ],
+      "bad_token_ids": [
+        30
+      ]
+    },
+    "bind_reference_bound_children@2ea48e487767": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        276,
+        277,
+        278,
+        279,
+        280,
+        281,
+        282,
+        283,
+        284,
+        286
+      ],
+      "good_token_ids": [
+        283
+      ],
+      "bad_token_ids": [
+        273,
+        274,
+        276
+      ]
+    },
+    "bind_reference_bound_children@31dd009a87ff": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        277,
+        278
+      ],
+      "good_token_ids": [
+        275
+      ],
+      "bad_token_ids": [
+        58,
+        65,
+        273
+      ]
+    },
+    "bind_reference_bound_children@35798c7fbc51": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        275
+      ],
+      "good_token_ids": [
+        273,
+        275
+      ],
+      "bad_token_ids": [
+        9,
+        65
+      ]
+    },
+    "bind_reference_bound_children@4704eb41d132": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        276,
+        277
+      ],
+      "good_token_ids": [
+        273
+      ],
+      "bad_token_ids": [
+        9,
+        274,
+        276
+      ]
+    },
+    "bind_reference_bound_children@48d2aefb3d59": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        276,
+        278,
+        281
+      ],
+      "good_token_ids": [
+        273
+      ],
+      "bad_token_ids": [
+        9,
+        274,
+        276
+      ]
+    },
+    "bind_reference_bound_children@510d19b6c905": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        276,
+        277
+      ],
+      "good_token_ids": [
+        274
+      ],
+      "bad_token_ids": [
+        55,
+        273,
+        276
+      ]
+    },
+    "bind_reference_bound_children@5c21a04e6ca4": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        277,
+        278
+      ],
+      "good_token_ids": [
+        275
+      ],
+      "bad_token_ids": [
+        65,
+        273,
+        274
+      ]
+    },
+    "bind_reference_bound_children@66630098bf1c": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        277
+      ],
+      "good_token_ids": [
+        275
+      ],
+      "bad_token_ids": [
+        65,
+        273,
+        274
+      ]
+    },
+    "bind_reference_bound_children@69e429142d17": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        276,
+        277,
+        278,
+        280,
+        282,
+        285,
+        288
+      ],
+      "good_token_ids": [
+        278
+      ],
+      "bad_token_ids": [
+        273,
+        274,
+        275
+      ]
+    },
+    "bind_reference_bound_children@79018fb31038": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        276
+      ],
+      "good_token_ids": [
+        273,
+        274,
+        276
+      ],
+      "bad_token_ids": [
+        9
+      ]
+    },
+    "bind_reference_bound_children@7b0fbba7c06c": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        277,
+        278
+      ],
+      "good_token_ids": [
+        273
+      ],
+      "bad_token_ids": [
+        9,
+        274,
+        275
+      ]
+    },
+    "bind_reference_bound_children@7d8e925a0e02": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        276,
+        278
+      ],
+      "good_token_ids": [
+        276
+      ],
+      "bad_token_ids": [
+        9,
+        273,
+        275
+      ]
+    },
+    "bind_reference_bound_children@7fe30b940fbc": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        276,
+        277,
+        278,
+        280,
+        282
+      ],
+      "good_token_ids": [
+        278
+      ],
+      "bad_token_ids": [
+        273,
+        275,
+        276
+      ]
+    },
+    "bind_reference_bound_children@85ace7f43480": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        276,
+        277,
+        278,
+        279,
+        281
+      ],
+      "good_token_ids": [
+        278
+      ],
+      "bad_token_ids": [
+        9,
+        273,
+        274
+      ]
+    },
+    "bind_reference_bound_children@a3a8f1846aaa": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        276,
+        277,
+        278,
+        279,
+        280,
+        281,
+        282,
+        283,
+        284,
+        286,
+        288
+      ],
+      "good_token_ids": [
+        283
+      ],
+      "bad_token_ids": [
+        9,
+        273,
+        275
+      ]
+    },
+    "bind_reference_bound_children@a4ef83f9e209": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        276,
+        278
+      ],
+      "good_token_ids": [
+        275
+      ],
+      "bad_token_ids": [
+        9,
+        273,
+        276
+      ]
+    },
+    "bind_reference_bound_children@a8c0866b9b19": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        276,
+        278
+      ],
+      "good_token_ids": [
+        276
+      ],
+      "bad_token_ids": [
+        9,
+        273,
+        274
+      ]
+    },
+    "bind_reference_bound_children@d34b2f147864": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        277,
+        279,
+        282,
+        285,
+        288
+      ],
+      "good_token_ids": [
+        274
+      ],
+      "bad_token_ids": [
+        9,
+        273,
+        275
+      ]
+    },
+    "bind_reference_bound_children@e5e14ebc0168": {
+      "decision_kind": "bind_reference_bound_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275,
+        277,
+        279
+      ],
+      "good_token_ids": [
+        274
+      ],
+      "bad_token_ids": [
+        9,
+        273,
+        275
+      ]
+    },
+    "bind_reference_bound_input@b9b9084610a0": {
+      "decision_kind": "bind_reference_bound_input",
+      "legal_token_ids": [
+        6,
+        8,
+        10,
+        17,
+        21,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        273,
+        274,
+        275,
+        277,
+        278
+      ],
+      "good_token_ids": [
+        275
+      ],
+      "bad_token_ids": [
+        6,
+        8,
+        101
+      ]
+    },
+    "bind_reference_root_children@397e5fc8cba8": {
+      "decision_kind": "bind_reference_root_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273
+      ],
+      "good_token_ids": [
+        273
+      ],
+      "bad_token_ids": [
+        9,
+        48,
+        58
+      ]
+    },
+    "bind_reference_root_children@7865173cc04b": {
+      "decision_kind": "bind_reference_root_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273
+      ],
+      "good_token_ids": [
+        273
+      ],
+      "bad_token_ids": [
+        9,
+        48,
+        65
+      ]
+    },
+    "bind_reference_root_children@8525528e7a62": {
+      "decision_kind": "bind_reference_root_children",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274
+      ],
+      "good_token_ids": [
+        274
+      ],
+      "bad_token_ids": [
+        57,
+        65,
+        273
+      ]
+    },
+    "bind_reference_root_children@a0b2e3a06165": {
+      "decision_kind": "bind_reference_root_children",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273,
+        274,
+        275
+      ],
+      "good_token_ids": [
+        275
+      ],
+      "bad_token_ids": [
+        65,
+        273,
+        274
+      ]
+    },
+    "bind_reference_root_children@be6391825f43": {
+      "decision_kind": "bind_reference_root_children",
+      "legal_token_ids": [
+        9,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        273
+      ],
+      "good_token_ids": [
+        273
+      ],
+      "bad_token_ids": [
+        9,
+        48,
+        57
+      ]
+    },
+    "component_bound@0887f691a8be": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        65
+      ],
+      "bad_token_ids": [
+        32,
+        39,
+        57
+      ]
+    },
+    "component_bound@0f3c28dabca2": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        32
+      ],
+      "bad_token_ids": [
+        48,
+        57,
+        65
+      ]
+    },
+    "component_bound@0f79aa2eb60b": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        35
+      ],
+      "bad_token_ids": [
+        33,
+        57,
+        65
+      ]
+    },
+    "component_bound@10192b916cb9": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        65
+      ],
+      "bad_token_ids": [
+        48,
+        56,
+        57
+      ]
+    },
+    "component_bound@245bb790f8c0": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        43
+      ],
+      "bad_token_ids": [
+        39,
+        57,
+        65
+      ]
+    },
+    "component_bound@28d12510c5f2": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        44
+      ],
+      "bad_token_ids": [
+        45,
+        57,
+        65
+      ]
+    },
+    "component_bound@2aa7aecf5cd3": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        65
+      ],
+      "bad_token_ids": [
+        32,
+        45,
+        57
+      ]
+    },
+    "component_bound@3257174edd6e": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        65
+      ],
+      "bad_token_ids": [
+        48,
+        54,
+        57
+      ]
+    },
+    "component_bound@375742f0fb44": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        32
+      ],
+      "bad_token_ids": [
+        45,
+        57,
+        65
+      ]
+    },
+    "component_bound@46284f580fc5": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        65
+      ],
+      "bad_token_ids": [
+        32,
+        48,
+        57
+      ]
+    },
+    "component_bound@4715f0cbdb3b": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        65
+      ],
+      "bad_token_ids": [
+        32,
+        33,
+        57
+      ]
+    },
+    "component_bound@4a699c4abfde": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        63
+      ],
+      "bad_token_ids": [
+        52,
+        58,
+        65
+      ]
+    },
+    "component_bound@4bdfae405224": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        59
+      ],
+      "bad_token_ids": [
+        48,
+        57,
+        65
+      ]
+    },
+    "component_bound@54a257a050bf": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        37
+      ],
+      "bad_token_ids": [
+        54,
+        56,
+        65
+      ]
+    },
+    "component_bound@648ed9cc6edc": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        65
+      ],
+      "bad_token_ids": [
+        39,
+        54,
+        57
+      ]
+    },
+    "component_bound@8abc2551c770": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        35
+      ],
+      "bad_token_ids": [
+        48,
+        57,
+        65
+      ]
+    },
+    "component_bound@a8c3f6e10d2a": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        46
+      ],
+      "bad_token_ids": [
+        45,
+        56,
+        58
+      ]
+    },
+    "component_bound@b3203e6c9753": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        32
+      ],
+      "bad_token_ids": [
+        56,
+        57,
+        65
+      ]
+    },
+    "component_bound@fb82b5486c53": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        65
+      ],
+      "bad_token_ids": [
+        39,
+        45,
+        57
+      ]
+    },
+    "component_bound@fff549620ae0": {
+      "decision_kind": "component_bound",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        35
+      ],
+      "bad_token_ids": [
+        36,
+        39,
+        65
+      ]
+    },
+    "component_root@e978356aebaa": {
+      "decision_kind": "component_root",
+      "legal_token_ids": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "good_token_ids": [
+        57
+      ],
+      "bad_token_ids": [
+        54,
+        58,
+        65
+      ]
+    },
+    "grammar_comma@bba1934e88a1": {
+      "decision_kind": "grammar_comma",
+      "legal_token_ids": [
+        9,
+        12
+      ],
+      "good_token_ids": [
+        12
+      ],
+      "bad_token_ids": [
+        9
+      ]
+    },
+    "grammar_comma@f9accf594cdd": {
+      "decision_kind": "grammar_comma",
+      "legal_token_ids": [
+        7,
+        12
+      ],
+      "good_token_ids": [
+        12
+      ],
+      "bad_token_ids": [
+        7
+      ]
+    },
+    "grammar_lsqb@abb65dff71b3": {
+      "decision_kind": "grammar_lsqb",
+      "legal_token_ids": [
+        6,
+        8,
+        10,
+        17,
+        21,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        273,
+        275,
+        276
+      ],
+      "good_token_ids": [
+        8
+      ],
+      "bad_token_ids": [
+        6,
+        275,
+        276
+      ]
+    },
+    "grammar_rpar@b02b0d02ba39": {
+      "decision_kind": "grammar_rpar",
+      "legal_token_ids": [
+        7,
+        12
+      ],
+      "good_token_ids": [
+        7
+      ],
+      "bad_token_ids": [
+        12
+      ]
+    },
+    "grammar_rsqb_bound_empty@4874b389b9da": {
+      "decision_kind": "grammar_rsqb_bound_empty",
+      "legal_token_ids": [
+        6,
+        8,
+        9,
+        10,
+        17,
+        21,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        273,
+        274,
+        276
+      ],
+      "good_token_ids": [
+        9
+      ],
+      "bad_token_ids": [
+        6,
+        8,
+        273
+      ]
+    },
+    "grammar_rsqb_bound_empty@7dbadb62b4c7": {
+      "decision_kind": "grammar_rsqb_bound_empty",
+      "legal_token_ids": [
+        6,
+        8,
+        9,
+        10,
+        17,
+        21,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        273,
+        275,
+        276
+      ],
+      "good_token_ids": [
+        9
+      ],
+      "bad_token_ids": [
+        8,
+        273,
+        275
+      ]
+    },
+    "grammar_rsqb_bound_empty@89f9c5808827": {
+      "decision_kind": "grammar_rsqb_bound_empty",
+      "legal_token_ids": [
+        6,
+        8,
+        9,
+        10,
+        17,
+        21,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        273,
+        274,
+        276,
+        277
+      ],
+      "good_token_ids": [
+        9
+      ],
+      "bad_token_ids": [
+        6,
+        8,
+        92
+      ]
+    },
+    "grammar_rsqb_bound_empty@eafc3cd4f37e": {
+      "decision_kind": "grammar_rsqb_bound_empty",
+      "legal_token_ids": [
+        6,
+        8,
+        9,
+        10,
+        17,
+        21,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        274,
+        277
+      ],
+      "good_token_ids": [
+        9
+      ],
+      "bad_token_ids": [
+        6,
+        8,
+        274
+      ]
+    },
+    "grammar_rsqb_bound_populated@3cf40154baf5": {
+      "decision_kind": "grammar_rsqb_bound_populated",
+      "legal_token_ids": [
+        9,
+        12
+      ],
+      "good_token_ids": [
+        9
+      ],
+      "bad_token_ids": [
+        12
+      ]
+    },
+    "grammar_rsqb_bound_populated@4abd0ce07f63": {
+      "decision_kind": "grammar_rsqb_bound_populated",
+      "legal_token_ids": [
+        8,
+        9,
+        13,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29
+      ],
+      "good_token_ids": [
+        9
+      ],
+      "bad_token_ids": [
+        8,
+        16,
+        24
+      ]
+    },
+    "grammar_rsqb_root_populated@0ab5ce0081dd": {
+      "decision_kind": "grammar_rsqb_root_populated",
+      "legal_token_ids": [
+        9,
+        12
+      ],
+      "good_token_ids": [
+        9
+      ],
+      "bad_token_ids": [
+        12
+      ]
+    },
+    "lit@5b9a7c7d1328": {
+      "decision_kind": "lit",
+      "legal_token_ids": [
+        111,
+        112,
+        114,
+        115,
+        116,
+        117,
+        118,
+        119,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        139,
+        140,
+        142,
+        143,
+        144,
+        171,
+        172,
+        174,
+        176,
+        204,
+        206,
+        207
+      ],
+      "good_token_ids": [
+        111
+      ],
+      "bad_token_ids": [
+        122,
+        126,
+        139
+      ]
+    },
+    "lit@5bd36d78f798": {
+      "decision_kind": "lit",
+      "legal_token_ids": [
+        86,
+        97
+      ],
+      "good_token_ids": [
+        86
+      ],
+      "bad_token_ids": [
+        97
+      ]
+    },
+    "lit@8bf8d5927353": {
+      "decision_kind": "lit",
+      "legal_token_ids": [
+        86,
+        97
+      ],
+      "good_token_ids": [
+        97
+      ],
+      "bad_token_ids": [
+        86
+      ]
+    },
+    "sym@0521601293c3": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209
+      ],
+      "good_token_ids": [
+        208
+      ],
+      "bad_token_ids": [
+        209
+      ]
+    },
+    "sym@1754e52fdc5a": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216,
+        217,
+        218,
+        219
+      ],
+      "good_token_ids": [
+        208
+      ],
+      "bad_token_ids": [
+        209,
+        211,
+        216
+      ]
+    },
+    "sym@1cd63b9c656f": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210,
+        211,
+        212,
+        213
+      ],
+      "good_token_ids": [
+        208
+      ],
+      "bad_token_ids": [
+        209,
+        210,
+        211
+      ]
+    },
+    "sym@1faa316469f2": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210,
+        211,
+        212,
+        213
+      ],
+      "good_token_ids": [
+        211
+      ],
+      "bad_token_ids": [
+        208,
+        209,
+        210
+      ]
+    },
+    "sym@20fe5bbdd17c": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216
+      ],
+      "good_token_ids": [
+        216
+      ],
+      "bad_token_ids": [
+        208,
+        209,
+        211
+      ]
+    },
+    "sym@2cef3c557137": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214
+      ],
+      "good_token_ids": [
+        209
+      ],
+      "bad_token_ids": [
+        208,
+        210,
+        211
+      ]
+    },
+    "sym@37a79285c48d": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210
+      ],
+      "good_token_ids": [
+        210
+      ],
+      "bad_token_ids": [
+        208,
+        209
+      ]
+    },
+    "sym@48ff02cc1d97": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        208,
+        209
+      ],
+      "good_token_ids": [
+        208
+      ],
+      "bad_token_ids": [
+        86,
+        92,
+        209
+      ]
+    },
+    "sym@d429a0a6a58d": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210,
+        211,
+        212
+      ],
+      "good_token_ids": [
+        212
+      ],
+      "bad_token_ids": [
+        208,
+        209,
+        211
+      ]
+    },
+    "sym@d93d1b1c1e05": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216,
+        217,
+        218
+      ],
+      "good_token_ids": [
+        215
+      ],
+      "bad_token_ids": [
+        208,
+        209,
+        211
+      ]
+    },
+    "sym@dc1bdea5d6bd": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210,
+        211
+      ],
+      "good_token_ids": [
+        208
+      ],
+      "bad_token_ids": [
+        209,
+        210,
+        211
+      ]
+    },
+    "sym@efb2f2cc5db2": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210,
+        211,
+        212,
+        213
+      ],
+      "good_token_ids": [
+        213
+      ],
+      "bad_token_ids": [
+        208,
+        209,
+        211
+      ]
+    },
+    "sym@f74667656f4f": {
+      "decision_kind": "sym",
+      "legal_token_ids": [
+        208,
+        209,
+        210,
+        211,
+        212,
+        213,
+        214,
+        215,
+        216,
+        217,
+        218
+      ],
+      "good_token_ids": [
+        214
+      ],
+      "bad_token_ids": [
+        208,
+        209,
+        216
+      ]
+    }
+  },
+  "held_out_signature_coverage": {
+    "covered": [
+      "bind_declaration_root@ad51c5f1712d",
+      "bind_reference_root_children@8525528e7a62",
+      "bind_reference_root_children@be6391825f43",
+      "component_bound@4715f0cbdb3b",
+      "component_root@e978356aebaa",
+      "grammar_comma@bba1934e88a1",
+      "grammar_rpar@b02b0d02ba39",
+      "grammar_rsqb_bound_populated@3cf40154baf5",
+      "grammar_rsqb_root_populated@0ab5ce0081dd",
+      "lit@5bd36d78f798",
+      "lit@8bf8d5927353",
+      "sym@0521601293c3"
+    ],
+    "uncovered": [
+      "bind_reference_bound_children@510d19b6c905",
+      "bind_reference_bound_children@66630098bf1c",
+      "bind_reference_bound_children@7b0fbba7c06c",
+      "component_bound@0f79aa2eb60b",
+      "component_bound@4a699c4abfde",
+      "component_bound@b3203e6c9753",
+      "grammar_rsqb_bound_empty@89f9c5808827",
+      "sym@1754e52fdc5a",
+      "sym@d429a0a6a58d"
+    ]
+  },
+  "train_objective_count": 56,
+  "held_out_objective_count": 84,
+  "train_minimum_norm_solver": {
+    "task_count": 56,
+    "active_task_count": 55,
+    "inactive_task_count": 1,
+    "iterations": 5000,
+    "duality_gap": 9.001693220154398e-05,
+    "converged": false,
+    "norm_sq": 0.0004535641943410283,
+    "min_task_dot": 0.0,
+    "min_active_task_dot": 0.00037716894001568746,
+    "common_descent": true,
+    "weight_by_objective": {
+      "bind_declaration_root:bad_probability_mass": 0.0001683546047419229,
+      "bind_declaration_root:good_probability_mass": 0.0,
+      "bind_declaration_root:loss": 0.0,
+      "bind_declaration_root:mean_margin": 0.0,
+      "bind_reference_bound_children:bad_probability_mass": 0.0059699913804609015,
+      "bind_reference_bound_children:good_probability_mass": 0.0076192987718410226,
+      "bind_reference_bound_children:loss": 0.0,
+      "bind_reference_bound_children:mean_margin": 0.0,
+      "bind_reference_bound_input:bad_probability_mass": 0.0,
+      "bind_reference_bound_input:good_probability_mass": 0.0,
+      "bind_reference_bound_input:loss": 0.0,
+      "bind_reference_bound_input:mean_margin": 0.0,
+      "bind_reference_root_children:bad_probability_mass": 0.0,
+      "bind_reference_root_children:good_probability_mass": 0.007472965669922386,
+      "bind_reference_root_children:loss": 0.0,
+      "bind_reference_root_children:mean_margin": 0.0,
+      "component_bound:bad_probability_mass": 0.004468928208321775,
+      "component_bound:good_probability_mass": 0.005277330326310278,
+      "component_bound:loss": 0.0,
+      "component_bound:mean_margin": 0.0,
+      "component_root:bad_probability_mass": 0.0,
+      "component_root:good_probability_mass": 0.0,
+      "component_root:loss": 0.009192255797915414,
+      "component_root:mean_margin": 0.0,
+      "grammar_comma:bad_probability_mass": 0.007251481355055462,
+      "grammar_comma:good_probability_mass": 0.002955450636584094,
+      "grammar_comma:loss": 0.0043396760631739,
+      "grammar_comma:mean_margin": 0.42277293382824865,
+      "grammar_lsqb:bad_probability_mass": 0.001928087203668279,
+      "grammar_lsqb:good_probability_mass": 0.0,
+      "grammar_lsqb:loss": 0.0,
+      "grammar_lsqb:mean_margin": 0.006490879960971869,
+      "grammar_rpar:bad_probability_mass": 0.0,
+      "grammar_rpar:good_probability_mass": 0.15195181977732536,
+      "grammar_rpar:loss": 0.005232280609411371,
+      "grammar_rpar:mean_margin": 0.05130578442550561,
+      "grammar_rsqb_bound_empty:bad_probability_mass": 0.0,
+      "grammar_rsqb_bound_empty:good_probability_mass": 0.0,
+      "grammar_rsqb_bound_empty:loss": 0.007361334183526867,
+      "grammar_rsqb_bound_empty:mean_margin": 0.007472965126787949,
+      "grammar_rsqb_bound_populated:bad_probability_mass": 0.009796745403431164,
+      "grammar_rsqb_bound_populated:good_probability_mass": 0.0,
+      "grammar_rsqb_bound_populated:loss": 0.11344138154067872,
+      "grammar_rsqb_bound_populated:mean_margin": 0.01269181811640825,
+      "grammar_rsqb_root_populated:bad_probability_mass": 0.04612670320825775,
+      "grammar_rsqb_root_populated:good_probability_mass": 0.0,
+      "grammar_rsqb_root_populated:loss": 0.011202617201891899,
+      "grammar_rsqb_root_populated:mean_margin": 0.08993719360183022,
+      "lit:bad_probability_mass": 0.0013550239747497667,
+      "lit:good_probability_mass": 0.0030914325650253775,
+      "lit:loss": 0.0031252664579526643,
+      "lit:mean_margin": 0.0,
+      "sym:bad_probability_mass": 0.0,
+      "sym:good_probability_mass": 0.0,
+      "sym:loss": 0.0,
+      "sym:mean_margin": 0.0
+    }
+  },
+  "train_alignment": {
+    "bind_declaration_root:bad_probability_mass": {
+      "dot": 0.0016307869431642992,
+      "cosine": 0.019406838463376774,
+      "left_norm": 3.9456862907325894,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_declaration_root:good_probability_mass": {
+      "dot": 0.0016307879910816355,
+      "cosine": 0.019406857776729704,
+      "left_norm": 3.945684899488869,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_declaration_root:loss": {
+      "dot": 0.0,
+      "cosine": 0.0,
+      "left_norm": 0.0,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_declaration_root:mean_margin": {
+      "dot": 0.06143214850563862,
+      "cosine": 0.01961150853106158,
+      "left_norm": 147.0837931717384,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_children:bad_probability_mass": {
+      "dot": 0.003124393704200257,
+      "cosine": 0.020666634422341786,
+      "left_norm": 7.09865574154558,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_children:good_probability_mass": {
+      "dot": 0.004639931966458456,
+      "cosine": 0.031042072902828,
+      "left_norm": 7.01844686588225,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_children:loss": {
+      "dot": 0.01872217724748527,
+      "cosine": 0.02009141367758275,
+      "left_norm": 43.754827390303014,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_children:mean_margin": {
+      "dot": 0.03148684012401249,
+      "cosine": 0.033312032540074206,
+      "left_norm": 44.382122228549875,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_input:bad_probability_mass": {
+      "dot": 0.10043456312682253,
+      "cosine": 0.16371387960378056,
+      "left_norm": 28.805658831859365,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_input:good_probability_mass": {
+      "dot": 0.09973872964243659,
+      "cosine": 0.164358260524069,
+      "left_norm": 28.493934017169256,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_input:loss": {
+      "dot": 0.19627736417309297,
+      "cosine": 0.14790215533874718,
+      "left_norm": 62.31259423792536,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_input:mean_margin": {
+      "dot": 0.34099229889103105,
+      "cosine": 0.14396131983503205,
+      "left_norm": 111.21897016735788,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_root_children:bad_probability_mass": {
+      "dot": 0.022905369134170087,
+      "cosine": 0.2670207887261317,
+      "left_norm": 4.027841190632507,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_root_children:good_probability_mass": {
+      "dot": 0.022950817924618845,
+      "cosine": 0.2673083875393391,
+      "left_norm": 4.0314910466420475,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_root_children:loss": {
+      "dot": 0.030519778067502303,
+      "cosine": 0.2550230857426122,
+      "left_norm": 5.619297081969763,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_root_children:mean_margin": {
+      "dot": 0.12218357918617495,
+      "cosine": 0.07888322940478845,
+      "left_norm": 72.72911104209112,
+      "right_norm": 0.021297071150296276
+    },
+    "component_bound:bad_probability_mass": {
+      "dot": 0.0033808427023408337,
+      "cosine": 0.020005221748802,
+      "left_norm": 7.935270097287178,
+      "right_norm": 0.021297071150296276
+    },
+    "component_bound:good_probability_mass": {
+      "dot": 0.004072591924843223,
+      "cosine": 0.019921277817528803,
+      "left_norm": 9.599173069480662,
+      "right_norm": 0.021297071150296276
+    },
+    "component_bound:loss": {
+      "dot": 0.08164107829274603,
+      "cosine": 0.08927038003692306,
+      "left_norm": 42.941920807494895,
+      "right_norm": 0.021297071150296276
+    },
+    "component_bound:mean_margin": {
+      "dot": 0.07693626400943354,
+      "cosine": 0.07923136030231516,
+      "left_norm": 45.59467236036276,
+      "right_norm": 0.021297071150296276
+    },
+    "component_root:bad_probability_mass": {
+      "dot": 0.005336278145415568,
+      "cosine": 0.022094271553085434,
+      "left_norm": 11.340674595596372,
+      "right_norm": 0.021297071150296276
+    },
+    "component_root:good_probability_mass": {
+      "dot": 0.005363159975130413,
+      "cosine": 0.02207800433623893,
+      "left_norm": 11.406201918021091,
+      "right_norm": 0.021297071150296276
+    },
+    "component_root:loss": {
+      "dot": 0.00186200245543134,
+      "cosine": 0.019049811697649646,
+      "left_norm": 4.589545506952468,
+      "right_norm": 0.021297071150296276
+    },
+    "component_root:mean_margin": {
+      "dot": 0.12575951223746373,
+      "cosine": 0.05557107260249873,
+      "left_norm": 106.26058024514714,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_comma:bad_probability_mass": {
+      "dot": 0.009475032223971006,
+      "cosine": 0.020830321785821875,
+      "left_norm": 21.35820914321093,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_comma:good_probability_mass": {
+      "dot": 0.009475033923856294,
+      "cosine": 0.020830325210231773,
+      "left_norm": 21.358209463826835,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_comma:loss": {
+      "dot": 0.0510345376222823,
+      "cosine": 0.020468613183809953,
+      "left_norm": 117.07276722210226,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_comma:mean_margin": {
+      "dot": 0.050266371380256046,
+      "cosine": 0.01771037597183799,
+      "left_norm": 133.26922522096663,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_lsqb:bad_probability_mass": {
+      "dot": 0.004047316625695466,
+      "cosine": 0.01851670429262377,
+      "left_norm": 10.263219284569285,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_lsqb:good_probability_mass": {
+      "dot": 0.00476381168912125,
+      "cosine": 0.025555712133782185,
+      "left_norm": 8.752794183758677,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_lsqb:loss": {
+      "dot": 0.04195187187314095,
+      "cosine": 0.019527747181405188,
+      "left_norm": 100.87401755475175,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_lsqb:mean_margin": {
+      "dot": 0.042322714856549024,
+      "cosine": 0.018251577103296404,
+      "left_norm": 108.88128537000163,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rpar:bad_probability_mass": {
+      "dot": 0.007263553764133658,
+      "cosine": 0.021296627426720928,
+      "left_norm": 16.01468646458768,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rpar:good_probability_mass": {
+      "dot": 0.007263554220147532,
+      "cosine": 0.021296628436993297,
+      "left_norm": 16.014686710300335,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rpar:loss": {
+      "dot": 0.030515407198435006,
+      "cosine": 0.0213481354939586,
+      "left_norm": 67.11805106412206,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rpar:mean_margin": {
+      "dot": 0.06631188496174298,
+      "cosine": 0.021297474681543856,
+      "left_norm": 146.19865619961337,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_empty:bad_probability_mass": {
+      "dot": 0.01862493560196582,
+      "cosine": 0.09116581016518169,
+      "left_norm": 9.592745049855152,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_empty:good_probability_mass": {
+      "dot": 0.0188257746048362,
+      "cosine": 0.08639315549648663,
+      "left_norm": 10.231837545278745,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_empty:loss": {
+      "dot": 0.04469168230563491,
+      "cosine": 0.02873073879137911,
+      "left_norm": 73.03987602244887,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_empty:mean_margin": {
+      "dot": 0.07216155761971299,
+      "cosine": 0.026909587781026756,
+      "left_norm": 125.91543557125031,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_populated:bad_probability_mass": {
+      "dot": 0.01070206613466191,
+      "cosine": 0.022045466992498344,
+      "left_norm": 22.7944147247852,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_populated:good_probability_mass": {
+      "dot": 0.010702074136752955,
+      "cosine": 0.02204545544662478,
+      "left_norm": 22.794443706636947,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_populated:loss": {
+      "dot": 0.058743860593649486,
+      "cosine": 0.019643265023185228,
+      "left_norm": 140.41998640606238,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_populated:mean_margin": {
+      "dot": 0.060034570289881045,
+      "cosine": 0.019579093567559238,
+      "left_norm": 143.97561514422327,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_root_populated:bad_probability_mass": {
+      "dot": 0.0071224578220860785,
+      "cosine": 0.01964526050878378,
+      "left_norm": 17.02363158912128,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_root_populated:good_probability_mass": {
+      "dot": 0.007122458734350148,
+      "cosine": 0.01964526229514011,
+      "left_norm": 17.02363222158507,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_root_populated:loss": {
+      "dot": 0.03611700691272402,
+      "cosine": 0.01983571879379817,
+      "left_norm": 85.49563213118795,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_root_populated:mean_margin": {
+      "dot": 0.06374206018536199,
+      "cosine": 0.01964288171853779,
+      "left_norm": 152.3705421204762,
+      "right_norm": 0.021297071150296276
+    },
+    "lit:bad_probability_mass": {
+      "dot": 0.00011010753414809034,
+      "cosine": 0.04684608084375015,
+      "left_norm": 0.11036310012031704,
+      "right_norm": 0.021297071150296276
+    },
+    "lit:good_probability_mass": {
+      "dot": 1.5221017423933516e-05,
+      "cosine": 0.01891080229939461,
+      "left_norm": 0.03779321576509027,
+      "right_norm": 0.021297071150296276
+    },
+    "lit:loss": {
+      "dot": 0.014059580054495063,
+      "cosine": 0.019449416117729077,
+      "left_norm": 33.94266196670921,
+      "right_norm": 0.021297071150296276
+    },
+    "lit:mean_margin": {
+      "dot": 0.051847963376476194,
+      "cosine": 0.035048521871322534,
+      "left_norm": 69.46117299892437,
+      "right_norm": 0.021297071150296276
+    },
+    "sym:bad_probability_mass": {
+      "dot": 0.0118708959698052,
+      "cosine": 0.04695963663576053,
+      "left_norm": 11.8696766854718,
+      "right_norm": 0.021297071150296276
+    },
+    "sym:good_probability_mass": {
+      "dot": 0.011882606221052416,
+      "cosine": 0.0469923136356199,
+      "left_norm": 11.873123786183816,
+      "right_norm": 0.021297071150296276
+    },
+    "sym:loss": {
+      "dot": 0.051470592241012136,
+      "cosine": 0.05017725735541999,
+      "left_norm": 48.16508867206165,
+      "right_norm": 0.021297071150296276
+    },
+    "sym:mean_margin": {
+      "dot": 0.07175241209902058,
+      "cosine": 0.060565545142878784,
+      "left_norm": 55.62768579066426,
+      "right_norm": 0.021297071150296276
+    }
+  },
+  "train_regressions": [],
+  "held_out_alignment": {
+    "bind_declaration_root@ad51c5f1712d:bad_probability_mass": {
+      "dot": 0.001517126233982308,
+      "cosine": 0.019816800729850526,
+      "left_norm": 3.594746703150223,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_declaration_root@ad51c5f1712d:good_probability_mass": {
+      "dot": 0.0015171269403693214,
+      "cosine": 0.01981681712232231,
+      "left_norm": 3.594745403319206,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_declaration_root@ad51c5f1712d:loss": {
+      "dot": 0.0,
+      "cosine": 0.0,
+      "left_norm": 0.0,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_declaration_root@ad51c5f1712d:mean_margin": {
+      "dot": 0.06279137276237584,
+      "cosine": 0.020014373291410464,
+      "left_norm": 147.31199138076062,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_children@510d19b6c905:bad_probability_mass": {
+      "dot": 0.04176705848787243,
+      "cosine": 0.25220825910967154,
+      "left_norm": 7.775972289336414,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_children@510d19b6c905:good_probability_mass": {
+      "dot": 0.041600709173959416,
+      "cosine": 0.2534454148941724,
+      "left_norm": 7.707196177979777,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_children@510d19b6c905:loss": {
+      "dot": 0.4877063718892365,
+      "cosine": 0.2537411692394641,
+      "left_norm": 90.25008323565052,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_children@510d19b6c905:mean_margin": {
+      "dot": 0.6493840352288451,
+      "cosine": 0.23445522269674976,
+      "left_norm": 130.05343106725525,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_children@66630098bf1c:bad_probability_mass": {
+      "dot": 0.06683366562946899,
+      "cosine": 0.11233472788290766,
+      "left_norm": 27.935816037246024,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_children@66630098bf1c:good_probability_mass": {
+      "dot": 0.06684107282443646,
+      "cosine": 0.1123799912732576,
+      "left_norm": 27.927659191184965,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_children@66630098bf1c:loss": {
+      "dot": 0.08535280375647969,
+      "cosine": 0.0829040040522292,
+      "left_norm": 48.34175396038297,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_children@66630098bf1c:mean_margin": {
+      "dot": 0.04396257239254252,
+      "cosine": 0.01728531533715089,
+      "left_norm": 119.42243107733795,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_children@7b0fbba7c06c:bad_probability_mass": {
+      "dot": -0.00108617958994537,
+      "cosine": -0.09740119448687286,
+      "left_norm": 0.523621503208378,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_children@7b0fbba7c06c:good_probability_mass": {
+      "dot": -0.0010678049214752645,
+      "cosine": -0.09729311527765144,
+      "left_norm": 0.5153353410536956,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_children@7b0fbba7c06c:loss": {
+      "dot": -0.45074599155103856,
+      "cosine": -0.17875396703891439,
+      "left_norm": 118.40125417057695,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_children@7b0fbba7c06c:mean_margin": {
+      "dot": -0.454284631511789,
+      "cosine": -0.1792736489729601,
+      "left_norm": 118.98486021966198,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_root_children@8525528e7a62:bad_probability_mass": {
+      "dot": 0.09398329054676581,
+      "cosine": 0.255795463395844,
+      "left_norm": 17.25193951326012,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_root_children@8525528e7a62:good_probability_mass": {
+      "dot": 0.09410024695497612,
+      "cosine": 0.2558899227069015,
+      "left_norm": 17.267032174791005,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_root_children@8525528e7a62:loss": {
+      "dot": 0.11201126806223047,
+      "cosine": 0.255455209755732,
+      "left_norm": 20.58861193698355,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_root_children@8525528e7a62:mean_margin": {
+      "dot": 0.700846857153741,
+      "cosine": 0.2618659379722747,
+      "left_norm": 125.6678649933308,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_root_children@be6391825f43:bad_probability_mass": {
+      "dot": -0.003804852387240217,
+      "cosine": -0.06057113883521989,
+      "left_norm": 2.949525747183429,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_root_children@be6391825f43:good_probability_mass": {
+      "dot": -0.0038104836082670794,
+      "cosine": -0.060549465274831536,
+      "left_norm": 2.9549484153268253,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_root_children@be6391825f43:loss": {
+      "dot": 0.0,
+      "cosine": 0.0,
+      "left_norm": 0.0,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_root_children@be6391825f43:mean_margin": {
+      "dot": -0.12455104507385495,
+      "cosine": -0.04939203486682388,
+      "left_norm": 118.40514539018164,
+      "right_norm": 0.021297071150296276
+    },
+    "component_bound@0f79aa2eb60b:bad_probability_mass": {
+      "dot": -8.476491926507447e-05,
+      "cosine": -0.0016531781989004787,
+      "left_norm": 2.407557129852311,
+      "right_norm": 0.021297071150296276
+    },
+    "component_bound@0f79aa2eb60b:good_probability_mass": {
+      "dot": 0.00023568701251753464,
+      "cosine": 0.02507689003316905,
+      "left_norm": 0.44130829854456155,
+      "right_norm": 0.021297071150296276
+    },
+    "component_bound@0f79aa2eb60b:loss": {
+      "dot": 0.04970915796731879,
+      "cosine": 0.02053689444430441,
+      "left_norm": 113.65322243283939,
+      "right_norm": 0.021297071150296276
+    },
+    "component_bound@0f79aa2eb60b:mean_margin": {
+      "dot": 0.04969619998925535,
+      "cosine": 0.020390758374946538,
+      "left_norm": 114.43791103838691,
+      "right_norm": 0.021297071150296276
+    },
+    "component_bound@4715f0cbdb3b:bad_probability_mass": {
+      "dot": -0.004119488283472212,
+      "cosine": -0.008198909422144402,
+      "left_norm": 23.592138093118585,
+      "right_norm": 0.021297071150296276
+    },
+    "component_bound@4715f0cbdb3b:good_probability_mass": {
+      "dot": -0.002599341859895964,
+      "cosine": -0.004813716426757609,
+      "left_norm": 25.354965052073226,
+      "right_norm": 0.021297071150296276
+    },
+    "component_bound@4715f0cbdb3b:loss": {
+      "dot": 0.007713359736578559,
+      "cosine": 0.00822799927243191,
+      "left_norm": 44.01791425399092,
+      "right_norm": 0.021297071150296276
+    },
+    "component_bound@4715f0cbdb3b:mean_margin": {
+      "dot": -0.07546396834751982,
+      "cosine": -0.0341879489132331,
+      "left_norm": 103.64460748126378,
+      "right_norm": 0.021297071150296276
+    },
+    "component_bound@4a699c4abfde:bad_probability_mass": {
+      "dot": 0.00536802373177872,
+      "cosine": 0.018435063882357775,
+      "left_norm": 13.672561907025854,
+      "right_norm": 0.021297071150296276
+    },
+    "component_bound@4a699c4abfde:good_probability_mass": {
+      "dot": 1.178718960497512e-06,
+      "cosine": 0.05900199157249664,
+      "left_norm": 0.0009380450941556129,
+      "right_norm": 0.021297071150296276
+    },
+    "component_bound@4a699c4abfde:loss": {
+      "dot": 0.195853714543541,
+      "cosine": 0.0761397095790103,
+      "left_norm": 120.78158235852942,
+      "right_norm": 0.021297071150296276
+    },
+    "component_bound@4a699c4abfde:mean_margin": {
+      "dot": 0.19585500699905525,
+      "cosine": 0.07613978030925046,
+      "left_norm": 120.78226720548919,
+      "right_norm": 0.021297071150296276
+    },
+    "component_bound@b3203e6c9753:bad_probability_mass": {
+      "dot": -0.003843825419091881,
+      "cosine": -0.04682955077751996,
+      "left_norm": 3.8541071175985806,
+      "right_norm": 0.021297071150296276
+    },
+    "component_bound@b3203e6c9753:good_probability_mass": {
+      "dot": 2.2597481227961547e-06,
+      "cosine": 0.03188228875613922,
+      "left_norm": 0.0033280562777171225,
+      "right_norm": 0.021297071150296276
+    },
+    "component_bound@b3203e6c9753:loss": {
+      "dot": 0.09803712219587599,
+      "cosine": 0.04065206881638046,
+      "left_norm": 113.23691277201294,
+      "right_norm": 0.021297071150296276
+    },
+    "component_bound@b3203e6c9753:mean_margin": {
+      "dot": 0.09803956232800028,
+      "cosine": 0.04065230048004686,
+      "left_norm": 113.23908591028388,
+      "right_norm": 0.021297071150296276
+    },
+    "component_root@e978356aebaa:bad_probability_mass": {
+      "dot": 0.005703794709926451,
+      "cosine": 0.021486993987121342,
+      "left_norm": 12.464312874442452,
+      "right_norm": 0.021297071150296276
+    },
+    "component_root@e978356aebaa:good_probability_mass": {
+      "dot": 0.005730815334738489,
+      "cosine": 0.021473317391090367,
+      "left_norm": 12.531336415307408,
+      "right_norm": 0.021297071150296276
+    },
+    "component_root@e978356aebaa:loss": {
+      "dot": 0.0026953181218061393,
+      "cosine": 0.019048413615341913,
+      "left_norm": 6.644026205398998,
+      "right_norm": 0.021297071150296276
+    },
+    "component_root@e978356aebaa:mean_margin": {
+      "dot": 0.12861897755649365,
+      "cosine": 0.05651598121704874,
+      "left_norm": 106.8596872913919,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_comma@bba1934e88a1:bad_probability_mass": {
+      "dot": 0.00679288837399983,
+      "cosine": 0.010003263765587954,
+      "left_norm": 31.885473875252654,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_comma@bba1934e88a1:good_probability_mass": {
+      "dot": 0.006792889062964379,
+      "cosine": 0.010003264860611955,
+      "left_norm": 31.885473618820647,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_comma@bba1934e88a1:loss": {
+      "dot": 0.04057126638253905,
+      "cosine": 0.014450385575448074,
+      "left_norm": 131.83151611863263,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_comma@bba1934e88a1:mean_margin": {
+      "dot": 0.021659173584761333,
+      "cosine": 0.006610309491324186,
+      "left_norm": 153.85095864961886,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rpar@b02b0d02ba39:bad_probability_mass": {
+      "dot": 0.015221634441943861,
+      "cosine": 0.046184607374030455,
+      "left_norm": 15.475480775860492,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rpar@b02b0d02ba39:good_probability_mass": {
+      "dot": 0.01522163152721629,
+      "cosine": 0.04618460027441116,
+      "left_norm": 15.47548019145645,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rpar@b02b0d02ba39:loss": {
+      "dot": 0.05060712666366119,
+      "cosine": 0.04618460162532631,
+      "left_norm": 51.45109194909457,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rpar@b02b0d02ba39:mean_margin": {
+      "dot": 0.1438122866839425,
+      "cosine": 0.046184601713894734,
+      "left_norm": 146.21061615633127,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_empty@89f9c5808827:bad_probability_mass": {
+      "dot": 0.019169979142315455,
+      "cosine": 0.09183021198500434,
+      "left_norm": 9.802033256879133,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_empty@89f9c5808827:good_probability_mass": {
+      "dot": 0.0004904441704922371,
+      "cosine": 0.005284584920149508,
+      "left_norm": 4.357714903712249,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_empty@89f9c5808827:loss": {
+      "dot": 0.0988527195503601,
+      "cosine": 0.038974865862682784,
+      "left_norm": 119.09241736546535,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_empty@89f9c5808827:mean_margin": {
+      "dot": 0.10848133781777712,
+      "cosine": 0.04090281667713869,
+      "left_norm": 124.53227868163535,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_populated@3cf40154baf5:bad_probability_mass": {
+      "dot": 0.0008783745535043139,
+      "cosine": 0.006867667855154793,
+      "left_norm": 6.005519493596948,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_populated@3cf40154baf5:good_probability_mass": {
+      "dot": 0.0008783775270657115,
+      "cosine": 0.006867695567314884,
+      "left_norm": 6.005515590847172,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_populated@3cf40154baf5:loss": {
+      "dot": 0.002474233947114886,
+      "cosine": 0.0007540504265271238,
+      "left_norm": 154.07085387822463,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_populated@3cf40154baf5:mean_margin": {
+      "dot": 0.002612812445874191,
+      "cosine": 0.0007916084313429779,
+      "left_norm": 154.9808159732885,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_root_populated@0ab5ce0081dd:bad_probability_mass": {
+      "dot": 0.011250352768595318,
+      "cosine": 0.024186734373737622,
+      "left_norm": 21.840824222270395,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_root_populated@0ab5ce0081dd:good_probability_mass": {
+      "dot": 0.011250353520919631,
+      "cosine": 0.024186737715786263,
+      "left_norm": 21.840822664894215,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_root_populated@0ab5ce0081dd:loss": {
+      "dot": 0.04902764544669258,
+      "cosine": 0.031531991446621305,
+      "left_norm": 73.00788290134129,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_root_populated@0ab5ce0081dd:mean_margin": {
+      "dot": 0.06609897431906296,
+      "cosine": 0.02023047234238255,
+      "left_norm": 153.41535021430192,
+      "right_norm": 0.021297071150296276
+    },
+    "lit@5bd36d78f798:bad_probability_mass": {
+      "dot": 3.2687110006310267e-06,
+      "cosine": 0.019090258087191794,
+      "left_norm": 0.008039792553431362,
+      "right_norm": 0.021297071150296276
+    },
+    "lit@5bd36d78f798:good_probability_mass": {
+      "dot": 3.268217050547806e-06,
+      "cosine": 0.019090399919599613,
+      "left_norm": 0.008038517900350085,
+      "right_norm": 0.021297071150296276
+    },
+    "lit@5bd36d78f798:loss": {
+      "dot": 0.0,
+      "cosine": 0.0,
+      "left_norm": 0.0,
+      "right_norm": 0.021297071150296276
+    },
+    "lit@5bd36d78f798:mean_margin": {
+      "dot": 0.06230635668441666,
+      "cosine": 0.02005742858845385,
+      "left_norm": 145.86033964916032,
+      "right_norm": 0.021297071150296276
+    },
+    "lit@8bf8d5927353:bad_probability_mass": {
+      "dot": -1.3145991843347468e-07,
+      "cosine": -0.022555948551113755,
+      "left_norm": 0.0002736606671338747,
+      "right_norm": 0.021297071150296276
+    },
+    "lit@8bf8d5927353:good_probability_mass": {
+      "dot": -1.3116836577153537e-07,
+      "cosine": -0.022735804989766246,
+      "left_norm": 0.0002708936908235624,
+      "right_norm": 0.021297071150296276
+    },
+    "lit@8bf8d5927353:loss": {
+      "dot": -0.07033768625986338,
+      "cosine": -0.02273579998866574,
+      "left_norm": 145.26398582528452,
+      "right_norm": 0.021297071150296276
+    },
+    "lit@8bf8d5927353:mean_margin": {
+      "dot": -0.0703377399802392,
+      "cosine": -0.022735812037592486,
+      "left_norm": 145.2640197873481,
+      "right_norm": 0.021297071150296276
+    },
+    "sym@0521601293c3:bad_probability_mass": {
+      "dot": 0.023428674342080454,
+      "cosine": 0.052507480585768,
+      "left_norm": 20.95109149510813,
+      "right_norm": 0.021297071150296276
+    },
+    "sym@0521601293c3:good_probability_mass": {
+      "dot": 0.02342867416063697,
+      "cosine": 0.05250747838252312,
+      "left_norm": 20.951092211972494,
+      "right_norm": 0.021297071150296276
+    },
+    "sym@0521601293c3:loss": {
+      "dot": 0.09508501543891133,
+      "cosine": 0.052507487324651596,
+      "left_norm": 85.02976197090949,
+      "right_norm": 0.021297071150296276
+    },
+    "sym@0521601293c3:mean_margin": {
+      "dot": 0.1714776220239755,
+      "cosine": 0.05250748087296566,
+      "left_norm": 153.34385873828938,
+      "right_norm": 0.021297071150296276
+    },
+    "sym@1754e52fdc5a:bad_probability_mass": {
+      "dot": 0.013575108190036628,
+      "cosine": 0.023080424944807915,
+      "left_norm": 27.617198223455507,
+      "right_norm": 0.021297071150296276
+    },
+    "sym@1754e52fdc5a:good_probability_mass": {
+      "dot": 0.013575829016318213,
+      "cosine": 0.02307253005067589,
+      "left_norm": 27.628115150169997,
+      "right_norm": 0.021297071150296276
+    },
+    "sym@1754e52fdc5a:loss": {
+      "dot": 0.024174493617231296,
+      "cosine": 0.022349918685259543,
+      "left_norm": 50.78805210640293,
+      "right_norm": 0.021297071150296276
+    },
+    "sym@1754e52fdc5a:mean_margin": {
+      "dot": 0.117444755419282,
+      "cosine": 0.047126306365810514,
+      "left_norm": 117.01737290061266,
+      "right_norm": 0.021297071150296276
+    },
+    "sym@d429a0a6a58d:bad_probability_mass": {
+      "dot": -6.048206757439344e-07,
+      "cosine": -0.011925888693637057,
+      "left_norm": 0.0023813103281130924,
+      "right_norm": 0.021297071150296276
+    },
+    "sym@d429a0a6a58d:good_probability_mass": {
+      "dot": 6.2237629039780436e-15,
+      "cosine": 0.00955301808777557,
+      "left_norm": 3.0590921380299786e-11,
+      "right_norm": 0.021297071150296276
+    },
+    "sym@d429a0a6a58d:loss": {
+      "dot": 0.13262372646775766,
+      "cosine": 0.05042940116566674,
+      "left_norm": 123.48594616186055,
+      "right_norm": 0.021297071150296276
+    },
+    "sym@d429a0a6a58d:mean_margin": {
+      "dot": 0.13262372646775766,
+      "cosine": 0.05042940116566674,
+      "left_norm": 123.48594616186055,
+      "right_norm": 0.021297071150296276
+    }
+  },
+  "held_out_regressions": [
+    "bind_reference_bound_children@7b0fbba7c06c:bad_probability_mass",
+    "bind_reference_bound_children@7b0fbba7c06c:good_probability_mass",
+    "bind_reference_bound_children@7b0fbba7c06c:loss",
+    "bind_reference_bound_children@7b0fbba7c06c:mean_margin",
+    "bind_reference_root_children@be6391825f43:bad_probability_mass",
+    "bind_reference_root_children@be6391825f43:good_probability_mass",
+    "bind_reference_root_children@be6391825f43:mean_margin",
+    "component_bound@0f79aa2eb60b:bad_probability_mass",
+    "component_bound@4715f0cbdb3b:bad_probability_mass",
+    "component_bound@4715f0cbdb3b:good_probability_mass",
+    "component_bound@4715f0cbdb3b:mean_margin",
+    "component_bound@b3203e6c9753:bad_probability_mass",
+    "lit@8bf8d5927353:bad_probability_mass",
+    "lit@8bf8d5927353:good_probability_mass",
+    "lit@8bf8d5927353:loss",
+    "lit@8bf8d5927353:mean_margin",
+    "sym@d429a0a6a58d:bad_probability_mass"
+  ],
+  "checkpoint": "/home/codex/repos/slm-training/outputs/autoresearch/e228-candidate-margin-alignment/runs/e228-candidate-margin-matched/checkpoints/last.pt",
+  "checkpoint_sha": "7a9be4a665e216d7f7e73883ad74ad972bbf30846896d0c29188d6482f5b093a",
+  "events_path": "src/slm_training/resources/data/preference/e261_gold_ast_counterfactual_v1/events.jsonl"
+}
