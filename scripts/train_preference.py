@@ -86,6 +86,17 @@ def main(argv: list[str] | None = None) -> int:
     events.add_argument("--manifest-out", type=Path, default=None)
     events.add_argument("--evidence-out", type=Path, default=None)
     events.add_argument("--dataset-id", default=None)
+    events.add_argument(
+        "--min-train-signature-support",
+        type=int,
+        default=1,
+        help="Manifest target for train support of every held-out signature.",
+    )
+    events.add_argument(
+        "--allow-sparse-signatures",
+        action="store_true",
+        help="Diagnostic-only override for a counterfactual corpus that misses support.",
+    )
     events.add_argument("--source-record-manifest", type=Path, default=None)
     events.add_argument(
         "--evidence-kind",
@@ -136,10 +147,8 @@ def main(argv: list[str] | None = None) -> int:
             if args.evidence_kind == "all"
             or event.evidence_kind == args.evidence_kind
         ]
-        count = write_decision_events(args.out, mined)
         evidence = counterfactual_evidence_from_traces(traces)
-        if args.evidence_out is not None:
-            write_counterfactual_evidence(args.evidence_out, evidence)
+        manifest = None
         if args.manifest_out is not None:
             if not args.dataset_id:
                 parser.error("--manifest-out requires --dataset-id")
@@ -160,7 +169,16 @@ def main(argv: list[str] | None = None) -> int:
                 source_record_fingerprint=source_fingerprint,
                 evidence_path=(args.evidence_out.name if args.evidence_out else None),
                 evidence_rows=evidence,
+                min_train_signature_support=args.min_train_signature_support,
+                require_signature_support=(
+                    args.evidence_kind == "counterfactual"
+                    and not args.allow_sparse_signatures
+                ),
             )
+        count = write_decision_events(args.out, mined)
+        if args.evidence_out is not None:
+            write_counterfactual_evidence(args.evidence_out, evidence)
+        if manifest is not None:
             write_decision_event_manifest(args.manifest_out, manifest)
         print(
             json.dumps(
