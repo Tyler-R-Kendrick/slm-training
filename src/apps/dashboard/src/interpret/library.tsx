@@ -26,11 +26,16 @@ import {
   ThresholdEditor as ThresholdEditorC,
   JobLauncher as JobLauncherC,
   LogStream as LogStreamC,
+  HeroStrip as HeroStripC,
+  JobLines,
+  JobsBadgeView,
+  DispatchLines,
   Empty,
   fmt,
   pct,
   type GatePayload,
 } from "../components";
+import { EMPTY_HERO } from "../hero";
 import { getJSON, postJSON } from "../api";
 import { useCaps, jobDef } from "../caps";
 import { Playground } from "../pages/Playground";
@@ -289,39 +294,14 @@ const Hint = defineComponent({
 });
 
 // Live jobs list. data = overview_jobs Query result {rows:[{id,job,status}], execution}.
-// Mirrors the compiled Live-jobs card: read-only + empty states, then job lines
-// with a status pill and a working cancel chip when the control plane is online.
+// Delegates to the shared JobLines view so compiled and interpreted match verbatim.
 const JobList = defineComponent({
   name: "JobList",
   description: "Active-job lines from the overview_jobs query, with read-only / empty states and a cancel chip.",
   props: z.object({ data: any }),
   component: ({ props }: any) => {
     const d = props.data || {};
-    const execution = !!d.execution;
-    const rows = rowsOf(d);
-    if (!execution) return <Empty>Execution disabled — serve locally to run jobs.</Empty>;
-    if (!rows.length) return <Empty>No jobs running.</Empty>;
-    return (
-      <>
-        {rows.map((j: any, i: number) => (
-          <div
-            className="job-line"
-            key={j.id ?? i}
-            style={{ display: "flex", justifyContent: "space-between", padding: "0.35rem 0", borderBottom: "1px solid var(--border)" }}
-          >
-            <span className="mono">{j.job}</span>
-            <span style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-              <StatusPillC value={j.status} />
-              {j.id != null && (
-                <button className="chip" onClick={() => postJSON(`/api/jobs/${j.id}/cancel`, {})}>
-                  cancel
-                </button>
-              )}
-            </span>
-          </div>
-        ))}
-      </>
-    );
+    return <JobLines data={{ rows: rowsOf(d), execution: !!d.execution }} />;
   },
 });
 
@@ -331,55 +311,35 @@ const JobsBadge = defineComponent({
   name: "JobsBadge",
   description: "Header badge for the Live-jobs card, driven by the overview_jobs query's execution flag.",
   props: z.object({ data: any }),
-  component: ({ props }: any) =>
-    props.data && props.data.execution ? (
-      <StatusPillC value="running" label="control plane" />
-    ) : (
-      <span className="prov prov-committed">read-only</span>
-    ),
+  component: ({ props }: any) => <JobsBadgeView data={{ execution: !!props.data?.execution }} />,
 });
 
 // Remote dispatches list. data = dispatches Query result {rows:[{id,job,status,url}],
-// remotes:[{run_id,url}]}. Mirrors the compiled Remote-dispatches card.
+// remotes:[{run_id,url}]}. Delegates to the shared DispatchLines view.
 const DispatchList = defineComponent({
   name: "DispatchList",
   description: "Remote (HF Jobs / pod) dispatch rows + durable checkpoints from the dispatches query.",
   props: z.object({ data: any }),
   component: ({ props }: any) => {
     const d = props.data || {};
-    const jobs = rowsOf(d);
-    const remotes = Array.isArray(d.remotes) ? d.remotes : [];
-    if (!jobs.length && !remotes.length) {
-      return <Empty>No remote (HF Jobs / pod) trains dispatched — launch one from Experiments.</Empty>;
-    }
     return (
-      <>
-        {jobs.map((j: any, i: number) => (
-          <div key={j.id ?? `j${i}`} className="dispatch-row">
-            <span className="mono">{j.job}</span>
-            <span style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
-              <StatusPillC value={j.status} />
-              {j.url && (
-                <a className="runlink" href={j.url} target="_blank" rel="noreferrer">
-                  view remote ↗
-                </a>
-              )}
-            </span>
-          </div>
-        ))}
-        {remotes.map((r: any, i: number) => (
-          <div key={r.run_id ?? `r${i}`} className="dispatch-row">
-            <span className="mono">{r.run_id}</span>
-            {r.url && (
-              <a className="runlink" href={r.url} target="_blank" rel="noreferrer">
-                durable checkpoint ↗
-              </a>
-            )}
-          </div>
-        ))}
-      </>
+      <DispatchLines
+        data={{ rows: rowsOf(d), remotes: Array.isArray(d.remotes) ? d.remotes : [] }}
+        navigate={(to) => navRef.current?.(to)}
+      />
     );
   },
+});
+
+// Mission-control hero strip. data = overview_hero Query result (HeroData shape);
+// renders the shared HeroStrip so both modes derive the verdict identically.
+const HeroStrip = defineComponent({
+  name: "HeroStrip",
+  description: "Ship-status hero: gate verdict for the current reference, provenance, deployment, in-flight counts, CTAs.",
+  props: z.object({ data: any }),
+  component: ({ props }: any) => (
+    <HeroStripC hero={props.data && props.data.reference !== undefined ? props.data : EMPTY_HERO} navigate={(to) => navRef.current?.(to)} />
+  ),
 });
 
 // ---- Interactive / stateful widgets --------------------------------------
@@ -523,7 +483,11 @@ function CheckpointConsoleImpl() {
           </select>
         }
       >
-        {!selected && <Empty>No experiment with suite metrics available.</Empty>}
+        {!selected && (
+          <Empty ctaLabel="run a smoke suite →" onCta={() => navRef.current?.("/smoke")}>
+            No experiment with suite metrics available.
+          </Empty>
+        )}
         {selected && (
           <div className="two-col">
             <div>
@@ -635,6 +599,7 @@ const CUSTOM = [
   JobList,
   JobsBadge,
   DispatchList,
+  HeroStrip,
   ChipTabs,
   JobConsole,
   DataBrowser,

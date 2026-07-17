@@ -72,21 +72,29 @@
       "components": [
         "Badge",
         "DataTable",
+        "DispatchList",
         "Grid",
+        "HeroStrip",
         "Hint",
+        "JobList",
+        "JobsBadge",
         "NavChip",
         "Page",
         "PageHead",
         "Panel",
         "Pill",
         "ProvenanceBadge",
+        "Row",
         "StatTile"
       ],
       "file": "overview.openui",
       "queries": [
-        "overview_insights"
+        "dispatches",
+        "overview_hero",
+        "overview_insights",
+        "overview_jobs"
       ],
-      "sha256": "16c00b31fe2dc9a63decddfb27a5ec10b22803f98f8f641cd9e57e0a4a6b77cc",
+      "sha256": "b04d4c0a795d7ea76eda855273b485b9be8bfb56b839d2200d4ed4af4e4b2755",
       "status": "ok"
     },
     "playground": {
@@ -118,7 +126,7 @@
         "smoke_perf",
         "smoke_quality"
       ],
-      "sha256": "88ce5a04a013c03de920abddfb72ba616dec7da00a3cda2b34f2faafaa1018bf",
+      "sha256": "ff3b3b763ad4f7d5ef85c3b5462ead3524a6796bd50b2d3a29ed93cdec06bd4c",
       "status": "ok"
     }
   }
