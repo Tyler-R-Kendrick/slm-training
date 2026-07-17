@@ -1467,6 +1467,16 @@ The next diagnostic must normalize objective gradients before combining them;
 do not change duration or add token-specific cases. Full evidence:
 [iter-e274-legal-conditioned-metric-feasibility-20260717.md](iter-e274-legal-conditioned-metric-feasibility-20260717.md).
 
+E275 unit-normalized every nonzero legal-conditioned metric gradient before
+minimum-norm combination, then checked the direction against the original
+unscaled objectives. All 55 active train objectives align positively and the
+single-metric weight collapse disappears. Held-out regressions fall from eleven
+to three: component-bound good/bad mass and literal loss. The direction remains
+unsafe, so no training ran. The next diagnostic must split kind-level averages
+by grammar/AST decision signatures derived from legal/good/bad sets, not add
+literal or component special cases. Full evidence:
+[iter-e275-normalized-metric-geometry-20260717.md](iter-e275-normalized-metric-geometry-20260717.md).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
