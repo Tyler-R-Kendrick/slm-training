@@ -267,3 +267,13 @@ python -m scripts.run_perf_matrix --only C5,C6,C7,C8 --list
 
 No C5-C8 latency or quality result exists. Reported speedups in CFGzip,
 XGrammar-2, WGrammar, TruncProof, or related papers are external evidence only.
+
+## E289 exact choice-state cache (2026-07-17)
+
+The production choice decoder now caches exact legal sets by immutable symbolic
+state. Against E288's byte-identical checkpoint, standalone p50 improved 2.65×
+to 5.86× across all five suites while parse stayed 1.0 and dead ends stayed
+zero. Hit rates ranged from 57.6% to 76.4%; cold-state p95 remains 5.9–8.7
+seconds. Meaningful parse, fidelity, reward, and AgentV remain zero, so the
+result is non-promotable. Full recipe and suite telemetry:
+[E289](iter-e289-choice-state-cache-20260717.md).

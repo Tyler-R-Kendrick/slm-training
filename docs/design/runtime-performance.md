@@ -166,6 +166,17 @@ python -m scripts.train_model --device auto --compile --amp --grad-accum 2 \
 This environment's measured accel bench is recorded under `outputs/runs/accel_bench.json`.
 Fused NEON/Cactus kernels remain external (`slm_training.runtime.cactus`).
 
+### Exact choice-state cache (E289, 2026-07-17)
+
+Choice-native constrained decoding now memoizes exact legal-token sets by
+immutable production-state signature and remaining positions. On the same
+checkpoint bytes as E288, all five suites retained parse 1.0 with zero dead
+ends. Standalone p50 latency improved 2.65×–5.86×; cache hit rates were
+57.6%–76.4%. Cold-state p95 remained about 5.9–8.7 seconds, so direct
+pushdown-frame candidate construction is the next target. Semantic gates remain
+zero and AgentV is 0/5; this is a runtime improvement, not a ship result.
+See [E289 results](iter-e289-choice-state-cache-20260717.md).
+
 ### Restricted semantic projection
 
 TwoTower's denoiser now exposes a decode-only `encode` / `project` split. The

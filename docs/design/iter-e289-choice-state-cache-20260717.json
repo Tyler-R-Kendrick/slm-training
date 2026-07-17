@@ -1,0 +1,118 @@
+{
+  "iteration": "E289",
+  "date": "2026-07-17",
+  "hypothesis": "Memoizing exact legal-token sets by immutable choice-decoder state will remove repeated exhaustive legality checks without changing constrained-decoding behavior.",
+  "implementation": {
+    "cache_key": "production-state signature plus remaining positions",
+    "approximate": false,
+    "telemetry": [
+      "choice_state_cache_hits",
+      "choice_state_cache_misses"
+    ]
+  },
+  "training": {
+    "run_id": "capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0",
+    "device": "cpu",
+    "steps_completed": 107,
+    "target_tokens": 5022,
+    "stop_reason": "token_budget",
+    "max_wall_minutes": 5.0,
+    "elapsed_seconds": 29.7357,
+    "checkpoint_sha256": "7cad143139f91369b4780878f634e7fa24434d7ccb8f9813a00f5412f3051c99",
+    "same_sha_as_e288": true,
+    "promotable": false
+  },
+  "evaluation": {
+    "run_id": "e289-choice-state-cache-r2",
+    "agentv": {
+      "total": 5,
+      "passed": 0,
+      "execution_errors": 0
+    },
+    "suites": {
+      "smoke": {
+        "n": 3,
+        "parse": 1.0,
+        "meaningful": 0.0,
+        "fidelity": 0.0,
+        "structural": 0.3094333,
+        "reward": 0.0,
+        "p50_ms": 2337.35,
+        "p95_ms": 8663.68,
+        "cache_hits_mean": 31.667,
+        "cache_misses_mean": 23.333,
+        "cache_hit_rate": 0.5757636,
+        "dead_ends": 0,
+        "e288_p50_speedup": 2.65068
+      },
+      "held_out": {
+        "n": 5,
+        "parse": 1.0,
+        "meaningful": 0.0,
+        "fidelity": 0.0,
+        "structural": 0.2514,
+        "reward": 0.0,
+        "p50_ms": 1195.79,
+        "p95_ms": 5913.91,
+        "cache_hits_mean": 42.0,
+        "cache_misses_mean": 13.0,
+        "cache_hit_rate": 0.7636364,
+        "dead_ends": 0,
+        "e288_p50_speedup": 5.02325
+      },
+      "adversarial": {
+        "n": 4,
+        "parse": 1.0,
+        "meaningful": 0.0,
+        "fidelity": 0.0,
+        "structural": 0.2905,
+        "reward": 0.0,
+        "p50_ms": 1417.53,
+        "p95_ms": 5899.93,
+        "cache_hits_mean": 39.5,
+        "cache_misses_mean": 15.5,
+        "cache_hit_rate": 0.7181818,
+        "dead_ends": 0,
+        "e288_p50_speedup": 4.33997
+      },
+      "ood": {
+        "n": 4,
+        "parse": 1.0,
+        "meaningful": 0.0,
+        "fidelity": 0.0,
+        "structural": 0.236875,
+        "reward": 0.0,
+        "p50_ms": 1168.92,
+        "p95_ms": 6166.74,
+        "cache_hits_mean": 37.5,
+        "cache_misses_mean": 17.5,
+        "cache_hit_rate": 0.6818182,
+        "dead_ends": 0,
+        "e288_p50_speedup": 5.13385
+      },
+      "rico_held": {
+        "n": 3,
+        "parse": 1.0,
+        "meaningful": 0.0,
+        "fidelity": 0.0,
+        "structural": 0.0900667,
+        "reward": 0.0,
+        "p50_ms": 1036.8,
+        "p95_ms": 5996.36,
+        "cache_hits_mean": 36.0,
+        "cache_misses_mean": 19.0,
+        "cache_hit_rate": 0.6545455,
+        "dead_ends": 0,
+        "e288_p50_speedup": 5.85804
+      }
+    }
+  },
+  "verdict": {
+    "behavior_preserved": true,
+    "p50_improved": true,
+    "p95_cold_path_still_slow": true,
+    "semantic_gates_passed": false,
+    "ship": false,
+    "next": "Construct candidates directly from pushdown-frame categories and prove bit-exact equivalence against exhaustive legality."
+  }
+}
