@@ -421,6 +421,12 @@ def compile_commands(
                     str(knobs.slot_component_decode_weight),
                 ]
             )
+        if knobs.slot_component_prompt_context is not None:
+            train.append(
+                "--slot-component-prompt-context"
+                if knobs.slot_component_prompt_context
+                else "--no-slot-component-prompt-context"
+            )
         if knobs.component_plan_attention_pool:
             train.append("--component-plan-attention-pool")
         if knobs.component_plan_token_pool:

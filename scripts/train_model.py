@@ -406,6 +406,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Bias compiler-legal bound components for the next unfilled slot.",
     )
     parser.add_argument(
+        "--slot-component-prompt-context",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Add pooled whole-prompt context to each slot-component prediction.",
+    )
+    parser.add_argument(
         "--component-edge-loss-weight",
         type=float,
         default=0.0,
@@ -798,6 +804,7 @@ def main(argv: list[str] | None = None) -> int:
             component_plan_token_pool=args.component_plan_token_pool,
             slot_component_loss_weight=args.slot_component_loss_weight,
             slot_component_decode_weight=args.slot_component_decode_weight,
+            slot_component_prompt_context=args.slot_component_prompt_context,
             component_edge_loss_weight=args.component_edge_loss_weight,
             component_edge_alignment_loss_weight=(
                 args.component_edge_alignment_loss_weight

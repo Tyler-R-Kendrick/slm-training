@@ -214,6 +214,7 @@ class TwoTowerConfig:
     component_plan_token_pool: bool = False
     slot_component_loss_weight: float = 0.0
     slot_component_decode_weight: float = 0.0
+    slot_component_prompt_context: bool = True
     component_edge_loss_weight: float = 0.0
     component_edge_alignment_loss_weight: float = 0.0
     component_edge_decode_weight: float = 0.0
@@ -1277,6 +1278,8 @@ class TwoTowerModel(nn.Module):
         assert self.slot_component_head is not None
         slot_context, slot_pad = self._encode_context(slots)
         slot_pooled = self._pool_context(slot_context, slot_pad)
+        if not bool(getattr(self.config, "slot_component_prompt_context", True)):
+            return self.slot_component_head(slot_pooled)
         prompt_pooled = self._pool_context(context, pad_mask).index_select(
             0, context_rows
         )

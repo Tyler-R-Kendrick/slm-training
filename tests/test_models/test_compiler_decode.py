@@ -883,6 +883,26 @@ def test_slot_component_supervises_each_visible_slot_owner() -> None:
     assert 0 <= model.last_training_metrics["slot_component_accuracy"] <= 1
 
 
+def test_slot_component_can_exclude_whole_prompt_context() -> None:
+    model = _model(
+        slot_component_loss_weight=1.0,
+        slot_component_prompt_context=False,
+    )
+    model.eval()
+    first, first_pad = model._encode_context(["email field"])
+    second, second_pad = model._encode_context(["unrelated dashboard"])
+
+    with torch.no_grad():
+        first_logits = model._slot_component_logits(
+            [":form.email"], first, first_pad, torch.tensor([0])
+        )
+        second_logits = model._slot_component_logits(
+            [":form.email"], second, second_pad, torch.tensor([0])
+        )
+
+    assert torch.equal(first_logits, second_logits)
+
+
 def test_slot_component_bias_uses_next_unfilled_slot() -> None:
     from types import MethodType
 
