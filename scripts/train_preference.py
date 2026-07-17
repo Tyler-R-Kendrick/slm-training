@@ -147,10 +147,8 @@ def main(argv: list[str] | None = None) -> int:
             if args.evidence_kind == "all"
             or event.evidence_kind == args.evidence_kind
         ]
-        count = write_decision_events(args.out, mined)
         evidence = counterfactual_evidence_from_traces(traces)
-        if args.evidence_out is not None:
-            write_counterfactual_evidence(args.evidence_out, evidence)
+        manifest = None
         if args.manifest_out is not None:
             if not args.dataset_id:
                 parser.error("--manifest-out requires --dataset-id")
@@ -177,6 +175,10 @@ def main(argv: list[str] | None = None) -> int:
                     and not args.allow_sparse_signatures
                 ),
             )
+        count = write_decision_events(args.out, mined)
+        if args.evidence_out is not None:
+            write_counterfactual_evidence(args.evidence_out, evidence)
+        if manifest is not None:
             write_decision_event_manifest(args.manifest_out, manifest)
         print(
             json.dumps(

@@ -106,6 +106,22 @@ def decision_signature(event: DecisionEventV1) -> str:
     return f"{event.decision_kind}@{_sha(decision_signature_metadata(event))[:12]}"
 
 
+def decision_support_signature_metadata(
+    event: DecisionEventV1,
+) -> dict[str, object]:
+    """Return grammar state and judged positive, excluding sampled negatives."""
+    return {
+        "decision_kind": event.decision_kind,
+        "legal_token_ids": list(event.legal_token_ids),
+        "good_token_ids": list(event.good_token_ids),
+    }
+
+
+def decision_support_signature(event: DecisionEventV1) -> str:
+    metadata = decision_support_signature_metadata(event)
+    return f"{event.decision_kind}@{_sha(metadata)[:12]}"
+
+
 def decision_signature_support(
     events: Iterable[DecisionEventV1], *, min_train_support: int = 1
 ) -> dict[str, Any]:
@@ -114,12 +130,15 @@ def decision_signature_support(
     rows = list(events)
     counts = {
         split: Counter(
-            decision_signature(event) for event in rows if event.split == split
+            decision_support_signature(event)
+            for event in rows
+            if event.split == split
         )
         for split in ("train", "held_out")
     }
     metadata = {
-        decision_signature(event): decision_signature_metadata(event) for event in rows
+        decision_support_signature(event): decision_support_signature_metadata(event)
+        for event in rows
     }
     held = set(counts["held_out"])
     covered = sorted(
@@ -263,9 +282,16 @@ def events_from_trace(trace: dict[str, Any]) -> list[DecisionEventV1]:
 def load_trace_rows(path: Path | str) -> list[dict[str, Any]]:
     path = Path(path)
     if path.is_dir():
-        path = path / "traces.jsonl"
-    with path.open("r", encoding="utf-8") as handle:
-        return [json.loads(line) for line in handle if line.strip()]
+        paths = sorted(path.rglob("traces.jsonl"))
+        if not paths:
+            raise FileNotFoundError(f"no sharded trace stores under {path}")
+    else:
+        paths = [path]
+    rows: list[dict[str, Any]] = []
+    for trace_path in paths:
+        with trace_path.open("r", encoding="utf-8") as handle:
+            rows.extend(json.loads(line) for line in handle if line.strip())
+    return rows
 
 
 def load_decision_events(path: Path | str) -> list[DecisionEventV1]:
@@ -424,6 +450,22 @@ def decision_event_manifest(
     if source_record_fingerprint is not None:
         payload["source_record_fingerprint"] = source_record_fingerprint
     evidence = sorted(evidence_rows, key=lambda row: row["evidence_id"])
+    candidates = [
+        candidate
+        for row in evidence
+        for candidate in (row.get("probe") or {}).get("candidates") or ()
+    ]
+    payload["qualified_judge_summary"] = {
+        "probes": len(evidence),
+        "candidates": len(candidates),
+        "independent_judge_passed": sum(
+            (candidate.get("judge") or {}).get("ok") is True
+            for candidate in candidates
+        ),
+        "fully_verified": sum(
+            candidate.get("verified") is True for candidate in candidates
+        ),
+    }
     if evidence_path is not None:
         payload["judge_evidence"] = evidence_path
         payload["judge_evidence_count"] = len(evidence)

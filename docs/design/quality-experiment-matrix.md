@@ -1550,6 +1550,17 @@ minimum support per grammar-derived signature, followed by this same profile;
 do not add token/component special cases. Full evidence:
 [iter-e276-decision-signature-alignment-20260717.md](iter-e276-decision-signature-alignment-20260717.md).
 
+E277 added signature-diverse gold-AST state sampling, sharded trace ingestion,
+manifested support coverage, and fail-closed admission before corpus writes.
+The completed 65-record synthesis produced 362 independently backed events,
+but only 14/23 held-out support signatures have train coverage. The strict
+builder rejected the corpus before publication; more event volume alone did
+not repair support. Seven missing states exist in train gold ASTs and two
+require new leakage-safe judged records. Target grammar-state metadata next;
+do not train this candidate or hard-code component names in the compiler. Full
+evidence:
+[iter-e277-signature-coverage-synthesis-20260717.md](iter-e277-signature-coverage-synthesis-20260717.md).
+
 ## V16 C3 corpus-mined macro tokens (fixture-run 2026-07-17)
 
 Track C3 (Stitch [arXiv:2211.16605](https://arxiv.org/abs/2211.16605) /
