@@ -1808,6 +1808,53 @@ ship. Target component-type selection next. See
 [results](iter-e301-choice-connected-close-20260717.md) and
 [JSON](choice-connected-close-results-iter-e301-20260717.json).
 
+## E302 trained component plan composition (CPU scratch eval-only, 2026-07-17)
+
+The E293 trained plan head at decode weight 1 is composed with E301. The
+quality board remains byte-for-byte equal at seven failures and AgentV 2/5.
+Telemetry proves the head applies, but it changes zero choices outside RICO and
+four RICO choices without aggregate metric impact.
+
+**Verdict:** no gain at weight 1; test scale once, then improve targets rather
+than sweeping if rankings remain collapsed. See
+[results](iter-e302-choice-plan-connected-20260717.md) and
+[JSON](choice-plan-connected-results-iter-e302-20260717.json).
+
+## E303 component-plan scale check (CPU scratch eval-only, 2026-07-17)
+
+Raising plan decode weight 1→4 remains quality-identical at seven failures and
+AgentV 2/5. It changes seven RICO choices versus four at weight 1, but still
+changes none on smoke/held/adversarial/OOD.
+
+**Verdict:** stop scaling; improve ranking targets or coverage. See
+[results](iter-e303-choice-plan-scale-20260717.md) and
+[JSON](choice-plan-scale-results-iter-e303-20260717.json).
+
+## E304 20k-token choice plan (CPU scratch, 2026-07-17)
+
+The matched E293 recipe is extended 5k→20k target tokens (418 steps). Complete
+weighted NLL improves 7.5550→5.1647 and final-20 plan averages reach root
+accuracy 0.875 / bound top-k recall 0.459. Honest E301-policy evaluation,
+however, regresses from 7→10 failures and AgentV 2/5→1/5. Limited RICO reaches
+meaningful 1.0, while held/OOD remain zero and smoke/adversarial each gain a
+parse failure.
+
+**Verdict:** reject duration scaling; NLL is not ship quality. See
+[results](iter-e304-choice-plan-20k-20260717.md) and
+[JSON](choice-plan-20k-results-iter-e304-20260717.json).
+
+## E305 slot-safe connected content (CPU scratch eval-only, 2026-07-17)
+
+Required string arguments now consume request slots and bound components close
+after required arguments. Against E304, parse returns to 1.0, failures fall
+10→7, and AgentV recovers 1/5→2/5. Limited RICO retains meaningful 1.0,
+recall 0.5556, and reward 0.8515. Held/OOD remain zero.
+
+**Verdict:** keep the generalized repair; stop decoder forcing and improve
+component-type supervision/data. See
+[results](iter-e305-choice-slot-safe-content-20260717.md) and
+[JSON](choice-slot-safe-results-iter-e305-20260717.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

@@ -316,6 +316,12 @@ def _effective_evaluation_policy(
             else str(value("compiler_decode_mode"))
         ),
         "decode_min_content": int(value("decode_min_content") or 0),
+        "component_inventory_decode_weight": float(
+            value("component_inventory_decode_weight") or 0.0
+        ),
+        "component_plan_decode_weight": float(
+            value("component_plan_decode_weight") or 0.0
+        ),
         "schema_in_context": bool(value("schema_in_context")),
         "slot_contract_in_context": bool(value("slot_contract_in_context")),
         "slot_contract_constrained_decode": bool(

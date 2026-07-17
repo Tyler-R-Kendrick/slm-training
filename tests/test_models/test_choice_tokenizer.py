@@ -343,8 +343,22 @@ def test_twotower_choice_wiring(tmp_path: Path) -> None:
         [":hero.title", ":hero.body"],
     )
     assert initial == {model.tokenizer.token_to_id["="]}
-    for token in ("=", "+TextContent", "@0", "-"):
+    for token in ("=", "+TextContent"):
         assert state.advance_id(model.tokenizer.token_to_id[token])
+    slot = model._choice_min_content_legal_ids(
+        state,
+        state.allowed_ids(61),
+        [":hero.title", ":hero.body"],
+    )
+    assert slot == {model.tokenizer.token_to_id["@0"]}
+    assert state.advance_id(model.tokenizer.token_to_id["@0"])
+    bound_close = model._choice_min_content_legal_ids(
+        state,
+        state.allowed_ids(60),
+        [":hero.title", ":hero.body"],
+    )
+    assert bound_close == {model.tokenizer.token_to_id["-"]}
+    assert state.advance_id(model.tokenizer.token_to_id["-"])
     root_marker = model._choice_min_content_legal_ids(
         state,
         state.allowed_ids(59),

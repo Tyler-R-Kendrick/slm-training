@@ -4062,6 +4062,28 @@ class TwoTowerModel(nn.Module):
             return content or legal
         if (
             state.mode == "v05"
+            and state.current_marker == "="
+            and len(state.frames) == 1
+            and state.frames[0].kind == "component"
+        ):
+            frame = state.frames[0]
+            if frame.arg_index >= frame.required_args:
+                component_close_id = tok.token_to_id["-"]
+                return (
+                    {component_close_id}
+                    if component_close_id in legal
+                    else legal
+                )
+            schema = frame.schemas[frame.arg_index]
+            if state._schema_accepts(schema, "string") and slot_contract:
+                slot_index = min(
+                    state.bound_component_count,
+                    len(slot_contract) - 1,
+                )
+                slot_id = tok.token_to_id[f"@{slot_index}"]
+                return {slot_id} if slot_id in legal else legal
+        if (
+            state.mode == "v05"
             and state.current_marker == "r="
             and not state.frames
         ):

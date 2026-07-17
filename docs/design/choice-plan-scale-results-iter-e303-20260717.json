@@ -1,0 +1,22 @@
+{
+  "iteration": "E303",
+  "date": "2026-07-17",
+  "run_id": "e303-choice-plan4-connected-close-honest-r1",
+  "checkpoint_sha256": "78b70c81bd16395e22718baa91b50427c205f38136269c6248b85562cdec5308",
+  "evaluation_policy": {
+    "decode_min_content": -1,
+    "component_inventory_decode_weight": 0.0,
+    "component_plan_decode_weight": 4.0
+  },
+  "quality_equal_to": [
+    "e301-choice-connected-content-close-honest-r1",
+    "e302-choice-plan-connected-close-honest-r1"
+  ],
+  "gate_failure_count": 7,
+  "agentv": {"total": 5, "passed": 2, "failed": 3, "execution_errors": 0},
+  "component_plan_telemetry": {
+    "applications_by_suite": {"smoke": 3, "held_out": 5, "adversarial": 4, "ood": 4, "rico_held": 40},
+    "choice_changes_by_suite": {"smoke": 0, "held_out": 0, "adversarial": 0, "ood": 0, "rico_held": 7}
+  },
+  "verdict": "Weight 4 is quality-identical to weight 1 and the no-plan E301 board; stop scaling and improve training targets or coverage."
+}

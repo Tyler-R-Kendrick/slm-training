@@ -1,0 +1,23 @@
+{
+  "iteration": "E305",
+  "date": "2026-07-17",
+  "run_id": "e305-choice-slot-safe-connected-honest-r1",
+  "checkpoint_sha256": "2081378f2a3f11530a2193e79a0b98d4f487c2631c3f814018117bbd2677d420",
+  "policy": {
+    "decode_min_content": -1,
+    "component_plan_decode_weight": 1.0,
+    "required_string_arguments": "force request slot when legal",
+    "optional_arguments": "close after required arguments",
+    "allow_unconstrained_fallback": false
+  },
+  "suites": {
+    "smoke": {"n": 3, "parse": 1.0, "meaningful": 0.3333333333333333, "fidelity": 0.5277777777777778, "structure": 0.46416666666666667, "component_recall": 0.16666666666666666, "reward": 0.24966666666666668, "latency_ms_p50": 162.49},
+    "held_out": {"n": 5, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.27999999999999997, "structure": 0.33686, "component_recall": 0.0, "reward": 0.0, "latency_ms_p50": 144.63},
+    "adversarial": {"n": 4, "parse": 1.0, "meaningful": 0.5, "fidelity": 0.5416666666666666, "structure": 0.474375, "component_recall": 0.375, "reward": 0.4245, "latency_ms_p50": 144.56},
+    "ood": {"n": 4, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.2583333333333333, "structure": 0.375, "component_recall": 0.0, "reward": 0.0, "latency_ms_p50": 148.73},
+    "rico_held": {"n": 3, "parse": 1.0, "meaningful": 1.0, "fidelity": 0.5416666666666666, "structure": 0.3397333333333334, "component_recall": 0.5555555555555555, "reward": 0.8515, "latency_ms_p50": 329.14}
+  },
+  "gate_failure_count": 7,
+  "agentv": {"total": 5, "passed": 2, "failed": 3, "execution_errors": 0},
+  "verdict": "Slot-safe required arguments restore parse and preserve the 20k checkpoint's RICO gain, but held-out and OOD remain zero; no promotion."
+}

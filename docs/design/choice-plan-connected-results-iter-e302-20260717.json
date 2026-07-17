@@ -1,0 +1,15 @@
+{
+  "iteration": "E302",
+  "date": "2026-07-17",
+  "run_id": "e302-choice-plan-connected-close-honest-r1",
+  "checkpoint_sha256": "78b70c81bd16395e22718baa91b50427c205f38136269c6248b85562cdec5308",
+  "component_plan_decode_weight": 1.0,
+  "quality_equal_to": "e301-choice-connected-content-close-honest-r1",
+  "gate_failure_count": 7,
+  "agentv": {"total": 5, "passed": 2, "failed": 3, "execution_errors": 0},
+  "component_plan_telemetry": {
+    "applications_by_suite": {"smoke": 3, "held_out": 5, "adversarial": 4, "ood": 4, "rico_held": 35},
+    "choice_changes_by_suite": {"smoke": 0, "held_out": 0, "adversarial": 0, "ood": 0, "rico_held": 4}
+  },
+  "verdict": "Trained plan at weight 1 is active but yields no aggregate quality gain over E301; no promotion."
+}

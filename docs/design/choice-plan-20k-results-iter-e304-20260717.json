@@ -1,0 +1,55 @@
+{
+  "iteration": "E304",
+  "date": "2026-07-17",
+  "train_run_id": "e304-choice-plan-20k-r1",
+  "evaluation_run_id": "e304-choice-plan-20k-honest-r1",
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "design_md_context": false,
+    "output_tokenizer": "choice",
+    "d_model": 64,
+    "n_heads": 2,
+    "context_layers": 1,
+    "denoiser_layers": 2,
+    "batch_size": 2,
+    "seed": 0,
+    "steps": 418,
+    "seen_target_tokens": 20003,
+    "elapsed_wall_seconds": 124.08073151700046,
+    "component_plan_loss_weight": 1.0,
+    "component_plan_decode_weight": 1.0
+  },
+  "checkpoint": {
+    "path": "outputs/runs/e304-choice-plan-20k-r1/checkpoints/last.pt",
+    "sha256": "2081378f2a3f11530a2193e79a0b98d4f487c2631c3f814018117bbd2677d420",
+    "bucket": null,
+    "sync_reason": "scratch diagnostic with explicit --no-sync-checkpoints"
+  },
+  "loss_suite": {
+    "complete": true,
+    "weighted_nll": 5.164741930222244,
+    "binding_nll": 5.551413578912616,
+    "structural_nll": 4.138738503058751,
+    "repair_nll": 5.6201695958773294,
+    "schema_ood_nll": 5.326328095849955,
+    "broad_nll": 5.416500972308122,
+    "agentv": {"total": 1, "passed": 1, "execution_errors": 0}
+  },
+  "plan_last_20_mean": {
+    "loss": 2.3686,
+    "root_accuracy": 0.875,
+    "bound_topk_recall": 0.4592,
+    "bound_count_mae": 0.3448
+  },
+  "suites": {
+    "smoke": {"n": 3, "parse": 0.6666666666666666, "meaningful": 0.3333333333333333, "fidelity": 0.38888888888888884, "structure": 0.3458333333333334, "component_recall": 0.16666666666666666, "reward": 0.283},
+    "held_out": {"n": 5, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.5599999999999999, "structure": 0.33686, "component_recall": 0.0, "reward": 0.0},
+    "adversarial": {"n": 4, "parse": 0.75, "meaningful": 0.25, "fidelity": 0.5833333333333333, "structure": 0.224375, "component_recall": 0.125, "reward": 0.21225},
+    "ood": {"n": 4, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.5166666666666666, "structure": 0.375, "component_recall": 0.0, "reward": 0.0},
+    "rico_held": {"n": 3, "parse": 1.0, "meaningful": 1.0, "fidelity": 0.25, "structure": 0.34600000000000003, "component_recall": 0.5555555555555555, "reward": 0.7639999999999999}
+  },
+  "gate_failure_count": 10,
+  "agentv": {"total": 5, "passed": 1, "failed": 4, "execution_errors": 0},
+  "verdict": "NLL improves strongly and RICO passes, but global ship quality regresses versus E301; reject duration scaling and do not promote."
+}
