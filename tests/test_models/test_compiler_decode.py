@@ -172,6 +172,67 @@ def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> 
     assert tokenizer.eos_id in complete.candidate_ids
 
 
+def test_min_content_contract_withholds_eos_until_components_emitted() -> None:
+    # A4: an empty/underfull but grammatically complete layout must not be a
+    # legal completion while the grammar still offers a way to add content.
+    from slm_training.dsl.grammar.fastpath.compiler_draft import (
+        emitted_component_count,
+    )
+
+    tokenizer = DSLNativeTokenizer.build()
+    contract = [":hero.title"]
+    prefix = [
+        tokenizer.bos_id,
+        *tokenizer.encode('root=TextContent(":hero.title")', add_special=False),
+    ]
+    assert emitted_component_count(tokenizer, prefix) == 1
+
+    # Contract off (default): EOS admitted for the complete document.
+    off = build_completion_forest(tokenizer, prefix, slot_contract=contract)
+    assert tokenizer.eos_id in off.candidate_ids
+
+    # Floor met (1 component >= 1): EOS still admitted.
+    met = build_completion_forest(
+        tokenizer, prefix, slot_contract=contract, min_content=1
+    )
+    assert tokenizer.eos_id in met.candidate_ids
+
+    # Floor unmet (1 component < 2): EOS withheld, but a non-EOS continuation
+    # remains so decode is forced to add content rather than dead-end.
+    unmet = build_completion_forest(
+        tokenizer, prefix, slot_contract=contract, min_content=2
+    )
+    assert tokenizer.eos_id not in unmet.candidate_ids
+    assert unmet.paths
+    assert any(path.token_ids for path in unmet.paths)
+
+
+def test_effective_min_content_auto_from_inventory() -> None:
+    # decode_min_content == -1 derives the floor from distinct slot roots.
+    model = TwoTowerModel.from_records(
+        [
+            ExampleRecord(
+                id="a",
+                prompt="Hero",
+                openui='root = Stack([t])\nt = TextContent(":hero.title")',
+                placeholders=[":hero.title"],
+            )
+        ],
+        config=TwoTowerConfig(
+            d_model=32, n_heads=4, context_layers=1, denoiser_layers=1, seed=0,
+            decode_min_content=-1,
+        ),
+        device="cpu",
+    )
+    assert model._effective_min_content([":hero.title", ":hero.body"]) == 1
+    assert model._effective_min_content([":a.x", ":b.y"]) == 2
+    assert model._effective_min_content(None) == 0
+    model.config.decode_min_content = 3
+    assert model._effective_min_content(None) == 3
+    model.config.decode_min_content = 0
+    assert model._effective_min_content([":a.x", ":b.y"]) == 0
+
+
 def test_complete_ast_uses_lark_when_official_parser_is_unavailable(
     monkeypatch,
 ) -> None:

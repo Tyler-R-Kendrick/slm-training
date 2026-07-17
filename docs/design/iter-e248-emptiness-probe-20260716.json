@@ -1,0 +1,303 @@
+{
+  "checkpoint": "src/slm_training/resources/checkpoints/playground_demo/last.pt",
+  "test_dir": "src/slm_training/resources/data/eval/remediated",
+  "grammar_dsl": "openui",
+  "by_suite": {
+    "smoke": {
+      "suite_version": "v1",
+      "n_records": 3,
+      "n_skipped": 0,
+      "empty_program": "root = Stack([])",
+      "empty_preferred_fraction_total": 1.0,
+      "empty_preferred_fraction_per_token": 1.0,
+      "mean_margin_total": 930.1268819173177,
+      "mean_margin_per_token": 7.849110716973082,
+      "verdict": "content_modeling_failure",
+      "per_record": [
+        {
+          "id": "smoke_hero_01",
+          "split": "smoke",
+          "pop_tokens": 100,
+          "empty_tokens": 10,
+          "pop_nll_total": 1632.0260009765625,
+          "empty_nll_total": 63.435359954833984,
+          "pop_nll_per_token": 16.320260009765626,
+          "empty_nll_per_token": 6.343535995483398,
+          "margin_total": 1568.5906410217285,
+          "margin_per_token": 9.976724014282228,
+          "empty_preferred_total": true,
+          "empty_preferred_per_token": true
+        },
+        {
+          "id": "smoke_button_01",
+          "split": "smoke",
+          "pop_tokens": 41,
+          "empty_tokens": 10,
+          "pop_nll_total": 432.2109069824219,
+          "empty_nll_total": 50.76496505737305,
+          "pop_nll_per_token": 10.541729438595656,
+          "empty_nll_per_token": 5.076496505737305,
+          "margin_total": 381.4459419250488,
+          "margin_per_token": 5.465232932858351,
+          "empty_preferred_total": true,
+          "empty_preferred_per_token": true
+        },
+        {
+          "id": "smoke_callout_01",
+          "split": "smoke",
+          "pop_tokens": 62,
+          "empty_tokens": 10,
+          "pop_nll_total": 905.3076782226562,
+          "empty_nll_total": 64.96361541748047,
+          "pop_nll_per_token": 14.601736745526713,
+          "empty_nll_per_token": 6.496361541748047,
+          "margin_total": 840.3440628051758,
+          "margin_per_token": 8.105375203778667,
+          "empty_preferred_total": true,
+          "empty_preferred_per_token": true
+        }
+      ]
+    },
+    "held_out": {
+      "suite_version": "v1",
+      "n_records": 5,
+      "n_skipped": 0,
+      "empty_program": "root = Stack([])",
+      "empty_preferred_fraction_total": 1.0,
+      "empty_preferred_fraction_per_token": 1.0,
+      "mean_margin_total": 1975.5318687438964,
+      "mean_margin_per_token": 12.137904768817531,
+      "verdict": "content_modeling_failure",
+      "per_record": [
+        {
+          "id": "held_out_form_01",
+          "split": "held_out",
+          "pop_tokens": 107,
+          "empty_tokens": 10,
+          "pop_nll_total": 2650.69580078125,
+          "empty_nll_total": 51.62936019897461,
+          "pop_nll_per_token": 24.772857951226637,
+          "empty_nll_per_token": 5.162936019897461,
+          "margin_total": 2599.0664405822754,
+          "margin_per_token": 19.609921931329175,
+          "empty_preferred_total": true,
+          "empty_preferred_per_token": true
+        },
+        {
+          "id": "held_out_dual_card_01",
+          "split": "held_out",
+          "pop_tokens": 161,
+          "empty_tokens": 10,
+          "pop_nll_total": 3018.34033203125,
+          "empty_nll_total": 51.59834671020508,
+          "pop_nll_per_token": 18.74745547845497,
+          "empty_nll_per_token": 5.159834671020508,
+          "margin_total": 2966.741985321045,
+          "margin_per_token": 13.587620807434462,
+          "empty_preferred_total": true,
+          "empty_preferred_per_token": true
+        },
+        {
+          "id": "held_out_input_01",
+          "split": "held_out",
+          "pop_tokens": 54,
+          "empty_tokens": 10,
+          "pop_nll_total": 626.4662475585938,
+          "empty_nll_total": 51.61130142211914,
+          "pop_nll_per_token": 11.601226806640625,
+          "empty_nll_per_token": 5.161130142211914,
+          "margin_total": 574.8549461364746,
+          "margin_per_token": 6.440096664428711,
+          "empty_preferred_total": true,
+          "empty_preferred_per_token": true
+        },
+        {
+          "id": "held_out_tabs_01",
+          "split": "held_out",
+          "pop_tokens": 155,
+          "empty_tokens": 10,
+          "pop_nll_total": 2628.9990234375,
+          "empty_nll_total": 63.804168701171875,
+          "pop_nll_per_token": 16.96128402217742,
+          "empty_nll_per_token": 6.3804168701171875,
+          "margin_total": 2565.194854736328,
+          "margin_per_token": 10.580867152060232,
+          "empty_preferred_total": true,
+          "empty_preferred_per_token": true
+        },
+        {
+          "id": "held_out_settings_01",
+          "split": "held_out",
+          "pop_tokens": 73,
+          "empty_tokens": 10,
+          "pop_nll_total": 1236.470458984375,
+          "empty_nll_total": 64.66934204101562,
+          "pop_nll_per_token": 16.937951492936644,
+          "empty_nll_per_token": 6.4669342041015625,
+          "margin_total": 1171.8011169433594,
+          "margin_per_token": 10.471017288835082,
+          "empty_preferred_total": true,
+          "empty_preferred_per_token": true
+        }
+      ]
+    },
+    "adversarial": {
+      "suite_version": "v1",
+      "n_records": 4,
+      "n_skipped": 0,
+      "empty_program": "root = Stack([])",
+      "empty_preferred_fraction_total": 1.0,
+      "empty_preferred_fraction_per_token": 1.0,
+      "mean_margin_total": 1094.5238599777222,
+      "mean_margin_per_token": 7.610001721107264,
+      "verdict": "content_modeling_failure",
+      "per_record": [
+        {
+          "id": "adv_empty_prompt_01",
+          "split": "adversarial",
+          "pop_tokens": 27,
+          "empty_tokens": 10,
+          "pop_nll_total": 194.5240936279297,
+          "empty_nll_total": 53.590389251708984,
+          "pop_nll_per_token": 7.204596060293692,
+          "empty_nll_per_token": 5.359038925170898,
+          "margin_total": 140.9337043762207,
+          "margin_per_token": 1.8455571351227942,
+          "empty_preferred_total": true,
+          "empty_preferred_per_token": true
+        },
+        {
+          "id": "adv_dual_card_01",
+          "split": "adversarial",
+          "pop_tokens": 111,
+          "empty_tokens": 10,
+          "pop_nll_total": 2041.16015625,
+          "empty_nll_total": 63.33347702026367,
+          "pop_nll_per_token": 18.388830236486488,
+          "empty_nll_per_token": 6.3333477020263675,
+          "margin_total": 1977.8266792297363,
+          "margin_per_token": 12.05548253446012,
+          "empty_preferred_total": true,
+          "empty_preferred_per_token": true
+        },
+        {
+          "id": "adv_deep_nest_01",
+          "split": "adversarial",
+          "pop_tokens": 96,
+          "empty_tokens": 10,
+          "pop_nll_total": 1441.7359619140625,
+          "empty_nll_total": 60.58163833618164,
+          "pop_nll_per_token": 15.018082936604818,
+          "empty_nll_per_token": 6.058163833618164,
+          "margin_total": 1381.1543235778809,
+          "margin_per_token": 8.959919102986653,
+          "empty_preferred_total": true,
+          "empty_preferred_per_token": true
+        },
+        {
+          "id": "adv_many_buttons_01",
+          "split": "adversarial",
+          "pop_tokens": 68,
+          "empty_tokens": 10,
+          "pop_nll_total": 940.7333984375,
+          "empty_nll_total": 62.55266571044922,
+          "pop_nll_per_token": 13.834314682904411,
+          "empty_nll_per_token": 6.255266571044922,
+          "margin_total": 878.1807327270508,
+          "margin_per_token": 7.579048111859489,
+          "empty_preferred_total": true,
+          "empty_preferred_per_token": true
+        }
+      ]
+    },
+    "ood": {
+      "suite_version": "v1",
+      "n_records": 4,
+      "n_skipped": 0,
+      "empty_program": "root = Stack([])",
+      "empty_preferred_fraction_total": 1.0,
+      "empty_preferred_fraction_per_token": 1.0,
+      "mean_margin_total": 1817.2308177947998,
+      "mean_margin_per_token": 12.712144524896292,
+      "verdict": "content_modeling_failure",
+      "per_record": [
+        {
+          "id": "ood_dashboard_01",
+          "split": "ood",
+          "pop_tokens": 144,
+          "empty_tokens": 10,
+          "pop_nll_total": 2513.839111328125,
+          "empty_nll_total": 60.95954513549805,
+          "pop_nll_per_token": 17.457216050889755,
+          "empty_nll_per_token": 6.095954513549804,
+          "margin_total": 2452.879566192627,
+          "margin_per_token": 11.361261537339951,
+          "empty_preferred_total": true,
+          "empty_preferred_per_token": true
+        },
+        {
+          "id": "ood_gallery_01",
+          "split": "ood",
+          "pop_tokens": 114,
+          "empty_tokens": 10,
+          "pop_nll_total": 2242.46142578125,
+          "empty_nll_total": 62.00639343261719,
+          "pop_nll_per_token": 19.670714261239034,
+          "empty_nll_per_token": 6.200639343261718,
+          "margin_total": 2180.455032348633,
+          "margin_per_token": 13.470074917977316,
+          "empty_preferred_total": true,
+          "empty_preferred_per_token": true
+        },
+        {
+          "id": "ood_modal_01",
+          "split": "ood",
+          "pop_tokens": 73,
+          "empty_tokens": 10,
+          "pop_nll_total": 1111.7227783203125,
+          "empty_nll_total": 61.47655487060547,
+          "pop_nll_per_token": 15.229079155072775,
+          "empty_nll_per_token": 6.147655487060547,
+          "margin_total": 1050.246223449707,
+          "margin_per_token": 9.081423668012228,
+          "empty_preferred_total": true,
+          "empty_preferred_per_token": true
+        },
+        {
+          "id": "ood_auth_01",
+          "split": "ood",
+          "pop_tokens": 74,
+          "empty_tokens": 10,
+          "pop_nll_total": 1637.2318115234375,
+          "empty_nll_total": 51.88936233520508,
+          "pop_nll_per_token": 22.12475420977618,
+          "empty_nll_per_token": 5.188936233520508,
+          "margin_total": 1585.3424491882324,
+          "margin_per_token": 16.935817976255674,
+          "empty_preferred_total": true,
+          "empty_preferred_per_token": true
+        }
+      ]
+    }
+  },
+  "honesty": "diagnostic_not_ship",
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "spec": "outputs/probe/agentv/openui-a1-emptiness-probe.eval.jsonl",
+    "summary": {
+      "total": 4,
+      "passed": 0,
+      "failed": 4,
+      "executionErrors": 0,
+      "durationMs": 31,
+      "meanScore": 0.5
+    },
+    "artifacts": {
+      "runDir": "/home/user/slm-training/outputs/probe/agentv/openui-a1-emptiness-probe",
+      "benchmarkPath": "/home/user/slm-training/outputs/probe/agentv/openui-a1-emptiness-probe/benchmark.json",
+      "indexPath": "/home/user/slm-training/outputs/probe/agentv/openui-a1-emptiness-probe/index.jsonl",
+      "timingPath": "/home/user/slm-training/outputs/probe/agentv/openui-a1-emptiness-probe/timing.json"
+    }
+  }
+}

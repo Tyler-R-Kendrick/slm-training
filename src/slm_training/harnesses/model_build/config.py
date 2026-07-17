@@ -36,6 +36,9 @@ class ModelBuildConfig:
     # False for scratch POC; True by default when context_backend=hf (see factory)
     freeze_context: bool = True
     local_files_only: bool = False
+    # scratch | hf — B4: adapt the pretrained hf_model_name causal LM into the
+    # (trainable) masked denoiser instead of the from-scratch DenoiserTower.
+    denoiser_backend: str = "scratch"
     grammar_constrained: bool = True
     # Grammar / DSL backend id: openui | openui-lark | openui-langcore | toy-layout
     grammar_dsl: str = "openui"
@@ -114,6 +117,7 @@ class ModelBuildConfig:
     compiler_search_stagnation_patience: int = 2
     compiler_search_backtrack_limit: int = 8
     compiler_search_local_nogoods: bool = False
+    decode_min_content: int = 0  # A4: 0 off | >0 floor | -1 auto-from-inventory
     fastpath_aux_weight: float = 0.0
     fastpath_gate_threshold: float = 0.5
     # V4 critic / remask levers
@@ -162,6 +166,8 @@ class ModelBuildConfig:
     # V5: lexer-native output tokenizer + Stage-2 levers
     output_tokenizer: str = "compositional"  # compositional | lexer
     use_symbol_table: bool = True
+    # C1: absolute | relative (De Bruijn <BINDDEF>/<BINDREL_±k> binder channel)
+    bind_encoding: str = "absolute"
     factorized_embeddings: bool = False
     mask_pattern: str = "random"  # random | mixed | diffusion
     statement_mask_prob: float = 0.35

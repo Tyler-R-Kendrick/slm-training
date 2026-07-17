@@ -510,6 +510,39 @@ The code substrate is `data/progspec/scopes.py`, the conditional heads in
 `models/grammar_diffusion.py`, and planned matrix rows X16-X21. No X16-X21 run,
 quality gain, or ship status is recorded by this implementation-only change.
 
+## DSL diffusion research program (Tracks A-G)
+
+The 2026-07-16 prior-art sweep for the DSL diffusion SLM research program
+(emptiness wall, semantic-choice representation, binding/macros, tree-native
+denoising, capacity measurement, DSL packs, self-improvement — Linear project
+"DSL Diffusion SLM Research Program", SLM-20..47) is committed in
+[`dsl-program-sources.json`](../../src/slm_training/resources/autoresearch/dsl-program-sources.json)
+(24 new sources; entries already tracked in the V8/ScopeDiff manifests or on
+this page are deliberately omitted). All 24 are labeled **Adjacent** — lineage
+only, nothing implemented, no result inherited.
+
+| Research cluster | Program use | Boundary |
+| --- | --- | --- |
+| Sketch-then-fill and externalized grammar (Coarse-to-Fine [1805.04793](https://arxiv.org/abs/1805.04793), Grammar Prompting [2305.19234](https://arxiv.org/abs/2305.19234), CodeFusion [2310.17680](https://arxiv.org/abs/2310.17680), TinyStories [2305.07759](https://arxiv.org/abs/2305.07759)) | Track B choice-sequence codec + Track E capacity study; direct collisions to differentiate against | **Adjacent** — AR/prompting/large-model settings; no tiny-diffusion externalized-grammar result exists to inherit |
+| Span/macro abstraction (Gist tokens [2304.08467](https://arxiv.org/abs/2304.08467), DyVo [2410.07722](https://arxiv.org/abs/2410.07722), DreamCoder [2006.08381](https://arxiv.org/abs/2006.08381), LILO [2310.19791](https://arxiv.org/abs/2310.19791), Stitch [2211.16605](https://arxiv.org/abs/2211.16605)) | Track C macro tokens and dynamic pseudo-embeddings | **Adjacent** — learned/lossy or lambda-calculus settings; our expansion is deterministic and grammar-coupled |
+| Binding theory (Smolensky TPR, binding-problem survey [2012.05208](https://arxiv.org/abs/2012.05208), code2seq [1808.01400](https://arxiv.org/abs/1808.01400), open-vocab code [2003.07914](https://arxiv.org/abs/2003.07914)) | Track C design rationale: externalize binding to the verifier — implemented as C1 relative binder refs (`bind_encoding=relative`, E257, `iter-e257-c1-relative-bind-20260716.md`) | **Adjacent** — theory/motivation only; no mechanism from these papers is reproduced |
+| **Negative results engaged head-on** (identifier anonymization degradation [2510.03178](https://arxiv.org/abs/2510.03178); context-sensitive alpha-equivalence hashing pitfall [2401.02948](https://arxiv.org/abs/2401.02948); GAD/ASAp constraint-distortion, already in the V8 manifest) | C4 control experiment; C1/D2 canonicalizer design; A1 emptiness diagnosis | These threats are treated as hypotheses to test locally, not results that transfer either way |
+| Diffusion objective/adaptation options (SEDD [2310.16834](https://arxiv.org/abs/2310.16834), DiffuGPT/DiffuLLaMA [2410.17891](https://arxiv.org/abs/2410.17891), constrained discrete diffusion [2503.09790](https://arxiv.org/abs/2503.09790)) | Track B4 adaptation baseline; objective fallback; novelty positioning | **DiffuLLaMA now Adapted** — `models/hf_denoiser.py` reuses only the drop-the-causal-mask move (bidirectional 4D attention mask over a pretrained SmolLM2-135M backbone) as V10 rows E255/E256; no annealing/shift/training recipe reproduced, fixture-grade verdict open (`iter-e255-e256-b4-ar-adaptation-20260716.md`). SEDD/constrained-diffusion remain **Adjacent** — the stack keeps the MDLM-style schedule (Adapted, above) |
+| Reasoning-in-formal-language baselines (PAL [2211.10435](https://arxiv.org/abs/2211.10435), PoT [2211.12588](https://arxiv.org/abs/2211.12588), Sketch-of-Thought [2503.05179](https://arxiv.org/abs/2503.05179)) | Track G4 harness baselines | **Adjacent** — prompting methods on frozen LLMs |
+| Self-improvement loops (AI Scientist [2408.06292](https://arxiv.org/abs/2408.06292), AlphaEvolve, ShinkaEvolve) | Track G2 recipe evolution, gated by frozen benchmarks + honest gates + fail-closed RL readiness | **Adjacent** — only the population/evaluator pattern transfers |
+
+Program-level positioning recorded here for honesty: grammar-constrained
+diffusion decoding is an actively contested niche
+([2508.10111](https://arxiv.org/abs/2508.10111) is already **Adapted** in the
+fastpath; [2503.09790](https://arxiv.org/abs/2503.09790) and successors exist),
+tree-native denoising collides with *Diffusion on Syntax Trees*
+([2405.20519](https://arxiv.org/abs/2405.20519), already cited for X19), and
+"reason in an invented DSL" is crowded (DreamCoder/LILO/PAL). The unclaimed
+combination this program targets is: tiny from-scratch DSL diffusion + template
+markers + deterministic identifier/macro expansion + canonicalizing denoiser,
+measured by bits-per-semantic-decision. No novelty is claimed until matched
+local runs exist.
+
 ## Autoresearch systems and adjacent research directions
 
 ### Swappable deep-research systems

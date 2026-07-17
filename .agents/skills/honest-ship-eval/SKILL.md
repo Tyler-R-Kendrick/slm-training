@@ -38,15 +38,18 @@ Before asserting pass:
 
 ## Default honest bars (CLI `--ship-gates`)
 
-| Suite | parse | structural | placeholder_fidelity | reward |
-| --- | ---: | ---: | ---: | ---: |
-| smoke | ≥ 0.66 | ≥ 0.35 | ≥ 0.25 | ≥ 0.30 |
-| held_out | ≥ 0.40 | ≥ 0.30 | ≥ 0.15 | — |
-| adversarial | ≥ 0.25 | ≥ 0.25 | — | — |
-| ood | ≥ 0.25 | ≥ 0.25 | — | — |
-| rico_held | ≥ 0.10 | ≥ 0.20 | — | — |
+| Suite | parse | structural | component recall | placeholder_fidelity | reward |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| smoke | ≥ 0.66 | ≥ 0.35 | ≥ 0.35 | ≥ 0.25 | ≥ 0.30 |
+| held_out | ≥ 0.40 | ≥ 0.30 | ≥ 0.30 | ≥ 0.15 | — |
+| adversarial | ≥ 0.25 | ≥ 0.25 | ≥ 0.20 | — | — |
+| ood | ≥ 0.25 | ≥ 0.25 | ≥ 0.20 | — | — |
+| rico_held | ≥ 0.10 | ≥ 0.20 | ≥ 0.15 | — | — |
 
-Do not lower these to green a run. Document a fail and change levers instead.
+`component_type_recall` is the semantic-density floor (E2): the trivial/empty
+program scores ~0, so compression/decode changes cannot green gates with
+shorter-but-emptier output. Do not lower these to green a run. Document a fail
+and change levers instead.
 
 ## Preferred honest recipes
 
