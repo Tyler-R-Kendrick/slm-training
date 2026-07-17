@@ -16,6 +16,7 @@ from slm_training.harnesses.preference.local_decisions import (
 from slm_training.harnesses.preference.local_train import (
     _event_logits,
     _event_logits_many,
+    _minimum_norm_gradient,
     _project_conflicting_gradients,
     _guard_strata_regressions,
     evaluate_local_decisions,
@@ -132,11 +133,23 @@ def test_project_conflicting_gradients_removes_negative_component() -> None:
     assert torch.allclose(combined[0], torch.tensor([0.25, 0.75]))
 
 
+def test_minimum_norm_gradient_certifies_common_descent() -> None:
+    combined, report = _minimum_norm_gradient(
+        [[torch.tensor([1.0, 0.0])], [torch.tensor([0.0, 2.0])]]
+    )
+
+    assert combined[0] is not None
+    assert report["converged"] is True
+    assert report["common_descent"] is True
+    assert report["min_task_dot"] > 0
+    assert torch.allclose(combined[0], torch.tensor([0.8, 0.4]), atol=1e-6)
+
+
 def test_projection_requires_stratified_guard() -> None:
-    with pytest.raises(ValueError, match="requires the decision-kind guard"):
+    with pytest.raises(ValueError, match="require the decision-kind guard"):
         train_local_decisions(
             _model(), [_event()], objective="ce_margin", steps=1,
-            project_by_decision_kind=True,
+            gradient_combination="pcgrad",
         )
 
 
@@ -169,10 +182,10 @@ def test_train_projects_all_decision_kinds_before_guarding() -> None:
         guarded_updates=True,
         guard_backtrack_steps=0,
         guard_by_decision_kind=True,
-        project_by_decision_kind=True,
+        gradient_combination="pcgrad",
     )
 
-    assert summary["project_by_decision_kind"] is True
+    assert summary["gradient_combination"] == "pcgrad"
     assert summary["gradient_projection"]["task_count"] == 2
     assert summary["gradient_projection"]["ordered_pair_count"] == 2
     assert summary["decision_kind_steps"] == {
