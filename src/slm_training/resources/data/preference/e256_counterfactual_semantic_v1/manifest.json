@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "kind": "decision_event_corpus",
+  "dataset_id": "e256_counterfactual_semantic_v1",
+  "immutable": true,
+  "records": "events.jsonl",
+  "record_count": 16,
+  "group_count": 8,
+  "content_fingerprint": "0c253f11a9ec096fb81663db43d9aacf3406a01b09a9d39a20e02eaa04686e53",
+  "policy_checkpoint_sha": "7a9be4a665e216d7f7e73883ad74ad972bbf30846896d0c29188d6482f5b093a",
+  "tokenizer_sha": "8dbf8142068860eed06463fa2e0013bb298267a305bcfd85a0c24df0f7f61efe",
+  "decode_config_hash": "8c2a2ae5cb5c4ad0ab44de74a172fc2c887fbdc7e5e7e20ede953184a0c3fe5b",
+  "evidence_kinds": {
+    "constraint_shadow": 0,
+    "counterfactual": 16
+  },
+  "splits": {
+    "train": 14,
+    "held_out": 2
+  },
+  "split_groups": {
+    "train": 7,
+    "held_out": 1
+  },
+  "set_valued_events": 8,
+  "source_trace_ids": [
+    "277a2cb24ba7218a9e545612fb61aa95"
+  ],
+  "source_record_fingerprint": "9f72d85b6cc7118e0f69e010d0debdd2b40ede514e03178dded8e164daaae9bb",
+  "judge_evidence": "evidence.jsonl",
+  "judge_evidence_count": 16,
+  "judge_evidence_fingerprint": "4d4508c29127ef49ea93599ec4ab976e8560ebc4c83bd7354777b025102fd98f"
+}

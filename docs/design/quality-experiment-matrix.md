@@ -1134,7 +1134,7 @@ split contains at least one same-state-verified multi-good or multi-bad event.
 | E249 | Exact-event CE plus margin | Event win/margin and per-kind recurrence | measured; lexical objective generalized; semantic quality regressed; rejected |
 | E250 | Bad-token unlikelihood | Bad probability mass and held-out recurrence | proposed/unrun |
 | E251 | Single-pair clipped FTPO | Active weight, chosen/margin win, drift | proposed/unrun |
-| E252 | Verifier-backed set FTPO | Set coverage, evidence source, held-out recurrence | compiler repaired; 6 events/3 groups, but 0 held-out; training unrun |
+| E252 | Verifier-backed set FTPO | Set coverage, evidence source, held-out recurrence | measured; local held-out margin improved, but semantic quality collapsed; rejected |
 | E253 | E252 plus frozen-reference tether | Non-target MSE, target excess MSE, unchanged decisions | proposed/unrun |
 | E254 | E253 plus balanced sampling | Source/kind/rejected-set exposure and all E253 metrics | proposed/unrun |
 
@@ -1243,6 +1243,43 @@ C1's). JSON:
 narrative:
 [iter-e257-c1-relative-bind-20260716.md](iter-e257-c1-relative-bind-20260716.md).
 Same honesty envelope as the B4 pair.
+
+E256 then ran the repaired path across all 65 E230 document records. It
+persisted 16 independently judged counterfactual events and their full probes
+as an immutable source corpus: 14 train and two held-out events across eight
+groups, with eight set-valued comparisons. This clears the predefined E252
+corpus prerequisite but remains narrow root-decision evidence; training and all
+quality gates are still pending. Full evidence:
+[iter-e256-counterfactual-corpus-20260716.md](iter-e256-counterfactual-corpus-20260716.md).
+
+E252 trained for 30 matched CPU updates on that corpus. Held-out FTPO loss and
+margin improved, but good-token mass decreased; the full result is decisively
+negative. Syntax stayed 1.0 through the deterministic compiler layer while
+placeholder fidelity fell to zero on all suites, structure/reward regressed on
+every suite versus E248, 13 thresholds failed, and AgentV passed 0/5. This
+falsifies narrow root-only counterfactual supervision. E253/E254 remain blocked
+until evidence covers deeper semantic decisions and more held-out groups; a
+tether or sampling change is not a substitute for support. Full evidence:
+[iter-e252-ftpo-set-20260716.md](iter-e252-ftpo-set-20260716.md).
+
+E258 replaced chronological state truncation with deterministic stratification
+over compiler-derived decision kinds and relative trajectory-depth quartiles.
+Across 65 records it replayed 260 states and produced 18 qualified events across
+six decision kinds, including bound components, child references, populated-root
+closure, and symbols. The sampler hypothesis is confirmed, but only eight prompt
+groups and one held-out group qualified, so this export is not admitted for
+training. E253/E254 remain blocked pending broader group support. Full evidence:
+[iter-e258-counterfactual-depth-probe-20260716.md](iter-e258-counterfactual-depth-probe-20260716.md).
+
+E259 doubled the uniform budget to eight states per record: 520 states and 1,528
+legal candidates produced 38 qualified events across eight decision kinds. The
+extra depth added roles but no prompt groups; support remained eight groups with
+one held-out group. This falsifies state-count scaling as the group-coverage fix,
+so the export is not admitted and E253/E254 remain blocked. The next data lever
+must derive broad exact states from grammar/AST-aligned judged trajectories, not
+probe more states from the same poor model completions. Full evidence:
+[iter-e259-expanded-counterfactual-probe-20260716.md](iter-e259-expanded-counterfactual-probe-20260716.md).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
