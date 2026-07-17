@@ -72,7 +72,10 @@ Design commitments that keep it inside the existing program machinery:
 
 ## Pack contract mapping (F1)
 
-Once F1 lands the DSL-pack contract, the patterns pack supplies:
+F1 (SLM-34) landed the contract: `DSLPack` in
+[`src/slm_training/dsl/packs/types.py`](../../src/slm_training/dsl/packs/types.py)
+with builtin `openui` and `toy-layout` instances and contract-invariant tests
+(`tests/test_dsl/test_packs.py`). The patterns pack supplies:
 
 | Pack slot | Patterns DSL |
 | --- | --- |

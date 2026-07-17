@@ -52,3 +52,26 @@ structural bias, and (via `dsl.parser`) parse/validate when that module is used.
 Official schema validation and placeholder content policy remain lang-core
 responsibilities when that backend is selected; Lark backends enforce syntax +
 root presence and leave library policy to the caller.
+
+## DSL packs (F1, SLM-34)
+
+The backend covers only the parse/decode half. The full per-DSL bundle —
+{grammar backend, canonicalizer, validity oracle, typed corpus generator,
+scope check, placeholder policy} — is a **pack**:
+[`src/slm_training/dsl/packs/`](../../src/slm_training/dsl/packs/)
+(`DSLPack` in `types.py`; registry `get_pack`/`register_pack`/`list_packs`
+mirroring this backend registry). Builtin instances: `openui` (codec
+round-trip canonicalizer, `validate_output` oracle, progspec generator) and
+`toy-layout` (identity canonicalizer + template generator — the
+contract-shape guard). `grammar` and `validity_oracle` are independent pack
+fields on purpose: the F4 ontology packs validate by consistency check, not
+CFG parse.
+
+Pack seams added in F1: `fastpath/engine.engine_for_dsl` resolves any
+registered backend's `grammar_path` (no more hard-coded path table), and
+`data/verify/stack._grammar_backend` accepts a backend id (default remains
+the OpenUI Lark backend — the G0–G12 gate stack itself is OpenUI-semantic
+and stays that way until a pack supplies its own semantic gates).
+
+Adding a DSL end-to-end is now: backend (steps above) → `DSLPack` bundle →
+`register_pack` → `tests/test_dsl/test_packs.py` contract invariants pass.

@@ -191,9 +191,16 @@ def _skip(gate: Gate, detail: str) -> GateResult:
     return GateResult(gate, GateStatus.SKIP, detail)
 
 
-@lru_cache(maxsize=1)
-def _grammar_backend() -> OpenUILarkBackend:
-    return OpenUILarkBackend()
+@lru_cache(maxsize=8)
+def _grammar_backend(dsl: str | None = None):
+    # F1 pack seam: default stays the OpenUI Lark backend (the G0-G12 gate
+    # stack is OpenUI-semantic), but the syntactic gate can be pointed at any
+    # registered backend by id.
+    if dsl is None or dsl == "openui-lark":
+        return OpenUILarkBackend()
+    from slm_training.dsl.grammar.backends import get_backend
+
+    return get_backend(dsl)
 
 
 def _lexical(source: str) -> GateResult:
