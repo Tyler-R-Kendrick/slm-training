@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import signal
+import time
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Literal
@@ -1876,6 +1877,7 @@ def _maybe_local_preference(
             return _copy_checkpoint(trained, dest), summary
         raise RuntimeError(f"{exp.eid} resume artifacts do not match this recipe")
     with run_trace(exp.run_id, "local_preference.train", run_dir=out_dir) as trace:
+        started = time.perf_counter()
         summary = train_local_from_paths(
             ckpt,
             args.decision_events,
@@ -1896,6 +1898,16 @@ def _maybe_local_preference(
             guarded_selection=bool(exp.local_preference_guarded_selection),
             guarded_updates=bool(exp.local_preference_guarded_updates),
             guard_backtrack_steps=int(exp.local_preference_guard_backtrack_steps),
+        )
+        summary["duration_seconds"] = time.perf_counter() - started
+        selection = summary.get("validation_selection") or {}
+        summary["validation_trials"] = sum(
+            len(item.get("trials") or [])
+            for item in selection.get("history") or []
+        )
+        summary["validation_event_forwards"] = (
+            int(summary["validation_trials"])
+            * int(summary.get("held_out_events") or 0)
         )
         summary["trace_id"] = trace.trace_id
         summary["traceparent"] = trace.traceparent

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from types import SimpleNamespace
 
 import slm_training.evals.agentv as agentv_module
 
@@ -27,12 +26,9 @@ def test_agentv_runtime_uses_git_common_checkout_for_worktree_sdk(
     worktree.mkdir()
     monkeypatch.delenv("AGENTV_RUNNER", raising=False)
     monkeypatch.setattr(
-        agentv_module.subprocess,
-        "run",
-        lambda *args, **kwargs: SimpleNamespace(
-            returncode=0,
-            stdout=str(common_root / ".git") + "\n",
-        ),
+        agentv_module,
+        "checkout_roots",
+        lambda root: (root, common_root),
     )
 
     assert _agentv_runtime(worktree) == (runner, common_root)

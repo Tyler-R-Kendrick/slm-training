@@ -14,7 +14,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-from slm_training.bridge_utils import readline_with_timeout, repo_root
+from slm_training.bridge_utils import checkout_roots, readline_with_timeout, repo_root
 from slm_training.dsl.language_contract import contract_id
 from slm_training.dsl.placeholders import extract_placeholders
 
@@ -24,6 +24,8 @@ DEFAULT_CLI = DEFAULT_BRIDGE_DIR / "cli.mjs"
 DEFAULT_SCHEMA_SNAPSHOT = (
     REPO_ROOT / "src" / "slm_training" / "dsl" / "grammars" / "openui_schema.json"
 )
+_BRIDGE_RELATIVE = Path("src/apps/openui_bridge")
+_BRIDGE_SOURCES = ("cli.mjs", "library.mjs", "package.json", "package-lock.json")
 
 _REPL_LOCK = threading.Lock()
 _REPL_PROC: subprocess.Popen[str] | None = None
@@ -72,9 +74,38 @@ def _node_bin() -> str:
     return shutil.which("node") or ""
 
 
+def _same_bridge_sources(left: Path, right: Path) -> bool:
+    return all(
+        (left / name).is_file()
+        and (right / name).is_file()
+        and (left / name).read_bytes() == (right / name).read_bytes()
+        for name in _BRIDGE_SOURCES
+    )
+
+
+@lru_cache(maxsize=1)
+def _bridge_dir() -> Path:
+    override = os.getenv("OPENUI_BRIDGE_CLI")
+    if override:
+        return Path(override).resolve().parent
+    current = DEFAULT_BRIDGE_DIR
+    for root in checkout_roots(REPO_ROOT):
+        candidate = root / _BRIDGE_RELATIVE
+        if candidate != current and not _same_bridge_sources(current, candidate):
+            continue
+        if (candidate / "node_modules" / "@openuidev" / "lang-core").is_dir():
+            return candidate
+    return current
+
+
+def _bridge_cli() -> Path:
+    override = os.getenv("OPENUI_BRIDGE_CLI")
+    return Path(override).resolve() if override else _bridge_dir() / "cli.mjs"
+
+
 def bridge_available() -> bool:
     node = _node_bin()
-    cli = Path(os.getenv("OPENUI_BRIDGE_CLI") or DEFAULT_CLI)
+    cli = _bridge_cli()
     node_modules = cli.parent / "node_modules" / "@openuidev" / "lang-core"
     return bool(node) and cli.is_file() and node_modules.is_dir()
 
@@ -105,7 +136,7 @@ def _ensure_repl() -> subprocess.Popen[str]:
     if _REPL_PROC is not None and _REPL_PROC.poll() is None:
         return _REPL_PROC
     node = _node_bin()
-    cli = Path(os.getenv("OPENUI_BRIDGE_CLI") or DEFAULT_CLI)
+    cli = _bridge_cli()
     if not node:
         raise RuntimeError(
             "Node.js is required for @openuidev/lang-core bridge. Install Node 20+."
@@ -131,7 +162,7 @@ def _invoke_once(payload: dict[str, Any], timeout_s: float = 30.0) -> dict[str, 
         raise RuntimeError(
             "Node.js is required for @openuidev/lang-core bridge. Install Node 20+."
         )
-    cli = Path(os.getenv("OPENUI_BRIDGE_CLI") or DEFAULT_CLI)
+    cli = _bridge_cli()
     if not cli.is_file():
         raise RuntimeError(f"OpenUI bridge CLI not found at {cli}")
     if not (cli.parent / "node_modules" / "@openuidev" / "lang-core").is_dir():

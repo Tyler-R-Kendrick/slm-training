@@ -1355,6 +1355,18 @@ not a training gain. The guard is retained; the parent-equivalent E264 artifact
 is rejected and not promoted. Full evidence:
 [iter-e264-guarded-gold-ast-ftpo-20260716.md](iter-e264-guarded-gold-ast-ftpo-20260716.md).
 
+E265 enforced that Pareto contract on every optimizer proposal with
+optimizer-consistent backtracking. Three of 30 updates were accepted and all
+four aggregate held-out metrics improved, proving a safe local direction
+exists. The aggregate nevertheless hid severe per-decision-kind regressions
+(`grammar_comma` loss `1.3764→3.1417`), and full-eval fidelity/reward fell on
+most suites while five gates still failed. The naive implementation also took
+50m09s for 142 candidate scales and 5,538 held-out event forwards. Reject the
+checkpoint. The next guard must be stratified by grammar/AST decision kind and
+validation must be batched/cached without weakening the contract. Full
+evidence:
+[iter-e265-safe-gold-ast-ftpo-20260717.md](iter-e265-safe-gold-ast-ftpo-20260717.md).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
