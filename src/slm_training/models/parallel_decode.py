@@ -349,6 +349,91 @@ def select_remask_core_indices(
     return chosen
 
 
+def select_remask_coverage_indices(
+    conf: torch.Tensor,
+    known: torch.Tensor,
+    *,
+    remask_ratio: float = 0.15,
+    protect_bos: bool = True,
+    coverage_deficit: torch.Tensor | None = None,
+    grammar_positions: list[int] | None = None,
+) -> list[int]:
+    """A3: remask the known positions with the highest content-coverage deficit.
+
+    ``coverage_deficit`` is a per-position score (higher = the position sits in
+    an under-covered region that should get another decode pass to place missing
+    inventory content). This is the soft sibling of A4's hard minimum-content
+    contract: instead of making the empty program illegal, it preferentially
+    revisits filler positions when the expected inventory is not yet covered.
+
+    Mirrors :func:`select_remask_core_indices`: fill any ``grammar_positions``
+    first, then spend the ``remask_ratio`` budget on highest deficit, falling
+    back to lowest confidence when no deficit tensor is supplied.
+    """
+    if remask_ratio <= 0.0 and not grammar_positions:
+        return []
+    flat_known = known.view(-1).clone()
+    length = conf.size(-1)
+    if protect_bos and flat_known.numel() > 0:
+        for b in range(conf.size(0)):
+            flat_known[b * length] = False
+    eligible_idx = flat_known.nonzero(as_tuple=False).flatten().tolist()
+    if not eligible_idx and not grammar_positions:
+        return []
+
+    chosen: list[int] = []
+    seen: set[int] = set()
+
+    def _add(idx: int) -> None:
+        i = int(idx)
+        if i in seen:
+            return
+        if i < 0 or i >= flat_known.numel():
+            return
+        if protect_bos and (i % length) == 0:
+            return
+        if not bool(flat_known[i].item()) and i not in set(grammar_positions or []):
+            return
+        seen.add(i)
+        chosen.append(i)
+
+    for i in grammar_positions or []:
+        _add(i)
+
+    eligible = max(len(eligible_idx), len(chosen))
+    budget = (
+        max(1, int(math.ceil(eligible * float(remask_ratio))))
+        if remask_ratio > 0
+        else len(chosen)
+    )
+    budget = max(budget, len(chosen))
+
+    if coverage_deficit is not None and len(chosen) < budget:
+        flat_def = coverage_deficit.view(-1)
+        scored = sorted(
+            eligible_idx,
+            key=lambda i: (
+                float(flat_def[i].item()) if i < flat_def.numel() else 0.0,
+                # Stable tiebreak: lowest confidence first within equal deficit.
+                -float(conf.view(-1)[i].item()) if i < conf.numel() else 0.0,
+            ),
+            reverse=True,
+        )
+        for i in scored:
+            if len(chosen) >= budget:
+                break
+            _add(i)
+    elif len(chosen) < budget:
+        for i in select_remask_indices(
+            conf, known, remask_ratio=remask_ratio, protect_bos=protect_bos
+        ):
+            if len(chosen) >= budget:
+                break
+            _add(i)
+
+    return chosen
+
+
 class StabilityTracker:
     """
     E70 (LESS-lite): track per-position top-1 persistence and inter-step

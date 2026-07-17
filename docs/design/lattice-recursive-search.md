@@ -1,8 +1,12 @@
 # Lattice-guided recursive compiler search
 
-**Status:** inference controller implemented and E240-E245 evaluated on CPU on
-2026-07-16. E246-E247 were not run because the predeclared continuation rule
-failed. No checkpoint was trained, copied, promoted, or synced.
+**Status:** architecture doc; two independent fixture-grade executions on
+2026-07-16. One campaign ran all eight rows through the honest suites (see
+[iter-e240-e247-lattice-campaign-20260716.md](iter-e240-e247-lattice-campaign-20260716.md));
+a parallel run evaluated E240-E245 on CPU and stopped before E246-E247 because
+its predeclared continuation rule failed. No checkpoint was trained, copied,
+promoted, or synced, no ship-gate clear is claimed, and the frontier-scale run
+on E224+ checkpoints remains open.
 
 ## Research question
 

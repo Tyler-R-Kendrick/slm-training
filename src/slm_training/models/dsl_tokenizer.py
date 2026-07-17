@@ -236,6 +236,18 @@ def _bind_token(i: int) -> str:
     return f"<BIND_{i}>"
 
 
+# C1 scope-as-relative-index (De Bruijn-style) binder channel. Definition
+# sites are nameless (<BINDDEF>: statement position determines identity) and
+# reference sites carry a signed statement delta (<BINDREL_+k>/<BINDREL_-k>;
+# OpenUI allows forward references, so the delta is signed rather than a
+# classic most-recent-binder index).
+BIND_DEF = "<BINDDEF>"
+
+
+def _bind_rel_token(delta: int) -> str:
+    return f"<BINDREL_{delta:+d}>"
+
+
 def _state_token(i: int) -> str:
     return f"<STATE_{i}>"
 
@@ -437,6 +449,8 @@ class DSLNativeTokenizer:
     sym_slots: int = DEFAULT_SYM_SLOTS
     bind_slots: int = DEFAULT_BIND_SLOTS
     state_slots: int = DEFAULT_STATE_SLOTS
+    # absolute (<BIND_j> identity slots) | relative (C1: <BINDDEF>/<BINDREL_±k>)
+    bind_encoding: str = "absolute"
     # Overflow counter (byte-path used when symbol table is full).
     overflow_count: int = 0
 
@@ -511,6 +525,20 @@ class DSLNativeTokenizer:
                 return None
         return None
 
+    def bind_rel_delta_of(self, tid: int) -> int | None:
+        """Signed statement delta for a <BINDREL_±k> token, else None."""
+        tok = self.id_to_token.get(int(tid), "")
+        if tok.startswith("<BINDREL_") and tok.endswith(">"):
+            try:
+                return int(tok[9:-1])
+            except ValueError:
+                return None
+        return None
+
+    @property
+    def bind_def_id(self) -> int | None:
+        return self.token_to_id.get(BIND_DEF)
+
     def state_slot_of(self, tid: int) -> int | None:
         tok = self.id_to_token.get(int(tid), "")
         if tok.startswith("<STATE_") and tok.endswith(">"):
@@ -527,6 +555,7 @@ class DSLNativeTokenizer:
         sym_slots: int = DEFAULT_SYM_SLOTS,
         bind_slots: int = DEFAULT_BIND_SLOTS,
         state_slots: int = DEFAULT_STATE_SLOTS,
+        bind_encoding: str = "absolute",
     ) -> DSLNativeTokenizer:
         """Build the fixed corpus-independent vocabulary."""
         vocab: list[str] = []
@@ -569,6 +598,12 @@ class DSLNativeTokenizer:
             _add(_sym_token(i), TokenKind.SYM)
         for i in range(bind_slots):
             _add(_bind_token(i), TokenKind.BIND)
+        if bind_encoding == "relative":
+            _add(BIND_DEF, TokenKind.BIND)
+            for delta in range(-bind_slots, bind_slots + 1):
+                _add(_bind_rel_token(delta), TokenKind.BIND)
+        elif bind_encoding != "absolute":
+            raise ValueError(f"unknown bind_encoding {bind_encoding!r}")
         for i in range(state_slots):
             _add(_state_token(i), TokenKind.STATE)
 
@@ -583,6 +618,7 @@ class DSLNativeTokenizer:
             sym_slots=sym_slots,
             bind_slots=bind_slots,
             state_slots=state_slots,
+            bind_encoding=bind_encoding,
         )
 
     # --- surface lexing / canonicalize ---------------------------------
@@ -661,6 +697,7 @@ class DSLNativeTokenizer:
         pieces = self.lex_surface(text)
         ids: list[int] = []
         # First pass: discover binder definitions (NAME = ...) in order.
+        def_order: list[str] = []
         for i, piece in enumerate(pieces):
             if (
                 piece[:1].islower()
@@ -669,19 +706,53 @@ class DSLNativeTokenizer:
                 and pieces[i + 1] == "="
             ):
                 table.ensure_binder(piece, max_slots=self.bind_slots)
+                if piece not in def_order:
+                    def_order.append(piece)
             if piece.startswith("$") and i + 1 < len(pieces) and pieces[i + 1] == "=":
                 table.ensure_state(piece, max_slots=self.state_slots)
 
+        relative = self.bind_encoding == "relative"
+        if relative and def_order and def_order[0] != "root":
+            raise ValueError(
+                "relative bind encoding requires the root binder to be defined "
+                f"first (got {def_order[0]!r}); canonicalize the program first"
+            )
+        def_index = {name: i for i, name in enumerate(def_order)}
+        cur_def = 0
+
         for i, piece in enumerate(pieces):
+            preserve_identifier = (
+                i + 1 < len(pieces) and pieces[i + 1] == ":"
+            ) or (i > 0 and pieces[i - 1] == ".")
+            if (
+                relative
+                and not preserve_identifier
+                and piece[:1].islower()
+                and piece.isidentifier()
+                and piece in def_index
+                and piece not in self.token_to_id
+            ):
+                if i + 1 < len(pieces) and pieces[i + 1] == "=":
+                    # Nameless definition: statement position IS the identity.
+                    cur_def = def_index[piece]
+                    def_id = self.bind_def_id
+                    assert def_id is not None
+                    ids.append(def_id)
+                    continue
+                delta = def_index[piece] - cur_def
+                rel_id = self.token_to_id.get(_bind_rel_token(delta))
+                if rel_id is None:
+                    self.overflow_count += 1
+                    ids.extend(self._encode_bytes(piece))
+                    continue
+                ids.append(rel_id)
+                continue
             ids.extend(
                 self._encode_piece(
                     piece,
                     table=table,
                     use_symbol_table=use_symbol_table,
-                    preserve_identifier=(
-                        (i + 1 < len(pieces) and pieces[i + 1] == ":")
-                        or (i > 0 and pieces[i - 1] == ".")
-                    ),
+                    preserve_identifier=preserve_identifier,
                 )
             )
 
@@ -788,6 +859,7 @@ class DSLNativeTokenizer:
         skip_special: bool = True,
         *,
         table: SymbolTable | None = None,
+        preserve_trailing_newline: bool = False,
     ) -> str:
         """Pretty-print lexer-native ids back to OpenUI source."""
         table = table or SymbolTable()
@@ -795,6 +867,7 @@ class DSLNativeTokenizer:
         pieces: list[str] = []
         i = 0
         n = len(ids)
+        cur_def = -1  # index of the last <BINDDEF> statement seen
         while i < n:
             tid = int(ids[i])
             if skip_special and tid in special:
@@ -813,6 +886,26 @@ class DSLNativeTokenizer:
                 continue
 
             if kind == TokenKind.BIND:
+                if tok == BIND_DEF:
+                    cur_def += 1
+                    pieces.append(
+                        "root" if cur_def == 0 else _bind_surface_name(cur_def)
+                    )
+                    i += 1
+                    continue
+                delta = self.bind_rel_delta_of(tid)
+                if delta is not None:
+                    target = max(cur_def, 0) + delta
+                    # Out-of-scope offsets decode to a never-defined name so the
+                    # verifier rejects them — never silently repaired.
+                    if target == 0:
+                        pieces.append("root")
+                    elif target > 0:
+                        pieces.append(_bind_surface_name(target))
+                    else:
+                        pieces.append(f"oob{-target}")
+                    i += 1
+                    continue
                 slot = self.bind_slot_of(tid)
                 # Slot zero is reserved for the required OpenUI root binder.
                 pieces.append("root" if (slot or 0) == 0 else _bind_surface_name(slot or 0))
@@ -867,7 +960,9 @@ class DSLNativeTokenizer:
             pieces.append(tok)
             i += 1
 
-        return self._pretty_print(pieces)
+        return self._pretty_print(
+            pieces, preserve_trailing_newline=preserve_trailing_newline
+        )
 
     def _consume_literal_body(self, ids: list[int], start: int) -> tuple[str, int]:
         chars: list[str] = []
@@ -889,7 +984,9 @@ class DSLNativeTokenizer:
         return "".join(chars), i
 
     @staticmethod
-    def _pretty_print(pieces: list[str]) -> str:
+    def _pretty_print(
+        pieces: list[str], *, preserve_trailing_newline: bool = False
+    ) -> str:
         """Join pieces with OpenUI-like spacing."""
         if not pieces:
             return ""
@@ -948,7 +1045,8 @@ class DSLNativeTokenizer:
         text = "".join(out)
         # Normalize spaces introduced by " = " near newlines.
         text = re.sub(r"[ \t]+\n", "\n", text)
-        text = re.sub(r"\n+$", "", text)
+        if not preserve_trailing_newline:
+            text = re.sub(r"\n+$", "", text)
         return text
 
     def statement_spans(self, ids: list[int]) -> list[tuple[int, int]]:
@@ -1001,6 +1099,7 @@ class DSLNativeTokenizer:
                     "sym_slots": self.sym_slots,
                     "bind_slots": self.bind_slots,
                     "state_slots": self.state_slots,
+                    "bind_encoding": self.bind_encoding,
                     "token_to_id": self.token_to_id,
                     "id_to_kind": {str(k): v for k, v in self.id_to_kind.items()},
                 },
@@ -1041,6 +1140,7 @@ class DSLNativeTokenizer:
             sym_slots=int(data.get("sym_slots") or DEFAULT_SYM_SLOTS),
             bind_slots=int(data.get("bind_slots") or DEFAULT_BIND_SLOTS),
             state_slots=int(data.get("state_slots") or DEFAULT_STATE_SLOTS),
+            bind_encoding=str(data.get("bind_encoding") or "absolute"),
         )
 
 

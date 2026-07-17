@@ -211,6 +211,7 @@ def passing_evaluation() -> dict:
                 "n": 10,
                 "parse_rate": 1,
                 "structural_similarity": 1,
+                "component_type_recall": 1,
                 "placeholder_fidelity": 1,
                 "reward_score": 1,
             },
@@ -218,11 +219,27 @@ def passing_evaluation() -> dict:
                 "n": 10,
                 "parse_rate": 1,
                 "structural_similarity": 1,
+                "component_type_recall": 1,
                 "placeholder_fidelity": 1,
             },
-            "adversarial": {"n": 10, "parse_rate": 1, "structural_similarity": 1},
-            "ood": {"n": 10, "parse_rate": 1, "structural_similarity": 1},
-            "rico_held": {"n": 1500, "parse_rate": 1, "structural_similarity": 1},
+            "adversarial": {
+                "n": 10,
+                "parse_rate": 1,
+                "structural_similarity": 1,
+                "component_type_recall": 1,
+            },
+            "ood": {
+                "n": 10,
+                "parse_rate": 1,
+                "structural_similarity": 1,
+                "component_type_recall": 1,
+            },
+            "rico_held": {
+                "n": 1500,
+                "parse_rate": 1,
+                "structural_similarity": 1,
+                "component_type_recall": 1,
+            },
         },
         "agentv": {"passed": True},
         "reward_samples": [0.1, 0.4, 0.8],
@@ -697,6 +714,25 @@ def test_scope_diffusion_source_manifest_is_complete() -> None:
         "Adapted",
         "Adjacent",
     }
+
+
+def test_dsl_program_source_manifest_is_complete() -> None:
+    from scripts.autoresearch import _load_sources
+
+    path = Path("src/slm_training/resources/autoresearch/dsl-program-sources.json")
+    rows = _load_sources(path)
+    assert len(rows) == 24
+    assert len({row.uri for row in rows}) == 24
+    assert sum(row.uri.startswith("https://arxiv.org/abs/") for row in rows) == 21
+    assert all(row.metadata.get("category") == "dsl_program" for row in rows)
+    assert all(row.metadata.get("implementation_status") == "Adjacent" for row in rows)
+    assert all(row.metadata.get("limitations") for row in rows)
+    # No overlap with the earlier committed manifests (dedupe honesty).
+    for other in ("dynamic-symbol-sources.json", "scope-diffusion-sources.json"):
+        other_rows = _load_sources(
+            Path("src/slm_training/resources/autoresearch") / other
+        )
+        assert not {row.uri for row in rows} & {row.uri for row in other_rows}
 
 
 def test_local_decision_source_manifest_is_complete() -> None:

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from slm_training.dsl.grammar.fastpath.engine import OpenUIIncrementalEngine
-from slm_training.dsl.grammar.fastpath.token_map import string_to_token_ids
+from slm_training.dsl.grammar.fastpath.token_map import decode_prefix, string_to_token_ids
 from slm_training.models.tokenizer import OpenUITokenizer
 
 
@@ -40,12 +40,12 @@ def draft_forced_ids(
     max_tokens: int = 8,
 ) -> list[int]:
     """Speculatively draft up to max_tokens forced continuations."""
-    text = tokenizer.decode(prefix_ids)
+    text = decode_prefix(tokenizer, prefix_ids)
     drafted: list[int] = []
     for _ in range(max_tokens):
         tid = force_next_token_id(engine, tokenizer, text)
         if tid is None:
             break
         drafted.append(tid)
-        text = tokenizer.decode(prefix_ids + drafted)
+        text = decode_prefix(tokenizer, prefix_ids + drafted)
     return drafted

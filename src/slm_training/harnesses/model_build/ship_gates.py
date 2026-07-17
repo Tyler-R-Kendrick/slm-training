@@ -7,29 +7,41 @@ from pathlib import Path
 from typing import Any
 
 # Per-suite minimums. Smoke is a canary; generalization requires the rest.
+#
+# ``component_type_recall`` is the **semantic-density floor** (E2): the fraction
+# of the gold's component *types* the prediction recovers. It collapses toward 0
+# for the trivial/empty program, so a compression- or decode-driven change that
+# emits shorter-but-emptier output cannot green these gates on syntax alone. The
+# floors sit at or below the structural bars (density must be at least as present
+# as structure) and only make the policy stricter — never weaker.
 DEFAULT_SHIP_GATES: dict[str, dict[str, float]] = {
     "smoke": {
         "meaningful_program_rate": 0.66,
         "structural_similarity": 0.35,
+        "component_type_recall": 0.35,
         "placeholder_fidelity": 0.25,
         "reward_score": 0.30,
     },
     "held_out": {
         "meaningful_program_rate": 0.40,
         "structural_similarity": 0.30,
+        "component_type_recall": 0.30,
         "placeholder_fidelity": 0.15,
     },
     "adversarial": {
         "meaningful_program_rate": 0.25,
         "structural_similarity": 0.25,
+        "component_type_recall": 0.20,
     },
     "ood": {
         "meaningful_program_rate": 0.25,
         "structural_similarity": 0.25,
+        "component_type_recall": 0.20,
     },
     "rico_held": {
         "meaningful_program_rate": 0.10,
         "structural_similarity": 0.20,
+        "component_type_recall": 0.15,
     },
 }
 
@@ -65,6 +77,7 @@ def evaluate_ship_gates(
             "placeholder_fidelity": metrics.get("placeholder_fidelity"),
             "placeholder_validity": metrics.get("placeholder_validity"),
             "structural_similarity": metrics.get("structural_similarity"),
+            "component_type_recall": metrics.get("component_type_recall"),
             "reward_score": metrics.get("reward_score"),
         }
         if (
@@ -100,10 +113,11 @@ def evaluate_ship_gates(
         "pass": all(checks.values()) if checks else False,
         "note": (
             "Honest ship gates require all policy suites and score structure only "
-            "(meaningful_program_rate / structural_similarity / "
-            "placeholder_fidelity / reward_score). Syntax parse is reported "
-            "separately and is not a learned-quality substitute. "
-            "DESIGN.md style lint is never a ship gate. "
+            "(meaningful_program_rate / structural_similarity / component_type_recall "
+            "/ placeholder_fidelity / reward_score). component_type_recall is the "
+            "semantic-density floor: shorter-but-emptier output cannot pass on "
+            "syntax alone. Syntax parse is reported separately and is not a "
+            "learned-quality substitute. DESIGN.md style lint is never a ship gate. "
             "See docs/design/adversarial-review.md and docs/design/structure-only-eval.md."
         ),
     }

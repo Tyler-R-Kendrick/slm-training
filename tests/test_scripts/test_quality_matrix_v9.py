@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from scripts.run_quality_matrix import _v9_experiments, main
+from scripts.run_quality_matrix import _apply_eval_checkpoint, _v9_experiments, main
 
 
 def test_v9_registers_only_planned_lattice_rows() -> None:
@@ -24,6 +24,18 @@ def test_v9_registers_only_planned_lattice_rows() -> None:
     assert all(not row.allow_unconstrained_fallback for row in rows)
     assert rows[1].compiler_search_local_nogoods is False
     assert all(row.compiler_search_local_nogoods for row in rows[2:])
+
+
+def test_apply_eval_checkpoint_routes_declared_eval_only_rows() -> None:
+    rows = _v9_experiments(Path("outputs/data/train/v1"))
+    ckpt = Path("outputs/runs/qx_e240_compiler_tree_control/checkpoints/last.pt")
+    routed = _apply_eval_checkpoint(rows, ckpt)
+    assert all(row.eval_from_checkpoint == str(ckpt) for row in routed)
+    # Without a checkpoint the rows are returned untouched (classifier would
+    # then require --parent/--scratch-control rather than silently retraining).
+    assert all(
+        row.eval_from_checkpoint is None for row in _apply_eval_checkpoint(rows, None)
+    )
 
 
 def test_v9_uses_parent_read_only_without_training(tmp_path, monkeypatch) -> None:

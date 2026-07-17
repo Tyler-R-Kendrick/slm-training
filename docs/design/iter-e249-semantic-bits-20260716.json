@@ -1,0 +1,34 @@
+{
+  "production": {
+    "n_decisions": 673,
+    "alphabet_size": 51,
+    "total_bits": 2909.342995061003,
+    "bits_per_decision": 4.322946500833585,
+    "stream": "production",
+    "n_programs": 19,
+    "n_scored_programs": 19,
+    "mean_decisions_per_program": 35.421052631578945,
+    "by_category": {
+      "direction": 21,
+      "literal": 16,
+      "production": 120,
+      "reference": 101,
+      "slot": 79,
+      "structural": 336
+    }
+  },
+  "surface": {
+    "n_decisions": 1014,
+    "alphabet_size": 198,
+    "total_bits": 5479.375020609837,
+    "bits_per_decision": 5.403722900009701,
+    "stream": "surface",
+    "n_programs": 19,
+    "n_scored_programs": 19,
+    "mean_decisions_per_program": 53.36842105263158
+  },
+  "surface_to_production_bit_ratio": 1.883371960580724,
+  "decision_reduction_ratio": 1.5066864784546805,
+  "records": "src/slm_training/resources/data/eval/remediated/suites",
+  "n_records": 19
+}

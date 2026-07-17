@@ -146,6 +146,75 @@ def _event_logits(model: TwoTowerModel, event: DecisionEventV1) -> torch.Tensor:
     return logits[0, event.position]
 
 
+def _objective_events(
+    events: list[DecisionEventV1], objective: LocalObjective
+) -> list[DecisionEventV1]:
+    if objective == "ce_margin":
+        return [event for event in events if len(event.good_token_ids) == 1]
+    if objective == "ftpo_single":
+        return [
+            event
+            for event in events
+            if len(event.good_token_ids) == 1 and len(event.bad_token_ids) == 1
+        ]
+    return events
+
+
+@torch.inference_mode()
+def evaluate_local_decisions(
+    model: TwoTowerModel,
+    events: list[DecisionEventV1],
+    *,
+    objective: LocalObjective,
+    split: str = "held_out",
+    epsilon: float = 2.0,
+    tau: float = 1.0,
+) -> dict:
+    """Measure exact-state recurrence without updating the policy."""
+    selected = _objective_events(
+        [event for event in events if event.split == split], objective
+    )
+    was_training = model.training
+    model.eval()
+    totals: dict[str, float] = defaultdict(float)
+    by_kind: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
+    kind_counts: dict[str, int] = defaultdict(int)
+    for event in selected:
+        _, metrics = local_decision_loss(
+            _event_logits(model, event),
+            event,
+            objective=objective,
+            epsilon=epsilon,
+            tau=tau,
+        )
+        for name, value in metrics.items():
+            totals[name] += value
+            by_kind[event.decision_kind][name] += value
+        kind_counts[event.decision_kind] += 1
+    model.train(was_training)
+    count = len(selected)
+    return {
+        "split": split,
+        "event_count": count,
+        "excluded_events": sum(event.split == split for event in events) - count,
+        "metrics": {
+            name: value / count for name, value in sorted(totals.items())
+        }
+        if count
+        else {},
+        "by_decision_kind": {
+            kind: {
+                "event_count": kind_counts[kind],
+                "metrics": {
+                    name: value / kind_counts[kind]
+                    for name, value in sorted(metrics.items())
+                },
+            }
+            for kind, metrics in sorted(by_kind.items())
+        },
+    }
+
+
 def train_local_decisions(
     model: TwoTowerModel,
     events: list[DecisionEventV1],
@@ -164,19 +233,13 @@ def train_local_decisions(
 ) -> dict:
     if steps <= 0 or lr <= 0:
         raise ValueError("steps and learning rate must be positive")
+    if any(event.evidence_kind == "constraint_shadow" for event in events):
+        raise ValueError(
+            "constraint shadows encode decoder legality, not semantic preferences; "
+            "train only on judge-backed counterfactual events"
+        )
     all_train_events = [event for event in events if event.split == "train"]
-    if objective == "ce_margin":
-        train_events = [
-            event for event in all_train_events if len(event.good_token_ids) == 1
-        ]
-    elif objective == "ftpo_single":
-        train_events = [
-            event
-            for event in all_train_events
-            if len(event.good_token_ids) == 1 and len(event.bad_token_ids) == 1
-        ]
-    else:
-        train_events = all_train_events
+    train_events = _objective_events(all_train_events, objective)
     if objective == "ftpo_set" and not any(
         len(event.good_token_ids) > 1 or len(event.bad_token_ids) > 1
         for event in train_events
@@ -266,6 +329,13 @@ def train_local_from_paths(
     events = load_decision_events(events_path)
     model = TwoTowerModel.from_checkpoint(checkpoint, device=device)
     _validate_identity(events, checkpoint, model)
+    held_out_before = evaluate_local_decisions(
+        model,
+        events,
+        objective=objective,
+        epsilon=epsilon,
+        tau=tau,
+    )
     reference_model = None
     if reference_checkpoint is not None:
         if checkpoint_sha(reference_checkpoint) != checkpoint_sha(checkpoint):
@@ -286,6 +356,20 @@ def train_local_from_paths(
         balanced=balanced,
         seed=seed,
     )
+    held_out_after = evaluate_local_decisions(
+        model,
+        events,
+        objective=objective,
+        epsilon=epsilon,
+        tau=tau,
+    )
+    summary["held_out_before"] = held_out_before
+    summary["held_out_after"] = held_out_after
+    summary["held_out_delta"] = {
+        name: held_out_after["metrics"][name] - value
+        for name, value in held_out_before["metrics"].items()
+        if name in held_out_after["metrics"]
+    }
     out_dir.mkdir(parents=True, exist_ok=True)
     output = out_dir / "model.pt"
     model.save(output)

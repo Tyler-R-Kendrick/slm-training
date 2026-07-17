@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from slm_training.dsl import bridge_available
+from slm_training.dsl import ParseError, bridge_available
 from slm_training.dsl.grammar.backends import available_backends, get_backend
 from slm_training.dsl.grammar.backends.ast_utils import (
     ast_fingerprint,
@@ -57,6 +57,14 @@ def test_openui_lark_parses_element_ast() -> None:
     assert ":hero.title" in program.placeholders
     assert component_multiset(program.root)["Stack"] == 1
     assert component_multiset(program.root)["TextContent"] == 1
+
+
+def test_openui_lark_requires_newlines_between_statements() -> None:
+    backend = get_backend("openui-lark")
+    with pytest.raises(ParseError):
+        backend.parse(
+            'root = Stack([hero])hero = TextContent(":hero.title")'
+        )
 
 
 def test_openui_lark_v05_program_metadata_and_roundtrip() -> None:

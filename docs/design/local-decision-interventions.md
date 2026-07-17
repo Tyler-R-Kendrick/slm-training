@@ -1,8 +1,8 @@
 # Local decision interventions for TwoTower
 
-**Status:** research intake and implementation specification. The E248 control is
-measured and the exact-event mining prerequisite is complete; intervention rows
-remain unrun. This document contains no model-quality or ship claim.
+**Status:** research intake plus measured E248/E249 campaign. E249 is rejected:
+constraint-shadow ranking generalized locally but regressed semantic quality on
+every suite. This document contains no model-quality or ship claim.
 
 ## Source and audit
 
@@ -127,6 +127,10 @@ than reconstructing them from final strings. The committed
 manifest, source trace, diagnostics, and honesty boundary are recorded in
 [`iter-e249-exact-event-mining-20260716.md`](iter-e249-exact-event-mining-20260716.md).
 
-All events are grammar constraint shadows. They support E249-E251 as a matched
-lexical-decision experiment but do not support semantic claims. E252-E254 remain
+All events are grammar constraint shadows. E249 proved that they support a
+matched lexical-decision experiment but not a semantic-quality objective:
+held-out chosen win reached 0.7649 while structure and reward regressed on every
+suite. Do not run E250/E251 on this corpus as quality labels. E252-E254 remain
 fail-closed because the corpus contains no counterfactual or set-valued evidence.
+Measured result:
+[`iter-e249-local-ce-margin-20260716.md`](iter-e249-local-ce-margin-20260716.md).

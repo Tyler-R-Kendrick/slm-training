@@ -12,6 +12,7 @@ from slm_training.dsl.grammar.fastpath.force_emit import force_next_token_id
 from slm_training.dsl.grammar.fastpath.token_map import (
     allowed_id_set,
     apply_literal_frame,
+    decode_prefix,
 )
 
 Coverage = Literal["complete", "partial", "none"]
@@ -188,6 +189,21 @@ def active_declaration_binder_id(
     """Return the grammar-native binder for the active declaration."""
     _declarations, _references, active = _binder_scope(tokenizer, prefix_ids)
     return active
+
+
+def emitted_component_count(tokenizer: Any, prefix_ids: list[int]) -> int:
+    """Count component instantiations already emitted in ``prefix_ids``.
+
+    Uses the tokenizer's compiler-derived ``component`` symbol space (no AST
+    parse, no Node bridge). This is the content measure the minimum-content
+    decode contract (A4) checks: an empty/underfull layout has too few
+    components to satisfy a prompt that names them.
+    """
+    try:
+        component_ids = set(tokenizer.kind_ids("component"))
+    except Exception:  # noqa: BLE001 - tokenizer without kind_ids → no gate
+        return 0
+    return sum(1 for token_id in prefix_ids if int(token_id) in component_ids)
 
 
 def binder_reference_arities(
@@ -396,8 +412,7 @@ def _official_schema() -> dict[str, Any] | None:
     try:
         from slm_training.dsl import lang_core
 
-        if lang_core.bridge_available():
-            return lang_core.library_schema()
+        return lang_core.library_schema()
     except Exception:  # noqa: BLE001
         pass
     return None
@@ -412,7 +427,13 @@ def _generated_ast_is_complete(prefix_text: str) -> bool:
         program = lang_core.parse(prefix_text)
         return isinstance(program.root, dict) and bool(program.root)
     except Exception:  # noqa: BLE001
-        return False
+        try:
+            from slm_training.dsl.grammar.backends import get_backend
+
+            program = get_backend("openui-lark").validate(prefix_text)
+            return isinstance(program.root, dict) and bool(program.root)
+        except Exception:  # noqa: BLE001
+            return False
 
 
 def _active_call(state: Any) -> tuple[str, int, int] | None:
@@ -602,6 +623,7 @@ def build_completion_forest(
     state: Any | None = None,
     slot_contract: list[str] | None = None,
     max_path_tokens: int = 8,
+    min_content: int = 0,
 ) -> CompletionForest:
     """Enumerate every mapped, globally extendable action at ``prefix_ids``.
 
@@ -609,6 +631,12 @@ def build_completion_forest(
     compiler-derived component/binder/symbol spaces, and the optional slot
     contract restricts active placeholder symbols. Each branch is extended
     through its maximal deterministic grammar suffix.
+
+    ``min_content`` (A4 minimum-content decode contract): when > 0, EOS is not
+    admitted until at least ``min_content`` components have been emitted, so a
+    grammatically valid but empty/underfull layout is not a legal completion
+    while the grammar still offers a way to add content. The gate never creates
+    a dead end — it only withholds EOS when a non-EOS continuation remains.
     """
     engine = getattr(state, "engine", None) if state is not None else None
     if not isinstance(engine, OpenUIIncrementalEngine):
@@ -616,7 +644,7 @@ def build_completion_forest(
     if state is not None:
         prefix_text = state.sync_ids(tokenizer, prefix_ids)
     else:
-        prefix_text = tokenizer.decode(prefix_ids)
+        prefix_text = decode_prefix(tokenizer, prefix_ids)
     if not engine.set_prefix(prefix_text) and prefix_text.strip():
         return CompletionForest((), "none")
 
@@ -628,7 +656,15 @@ def build_completion_forest(
             candidates.discard(int(newline_id))
     ast_complete = _generated_ast_is_complete(prefix_text)
     references_resolved = _references_resolved(tokenizer, prefix_ids)
-    if "$END" in terminals and ast_complete and references_resolved:
+    # A4: withhold EOS while the layout has fewer than ``min_content`` components,
+    # but only when the grammar still offers a non-EOS continuation (never create
+    # a dead end that would force a fallback on an otherwise-valid document).
+    content_met = True
+    if min_content > 0:
+        other_candidates = candidates - {int(tokenizer.eos_id)}
+        if other_candidates and emitted_component_count(tokenizer, prefix_ids) < min_content:
+            content_met = False
+    if "$END" in terminals and ast_complete and references_resolved and content_met:
         candidates.add(int(tokenizer.eos_id))
     else:
         candidates.discard(int(tokenizer.eos_id))
@@ -766,7 +802,6 @@ def build_completion_forest(
                 slot_contract and schema_type == "string"
             ):
                 candidates -= sym_ids
-                inventory_complete = False
         except Exception:  # noqa: BLE001
             inventory_complete = False
 

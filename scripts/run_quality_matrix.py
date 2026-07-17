@@ -108,6 +108,10 @@ class Experiment:
     remask_to_mask: bool = True
     slot_aware_trust_gate: bool = False
     model_name: str = "twotower"
+    # V10 (B4): scratch | hf — AR→masked-denoiser adaptation backbone.
+    denoiser_backend: str = "scratch"
+    # V10 (C1): absolute | relative (De Bruijn binder references).
+    bind_encoding: str = "absolute"
     # V7 levers: speculative denoising (docs/design/speculative-denoising.md)
     stability_min_persistence: int = 0
     stability_jsd_weight: float = 1.0
@@ -1344,6 +1348,50 @@ def _v10_experiments(train_dir: Path) -> list[Experiment]:
     ]
 
 
+def _v11_experiments(train_dir: Path) -> list[Experiment]:
+    """E255-E257: Track B/C representation baselines.
+
+    E255/E256 (B4): matched pair differing only in the denoiser backbone —
+    from-scratch DenoiserTower vs the pretrained hf_model_name causal LM
+    adapted into a bidirectional masked denoiser. Parallel MaskGIT decode
+    (not LTR) keeps the 135M-backbone eval tractable and identical across
+    the pair. E257 (C1): scope-as-relative-index binder references
+    (<BINDDEF>/<BINDREL_±k>), matched against E255 on everything but
+    bind_encoding.
+    """
+    base = dict(
+        output_tokenizer="lexer",
+        mask_pattern="diffusion",
+        grammar_ltr_primary=False,
+    )
+    return [
+        Experiment("E255", "qx_e255_b4_scratch_control", "B4 matched from-scratch denoiser control", train_dir, **base),
+        Experiment("E256", "qx_e256_b4_ar_adapt", "B4 DiffuLLaMA-style SmolLM2 AR-to-masked-denoiser adaptation", train_dir, denoiser_backend="hf", **base),
+        Experiment("E257", "qx_e257_c1_relative_bind", "C1 De Bruijn relative binder references", train_dir, bind_encoding="relative", **base),
+    ]
+
+
+def _apply_eval_checkpoint(
+    experiments: list[Experiment], eval_checkpoint: Path | None
+) -> list[Experiment]:
+    """Route declared eval-only rows (V9) through one frozen checkpoint.
+
+    Rows registered with ``initialization="eval_only"`` compare decode-time
+    policies and must share identical checkpoint lineage; without an explicit
+    checkpoint source the classifier would silently retrain each row.
+    """
+    if eval_checkpoint is None:
+        return experiments
+    return [
+        replace(exp, eval_from_checkpoint=str(eval_checkpoint))
+        if exp.initialization == "eval_only"
+        and not exp.eval_from_run
+        and not exp.eval_from_checkpoint
+        else exp
+        for exp in experiments
+    ]
+
+
 def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
     return ModelBuildConfig(
         train_dir=exp.train_dir,
@@ -1364,6 +1412,8 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         denoiser_layers=exp.denoiser_layers,
         context_backend=args.context_backend,
         local_files_only=args.local_files_only,
+        denoiser_backend=str(getattr(exp, "denoiser_backend", "scratch") or "scratch"),
+        bind_encoding=str(getattr(exp, "bind_encoding", "absolute") or "absolute"),
         grammar_constrained=True,
         grammar_ltr_primary=bool(getattr(exp, "grammar_ltr_primary", True)),
         grammar_ltr_repair=exp.grammar_ltr_repair,
@@ -2160,6 +2210,15 @@ def main(argv: list[str] | None = None) -> int:
         help="Explicitly run selected rows as non-deployable scratch controls.",
     )
     parser.add_argument(
+        "--eval-checkpoint",
+        type=Path,
+        default=None,
+        help=(
+            "Frozen checkpoint for declared eval-only rows (V9 E240-E247): "
+            "evaluate decode policies over one shared lineage without training."
+        ),
+    )
+    parser.add_argument(
         "--build-curriculum",
         action="store_true",
         help="Build curriculum train corpus before running.",
@@ -2182,10 +2241,12 @@ def main(argv: list[str] | None = None) -> int:
             "v8",
             "v9",
             "v10",
+            "v11",
             "all",
         ),
         default="v3",
-        help="Experiment set through v10 local-decision rows E248-E254, or all.",
+        help="Experiment set through v10 local-decision rows E248-E254 and"
+        " v11 representation rows E255-E257, or all.",
     )
     parser.add_argument(
         "--list",
@@ -2223,11 +2284,16 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(f"unknown suites: {','.join(unknown_suites)}")
     if not args.suites:
         parser.error("--suites must select at least one suite")
-    if args.matrix in {"v4", "v5", "v6", "v7", "v8", "v9", "v10", "all"}:
-        if args.parent is None and not args.scratch_control:
+    if args.matrix in {"v4", "v5", "v6", "v7", "v8", "v9", "v10", "v11", "all"}:
+        if (
+            args.parent is None
+            and not args.scratch_control
+            and args.eval_checkpoint is None
+        ):
             if not args.list:
                 parser.error(
-                    "modern matrices require --parent or explicit --scratch-control"
+                    "modern matrices require --parent, explicit --scratch-control,"
+                    " or --eval-checkpoint"
                 )
     if args.matrix in {"v10", "all"} and args.parent is None and not args.list:
         parser.error("V10 exact-state rows require --parent")
@@ -2358,6 +2424,8 @@ def main(argv: list[str] | None = None) -> int:
         experiments.extend(_v9_experiments(args.train_dir))
     if args.matrix in {"v10", "all"}:
         experiments.extend(_v10_experiments(args.train_dir))
+    if args.matrix in {"v11", "all"}:
+        experiments.extend(_v11_experiments(args.train_dir))
     if args.only:
         experiments = [e for e in experiments if e.eid in selected_ids]
     if args.list:
@@ -2378,6 +2446,10 @@ def main(argv: list[str] | None = None) -> int:
     if any(exp.local_preference_objective for exp in experiments):
         if args.decision_events is None:
             parser.error("V10 intervention rows require --decision-events")
+
+    if args.eval_checkpoint is not None and args.scratch_control:
+        parser.error("--eval-checkpoint and --scratch-control are mutually exclusive")
+    experiments = _apply_eval_checkpoint(experiments, args.eval_checkpoint)
 
     classified: list[Experiment] = []
     for exp in experiments:

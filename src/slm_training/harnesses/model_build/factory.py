@@ -70,6 +70,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "compiler_search_stagnation_patience",
         "compiler_search_backtrack_limit",
         "compiler_search_local_nogoods",
+        "decode_min_content",
         "fastpath_aux_weight",
         "fastpath_gate_threshold",
         "suffix_rollback_window",
@@ -94,6 +95,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "gen_steps",
         "output_tokenizer",
         "use_symbol_table",
+        "bind_encoding",
         "factorized_embeddings",
         "mask_pattern",
         "statement_mask_prob",
@@ -226,6 +228,7 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         hf_model_revision=config.hf_model_revision,
         freeze_context=freeze,
         local_files_only=config.local_files_only,
+        denoiser_backend=config.denoiser_backend,
         grammar_constrained=config.grammar_constrained,
         grammar_top_k=config.grammar_top_k,
         structural_bias=config.structural_bias,
@@ -285,6 +288,7 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         compiler_search_local_nogoods=bool(
             getattr(config, "compiler_search_local_nogoods", False)
         ),
+        decode_min_content=max(-1, int(getattr(config, "decode_min_content", 0) or 0)),
         fastpath_aux_weight=getattr(config, "fastpath_aux_weight", 0.0),
         fastpath_gate_threshold=float(
             getattr(config, "fastpath_gate_threshold", 0.5) or 0.5
@@ -298,6 +302,7 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         grammar_block_size=getattr(config, "grammar_block_size", 32),
         output_tokenizer=getattr(config, "output_tokenizer", "compositional"),
         use_symbol_table=getattr(config, "use_symbol_table", True),
+        bind_encoding=str(getattr(config, "bind_encoding", "absolute") or "absolute"),
         factorized_embeddings=getattr(config, "factorized_embeddings", False),
         mask_pattern=getattr(config, "mask_pattern", "random"),
         statement_mask_prob=float(getattr(config, "statement_mask_prob", 0.35) or 0.35),

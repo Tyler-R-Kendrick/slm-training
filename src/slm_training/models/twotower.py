@@ -43,6 +43,7 @@ from slm_training.models.parallel_decode import (
     core_instability_scores,
     perturb_known_neighbors,
     select_remask_core_indices,
+    select_remask_coverage_indices,
     select_remask_indices,
     select_remask_policy_indices,
     select_remask_stability_indices,
@@ -147,6 +148,9 @@ class TwoTowerConfig:
     # True when using a pretrained HF context tower; optional for scratch.
     freeze_context: bool = False
     local_files_only: bool = False
+    # scratch | hf — B4 DiffuLLaMA-style adaptation: reuse the pretrained
+    # hf_model_name causal LM as a bidirectional masked denoiser backbone.
+    denoiser_backend: str = "scratch"
     grammar_constrained: bool = True
     grammar_top_k: int = 16
     structural_bias: float = 1.25
@@ -260,6 +264,11 @@ class TwoTowerConfig:
     compiler_search_stagnation_patience: int = 2
     compiler_search_backtrack_limit: int = 8
     compiler_search_local_nogoods: bool = False
+    # A4 minimum-content decode contract (compiler-tree decode only):
+    #   0  -> off (empty layouts remain legal completions);
+    #   >0 -> require at least this many components before EOS is admitted;
+    #   -1 -> auto: derive the floor from the resolved slot-contract inventory.
+    decode_min_content: int = 0
     fastpath_aux_weight: float = 0.0
     fastpath_gate_threshold: float = 0.5
     # E31: train/use FastPathGate trust head for remask.
@@ -269,6 +278,8 @@ class TwoTowerConfig:
     output_tokenizer: str = "compositional"
     # When output_tokenizer=lexer: map placeholders to <SYM_i> (E41+).
     use_symbol_table: bool = True
+    # C1: absolute (<BIND_j>) | relative (<BINDDEF>/<BINDREL_±k> De Bruijn refs).
+    bind_encoding: str = "absolute"
     # Stage-2: kind-factorized embeddings (E_tok + E_kind).
     factorized_embeddings: bool = False
     # Stage-2 training mask: random | mixed (statement spans ∪ random).
@@ -473,22 +484,42 @@ class TwoTowerModel(nn.Module):
                     ]
             except Exception:  # noqa: BLE001
                 kind_ids = None
-        self.denoiser = DenoiserTower(
-            vocab_size=tokenizer.vocab_size,
-            d_model=self.config.d_model,
-            n_layers=self.config.denoiser_layers,
-            n_heads=self.config.n_heads,
-            max_len=self.config.max_target_len,
-            dropout=self.config.dropout,
-            kind_ids=kind_ids,
-            n_kinds=max(kind_ids) + 1 if kind_ids else 0,
-        )
+        denoiser_backend = str(
+            getattr(self.config, "denoiser_backend", "scratch") or "scratch"
+        ).lower()
+        if denoiser_backend in {"hf", "huggingface", "transformers"}:
+            from slm_training.models.hf_denoiser import HFDenoiserTower
+
+            self.denoiser: nn.Module = HFDenoiserTower(
+                vocab_size=tokenizer.vocab_size,
+                d_model=self.config.d_model,
+                max_len=self.config.max_target_len,
+                hf_model_name=self.config.hf_model_name,
+                hf_model_revision=self.config.hf_model_revision,
+                local_files_only=self.config.local_files_only,
+                kind_ids=kind_ids,
+                n_kinds=max(kind_ids) + 1 if kind_ids else 0,
+            )
+        elif denoiser_backend in {"scratch", "token", "local"}:
+            self.denoiser = DenoiserTower(
+                vocab_size=tokenizer.vocab_size,
+                d_model=self.config.d_model,
+                n_layers=self.config.denoiser_layers,
+                n_heads=self.config.n_heads,
+                max_len=self.config.max_target_len,
+                dropout=self.config.dropout,
+                kind_ids=kind_ids,
+                n_kinds=max(kind_ids) + 1 if kind_ids else 0,
+            )
+        else:
+            raise ValueError(f"unknown denoiser_backend {denoiser_backend!r}")
 
         def isolated_aux_init(factory, offset: int):
             """Initialize an auxiliary module without shifting train RNG."""
             with torch.random.fork_rng(devices=[]):
                 torch.manual_seed(int(self.config.seed) + offset)
                 return factory()
+
 
         self.length_head = (
             isolated_aux_init(
@@ -648,6 +679,64 @@ class TwoTowerModel(nn.Module):
         if getattr(self.config, "grammar_trust_model", False):
             return 0.0
         return float(self.config.structural_bias or 0.0)
+
+    def _effective_min_content(self, slot_contract: list[str] | None) -> int:
+        """A4 minimum-content floor for the compiler-tree completion forest.
+
+        ``decode_min_content`` == -1 derives the floor from the resolved
+        slot-contract inventory (one component per distinct content slot, capped
+        so it never demands more than the prompt implies); >0 uses the fixed
+        value; 0 disables the contract.
+        """
+        raw = int(getattr(self.config, "decode_min_content", 0) or 0)
+        if raw >= 0:
+            return raw
+        if not slot_contract:
+            return 0
+        # Distinct placeholder roots ≈ the number of content-bearing components
+        # the prompt asks for; the empty layout binds none of them.
+        roots = {str(slot).split(".", 1)[0] for slot in slot_contract if slot}
+        return len(roots)
+
+    def _coverage_deficit(
+        self, ids: torch.Tensor, known: torch.Tensor
+    ) -> torch.Tensor:
+        """A3 per-position content-coverage deficit.
+
+        Non-content (structural filler) positions score ``1 - content_fraction``
+        per row, where ``content_fraction`` is the share of known positions that
+        hold component/symbol/content tokens. Content positions score 0 (keep
+        them). When a row is content-sparse the filler positions get a high
+        deficit and are preferentially remasked to re-decode toward content;
+        when content is already dense the deficit is near zero and the policy
+        falls back to ordinary confidence remasking. Self-contained: reads only
+        the tokenizer's compiler-derived symbol spaces, no slot contract.
+        """
+        content_ids: set[int] = set()
+        for kind in ("component", "sym", "bind"):
+            try:
+                content_ids |= set(self.tokenizer.kind_ids(kind))
+            except Exception:  # noqa: BLE001 - tokenizer without that kind
+                continue
+        deficit = torch.zeros_like(ids, dtype=torch.float32)
+        if not content_ids:
+            return deficit
+        rows, length = ids.shape
+        for b in range(rows):
+            known_positions = [
+                t for t in range(length) if bool(known[b, t].item())
+            ]
+            if not known_positions:
+                continue
+            content_hits = sum(
+                1 for t in known_positions if int(ids[b, t].item()) in content_ids
+            )
+            content_fraction = content_hits / len(known_positions)
+            row_deficit = 1.0 - content_fraction
+            for t in known_positions:
+                if int(ids[b, t].item()) not in content_ids:
+                    deficit[b, t] = row_deficit
+        return deficit
 
     def _pick_kwargs(self) -> dict[str, object]:
         trust = bool(getattr(self.config, "grammar_trust_model", False))
@@ -3309,6 +3398,7 @@ class TwoTowerModel(nn.Module):
                             list(parent), length
                         )[0].tolist(),
                         "phase": "compiler_tree",
+                        "decision_kind": str(paths[chosen].kind),
                     }
                     if recorder.record_support:
                         commit["allowed_id_set"] = list(allowed)
@@ -3415,6 +3505,7 @@ class TwoTowerModel(nn.Module):
                     max_path_tokens=int(
                         getattr(self.config, "grammar_draft_window", 8) or 8
                     ),
+                    min_content=self._effective_min_content(slot_contract),
                 )
             # Partial coverage still contains individually grammar-admitted
             # paths. Tree/restricted modes must consume those paths; falling
@@ -4741,7 +4832,7 @@ class TwoTowerModel(nn.Module):
             use_gate
             or getattr(self.config, "remask_use_entropy", False)
             or remask
-            or remask_policy in {"core", "combined", "stability"}
+            or remask_policy in {"core", "combined", "stability", "coverage"}
         )
         gate_trust = None
         entropy = None
@@ -4825,6 +4916,18 @@ class TwoTowerModel(nn.Module):
                     else None,
                     gate_threshold=gate_threshold,
                     combine_policy=remask_policy == "combined",
+                )
+            elif remask_policy == "coverage":
+                # A3: bias remasking toward filler positions when the layout is
+                # content-sparse, giving the model another pass to place missing
+                # inventory content (soft sibling of the A4 hard contract).
+                remask_flat = select_remask_coverage_indices(
+                    conf,
+                    known,
+                    remask_ratio=remask_ratio,
+                    protect_bos=True,
+                    coverage_deficit=self._coverage_deficit(ids, known),
+                    grammar_positions=remask,
                 )
             else:
                 remask_flat = select_remask_policy_indices(
@@ -5798,7 +5901,11 @@ class TwoTowerModel(nn.Module):
         if _is_lexer_output(cfg):
             from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
 
-            tokenizer = DSLNativeTokenizer.build()
+            tokenizer = DSLNativeTokenizer.build(
+                bind_encoding=str(
+                    getattr(cfg, "bind_encoding", "absolute") or "absolute"
+                )
+            )
             # Scratch context keeps a prompt-word tokenizer (decoupled).
             ctx_texts = [r.prompt for r in records]
             context_tokenizer = OpenUITokenizer.build(ctx_texts)

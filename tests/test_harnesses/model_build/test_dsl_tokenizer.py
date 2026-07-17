@@ -72,6 +72,15 @@ def test_round_trip_with_symbol_table(tok: DSLNativeTokenizer) -> None:
     assert '":hero.title"' in text2
 
 
+def test_prefix_decode_preserves_terminal_newline(tok: DSLNativeTokenizer) -> None:
+    ids = [
+        *tok.encode('root = Button(":cta.label")', add_special=False),
+        tok.token_to_id["NL"],
+    ]
+    assert not tok.decode(ids).endswith("\n")
+    assert tok.decode(ids, preserve_trailing_newline=True).endswith("\n")
+
+
 def test_runtime_symbol_contract_and_v2_table_migration(tok: DSLNativeTokenizer) -> None:
     request = GenerationRequest(
         prompt="Hero",
