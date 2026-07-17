@@ -93,7 +93,7 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 | ScopeDiff X18 confirmation | `gx_x18_scope_noise_confirm_200` seeds 0/1/2 | CPU scratch topology v2 matrix | `outputs/runs/gx_x18_scope_noise_confirm_200/` (local) | 200 steps; all-suite median parse/fidelity 0.0; not promoted or synced |
 | ScopeDiff X21 confirmation | `gx_x21_scoped_topology_confirm_200` seeds 0/1/2 | CPU scratch topology v2 matrix | `outputs/runs/gx_x21_scoped_topology_confirm_200/` (local) | 200 steps; weak structure, parse/fidelity 0.0; not promoted or synced |
 | B3 five-minute lexer control | `capacity_lexer_v1__d64_h2_c1_dn2_t5000_x1__s0` | CPU scratch matched-capacity control | `outputs/ladders/b3-matched-5m-e287-r2/runs/capacity_lexer_v1__d64_h2_c1_dn2_t5000_x1__s0/checkpoints/last.pt` (local) | 53 steps / 5,004 target tokens; all-suite parse/meaningful/fidelity 0.0; AgentV 0/5 — **not promotable or ship** ([results](design/iter-b3-capacity-ladder-20260717.md)) |
-| B3 five-minute choice arm | `capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0` | CPU scratch matched-capacity choice codec | `outputs/ladders/b3-matched-5m-e287-r2/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/checkpoints/last.pt` (local) | 107 steps / 5,022 target tokens; empty-decode defect, all-suite parse/meaningful/fidelity 0.0; AgentV 0/5 — **not promotable or ship** ([results](design/iter-b3-capacity-ladder-20260717.md)) |
+| B3 five-minute choice arm | `capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0` | CPU scratch matched-capacity choice codec | `outputs/ladders/b3-matched-5m-e287-r2/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/checkpoints/last.pt` (local) | E288 frozen eval restores deterministic parse 1.0 on all suites, but meaningful/fidelity remain 0.0 and AgentV 0/5 — **not promotable or ship** ([results](design/iter-e288-choice-native-gate-20260717.md)) |
 | Production HF ship | — | — | `hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/` | **None registered yet** — fill this row after the first full HF sync |
 
 Update the table in place when a checkpoint is written or superseded. Keep
@@ -195,6 +195,11 @@ Leakage: structural fingerprints + train/test isolation
 | `adversarial` (B3 choice arm) | 4 | 0.0 | 0.0 | 0.0 | 0.0 | No — empty predictions; AgentV row failed |
 | `ood` (B3 choice arm) | 4 | 0.0 | 0.0 | 0.0 | 0.0 | No — empty predictions; AgentV row failed |
 | `rico_held` (B3 choice arm) | 3 | 0.0 | 0.0 | 0.0 | 0.0 | No — empty predictions; AgentV row failed |
+| `smoke` (E288 choice-native gate) | 3 | 1.0 | 0.0 | 0.3094 | 0.0 | No — meaningful 0.0; AgentV row failed |
+| `held_out` (E288 choice-native gate) | 5 | 1.0 | 0.0 | 0.2514 | 0.0 | No — meaningful 0.0; AgentV row failed |
+| `adversarial` (E288 choice-native gate) | 4 | 1.0 | 0.0 | 0.2905 | 0.0 | No — meaningful 0.0; AgentV row failed |
+| `ood` (E288 choice-native gate) | 4 | 1.0 | 0.0 | 0.2369 | 0.0 | No — meaningful 0.0; AgentV row failed |
+| `rico_held` (E288 choice-native gate) | 3 | 1.0 | 0.0 | 0.0901 | 0.0 | No — meaningful 0.0; AgentV row failed |
 | `smoke` (`e177-semantic-judge-32step`, E180 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1542 | 0.607 | No — syntax 1.0, but meaningful component recall 0.25; not a ship evaluation |
 | `smoke` (`e181-semantic-balanced-32step`, E181 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1542 | 0.607 | No — mixture-only control did not improve quality; not a ship evaluation |
 | `smoke` (`e184-compiler-aligned-32step`, E194 diagnostic subset) | 1 | 0.0 | 0.0 | 0.3600 | 0.0 | No — root/schema constraints improved, but output remained incomplete; not a ship evaluation |
@@ -496,7 +501,7 @@ suites because they contain no scope metadata. Evidence:
 
 | 2026-07-17 | `qx_e278_c2_pseudo_embeddings` (V15 C2) | `outputs/runs/` (local, not synced); evidence `docs/design/iter-e278-c2-pseudo-embeddings-20260717.md` + v13 JSON + binding probe JSON | 200 CPU steps, fixture v1, matched vs E255 (only `runtime_symbol_features="replace"` differs): structural similarity 0.19–0.29 vs 0.28–0.37 (honest fixture negative); binding probe on the trained checkpoint: same-surface hidden cosine 0.9998 vs cross 0.9679 (margin +0.032); run flushed + fixed a latent stale-feature leak (training_loss now clears request-local features) | DyVo-style deterministic byte-compositional symbol embeddings via the V8 delta path; fixture wiring + probe evidence only, frontier C2×C1 interaction open; no promotion |
 | 2026-07-17 | `capacity_lexer_v1__d64_h2_c1_dn2_t5000_x1__s0` (B3 matched control) | `outputs/ladders/b3-matched-5m-e287-r2/runs/capacity_lexer_v1__d64_h2_c1_dn2_t5000_x1__s0/` (local) | 53 CPU scratch steps / 5,004 target tokens; weighted NLL 13.1800; parse/meaningful/fidelity 0.0 on all five suites | AgentV 0/5; invalid integrity-only promotion removed and gate fixed; scratch/no sync/no promotion |
-| 2026-07-17 | `capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0` (B3 matched choice) | `outputs/ladders/b3-matched-5m-e287-r2/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/` (local) | 107 CPU scratch steps / 5,022 target tokens; weighted NLL 7.0985 with missing binding category; all 19 predictions empty and all-suite parse/meaningful/fidelity 0.0 | AgentV 0/5; choice-native legal-decision gate absent, so result diagnoses decode infrastructure rather than undertraining; scratch/no sync/no promotion |
+| 2026-07-17 | `capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0` (B3 matched choice; E288 reevaluation) | `outputs/ladders/b3-matched-5m-e287-r2/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/` (local) | 107 CPU scratch steps / 5,022 target tokens; E287 emitted 19 empty predictions; E288 same SHA restores parse 1.0 on every suite via production-codec/schema state | Meaningful/fidelity/reward remain 0.0, AgentV 0/5; decoder fix confirmed without retraining; scratch/no sync/no promotion |
 
 Append a row for every new or replaced checkpoint. Do not delete history.
 

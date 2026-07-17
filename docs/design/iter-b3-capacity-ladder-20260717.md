@@ -174,3 +174,8 @@ produces an empty program. The next iteration must add a choice-native legal
 decision state derived from the production codec, including forced selection
 when only one token is legal, then reevaluate this frozen checkpoint without
 retraining.
+
+E288 implemented that generalized production-codec/schema state and reevaluated
+the frozen checkpoint. Parse recovered from 0.0 to **1.0 on all five suites**
+without changing weights; meaningful-program rate and fidelity stayed 0.0.
+See [iter-e288-choice-native-gate-20260717.md](iter-e288-choice-native-gate-20260717.md).
