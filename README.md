@@ -105,6 +105,7 @@ summary and the full card whenever a checkpoint is created or promoted.
 | E292 complete-loss choice arm | `capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/last.pt` | `outputs/ladders/e292-choice-loss-suite-complete-r2/…` (local) | Same checkpoint SHA; all five frozen loss categories now complete (weighted NLL 7.2265), but honest meaningful rate is 0.0 and AgentV is 0/5 — not promoted or ship |
 | E293 choice-native component plan | `e293-choice-component-plan-r3/last.pt` | `outputs/runs/e293-choice-component-plan-r3/…` (local) | Plan target learns and legal bias reduces failures 17→13, but matched no-DESIGN meaningful rate is 0.0 and AgentV 0/5 — not promoted or ship |
 | E294 no-DESIGN choice control | `e294-choice-no-design-control-r1/last.pt` | `outputs/runs/e294-choice-no-design-control-r1/…` (local) | No-plan control exactly matches E293 bias-off; meaningful 0.0, AgentV 0/5, 17 failures — not promoted or ship |
+| E295 DESIGN-dropout choice arm | `e295-choice-design-dropout-r1/last.pt` | `outputs/runs/e295-choice-design-dropout-r1/…` (local) | 50% deterministic context dropout yields adversarial meaningful 0.25 and AgentV 1/5, but four suites remain 0.0 and 14 gates fail — not promoted or ship |
 | Production HF ship | *(none yet)* | [HF Bucket `TKendrick/OpenUI`](https://huggingface.co/buckets/TKendrick/OpenUI) `checkpoints/<run_id>/` | Register here after first full HF sync + `--ship-gates` |
 
 **Load demo:** `python -m scripts.serve_playground` · **Full train sync:** set

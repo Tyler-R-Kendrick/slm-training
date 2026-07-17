@@ -799,6 +799,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "schema_in_context": bool(getattr(config, "schema_in_context", False)),
             "retrieval_k": getattr(config, "retrieval_k", 0),
             "grammar_constrained": bool(getattr(config, "grammar_constrained", False)),
+            "design_md_dropout": float(
+                getattr(effective_plugin_config, "design_md_dropout", 0.0) or 0.0
+            ),
             "honesty_mode": (
                 "no-design-md-context"
                 if not getattr(

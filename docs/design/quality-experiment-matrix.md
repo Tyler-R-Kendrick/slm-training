@@ -1728,6 +1728,20 @@ still produces no meaningful programs. Secondary-ranking evidence only; no
 promotion. See [the narrative](iter-e294-no-design-plan-control-20260717.md)
 and [machine-readable results](choice-plan-control-results-iter-e294-20260717.json).
 
+## E295 deterministic DESIGN-context dropout (CPU scratch, 2026-07-17)
+
+E295 adds cache-safe record-level `--design-md-dropout` and runs a matched 50%
+arm: exactly 240/480 DESIGN contexts are omitted. Complete weighted NLL 7.3785
+interpolates between E292 all-DESIGN (7.2265) and E294 no-DESIGN (7.4977).
+Frozen prompt-only evaluation produces one meaningful adversarial program
+(0.25), AgentV 1/5, and 14 failures versus 0.0 / 0/5 / 15–17 in the controls.
+The other four suite scoreboards exactly match E294.
+
+**Verdict:** retain and replicate the generalized lever; the isolated
+adversarial success is not broad transfer and the checkpoint is not promotable.
+See [the narrative](iter-e295-design-context-dropout-20260717.md) and
+[machine-readable results](choice-design-dropout-results-iter-e295-20260717.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

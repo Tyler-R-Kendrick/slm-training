@@ -119,6 +119,11 @@ Checkpoint remains the pre-remediation fixture-upsample scratch run (not retrain
   matches E293 with decode bias off, so plan training alone does not improve
   discrete outputs; the active head only cuts failures 17→13 on secondary
   metrics. Meaningful rate remains 0.0, so no ship claim follows.
+- E295 deterministically drops DESIGN context for exactly 240/480 training
+  records. Its complete NLL lies between the all/no-DESIGN controls and frozen
+  prompt-only evaluation recovers one meaningful adversarial program (0.25,
+  AgentV 1/5, 14 failures), while the other four suites exactly match E294.
+  This narrow signal warrants replication but does not support promotion.
 
 ## Re-eval commands
 
