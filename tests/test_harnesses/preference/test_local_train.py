@@ -17,6 +17,7 @@ from slm_training.harnesses.preference.local_train import (
     _event_logits,
     _event_logits_many,
     _fresh_adamw_direction,
+    _guard_objective_tensors,
     _gradient_alignment,
     _minimum_norm_gradient,
     _project_conflicting_gradients,
@@ -154,6 +155,16 @@ def test_fresh_adamw_direction_matches_first_step_geometry() -> None:
 
     assert direction[0] is not None
     assert torch.allclose(direction[0], torch.tensor([1.2, -1.3]))
+
+
+def test_guard_objectives_are_minimization_oriented() -> None:
+    logits = torch.tensor([0.0, 2.0, -1.0, 0.0], requires_grad=True)
+    event = _event(good=(1,), bad=(2,))
+    values = _guard_objective_tensors(logits, event, objective="ftpo_set")
+
+    assert values["bad_probability_mass"] > 0
+    assert values["good_probability_mass"] < 0
+    assert values["mean_margin"] == -3.0
 
 
 def test_minimum_norm_gradient_certifies_common_descent() -> None:
