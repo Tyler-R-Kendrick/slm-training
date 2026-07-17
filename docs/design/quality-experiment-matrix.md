@@ -1978,6 +1978,19 @@ one `TextContent`; seven failures and AgentV 2/5 remain.
 See [train result](iter-e314-visible-slot-contract-train-20260717.md) and
 [JSON](visible-slot-contract-train-results-iter-e314-20260717.json).
 
+## E315 distinct-slot auto content floor (eval-only, 2026-07-17)
+
+Auto min-content incorrectly counted namespace prefixes, so all `:held.*` or
+`:ood.*` slots collapsed to one obligation. Counting distinct slots restores
+contract recall/fidelity to 1.0 on all five suites, improves held/adversarial/
+OOD/RICO structure, makes OOD meaningful 0.25, and cuts failures 7→5 while
+preserving parse 1.0. AgentV remains 2/5.
+
+**Verdict:** accept the generalized decoder correction, but do not promote the
+unchanged checkpoint: held-out component recall remains zero and OOD recall
+0.125 still fails. See [results](iter-e315-distinct-slot-floor-20260717.md) and
+[JSON](distinct-slot-floor-results-iter-e315-20260717.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
