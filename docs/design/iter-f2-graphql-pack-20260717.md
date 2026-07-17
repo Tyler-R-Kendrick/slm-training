@@ -2,9 +2,19 @@
 
 Fixture-grade implementation for Track F2 (Linear SLM-43) — the second real
 DSL pack under the F1 contract and the first schema-native backend. Code:
-[`src/slm_training/dsl/packs/graphql.py`](../../src/slm_training/dsl/packs/graphql.py)
-+ [`src/slm_training/dsl/grammar/backends/graphql_query.py`](../../src/slm_training/dsl/grammar/backends/graphql_query.py).
+[`src/slm_training/dsl/packs/graphql.py`](../../src/slm_training/dsl/packs/graphql.py),
+resolving the shared `graphql` grammar backend via `get_backend("graphql")`.
 Not a ship claim.
+
+> **Reconciliation note (PR #275 merge, 2026-07-17):** origin/main already ships
+> the canonical F2 GraphQL owner as `dsl/pack.py`'s `graphql` pack plus the
+> Node-bridge [`graphql_js.py`](../../src/slm_training/dsl/grammar/backends/graphql_js.py)
+> backend. #275's parallel `graphql_query.py` backend (pure `graphql-core`) was
+> removed during the merge; `graphql_js` is the single registered `graphql`
+> backend. #275's `dsl/packs/` pack framework is retained because Track G4's
+> reasoning bench depends on its `arith-sketch` pack — see the F1 follow-up
+> caveat in [`dsl-pack-contract.md`](dsl-pack-contract.md). The `dsl.packs`
+> GraphQL pack now runs against the canonical `graphql_js` backend.
 
 ## What was built
 

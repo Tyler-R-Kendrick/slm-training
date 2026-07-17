@@ -1,3 +1,5 @@
+> **Reconciliation note (PR #275 merge, 2026-07-17):** the `meta_trace.py` module this iteration wired was a parallel owner of work that origin/main already ships as the canonical `harnesses/distill/trace_store.py (record_harness_decision / record_matrix_outcome / sync_traces)`. The duplicate module (and its test) were removed during the merge; main's owner is authoritative. This record is retained as the experiment narrative.
+
 # G5 — meta-trace capture fixture (2026-07-17)
 
 Fixture-grade wiring for Track G5 (Linear SLM-37). Schema documentation:

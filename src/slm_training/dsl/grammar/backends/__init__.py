@@ -55,7 +55,7 @@ def _ensure_builtins() -> None:
     if _REGISTRY:
         return
     from slm_training.dsl.grammar.backends.arith_sketch import ArithSketchBackend
-    from slm_training.dsl.grammar.backends.graphql_query import GraphQLQueryBackend
+    from slm_training.dsl.grammar.backends.graphql_js import GraphQLJsBackend
     from slm_training.dsl.grammar.backends.lark_backend import LarkFileBackend
     from slm_training.dsl.grammar.backends.openui_hybrid import OpenUIHybridBackend
     from slm_training.dsl.grammar.backends.openui_langcore import OpenUILangCoreBackend
@@ -67,7 +67,7 @@ def _ensure_builtins() -> None:
     register_backend(OpenUIHybridBackend())
     register_backend(ToyLayoutBackend())
     register_backend(ArithSketchBackend())
-    register_backend(GraphQLQueryBackend())
+    register_backend(GraphQLJsBackend())
     # Alias: generic Lark loader stays available for ad-hoc grammars.
     register_backend(
         LarkFileBackend(

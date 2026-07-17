@@ -1,5 +1,22 @@
 # F1 (SLM-34): the DSL-pack contract — OpenUI as the first pack
 
+> **Known follow-up (PR #275 merge, 2026-07-17):** this module (`dsl/pack.py`,
+> single-module `DslPack` + `register_pack`/`get_pack`) is the **canonical** F1
+> pack owner. PR #275 independently authored a second, `dsl/packs/` package
+> (`DSLPack` in `packs/types.py` + `packs/openui.py` / `packs/toy_layout.py` /
+> `packs/graphql.py` / `packs/arith_sketch.py`). During the merge the `dsl/packs/`
+> framework was **retained** rather than rehomed, because Track G4's reasoning
+> bench (`harnesses/reasoning/bench.py`) depends on its `arith-sketch` pack and
+> rehoming that onto `dsl/pack.py` under time pressure was judged too invasive to
+> do safely. The two frameworks are independent (separate registries; nothing
+> imports both conflictingly) and both are green, but shipping two pack systems
+> is a deliberate shortcut: the follow-up is to fold `dsl/packs/arith_sketch.py`
+> (and any still-wanted pack) into this canonical `dsl/pack.py` registry and
+> delete `dsl/packs/`. The shared `graphql` grammar backend is already single-owner
+> (main's `graphql_js.py`); #275's duplicate `graphql_query.py` backend, its
+> parallel `program_matrices.py` (G1) and `meta_trace.py` (G5) modules were
+> removed in the merge in favor of main's canonical owners.
+
 **Status:** landed (refactor + contract formalization; no training behavior change).
 **Code:** `src/slm_training/dsl/pack.py` (contract + registry),
 `tests/test_dsl/test_pack.py` (registry, slots, e2e fixture run).

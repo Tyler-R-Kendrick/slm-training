@@ -1,8 +1,8 @@
-# E278/E279 — C4 head-on test of the "names disappear" threat (2026-07-17)
+# E281/E282 — C4 head-on test of the "names disappear" threat (2026-07-17)
 
 Fixture-grade matched pair for Track C4 (Linear SLM-28). Machine-readable
 evidence:
-[quality-matrix-results-iter-v14-c4-20260717.json](quality-matrix-results-iter-v14-c4-20260717.json).
+[quality-matrix-results-iter-v16-c4-20260717.json](quality-matrix-results-iter-v16-c4-20260717.json).
 Code: `symbol_anonymization` flag in
 [`src/slm_training/models/dsl_tokenizer.py`](../../src/slm_training/models/dsl_tokenizer.py)
 (encode) and
@@ -20,8 +20,8 @@ empirically instead of assuming it.
 
 ## The controlled pair
 
-One lever: `symbol_anonymization`. The surface arm (E279) encodes binder and
-state names verbatim through the existing byte channel; the control (E278)
+One lever: `symbol_anonymization`. The surface arm (E282) encodes binder and
+state names verbatim through the existing byte channel; the control (E281)
 keeps the standard `<BIND_j>`/`<STATE_k>` pools. Placeholders ride `<SYM_i>`
 in **both** arms (the placeholder lever was already tested and rejected as
 E49), so the comparison isolates exactly the identifier-anonymization choice
@@ -38,12 +38,12 @@ Fail-closed guards refuse surface mode combined with `grammar_constrained`,
 
 ## Fixture result (wiring evidence only)
 
-Recipe: `--matrix v14 --steps 80 --device cpu --context-backend scratch
+Recipe: `--matrix v16 --steps 80 --device cpu --context-backend scratch
 --no-design-md-context --rico-limit 3 --scratch-control`, batch 4, seed 0,
 lr 3e-4, fixture v1 corpus (108 records); suites smoke 3 / held_out 5 /
 adversarial 4 / ood 4 / rico_held 3.
 
-| Metric | E278 anonymized | E279 surface |
+| Metric | E281 anonymized | E282 surface |
 | --- | --- | --- |
 | syntax parse (all suites) | 0.0 | 0.0 |
 | meaningful parse (all suites) | 0.0 | 0.0 |
@@ -88,7 +88,7 @@ than none.**
 - Fixture/scratch wiring evidence only; no ship claim, no gate weakened,
   nothing promoted. The E-row verdict field stays open.
 - Removing the grammar gate from both arms changes the decode regime relative
-  to E255/E277-style rows; E278 exists precisely so the pair stays internally
+  to E255/E280-style rows; E281 exists precisely so the pair stays internally
   matched. Cross-matrix comparisons to constrained rows are not valid.
 - The surface arm is a measurement instrument, not a candidate
   representation: it forfeits the fixed-vocab NAME gate, macro channel, and

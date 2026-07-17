@@ -81,6 +81,9 @@ class DecodeStats:
     dynamic_mask_applications: int = 0
     dynamic_candidates_before: int = 0
     dynamic_candidates_after: int = 0
+    # A2 (ASAp): constraint-violating (position, token) mass removals recorded.
+    asap_penalties: int = 0
+    asap_positions: int = 0
     constraint_graph_edges: int = 0
     completion_bound_known: int = 0
     completion_bound_unknown: int = 0
@@ -227,6 +230,8 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "dynamic_mask_applications",
         "dynamic_candidates_before",
         "dynamic_candidates_after",
+        "asap_penalties",
+        "asap_positions",
         "constraint_graph_edges",
         "completion_bound_known",
         "completion_bound_unknown",

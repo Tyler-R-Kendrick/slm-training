@@ -121,6 +121,8 @@ class Experiment:
     # C4 pair runs decode unconstrained in BOTH arms (the NAME gate is
     # BIND-only, so constrained decode cannot emit surface identifiers).
     grammar_constrained: bool = True
+    # V14 (A2): ASAp-style distribution-aware constrained MaskGIT decode.
+    asap_decode: bool = False
     # V7 levers: speculative denoising (docs/design/speculative-denoising.md)
     stability_min_persistence: int = 0
     stability_jsd_weight: float = 1.0
@@ -1498,7 +1500,7 @@ def _v12_experiments(train_dir: Path) -> list[Experiment]:
 
 
 def _v13_experiments(train_dir: Path) -> list[Experiment]:
-    """E277 (C3, SLM-27): corpus-mined macro tokens, matched against E255."""
+    """E280 (C3, SLM-27): corpus-mined macro tokens, matched against E255."""
     base = dict(
         output_tokenizer="lexer",
         mask_pattern="diffusion",
@@ -1506,8 +1508,8 @@ def _v13_experiments(train_dir: Path) -> list[Experiment]:
     )
     return [
         Experiment(
-            "E277",
-            "qx_e277_c3_macro_tokens",
+            "E280",
+            "qx_e280_c3_macro_tokens",
             "C3 corpus-mined macro tokens with deterministic expansion",
             train_dir,
             macro_tokens=True,
@@ -1517,7 +1519,45 @@ def _v13_experiments(train_dir: Path) -> list[Experiment]:
 
 
 def _v14_experiments(train_dir: Path) -> list[Experiment]:
-    """E278/E279 (C4, SLM-28): names-disappear matched pair.
+    """E277 (A2): ASAp-style distribution-aware constrained MaskGIT decode.
+
+    Observed constraint violations remove the violating token's mass at that
+    canvas position from the next proposal, and unmask ordering uses
+    post-removal confidence. Decode-only, so eval-only: route through a frozen
+    E255 checkpoint via ``--parent`` — a matched pair differing only in
+    ``asap_decode``.
+    """
+    base = dict(
+        output_tokenizer="lexer",
+        mask_pattern="diffusion",
+        grammar_ltr_primary=False,
+        initialization="eval_only",
+        runtime_override_fields=frozenset({"asap_decode", "grammar_ltr_primary"}),
+    )
+    return [
+        Experiment("E277", "qx_e277_a2_asap_decode", "A2 ASAp distribution-aware constrained MaskGIT decode", train_dir, asap_decode=True, **base),
+    ]
+
+
+def _v15_experiments(train_dir: Path) -> list[Experiment]:
+    """E278 (C2): dynamic pseudo-embeddings for symbol tokens (SLM-26).
+
+    ``runtime_symbol_features="replace"`` cancels the learned symbol-pool row
+    with a deterministic byte-compositional vector (DyVo-style; weight tying
+    and batching untouched). Matched against E255 on everything but the mode.
+    """
+    base = dict(
+        output_tokenizer="lexer",
+        mask_pattern="diffusion",
+        grammar_ltr_primary=False,
+    )
+    return [
+        Experiment("E278", "qx_e278_c2_pseudo_embeddings", "C2 dynamic pseudo-embeddings for symbol tokens", train_dir, runtime_symbol_features="replace", **base),
+    ]
+
+
+def _v16_experiments(train_dir: Path) -> list[Experiment]:
+    """E281/E282 (C4, SLM-28): names-disappear matched pair.
 
     Both arms decode unconstrained (grammar_constrained=False) because the
     NAME gate admits only <BIND_j> ids — the surface arm could never emit a
@@ -1532,15 +1572,15 @@ def _v14_experiments(train_dir: Path) -> list[Experiment]:
     )
     return [
         Experiment(
-            "E278",
-            "qx_e278_c4_anon_control",
+            "E281",
+            "qx_e281_c4_anon_control",
             "C4 anonymized-symbol control (unconstrained decode)",
             train_dir,
             **base,
         ),
         Experiment(
-            "E279",
-            "qx_e279_c4_surface_ids",
+            "E282",
+            "qx_e282_c4_surface_ids",
             "C4 surface binder/state identifiers via byte channel",
             train_dir,
             symbol_anonymization=False,
@@ -1595,6 +1635,7 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         macro_tokens=bool(getattr(exp, "macro_tokens", False)),
         symbol_anonymization=bool(getattr(exp, "symbol_anonymization", True)),
         grammar_constrained=bool(getattr(exp, "grammar_constrained", True)),
+        asap_decode=bool(getattr(exp, "asap_decode", False)),
         grammar_ltr_primary=bool(getattr(exp, "grammar_ltr_primary", True)),
         grammar_ltr_repair=exp.grammar_ltr_repair,
         grammar_ltr_max_tokens=exp.grammar_ltr_max_tokens,
@@ -2522,13 +2563,16 @@ def main(argv: list[str] | None = None) -> int:
             "v12",
             "v13",
             "v14",
+            "v15",
+            "v16",
             "all",
         ),
         default="v3",
         help="Experiment set through v10 local-decision rows E248-E254,"
         " v11 representation rows E255-E257, the v12 choice-codec row E262,"
-        " the v13 macro-token row E277, and the v14 names-disappear pair"
-        " E260/E261, or all.",
+        " the v13 macro-token row E280, the v14 decode-distortion row E277,"
+        " the v15 pseudo-embedding row E278, the v16 names-disappear pair"
+        " E281/E282, or all.",
     )
     parser.add_argument(
         "--list",
@@ -2566,7 +2610,7 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(f"unknown suites: {','.join(unknown_suites)}")
     if not args.suites:
         parser.error("--suites must select at least one suite")
-    if args.matrix in {"v4", "v5", "v6", "v7", "v8", "v9", "v10", "v11", "v12", "v13", "all"}:
+    if args.matrix in {"v4", "v5", "v6", "v7", "v8", "v9", "v10", "v11", "v12", "v13", "v14", "v15", "all"}:
         if (
             args.parent is None
             and not args.scratch_control
@@ -2714,6 +2758,10 @@ def main(argv: list[str] | None = None) -> int:
         experiments.extend(_v13_experiments(args.train_dir))
     if args.matrix in {"v14", "all"}:
         experiments.extend(_v14_experiments(args.train_dir))
+    if args.matrix in {"v15", "all"}:
+        experiments.extend(_v15_experiments(args.train_dir))
+    if args.matrix in {"v16", "all"}:
+        experiments.extend(_v16_experiments(args.train_dir))
     if args.only:
         experiments = [e for e in experiments if e.eid in selected_ids]
     if args.list:

@@ -27,6 +27,11 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
     {
         "batch_size",
         "allow_unconstrained_fallback",
+        "asap_decode",
+        "bind_encoding",
+        "decode_min_content",
+        "denoiser_backend",
+        "mask_pattern",
         "context_backend",
         "compiler_alignment_loss_weight",
         "compiler_alignment_margin",
@@ -302,7 +307,17 @@ class ExperimentKnobs(StrictModel):
     topology_global_sync_interval: int | None = Field(default=None, ge=1, le=32)
     topology_accept_threshold: float | None = Field(default=None, ge=0, le=1)
     topology_contract_threshold: float | None = Field(default=None, ge=0, le=1)
-    runtime_symbol_features: Literal["none", "surface", "role_gated"] | None = None
+    # DSL diffusion research program levers (G1, SLM-46): Track A decode
+    # (A2 ASAp mass removal, A4 min-content floor), Track B backbone (B4)
+    # and Track C representation (C1 relative binder refs).
+    asap_decode: bool | None = None
+    decode_min_content: int | None = Field(default=None, ge=-1, le=64)
+    denoiser_backend: Literal["scratch", "hf"] | None = None
+    bind_encoding: Literal["absolute", "relative"] | None = None
+    mask_pattern: Literal["random", "mixed", "diffusion"] | None = None
+    runtime_symbol_features: (
+        Literal["none", "surface", "role_gated", "replace"] | None
+    ) = None
     symbol_slot_augmentation: bool | None = None
     semantic_candidate_masks: bool | None = None
     constraint_graph_mode: Literal["off", "grammar", "hybrid"] | None = None

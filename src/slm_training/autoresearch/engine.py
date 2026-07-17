@@ -358,6 +358,17 @@ def compile_commands(
             train.extend(["--output-tokenizer", knobs.output_tokenizer])
         elif any(getattr(knobs, field) is not None for field in symbol_fields):
             train.extend(["--output-tokenizer", "lexer"])
+        # DSL diffusion program levers (G1): typed knob -> bounded flag only.
+        if knobs.mask_pattern:
+            train.extend(["--mask-pattern", knobs.mask_pattern])
+        if knobs.bind_encoding:
+            train.extend(["--bind-encoding", knobs.bind_encoding])
+        if knobs.denoiser_backend:
+            train.extend(["--denoiser-backend", knobs.denoiser_backend])
+        if knobs.decode_min_content is not None:
+            train.extend(["--decode-min-content", str(knobs.decode_min_content)])
+        if knobs.asap_decode:
+            train.append("--asap-decode")
         if knobs.compiler_alignment_loss_weight is not None:
             train.extend(
                 [

@@ -1,3 +1,5 @@
+> **Reconciliation note (PR #275 merge, 2026-07-17):** the `program_matrices.py` module this iteration wired was a parallel owner of work that origin/main already ships as the canonical `autoresearch/program_matrix.py (build_track_a_campaign)`. The duplicate module (and its test) were removed during the merge; main's owner is authoritative. This record is retained as the experiment narrative.
+
 # G1 — Track A encoded as an autoresearch matrix (2026-07-17)
 
 Wiring for Track G1 (Linear SLM-46): the program's experiments route through

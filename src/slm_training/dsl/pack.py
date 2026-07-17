@@ -282,6 +282,16 @@ def _ensure_builtin_packs() -> None:
             incremental_engine=_toy_layout_engine,
         )
     )
+    # F2 (SLM-43): GraphQL — graphql-js oracle, the schema IS the symbol table.
+    # Registered even when the Node bridge is absent; backend.available()
+    # reports the bridge state and oracle/canonicalize fail at call time, not
+    # registration (mirrors toy-layout's partial-pack pattern).
+    try:
+        from slm_training.dsl.graphql_pack import build_graphql_pack
+
+        register_pack(build_graphql_pack())
+    except Exception:  # noqa: BLE001 - graphql pack is optional
+        pass
 
 
 __all__ = [
