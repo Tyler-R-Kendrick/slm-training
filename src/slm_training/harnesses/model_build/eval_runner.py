@@ -315,6 +315,7 @@ def _effective_evaluation_policy(
             if value("compiler_decode_mode") is None
             else str(value("compiler_decode_mode"))
         ),
+        "decode_min_content": int(value("decode_min_content") or 0),
         "schema_in_context": bool(value("schema_in_context")),
         "slot_contract_in_context": bool(value("slot_contract_in_context")),
         "slot_contract_constrained_decode": bool(

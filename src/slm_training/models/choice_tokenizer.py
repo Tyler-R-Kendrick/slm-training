@@ -616,6 +616,7 @@ class ChoiceDecodeState:
     section_types: list[str] = field(default_factory=list)
     current_marker: str | None = None
     valid_root_seen: bool = False
+    bound_component_count: int = 0
     literal_frame: str | None = None
     literal_size: int = 0
     literal_is_object_key: bool = False
@@ -629,6 +630,7 @@ class ChoiceDecodeState:
             section_types=list(self.section_types),
             current_marker=self.current_marker,
             valid_root_seen=self.valid_root_seen,
+            bound_component_count=self.bound_component_count,
             literal_frame=self.literal_frame,
             literal_size=self.literal_size,
             literal_is_object_key=self.literal_is_object_key,
@@ -643,6 +645,20 @@ class ChoiceDecodeState:
                 and self.section_types[-1].startswith("element:")
             )
         return self.mode == "v05" and self.valid_root_seen
+
+    def is_slot_content_component_id(self, token_id: int) -> bool:
+        """Whether a component must consume a string-bearing content argument."""
+        token = self.tokenizer.id_to_token.get(int(token_id), "")
+        if not token.startswith(OPEN_PREFIX):
+            return False
+        contract = _component_contracts().get(token[len(OPEN_PREFIX) :])
+        if contract is None:
+            return False
+        schemas, required_args = contract
+        return any(
+            self._schema_accepts(schema, "string")
+            for schema in schemas[:required_args]
+        )
 
     @staticmethod
     def _schema_accepts(schema: dict[str, Any], expr_type: str) -> bool:
@@ -670,6 +686,12 @@ class ChoiceDecodeState:
         if not self.frames:
             self.section_types.append(expr_type)
             if self.mode == "v05":
+                if (
+                    self.current_marker == "="
+                    and expr_type.startswith("element:")
+                    and expr_type != "element:Stack"
+                ):
+                    self.bound_component_count += 1
                 if self.current_marker == "r=" and expr_type.startswith("element:"):
                     self.valid_root_seen = True
                 self.current_marker = None
@@ -945,6 +967,7 @@ class ChoiceDecodeState:
             tuple(self.section_types),
             self.current_marker,
             self.valid_root_seen,
+            self.bound_component_count,
             self.literal_frame,
             self.literal_size,
             self.literal_is_object_key,

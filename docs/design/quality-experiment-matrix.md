@@ -1766,6 +1766,21 @@ dropout sweeps at this budget; target empty-root collapse next. See
 [results](iter-e297-e298-dropout-replication-metric-guard-20260717.md) and
 [JSON](choice-dropout-results-iter-e297-e298-20260717.json).
 
+## E299 choice-native minimum content (CPU scratch eval-only, 2026-07-17)
+
+The unchanged E297 checkpoint is reevaluated with
+`decode_min_content=-1`. The choice decoder now requires a string-bearing
+content root from the prompt-visible slot inventory and records the effective
+setting in evaluation provenance. Parse remains 1.0. Meaningful rate rises from
+0.0 to 0.3333 smoke, 0.5 adversarial, and 0.6667 limited `rico_held`; failed
+thresholds fall 17→12. Held-out/OOD meaningful remain 0.0, structure regresses
+on four suites, and AgentV remains 0/5.
+
+**Verdict:** retain as an opt-in diagnostic, not a default or ship lever. The
+next experiment must connect content to a structured container root. See
+[results](iter-e299-choice-min-content-20260717.md) and
+[JSON](choice-min-content-results-iter-e299-20260717.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

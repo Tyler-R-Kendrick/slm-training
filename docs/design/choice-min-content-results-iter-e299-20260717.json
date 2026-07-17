@@ -1,0 +1,38 @@
+{
+  "iteration": "E299",
+  "date": "2026-07-17",
+  "run_id": "e299-choice-min-content-auto-honest-r5",
+  "checkpoint": {
+    "source_run_id": "e297-choice-design-dropout50-seed1-r1",
+    "sha256": "a78193f91ee12d07791cab008a75267e3f6e19cfd223fbc726b3896dd98d14ee",
+    "new_checkpoint": false,
+    "bucket": null,
+    "sync_reason": "eval-only CPU scratch diagnostic; no new checkpoint"
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "suites": ["smoke", "held_out", "adversarial", "ood", "rico_held"],
+    "honesty_mode": "prompt-visible slot inventory; no DESIGN.md context",
+    "output_tokenizer": "choice",
+    "compiler_decode_mode": "tree",
+    "decode_min_content": -1,
+    "allow_unconstrained_fallback": false
+  },
+  "suites": {
+    "smoke": {"n": 3, "parse": 1.0, "meaningful": 0.3333333333333333, "fidelity": 0.7222222222222222, "structure": 0.17416666666666666, "component_recall": 0.16666666666666666, "reward": 0.269},
+    "held_out": {"n": 5, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.44666666666666666, "structure": 0.10877999999999999, "component_recall": 0.0, "reward": 0.0},
+    "adversarial": {"n": 4, "parse": 1.0, "meaningful": 0.5, "fidelity": 0.6666666666666666, "structure": 0.19265, "component_recall": 0.375, "reward": 0.4035},
+    "ood": {"n": 4, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.2583333333333333, "structure": 0.14687499999999998, "component_recall": 0.0, "reward": 0.0},
+    "rico_held": {"n": 3, "parse": 1.0, "meaningful": 0.6666666666666666, "fidelity": 0.20833333333333334, "structure": 0.1035, "component_recall": 0.3333333333333333, "reward": 0.4746666666666666}
+  },
+  "gate_failure_count": 12,
+  "agentv": {"total": 5, "passed": 0, "failed": 5, "execution_errors": 0},
+  "supersedes": [
+    "e299-choice-min-content-auto-honest-r1",
+    "e299-choice-min-content-auto-honest-r2",
+    "e299-choice-min-content-auto-honest-r3",
+    "e299-choice-min-content-auto-honest-r4"
+  ],
+  "verdict": "Opt-in diagnostic only: semantic density and placeholder fidelity improve, but structure regresses, held-out and OOD meaningful rates remain zero, and AgentV stays 0/5. No promotion or ship claim."
+}

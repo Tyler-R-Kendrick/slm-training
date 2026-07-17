@@ -165,6 +165,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Compiler-drafted decode hierarchy (decode-only; default: off).",
     )
     parser.add_argument(
+        "--decode-min-content",
+        type=int,
+        default=None,
+        help="Override minimum components before EOS (0 off, -1 auto-from-inventory).",
+    )
+    parser.add_argument(
         "--component-inventory-decode-weight",
         type=float,
         default=None,
@@ -414,6 +420,7 @@ def main(argv: list[str] | None = None) -> int:
         grammar_verify_chosen_only=(True if args.verify_chosen_only else None),
         grammar_top_k=args.grammar_top_k,
         compiler_decode_mode=args.compiler_decode_mode,
+        decode_min_content=args.decode_min_content,
         component_inventory_decode_weight=args.component_inventory_decode_weight,
         component_plan_decode_weight=args.component_plan_decode_weight,
         component_edge_decode_weight=args.component_edge_decode_weight,

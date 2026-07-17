@@ -47,6 +47,7 @@ def test_evaluation_policy_reports_loaded_checkpoint_settings() -> None:
             grammar_ltr_primary=False,
             grammar_ltr_repair=False,
             compiler_decode_mode="off",
+            decode_min_content=-1,
             local_files_only=False,
             schema_in_context=False,
             slot_contract_in_context=False,
@@ -66,6 +67,7 @@ def test_evaluation_policy_reports_loaded_checkpoint_settings() -> None:
     assert policy["context_backend"] == "scratch"
     assert policy["grammar_constrained"] is True
     assert policy["grammar_ltr_primary"] is False
+    assert policy["decode_min_content"] == -1
 
 
 def test_structural_similarity_identical() -> None:

@@ -149,6 +149,47 @@ def test_choice_state_rejects_unavailable_slots_and_forward_refs(
     assert tok.token_to_id["&0"] not in state.allowed_ids(8)
 
 
+def test_choice_state_counts_bound_components(tok: ChoiceTokenizer) -> None:
+    state = ChoiceDecodeState(tok, slot_count=1)
+    for token in ("=", "+TextContent", '@0', "-"):
+        assert state.advance_id(tok.token_to_id[token])
+    assert state.bound_component_count == 1
+
+    for token in ("r=", "+Stack", "[", "]", "-"):
+        assert state.advance_id(tok.token_to_id[token])
+    assert state.bound_component_count == 1
+    assert state.valid_root_seen
+
+
+def test_choice_state_does_not_count_bound_stack_as_content(
+    tok: ChoiceTokenizer,
+) -> None:
+    state = ChoiceDecodeState(tok)
+    for token in ("=", "+Stack", "[", "]", "-"):
+        assert state.advance_id(tok.token_to_id[token])
+    assert state.bound_component_count == 0
+
+
+def test_choice_state_identifies_slot_content_components(
+    tok: ChoiceTokenizer,
+) -> None:
+    state = ChoiceDecodeState(tok)
+    assert state.is_slot_content_component_id(tok.token_to_id["+TextContent"])
+    assert not state.is_slot_content_component_id(tok.token_to_id["+Stack"])
+    assert not state.is_slot_content_component_id(tok.token_to_id["+Separator"])
+
+
+def test_choice_state_initial_bind_path_can_satisfy_content_floor(
+    tok: ChoiceTokenizer,
+) -> None:
+    state = ChoiceDecodeState(tok, slot_count=1)
+    assert tok.token_to_id["="] in state.allowed_ids(32)
+    assert state.mode is None
+
+    assert state.advance_id(tok.token_to_id["="])
+    assert state.mode == "v05"
+
+
 def test_choice_state_caches_exact_legal_sets(tok: ChoiceTokenizer) -> None:
     tok.allowed_cache.clear()
     tok.allowed_cache_hits = 0
@@ -293,6 +334,25 @@ def test_twotower_choice_wiring(tmp_path: Path) -> None:
     text = model.generate("Hero card", gold=records[0])
     assert text
     assert validate(text).serialized == text
+    model.config.decode_min_content = -1
+    state = ChoiceDecodeState(model.tokenizer, slot_count=2)
+    initial = model._choice_min_content_legal_ids(
+        state,
+        state.allowed_ids(63),
+        [":hero.title", ":hero.body"],
+    )
+    assert initial <= {
+        model.tokenizer.token_to_id["="],
+        model.tokenizer.token_to_id["r="],
+    }
+    assert state.advance_id(model.tokenizer.token_to_id["r="])
+    root = model._choice_min_content_legal_ids(
+        state,
+        state.allowed_ids(62),
+        [":hero.title", ":hero.body"],
+    )
+    assert root
+    assert all(state.is_slot_content_component_id(token_id) for token_id in root)
 
     ckpt = tmp_path / "choice.pt"
     model.save(ckpt)

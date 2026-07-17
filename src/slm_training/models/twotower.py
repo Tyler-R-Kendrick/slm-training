@@ -4025,6 +4025,48 @@ class TwoTowerModel(nn.Module):
         """Left-to-right argmax decode (batch size 1 wrapper)."""
         return self._greedy_ltr_decode_batch(ctx, ctx_pad, length)
 
+    def _choice_min_content_legal_ids(
+        self,
+        state: Any,
+        legal: set[int],
+        slot_contract: list[str] | None,
+    ) -> set[int]:
+        """Apply A4 semantic-density constraints to choice-codec decisions."""
+        floor = self._effective_min_content(slot_contract)
+        if floor <= 0:
+            return legal
+        tok = self.tokenizer
+        if state.valid_root_seen and tok.eos_id in legal:
+            return {tok.eos_id}
+        if state.mode in {None, "v05"} and state.current_marker is None:
+            bind_id = tok.token_to_id["="]
+            root_id = tok.token_to_id["r="]
+            markers = (
+                {root_id}
+                if state.bound_component_count >= floor
+                else {bind_id}
+            )
+            if state.bound_component_count == floor - 1:
+                markers.add(root_id)
+            constrained = legal & markers
+            return constrained or legal
+        if (
+            state.mode == "v05"
+            and state.current_marker in {"=", "r="}
+            and not state.frames
+            and (
+                state.current_marker == "r="
+                or floor > state.bound_component_count
+            )
+        ):
+            content = {
+                token_id
+                for token_id in legal
+                if state.is_slot_content_component_id(token_id)
+            }
+            return content or legal
+        return legal
+
     def _choice_ltr_decode_batch(
         self,
         ctx: torch.Tensor,
@@ -4064,6 +4106,10 @@ class TwoTowerModel(nn.Module):
             allowed = {
                 row: states[row].allowed_ids(length - position) for row in rows
             }
+            for row in rows:
+                allowed[row] = self._choice_min_content_legal_ids(
+                    states[row], allowed[row], contracts[row]
+                )
             if stats is not None:
                 stats.choice_state_cache_hits += tok.allowed_cache_hits - cache_hits
                 stats.choice_state_cache_misses += (
