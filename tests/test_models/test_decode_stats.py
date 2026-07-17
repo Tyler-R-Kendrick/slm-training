@@ -40,12 +40,16 @@ def test_decode_stats_aggregates_choice_state_cache_counts() -> None:
         choice_state_cache_misses=2,
         choice_candidates_considered=31,
         choice_vocab_candidates_avoided=1200,
+        choice_completion_cache_hits=29,
+        choice_completion_cache_misses=3,
     )
     summary = aggregate_stats([stats])
     assert summary["choice_state_cache_hits_sum"] == 7.0
     assert summary["choice_state_cache_misses_sum"] == 2.0
     assert summary["choice_candidates_considered_sum"] == 31.0
     assert summary["choice_vocab_candidates_avoided_sum"] == 1200.0
+    assert summary["choice_completion_cache_hits_sum"] == 29.0
+    assert summary["choice_completion_cache_misses_sum"] == 3.0
 
 
 def test_decode_stats_aggregates_dead_end_traces() -> None:

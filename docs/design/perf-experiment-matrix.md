@@ -287,3 +287,11 @@ semantic metrics zero). Median p95 improves 1.14×–1.19×, while p50 regresses
 0.59×–0.89× of E289. The mixed result is non-promotable; next work targets
 exact completion lower bounds and candidate-set allocation.
 [Full E290 evidence](iter-e290-choice-direct-candidates-20260717.md).
+
+## E291 exact completion-state cache (2026-07-17)
+
+Exact minimum-completion memoization reaches 90.7–91.9% hit rates and removes
+E290's p50 regression: median p50 improves 1.29×–1.99× and p95 improves
+1.51×–1.93× versus E290. Against E289, all p95s improve 1.73×–2.30×; OOD p50
+remains 13% slower. Parse stays 1.0 with zero dead ends, while semantic metrics
+and AgentV remain zero. [Full E291 evidence](iter-e291-choice-completion-cache-20260717.md).

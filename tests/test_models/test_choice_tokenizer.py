@@ -11,6 +11,7 @@ from slm_training.dsl.parser import validate
 from slm_training.dsl.schema import ExampleRecord, load_jsonl
 from slm_training.models.choice_tokenizer import (
     CHOICE_TOKENIZER_KIND,
+    LIT_PREFIX,
     LIT_STR,
     NAME_STR,
     TERNARY_OP,
@@ -211,6 +212,44 @@ def test_direct_candidates_avoid_most_vocabulary_ids(tok: ChoiceTokenizer) -> No
     assert literal.advance_id(tok.token_to_id[LIT_STR])
     literal_candidates = literal._candidate_ids()
     assert len(literal_candidates) < tok.vocab_size // 2
+
+
+def test_expression_candidates_are_reused_and_request_scoped(
+    tok: ChoiceTokenizer,
+) -> None:
+    tok.expression_candidate_cache.clear()
+    first = tok.expression_candidates(slot_count=2, available_ref_count=1)
+    assert tok.expression_candidates(slot_count=2, available_ref_count=1) is first
+    assert tok.token_to_id["@1"] in first
+    assert tok.token_to_id["@2"] not in first
+    assert tok.token_to_id["&0"] in first
+    assert tok.token_to_id["&1"] not in first
+
+
+def test_minimum_completion_cache_collapses_equivalent_literal_states(
+    tok: ChoiceTokenizer,
+) -> None:
+    literals = [
+        token
+        for token in tok.token_to_id
+        if token.startswith(LIT_PREFIX + '"')
+    ][:2]
+    assert len(literals) == 2
+    states = []
+    for literal in literals:
+        state = ChoiceDecodeState(tok)
+        assert state.advance_id(tok.token_to_id[literal])
+        states.append(state)
+    assert states[0].signature() == states[1].signature()
+
+    tok.completion_cache.clear()
+    tok.completion_cache_hits = 0
+    tok.completion_cache_misses = 0
+    completion_length = states[0].minimal_completion_length()
+    assert completion_length < 1025
+    assert states[1].minimal_completion_length() == completion_length
+    assert tok.completion_cache_misses == 1
+    assert tok.completion_cache_hits == 1
 
 
 @needs_bridge

@@ -186,6 +186,16 @@ zero dead ends. Across two standalone runs, p95 improves 14–19% over E289, but
 p50 regresses 11–41%; therefore this is a mixed result, not a promoted runtime
 default. See [E290 results](iter-e290-choice-direct-candidates-20260717.md).
 
+### Exact completion-state cache (E291, 2026-07-17)
+
+Minimum completion lengths are now memoized by immutable choice-decoder state,
+and expression partitions are reused by slot/reference counts. A schema-warm
+control improves exact allowed-set construction 7.0×. Across two all-suite
+runs, completion-cache hit rates are 90.7–91.9%; p50 improves 1.29×–1.99× and
+p95 1.51×–1.93× over E290 with identical outputs and zero dead ends. Lazy
+component-contract construction still adds about 2.38 seconds to the first
+process-cold request. See [E291 results](iter-e291-choice-completion-cache-20260717.md).
+
 ### Restricted semantic projection
 
 TwoTower's denoiser now exposes a decode-only `encode` / `project` split. The

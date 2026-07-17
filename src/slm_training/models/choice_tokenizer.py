@@ -191,8 +191,16 @@ class ChoiceTokenizer:
     candidate_partitions: dict[str, frozenset[int]] = field(
         default_factory=dict, repr=False, compare=False
     )
+    expression_candidate_cache: dict[tuple[int, int], frozenset[int]] = field(
+        default_factory=dict, repr=False, compare=False
+    )
+    completion_cache: dict[tuple[object, ...], int] = field(
+        default_factory=dict, repr=False, compare=False
+    )
     candidates_considered: int = field(default=0, repr=False, compare=False)
     vocab_candidates_avoided: int = field(default=0, repr=False, compare=False)
+    completion_cache_hits: int = field(default=0, repr=False, compare=False)
+    completion_cache_misses: int = field(default=0, repr=False, compare=False)
 
     # --- special ids -----------------------------------------------------
 
@@ -287,6 +295,30 @@ class ChoiceTokenizer:
             if predicate(token)
         )
         self.candidate_partitions[name] = result
+        return result
+
+    def expression_candidates(
+        self, *, slot_count: int, available_ref_count: int
+    ) -> frozenset[int]:
+        """Exact reusable expression-start superset for request-local counts."""
+        key = (
+            min(max(int(slot_count), 0), self.sym_slots),
+            min(max(int(available_ref_count), 0), self.ref_slots),
+        )
+        cached = self.expression_candidate_cache.get(key)
+        if cached is not None:
+            return cached
+        candidates = set(self.candidate_partition("expression"))
+        candidates.difference_update(self.candidate_partition("bind"))
+        candidates.update(
+            self.token_to_id[f"{REF_PREFIX}{index}"] for index in range(key[1])
+        )
+        candidates.difference_update(self.candidate_partition("slot"))
+        candidates.update(
+            self.token_to_id[f"{SLOT_PREFIX}{index}"] for index in range(key[0])
+        )
+        result = frozenset(candidates)
+        self.expression_candidate_cache[key] = result
         return result
 
     # --- build -----------------------------------------------------------
@@ -874,14 +906,25 @@ class ChoiceDecodeState:
         return tok.token_to_id[f"{LIT_PREFIX}null"]
 
     def minimal_completion_length(self) -> int:
+        key = self.signature()
+        cached = self.tokenizer.completion_cache.get(key)
+        if cached is not None:
+            self.tokenizer.completion_cache_hits += 1
+            return cached
+        self.tokenizer.completion_cache_misses += 1
         probe = self.clone()
+        result = 1025
         for count in range(1, 1025):
             token_id = probe._completion_id()
             if not probe.advance_id(token_id):
-                return 1025
+                break
             if token_id == probe.tokenizer.eos_id:
-                return count
-        return 1025
+                result = count
+                break
+        if len(self.tokenizer.completion_cache) >= 8192:
+            self.tokenizer.completion_cache.clear()
+        self.tokenizer.completion_cache[key] = result
+        return result
 
     def signature(self) -> tuple[object, ...]:
         return (
@@ -912,18 +955,12 @@ class ChoiceDecodeState:
         tok = self.tokenizer
 
         def _expression_candidates() -> set[int]:
-            candidates = set(tok.candidate_partition("expression"))
-            candidates.difference_update(tok.candidate_partition("bind"))
-            candidates.update(
-                tok.token_to_id[f"{REF_PREFIX}{index}"]
-                for index in range(min(len(self.section_types), tok.ref_slots))
+            return set(
+                tok.expression_candidates(
+                    slot_count=self.slot_count,
+                    available_ref_count=len(self.section_types),
+                )
             )
-            candidates.difference_update(tok.candidate_partition("slot"))
-            candidates.update(
-                tok.token_to_id[f"{SLOT_PREFIX}{index}"]
-                for index in range(min(self.slot_count, tok.sym_slots))
-            )
-            return candidates
 
         if self.literal_frame is not None:
             return set(tok.candidate_partition("byte")) | {
