@@ -792,6 +792,715 @@ def roundtrip_openui(
     return program, decoded
 
 
+# ---------------------------------------------------------------------------
+# B1 (SLM-42): pure grammar-choice stream.
+#
+# ``encode_choices`` emits ONLY semantic decisions — every token answers
+# "which production applies here?" or "which filler goes in this slot?".
+# All grammar-forced surface syntax (statement markers, call parens, commas,
+# object braces' colons, statement terminators) is reconstructed by the
+# deterministic detokenizer ``decode_choices``, which routes the final text
+# through the official lang-core serializer (fail-closed on invalid
+# reconstruction).
+#
+# Per-sigil keep/drop rationale vs the production stream:
+#
+#   token          keep?  why
+#   -------------  -----  ----------------------------------------------------
+#   +Comp          KEEP   production choice: which component/call head.
+#   *Builtin       KEEP   production choice: which builtin action/aggregate.
+#   -  (CLOSE)     KEEP   arity decision: prop/arg lists are variable length
+#                         (openui_prop_order.json declares order, not arity),
+#                         so "stop filling" is a real choice at every position.
+#   [ / ]          KEEP   shape decision: the grammar admits scalar or list in
+#                         any value position (prop order carries no types), so
+#                         list-vs-scalar and list length are genuine choices.
+#   { / }          KEEP   shape decision: object literal vs other expr, and
+#                         entry count, are genuine choices (v0.5).
+#   @i             KEEP   slot filler choice (which placeholder).
+#   &i             KEEP   reference choice (which earlier statement).
+#   $@i            KEEP   state reference choice.
+#   #lit           KEEP   literal filler choice.
+#   ^dir           KEEP   enum filler choice (column/row).
+#   n:name         KEEP   object-key / unbound-identifier choice (which key).
+#                         Irreducible: keys are user content, not grammar.
+#   .name          KEEP   member-access choice (that access happens + which
+#                         member) — one fused token (v0.5).
+#   o:<op>         KEEP   operator choice (which operator applies IS a
+#                         decision); operands are positional so no parens.
+#   r=/$=/q=/m=/a= KEEP   statement-production choice (v0.5 only): state vs
+#                         binder is not derivable from the RHS ("$x = 0" vs
+#                         "x = 0"); root position is source order in v0.5.
+#                         q=/m=/a= are technically derivable from the RHS head
+#                         but kept so deterministic alpha-naming stays local.
+#   =  (STMT)      DROP   structural path: statements are self-delimiting
+#                         (one top-level expression each), so the marker is
+#                         grammar-forced. v0.5 keeps its markers (above).
+#   ;  (EOL)       DROP   grammar-forced: a statement ends exactly when its
+#                         expression completes.
+#   !v0.5          DROP   derivable: a stream starting with a statement
+#                         marker is v0.5; otherwise structural.
+#   p:punct        DROP   all of it: parens/commas/colons/braces' punctuation
+#                         is reconstructed from the grammar; operator choices
+#                         survive as ``o:<op>`` tokens instead.
+# ---------------------------------------------------------------------------
+
+OP_PREFIX = "o:"
+MEMBER_PREFIX = "."
+OBJ_OPEN = "{"
+OBJ_CLOSE = "}"
+TERNARY_OP = f"{OP_PREFIX}?:"
+NOT_OP = f"{OP_PREFIX}!"
+NEG_OP = f"{OP_PREFIX}neg"
+INDEX_OP = f"{OP_PREFIX}[]"
+
+_V05_BINARY_LEVELS: tuple[tuple[str, ...], ...] = (
+    ("||",),
+    ("&&",),
+    ("==", "!="),
+    (">=", "<=", ">", "<"),
+    ("+", "-"),
+    ("*", "/", "%"),
+)
+_CHOICE_BINARY_OPS = frozenset(op for level in _V05_BINARY_LEVELS for op in level)
+CHOICE_STMT_MARKERS = (
+    ROOT_STMT,
+    STATE_STMT,
+    QUERY_STMT,
+    MUTATION_STMT,
+    ACTION_STMT,
+    STMT,
+)
+# Binary operator precedence (ternary=1 .. unary=8, postfix=9, atoms=10).
+_CHOICE_PREC = {
+    "||": 2,
+    "&&": 3,
+    "==": 4,
+    "!=": 4,
+    ">": 5,
+    "<": 5,
+    ">=": 5,
+    "<=": 5,
+    "+": 6,
+    "-": 6,
+    "*": 7,
+    "/": 7,
+    "%": 7,
+}
+
+_IDENT_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+_LOWER_IDENT_RE = re.compile(r"[a-z_][A-Za-z0-9_]*")
+_UPPER_IDENT_RE = re.compile(r"[A-Z][A-Za-z0-9_]*")
+_CHOICE_NUMBER_RE = re.compile(r"-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?")
+
+
+def _v05_normalize_pieces(pieces: list[str]) -> list[str]:
+    """Split ``-5`` into ``-``, ``5`` when it follows a value (binary minus)."""
+    out: list[str] = []
+    for piece in pieces:
+        prev = out[-1] if out else None
+        if (
+            piece.startswith("-")
+            and _CHOICE_NUMBER_RE.fullmatch(piece)
+            and prev is not None
+            and (
+                prev in {")", "]", "}"}
+                or prev.startswith(('"', "'", "$"))
+                or prev in {"true", "false", "null"}
+                or _IDENT_RE.fullmatch(prev)
+                or _CHOICE_NUMBER_RE.fullmatch(prev)
+            )
+        ):
+            out.append("-")
+            out.append(piece[1:])
+            continue
+        out.append(piece)
+    return out
+
+
+class _V05ExprParser:
+    """Pratt parser for v0.5 RHS expressions (mirrors openui.lark precedence)."""
+
+    def __init__(self, pieces: list[str]) -> None:
+        self._pieces = pieces
+        self._pos = 0
+
+    def parse(self) -> Any:
+        node = self._ternary()
+        if self._pos != len(self._pieces):
+            raise ParseError(
+                f"trailing v0.5 expression input: {self._pieces[self._pos:]!r}"
+            )
+        return node
+
+    def _peek(self) -> str | None:
+        return self._pieces[self._pos] if self._pos < len(self._pieces) else None
+
+    def _pop(self) -> str:
+        if self._pos >= len(self._pieces):
+            raise ParseError("unexpected end of v0.5 expression")
+        piece = self._pieces[self._pos]
+        self._pos += 1
+        return piece
+
+    def _expect(self, piece: str) -> None:
+        got = self._pop()
+        if got != piece:
+            raise ParseError(f"expected {piece!r}, got {got!r}")
+
+    def _ternary(self) -> Any:
+        cond = self._binary(0)
+        if self._peek() == "?":
+            self._pop()
+            then = self._ternary()
+            self._expect(":")
+            other = self._ternary()
+            return ("ternary", cond, then, other)
+        return cond
+
+    def _binary(self, level: int) -> Any:
+        if level >= len(_V05_BINARY_LEVELS):
+            return self._unary()
+        node = self._binary(level + 1)
+        while self._peek() in _V05_BINARY_LEVELS[level]:
+            op = self._pop()
+            node = ("binary", op, node, self._binary(level + 1))
+        return node
+
+    def _unary(self) -> Any:
+        piece = self._peek()
+        if piece == "!":
+            self._pop()
+            return ("unary", "!", self._unary())
+        if piece == "-":
+            self._pop()
+            return ("unary", "neg", self._unary())
+        return self._postfix()
+
+    def _postfix(self) -> Any:
+        node = self._primary()
+        while True:
+            nxt = self._peek()
+            if nxt == ".":
+                self._pop()
+                name = self._pop()
+                if not _IDENT_RE.fullmatch(name or ""):
+                    raise ParseError(f"invalid member name {name!r}")
+                node = ("member", node, name)
+                continue
+            if nxt == "[":
+                self._pop()
+                index = self._ternary()
+                self._expect("]")
+                node = ("index", node, index)
+                continue
+            return node
+
+    def _call_args(self) -> list[Any]:
+        self._expect("(")
+        args: list[Any] = []
+        if self._peek() == ")":
+            self._pop()
+            return args
+        args.append(self._ternary())
+        while self._peek() == ",":
+            self._pop()
+            args.append(self._ternary())
+        self._expect(")")
+        return args
+
+    def _primary(self) -> Any:
+        piece = self._pop()
+        if piece.startswith(('"', "'")):
+            value = json.loads(piece) if piece.startswith('"') else piece[1:-1]
+            return ("str", value)
+        if _CHOICE_NUMBER_RE.fullmatch(piece):
+            return ("num", piece)
+        if piece in {"true", "false", "null"}:
+            return ("kw", piece)
+        if piece.startswith("$"):
+            return ("state", piece)
+        if piece.startswith("@"):
+            return ("builtin", piece[1:], self._call_args())
+        if _UPPER_IDENT_RE.fullmatch(piece):
+            return ("call", piece, self._call_args())
+        if _LOWER_IDENT_RE.fullmatch(piece):
+            return ("ident", piece)
+        if piece == "(":
+            node = self._ternary()
+            self._expect(")")
+            return node
+        if piece == "[":
+            items: list[Any] = []
+            if self._peek() == "]":
+                self._pop()
+                return ("array", items)
+            items.append(self._ternary())
+            while self._peek() == ",":
+                self._pop()
+                items.append(self._ternary())
+            self._expect("]")
+            return ("array", items)
+        if piece == "{":
+            entries: list[tuple[str, Any]] = []
+            if self._peek() == "}":
+                self._pop()
+                return ("object", entries)
+            while True:
+                key = self._pop()
+                if not _IDENT_RE.fullmatch(key or ""):
+                    raise ParseError(f"unsupported v0.5 object key {key!r}")
+                self._expect(":")
+                entries.append((key, self._ternary()))
+                if self._peek() == ",":
+                    self._pop()
+                    continue
+                break
+            self._expect("}")
+            return ("object", entries)
+        raise ParseError(f"unsupported v0.5 expression piece {piece!r}")
+
+
+def _parse_v05_expr(rhs: str) -> Any:
+    pieces = [
+        piece
+        for piece in _V05_LEX_RE.findall(rhs)
+        if not piece.startswith(("//", "#"))
+    ]
+    return _V05ExprParser(_v05_normalize_pieces(pieces)).parse()
+
+
+def _emit_choice_expr(
+    node: Any,
+    *,
+    slot_index: dict[str, int],
+    binder_index: dict[str, int],
+    state_index: dict[str, int],
+) -> list[str]:
+    def emit(child: Any) -> list[str]:
+        return _emit_choice_expr(
+            child,
+            slot_index=slot_index,
+            binder_index=binder_index,
+            state_index=state_index,
+        )
+
+    kind = node[0]
+    if kind == "str":
+        value = node[1]
+        if isinstance(value, str) and is_placeholder(value):
+            if value not in slot_index:
+                raise ParseError(f"placeholder {value!r} missing from slot_contract")
+            return [f"{SLOT_PREFIX}{slot_index[value]}"]
+        return [_literal_token(value)]
+    if kind in {"num", "kw"}:
+        return [f"{LIT_PREFIX}{node[1]}"]
+    if kind == "state":
+        name = node[1]
+        if name not in state_index:
+            state_index[name] = len(state_index)
+        return [f"{STATE_REF_PREFIX}{state_index[name]}"]
+    if kind == "ident":
+        name = node[1]
+        if name in binder_index:
+            return [f"{REF_PREFIX}{binder_index[name]}"]
+        return [f"{NAME_PREFIX}{name}"]
+    if kind == "member":
+        return [f"{MEMBER_PREFIX}{node[2]}", *emit(node[1])]
+    if kind == "index":
+        return [INDEX_OP, *emit(node[1]), *emit(node[2])]
+    if kind == "array":
+        out = [LIST_OPEN]
+        for item in node[1]:
+            out.extend(emit(item))
+        out.append(LIST_CLOSE)
+        return out
+    if kind == "object":
+        out = [OBJ_OPEN]
+        for key, value in node[1]:
+            out.append(f"{NAME_PREFIX}{key}")
+            out.extend(emit(value))
+        out.append(OBJ_CLOSE)
+        return out
+    if kind == "call":
+        out = [f"{OPEN_PREFIX}{node[1]}"]
+        for arg in node[2]:
+            out.extend(emit(arg))
+        out.append(CLOSE)
+        return out
+    if kind == "builtin":
+        out = [f"{BUILTIN_PREFIX}{node[1]}"]
+        for arg in node[2]:
+            out.extend(emit(arg))
+        out.append(CLOSE)
+        return out
+    if kind == "unary":
+        return [NOT_OP if node[1] == "!" else NEG_OP, *emit(node[2])]
+    if kind == "binary":
+        return [f"{OP_PREFIX}{node[1]}", *emit(node[2]), *emit(node[3])]
+    if kind == "ternary":
+        return [TERNARY_OP, *emit(node[1]), *emit(node[2]), *emit(node[3])]
+    raise ParseError(f"unsupported v0.5 AST node: {node!r}")
+
+
+def _encode_choices_v05(
+    source: str,
+    *,
+    slot_contract: Iterable[str] | None,
+) -> ProductionProgram:
+    _parse_program(source)
+    statements = _v05_statements(source)
+    contract = (
+        canonical_slot_contract(source, declared=slot_contract)
+        if slot_contract is not None
+        else canonical_slot_contract(source)
+    )
+    slot_index = {placeholder: i for i, placeholder in enumerate(contract)}
+    binder_index = {name: i for i, (name, _) in enumerate(statements)}
+    state_names = [name for name, _ in statements if name.startswith("$")]
+    state_index = {name: i for i, name in enumerate(state_names)}
+    tokens: list[str] = []
+    for name, rhs in statements:
+        tokens.append(_v05_marker(name, rhs))
+        tokens.extend(
+            _emit_choice_expr(
+                _parse_v05_expr(rhs),
+                slot_index=slot_index,
+                binder_index=binder_index,
+                state_index=state_index,
+            )
+        )
+    return ProductionProgram(tokens=tuple(tokens), slot_contract=tuple(contract))
+
+
+def encode_choices(
+    source: str,
+    *,
+    slot_contract: Iterable[str] | None = None,
+) -> ProductionProgram:
+    """Encode OpenUI into the pure grammar-choice stream (semantic decisions only).
+
+    The choice stream lives in **canonical space**: with the lang-core bridge
+    available the input is first collapsed to the official serializer form
+    (which may reorder statements, prune dead bindings / trailing ``null``
+    props, and drop redundant parens). This keeps the token stream a fixed
+    point of ``decode_choices`` — decode routes through the same serializer —
+    and keeps the v0.5 path's codec-mode dispatch stable under decode.
+    """
+    from slm_training.dsl.lang_core import bridge_available
+
+    scrubbed = strip_style_literals(source or "").strip()
+    program = _parse_program(scrubbed)
+    if bridge_available():
+        serialized = strip_style_literals(program.serialized or "").strip()
+        if serialized:
+            scrubbed = serialized
+    if _requires_v05_codec(scrubbed):
+        return _encode_choices_v05(scrubbed, slot_contract=slot_contract)
+    bindings = _parse_bindings(scrubbed)
+    contract = (
+        canonical_slot_contract(scrubbed, declared=slot_contract)
+        if slot_contract is not None
+        else canonical_slot_contract(scrubbed)
+    )
+    slot_index = {ph: i for i, ph in enumerate(contract)}
+    stmt_order = _statement_order(bindings)
+    stmt_index = {name: i for i, name in enumerate(stmt_order)}
+    tokens: list[str] = []
+    for position, name in enumerate(stmt_order):
+        # No STMT marker: statements are self-delimiting expressions.
+        tokens.extend(
+            _encode_expr(
+                _resolve_binding(bindings, name),
+                slot_index=slot_index,
+                stmt_index=stmt_index,
+                stmt_limit=position,
+            )
+        )
+    return ProductionProgram(tokens=tuple(tokens), slot_contract=tuple(contract))
+
+
+def _canonicalize_choice_text(text: str) -> str:
+    """Validate + serialize the reconstruction through the official pipeline.
+
+    Fail closed: an unparseable reconstruction raises ``ParseError``. With the
+    lang-core bridge available the returned text is the serializer fixed point.
+    """
+    from slm_training.dsl.lang_core import bridge_available
+    from slm_training.dsl.parser import validate
+
+    try:
+        program = validate(text)
+    except ParseError:
+        raise
+    except Exception as exc:  # noqa: BLE001 - backend-specific errors
+        raise ParseError(f"invalid choice reconstruction: {exc}") from exc
+    if bridge_available():
+        serialized = (program.serialized or "").strip()
+        if not serialized:
+            raise ParseError("choice reconstruction produced no canonical form")
+        return serialized
+    return text
+
+
+def _parse_choice_node(
+    stream: list[str], pos: int, *, n_refs_available: int
+) -> tuple[Any, int]:
+    """Parse one choice-stream expression into a render node."""
+
+    def parse(pos: int) -> tuple[Any, int]:
+        if pos >= len(stream):
+            raise ParseError("unexpected end of choice stream")
+        tok = stream[pos]
+        pos += 1
+        if tok == LIST_OPEN:
+            items: list[Any] = []
+            while pos < len(stream) and stream[pos] != LIST_CLOSE:
+                node, pos = parse(pos)
+                items.append(node)
+            if pos >= len(stream):
+                raise ParseError("unterminated choice list")
+            return ("array", items), pos + 1
+        if tok == OBJ_OPEN:
+            entries: list[tuple[str, Any]] = []
+            while pos < len(stream) and stream[pos] != OBJ_CLOSE:
+                key_tok = stream[pos]
+                if not key_tok.startswith(NAME_PREFIX):
+                    raise ParseError(f"expected object key token, got {key_tok!r}")
+                pos += 1
+                value, pos = parse(pos)
+                entries.append((key_tok[len(NAME_PREFIX) :], value))
+            if pos >= len(stream):
+                raise ParseError("unterminated choice object")
+            return ("object", entries), pos + 1
+        if tok == TERNARY_OP:
+            cond, pos = parse(pos)
+            then, pos = parse(pos)
+            other, pos = parse(pos)
+            return ("ternary", cond, then, other), pos
+        if tok in {NOT_OP, NEG_OP}:
+            child, pos = parse(pos)
+            return ("unary", "!" if tok == NOT_OP else "neg", child), pos
+        if tok == INDEX_OP:
+            base, pos = parse(pos)
+            index, pos = parse(pos)
+            return ("index", base, index), pos
+        if tok.startswith(OP_PREFIX):
+            op = tok[len(OP_PREFIX) :]
+            if op not in _CHOICE_BINARY_OPS:
+                raise ParseError(f"unknown choice operator token: {tok}")
+            left, pos = parse(pos)
+            right, pos = parse(pos)
+            return ("binary", op, left, right), pos
+        if tok.startswith(MEMBER_PREFIX):
+            base, pos = parse(pos)
+            return ("member", base, tok[len(MEMBER_PREFIX) :]), pos
+        if tok.startswith(OPEN_PREFIX):
+            args: list[Any] = []
+            while pos < len(stream) and stream[pos] != CLOSE:
+                node, pos = parse(pos)
+                args.append(node)
+            if pos >= len(stream):
+                raise ParseError("unterminated choice call")
+            return ("call", tok[len(OPEN_PREFIX) :], args), pos + 1
+        if tok.startswith(BUILTIN_PREFIX):
+            args = []
+            while pos < len(stream) and stream[pos] != CLOSE:
+                node, pos = parse(pos)
+                args.append(node)
+            if pos >= len(stream):
+                raise ParseError("unterminated choice builtin call")
+            return ("builtin", tok[len(BUILTIN_PREFIX) :], args), pos + 1
+        if tok.startswith(STATE_REF_PREFIX):
+            return ("stateref", int(tok[len(STATE_REF_PREFIX) :])), pos
+        if tok.startswith(SLOT_PREFIX):
+            return ("slot", int(tok[len(SLOT_PREFIX) :])), pos
+        if tok.startswith(REF_PREFIX):
+            index = int(tok[len(REF_PREFIX) :])
+            if index < 0 or index >= n_refs_available:
+                raise ParseError(f"statement ref out of range: {tok}")
+            return ("ref", index), pos
+        if tok.startswith(DIR_PREFIX):
+            return ("atom", json.dumps(tok[len(DIR_PREFIX) :])), pos
+        if tok.startswith(LIT_PREFIX):
+            return ("atom", _decode_literal(tok[len(LIT_PREFIX) :])), pos
+        if tok.startswith(NAME_PREFIX):
+            return ("atom", tok[len(NAME_PREFIX) :]), pos
+        raise ParseError(f"unknown choice token: {tok}")
+
+    return parse(pos)
+
+
+def _render_choice_node(
+    node: Any,
+    *,
+    contract: tuple[str, ...],
+    binder_names: list[str],
+    state_names: list[str],
+    min_prec: int = 0,
+) -> str:
+    def render(child: Any, min_prec: int = 0) -> str:
+        return _render_choice_node(
+            child,
+            contract=contract,
+            binder_names=binder_names,
+            state_names=state_names,
+            min_prec=min_prec,
+        )
+
+    kind = node[0]
+    if kind == "atom":
+        return node[1]
+    if kind == "slot":
+        index = node[1]
+        if index < 0 or index >= len(contract):
+            raise ParseError(f"slot pointer out of range: @{index}")
+        return json.dumps(contract[index])
+    if kind == "ref":
+        index = node[1]
+        if index < 0 or index >= len(binder_names):
+            raise ParseError(f"statement ref out of range: &{index}")
+        return binder_names[index]
+    if kind == "stateref":
+        index = node[1]
+        return state_names[index] if index < len(state_names) else f"$s{index}"
+    if kind == "array":
+        return "[" + ", ".join(render(item) for item in node[1]) + "]"
+    if kind == "object":
+        return (
+            "{"
+            + ", ".join(f"{key}: {render(value)}" for key, value in node[1])
+            + "}"
+        )
+    if kind == "call":
+        return f"{node[1]}({', '.join(render(arg) for arg in node[2])})"
+    if kind == "builtin":
+        return f"@{node[1]}({', '.join(render(arg) for arg in node[2])})"
+    if kind == "member":
+        return f"{render(node[1], 9)}.{node[2]}"
+    if kind == "index":
+        return f"{render(node[1], 9)}[{render(node[2])}]"
+    if kind == "unary":
+        rendered = ("!" if node[1] == "!" else "-") + render(node[2], 8)
+        return f"({rendered})" if min_prec > 8 else rendered
+    if kind == "binary":
+        prec = _CHOICE_PREC[node[1]]
+        rendered = f"{render(node[2], prec)} {node[1]} {render(node[3], prec + 1)}"
+        return f"({rendered})" if prec < min_prec else rendered
+    if kind == "ternary":
+        rendered = f"{render(node[1], 2)} ? {render(node[2], 1)} : {render(node[3], 1)}"
+        return f"({rendered})" if min_prec > 1 else rendered
+    raise ParseError(f"unsupported choice render node: {node!r}")
+
+
+def _decode_choices_structural(
+    stream: list[str], contract: tuple[str, ...], *, root_name: str
+) -> str:
+    nodes: list[Any] = []
+    pos = 0
+    while pos < len(stream):
+        node, pos = _parse_choice_node(stream, pos, n_refs_available=len(nodes))
+        nodes.append(node)
+    if not nodes:
+        raise ParseError("empty choice stream")
+    # Forward references are unrepresentable (the encoder enforces
+    # stmt_limit), so renaming the last statement to root after the fact is
+    # exact: no earlier expression can reference it.
+    binder_names = [f"v{i}" for i in range(len(nodes) - 1)] + [root_name]
+    exprs = [
+        _render_choice_node(
+            node, contract=contract, binder_names=binder_names, state_names=[]
+        )
+        for node in nodes
+    ]
+    root_line = f"{root_name} = {exprs[-1]}"
+    other_lines = [
+        f"{binder_names[i]} = {exprs[i]}" for i in range(len(nodes) - 1)
+    ]
+    return "\n".join([root_line, *other_lines])
+
+
+def _decode_choices_v05(
+    stream: list[str], contract: tuple[str, ...], *, root_name: str
+) -> str:
+    markers = set(CHOICE_STMT_MARKERS)
+    sections: list[tuple[str, Any]] = []
+    pos = 0
+    while pos < len(stream):
+        marker = stream[pos]
+        if marker not in markers:
+            raise ParseError(f"expected choice statement marker, got {marker!r}")
+        pos += 1
+        node, pos = _parse_choice_node(stream, pos, n_refs_available=1 << 30)
+        sections.append((marker, node))
+
+    binder_names: list[str] = []
+    counters = {STATE_STMT: 0, QUERY_STMT: 0, MUTATION_STMT: 0, ACTION_STMT: 0}
+    prefixes = {QUERY_STMT: "q", MUTATION_STMT: "m", ACTION_STMT: "a"}
+    for index, (marker, _) in enumerate(sections):
+        if marker == ROOT_STMT:
+            name = root_name
+        elif marker == STATE_STMT:
+            name = f"$s{counters[STATE_STMT]}"
+            counters[STATE_STMT] += 1
+        elif marker in prefixes:
+            name = f"{prefixes[marker]}{counters[marker]}"
+            counters[marker] += 1
+        else:
+            name = f"v{index}"
+        binder_names.append(name)
+    state_names = [
+        name
+        for (marker, _), name in zip(sections, binder_names)
+        if marker == STATE_STMT
+    ]
+    lines = []
+    for (marker, node), name in zip(sections, binder_names):
+        rendered = _render_choice_node(
+            node,
+            contract=contract,
+            binder_names=binder_names,
+            state_names=state_names,
+        )
+        lines.append(f"{name} = {rendered}")
+    return "\n".join(lines)
+
+
+def decode_choices(
+    tokens: Iterable[str],
+    slot_contract: Iterable[str],
+    *,
+    root_name: str = "root",
+) -> str:
+    """Deterministically reconstruct canonical OpenUI from a choice stream.
+
+    The mode is derivable: a stream starting with a v0.5 statement marker is
+    v0.5, anything else is the structural path (whose statements carry no
+    markers). The reconstruction is routed through the official lang-core
+    serializer and fails closed on invalid input.
+    """
+    contract = tuple(slot_contract)
+    stream = list(tokens)
+    if not stream:
+        raise ParseError("empty choice stream")
+    if stream[0] in CHOICE_STMT_MARKERS:
+        text = _decode_choices_v05(stream, contract, root_name=root_name)
+    else:
+        text = _decode_choices_structural(stream, contract, root_name=root_name)
+    return _canonicalize_choice_text(text)
+
+
+def roundtrip_choices(
+    source: str,
+    *,
+    slot_contract: Iterable[str] | None = None,
+) -> tuple[ProductionProgram, str]:
+    """Encode to the choice stream then decode; returns (program, canonical text)."""
+    program = encode_choices(source, slot_contract=slot_contract)
+    decoded = decode_choices(program.tokens, program.slot_contract)
+    return program, decoded
+
+
 def build_vocab_from_corpus(
     sources: Iterable[str],
     *,
@@ -1059,14 +1768,22 @@ class ProductionCodec:
 __all__ = [
     "ACTION_STMT",
     "BUILTIN_PREFIX",
+    "CHOICE_STMT_MARKERS",
     "CLOSE",
     "DIR_PREFIX",
+    "INDEX_OP",
     "LIST_CLOSE",
     "LIST_OPEN",
     "LIT_PREFIX",
+    "MEMBER_PREFIX",
     "MUTATION_STMT",
     "NAME_PREFIX",
+    "NEG_OP",
+    "NOT_OP",
+    "OBJ_CLOSE",
+    "OBJ_OPEN",
     "OPEN_PREFIX",
+    "OP_PREFIX",
     "REF_PREFIX",
     "ROOT_STMT",
     "SLOT_PREFIX",
@@ -1074,12 +1791,16 @@ __all__ = [
     "STATE_REF_PREFIX",
     "STATE_STMT",
     "QUERY_STMT",
+    "TERNARY_OP",
     "V05",
     "ProductionCodec",
     "ProductionProgram",
     "ProductionVocab",
     "build_vocab_from_corpus",
+    "decode_choices",
     "decode_productions",
+    "encode_choices",
     "encode_openui",
+    "roundtrip_choices",
     "roundtrip_openui",
 ]

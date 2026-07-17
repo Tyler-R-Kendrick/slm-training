@@ -1,0 +1,123 @@
+{
+  "iteration": "B1 choice-sequence codec (SLM-42)",
+  "date": "2026-07-17",
+  "reference": "docs/design/iter-b1-choice-sequence-codec-20260717.md",
+  "matrix_row": {
+    "id": "E262",
+    "run_id": "qx_e262_b1_choice_codec",
+    "matrix": "v12",
+    "status": "registered_unrun",
+    "matched_control": "E255",
+    "reason_unrun": "no outputs/data/eval/v1 suite corpus in this environment; production budget required for a verdict"
+  },
+  "semantic_density": {
+    "corpus": "src/slm_training/resources/{train,test}_seeds.jsonl",
+    "n_records": 36,
+    "surface": {
+      "n_decisions": 1535,
+      "alphabet_size": 244,
+      "total_bits": 8368.009503371515,
+      "bits_per_decision": 5.451471989167111
+    },
+    "production": {
+      "n_decisions": 1019,
+      "alphabet_size": 54,
+      "total_bits": 4391.938302737241,
+      "bits_per_decision": 4.310047402097391,
+      "by_category": {
+        "direction": 40,
+        "literal": 37,
+        "production": 177,
+        "reference": 141,
+        "slot": 118,
+        "structural": 506
+      }
+    },
+    "choice": {
+      "n_decisions": 842,
+      "alphabet_size": 53,
+      "total_bits": 3713.1838687708782,
+      "bits_per_decision": 4.4099570888015185,
+      "by_category": {
+        "arity": 329,
+        "direction": 40,
+        "literal": 37,
+        "production": 177,
+        "reference": 141,
+        "slot": 118
+      },
+      "punct": 0,
+      "structural": 0,
+      "name": 0
+    },
+    "surface_to_production_bit_ratio": 1.905311260441937,
+    "surface_to_choice_bit_ratio": 2.253594165844919,
+    "production_to_choice_bit_ratio": 1.1827958048818739,
+    "decision_reduction_ratio": 1.506378802747792,
+    "choice_decision_reduction_ratio": 1.823040380047506
+  },
+  "fixture_wiring_smoke": {
+    "honesty": "wiring-evidence-only; honest zeros; no quality claim supported",
+    "device": "cpu",
+    "suite": "smoke (16 fixture test seeds)",
+    "train_corpus": "24 fixture train seeds",
+    "runs": [
+      {
+        "run_id": "qx_e258_b1_choice_codec_fixture_smoke",
+        "output_tokenizer": "choice",
+        "steps": 120,
+        "d_model": 64,
+        "mask_pattern": "random",
+        "parse_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "train_s": 9.2,
+        "eval_s": 0.9
+      },
+      {
+        "run_id": "qx_e259_b1_lexer_control_fixture_smoke",
+        "output_tokenizer": "lexer",
+        "steps": 120,
+        "d_model": 64,
+        "mask_pattern": "random",
+        "parse_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "train_s": 5.9,
+        "eval_s": 149.7
+      },
+      {
+        "run_id": "qx_e258_b1_choice_codec_fixture_smoke_800",
+        "output_tokenizer": "choice",
+        "steps": 800,
+        "d_model": 128,
+        "mask_pattern": "random",
+        "parse_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "train_s": 34.1
+      },
+      {
+        "run_id": "qx_e258_choice_smoke_2500",
+        "output_tokenizer": "choice",
+        "steps": 2500,
+        "d_model": 128,
+        "mask_pattern": "random",
+        "parse_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "train_memorization_valid": "0/8",
+        "train_s": 84.7
+      },
+      {
+        "run_id": "qx_e258_choice_smoke_diff1200",
+        "output_tokenizer": "choice",
+        "steps": 1200,
+        "d_model": 128,
+        "mask_pattern": "diffusion",
+        "parse_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "train_memorization_valid": "0/8",
+        "train_s": 44.6
+      }
+    ]
+  },
+  "model_card_updated": false,
+  "checkpoint_created": false
+}

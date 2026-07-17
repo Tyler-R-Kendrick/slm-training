@@ -1299,6 +1299,38 @@ corpus prerequisite is satisfied and a new semantic preference experiment is
 unblocked, but model quality and ship gates remain unmeasured. Full evidence:
 [iter-e261-gold-ast-counterfactual-corpus-20260716.md](iter-e261-gold-ast-counterfactual-corpus-20260716.md).
 
+## V12 B1 choice-sequence codec (registered 2026-07-17; matrix row unrun)
+
+Track B1 (SLM-42): a pure grammar-choice output stream — the model predicts
+only semantic decisions (which production, which slot filler); all non-lexical
+surface syntax is reconstructed by a deterministic detokenizer through the
+official lang-core serializer (fail-closed, so parse is a meaningful honest
+primary — the detokenizer never invents syntax for an invalid stream). New
+`--output-tokenizer choice` beside compositional/lexer; codec in
+`dsl/production_codec.py` (`encode_choices`/`decode_choices`), tokenizer in
+`models/choice_tokenizer.py` (sidecar kind `choice_codec`). B2 canonical
+alignment laws pinned in `tests/test_dsl/test_choice_codec.py`.
+
+| ID | Isolated lever | Status |
+| --- | --- | --- |
+| E262 | B1 pure grammar-choice output stream (`output_tokenizer=choice`) vs E255 lexer control (same diffusion masking, non-LTR MaskGIT decode) | registered / unrun |
+
+E2 semantic density (36 fixture seeds, measured 2026-07-17): choice stream
+carries 842 decisions / 3713.2 bits vs production 1019 / 4391.9 and surface
+1535 / 8368.0 — `surface_to_choice_bit_ratio` 2.254 (production: 1.905),
+`production_to_choice_bit_ratio` 1.183; structural/punct/name categories
+collapse to 0 (arity choices remain, honestly categorized). A fixture-scale
+CPU wiring smoke of the identical harness path (choice + matched lexer
+control) scored honest 0.0 parse on both arms at 120–2500 steps —
+wiring evidence only; the matrix row needs the standard eval corpus and
+budget. JSON + narrative:
+[iter-b1-choice-sequence-codec-20260717.json](iter-b1-choice-sequence-codec-20260717.json),
+[iter-b1-choice-sequence-codec-20260717.md](iter-b1-choice-sequence-codec-20260717.md).
+No checkpoint was created or promoted; MODEL_CARD unchanged. v1 caveat: the
+surface-DFA token gate is bypassed for choice ids (validation moves entirely
+to the fail-closed detokenizer); a choice-native legal-decision gate is the
+follow-up.
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
