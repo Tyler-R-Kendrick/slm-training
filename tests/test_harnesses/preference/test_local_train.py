@@ -20,6 +20,7 @@ from slm_training.harnesses.preference.local_train import (
     evaluate_local_decisions,
     event_schedule,
     local_decision_loss,
+    proposal_schedule,
     train_local_decisions,
     train_local_from_paths,
 )
@@ -94,6 +95,25 @@ def test_set_objective_and_balancing_fail_closed() -> None:
         )
     schedule = event_schedule([event], steps=3, seed=0, balanced=True)
     assert schedule == [event, event, event]
+
+
+def test_proposal_schedule_groups_events_by_decision_kind() -> None:
+    component = _event(group="component")
+    component_two = replace(component, event_id="component-two")
+    grammar = replace(_event(group="grammar"), decision_kind="grammar_comma")
+
+    schedule = proposal_schedule(
+        [component, component_two, grammar],
+        steps=2,
+        seed=0,
+        balanced=False,
+        block_by_decision_kind=True,
+    )
+
+    assert [[event.decision_kind for event in block] for block in schedule] == [
+        ["component", "component"],
+        ["grammar_comma"],
+    ]
 
 
 def test_single_objective_filters_set_valued_events() -> None:

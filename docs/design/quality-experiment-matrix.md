@@ -1378,6 +1378,16 @@ artifact. The next lever is decision-kind block-coordinate proposals, not more
 global FTPO duration or a literal special case. Full evidence:
 [iter-e266-stratified-safe-ftpo-20260717.md](iter-e266-stratified-safe-ftpo-20260717.md).
 
+E267 averaged train losses within each grammar/AST `decision_kind` before
+proposing an update, testing whether E266's single-event gradients were simply
+too noisy. All 30 category blocks and 150 scales were rejected; the restored
+model is bit-identical to E228 and full evaluation exactly matches the current
+parent control. The batched stage remained practical at 90.27s. Category
+averaging therefore does not produce a safe FTPO direction. The next lever
+must construct a conflict-projected or minimum-norm combination of per-kind
+gradients, not vary duration or scalar learning rate. Full evidence:
+[iter-e267-block-stratified-ftpo-20260717.md](iter-e267-block-stratified-ftpo-20260717.md).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
