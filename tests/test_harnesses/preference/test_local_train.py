@@ -167,6 +167,26 @@ def test_guard_objectives_are_minimization_oriented() -> None:
     assert values["mean_margin"] == -3.0
 
 
+def test_legal_token_probability_mass_ignores_unselectable_logits() -> None:
+    event = replace(_event(good=(1,), bad=(2,)), legal_token_ids=(1, 2))
+    logits = torch.tensor([0.0, 2.0, -1.0, 100.0], requires_grad=True)
+
+    full_vocab = _guard_objective_tensors(
+        logits, event, objective="ftpo_set", probability_space="full_vocab"
+    )
+    legal_tokens = _guard_objective_tensors(
+        logits, event, objective="ftpo_set", probability_space="legal_tokens"
+    )
+
+    assert full_vocab["good_probability_mass"].item() == pytest.approx(0.0, abs=1e-6)
+    assert legal_tokens["good_probability_mass"].item() == pytest.approx(
+        -torch.sigmoid(torch.tensor(3.0)).item()
+    )
+    assert legal_tokens["bad_probability_mass"].item() == pytest.approx(
+        torch.sigmoid(torch.tensor(-3.0)).item()
+    )
+
+
 def test_minimum_norm_gradient_certifies_common_descent() -> None:
     combined, report = _minimum_norm_gradient(
         [[torch.tensor([1.0, 0.0])], [torch.tensor([0.0, 2.0])]]

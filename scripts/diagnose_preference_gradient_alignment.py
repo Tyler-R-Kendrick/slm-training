@@ -19,6 +19,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--objective", default="ftpo_set")
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--metric-complete", action="store_true")
+    parser.add_argument(
+        "--probability-space",
+        choices=("full_vocab", "legal_tokens"),
+        default="full_vocab",
+        help="Probability denominator for metric-complete mass objectives.",
+    )
     args = parser.parse_args(argv)
     report = diagnose_decision_gradient_alignment_from_paths(
         args.checkpoint,
@@ -26,6 +32,7 @@ def main(argv: list[str] | None = None) -> int:
         objective=args.objective,
         device=args.device,
         metric_complete=args.metric_complete,
+        probability_space=args.probability_space,
     )
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")

@@ -169,6 +169,7 @@ def _guard_objective_tensors(
     event: DecisionEventV1,
     *,
     objective: LocalObjective,
+    probability_space: Literal["full_vocab", "legal_tokens"] = "full_vocab",
     epsilon: float = 2.0,
     tau: float = 1.0,
 ) -> dict[str, torch.Tensor]:
@@ -178,13 +179,34 @@ def _guard_objective_tensors(
     )
     good_ids = _indices(event.good_token_ids, logits)
     bad_ids = _indices(event.bad_token_ids, logits)
-    probs = F.softmax(logits, dim=-1)
+    if probability_space == "full_vocab":
+        probs = F.softmax(logits, dim=-1)
+        good_mass = probs.index_select(0, good_ids).sum()
+        bad_mass = probs.index_select(0, bad_ids).sum()
+    elif probability_space == "legal_tokens":
+        legal_ids = _indices(event.legal_token_ids, logits)
+        legal_probs = F.softmax(logits.index_select(0, legal_ids), dim=-1)
+        legal_index = {
+            token_id: index for index, token_id in enumerate(event.legal_token_ids)
+        }
+        legal_good_ids = _indices(
+            tuple(legal_index[token_id] for token_id in event.good_token_ids),
+            legal_probs,
+        )
+        legal_bad_ids = _indices(
+            tuple(legal_index[token_id] for token_id in event.bad_token_ids),
+            legal_probs,
+        )
+        good_mass = legal_probs.index_select(0, legal_good_ids).sum()
+        bad_mass = legal_probs.index_select(0, legal_bad_ids).sum()
+    else:
+        raise ValueError(f"unknown probability space: {probability_space}")
     good = logits.index_select(0, good_ids)
     bad = logits.index_select(0, bad_ids)
     return {
         "loss": loss,
-        "bad_probability_mass": probs.index_select(0, bad_ids).sum(),
-        "good_probability_mass": -probs.index_select(0, good_ids).sum(),
+        "bad_probability_mass": bad_mass,
+        "good_probability_mass": -good_mass,
         "mean_margin": -(good[:, None] - bad[None, :]).mean(),
     }
 
@@ -558,6 +580,7 @@ def diagnose_metric_complete_gradient_feasibility(
     events: list[DecisionEventV1],
     *,
     objective: LocalObjective,
+    probability_space: Literal["full_vocab", "legal_tokens"] = "full_vocab",
     epsilon: float = 2.0,
     tau: float = 1.0,
 ) -> dict:
@@ -575,7 +598,12 @@ def diagnose_metric_complete_gradient_feasibility(
             selected, _event_logits_many(model, selected), strict=True
         ):
             for metric, value in _guard_objective_tensors(
-                logits, event, objective=objective, epsilon=epsilon, tau=tau
+                logits,
+                event,
+                objective=objective,
+                probability_space=probability_space,
+                epsilon=epsilon,
+                tau=tau,
             ).items():
                 values[f"{event.decision_kind}:{metric}"].append(value)
             counts[split][event.decision_kind] += 1
@@ -603,6 +631,7 @@ def diagnose_metric_complete_gradient_feasibility(
     }
     return {
         "objective": objective,
+        "probability_space": probability_space,
         "guard_objective_directions": dict(_GUARD_DIRECTIONS),
         "train_event_counts": dict(sorted(counts["train"].items())),
         "held_out_event_counts": dict(sorted(counts["held_out"].items())),
@@ -623,13 +652,17 @@ def diagnose_decision_gradient_alignment_from_paths(
     objective: LocalObjective,
     device: str = "cpu",
     metric_complete: bool = False,
+    probability_space: Literal["full_vocab", "legal_tokens"] = "full_vocab",
 ) -> dict:
     events = load_decision_events(events_path)
     model = TwoTowerModel.from_checkpoint(checkpoint, device=device)
     _validate_identity(events, checkpoint, model)
     report = (
         diagnose_metric_complete_gradient_feasibility(
-            model, events, objective=objective
+            model,
+            events,
+            objective=objective,
+            probability_space=probability_space,
         )
         if metric_complete
         else diagnose_decision_gradient_alignment(model, events, objective=objective)
