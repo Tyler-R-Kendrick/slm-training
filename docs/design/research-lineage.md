@@ -166,15 +166,24 @@ of [XGrammar](https://arxiv.org/abs/2411.15100). Implementation and exact gates:
 
 | | |
 | --- | --- |
-| **Papers** | [Unlikelihood](https://arxiv.org/abs/1908.04319), [Token-level DPO](https://arxiv.org/abs/2404.11999), [TIS-DPO](https://arxiv.org/abs/2410.04350), [ConfPO](https://arxiv.org/abs/2506.08712), [TGDPO](https://arxiv.org/abs/2506.14574), [Antislop](https://arxiv.org/abs/2510.15061), [TokenRatio](https://arxiv.org/abs/2605.12288) |
+| **Papers** | [Unlikelihood](https://arxiv.org/abs/1908.04319), [Token-level DPO](https://arxiv.org/abs/2404.11999), [TIS-DPO](https://arxiv.org/abs/2410.04350), [ConfPO](https://arxiv.org/abs/2506.08712), [TGDPO](https://arxiv.org/abs/2506.14574), [Antislop](https://arxiv.org/abs/2510.15061), [TokenRatio](https://arxiv.org/abs/2605.12288), [TAB-PO](https://arxiv.org/abs/2603.00025) |
 | **Fidelity** | **Adapted** — exact masked-token states, verifier-backed good/bad action sets, clipped logit margins, and optional frozen-reference tethering; not sequence DPO or a faithful reproduction of any cited objective |
-| **Code** | Existing preference/trace owners; detailed boundary and full 25-paper audit in [`local-decision-interventions.md`](local-decision-interventions.md) |
-| **Matrix** | Proposed/unrun V10 rows E248-E254 in [`quality-experiment-matrix.md`](quality-experiment-matrix.md) |
+| **Code** | Existing preference/trace owners; the LDI0-01 architecture contract, named owners, and full 34-source audit are in [`local-decision-interventions.md`](local-decision-interventions.md) |
+| **Matrix** | Measured V10 rows E248-E254 and the E265-E286 local-preference ledger (LDI campaign index) in [`quality-experiment-matrix.md`](quality-experiment-matrix.md); the chain is negative (E249/E252 rejected) |
 
-SAE/ReFT discovery, removable LoRA/DoRA/PiSSA actuators, adapter routing, iterative
-remine, and RLVR are **Adjacent**. The first TwoTower implementation is a localized
-loss with a global full-parameter update. It makes no locality or ship claim until
-the registered controls run under unchanged gates.
+SAE/ReFT discovery, removable LoRA/DoRA/PiSSA/[AdaLoRA](https://arxiv.org/abs/2303.10512)
+actuators, adapter routing, iterative remine, and RLVR are **Adjacent**.
+Objective-geometry lenses for the current blocker —
+[Gradient Surgery/PCGrad](https://arxiv.org/abs/2001.06782) and
+[MGDA](https://arxiv.org/abs/1810.04650) — and decoding baselines
+([min-p](https://arxiv.org/abs/2407.01082)) are **Adjacent**: diagnostic framing and
+baselines to beat, not implemented. [PICARD](https://arxiv.org/abs/2109.05093) and
+[Grammar-Aligned Decoding/ASAp](https://arxiv.org/abs/2405.21047) frame the
+constraint-legality invariant — constraint shadows certify legality only, never
+semantic preference. These are lineage labels, not reproduced results. The first
+TwoTower implementation is a localized loss with a global full-parameter update. It
+makes no locality or ship claim until the registered controls run under unchanged
+gates.
 
 ### GRPO-lite
 
