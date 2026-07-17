@@ -1425,6 +1425,16 @@ MGDA certificate covers. The next diagnostic must certify the actual
 optimizer-transformed step before any new training. Full evidence:
 [iter-e270-preference-gradient-alignment-20260717.md](iter-e270-preference-gradient-alignment-20260717.md).
 
+E271 analytically profiled the exact fresh Adam/AdamW first-step directions
+without mutating the model. Both transforms reverse held-out
+`grammar_comma` (cosine about `-0.00913`) and train-only `grammar_lsqb`
+(`-0.00345`), while their values are nearly identical; decoupled weight decay
+is not the cause. Adam's adaptive sign-like preconditioning breaks the raw
+MGDA common-descent certificate. The next bounded training lever is a one-step
+MGDA plus SGD preflight under the unchanged stratified guard, not another
+gradient mixer or AdamW scalar tune. Full evidence:
+[iter-e271-preference-optimizer-geometry-20260717.md](iter-e271-preference-optimizer-geometry-20260717.md).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
