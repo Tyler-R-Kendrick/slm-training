@@ -194,6 +194,8 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "binder_arity_choice_changes",
         "forced_spans",
         "forced_tokens",
+        "choice_state_cache_hits",
+        "choice_state_cache_misses",
         "trie_nodes",
         "restricted_projections",
         "full_projections",
