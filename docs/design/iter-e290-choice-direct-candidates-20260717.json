@@ -1,0 +1,122 @@
+{
+  "iteration": "E290",
+  "date": "2026-07-17",
+  "hypothesis": "Grammar-derived next-token partitions can reduce cold choice-decoder work while the existing transition and completion checks preserve exact legality.",
+  "implementation": {
+    "partitions": [
+      "statement_marker",
+      "expression_start",
+      "object_key",
+      "literal_byte",
+      "frame_close"
+    ],
+    "state_filters": [
+      "available_reference",
+      "available_slot"
+    ],
+    "final_validator_unchanged": true,
+    "exhaustive_oracle_test": true,
+    "telemetry": [
+      "choice_candidates_considered",
+      "choice_vocab_candidates_avoided"
+    ]
+  },
+  "training": {
+    "run_id": "capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0",
+    "device": "cpu",
+    "steps": 107,
+    "seen_target_tokens": 5022,
+    "stopped_on": "token_budget",
+    "max_wall_minutes": 5.0,
+    "elapsed_wall_seconds": 29.2179,
+    "weighted_nll": 7.098483934,
+    "checkpoint_sha256": "7cad143139f91369b4780878f634e7fa24434d7ccb8f9813a00f5412f3051c99",
+    "same_sha_as_e288_e289": true,
+    "promotable": false
+  },
+  "evaluation": {
+    "run_ids": [
+      "e290-choice-direct-candidates-r1",
+      "e290-choice-direct-candidates-r2"
+    ],
+    "agentv_each": {
+      "total": 5,
+      "passed": 0,
+      "execution_errors": 0
+    },
+    "quality_all_suites": {
+      "parse": 1.0,
+      "meaningful": 0.0,
+      "fidelity": 0.0,
+      "reward": 0.0,
+      "dead_ends": 0
+    },
+    "suites": {
+      "smoke": {
+        "n": 3,
+        "structural": 0.3094333,
+        "p50_ms": [2661.77, 2594.02],
+        "p50_median_ms": 2627.89,
+        "p50_speedup_vs_e289": 0.8894,
+        "p95_ms": [7791.98, 7262.88],
+        "p95_median_ms": 7527.43,
+        "p95_speedup_vs_e289": 1.1509,
+        "vocab_avoid_rate": 0.347808
+      },
+      "held_out": {
+        "n": 5,
+        "structural": 0.2514,
+        "p50_ms": [2145.79, 1930.78],
+        "p50_median_ms": 2038.28,
+        "p50_speedup_vs_e289": 0.5867,
+        "p95_ms": [5191.41, 4856.2],
+        "p95_median_ms": 5023.81,
+        "p95_speedup_vs_e289": 1.1772,
+        "vocab_avoid_rate": 0.347792
+      },
+      "adversarial": {
+        "n": 4,
+        "structural": 0.2905,
+        "p50_ms": [1888.03, 2014.78],
+        "p50_median_ms": 1951.4,
+        "p50_speedup_vs_e289": 0.7264,
+        "p95_ms": [5067.7, 5210.86],
+        "p95_median_ms": 5139.28,
+        "p95_speedup_vs_e289": 1.148,
+        "vocab_avoid_rate": 0.347781
+      },
+      "ood": {
+        "n": 4,
+        "structural": 0.236875,
+        "p50_ms": [1516.14, 1953.45],
+        "p50_median_ms": 1734.8,
+        "p50_speedup_vs_e289": 0.6738,
+        "p95_ms": [4968.22, 5386.06],
+        "p95_median_ms": 5177.14,
+        "p95_speedup_vs_e289": 1.1911,
+        "vocab_avoid_rate": 0.347808
+      },
+      "rico_held": {
+        "n": 3,
+        "structural": 0.0900667,
+        "p50_ms": [1280.6, 1517.24],
+        "p50_median_ms": 1398.92,
+        "p50_speedup_vs_e289": 0.7411,
+        "p95_ms": [4870.8, 5615.21],
+        "p95_median_ms": 5243.01,
+        "p95_speedup_vs_e289": 1.1437,
+        "vocab_avoid_rate": 0.34776
+      }
+    }
+  },
+  "verdict": {
+    "behavior_preserved": true,
+    "cold_probe_work_reduced": true,
+    "p95_improved": true,
+    "p50_regressed": true,
+    "semantic_gates_passed": false,
+    "promote_runtime_default": false,
+    "ship": false,
+    "next": "Replace repeated recursive completion searches with exact grammar-derived lower bounds and avoid rebuilding candidate sets on cache misses."
+  }
+}

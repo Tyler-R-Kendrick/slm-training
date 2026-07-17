@@ -100,6 +100,7 @@ summary and the full card whenever a checkpoint is created or promoted.
 | B3 five-minute lexer control | `capacity_lexer_v1__d64_h2_c1_dn2_t5000_x1__s0/last.pt` | `outputs/ladders/b3-matched-5m-e287-r2/…` (local) | 53-step / 5,004-token CPU scratch; five-suite parse/meaningful 0.0, AgentV 0/5 — not promoted or ship |
 | B3 five-minute choice arm | `capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/last.pt` | `outputs/ladders/b3-matched-5m-e287-r2/…` (local) | E288 frozen eval: deterministic parse 1.0 on all suites, but meaningful/fidelity 0.0 and AgentV 0/5 — not promoted or ship |
 | E289 cached choice arm | `capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/last.pt` | `outputs/ladders/e289-choice-state-cache/…` (local) | Same checkpoint SHA as E288; exact symbolic-state cache preserves parse 1.0 and cuts p50 2.65×–5.86×, but semantic metrics and AgentV remain zero — not promoted or ship |
+| E290 direct-candidate choice arm | `capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/last.pt` | `outputs/ladders/e290-choice-direct-candidates/…` (local) | Same checkpoint SHA; exact grammar-derived candidates improve p95 1.14×–1.19× but regress p50, while semantic metrics and AgentV remain zero — not promoted or ship |
 | Production HF ship | *(none yet)* | [HF Bucket `TKendrick/OpenUI`](https://huggingface.co/buckets/TKendrick/OpenUI) `checkpoints/<run_id>/` | Register here after first full HF sync + `--ship-gates` |
 
 **Load demo:** `python -m scripts.serve_playground` · **Full train sync:** set

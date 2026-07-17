@@ -277,3 +277,13 @@ zero. Hit rates ranged from 57.6% to 76.4%; cold-state p95 remains 5.9–8.7
 seconds. Meaningful parse, fidelity, reward, and AgentV remain zero, so the
 result is non-promotable. Full recipe and suite telemetry:
 [E289](iter-e289-choice-state-cache-20260717.md).
+
+## E290 grammar-derived choice candidates (2026-07-17)
+
+Production/frame partitions plus available-ref/slot filters avoid 34.8% of
+vocabulary probes on exact-cache misses. Exhaustive-oracle tests and two
+all-suite evaluations preserve E289 behavior (parse 1.0, zero dead ends,
+semantic metrics zero). Median p95 improves 1.14×–1.19×, while p50 regresses to
+0.59×–0.89× of E289. The mixed result is non-promotable; next work targets
+exact completion lower bounds and candidate-set allocation.
+[Full E290 evidence](iter-e290-choice-direct-candidates-20260717.md).

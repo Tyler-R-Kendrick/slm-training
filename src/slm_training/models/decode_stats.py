@@ -48,6 +48,8 @@ class DecodeStats:
     forced_tokens: int = 0
     choice_state_cache_hits: int = 0
     choice_state_cache_misses: int = 0
+    choice_candidates_considered: int = 0
+    choice_vocab_candidates_avoided: int = 0
     trie_nodes: int = 0
     restricted_projections: int = 0
     full_projections: int = 0
@@ -196,6 +198,8 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "forced_tokens",
         "choice_state_cache_hits",
         "choice_state_cache_misses",
+        "choice_candidates_considered",
+        "choice_vocab_candidates_avoided",
         "trie_nodes",
         "restricted_projections",
         "full_projections",

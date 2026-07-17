@@ -4029,6 +4029,8 @@ class TwoTowerModel(nn.Module):
                 break
             cache_hits = tok.allowed_cache_hits
             cache_misses = tok.allowed_cache_misses
+            candidates_considered = tok.candidates_considered
+            vocab_candidates_avoided = tok.vocab_candidates_avoided
             allowed = {
                 row: states[row].allowed_ids(length - position) for row in rows
             }
@@ -4036,6 +4038,12 @@ class TwoTowerModel(nn.Module):
                 stats.choice_state_cache_hits += tok.allowed_cache_hits - cache_hits
                 stats.choice_state_cache_misses += (
                     tok.allowed_cache_misses - cache_misses
+                )
+                stats.choice_candidates_considered += (
+                    tok.candidates_considered - candidates_considered
+                )
+                stats.choice_vocab_candidates_avoided += (
+                    tok.vocab_candidates_avoided - vocab_candidates_avoided
                 )
             need_model = [row for row in rows if len(allowed[row]) > 1]
             logits = (

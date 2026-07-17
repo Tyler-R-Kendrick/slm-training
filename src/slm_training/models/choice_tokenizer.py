@@ -188,6 +188,11 @@ class ChoiceTokenizer:
     )
     allowed_cache_hits: int = field(default=0, repr=False, compare=False)
     allowed_cache_misses: int = field(default=0, repr=False, compare=False)
+    candidate_partitions: dict[str, frozenset[int]] = field(
+        default_factory=dict, repr=False, compare=False
+    )
+    candidates_considered: int = field(default=0, repr=False, compare=False)
+    vocab_candidates_avoided: int = field(default=0, repr=False, compare=False)
 
     # --- special ids -----------------------------------------------------
 
@@ -226,6 +231,63 @@ class ChoiceTokenizer:
 
     def sym_id(self, slot: int) -> int:
         return self.token_to_id[f"{SLOT_PREFIX}{slot}"]
+
+    def candidate_partition(self, name: str) -> frozenset[int]:
+        """Return a lazily built production-category token partition."""
+        cached = self.candidate_partitions.get(name)
+        if cached is not None:
+            return cached
+
+        def _is_expression_start(token: str) -> bool:
+            return (
+                token.startswith(
+                    (
+                        OPEN_PREFIX,
+                        BUILTIN_PREFIX,
+                        OP_PREFIX,
+                        MEMBER_PREFIX,
+                        REF_PREFIX,
+                        SLOT_PREFIX,
+                        STATE_REF_PREFIX,
+                        DIR_PREFIX,
+                        NAME_PREFIX,
+                        LIT_PREFIX,
+                    )
+                )
+                or token
+                in {
+                    LIST_OPEN,
+                    OBJ_OPEN,
+                    TERNARY_OP,
+                    NOT_OP,
+                    NEG_OP,
+                    INDEX_OP,
+                    LIT_STR,
+                    LIT_NUM,
+                    NAME_STR,
+                    MEMBER_STR,
+                }
+            )
+
+        predicates = {
+            "byte": lambda token: token.startswith(_BYTE_PREFIX),
+            "bind": lambda token: token.startswith(REF_PREFIX),
+            "expression": _is_expression_start,
+            "marker": lambda token: token in CHOICE_STMT_MARKERS,
+            "object_key": lambda token: token.startswith(NAME_PREFIX)
+            or token == NAME_STR,
+            "slot": lambda token: token.startswith(SLOT_PREFIX),
+        }
+        predicate = predicates.get(name)
+        if predicate is None:
+            raise ValueError(f"unknown choice candidate partition: {name}")
+        result = frozenset(
+            token_id
+            for token_id, token in self.id_to_token.items()
+            if predicate(token)
+        )
+        self.candidate_partitions[name] = result
+        return result
 
     # --- build -----------------------------------------------------------
 
@@ -845,15 +907,56 @@ class ChoiceDecodeState:
             self.literal_is_object_key,
         )
 
-    def allowed_ids(self, remaining_positions: int) -> set[int]:
-        key = (self.signature(), int(remaining_positions))
-        cached = self.tokenizer.allowed_cache.get(key)
-        if cached is not None:
-            self.tokenizer.allowed_cache_hits += 1
-            return set(cached)
-        self.tokenizer.allowed_cache_misses += 1
+    def _candidate_ids(self) -> set[int]:
+        """Grammar-derived superset of legal next IDs for the current frame."""
+        tok = self.tokenizer
+
+        def _expression_candidates() -> set[int]:
+            candidates = set(tok.candidate_partition("expression"))
+            candidates.difference_update(tok.candidate_partition("bind"))
+            candidates.update(
+                tok.token_to_id[f"{REF_PREFIX}{index}"]
+                for index in range(min(len(self.section_types), tok.ref_slots))
+            )
+            candidates.difference_update(tok.candidate_partition("slot"))
+            candidates.update(
+                tok.token_to_id[f"{SLOT_PREFIX}{index}"]
+                for index in range(min(self.slot_count, tok.sym_slots))
+            )
+            return candidates
+
+        if self.literal_frame is not None:
+            return set(tok.candidate_partition("byte")) | {
+                tok.token_to_id[LIT_END]
+            }
+
+        if self.frames:
+            frame = self.frames[-1]
+            if frame.kind == "object" and frame.phase == "key":
+                return set(tok.candidate_partition("object_key")) | {
+                    tok.token_to_id[str(frame.close)]
+                }
+            candidates = _expression_candidates()
+            if frame.kind in {"variadic", "component"}:
+                candidates.add(tok.token_to_id[str(frame.close)])
+            return candidates
+
+        candidates: set[int] = set()
+        if self.mode == "v05" and self.current_marker is None:
+            candidates.update(tok.candidate_partition("marker"))
+        else:
+            candidates.update(_expression_candidates())
+            if self.mode is None:
+                candidates.update(tok.candidate_partition("marker"))
+        if self.can_end():
+            candidates.add(tok.eos_id)
+        return candidates
+
+    def _filter_allowed(
+        self, candidate_ids: Iterable[int], remaining_positions: int
+    ) -> set[int]:
         allowed: set[int] = set()
-        for token_id in self.tokenizer.id_to_token:
+        for token_id in candidate_ids:
             probe = self.clone()
             if not probe.advance_id(token_id):
                 continue
@@ -864,6 +967,27 @@ class ChoiceDecodeState:
             )
             if completion <= remaining_positions - 1:
                 allowed.add(token_id)
+        return allowed
+
+    def exhaustive_allowed_ids(self, remaining_positions: int) -> set[int]:
+        """Reference implementation used to prove direct candidates exact."""
+        return self._filter_allowed(
+            self.tokenizer.id_to_token, int(remaining_positions)
+        )
+
+    def allowed_ids(self, remaining_positions: int) -> set[int]:
+        key = (self.signature(), int(remaining_positions))
+        cached = self.tokenizer.allowed_cache.get(key)
+        if cached is not None:
+            self.tokenizer.allowed_cache_hits += 1
+            return set(cached)
+        self.tokenizer.allowed_cache_misses += 1
+        candidates = self._candidate_ids()
+        self.tokenizer.candidates_considered += len(candidates)
+        self.tokenizer.vocab_candidates_avoided += (
+            self.tokenizer.vocab_size - len(candidates)
+        )
+        allowed = self._filter_allowed(candidates, int(remaining_positions))
         if len(self.tokenizer.allowed_cache) >= 4096:
             self.tokenizer.allowed_cache.clear()
         self.tokenizer.allowed_cache[key] = frozenset(allowed)

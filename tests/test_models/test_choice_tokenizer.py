@@ -11,6 +11,9 @@ from slm_training.dsl.parser import validate
 from slm_training.dsl.schema import ExampleRecord, load_jsonl
 from slm_training.models.choice_tokenizer import (
     CHOICE_TOKENIZER_KIND,
+    LIT_STR,
+    NAME_STR,
+    TERNARY_OP,
     ChoiceDecodeState,
     ChoiceTokenizer,
     is_choice_tokenizer,
@@ -155,6 +158,59 @@ def test_choice_state_caches_exact_legal_sets(tok: ChoiceTokenizer) -> None:
     assert second == first
     assert tok.allowed_cache_misses == 1
     assert tok.allowed_cache_hits == 1
+
+
+def test_direct_candidates_match_exhaustive_oracle_on_reachable_states(
+    tok: ChoiceTokenizer,
+) -> None:
+    def advanced(
+        token: str, parent: ChoiceDecodeState | None = None
+    ) -> ChoiceDecodeState:
+        state = (parent or ChoiceDecodeState(tok, slot_count=3)).clone()
+        assert state.advance_id(tok.token_to_id[token])
+        return state
+
+    component = next(
+        token for token in tok.token_to_id if token.startswith("+")
+    )
+    object_state = advanced("{")
+    states = [
+        ChoiceDecodeState(tok, slot_count=3),
+        advanced("r="),
+        advanced(component),
+        advanced("["),
+        object_state,
+        advanced(NAME_STR, object_state),
+        advanced(LIT_STR),
+        advanced(TERNARY_OP),
+    ]
+    for state in states:
+        accepted = set()
+        for token_id in tok.id_to_token:
+            probe = state.clone()
+            if probe.advance_id(token_id):
+                accepted.add(token_id)
+        assert accepted <= state._candidate_ids()
+
+    initial = states[0]
+    assert initial._filter_allowed(
+        initial._candidate_ids(), 8
+    ) == initial.exhaustive_allowed_ids(8)
+
+
+def test_direct_candidates_avoid_most_vocabulary_ids(tok: ChoiceTokenizer) -> None:
+    tok.allowed_cache.clear()
+    tok.candidates_considered = 0
+    tok.vocab_candidates_avoided = 0
+    initial = ChoiceDecodeState(tok, slot_count=2)
+    initial.allowed_ids(8)
+    assert tok.candidates_considered < tok.vocab_size
+    assert tok.vocab_candidates_avoided > 0
+
+    literal = initial.clone()
+    assert literal.advance_id(tok.token_to_id[LIT_STR])
+    literal_candidates = literal._candidate_ids()
+    assert len(literal_candidates) < tok.vocab_size // 2
 
 
 @needs_bridge
