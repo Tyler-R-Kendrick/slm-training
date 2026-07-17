@@ -94,5 +94,6 @@
     "gate_failure_count": 17,
     "agentv": {"total": 5, "passed": 0, "failed": 5, "execution_errors": 0}
   },
-  "verdict": "Harness and provenance reporting repaired. Plan training helps one suite under the actual E292 DESIGN-context recipe, but direct bias is harmful and the gain does not survive no-DESIGN training. Reject both checkpoints."
+  "e294_followup": "A separately trained no-DESIGN no-plan control exactly matches E293 decode-off metrics; plan training alone has no discrete-output effect at this resolution.",
+  "verdict": "Harness and provenance reporting repaired. Plan training helps one suite under the actual E292 DESIGN-context recipe, but the no-DESIGN effect is entirely decode-head ranking and never improves meaningful rate. Reject both checkpoints."
 }

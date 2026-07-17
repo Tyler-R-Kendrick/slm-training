@@ -70,9 +70,10 @@ five suites and AgentV 0/5 with zero execution errors. Parse stays 1.0.
 
 The actual E292-matched DESIGN-context `r2` arm reached adversarial meaningful
 0.5 only with decode bias off (AgentV 1/5, 11 gate failures). The no-DESIGN
-follow-up does not reproduce it. There is no separately trained no-DESIGN
-control checkpoint, so `r3` is a policy transfer check, not an isolated
-plan-training comparison.
+follow-up does not reproduce it. E294 supplies the separately trained
+no-DESIGN control: it exactly matches E293's decode-bias-off metrics despite
+69/73 shared tensors differing, so plan training alone has no discrete-output
+effect at this evaluation resolution.
 
 ## Verdict
 
@@ -81,7 +82,8 @@ one suite in the actual E292-matched DESIGN-context regime, while direct decode
 bias is harmful there. The gain does not survive policy-correct no-DESIGN
 training, where bias improves only secondary metrics and AgentV remains 0/5.
 Keep the generalized harness, do not promote either checkpoint, and isolate
-context grounding with a true no-DESIGN control before tuning this bias further.
+context grounding before tuning this bias further. E294 closes the no-DESIGN
+control and shows that only the learned decode head changes outputs.
 
 Artifacts:
 

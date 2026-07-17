@@ -1714,6 +1714,20 @@ signal does not transfer to the no-DESIGN policy; no promotion. See
 [the narrative](iter-e293-choice-component-plan-20260717.md) and
 [machine-readable results](choice-component-plan-results-iter-e293-20260717.json).
 
+## E294 no-DESIGN no-plan control (CPU scratch, 2026-07-17)
+
+E294 supplies the missing control for E293 `r3`: identical 107-step /
+5,022-token choice recipe with no DESIGN context and both plan weights zero.
+Weighted NLL is 7.4977 versus E293's 7.5550. Its frozen honest board is exactly
+identical to E293 with decode bias off, despite 69/73 shared non-head tensors
+differing: meaningful 0.0 everywhere, AgentV 0/5, 17 failures.
+
+**Verdict:** plan training alone does not change discrete outputs at this
+resolution; enabling its learned legal-candidate bias cuts failures 17→13 but
+still produces no meaningful programs. Secondary-ranking evidence only; no
+promotion. See [the narrative](iter-e294-no-design-plan-control-20260717.md)
+and [machine-readable results](choice-plan-control-results-iter-e294-20260717.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

@@ -115,6 +115,10 @@ Checkpoint remains the pre-remediation fixture-upsample scratch run (not retrain
   reduces gate failures 17→13 versus bias off, but meaningful rate remains 0.0
   on every suite and AgentV remains 0/5. Neither arm is a ship candidate; see
   [iter-e293-choice-component-plan-20260717.md](iter-e293-choice-component-plan-20260717.md).
+- E294 supplies the separately trained no-DESIGN/no-plan control. It exactly
+  matches E293 with decode bias off, so plan training alone does not improve
+  discrete outputs; the active head only cuts failures 17→13 on secondary
+  metrics. Meaningful rate remains 0.0, so no ship claim follows.
 
 ## Re-eval commands
 
