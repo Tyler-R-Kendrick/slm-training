@@ -16,6 +16,7 @@ from slm_training.harnesses.preference.local_decisions import (
 from slm_training.harnesses.preference.local_train import (
     _event_logits,
     _event_logits_many,
+    _minimum_norm_gradient,
     _project_conflicting_gradients,
     _guard_strata_regressions,
     evaluate_local_decisions,
@@ -132,11 +133,36 @@ def test_project_conflicting_gradients_removes_negative_component() -> None:
     assert torch.allclose(combined[0], torch.tensor([0.25, 0.75]))
 
 
+def test_minimum_norm_gradient_certifies_common_descent() -> None:
+    combined, report = _minimum_norm_gradient(
+        [[torch.tensor([1.0, 0.0])], [torch.tensor([0.0, 2.0])]]
+    )
+
+    assert combined[0] is not None
+    assert report["converged"] is True
+    assert report["common_descent"] is True
+    assert report["min_task_dot"] > 0
+    assert torch.allclose(combined[0], torch.tensor([0.8, 0.4]), atol=1e-6)
+
+
+def test_minimum_norm_gradient_ignores_inactive_tasks() -> None:
+    combined, report = _minimum_norm_gradient(
+        [[torch.tensor([0.0, 0.0])], [torch.tensor([1.0, 2.0])]]
+    )
+
+    assert combined[0] is not None
+    assert report["active_task_count"] == 1
+    assert report["inactive_task_count"] == 1
+    assert report["common_descent"] is True
+    assert report["weights"] == [0.0, 1.0]
+    assert torch.equal(combined[0], torch.tensor([1.0, 2.0]))
+
+
 def test_projection_requires_stratified_guard() -> None:
-    with pytest.raises(ValueError, match="requires the decision-kind guard"):
+    with pytest.raises(ValueError, match="require the decision-kind guard"):
         train_local_decisions(
             _model(), [_event()], objective="ce_margin", steps=1,
-            project_by_decision_kind=True,
+            gradient_combination="pcgrad",
         )
 
 
@@ -169,16 +195,68 @@ def test_train_projects_all_decision_kinds_before_guarding() -> None:
         guarded_updates=True,
         guard_backtrack_steps=0,
         guard_by_decision_kind=True,
-        project_by_decision_kind=True,
+        gradient_combination="pcgrad",
     )
 
-    assert summary["project_by_decision_kind"] is True
+    assert summary["gradient_combination"] == "pcgrad"
     assert summary["gradient_projection"]["task_count"] == 2
     assert summary["gradient_projection"]["ordered_pair_count"] == 2
     assert summary["decision_kind_steps"] == {
         "component": 1,
         "grammar_comma": 1,
     }
+
+
+def test_uncertified_mgda_bypasses_optimizer_and_guard_trials(monkeypatch) -> None:
+    model = _model()
+    first = _event(
+        good=(model.tokenizer.eos_id,),
+        bad=(model.tokenizer.mask_id,),
+        group="first",
+    )
+    second = replace(first, event_id="second", decision_kind="grammar_comma")
+    held_group = "held"
+    while split_for_group(held_group) != "held_out":
+        held_group += "x"
+    held = replace(first, event_id="held", group_id=held_group, split="held_out")
+    metrics = {
+        "loss": 1.0,
+        "bad_probability_mass": 0.1,
+        "good_probability_mass": 0.2,
+        "mean_margin": 1.0,
+    }
+    baseline = {
+        "metrics": metrics,
+        "by_decision_kind": {"component": {"metrics": metrics}},
+    }
+    monkeypatch.setattr(
+        "slm_training.harnesses.preference.local_train._minimum_norm_gradient",
+        lambda gradients: (
+            [None] * len(gradients[0]),
+            {"common_descent": False, "task_count": len(gradients)},
+        ),
+    )
+    before = copy.deepcopy(model.state_dict())
+
+    summary = train_local_decisions(
+        model,
+        [first, second],
+        objective="ce_margin",
+        steps=1,
+        validation_events=[held],
+        validation_baseline=baseline,
+        guarded_updates=True,
+        guard_by_decision_kind=True,
+        gradient_combination="mgda",
+    )
+
+    history = summary["validation_selection"]["history"][1]
+    assert history["rejection_reason"] == "no_common_descent_certificate"
+    assert history["trials"] == []
+    assert summary["validation_selection"]["accepted_steps"] == 0
+    assert all(
+        torch.equal(before[key], value) for key, value in model.state_dict().items()
+    )
 
 
 def test_single_objective_filters_set_valued_events() -> None:

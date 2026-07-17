@@ -22,6 +22,7 @@ from slm_training.models.twotower import TwoTowerModel
 
 
 LocalObjective = Literal["ce_margin", "unlikelihood", "ftpo_single", "ftpo_set"]
+GradientCombination = Literal["proposal", "pcgrad", "mgda"]
 
 _GUARD_DIRECTIONS = {
     "loss": "min",
@@ -271,6 +272,100 @@ def _project_conflicting_gradients(
     }
 
 
+def _minimum_norm_gradient(
+    gradients: list[list[torch.Tensor | None]],
+    *,
+    max_iterations: int = 5000,
+    tolerance: float = 1e-10,
+) -> tuple[list[torch.Tensor | None], dict]:
+    """Find the minimum-norm convex task-gradient combination with Frank-Wolfe."""
+    if not gradients:
+        raise ValueError("at least one task gradient is required")
+    width = len(gradients[0])
+    if any(len(row) != width for row in gradients):
+        raise ValueError("task gradients must share a parameter layout")
+    count = len(gradients)
+    gram = torch.empty((count, count), dtype=torch.float64)
+    for left in range(count):
+        for right in range(left, count):
+            value = sum(
+                (a.detach() * b.detach()).sum().double().cpu()
+                for a, b in zip(gradients[left], gradients[right], strict=True)
+                if a is not None and b is not None
+            )
+            gram[left, right] = value
+            gram[right, left] = value
+    diagonal = torch.diagonal(gram)
+    active = torch.nonzero(diagonal > tolerance).flatten()
+    weights = torch.zeros(count, dtype=torch.float64)
+    if not len(active):
+        return [None] * width, {
+            "task_count": count,
+            "active_task_count": 0,
+            "inactive_task_count": count,
+            "iterations": 0,
+            "duality_gap": 0.0,
+            "converged": True,
+            "norm_sq": 0.0,
+            "min_task_dot": 0.0,
+            "min_active_task_dot": 0.0,
+            "common_descent": False,
+            "weights": weights.tolist(),
+        }
+    active_gram = gram.index_select(0, active).index_select(1, active)
+    active_weights = torch.zeros(len(active), dtype=torch.float64)
+    active_weights[int(torch.diagonal(active_gram).argmin())] = 1.0
+    converged = False
+    iterations = 0
+    gap = float("inf")
+    for iterations in range(1, max_iterations + 1):
+        gram_weights = active_gram @ active_weights
+        vertex = int(gram_weights.argmin())
+        direction = -active_weights
+        direction[vertex] += 1.0
+        gap = float(active_weights @ gram_weights - gram_weights[vertex])
+        if gap <= tolerance:
+            converged = True
+            break
+        denominator = float(direction @ active_gram @ direction)
+        if denominator <= tolerance:
+            break
+        step = max(0.0, min(1.0, -float(direction @ gram_weights) / denominator))
+        active_weights.add_(direction, alpha=step)
+    weights[active] = active_weights
+    combined: list[torch.Tensor | None] = []
+    for parameter_index in range(width):
+        values = [
+            (float(weights[index]), row[parameter_index])
+            for index, row in enumerate(gradients)
+            if row[parameter_index] is not None
+        ]
+        combined.append(
+            sum(weight * value.detach() for weight, value in values)
+            if values
+            else None
+        )
+    task_dots = gram @ weights
+    norm_sq = float(weights @ task_dots)
+    min_task_dot = float(task_dots.min())
+    min_active_task_dot = float(task_dots.index_select(0, active).min())
+    return combined, {
+        "task_count": count,
+        "active_task_count": len(active),
+        "inactive_task_count": count - len(active),
+        "iterations": iterations,
+        "duality_gap": gap,
+        "converged": converged,
+        "norm_sq": norm_sq,
+        "min_task_dot": min_task_dot,
+        "min_active_task_dot": min_active_task_dot,
+        "common_descent": (
+            min_active_task_dot > tolerance and min_task_dot >= -tolerance
+        ),
+        "weights": weights.tolist(),
+    }
+
+
 def _event_logits(model: TwoTowerModel, event: DecisionEventV1) -> torch.Tensor:
     ctx, ctx_pad = model._encode_context([event.context_text])
     ids = torch.tensor([event.canvas_ids], dtype=torch.long, device=model.device_name)
@@ -404,7 +499,7 @@ def train_local_decisions(
     guard_backtrack_steps: int = 4,
     guard_by_decision_kind: bool = False,
     block_by_decision_kind: bool = False,
-    project_by_decision_kind: bool = False,
+    gradient_combination: GradientCombination = "proposal",
 ) -> dict:
     if steps <= 0 or lr <= 0:
         raise ValueError("steps and learning rate must be positive")
@@ -433,8 +528,8 @@ def train_local_decisions(
         raise ValueError("guard backtrack steps must be non-negative")
     if guard_by_decision_kind and not (guarded_selection or guarded_updates):
         raise ValueError("decision-kind guard requires guarded training")
-    if project_by_decision_kind and not guard_by_decision_kind:
-        raise ValueError("decision-kind projection requires the decision-kind guard")
+    if gradient_combination != "proposal" and not guard_by_decision_kind:
+        raise ValueError("multi-objective gradients require the decision-kind guard")
     schedule = proposal_schedule(
         train_events,
         steps=max(0, int(steps)),
@@ -442,7 +537,7 @@ def train_local_decisions(
         balanced=balanced,
         block_by_decision_kind=block_by_decision_kind,
     )
-    if project_by_decision_kind:
+    if gradient_combination != "proposal":
         schedule = [train_events] * len(schedule)
     if reference_model is not None:
         reference_model.eval()
@@ -459,6 +554,7 @@ def train_local_decisions(
     best_step = 0
     strata_regression_counts: Counter[str] = Counter()
     gradient_projection_totals: Counter[str] = Counter()
+    gradient_solver_history: list[dict] = []
     if guarded_selection or guarded_updates:
         baseline = validation_baseline or evaluate_local_decisions(
             model,
@@ -480,6 +576,7 @@ def train_local_decisions(
             "by_decision_kind": bool(guard_by_decision_kind),
         }
     for step, proposal in enumerate(schedule, start=1):
+        gradient_certified = True
         logits_rows = _event_logits_many(model, proposal)
         with torch.no_grad():
             reference_rows = (
@@ -514,7 +611,7 @@ def train_local_decisions(
             for name, value in proposal_metrics.items()
         }
         optimizer.zero_grad(set_to_none=True)
-        if project_by_decision_kind:
+        if gradient_combination != "proposal":
             trainable = list(model.trainable_parameters())
             losses_by_kind: dict[str, list[torch.Tensor]] = defaultdict(list)
             for event, event_loss in zip(proposal, proposal_losses, strict=True):
@@ -534,14 +631,40 @@ def train_local_decisions(
                 )
                 for index, kind_loss in enumerate(kind_losses)
             ]
-            combined, projection = _project_conflicting_gradients(task_gradients)
+            if gradient_combination == "pcgrad":
+                combined, projection = _project_conflicting_gradients(task_gradients)
+            else:
+                combined, projection = _minimum_norm_gradient(task_gradients)
+            gradient_certified = bool(projection.get("common_descent", True))
             for parameter, gradient in zip(trainable, combined, strict=True):
-                parameter.grad = gradient
+                parameter.grad = gradient if gradient_certified else None
             gradient_projection_totals.update(
-                {name: int(value) for name, value in projection.items()}
+                {
+                    name: int(value)
+                    for name, value in projection.items()
+                    if isinstance(value, int) and not isinstance(value, bool)
+                }
             )
+            gradient_solver_history.append(projection)
         else:
             loss.backward()
+        if not gradient_certified:
+            for name, value in metrics.items():
+                totals[name] += value
+            for kind in sorted({event.decision_kind for event in proposal}):
+                by_kind[kind] += 1
+            if guarded_updates:
+                selection["history"].append(
+                    {
+                        "step": step,
+                        "eligible": False,
+                        "accepted_scale": None,
+                        "metrics": best_metrics,
+                        "trials": [],
+                        "rejection_reason": "no_common_descent_certificate",
+                    }
+                )
+            continue
         if guarded_updates:
             model_state = copy.deepcopy(model.state_dict())
             optimizer_state = copy.deepcopy(optimizer.state_dict())
@@ -616,7 +739,7 @@ def train_local_decisions(
             optimizer.step()
         for name, value in metrics.items():
             totals[name] += value
-        if project_by_decision_kind:
+        if gradient_combination != "proposal":
             for kind in sorted({event.decision_kind for event in proposal}):
                 by_kind[kind] += 1
         else:
@@ -678,8 +801,9 @@ def train_local_decisions(
         "guard_backtrack_steps": int(guard_backtrack_steps) if guarded_updates else 0,
         "guard_by_decision_kind": bool(guard_by_decision_kind),
         "block_by_decision_kind": bool(block_by_decision_kind),
-        "project_by_decision_kind": bool(project_by_decision_kind),
+        "gradient_combination": gradient_combination,
         "gradient_projection": dict(sorted(gradient_projection_totals.items())),
+        "gradient_solver_history": gradient_solver_history,
         "validation_every": (
             1 if guarded_updates else int(validation_every) if guarded_selection else 0
         ),
@@ -723,7 +847,7 @@ def train_local_from_paths(
     guard_backtrack_steps: int = 4,
     guard_by_decision_kind: bool = False,
     block_by_decision_kind: bool = False,
-    project_by_decision_kind: bool = False,
+    gradient_combination: GradientCombination = "proposal",
 ) -> dict:
     events = load_decision_events(events_path)
     model = TwoTowerModel.from_checkpoint(checkpoint, device=device)
@@ -762,7 +886,7 @@ def train_local_from_paths(
         guard_backtrack_steps=guard_backtrack_steps,
         guard_by_decision_kind=guard_by_decision_kind,
         block_by_decision_kind=block_by_decision_kind,
-        project_by_decision_kind=project_by_decision_kind,
+        gradient_combination=gradient_combination,
     )
     held_out_after = evaluate_local_decisions(
         model,

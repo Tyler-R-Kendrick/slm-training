@@ -1400,6 +1400,18 @@ convex combination with an explicit common-descent certificate, benchmarked
 for one step before a full run. Full evidence:
 [iter-e268-projected-stratified-ftpo-20260717.md](iter-e268-projected-stratified-ftpo-20260717.md).
 
+E269 replaced PCGrad with the minimum-norm convex combination from MGDA and
+used a one-step preflight before authorizing matched compute. After repairing
+inactive zero-gradient handling and fail-closed optimizer bypass, the final
+solver found a strict common-descent direction for 13 active train objectives.
+All five scales still regressed held-out metrics in `component_bound`,
+`grammar_comma`, `lit`, and `sym`; the parent was restored and full evaluation
+retained five failures with AgentV 2/5. The 219.11s one-step cost projects to
+about 110 minutes for 30 steps, so the full run was correctly canceled. The
+next lever is train/held-out gradient-alignment and provenance diagnosis, not
+another optimizer or scalar tuning pass. Full evidence:
+[iter-e269-mgda-stratified-ftpo-20260717.md](iter-e269-mgda-stratified-ftpo-20260717.md).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

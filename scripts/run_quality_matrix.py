@@ -169,7 +169,7 @@ class Experiment:
     local_preference_guard_backtrack_steps: int = 4
     local_preference_guard_by_decision_kind: bool = False
     local_preference_block_by_decision_kind: bool = False
-    local_preference_project_by_decision_kind: bool = False
+    local_preference_gradient_combination: Literal["proposal", "pcgrad", "mgda"] = "proposal"
     binder_arity_loss_weight: float = 0.0
     binder_arity_decode_weight: float = 0.0
 
@@ -1408,7 +1408,18 @@ def _v10_experiments(train_dir: Path) -> list[Experiment]:
             local_preference_objective="ftpo_set",
             local_preference_guarded_updates=True,
             local_preference_guard_by_decision_kind=True,
-            local_preference_project_by_decision_kind=True,
+            local_preference_gradient_combination="pcgrad",
+            **base,
+        ),
+        Experiment(
+            "E269",
+            "qx_e269_mgda_stratified_safe_gold_ast_ftpo_set",
+            "Minimum-norm common-descent decision-kind safe set FTPO",
+            train_dir,
+            local_preference_objective="ftpo_set",
+            local_preference_guarded_updates=True,
+            local_preference_guard_by_decision_kind=True,
+            local_preference_gradient_combination="mgda",
             **base,
         ),
     ]
@@ -1905,8 +1916,8 @@ def _maybe_local_preference(
             == bool(exp.local_preference_guard_by_decision_kind)
             and bool(summary.get("block_by_decision_kind"))
             == bool(exp.local_preference_block_by_decision_kind)
-            and bool(summary.get("project_by_decision_kind"))
-            == bool(exp.local_preference_project_by_decision_kind)
+            and summary.get("gradient_combination", "proposal")
+            == exp.local_preference_gradient_combination
             and summary.get("source_checkpoint_sha") == expected_sha
             and int(summary.get("train_events", -1)) == expected_counts["train"]
             and int(summary.get("held_out_events", -1))
@@ -1945,9 +1956,7 @@ def _maybe_local_preference(
             block_by_decision_kind=bool(
                 exp.local_preference_block_by_decision_kind
             ),
-            project_by_decision_kind=bool(
-                exp.local_preference_project_by_decision_kind
-            ),
+            gradient_combination=exp.local_preference_gradient_combination,
         )
         summary["duration_seconds"] = time.perf_counter() - started
         selection = summary.get("validation_selection") or {}
@@ -2280,8 +2289,8 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
         "local_preference_block_by_decision_kind": (
             exp.local_preference_block_by_decision_kind
         ),
-        "local_preference_project_by_decision_kind": (
-            exp.local_preference_project_by_decision_kind
+        "local_preference_gradient_combination": (
+            exp.local_preference_gradient_combination
         ),
         "local_preference_summary": local_preference_summary,
         **_summarize_board(board),
