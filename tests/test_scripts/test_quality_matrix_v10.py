@@ -16,7 +16,7 @@ def test_v10_registers_exact_state_ablation_rows() -> None:
         "E252",
         "E253",
         "E254",
-        "E262",
+        "E263",
     ]
     assert rows[0].local_parent_control is True
     assert [row.local_preference_objective for row in rows[1:]] == [
@@ -31,8 +31,8 @@ def test_v10_registers_exact_state_ablation_rows() -> None:
     by_id = {row.eid: row for row in rows}
     assert by_id["E253"].local_preference_reference_tether is True
     assert by_id["E254"].local_preference_balanced is True
-    assert by_id["E262"].local_preference_reference_tether is False
-    assert by_id["E262"].local_preference_balanced is False
+    assert by_id["E263"].local_preference_reference_tether is False
+    assert by_id["E263"].local_preference_balanced is False
     assert all(row.compiler_decode_mode == "tree" for row in rows)
 
 
@@ -114,7 +114,7 @@ def test_local_preference_resume_reuses_only_matching_stage(tmp_path) -> None:
 
     from slm_training.harnesses.preference.local_decisions import DecisionEventV1
 
-    exp = next(row for row in _v10_experiments(tmp_path) if row.eid == "E262")
+    exp = next(row for row in _v10_experiments(tmp_path) if row.eid == "E263")
     parent = tmp_path / "parent.pt"
     parent.write_bytes(b"parent")
     trained = tmp_path / "trained.pt"

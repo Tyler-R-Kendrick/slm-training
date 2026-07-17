@@ -1347,8 +1347,8 @@ def _v10_experiments(train_dir: Path) -> list[Experiment]:
             **base,
         ),
         Experiment(
-            "E262",
-            "qx_e262_broad_gold_ast_ftpo_set",
+            "E263",
+            "qx_e263_broad_gold_ast_ftpo_set",
             "Broad grammar/AST-aligned set FTPO",
             train_dir,
             local_preference_objective="ftpo_set",

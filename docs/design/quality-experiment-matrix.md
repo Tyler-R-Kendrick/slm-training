@@ -1331,6 +1331,19 @@ surface-DFA token gate is bypassed for choice ids (validation moves entirely
 to the fail-closed detokenizer); a choice-native legal-decision gate is the
 follow-up.
 
+E263 then repeated E252's matched 30-step set-FTPO recipe using the committed
+E261 corpus. Broad support prevented the E252 fidelity collapse: fidelity and
+meaningful-program rates exactly matched the E248 parent, while deterministic
+syntax remained 1.0 with no fallback or timeout. The objective still failed:
+held-out FTPO loss worsened from 2.7660 to 3.0144, bad-token mass more than
+doubled, structure regressed on all five suites, ten thresholds failed, and
+AgentV passed 0/5. The checkpoint is rejected. The next lever must guard updates
+against held-out exact-state and parent-semantic regressions, not add syntax
+training or duration. This run originally emitted E262 before concurrent B1
+claimed that ID; the measured preference result is canonically E263. Full
+evidence:
+[iter-e263-broad-gold-ast-ftpo-20260716.md](iter-e263-broad-gold-ast-ftpo-20260716.md).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
