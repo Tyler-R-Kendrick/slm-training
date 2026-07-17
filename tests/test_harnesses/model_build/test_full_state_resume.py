@@ -104,6 +104,15 @@ def test_token_budget_stops_before_steps(train_dir: Path, tmp_path: Path) -> Non
     assert summary["seen_target_tokens"] >= 200
 
 
+def test_wall_budget_stops_before_steps(train_dir: Path, tmp_path: Path) -> None:
+    summary = train(
+        _cfg(train_dir, tmp_path, "wall", 1000, max_wall_minutes=1e-9)
+    )
+    assert summary["stopped_on"] == "wall_time_budget"
+    assert summary["steps"] == 0
+    assert summary["max_wall_minutes"] == 1e-9
+
+
 def test_full_state_resume_is_bit_exact(train_dir: Path, tmp_path: Path) -> None:
     full = train(_cfg(train_dir, tmp_path, "full", 6))
 

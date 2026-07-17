@@ -1595,6 +1595,16 @@ the same declared training budget; runtime expiry is a stopped run, never a
 quality result. Full record:
 [iter-e285-exact-signature-profile-aborted-20260717.md](iter-e285-exact-signature-profile-aborted-20260717.md).
 
+E286 tested chunked batched vector-Jacobian products as a generalized
+acceleration for the same full-corpus profile. A batch-16 E284 reproduction
+remained incomplete at 283.62 seconds and was killed by the five-minute process
+envelope without producing a report. The implementation was removed: a faster
+unit test is not enough when the real harness misses its operational gate. This
+is **invalid evidence**, no training ran, and E285 remains unresolved. The loop
+pivots to the already registered matched B3 capacity arms, whose equal
+width/depth/token/step recipes fit the bounded experiment policy. Full record:
+[iter-e286-batched-signature-profile-rejected-20260717.md](iter-e286-batched-signature-profile-rejected-20260717.md).
+
 ## V16 C3 corpus-mined macro tokens (fixture-run 2026-07-17)
 
 Track C3 (Stitch [arXiv:2211.16605](https://arxiv.org/abs/2211.16605) /

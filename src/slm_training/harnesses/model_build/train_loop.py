@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import math
 import random
+import time
 import warnings
 from datetime import datetime, timezone
 from pathlib import Path
@@ -69,6 +70,16 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         save_full_state,
     )
 
+    max_wall_minutes = getattr(config, "max_wall_minutes", None)
+    if max_wall_minutes is not None and not 0 < float(max_wall_minutes) <= 5:
+        raise ValueError("max_wall_minutes must be positive and at most 5")
+    wall_started = time.monotonic()
+    wall_deadline = (
+        wall_started + float(max_wall_minutes) * 60
+        if max_wall_minutes is not None
+        else None
+    )
+
     accel = detect_device(config.device)
     # Honor explicit device but adopt accel threading / amp defaults.
     if config.device in {"auto", "best"}:
@@ -120,6 +131,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "grad_accum": int(getattr(config, "grad_accum_steps", 1) or 1),
             "effective_batch_size": int(config.batch_size)
             * int(getattr(config, "grad_accum_steps", 1) or 1),
+            "max_wall_minutes": max_wall_minutes,
         },
     )
     mix_curriculum = bool(getattr(config, "mix_curriculum", True))
@@ -337,6 +349,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             and (seen_target_tokens >= int(budget))
         )
 
+    def _wall_budget_exhausted() -> bool:
+        return wall_deadline is not None and time.monotonic() >= wall_deadline
+
     def _save_full_state_now() -> None:
         if not is_twotower or not bool(getattr(config, "full_state_checkpoint", True)):
             return
@@ -507,6 +522,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     mode = "a" if resumed_from else "w"
     with bind_telemetry(tel), metrics_path.open(mode, encoding="utf-8") as metrics_file:
         while step < config.steps:
+            if _wall_budget_exhausted():
+                stopped_on = "wall_time_budget"
+                break
             if _budget_exhausted():
                 stopped_on = "token_budget"
                 break
@@ -616,15 +634,18 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         ckpt_path = ckpt_dir / "last.pt"
         with timed("final_save"):
             plugin.save(ckpt_path)
-        final_eval = _maybe_eval(
-            step, force=bool(config.test_dir and config.eval_every > 0)
-        )
-        final_loss_eval = _maybe_loss_eval(
-            step,
-            # Cadence 0 disables intermediate checks, but never disables the
-            # final feedback artifact for a testable TwoTower run.
-            force=bool(config.test_dir),
-        )
+        final_eval = None
+        final_loss_eval = None
+        if not _wall_budget_exhausted():
+            final_eval = _maybe_eval(
+                step, force=bool(config.test_dir and config.eval_every > 0)
+            )
+            final_loss_eval = _maybe_loss_eval(
+                step,
+                # Cadence 0 disables intermediate checks, but never disables the
+                # final feedback artifact for a testable TwoTower run.
+                force=bool(config.test_dir),
+            )
         _save_full_state_now()
 
     if bool(getattr(config, "register_promoted", False)):
@@ -680,6 +701,8 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         "seen_prompt_tokens": seen_prompt_tokens,
         "seen_target_tokens": seen_target_tokens,
         "target_token_budget": getattr(config, "target_token_budget", None),
+        "max_wall_minutes": max_wall_minutes,
+        "elapsed_wall_seconds": time.monotonic() - wall_started,
         "resumed_from": resumed_from,
         "data_manifest_sha": manifest_sha,
         # Scratch-context and frozen-HF runs are different scientific tracks —

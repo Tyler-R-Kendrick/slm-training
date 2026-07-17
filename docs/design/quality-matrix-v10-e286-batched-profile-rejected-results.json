@@ -1,0 +1,25 @@
+{
+  "experiment_id": "E286",
+  "status": "stopped",
+  "evidence_valid": false,
+  "implementation": "chunked_batched_vector_jacobian_products",
+  "gradient_batch_size": 16,
+  "max_wall_minutes": 5.0,
+  "elapsed_wall_seconds": 283.62,
+  "termination": "signal_9_before_report",
+  "output_artifact": null,
+  "training_performed": false,
+  "checkpoint_mutated": false,
+  "checkpoint": "/home/codex/repos/slm-training/outputs/autoresearch/e228-candidate-margin-alignment/runs/e228-candidate-margin-matched/checkpoints/last.pt",
+  "events_path": "src/slm_training/resources/data/preference/e283_signature_support_repair_v1/events.jsonl",
+  "intended_reproduction": {
+    "control": "E284",
+    "objective": "ftpo_set",
+    "probability_space": "legal_tokens",
+    "gradient_scaling": "unit_norm",
+    "train_strata": "decision_kind",
+    "held_out_strata": "decision_signature",
+    "event_count": 372
+  },
+  "decision": "reject_implementation_and_pivot_to_matched_bounded_capacity_ladder"
+}

@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from slm_training.harnesses.experiments.efficiency_gain import efficiency_gain, efficiency_gain_lcb
 from slm_training.harnesses.experiments.ladder import (
     capacity_ladder_pair,
@@ -75,19 +73,19 @@ def test_lexer_representation_threads_into_config(tmp_path: Path) -> None:
     assert cfg.output_tokenizer == "lexer"
 
 
-def test_choice_representation_fails_closed(tmp_path: Path) -> None:
+def test_choice_representation_threads_into_config(tmp_path: Path) -> None:
     (choice_ladder,) = capacity_ladder_pair(
         base_token_budget=1000, widths=(64,), horizons=(1.0,), representations=("choice",)
     )
-    with pytest.raises(ValueError, match="not trainable yet"):
-        model_build_config_for_point(
-            choice_ladder.points[0],
-            choice_ladder,
-            train_dir=tmp_path,
-            test_dir=None,
-            run_root=tmp_path / "runs",
-            seed=0,
-        )
+    cfg = model_build_config_for_point(
+        choice_ladder.points[0],
+        choice_ladder,
+        train_dir=tmp_path,
+        test_dir=None,
+        run_root=tmp_path / "runs",
+        seed=0,
+    )
+    assert cfg.output_tokenizer == "choice"
 
 
 def test_power_law_fit_and_eg() -> None:

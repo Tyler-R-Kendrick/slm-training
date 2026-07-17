@@ -8,8 +8,11 @@ Registration/wiring evidence only — no trained-quality claim here.
 
 from __future__ import annotations
 
+import argparse
 from dataclasses import fields
 from pathlib import Path
+
+import pytest
 
 from slm_training.harnesses.experiments.ladder import (
     CAPACITY_ARMS,
@@ -18,6 +21,7 @@ from slm_training.harnesses.experiments.ladder import (
     capacity_ladder_arms,
     model_build_config_for_point,
 )
+from scripts.run_scaling_ladder import _wall_minutes
 
 # Non-tokenizer ModelBuildConfig fields that must be identical across the two
 # arms for the comparison to isolate the representation. output_tokenizer is the
@@ -77,3 +81,10 @@ def test_capacity_ladder_single_arm_is_scratch_track() -> None:
     assert lad.ladder_id == "capacity_choice_v1"
     assert (lad.decode_frozen or {}).get("mask_pattern") == "diffusion"
     assert (lad.decode_frozen or {}).get("grammar_ltr_primary") is False
+
+
+def test_ladder_wall_budget_is_configurable_but_capped() -> None:
+    assert _wall_minutes("0.25") == 0.25
+    assert _wall_minutes("5") == 5.0
+    with pytest.raises(argparse.ArgumentTypeError, match="at most 5"):
+        _wall_minutes("5.1")
