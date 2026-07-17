@@ -1,4 +1,4 @@
-# E265 — C3 corpus-mined macro tokens with deterministic expansion (2026-07-17)
+# E277 — C3 corpus-mined macro tokens with deterministic expansion (2026-07-17)
 
 Fixture-grade wiring row for Track C3 (Linear SLM-27). Machine-readable
 evidence:
@@ -59,7 +59,7 @@ recipe (80 steps, batch 4, seed 0, lexer tokenizer, same corpus),
 
 ## Fixture result (wiring evidence only)
 
-E265 recipe: `--matrix v13 --only E265 --steps 80 --device cpu
+E277 recipe: `--matrix v13 --only E277 --steps 80 --device cpu
 --context-backend scratch --no-design-md-context --rico-limit 3
 --scratch-control`; suites smoke 3 / held_out 5 / adversarial 4 / ood 4 /
 rico_held 3.

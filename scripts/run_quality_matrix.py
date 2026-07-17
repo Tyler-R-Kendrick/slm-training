@@ -1427,7 +1427,7 @@ def _v12_experiments(train_dir: Path) -> list[Experiment]:
 
 
 def _v13_experiments(train_dir: Path) -> list[Experiment]:
-    """E265 (C3, SLM-27): corpus-mined macro tokens, matched against E255."""
+    """E277 (C3, SLM-27): corpus-mined macro tokens, matched against E255."""
     base = dict(
         output_tokenizer="lexer",
         mask_pattern="diffusion",
@@ -1435,8 +1435,8 @@ def _v13_experiments(train_dir: Path) -> list[Experiment]:
     )
     return [
         Experiment(
-            "E265",
-            "qx_e265_c3_macro_tokens",
+            "E277",
+            "qx_e277_c3_macro_tokens",
             "C3 corpus-mined macro tokens with deterministic expansion",
             train_dir,
             macro_tokens=True,
@@ -1446,7 +1446,7 @@ def _v13_experiments(train_dir: Path) -> list[Experiment]:
 
 
 def _v14_experiments(train_dir: Path) -> list[Experiment]:
-    """E266/E267 (C4, SLM-28): names-disappear matched pair.
+    """E278/E279 (C4, SLM-28): names-disappear matched pair.
 
     Both arms decode unconstrained (grammar_constrained=False) because the
     NAME gate admits only <BIND_j> ids — the surface arm could never emit a
@@ -1461,15 +1461,15 @@ def _v14_experiments(train_dir: Path) -> list[Experiment]:
     )
     return [
         Experiment(
-            "E266",
-            "qx_e266_c4_anon_control",
+            "E278",
+            "qx_e278_c4_anon_control",
             "C4 anonymized-symbol control (unconstrained decode)",
             train_dir,
             **base,
         ),
         Experiment(
-            "E267",
-            "qx_e267_c4_surface_ids",
+            "E279",
+            "qx_e279_c4_surface_ids",
             "C4 surface binder/state identifiers via byte channel",
             train_dir,
             symbol_anonymization=False,
@@ -2402,7 +2402,7 @@ def main(argv: list[str] | None = None) -> int:
         default="v3",
         help="Experiment set through v10 local-decision rows E248-E254,"
         " v11 representation rows E255-E257, the v12 choice-codec row E262,"
-        " the v13 macro-token row E265, and the v14 names-disappear pair"
+        " the v13 macro-token row E277, and the v14 names-disappear pair"
         " E260/E261, or all.",
     )
     parser.add_argument(

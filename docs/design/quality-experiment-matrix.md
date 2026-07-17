@@ -1372,14 +1372,14 @@ and decode cannot disagree. Macros never contain `<SYM_i>`/`<BIND_j>`/
 
 | ID | Isolated lever | Status |
 | --- | --- | --- |
-| E265 | C3 `macro_tokens=true` on the lexer/diffusion base | fixture-run |
+| E277 | C3 `macro_tokens=true` on the lexer/diffusion base | fixture-run |
 
 ### V13 measured results (CPU, fixture-grade, 2026-07-17)
 
 Recipe: `--steps 80 --scratch-control --no-design-md-context --rico-limit 3`,
 batch 4, seed 0, lr 3e-4, fixture v1 corpus (108 records). JSON:
 [quality-matrix-results-iter-v13-c3-20260717.json](quality-matrix-results-iter-v13-c3-20260717.json);
-narrative: [iter-e265-c3-macro-tokens-20260717.md](iter-e265-c3-macro-tokens-20260717.md).
+narrative: [iter-e277-c3-macro-tokens-20260717.md](iter-e277-c3-macro-tokens-20260717.md).
 
 Induction: 16 macros (cap), corpus 4,964 → 3,261 tokens incl. table (−34.3%),
 description length −35.5%; matched-recipe training throughput
@@ -1404,15 +1404,15 @@ relative binding fail closed.
 
 | ID | Isolated lever | Status |
 | --- | --- | --- |
-| E266 | Anonymized-symbol control (unconstrained decode) | fixture-run |
-| E267 | Surface binder/state identifiers via byte channel | fixture-run |
+| E278 | Anonymized-symbol control (unconstrained decode) | fixture-run |
+| E279 | Surface binder/state identifiers via byte channel | fixture-run |
 
 ### V14 measured results (CPU, fixture-grade, 2026-07-17)
 
 Recipe: `--steps 80 --scratch-control --no-design-md-context --rico-limit 3`,
 batch 4, seed 0, lr 3e-4, fixture v1 corpus. JSON:
 [quality-matrix-results-iter-v14-c4-20260717.json](quality-matrix-results-iter-v14-c4-20260717.json);
-narrative: [iter-e266-e267-c4-names-disappear-20260717.md](iter-e266-e267-c4-names-disappear-20260717.md).
+narrative: [iter-e278-e279-c4-names-disappear-20260717.md](iter-e278-e279-c4-names-disappear-20260717.md).
 
 Syntax/meaningful parse 0.0 on both arms (fixture wall); structural
 similarity favors the **surface** arm on 5/5 suites (0.23/0.17/0.16/0.18/0.11

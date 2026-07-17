@@ -52,8 +52,8 @@
   "matrix_set": "v12",
   "results": [
     {
-      "id": "E265",
-      "run_id": "qx_e265_c3_macro_tokens",
+      "id": "E277",
+      "run_id": "qx_e277_c3_macro_tokens",
       "initialization": "scratch",
       "training_executed": true,
       "parent_checkpoint": null,
@@ -80,7 +80,7 @@
       "best_of_n": 1,
       "train_dir": "outputs/data/train/v1",
       "train_content_fingerprint": "79552bd716d712ad06b6e96e8c8356a1d9416140bd605f08da49d771adf99231",
-      "checkpoint": "outputs/runs/qx_e265_c3_macro_tokens/checkpoints/last.pt",
+      "checkpoint": "outputs/runs/qx_e277_c3_macro_tokens/checkpoints/last.pt",
       "trace_id": "9b09b526986ab68df1fff4ebe168eb79",
       "traceparent": "00-9b09b526986ab68df1fff4ebe168eb79-50cb4dbab701b055-01",
       "trace_bundle": "outputs/traces/9b09b526986ab68df1fff4ebe168eb79",

@@ -1,4 +1,4 @@
-# E266/E267 — C4 head-on test of the "names disappear" threat (2026-07-17)
+# E278/E279 — C4 head-on test of the "names disappear" threat (2026-07-17)
 
 Fixture-grade matched pair for Track C4 (Linear SLM-28). Machine-readable
 evidence:
@@ -20,8 +20,8 @@ empirically instead of assuming it.
 
 ## The controlled pair
 
-One lever: `symbol_anonymization`. The surface arm (E267) encodes binder and
-state names verbatim through the existing byte channel; the control (E266)
+One lever: `symbol_anonymization`. The surface arm (E279) encodes binder and
+state names verbatim through the existing byte channel; the control (E278)
 keeps the standard `<BIND_j>`/`<STATE_k>` pools. Placeholders ride `<SYM_i>`
 in **both** arms (the placeholder lever was already tested and rejected as
 E49), so the comparison isolates exactly the identifier-anonymization choice
@@ -43,7 +43,7 @@ Recipe: `--matrix v14 --steps 80 --device cpu --context-backend scratch
 lr 3e-4, fixture v1 corpus (108 records); suites smoke 3 / held_out 5 /
 adversarial 4 / ood 4 / rico_held 3.
 
-| Metric | E266 anonymized | E267 surface |
+| Metric | E278 anonymized | E279 surface |
 | --- | --- | --- |
 | syntax parse (all suites) | 0.0 | 0.0 |
 | meaningful parse (all suites) | 0.0 | 0.0 |
@@ -88,7 +88,7 @@ than none.**
 - Fixture/scratch wiring evidence only; no ship claim, no gate weakened,
   nothing promoted. The E-row verdict field stays open.
 - Removing the grammar gate from both arms changes the decode regime relative
-  to E255/E265-style rows; E266 exists precisely so the pair stays internally
+  to E255/E277-style rows; E278 exists precisely so the pair stays internally
   matched. Cross-matrix comparisons to constrained rows are not valid.
 - The surface arm is a measurement instrument, not a candidate
   representation: it forfeits the fixed-vocab NAME gate, macro channel, and
