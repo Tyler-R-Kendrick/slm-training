@@ -30,7 +30,8 @@
     "tokenizer_sha": "8dbf8142068860eed06463fa2e0013bb298267a305bcfd85a0c24df0f7f61efe",
     "decode_config_hash": "8c2a2ae5cb5c4ad0ab44de74a172fc2c887fbdc7e5e7e20ede953184a0c3fe5b",
     "language_contract_before": "f2d0c69ba5849ef9",
-    "language_contract_after": "e3bf2f98f043e9a8"
+    "probe_language_contract": "e3bf2f98f043e9a8",
+    "final_repaired_language_contract": "dffa3760e8008c2c"
   },
   "verifier": {
     "name": "independent_judge+meaningful_program+pareto_v1",
@@ -62,6 +63,17 @@
     "render_sample_edit_268f71ed9621",
     "rico_train_15"
   ],
+  "regression_validation": {
+    "run_id": "e252-hidden-ast-regression",
+    "trace_id": "05ea754df2d85b7f93e1e19d5d788d52",
+    "records": 1,
+    "accepted_traces": 1,
+    "states": 2,
+    "legal_candidates": 6,
+    "verified_candidates": 3,
+    "qualified_counterfactual_events": 2,
+    "purpose": "Verify the grammar-hidden separator preserves counterfactual behavior while restoring the generated AST shape."
+  },
   "candidate_corpus": {
     "dataset_id": "e252_counterfactual_semantic_v1",
     "record_count": 6,

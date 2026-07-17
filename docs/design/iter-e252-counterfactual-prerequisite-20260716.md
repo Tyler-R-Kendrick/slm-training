@@ -48,7 +48,11 @@ The repair is contract-derived rather than example-derived:
   replacing parser-error-string checks.
 
 The grammar change updates the language contract from `f2d0c69ba5849ef9` to
-`e3bf2f98f043e9a8`.
+`dffa3760e8008c2c`. A full-CI regression exposed that the first separator rule
+introduced a visible AST wrapper; making the rule grammar-hidden preserved the
+separator language and restored statement anchors and gate ordering. A final
+one-record regression trace (`05ea754df2d85b7f93e1e19d5d788d52`) accepted
+the output and reproduced two qualified events from six candidates.
 
 ## Corrected bounded diagnostic
 

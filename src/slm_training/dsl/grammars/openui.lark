@@ -1,8 +1,8 @@
 // OpenUI Lang v0.5 — in-process grammar for AST extraction/constrained decode.
 // Component validation and runtime semantics remain authoritative in lang-core.
 
-start: _NL* statement_list?
-statement_list: statement (_NL statement)* _NL?
+start: _NL* _statement_list?
+_statement_list: statement (_NL statement)* _NL?
 
 statement: state_statement | value_statement
 state_statement: STATE_NAME "=" expr

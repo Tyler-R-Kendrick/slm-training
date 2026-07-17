@@ -59,7 +59,9 @@ newline even though user-facing final decoding trims it. This keeps partial
 lexical state distinct from final-document formatting. Compiler-tree admission
 is derived from the grammar and schema; it does not inspect parser error strings
 or match known output literals. This correction changes the language contract
-ID from `f2d0c69ba5849ef9` to `e3bf2f98f043e9a8`.
+ID from `f2d0c69ba5849ef9` to `dffa3760e8008c2c`. The separator helper is
+grammar-hidden so generated AST consumers continue to receive statements
+directly beneath `start`.
 
 ## Cactus
 
