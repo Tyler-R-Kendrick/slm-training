@@ -5,8 +5,8 @@ head = PageHead("Checkpoints & Promotion", "Navigate the roster, tune configurab
 
 tileRow = Grid(@Each(tiles.rows, "t", StatTile(t.label, t.value, t.sub, t.accent)), "200px")
 
-rosterCols = [{ key: "role", label: "Role" }, { key: "run_id", label: "Run" }, { key: "kind", label: "Kind" }, { key: "source", label: "Source" }, { key: "status", label: "Status" }]
-rosterPanel = Panel("Roster", [DataTable(rosterCols, roster.rows)], ProvenanceBadge("committed"))
+rosterCols = [{ key: "role", label: "Role" }, { key: "run_id", label: "Run" }, { key: "architecture", label: "Architecture" }, { key: "parameters", label: "Parameters", align: "right" }, { key: "model_size", label: "Model size", align: "right" }, { key: "throughput", label: "Throughput", align: "right" }, { key: "status", label: "Status" }]
+rosterPanel = Panel("Roster", [DataTable(rosterCols, roster.rows), Hint("≈ denotes a comparable architecture estimate; throughput depends on hardware and decode settings.", true)], ProvenanceBadge("committed"))
 
 console = CheckpointConsole()
 
