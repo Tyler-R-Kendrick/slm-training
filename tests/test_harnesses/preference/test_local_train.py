@@ -21,6 +21,7 @@ from slm_training.harnesses.preference.local_train import (
     _gradient_alignment,
     _minimum_norm_gradient,
     _project_conflicting_gradients,
+    _scale_gradient,
     _guard_strata_regressions,
     evaluate_local_decisions,
     event_schedule,
@@ -145,6 +146,16 @@ def test_gradient_alignment_reports_cosine_and_norms() -> None:
     assert report["left_norm"] == 1.0
     assert report["right_norm"] == pytest.approx(2**0.5)
     assert report["cosine"] == pytest.approx(-(2**-0.5))
+
+
+def test_unit_norm_gradient_scaling_preserves_direction() -> None:
+    scaled = _scale_gradient(
+        [torch.tensor([3.0, 4.0]), None], scaling="unit_norm"
+    )
+
+    assert scaled[0] is not None
+    assert torch.allclose(scaled[0], torch.tensor([0.6, 0.8]))
+    assert scaled[1] is None
 
 
 def test_fresh_adamw_direction_matches_first_step_geometry() -> None:

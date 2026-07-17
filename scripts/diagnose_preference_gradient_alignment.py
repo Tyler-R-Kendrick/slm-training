@@ -25,6 +25,12 @@ def main(argv: list[str] | None = None) -> int:
         default="full_vocab",
         help="Probability denominator for metric-complete mass objectives.",
     )
+    parser.add_argument(
+        "--gradient-scaling",
+        choices=("raw", "unit_norm"),
+        default="raw",
+        help="Geometry used to combine metric-complete objective gradients.",
+    )
     args = parser.parse_args(argv)
     report = diagnose_decision_gradient_alignment_from_paths(
         args.checkpoint,
@@ -33,6 +39,7 @@ def main(argv: list[str] | None = None) -> int:
         device=args.device,
         metric_complete=args.metric_complete,
         probability_space=args.probability_space,
+        gradient_scaling=args.gradient_scaling,
     )
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
