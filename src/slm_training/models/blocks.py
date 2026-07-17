@@ -303,6 +303,18 @@ class DenoiserTower(nn.Module):
         candidate_ids: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Project hidden states to the full vocabulary or gathered candidates."""
+        if self._runtime_symbol_features is not None and hidden.dim() != 3:
+            # Compiler/tree scorers project [D] or [N,D] slices. Feature rows
+            # are per-request, so this is only well-defined when exactly one
+            # request's features are active (the per-row decode paths).
+            if int(self._runtime_symbol_features.size(0)) != 1:
+                raise ValueError(
+                    "runtime symbol features require [B,T,D] hidden states "
+                    "when more than one request is active"
+                )
+            flat = hidden.reshape(1, -1, hidden.size(-1))
+            out = self.project(flat, candidate_ids)
+            return out.reshape(*hidden.shape[:-1], out.size(-1))
         features = self._features_for_batch(hidden.size(0))
         if candidate_ids is None:
             logits = self.lm_head(hidden)

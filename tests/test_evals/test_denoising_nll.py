@@ -177,6 +177,23 @@ def test_frozen_suite_spec_matches_weights() -> None:
     assert len(spec["mask_rates"]) == 5
 
 
+def test_loss_suites_clear_stale_runtime_symbol_features(tmp_path: Path) -> None:
+    """Request-local features from a training batch must not leak into the
+    teacher-forced suites: a stale batch dimension crashes the batched NLL
+    forward, and stale content would silently bias it."""
+    import torch
+
+    model = _model()
+    test_dir = tmp_path / "test_data"
+    _write_suite(test_dir, "held_out", _records("held_out"))
+    stale = torch.zeros((4, model.tokenizer.vocab_size, 32))
+    stale[:, 0, :] = 1.0
+    model.denoiser.set_runtime_symbol_features(stale)
+    report = evaluate_loss_suites(model, test_dir)
+    assert report["aggregate"]["weighted_nll"] is not None
+    assert model.denoiser._runtime_symbol_features is None
+
+
 def test_loss_suites_full_report(tmp_path: Path) -> None:
     model = _model()
     test_dir = tmp_path / "test_data"

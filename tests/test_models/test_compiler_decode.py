@@ -64,6 +64,27 @@ def test_gathered_projection_matches_full_lm_head() -> None:
     assert torch.allclose(gathered, full.index_select(-1, candidates))
 
 
+def test_projection_with_features_accepts_sliced_hidden() -> None:
+    """Compiler/tree scorers project [D] and [N,D] slices; with one request's
+    runtime symbol features active the projection must match the [B,T,D]
+    path instead of crashing on the feature einsum."""
+    denoiser = DenoiserTower(vocab_size=17, d_model=8, n_layers=1, n_heads=2)
+    features = torch.zeros((1, 17, 8))
+    features[:, 3, :] = 0.5
+    denoiser.set_runtime_symbol_features(features)
+    hidden3 = torch.randn(1, 4, 8)
+    full = denoiser.project(hidden3)
+    single = denoiser.project(hidden3[0, 2])
+    assert torch.allclose(single, full[0, 2], atol=1e-5)
+    candidates = torch.tensor([3, 5])
+    gathered = denoiser.project(hidden3[0, 2], candidates)
+    assert torch.allclose(gathered, full[0, 2].index_select(-1, candidates), atol=1e-5)
+    # Multi-request features cannot be attributed to a sliced row: fail closed.
+    denoiser.set_runtime_symbol_features(torch.zeros((2, 17, 8)))
+    with pytest.raises(ValueError, match="B,T,D"):
+        denoiser.project(hidden3[0, 2])
+
+
 def test_completion_forest_uses_active_binder_and_symbol_spaces(monkeypatch) -> None:
     from slm_training.dsl.grammar.fastpath import compiler_draft
 
