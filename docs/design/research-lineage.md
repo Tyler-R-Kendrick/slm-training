@@ -510,6 +510,30 @@ The code substrate is `data/progspec/scopes.py`, the conditional heads in
 `models/grammar_diffusion.py`, and planned matrix rows X16-X21. No X16-X21 run,
 quality gain, or ship status is recorded by this implementation-only change.
 
+## Verified scope solving & hybrid realization (VSS0)
+
+[verified-scope-solver.md](verified-scope-solver.md) (VSS0-01, SLM-57) is the
+spec-only contract that separates **prefix legality** (already enforced by the
+compiler completion forest) from **support** — participation in at least one
+bounded, fully verified completion. It adds no code, dependency, experiment, or
+checkpoint. The anchors below are lineage labels for that contract, not reproduced
+results; because SLM-57 ships no code, none is **Faithful**. TreeDiff and the
+Lattice Deduction Transformer reuse their existing R13/R7 labels from the V9
+sources ([lattice-recursive-search.md](lattice-recursive-search.md)); grouping the
+batch here avoids treating adjacent papers as independent evidence for one lever.
+
+| Paper | Fidelity | Role in the VSS0 contract (spec-only) |
+| --- | --- | --- |
+| [DeepCoder](https://arxiv.org/abs/1611.01989) (Balog et al., ICLR 2017) | **Adjacent** | Learned search-guidance / candidate ranking; the contract keeps learned scores soft (`rank_forest`) and does not reimplement its attribute predictor or DSL |
+| Counterexample-guided (neural) synthesis / CEGIS — see the *LLM-Modulo / CEGIS planning* anchor above and R19/R23 in [lattice-recursive-search.md](lattice-recursive-search.md) | **Adapted boundary** | Deduction-vs-decision split and local nogoods adopt the counterexample → refinement principle; neural synthesis training is not reimplemented |
+| [egg / e-graphs](https://arxiv.org/abs/2004.03082) (Willsey et al., POPL 2021) | **Adjacent** | Post-realization canonicalization is motivated by equality saturation, but the contract is not an e-graph / equality-saturation engine (cf. `iter-e252-canonicalizer-20260716.md`) |
+| EDLM — energy-based diffusion language model (2024) | **Adjacent** | Energy/score-based candidate ranking is analogous to the soft-scoring layer; no EDLM training or energy head is implemented or assumed |
+| [TreeDiff](https://arxiv.org/abs/2508.01473) (Zeng et al., 2025) | **Adapted boundary** | Tree-edit diffusion informs late realization against AST/choice IR; architecture and training remain future empirical work (as R13) |
+| [Lattice Deduction Transformer](https://arxiv.org/abs/2605.08605) (Davis et al., 2026) | **Adapted** | Monotone lattice projection plus rollback are the closure/deduction model; LDT architecture, alpha supervision, and training remain future work (as R7) |
+
+No solver, experiment, checkpoint, or ship status follows from this spec-only
+anchor set; the contract is implemented behind a feature flag by later VSS issues.
+
 ## DSL diffusion research program (Tracks A-G)
 
 The 2026-07-16 prior-art sweep for the DSL diffusion SLM research program
