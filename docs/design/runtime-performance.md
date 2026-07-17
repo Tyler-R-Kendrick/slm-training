@@ -177,6 +177,15 @@ pushdown-frame candidate construction is the next target. Semantic gates remain
 zero and AgentV is 0/5; this is a runtime improvement, not a ship result.
 See [E289 results](iter-e289-choice-state-cache-20260717.md).
 
+### Grammar-derived choice candidates (E290, 2026-07-17)
+
+The choice decoder now constructs a next-token superset from production/frame
+categories before applying the unchanged exact validator. It avoids 34.8% of
+whole-vocabulary probes on cache misses and preserves all-suite parse 1.0 with
+zero dead ends. Across two standalone runs, p95 improves 14–19% over E289, but
+p50 regresses 11–41%; therefore this is a mixed result, not a promoted runtime
+default. See [E290 results](iter-e290-choice-direct-candidates-20260717.md).
+
 ### Restricted semantic projection
 
 TwoTower's denoiser now exposes a decode-only `encode` / `project` split. The
