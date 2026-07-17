@@ -1,0 +1,132 @@
+{
+  "iteration": "E291",
+  "date": "2026-07-17",
+  "hypothesis": "Memoizing exact minimum-completion lengths by immutable symbolic state will collapse repeated recursive walks for semantically equivalent token choices.",
+  "implementation": {
+    "completion_cache_key": "ChoiceDecodeState.signature",
+    "approximate": false,
+    "expression_partition_key": ["slot_count", "available_ref_count"],
+    "exhaustive_oracle_preserved": true,
+    "telemetry": [
+      "choice_completion_cache_hits",
+      "choice_completion_cache_misses"
+    ]
+  },
+  "microbenchmark": {
+    "scope": "schema-warm initial state, slot_count=3, remaining_positions=8",
+    "allowed_ids": 442,
+    "with_completion_cache_ms": 4.337,
+    "without_completion_cache_ms": 30.351,
+    "speedup": 6.998,
+    "completion_cache_hits": 375,
+    "completion_cache_misses": 74,
+    "one_time_schema_cold_ms": 2379.359
+  },
+  "training": {
+    "run_id": "capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0",
+    "device": "cpu",
+    "steps": 107,
+    "seen_target_tokens": 5022,
+    "stopped_on": "token_budget",
+    "max_wall_minutes": 5.0,
+    "elapsed_wall_seconds": 24.5764,
+    "weighted_nll": 7.098483934,
+    "checkpoint_sha256": "7cad143139f91369b4780878f634e7fa24434d7ccb8f9813a00f5412f3051c99",
+    "same_sha_as_e288_e290": true,
+    "promotable": false
+  },
+  "evaluation": {
+    "run_ids": [
+      "e291-choice-completion-cache-r1",
+      "e291-choice-completion-cache-r2"
+    ],
+    "agentv_each": {
+      "total": 5,
+      "passed": 0,
+      "execution_errors": 0
+    },
+    "quality_all_suites": {
+      "parse": 1.0,
+      "meaningful": 0.0,
+      "fidelity": 0.0,
+      "reward": 0.0,
+      "dead_ends": 0
+    },
+    "suites": {
+      "smoke": {
+        "n": 3,
+        "structural": 0.3094333,
+        "p50_ms": [1637.54, 1694.82],
+        "p50_median_ms": 1666.18,
+        "p50_speedup_vs_e289": 1.4028,
+        "p50_speedup_vs_e290": 1.5772,
+        "p95_ms": [5057.45, 4943.37],
+        "p95_median_ms": 5000.41,
+        "p95_speedup_vs_e289": 1.7326,
+        "p95_speedup_vs_e290": 1.5054,
+        "completion_cache_hit_rate": 0.91446
+      },
+      "held_out": {
+        "n": 5,
+        "structural": 0.2514,
+        "p50_ms": [924.3, 1245.35],
+        "p50_median_ms": 1084.82,
+        "p50_speedup_vs_e289": 1.1023,
+        "p50_speedup_vs_e290": 1.8789,
+        "p95_ms": [2738.55, 2664.98],
+        "p95_median_ms": 2701.77,
+        "p95_speedup_vs_e289": 2.1889,
+        "p95_speedup_vs_e290": 1.8595,
+        "completion_cache_hit_rate": 0.918901
+      },
+      "adversarial": {
+        "n": 4,
+        "structural": 0.2905,
+        "p50_ms": [910.7, 1054.26],
+        "p50_median_ms": 982.48,
+        "p50_speedup_vs_e289": 1.4428,
+        "p50_speedup_vs_e290": 1.9862,
+        "p95_ms": [2761.85, 2759.29],
+        "p95_median_ms": 2760.57,
+        "p95_speedup_vs_e289": 2.1372,
+        "p95_speedup_vs_e290": 1.8617,
+        "completion_cache_hit_rate": 0.907094
+      },
+      "ood": {
+        "n": 4,
+        "structural": 0.236875,
+        "p50_ms": [1426.79, 1259.6],
+        "p50_median_ms": 1343.19,
+        "p50_speedup_vs_e289": 0.8703,
+        "p50_speedup_vs_e290": 1.2915,
+        "p95_ms": [2653.72, 2699.8],
+        "p95_median_ms": 2676.76,
+        "p95_speedup_vs_e289": 2.3038,
+        "p95_speedup_vs_e290": 1.9341,
+        "completion_cache_hit_rate": 0.91446
+      },
+      "rico_held": {
+        "n": 3,
+        "structural": 0.0900667,
+        "p50_ms": [803.91, 922.89],
+        "p50_median_ms": 863.4,
+        "p50_speedup_vs_e289": 1.2008,
+        "p50_speedup_vs_e290": 1.6202,
+        "p95_ms": [2799.44, 2750.19],
+        "p95_median_ms": 2774.82,
+        "p95_speedup_vs_e289": 2.161,
+        "p95_speedup_vs_e290": 1.8895,
+        "completion_cache_hit_rate": 0.911887
+      }
+    }
+  },
+  "verdict": {
+    "behavior_preserved": true,
+    "runtime_improved_vs_e290": true,
+    "p95_improved_vs_e289": true,
+    "all_p50_improved_vs_e289": false,
+    "semantic_gates_passed": false,
+    "ship": false,
+    "next": "Move pinned component-contract construction out of first-request latency and measure process-start versus request latency separately."
+  }
+}
