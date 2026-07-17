@@ -110,6 +110,8 @@ def classify_parse_failure(
         return "low_component_recall"
     if error == "no_placeholders":
         return "no_placeholders"
+    if error and error.startswith("excessive_output_tokens"):
+        return "pathological_overgeneration"
     if error in {"empty_root_stack", "empty_card", "no_content_components"}:
         return "trivial_layout"
     if error and (

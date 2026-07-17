@@ -159,6 +159,60 @@ def test_meaningful_parse_requires_component_recall() -> None:
     assert component_type_recall(weak, gold.openui) < 0.5
 
 
+def test_meaningful_parse_rejects_pathological_overgeneration() -> None:
+    gold = ExampleRecord(
+        id="fallback",
+        prompt="x",
+        openui='root = Stack([content])\ncontent = TextContent(":x.text")',
+        placeholders=[":x.text"],
+    )
+    repeated = ", ".join(["content"] * 30)
+    bloated = (
+        f"root = Stack([{repeated}])\n"
+        'content = TextContent(":x.text")'
+    )
+
+    ok, err, _ = _is_meaningful_program(bloated, gold=gold)
+
+    assert ok is False
+    assert err and err.startswith("excessive_output_tokens:")
+
+
+def test_failed_meaningful_parse_gets_no_recall_or_reward_credit(
+    tmp_path: Path,
+) -> None:
+    test_dir = tmp_path / "test"
+    (test_dir / "suites" / "smoke").mkdir(parents=True)
+    gold = ExampleRecord(
+        id="fallback",
+        prompt="x",
+        openui='root = Stack([content])\ncontent = TextContent(":x.text")',
+        placeholders=[":x.text"],
+        split="smoke",
+    )
+    write_jsonl(test_dir / "suites" / "smoke" / "records.jsonl", [gold])
+    repeated = ", ".join(["content"] * 30)
+    bloated = (
+        f"root = Stack([{repeated}])\n"
+        'content = TextContent(":x.text")'
+    )
+    model = SimpleNamespace(generate=lambda _prompt: bloated)
+    config = ModelBuildConfig(
+        train_dir=tmp_path,
+        test_dir=test_dir,
+        suite="smoke",
+        run_root=tmp_path / "runs",
+        run_id="overgeneration",
+    )
+
+    metrics = evaluate(config, model=model, publish_agentv=False)
+
+    assert metrics["meaningful_program_rate"] == 0.0
+    assert metrics["component_type_recall"] == 0.0
+    assert metrics["reward_score"] == 0.0
+    assert metrics["failure_breakdown"] == {"pathological_overgeneration": 1}
+
+
 def test_ship_gates_fail_when_hard_suites_miss() -> None:
     suites = {
         "smoke": {

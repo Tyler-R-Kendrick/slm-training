@@ -33,7 +33,7 @@ The loss-suite AgentV record passes 1/1 with zero execution errors. Checkpoint
 SHA-256:
 `5b4c50467454f7a9dddbc28da2e115c31a8eba8071587e95eda096729a16fb50`.
 
-## Frozen prompt-only evaluation
+## Frozen prompt-only evaluation (superseded)
 
 `e295-choice-design-dropout-honest-r1` uses the unchanged ship gates, scratch
 context, prompt-derived honest slot contracts, no DESIGN context, and no
@@ -47,18 +47,18 @@ unconstrained fallback.
 | ood | 4 | 1.0 | 0.0 | 0.0000 | 0.2369 | 0.0 | 0.0 |
 | rico_held | 3 | 1.0 | 0.0 | 0.0000 | 0.0901 | 0.0 | 0.0 |
 
-E295 improves adversarial meaningful rate from 0.0 in both controls to 0.25,
-passes AgentV 1/5 instead of 0/5, and reduces frozen failures from E292's 15 and
-E294's 17 to 14. The other four suite scoreboards are exactly E294's, so this is
-a one-example context-robustness signal, not broad transfer.
+This original evaluation reported adversarial meaningful 0.25 and AgentV 1/5.
+E298 later showed that the single output was pathological over-generation
+(72 lexical symbols versus 14 gold) and tightened the shared evaluator. The
+authoritative corrected result is meaningful/component recall/reward 0.0 on
+all suites, AgentV 0/5, and 16 failed thresholds. See
+[E297–E298](iter-e297-e298-dropout-replication-metric-guard-20260717.md).
 
 ## Verdict
 
-Keep deterministic DESIGN dropout as a reproducible training lever. The matched
-NLL interpolation and one adversarial success justify replication, but four
-suites remain at meaningful 0.0 and the checkpoint fails 14 frozen thresholds.
-It is neither promotable nor ship-ready. A replicated dropout-rate/seed check is
-required before combining this lever with component-plan training.
+Keep deterministic DESIGN dropout as a reproducible mechanism, but E297 fails
+cross-seed replication and E298 invalidates the only apparent semantic gain.
+Stop this sweep at the current budget; it is neither promotable nor ship-ready.
 
 Artifacts:
 

@@ -38,5 +38,5 @@
     "gate_failure_count": 17,
     "agentv": {"total": 5, "passed": 0, "failed": 5, "execution_errors": 0}
   },
-  "verdict": "The 25% same-seed rate arm does not reproduce E295's adversarial success. No promotion; replicate 50% across seeds next."
+  "verdict": "The 25% same-seed arm is negative, and E298 later invalidated E295's apparent success as pathological overgeneration. No promotion; stop this sweep."
 }

@@ -120,13 +120,17 @@ Checkpoint remains the pre-remediation fixture-upsample scratch run (not retrain
   discrete outputs; the active head only cuts failures 17→13 on secondary
   metrics. Meaningful rate remains 0.0, so no ship claim follows.
 - E295 deterministically drops DESIGN context for exactly 240/480 training
-  records. Its complete NLL lies between the all/no-DESIGN controls and frozen
-  prompt-only evaluation recovers one meaningful adversarial program (0.25,
-  AgentV 1/5, 14 failures), while the other four suites exactly match E294.
-  This narrow signal warrants replication but does not support promotion.
+  records. Its complete NLL lies between the all/no-DESIGN controls. E298
+  invalidates its lone apparent adversarial success as pathological
+  over-generation; corrected meaningful/component recall/reward are 0.0
+  throughout, AgentV 0/5, with 16 failures.
 - E296 lowers dropout to 25% at the same seed. NLL improves, but the prompt-only
   board exactly matches E294 (meaningful 0.0, AgentV 0/5, 17 failures), so
-  E295's isolated success is rate-specific and remains unreplicated.
+  the corrected no-gain interpretation.
+- E297 repeats 50% dropout at seed 1 and also produces meaningful 0.0,
+  AgentV 0/5, and 17 failures. E298 now rejects validated outputs above 4× gold
+  lexical size and gives failed meaningful programs no component-recall/reward
+  credit. Stop dropout sweeps; empty-root collapse remains the model failure.
 
 ## Re-eval commands
 

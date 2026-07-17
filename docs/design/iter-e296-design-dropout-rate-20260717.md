@@ -15,12 +15,11 @@ SHA-256 is
 
 Frozen prompt-only ship evaluation exactly matches E294 on every headline
 metric: parse 1.0 throughout, meaningful 0.0 throughout, AgentV 0/5, and 17
-failed thresholds. E295's adversarial meaningful 0.25 therefore does not form a
-smooth rate response at seed 0.
+failed thresholds. E298 subsequently invalidated E295's apparent adversarial
+gain as pathological over-generation.
 
 **Verdict:** E296 is not promotable or ship-ready. Keep the dropout mechanism,
-but treat E295's one-example gain as unreplicated until a 50% second-seed arm
-reproduces it. Do not combine dropout with the plan head yet.
+but stop the sweep at this budget. Do not combine dropout with the plan head.
 
 Artifacts:
 

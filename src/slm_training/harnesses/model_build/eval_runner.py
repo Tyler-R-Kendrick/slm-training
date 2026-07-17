@@ -14,7 +14,7 @@ from typing import Any
 
 from slm_training.data.structure import strip_style_literals
 from slm_training.dsl.placeholders import extract_placeholders
-from slm_training.dsl.parser import ParseError, validate
+from slm_training.dsl.parser import ParseError, lexical_tokens, validate
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 from slm_training.harnesses.model_build.data import (
@@ -345,11 +345,13 @@ def _is_meaningful_program(
     *,
     gold: ExampleRecord | None = None,
     min_component_recall: float = 0.5,
+    max_output_token_ratio: float = 4.0,
 ) -> tuple[bool, str | None, str | None]:
     """
     Validate and reject trivial / off-task programs.
-    Empty Stack/Card, no content components, no placeholders, and (when gold
-    is provided) low component-type recall vs the gold layout.
+    Empty Stack/Card, no content components, no placeholders, pathological
+    over-generation, and (when gold is provided) low component-type recall vs
+    the gold layout.
     """
     try:
         program = validate(pred)
@@ -367,6 +369,16 @@ def _is_meaningful_program(
         return False, "no_content_components", serialized
     if not extract_placeholders(serialized):
         return False, "no_placeholders", serialized
+    if gold is not None and max_output_token_ratio > 0:
+        pred_tokens = len(lexical_tokens(serialized))
+        gold_tokens = len(lexical_tokens(gold.openui))
+        max_tokens = max(1, math.ceil(gold_tokens * max_output_token_ratio))
+        if pred_tokens > max_tokens:
+            return (
+                False,
+                f"excessive_output_tokens:{pred_tokens}>{max_tokens}",
+                serialized,
+            )
     if gold is not None and min_component_recall > 0:
         recall = component_type_recall(serialized, gold.openui)
         if recall < min_component_recall:
@@ -606,10 +618,10 @@ def evaluate(
         exact = _tree_match(scored_pred, record.openui)
         struct = structural_similarity(scored_pred, record.openui)
         tree_edit = tree_edit_similarity(scored_pred, record.openui)
-        recall = component_type_recall(scored_pred, record.openui)
+        recall = component_type_recall(scored_pred, record.openui) if ok else 0.0
         contract_prec = _contract_precision(scored_pred, record)
         contract_rec = _contract_recall(scored_pred, record)
-        reward = _reward_for_prediction(scored_pred, record)
+        reward = _reward_for_prediction(scored_pred, record) if ok else 0.0
         codec = getattr(plugin, "codec", None)
         if codec is not None:
             from slm_training.models.grammar_diffusion import (

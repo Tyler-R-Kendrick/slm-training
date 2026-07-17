@@ -37,6 +37,8 @@
   },
   "honest_evaluation": {
     "run_id": "e295-choice-design-dropout-honest-r1",
+    "superseded": true,
+    "superseded_by": "e298-choice-dropout50-metric-corrected-r2",
     "policy": {
       "ship_gates": true,
       "honest_slot_contract": true,
@@ -54,6 +56,15 @@
     "gate_failure_count": 14,
     "agentv": {"total": 5, "passed": 1, "failed": 4, "execution_errors": 0}
   },
+  "corrected_evaluation": {
+    "run_id": "e298-choice-dropout50-metric-corrected-r2",
+    "meaningful_by_suite": {"smoke": 0.0, "held_out": 0.0, "adversarial": 0.0, "ood": 0.0, "rico_held": 0.0},
+    "component_recall_by_suite": {"smoke": 0.0, "held_out": 0.0, "adversarial": 0.0, "ood": 0.0, "rico_held": 0.0},
+    "reward_by_suite": {"smoke": 0.0, "held_out": 0.0, "adversarial": 0.0, "ood": 0.0, "rico_held": 0.0},
+    "pathological_overgeneration_count": 1,
+    "gate_failure_count": 16,
+    "agentv": {"total": 5, "passed": 0, "failed": 5, "execution_errors": 0}
+  },
   "comparison": {
     "e292_all_design_weighted_nll": 7.2265,
     "e292_all_design_gate_failures": 15,
@@ -61,7 +72,7 @@
     "e294_no_design_weighted_nll": 7.497654616691396,
     "e294_no_design_gate_failures": 17,
     "e294_no_design_agentv_passed": 0,
-    "adversarial_meaningful_gain_vs_both": 0.25
+    "adversarial_meaningful_gain_vs_both": 0.0
   },
-  "verdict": "A narrow one-example context-robustness signal warrants replication, but four suites remain non-meaningful and 14 frozen thresholds fail. No promotion."
+  "verdict": "E298 invalidates the apparent adversarial gain as pathological overgeneration. Meaningful rate is 0.0 throughout; no promotion."
 }

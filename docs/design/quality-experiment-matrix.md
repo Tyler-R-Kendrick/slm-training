@@ -1733,12 +1733,13 @@ and [machine-readable results](choice-plan-control-results-iter-e294-20260717.js
 E295 adds cache-safe record-level `--design-md-dropout` and runs a matched 50%
 arm: exactly 240/480 DESIGN contexts are omitted. Complete weighted NLL 7.3785
 interpolates between E292 all-DESIGN (7.2265) and E294 no-DESIGN (7.4977).
-Frozen prompt-only evaluation produces one meaningful adversarial program
-(0.25), AgentV 1/5, and 14 failures versus 0.0 / 0/5 / 15–17 in the controls.
-The other four suite scoreboards exactly match E294.
+The original prompt-only evaluation reported one meaningful adversarial
+program. E298 invalidates it as pathological over-generation: corrected
+meaningful/component recall/reward are 0.0 throughout, AgentV 0/5, with 16
+failed thresholds.
 
-**Verdict:** retain and replicate the generalized lever; the isolated
-adversarial success is not broad transfer and the checkpoint is not promotable.
+**Verdict:** retain the generalized mechanism but stop this sweep; no semantic
+gain remains and the checkpoint is not promotable.
 See [the narrative](iter-e295-design-context-dropout-20260717.md) and
 [machine-readable results](choice-design-dropout-results-iter-e295-20260717.json).
 
@@ -1746,10 +1747,24 @@ See [the narrative](iter-e295-design-context-dropout-20260717.md) and
 
 The same-seed 25% arm omits 127/480 DESIGN records. NLL improves to 7.3503,
 but frozen prompt-only metrics exactly match E294: meaningful 0.0, AgentV 0/5,
-17 failures. E295's single adversarial success is not a smooth rate response.
-No promotion; replicate 50% across seeds next. See
+17 failures. E298 later invalidates E295's apparent success. No promotion. See
 [results](iter-e296-design-dropout-rate-20260717.md) and
 [JSON](choice-design-dropout-results-iter-e296-20260717.json).
+
+## E297–E298 cross-seed replication and metric repair (CPU scratch, 2026-07-17)
+
+E297 repeats 50% dropout at seed 1 (237/480 records dropped, 106 steps / 5,061
+target tokens). Weighted NLL regresses to 7.5864 and frozen prompt-only
+meaningful/component recall/reward remain 0.0 on all suites (AgentV 0/5, 17
+failures). Audit of E295's lone apparent success found a 72-symbol output for a
+14-symbol target. E298 adds a 4× lexical-size ceiling to meaningful parse and
+zeros component-recall/reward credit for failed programs. Corrected E295 is
+meaningful 0.0 throughout, AgentV 0/5, 16 failures.
+
+**Verdict:** E295's gain is invalidated and E297 fails replication. Stop
+dropout sweeps at this budget; target empty-root collapse next. See
+[results](iter-e297-e298-dropout-replication-metric-guard-20260717.md) and
+[JSON](choice-dropout-results-iter-e297-e298-20260717.json).
 
 ## Verifier-guided repair (mixed status)
 

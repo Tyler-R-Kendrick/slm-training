@@ -1,0 +1,52 @@
+{
+  "iterations": ["E297", "E298"],
+  "date": "2026-07-17",
+  "e297": {
+    "run_id": "e297-choice-design-dropout50-seed1-r1",
+    "recipe": {
+      "device": "cpu",
+      "context_backend": "scratch",
+      "design_md_dropout": 0.5,
+      "design_records_dropped": 237,
+      "design_records_retained": 243,
+      "seed": 1,
+      "steps": 106,
+      "seen_prompt_tokens": 32886,
+      "seen_target_tokens": 5061,
+      "elapsed_wall_seconds": 39.23527355199985
+    },
+    "checkpoint": {
+      "sha256": "a78193f91ee12d07791cab008a75267e3f6e19cfd223fbc726b3896dd98d14ee",
+      "bucket": null,
+      "sync_reason": "scratch diagnostic; local only"
+    },
+    "loss_suite": {
+      "weighted_nll": 7.586442277601872,
+      "binding_nll": 8.796406866184302,
+      "structural_nll": 6.068060193175361,
+      "repair_nll": 7.876002216339112,
+      "schema_ood_nll": 7.109042827138361,
+      "broad_nll": 7.889483021141647,
+      "agentv": {"total": 1, "passed": 1, "execution_errors": 0}
+    },
+    "honest_evaluation": {
+      "run_id": "e297-choice-design-dropout50-seed1-honest-r1",
+      "meaningful_by_suite": {"smoke": 0.0, "held_out": 0.0, "adversarial": 0.0, "ood": 0.0, "rico_held": 0.0},
+      "gate_failure_count": 17,
+      "agentv": {"total": 5, "passed": 0, "failed": 5, "execution_errors": 0}
+    }
+  },
+  "e298": {
+    "run_id": "e298-choice-dropout50-metric-corrected-r2",
+    "checkpoint_sha256": "5b4c50467454f7a9dddbc28da2e115c31a8eba8071587e95eda096729a16fb50",
+    "max_output_token_ratio": 4.0,
+    "pathological_overgeneration_count": 1,
+    "meaningful_by_suite": {"smoke": 0.0, "held_out": 0.0, "adversarial": 0.0, "ood": 0.0, "rico_held": 0.0},
+    "component_recall_by_suite": {"smoke": 0.0, "held_out": 0.0, "adversarial": 0.0, "ood": 0.0, "rico_held": 0.0},
+    "reward_by_suite": {"smoke": 0.0, "held_out": 0.0, "adversarial": 0.0, "ood": 0.0, "rico_held": 0.0},
+    "gate_failure_count": 16,
+    "agentv": {"total": 5, "passed": 0, "failed": 5, "execution_errors": 0},
+    "supersedes": ["e295-choice-design-dropout-honest-r1", "e298-choice-dropout50-metric-corrected-r1"]
+  },
+  "verdict": "E295's apparent gain was pathological overgeneration and is invalidated. E297 also fails cross-seed replication. Stop dropout sweeps; target empty-root collapse next."
+}
