@@ -16,6 +16,8 @@ import torch.nn.functional as F
 from slm_training.harnesses.distill.trace_store import checkpoint_sha
 from slm_training.harnesses.preference.local_decisions import (
     DecisionEventV1,
+    decision_signature,
+    decision_signature_metadata,
     load_decision_events,
 )
 from slm_training.models.twotower import TwoTowerModel
@@ -213,24 +215,11 @@ def _guard_objective_tensors(
     }
 
 
-def _decision_signature(event: DecisionEventV1) -> tuple[str, dict[str, object]]:
-    metadata: dict[str, object] = {
-        "decision_kind": event.decision_kind,
-        "legal_token_ids": list(event.legal_token_ids),
-        "good_token_ids": list(event.good_token_ids),
-        "bad_token_ids": list(event.bad_token_ids),
-    }
-    digest = hashlib.sha256(
-        json.dumps(metadata, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    ).hexdigest()[:12]
-    return f"{event.decision_kind}@{digest}", metadata
-
-
 def _objective_stratum(event: DecisionEventV1, strata: ObjectiveStrata) -> str:
     if strata == "decision_kind":
         return event.decision_kind
     if strata == "decision_signature":
-        return _decision_signature(event)[0]
+        return decision_signature(event)
     raise ValueError(f"unknown objective strata: {strata}")
 
 
@@ -647,7 +636,8 @@ def diagnose_metric_complete_gradient_feasibility(
             selected, _event_logits_many(model, selected), strict=True
         ):
             stratum = _objective_stratum(event, strata)
-            signature, metadata = _decision_signature(event)
+            signature = decision_signature(event)
+            metadata = decision_signature_metadata(event)
             signature_counts[split][signature] += 1
             signature_metadata[signature] = metadata
             for metric, value in _guard_objective_tensors(

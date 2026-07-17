@@ -1550,6 +1550,29 @@ minimum support per grammar-derived signature, followed by this same profile;
 do not add token/component special cases. Full evidence:
 [iter-e276-decision-signature-alignment-20260717.md](iter-e276-decision-signature-alignment-20260717.md).
 
+E277 added signature-diverse gold-AST state sampling, sharded trace ingestion,
+manifested support coverage, and fail-closed admission before corpus writes.
+The completed 65-record synthesis produced 362 independently backed events,
+but only 14/23 held-out support signatures have train coverage. The strict
+builder rejected the corpus before publication; more event volume alone did
+not repair support. Seven missing states exist in train gold ASTs and two
+require new leakage-safe judged records. Target grammar-state metadata next;
+do not train this candidate or hard-code component names in the compiler. Full
+evidence:
+[iter-e277-signature-coverage-synthesis-20260717.md](iter-e277-signature-coverage-synthesis-20260717.md).
+
+E283 replaced bounded random coverage repair with exact compiler-state targets
+derived from decision kind, legal token set, and selected token. Six judged
+E230 train-group records repaired seven signatures. Two fresh generation
+records synthesized from grammar/component semantics independently passed the
+pairing judge, meaningful-program verifier, and exact compiler-state check;
+held-out prompts/programs were not copied. The combined immutable corpus has
+372 judge-backed events (311 train / 61 held-out), all 23 held-out support
+signatures are covered, and the strict admission gate passes. Both source
+records and preference events are committed and visible to the training-data
+API. No model training ran. Full evidence:
+[iter-e283-signature-support-repair-20260717.md](iter-e283-signature-support-repair-20260717.md).
+
 ## V16 C3 corpus-mined macro tokens (fixture-run 2026-07-17)
 
 Track C3 (Stitch [arXiv:2211.16605](https://arxiv.org/abs/2211.16605) /

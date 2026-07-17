@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import replace
+from pathlib import Path
 from typing import Any
 
 from slm_training.data.quality import independent_judge
@@ -30,6 +31,48 @@ SEMANTIC_VERIFIER_V1 = "independent_judge+meaningful_program+pareto_v1"
 def _sha(payload: object) -> str:
     raw = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def counterfactual_state_signature(state: dict[str, Any]) -> str:
+    """Identify one compiler state from grammar-derived decision metadata."""
+    kind = str(state.get("decision_kind") or "compiler_tree")
+    legal = state.get("legal_token_ids", state.get("allowed_id_set"))
+    selected = state.get("selected_token_id", state.get("id", -1))
+    if not isinstance(legal, (list, tuple, set)):
+        raise ValueError("counterfactual state requires legal_token_ids")
+    return _sha(
+        {
+            "decision_kind": kind,
+            "legal_token_ids": sorted({int(value) for value in legal}),
+            "selected_token_id": int(selected),
+        }
+    )
+
+
+def load_counterfactual_state_targets(path: Path | str) -> set[str]:
+    """Load exact compiler-state targets without token- or grammar-case logic."""
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    rows = payload.get("targets") if isinstance(payload, dict) else payload
+    if not isinstance(rows, list) or not rows:
+        raise ValueError("counterfactual target manifest requires non-empty targets")
+    if any(
+        not isinstance(row, dict)
+        or "decision_kind" not in row
+        or "legal_token_ids" not in row
+        or "selected_token_id" not in row
+        for row in rows
+    ):
+        raise ValueError(
+            "counterfactual targets require decision_kind, legal_token_ids, "
+            "and selected_token_id"
+        )
+    signatures = {
+        counterfactual_state_signature(row)
+        for row in rows
+    }
+    if len(signatures) != len(rows):
+        raise ValueError("counterfactual target manifest contains invalid or duplicate targets")
+    return signatures
 
 
 def semantic_outcome(record: ExampleRecord, text: str) -> dict[str, Any]:
@@ -94,6 +137,7 @@ def select_counterfactual_states(
     max_states: int,
     seed: int = 0,
     context_key: str = "",
+    target_signatures: set[str] | None = None,
 ) -> list[dict[str, Any]]:
     """Select deterministic states across parser roles and decode depth.
 
@@ -115,6 +159,12 @@ def select_counterfactual_states(
         if key not in seen:
             seen.add(key)
             eligible.append(commit)
+    if target_signatures is not None:
+        eligible = [
+            commit
+            for commit in eligible
+            if counterfactual_state_signature(commit) in target_signatures
+        ]
     if not eligible:
         return []
 
@@ -130,15 +180,17 @@ def select_counterfactual_states(
     def stable_order(*parts: object) -> str:
         return _sha([int(seed), context_hash, *parts])
 
-    strata: dict[str, dict[int, list[dict[str, Any]]]] = {}
+    strata: dict[str, dict[str, list[dict[str, Any]]]] = {}
     for commit in eligible:
         kind = str(commit.get("decision_kind") or "compiler_tree")
-        strata.setdefault(kind, {}).setdefault(depth_bucket(commit), []).append(commit)
+        signature = counterfactual_state_signature(commit)
+        strata.setdefault(kind, {}).setdefault(signature, []).append(commit)
 
     kinds = sorted(strata, key=lambda kind: stable_order("kind", kind))
-    buckets = {
+    signatures = {
         kind: sorted(
-            strata[kind], key=lambda bucket: stable_order("bucket", kind, bucket)
+            strata[kind],
+            key=lambda signature: stable_order("signature", kind, signature),
         )
         for kind in kinds
     }
@@ -147,17 +199,18 @@ def select_counterfactual_states(
     while len(selected) < max_states:
         added = False
         for kind in kinds:
-            if round_index >= len(buckets[kind]):
+            if round_index >= len(signatures[kind]):
                 continue
-            bucket = buckets[kind][round_index]
-            rows = strata[kind][bucket]
+            signature = signatures[kind][round_index]
+            rows = strata[kind][signature]
             selected.append(
                 min(
                     rows,
                     key=lambda commit: stable_order(
                         "state",
                         kind,
-                        bucket,
+                        signature,
+                        depth_bucket(commit),
                         int(commit["t"]),
                         tuple(map(int, commit["pre_canvas"])),
                     ),
@@ -239,6 +292,7 @@ def mine_semantic_counterfactuals(
     max_candidates: int = 4,
     seed: int = 0,
     state_source: str = "policy",
+    target_state_signatures: set[str] | None = None,
 ) -> dict[str, int]:
     """Replay bounded grammar-legal alternatives and append qualified evidence."""
     import torch
@@ -270,6 +324,7 @@ def mine_semantic_counterfactuals(
         max_states=max_states,
         seed=seed,
         context_key=context_text,
+        target_signatures=target_state_signatures,
     )
 
     stats = {

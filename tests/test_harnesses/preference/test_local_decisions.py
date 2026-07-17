@@ -9,8 +9,11 @@ from slm_training.harnesses.preference.local_decisions import (
     DecisionEventV1,
     counterfactual_evidence_from_traces,
     decision_event_manifest,
+    decision_support_signature,
+    decision_signature_support,
     events_from_trace,
     load_decision_events,
+    load_trace_rows,
     split_for_group,
     write_decision_events,
 )
@@ -160,6 +163,8 @@ def test_build_local_events_cli(tmp_path, capsys) -> None:
     out = tmp_path / "events.jsonl"
     source = tmp_path / "source-manifest.json"
     source.write_text('{"content_fingerprint":"source-sha"}')
+    source_two = tmp_path / "source-manifest-two.json"
+    source_two.write_text('{"content_fingerprint":"source-sha-two"}')
     manifest = tmp_path / "manifest.json"
     evidence = tmp_path / "evidence.jsonl"
     assert main(
@@ -168,12 +173,17 @@ def test_build_local_events_cli(tmp_path, capsys) -> None:
             "--manifest-out", str(manifest), "--dataset-id", "events-v1",
             "--evidence-out", str(evidence),
             "--source-record-manifest", str(source),
+            "--source-record-manifest", str(source_two),
         ]
     ) == 0
     assert len(load_decision_events(out)) == 1
     data = json.loads(manifest.read_text())
     assert data["record_count"] == 1
-    assert data["source_record_fingerprint"] == "source-sha"
+    assert data["source_record_fingerprint"] not in {
+        "source-sha",
+        "source-sha-two",
+    }
+    assert data["source_record_fingerprints"] == ["source-sha", "source-sha-two"]
     assert data["policy_checkpoint_sha"] == "checkpoint-sha"
     assert data["judge_evidence_count"] == 0
     assert evidence.read_text() == ""
@@ -201,6 +211,19 @@ def test_build_local_events_can_require_counterfactual_evidence(
     assert json.loads(capsys.readouterr().out)["events"] == 0
 
 
+def test_load_trace_rows_reads_nested_shards(tmp_path) -> None:
+    for index in range(2):
+        shard = tmp_path / f"shard-{index}"
+        shard.mkdir()
+        row = _trace()
+        row["trajectory_id"] = f"trace-{index}"
+        (shard / "traces.jsonl").write_text(json.dumps(row) + "\n")
+
+    rows = load_trace_rows(tmp_path)
+
+    assert [row["trajectory_id"] for row in rows] == ["trace-0", "trace-1"]
+
+
 def test_manifest_rejects_mixed_policy_identities() -> None:
     first = events_from_trace(_trace())[0]
     data = first.to_dict()
@@ -209,3 +232,55 @@ def test_manifest_rejects_mixed_policy_identities() -> None:
     second = DecisionEventV1.from_dict(data)
     with pytest.raises(ValueError, match="mixes policy identities"):
         decision_event_manifest([first, second], dataset_id="mixed")
+
+
+def test_signature_support_reports_sparse_held_out_semantics() -> None:
+    base = events_from_trace(_trace())[0]
+    train_group = "train"
+    while split_for_group(train_group) != "train":
+        train_group += "x"
+    train_data = base.to_dict()
+    train_data.update(event_id="train-event", group_id=train_group, split="train")
+    train = DecisionEventV1.from_dict(train_data)
+    held_group = "held"
+    while split_for_group(held_group) != "held_out":
+        held_group += "x"
+    held_data = train.to_dict()
+    held_data.update(
+        event_id="held-event",
+        group_id=held_group,
+        split="held_out",
+        good_token_ids=[7],
+        bad_token_ids=[8],
+        legal_token_ids=[7, 8],
+    )
+    held = DecisionEventV1.from_dict(held_data)
+
+    report = decision_signature_support([train, held], min_train_support=1)
+
+    assert report["held_out_coverage"]["passed"] is False
+    assert len(report["held_out_coverage"]["uncovered"]) == 1
+    with pytest.raises(ValueError, match="lacks train support"):
+        decision_event_manifest(
+            [train, held],
+            dataset_id="sparse",
+            require_signature_support=True,
+        )
+
+
+def test_support_signature_ignores_sampled_negative_variation() -> None:
+    event = events_from_trace(_trace())[0]
+    data = event.to_dict()
+    extra_token = max(event.legal_token_ids) + 100
+    data.update(
+        event_id="different-negatives",
+        bad_token_ids=[extra_token],
+        legal_token_ids=sorted(set(event.legal_token_ids) | {extra_token}),
+    )
+    changed_legal = DecisionEventV1.from_dict(data)
+    data["legal_token_ids"] = list(event.legal_token_ids)
+    data["bad_token_ids"] = [event.legal_token_ids[-1]]
+    changed_bad = DecisionEventV1.from_dict(data)
+
+    assert decision_support_signature(changed_bad) == decision_support_signature(event)
+    assert decision_support_signature(changed_legal) != decision_support_signature(event)
