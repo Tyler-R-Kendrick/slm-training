@@ -175,6 +175,20 @@ def _normalize_record(record: ExampleRecord) -> ExampleRecord:
     meta.setdefault("determinacy", "deterministic")
     meta.setdefault("parent_id", root_id)
     meta.setdefault("provenance", {})
+    prompt = record.prompt.strip()
+    if str(meta["task"]) == "generation" and isinstance(meta.get("edit"), dict):
+        from slm_training.data.quality import (
+            render_semantic_contract_prompt,
+            semantic_contract_for_openui,
+        )
+
+        semantic_contract = semantic_contract_for_openui(openui)
+        meta["semantic_contract"] = semantic_contract
+        meta["prompt_remediation"] = {
+            "kind": "ast_semantic_contract_v1",
+            "original_prompt_fingerprint": fingerprint_prompt(prompt),
+        }
+        prompt = render_semantic_contract_prompt(semantic_contract)
     spec = ProgramSpec.from_openui(
         id=root_id,
         openui=openui,
@@ -187,7 +201,7 @@ def _normalize_record(record: ExampleRecord) -> ExampleRecord:
     )
     emitted = emit_record(
         spec,
-        prompt=record.prompt.strip(),
+        prompt=prompt,
         task=str(meta["task"]),
         openui=openui,
         record_id=record.id,
@@ -454,13 +468,22 @@ def _records_from_progspec(
             )
             continue
         try:
+            from slm_training.data.quality import (
+                render_semantic_contract_prompt,
+                semantic_contract_for_openui,
+            )
+
+            semantic_contract = semantic_contract_for_openui(spec.canonical_openui)
             record = emit_record(
                 spec,
-                prompt=f"Generate the {spec.program_family_id} OpenUI program.",
+                prompt=render_semantic_contract_prompt(semantic_contract),
                 task="generation",
                 record_id=spec.id,
                 source="programspec_generated",
-                meta={"source_kind": "program-first"},
+                meta={
+                    "source_kind": "program-first",
+                    "semantic_contract": semantic_contract,
+                },
             )
             out.append(
                 stamp_record(record, VerificationContext(source_kind="program-first"))

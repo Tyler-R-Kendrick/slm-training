@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -36,6 +37,12 @@ def test_build_publishes_by_default_and_reruns_are_noops(tmp_path: Path) -> None
     published = tmp_path / "published" / "train" / "vtest"
     assert (published / "records.jsonl").is_file()
     assert (published / "manifest.json").is_file()
+    assert (published / "synthesis_telemetry.jsonl").is_file()
+    manifest = json.loads((published / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["records"] == (published / "records.jsonl").as_posix()
+    assert manifest["synthesis_telemetry"] == (
+        published / "synthesis_telemetry.jsonl"
+    ).as_posix()
     # An identical rebuild republishes as a no-op instead of failing.
     assert build_main(_args(tmp_path)) == 0
     assert (published / "records.jsonl").is_file()

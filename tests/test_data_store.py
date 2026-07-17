@@ -33,12 +33,27 @@ def test_local_first_and_conflict_detection(tmp_path: Path) -> None:
 
 def test_publish_is_explicit_and_immutable(tmp_path: Path) -> None:
     store = DataStore(tmp_path)
-    _dataset(store.path("train", "ready"))
+    local = store.path("train", "ready")
+    _dataset(local)
+    telemetry = local / "synthesis_telemetry.jsonl"
+    telemetry.write_text('{"records": 1}\n', encoding="utf-8")
+    manifest_path = local / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    manifest["records"] = (local / "records.jsonl").as_posix()
+    manifest["synthesis_telemetry"] = telemetry.as_posix()
+    manifest_path.write_text(json.dumps(manifest) + "\n", encoding="utf-8")
+    write_common_manifest(local, kind="train", dataset_id="ready")
+
     published = store.publish("train", "ready")
     assert published.storage == "git"
     assert (published.path / "records.jsonl").is_file()
+    assert (published.path / "synthesis_telemetry.jsonl").is_file()
     manifest = json.loads((published.path / "manifest.json").read_text())
     assert manifest["immutable"] is True
+    assert manifest["records"] == (published.path / "records.jsonl").as_posix()
+    assert manifest["synthesis_telemetry"] == (
+        published.path / "synthesis_telemetry.jsonl"
+    ).as_posix()
     with pytest.raises(FileExistsError):
         store.publish("train", "ready")
 

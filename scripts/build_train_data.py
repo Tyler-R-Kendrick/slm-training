@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 from pathlib import Path
 
 from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
@@ -328,13 +329,7 @@ def main(argv: list[str] | None = None) -> int:
         synthesis = output_dir / "synthesis_telemetry.jsonl"
         if synthesis.is_file():
             centralized = trace.domain_path("synthesis", "synthesis_telemetry.jsonl")
-            synthesis.replace(centralized)
-            manifest_path = output_dir / "manifest.json"
-            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-            manifest["synthesis_telemetry"] = centralized.as_posix()
-            manifest_path.write_text(
-                json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
-            )
+            shutil.copy2(synthesis, centralized)
         result["manifest"] = write_common_manifest(
             output_dir,
             kind="train",

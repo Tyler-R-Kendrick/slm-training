@@ -52,6 +52,31 @@ def _manifest(path: Path) -> dict[str, Any]:
     return json.loads(manifest.read_text(encoding="utf-8"))
 
 
+def _relocate_manifest_paths(
+    value: Any, *, source: Path, destination: Path
+) -> Any:
+    """Rewrite dataset-local manifest paths when moving between stores."""
+    if isinstance(value, dict):
+        return {
+            key: _relocate_manifest_paths(
+                item, source=source, destination=destination
+            )
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [
+            _relocate_manifest_paths(
+                item, source=source, destination=destination
+            )
+            for item in value
+        ]
+    if isinstance(value, str):
+        source_prefix = source.as_posix().rstrip("/")
+        if value == source_prefix or value.startswith(source_prefix + "/"):
+            return destination.as_posix().rstrip("/") + value[len(source_prefix) :]
+    return value
+
+
 def dataset_fingerprint(path: Path) -> str | None:
     payload = _manifest(path)
     for key in ("content_fingerprint", "records_sha", "manifest_sha256"):
@@ -211,11 +236,17 @@ class DataStore:
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(source.path, destination)
         source_manifest = _manifest(destination)
+        relocated_manifest = _relocate_manifest_paths(
+            source_manifest, source=source.path, destination=destination
+        )
+        (destination / "manifest.json").write_text(
+            json.dumps(relocated_manifest, indent=2) + "\n", encoding="utf-8"
+        )
         write_common_manifest(
             destination,
             kind=kind,
             dataset_id=dataset_id,
-            trace_id=source_manifest.get("trace_id"),
+            trace_id=relocated_manifest.get("trace_id"),
             immutable=True,
         )
         return DatasetRef(
