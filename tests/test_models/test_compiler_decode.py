@@ -64,6 +64,64 @@ def test_gathered_projection_matches_full_lm_head() -> None:
     assert torch.allclose(gathered, full.index_select(-1, candidates))
 
 
+def test_choice_gold_decisions_classify_component_roles() -> None:
+    from slm_training.models.choice_tokenizer import ChoiceTokenizer
+
+    tokenizer = ChoiceTokenizer.build()
+    source = (
+        'root = Card([title])\n'
+        'title = TextContent(":hero.title")'
+    )
+    decisions = gold_compiler_decisions(
+        tokenizer,
+        tokenizer.encode(source, placeholders=[":hero.title"]),
+        slot_contract=[":hero.title"],
+    )
+    component_roles = [
+        decision.kind
+        for decision in decisions
+        if decision.token_kind == "component"
+    ]
+    # Structural choice streams emit dependencies first and the root last.
+    assert component_roles == ["component_bound", "component_root"]
+    assert all(len(decision.candidate_ids) > 1 for decision in decisions)
+
+
+def test_choice_component_plan_trains_without_surface_compiler() -> None:
+    record = ExampleRecord(
+        id="choice-plan",
+        prompt="card with title",
+        openui='root = Card([title])\ntitle = TextContent(":hero.title")',
+        placeholders=[":hero.title"],
+        split="train",
+        source="fixture",
+    )
+    model = TwoTowerModel.from_records(
+        [record],
+        config=TwoTowerConfig(
+            context_backend="scratch",
+            output_tokenizer="choice",
+            d_model=32,
+            n_heads=2,
+            context_layers=1,
+            denoiser_layers=1,
+            max_prompt_len=32,
+            max_target_len=64,
+            component_plan_loss_weight=1.0,
+            component_plan_decode_weight=1.0,
+            seed=0,
+        ),
+        device="cpu",
+    )
+    loss = model.training_loss([record])
+    loss.backward()
+    assert torch.isfinite(loss)
+    assert model.component_plan_head is not None
+    assert model.component_plan_head.weight.grad is not None
+    assert model.component_plan_head.weight.grad.abs().sum() > 0
+    assert model.last_training_metrics["component_plan_root_accuracy"] >= 0.0
+
+
 def test_projection_with_features_accepts_sliced_hidden() -> None:
     """Compiler/tree scorers project [D] and [N,D] slices; with one request's
     runtime symbol features active the projection must match the [B,T,D]

@@ -78,6 +78,11 @@ def _token_class(tokenizer: Any, token_id: int) -> str:
             return "other"
     except Exception:  # noqa: BLE001
         pass
+    kind = getattr(tokenizer, "id_to_kind", {}).get(int(token_id))
+    if kind in {"sym", "bind", "state"}:
+        return "binding"
+    if kind in {"struct", "component", "builtin"}:
+        return "structural"
     token = tokenizer.id_to_token.get(int(token_id), "")
     if not token:
         return "other"

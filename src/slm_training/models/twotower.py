@@ -3009,6 +3009,13 @@ class TwoTowerModel(nn.Module):
                     F.softplus(logits[1, token_id]) - emitted_bound.get(token_id, 0)
                 ).clamp_min(1e-4)
                 bias[position] = weight * remaining.log()
+            elif kind == "component_root_or_bound":
+                remaining = (
+                    F.softplus(logits[1, token_id]) - emitted_bound.get(token_id, 0)
+                ).clamp_min(1e-4)
+                bias[position] = weight * torch.logaddexp(
+                    logits[0, token_id], remaining.log()
+                )
         return bias
 
     def _component_edge_bias(
@@ -4070,10 +4077,47 @@ class TwoTowerModel(nn.Module):
                         stats.forced_tokens += 1
                 else:
                     assert logits is not None
+                    candidate_ids = tuple(sorted(legal))
                     legal_ids = torch.tensor(
-                        sorted(legal), dtype=torch.long, device=logits.device
+                        candidate_ids, dtype=torch.long, device=logits.device
                     )
-                    best = logits[row, position].index_select(0, legal_ids).argmax()
+                    scores = logits[row, position].index_select(0, legal_ids)
+                    inventory_bias = self._component_inventory_bias(
+                        ctx[row : row + 1],
+                        ctx_pad[row : row + 1],
+                        candidate_ids,
+                    )
+                    if inventory_bias is not None:
+                        scores = scores + inventory_bias
+                    candidate_kinds = tuple(
+                        (
+                            "component_root"
+                            if states[row].current_marker == "r="
+                            else "component_bound"
+                            if states[row].mode == "v05"
+                            else "component_root_or_bound"
+                        )
+                        if tok.kind_of(token_id) == "component"
+                        and not states[row].frames
+                        else tok.kind_of(token_id)
+                        for token_id in candidate_ids
+                    )
+                    plan_bias = self._component_plan_bias(
+                        ctx[row : row + 1],
+                        ctx_pad[row : row + 1],
+                        ids[row, :position].tolist(),
+                        candidate_ids,
+                        candidate_kinds,
+                    )
+                    if plan_bias is not None:
+                        before_plan = int(scores.argmax().item())
+                        scores = scores + plan_bias
+                        if stats is not None:
+                            stats.component_plan_applications += 1
+                            stats.component_plan_choice_changes += int(
+                                int(scores.argmax().item()) != before_plan
+                            )
+                    best = scores.argmax()
                     choice = int(legal_ids[int(best)].item())
                 ids[row, position] = choice
                 if stats is not None:

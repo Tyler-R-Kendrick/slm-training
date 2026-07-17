@@ -100,6 +100,21 @@ Checkpoint remains the pre-remediation fixture-upsample scratch run (not retrain
   E35 inventory-in-prompt API for the production eval path.
 - Prefer `--matrix v6 --only E53` (or E35/E36) for honest fixture ship claims;
   production still requires full `rico_held` (1500) + HF context.
+- E292 re-evaluates the matched choice checkpoint with prompt-derived
+  slot-contract constrained decoding, no DESIGN.md context, and no
+  unconstrained fallback. Fidelity rises on four small suites, but meaningful
+  rate remains 0.0 everywhere, component recall is at most 0.04, AgentV is 0/5,
+  and 15 gates fail. This is honest fixture-scale diagnostic evidence, not a
+  ship claim; see
+  [iter-e292-choice-loss-suite-completeness-20260717.md](iter-e292-choice-loss-suite-completeness-20260717.md).
+- E293 adds the same honest policy around a choice-native component-plan arm.
+  A provenance audit found E292 was trained with DESIGN context despite a
+  mislabeled summary; that reporting path is fixed. The matched DESIGN-context
+  plan arm reaches one meaningful adversarial row only with bias off. In the
+  no-DESIGN follow-up, the learned bias changes 38 legal choices and
+  reduces gate failures 17→13 versus bias off, but meaningful rate remains 0.0
+  on every suite and AgentV remains 0/5. Neither arm is a ship candidate; see
+  [iter-e293-choice-component-plan-20260717.md](iter-e293-choice-component-plan-20260717.md).
 
 ## Re-eval commands
 
