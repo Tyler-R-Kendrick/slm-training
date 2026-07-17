@@ -29,8 +29,8 @@
     ]
   },
   "attempts": [
-    {
-      "attempt": 1,
+        {
+            "attempt": 1,
       "arm": "lexer",
       "status": "failed",
       "failure_target": "infrastructure",
@@ -43,8 +43,88 @@
       "agentv_result_written": false,
       "train_telemetry_written": false,
       "checkpoint_written": false,
-      "evaluation_written": false,
-      "evidence_valid": false
-    }
-  ]
+            "evaluation_written": false,
+            "evidence_valid": false
+        },
+        {
+            "attempt": 2,
+            "arm": "lexer",
+            "status": "completed",
+            "run_id": "capacity_lexer_v1__d64_h2_c1_dn2_t5000_x1__s0",
+            "run_dir": "outputs/ladders/b3-matched-5m-e287-r2/runs/capacity_lexer_v1__d64_h2_c1_dn2_t5000_x1__s0",
+            "steps_completed": 53,
+            "stopped_on": "token_budget",
+            "seen_target_tokens": 5004,
+            "last_loss": 18.731218338012695,
+            "weighted_nll": 13.180040878221538,
+            "elapsed_wall_seconds": 165.27797550000832,
+            "trainable_parameters": 294666,
+            "semantic_bits": {
+                "stream": "surface",
+                "programs": 480,
+                "decisions": 15780,
+                "bits_per_decision": 5.380495419754527,
+                "total_bits": 84904.21772372644,
+                "params_per_bit": 3.47056963599649
+            },
+            "evaluation": {
+                "smoke": {
+                    "n": 3,
+                    "parse_rate": 0.0,
+                    "meaningful_program_rate": 0.0,
+                    "placeholder_fidelity": 0.0,
+                    "structural_similarity": 0.0125,
+                    "reward_score": 0.0
+                },
+                "held_out": {
+                    "n": 5,
+                    "parse_rate": 0.0,
+                    "meaningful_program_rate": 0.0,
+                    "placeholder_fidelity": 0.0,
+                    "structural_similarity": 0.11656,
+                    "reward_score": 0.0
+                },
+                "adversarial": {
+                    "n": 4,
+                    "parse_rate": 0.0,
+                    "meaningful_program_rate": 0.0,
+                    "placeholder_fidelity": 0.0,
+                    "structural_similarity": 0.034625,
+                    "reward_score": 0.0
+                },
+                "ood": {
+                    "n": 4,
+                    "parse_rate": 0.0,
+                    "meaningful_program_rate": 0.0,
+                    "placeholder_fidelity": 0.0,
+                    "structural_similarity": 0.083325,
+                    "reward_score": 0.0
+                },
+                "rico_held": {
+                    "n": 3,
+                    "parse_rate": 0.0,
+                    "meaningful_program_rate": 0.0,
+                    "placeholder_fidelity": 0.0,
+                    "structural_similarity": 0.2528,
+                    "reward_score": 0.0
+                }
+            },
+            "agentv": {
+                "passed": 0,
+                "total": 5
+            },
+            "telemetry": {
+                "total_ms": 165050.217,
+                "eval_suites_pct": 92.5,
+                "loss_suites_pct": 5.21,
+                "training_forward_backward_pct": 1.02
+            },
+            "checkpoint": "outputs/ladders/b3-matched-5m-e287-r2/runs/capacity_lexer_v1__d64_h2_c1_dn2_t5000_x1__s0/checkpoints/last.pt",
+            "checkpoint_scope": "local scratch",
+            "promotable": false,
+            "promotion_note": "The run originally failed open on integrity-only evidence. The invalid promoted artifacts were deleted and the gate now requires quality, rank, efficiency, or ship evidence.",
+            "evidence_valid": true
+        }
+    ],
+    "interim_verdict": "The lexer control is valid but fails every primary quality signal and all five AgentV rows. No arm comparison is claimed until the matched choice run completes."
 }

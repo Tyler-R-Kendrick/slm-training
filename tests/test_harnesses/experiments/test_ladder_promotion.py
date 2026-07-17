@@ -139,3 +139,12 @@ def test_promotion_checks(tmp_path: Path) -> None:
     dest = register_promoted_checkpoint(tmp_path / "ckpts", source=src, meta={"ok": True})
     assert dest.exists()
     assert (tmp_path / "ckpts" / "promoted.json").exists()
+
+
+def test_integrity_alone_cannot_promote() -> None:
+    result = evaluate_promotion(
+        integrity={"pass": True, "failures": [], "leakage_hits": 0}
+    )
+
+    assert result["promotable"] is False
+    assert result["failures"] == ["sufficient_evidence"]

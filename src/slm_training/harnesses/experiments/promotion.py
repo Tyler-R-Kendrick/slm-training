@@ -189,6 +189,19 @@ def evaluate_promotion(
         if not gates.get("pass"):
             failures.append("ship_gates")
 
+    comparative_checks = {
+        "weighted_nll_improved",
+        "rank_stability",
+        "eg_time",
+        "ship_gates",
+    }
+    if not comparative_checks & checks.keys():
+        checks["sufficient_evidence"] = {
+            "pass": False,
+            "reason": "promotion requires quality, rank, efficiency, or ship evidence",
+        }
+        failures.append("sufficient_evidence")
+
     return {
         "promotable": not failures,
         "checks": checks,

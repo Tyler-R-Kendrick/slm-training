@@ -106,3 +106,37 @@ latest-main preflight; no missing checkpoint is inferred or reconstructed.
 
 Live machine-readable ledger:
 [iter-b3-capacity-ladder-5m-results-20260717.json](iter-b3-capacity-ladder-5m-results-20260717.json).
+
+## Five-minute matched run — lexer control complete
+
+The restarted lexer control completed the matched 5,000-target-token recipe in
+53 steps (5,004 tokens) and 165.28 seconds, below the configured five-minute
+whole-arm cap. It used CPU scratch context, width 64, seed 0, batch 2, the 480
+committed judge-approved E218 records, and all five remediated suites.
+
+| suite | n | parse | meaningful | fidelity | structure | reward |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| smoke | 3 | 0 | 0 | 0 | 0.0125 | 0 |
+| held_out | 5 | 0 | 0 | 0 | 0.1166 | 0 |
+| adversarial | 4 | 0 | 0 | 0 | 0.0346 | 0 |
+| ood | 4 | 0 | 0 | 0 | 0.0833 | 0 |
+| rico_held | 3 | 0 | 0 | 0 | 0.2528 | 0 |
+
+Weighted NLL fell to 13.1800, but it is not a substitute for the zero primary
+quality metrics. AgentV passed 0/5 rows. The local scratch checkpoint is
+therefore **not promotable and not ship**.
+
+The run also exposed a fail-open promotion policy: a single-rung ladder with
+only a passing integrity check was labeled promotable. The falsely named
+`promoted.pt` / `promoted.json` outputs were removed. Promotion now requires at
+least one quality, rank-stability, efficiency, or ship-gate evidence channel;
+integrity alone cannot promote.
+
+Telemetry identifies evaluation, not training, as the immediate throughput
+bottleneck: the final five-suite evaluation consumed 92.50% of measured time,
+loss suites 5.21%, and forward plus backward only 1.02%. This does not justify
+reducing suite coverage in the matched pair; both arms retain the same honest
+five-suite evaluation.
+
+The choice arm is still pending. Until it runs under the identical budget,
+there is no B3 representation winner and no cross-tokenizer NLL comparison.
