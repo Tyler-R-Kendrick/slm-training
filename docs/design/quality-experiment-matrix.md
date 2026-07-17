@@ -1355,6 +1355,138 @@ not a training gain. The guard is retained; the parent-equivalent E264 artifact
 is rejected and not promoted. Full evidence:
 [iter-e264-guarded-gold-ast-ftpo-20260716.md](iter-e264-guarded-gold-ast-ftpo-20260716.md).
 
+E265 enforced that Pareto contract on every optimizer proposal with
+optimizer-consistent backtracking. Three of 30 updates were accepted and all
+four aggregate held-out metrics improved, proving a safe local direction
+exists. The aggregate nevertheless hid severe per-decision-kind regressions
+(`grammar_comma` loss `1.3764→3.1417`), and full-eval fidelity/reward fell on
+most suites while five gates still failed. The naive implementation also took
+50m09s for 142 candidate scales and 5,538 held-out event forwards. Reject the
+checkpoint. The next guard must be stratified by grammar/AST decision kind and
+validation must be batched/cached without weakening the contract. Full
+evidence:
+[iter-e265-safe-gold-ast-ftpo-20260717.md](iter-e265-safe-gold-ast-ftpo-20260717.md).
+
+E266 replaced the aggregate-only contract with the same four guards applied to
+every grammar/AST `decision_kind`, and batched same-length held-out states with
+cached frozen context. All 30 proposals and 150 scales were rejected, proving
+the tested global FTPO direction has no safe per-kind Pareto update. The model
+was restored bit-identically to E228 and a same-code parent control reproduced
+every suite metric. Batching cut the local stage from 3,009.05s to 79.77s
+(37.7×) despite checking more scales. Retain the guard and batching; reject the
+artifact. The next lever is decision-kind block-coordinate proposals, not more
+global FTPO duration or a literal special case. Full evidence:
+[iter-e266-stratified-safe-ftpo-20260717.md](iter-e266-stratified-safe-ftpo-20260717.md).
+
+E267 averaged train losses within each grammar/AST `decision_kind` before
+proposing an update, testing whether E266's single-event gradients were simply
+too noisy. All 30 category blocks and 150 scales were rejected; the restored
+model is bit-identical to E228 and full evaluation exactly matches the current
+parent control. The batched stage remained practical at 90.27s. Category
+averaging therefore does not produce a safe FTPO direction. The next lever
+must construct a conflict-projected or minimum-norm combination of per-kind
+gradients, not vary duration or scalar learning rate. Full evidence:
+[iter-e267-block-stratified-ftpo-20260717.md](iter-e267-block-stratified-ftpo-20260717.md).
+
+E268 constructed all 14 grammar/AST decision-kind gradients per step and
+deterministically applied pairwise PCGrad before the unchanged stratified
+guard. It projected 2,220 of 5,460 ordered task pairs, yet every one of 30
+proposals and 150 scales regressed at least one per-kind metric. The restored
+model and full evaluation exactly match the parent; five gates fail and AgentV
+is 2/5. The local stage took 2,338.56s, 25.9x E267, so this implementation is
+also operationally rejected. Pairwise projection does not certify a common
+descent direction. The next generalized lever is a deterministic minimum-norm
+convex combination with an explicit common-descent certificate, benchmarked
+for one step before a full run. Full evidence:
+[iter-e268-projected-stratified-ftpo-20260717.md](iter-e268-projected-stratified-ftpo-20260717.md).
+
+E269 replaced PCGrad with the minimum-norm convex combination from MGDA and
+used a one-step preflight before authorizing matched compute. After repairing
+inactive zero-gradient handling and fail-closed optimizer bypass, the final
+solver found a strict common-descent direction for 13 active train objectives.
+All five scales still regressed held-out metrics in `component_bound`,
+`grammar_comma`, `lit`, and `sym`; the parent was restored and full evaluation
+retained five failures with AgentV 2/5. The 219.11s one-step cost projects to
+about 110 minutes for 30 steps, so the full run was correctly canceled. The
+next lever is train/held-out gradient-alignment and provenance diagnosis, not
+another optimizer or scalar tuning pass. Full evidence:
+[iter-e269-mgda-stratified-ftpo-20260717.md](iter-e269-mgda-stratified-ftpo-20260717.md).
+
+E270 profiled frozen-parent train and held-out FTPO gradients without an
+optimizer. Same-kind split gradients are nonnegative for every shared
+decision kind, but the full matrix exposes severe cross-kind conflicts (for
+example held-out `grammar_comma` vs train
+`grammar_rsqb_bound_populated`, cosine `-0.9941`). MGDA still produces a raw
+combined direction with positive dot product against every active held-out
+FTPO-loss gradient; `grammar_comma` is weakest at cosine `0.0032`. Therefore
+E269's rejected finite steps are an optimizer-geometry mismatch: AdamW's
+preconditioned/sign-like first update is not the raw gradient direction the
+MGDA certificate covers. The next diagnostic must certify the actual
+optimizer-transformed step before any new training. Full evidence:
+[iter-e270-preference-gradient-alignment-20260717.md](iter-e270-preference-gradient-alignment-20260717.md).
+
+E271 analytically profiled the exact fresh Adam/AdamW first-step directions
+without mutating the model. Both transforms reverse held-out
+`grammar_comma` (cosine about `-0.00913`) and train-only `grammar_lsqb`
+(`-0.00345`), while their values are nearly identical; decoupled weight decay
+is not the cause. Adam's adaptive sign-like preconditioning breaks the raw
+MGDA common-descent certificate. The next bounded training lever is a one-step
+MGDA plus SGD preflight under the unchanged stratified guard, not another
+gradient mixer or AdamW scalar tune. Full evidence:
+[iter-e271-preference-optimizer-geometry-20260717.md](iter-e271-preference-optimizer-geometry-20260717.md).
+
+E272 applied the certified MGDA raw gradient with collinear SGD under the
+unchanged strict guard. Aggregate held-out FTPO loss improved at every scale,
+but all five scales regressed nine guarded probability/margin metrics across
+six decision kinds. The parent was restored; five ship gates fail and AgentV
+is 2/5. This rules out optimizer geometry as the final blocker: the solver's
+objective is incomplete because it certifies only loss while the contract also
+guards bad mass, good mass, and mean margin per kind. The next diagnostic must
+cover the full metric-gradient constraint set before any training. Full
+evidence:
+[iter-e272-mgda-sgd-preflight-20260717.md](iter-e272-mgda-sgd-preflight-20260717.md).
+
+E273 differentiated all four guarded metrics for every train decision kind:
+56 objectives, 55 active. Their minimum-norm vector is effectively zero
+(`norm_sq=3.90e-8`) and still lacks common descent; twelve held-out objectives
+oppose it. Probability-mass objectives dominate the conflict. No
+metric-complete optimizer run is justified. Before changing data or model
+capacity, verify whether good/bad mass is evaluated in the wrong probability
+space: it currently uses full-vocabulary softmax although constrained decoding
+chooses only among `legal_token_ids`. Full evidence:
+[iter-e273-metric-complete-feasibility-20260717.md](iter-e273-metric-complete-feasibility-20260717.md).
+
+E274 repeated the frozen-parent profile with good/bad probability conditioned
+only on each event's grammar-derived legal candidates. The train-side result
+flips from no feasible direction to strict common descent (`norm_sq=3.81e-4`,
+minimum active-task dot `3.36e-4`), proving full-vocabulary mass created a false
+Pareto conflict for constrained decisions. Training remains blocked: eleven
+held-out objectives oppose the corrected direction, and raw gradient scale
+assigns `0.9964` of the minimum-norm mixture to `lit:good_probability_mass`.
+The next diagnostic must normalize objective gradients before combining them;
+do not change duration or add token-specific cases. Full evidence:
+[iter-e274-legal-conditioned-metric-feasibility-20260717.md](iter-e274-legal-conditioned-metric-feasibility-20260717.md).
+
+E275 unit-normalized every nonzero legal-conditioned metric gradient before
+minimum-norm combination, then checked the direction against the original
+unscaled objectives. All 55 active train objectives align positively and the
+single-metric weight collapse disappears. Held-out regressions fall from eleven
+to three: component-bound good/bad mass and literal loss. The direction remains
+unsafe, so no training ran. The next diagnostic must split kind-level averages
+by grammar/AST decision signatures derived from legal/good/bad sets, not add
+literal or component special cases. Full evidence:
+[iter-e275-normalized-metric-geometry-20260717.md](iter-e275-normalized-metric-geometry-20260717.md).
+
+E276 kept E275's train direction fixed and evaluated 21 held-out signatures
+derived from decision kind plus legal/good/bad token sets. Nine signatures have
+no train counterpart. Seventeen objective regressions concentrate in seven
+signatures: four are absent from train and the other three have only one to
+three train examples. Coarse kind-level averaging was hiding sparse semantic
+support. No training ran. The next lever is judged, leakage-safe synthesis with
+minimum support per grammar-derived signature, followed by this same profile;
+do not add token/component special cases. Full evidence:
+[iter-e276-decision-signature-alignment-20260717.md](iter-e276-decision-signature-alignment-20260717.md).
+
 ## V13 C3 corpus-mined macro tokens (fixture-run 2026-07-17)
 
 Track C3 (Stitch [arXiv:2211.16605](https://arxiv.org/abs/2211.16605) /

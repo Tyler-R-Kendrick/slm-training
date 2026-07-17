@@ -6,7 +6,9 @@
 **Blocks unblocked:** F2 (GraphQL), F3 (patterns DSL,
 [design-patterns-dsl.md](design-patterns-dsl.md)), F4 (nomenclatures,
 [expert-nomenclature-packs.md](expert-nomenclature-packs.md)), G3 (latent-DSL
-generator).
+generator, **landed** — [latent-dsl-generator.md](latent-dsl-generator.md):
+`synthesize_pack(task_spec)` mechanically instantiates a partial pack from a
+synthesized grammar, the same filled/honest-None split as `toy-layout`).
 
 ## The contract
 

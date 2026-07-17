@@ -18,12 +18,24 @@ def test_v10_registers_exact_state_ablation_rows() -> None:
         "E254",
         "E263",
         "E264",
+        "E265",
+        "E266",
+        "E267",
+        "E268",
+        "E269",
+        "E272",
     ]
     assert rows[0].local_parent_control is True
     assert [row.local_preference_objective for row in rows[1:]] == [
         "ce_margin",
         "unlikelihood",
         "ftpo_single",
+        "ftpo_set",
+        "ftpo_set",
+        "ftpo_set",
+        "ftpo_set",
+        "ftpo_set",
+        "ftpo_set",
         "ftpo_set",
         "ftpo_set",
         "ftpo_set",
@@ -36,6 +48,15 @@ def test_v10_registers_exact_state_ablation_rows() -> None:
     assert by_id["E263"].local_preference_reference_tether is False
     assert by_id["E263"].local_preference_balanced is False
     assert by_id["E264"].local_preference_guarded_selection is True
+    assert by_id["E265"].local_preference_guarded_updates is True
+    assert by_id["E265"].local_preference_guard_backtrack_steps == 4
+    assert by_id["E266"].local_preference_guarded_updates is True
+    assert by_id["E266"].local_preference_guard_by_decision_kind is True
+    assert by_id["E267"].local_preference_block_by_decision_kind is True
+    assert by_id["E268"].local_preference_gradient_combination == "pcgrad"
+    assert by_id["E269"].local_preference_gradient_combination == "mgda"
+    assert by_id["E272"].local_preference_gradient_combination == "mgda"
+    assert by_id["E272"].local_preference_optimizer == "sgd"
     assert all(row.compiler_decode_mode == "tree" for row in rows)
 
 

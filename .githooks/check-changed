@@ -2,9 +2,14 @@
 set -eu
 
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+common_git_dir=$(git -C "$root" rev-parse --path-format=absolute --git-common-dir)
+common_root=$(dirname -- "$common_git_dir")
 unset $(git rev-parse --local-env-vars)
 cd "$root"
 if [ -x .venv/bin/python ]; then
   exec .venv/bin/python -m scripts.check_changed "$@"
+fi
+if [ -x "$common_root/.venv/bin/python" ]; then
+  exec "$common_root/.venv/bin/python" -m scripts.check_changed "$@"
 fi
 exec python3 -m scripts.check_changed "$@"

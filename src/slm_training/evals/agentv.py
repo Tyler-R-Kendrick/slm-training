@@ -9,6 +9,8 @@ import subprocess
 from pathlib import Path
 from typing import Any, Sequence
 
+from slm_training.bridge_utils import checkout_roots
+
 
 def _agentv_runtime(repo_root: Path) -> tuple[Path, Path]:
     """Resolve the pinned SDK from this checkout or its Git common checkout."""
@@ -17,19 +19,7 @@ def _agentv_runtime(repo_root: Path) -> tuple[Path, Path]:
         runner = Path(override).resolve()
         return runner, runner.parents[1]
 
-    roots = [repo_root]
-    common = subprocess.run(
-        ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
-        cwd=repo_root,
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    if common.returncode == 0 and common.stdout.strip():
-        common_root = Path(common.stdout.strip()).resolve().parent
-        if common_root not in roots:
-            roots.append(common_root)
-    for root in roots:
+    for root in checkout_roots(repo_root):
         runner = root / "scripts" / "run_agentv_eval.mjs"
         sdk = root / "node_modules" / "@agentv" / "core" / "package.json"
         if runner.is_file() and sdk.is_file():
