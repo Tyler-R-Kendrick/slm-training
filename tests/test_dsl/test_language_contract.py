@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import pytest
+
+from slm_training.dsl import lang_core
 from slm_training.dsl.language_contract import (
     LANG_SPEC,
     LanguageContract,
@@ -45,3 +48,28 @@ def test_to_dict_round_trips_fields() -> None:
     assert data["lang_spec"] == contract.lang_spec
     assert set(data["openui_versions"]) == {name for name, _ in contract.openui_versions}
     assert data["output_contract_version"] == 1
+
+
+def test_library_schema_falls_back_to_committed_snapshot(monkeypatch) -> None:
+    lang_core._RESULT_CACHE.pop("schema", None)
+    monkeypatch.setattr(
+        lang_core,
+        "_invoke",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("offline")),
+    )
+
+    schema = lang_core.library_schema(refresh=True)
+    assert len(schema["properties"]) == 54
+    assert schema["$defs"]["Card"]["required"] == ["children"]
+    assert list(schema["$defs"]["RadioItem"]["properties"]) == [
+        "label",
+        "description",
+        "value",
+    ]
+
+
+def test_committed_schema_matches_pinned_library() -> None:
+    if not lang_core.bridge_available():
+        pytest.skip("OpenUI bridge dependencies are unavailable")
+    live = lang_core.library_schema(refresh=True, allow_snapshot=False)
+    assert live == lang_core._schema_snapshot()

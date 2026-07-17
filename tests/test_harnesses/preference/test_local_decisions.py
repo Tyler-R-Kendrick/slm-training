@@ -7,6 +7,7 @@ import pytest
 from scripts.train_preference import main
 from slm_training.harnesses.preference.local_decisions import (
     DecisionEventV1,
+    counterfactual_evidence_from_traces,
     decision_event_manifest,
     events_from_trace,
     load_decision_events,
@@ -137,6 +138,9 @@ def test_counterfactual_requires_labels_recomputed_from_judge_probe() -> None:
 
     event = events_from_trace(trace)[0]
     assert event.evidence_kind == "counterfactual"
+    evidence = counterfactual_evidence_from_traces([trace])
+    assert len(evidence) == 1
+    assert evidence[0]["probe"] == probe
     decision["good_token_ids"] = [4]
     with pytest.raises(ValueError, match="does not match judge probe"):
         events_from_trace(trace)
@@ -157,10 +161,12 @@ def test_build_local_events_cli(tmp_path, capsys) -> None:
     source = tmp_path / "source-manifest.json"
     source.write_text('{"content_fingerprint":"source-sha"}')
     manifest = tmp_path / "manifest.json"
+    evidence = tmp_path / "evidence.jsonl"
     assert main(
         [
             "build-local-events", "--traces", str(traces), "--out", str(out),
             "--manifest-out", str(manifest), "--dataset-id", "events-v1",
+            "--evidence-out", str(evidence),
             "--source-record-manifest", str(source),
         ]
     ) == 0
@@ -169,6 +175,8 @@ def test_build_local_events_cli(tmp_path, capsys) -> None:
     assert data["record_count"] == 1
     assert data["source_record_fingerprint"] == "source-sha"
     assert data["policy_checkpoint_sha"] == "checkpoint-sha"
+    assert data["judge_evidence_count"] == 0
+    assert evidence.read_text() == ""
     assert json.loads(capsys.readouterr().out)["events"] == 1
 
 

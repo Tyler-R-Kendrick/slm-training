@@ -84,6 +84,7 @@ def main(argv: list[str] | None = None) -> int:
         default=Path("outputs/data/preference/local_decisions.jsonl"),
     )
     events.add_argument("--manifest-out", type=Path, default=None)
+    events.add_argument("--evidence-out", type=Path, default=None)
     events.add_argument("--dataset-id", default=None)
     events.add_argument("--source-record-manifest", type=Path, default=None)
     events.add_argument(
@@ -118,11 +119,13 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "build-local-events":
         from slm_training.harnesses.preference.local_decisions import (
+            counterfactual_evidence_from_traces,
             decision_event_manifest,
             events_from_trace,
             load_trace_rows,
             write_decision_events,
             write_decision_event_manifest,
+            write_counterfactual_evidence,
         )
 
         traces = load_trace_rows(args.traces)
@@ -134,6 +137,9 @@ def main(argv: list[str] | None = None) -> int:
             or event.evidence_kind == args.evidence_kind
         ]
         count = write_decision_events(args.out, mined)
+        evidence = counterfactual_evidence_from_traces(traces)
+        if args.evidence_out is not None:
+            write_counterfactual_evidence(args.evidence_out, evidence)
         if args.manifest_out is not None:
             if not args.dataset_id:
                 parser.error("--manifest-out requires --dataset-id")
@@ -152,9 +158,16 @@ def main(argv: list[str] | None = None) -> int:
                     if trace.get("trace_id")
                 ),
                 source_record_fingerprint=source_fingerprint,
+                evidence_path=(args.evidence_out.name if args.evidence_out else None),
+                evidence_rows=evidence,
             )
             write_decision_event_manifest(args.manifest_out, manifest)
-        print(json.dumps({"events": count, "out": str(args.out)}, indent=2))
+        print(
+            json.dumps(
+                {"events": count, "evidence": len(evidence), "out": str(args.out)},
+                indent=2,
+            )
+        )
         return 0
 
     if args.cmd == "train-local":

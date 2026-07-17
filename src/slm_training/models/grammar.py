@@ -64,6 +64,14 @@ def _token_surface_piece(tokenizer: OpenUITokenizer, token_id: int) -> str:
     return raw
 
 
+def _decode_prefix_text(
+    tokenizer: OpenUITokenizer, prefix_ids: list[int]
+) -> str:
+    from slm_training.dsl.grammar.fastpath.token_map import decode_prefix
+
+    return decode_prefix(tokenizer, prefix_ids)
+
+
 def set_active_dsl(dsl: str | None) -> None:
     """Select grammar backend id used by stream_check / structural priors."""
     global _ACTIVE_DSL, _STREAM_CACHE, _STRUCT_ID_CACHE, _BIAS_CACHE
@@ -226,6 +234,8 @@ class GrammarDecodeState:
         from slm_training.models.decode_stats import get_active_stats
 
         stats = get_active_stats()
+        from slm_training.dsl.grammar.fastpath.token_map import decode_prefix
+
         if prefix_ids == self.prefix_ids:
             return self.prefix_text
         t0 = time.perf_counter()
@@ -236,12 +246,12 @@ class GrammarDecodeState:
             # Append-only growth — decode only the new suffix tokens.
             extra = prefix_ids[len(self.prefix_ids) :]
             if extra:
-                chunk = tokenizer.decode(extra)
+                chunk = decode_prefix(tokenizer, extra)
                 self.prefix_text = self.prefix_text + chunk
             self.prefix_ids = list(prefix_ids)
         else:
             self.prefix_ids = list(prefix_ids)
-            self.prefix_text = tokenizer.decode(prefix_ids) if prefix_ids else ""
+            self.prefix_text = decode_prefix(tokenizer, prefix_ids) if prefix_ids else ""
         self.clear_position_memo()
         if stats is not None:
             stats.detok_ms += (time.perf_counter() - t0) * 1000.0
@@ -320,7 +330,7 @@ def force_emit_token_id(
             return None
         stats = get_active_stats()
         t0 = time.perf_counter()
-        prefix_text = tokenizer.decode(prefix_ids)
+        prefix_text = _decode_prefix_text(tokenizer, prefix_ids)
         if stats is not None:
             stats.detok_ms += (time.perf_counter() - t0) * 1000.0
     stats = get_active_stats()
@@ -374,7 +384,7 @@ def contract_allowed_token_ids(
     except Exception:  # noqa: BLE001
         pass
 
-    prefix_text = tokenizer.decode(prefix_ids)
+    prefix_text = _decode_prefix_text(tokenizer, prefix_ids)
     if not _incomplete_quoted_string(prefix_text):
         return None
 
@@ -443,7 +453,7 @@ def dfa_admits_token(
         else:
             stats = get_active_stats()
             t0 = time.perf_counter()
-            prefix_text = tokenizer.decode(prefix_ids)
+            prefix_text = _decode_prefix_text(tokenizer, prefix_ids)
             if stats is not None:
                 stats.detok_ms += (time.perf_counter() - t0) * 1000.0
 
@@ -568,7 +578,11 @@ def _placeholder_interior_allowed_ids(
     prefix_text: str | None = None,
 ) -> set[int] | None:
     """When inside a quoted `:placeholder`, allow compositional subtoken ids."""
-    text = prefix_text if prefix_text is not None else tokenizer.decode(prefix_ids)
+    text = (
+        prefix_text
+        if prefix_text is not None
+        else _decode_prefix_text(tokenizer, prefix_ids)
+    )
     if not _incomplete_quoted_string(text):
         return None
     last_open = text.rfind('"')
@@ -638,7 +652,7 @@ def pick_constrained_token(
         skip_exact = bool(state.skip_exact_stream_probe)
     else:
         t0 = time.perf_counter()
-        prefix_text = tokenizer.decode(prefix_ids)
+        prefix_text = _decode_prefix_text(tokenizer, prefix_ids)
         if stats is not None:
             stats.detok_ms += (time.perf_counter() - t0) * 1000.0
         engine = _dfa_engine()
@@ -763,20 +777,32 @@ def pick_constrained_token(
     if stats is not None and singleton_allowed is not None:
         stats.constrained_last_legal_candidates = 1
 
-    def _invalid_component_close(tid: int) -> bool:
-        if tokenizer.id_to_token.get(tid, "") != ")":
-            return False
-        try:
-            from slm_training.dsl.parser import validate
+    compiler_candidates: set[int] | None = None
 
-            validate(prefix_text + ")")
-        except Exception as exc:  # noqa: BLE001
-            message = str(exc)
-            return any(
-                marker in message
-                for marker in ("excess-args", "excess args", "missing-required")
-            )
-        return False
+    def _compiler_admits(tid: int) -> bool:
+        nonlocal compiler_candidates
+        try:
+            from slm_training.models.dsl_tokenizer import is_dsl_native_tokenizer
+
+            if not is_dsl_native_tokenizer(tokenizer):
+                return True
+            if compiler_candidates is None:
+                from slm_training.dsl.grammar.fastpath.compiler_draft import (
+                    build_completion_forest,
+                )
+
+                forest = build_completion_forest(
+                    tokenizer,
+                    prefix_ids,
+                    state=state,
+                    slot_contract=slot_contract,
+                )
+                if forest.coverage != "complete":
+                    return True
+                compiler_candidates = set(forest.candidate_ids)
+            return int(tid) in compiler_candidates
+        except Exception:  # noqa: BLE001
+            return True
 
     def _legal(token_id: int, *, stream: bool = True) -> bool:
         tid = int(token_id)
@@ -848,9 +874,11 @@ def pick_constrained_token(
                     return False
             elif tid not in contract_allowed:
                 return False
+        if not _compiler_admits(tid):
+            return False
         # A singleton admission already proves lexical legality. Apply this
         # only after special-token, semantic, and contract checks above.
-        if singleton_allowed == tid and not _invalid_component_close(tid):
+        if singleton_allowed == tid:
             return True
         # R1: when the DFA already lists this id in an exact (non-broad) accept
         # set, skip the redundant copy-probe admit — set_prefix + allowed_id_set
@@ -919,11 +947,6 @@ def pick_constrained_token(
         if not (skip_exact or exact_terminals) and not _stream_probe_ok(
             tokenizer, prefix_ids, tid, prefix_text=prefix_text
         ):
-            return False
-        # Semantic arity is only decidable at a closing component delimiter.
-        # Missing or excess required arguments cannot be repaired after `)`;
-        # reject that close while preserving errors about later bindings.
-        if _invalid_component_close(tid):
             return False
         return True
 
