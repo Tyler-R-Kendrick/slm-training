@@ -1280,6 +1280,15 @@ must derive broad exact states from grammar/AST-aligned judged trajectories, not
 probe more states from the same poor model completions. Full evidence:
 [iter-e259-expanded-counterfactual-probe-20260716.md](iter-e259-expanded-counterfactual-probe-20260716.md).
 
+E260 tested that grammar/AST lever on 10 records. Forty exact gold-derived states
+produced 30 qualified events across 11 decision kinds and nine prompt groups,
+including six events from two stable held-out groups. Gold remained outside model
+context; retained probes pair a gold-selected completion with policy-completed
+legal alternatives and independent judge evidence. The bounded hypothesis is
+confirmed, but training remains blocked until the identical all-record run is
+persisted and audited. Full evidence:
+[iter-e260-gold-ast-counterfactual-probe-20260716.md](iter-e260-gold-ast-counterfactual-probe-20260716.md).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
