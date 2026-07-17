@@ -5632,6 +5632,12 @@ class TwoTowerModel(nn.Module):
                     remasks=step_remasks,
                 )
 
+        if asap is not None:
+            active_stats = get_active_stats()
+            if active_stats is not None:
+                active_stats.asap_penalties += asap.penalties
+                active_stats.asap_positions += len(asap._removed)
+
         if unknown.any():
             if use_grammar:
                 ids = self._constrained_ltr_repair(

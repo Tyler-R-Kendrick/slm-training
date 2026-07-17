@@ -1244,6 +1244,44 @@ narrative:
 [iter-e257-c1-relative-bind-20260716.md](iter-e257-c1-relative-bind-20260716.md).
 Same honesty envelope as the B4 pair.
 
+## V12 A2 ASAp distribution-aware constrained decode (fixture-run 2026-07-17)
+
+Track A2 (Grammar-Aligned Decoding / ASAp,
+[2405.21047](https://arxiv.org/abs/2405.21047), **Adapted**: only the adaptive
+removal of observed constraint-violating mass is reused, transplanted from
+ASAp's prefix trie onto the MaskGIT canvas position — no
+sampling-until-acceptance loop, no convergence guarantee): `asap_decode`
+(`models/parallel_decode.py::AsapLedger`) removes admit-reject and grammar
+stream hard-error mass from the next proposal at that position and gives
+unmask ordering the post-removal confidence. Decode-only, eval-only row routed
+through the frozen E255 checkpoint via `--parent` — matched pair differing
+only in `asap_decode` (enforced by `tests/test_scripts/test_quality_matrix_v12.py`).
+
+| ID | Isolated lever | Baseline | Status |
+| --- | --- | --- | --- |
+| E259 | `asap_decode=True` (A2 ASAp mass removal) | E255 recorded eval | fixture-run |
+
+### V12 measured results (CPU, fixture-grade, 2026-07-17)
+
+Recipe: eval-only overlay on `qx_e255_b4_scratch_control/best_weighted_nll.pt`,
+fixture v1 corpus, suites smoke 3 / held_out 5 / adversarial 4 / ood 4 /
+rico_held 0, parallel MaskGIT decode, `--rico-limit 3`. JSON:
+[quality-matrix-results-iter-v12-a2-20260717.json](quality-matrix-results-iter-v12-a2-20260717.json);
+narrative + honesty envelope:
+[iter-e259-a2-asap-decode-20260717.md](iter-e259-a2-asap-decode-20260717.md).
+Ledger telemetry proves the lever is live: 204–334 `asap_penalties` across
+32–53 distinct positions per suite; two runs produced byte-identical metrics.
+
+Honest gates still fail on both rows (syntax/meaningful parse 0.0 — the
+fixture-scale placeholder-policy wall Track A targets at frontier scale, not
+here). Secondary signals, structural similarity E255 → E259:
+smoke 0.30 → 0.265, held_out 0.323 → 0.248, adversarial 0.281 → 0.370,
+ood 0.372 → 0.278 — decode behavior demonstrably diverges under the ledger,
+with mixed noise-level deltas at n≤5 per suite. **Wiring evidence only**: the
+fixture budget cannot decide the ASAp hypothesis; the A2 verdict requires the
+frontier checkpoints (GPU host, n=1500 RICO bar) where the A1-diagnosed
+constraint distortion actually binds.
+
 E256 then ran the repaired path across all 65 E230 document records. It
 persisted 16 independently judged counterfactual events and their full probes
 as an immutable source corpus: 14 train and two held-out events across eight
