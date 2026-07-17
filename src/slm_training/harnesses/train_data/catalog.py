@@ -60,6 +60,7 @@ KNOWN_FAMILIES = (
 
 _SYNTH_TO_FAMILY = {
     "template": "prompt_paraphrase",
+    "component_prompt": "prompt_paraphrase",
     "layout_augment": "layout_augment",
     "namespace_augment": "namespace_augment",
     "corruption_repair": "corruption_repair",

@@ -1,0 +1,26 @@
+{
+  "iteration": "E306",
+  "date": "2026-07-17",
+  "run_id": "e306-component-coverage-diagnostic",
+  "train_records": 480,
+  "train_component_occurrences": 1829,
+  "train_component_types": 54,
+  "rare_below": 5,
+  "component_coverage": {
+    "smoke": {"occurrence": 1.0, "type": 1.0, "unseen_types": [], "rare_types": []},
+    "held_out": {"occurrence": 1.0, "type": 1.0, "unseen_types": [], "rare_types": []},
+    "adversarial": {"occurrence": 1.0, "type": 1.0, "unseen_types": [], "rare_types": []},
+    "ood": {"occurrence": 1.0, "type": 1.0, "unseen_types": [], "rare_types": []},
+    "rico_held": {"occurrence": 1.0, "type": 1.0, "unseen_types": [], "rare_types": []}
+  },
+  "lexical_coverage": {
+    "smoke": {"openui_tokens": 0.95, "placeholder_tokens": 0.84375},
+    "held_out": {"openui_tokens": 0.8752293577981651, "placeholder_tokens": 0.7606382978723404},
+    "adversarial": {"openui_tokens": 0.87248322147651, "placeholder_tokens": 0.7804878048780488},
+    "ood": {"openui_tokens": 0.8678304239401496, "placeholder_tokens": 0.7702702702702703},
+    "rico_held": {"openui_tokens": 0.8389982110912344, "placeholder_tokens": 0.8472222222222222}
+  },
+  "length_budget_ok": true,
+  "agentv": {"total": 1, "passed": 1, "failed": 0, "execution_errors": 0},
+  "verdict": "Component types are fully supported; target lexical diversity and prompt-to-component alignment rather than raw component presence."
+}

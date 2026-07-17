@@ -8,6 +8,7 @@ from pathlib import Path
 from slm_training.dsl.schema import ExampleRecord, write_jsonl
 from slm_training.harnesses.model_build.diagnostic import (
     ceiling_report,
+    component_coverage_report,
     score_gold_as_prediction,
 )
 from slm_training.models.tokenizer import OpenUITokenizer, tokenize_text
@@ -94,6 +95,41 @@ def test_ceiling_report_fixture_suites(tmp_path: Path) -> None:
     board = ceiling_report(tmp_path, suites=("smoke",))
     assert board["smoke"]["parse_rate"] == 1.0
     assert board["smoke"]["placeholder_fidelity"] == 1.0
+
+
+def test_component_coverage_reports_unseen_and_rare_types(tmp_path: Path) -> None:
+    train_dir = tmp_path / "train"
+    train_dir.mkdir()
+    write_jsonl(
+        train_dir / "records.jsonl",
+        [ExampleRecord(id="tr", prompt="text", openui='root = TextContent(":x")')],
+    )
+    suite_dir = tmp_path / "eval" / "suites" / "smoke"
+    suite_dir.mkdir(parents=True)
+    write_jsonl(
+        suite_dir / "records.jsonl",
+        [
+            ExampleRecord(
+                id="sm",
+                prompt="card",
+                openui='root = Card([TextContent(":x")])',
+            )
+        ],
+    )
+    report = component_coverage_report(
+        train_dir,
+        tmp_path / "eval",
+        suites=("smoke",),
+        rare_below=2,
+    )
+    smoke = report["suites"]["smoke"]
+    assert smoke["unseen_types"] == ["Card"]
+    assert smoke["type_coverage"] == 0.5
+    assert smoke["occurrence_coverage"] == 0.5
+    assert {row["component"] for row in smoke["rare_types"]} == {
+        "Card",
+        "TextContent",
+    }
 
 
 def test_length_budget_flags_truncation() -> None:

@@ -1,0 +1,74 @@
+{
+  "id": "E307",
+  "date": "2026-07-17",
+  "objective": "Replace edit-like generation requests with deterministic schema-generic prompts that expose component inventory and content concepts.",
+  "implementation": {
+    "synthesizer": "component",
+    "component_source": "target component counts",
+    "component_rendering": "CamelCase schema names rendered as natural words",
+    "content_source": "terminal placeholder path segments with underscores rendered as spaces",
+    "source_family": "prompt_paraphrase",
+    "eval_gold_used": false
+  },
+  "recipe": {
+    "source": "existing",
+    "derive_from": "src/slm_training/resources/data/train/e218_schema_normalized_judge_v5/records.jsonl",
+    "language_contract_regeneration": false,
+    "frontier_artifacts": false,
+    "edit_derivatives": false,
+    "repairs_per_program": 0,
+    "allow_missing_design_md": true,
+    "publish_path": "src/slm_training/resources/data/train/e307_component_prompt_v4",
+    "device": "cpu",
+    "training_steps": 0
+  },
+  "build": {
+    "seed_records": 480,
+    "collected_records": 599,
+    "kept_records": 592,
+    "component_prompt_records": 112,
+    "verifier_rejected": 7,
+    "quality_rejected": 0,
+    "errors": 0,
+    "content_fingerprint": "62f408c85ba7fa67606bd8deecb904cecb58f78255fc4ef101b7e7c4afa60259",
+    "reproduction_fingerprint": "62f408c85ba7fa67606bd8deecb904cecb58f78255fc4ef101b7e7c4afa60259",
+    "trace_id": "06708d814696aa3bf3fee022997c1379"
+  },
+  "prompt_alignment": {
+    "e218_generation_rows": 119,
+    "e218_any_component_mention": 15,
+    "e218_full_inventory_mention": 1,
+    "e307_generation_rows": 231,
+    "e307_any_component_mention": 127,
+    "e307_full_inventory_mention": 111,
+    "note": "Two valid Buttons rows remain intentionally ambiguous to the plural-aware mention scanner; the independent admission judge accepts them."
+  },
+  "integrity": {
+    "eval_records_checked": 19,
+    "contaminated_records": 0,
+    "component_type_coverage_all_suites": 1.0,
+    "train_target_p95_tokens": 93,
+    "train_target_max_tokens": 112,
+    "over_256_tokens": 0,
+    "agentv": {
+      "total": 1,
+      "passed": 1,
+      "failed": 0
+    }
+  },
+  "rejected_build_controls": [
+    {
+      "version": "v1",
+      "reason": "A second global parent cap collapsed existing multi-task root families to 126 rows."
+    },
+    {
+      "version": "v2",
+      "reason": "Default language-contract regeneration replaced existing task derivatives and reduced the source to 247 seeds."
+    },
+    {
+      "version": "v3",
+      "reason": "Raw CamelCase names did not match natural-language component tokenization."
+    }
+  ],
+  "verdict": "Accept the leak-free deterministic corpus for a matched scratch train. This is data-build evidence, not model quality or a ship claim."
+}

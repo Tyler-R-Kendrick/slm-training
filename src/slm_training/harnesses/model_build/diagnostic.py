@@ -10,6 +10,7 @@ from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.schema import ExampleRecord, load_jsonl
 from slm_training.harnesses.model_build.data import load_suite_records
 from slm_training.harnesses.model_build.eval_runner import (
+    _component_multiset,
     _is_meaningful_program,
     _placeholder_fidelity,
     _placeholder_validity,
@@ -131,6 +132,65 @@ def ceiling_report(
             "failures": [r for r in rows if not r["parse_ok"] or r["placeholder_fidelity"] < 1.0],
         }
     return out
+
+
+def component_coverage_report(
+    train_dir: Path,
+    test_dir: Path,
+    *,
+    suites: tuple[str, ...] = ("smoke", "held_out", "adversarial", "ood", "rico_held"),
+    rare_below: int = 5,
+) -> dict[str, Any]:
+    """Report eval component-type support in the training corpus."""
+    train_counts: dict[str, int] = {}
+    for record in load_jsonl(train_dir / "records.jsonl"):
+        for name, count in _component_multiset(record.openui).items():
+            train_counts[name] = train_counts.get(name, 0) + count
+
+    suite_reports: dict[str, Any] = {}
+    for suite in suites:
+        try:
+            records = load_suite_records(test_dir, suite)
+        except FileNotFoundError:
+            continue
+        gold_counts: dict[str, int] = {}
+        for record in records:
+            for name, count in _component_multiset(record.openui).items():
+                gold_counts[name] = gold_counts.get(name, 0) + count
+        total = sum(gold_counts.values())
+        supported = sum(
+            count for name, count in gold_counts.items() if train_counts.get(name, 0)
+        )
+        types = sorted(gold_counts)
+        suite_reports[suite] = {
+            "n": len(records),
+            "gold_component_occurrences": total,
+            "gold_component_types": len(types),
+            "occurrence_coverage": supported / total if total else 1.0,
+            "type_coverage": (
+                sum(1 for name in types if train_counts.get(name, 0)) / len(types)
+                if types
+                else 1.0
+            ),
+            "unseen_types": [
+                name for name in types if not train_counts.get(name, 0)
+            ],
+            "rare_types": [
+                {
+                    "component": name,
+                    "train_occurrences": train_counts.get(name, 0),
+                    "eval_occurrences": gold_counts[name],
+                }
+                for name in types
+                if train_counts.get(name, 0) < rare_below
+            ],
+        }
+    return {
+        "train_component_occurrences": sum(train_counts.values()),
+        "train_component_types": len(train_counts),
+        "rare_below": rare_below,
+        "suites": suite_reports,
+    }
 
 
 def _percentile(sorted_vals: Sequence[int], p: float) -> int:
@@ -257,6 +317,7 @@ def run_full_diagnostic(
 ) -> dict[str, Any]:
     return {
         "vocab_coverage": vocab_coverage_report(train_dir, test_dir).to_dict(),
+        "component_coverage": component_coverage_report(train_dir, test_dir),
         "ceiling": ceiling_report(test_dir),
         "length_budget": length_budget_report(
             train_dir=train_dir,

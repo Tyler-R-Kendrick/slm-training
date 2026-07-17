@@ -1855,6 +1855,33 @@ component-type supervision/data. See
 [results](iter-e305-choice-slot-safe-content-20260717.md) and
 [JSON](choice-slot-safe-results-iter-e305-20260717.json).
 
+## E306 component coverage diagnostic (CPU, 2026-07-17)
+
+The canonical diagnostic now measures train support for eval component types.
+All five suites have 1.0 occurrence/type coverage, no unseen types, and no type
+below five train occurrences. By contrast, held/OOD OpenUI lexical coverage is
+0.8752/0.8678 and placeholder lexical coverage is 0.7606/0.7703.
+
+**Verdict:** target lexical diversity and prompt-to-component alignment through
+the judged synthesis pipeline; do not add redundant component-only rows. See
+[results](iter-e306-component-coverage-diagnostic-20260717.md) and
+[JSON](component-coverage-results-iter-e306-20260717.json).
+
+## E307 component-prompt synthesis (CPU data build, 2026-07-17)
+
+A new schema-generic synthesizer describes each eligible target's component
+inventory and terminal content concepts in natural prose. The immutable
+592-row v4 corpus preserves all 480 E218 roots and adds 112 admitted variants;
+seven G11 failures stay rejected. Generation prompts naming any target
+component rise 15/119→127/231 and full-inventory mentions rise 1/119→111/231.
+The build reproduces at fingerprint `62f408c85ba7…`, has zero overlap across
+19 eval records, fits the 256-token budget, and publishes AgentV 1/1.
+
+**Verdict:** accept as training input for a matched scratch comparison. This is
+data-build evidence, not a model or ship result. See
+[results](iter-e307-component-prompt-synthesis-20260717.md) and
+[JSON](component-prompt-synthesis-results-iter-e307-20260717.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

@@ -79,13 +79,17 @@ def main(argv: list[str] | None = None) -> int:
         choices=[
             "quality",
             "template",
+            "component",
             "layout",
             "frontier",
             "none",
             "noop",
             "off",
         ],
-        help="Deterministic synthesizer (default: quality = layout aug + templates).",
+        help=(
+            "Deterministic synthesizer (default: quality = layout aug + templates; "
+            "component = target inventory + content-concept prompt)."
+        ),
     )
     parser.add_argument(
         "--programspec-path",

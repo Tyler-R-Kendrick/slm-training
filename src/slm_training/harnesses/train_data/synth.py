@@ -58,6 +58,64 @@ class TemplateSynthesizer:
         return out
 
 
+class ComponentPromptSynthesizer:
+    """Describe a target's component inventory and content concepts in prose."""
+
+    @staticmethod
+    def _quantity(name: str, count: int) -> str:
+        name = re.sub(r"(?<!^)(?=[A-Z])", " ", name)
+        if count == 1:
+            return f"one {name}"
+        return f"{count} {name} components"
+
+    @staticmethod
+    def _join(items: list[str]) -> str:
+        if len(items) < 2:
+            return "".join(items)
+        if len(items) == 2:
+            return " and ".join(items)
+        return f"{', '.join(items[:-1])}, and {items[-1]}"
+
+    def expand(self, record: ExampleRecord) -> list[ExampleRecord]:
+        from slm_training.data.quality import component_counts
+
+        counts = component_counts(record.openui)
+        if not counts:
+            return []
+        inventory = [
+            self._quantity(name, count) for name, count in counts.items()
+        ]
+        concepts = list(
+            dict.fromkeys(
+                placeholder.rsplit(".", 1)[-1].lstrip(":").replace("_", " ")
+                for placeholder in record.placeholders
+                if placeholder.strip(":")
+            )
+        )
+        prompt = f"Build an OpenUI layout with {self._join(inventory)}."
+        if concepts:
+            prompt += f" Include content slots for {self._join(concepts)}."
+        return [
+            ExampleRecord(
+                id=f"{record.id}_component_prompt",
+                prompt=prompt,
+                openui=record.openui,
+                placeholders=list(record.placeholders),
+                split=record.split,
+                source=f"{record.source}+component_prompt",
+                meta={
+                    **record.meta,
+                    "synth": "component_prompt",
+                    "task": "generation",
+                    "parent_id": record.id,
+                    "component_inventory": dict(counts),
+                    "content_concepts": concepts,
+                },
+                design_md=record.design_md,
+            )
+        ]
+
+
 class LayoutAugmentSynthesizer:
     """
     Deterministic structural augmentations.
@@ -313,6 +371,8 @@ def get_synthesizer(name: str) -> PromptSynthesizer:
         return NoopSynthesizer()
     if name in {"template", "templates"}:
         return TemplateSynthesizer()
+    if name in {"component", "component_prompt", "inventory"}:
+        return ComponentPromptSynthesizer()
     if name in {"layout", "layout_augment", "aug"}:
         return LayoutAugmentSynthesizer()
     if name in {"namespace", "namespace_augment", "ns"}:

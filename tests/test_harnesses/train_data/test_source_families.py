@@ -16,6 +16,7 @@ from slm_training.harnesses.train_data.catalog import (
     family_stats,
     resolve_lineage,
 )
+from slm_training.harnesses.train_data.synth import ComponentPromptSynthesizer
 
 pytestmark_bridge = pytest.mark.skipif(
     not bridge_available(),
@@ -67,6 +68,41 @@ def test_classify_source_family() -> None:
         )
         == "namespace_augment"
     )
+    assert (
+        classify_source_family(
+            _record(
+                "a_component_prompt",
+                "fixture+component_prompt",
+                synth="component_prompt",
+                parent_id="a",
+            )
+        )
+        == "prompt_paraphrase"
+    )
+
+
+def test_component_prompt_synthesizer_describes_inventory_and_content() -> None:
+    [derived] = ComponentPromptSynthesizer().expand(
+        ExampleRecord(
+            id="hero",
+            prompt="Update hero content.",
+            openui=HERO,
+            placeholders=[":shop.hero_title", ":shop.hero_body"],
+            split="train",
+            meta={"task": "generation"},
+        )
+    )
+    assert derived.prompt == (
+        "Build an OpenUI layout with one Stack, 2 Text Content components, "
+        "and one Card. Include content slots for hero title and hero body."
+    )
+    assert derived.openui == HERO
+    assert derived.meta["component_inventory"] == {
+        "Stack": 1,
+        "TextContent": 2,
+        "Card": 1,
+    }
+    assert derived.meta["content_concepts"] == ["hero title", "hero body"]
 
 
 def test_resolve_lineage_walks_to_root() -> None:
