@@ -325,6 +325,15 @@ def _x_experiments(
             scope_contract_negatives=True,
             design_md_in_context=design_md_in_context,
         ),
+        GrammarExperiment(
+            "X22",
+            "gx_x22_kapur_tree_edit",
+            "D3 Kapur-style baseline: all-valid tree edits + value-guided search",
+            train_v1,
+            model_name="tree_edit_diffusion",
+            slot_contract_in_context=True,
+            design_md_in_context=design_md_in_context,
+        ),
     ]
 
 

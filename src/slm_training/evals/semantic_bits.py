@@ -34,16 +34,24 @@ from typing import Any, Iterable
 
 from slm_training.dsl.production_codec import (
     BUILTIN_PREFIX,
+    CHOICE_STMT_MARKERS,
+    CLOSE,
     DIR_PREFIX,
+    LIST_CLOSE,
+    LIST_OPEN,
     LIT_PREFIX,
+    MEMBER_PREFIX,
     NAME_PREFIX,
+    OBJ_CLOSE,
+    OBJ_OPEN,
     OPEN_PREFIX,
+    OP_PREFIX,
     PUNCT_PREFIX,
     REF_PREFIX,
     SLOT_PREFIX,
     STATE_REF_PREFIX,
+    encode_choices,
     encode_openui,
-    to_choice_stream,
 )
 
 # Token first-character → semantic category, for a transparent breakdown.
@@ -69,6 +77,29 @@ def categorize(token: str) -> str:
     return "structural"
 
 
+# B1 (SLM-42): choice-stream token categories. The choice stream carries only
+# semantic decisions, so tokens the production categorizer would have called
+# "structural" get honest decision categories instead: statement-production
+# choices ("statement"), arity/shape choices ("arity"), operator choices
+# ("operator"), and member-access choices ("member"). A residual "structural"
+# count in a choice stream is a bug.
+_CHOICE_MARKERS = frozenset(CHOICE_STMT_MARKERS)
+_CHOICE_ARITY = frozenset({CLOSE, LIST_OPEN, LIST_CLOSE, OBJ_OPEN, OBJ_CLOSE})
+
+
+def categorize_choice(token: str) -> str:
+    """Classify a choice-stream token into a semantic-decision category."""
+    if token in _CHOICE_MARKERS:
+        return "statement"
+    if token in _CHOICE_ARITY:
+        return "arity"
+    if token.startswith(OP_PREFIX):
+        return "operator"
+    if token.startswith(MEMBER_PREFIX):
+        return "member"
+    return categorize(token)
+
+
 @dataclass(frozen=True)
 class SemanticBitsConfig:
     # Count slot-pointer tokens ("@i") as decisions. Slots are genuine filler
@@ -89,25 +120,30 @@ def _openui_of(record: Any) -> tuple[str, list[str] | None]:
     return str(openui or ""), (list(placeholders) if placeholders else None)
 
 
-def _production_tokens(
-    record: Any, cfg: SemanticBitsConfig, *, choice: bool = False
-) -> list[str]:
+def _production_tokens(record: Any, cfg: SemanticBitsConfig) -> list[str]:
     source, placeholders = _openui_of(record)
     if not source.strip():
         return []
-    try:
-        program = encode_openui(source, slot_contract=placeholders)
-    except Exception:  # noqa: BLE001 - codec-unencodable contributes nothing
-        # Mirrors the surface stream's policy. The skip is visible, never
-        # silent: n_scored_programs < n_programs in the report (e.g. rootless
-        # language-contract records the document codec cannot encode).
-        return []
-    # B1 choice stream: elide grammar-forced framing BEFORE category filtering
-    # (the transform needs the framing intact to locate statement boundaries).
-    stream = to_choice_stream(program.tokens) if choice else program.tokens
+    program = encode_openui(source, slot_contract=placeholders)
     tokens: list[str] = []
-    for token in stream:
+    for token in program.tokens:
         cat = categorize(token)
+        if cat == "slot" and not cfg.include_slots:
+            continue
+        if cat == "literal" and not cfg.include_literals:
+            continue
+        tokens.append(token)
+    return tokens
+
+
+def _choice_tokens(record: Any, cfg: SemanticBitsConfig) -> list[str]:
+    source, placeholders = _openui_of(record)
+    if not source.strip():
+        return []
+    program = encode_choices(source, slot_contract=placeholders)
+    tokens: list[str] = []
+    for token in program.tokens:
+        cat = categorize_choice(token)
         if cat == "slot" and not cfg.include_slots:
             continue
         if cat == "literal" and not cfg.include_literals:
@@ -160,17 +196,17 @@ def semantic_bits(
 ) -> dict[str, Any]:
     """Bits-per-decision for one representation over a corpus.
 
-    ``stream`` is ``"production"`` (grammar choice points), ``"choice"`` (the B1
-    choice-sequence stream — production minus grammar-forced framing), or
-    ``"surface"`` (compiler lexemes). ``params`` (a model's trainable parameter
-    count) adds a ``params_per_bit`` field.
+    ``stream`` is ``"production"`` (grammar choice points), ``"choice"``
+    (B1 pure grammar-choice stream: semantic decisions only), or ``"surface"``
+    (compiler lexemes). ``params`` (a model's trainable parameter count) adds a
+    ``params_per_bit`` field.
     """
     cfg = config or SemanticBitsConfig()
     records = list(records)
     if stream == "production":
         per_program = [_production_tokens(r, cfg) for r in records]
     elif stream == "choice":
-        per_program = [_production_tokens(r, cfg, choice=True) for r in records]
+        per_program = [_choice_tokens(r, cfg) for r in records]
     elif stream == "surface":
         per_program = [_surface_tokens(r) for r in records]
     else:  # pragma: no cover - guarded by callers/tests
@@ -189,8 +225,11 @@ def semantic_bits(
             ),
         }
     )
-    if stream in ("production", "choice"):
+    if stream == "production":
         cats = Counter(categorize(tok) for tok in flat)
+        report["by_category"] = dict(sorted(cats.items()))
+    elif stream == "choice":
+        cats = Counter(categorize_choice(tok) for tok in flat)
         report["by_category"] = dict(sorted(cats.items()))
     if params is not None and report["total_bits"] > 0:
         report["params"] = int(params)
@@ -204,7 +243,7 @@ def compare_representations(
     config: SemanticBitsConfig | None = None,
     params: int | None = None,
 ) -> dict[str, Any]:
-    """Production vs choice vs surface bits, and the externalization ratios."""
+    """Production vs surface bits, and the externalization compression ratio."""
     records = list(records)
     production = semantic_bits(
         records, stream="production", config=config, params=params
@@ -214,32 +253,29 @@ def compare_representations(
     prod_bits = production["total_bits"]
     choice_bits = choice["total_bits"]
     surf_bits = surface["total_bits"]
-    # Ratios are only meaningful over the SAME scored programs. When a stream
-    # skips records the others score (e.g. rootless language-contract records
-    # the document codec cannot encode), cross-stream ratios would compare
-    # different corpora — report None and flag the mismatch instead.
-    scored = {
-        production["n_scored_programs"],
-        choice["n_scored_programs"],
-        surface["n_scored_programs"],
-    }
-    mismatch = len(scored) > 1
     return {
         "production": production,
         "choice": choice,
         "surface": surface,
-        "scored_programs_mismatch": mismatch,
         # >1 means externalizing the grammar shrinks the corpus's total choice
         # bits (fewer bits for the model to learn) relative to raw surface.
         "surface_to_production_bit_ratio": (
-            surf_bits / prod_bits if prod_bits > 0 and not mismatch else None
+            surf_bits / prod_bits if prod_bits > 0 else None
         ),
         "surface_to_choice_bit_ratio": (
-            surf_bits / choice_bits if choice_bits > 0 and not mismatch else None
+            surf_bits / choice_bits if choice_bits > 0 else None
+        ),
+        "production_to_choice_bit_ratio": (
+            prod_bits / choice_bits if choice_bits > 0 else None
         ),
         "decision_reduction_ratio": (
             surface["n_decisions"] / production["n_decisions"]
-            if production["n_decisions"] > 0 and not mismatch
+            if production["n_decisions"] > 0
+            else None
+        ),
+        "choice_decision_reduction_ratio": (
+            surface["n_decisions"] / choice["n_decisions"]
+            if choice["n_decisions"] > 0
             else None
         ),
     }

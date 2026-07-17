@@ -1,0 +1,1413 @@
+{
+  "objective": "ftpo_set",
+  "by_decision_kind": {
+    "bind_declaration_root": {
+      "dot": 0.0,
+      "cosine": 0.0,
+      "left_norm": 0.0,
+      "right_norm": 0.0,
+      "train": {
+        "event_count": 19,
+        "group_count": 19,
+        "evidence_kinds": {
+          "counterfactual": 19
+        },
+        "mean_evidence_confidence": 1.0
+      },
+      "held_out": {
+        "event_count": 6,
+        "group_count": 6,
+        "evidence_kinds": {
+          "counterfactual": 6
+        },
+        "mean_evidence_confidence": 1.0
+      }
+    },
+    "bind_reference_bound_children": {
+      "dot": 88.33185995717662,
+      "cosine": 0.10507285096958498,
+      "left_norm": 43.754827390303014,
+      "right_norm": 19.213252225704796,
+      "train": {
+        "event_count": 16,
+        "group_count": 16,
+        "evidence_kinds": {
+          "counterfactual": 16
+        },
+        "mean_evidence_confidence": 1.0
+      },
+      "held_out": {
+        "event_count": 4,
+        "group_count": 4,
+        "evidence_kinds": {
+          "counterfactual": 4
+        },
+        "mean_evidence_confidence": 1.0
+      }
+    },
+    "bind_reference_root_children": {
+      "dot": 57.546547297278295,
+      "cosine": 0.9948101471152285,
+      "left_norm": 5.619297081969763,
+      "right_norm": 10.294305968491775,
+      "train": {
+        "event_count": 17,
+        "group_count": 17,
+        "evidence_kinds": {
+          "counterfactual": 17
+        },
+        "mean_evidence_confidence": 1.0
+      },
+      "held_out": {
+        "event_count": 2,
+        "group_count": 2,
+        "evidence_kinds": {
+          "counterfactual": 2
+        },
+        "mean_evidence_confidence": 1.0
+      }
+    },
+    "component_bound": {
+      "dot": 1520.1932451238274,
+      "cosine": 0.6232151588061385,
+      "left_norm": 42.941920807494895,
+      "right_norm": 56.80405292404963,
+      "train": {
+        "event_count": 21,
+        "group_count": 21,
+        "evidence_kinds": {
+          "counterfactual": 21
+        },
+        "mean_evidence_confidence": 1.0
+      },
+      "held_out": {
+        "event_count": 4,
+        "group_count": 4,
+        "evidence_kinds": {
+          "counterfactual": 4
+        },
+        "mean_evidence_confidence": 1.0
+      }
+    },
+    "component_root": {
+      "dot": 30.459193935196538,
+      "cosine": 0.9988893642297844,
+      "left_norm": 4.589545506952468,
+      "right_norm": 6.644026205398998,
+      "train": {
+        "event_count": 18,
+        "group_count": 18,
+        "evidence_kinds": {
+          "counterfactual": 18
+        },
+        "mean_evidence_confidence": 1.0
+      },
+      "held_out": {
+        "event_count": 3,
+        "group_count": 3,
+        "evidence_kinds": {
+          "counterfactual": 3
+        },
+        "mean_evidence_confidence": 1.0
+      }
+    },
+    "grammar_comma": {
+      "dot": 14146.778064774346,
+      "cosine": 0.9166053966315074,
+      "left_norm": 117.07276722210226,
+      "right_norm": 131.83151611863263,
+      "train": {
+        "event_count": 23,
+        "group_count": 23,
+        "evidence_kinds": {
+          "counterfactual": 23
+        },
+        "mean_evidence_confidence": 1.0
+      },
+      "held_out": {
+        "event_count": 4,
+        "group_count": 4,
+        "evidence_kinds": {
+          "counterfactual": 4
+        },
+        "mean_evidence_confidence": 1.0
+      }
+    },
+    "grammar_rpar": {
+      "dot": 3398.3333025861457,
+      "cosine": 0.9840836991745808,
+      "left_norm": 67.11805106412206,
+      "right_norm": 51.45109194909457,
+      "train": {
+        "event_count": 21,
+        "group_count": 21,
+        "evidence_kinds": {
+          "counterfactual": 21
+        },
+        "mean_evidence_confidence": 1.0
+      },
+      "held_out": {
+        "event_count": 1,
+        "group_count": 1,
+        "evidence_kinds": {
+          "counterfactual": 1
+        },
+        "mean_evidence_confidence": 1.0
+      }
+    },
+    "grammar_rsqb_bound_empty": {
+      "dot": 7793.083306065336,
+      "cosine": 0.8959116431141707,
+      "left_norm": 73.03987602244887,
+      "right_norm": 119.09241736546535,
+      "train": {
+        "event_count": 3,
+        "group_count": 3,
+        "evidence_kinds": {
+          "counterfactual": 3
+        },
+        "mean_evidence_confidence": 1.0
+      },
+      "held_out": {
+        "event_count": 1,
+        "group_count": 1,
+        "evidence_kinds": {
+          "counterfactual": 1
+        },
+        "mean_evidence_confidence": 1.0
+      }
+    },
+    "grammar_rsqb_bound_populated": {
+      "dot": 21456.123246699957,
+      "cosine": 0.9917491547812864,
+      "left_norm": 140.41998640606238,
+      "right_norm": 154.07085387822463,
+      "train": {
+        "event_count": 7,
+        "group_count": 7,
+        "evidence_kinds": {
+          "counterfactual": 7
+        },
+        "mean_evidence_confidence": 1.0
+      },
+      "held_out": {
+        "event_count": 2,
+        "group_count": 2,
+        "evidence_kinds": {
+          "counterfactual": 2
+        },
+        "mean_evidence_confidence": 1.0
+      }
+    },
+    "grammar_rsqb_root_populated": {
+      "dot": 6219.977825025332,
+      "cosine": 0.9964950685594481,
+      "left_norm": 85.49563213118795,
+      "right_norm": 73.00788290134129,
+      "train": {
+        "event_count": 23,
+        "group_count": 23,
+        "evidence_kinds": {
+          "counterfactual": 23
+        },
+        "mean_evidence_confidence": 1.0
+      },
+      "held_out": {
+        "event_count": 4,
+        "group_count": 4,
+        "evidence_kinds": {
+          "counterfactual": 4
+        },
+        "mean_evidence_confidence": 1.0
+      }
+    },
+    "lit": {
+      "dot": 868.0689225485953,
+      "cosine": 0.8802789937220112,
+      "left_norm": 33.94266196670921,
+      "right_norm": 29.052798440689745,
+      "train": {
+        "event_count": 15,
+        "group_count": 15,
+        "evidence_kinds": {
+          "counterfactual": 15
+        },
+        "mean_evidence_confidence": 1.0
+      },
+      "held_out": {
+        "event_count": 5,
+        "group_count": 5,
+        "evidence_kinds": {
+          "counterfactual": 5
+        },
+        "mean_evidence_confidence": 1.0
+      }
+    },
+    "sym": {
+      "dot": 1497.1364975392416,
+      "cosine": 0.5616316709562523,
+      "left_norm": 48.16508867206165,
+      "right_norm": 55.34487916207116,
+      "train": {
+        "event_count": 15,
+        "group_count": 15,
+        "evidence_kinds": {
+          "counterfactual": 15
+        },
+        "mean_evidence_confidence": 1.0
+      },
+      "held_out": {
+        "event_count": 3,
+        "group_count": 3,
+        "evidence_kinds": {
+          "counterfactual": 3
+        },
+        "mean_evidence_confidence": 1.0
+      }
+    }
+  },
+  "train_only_decision_kinds": [
+    "bind_reference_bound_input",
+    "grammar_lsqb"
+  ],
+  "held_out_only_decision_kinds": [],
+  "train_minimum_norm_solver": {
+    "task_count": 14,
+    "active_task_count": 13,
+    "inactive_task_count": 1,
+    "iterations": 5000,
+    "duality_gap": 0.1305470135698812,
+    "converged": false,
+    "norm_sq": 4.363742876509176,
+    "min_task_dot": 0.0,
+    "min_active_task_dot": 4.217833784798339,
+    "common_descent": true,
+    "weight_by_decision_kind": {
+      "bind_declaration_root": 0.0,
+      "bind_reference_bound_children": 0.0,
+      "bind_reference_bound_input": 0.0,
+      "bind_reference_root_children": 0.13785625444289162,
+      "component_bound": 0.021173028158493572,
+      "component_root": 0.3489950103001482,
+      "grammar_comma": 0.19048174528894177,
+      "grammar_lsqb": 0.0030818647407315296,
+      "grammar_rpar": 0.16540625512907497,
+      "grammar_rsqb_bound_empty": 0.004014354299410508,
+      "grammar_rsqb_bound_populated": 0.0576507964822645,
+      "grammar_rsqb_root_populated": 0.06563545681086906,
+      "lit": 0.005705234347175952,
+      "sym": 0.0
+    }
+  },
+  "held_out_to_train_combination": {
+    "bind_declaration_root": {
+      "dot": 0.0,
+      "cosine": 0.0,
+      "left_norm": 0.0,
+      "right_norm": 2.0889619343059596
+    },
+    "bind_reference_bound_children": {
+      "dot": 5.869345062224049,
+      "cosine": 0.14623732437291237,
+      "left_norm": 19.213252225704796,
+      "right_norm": 2.0889619343059596
+    },
+    "bind_reference_root_children": {
+      "dot": 7.984347687295554,
+      "cosine": 0.3712887942040269,
+      "left_norm": 10.294305968491775,
+      "right_norm": 2.0889619343059596
+    },
+    "component_bound": {
+      "dot": 29.068966820653337,
+      "cosine": 0.2449738607211945,
+      "left_norm": 56.80405292404963,
+      "right_norm": 2.0889619343059596
+    },
+    "component_root": {
+      "dot": 6.205273039196288,
+      "cosine": 0.4470941967341435,
+      "left_norm": 6.644026205398998,
+      "right_norm": 2.0889619343059596
+    },
+    "grammar_comma": {
+      "dot": 0.8825025224987113,
+      "cosine": 0.0032045435830838475,
+      "left_norm": 131.83151611863263,
+      "right_norm": 2.0889619343059596
+    },
+    "grammar_rpar": {
+      "dot": 4.142757203668781,
+      "cosine": 0.0385446723867961,
+      "left_norm": 51.45109194909457,
+      "right_norm": 2.0889619343059596
+    },
+    "grammar_rsqb_bound_empty": {
+      "dot": 3.9582665560347152,
+      "cosine": 0.015910740771441282,
+      "left_norm": 119.09241736546535,
+      "right_norm": 2.0889619343059596
+    },
+    "grammar_rsqb_bound_populated": {
+      "dot": 5.385705932238129,
+      "cosine": 0.01673368621200882,
+      "left_norm": 154.07085387822463,
+      "right_norm": 2.0889619343059596
+    },
+    "grammar_rsqb_root_populated": {
+      "dot": 4.2482239250847,
+      "cosine": 0.027855253771730724,
+      "left_norm": 73.00788290134129,
+      "right_norm": 2.0889619343059596
+    },
+    "lit": {
+      "dot": 3.6567819714029772,
+      "cosine": 0.06025326283763663,
+      "left_norm": 29.052798440689745,
+      "right_norm": 2.0889619343059596
+    },
+    "sym": {
+      "dot": 9.838940062402955,
+      "cosine": 0.08510211335819703,
+      "left_norm": 55.34487916207116,
+      "right_norm": 2.0889619343059596
+    }
+  },
+  "cross_kind_alignment": {
+    "bind_declaration_root": {
+      "bind_declaration_root": {
+        "dot": 0.0,
+        "cosine": 0.0,
+        "left_norm": 0.0,
+        "right_norm": 0.0
+      },
+      "bind_reference_bound_children": {
+        "dot": 0.0,
+        "cosine": 0.0,
+        "left_norm": 0.0,
+        "right_norm": 43.754827390303014
+      },
+      "bind_reference_bound_input": {
+        "dot": 0.0,
+        "cosine": 0.0,
+        "left_norm": 0.0,
+        "right_norm": 62.31259423792536
+      },
+      "bind_reference_root_children": {
+        "dot": 0.0,
+        "cosine": 0.0,
+        "left_norm": 0.0,
+        "right_norm": 5.619297081969763
+      },
+      "component_bound": {
+        "dot": 0.0,
+        "cosine": 0.0,
+        "left_norm": 0.0,
+        "right_norm": 42.941920807494895
+      },
+      "component_root": {
+        "dot": 0.0,
+        "cosine": 0.0,
+        "left_norm": 0.0,
+        "right_norm": 4.589545506952468
+      },
+      "grammar_comma": {
+        "dot": 0.0,
+        "cosine": 0.0,
+        "left_norm": 0.0,
+        "right_norm": 117.07276722210226
+      },
+      "grammar_lsqb": {
+        "dot": 0.0,
+        "cosine": 0.0,
+        "left_norm": 0.0,
+        "right_norm": 100.87401755475175
+      },
+      "grammar_rpar": {
+        "dot": 0.0,
+        "cosine": 0.0,
+        "left_norm": 0.0,
+        "right_norm": 67.11805106412206
+      },
+      "grammar_rsqb_bound_empty": {
+        "dot": 0.0,
+        "cosine": 0.0,
+        "left_norm": 0.0,
+        "right_norm": 73.03987602244887
+      },
+      "grammar_rsqb_bound_populated": {
+        "dot": 0.0,
+        "cosine": 0.0,
+        "left_norm": 0.0,
+        "right_norm": 140.41998640606238
+      },
+      "grammar_rsqb_root_populated": {
+        "dot": 0.0,
+        "cosine": 0.0,
+        "left_norm": 0.0,
+        "right_norm": 85.49563213118795
+      },
+      "lit": {
+        "dot": 0.0,
+        "cosine": 0.0,
+        "left_norm": 0.0,
+        "right_norm": 33.94266196670921
+      },
+      "sym": {
+        "dot": 0.0,
+        "cosine": 0.0,
+        "left_norm": 0.0,
+        "right_norm": 48.16508867206165
+      }
+    },
+    "bind_reference_bound_children": {
+      "bind_declaration_root": {
+        "dot": 0.0,
+        "cosine": 0.0,
+        "left_norm": 19.213252225704796,
+        "right_norm": 0.0
+      },
+      "bind_reference_bound_children": {
+        "dot": 88.33185995717662,
+        "cosine": 0.10507285096958498,
+        "left_norm": 19.213252225704796,
+        "right_norm": 43.754827390303014
+      },
+      "bind_reference_bound_input": {
+        "dot": 536.4032839294467,
+        "cosine": 0.44803785716318584,
+        "left_norm": 19.213252225704796,
+        "right_norm": 62.31259423792536
+      },
+      "bind_reference_root_children": {
+        "dot": 14.729547800464733,
+        "cosine": 0.13642895010127917,
+        "left_norm": 19.213252225704796,
+        "right_norm": 5.619297081969763
+      },
+      "component_bound": {
+        "dot": 40.15600175969098,
+        "cosine": 0.048670758427991914,
+        "left_norm": 19.213252225704796,
+        "right_norm": 42.941920807494895
+      },
+      "component_root": {
+        "dot": 5.567878205547187,
+        "cosine": 0.06314212043683579,
+        "left_norm": 19.213252225704796,
+        "right_norm": 4.589545506952468
+      },
+      "grammar_comma": {
+        "dot": 418.7444593883754,
+        "cosine": 0.18616254429535523,
+        "left_norm": 19.213252225704796,
+        "right_norm": 117.07276722210226
+      },
+      "grammar_lsqb": {
+        "dot": -188.07580825944194,
+        "cosine": -0.0970404350296071,
+        "left_norm": 19.213252225704796,
+        "right_norm": 100.87401755475175
+      },
+      "grammar_rpar": {
+        "dot": 12.617389168396597,
+        "cosine": 0.009784289118083427,
+        "left_norm": 19.213252225704796,
+        "right_norm": 67.11805106412206
+      },
+      "grammar_rsqb_bound_empty": {
+        "dot": -744.3993471696599,
+        "cosine": -0.5304507553258014,
+        "left_norm": 19.213252225704796,
+        "right_norm": 73.03987602244887
+      },
+      "grammar_rsqb_bound_populated": {
+        "dot": -795.9975161680821,
+        "cosine": -0.29504068102727965,
+        "left_norm": 19.213252225704796,
+        "right_norm": 140.41998640606238
+      },
+      "grammar_rsqb_root_populated": {
+        "dot": -476.7623285306652,
+        "cosine": -0.29023990313182524,
+        "left_norm": 19.213252225704796,
+        "right_norm": 85.49563213118795
+      },
+      "lit": {
+        "dot": -9.546565071214534,
+        "cosine": -0.014638627308555587,
+        "left_norm": 19.213252225704796,
+        "right_norm": 33.94266196670921
+      },
+      "sym": {
+        "dot": 34.904572193259696,
+        "cosine": 0.03771803604628403,
+        "left_norm": 19.213252225704796,
+        "right_norm": 48.16508867206165
+      }
+    },
+    "bind_reference_root_children": {
+      "bind_declaration_root": {
+        "dot": 0.0,
+        "cosine": 0.0,
+        "left_norm": 10.294305968491775,
+        "right_norm": 0.0
+      },
+      "bind_reference_bound_children": {
+        "dot": 105.85453118055855,
+        "cosine": 0.23501003429531,
+        "left_norm": 10.294305968491775,
+        "right_norm": 43.754827390303014
+      },
+      "bind_reference_bound_input": {
+        "dot": -51.73119090553887,
+        "cosine": -0.08064539468415154,
+        "left_norm": 10.294305968491775,
+        "right_norm": 62.31259423792536
+      },
+      "bind_reference_root_children": {
+        "dot": 57.546547297278295,
+        "cosine": 0.9948101471152285,
+        "left_norm": 10.294305968491775,
+        "right_norm": 5.619297081969763
+      },
+      "component_bound": {
+        "dot": 59.10562456877675,
+        "cosine": 0.13370580772458815,
+        "left_norm": 10.294305968491775,
+        "right_norm": 42.941920807494895
+      },
+      "component_root": {
+        "dot": -3.760455262650282,
+        "cosine": -0.07959277995771497,
+        "left_norm": 10.294305968491775,
+        "right_norm": 4.589545506952468
+      },
+      "grammar_comma": {
+        "dot": -62.20083299097115,
+        "cosine": -0.05161111537080905,
+        "left_norm": 10.294305968491775,
+        "right_norm": 117.07276722210226
+      },
+      "grammar_lsqb": {
+        "dot": 35.654267124616645,
+        "cosine": 0.03433484756861464,
+        "left_norm": 10.294305968491775,
+        "right_norm": 100.87401755475175
+      },
+      "grammar_rpar": {
+        "dot": 26.546824843813315,
+        "cosine": 0.03842166445491706,
+        "left_norm": 10.294305968491775,
+        "right_norm": 67.11805106412206
+      },
+      "grammar_rsqb_bound_empty": {
+        "dot": 57.13582031241882,
+        "cosine": 0.07598911164886807,
+        "left_norm": 10.294305968491775,
+        "right_norm": 73.03987602244887
+      },
+      "grammar_rsqb_bound_populated": {
+        "dot": 72.56076802808018,
+        "cosine": 0.05019678149023602,
+        "left_norm": 10.294305968491775,
+        "right_norm": 140.41998640606238
+      },
+      "grammar_rsqb_root_populated": {
+        "dot": 45.70976844005255,
+        "cosine": 0.05193594296896159,
+        "left_norm": 10.294305968491775,
+        "right_norm": 85.49563213118795
+      },
+      "lit": {
+        "dot": 8.173343416471656,
+        "cosine": 0.023391430164188137,
+        "left_norm": 10.294305968491775,
+        "right_norm": 33.94266196670921
+      },
+      "sym": {
+        "dot": 14.234733852581883,
+        "cosine": 0.02870912228313703,
+        "left_norm": 10.294305968491775,
+        "right_norm": 48.16508867206165
+      }
+    },
+    "component_bound": {
+      "bind_declaration_root": {
+        "dot": 0.0,
+        "cosine": 0.0,
+        "left_norm": 56.80405292404963,
+        "right_norm": 0.0
+      },
+      "bind_reference_bound_children": {
+        "dot": 59.54417488262581,
+        "cosine": 0.02395708552175395,
+        "left_norm": 56.80405292404963,
+        "right_norm": 43.754827390303014
+      },
+      "bind_reference_bound_input": {
+        "dot": 489.20690905838956,
+        "cosine": 0.13820935051320676,
+        "left_norm": 56.80405292404963,
+        "right_norm": 62.31259423792536
+      },
+      "bind_reference_root_children": {
+        "dot": 41.58605044695007,
+        "cosine": 0.13028258277890403,
+        "left_norm": 56.80405292404963,
+        "right_norm": 5.619297081969763
+      },
+      "component_bound": {
+        "dot": 1520.1932451238274,
+        "cosine": 0.6232151588061385,
+        "left_norm": 56.80405292404963,
+        "right_norm": 42.941920807494895
+      },
+      "component_root": {
+        "dot": -23.07715906983523,
+        "cosine": -0.08851835608789069,
+        "left_norm": 56.80405292404963,
+        "right_norm": 4.589545506952468
+      },
+      "grammar_comma": {
+        "dot": -590.43745430991,
+        "cosine": -0.08878481455477696,
+        "left_norm": 56.80405292404963,
+        "right_norm": 117.07276722210226
+      },
+      "grammar_lsqb": {
+        "dot": 504.5817565223215,
+        "cosine": 0.08805882837704727,
+        "left_norm": 56.80405292404963,
+        "right_norm": 100.87401755475175
+      },
+      "grammar_rpar": {
+        "dot": 86.32333225536411,
+        "cosine": 0.022641726292008765,
+        "left_norm": 56.80405292404963,
+        "right_norm": 67.11805106412206
+      },
+      "grammar_rsqb_bound_empty": {
+        "dot": 51.61667487942612,
+        "cosine": 0.012440867747157504,
+        "left_norm": 56.80405292404963,
+        "right_norm": 73.03987602244887
+      },
+      "grammar_rsqb_bound_populated": {
+        "dot": 962.765215311916,
+        "cosine": 0.12070135368247198,
+        "left_norm": 56.80405292404963,
+        "right_norm": 140.41998640606238
+      },
+      "grammar_rsqb_root_populated": {
+        "dot": 598.2528223514536,
+        "cosine": 0.1231860430201069,
+        "left_norm": 56.80405292404963,
+        "right_norm": 85.49563213118795
+      },
+      "lit": {
+        "dot": 150.54350928098188,
+        "cosine": 0.0780794621666783,
+        "left_norm": 56.80405292404963,
+        "right_norm": 33.94266196670921
+      },
+      "sym": {
+        "dot": 343.2379879763514,
+        "cosine": 0.1254537535882321,
+        "left_norm": 56.80405292404963,
+        "right_norm": 48.16508867206165
+      }
+    },
+    "component_root": {
+      "bind_declaration_root": {
+        "dot": 0.0,
+        "cosine": 0.0,
+        "left_norm": 6.644026205398998,
+        "right_norm": 0.0
+      },
+      "bind_reference_bound_children": {
+        "dot": 9.550411069978793,
+        "cosine": 0.03285222233052162,
+        "left_norm": 6.644026205398998,
+        "right_norm": 43.754827390303014
+      },
+      "bind_reference_bound_input": {
+        "dot": 40.17666532333591,
+        "cosine": 0.09704355957153918,
+        "left_norm": 6.644026205398998,
+        "right_norm": 62.31259423792536
+      },
+      "bind_reference_root_children": {
+        "dot": -3.0061871905430895,
+        "cosine": -0.08051980049113833,
+        "left_norm": 6.644026205398998,
+        "right_norm": 5.619297081969763
+      },
+      "component_bound": {
+        "dot": -153.8438427666527,
+        "cosine": -0.5392216436864101,
+        "left_norm": 6.644026205398998,
+        "right_norm": 42.941920807494895
+      },
+      "component_root": {
+        "dot": 30.459193935196538,
+        "cosine": 0.9988893642297844,
+        "left_norm": 6.644026205398998,
+        "right_norm": 4.589545506952468
+      },
+      "grammar_comma": {
+        "dot": -30.155660331067878,
+        "cosine": -0.03876873427143779,
+        "left_norm": 6.644026205398998,
+        "right_norm": 117.07276722210226
+      },
+      "grammar_lsqb": {
+        "dot": -105.81282428939133,
+        "cosine": -0.15788019412292656,
+        "left_norm": 6.644026205398998,
+        "right_norm": 100.87401755475175
+      },
+      "grammar_rpar": {
+        "dot": 26.631185542656603,
+        "cosine": 0.05972000376820619,
+        "left_norm": 6.644026205398998,
+        "right_norm": 67.11805106412206
+      },
+      "grammar_rsqb_bound_empty": {
+        "dot": -14.354994682685371,
+        "cosine": -0.029580919656517653,
+        "left_norm": 6.644026205398998,
+        "right_norm": 73.03987602244887
+      },
+      "grammar_rsqb_bound_populated": {
+        "dot": 12.799615933772088,
+        "cosine": 0.013719449170102137,
+        "left_norm": 6.644026205398998,
+        "right_norm": 140.41998640606238
+      },
+      "grammar_rsqb_root_populated": {
+        "dot": 5.913365105451902,
+        "cosine": 0.010410208546664074,
+        "left_norm": 6.644026205398998,
+        "right_norm": 85.49563213118795
+      },
+      "lit": {
+        "dot": -27.385677902988633,
+        "cosine": -0.12143566631602694,
+        "left_norm": 6.644026205398998,
+        "right_norm": 33.94266196670921
+      },
+      "sym": {
+        "dot": -10.94128005606714,
+        "cosine": -0.034190419830326,
+        "left_norm": 6.644026205398998,
+        "right_norm": 48.16508867206165
+      }
+    },
+    "grammar_comma": {
+      "bind_declaration_root": {
+        "dot": 0.0,
+        "cosine": 0.0,
+        "left_norm": 131.83151611863263,
+        "right_norm": 0.0
+      },
+      "bind_reference_bound_children": {
+        "dot": 2530.290900095145,
+        "cosine": 0.4386571695584695,
+        "left_norm": 131.83151611863263,
+        "right_norm": 43.754827390303014
+      },
+      "bind_reference_bound_input": {
+        "dot": -1079.7166467379798,
+        "cosine": -0.13143611633257798,
+        "left_norm": 131.83151611863263,
+        "right_norm": 62.31259423792536
+      },
+      "bind_reference_root_children": {
+        "dot": -37.94277039140022,
+        "cosine": -0.05121861115887578,
+        "left_norm": 131.83151611863263,
+        "right_norm": 5.619297081969763
+      },
+      "component_bound": {
+        "dot": -662.2543881992415,
+        "cosine": -0.11698337085340534,
+        "left_norm": 131.83151611863263,
+        "right_norm": 42.941920807494895
+      },
+      "component_root": {
+        "dot": -6.831441157906696,
+        "cosine": -0.011290765949651168,
+        "left_norm": 131.83151611863263,
+        "right_norm": 4.589545506952468
+      },
+      "grammar_comma": {
+        "dot": 14146.778064774346,
+        "cosine": 0.9166053966315074,
+        "left_norm": 131.83151611863263,
+        "right_norm": 117.07276722210226
+      },
+      "grammar_lsqb": {
+        "dot": 590.4864925936745,
+        "cosine": 0.044402906910990296,
+        "left_norm": 131.83151611863263,
+        "right_norm": 100.87401755475175
+      },
+      "grammar_rpar": {
+        "dot": -5119.200395660341,
+        "cosine": -0.5785535287979287,
+        "left_norm": 131.83151611863263,
+        "right_norm": 67.11805106412206
+      },
+      "grammar_rsqb_bound_empty": {
+        "dot": -6325.478181361893,
+        "cosine": -0.6569224259391908,
+        "left_norm": 131.83151611863263,
+        "right_norm": 73.03987602244887
+      },
+      "grammar_rsqb_bound_populated": {
+        "dot": -18403.14101042065,
+        "cosine": -0.9941313751243005,
+        "left_norm": 131.83151611863263,
+        "right_norm": 140.41998640606238
+      },
+      "grammar_rsqb_root_populated": {
+        "dot": -11191.136520118262,
+        "cosine": -0.9929125940931772,
+        "left_norm": 131.83151611863263,
+        "right_norm": 85.49563213118795
+      },
+      "lit": {
+        "dot": -1116.8697256727219,
+        "cosine": -0.24959585753609323,
+        "left_norm": 131.83151611863263,
+        "right_norm": 33.94266196670921
+      },
+      "sym": {
+        "dot": 289.4377947108651,
+        "cosine": 0.04558307612242554,
+        "left_norm": 131.83151611863263,
+        "right_norm": 48.16508867206165
+      }
+    },
+    "grammar_rpar": {
+      "bind_declaration_root": {
+        "dot": 0.0,
+        "cosine": 0.0,
+        "left_norm": 51.45109194909457,
+        "right_norm": 0.0
+      },
+      "bind_reference_bound_children": {
+        "dot": -180.40963075277944,
+        "cosine": -0.08013811936896752,
+        "left_norm": 51.45109194909457,
+        "right_norm": 43.754827390303014
+      },
+      "bind_reference_bound_input": {
+        "dot": 556.400456847538,
+        "cosine": 0.17354697542834222,
+        "left_norm": 51.45109194909457,
+        "right_norm": 62.31259423792536
+      },
+      "bind_reference_root_children": {
+        "dot": 10.35621239134015,
+        "cosine": 0.03581989919499409,
+        "left_norm": 51.45109194909457,
+        "right_norm": 5.619297081969763
+      },
+      "component_bound": {
+        "dot": -172.05110112751493,
+        "cosine": -0.07787201158683608,
+        "left_norm": 51.45109194909457,
+        "right_norm": 42.941920807494895
+      },
+      "component_root": {
+        "dot": 14.272637941704048,
+        "cosine": 0.060442159476039564,
+        "left_norm": 51.45109194909457,
+        "right_norm": 4.589545506952468
+      },
+      "grammar_comma": {
+        "dot": -5055.317627227547,
+        "cosine": -0.8392627883998623,
+        "left_norm": 51.45109194909457,
+        "right_norm": 117.07276722210226
+      },
+      "grammar_lsqb": {
+        "dot": -551.388462920251,
+        "cosine": -0.10623894775236709,
+        "left_norm": 51.45109194909457,
+        "right_norm": 100.87401755475175
+      },
+      "grammar_rpar": {
+        "dot": 3398.3333025861457,
+        "cosine": 0.9840836991745808,
+        "left_norm": 51.45109194909457,
+        "right_norm": 67.11805106412206
+      },
+      "grammar_rsqb_bound_empty": {
+        "dot": 449.3362126632742,
+        "cosine": 0.11956850435493108,
+        "left_norm": 51.45109194909457,
+        "right_norm": 73.03987602244887
+      },
+      "grammar_rsqb_bound_populated": {
+        "dot": 4113.487970525481,
+        "cosine": 0.5693596799466335,
+        "left_norm": 51.45109194909457,
+        "right_norm": 140.41998640606238
+      },
+      "grammar_rsqb_root_populated": {
+        "dot": 2517.2970311866716,
+        "cosine": 0.5722633589434528,
+        "left_norm": 51.45109194909457,
+        "right_norm": 85.49563213118795
+      },
+      "lit": {
+        "dot": -45.09218794361976,
+        "cosine": -0.025820272012758442,
+        "left_norm": 51.45109194909457,
+        "right_norm": 33.94266196670921
+      },
+      "sym": {
+        "dot": 96.28568608108318,
+        "cosine": 0.03885391349270613,
+        "left_norm": 51.45109194909457,
+        "right_norm": 48.16508867206165
+      }
+    },
+    "grammar_rsqb_bound_empty": {
+      "bind_declaration_root": {
+        "dot": 0.0,
+        "cosine": 0.0,
+        "left_norm": 119.09241736546535,
+        "right_norm": 0.0
+      },
+      "bind_reference_bound_children": {
+        "dot": -2747.1250485867763,
+        "cosine": -0.527191431721464,
+        "left_norm": 119.09241736546535,
+        "right_norm": 43.754827390303014
+      },
+      "bind_reference_bound_input": {
+        "dot": 2223.867324675385,
+        "cosine": 0.29967390739490546,
+        "left_norm": 119.09241736546535,
+        "right_norm": 62.31259423792536
+      },
+      "bind_reference_root_children": {
+        "dot": 11.881554094743422,
+        "cosine": 0.01775444683567894,
+        "left_norm": 119.09241736546535,
+        "right_norm": 5.619297081969763
+      },
+      "component_bound": {
+        "dot": 627.9401440470551,
+        "cosine": 0.12278707980387421,
+        "left_norm": 119.09241736546535,
+        "right_norm": 42.941920807494895
+      },
+      "component_root": {
+        "dot": -13.105291159460059,
+        "cosine": -0.023976891771181806,
+        "left_norm": 119.09241736546535,
+        "right_norm": 4.589545506952468
+      },
+      "grammar_comma": {
+        "dot": -6116.789848995753,
+        "cosine": -0.43871609289190566,
+        "left_norm": 119.09241736546535,
+        "right_norm": 117.07276722210226
+      },
+      "grammar_lsqb": {
+        "dot": -3600.1553034525446,
+        "cosine": -0.2996800324020052,
+        "left_norm": 119.09241736546535,
+        "right_norm": 100.87401755475175
+      },
+      "grammar_rpar": {
+        "dot": 958.3739139249192,
+        "cosine": 0.1198978888451792,
+        "left_norm": 119.09241736546535,
+        "right_norm": 67.11805106412206
+      },
+      "grammar_rsqb_bound_empty": {
+        "dot": 7793.083306065336,
+        "cosine": 0.8959116431141707,
+        "left_norm": 119.09241736546535,
+        "right_norm": 73.03987602244887
+      },
+      "grammar_rsqb_bound_populated": {
+        "dot": 10068.236791566158,
+        "cosine": 0.6020608447345985,
+        "left_norm": 119.09241736546535,
+        "right_norm": 140.41998640606238
+      },
+      "grammar_rsqb_root_populated": {
+        "dot": 6009.712289849268,
+        "cosine": 0.5902359290942488,
+        "left_norm": 119.09241736546535,
+        "right_norm": 85.49563213118795
+      },
+      "lit": {
+        "dot": 899.7649346081798,
+        "cosine": 0.22258661971287766,
+        "left_norm": 119.09241736546535,
+        "right_norm": 33.94266196670921
+      },
+      "sym": {
+        "dot": 608.784798902699,
+        "cosine": 0.1061322386302512,
+        "left_norm": 119.09241736546535,
+        "right_norm": 48.16508867206165
+      }
+    },
+    "grammar_rsqb_bound_populated": {
+      "bind_declaration_root": {
+        "dot": 0.0,
+        "cosine": 0.0,
+        "left_norm": 154.07085387822463,
+        "right_norm": 0.0
+      },
+      "bind_reference_bound_children": {
+        "dot": -2918.1157822983137,
+        "cosine": -0.43286857160073533,
+        "left_norm": 154.07085387822463,
+        "right_norm": 43.754827390303014
+      },
+      "bind_reference_bound_input": {
+        "dot": 1241.5017068904958,
+        "cosine": 0.12931562377479827,
+        "left_norm": 154.07085387822463,
+        "right_norm": 62.31259423792536
+      },
+      "bind_reference_root_children": {
+        "dot": 45.91436356012457,
+        "cosine": 0.053032986686842455,
+        "left_norm": 154.07085387822463,
+        "right_norm": 5.619297081969763
+      },
+      "component_bound": {
+        "dot": 780.5489336633955,
+        "cosine": 0.11797722551370679,
+        "left_norm": 154.07085387822463,
+        "right_norm": 42.941920807494895
+      },
+      "component_root": {
+        "dot": 6.939174649013863,
+        "cosine": 0.009813358129511092,
+        "left_norm": 154.07085387822463,
+        "right_norm": 4.589545506952468
+      },
+      "grammar_comma": {
+        "dot": -16462.83187399707,
+        "cosine": -0.9127002504776509,
+        "left_norm": 154.07085387822463,
+        "right_norm": 117.07276722210226
+      },
+      "grammar_lsqb": {
+        "dot": -663.3415891685909,
+        "cosine": -0.04268127843336979,
+        "left_norm": 154.07085387822463,
+        "right_norm": 100.87401755475175
+      },
+      "grammar_rpar": {
+        "dot": 5975.258135975212,
+        "cosine": 0.5778256881833848,
+        "left_norm": 154.07085387822463,
+        "right_norm": 67.11805106412206
+      },
+      "grammar_rsqb_bound_empty": {
+        "dot": 7284.7456176599935,
+        "cosine": 0.6473421323079628,
+        "left_norm": 154.07085387822463,
+        "right_norm": 73.03987602244887
+      },
+      "grammar_rsqb_bound_populated": {
+        "dot": 21456.123246699957,
+        "cosine": 0.9917491547812864,
+        "left_norm": 154.07085387822463,
+        "right_norm": 140.41998640606238
+      },
+      "grammar_rsqb_root_populated": {
+        "dot": 13041.26503728464,
+        "cosine": 0.9900458415408421,
+        "left_norm": 154.07085387822463,
+        "right_norm": 85.49563213118795
+      },
+      "lit": {
+        "dot": 1314.6632104543628,
+        "cosine": 0.2513900713822496,
+        "left_norm": 154.07085387822463,
+        "right_norm": 33.94266196670921
+      },
+      "sym": {
+        "dot": -339.8524629371168,
+        "cosine": -0.04579705674939207,
+        "left_norm": 154.07085387822463,
+        "right_norm": 48.16508867206165
+      }
+    },
+    "grammar_rsqb_root_populated": {
+      "bind_declaration_root": {
+        "dot": 0.0,
+        "cosine": 0.0,
+        "left_norm": 73.00788290134129,
+        "right_norm": 0.0
+      },
+      "bind_reference_bound_children": {
+        "dot": -1386.6064382748432,
+        "cosine": -0.43406771243015896,
+        "left_norm": 73.00788290134129,
+        "right_norm": 43.754827390303014
+      },
+      "bind_reference_bound_input": {
+        "dot": 579.8397387353439,
+        "cosine": 0.12745661746000914,
+        "left_norm": 73.00788290134129,
+        "right_norm": 62.31259423792536
+      },
+      "bind_reference_root_children": {
+        "dot": 21.10166047862529,
+        "cosine": 0.05143572706383068,
+        "left_norm": 73.00788290134129,
+        "right_norm": 5.619297081969763
+      },
+      "component_bound": {
+        "dot": 365.34844584975644,
+        "cosine": 0.11653490935859058,
+        "left_norm": 73.00788290134129,
+        "right_norm": 42.941920807494895
+      },
+      "component_root": {
+        "dot": 3.245721105892063,
+        "cosine": 0.00968660887856568,
+        "left_norm": 73.00788290134129,
+        "right_norm": 4.589545506952468
+      },
+      "grammar_comma": {
+        "dot": -7794.71991633449,
+        "cosine": -0.9119580806550328,
+        "left_norm": 73.00788290134129,
+        "right_norm": 117.07276722210226
+      },
+      "grammar_lsqb": {
+        "dot": -320.8919307551623,
+        "cosine": -0.04357222358231122,
+        "left_norm": 73.00788290134129,
+        "right_norm": 100.87401755475175
+      },
+      "grammar_rpar": {
+        "dot": 2831.2223036316805,
+        "cosine": 0.5777831587248464,
+        "left_norm": 73.00788290134129,
+        "right_norm": 67.11805106412206
+      },
+      "grammar_rsqb_bound_empty": {
+        "dot": 3471.86309652392,
+        "cosine": 0.6510776831853866,
+        "left_norm": 73.00788290134129,
+        "right_norm": 73.03987602244887
+      },
+      "grammar_rsqb_bound_populated": {
+        "dot": 10133.705844349815,
+        "cosine": 0.9884839274461682,
+        "left_norm": 73.00788290134129,
+        "right_norm": 140.41998640606238
+      },
+      "grammar_rsqb_root_populated": {
+        "dot": 6219.977825025332,
+        "cosine": 0.9964950685594481,
+        "left_norm": 73.00788290134129,
+        "right_norm": 85.49563213118795
+      },
+      "lit": {
+        "dot": 614.4097096837654,
+        "cosine": 0.24793761340465667,
+        "left_norm": 73.00788290134129,
+        "right_norm": 33.94266196670921
+      },
+      "sym": {
+        "dot": -162.7870575048703,
+        "cosine": -0.046293258815394416,
+        "left_norm": 73.00788290134129,
+        "right_norm": 48.16508867206165
+      }
+    },
+    "lit": {
+      "bind_declaration_root": {
+        "dot": 0.0,
+        "cosine": 0.0,
+        "left_norm": 29.052798440689745,
+        "right_norm": 0.0
+      },
+      "bind_reference_bound_children": {
+        "dot": -192.21694136710863,
+        "cosine": -0.1512090261183569,
+        "left_norm": 29.052798440689745,
+        "right_norm": 43.754827390303014
+      },
+      "bind_reference_bound_input": {
+        "dot": 174.6899775779762,
+        "cosine": 0.09649486114635437,
+        "left_norm": 29.052798440689745,
+        "right_norm": 62.31259423792536
+      },
+      "bind_reference_root_children": {
+        "dot": -4.218288852646033,
+        "cosine": -0.025838443665042714,
+        "left_norm": 29.052798440689745,
+        "right_norm": 5.619297081969763
+      },
+      "component_bound": {
+        "dot": 183.4013473691573,
+        "cosine": 0.14700533094592905,
+        "left_norm": 29.052798440689745,
+        "right_norm": 42.941920807494895
+      },
+      "component_root": {
+        "dot": -14.904862285080593,
+        "cosine": -0.1117815985901781,
+        "left_norm": 29.052798440689745,
+        "right_norm": 4.589545506952468
+      },
+      "grammar_comma": {
+        "dot": -274.3547863275634,
+        "cosine": -0.08066194432373863,
+        "left_norm": 29.052798440689745,
+        "right_norm": 117.07276722210226
+      },
+      "grammar_lsqb": {
+        "dot": 20.10975272624041,
+        "cosine": 0.006861821894730256,
+        "left_norm": 29.052798440689745,
+        "right_norm": 100.87401755475175
+      },
+      "grammar_rpar": {
+        "dot": -47.7397181675766,
+        "cosine": -0.02448231844101964,
+        "left_norm": 29.052798440689745,
+        "right_norm": 67.11805106412206
+      },
+      "grammar_rsqb_bound_empty": {
+        "dot": 404.37890683900275,
+        "cosine": 0.19056383993566614,
+        "left_norm": 29.052798440689745,
+        "right_norm": 73.03987602244887
+      },
+      "grammar_rsqb_bound_populated": {
+        "dot": 607.7905219223262,
+        "cosine": 0.1489831064468841,
+        "left_norm": 29.052798440689745,
+        "right_norm": 140.41998640606238
+      },
+      "grammar_rsqb_root_populated": {
+        "dot": 366.1961009076922,
+        "cosine": 0.14742862564746348,
+        "left_norm": 29.052798440689745,
+        "right_norm": 85.49563213118795
+      },
+      "lit": {
+        "dot": 868.0689225485953,
+        "cosine": 0.8802789937220112,
+        "left_norm": 29.052798440689745,
+        "right_norm": 33.94266196670921
+      },
+      "sym": {
+        "dot": 35.648594083820484,
+        "cosine": 0.025475462160924337,
+        "left_norm": 29.052798440689745,
+        "right_norm": 48.16508867206165
+      }
+    },
+    "sym": {
+      "bind_declaration_root": {
+        "dot": 0.0,
+        "cosine": 0.0,
+        "left_norm": 55.34487916207116,
+        "right_norm": 0.0
+      },
+      "bind_reference_bound_children": {
+        "dot": 70.75926409220949,
+        "cosine": 0.029219978298302415,
+        "left_norm": 55.34487916207116,
+        "right_norm": 43.754827390303014
+      },
+      "bind_reference_bound_input": {
+        "dot": -233.3304013529728,
+        "cosine": -0.06765782806452258,
+        "left_norm": 55.34487916207116,
+        "right_norm": 62.31259423792536
+      },
+      "bind_reference_root_children": {
+        "dot": 58.155581434317654,
+        "cosine": 0.18699584877721365,
+        "left_norm": 55.34487916207116,
+        "right_norm": 5.619297081969763
+      },
+      "component_bound": {
+        "dot": 377.7881960979148,
+        "cosine": 0.15896059296098974,
+        "left_norm": 55.34487916207116,
+        "right_norm": 42.941920807494895
+      },
+      "component_root": {
+        "dot": -29.788296014815174,
+        "cosine": -0.11727313550616358,
+        "left_norm": 55.34487916207116,
+        "right_norm": 4.589545506952468
+      },
+      "grammar_comma": {
+        "dot": -100.51100187970133,
+        "cosine": -0.015512445712240435,
+        "left_norm": 55.34487916207116,
+        "right_norm": 117.07276722210226
+      },
+      "grammar_lsqb": {
+        "dot": 118.65430368089437,
+        "cosine": 0.021253317662712417,
+        "left_norm": 55.34487916207116,
+        "right_norm": 100.87401755475175
+      },
+      "grammar_rpar": {
+        "dot": 277.40578794127816,
+        "cosine": 0.07467904188497548,
+        "left_norm": 55.34487916207116,
+        "right_norm": 67.11805106412206
+      },
+      "grammar_rsqb_bound_empty": {
+        "dot": 259.127758692754,
+        "cosine": 0.06410272145979107,
+        "left_norm": 55.34487916207116,
+        "right_norm": 73.03987602244887
+      },
+      "grammar_rsqb_bound_populated": {
+        "dot": -240.55111269213012,
+        "cosine": -0.03095287543021002,
+        "left_norm": 55.34487916207116,
+        "right_norm": 140.41998640606238
+      },
+      "grammar_rsqb_root_populated": {
+        "dot": -149.5207165379004,
+        "cosine": -0.0315994845402405,
+        "left_norm": 55.34487916207116,
+        "right_norm": 85.49563213118795
+      },
+      "lit": {
+        "dot": -42.83049501788906,
+        "cosine": -0.022799732479237292,
+        "left_norm": 55.34487916207116,
+        "right_norm": 33.94266196670921
+      },
+      "sym": {
+        "dot": 1497.1364975392416,
+        "cosine": 0.5616316709562523,
+        "left_norm": 55.34487916207116,
+        "right_norm": 48.16508867206165
+      }
+    }
+  },
+  "checkpoint": "/home/codex/repos/slm-training/outputs/autoresearch/e228-candidate-margin-alignment/runs/e228-candidate-margin-matched/checkpoints/last.pt",
+  "checkpoint_sha": "7a9be4a665e216d7f7e73883ad74ad972bbf30846896d0c29188d6482f5b093a",
+  "events_path": "src/slm_training/resources/data/preference/e261_gold_ast_counterfactual_v1/events.jsonl"
+}

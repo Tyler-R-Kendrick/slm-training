@@ -1,0 +1,750 @@
+{
+  "objective": "ftpo_set",
+  "probability_space": "legal_tokens",
+  "gradient_scaling": "unit_norm",
+  "guard_objective_directions": {
+    "loss": "min",
+    "bad_probability_mass": "min",
+    "good_probability_mass": "max",
+    "mean_margin": "max"
+  },
+  "train_event_counts": {
+    "bind_declaration_root": 19,
+    "bind_reference_bound_children": 16,
+    "bind_reference_bound_input": 1,
+    "bind_reference_root_children": 17,
+    "component_bound": 21,
+    "component_root": 18,
+    "grammar_comma": 23,
+    "grammar_lsqb": 1,
+    "grammar_rpar": 21,
+    "grammar_rsqb_bound_empty": 3,
+    "grammar_rsqb_bound_populated": 7,
+    "grammar_rsqb_root_populated": 23,
+    "lit": 15,
+    "sym": 15
+  },
+  "held_out_event_counts": {
+    "bind_declaration_root": 6,
+    "bind_reference_bound_children": 4,
+    "bind_reference_root_children": 2,
+    "component_bound": 4,
+    "component_root": 3,
+    "grammar_comma": 4,
+    "grammar_rpar": 1,
+    "grammar_rsqb_bound_empty": 1,
+    "grammar_rsqb_bound_populated": 2,
+    "grammar_rsqb_root_populated": 4,
+    "lit": 5,
+    "sym": 3
+  },
+  "train_objective_count": 56,
+  "held_out_objective_count": 48,
+  "train_minimum_norm_solver": {
+    "task_count": 56,
+    "active_task_count": 55,
+    "inactive_task_count": 1,
+    "iterations": 5000,
+    "duality_gap": 9.001693220154398e-05,
+    "converged": false,
+    "norm_sq": 0.0004535641943410283,
+    "min_task_dot": 0.0,
+    "min_active_task_dot": 0.00037716894001568746,
+    "common_descent": true,
+    "weight_by_objective": {
+      "bind_declaration_root:bad_probability_mass": 0.0001683546047419229,
+      "bind_declaration_root:good_probability_mass": 0.0,
+      "bind_declaration_root:loss": 0.0,
+      "bind_declaration_root:mean_margin": 0.0,
+      "bind_reference_bound_children:bad_probability_mass": 0.0059699913804609015,
+      "bind_reference_bound_children:good_probability_mass": 0.0076192987718410226,
+      "bind_reference_bound_children:loss": 0.0,
+      "bind_reference_bound_children:mean_margin": 0.0,
+      "bind_reference_bound_input:bad_probability_mass": 0.0,
+      "bind_reference_bound_input:good_probability_mass": 0.0,
+      "bind_reference_bound_input:loss": 0.0,
+      "bind_reference_bound_input:mean_margin": 0.0,
+      "bind_reference_root_children:bad_probability_mass": 0.0,
+      "bind_reference_root_children:good_probability_mass": 0.007472965669922386,
+      "bind_reference_root_children:loss": 0.0,
+      "bind_reference_root_children:mean_margin": 0.0,
+      "component_bound:bad_probability_mass": 0.004468928208321775,
+      "component_bound:good_probability_mass": 0.005277330326310278,
+      "component_bound:loss": 0.0,
+      "component_bound:mean_margin": 0.0,
+      "component_root:bad_probability_mass": 0.0,
+      "component_root:good_probability_mass": 0.0,
+      "component_root:loss": 0.009192255797915414,
+      "component_root:mean_margin": 0.0,
+      "grammar_comma:bad_probability_mass": 0.007251481355055462,
+      "grammar_comma:good_probability_mass": 0.002955450636584094,
+      "grammar_comma:loss": 0.0043396760631739,
+      "grammar_comma:mean_margin": 0.42277293382824865,
+      "grammar_lsqb:bad_probability_mass": 0.001928087203668279,
+      "grammar_lsqb:good_probability_mass": 0.0,
+      "grammar_lsqb:loss": 0.0,
+      "grammar_lsqb:mean_margin": 0.006490879960971869,
+      "grammar_rpar:bad_probability_mass": 0.0,
+      "grammar_rpar:good_probability_mass": 0.15195181977732536,
+      "grammar_rpar:loss": 0.005232280609411371,
+      "grammar_rpar:mean_margin": 0.05130578442550561,
+      "grammar_rsqb_bound_empty:bad_probability_mass": 0.0,
+      "grammar_rsqb_bound_empty:good_probability_mass": 0.0,
+      "grammar_rsqb_bound_empty:loss": 0.007361334183526867,
+      "grammar_rsqb_bound_empty:mean_margin": 0.007472965126787949,
+      "grammar_rsqb_bound_populated:bad_probability_mass": 0.009796745403431164,
+      "grammar_rsqb_bound_populated:good_probability_mass": 0.0,
+      "grammar_rsqb_bound_populated:loss": 0.11344138154067872,
+      "grammar_rsqb_bound_populated:mean_margin": 0.01269181811640825,
+      "grammar_rsqb_root_populated:bad_probability_mass": 0.04612670320825775,
+      "grammar_rsqb_root_populated:good_probability_mass": 0.0,
+      "grammar_rsqb_root_populated:loss": 0.011202617201891899,
+      "grammar_rsqb_root_populated:mean_margin": 0.08993719360183022,
+      "lit:bad_probability_mass": 0.0013550239747497667,
+      "lit:good_probability_mass": 0.0030914325650253775,
+      "lit:loss": 0.0031252664579526643,
+      "lit:mean_margin": 0.0,
+      "sym:bad_probability_mass": 0.0,
+      "sym:good_probability_mass": 0.0,
+      "sym:loss": 0.0,
+      "sym:mean_margin": 0.0
+    }
+  },
+  "train_alignment": {
+    "bind_declaration_root:bad_probability_mass": {
+      "dot": 0.0016307869431642992,
+      "cosine": 0.019406838463376774,
+      "left_norm": 3.9456862907325894,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_declaration_root:good_probability_mass": {
+      "dot": 0.0016307879910816355,
+      "cosine": 0.019406857776729704,
+      "left_norm": 3.945684899488869,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_declaration_root:loss": {
+      "dot": 0.0,
+      "cosine": 0.0,
+      "left_norm": 0.0,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_declaration_root:mean_margin": {
+      "dot": 0.06143214850563862,
+      "cosine": 0.01961150853106158,
+      "left_norm": 147.0837931717384,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_children:bad_probability_mass": {
+      "dot": 0.003124393704200257,
+      "cosine": 0.020666634422341786,
+      "left_norm": 7.09865574154558,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_children:good_probability_mass": {
+      "dot": 0.004639931966458456,
+      "cosine": 0.031042072902828,
+      "left_norm": 7.01844686588225,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_children:loss": {
+      "dot": 0.01872217724748527,
+      "cosine": 0.02009141367758275,
+      "left_norm": 43.754827390303014,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_children:mean_margin": {
+      "dot": 0.03148684012401249,
+      "cosine": 0.033312032540074206,
+      "left_norm": 44.382122228549875,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_input:bad_probability_mass": {
+      "dot": 0.10043456312682253,
+      "cosine": 0.16371387960378056,
+      "left_norm": 28.805658831859365,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_input:good_probability_mass": {
+      "dot": 0.09973872964243659,
+      "cosine": 0.164358260524069,
+      "left_norm": 28.493934017169256,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_input:loss": {
+      "dot": 0.19627736417309297,
+      "cosine": 0.14790215533874718,
+      "left_norm": 62.31259423792536,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_input:mean_margin": {
+      "dot": 0.34099229889103105,
+      "cosine": 0.14396131983503205,
+      "left_norm": 111.21897016735788,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_root_children:bad_probability_mass": {
+      "dot": 0.022905369134170087,
+      "cosine": 0.2670207887261317,
+      "left_norm": 4.027841190632507,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_root_children:good_probability_mass": {
+      "dot": 0.022950817924618845,
+      "cosine": 0.2673083875393391,
+      "left_norm": 4.0314910466420475,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_root_children:loss": {
+      "dot": 0.030519778067502303,
+      "cosine": 0.2550230857426122,
+      "left_norm": 5.619297081969763,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_root_children:mean_margin": {
+      "dot": 0.12218357918617495,
+      "cosine": 0.07888322940478845,
+      "left_norm": 72.72911104209112,
+      "right_norm": 0.021297071150296276
+    },
+    "component_bound:bad_probability_mass": {
+      "dot": 0.0033808427023408337,
+      "cosine": 0.020005221748802,
+      "left_norm": 7.935270097287178,
+      "right_norm": 0.021297071150296276
+    },
+    "component_bound:good_probability_mass": {
+      "dot": 0.004072591924843223,
+      "cosine": 0.019921277817528803,
+      "left_norm": 9.599173069480662,
+      "right_norm": 0.021297071150296276
+    },
+    "component_bound:loss": {
+      "dot": 0.08164107829274603,
+      "cosine": 0.08927038003692306,
+      "left_norm": 42.941920807494895,
+      "right_norm": 0.021297071150296276
+    },
+    "component_bound:mean_margin": {
+      "dot": 0.07693626400943354,
+      "cosine": 0.07923136030231516,
+      "left_norm": 45.59467236036276,
+      "right_norm": 0.021297071150296276
+    },
+    "component_root:bad_probability_mass": {
+      "dot": 0.005336278145415568,
+      "cosine": 0.022094271553085434,
+      "left_norm": 11.340674595596372,
+      "right_norm": 0.021297071150296276
+    },
+    "component_root:good_probability_mass": {
+      "dot": 0.005363159975130413,
+      "cosine": 0.02207800433623893,
+      "left_norm": 11.406201918021091,
+      "right_norm": 0.021297071150296276
+    },
+    "component_root:loss": {
+      "dot": 0.00186200245543134,
+      "cosine": 0.019049811697649646,
+      "left_norm": 4.589545506952468,
+      "right_norm": 0.021297071150296276
+    },
+    "component_root:mean_margin": {
+      "dot": 0.12575951223746373,
+      "cosine": 0.05557107260249873,
+      "left_norm": 106.26058024514714,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_comma:bad_probability_mass": {
+      "dot": 0.009475032223971006,
+      "cosine": 0.020830321785821875,
+      "left_norm": 21.35820914321093,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_comma:good_probability_mass": {
+      "dot": 0.009475033923856294,
+      "cosine": 0.020830325210231773,
+      "left_norm": 21.358209463826835,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_comma:loss": {
+      "dot": 0.0510345376222823,
+      "cosine": 0.020468613183809953,
+      "left_norm": 117.07276722210226,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_comma:mean_margin": {
+      "dot": 0.050266371380256046,
+      "cosine": 0.01771037597183799,
+      "left_norm": 133.26922522096663,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_lsqb:bad_probability_mass": {
+      "dot": 0.004047316625695466,
+      "cosine": 0.01851670429262377,
+      "left_norm": 10.263219284569285,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_lsqb:good_probability_mass": {
+      "dot": 0.00476381168912125,
+      "cosine": 0.025555712133782185,
+      "left_norm": 8.752794183758677,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_lsqb:loss": {
+      "dot": 0.04195187187314095,
+      "cosine": 0.019527747181405188,
+      "left_norm": 100.87401755475175,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_lsqb:mean_margin": {
+      "dot": 0.042322714856549024,
+      "cosine": 0.018251577103296404,
+      "left_norm": 108.88128537000163,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rpar:bad_probability_mass": {
+      "dot": 0.007263553764133658,
+      "cosine": 0.021296627426720928,
+      "left_norm": 16.01468646458768,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rpar:good_probability_mass": {
+      "dot": 0.007263554220147532,
+      "cosine": 0.021296628436993297,
+      "left_norm": 16.014686710300335,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rpar:loss": {
+      "dot": 0.030515407198435006,
+      "cosine": 0.0213481354939586,
+      "left_norm": 67.11805106412206,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rpar:mean_margin": {
+      "dot": 0.06631188496174298,
+      "cosine": 0.021297474681543856,
+      "left_norm": 146.19865619961337,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_empty:bad_probability_mass": {
+      "dot": 0.01862493560196582,
+      "cosine": 0.09116581016518169,
+      "left_norm": 9.592745049855152,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_empty:good_probability_mass": {
+      "dot": 0.0188257746048362,
+      "cosine": 0.08639315549648663,
+      "left_norm": 10.231837545278745,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_empty:loss": {
+      "dot": 0.04469168230563491,
+      "cosine": 0.02873073879137911,
+      "left_norm": 73.03987602244887,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_empty:mean_margin": {
+      "dot": 0.07216155761971299,
+      "cosine": 0.026909587781026756,
+      "left_norm": 125.91543557125031,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_populated:bad_probability_mass": {
+      "dot": 0.01070206613466191,
+      "cosine": 0.022045466992498344,
+      "left_norm": 22.7944147247852,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_populated:good_probability_mass": {
+      "dot": 0.010702074136752955,
+      "cosine": 0.02204545544662478,
+      "left_norm": 22.794443706636947,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_populated:loss": {
+      "dot": 0.058743860593649486,
+      "cosine": 0.019643265023185228,
+      "left_norm": 140.41998640606238,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_populated:mean_margin": {
+      "dot": 0.060034570289881045,
+      "cosine": 0.019579093567559238,
+      "left_norm": 143.97561514422327,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_root_populated:bad_probability_mass": {
+      "dot": 0.0071224578220860785,
+      "cosine": 0.01964526050878378,
+      "left_norm": 17.02363158912128,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_root_populated:good_probability_mass": {
+      "dot": 0.007122458734350148,
+      "cosine": 0.01964526229514011,
+      "left_norm": 17.02363222158507,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_root_populated:loss": {
+      "dot": 0.03611700691272402,
+      "cosine": 0.01983571879379817,
+      "left_norm": 85.49563213118795,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_root_populated:mean_margin": {
+      "dot": 0.06374206018536199,
+      "cosine": 0.01964288171853779,
+      "left_norm": 152.3705421204762,
+      "right_norm": 0.021297071150296276
+    },
+    "lit:bad_probability_mass": {
+      "dot": 0.00011010753414809034,
+      "cosine": 0.04684608084375015,
+      "left_norm": 0.11036310012031704,
+      "right_norm": 0.021297071150296276
+    },
+    "lit:good_probability_mass": {
+      "dot": 1.5221017423933516e-05,
+      "cosine": 0.01891080229939461,
+      "left_norm": 0.03779321576509027,
+      "right_norm": 0.021297071150296276
+    },
+    "lit:loss": {
+      "dot": 0.014059580054495063,
+      "cosine": 0.019449416117729077,
+      "left_norm": 33.94266196670921,
+      "right_norm": 0.021297071150296276
+    },
+    "lit:mean_margin": {
+      "dot": 0.051847963376476194,
+      "cosine": 0.035048521871322534,
+      "left_norm": 69.46117299892437,
+      "right_norm": 0.021297071150296276
+    },
+    "sym:bad_probability_mass": {
+      "dot": 0.0118708959698052,
+      "cosine": 0.04695963663576053,
+      "left_norm": 11.8696766854718,
+      "right_norm": 0.021297071150296276
+    },
+    "sym:good_probability_mass": {
+      "dot": 0.011882606221052416,
+      "cosine": 0.0469923136356199,
+      "left_norm": 11.873123786183816,
+      "right_norm": 0.021297071150296276
+    },
+    "sym:loss": {
+      "dot": 0.051470592241012136,
+      "cosine": 0.05017725735541999,
+      "left_norm": 48.16508867206165,
+      "right_norm": 0.021297071150296276
+    },
+    "sym:mean_margin": {
+      "dot": 0.07175241209902058,
+      "cosine": 0.060565545142878784,
+      "left_norm": 55.62768579066426,
+      "right_norm": 0.021297071150296276
+    }
+  },
+  "train_regressions": [],
+  "held_out_alignment": {
+    "bind_declaration_root:bad_probability_mass": {
+      "dot": 0.001517126233982308,
+      "cosine": 0.019816800729850526,
+      "left_norm": 3.594746703150223,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_declaration_root:good_probability_mass": {
+      "dot": 0.0015171269403693214,
+      "cosine": 0.01981681712232231,
+      "left_norm": 3.594745403319206,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_declaration_root:loss": {
+      "dot": 0.0,
+      "cosine": 0.0,
+      "left_norm": 0.0,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_declaration_root:mean_margin": {
+      "dot": 0.06279137276237584,
+      "cosine": 0.020014373291410464,
+      "left_norm": 147.31199138076062,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_children:bad_probability_mass": {
+      "dot": 0.043587052935502635,
+      "cosine": 0.14126610510264986,
+      "left_norm": 14.48770695569656,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_children:good_probability_mass": {
+      "dot": 0.04355376337959578,
+      "cosine": 0.14139317742920576,
+      "left_norm": 14.463631596657814,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_children:loss": {
+      "dot": 0.05191649850233571,
+      "cosine": 0.12687750446742968,
+      "left_norm": 19.213252225704796,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_bound_children:mean_margin": {
+      "dot": 0.07075614220796456,
+      "cosine": 0.06681953622730043,
+      "left_norm": 49.721109061602796,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_root_children:bad_probability_mass": {
+      "dot": 0.0450892211534327,
+      "cosine": 0.26052626215676117,
+      "left_norm": 8.126458899814256,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_root_children:good_probability_mass": {
+      "dot": 0.045144881874136185,
+      "cosine": 0.26062589021191157,
+      "left_norm": 8.133380374317987,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_root_children:loss": {
+      "dot": 0.056005634031115234,
+      "cosine": 0.255455209755732,
+      "left_norm": 10.294305968491775,
+      "right_norm": 0.021297071150296276
+    },
+    "bind_reference_root_children:mean_margin": {
+      "dot": 0.2881479191337524,
+      "cosine": 0.16344597343772127,
+      "left_norm": 82.77922952281865,
+      "right_norm": 0.021297071150296276
+    },
+    "component_bound:bad_probability_mass": {
+      "dot": -0.0006700136442975907,
+      "cosine": -0.008430857987668156,
+      "left_norm": 3.731573421344948,
+      "right_norm": 0.021297071150296276
+    },
+    "component_bound:good_probability_mass": {
+      "dot": -0.0005900544955215416,
+      "cosine": -0.004407834279051966,
+      "left_norm": 6.285603525080513,
+      "right_norm": 0.021297071150296276
+    },
+    "component_bound:loss": {
+      "dot": 0.08782834028865748,
+      "cosine": 0.0725998077541785,
+      "left_norm": 56.80405292404963,
+      "right_norm": 0.021297071150296276
+    },
+    "component_bound:mean_margin": {
+      "dot": 0.06703170021366407,
+      "cosine": 0.0597563794050547,
+      "left_norm": 52.67154738955592,
+      "right_norm": 0.021297071150296276
+    },
+    "component_root:bad_probability_mass": {
+      "dot": 0.005703794709926451,
+      "cosine": 0.021486993987121342,
+      "left_norm": 12.464312874442452,
+      "right_norm": 0.021297071150296276
+    },
+    "component_root:good_probability_mass": {
+      "dot": 0.005730815334738489,
+      "cosine": 0.021473317391090367,
+      "left_norm": 12.531336415307408,
+      "right_norm": 0.021297071150296276
+    },
+    "component_root:loss": {
+      "dot": 0.0026953181218061393,
+      "cosine": 0.019048413615341913,
+      "left_norm": 6.644026205398998,
+      "right_norm": 0.021297071150296276
+    },
+    "component_root:mean_margin": {
+      "dot": 0.12861897755649365,
+      "cosine": 0.05651598121704874,
+      "left_norm": 106.8596872913919,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_comma:bad_probability_mass": {
+      "dot": 0.00679288837399983,
+      "cosine": 0.010003263765587954,
+      "left_norm": 31.885473875252654,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_comma:good_probability_mass": {
+      "dot": 0.006792889062964379,
+      "cosine": 0.010003264860611955,
+      "left_norm": 31.885473618820647,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_comma:loss": {
+      "dot": 0.04057126638253905,
+      "cosine": 0.014450385575448074,
+      "left_norm": 131.83151611863263,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_comma:mean_margin": {
+      "dot": 0.021659173584761333,
+      "cosine": 0.006610309491324186,
+      "left_norm": 153.85095864961886,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rpar:bad_probability_mass": {
+      "dot": 0.015221634441943861,
+      "cosine": 0.046184607374030455,
+      "left_norm": 15.475480775860492,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rpar:good_probability_mass": {
+      "dot": 0.01522163152721629,
+      "cosine": 0.04618460027441116,
+      "left_norm": 15.47548019145645,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rpar:loss": {
+      "dot": 0.05060712666366119,
+      "cosine": 0.04618460162532631,
+      "left_norm": 51.45109194909457,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rpar:mean_margin": {
+      "dot": 0.1438122866839425,
+      "cosine": 0.046184601713894734,
+      "left_norm": 146.21061615633127,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_empty:bad_probability_mass": {
+      "dot": 0.019169979142315455,
+      "cosine": 0.09183021198500434,
+      "left_norm": 9.802033256879133,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_empty:good_probability_mass": {
+      "dot": 0.0004904441704922371,
+      "cosine": 0.005284584920149508,
+      "left_norm": 4.357714903712249,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_empty:loss": {
+      "dot": 0.0988527195503601,
+      "cosine": 0.038974865862682784,
+      "left_norm": 119.09241736546535,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_empty:mean_margin": {
+      "dot": 0.10848133781777712,
+      "cosine": 0.04090281667713869,
+      "left_norm": 124.53227868163535,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_populated:bad_probability_mass": {
+      "dot": 0.0008783745535043139,
+      "cosine": 0.006867667855154793,
+      "left_norm": 6.005519493596948,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_populated:good_probability_mass": {
+      "dot": 0.0008783775270657115,
+      "cosine": 0.006867695567314884,
+      "left_norm": 6.005515590847172,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_populated:loss": {
+      "dot": 0.002474233947114886,
+      "cosine": 0.0007540504265271238,
+      "left_norm": 154.07085387822463,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_bound_populated:mean_margin": {
+      "dot": 0.002612812445874191,
+      "cosine": 0.0007916084313429779,
+      "left_norm": 154.9808159732885,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_root_populated:bad_probability_mass": {
+      "dot": 0.011250352768595318,
+      "cosine": 0.024186734373737622,
+      "left_norm": 21.840824222270395,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_root_populated:good_probability_mass": {
+      "dot": 0.011250353520919631,
+      "cosine": 0.024186737715786263,
+      "left_norm": 21.840822664894215,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_root_populated:loss": {
+      "dot": 0.04902764544669258,
+      "cosine": 0.031531991446621305,
+      "left_norm": 73.00788290134129,
+      "right_norm": 0.021297071150296276
+    },
+    "grammar_rsqb_root_populated:mean_margin": {
+      "dot": 0.06609897431906296,
+      "cosine": 0.02023047234238255,
+      "left_norm": 153.41535021430192,
+      "right_norm": 0.021297071150296276
+    },
+    "lit:bad_probability_mass": {
+      "dot": 2.5886362080989556e-06,
+      "cosine": 0.01905750816455534,
+      "left_norm": 0.006378007493947274,
+      "right_norm": 0.021297071150296276
+    },
+    "lit:good_probability_mass": {
+      "dot": 2.588109028397685e-06,
+      "cosine": 0.01905514594579824,
+      "left_norm": 0.006377499107627452,
+      "right_norm": 0.021297071150296276
+    },
+    "lit:loss": {
+      "dot": -0.014067538804916437,
+      "cosine": -0.0227358015002465,
+      "left_norm": 29.052798440689745,
+      "right_norm": 0.021297071150296276
+    },
+    "lit:mean_margin": {
+      "dot": 0.0357775273792723,
+      "cosine": 0.019056060605474403,
+      "left_norm": 88.15710412111393,
+      "right_norm": 0.021297071150296276
+    },
+    "sym:bad_probability_mass": {
+      "dot": 0.012334394148956328,
+      "cosine": 0.04095527966168095,
+      "left_norm": 14.141257962134638,
+      "right_norm": 0.021297071150296276
+    },
+    "sym:good_probability_mass": {
+      "dot": 0.012334839352067514,
+      "cosine": 0.04094205966872935,
+      "left_norm": 14.146334691572298,
+      "right_norm": 0.021297071150296276
+    },
+    "sym:loss": {
+      "dot": 0.08396108660904554,
+      "cosine": 0.07123291634325923,
+      "left_norm": 55.34487916207116,
+      "right_norm": 0.021297071150296276
+    },
+    "sym:mean_margin": {
+      "dot": 0.14051537219261956,
+      "cosine": 0.06919390116086208,
+      "left_norm": 95.35339037658572,
+      "right_norm": 0.021297071150296276
+    }
+  },
+  "held_out_regressions": [
+    "component_bound:bad_probability_mass",
+    "component_bound:good_probability_mass",
+    "lit:loss"
+  ],
+  "checkpoint": "/home/codex/repos/slm-training/outputs/autoresearch/e228-candidate-margin-alignment/runs/e228-candidate-margin-matched/checkpoints/last.pt",
+  "checkpoint_sha": "7a9be4a665e216d7f7e73883ad74ad972bbf30846896d0c29188d6482f5b093a",
+  "events_path": "src/slm_training/resources/data/preference/e261_gold_ast_counterfactual_v1/events.jsonl"
+}

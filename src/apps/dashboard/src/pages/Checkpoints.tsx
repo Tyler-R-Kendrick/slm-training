@@ -20,7 +20,7 @@ import {
   type GatePayload,
 } from "../components";
 
-export function Checkpoints({ navigate: _navigate }: { navigate: (to: string) => void }) {
+export function Checkpoints({ navigate }: { navigate: (to: string) => void }) {
   const caps = useCaps();
   const roster = usePoll<any>("/api/checkpoints", 0);
   const quality = usePoll<any>("/api/scoreboards/quality", 0);
@@ -97,7 +97,11 @@ export function Checkpoints({ navigate: _navigate }: { navigate: (to: string) =>
           </select>
         }
       >
-        {!selected && <Empty>No experiment with suite metrics available.</Empty>}
+        {!selected && (
+          <Empty ctaLabel="run a smoke suite →" onCta={() => navigate("/smoke")}>
+            No experiment with suite metrics available.
+          </Empty>
+        )}
         {selected && (
           <div className="two-col">
             <div>

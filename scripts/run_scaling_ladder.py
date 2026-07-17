@@ -36,6 +36,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--steps", type=int, default=50)
     parser.add_argument("--batch-size", type=int, default=2)
     parser.add_argument(
+        "--capacity-arm",
+        choices=("lexer", "choice"),
+        default=None,
+        help=(
+            "B3 capacity ladder (SLM-23): run one output-representation arm "
+            "(scratch track). Overrides --track; pairs with the other arm at "
+            "matched widths for the quality-vs-d_model comparison."
+        ),
+    )
+    parser.add_argument(
         "--dry-fit",
         action="store_true",
         help="Skip training; only exercise fit/EG helpers on synthetic points.",
@@ -44,6 +54,7 @@ def main(argv: list[str] | None = None) -> int:
 
     from slm_training.harnesses.experiments.efficiency_gain import efficiency_gain, efficiency_gain_lcb
     from slm_training.harnesses.experiments.ladder import (
+        capacity_ladder,
         hf_ladder_default,
         model_build_config_for_point,
         scratch_ladder_default,
@@ -62,21 +73,27 @@ def main(argv: list[str] | None = None) -> int:
     widths = tuple(int(x) for x in args.widths.split(",") if x.strip())
     horizons = tuple(float(x) for x in args.horizons.split(",") if x.strip())
     seeds = [int(x) for x in args.seeds.split(",") if x.strip()]
-    ladder = (
-        scratch_ladder_default(
+    if args.capacity_arm is not None:
+        ladder = capacity_ladder(
+            args.capacity_arm,
+            base_token_budget=args.base_token_budget,
+            widths=widths,
+            horizons=horizons,
+        )
+    elif args.track == "scratch":
+        ladder = scratch_ladder_default(
             base_token_budget=args.base_token_budget,
             widths=widths,
             horizons=horizons,
             representation=args.representation,
         )
-        if args.track == "scratch"
-        else hf_ladder_default(
+    else:
+        ladder = hf_ladder_default(
             base_token_budget=args.base_token_budget,
             widths=widths,
             horizons=horizons,
             representation=args.representation,
         )
-    )
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -214,7 +231,13 @@ def main(argv: list[str] | None = None) -> int:
             for o in observations
         ],
     }
-    (out / "ladder_summary.json").write_text(
+    payload["output_tokenizer"] = ladder.output_tokenizer
+    summary_name = (
+        f"ladder_summary_{ladder.ladder_id}.json"
+        if args.capacity_arm is not None
+        else "ladder_summary.json"
+    )
+    (out / summary_name).write_text(
         json.dumps(payload, indent=2) + "\n", encoding="utf-8"
     )
     print(json.dumps({"out": str(out), "fit": fit, "promotion": promotion}, indent=2))

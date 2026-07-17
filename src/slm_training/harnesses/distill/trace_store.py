@@ -261,6 +261,12 @@ class TraceStore:
                         row["trajectory_id"] = row.pop("trace_id", None)
                     yield row
 
+    def iter_kind(self, kind: str) -> Iterator[dict[str, Any]]:
+        """Filter the store by meta-model trace kind (decode rows = 'decode')."""
+        for row in self.iter_traces():
+            if row.get("kind", "decode") == kind:
+                yield row
+
     def _update_manifest(self, *, count: int) -> None:
         now = datetime.now(timezone.utc).isoformat()
         manifest = {
@@ -284,3 +290,137 @@ class TraceStore:
         self.manifest_path.write_text(
             json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
         )
+
+
+# ── G5 (SLM-37): meta-model trace capture ────────────────────────────────
+#
+# The eventual DSL-generating meta-model trains on three trace kinds sharing
+# one identity envelope (checkpoint SHA, decode-config hash, run/trace ids):
+#   decode           — per-step canvases/commits/remasks (DecodeTraceRecorder)
+#   harness_decision — a bounded decision a harness made (lever chosen,
+#                      candidate accepted/rejected, gate verdict)
+#   matrix_outcome   — one experiment row's scoreboard + pass/fail
+# Schema documented in docs/design/meta-model-traces.md.
+
+
+def record_harness_decision(
+    store: TraceStore,
+    *,
+    harness: str,
+    decision: str,
+    inputs: dict[str, Any] | None = None,
+    outcome: dict[str, Any] | None = None,
+    **meta: Any,
+) -> str:
+    return store.append(
+        {
+            "version": TRACE_VERSION,
+            "kind": "harness_decision",
+            "harness": harness,
+            "decision": decision,
+            "inputs": inputs or {},
+            "outcome": outcome or {},
+            "meta": meta,
+            "recorded_at": datetime.now(timezone.utc).isoformat(),
+        }
+    )
+
+
+def record_matrix_outcome(
+    store: TraceStore,
+    matrix_result: dict[str, Any],
+    *,
+    matrix_set: str,
+    **meta: Any,
+) -> str:
+    """Persist one quality/grammar-matrix experiment row as a trace."""
+    if "id" not in matrix_result:
+        raise ValueError("matrix result must carry its experiment id")
+    return store.append(
+        {
+            "version": TRACE_VERSION,
+            "kind": "matrix_outcome",
+            "matrix_set": matrix_set,
+            "experiment_id": matrix_result.get("id"),
+            "run_id_source": matrix_result.get("run_id"),
+            "passed": matrix_result.get("pass"),
+            "failures": list(matrix_result.get("failures") or []),
+            "suites": matrix_result.get("suites") or {},
+            "meta": meta,
+            "recorded_at": datetime.now(timezone.utc).isoformat(),
+        }
+    )
+
+
+def replay_violations(trace: dict[str, Any]) -> list[str]:
+    """Check a decode trace's replay invariant; empty list = replayable.
+
+    Each recorded step canvas must reflect that step's commits except where
+    the same step's remasks (or a later EOS pad) removed them, and remasked
+    positions must actually hold the mask id in the *next* recorded canvas.
+    This certifies the (canvas, commits, remasks) stream is self-consistent,
+    which is what meta-model training replays.
+    """
+    violations: list[str] = []
+    steps = [s for s in trace.get("steps", []) if s.get("canvas") is not None]
+    for row in steps:
+        canvas = row["canvas"]
+        remasked = {
+            int(t)
+            for remask in row.get("remasks", [])
+            for t in (remask.get("positions") or [])
+        }
+        for commit in row.get("commits", []) or []:
+            t, tid = int(commit["t"]), int(commit["id"])
+            if t in remasked:
+                continue
+            # canvas[t] == 0 (pad) is legal: EOS truncation pads the tail
+            # after commits within the same step.
+            if t < len(canvas) and canvas[t] != tid and canvas[t] != 0:
+                violations.append(
+                    f"step {row.get('step')}: canvas[{t}]={canvas[t]} != commit {tid}"
+                )
+    final = (trace.get("final") or {}).get("canvas")
+    if steps and final is None:
+        violations.append("trace has steps but no final canvas")
+    return violations
+
+
+def trace_bucket_uri(run_id: str) -> str:
+    """Meta-model traces live beside checkpoints in the existing bucket."""
+    return f"hf://buckets/TKendrick/OpenUI/traces/{run_id}"
+
+
+def sync_traces(
+    root: Path | str,
+    run_id: str,
+    *,
+    push: bool = False,
+) -> dict[str, Any]:
+    """Mirror a trace store into the bucket (same shape as sync_campaign)."""
+    local = Path(root)
+    if not (local / "manifest.json").is_file():
+        raise FileNotFoundError(f"trace store not found: {local}")
+    command = [
+        "hf",
+        "buckets",
+        "sync",
+        str(local),
+        trace_bucket_uri(run_id),
+        "--no-delete",
+    ]
+    if not push:
+        return {
+            "push": False,
+            "command": command,
+            "remote_uri": trace_bucket_uri(run_id),
+        }
+    import subprocess
+
+    completed = subprocess.run(command, check=True, capture_output=True, text=True)
+    return {
+        "push": True,
+        "command": command,
+        "remote_uri": trace_bucket_uri(run_id),
+        "stdout": completed.stdout.strip(),
+    }

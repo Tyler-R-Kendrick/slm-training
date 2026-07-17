@@ -1,0 +1,232 @@
+{
+  "campaign_id": "g2_fixture_20260717",
+  "generations": [
+    {
+      "index": 0,
+      "results": [
+        {
+          "gene": {
+            "mask_pattern": "diffusion",
+            "parallel_unmask": "adaptive",
+            "gen_steps": 8,
+            "remask_span": "token",
+            "statement_mask_prob": 0.35,
+            "ltr_loss_weight": 0.5,
+            "fidelity_loss_weight": 0.040484,
+            "lr": 0.0003
+          },
+          "gene_id": "708a9ff9e9",
+          "fitness": 16.414610839414923,
+          "gates_pass": false,
+          "gate_failures": [
+            "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+            "smoke:structural_similarity actual=0.22999999999999998 need>=0.35",
+            "smoke:component_type_recall actual=0.0 need>=0.35",
+            "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+            "smoke:reward_score actual=0.0 need>=0.3",
+            "held_out:meaningful_program_rate actual=0.0 need>=0.4",
+            "held_out:structural_similarity actual=0.20701999999999998 need>=0.3",
+            "held_out:component_type_recall actual=0.12857142857142856 need>=0.3",
+            "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+            "adversarial:missing_suite",
+            "ood:missing_suite",
+            "rico_held:missing_suite"
+          ],
+          "summary_path": "outputs/runs/g2_fixture_20260717_g0_s2_708a9ff9e9/train_summary.json",
+          "error": null
+        },
+        {
+          "gene": {
+            "mask_pattern": "diffusion",
+            "parallel_unmask": "adaptive",
+            "gen_steps": 8,
+            "remask_span": "token",
+            "statement_mask_prob": 0.35,
+            "ltr_loss_weight": 0.5,
+            "fidelity_loss_weight": 0.5,
+            "lr": 0.0003
+          },
+          "gene_id": "d8c96d7bae",
+          "fitness": 16.653624993045476,
+          "gates_pass": false,
+          "gate_failures": [
+            "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+            "smoke:structural_similarity actual=0.22999999999999998 need>=0.35",
+            "smoke:component_type_recall actual=0.0 need>=0.35",
+            "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+            "smoke:reward_score actual=0.0 need>=0.3",
+            "held_out:meaningful_program_rate actual=0.0 need>=0.4",
+            "held_out:structural_similarity actual=0.20701999999999998 need>=0.3",
+            "held_out:component_type_recall actual=0.12857142857142856 need>=0.3",
+            "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+            "adversarial:missing_suite",
+            "ood:missing_suite",
+            "rico_held:missing_suite"
+          ],
+          "summary_path": "outputs/runs/g2_fixture_20260717_g0_s0_d8c96d7bae/train_summary.json",
+          "error": null
+        },
+        {
+          "gene": {
+            "mask_pattern": "diffusion",
+            "parallel_unmask": "adaptive",
+            "gen_steps": 8,
+            "remask_span": "token",
+            "statement_mask_prob": 0.35,
+            "ltr_loss_weight": 0.5,
+            "fidelity_loss_weight": 0.757954,
+            "lr": 0.0003
+          },
+          "gene_id": "33f4de5b50",
+          "fitness": 16.749903990346382,
+          "gates_pass": false,
+          "gate_failures": [
+            "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+            "smoke:structural_similarity actual=0.22999999999999998 need>=0.35",
+            "smoke:component_type_recall actual=0.0 need>=0.35",
+            "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+            "smoke:reward_score actual=0.0 need>=0.3",
+            "held_out:meaningful_program_rate actual=0.0 need>=0.4",
+            "held_out:structural_similarity actual=0.20701999999999998 need>=0.3",
+            "held_out:component_type_recall actual=0.12857142857142856 need>=0.3",
+            "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+            "adversarial:missing_suite",
+            "ood:missing_suite",
+            "rico_held:missing_suite"
+          ],
+          "summary_path": "outputs/runs/g2_fixture_20260717_g0_s1_33f4de5b50/train_summary.json",
+          "error": null
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "results": [
+        {
+          "gene": {
+            "mask_pattern": "diffusion",
+            "parallel_unmask": "adaptive",
+            "gen_steps": 8,
+            "remask_span": "token",
+            "statement_mask_prob": 0.35,
+            "ltr_loss_weight": 0.5,
+            "fidelity_loss_weight": 0.040484,
+            "lr": 0.0003
+          },
+          "gene_id": "708a9ff9e9",
+          "fitness": 16.414610839414923,
+          "gates_pass": false,
+          "gate_failures": [
+            "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+            "smoke:structural_similarity actual=0.22999999999999998 need>=0.35",
+            "smoke:component_type_recall actual=0.0 need>=0.35",
+            "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+            "smoke:reward_score actual=0.0 need>=0.3",
+            "held_out:meaningful_program_rate actual=0.0 need>=0.4",
+            "held_out:structural_similarity actual=0.20701999999999998 need>=0.3",
+            "held_out:component_type_recall actual=0.12857142857142856 need>=0.3",
+            "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+            "adversarial:missing_suite",
+            "ood:missing_suite",
+            "rico_held:missing_suite"
+          ],
+          "summary_path": "outputs/runs/g2_fixture_20260717_g0_s2_708a9ff9e9/train_summary.json",
+          "error": null
+        },
+        {
+          "gene": {
+            "mask_pattern": "diffusion",
+            "parallel_unmask": "adaptive",
+            "gen_steps": 8,
+            "remask_span": "token",
+            "statement_mask_prob": 0.35,
+            "ltr_loss_weight": 0.5,
+            "fidelity_loss_weight": 0.5,
+            "lr": 0.0003
+          },
+          "gene_id": "d8c96d7bae",
+          "fitness": 16.653624993045476,
+          "gates_pass": false,
+          "gate_failures": [
+            "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+            "smoke:structural_similarity actual=0.22999999999999998 need>=0.35",
+            "smoke:component_type_recall actual=0.0 need>=0.35",
+            "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+            "smoke:reward_score actual=0.0 need>=0.3",
+            "held_out:meaningful_program_rate actual=0.0 need>=0.4",
+            "held_out:structural_similarity actual=0.20701999999999998 need>=0.3",
+            "held_out:component_type_recall actual=0.12857142857142856 need>=0.3",
+            "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+            "adversarial:missing_suite",
+            "ood:missing_suite",
+            "rico_held:missing_suite"
+          ],
+          "summary_path": "outputs/runs/g2_fixture_20260717_g0_s0_d8c96d7bae/train_summary.json",
+          "error": null
+        },
+        {
+          "gene": {
+            "mask_pattern": "diffusion",
+            "parallel_unmask": "fixed",
+            "gen_steps": 8,
+            "remask_span": "token",
+            "statement_mask_prob": 0.35,
+            "ltr_loss_weight": 0.5,
+            "fidelity_loss_weight": 0.5,
+            "lr": 0.0003
+          },
+          "gene_id": "e6b9d5f805",
+          "fitness": 16.653624993045476,
+          "gates_pass": false,
+          "gate_failures": [
+            "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+            "smoke:structural_similarity actual=0.22999999999999998 need>=0.35",
+            "smoke:component_type_recall actual=0.0 need>=0.35",
+            "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+            "smoke:reward_score actual=0.0 need>=0.3",
+            "held_out:meaningful_program_rate actual=0.0 need>=0.4",
+            "held_out:structural_similarity actual=0.20701999999999998 need>=0.3",
+            "held_out:component_type_recall actual=0.12857142857142856 need>=0.3",
+            "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+            "adversarial:missing_suite",
+            "ood:missing_suite",
+            "rico_held:missing_suite"
+          ],
+          "summary_path": "outputs/runs/g2_fixture_20260717_g1_s2_e6b9d5f805/train_summary.json",
+          "error": null
+        }
+      ]
+    }
+  ],
+  "best": {
+    "gene": {
+      "mask_pattern": "diffusion",
+      "parallel_unmask": "adaptive",
+      "gen_steps": 8,
+      "remask_span": "token",
+      "statement_mask_prob": 0.35,
+      "ltr_loss_weight": 0.5,
+      "fidelity_loss_weight": 0.040484,
+      "lr": 0.0003
+    },
+    "gene_id": "708a9ff9e9",
+    "fitness": 16.414610839414923,
+    "gates_pass": false,
+    "gate_failures": [
+      "smoke:meaningful_program_rate actual=0.0 need>=0.66",
+      "smoke:structural_similarity actual=0.22999999999999998 need>=0.35",
+      "smoke:component_type_recall actual=0.0 need>=0.35",
+      "smoke:placeholder_fidelity actual=0.0 need>=0.25",
+      "smoke:reward_score actual=0.0 need>=0.3",
+      "held_out:meaningful_program_rate actual=0.0 need>=0.4",
+      "held_out:structural_similarity actual=0.20701999999999998 need>=0.3",
+      "held_out:component_type_recall actual=0.12857142857142856 need>=0.3",
+      "held_out:placeholder_fidelity actual=0.0 need>=0.15",
+      "adversarial:missing_suite",
+      "ood:missing_suite",
+      "rico_held:missing_suite"
+    ]
+  },
+  "promotable": false,
+  "note": "selection ranks gate-passers first under the unaltered default ship policy; no candidate passed, so nothing is promotable"
+}

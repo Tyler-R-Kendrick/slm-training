@@ -64,8 +64,25 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Replay and independently judge grammar-legal exact-state alternatives.",
     )
-    parser.add_argument("--counterfactual-states-per-record", type=int, default=4)
+    parser.add_argument(
+        "--counterfactual-states-per-record",
+        type=int,
+        default=4,
+        help=(
+            "Maximum judge probes per record, stratified across compiler-derived "
+            "decision kinds and relative trajectory depth."
+        ),
+    )
     parser.add_argument("--counterfactual-candidates", type=int, default=4)
+    parser.add_argument(
+        "--counterfactual-state-source",
+        choices=("policy", "gold_ast"),
+        default="policy",
+        help=(
+            "Mine states from policy commits or grammar/AST-aligned judged "
+            "targets. Gold targets never enter model context."
+        ),
+    )
     args = parser.parse_args(argv)
 
     if args.counterfactual_semantic and (
@@ -207,6 +224,7 @@ def main(argv: list[str] | None = None) -> int:
                     max_states=int(args.counterfactual_states_per_record),
                     max_candidates=int(args.counterfactual_candidates),
                     seed=int(args.seed),
+                    state_source=str(args.counterfactual_state_source),
                 )
                 for key, value in mined.items():
                     counterfactual[key] += value

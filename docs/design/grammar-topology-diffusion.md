@@ -254,3 +254,28 @@ passed 1/5, 2/5, and 0/5 for X9 and 0/5 for every X14 seed. Checkpoints remain
 local scratch artifacts under `outputs/topology_confirm_4bf964d`; none were
 promoted or synced. The next experiment should improve generation validity and
 held-out vocabulary coverage before any full HF-context spend.
+
+## Measured D3 Kapur baseline X22 (2026-07-17 UTC)
+
+Track D3 (SLM-31) added `models/tree_edit_diffusion.py` — a baseline faithful
+to the *mechanism* of Diffusion On Syntax Trees
+([arXiv:2405.20519](https://arxiv.org/abs/2405.20519)): all intermediate
+states are valid programs (forward noise = verified component
+replace/add/remove chains), the policy is supervised on the inverse edit, and
+decode is value-guided beam search from a minimal valid seed. Observation
+channel is prompt conditioning instead of the paper's rendered-image feedback
+(stated boundary). Registered as X22 (`model_name="tree_edit_diffusion"`).
+
+Matched 80-step CPU screening vs X9 (seed 0, scratch context, unchanged
+gates): X22 syntax parse 1.0 on all five suites (by construction — the
+honest signal is content), meaningful parse **0.2 held_out / 0.25
+adversarial / 0.25 ood** (the adversarial and ood gate rows passed outright
+— first nonzero meaningful parse at this fixture budget in the program),
+structural similarity 0.32–0.37 (non-RICO), fidelity 0.12–0.53. X9 at the
+identical recipe scored 0.0 on every signal. Both rows still fail the full
+gate battery; nothing promoted. Caveats: single seed, tiny suites, X9's
+published confirmations used 200 steps, and X22's edit space cannot yet
+express v0.5 state/query/action statements (RICO meaningful parse 0.0).
+Evidence:
+[iter-x22-d3-kapur-tree-edit-20260717.md](iter-x22-d3-kapur-tree-edit-20260717.md)
++ [grammar-matrix-results-iter-x22-kapur-20260717.json](grammar-matrix-results-iter-x22-kapur-20260717.json).

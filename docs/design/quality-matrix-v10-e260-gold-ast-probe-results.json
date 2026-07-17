@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E260-gold-ast-counterfactual-probe",
+  "status": "measured_bounded_hypothesis_confirmed",
+  "run": {
+    "run_id": "e260-gold-state-probe-10",
+    "trace_id": "1211a687b0b3464bf67409ee31cdb806",
+    "base_commit": "1b4cb50c2b10f66ebc93ceea0d9b8175926a390f",
+    "device": "cpu",
+    "seed": 260,
+    "source_document_records": 10,
+    "decode_policy": "strict_compiler_tree",
+    "counterfactual_state_source": "gold_ast",
+    "states_per_record": 4,
+    "candidates_per_state": 4
+  },
+  "identity": {
+    "source_record_fingerprint": "9f72d85b6cc7118e0f69e010d0debdd2b40ede514e03178dded8e164daaae9bb",
+    "policy_checkpoint_sha": "7a9be4a665e216d7f7e73883ad74ad972bbf30846896d0c29188d6482f5b093a",
+    "tokenizer_sha": "8dbf8142068860eed06463fa2e0013bb298267a305bcfd85a0c24df0f7f61efe",
+    "decode_config_hash": "8c2a2ae5cb5c4ad0ab44de74a172fc2c887fbdc7e5e7e20ede953184a0c3fe5b"
+  },
+  "scoreboard": {
+    "traces": 10,
+    "accepted_traces": 10,
+    "states": 40,
+    "legal_candidates": 116,
+    "independent_judge_passed": 114,
+    "verified_candidates": 48,
+    "qualified_events": 30,
+    "qualified_decision_kinds": 11,
+    "qualified_groups": 9,
+    "train_events": 24,
+    "held_out_events": 6,
+    "train_groups": 7,
+    "held_out_groups": 2,
+    "set_valued_events": 17
+  },
+  "decision": {
+    "bounded_hypothesis_confirmed": true,
+    "admit_for_training": false,
+    "run_full_corpus": true,
+    "ship": false,
+    "reason": "Grammar/AST-aligned states broke the rollout miner's eight-group ceiling and produced two stable held-out groups on only ten records."
+  }
+}

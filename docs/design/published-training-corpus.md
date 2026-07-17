@@ -1,6 +1,13 @@
 # Published training corpora
 
-Generated datasets are not sufficient when they remain only under gitignored `outputs/`. Before a training run is used for iteration, publish its version with:
+Generated datasets are not sufficient when they remain only under gitignored `outputs/`.
+
+`scripts/build_train_data.py` now publishes the built version into
+`src/slm_training/resources/data/train/<version>/` **by default** after every
+successful build (`--no-publish` opts out for ad-hoc/scratch roots). An
+identical rebuild republishes as a no-op; rebuilding the same version with
+different content fails loudly — bump `--version` instead of overwriting
+evidence. Standalone publication remains available:
 
 ```bash
 python scripts/publish_train_data.py --version remediated

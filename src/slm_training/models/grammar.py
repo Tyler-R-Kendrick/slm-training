@@ -57,7 +57,7 @@ def _token_surface_piece(tokenizer: OpenUITokenizer, token_id: int) -> str:
             return raw
     kind_of = getattr(tokenizer, "kind_of", None)
     kind = getattr(kind_of(tid), "value", "") if callable(kind_of) else ""
-    if kind in {"sym", "bind", "state", "lit"} or not raw:
+    if kind in {"sym", "bind", "state", "lit", "macro"} or not raw:
         decoded = tokenizer.decode([tid])
         if decoded:
             return decoded

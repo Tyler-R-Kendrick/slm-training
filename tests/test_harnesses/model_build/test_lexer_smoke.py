@@ -77,9 +77,57 @@ def test_lexer_from_records_builds_dual_tokenizers(tmp_path: Path) -> None:
     model = TwoTowerModel.from_records(records, config=cfg, device="cpu")
     assert is_dsl_native_tokenizer(model.tokenizer)
     assert model.context_tokenizer is not model.tokenizer
-    assert model.tokenizer.vocab_size <= 400
+    # Fixed corpus-independent vocabulary incl. 64 reserved <MACRO_i> rows (C3).
+    assert model.tokenizer.vocab_size <= 480
     loss = model.training_loss(records)
     assert float(loss.detach()) >= 0.0
+
+
+def test_surface_identifier_arm_trains_and_fails_closed(tmp_path: Path) -> None:
+    """C4 (SLM-28): the surface arm builds/trains end-to-end, and refuses the
+    combinations whose decode or encoding presuppose anonymized pooled ids."""
+    import pytest
+
+    records = [
+        ExampleRecord(
+            id="t1",
+            prompt="Hero card",
+            openui=HERO,
+            placeholders=[":hero.title", ":hero.body"],
+        )
+    ]
+    base = dict(
+        output_tokenizer="lexer",
+        context_backend="scratch",
+        grammar_constrained=False,
+        d_model=64,
+        n_heads=4,
+        context_layers=1,
+        denoiser_layers=2,
+        max_prompt_len=64,
+        max_target_len=160,
+    )
+    cfg = TwoTowerConfig(symbol_anonymization=False, **base)
+    model = TwoTowerModel.from_records(records, config=cfg, device="cpu")
+    target_ids = model._encode_openui(
+        HERO, placeholders=[":hero.title", ":hero.body"]
+    )
+    assert not any(model.tokenizer.is_bind_id(i) for i in target_ids)
+    loss = model.training_loss(records)
+    assert float(loss.detach()) >= 0.0
+
+    for bad in (
+        dict(grammar_constrained=True),
+        dict(macro_tokens=True),
+        dict(bind_encoding="relative"),
+    ):
+        merged = {**base, **bad}
+        with pytest.raises(ValueError, match="symbol_anonymization"):
+            TwoTowerModel.from_records(
+                records,
+                config=TwoTowerConfig(symbol_anonymization=False, **merged),
+                device="cpu",
+            )
 
 
 def test_lexer_train_eval_smoke(tmp_path: Path) -> None:

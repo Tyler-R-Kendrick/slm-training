@@ -304,6 +304,14 @@ def evaluate_loss_suites(
     ``complete=False`` when anything was missing — a partial aggregate is
     never silently presented as the full objective.
     """
+    # Teacher-forced suites carry no request context: request-local runtime
+    # symbol features from the last training batch must not leak in (their
+    # batch dimension is stale and their content is request-specific).
+    setter = getattr(
+        getattr(model, "denoiser", None), "set_runtime_symbol_features", None
+    )
+    if callable(setter):
+        setter(None)
     try:
         spec = load_suite_spec(LOSS_SUITE_VERSION)
     except FileNotFoundError:

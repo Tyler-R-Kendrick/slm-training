@@ -162,9 +162,56 @@ def _plain_markdown(value: str | None) -> str:
     return text.replace("`", "").replace("**", "").strip()
 
 
+_METRIC_LABELS = {
+    "meaningful_program_rate": "Meaningful",
+    "structural_similarity": "Structure",
+    "component_type_recall": "Type recall",
+    "placeholder_fidelity": "Fidelity",
+    "reward_score": "Reward",
+}
+
+
+def gate_metric_keys() -> list[str]:
+    """The aggregate metric levers, in ship-gate policy order.
+
+    The ship-gate policy is the canonical statement of what training is
+    optimizing; deriving the dashboard's metric set from it means a policy
+    change (adding/dropping a lever) propagates to every metric surface.
+    """
+    keys: list[str] = []
+    for mins in DEFAULT_SHIP_GATES.values():
+        for key in mins:
+            if key not in keys:
+                keys.append(key)
+    return keys
+
+
+def metric_label(key: str) -> str:
+    return _METRIC_LABELS.get(key, key.replace("_", " "))
+
+
+def _normalize_metrics(metrics: Any) -> dict[str, float]:
+    """Re-key an arbitrary metrics dict onto the ship-gate levers.
+
+    Legacy evaluation reports predate the meaningful/parse split; their
+    parse_rate feeds the meaningful lever so cross-era comparisons stay on
+    one metric vocabulary.
+    """
+    if not isinstance(metrics, dict):
+        return {}
+    out: dict[str, float] = {}
+    for key in gate_metric_keys():
+        value = metrics.get(key)
+        if value is None and key == "meaningful_program_rate":
+            value = metrics.get("parse_rate")
+        if isinstance(value, (int, float)):
+            out[key] = float(value)
+    return out
+
+
 def _suite_metrics(suites: Any) -> tuple[dict[str, float], int]:
     """Collapse suite metrics with sample-count weighting for fair comparisons."""
-    keys = ("parse_rate", "placeholder_fidelity", "structural_similarity", "reward_score")
+    keys = tuple(gate_metric_keys())
     totals = {key: 0.0 for key in keys}
     weights = {key: 0 for key in keys}
     sample_count = 0
@@ -176,11 +223,10 @@ def _suite_metrics(suites: Any) -> tuple[dict[str, float], int]:
         weight = max(1, int(suite.get("n") or 0))
         sample_count += int(suite.get("n") or 0)
         for key in keys:
-            value = (
-                suite.get("meaningful_program_rate", suite.get(key))
-                if key == "parse_rate"
-                else suite.get(key)
-            )
+            value = suite.get(key)
+            if value is None and key == "meaningful_program_rate":
+                # Legacy scoreboard rows predate the meaningful/parse split.
+                value = suite.get("parse_rate")
             if isinstance(value, (int, float)):
                 totals[key] += float(value) * weight
                 weights[key] += weight
@@ -798,7 +844,9 @@ class Readers:
                             if int(value or 0) > 0
                         ),
                         "usage": (
-                            "E252–E254" if counterfactual else "decoder evidence only"
+                            "semantic preference training"
+                            if counterfactual
+                            else "decoder evidence only"
                         ),
                         "fingerprint": str(
                             manifest.get("content_fingerprint") or ""
@@ -1107,11 +1155,12 @@ class Readers:
             (r for r in references if r["track"] == "twotower" and r["metrics"]),
             None,
         )
-        baseline_score = (
-            sum(primary["metrics"].values()) / len(primary["metrics"])
-            if primary and primary["metrics"]
-            else None
-        )
+        # Normalize the reference onto the gate levers so deltas never average
+        # different metric vocabularies (e.g. legacy parse_rate-era reports).
+        if primary is not None:
+            primary = {**primary, "metrics": _normalize_metrics(primary["metrics"])}
+            if not primary["metrics"]:
+                primary = None
         rows: list[dict[str, Any]] = []
         seen: set[str] = set()
         for kind in (RESEARCH_SCOREBOARD_KIND, "quality", "grammar"):
@@ -1124,7 +1173,19 @@ class Readers:
                 if not metrics:
                     continue
                 score = sum(metrics.values()) / len(metrics)
-                delta = score - baseline_score if baseline_score is not None else None
+                # Deltas compare means over the levers BOTH sides report, so a
+                # row missing a lever is never compared across dimensions.
+                delta = None
+                if primary is not None:
+                    common = [
+                        key
+                        for key in gate_metric_keys()
+                        if key in metrics and key in primary["metrics"]
+                    ]
+                    if common:
+                        delta = sum(metrics[k] for k in common) / len(common) - sum(
+                            primary["metrics"][k] for k in common
+                        ) / len(common)
                 rows.append(
                     {
                         "id": row.get("id") or row.get("run_id"),
@@ -1138,10 +1199,7 @@ class Readers:
                             if row.get("pass") is False
                             else "not recorded"
                         ),
-                        "parse": metrics.get("parse_rate"),
-                        "fidelity": metrics.get("placeholder_fidelity"),
-                        "structure": metrics.get("structural_similarity"),
-                        "reward": metrics.get("reward_score"),
+                        "metrics": metrics,
                         "score": score,
                         "sample_count": sample_count,
                         "vs_reference": (
@@ -1208,8 +1266,10 @@ class Readers:
             signatures: dict[tuple[float | None, ...], list[str]] = {}
             for row in rows:
                 signature = tuple(
-                    round(row[key], 6) if isinstance(row[key], float) else None
-                    for key in ("parse", "fidelity", "structure", "reward")
+                    round(row["metrics"][key], 6)
+                    if isinstance(row["metrics"].get(key), float)
+                    else None
+                    for key in gate_metric_keys()
                 )
                 signatures.setdefault(signature, []).append(str(row["id"]))
             same = max(signatures.values(), key=len)
@@ -1245,7 +1305,13 @@ class Readers:
         }
 
     def performance_insights(self) -> dict[str, Any]:
-        references, fingerprint = self._reference_models()
+        references, reference_identity = self._reference_models()
+        # The insight cache regenerates when the roster/champions change (by
+        # design) — and also when the gate policy changes, since every finding
+        # is derived from the policy's metric levers.
+        fingerprint = content_sha(
+            {"references": reference_identity, "gate_policy": DEFAULT_SHIP_GATES}
+        )
         rows, primary = self._performance_rows(references)
         cache_path = self.outputs / "dashboard" / "overview-insights.json"
         cached_payload = _read_json(cache_path) or {}
@@ -1286,6 +1352,9 @@ class Readers:
             ),
             "comparison_basis": basis,
             "comparisons": rows,
+            "metric_columns": [
+                {"key": key, "label": metric_label(key)} for key in gate_metric_keys()
+            ],
             "stats": {
                 "reference_models": len(references),
                 "experiments": len(rows),
@@ -1304,10 +1373,15 @@ class Readers:
     # ---- system + overview aggregate -----------------------------------------
 
     def system(self) -> dict[str, Any]:
+        try:
+            # An existing-but-empty outputs/ is still a cold start.
+            outputs_present = self.outputs.exists() and any(self.outputs.iterdir())
+        except OSError:
+            outputs_present = False
         return {
             "checkpoint_bucket": "hf://buckets/TKendrick/OpenUI",
             "deployment": self.deployment_state(),
-            "outputs_present": self.outputs.exists(),
+            "outputs_present": outputs_present,
         }
 
     def overview(self) -> dict[str, Any]:

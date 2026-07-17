@@ -24,6 +24,24 @@ def repo_root() -> Path:
     return here.parents[1]
 
 
+def checkout_roots(root: Path | None = None) -> tuple[Path, ...]:
+    """Return this checkout followed by its Git common checkout, if distinct."""
+    root = (root or repo_root()).resolve()
+    roots = [root]
+    common = subprocess.run(
+        ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
+        cwd=root,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if common.returncode == 0 and common.stdout.strip():
+        common_root = Path(common.stdout.strip()).resolve().parent
+        if common_root not in roots:
+            roots.append(common_root)
+    return tuple(roots)
+
+
 def readline_with_timeout(
     proc: subprocess.Popen[str],
     timeout_s: float,

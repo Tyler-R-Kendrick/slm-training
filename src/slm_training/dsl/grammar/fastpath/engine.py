@@ -325,6 +325,16 @@ class OpenUIIncrementalEngine:
 
 def engine_for_dsl(dsl: str | None = None) -> OpenUIIncrementalEngine | None:
     key = (dsl or "openui").strip().lower()
+    # F1: a registered DSL pack's incremental_engine slot wins; the alias
+    # list below stays as the registry-free fallback.
+    try:
+        from slm_training.dsl.pack import get_pack
+
+        pack = get_pack(key)
+        if pack.incremental_engine is not None:
+            return pack.incremental_engine()
+    except KeyError:
+        pass
     if key in {
         "openui",
         "openui-lark",
@@ -336,4 +346,14 @@ def engine_for_dsl(dsl: str | None = None) -> OpenUIIncrementalEngine | None:
         return OpenUIIncrementalEngine()
     if key == "toy-layout":
         return OpenUIIncrementalEngine(GRAMMARS_DIR / "toy_layout.lark")
+    # F1 pack seam: any registered backend that carries a Lark grammar path
+    # gets a fastpath engine without editing this function.
+    try:
+        from slm_training.dsl.grammar.backends import get_backend
+
+        info = get_backend(key).info
+        if info.grammar_path is not None:
+            return OpenUIIncrementalEngine(info.grammar_path)
+    except KeyError:
+        pass
     return None

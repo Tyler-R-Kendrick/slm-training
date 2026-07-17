@@ -710,9 +710,12 @@ def test_scope_diffusion_source_manifest_is_complete() -> None:
     assert len({row.uri for row in rows}) == 19
     assert all(row.uri.startswith("https://arxiv.org/abs/") for row in rows)
     assert all(row.metadata.get("scope_diff_takeaway") for row in rows)
+    # "Faithful (mechanism)" is the Kapur tree-diffusion status after D3
+    # (SLM-31) reproduced the paper's mechanism (models/tree_edit_diffusion.py).
     assert {row.metadata.get("implementation_status") for row in rows} == {
         "Adapted",
         "Adjacent",
+        "Faithful (mechanism)",
     }
 
 
