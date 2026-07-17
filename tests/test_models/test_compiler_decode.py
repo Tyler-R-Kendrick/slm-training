@@ -6,6 +6,7 @@ import pytest
 import torch
 
 from slm_training.dsl.grammar.fastpath.compiler_draft import (
+    CompilerDecision,
     CompletionPath,
     active_declaration_binder_id,
     active_declaration_reference_count,
@@ -693,6 +694,45 @@ def test_compiler_alignment_can_stratify_grammar_decision_kinds() -> None:
     assert metrics["compiler_alignment_grammar_rsqb_root_populated_rows"] == 1
     assert metrics["compiler_alignment_grammar_comma_rows"] == 1
     assert metrics["compiler_alignment_grammar_rsqb_root_populated_loss"] >= 0.0
+
+
+def test_compiler_alignment_skips_gold_outside_legal_candidates(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    model = _model()
+    model.config.compiler_alignment_loss_weight = 1.0
+    model.config.compiler_alignment_stratified = True
+    model.config.compiler_alignment_semantic_exhaustive = True
+    record = ExampleRecord(
+        id="alignment-invalid-candidate",
+        prompt="card",
+        openui='root = Card([title])\ntitle = TextContent(":hero.title")',
+        placeholders=[":hero.title"],
+        split="train",
+        source="fixture",
+    )
+    monkeypatch.setattr(
+        "slm_training.dsl.grammar.fastpath.compiler_draft.gold_compiler_decisions",
+        lambda *_args, **_kwargs: (
+            CompilerDecision(
+                position=1,
+                kind="component_root",
+                token_kind="component",
+                candidate_ids=(model.tokenizer.mask_id,),
+            ),
+        ),
+    )
+
+    loss = model.training_loss([record])
+
+    assert torch.isfinite(loss)
+    assert model.last_training_metrics["compiler_alignment_rows"] == 0
+    assert (
+        model.last_training_metrics[
+            "compiler_alignment_gold_outside_candidate_rows"
+        ]
+        == 1
+    )
 
 
 def test_component_inventory_supervision_trains_prompt_level_component_set() -> None:

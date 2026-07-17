@@ -1700,6 +1700,7 @@ class TwoTowerModel(nn.Module):
             aligned_kinds: list[str] = []
             aligned_candidate_ids: list[tuple[int, ...]] = []
             kind_rows: dict[str, int] = {}
+            gold_outside_candidate_rows = 0
             for row, record in enumerate(batch):
                 target_key = tuple(
                     int(token_id) for token_id in target_ids[row].tolist()
@@ -1737,13 +1738,17 @@ class TwoTowerModel(nn.Module):
                     selected = [decisions[self._rng.randrange(len(decisions))]]
                 for decision in selected:
                     cut = int(decision.position)
+                    target = int(target_ids[row, cut])
+                    if target not in decision.candidate_ids:
+                        gold_outside_candidate_rows += 1
+                        continue
                     canvas = target_ids[row].clone()
                     canvas[cut:] = self.tokenizer.mask_id
                     canvas[target_ids[row].eq(self.tokenizer.pad_id)] = (
                         self.tokenizer.pad_id
                     )
                     aligned_canvases.append(canvas)
-                    aligned_targets.append(int(target_ids[row, cut]))
+                    aligned_targets.append(target)
                     aligned_positions.append(cut)
                     aligned_context_rows.append(row)
                     aligned_kinds.append(decision.kind)
@@ -1842,6 +1847,9 @@ class TwoTowerModel(nn.Module):
                 ),
                 "compiler_alignment_candidate_count_max": max(
                     map(len, aligned_candidate_ids), default=0
+                ),
+                "compiler_alignment_gold_outside_candidate_rows": (
+                    gold_outside_candidate_rows
                 ),
                 "compiler_alignment_cross_entropy": (
                     float(cross_entropy_tensor.mean().detach().cpu())

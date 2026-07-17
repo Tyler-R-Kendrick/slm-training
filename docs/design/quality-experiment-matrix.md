@@ -1944,6 +1944,17 @@ semantic supervision next. See
 [results](iter-e312-component-plan-token-pool-decode-20260717.md) and
 [JSON](component-plan-token-pool-decode-results-iter-e312-20260717.json).
 
+## E313 semantic-exhaustive choice alignment (CPU scratch, 2026-07-17)
+
+The first matched E311+semantic-alignment launch stopped after step 7 / 336
+target tokens: one gold token was absent from its compiler candidate tuple and
+the alignment harness raised `ValueError`. No checkpoint was written.
+
+**Status:** harness failure, not model evidence. Skip and count invalid
+alignment rows, test the guard, and relaunch the same recipe. See
+[notes](iter-e313-semantic-exhaustive-20260717.md) and
+[JSON](iter-e313-semantic-exhaustive-20260717.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

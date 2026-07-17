@@ -1,0 +1,22 @@
+{
+  "campaign": "E313 semantic-exhaustive choice alignment",
+  "date": "2026-07-17",
+  "status": "launch_failed_harness_gold_outside_candidates",
+  "hypothesis": "Direct supervision of the actual denoiser at every semantic compiler decision improves held-out and OOD component selection.",
+  "attempts": [
+    {
+      "run_id": "e313-semantic-exhaustive-20k-r1",
+      "device": "cpu",
+      "steps_completed": 7,
+      "seen_target_tokens": 336,
+      "checkpoint_written": false,
+      "failure": "ValueError: tuple.index(x): x not in tuple",
+      "failure_site": "TwoTowerModel.training_loss compiler alignment gold-index lookup",
+      "last_alignment_rows": 20,
+      "last_alignment_loss": 22.18596839904785,
+      "last_component_root_rows": 2,
+      "last_component_bound_rows": 5
+    }
+  ],
+  "next_action": "Skip and count gold-outside-candidate alignment rows, test the guard, and relaunch the same recipe."
+}
