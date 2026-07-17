@@ -382,6 +382,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Bias compiler-legal components by role and remaining planned count.",
     )
     parser.add_argument(
+        "--component-plan-attention-pool",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Use a learned attention pool instead of context mean for the plan head.",
+    )
+    parser.add_argument(
         "--component-edge-loss-weight",
         type=float,
         default=0.0,
@@ -770,6 +776,7 @@ def main(argv: list[str] | None = None) -> int:
             component_inventory_decode_weight=args.component_inventory_decode_weight,
             component_plan_loss_weight=args.component_plan_loss_weight,
             component_plan_decode_weight=args.component_plan_decode_weight,
+            component_plan_attention_pool=args.component_plan_attention_pool,
             component_edge_loss_weight=args.component_edge_loss_weight,
             component_edge_alignment_loss_weight=(
                 args.component_edge_alignment_loss_weight

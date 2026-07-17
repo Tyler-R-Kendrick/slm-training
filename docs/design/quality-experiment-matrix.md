@@ -1896,6 +1896,18 @@ prompt-conditioned plan supervision directly. See
 [results](iter-e308-component-prompt-train-20260717.md) and
 [JSON](component-prompt-train-results-iter-e308-20260717.json).
 
+## E309 component-plan weight scaling (CPU scratch, 2026-07-17)
+
+On E307 v4, raising plan training weight 1→4 leaves final-20 root accuracy
+0.85 and bound recall 0.4104 unchanged; loss slightly worsens. The frozen
+five-suite selected-metric hash is exactly E308, with seven failures and
+AgentV 2/5.
+
+**Verdict:** reject and stop scalar plan-weight scaling. Change the target or
+representation next. See
+[results](iter-e309-component-plan-weight-20260717.md) and
+[JSON](component-plan-weight-results-iter-e309-20260717.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

@@ -105,6 +105,7 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 | E297 seed-1 DESIGN-dropout arm | `e297-choice-design-dropout50-seed1-r1` | CPU scratch 50% DESIGN-dropout replication | `outputs/runs/e297-choice-design-dropout50-seed1-r1/checkpoints/last.pt` (local) | Complete weighted NLL 7.5864; base eval 17 failures. E301 concise connected decoding cuts failures to 7 and AgentV reaches 2/5, but held/OOD meaningful remain zero — **not promotable or ship** ([results](design/iter-e301-choice-connected-close-20260717.md)) |
 | E304 20k-token component plan | `e304-choice-plan-20k-r1` | CPU scratch no-DESIGN duration arm | `outputs/runs/e304-choice-plan-20k-r1/checkpoints/last.pt` (local) | Complete weighted NLL 5.1647. E305 slot-safe decode restores parse, yields RICO meaningful 1.0/reward 0.8515, and cuts failures to 7 / AgentV 2/5; held/OOD remain zero — **not promotable or ship** ([results](design/iter-e305-choice-slot-safe-content-20260717.md)) |
 | E308 component-prompt plan | `e308-component-prompt-20k-r1` | CPU scratch E307 data arm | `outputs/runs/e308-component-prompt-20k-r1/checkpoints/last.pt` (local) | Weighted NLL 4.8836, but four suites equal E305 and limited RICO regresses; 7 failures / AgentV 2/5 — **not promotable or ship** ([results](design/iter-e308-component-prompt-train-20260717.md)) |
+| E309 plan-weight scaling | `e309-component-plan4-20k-r1` | CPU scratch E307 supervision arm | `outputs/runs/e309-component-plan4-20k-r1/checkpoints/last.pt` (local) | Plan weight 4 leaves head recall and all suite metrics equal E308; 7 failures / AgentV 2/5 — **not promotable or ship** ([results](design/iter-e309-component-plan-weight-20260717.md)) |
 | Production HF ship | — | — | `hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/` | **None registered yet** — fill this row after the first full HF sync |
 
 Update the table in place when a checkpoint is written or superseded. Keep
@@ -286,6 +287,11 @@ Leakage: structural fingerprints + train/test isolation
 | `adversarial` (E308 component prompts) | 4 | 1.0 | 0.5417 | 0.4744 | 0.4245 | Yes for suite thresholds; no global ship |
 | `ood` (E308 component prompts) | 4 | 1.0 | 0.2583 | 0.3750 | 0.0000 | No — meaningful/component recall 0.0 |
 | `rico_held` (E308 component prompts) | 3 | 1.0 | 0.5417 | 0.3333 | 0.5567 | Yes for limited suite thresholds; regresses E305 and no global ship |
+| `smoke` (E309 plan weight 4) | 3 | 1.0 | 0.5278 | 0.4642 | 0.2497 | No — meaningful 0.3333 and recall 0.1667 |
+| `held_out` (E309 plan weight 4) | 5 | 1.0 | 0.2800 | 0.3369 | 0.0000 | No — meaningful/component recall 0.0 |
+| `adversarial` (E309 plan weight 4) | 4 | 1.0 | 0.5417 | 0.4744 | 0.4245 | Yes for suite thresholds; no global ship |
+| `ood` (E309 plan weight 4) | 4 | 1.0 | 0.2583 | 0.3750 | 0.0000 | No — meaningful/component recall 0.0 |
+| `rico_held` (E309 plan weight 4) | 3 | 1.0 | 0.5417 | 0.3333 | 0.5567 | Yes for limited suite thresholds; no global ship |
 | `smoke` (`e177-semantic-judge-32step`, E180 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1542 | 0.607 | No — syntax 1.0, but meaningful component recall 0.25; not a ship evaluation |
 | `smoke` (`e181-semantic-balanced-32step`, E181 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1542 | 0.607 | No — mixture-only control did not improve quality; not a ship evaluation |
 | `smoke` (`e184-compiler-aligned-32step`, E194 diagnostic subset) | 1 | 0.0 | 0.0 | 0.3600 | 0.0 | No — root/schema constraints improved, but output remained incomplete; not a ship evaluation |
@@ -606,6 +612,7 @@ suites because they contain no scope metadata. Evidence:
 | 2026-07-17 | `e304-choice-plan-20k-r1` (E304 duration arm) | `outputs/runs/e304-choice-plan-20k-r1/` (local) | 418 CPU scratch steps / 20,003 target tokens; complete NLL 5.1647; SHA `2081378f2a3f11530a2193e79a0b98d4f487c2631c3f814018117bbd2677d420`; explicit no-sync | Honest board regresses to 10 failures / AgentV 1/5 despite RICO meaningful 1.0; no promotion |
 | 2026-07-17 | `e305-choice-slot-safe-connected-honest-r1` (E305 eval-only) | `outputs/runs/e305-choice-slot-safe-connected-honest-r1/` (local) | Same E304 SHA; required strings consume visible slots and components close after required args | Parse 1.0, failures 7, AgentV 2/5, RICO reward 0.8515; held/OOD zero, no promotion |
 | 2026-07-17 | `e308-component-prompt-20k-r1` (E308 data arm) | `outputs/runs/e308-component-prompt-20k-r1/` (local) | 420 CPU scratch steps / 20,001 target tokens on E307 v4; NLL 4.8836; SHA `f56089052dbc804754fb0d201bd7a4d6cbd356b6d72b42959147fce9233e2b55`; explicit no-sync | Four suites equal E305, RICO regresses, 7 failures / AgentV 2/5; no promotion |
+| 2026-07-17 | `e309-component-plan4-20k-r1` (E309 supervision arm) | `outputs/runs/e309-component-plan4-20k-r1/` (local) | 420 CPU scratch steps / 20,001 target tokens; plan loss weight 4; NLL 4.8847; SHA `18da6dc916bc2a5e4b84e0e96b648eb2108c9437451e3da76662b13df6d59075`; explicit no-sync | Head recall and five-suite metrics exactly equal E308; 7 failures / AgentV 2/5; no promotion |
 
 Append a row for every new or replaced checkpoint. Do not delete history.
 

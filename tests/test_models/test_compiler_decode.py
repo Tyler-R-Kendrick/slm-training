@@ -109,6 +109,7 @@ def test_choice_component_plan_trains_without_surface_compiler() -> None:
             max_target_len=64,
             component_plan_loss_weight=1.0,
             component_plan_decode_weight=1.0,
+            component_plan_attention_pool=True,
             seed=0,
         ),
         device="cpu",
@@ -119,6 +120,9 @@ def test_choice_component_plan_trains_without_surface_compiler() -> None:
     assert model.component_plan_head is not None
     assert model.component_plan_head.weight.grad is not None
     assert model.component_plan_head.weight.grad.abs().sum() > 0
+    assert model.component_plan_query is not None
+    assert model.component_plan_query.grad is not None
+    assert model.component_plan_query.grad.abs().sum() > 0
     assert model.last_training_metrics["component_plan_root_accuracy"] >= 0.0
 
 

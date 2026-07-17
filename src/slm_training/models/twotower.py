@@ -210,6 +210,7 @@ class TwoTowerConfig:
     # Grammar-role plan: root class plus bound-component multiplicities.
     component_plan_loss_weight: float = 0.0
     component_plan_decode_weight: float = 0.0
+    component_plan_attention_pool: bool = False
     component_edge_loss_weight: float = 0.0
     component_edge_alignment_loss_weight: float = 0.0
     component_edge_decode_weight: float = 0.0
@@ -594,6 +595,19 @@ class TwoTowerModel(nn.Module):
                 103,
             )
             if plan_enabled
+            else None
+        )
+        self.component_plan_query = (
+            isolated_aux_init(
+                lambda: nn.Parameter(
+                    torch.empty(self.config.d_model).normal_(
+                        std=self.config.d_model**-0.5
+                    )
+                ),
+                113,
+            )
+            if plan_enabled
+            and bool(getattr(self.config, "component_plan_attention_pool", False))
             else None
         )
         try:
@@ -1152,6 +1166,22 @@ class TwoTowerModel(nn.Module):
             return context.mean(dim=1)
         visible = (~pad_mask).unsqueeze(-1).to(context.dtype)
         return (context * visible).sum(dim=1) / visible.sum(dim=1).clamp(min=1.0)
+
+    def _pool_component_plan_context(
+        self, context: torch.Tensor, pad_mask: torch.Tensor | None
+    ) -> torch.Tensor:
+        if self.component_plan_query is None:
+            return self._pool_context(context, pad_mask)
+        scores = torch.einsum(
+            "btd,d->bt", context, self.component_plan_query
+        ) / math.sqrt(context.shape[-1])
+        if pad_mask is not None:
+            scores = scores.masked_fill(pad_mask, torch.finfo(scores.dtype).min)
+        weights = scores.softmax(dim=1)
+        if pad_mask is not None:
+            weights = weights.masked_fill(pad_mask, 0.0)
+            weights = weights / weights.sum(dim=1, keepdim=True).clamp_min(1e-9)
+        return torch.einsum("bt,btd->bd", weights, context)
 
     def _predict_target_lengths(
         self, context: torch.Tensor, pad_mask: torch.Tensor | None
@@ -1918,7 +1948,7 @@ class TwoTowerModel(nn.Module):
 
                 index = torch.as_tensor(component_ids, device=ctx.device)
                 plan_logits = self.component_plan_head(
-                    self._pool_context(ctx, ctx_pad)
+                    self._pool_component_plan_context(ctx, ctx_pad)
                 ).view(len(batch), 2, self.tokenizer.vocab_size)
                 root_logits = plan_logits[:, 0].index_select(1, index)
                 bound_logits = plan_logits[:, 1].index_select(1, index)
@@ -3005,9 +3035,9 @@ class TwoTowerModel(nn.Module):
         component_ids = set(self._component_inventory_token_ids())
         if not component_ids.intersection(candidate_ids):
             return None
-        logits = self.component_plan_head(self._pool_context(ctx, ctx_pad))[0].view(
-            2, self.tokenizer.vocab_size
-        )
+        logits = self.component_plan_head(
+            self._pool_component_plan_context(ctx, ctx_pad)
+        )[0].view(2, self.tokenizer.vocab_size)
         emitted_bound: dict[int, int] = {}
         skipped_root = False
         for token_id in prefix:
