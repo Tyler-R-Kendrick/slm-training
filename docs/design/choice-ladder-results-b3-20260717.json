@@ -1,0 +1,81 @@
+{
+  "study": "b3-choice-ladder",
+  "widths": [
+    16,
+    32,
+    64
+  ],
+  "steps": 60,
+  "lr": 0.0003,
+  "seed": 0,
+  "train_n": 32,
+  "heldout_n": 8,
+  "rows": [
+    {
+      "d_model": 16,
+      "target": "lexer",
+      "trainable_params": 27746,
+      "vocab_size": 400,
+      "tokens_per_program": 46.97,
+      "decisions_per_program": 19.1,
+      "train_loss_final": 15.7967,
+      "heldout_nll_per_token": 13.3936,
+      "heldout_nll_per_decision": 32.9362
+    },
+    {
+      "d_model": 16,
+      "target": "choice",
+      "trainable_params": 22226,
+      "vocab_size": 55,
+      "tokens_per_program": 21.0,
+      "decisions_per_program": 19.1,
+      "train_loss_final": 11.9636,
+      "heldout_nll_per_token": 11.1564,
+      "heldout_nll_per_decision": 12.2661
+    },
+    {
+      "d_model": 32,
+      "target": "lexer",
+      "trainable_params": 78018,
+      "vocab_size": 400,
+      "tokens_per_program": 46.97,
+      "decisions_per_program": 19.1,
+      "train_loss_final": 17.4632,
+      "heldout_nll_per_token": 16.9289,
+      "heldout_nll_per_decision": 41.6298
+    },
+    {
+      "d_model": 32,
+      "target": "choice",
+      "trainable_params": 66978,
+      "vocab_size": 55,
+      "tokens_per_program": 21.0,
+      "decisions_per_program": 19.1,
+      "train_loss_final": 9.5532,
+      "heldout_nll_per_token": 9.9098,
+      "heldout_nll_per_decision": 10.8955
+    },
+    {
+      "d_model": 64,
+      "target": "lexer",
+      "trainable_params": 246146,
+      "vocab_size": 400,
+      "tokens_per_program": 46.97,
+      "decisions_per_program": 19.1,
+      "train_loss_final": 14.2307,
+      "heldout_nll_per_token": 13.9972,
+      "heldout_nll_per_decision": 34.4206
+    },
+    {
+      "d_model": 64,
+      "target": "choice",
+      "trainable_params": 224066,
+      "vocab_size": 55,
+      "tokens_per_program": 21.0,
+      "decisions_per_program": 19.1,
+      "train_loss_final": 8.1161,
+      "heldout_nll_per_token": 9.9921,
+      "heldout_nll_per_decision": 10.9861
+    }
+  ]
+}

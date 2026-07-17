@@ -5975,6 +5975,22 @@ class TwoTowerModel(nn.Module):
                 (len(context_tokenizer.encode(r.prompt)) for r in records),
                 default=16,
             )
+        elif (
+            str(getattr(cfg, "output_tokenizer", "") or "").lower() == "choice"
+        ):
+            # B1 training half: choice-stream targets (canonical-space by
+            # construction). Context stays a prompt-word tokenizer.
+            from slm_training.models.choice_tokenizer import ChoiceTokenizer
+
+            tokenizer = ChoiceTokenizer.build([r.openui for r in records])
+            context_tokenizer = OpenUITokenizer.build([r.prompt for r in records])
+            max_prompt = max(
+                (len(context_tokenizer.encode(r.prompt)) for r in records),
+                default=16,
+            )
+            max_target = max(
+                (len(tokenizer.encode(r.openui)) for r in records), default=32
+            )
         else:
             texts = [r.prompt for r in records] + [r.openui for r in records]
             tokenizer = OpenUITokenizer.build(texts)

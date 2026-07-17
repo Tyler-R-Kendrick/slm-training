@@ -48,6 +48,41 @@ surface atom).
   be promoted (the E225 train/decode-mismatch lesson). The codec core lands
   first so B2's audit has the target representation in hand.
 
+## B3 fixture ladder (SLM-23, measured 2026-07-17)
+
+`harnesses/experiments/choice_ladder.py` + the `output_tokenizer="choice"`
+training path (`models/choice_tokenizer.py`, wired into
+`TwoTowerModel.from_records`): matched tiny models per width — one arm on
+lexer surface targets, one on choice targets — same 32 fixture-v1 records
+(choice-codec-compatible subset), 8 held-out, 60 CPU steps, lr 3e-4, seed 0,
+same held-out mask draw. JSON:
+[choice-ladder-results-b3-20260717.json](choice-ladder-results-b3-20260717.json).
+
+| d_model | target | params | vocab | tokens/prog | held-out NLL/token | **NLL/decision** |
+| ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| 16 | lexer | 27.7k | 400 | 47.0 | 13.39 | 32.94 |
+| 16 | choice | 22.2k | 55 | 21.0 | 11.16 | **12.27** |
+| 32 | lexer | 78.0k | 400 | 47.0 | 16.93 | 41.63 |
+| 32 | choice | 67.0k | 55 | 21.0 | 9.91 | **10.90** |
+| 64 | lexer | 246.1k | 400 | 47.0 | 14.00 | 34.42 |
+| 64 | choice | 224.1k | 55 | 21.0 | 9.99 | **10.99** |
+
+At every width the choice arm spends ~3× fewer nats per semantic decision on
+held-out programs, with a 7× smaller vocabulary and 2.2× shorter targets —
+the direction the externalized-syntax hypothesis predicts, now measured
+instead of asserted. Canonical-space alignment (B2's requirement) holds by
+construction: targets derive from the canonical production stream and
+`encode(decode(ids))` is the identity (test-enforced).
+
+**Fixture caveats (binding)**: 32 train records, 60 CPU steps, masked-NLL
+proxy — *not* meaningful parse, which stays the primary metric for any
+real B3 claim; constrained decode over choice vocabularies does not exist
+yet, so generation quality is unmeasured; the surface arm's NLL
+renormalization assumes decision count is representation-invariant (it is —
+both arms encode the same programs). The full ladder (`--matrix` rows,
+meaningful parse primary, frontier scale) remains open until B2 (SLM-22)
+lands and a choice-vocabulary constraint gate exists.
+
 ## Honesty
 
 Codec-layer evidence only: round-trip identity (`choices → OpenUI →
