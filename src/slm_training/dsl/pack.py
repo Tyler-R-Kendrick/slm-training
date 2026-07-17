@@ -139,9 +139,11 @@ def get_pack(dsl: str | None = None) -> DslPack:
 def _ensure_builtins() -> None:
     if _REGISTRY:
         return
+    from slm_training.dsl.packs.graphql import build_graphql_pack
     from slm_training.dsl.packs.openui import build_openui_pack
 
     register_pack(build_openui_pack())
+    register_pack(build_graphql_pack())
 
 
 __all__ = [

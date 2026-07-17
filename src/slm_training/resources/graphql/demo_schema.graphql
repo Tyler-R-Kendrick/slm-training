@@ -1,0 +1,31 @@
+"""F2 fixture schema: a small blog domain. The schema IS the symbol table —
+every query the pack generates or validates resolves its fields against it."""
+
+type Query {
+  posts(limit: Int): [Post]
+  post(id: ID!): Post
+  authors: [Author]
+  author(id: ID!): Author
+}
+
+type Post {
+  id: ID!
+  title: String
+  body: String
+  published: Boolean
+  author: Author
+  comments: [Comment]
+}
+
+type Author {
+  id: ID!
+  name: String
+  bio: String
+  posts: [Post]
+}
+
+type Comment {
+  id: ID!
+  text: String
+  author: Author
+}

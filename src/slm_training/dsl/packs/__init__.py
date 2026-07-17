@@ -6,6 +6,7 @@ Each module here wires one DSL's existing component owners into a
 land.
 """
 
+from slm_training.dsl.packs.graphql import build_graphql_pack
 from slm_training.dsl.packs.openui import build_openui_pack
 
-__all__ = ["build_openui_pack"]
+__all__ = ["build_graphql_pack", "build_openui_pack"]

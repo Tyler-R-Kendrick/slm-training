@@ -63,6 +63,36 @@ The pack wires the owners by reference; a future physical consolidation, if
 ever wanted, is mechanical (`git mv` + provider-string updates) and invisible
 to pack consumers.
 
+## The second instance: GraphQL (F2, SLM-43)
+
+[`dsl/packs/graphql.py`](../../src/slm_training/dsl/packs/graphql.py) proves
+the contract generalizes:
+
+- **Oracle**: the official `graphql` package (graphql-js) behind a JSON-over-
+  stdio sidecar ([`src/apps/graphql_bridge`](../../src/apps/graphql_bridge))
+  mirroring the OpenUI lang-core bridge. `validate` = parse + full schema
+  validation.
+- **Scope rules**: *the schema IS the symbol table* — every selected field
+  must exist on its parent schema type, enforced by graphql-js, never
+  learned. This is the strongest real-world exercise of the externalized-
+  scope principle (C1/C2), since OpenUI 0.2.x has little binding surface.
+- **Canonicalizer**: `print(parse(x))` — graphql-js's printer is a stable,
+  idempotent normal form.
+- **Placeholder policy**: variables (`$name`) are the routed-content channel;
+  the typed-AST generator emits required arguments only through variables.
+- **Corpus generator**
+  ([`harnesses/train_data/graphql_corpus.py`](../../src/slm_training/harnesses/train_data/graphql_corpus.py)):
+  walks the schema symbol table and emits one operation per Query root field
+  with depth-bounded selection sets — every output passes the pack's own
+  oracle by construction (enforced in `tests/test_dsl/test_graphql_pack.py`).
+- **Contract id**: offline hash of the graphql package version + the fixture
+  schema ([`resources/graphql/demo_schema.graphql`](../../src/slm_training/resources/graphql/demo_schema.graphql)).
+
+Deferred (recorded, not claimed): running the OpenUI quality matrices/gates
+over GraphQL corpora requires a GraphQL-aware output tokenizer and suite
+definitions — that is the training half of F2 and lands separately; this
+change is the pack foundation (oracle, scope, generator, canonical form).
+
 ## What F2+ must implement
 
 1. A `GrammarBackend` (register in `dsl/grammar/backends`) whose
