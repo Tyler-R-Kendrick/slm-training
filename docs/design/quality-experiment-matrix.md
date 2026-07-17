@@ -2007,6 +2007,17 @@ not a model or ship result. See
 [results](iter-e316-semantic-slot-synthesis-20260717.md) and
 [JSON](semantic-slot-synthesis-results-iter-e316-20260717.json).
 
+The matched 20k train worsens weighted/broad NLL to 5.4155/5.4832 but improves
+final-20 plan loss, root accuracy, bound recall, and count MAE. Under the frozen
+honest E315 policy, failures fall 5→2 and AgentV rises 2/5→3/5. OOD and limited
+RICO pass completely; smoke recall is 0.3333 against 0.35 and held recall is
+0.20 against 0.30.
+
+**Model verdict:** retain as the best current scratch candidate, but do not
+promote or claim ship. See
+[train result](iter-e316-semantic-slot-train-20260717.md) and
+[JSON](semantic-slot-train-results-iter-e316-20260717.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

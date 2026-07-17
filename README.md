@@ -115,6 +115,7 @@ summary and the full card whenever a checkpoint is created or promoted.
 | E311 token-pooled plan | `e311-component-plan-token-pool-20k-r1/last.pt` | `outputs/runs/e311-component-plan-token-pool-20k-r1/…` (local) | E312 weight-4 decode changes only limited-RICO choices and regresses structure; 7 failures/AgentV 2/5 — not promoted or ship |
 | E313 semantic-exhaustive alignment | `e313-semantic-exhaustive-20k-r2/last.pt` | `outputs/runs/e313-semantic-exhaustive-20k-r2/…` (local) | Alignment learns, but four suites equal E311 and RICO structure regresses; 7 failures/AgentV 2/5 — not promoted or ship |
 | E314 visible slot-contract train | `e314-visible-slot-contract-20k-r1/last.pt` | `outputs/runs/e314-visible-slot-contract-20k-r1/…` (local) | E315 distinct-slot floor restores full slot fidelity and cuts failures 7→5, but held recall stays 0/AgentV 2/5 — not promoted or ship |
+| E316 semantic-slot train | `e316-semantic-slots-20k-r1/last.pt` | `outputs/runs/e316-semantic-slots-20k-r1/…` (local) | Best current scratch: failures 5→2 and AgentV 3/5; smoke/held recall still miss — not promoted or ship |
 | Production HF ship | *(none yet)* | [HF Bucket `TKendrick/OpenUI`](https://huggingface.co/buckets/TKendrick/OpenUI) `checkpoints/<run_id>/` | Register here after first full HF sync + `--ship-gates` |
 
 **Load demo:** `python -m scripts.serve_playground` · **Full train sync:** set

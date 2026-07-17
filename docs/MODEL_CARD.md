@@ -110,6 +110,7 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 | E311 token-pooled plan | `e311-component-plan-token-pool-20k-r1` | CPU scratch E307 representation arm | `outputs/runs/e311-component-plan-token-pool-20k-r1/checkpoints/last.pt` (local) | E312 weight-4 decode changes only limited-RICO choices and regresses its structure; 7 failures / AgentV 2/5 — **not promotable or ship** ([E311](design/iter-e311-component-plan-token-pool-20260717.md), [E312](design/iter-e312-component-plan-token-pool-decode-20260717.md)) |
 | E313 semantic-exhaustive alignment | `e313-semantic-exhaustive-20k-r2` | CPU scratch E307 decision-local supervision arm | `outputs/runs/e313-semantic-exhaustive-20k-r2/checkpoints/last.pt` (local) | Alignment learns and plan diagnostics improve, but four suites equal E311, RICO structure regresses, and 7 failures / AgentV 2/5 remain — **not promotable or ship** ([results](design/iter-e313-semantic-exhaustive-20260717.md)) |
 | E314 visible slot-contract train | `e314-visible-slot-contract-20k-r1` | CPU scratch E314 v2 request-shape arm | `outputs/runs/e314-visible-slot-contract-20k-r1/checkpoints/last.pt` (local) | E315 corrected auto floor restores slot fidelity and cuts failures 7→5, but held-out component recall remains zero; AgentV 2/5 — **not promotable or ship** ([E314](design/iter-e314-visible-slot-contract-train-20260717.md), [E315](design/iter-e315-distinct-slot-floor-20260717.md)) |
+| E316 semantic-slot train | `e316-semantic-slots-20k-r1` | CPU scratch E316 semantic-role data arm | `outputs/runs/e316-semantic-slots-20k-r1/checkpoints/last.pt` (local) | Best current scratch: failures 5→2 and AgentV 3/5; OOD/RICO pass, but smoke recall 0.3333<0.35 and held recall 0.20<0.30 — **not promotable or ship** ([results](design/iter-e316-semantic-slot-train-20260717.md)) |
 | Production HF ship | — | — | `hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/` | **None registered yet** — fill this row after the first full HF sync |
 
 Update the table in place when a checkpoint is written or superseded. Keep
@@ -321,6 +322,11 @@ Leakage: structural fingerprints + train/test isolation
 | `adversarial` (E315 distinct-slot floor) | 4 | 1.0 | 1.0000 | 0.5970 | 0.4805 | Yes for suite thresholds; no global ship |
 | `ood` (E315 distinct-slot floor) | 4 | 1.0 | 1.0000 | 0.4206 | 0.2500 | No — component recall 0.125 |
 | `rico_held` (E315 distinct-slot floor) | 3 | 1.0 | 1.0000 | 0.3322 | 0.6667 | Yes for limited suite thresholds; no global ship |
+| `smoke` (E316 semantic slots) | 3 | 1.0 | 1.0000 | 0.5464 | 0.6407 | No — component recall 0.3333 < 0.35 |
+| `held_out` (E316 semantic slots) | 5 | 1.0 | 1.0000 | 0.4431 | 0.3916 | No — component recall 0.20 < 0.30 |
+| `adversarial` (E316 semantic slots) | 4 | 1.0 | 1.0000 | 0.4453 | 0.4865 | Yes for suite thresholds; no global ship |
+| `ood` (E316 semantic slots) | 4 | 1.0 | 1.0000 | 0.5104 | 0.9857 | Yes for suite thresholds; no global ship |
+| `rico_held` (E316 semantic slots) | 3 | 1.0 | 1.0000 | 0.3369 | 1.0000 | Yes for limited suite thresholds; no global ship |
 | `smoke` (`e177-semantic-judge-32step`, E180 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1542 | 0.607 | No — syntax 1.0, but meaningful component recall 0.25; not a ship evaluation |
 | `smoke` (`e181-semantic-balanced-32step`, E181 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1542 | 0.607 | No — mixture-only control did not improve quality; not a ship evaluation |
 | `smoke` (`e184-compiler-aligned-32step`, E194 diagnostic subset) | 1 | 0.0 | 0.0 | 0.3600 | 0.0 | No — root/schema constraints improved, but output remained incomplete; not a ship evaluation |
@@ -648,6 +654,7 @@ suites because they contain no scope metadata. Evidence:
 | 2026-07-17 | `e313-semantic-exhaustive-20k-r2` (E313 decision-local arm) | `outputs/runs/e313-semantic-exhaustive-20k-r2/` (local) | 420 CPU scratch steps / 20,001 target tokens; exhaustive semantic alignment; NLL 5.0604; SHA `3495bb22c1472c830f317cce9706dfadb7558b0c9e6139cb6436dbba75a32781`; explicit no-sync | Alignment learns but four suites equal E311 and RICO structure regresses; 7 failures / AgentV 2/5; no promotion |
 | 2026-07-17 | `e314-visible-slot-contract-20k-r1` (E314 request-shape arm) | `outputs/runs/e314-visible-slot-contract-20k-r1/` (local) | 420 CPU scratch steps / 20,001 target tokens; visible contract v2 data; NLL 5.0561; SHA `f0aaf614e5b6869441c65a091b74429ab9309d508648e51c1c9b4bfcc21a1588`; explicit no-sync | Four suites equal E311, RICO structure regresses, held-out collapse remains; 7 failures / AgentV 2/5; no promotion |
 | 2026-07-17 | `e315-distinct-slot-floor-honest-r1` (E315 eval-only) | `outputs/runs/e315-distinct-slot-floor-honest-r1/` (local) | Unchanged E314 SHA; auto floor counts distinct slots under frozen honest policy | Full slot fidelity; failures 7→5; OOD meaningful passes, but held recall 0 and AgentV 2/5; no checkpoint promotion |
+| 2026-07-17 | `e316-semantic-slots-20k-r1` (E316 semantic-role arm) | `outputs/runs/e316-semantic-slots-20k-r1/` (local) | 446 CPU scratch steps / 20,044 target tokens; semantic-slot v1 data; NLL 5.4155; SHA `b2f6e676363ac8ce7690fff0a2d56ec276d72013ba4e4a2f0083e1315c11395a`; explicit no-sync | Best current scratch: 2 failures / AgentV 3/5; OOD and limited RICO pass, but smoke and held recall miss; no promotion |
 
 Append a row for every new or replaced checkpoint. Do not delete history.
 

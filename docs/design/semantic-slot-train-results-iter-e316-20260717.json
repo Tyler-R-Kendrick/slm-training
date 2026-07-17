@@ -1,0 +1,57 @@
+{
+  "id": "E316",
+  "date": "2026-07-17",
+  "status": "best_current_scratch_not_promotable",
+  "intervention": "Train the matched token-pooled component-plan recipe on E316 semantic-slot data and decode with the accepted E315 distinct-slot floor.",
+  "train": {
+    "run_id": "e316-semantic-slots-20k-r1",
+    "device": "cpu",
+    "context_backend": "scratch",
+    "output_tokenizer": "choice",
+    "steps": 446,
+    "seen_prompt_tokens": 53747,
+    "seen_target_tokens": 20044,
+    "elapsed_wall_seconds": 125.64770278000105,
+    "trainable_params": 402012,
+    "checkpoint": "outputs/runs/e316-semantic-slots-20k-r1/checkpoints/last.pt",
+    "checkpoint_sha256": "b2f6e676363ac8ce7690fff0a2d56ec276d72013ba4e4a2f0083e1315c11395a",
+    "trace_id": "72c6e6c0fa42285a56c0aba0414cab24",
+    "checkpoint_sync": false,
+    "scratch_reason": "CPU matched experiment; explicit --no-sync-checkpoints"
+  },
+  "loss": {
+    "weighted_nll": 5.4154907549956,
+    "broad_mean_nll": 5.4831517372619025,
+    "loss_agentv": {"total": 1, "passed": 1, "failed": 0},
+    "final_20": {
+      "component_plan_loss": 1.9185146689414978,
+      "component_plan_root_accuracy": 0.95,
+      "component_plan_bound_topk_recall": 0.4620833367109299,
+      "component_plan_bound_count_mae": 0.279437018930912
+    }
+  },
+  "evaluation": {
+    "run_id": "e316-semantic-slots-20k-honest-r1",
+    "honesty": {
+      "ship_gates": true,
+      "compiler_decode_mode": "tree",
+      "decode_min_content": -1,
+      "honest_slot_contract": true,
+      "slot_contract_constrained_decode": true,
+      "allow_unconstrained_fallback": false
+    },
+    "suites": {
+      "smoke": {"n": 3, "parse_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.5464, "meaningful_program_rate": 0.666667, "component_type_recall": 0.333333, "reward_score": 0.640667, "pass": false},
+      "held_out": {"n": 5, "parse_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.44314, "meaningful_program_rate": 0.4, "component_type_recall": 0.2, "reward_score": 0.3916, "pass": false},
+      "adversarial": {"n": 4, "parse_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.4453, "meaningful_program_rate": 0.5, "component_type_recall": 0.375, "reward_score": 0.4865, "pass": true},
+      "ood": {"n": 4, "parse_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.5104, "meaningful_program_rate": 1.0, "component_type_recall": 0.541667, "reward_score": 0.98575, "pass": true},
+      "rico_held": {"n": 3, "parse_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.3369, "meaningful_program_rate": 1.0, "component_type_recall": 0.555556, "reward_score": 1.0, "pass": true}
+    },
+    "failures": [
+      "smoke:component_type_recall actual=0.3333333333333333 need>=0.35",
+      "held_out:component_type_recall actual=0.2 need>=0.3"
+    ],
+    "agentv": {"total": 5, "passed": 3, "failed": 2}
+  },
+  "verdict": "Retain as strongest current scratch candidate and continue targeted component-role work. Not promotable or ship while two authoritative gates fail."
+}
