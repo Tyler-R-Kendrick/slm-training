@@ -162,9 +162,9 @@ def _schema_semantic_reasons(openui: str) -> list[str]:
     if not definitions:
         return []
     try:
-        from slm_training.dsl import lang_core
+        from slm_training.dsl.parser import parse
 
-        program = lang_core.parse(openui)
+        program = parse(openui)
     except Exception:  # noqa: BLE001
         return ["judge_schema_parse_failed"]
     reasons: set[str] = set()

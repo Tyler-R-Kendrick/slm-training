@@ -222,6 +222,47 @@ def load_decision_events(path: Path | str) -> list[DecisionEventV1]:
         return [DecisionEventV1.from_dict(json.loads(line)) for line in handle if line.strip()]
 
 
+def counterfactual_evidence_from_traces(
+    traces: Iterable[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Retain the qualified judge probes backing mined counterfactual events."""
+    rows: list[dict[str, Any]] = []
+    for trace in traces:
+        events_from_trace(trace)  # Validate probe/decision agreement before export.
+        raw_events = trace.get("events") or []
+        decision_states = {
+            str(item.get("state_hash"))
+            for item in raw_events
+            if item.get("kind") == "counterfactual_decision"
+        }
+        meta = trace.get("meta") or {}
+        for probe in raw_events:
+            state_hash = str(probe.get("state_hash") or "")
+            if (
+                probe.get("kind") != "counterfactual_probe"
+                or probe.get("qualified") is not True
+                or state_hash not in decision_states
+            ):
+                continue
+            identity = {
+                "trajectory_id": trace.get("trajectory_id"),
+                "state_hash": state_hash,
+            }
+            rows.append(
+                {
+                    "schema_version": 1,
+                    "kind": "counterfactual_judge_evidence",
+                    "evidence_id": _sha(identity),
+                    "trace_id": trace.get("trace_id"),
+                    "trajectory_id": trace.get("trajectory_id"),
+                    "record_id": meta.get("record_id"),
+                    "context_text": meta.get("context_text"),
+                    "probe": probe,
+                }
+            )
+    return sorted(rows, key=lambda row: row["evidence_id"])
+
+
 def write_decision_events(path: Path | str, events: Iterable[DecisionEventV1]) -> int:
     path = Path(path)
     rows = sorted(events, key=lambda event: event.event_id)
@@ -238,6 +279,26 @@ def write_decision_events(path: Path | str, events: Iterable[DecisionEventV1]) -
     return len(rows)
 
 
+def write_counterfactual_evidence(
+    path: Path | str, rows: Iterable[dict[str, Any]]
+) -> int:
+    path = Path(path)
+    evidence = sorted(rows, key=lambda row: row["evidence_id"])
+    if len({row["evidence_id"] for row in evidence}) != len(evidence):
+        raise ValueError("duplicate counterfactual evidence ids")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        "w", encoding="utf-8", dir=path.parent, delete=False
+    ) as handle:
+        tmp = Path(handle.name)
+        for row in evidence:
+            handle.write(json.dumps(row, sort_keys=True) + "\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(tmp, path)
+    return len(evidence)
+
+
 def decision_event_manifest(
     events: Iterable[DecisionEventV1],
     *,
@@ -245,6 +306,8 @@ def decision_event_manifest(
     records_path: str = "events.jsonl",
     source_trace_ids: Iterable[str] = (),
     source_record_fingerprint: str | None = None,
+    evidence_path: str | None = None,
+    evidence_rows: Iterable[dict[str, Any]] = (),
 ) -> dict[str, Any]:
     """Build an immutable, identity-homogeneous event-corpus manifest."""
     rows = sorted(events, key=lambda event: event.event_id)
@@ -295,6 +358,11 @@ def decision_event_manifest(
     }
     if source_record_fingerprint is not None:
         payload["source_record_fingerprint"] = source_record_fingerprint
+    evidence = sorted(evidence_rows, key=lambda row: row["evidence_id"])
+    if evidence_path is not None:
+        payload["judge_evidence"] = evidence_path
+        payload["judge_evidence_count"] = len(evidence)
+        payload["judge_evidence_fingerprint"] = _sha(evidence)
     return payload
 
 

@@ -1134,7 +1134,7 @@ split contains at least one same-state-verified multi-good or multi-bad event.
 | E249 | Exact-event CE plus margin | Event win/margin and per-kind recurrence | measured; lexical objective generalized; semantic quality regressed; rejected |
 | E250 | Bad-token unlikelihood | Bad probability mass and held-out recurrence | proposed/unrun |
 | E251 | Single-pair clipped FTPO | Active weight, chosen/margin win, drift | proposed/unrun |
-| E252 | Verifier-backed set FTPO | Set coverage, evidence source, held-out recurrence | prerequisite measured; no admissible events; training unrun |
+| E252 | Verifier-backed set FTPO | Set coverage, evidence source, held-out recurrence | compiler repaired; 6 events/3 groups, but 0 held-out; training unrun |
 | E253 | E252 plus frozen-reference tether | Non-target MSE, target excess MSE, unchanged decisions | proposed/unrun |
 | E254 | E253 plus balanced sampling | Source/kind/rejected-set exposure and all E253 metrics | proposed/unrun |
 
@@ -1181,14 +1181,17 @@ decoding and require counterfactual semantic evidence before another local
 preference train. Full evidence:
 [iter-e249-local-ce-margin-20260716.md](iter-e249-local-ce-margin-20260716.md).
 
-The E252 prerequisite now replays grammar-legal alternatives from one exact
-production compiler state and requires independent-judge, meaningful-program,
-and Pareto evidence before corpus admission. The bounded diagnostic produced
-zero verified candidates: both legal branches collapsed to the same off-task
-fallback and failed component recall. No corpus or checkpoint was created, and
-constraint-shadow events are now rejected by local semantic training. Full
-evidence:
+The original E252 zero-event diagnostic was invalidated: an isolated worktree
+without bridge dependencies silently lost the official schema and AST/judge
+parity. The generalized repair commits a parity-checked schema snapshot, uses
+the Lark AST fallback, preserves partial-prefix newlines, and derives statement
+separation and candidate admission from grammar/schema semantics. A corrected
+32-record probe accepted every production trace and produced six judge-qualified
+events across three groups, including three set-valued events. All groups map to
+train under the stable split, so no corpus or checkpoint was created and E252
+remains fail-closed pending held-out recurrence. Full evidence:
 [iter-e252-counterfactual-prerequisite-20260716.md](iter-e252-counterfactual-prerequisite-20260716.md).
+
 ## V11 B4 AR→diffusion adaptation baseline (fixture-run 2026-07-16)
 
 Track B4 (DiffuGPT/DiffuLLaMA, [arXiv:2410.17891](https://arxiv.org/abs/2410.17891),

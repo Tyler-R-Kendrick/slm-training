@@ -233,6 +233,25 @@ def test_effective_min_content_auto_from_inventory() -> None:
     assert model._effective_min_content([":a.x", ":b.y"]) == 0
 
 
+def test_complete_ast_uses_lark_when_official_parser_is_unavailable(
+    monkeypatch,
+) -> None:
+    from slm_training.dsl import lang_core
+    from slm_training.dsl.grammar.fastpath import compiler_draft
+
+    compiler_draft._generated_ast_is_complete.cache_clear()
+    monkeypatch.setattr(
+        lang_core,
+        "parse",
+        lambda _source: (_ for _ in ()).throw(RuntimeError("offline")),
+    )
+
+    assert compiler_draft._generated_ast_is_complete(
+        'root = TextContent(":hero.title")'
+    )
+    assert not compiler_draft._generated_ast_is_complete("root = TextContent(")
+
+
 def test_completion_forest_uses_schema_property_order_for_enums(monkeypatch) -> None:
     from slm_training.dsl.grammar.fastpath import compiler_draft
 

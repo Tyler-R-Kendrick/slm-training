@@ -12,6 +12,7 @@ from slm_training.dsl.grammar.fastpath.force_emit import force_next_token_id
 from slm_training.dsl.grammar.fastpath.token_map import (
     allowed_id_set,
     apply_literal_frame,
+    decode_prefix,
 )
 
 Coverage = Literal["complete", "partial", "none"]
@@ -411,8 +412,7 @@ def _official_schema() -> dict[str, Any] | None:
     try:
         from slm_training.dsl import lang_core
 
-        if lang_core.bridge_available():
-            return lang_core.library_schema()
+        return lang_core.library_schema()
     except Exception:  # noqa: BLE001
         pass
     return None
@@ -427,7 +427,13 @@ def _generated_ast_is_complete(prefix_text: str) -> bool:
         program = lang_core.parse(prefix_text)
         return isinstance(program.root, dict) and bool(program.root)
     except Exception:  # noqa: BLE001
-        return False
+        try:
+            from slm_training.dsl.grammar.backends import get_backend
+
+            program = get_backend("openui-lark").validate(prefix_text)
+            return isinstance(program.root, dict) and bool(program.root)
+        except Exception:  # noqa: BLE001
+            return False
 
 
 def _active_call(state: Any) -> tuple[str, int, int] | None:
@@ -638,7 +644,7 @@ def build_completion_forest(
     if state is not None:
         prefix_text = state.sync_ids(tokenizer, prefix_ids)
     else:
-        prefix_text = tokenizer.decode(prefix_ids)
+        prefix_text = decode_prefix(tokenizer, prefix_ids)
     if not engine.set_prefix(prefix_text) and prefix_text.strip():
         return CompletionForest((), "none")
 
@@ -796,7 +802,6 @@ def build_completion_forest(
                 slot_contract and schema_type == "string"
             ):
                 candidates -= sym_ids
-                inventory_complete = False
         except Exception:  # noqa: BLE001
             inventory_complete = False
 

@@ -34,6 +34,13 @@ def string_to_token_ids(tokenizer: OpenUITokenizer, text: str) -> list[int]:
     return ids
 
 
+def decode_prefix(tokenizer: OpenUITokenizer, token_ids: list[int]) -> str:
+    """Decode an incremental grammar prefix without dropping terminal newlines."""
+    if _is_dsl_native(tokenizer):
+        return tokenizer.decode(token_ids, preserve_trailing_newline=True)
+    return tokenizer.decode(token_ids)
+
+
 def allowed_id_set(
     tokenizer: OpenUITokenizer,
     terminals: frozenset[str],
