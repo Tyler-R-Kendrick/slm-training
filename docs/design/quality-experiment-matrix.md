@@ -1134,7 +1134,7 @@ split contains at least one same-state-verified multi-good or multi-bad event.
 | E249 | Exact-event CE plus margin | Event win/margin and per-kind recurrence | measured; lexical objective generalized; semantic quality regressed; rejected |
 | E250 | Bad-token unlikelihood | Bad probability mass and held-out recurrence | proposed/unrun |
 | E251 | Single-pair clipped FTPO | Active weight, chosen/margin win, drift | proposed/unrun |
-| E252 | Verifier-backed set FTPO | Set coverage, evidence source, held-out recurrence | compiler repaired; 6 events/3 groups, but 0 held-out; training unrun |
+| E252 | Verifier-backed set FTPO | Set coverage, evidence source, held-out recurrence | E256 corpus admitted: 16 events/8 groups, 2 held-out; training pending |
 | E253 | E252 plus frozen-reference tether | Non-target MSE, target excess MSE, unchanged decisions | proposed/unrun |
 | E254 | E253 plus balanced sampling | Source/kind/rejected-set exposure and all E253 metrics | proposed/unrun |
 
@@ -1243,6 +1243,15 @@ C1's). JSON:
 narrative:
 [iter-e257-c1-relative-bind-20260716.md](iter-e257-c1-relative-bind-20260716.md).
 Same honesty envelope as the B4 pair.
+
+E256 then ran the repaired path across all 65 E230 document records. It
+persisted 16 independently judged counterfactual events and their full probes
+as an immutable source corpus: 14 train and two held-out events across eight
+groups, with eight set-valued comparisons. This clears the predefined E252
+corpus prerequisite but remains narrow root-decision evidence; training and all
+quality gates are still pending. Full evidence:
+[iter-e256-counterfactual-corpus-20260716.md](iter-e256-counterfactual-corpus-20260716.md).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
