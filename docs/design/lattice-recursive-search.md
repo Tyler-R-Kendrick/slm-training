@@ -51,6 +51,27 @@ This preserves the compiler as verifier. A learned conflict or quality score may
 prioritize exploration, but cannot create a legal branch, discard all legal
 branches, or bypass final OpenUI validation.
 
+## Constraint evidence (VSS0-02)
+
+`build_completion_forest(..., explain=True)` optionally annotates the hard lattice
+with **reason-coded constraint evidence**: for each *considered* candidate it
+records which stage — `grammar`, `schema`, `binding`, `slot_contract`, `dataflow`,
+`literal_frame`, `min_content`, `terminal`, or `coverage` — admitted or rejected it
+(`ConstraintEvidence` / `ConstraintStage` in
+[`constraint_evidence.py`](../../src/slm_training/dsl/grammar/fastpath/constraint_evidence.py)).
+The default `explain=False` path is byte-for-byte unchanged: no evidence is
+allocated, no full-vocabulary scan is added, and candidates/ordering/coverage are
+identical.
+
+**Honesty rule:** this evidence is *prefix-legality* attribution, not a support
+proof. It explains why the hard lattice narrowed, but only a forest whose
+`coverage == "complete"` licenses reading the rejections as exhaustive, and even
+then legality is not support — a `SUPPORTED` verdict still requires a verifier
+witness (see [verified-scope-solver.md](verified-scope-solver.md), "Constraint
+evidence"). Evidence never removes a candidate on its own; it is an input to later
+proof certificates and solver hard negatives, and min-content EOS withholding is
+kept distinct from grammar rejection.
+
 ## Campaign design (V9)
 
 The registered runnable rows are hypotheses, not results. The matched controls separate the

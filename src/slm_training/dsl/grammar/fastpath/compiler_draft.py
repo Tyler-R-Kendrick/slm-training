@@ -7,6 +7,12 @@ from dataclasses import dataclass
 from functools import lru_cache
 from typing import Any, Literal
 
+from slm_training.dsl.grammar.fastpath.constraint_evidence import (
+    ConstraintEvidence,
+    ConstraintEvidenceRecorder,
+    ConstraintStage,
+    stage_counts,
+)
 from slm_training.dsl.grammar.fastpath.engine import OpenUIIncrementalEngine
 from slm_training.dsl.grammar.fastpath.force_emit import force_next_token_id
 from slm_training.dsl.grammar.fastpath.token_map import (
@@ -33,10 +39,29 @@ class CompletionForest:
     paths: tuple[CompletionPath, ...]
     coverage: Coverage
     terminals: tuple[str, ...] = ()
+    evidence: tuple[ConstraintEvidence, ...] = ()
 
     @property
     def candidate_ids(self) -> tuple[int, ...]:
         return tuple(path.token_ids[0] for path in self.paths if path.token_ids)
+
+    @property
+    def is_exhaustive(self) -> bool:
+        """Whether the considered set is a complete account of legal actions.
+
+        ``coverage == "complete"`` is the *only* condition under which a consumer
+        may treat the recorded rejections as exhaustive. Even then, prefix
+        legality is **not** support: asserting ``SUPPORTED`` still requires a
+        verifier-accepted witness (see ``docs/design/verified-scope-solver.md``).
+        """
+        return self.coverage == "complete"
+
+    def stage_summary(self) -> tuple[tuple[str, int, int], ...]:
+        """Aggregate ``(stage, admitted, rejected)`` counts over ``evidence``.
+
+        Empty unless the forest was built with ``explain=True``.
+        """
+        return stage_counts(self.evidence)
 
 
 @dataclass(frozen=True)
@@ -624,6 +649,7 @@ def build_completion_forest(
     slot_contract: list[str] | None = None,
     max_path_tokens: int = 8,
     min_content: int = 0,
+    explain: bool = False,
 ) -> CompletionForest:
     """Enumerate every mapped, globally extendable action at ``prefix_ids``.
 
@@ -637,7 +663,17 @@ def build_completion_forest(
     grammatically valid but empty/underfull layout is not a legal completion
     while the grammar still offers a way to add content. The gate never creates
     a dead end — it only withholds EOS when a non-EOS continuation remains.
+
+    ``explain`` (VSS0-02): when True the returned forest also carries
+    ``evidence`` — a deterministic, reason-coded record of which hard-constraint
+    stage admitted or rejected each *considered* candidate. Explanation
+    collection never changes ``paths``, ``candidate_ids``, ``coverage``, or
+    ``terminals`` and introduces no full-vocabulary scan; it only annotates the
+    candidates the enumerator already considers. Evidence is prefix-legality
+    instrumentation, not a support proof — see
+    ``docs/design/verified-scope-solver.md``.
     """
+    recorder = ConstraintEvidenceRecorder() if explain else None
     engine = getattr(state, "engine", None) if state is not None else None
     if not isinstance(engine, OpenUIIncrementalEngine):
         engine = OpenUIIncrementalEngine()
@@ -646,14 +682,21 @@ def build_completion_forest(
     else:
         prefix_text = decode_prefix(tokenizer, prefix_ids)
     if not engine.set_prefix(prefix_text) and prefix_text.strip():
+        if recorder is not None:
+            recorder.note_unparseable_prefix()
+            return CompletionForest((), "none", (), recorder.finalize("none"))
         return CompletionForest((), "none")
 
     terminals = engine.next_terminals()
     candidates = allowed_id_set(tokenizer, terminals) or set()
+    if recorder is not None:
+        recorder.seed(candidates)
     if prefix_ids and tokenizer.id_to_token.get(int(prefix_ids[-1])) == "NL":
         newline_id = tokenizer.token_to_id.get("NL")
         if newline_id is not None:
             candidates.discard(int(newline_id))
+    if recorder is not None:
+        recorder.narrow(ConstraintStage.GRAMMAR, "repeated_newline", candidates)
     ast_complete = _generated_ast_is_complete(prefix_text)
     references_resolved = _references_resolved(tokenizer, prefix_ids)
     # A4: withhold EOS while the layout has fewer than ``min_content`` components,
@@ -664,10 +707,41 @@ def build_completion_forest(
         other_candidates = candidates - {int(tokenizer.eos_id)}
         if other_candidates and emitted_component_count(tokenizer, prefix_ids) < min_content:
             content_met = False
-    if "$END" in terminals and ast_complete and references_resolved and content_met:
+    eos_admitted = (
+        "$END" in terminals and ast_complete and references_resolved and content_met
+    )
+    if eos_admitted:
         candidates.add(int(tokenizer.eos_id))
     else:
         candidates.discard(int(tokenizer.eos_id))
+    if recorder is not None:
+        # Keep min-content EOS withholding distinguishable from grammar rejection.
+        if eos_admitted:
+            recorder.note_eos(
+                int(tokenizer.eos_id), True, ConstraintStage.TERMINAL, "admitted"
+            )
+        elif "$END" not in terminals or not ast_complete:
+            recorder.note_eos(
+                int(tokenizer.eos_id),
+                False,
+                ConstraintStage.TERMINAL,
+                "eos_not_document_end",
+            )
+        elif not references_resolved:
+            recorder.note_eos(
+                int(tokenizer.eos_id),
+                False,
+                ConstraintStage.BINDING,
+                "eos_unresolved_reference",
+            )
+        else:
+            recorder.note_eos(
+                int(tokenizer.eos_id),
+                False,
+                ConstraintStage.MIN_CONTENT,
+                "eos_below_min_content",
+                details=(("min_content", str(int(min_content))),),
+            )
     if "$END" in terminals and ast_complete:
         # Lark accepts postfix operators after any expression. Once the
         # generated AST has a complete document, retain only the grammar's
@@ -678,6 +752,10 @@ def build_completion_forest(
         )
         continuation_ids = allowed_id_set(tokenizer, continuation_terminals) or set()
         candidates &= continuation_ids | {int(tokenizer.eos_id)}
+        if recorder is not None:
+            recorder.narrow(
+                ConstraintStage.TERMINAL, "post_document_continuation", candidates
+            )
     needs_schema = bool(terminals & {"COMPONENT", "STRING"}) or _active_call(engine) is not None
     schema = _official_schema() if needs_schema else None
     if schema is not None and "COMPONENT" in terminals:
@@ -688,11 +766,23 @@ def build_completion_forest(
             if _semantic_kind(tokenizer, token_id) != "component"
             or _token_piece(tokenizer, token_id) in component_names
         }
+        if recorder is not None:
+            recorder.narrow(
+                ConstraintStage.SCHEMA, "component_not_in_schema", candidates
+            )
     enum_sequences = (
         _schema_enum_sequences(tokenizer, engine, schema) if schema else None
     )
     if enum_sequences is not None:
         candidates = {sequence[0] for sequence in enum_sequences if sequence}
+        if recorder is not None:
+            # The schema enum replaces the considered set; later ``candidates``
+            # mutations no longer affect the emitted paths, so stop attributing
+            # further set narrowing after this takeover.
+            recorder.narrow(
+                ConstraintStage.SCHEMA, "not_schema_enum_value", candidates
+            )
+            recorder.freeze()
     schema_type = _schema_slot_type(engine, schema) if schema else None
     schema_slot = _schema_slot_name(engine, schema) if schema else None
     type_terminals = _schema_type_terminals(schema_type)
@@ -701,6 +791,13 @@ def build_completion_forest(
     if type_terminals is not None and enum_sequences is None and not current_started:
         typed_ids = allowed_id_set(tokenizer, type_terminals) or set()
         candidates &= typed_ids
+        if recorder is not None:
+            recorder.narrow(
+                ConstraintStage.SCHEMA,
+                "wrong_value_type",
+                candidates,
+                details=(("schema_type", str(schema_type)),) if schema_type else (),
+            )
         if schema_type == "string" and slot_contract:
             try:
                 from slm_training.dsl.placeholders import CONTENT_PROPS
@@ -718,11 +815,19 @@ def build_completion_forest(
                     candidates = contract_ids
             except Exception:  # noqa: BLE001
                 pass
+            if recorder is not None:
+                recorder.narrow(
+                    ConstraintStage.SLOT_CONTRACT, "outside_slot_contract", candidates
+                )
 
     if schema_type == "array" and schema_slot == "children" and current_started:
         node_terminals = frozenset({"NAME", "COMPONENT", "COMMA", "RSQB", "RPAR"})
         node_ids = allowed_id_set(tokenizer, node_terminals) or set()
         candidates &= node_ids
+        if recorder is not None:
+            recorder.narrow(
+                ConstraintStage.DATAFLOW, "array_child_position", candidates
+            )
 
     if arity is not None:
         minimum, maximum, arg_count, current_started = arity
@@ -735,11 +840,15 @@ def build_completion_forest(
         if arg_count >= maximum:
             comma_ids = allowed_id_set(tokenizer, frozenset({"COMMA"})) or set()
             candidates -= comma_ids
+        if recorder is not None:
+            recorder.narrow(ConstraintStage.DATAFLOW, "call_arity", candidates)
 
     # Apply tokenizer framing after parser/schema filtering. LIT_STR renders as
     # a quote, so the surface parser sees an empty completed string while the
     # lexer-native token stream still requires BYTE* + LIT_END.
     candidates = apply_literal_frame(tokenizer, prefix_ids, candidates) or set()
+    if recorder is not None:
+        recorder.narrow(ConstraintStage.LITERAL_FRAME, "literal_frame", candidates)
 
     inventory_complete = not (needs_schema and schema is None)
     kind_of = getattr(tokenizer, "kind_of", None)
@@ -804,6 +913,8 @@ def build_completion_forest(
                 candidates -= sym_ids
         except Exception:  # noqa: BLE001
             inventory_complete = False
+    if recorder is not None:
+        recorder.narrow(ConstraintStage.BINDING, "binder_scope", candidates)
 
     if _at_declaration_value(tokenizer, prefix_ids):
         candidates = {
@@ -811,6 +922,12 @@ def build_completion_forest(
             for token_id in candidates
             if _semantic_kind(tokenizer, token_id) == "component"
         }
+        if recorder is not None:
+            recorder.narrow(
+                ConstraintStage.BINDING,
+                "declaration_value_component_only",
+                candidates,
+            )
 
     specials = {
         int(tokenizer.pad_id),
@@ -818,6 +935,8 @@ def build_completion_forest(
         int(tokenizer.bos_id),
         int(tokenizer.unk_id),
     }
+    if recorder is not None:
+        recorder.exclude_specials(specials)
     paths: list[CompletionPath] = []
     max_path_tokens = max(1, int(max_path_tokens))
     candidate_sequences = (
@@ -831,9 +950,13 @@ def build_completion_forest(
         candidate = int(sequence[0])
         if candidate == int(tokenizer.eos_id):
             paths.append(CompletionPath((candidate,), "eos"))
+            if recorder is not None:
+                recorder.admit_path(candidate, (candidate,), "eos")
             continue
         branch = OpenUIIncrementalEngine(engine.grammar_path)
         if not branch.set_prefix(prefix_text):
+            if recorder is not None:
+                recorder.reject_unreachable(candidate, "prefix_reset_failed")
             continue
         branch_text = prefix_text
         admitted = True
@@ -852,6 +975,8 @@ def build_completion_forest(
         # InteractiveParser accepted the edge and exposes at least one follow
         # terminal, which is the exact CFG reachability guarantee we need.
         if not admitted or not branch.next_terminals():
+            if recorder is not None:
+                recorder.reject_unreachable(candidate)
             continue
         drafted = [int(token_id) for token_id in sequence]
         while len(drafted) < max_path_tokens:
@@ -860,19 +985,17 @@ def build_completion_forest(
                 break
             drafted.append(int(forced))
             branch_text += _token_piece(tokenizer, forced)
-        paths.append(
-            CompletionPath(
-                tuple(drafted),
-                _decision_kind(
-                    tokenizer,
-                    candidate,
-                    prefix_ids,
-                    tuple(sorted(str(term) for term in terminals)),
-                    engine,
-                    schema,
-                ),
-            )
+        kind = _decision_kind(
+            tokenizer,
+            candidate,
+            prefix_ids,
+            tuple(sorted(str(term) for term in terminals)),
+            engine,
+            schema,
         )
+        paths.append(CompletionPath(tuple(drafted), kind))
+        if recorder is not None:
+            recorder.admit_path(candidate, drafted, kind)
 
     if not paths:
         coverage: Coverage = "partial" if terminals else "none"
@@ -880,8 +1003,12 @@ def build_completion_forest(
         coverage = "complete"
     else:
         coverage = "partial"
+    evidence = recorder.finalize(coverage) if recorder is not None else ()
     return CompletionForest(
-        tuple(paths), coverage, tuple(sorted(str(term) for term in terminals))
+        tuple(paths),
+        coverage,
+        tuple(sorted(str(term) for term in terminals)),
+        evidence,
     )
 
 
@@ -955,6 +1082,8 @@ __all__ = [
     "CompletionForest",
     "CompletionPath",
     "CompilerDecision",
+    "ConstraintEvidence",
+    "ConstraintStage",
     "Coverage",
     "build_completion_forest",
     "gold_compiler_decisions",

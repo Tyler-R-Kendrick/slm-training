@@ -142,6 +142,64 @@ complete coverage, while another candidate in the same forest is `UNKNOWN`.
 - Existing checkpoints and decode behavior remain unchanged until a later issue
   enables new flags.
 
+## Constraint evidence (VSS0-02 / SLM-58)
+
+VSS0-02 instruments the existing enumerator so a later certificate builder can
+tell **which hard-constraint stage admitted or rejected each considered candidate
+action**, without changing candidate membership, ordering, or default decode cost.
+It is the input to proof certificates, solver hard negatives, and per-domain
+diagnostics — not a support verdict itself.
+
+**Code:** `build_completion_forest(..., explain=True)` in
+[`compiler_draft.py`](../../src/slm_training/dsl/grammar/fastpath/compiler_draft.py),
+with the immutable evidence types in
+[`constraint_evidence.py`](../../src/slm_training/dsl/grammar/fastpath/constraint_evidence.py).
+
+### Schema
+
+- **`ConstraintStage`** — the hard-constraint stage that admitted/rejected an
+  action: `grammar`, `schema`, `binding`, `slot_contract`, `dataflow`,
+  `literal_frame`, `min_content`, `terminal`, `coverage`. Stages mirror the
+  deterministic narrowing order of `build_completion_forest`.
+- **`ConstraintEvidence(candidate_id, path_token_ids, stage, admitted,
+  reason_code, details)`** — one immutable admit/reject decision for a *considered*
+  candidate. `candidate_id` is the action's first token id (`None` only for a
+  whole-forest verdict such as an unparseable prefix or the terminal `coverage`
+  record); `path_token_ids` is the admitted action's forced suffix (empty for
+  rejections); `details` carries bounded safe metadata only (stage names, counts,
+  coverage) — **never** decoded prompt/user literals. `to_dict`/`from_dict` give a
+  deterministic JSON round-trip.
+- **`CompletionForest.evidence`** — the deterministic, logit-independent evidence
+  tuple (empty unless `explain=True`). `CompletionForest.stage_summary()` returns
+  per-stage `(stage, admitted, rejected)` counts; `CompletionForest.is_exhaustive`
+  is `coverage == "complete"`.
+
+### Honesty rule (do not drift)
+
+Constraint evidence records **prefix legality** — which stage excluded a candidate
+as not-admissible *now*. It is **not** a support-participation verdict:
+
+- Evidence is collected only for candidates the enumerator actually considers
+  (seeded from the grammar-admitted set); it never scans the full vocabulary and
+  never claims evidence for unenumerated vocabulary entries.
+- Only a forest whose `coverage == "complete"` (`is_exhaustive`) licenses treating
+  the recorded rejections as an exhaustive account of the considered set. A
+  `partial`/`none` forest carries a not-admitted `coverage_*` record and **must
+  not** be serialized as an exhaustive proof.
+- Even at complete coverage, legality is not support: asserting `SUPPORTED` still
+  requires a verifier-accepted witness (the reference support-semantics table
+  above); `UNSUPPORTED` still requires exhaustive complete-coverage search inside
+  declared bounds. Constraint evidence is an **input** to that later closure, not a
+  substitute for a certificate, and it never removes a candidate on its own.
+- Min-content EOS withholding is stage `min_content` (`eos_below_min_content`),
+  kept distinguishable from a grammar rejection so a certificate builder never
+  reads a content-floor pause as a legality contradiction.
+
+`explain=False` is the default and byte-for-byte unchanged: no evidence is
+allocated, candidate membership/ordering/`coverage`/`terminals` are identical, and
+no full-vocabulary scan is introduced. No learned model consumes this evidence in
+this issue.
+
 ## Default reference backend
 
 The default reference backend is **deterministic bounded enumeration** over the
@@ -221,8 +279,9 @@ the closure.
 
 | Symbol (file:line) | Existing role | Disposition under this contract |
 | --- | --- | --- |
-| `CompletionForest` (`fastpath/compiler_draft.py:29`) | Frozen enumerated next-action set for a prefix, carrying a `coverage: Coverage` guarantee (`complete`/`partial`/`none`) and `candidate_ids`. | **Retained, authoritative.** The support layer sits above it; its `coverage` tag is the substrate mapping to `SUPPORTED`/`UNSUPPORTED`/`UNKNOWN`. Not duplicated. |
-| `build_completion_forest` (`fastpath/compiler_draft.py:619`) | Deterministic bounded enumerator over the Lark CFG path (prefix legality via `OpenUIIncrementalEngine`). | **Retained.** Serves as the default reference backend's enumeration primitive. Not duplicated. |
+| `CompletionForest` (`fastpath/compiler_draft.py:29`) | Frozen enumerated next-action set for a prefix, carrying a `coverage: Coverage` guarantee (`complete`/`partial`/`none`) and `candidate_ids`. | **Retained, authoritative.** The support layer sits above it; its `coverage` tag is the substrate mapping to `SUPPORTED`/`UNSUPPORTED`/`UNKNOWN`. VSS0-02 adds an optional `evidence` field (default empty) and `is_exhaustive`/`stage_summary()` helpers; `coverage`/`candidate_ids` are unchanged. Not duplicated. |
+| `build_completion_forest` (`fastpath/compiler_draft.py:619`) | Deterministic bounded enumerator over the Lark CFG path (prefix legality via `OpenUIIncrementalEngine`). | **Retained; instrumented (VSS0-02).** Serves as the default reference backend's enumeration primitive; gains `explain=True` to emit reason-coded `ConstraintEvidence` per considered candidate without changing the default path. Not duplicated. |
+| `ConstraintStage` / `ConstraintEvidence` (`fastpath/constraint_evidence.py`) | Absent before VSS0-02. | **New (VSS0-02).** Prefix-legality attribution feeding later certificates/hard-negatives; not a support verdict (see *Constraint evidence* above). |
 | `LatticeSearchState` + `Nogood` (`fastpath/lattice_search.py:182`, `:16`) | Bounded backtracking search trail with local nogood memory (`choose`/`rollback`). | **Extended (later issue).** Reversible decisions and local nogoods gain replayable certificates; certified deductions become non-reversible. |
 | `RankedForest` / `rank_forest` (`fastpath/lattice_search.py:24`/`:44`) | Independent soft ordering over the hard compiler candidate set. | **Retained.** Grounds the invariant that learned modules rank/propose but never create legality. Not duplicated. |
 | `ScopeContract` / `ScopeKind` (`data/progspec/scopes.py:33`/`:18`) | AST scopes (`COMPONENT_CALL`/`STATEMENT`/`CHILD_LIST`) plus a def/use binder overlay (`definitions`/`uses`/`visible_binders`). | **Extended.** Scope def/use edges feed capsule SCC construction; scopes are **not** assumed independent. |
@@ -301,3 +360,12 @@ guarantee boundary only. `python -m scripts.repo_policy` passes; documentation
 changes select no test suites (`scripts/check_changed` skips `docs/`). Later VSS
 issues implement the dataclasses and state transitions specified here behind a
 feature flag before any decode-behavior change.
+
+2026-07-17 — VSS0-02 / SLM-58: added reason-coded constraint evidence
+(`build_completion_forest(..., explain=True)` + `constraint_evidence.py`). This is
+**instrumentation only, not a correctness or ship gain**: `explain=False` is the
+default and preserves byte-for-byte candidate-set parity (verified by
+`tests/test_models/test_compiler_evidence.py` for lexer-native prefixes, and by the
+unchanged `tests/test_models/test_compiler_decode.py` / `tests/test_dsl/test_choice_codec.py`
+suites). Evidence records prefix legality per considered candidate and never
+authorizes candidate removal or a `SUPPORTED`/`UNSUPPORTED` verdict.
