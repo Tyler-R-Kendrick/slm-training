@@ -519,6 +519,12 @@ def compile_commands(
             value = getattr(knobs, name)
             if value is not None:
                 evaluate.extend([f"--{name.replace('_', '-')}", str(value)])
+        # Track A emptiness-wall decode levers (A3 coverage remask, A4
+        # minimum-content contract). Decode-time, so they ride the eval stage.
+        if knobs.remask_policy is not None:
+            evaluate.extend(["--remask-policy", knobs.remask_policy])
+        if knobs.decode_min_content is not None:
+            evaluate.extend(["--decode-min-content", str(knobs.decode_min_content)])
         if knobs.allow_unconstrained_fallback is False:
             evaluate.append("--no-unconstrained-fallback")
         if knobs.schema_in_context:

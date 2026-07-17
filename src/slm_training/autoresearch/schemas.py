@@ -52,6 +52,8 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "compiler_search_noise",
         "compiler_search_stagnation_patience",
         "compiler_search_backtrack_limit",
+        "remask_policy",
+        "decode_min_content",
         "data_source",
         "design_md_context",
         "eval_version",
@@ -275,6 +277,13 @@ class ExperimentKnobs(StrictModel):
     compiler_search_noise: float | None = Field(default=None, ge=0, le=100)
     compiler_search_stagnation_patience: int | None = Field(default=None, ge=1, le=64)
     compiler_search_backtrack_limit: int | None = Field(default=None, ge=0, le=1024)
+    # Track A (emptiness-wall attack) decode-time levers.
+    remask_policy: (
+        Literal["confidence", "core", "combined", "stability", "coverage"] | None
+    ) = None  # A3: "coverage" biases remasking toward under-covered content.
+    decode_min_content: int | None = Field(
+        default=None, ge=-1, le=64
+    )  # A4: 0 off | >0 floor | -1 auto-from-inventory.
     schema_in_context: bool | None = None
     slot_contract_in_context: bool | None = None
     design_md_context: bool | None = None

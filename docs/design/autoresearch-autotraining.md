@@ -254,6 +254,25 @@ not online weight training or permission to edit implementation, frozen evaluati
 promotion policy, or ship gates. Hypothesizer implementation changes still require
 held-out evaluation and human approval before being treated as promoted behavior.
 
+### Program tracks as encoded matrices (G1, SLM-46)
+
+Program experiments are encoded as typed matrices in
+[`autoresearch/program_matrices.py`](../../src/slm_training/autoresearch/program_matrices.py)
+rather than run through a parallel ad-hoc loop. `track_a_matrix()` builds the
+valid-but-empty-wall attack as five authentic `ExperimentSpec`s — A3
+coverage-energy remasking (`remask_policy="coverage"`), A4 minimum-content
+decode contracts (`decode_min_content`), their combination, and A5 lattice
+search (`compiler_search_mode="lattice"`) — each grounded in a real
+`EvidenceSnapshot` over the committed E248/E250/E251/lattice iter docs. The
+A3/A4 levers became typed `ExperimentKnobs` (and `evaluate_model` CLI flags)
+in this change so the matrix compiles authentically instead of being
+differentiated by incidental seed/steps knobs. A2 (ASAp reweighting) is not
+yet a model-side lever and is deliberately left as a future row, not
+fabricated as a routable knob. The matrix passes
+`validate_hypothesis_matrix`, `compile_commands` (bounded CPU argv), and
+`create_hypothesis_feedback` end to end; the frozen hypothesizer benchmark
+(`hypothesizer_cases.json`) is untouched.
+
 ## Isolated researcher setup
 
 Installation is deliberately manual because the upstream environments are large,
