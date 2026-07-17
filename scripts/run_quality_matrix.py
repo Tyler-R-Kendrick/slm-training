@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import signal
+import time
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Literal
@@ -164,6 +165,8 @@ class Experiment:
     local_preference_reference_tether: bool = False
     local_preference_balanced: bool = False
     local_preference_guarded_selection: bool = False
+    local_preference_guarded_updates: bool = False
+    local_preference_guard_backtrack_steps: int = 4
     binder_arity_loss_weight: float = 0.0
     binder_arity_decode_weight: float = 0.0
 
@@ -1364,6 +1367,15 @@ def _v10_experiments(train_dir: Path) -> list[Experiment]:
             local_preference_guarded_selection=True,
             **base,
         ),
+        Experiment(
+            "E265",
+            "qx_e265_safe_gold_ast_ftpo_set",
+            "Pareto-safe backtracked gold-AST set FTPO updates",
+            train_dir,
+            local_preference_objective="ftpo_set",
+            local_preference_guarded_updates=True,
+            **base,
+        ),
     ]
 
 
@@ -1846,6 +1858,14 @@ def _maybe_local_preference(
             and bool(summary.get("reference_tethered")) == tethered
             and bool(summary.get("guarded_selection"))
             == bool(exp.local_preference_guarded_selection)
+            and bool(summary.get("guarded_updates"))
+            == bool(exp.local_preference_guarded_updates)
+            and int(summary.get("guard_backtrack_steps") or 0)
+            == (
+                int(exp.local_preference_guard_backtrack_steps)
+                if exp.local_preference_guarded_updates
+                else 0
+            )
             and summary.get("source_checkpoint_sha") == expected_sha
             and int(summary.get("train_events", -1)) == expected_counts["train"]
             and int(summary.get("held_out_events", -1))
@@ -1857,6 +1877,7 @@ def _maybe_local_preference(
             return _copy_checkpoint(trained, dest), summary
         raise RuntimeError(f"{exp.eid} resume artifacts do not match this recipe")
     with run_trace(exp.run_id, "local_preference.train", run_dir=out_dir) as trace:
+        started = time.perf_counter()
         summary = train_local_from_paths(
             ckpt,
             args.decision_events,
@@ -1875,6 +1896,18 @@ def _maybe_local_preference(
             seed=args.seed,
             validation_every=args.local_pref_validation_every,
             guarded_selection=bool(exp.local_preference_guarded_selection),
+            guarded_updates=bool(exp.local_preference_guarded_updates),
+            guard_backtrack_steps=int(exp.local_preference_guard_backtrack_steps),
+        )
+        summary["duration_seconds"] = time.perf_counter() - started
+        selection = summary.get("validation_selection") or {}
+        summary["validation_trials"] = sum(
+            len(item.get("trials") or [])
+            for item in selection.get("history") or []
+        )
+        summary["validation_event_forwards"] = (
+            int(summary["validation_trials"])
+            * int(summary.get("held_out_events") or 0)
         )
         summary["trace_id"] = trace.trace_id
         summary["traceparent"] = trace.traceparent
@@ -2183,6 +2216,10 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
         "local_preference_balanced": exp.local_preference_balanced,
         "local_preference_guarded_selection": (
             exp.local_preference_guarded_selection
+        ),
+        "local_preference_guarded_updates": exp.local_preference_guarded_updates,
+        "local_preference_guard_backtrack_steps": (
+            exp.local_preference_guard_backtrack_steps
         ),
         "local_preference_summary": local_preference_summary,
         **_summarize_board(board),
