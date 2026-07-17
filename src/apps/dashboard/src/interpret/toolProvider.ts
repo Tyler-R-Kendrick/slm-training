@@ -5,6 +5,7 @@
 // mode exactly (the compiled pages format per-column via fmt(v, digits)).
 import { getJSON, postJSON } from "../api";
 import { fetchHero } from "../hero";
+import { smokeGate } from "../metrics";
 
 const pct = (v: number) => `${Math.round((v || 0) * 100)}%`;
 
@@ -38,13 +39,25 @@ export const toolProvider: Record<string, QueryFn> = {
         ],
       },
       insights: p.insights ?? { improvements: [], carry_forward: [], novel: [] },
+      // Metric columns come from the server's ship-gate policy, so a lever
+      // change (add/drop a gate metric) re-shapes this table automatically.
       comparisons: {
+        columns: [
+          { key: "id", label: "Experiment" },
+          { key: "run_id", label: "Run" },
+          { key: "matrix", label: "Matrix" },
+          { key: "gate_status", label: "Gate" },
+          ...(p.metric_columns ?? []).map((c: any) => ({ key: c.key, label: c.label, align: "right" })),
+          { key: "vs_reference", label: "Vs reference", align: "right" },
+        ],
         rows: (p.comparisons ?? []).map((r: any) => ({
           ...r,
-          parse: r.parse == null ? "—" : pct(r.parse),
-          fidelity: r.fidelity == null ? "—" : pct(r.fidelity),
-          structure: r.structure == null ? "—" : pct(r.structure),
-          reward: r.reward == null ? "—" : pct(r.reward),
+          ...Object.fromEntries(
+            (p.metric_columns ?? []).map((c: any) => [
+              c.key,
+              r.metrics?.[c.key] == null ? "—" : pct(r.metrics[c.key]),
+            ]),
+          ),
         })),
       },
       comparison_basis: p.comparison_basis ?? "",
@@ -193,18 +206,32 @@ export const toolProvider: Record<string, QueryFn> = {
     };
   },
   smoke_quality: async () => {
-    const d: any = await getJSON("/api/scoreboards/quality");
+    // The canary gate threshold comes from the live ship-gate policy, not a
+    // hardcoded 0.66 — if the smoke lever moves, the pass/fail pill follows.
+    const [d, pol]: any[] = await Promise.all([
+      getJSON("/api/scoreboards/quality"),
+      getJSON("/api/gates/policy").catch(() => ({ policy: {} })),
+    ]);
+    const { lever, threshold, label } = smokeGate(pol.policy);
     return {
       provenance: d.provenance,
+      gate_label: label,
+      headline_label: lever.replace(/_/g, " "),
       rows: (d.results ?? []).map((r: any) => {
-        const parse = r.suites?.smoke?.parse_rate;
+        const suite = r.suites?.smoke ?? {};
+        const headline = suite[lever] ?? suite.parse_rate;
         return {
           id: r.id,
           run_id: r.run_id || r.id,
-          parse: f(parse, 2),
-          fidelity: f(r.suites?.smoke?.placeholder_fidelity, 2),
-          reward: f(r.suites?.smoke?.reward_score, 2),
-          parse_status: parse === undefined ? "" : parse >= 0.66 ? "pass" : "fail",
+          parse: f(headline, 2),
+          fidelity: f(suite.placeholder_fidelity, 2),
+          reward: f(suite.reward_score, 2),
+          parse_status:
+            headline === undefined || threshold === undefined
+              ? ""
+              : headline >= threshold
+                ? "pass"
+                : "fail",
         };
       }),
     };

@@ -495,6 +495,12 @@ export function HeroStrip({
       <div className="hero-verdict">
         <span className={`verdict ${verdictClass}`}>{verdictText}</span>
         <span className="hero-verdict-sub">ship gates · current reference</span>
+        {gate && !gate.pass && gate.failures.length > 0 && (
+          <span className="hero-failures mono">
+            failing: {gate.failures.join(", ")}
+            {gate.failure_count > gate.failures.length ? ` +${gate.failure_count - gate.failures.length} more` : ""}
+          </span>
+        )}
       </div>
       <div className="hero-ref">
         {ref ? (

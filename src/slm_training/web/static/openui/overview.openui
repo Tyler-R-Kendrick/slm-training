@@ -1,4 +1,4 @@
-perf = Query("overview_insights", {}, { references: { rows: [], provenance: "committed" }, tiles: { rows: [] }, insights: { improvements: [], carry_forward: [], novel: [] }, comparisons: { rows: [] }, comparison_basis: "", cache: {} }, 15)
+perf = Query("overview_insights", {}, { references: { rows: [], provenance: "committed" }, tiles: { rows: [] }, insights: { improvements: [], carry_forward: [], novel: [] }, comparisons: { rows: [], columns: [] }, comparison_basis: "", cache: {} }, 15)
 heroData = Query("overview_hero", {}, { reference: null, provenance: "committed", gate: null, deployment: { selected: false, track: "" }, inflight: { jobs: 0, dispatches: 0, execution: false } }, 15)
 jobs = Query("overview_jobs", {}, { rows: [], count: 0, execution: false }, 10)
 disp = Query("dispatches", {}, { rows: [], remotes: [], bucket_url: "" }, 30)
@@ -19,9 +19,8 @@ carryPanel = Panel("Carry forward", [DataTable(insightCols, perf.insights.carry_
 novelPanel = Panel("Easy-to-miss signals", [DataTable(insightCols, perf.insights.novel)], Pill("investigate", "running"))
 insightGrid = Grid([improvePanel, carryPanel, novelPanel], "320px")
 
-comparisonCols = [{ key: "id", label: "Experiment" }, { key: "run_id", label: "Run" }, { key: "matrix", label: "Matrix" }, { key: "gate_status", label: "Gate" }, { key: "parse", label: "Meaningful", align: "right" }, { key: "fidelity", label: "Fidelity", align: "right" }, { key: "structure", label: "Structure", align: "right" }, { key: "reward", label: "Reward", align: "right" }, { key: "vs_reference", label: "Vs reference", align: "right" }]
 cacheBadge = Badge(perf.cache.persisted ? "insights persisted" : "session insight", perf.cache.persisted ? "live" : "committed")
 comparisonNote = "Persisted " + perf.cache.generated_at + "; regenerated only when the model-card checkpoint roster or a track champion changes."
-comparisonPanel = Panel("Experiment performance vs current reference", [DataTable(comparisonCols, perf.comparisons, 26, "run_id"), Hint(comparisonNote, true)], cacheBadge)
+comparisonPanel = Panel("Experiment performance vs current reference", [DataTable(perf.comparisons.columns, perf.comparisons, 26, "run_id"), Hint(comparisonNote, true)], cacheBadge)
 
 root = Page([head, hero, inflight, referencePanel, tileRow, insightGrid, comparisonPanel])

@@ -14,6 +14,7 @@ import {
   ErrorNote,
   fmt,
 } from "../components";
+import { smokeGate } from "../metrics";
 
 function PhaseBreakdown({ runId, fallback }: { runId: string; fallback: any }) {
   const detail = usePoll<any>(runId ? `/api/runs/${encodeURIComponent(runId)}` : null, 0);
@@ -32,13 +33,17 @@ export function Smoke({ navigate }: { navigate: (to: string) => void }) {
   const [jobId, setJobId] = useState<string | null>(null);
   const perf = usePoll<any>("/api/scoreboards/perf", 0);
   const quality = usePoll<any>("/api/scoreboards/quality", 0);
+  const gatePolicy = usePoll<any>("/api/gates/policy", 0);
 
+  // Canary lever + threshold come from the live ship-gate policy — the pill
+  // keeps meaning "clears the smoke gate" even when the lever changes.
+  const gate = smokeGate(gatePolicy.data?.policy);
   const perfRows = perf.data?.results ?? [];
   const first = perfRows[0] ?? {};
   const smokeRows = (quality.data?.results ?? []).map((r: any) => ({
     id: r.id,
     run_id: r.run_id,
-    parse: r.suites?.smoke?.parse_rate,
+    parse: r.suites?.smoke?.[gate.lever] ?? r.suites?.smoke?.parse_rate,
     fidelity: r.suites?.smoke?.placeholder_fidelity,
     reward: r.suites?.smoke?.reward_score,
     n: r.suites?.smoke?.n,
@@ -92,10 +97,10 @@ export function Smoke({ navigate }: { navigate: (to: string) => void }) {
         <DataTable
           columns={[
             { key: "id", label: "experiment" },
-            { key: "parse", label: "parse", align: "right", digits: 2, help: "Share of smoke outputs that parse as valid OpenUI." },
+            { key: "parse", label: gate.lever.replace(/_/g, " "), align: "right", digits: 2, help: "Headline smoke lever from the ship-gate policy." },
             { key: "fidelity", label: "fidelity", align: "right", digits: 2, help: "Placeholder fidelity against the expected target." },
             { key: "reward", label: "reward", align: "right", digits: 2, help: "Aggregate smoke reward; higher is better." },
-            { key: "gate", label: "≥0.66 parse" },
+            { key: "gate", label: gate.label },
           ]}
           rows={smokeRows}
           searchable
@@ -105,7 +110,12 @@ export function Smoke({ navigate }: { navigate: (to: string) => void }) {
             parse: (r) => fmt(r.parse, 2),
             fidelity: (r) => fmt(r.fidelity, 2),
             reward: (r) => fmt(r.reward, 2),
-            gate: (r) => (r.parse === undefined ? <span className="hint">—</span> : <StatusPill value={r.parse >= 0.66} label={r.parse >= 0.66 ? "pass" : "fail"} />),
+            gate: (r) =>
+              r.parse === undefined || gate.threshold === undefined ? (
+                <span className="hint">—</span>
+              ) : (
+                <StatusPill value={r.parse >= gate.threshold} label={r.parse >= gate.threshold ? "pass" : "fail"} />
+              ),
           }}
         />
       </Card>

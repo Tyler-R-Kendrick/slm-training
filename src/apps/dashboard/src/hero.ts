@@ -14,7 +14,14 @@ export interface HeroReference {
 export interface HeroData {
   reference: HeroReference | null;
   provenance: string;
-  gate: { pass: boolean; passed: number; total: number } | null;
+  gate: {
+    pass: boolean;
+    passed: number;
+    total: number;
+    /** First few failing "suite:metric" gate keys — the levers to improve next. */
+    failures: string[];
+    failure_count: number;
+  } | null;
   deployment: { selected: boolean; track: string };
   inflight: { jobs: number; dispatches: number; execution: boolean };
 }
@@ -53,10 +60,13 @@ export async function fetchHero(): Promise<HeroData> {
     ).catch(() => null);
     const entries = Object.values(g?.gates ?? {});
     if (entries.length > 0) {
+      const failures = Array.isArray(g.failures) ? g.failures.map(String) : [];
       gate = {
         pass: !!g.pass,
         passed: entries.filter(Boolean).length,
         total: entries.length,
+        failures: failures.slice(0, 3),
+        failure_count: failures.length,
       };
     }
   }

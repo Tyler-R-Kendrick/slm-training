@@ -61,6 +61,7 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.01em; }
 .hero-none { border-left-color: var(--status-idle); }
 .hero-verdict { display: flex; flex-direction: column; gap: 0.4rem; align-items: flex-start; }
 .hero-verdict-sub { font-family: var(--font-mono); font-size: var(--fs-label); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-mute); }
+.hero-failures { max-width: 22rem; font-size: 0.7rem; color: var(--status-failed); overflow-wrap: anywhere; }
 .hero-ref { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
 .hero-run { display: flex; align-items: center; gap: 0.6rem; font-size: 1.02rem; font-weight: 600; }
 .hero-run .runlink { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

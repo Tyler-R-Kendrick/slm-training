@@ -94,7 +94,7 @@
         "overview_insights",
         "overview_jobs"
       ],
-      "sha256": "2113cde1d1677a1791afc9a8b2c4f8dfbed301332be6dcdf7d1c6d9ebecc759b",
+      "sha256": "3f2571db2bcf37e4607a42da800c6385ac83182aa26bd4410173127d9996bcfa",
       "status": "ok"
     },
     "playground": {
@@ -126,7 +126,7 @@
         "smoke_perf",
         "smoke_quality"
       ],
-      "sha256": "88ce5a04a013c03de920abddfb72ba616dec7da00a3cda2b34f2faafaa1018bf",
+      "sha256": "2cc5ea2b10eba5aedd02995467075ba620ab3cf769c2cd1473ecffb9b2db0622",
       "status": "ok"
     }
   }

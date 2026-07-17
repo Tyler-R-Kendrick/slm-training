@@ -266,10 +266,11 @@ def test_research_evidence_and_autoresearch_run_are_current(tmp_path) -> None:
     assert detail["telemetry"]["spans"]["forward"]["pct"] == 75.0
     assert detail["trace"]["trace_id"] == "a" * 32
     assert detail["scoreboard"]["suites"] == suites
-    # Headline comparisons use meaningful output, not syntax-only parse success.
+    # Headline comparisons use meaningful output, not syntax-only parse success,
+    # keyed by the ship-gate policy's lever names.
     comparisons, _ = readers._performance_rows([])
     current = next(row for row in comparisons if row["run_id"] == "e9-run")
-    assert current["parse"] == 0.25
+    assert current["metrics"]["meaningful_program_rate"] == 0.25
 
 
 def test_research_evidence_accepts_nested_train_and_evaluation(tmp_path) -> None:

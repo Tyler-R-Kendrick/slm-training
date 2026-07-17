@@ -36,6 +36,7 @@ export function Overview({ navigate }: { navigate: (to: string) => void }) {
   const insights = performance.insights ?? {};
   const stats = performance.stats ?? {};
   const cache = performance.cache ?? {};
+  const metricColumns = performance.metric_columns ?? [];
 
   const activeJobs = (jobsRaw?.jobs ?? []).filter((j: any) => ["running", "queued"].includes(j.status));
   const jobsData = {
@@ -130,10 +131,9 @@ export function Overview({ navigate }: { navigate: (to: string) => void }) {
             { key: "run_id", label: "Run" },
             { key: "matrix", label: "Matrix" },
             { key: "gate_status", label: "Gate" },
-            { key: "parse", label: "Meaningful", align: "right" },
-            { key: "fidelity", label: "Fidelity", align: "right" },
-            { key: "structure", label: "Structure", align: "right" },
-            { key: "reward", label: "Reward", align: "right" },
+            // Metric columns mirror the server's ship-gate policy, so lever
+            // changes re-shape this table without a dashboard edit.
+            ...metricColumns.map((c: any) => ({ key: c.key, label: c.label, align: "right" as const })),
             { key: "vs_reference", label: "Vs reference", align: "right" },
           ]}
           rows={comparisons}
@@ -144,10 +144,9 @@ export function Overview({ navigate }: { navigate: (to: string) => void }) {
               </a>
             ),
             gate_status: (row) => <StatusPill value={row.gate_status} />,
-            parse: (row) => pct(row.parse),
-            fidelity: (row) => pct(row.fidelity),
-            structure: (row) => pct(row.structure),
-            reward: (row) => pct(row.reward),
+            ...Object.fromEntries(
+              metricColumns.map((c: any) => [c.key, (row: any) => pct(row.metrics?.[c.key])]),
+            ),
           }}
         />
         <p className="hint" style={{ marginTop: "0.6rem" }}>

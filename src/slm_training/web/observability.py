@@ -162,9 +162,37 @@ def _plain_markdown(value: str | None) -> str:
     return text.replace("`", "").replace("**", "").strip()
 
 
+_METRIC_LABELS = {
+    "meaningful_program_rate": "Meaningful",
+    "structural_similarity": "Structure",
+    "component_type_recall": "Type recall",
+    "placeholder_fidelity": "Fidelity",
+    "reward_score": "Reward",
+}
+
+
+def gate_metric_keys() -> list[str]:
+    """The aggregate metric levers, in ship-gate policy order.
+
+    The ship-gate policy is the canonical statement of what training is
+    optimizing; deriving the dashboard's metric set from it means a policy
+    change (adding/dropping a lever) propagates to every metric surface.
+    """
+    keys: list[str] = []
+    for mins in DEFAULT_SHIP_GATES.values():
+        for key in mins:
+            if key not in keys:
+                keys.append(key)
+    return keys
+
+
+def metric_label(key: str) -> str:
+    return _METRIC_LABELS.get(key, key.replace("_", " "))
+
+
 def _suite_metrics(suites: Any) -> tuple[dict[str, float], int]:
     """Collapse suite metrics with sample-count weighting for fair comparisons."""
-    keys = ("parse_rate", "placeholder_fidelity", "structural_similarity", "reward_score")
+    keys = tuple(gate_metric_keys())
     totals = {key: 0.0 for key in keys}
     weights = {key: 0 for key in keys}
     sample_count = 0
@@ -176,11 +204,10 @@ def _suite_metrics(suites: Any) -> tuple[dict[str, float], int]:
         weight = max(1, int(suite.get("n") or 0))
         sample_count += int(suite.get("n") or 0)
         for key in keys:
-            value = (
-                suite.get("meaningful_program_rate", suite.get(key))
-                if key == "parse_rate"
-                else suite.get(key)
-            )
+            value = suite.get(key)
+            if value is None and key == "meaningful_program_rate":
+                # Legacy scoreboard rows predate the meaningful/parse split.
+                value = suite.get("parse_rate")
             if isinstance(value, (int, float)):
                 totals[key] += float(value) * weight
                 weights[key] += weight
@@ -1138,10 +1165,7 @@ class Readers:
                             if row.get("pass") is False
                             else "not recorded"
                         ),
-                        "parse": metrics.get("parse_rate"),
-                        "fidelity": metrics.get("placeholder_fidelity"),
-                        "structure": metrics.get("structural_similarity"),
-                        "reward": metrics.get("reward_score"),
+                        "metrics": metrics,
                         "score": score,
                         "sample_count": sample_count,
                         "vs_reference": (
@@ -1208,8 +1232,10 @@ class Readers:
             signatures: dict[tuple[float | None, ...], list[str]] = {}
             for row in rows:
                 signature = tuple(
-                    round(row[key], 6) if isinstance(row[key], float) else None
-                    for key in ("parse", "fidelity", "structure", "reward")
+                    round(row["metrics"][key], 6)
+                    if isinstance(row["metrics"].get(key), float)
+                    else None
+                    for key in gate_metric_keys()
                 )
                 signatures.setdefault(signature, []).append(str(row["id"]))
             same = max(signatures.values(), key=len)
@@ -1286,6 +1312,9 @@ class Readers:
             ),
             "comparison_basis": basis,
             "comparisons": rows,
+            "metric_columns": [
+                {"key": key, "label": metric_label(key)} for key in gate_metric_keys()
+            ],
             "stats": {
                 "reference_models": len(references),
                 "experiments": len(rows),
