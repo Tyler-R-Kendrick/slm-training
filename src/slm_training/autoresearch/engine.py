@@ -6,6 +6,7 @@ import hashlib
 import json
 import subprocess
 import sys
+import time
 from pathlib import Path
 from slm_training.autoresearch.rl_gate import assert_rl_ready
 from slm_training.autoresearch.schemas import (
@@ -549,11 +550,35 @@ def execute_commands(
     timeout_seconds: float | None = None,
 ) -> ExperimentOutcome:
     started = utc_now()
+    deadline = (
+        time.monotonic() + timeout_seconds
+        if timeout_seconds is not None
+        else None
+    )
     combined: list[str] = []
     stages: list[dict[str, object]] = []
     metrics: dict[str, float] = {}
     data_metrics: dict[str, float] = {}
     for command in commands:
+        remaining_seconds = (
+            max(0.0, deadline - time.monotonic())
+            if deadline is not None
+            else None
+        )
+        if remaining_seconds == 0:
+            return ExperimentOutcome(
+                experiment_id=experiment.experiment_id,
+                campaign_id=experiment.campaign_id,
+                status="stopped",
+                metrics=metrics,
+                data_metrics=data_metrics,
+                command=tuple(" ".join(item) for item in commands),
+                error="experiment exceeded cumulative wall-time budget",
+                wall_time_budget_seconds=timeout_seconds,
+                stage_telemetry=tuple(stages),
+                started_at=started,
+                finished_at=utc_now(),
+            )
         try:
             completed = subprocess.run(
                 command,
@@ -561,7 +586,7 @@ def execute_commands(
                 check=False,
                 capture_output=True,
                 text=True,
-                timeout=timeout_seconds,
+                timeout=remaining_seconds,
             )
         except subprocess.TimeoutExpired as exc:
             stages.append(
@@ -580,6 +605,7 @@ def execute_commands(
                 data_metrics=data_metrics,
                 command=tuple(" ".join(item) for item in commands),
                 error=f"stage exceeded wall-time limit: {' '.join(command)}",
+                wall_time_budget_seconds=timeout_seconds,
                 stage_telemetry=tuple(stages),
                 started_at=started,
                 finished_at=utc_now(),
@@ -601,6 +627,7 @@ def execute_commands(
                 data_metrics=data_metrics,
                 command=tuple(" ".join(item) for item in commands),
                 error=f"stage could not start: {' '.join(command)}: {exc}",
+                wall_time_budget_seconds=timeout_seconds,
                 stage_telemetry=tuple(stages),
                 started_at=started,
                 finished_at=utc_now(),
@@ -631,6 +658,7 @@ def execute_commands(
                 error="\n".join(combined)[-8000:],
                 metrics=metrics,
                 data_metrics=data_metrics,
+                wall_time_budget_seconds=timeout_seconds,
                 stage_telemetry=tuple(stages),
                 started_at=started,
                 finished_at=utc_now(),
@@ -643,6 +671,7 @@ def execute_commands(
         data_metrics=data_metrics,
         command=tuple(" ".join(command) for command in commands),
         exit_code=0,
+        wall_time_budget_seconds=timeout_seconds,
         stage_telemetry=tuple(stages),
         started_at=started,
         finished_at=utc_now(),

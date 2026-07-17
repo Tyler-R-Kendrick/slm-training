@@ -28,6 +28,7 @@ from slm_training.autoresearch.researchers import IsolatedResearcher, Researcher
 from slm_training.autoresearch.persistence import sync_campaign
 from slm_training.autoresearch.rl_gate import assert_rl_ready, assess_rl_readiness
 from slm_training.autoresearch.schemas import (
+    CampaignBudget,
     CampaignSpec,
     CategoricalNoveltyAudit,
     Diagnosis,
@@ -1240,6 +1241,37 @@ def test_execute_records_process_launch_failure() -> None:
     assert outcome.status == "failed"
     assert "stage could not start" in str(outcome.error)
     assert outcome.stage_telemetry[0]["launch_error"]
+
+
+def test_experiment_wall_budget_defaults_to_five_minutes_and_is_capped() -> None:
+    assert CampaignBudget().max_wall_minutes == 5.0
+    assert CampaignBudget(max_wall_minutes=0.25).max_wall_minutes == 0.25
+    with pytest.raises(ValidationError, match="less than or equal to 5"):
+        CampaignBudget(max_wall_minutes=5.01)
+
+
+def test_execute_shares_one_wall_budget_across_stages(monkeypatch) -> None:
+    import slm_training.autoresearch.engine as engine
+
+    time_reads = iter((10.0, 11.0, 13.5))
+    timeouts: list[float] = []
+
+    monkeypatch.setattr(engine.time, "monotonic", lambda: next(time_reads))
+
+    def complete(command, **kwargs):
+        timeouts.append(kwargs["timeout"])
+        return subprocess.CompletedProcess(command, 0, stdout="{}", stderr="")
+
+    monkeypatch.setattr(engine.subprocess, "run", complete)
+    outcome = execute_commands(
+        experiment(),
+        [["stage-one"], ["stage-two"]],
+        timeout_seconds=5.0,
+    )
+
+    assert outcome.status == "completed"
+    assert timeouts == [4.0, 1.5]
+    assert outcome.wall_time_budget_seconds == 5.0
 
 
 def test_train_version_and_data_build_are_mutually_exclusive() -> None:

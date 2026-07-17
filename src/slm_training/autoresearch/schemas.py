@@ -20,7 +20,7 @@ class StrictModel(BaseModel):
 class CampaignBudget(StrictModel):
     max_experiments: int = Field(default=12, ge=1, le=1000)
     max_gpu_hours: float = Field(default=0.0, ge=0)
-    max_wall_minutes: int = Field(default=240, ge=1)
+    max_wall_minutes: float = Field(default=5.0, gt=0, le=5.0)
 
 
 DEFAULT_ALLOWED_KNOBS = frozenset(
@@ -493,6 +493,7 @@ class ExperimentOutcome(StrictModel):
     command: tuple[str, ...] = ()
     exit_code: int | None = None
     error: str | None = None
+    wall_time_budget_seconds: float | None = Field(default=None, gt=0)
     stage_telemetry: tuple[dict[str, Any], ...] = ()
     started_at: str | None = None
     finished_at: str | None = None
