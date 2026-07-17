@@ -1307,6 +1307,37 @@ only**: no matched no-macro control row in this run; whether sequence
 compression buys quality is the open frontier-scale matched pair. No gate
 weakened; nothing promoted.
 
+## V13 C4 names-disappear matched pair (fixture-run 2026-07-17)
+
+Track C4 ("When Names Disappear" [arXiv:2510.03178](https://arxiv.org/abs/2510.03178)):
+does anonymizing binder/state identifiers to `<BIND_j>`/`<STATE_k>` — the
+assumption C1–C3 build on — hurt this DSL the way it hurts general code
+models? One lever (`symbol_anonymization`); placeholders keep `<SYM_i>` in
+both arms. Both arms decode unconstrained (`grammar_constrained=False`,
+per-experiment knob) because the NAME gate admits only `<BIND_j>` ids and
+would confound the comparison; surface mode + constrained decode / macros /
+relative binding fail closed.
+
+| ID | Isolated lever | Status |
+| --- | --- | --- |
+| E260 | Anonymized-symbol control (unconstrained decode) | fixture-run |
+| E261 | Surface binder/state identifiers via byte channel | fixture-run |
+
+### V13 measured results (CPU, fixture-grade, 2026-07-17)
+
+Recipe: `--steps 80 --scratch-control --no-design-md-context --rico-limit 3`,
+batch 4, seed 0, lr 3e-4, fixture v1 corpus. JSON:
+[quality-matrix-results-iter-v13-c4-20260717.json](quality-matrix-results-iter-v13-c4-20260717.json);
+narrative: [iter-e260-e261-c4-names-disappear-20260717.md](iter-e260-e261-c4-names-disappear-20260717.md).
+
+Syntax/meaningful parse 0.0 on both arms (fixture wall); structural
+similarity favors the **surface** arm on 5/5 suites (0.23/0.17/0.16/0.18/0.11
+vs 0.12/0.09/0.11/0.09/0.03) despite 1.72× longer targets at the same step
+budget. **Verdict: open** — the primary metric never leaves zero, so the
+threat is neither confirmed nor refuted; the secondary signal is a small
+adverse data point for the anonymization defense, to be settled by a
+frontier-scale replicated pair. No gate weakened; nothing promoted.
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

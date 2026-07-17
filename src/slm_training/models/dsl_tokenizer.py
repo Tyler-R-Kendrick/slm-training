@@ -812,6 +812,7 @@ class DSLNativeTokenizer:
         table: SymbolTable | None = None,
         use_symbol_table: bool = True,
         placeholders: Iterable[str] | None = None,
+        symbol_anonymization: bool = True,
     ) -> list[int]:
         """Encode OpenUI source into lexer-native ids.
 
@@ -819,7 +820,19 @@ class DSLNativeTokenizer:
         and binders become ``<BIND_j>``. When False (E40), placeholders go through
         the typed literal / byte channel; binders are still alpha-renamed to BIND
         slots (local names carry no cross-example semantics).
+
+        When ``symbol_anonymization`` is False (C4/SLM-28 surface arm), binder
+        and state names ride the byte channel verbatim instead of the
+        ``<BIND_j>``/``<STATE_k>`` pools — the one lever the names-disappear
+        comparison isolates; placeholders are untouched by this flag.
+        Incompatible with ``bind_encoding="relative"`` (which is itself a
+        nameless representation) — that combination raises.
         """
+        if not symbol_anonymization and self.bind_encoding == "relative":
+            raise ValueError(
+                "symbol_anonymization=False is incompatible with "
+                "bind_encoding='relative' (relative refs are nameless)"
+            )
         table = table or SymbolTable.from_placeholders(
             placeholders, max_slots=self.sym_slots
         )
@@ -839,11 +852,13 @@ class DSLNativeTokenizer:
                 and i + 1 < len(pieces)
                 and pieces[i + 1] == "="
             ):
-                table.ensure_binder(piece, max_slots=self.bind_slots)
+                if symbol_anonymization:
+                    table.ensure_binder(piece, max_slots=self.bind_slots)
                 if piece not in def_order:
                     def_order.append(piece)
             if piece.startswith("$") and i + 1 < len(pieces) and pieces[i + 1] == "=":
-                table.ensure_state(piece, max_slots=self.state_slots)
+                if symbol_anonymization:
+                    table.ensure_state(piece, max_slots=self.state_slots)
 
         relative = self.bind_encoding == "relative"
         if relative and def_order and def_order[0] != "root":
@@ -887,6 +902,7 @@ class DSLNativeTokenizer:
                     table=table,
                     use_symbol_table=use_symbol_table,
                     preserve_identifier=preserve_identifier,
+                    symbol_anonymization=symbol_anonymization,
                 )
             )
 
@@ -902,6 +918,7 @@ class DSLNativeTokenizer:
         table: SymbolTable,
         use_symbol_table: bool,
         preserve_identifier: bool = False,
+        symbol_anonymization: bool = True,
     ) -> list[int]:
         # Structural punctuation / NL
         if piece == NL:
@@ -922,6 +939,9 @@ class DSLNativeTokenizer:
             )
 
         if piece.startswith("$"):
+            if not symbol_anonymization:
+                # C4 surface arm: state names ride the byte channel verbatim.
+                return self._encode_bytes(piece)
             slot = table.ensure_state(piece, max_slots=self.state_slots)
             if slot is not None:
                 return [self.state_id(slot)]
@@ -931,6 +951,9 @@ class DSLNativeTokenizer:
         # Component already handled; NAME (binder / ref)
         if piece[:1].islower() and piece.isidentifier():
             if preserve_identifier:
+                return self._encode_bytes(piece)
+            if not symbol_anonymization:
+                # C4 surface arm: binder names ride the byte channel verbatim.
                 return self._encode_bytes(piece)
             slot = table.ensure_binder(piece, max_slots=self.bind_slots)
             if slot is None:

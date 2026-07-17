@@ -283,6 +283,10 @@ class TwoTowerConfig:
     # C3 (SLM-27): mine a deterministic per-corpus macro table at build time
     # and encode targets with <MACRO_i> tokens (lossless decode-time splice).
     macro_tokens: bool = False
+    # C4 (SLM-28): False = surface arm of the names-disappear comparison —
+    # binder/state names ride the byte channel verbatim instead of the
+    # <BIND_j>/<STATE_k> pools. Placeholders are unaffected by this flag.
+    symbol_anonymization: bool = True
     # Stage-2: kind-factorized embeddings (E_tok + E_kind).
     factorized_embeddings: bool = False
     # Stage-2 training mask: random | mixed (statement spans ∪ random).
@@ -1213,6 +1217,9 @@ class TwoTowerModel(nn.Module):
                     table=table,
                     use_symbol_table=use_sym,
                     placeholders=placeholders,
+                    symbol_anonymization=bool(
+                        getattr(self.config, "symbol_anonymization", True)
+                    ),
                 )
         except Exception:  # noqa: BLE001
             pass
@@ -5904,6 +5911,28 @@ class TwoTowerModel(nn.Module):
         if _is_lexer_output(cfg):
             from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
 
+            if not bool(getattr(cfg, "symbol_anonymization", True)):
+                # C4 fail-closed: the grammar gate's NAME accept-set is
+                # BIND-only and macros/relative refs presuppose pooled ids, so
+                # the surface arm refuses those combinations outright rather
+                # than silently decoding garbage.
+                if bool(getattr(cfg, "grammar_constrained", False)):
+                    raise ValueError(
+                        "symbol_anonymization=False is incompatible with "
+                        "grammar_constrained decode (NAME gate admits only "
+                        "<BIND_j> ids)"
+                    )
+                if bool(getattr(cfg, "macro_tokens", False)):
+                    raise ValueError(
+                        "symbol_anonymization=False is incompatible with "
+                        "macro_tokens (tables are mined on anonymized ids)"
+                    )
+                if str(getattr(cfg, "bind_encoding", "absolute")) != "absolute":
+                    raise ValueError(
+                        "symbol_anonymization=False requires "
+                        "bind_encoding='absolute'"
+                    )
+
             tokenizer = DSLNativeTokenizer.build(
                 bind_encoding=str(
                     getattr(cfg, "bind_encoding", "absolute") or "absolute"
@@ -5931,6 +5960,9 @@ class TwoTowerModel(nn.Module):
                             add_special=True,
                             use_symbol_table=use_sym,
                             placeholders=list(r.placeholders or []),
+                            symbol_anonymization=bool(
+                                getattr(cfg, "symbol_anonymization", True)
+                            ),
                         )
                     )
                     for r in records

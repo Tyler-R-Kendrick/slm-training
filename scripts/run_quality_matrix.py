@@ -114,6 +114,11 @@ class Experiment:
     bind_encoding: str = "absolute"
     # C3 (SLM-27): corpus-mined macro tokens with deterministic expansion.
     macro_tokens: bool = False
+    # C4 (SLM-28): False = surface binder/state identifiers (byte channel).
+    symbol_anonymization: bool = True
+    # C4 pair runs decode unconstrained in BOTH arms (the NAME gate is
+    # BIND-only, so constrained decode cannot emit surface identifiers).
+    grammar_constrained: bool = True
     # V7 levers: speculative denoising (docs/design/speculative-denoising.md)
     stability_min_persistence: int = 0
     stability_jsd_weight: float = 1.0
@@ -1392,6 +1397,39 @@ def _v12_experiments(train_dir: Path) -> list[Experiment]:
     ]
 
 
+def _v13_experiments(train_dir: Path) -> list[Experiment]:
+    """E260/E261 (C4, SLM-28): names-disappear matched pair.
+
+    Both arms decode unconstrained (grammar_constrained=False) because the
+    NAME gate admits only <BIND_j> ids — the surface arm could never emit a
+    byte-spelled identifier under the gate, which would confound the
+    representation lever with a decode-legality artifact.
+    """
+    base = dict(
+        output_tokenizer="lexer",
+        mask_pattern="diffusion",
+        grammar_ltr_primary=False,
+        grammar_constrained=False,
+    )
+    return [
+        Experiment(
+            "E260",
+            "qx_e260_c4_anon_control",
+            "C4 anonymized-symbol control (unconstrained decode)",
+            train_dir,
+            **base,
+        ),
+        Experiment(
+            "E261",
+            "qx_e261_c4_surface_ids",
+            "C4 surface binder/state identifiers via byte channel",
+            train_dir,
+            symbol_anonymization=False,
+            **base,
+        ),
+    ]
+
+
 def _apply_eval_checkpoint(
     experiments: list[Experiment], eval_checkpoint: Path | None
 ) -> list[Experiment]:
@@ -1436,7 +1474,8 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         denoiser_backend=str(getattr(exp, "denoiser_backend", "scratch") or "scratch"),
         bind_encoding=str(getattr(exp, "bind_encoding", "absolute") or "absolute"),
         macro_tokens=bool(getattr(exp, "macro_tokens", False)),
-        grammar_constrained=True,
+        symbol_anonymization=bool(getattr(exp, "symbol_anonymization", True)),
+        grammar_constrained=bool(getattr(exp, "grammar_constrained", True)),
         grammar_ltr_primary=bool(getattr(exp, "grammar_ltr_primary", True)),
         grammar_ltr_repair=exp.grammar_ltr_repair,
         grammar_ltr_max_tokens=exp.grammar_ltr_max_tokens,
@@ -2265,11 +2304,13 @@ def main(argv: list[str] | None = None) -> int:
             "v10",
             "v11",
             "v12",
+            "v13",
             "all",
         ),
         default="v3",
-        help="Experiment set through v11 representation rows E255-E257 and"
-        " the v12 macro-token row E259, or all.",
+        help="Experiment set through v11 representation rows E255-E257, the"
+        " v12 macro-token row E259, and the v13 names-disappear pair"
+        " E260/E261, or all.",
     )
     parser.add_argument(
         "--list",
@@ -2307,7 +2348,7 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(f"unknown suites: {','.join(unknown_suites)}")
     if not args.suites:
         parser.error("--suites must select at least one suite")
-    if args.matrix in {"v4", "v5", "v6", "v7", "v8", "v9", "v10", "v11", "v12", "all"}:
+    if args.matrix in {"v4", "v5", "v6", "v7", "v8", "v9", "v10", "v11", "v12", "v13", "all"}:
         if (
             args.parent is None
             and not args.scratch_control
@@ -2451,6 +2492,8 @@ def main(argv: list[str] | None = None) -> int:
         experiments.extend(_v11_experiments(args.train_dir))
     if args.matrix in {"v12", "all"}:
         experiments.extend(_v12_experiments(args.train_dir))
+    if args.matrix in {"v13", "all"}:
+        experiments.extend(_v13_experiments(args.train_dir))
     if args.only:
         experiments = [e for e in experiments if e.eid in selected_ids]
     if args.list:

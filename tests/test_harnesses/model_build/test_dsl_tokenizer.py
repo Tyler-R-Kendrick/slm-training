@@ -321,6 +321,30 @@ def test_macro_expansions_fail_closed_on_dynamic_tokens(
     assert tok.decode([tok.macro_id(5)]) == ""
 
 
+def test_surface_identifiers_round_trip_and_isolate_the_lever(
+    tok: DSLNativeTokenizer,
+) -> None:
+    """C4 (SLM-28): symbol_anonymization=False keeps binder/state names as
+    byte-channel surface text (exact round trip, no table needed at decode)
+    while placeholders still ride <SYM_i> — the one-lever comparison arm."""
+    for program in (HERO, CTA, V05_PROGRAM):
+        table = SymbolTable()
+        ids = tok.encode(program, table=table, symbol_anonymization=False)
+        assert not any(tok.is_bind_id(i) for i in ids)
+        assert not any(
+            tok.kind_of(i) == TokenKind.STATE for i in ids
+        )
+        assert tok.decode(ids, table=table) == program
+    # Placeholder channel is untouched by the flag.
+    table = SymbolTable()
+    ids = tok.encode(HERO, table=table, symbol_anonymization=False)
+    assert any(tok.is_sym_id(i) for i in ids)
+    # Nameless relative refs cannot carry surface names: fail closed.
+    rel = DSLNativeTokenizer.build(bind_encoding="relative")
+    with pytest.raises(ValueError, match="relative"):
+        rel.encode(HERO, symbol_anonymization=False)
+
+
 def test_fixture_seeds_round_trip(tok: DSLNativeTokenizer) -> None:
     path = Path("src/slm_training/resources/train_seeds.jsonl")
     if not path.is_file():

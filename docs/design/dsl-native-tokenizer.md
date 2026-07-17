@@ -99,6 +99,19 @@ table entry rather than emitting the raw sentinel. Enabled per-run via
 diffusion adapter gains a `macro_substitution` corruption policy that masks
 whole macro tokens (one id = one block edit).
 
+### Surface-identifier arm (C4, comparison-only)
+
+`symbol_anonymization=False` (encode flag, threaded from `TwoTowerConfig`)
+routes binder and state names through the byte channel verbatim instead of
+the `<BIND_j>`/`<STATE_k>` pools; placeholders keep `<SYM_i>`. This exists
+solely as the surface arm of the C4 names-disappear comparison
+(arXiv:2510.03178) — it is not a shipping representation. Decode needs no
+special handling (byte runs already reassemble into surface pieces), and the
+round trip is exact without a symbol table. Fail-closed: incompatible with
+`bind_encoding="relative"`, `macro_tokens=True`, and `grammar_constrained`
+decode (the NAME gate admits only `<BIND_j>` ids), all of which raise. On the
+fixture corpus the surface encoding is ~1.72× longer.
+
 ### Factorized embeddings (Stage 2)
 
 Optional `E_tok[id] + E_kind[kind(id)] + E_pos[i]` in
