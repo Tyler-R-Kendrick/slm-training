@@ -173,6 +173,10 @@ class GeneratorConfig:
     content_classes: tuple[str, ...] = ("plain", "escaped", "dsl_like")
     selected_triples: tuple[tuple[str, str, str], ...] = ()
     split: str = "train"
+    # DSL-pack seams (F1): default None resolves to the pinned OpenUI
+    # library schema / prop-order file, byte-identical to the old behavior.
+    schema: Mapping[str, Any] | None = None
+    prop_order: Mapping[str, Sequence[str]] | None = None
 
     def __post_init__(self) -> None:
         if self.max_depth < 1 or self.max_width < 1:
@@ -412,10 +416,12 @@ class ProgramGenerator:
     def __init__(self, config: GeneratorConfig = GeneratorConfig(), *, seed: int = 0):
         self.config = config
         self.seed = seed
-        schema = library_schema()
+        schema = dict(config.schema) if config.schema is not None else library_schema()
         self.definitions: dict[str, Any] = dict(schema.get("$defs", {}))
-        self.prop_order: dict[str, list[str]] = json.loads(
-            _PROP_ORDER_PATH.read_text(encoding="utf-8")
+        self.prop_order: dict[str, list[str]] = (
+            {name: list(order) for name, order in config.prop_order.items()}
+            if config.prop_order is not None
+            else json.loads(_PROP_ORDER_PATH.read_text(encoding="utf-8"))
         )
         requested = config.components or tuple(component_names())
         unknown = sorted(set(requested) - self.definitions.keys())

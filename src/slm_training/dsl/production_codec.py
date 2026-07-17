@@ -127,19 +127,33 @@ class ProductionVocab:
         return out
 
 
-@lru_cache(maxsize=1)
-def _prop_order() -> dict[str, list[str]]:
-    path = GRAMMARS_DIR / "openui_prop_order.json"
-    return json.loads(path.read_text(encoding="utf-8"))
+# Backend ids that share the OpenUI language (and its prop-order file).
+_OPENUI_DSL_KEYS = frozenset(
+    {"openui", "openui-lark", "openui-langcore", "lark-openui", "default", "auto"}
+)
 
 
-def _parse_program(source: str) -> Program:
+@lru_cache(maxsize=8)
+def _prop_order(dsl: str | None = None) -> dict[str, list[str]]:
+    key = (dsl or "openui").strip().lower()
+    if key in _OPENUI_DSL_KEYS:
+        path = GRAMMARS_DIR / "openui_prop_order.json"
+        return json.loads(path.read_text(encoding="utf-8"))
+    from slm_training.dsl.grammar.backends import get_backend
+
+    order = getattr(get_backend(key), "prop_order", None)
+    if callable(order):
+        return dict(order())
+    raise ParseError(f"no prop order available for dsl {key!r}")
+
+
+def _parse_program(source: str, dsl: str | None = None) -> Program:
     from slm_training.dsl.grammar.backends import get_backend
 
     text = strip_style_literals(source or "").strip()
     if not text:
-        raise ParseError("empty OpenUI source")
-    return get_backend("openui").validate(text)
+        raise ParseError("empty source")
+    return get_backend(dsl or "openui").validate(text)
 
 
 def _collect_bindings(source: str) -> dict[str, Any]:
@@ -244,7 +258,7 @@ def _split_top_level_args(inner: str) -> list[str]:
     return parts
 
 
-def _parse_rhs_value(token: str) -> Any:
+def _parse_rhs_value(token: str, dsl: str | None = None) -> Any:
     token = token.strip()
     if not token:
         raise ParseError("empty RHS value")
@@ -252,7 +266,7 @@ def _parse_rhs_value(token: str) -> Any:
         inner = token[1:-1].strip()
         if not inner:
             return []
-        return [_parse_rhs_value(part) for part in _split_top_level_args(inner)]
+        return [_parse_rhs_value(part, dsl) for part in _split_top_level_args(inner)]
     if token.startswith('"') and token.endswith('"'):
         try:
             return json.loads(token)
@@ -269,33 +283,38 @@ def _parse_rhs_value(token: str) -> Any:
     match = re.match(r"^([A-Z][A-Za-z0-9_]*)\s*\((.*)\)\s*$", token, re.DOTALL)
     if match:
         type_name = match.group(1)
-        args = [_parse_rhs_value(part) for part in _split_top_level_args(match.group(2))]
-        props = map_positional_props(type_name, args, _prop_order())
+        args = [
+            _parse_rhs_value(part, dsl)
+            for part in _split_top_level_args(match.group(2))
+        ]
+        props = map_positional_props(type_name, args, _prop_order(dsl))
         return {"type": "element", "typeName": type_name, "props": props}
     raise ParseError(f"unsupported RHS value: {token!r}")
 
 
-def _parse_bindings(source: str) -> dict[str, Any]:
+def _parse_bindings(source: str, dsl: str | None = None) -> dict[str, Any]:
     """Return statement-level AST nodes keyed by binder name (refs preserved)."""
-    _parse_program(source)
+    _parse_program(source, dsl)
     bindings: dict[str, Any] = {}
     for match in _STMT_RE.finditer(source):
         name = match.group(1)
         rhs = match.group(2).strip()
-        bindings[name] = _parse_rhs_value(rhs)
+        bindings[name] = _parse_rhs_value(rhs, dsl)
     if "root" not in bindings:
         raise ParseError("missing root binding")
     return bindings
 
 
-def _ordered_prop_values(type_name: str, props: dict[str, Any]) -> list[Any]:
+def _ordered_prop_values(
+    type_name: str, props: dict[str, Any], dsl: str | None = None
+) -> list[Any]:
     """Prop values in declared positional order (absent middle props -> None).
 
     The decoder reconstructs a positional surface, so emission must follow the
     declared prop order exactly — otherwise the parser reassigns values to the
     wrong props on reparse (e.g. Modal children landing in ``title``).
     """
-    order = list(_prop_order().get(type_name) or [])
+    order = list(_prop_order(dsl).get(type_name) or [])
     unknown = [key for key in props if key != "_args" and key not in order]
     if unknown:
         raise ParseError(
@@ -308,7 +327,7 @@ def _ordered_prop_values(type_name: str, props: dict[str, Any]) -> list[Any]:
     return values
 
 
-def _expr_refs(node: Any) -> list[str]:
+def _expr_refs(node: Any, dsl: str | None = None) -> list[str]:
     """Statement refs in emission order (mirrors ``_encode_expr`` traversal)."""
     refs: list[str] = []
 
@@ -325,22 +344,24 @@ def _expr_refs(node: Any) -> list[str]:
             return
         if kind == "element":
             props = dict(value.get("props") or {})
-            for item in _ordered_prop_values(str(value.get("typeName") or ""), props):
+            for item in _ordered_prop_values(
+                str(value.get("typeName") or ""), props, dsl
+            ):
                 walk(item)
             return
         if kind == "call":
             name = str(value.get("name") or "")
             props = map_positional_props(
-                name, list(value.get("args") or []), _prop_order()
+                name, list(value.get("args") or []), _prop_order(dsl)
             )
-            for item in _ordered_prop_values(name, props):
+            for item in _ordered_prop_values(name, props, dsl):
                 walk(item)
 
     walk(node)
     return refs
 
 
-def _statement_order(bindings: dict[str, Any]) -> list[str]:
+def _statement_order(bindings: dict[str, Any], dsl: str | None = None) -> list[str]:
     """Emission order: root's dependencies (DFS), remaining statements, root last.
 
     Refs are read from the parsed statement ASTs rather than surface text so
@@ -355,12 +376,12 @@ def _statement_order(bindings: dict[str, Any]) -> list[str]:
         if name in seen:
             return
         seen.add(name)
-        for ref in _expr_refs(bindings[name]):
+        for ref in _expr_refs(bindings[name], dsl):
             if ref in bindings:
                 visit(ref)
         order.append(name)
 
-    for ref in _expr_refs(bindings["root"]):
+    for ref in _expr_refs(bindings["root"], dsl):
         if ref in bindings:
             visit(ref)
     for name in bindings:
@@ -506,20 +527,25 @@ def encode_openui(
     source: str,
     *,
     slot_contract: Iterable[str] | None = None,
+    dsl: str | None = None,
 ) -> ProductionProgram:
-    """Parse OpenUI and emit a compact production token sequence."""
+    """Parse source and emit a compact production token sequence.
+
+    ``dsl`` selects the grammar backend + prop order (default: OpenUI). The
+    v0.5 typed path is OpenUI-specific and ignores non-OpenUI ``dsl`` values.
+    """
     scrubbed = strip_style_literals(source or "").strip()
     if _requires_v05_codec(scrubbed):
         return _encode_v05(scrubbed, slot_contract=slot_contract)
-    _parse_program(scrubbed)
-    bindings = _parse_bindings(scrubbed)
+    _parse_program(scrubbed, dsl)
+    bindings = _parse_bindings(scrubbed, dsl)
     contract = (
         canonical_slot_contract(scrubbed, declared=slot_contract)
         if slot_contract is not None
         else canonical_slot_contract(scrubbed)
     )
     slot_index = {ph: i for i, ph in enumerate(contract)}
-    stmt_order = _statement_order(bindings)
+    stmt_order = _statement_order(bindings, dsl)
     stmt_index = {name: i for i, name in enumerate(stmt_order)}
 
     tokens: list[str] = []
@@ -532,6 +558,7 @@ def encode_openui(
                 slot_index=slot_index,
                 stmt_index=stmt_index,
                 stmt_limit=position,
+                dsl=dsl,
             )
         )
     return ProductionProgram(tokens=tuple(tokens), slot_contract=tuple(contract))
@@ -785,9 +812,10 @@ def roundtrip_openui(
     source: str,
     *,
     slot_contract: Iterable[str] | None = None,
+    dsl: str | None = None,
 ) -> tuple[ProductionProgram, str]:
     """Encode then decode; returns (program, reconstructed OpenUI)."""
-    program = encode_openui(source, slot_contract=slot_contract)
+    program = encode_openui(source, slot_contract=slot_contract, dsl=dsl)
     decoded = decode_productions(program.tokens, program.slot_contract)
     return program, decoded
 
@@ -1177,6 +1205,7 @@ def encode_choices(
     source: str,
     *,
     slot_contract: Iterable[str] | None = None,
+    dsl: str | None = None,
 ) -> ProductionProgram:
     """Encode OpenUI into the pure grammar-choice stream (semantic decisions only).
 
@@ -1190,21 +1219,21 @@ def encode_choices(
     from slm_training.dsl.lang_core import bridge_available
 
     scrubbed = strip_style_literals(source or "").strip()
-    program = _parse_program(scrubbed)
+    program = _parse_program(scrubbed, dsl)
     if bridge_available():
         serialized = strip_style_literals(program.serialized or "").strip()
         if serialized:
             scrubbed = serialized
     if _requires_v05_codec(scrubbed):
         return _encode_choices_v05(scrubbed, slot_contract=slot_contract)
-    bindings = _parse_bindings(scrubbed)
+    bindings = _parse_bindings(scrubbed, dsl)
     contract = (
         canonical_slot_contract(scrubbed, declared=slot_contract)
         if slot_contract is not None
         else canonical_slot_contract(scrubbed)
     )
     slot_index = {ph: i for i, ph in enumerate(contract)}
-    stmt_order = _statement_order(bindings)
+    stmt_order = _statement_order(bindings, dsl)
     stmt_index = {name: i for i, name in enumerate(stmt_order)}
     tokens: list[str] = []
     for position, name in enumerate(stmt_order):
@@ -1215,6 +1244,7 @@ def encode_choices(
                 slot_index=slot_index,
                 stmt_index=stmt_index,
                 stmt_limit=position,
+                dsl=dsl,
             )
         )
     return ProductionProgram(tokens=tuple(tokens), slot_contract=tuple(contract))
@@ -1494,9 +1524,10 @@ def roundtrip_choices(
     source: str,
     *,
     slot_contract: Iterable[str] | None = None,
+    dsl: str | None = None,
 ) -> tuple[ProductionProgram, str]:
     """Encode to the choice stream then decode; returns (program, canonical text)."""
-    program = encode_choices(source, slot_contract=slot_contract)
+    program = encode_choices(source, slot_contract=slot_contract, dsl=dsl)
     decoded = decode_choices(program.tokens, program.slot_contract)
     return program, decoded
 
@@ -1521,6 +1552,7 @@ def _encode_expr(
     slot_index: dict[str, int],
     stmt_index: dict[str, int],
     stmt_limit: int | None = None,
+    dsl: str | None = None,
 ) -> list[str]:
     if node is None:
         return [_literal_token(None)]
@@ -1545,6 +1577,7 @@ def _encode_expr(
                     slot_index=slot_index,
                     stmt_index=stmt_index,
                     stmt_limit=stmt_limit,
+                    dsl=dsl,
                 )
             )
         out.append(LIST_CLOSE)
@@ -1571,6 +1604,7 @@ def _encode_expr(
                 slot_index=slot_index,
                 stmt_index=stmt_index,
                 stmt_limit=stmt_limit,
+                dsl=dsl,
             )
         )
         tokens.append(CLOSE)
@@ -1579,7 +1613,7 @@ def _encode_expr(
         # Toy-layout style calls — treat as component with positional args.
         name = str(node.get("name") or "")
         args = list(node.get("args") or [])
-        props = map_positional_props(name, args, _prop_order())
+        props = map_positional_props(name, args, _prop_order(dsl))
         tokens = [f"{OPEN_PREFIX}{name}"]
         tokens.extend(
             _encode_component_props(
@@ -1588,6 +1622,7 @@ def _encode_expr(
                 slot_index=slot_index,
                 stmt_index=stmt_index,
                 stmt_limit=stmt_limit,
+                dsl=dsl,
             )
         )
         tokens.append(CLOSE)
@@ -1602,9 +1637,10 @@ def _encode_component_props(
     slot_index: dict[str, int],
     stmt_index: dict[str, int],
     stmt_limit: int | None = None,
+    dsl: str | None = None,
 ) -> list[str]:
     tokens: list[str] = []
-    for value in _ordered_prop_values(type_name, props):
+    for value in _ordered_prop_values(type_name, props, dsl):
         if value is None:
             tokens.append(_literal_token(None))
             continue
@@ -1614,6 +1650,7 @@ def _encode_component_props(
                 slot_index=slot_index,
                 stmt_index=stmt_index,
                 stmt_limit=stmt_limit,
+                dsl=dsl,
             )
         )
     return tokens

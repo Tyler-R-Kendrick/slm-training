@@ -39,7 +39,7 @@ def canonicalize(source: str, *, dsl: str | None = None, validate: bool = True) 
     program. Set ``validate=False`` only in hot paths where the input is already
     trusted valid.
     """
-    program = encode_openui(source)
+    program = encode_openui(source, dsl=dsl)
     canonical = decode_productions(program.tokens, program.slot_contract)
     if validate:
         from slm_training.dsl.parser import validate as _validate
