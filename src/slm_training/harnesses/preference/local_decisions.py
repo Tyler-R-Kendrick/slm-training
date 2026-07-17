@@ -190,7 +190,7 @@ def events_from_trace(trace: dict[str, Any]) -> list[DecisionEventV1]:
         if (probe.get("verifier") or {}).get("name") != SEMANTIC_VERIFIER_V1:
             raise ValueError("counterfactual decision uses an unknown verifier")
         good, bad = label_pareto_candidates(list(probe.get("candidates") or []))
-        shared = ("pre_canvas", "position", "legal_token_ids")
+        shared = ("pre_canvas", "position", "legal_token_ids", "state_source")
         if (
             good != sorted({int(value) for value in item.get("good_token_ids") or []})
             or bad
