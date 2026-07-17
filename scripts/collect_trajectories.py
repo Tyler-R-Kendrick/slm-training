@@ -27,6 +27,12 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Explicit records.jsonl (alternative to --test-dir/--suite).",
     )
+    parser.add_argument(
+        "--record-id",
+        action="append",
+        default=[],
+        help="Collect only this exact record ID; repeat for multiple records.",
+    )
     parser.add_argument("--out", type=Path, default=None)
     parser.add_argument("--run-id", default="trajectory-latest")
     parser.add_argument("--limit", type=int, default=None)
@@ -83,6 +89,15 @@ def main(argv: list[str] | None = None) -> int:
             "targets. Gold targets never enter model context."
         ),
     )
+    parser.add_argument(
+        "--counterfactual-state-targets",
+        type=Path,
+        default=None,
+        help=(
+            "JSON manifest of compiler-derived decision kind, legal token IDs, "
+            "and selected token ID. Only exact matching states are probed."
+        ),
+    )
     args = parser.parse_args(argv)
 
     if args.counterfactual_semantic and (
@@ -123,6 +138,13 @@ def main(argv: list[str] | None = None) -> int:
         records = [
             record for record in records if record.target_kind == args.output_kind
         ]
+    if args.record_id:
+        requested_ids = set(args.record_id)
+        records_by_id = {record.id: record for record in records}
+        missing_ids = sorted(requested_ids - records_by_id.keys())
+        if missing_ids:
+            parser.error(f"unknown --record-id values: {', '.join(missing_ids)}")
+        records = [records_by_id[record_id] for record_id in args.record_id]
     if args.limit is not None:
         records = records[: max(0, int(args.limit))]
     if args.decode_policy == "strict_compiler_tree" and any(
@@ -131,6 +153,15 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(
             "strict_compiler_tree supports document records only; "
             "pass --output-kind document"
+        )
+    target_state_signatures = None
+    if args.counterfactual_state_targets is not None:
+        from slm_training.harnesses.preference.counterfactuals import (
+            load_counterfactual_state_targets,
+        )
+
+        target_state_signatures = load_counterfactual_state_targets(
+            args.counterfactual_state_targets
         )
 
     torch.manual_seed(int(args.seed))
@@ -225,6 +256,7 @@ def main(argv: list[str] | None = None) -> int:
                     max_candidates=int(args.counterfactual_candidates),
                     seed=int(args.seed),
                     state_source=str(args.counterfactual_state_source),
+                    target_state_signatures=target_state_signatures,
                 )
                 for key, value in mined.items():
                     counterfactual[key] += value

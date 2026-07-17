@@ -1,0 +1,11 @@
+{
+  "version": "e283_signature_support_synth_v1",
+  "record_count": 2,
+  "collected_count": 2,
+  "quality_rejected": 0,
+  "structure_reserved_rejected": 0,
+  "error_count": 0,
+  "synthesizer": "grammar_schema_targeted",
+  "independent_judge_passed": 2,
+  "compiler_state_validated": 2
+}

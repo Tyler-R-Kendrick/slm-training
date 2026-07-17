@@ -97,7 +97,13 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Diagnostic-only override for a counterfactual corpus that misses support.",
     )
-    events.add_argument("--source-record-manifest", type=Path, default=None)
+    events.add_argument(
+        "--source-record-manifest",
+        type=Path,
+        action="append",
+        default=[],
+        help="Source train manifest; repeat when traces span multiple corpora.",
+    )
     events.add_argument(
         "--evidence-kind",
         choices=("all", "constraint_shadow", "counterfactual"),
@@ -152,11 +158,15 @@ def main(argv: list[str] | None = None) -> int:
         if args.manifest_out is not None:
             if not args.dataset_id:
                 parser.error("--manifest-out requires --dataset-id")
-            source_fingerprint = None
-            if args.source_record_manifest is not None:
-                source_fingerprint = json.loads(
-                    args.source_record_manifest.read_text(encoding="utf-8")
-                ).get("content_fingerprint")
+            source_fingerprints = [
+                str(fingerprint)
+                for path in args.source_record_manifest
+                if (
+                    fingerprint := json.loads(
+                        path.read_text(encoding="utf-8")
+                    ).get("content_fingerprint")
+                )
+            ]
             manifest = decision_event_manifest(
                 mined,
                 dataset_id=args.dataset_id,
@@ -166,7 +176,7 @@ def main(argv: list[str] | None = None) -> int:
                     for trace in traces
                     if trace.get("trace_id")
                 ),
-                source_record_fingerprint=source_fingerprint,
+                source_record_fingerprints=source_fingerprints,
                 evidence_path=(args.evidence_out.name if args.evidence_out else None),
                 evidence_rows=evidence,
                 min_train_signature_support=args.min_train_signature_support,

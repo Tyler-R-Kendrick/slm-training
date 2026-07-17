@@ -1,0 +1,26 @@
+{
+  "version": "e283_signature_support_synth_v1",
+  "dataset_id": "e283_signature_support_synth_v1",
+  "kind": "train",
+  "source": "grammar_schema_synthesis",
+  "records": "records.jsonl",
+  "stats": "stats.json",
+  "record_count": 2,
+  "content_fingerprint": "5bb8f9601bbb2d0ef7caaf905eedda40d88e1908851445ee8bdd8818c604bcbe",
+  "ids": [
+    "e283_synth_bound_empty_v1",
+    "e283_synth_textarea_v1"
+  ],
+  "immutable": true,
+  "admission": {
+    "task": "generation",
+    "independent_judge_required": true,
+    "independent_judge_passed": 2,
+    "compiler_state_validated": 2,
+    "held_out_derivatives": 0
+  },
+  "target_support_signatures": [
+    "component_bound@0dea33eb4420",
+    "grammar_rsqb_bound_empty@c2ac6c04cbe5"
+  ]
+}
