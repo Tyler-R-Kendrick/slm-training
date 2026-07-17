@@ -366,6 +366,142 @@ def _minimum_norm_gradient(
     }
 
 
+def _gradient_alignment(
+    left: list[torch.Tensor | None], right: list[torch.Tensor | None]
+) -> dict[str, float]:
+    dot = sum(
+        (a.detach() * b.detach()).sum().double().cpu()
+        for a, b in zip(left, right, strict=True)
+        if a is not None and b is not None
+    )
+    left_norm_sq = sum(
+        value.detach().square().sum().double().cpu()
+        for value in left
+        if value is not None
+    )
+    right_norm_sq = sum(
+        value.detach().square().sum().double().cpu()
+        for value in right
+        if value is not None
+    )
+    denominator = float(left_norm_sq.sqrt() * right_norm_sq.sqrt())
+    return {
+        "dot": float(dot),
+        "cosine": float(dot) / denominator if denominator else 0.0,
+        "left_norm": float(left_norm_sq.sqrt()),
+        "right_norm": float(right_norm_sq.sqrt()),
+    }
+
+
+def diagnose_decision_gradient_alignment(
+    model: TwoTowerModel,
+    events: list[DecisionEventV1],
+    *,
+    objective: LocalObjective,
+    epsilon: float = 2.0,
+    tau: float = 1.0,
+) -> dict:
+    """Compare exact train and held-out gradients by grammar/AST decision kind."""
+    trainable = list(model.trainable_parameters())
+    gradients: dict[str, dict[str, list[torch.Tensor | None]]] = {}
+    provenance: dict[str, dict[str, dict]] = {}
+    for split in ("train", "held_out"):
+        selected = _objective_events(
+            [event for event in events if event.split == split], objective
+        )
+        logits_rows = _event_logits_many(model, selected)
+        losses: dict[str, list[torch.Tensor]] = defaultdict(list)
+        rows: dict[str, list[DecisionEventV1]] = defaultdict(list)
+        for event, logits in zip(selected, logits_rows, strict=True):
+            loss, _ = local_decision_loss(
+                logits, event, objective=objective, epsilon=epsilon, tau=tau
+            )
+            losses[event.decision_kind].append(loss)
+            rows[event.decision_kind].append(event)
+        gradients[split] = {}
+        provenance[split] = {}
+        kinds = sorted(losses)
+        for index, kind in enumerate(kinds):
+            gradients[split][kind] = list(
+                torch.autograd.grad(
+                    torch.stack(losses[kind]).mean(),
+                    trainable,
+                    retain_graph=index + 1 < len(kinds),
+                    allow_unused=True,
+                )
+            )
+            kind_rows = rows[kind]
+            provenance[split][kind] = {
+                "event_count": len(kind_rows),
+                "group_count": len({event.group_id for event in kind_rows}),
+                "evidence_kinds": dict(
+                    sorted(Counter(event.evidence_kind for event in kind_rows).items())
+                ),
+                "mean_evidence_confidence": sum(
+                    event.evidence_confidence for event in kind_rows
+                )
+                / len(kind_rows),
+            }
+    train_kinds = set(gradients["train"])
+    held_kinds = set(gradients["held_out"])
+    ordered_train_kinds = sorted(train_kinds)
+    combined, solver = _minimum_norm_gradient(
+        [gradients["train"][kind] for kind in ordered_train_kinds]
+    )
+    solver["weight_by_decision_kind"] = dict(
+        zip(ordered_train_kinds, solver.pop("weights"), strict=True)
+    )
+    return {
+        "objective": objective,
+        "by_decision_kind": {
+            kind: {
+                **_gradient_alignment(
+                    gradients["train"][kind], gradients["held_out"][kind]
+                ),
+                "train": provenance["train"][kind],
+                "held_out": provenance["held_out"][kind],
+            }
+            for kind in sorted(train_kinds & held_kinds)
+        },
+        "train_only_decision_kinds": sorted(train_kinds - held_kinds),
+        "held_out_only_decision_kinds": sorted(held_kinds - train_kinds),
+        "train_minimum_norm_solver": solver,
+        "held_out_to_train_combination": {
+            kind: _gradient_alignment(gradients["held_out"][kind], combined)
+            for kind in sorted(held_kinds)
+        },
+        "cross_kind_alignment": {
+            held_kind: {
+                train_kind: _gradient_alignment(
+                    gradients["held_out"][held_kind],
+                    gradients["train"][train_kind],
+                )
+                for train_kind in ordered_train_kinds
+            }
+            for held_kind in sorted(held_kinds)
+        },
+    }
+
+
+def diagnose_decision_gradient_alignment_from_paths(
+    checkpoint: Path,
+    events_path: Path,
+    *,
+    objective: LocalObjective,
+    device: str = "cpu",
+) -> dict:
+    events = load_decision_events(events_path)
+    model = TwoTowerModel.from_checkpoint(checkpoint, device=device)
+    _validate_identity(events, checkpoint, model)
+    report = diagnose_decision_gradient_alignment(
+        model, events, objective=objective
+    )
+    report["checkpoint"] = str(checkpoint)
+    report["checkpoint_sha"] = checkpoint_sha(checkpoint)
+    report["events_path"] = str(events_path)
+    return report
+
+
 def _event_logits(model: TwoTowerModel, event: DecisionEventV1) -> torch.Tensor:
     ctx, ctx_pad = model._encode_context([event.context_text])
     ids = torch.tensor([event.canvas_ids], dtype=torch.long, device=model.device_name)
