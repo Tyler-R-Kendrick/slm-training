@@ -64,7 +64,15 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Replay and independently judge grammar-legal exact-state alternatives.",
     )
-    parser.add_argument("--counterfactual-states-per-record", type=int, default=4)
+    parser.add_argument(
+        "--counterfactual-states-per-record",
+        type=int,
+        default=4,
+        help=(
+            "Maximum judge probes per record, stratified across compiler-derived "
+            "decision kinds and relative trajectory depth."
+        ),
+    )
     parser.add_argument("--counterfactual-candidates", type=int, default=4)
     args = parser.parse_args(argv)
 

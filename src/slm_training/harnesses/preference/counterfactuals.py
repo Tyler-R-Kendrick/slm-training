@@ -88,6 +88,107 @@ def label_pareto_candidates(
     return sorted(set(good)), sorted(set(bad) - set(good))
 
 
+def select_counterfactual_states(
+    commits: list[dict[str, Any]],
+    *,
+    max_states: int,
+    seed: int = 0,
+    context_key: str = "",
+) -> list[dict[str, Any]]:
+    """Select deterministic states across parser roles and decode depth.
+
+    Compiler commits are chronological, so taking their prefix systematically
+    over-samples root declarations. Round-robin over grammar-derived decision
+    kinds first, then relative trajectory-depth buckets, while using stable
+    hashes only to break ties.
+    """
+    eligible: list[dict[str, Any]] = []
+    seen: set[tuple[tuple[int, ...], int]] = set()
+    for commit in commits:
+        if (
+            commit.get("phase") != "compiler_tree"
+            or len(commit.get("allowed_id_set") or ()) <= 1
+            or commit.get("pre_canvas") is None
+        ):
+            continue
+        key = (tuple(map(int, commit["pre_canvas"])), int(commit["t"]))
+        if key not in seen:
+            seen.add(key)
+            eligible.append(commit)
+    if not eligible:
+        return []
+
+    positions = sorted({int(commit["t"]) for commit in eligible})
+    position_rank = {position: rank for rank, position in enumerate(positions)}
+
+    def depth_bucket(commit: dict[str, Any]) -> int:
+        rank = position_rank[int(commit["t"])]
+        return min(3, (4 * rank) // max(1, len(positions)))
+
+    context_hash = _sha(context_key)
+
+    def stable_order(*parts: object) -> str:
+        return _sha([int(seed), context_hash, *parts])
+
+    strata: dict[str, dict[int, list[dict[str, Any]]]] = {}
+    for commit in eligible:
+        kind = str(commit.get("decision_kind") or "compiler_tree")
+        strata.setdefault(kind, {}).setdefault(depth_bucket(commit), []).append(commit)
+
+    kinds = sorted(strata, key=lambda kind: stable_order("kind", kind))
+    buckets = {
+        kind: sorted(
+            strata[kind], key=lambda bucket: stable_order("bucket", kind, bucket)
+        )
+        for kind in kinds
+    }
+    selected: list[dict[str, Any]] = []
+    round_index = 0
+    while len(selected) < max_states:
+        added = False
+        for kind in kinds:
+            if round_index >= len(buckets[kind]):
+                continue
+            bucket = buckets[kind][round_index]
+            rows = strata[kind][bucket]
+            selected.append(
+                min(
+                    rows,
+                    key=lambda commit: stable_order(
+                        "state",
+                        kind,
+                        bucket,
+                        int(commit["t"]),
+                        tuple(map(int, commit["pre_canvas"])),
+                    ),
+                )
+            )
+            added = True
+            if len(selected) >= max_states:
+                break
+        if not added:
+            break
+        round_index += 1
+
+    selected_ids = {id(commit) for commit in selected}
+    remaining = sorted(
+        (commit for commit in eligible if id(commit) not in selected_ids),
+        key=lambda commit: stable_order(
+            "remaining",
+            str(commit.get("decision_kind") or "compiler_tree"),
+            depth_bucket(commit),
+            int(commit["t"]),
+            tuple(map(int, commit["pre_canvas"])),
+        ),
+    )
+    selected.extend(remaining[: max(0, max_states - len(selected))])
+
+    return [
+        {**commit, "counterfactual_depth_bucket": depth_bucket(commit)}
+        for commit in selected
+    ]
+
+
 def mine_semantic_counterfactuals(
     model: Any,
     recorder: Any,
@@ -105,23 +206,13 @@ def mine_semantic_counterfactuals(
         raise ValueError("counterfactual mining requires states >= 1 and candidates >= 2")
     if bool(getattr(model.config, "grammar_sample_decode", False)):
         raise ValueError("same-state counterfactual replay requires deterministic decode")
-    commits = [
-        commit
-        for step in recorder.steps
-        for commit in step.get("commits", ())
-        if commit.get("phase") == "compiler_tree"
-        and len(commit.get("allowed_id_set") or ()) > 1
-        and commit.get("pre_canvas") is not None
-    ]
-    unique: list[dict[str, Any]] = []
-    seen: set[tuple[tuple[int, ...], int]] = set()
-    for commit in commits:
-        key = (tuple(map(int, commit["pre_canvas"])), int(commit["t"]))
-        if key not in seen:
-            seen.add(key)
-            unique.append(commit)
-        if len(unique) >= max_states:
-            break
+    commits = [commit for step in recorder.steps for commit in step.get("commits", ())]
+    unique = select_counterfactual_states(
+        commits,
+        max_states=max_states,
+        seed=seed,
+        context_key=context_text,
+    )
 
     stats = {
         "states": len(unique),
@@ -219,6 +310,10 @@ def mine_semantic_counterfactuals(
                     state_hash=state_hash,
                     pre_canvas=canvas,
                     position=position,
+                    decision_kind=str(
+                        commit.get("decision_kind") or "compiler_tree"
+                    ),
+                    trajectory_depth_bucket=int(commit["counterfactual_depth_bucket"]),
                     selected_token_id=selected,
                     legal_token_ids=legal,
                     good_token_ids=good,
@@ -247,6 +342,7 @@ def mine_semantic_counterfactuals(
                     state_hash=state_hash,
                     pre_canvas=canvas,
                     position=position,
+                    trajectory_depth_bucket=int(commit["counterfactual_depth_bucket"]),
                     selected_token_id=selected,
                     good_token_ids=good,
                     bad_token_ids=bad,

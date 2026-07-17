@@ -7,6 +7,7 @@ import pytest
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.harnesses.preference.counterfactuals import (
     label_pareto_candidates,
+    select_counterfactual_states,
     semantic_outcome,
 )
 
@@ -103,3 +104,71 @@ def test_same_state_replay_rejects_sample_decode() -> None:
     recorder = SimpleNamespace(steps=[])
     with pytest.raises(ValueError, match="deterministic decode"):
         mine_semantic_counterfactuals(model, recorder, _record(), "context")
+
+
+def test_state_selection_stratifies_parser_roles_before_repeating_kinds() -> None:
+    commits = [
+        {
+            "phase": "compiler_tree",
+            "allowed_id_set": [1, 2],
+            "pre_canvas": [position, 0],
+            "t": position,
+            "decision_kind": kind,
+        }
+        for position, kind in (
+            (1, "bind_declaration_root"),
+            (2, "component_root"),
+            (3, "component_root"),
+            (8, "bind_reference_root_children"),
+            (9, "grammar_rsqb_root_populated"),
+        )
+    ]
+
+    selected = select_counterfactual_states(
+        commits, max_states=4, seed=7, context_key="record-a"
+    )
+
+    assert len(selected) == 4
+    assert len({row["decision_kind"] for row in selected}) == 4
+    assert all(0 <= row["counterfactual_depth_bucket"] <= 3 for row in selected)
+
+
+def test_state_selection_is_deterministic_and_ignores_ineligible_commits() -> None:
+    commits = [
+        {
+            "phase": "compiler_tree",
+            "allowed_id_set": [1, 2],
+            "pre_canvas": [position, 0],
+            "t": position,
+            "decision_kind": "component_bound",
+        }
+        for position in range(1, 9)
+    ]
+    commits.extend(
+        [
+            {
+                "phase": "repair",
+                "allowed_id_set": [1, 2],
+                "pre_canvas": [99, 0],
+                "t": 99,
+            },
+            {
+                "phase": "compiler_tree",
+                "allowed_id_set": [1],
+                "pre_canvas": [100, 0],
+                "t": 100,
+            },
+        ]
+    )
+
+    first = select_counterfactual_states(
+        commits, max_states=8, seed=11, context_key="record-b"
+    )
+    second = select_counterfactual_states(
+        commits, max_states=8, seed=11, context_key="record-b"
+    )
+
+    assert [row["t"] for row in first] == [row["t"] for row in second]
+    assert len(first) == 8
+    assert len({row["counterfactual_depth_bucket"] for row in first}) == 4
+    assert all(row["t"] < 99 for row in first)
