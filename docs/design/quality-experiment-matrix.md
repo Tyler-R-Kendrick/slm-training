@@ -1477,6 +1477,16 @@ by grammar/AST decision signatures derived from legal/good/bad sets, not add
 literal or component special cases. Full evidence:
 [iter-e275-normalized-metric-geometry-20260717.md](iter-e275-normalized-metric-geometry-20260717.md).
 
+E276 kept E275's train direction fixed and evaluated 21 held-out signatures
+derived from decision kind plus legal/good/bad token sets. Nine signatures have
+no train counterpart. Seventeen objective regressions concentrate in seven
+signatures: four are absent from train and the other three have only one to
+three train examples. Coarse kind-level averaging was hiding sparse semantic
+support. No training ran. The next lever is judged, leakage-safe synthesis with
+minimum support per grammar-derived signature, followed by this same profile;
+do not add token/component special cases. Full evidence:
+[iter-e276-decision-signature-alignment-20260717.md](iter-e276-decision-signature-alignment-20260717.md).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
