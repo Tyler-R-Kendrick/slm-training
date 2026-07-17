@@ -11,6 +11,7 @@
 :root {
   /* Type */
   --font-display: "Syne", system-ui, sans-serif;
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
   /* Dark theme (default) — deep ink → raised surfaces */
@@ -62,6 +63,9 @@
   --radius: 4px;
   --radius-lg: 8px;
   --gap: 1rem;
+
+  /* Terminal surfaces (logs, DSL editor) stay dark in both themes. */
+  --terminal-bg: rgba(5, 8, 6, 0.6);
 }
 
 :root[data-theme="light"] {

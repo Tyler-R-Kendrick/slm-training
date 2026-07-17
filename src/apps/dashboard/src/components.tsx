@@ -211,7 +211,7 @@ export function DataTable({
           {filtered.map((row, i) => (
             <tr key={i}>
               {columns.map((c) => (
-                <td key={c.key} style={{ textAlign: c.align ?? "left" }}>
+                <td key={c.key} className={`cell-${c.key}`} style={{ textAlign: c.align ?? "left" }}>
                   {render && render[c.key] ? render[c.key](row) : c.direction ? <MetricCell row={row} baseline={baseline} column={c} /> : fmt(row[c.key], c.digits ?? 3)}
                 </td>
               ))}
