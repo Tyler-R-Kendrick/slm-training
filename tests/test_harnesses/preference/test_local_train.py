@@ -14,6 +14,9 @@ from slm_training.harnesses.preference.local_decisions import (
     write_decision_events,
 )
 from slm_training.harnesses.preference.local_train import (
+    _event_logits,
+    _event_logits_many,
+    _guard_strata_regressions,
     evaluate_local_decisions,
     event_schedule,
     local_decision_loss,
@@ -185,6 +188,58 @@ def test_evaluate_local_decisions_reports_held_out_recurrence() -> None:
     assert report["event_count"] == 1
     assert report["by_decision_kind"]["component"]["event_count"] == 1
     assert "chosen_win" in report["metrics"]
+
+
+def test_batched_event_logits_match_single_event_evaluation() -> None:
+    model = _model()
+    events = []
+    for group in ("first", "second"):
+        event = _event(
+            good=(model.tokenizer.eos_id,),
+            bad=(model.tokenizer.mask_id,),
+            group=group,
+        )
+        events.append(
+            DecisionEventV1.from_dict(
+                {
+                    **event.to_dict(),
+                    "canvas_ids": [model.tokenizer.bos_id]
+                    + [model.tokenizer.mask_id] * 3,
+                }
+            )
+        )
+    model.eval()
+
+    expected = [_event_logits(model, event) for event in events]
+    actual = _event_logits_many(model, events)
+
+    assert all(torch.allclose(left, right) for left, right in zip(expected, actual))
+
+
+def test_decision_kind_guard_exposes_regression_hidden_by_aggregate() -> None:
+    baseline = {
+        "by_decision_kind": {
+            "grammar_comma": {
+                "metrics": {
+                    "loss": 1.0,
+                    "bad_probability_mass": 0.1,
+                    "good_probability_mass": 0.2,
+                    "mean_margin": 1.0,
+                }
+            }
+        }
+    }
+    candidate = copy.deepcopy(baseline)
+    candidate["by_decision_kind"]["grammar_comma"]["metrics"]["loss"] = 2.0
+
+    assert _guard_strata_regressions(candidate, baseline) == [
+        {
+            "decision_kind": "grammar_comma",
+            "metric": "loss",
+            "before": 1.0,
+            "after": 2.0,
+        }
+    ]
 
 
 def test_ftpo_set_requires_verified_set_event() -> None:
@@ -387,6 +442,75 @@ def test_guarded_updates_restore_model_when_all_scales_regress(monkeypatch) -> N
     assert selection["accepted_steps"] == 0
     assert selection["rejected_steps"] == 1
     assert len(selection["history"][1]["trials"]) == 3
+    assert all(
+        torch.equal(before[key], value) for key, value in model.state_dict().items()
+    )
+
+
+def test_guarded_updates_reject_aggregate_gain_with_stratum_regression(
+    monkeypatch,
+) -> None:
+    model = _model()
+    event = _event(
+        good=(model.tokenizer.eos_id, model.tokenizer.pad_id),
+        bad=(model.tokenizer.mask_id,),
+    )
+    event = DecisionEventV1.from_dict(
+        {
+            **event.to_dict(),
+            "canvas_ids": [model.tokenizer.bos_id]
+            + [model.tokenizer.mask_id] * 3,
+        }
+    )
+    held_group = "held"
+    while split_for_group(held_group) != "held_out":
+        held_group += "x"
+    held = replace(
+        event, split="held_out", group_id=held_group, event_id="held"
+    )
+    metrics = {
+        "loss": 1.0,
+        "bad_probability_mass": 0.1,
+        "good_probability_mass": 0.2,
+        "mean_margin": 1.0,
+    }
+    baseline = {
+        "event_count": 1,
+        "metrics": metrics,
+        "by_decision_kind": {"component": {"metrics": metrics}},
+    }
+    candidate = {
+        "metrics": {
+            "loss": 0.9,
+            "bad_probability_mass": 0.09,
+            "good_probability_mass": 0.21,
+            "mean_margin": 1.1,
+        },
+        "by_decision_kind": {
+            "component": {"metrics": {**metrics, "loss": 1.1}}
+        },
+    }
+    monkeypatch.setattr(
+        "slm_training.harnesses.preference.local_train.evaluate_local_decisions",
+        lambda *args, **kwargs: candidate,
+    )
+    before = copy.deepcopy(model.state_dict())
+
+    summary = train_local_decisions(
+        model,
+        [event],
+        objective="ftpo_set",
+        steps=1,
+        validation_events=[held],
+        validation_baseline=baseline,
+        guarded_updates=True,
+        guard_backtrack_steps=0,
+        guard_by_decision_kind=True,
+    )
+
+    trial = summary["validation_selection"]["history"][1]["trials"][0]
+    assert trial["eligible"] is False
+    assert trial["strata_regressions"][0]["decision_kind"] == "component"
     assert all(
         torch.equal(before[key], value) for key, value in model.state_dict().items()
     )

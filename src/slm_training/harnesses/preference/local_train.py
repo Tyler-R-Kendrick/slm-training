@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import random
 from collections import defaultdict
@@ -46,6 +47,32 @@ def _guard_dominates(
         for key, direction in _GUARD_DIRECTIONS.items()
     )
     return weak and strict
+
+
+def _guard_strata_regressions(candidate: dict, baseline: dict) -> list[dict]:
+    regressions = []
+    candidate_kinds = candidate.get("by_decision_kind") or {}
+    for kind, baseline_report in sorted(
+        (baseline.get("by_decision_kind") or {}).items()
+    ):
+        candidate_report = candidate_kinds.get(kind) or {}
+        before = baseline_report.get("metrics") or {}
+        after = candidate_report.get("metrics") or {}
+        for key, direction in _GUARD_DIRECTIONS.items():
+            if key not in before or key not in after:
+                regressions.append({"decision_kind": kind, "metric": key, "missing": True})
+                continue
+            regressed = after[key] > before[key] if direction == "min" else after[key] < before[key]
+            if regressed:
+                regressions.append(
+                    {
+                        "decision_kind": kind,
+                        "metric": key,
+                        "before": before[key],
+                        "after": after[key],
+                    }
+                )
+    return regressions
 
 
 def _indices(values: tuple[int, ...], logits: torch.Tensor) -> torch.Tensor:
@@ -172,6 +199,36 @@ def _event_logits(model: TwoTowerModel, event: DecisionEventV1) -> torch.Tensor:
     return logits[0, event.position]
 
 
+def _event_logits_many(
+    model: TwoTowerModel, events: list[DecisionEventV1]
+) -> list[torch.Tensor]:
+    """Evaluate exact states in same-length batches with reusable context keys."""
+    outputs: list[torch.Tensor | None] = [None] * len(events)
+    groups: dict[int, list[tuple[int, DecisionEventV1]]] = defaultdict(list)
+    for index, event in enumerate(events):
+        groups[len(event.canvas_ids)].append((index, event))
+    for group in groups.values():
+        prompts = [event.context_text for _, event in group]
+        cache_keys = [
+            "local-decision:"
+            + hashlib.sha256(prompt.encode("utf-8")).hexdigest()
+            for prompt in prompts
+        ]
+        ctx, ctx_pad = model._encode_context(prompts, cache_keys=cache_keys)
+        ids = torch.tensor(
+            [event.canvas_ids for _, event in group],
+            dtype=torch.long,
+            device=model.device_name,
+        )
+        logits = model.denoiser(
+            ids, ctx, pad_id=model.tokenizer.pad_id, ctx_pad_mask=ctx_pad
+        )
+        for row, (index, event) in enumerate(group):
+            outputs[index] = logits[row, event.position]
+    assert all(output is not None for output in outputs)
+    return [output for output in outputs if output is not None]
+
+
 def _objective_events(
     events: list[DecisionEventV1], objective: LocalObjective
 ) -> list[DecisionEventV1]:
@@ -205,9 +262,11 @@ def evaluate_local_decisions(
     totals: dict[str, float] = defaultdict(float)
     by_kind: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
     kind_counts: dict[str, int] = defaultdict(int)
-    for event in selected:
+    for event, logits in zip(
+        selected, _event_logits_many(model, selected), strict=True
+    ):
         _, metrics = local_decision_loss(
-            _event_logits(model, event),
+            logits,
             event,
             objective=objective,
             epsilon=epsilon,
@@ -262,6 +321,7 @@ def train_local_decisions(
     guarded_selection: bool = False,
     guarded_updates: bool = False,
     guard_backtrack_steps: int = 4,
+    guard_by_decision_kind: bool = False,
 ) -> dict:
     if steps <= 0 or lr <= 0:
         raise ValueError("steps and learning rate must be positive")
@@ -288,6 +348,8 @@ def train_local_decisions(
         raise ValueError("guarded training requires held-out decision events")
     if guard_backtrack_steps < 0:
         raise ValueError("guard backtrack steps must be non-negative")
+    if guard_by_decision_kind and not (guarded_selection or guarded_updates):
+        raise ValueError("decision-kind guard requires guarded training")
     schedule = event_schedule(
         train_events, steps=max(0, int(steps)), seed=int(seed), balanced=balanced
     )
@@ -302,6 +364,7 @@ def train_local_decisions(
     selection: dict | None = None
     best_state = None
     best_metrics: dict[str, float] = {}
+    best_report: dict = {}
     best_step = 0
     if guarded_selection or guarded_updates:
         baseline = validation_baseline or evaluate_local_decisions(
@@ -312,6 +375,7 @@ def train_local_decisions(
             tau=tau,
         )
         best_metrics = dict(baseline.get("metrics") or {})
+        best_report = baseline
         if not all(key in best_metrics for key in _GUARD_DIRECTIONS):
             raise ValueError("guarded selection baseline lacks required metrics")
         best_state = copy.deepcopy(model.state_dict())
@@ -320,6 +384,7 @@ def train_local_decisions(
             "baseline": best_metrics,
             "history": [{"step": 0, "eligible": True, "metrics": best_metrics}],
             "mode": "updates" if guarded_updates else "selection",
+            "by_decision_kind": bool(guard_by_decision_kind),
         }
     for step, event in enumerate(schedule, start=1):
         logits = _event_logits(model, event)
@@ -364,13 +429,27 @@ def train_local_decisions(
                     tau=tau,
                 )
                 candidate = dict(report.get("metrics") or {})
-                eligible = _guard_dominates(candidate, best_metrics)
+                strata_regressions = (
+                    _guard_strata_regressions(report, best_report)
+                    if guard_by_decision_kind
+                    else []
+                )
+                eligible = (
+                    _guard_dominates(candidate, best_metrics)
+                    and not strata_regressions
+                )
                 trials.append(
-                    {"scale": scale, "eligible": eligible, "metrics": candidate}
+                    {
+                        "scale": scale,
+                        "eligible": eligible,
+                        "metrics": candidate,
+                        "strata_regressions": strata_regressions,
+                    }
                 )
                 if eligible:
                     accepted = True
                     best_metrics = candidate
+                    best_report = report
                     best_step = step
                     best_state = copy.deepcopy(model.state_dict())
                     break
@@ -438,6 +517,7 @@ def train_local_decisions(
         "guarded_selection": bool(guarded_selection),
         "guarded_updates": bool(guarded_updates),
         "guard_backtrack_steps": int(guard_backtrack_steps) if guarded_updates else 0,
+        "guard_by_decision_kind": bool(guard_by_decision_kind),
         "validation_every": (
             1 if guarded_updates else int(validation_every) if guarded_selection else 0
         ),
@@ -479,6 +559,7 @@ def train_local_from_paths(
     guarded_selection: bool = False,
     guarded_updates: bool = False,
     guard_backtrack_steps: int = 4,
+    guard_by_decision_kind: bool = False,
 ) -> dict:
     events = load_decision_events(events_path)
     model = TwoTowerModel.from_checkpoint(checkpoint, device=device)
@@ -515,6 +596,7 @@ def train_local_from_paths(
         guarded_selection=guarded_selection,
         guarded_updates=guarded_updates,
         guard_backtrack_steps=guard_backtrack_steps,
+        guard_by_decision_kind=guard_by_decision_kind,
     )
     held_out_after = evaluate_local_decisions(
         model,
