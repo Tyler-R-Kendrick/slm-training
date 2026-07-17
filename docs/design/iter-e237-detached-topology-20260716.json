@@ -1,0 +1,48 @@
+{
+  "campaign": "E237 detached binder-topology context",
+  "date": "2026-07-16",
+  "status": "completed_rejected_noop_twelve_ship_thresholds_failed",
+  "isolated_lever": "detach pooled frozen context before binder-topology head",
+  "train": {
+    "run_id": "e237-detached-topology-32step",
+    "device": "cpu",
+    "steps": 32,
+    "batch_size": 4,
+    "learning_rate": 0.0003,
+    "seed": 0,
+    "train_version": "e230_diverse_judged_roots_v2",
+    "record_count": 126,
+    "topology_loss_first": 1.1497883797,
+    "topology_loss_last": 1.3684324026,
+    "topology_accuracy_first": 0.5454545617,
+    "topology_accuracy_last": 0.5238095522,
+    "topology_rows_first": 11,
+    "topology_rows_last": 21,
+    "last_loss": 28.3715953827,
+    "wall_ms": 142665.574,
+    "trace_id": "2bfa5b6dc890012a1496b2cb2bd89a8b",
+    "checkpoint_sha256": "edcbad06be36962d51c81e0ae5af913b9049f0f67f24bfdb9338446cd8c4b59d",
+    "checkpoint_sync": false
+  },
+  "evaluation_weight_1": {
+    "trace_id": "33c3ffd3a2d3f9a50a4cc1a669aee13b",
+    "aggregate_metrics_identical_to_e236": true,
+    "parse_rate_all_suites": 1.0,
+    "meaningful_program_rate_all_suites": 0.0,
+    "component_recall_all_suites": 0.0,
+    "fidelity_all_suites": 0.0,
+    "reward_all_suites": 0.0,
+    "structural_similarity": {"smoke": 0.3094333333, "held_out": 0.2514, "adversarial": 0.2905, "ood": 0.236875, "rico_held": 0.0900666667},
+    "failed_thresholds": 12,
+    "topology_applications": 38,
+    "topology_choice_changes": 0,
+    "agentv": {"total": 5, "passed": 0, "failed": 5, "execution_errors": 0, "mean_score": 0.5}
+  },
+  "ablation_topology_weight_0": {
+    "trace_id": "565eeff271ea13d174873189e576fe4a",
+    "aggregate_metrics_identical_to_weight_1": true,
+    "failed_thresholds": 12,
+    "agentv_passed": 0
+  },
+  "conclusion": "Detaching an already frozen context is a no-op. It reproduces E236 exactly and falsifies shared context-gradient interference as the cause."
+}

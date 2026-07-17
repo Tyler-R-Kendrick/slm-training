@@ -3,6 +3,10 @@
 Status: **bounded verification complete; production ship not claimed**.
 Machine-readable evidence: [data-synthesis-results.json](data-synthesis-results.json).
 
+Scope-graded families (identity anchors, canonical-form bias, scoped repair,
+typed lexical maps) are documented separately in
+[scope-graded-data-synthesis.md](scope-graded-data-synthesis.md).
+
 This closes the P1-P13 corpus-integration program at CPU smoke scale. It
 verifies the corpus contract, split isolation, governance, edit/task semantics,
 and a matched training-data signal. It does not replace a full HF-context run,

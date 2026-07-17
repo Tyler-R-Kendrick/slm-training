@@ -1,0 +1,55 @@
+{
+  "campaign": "B2 canonical-space train/decode alignment audit (SLM-22)",
+  "date_utc": "2026-07-16",
+  "status": "divergences_fixed_fixed_point_verified",
+  "training_run": false,
+  "recipe": {
+    "device": "cpu",
+    "kind": "codec_audit_sweep",
+    "corpora": [
+      "src/slm_training/resources/train_seeds.jsonl",
+      "src/slm_training/resources/test_seeds.jsonl"
+    ],
+    "record_count": 36,
+    "bridge": "openui-langcore (official @openuidev/lang-core)"
+  },
+  "audit": {
+    "checks": {
+      "token_idempotence": "encode(decode(encode(src))).tokens == encode(src).tokens",
+      "langcore_canonical_equal": "resolved root AST modulo statementId equal between src and decode(encode(src)) via the official bridge",
+      "dsl_tokenizer_canonicalize_idempotence": "canonicalize(canonicalize(src)) == canonicalize(src) with fresh per-example symbol tables"
+    },
+    "before_fix": {
+      "token_idempotence_failures": 3,
+      "langcore_canonical_failures": 2,
+      "dsl_tokenizer_failures": 0
+    },
+    "after_fix": {
+      "token_idempotence_failures": 0,
+      "langcore_canonical_failures": 0,
+      "dsl_tokenizer_failures": 0
+    }
+  },
+  "divergences_fixed": [
+    "dead-binding root mislabel: encoder ordered unreferenced statements after root while the decoder names the last stream statement 'root'; decoded programs bound root to the wrong expression",
+    "name-sensitive statement order: _statement_order scanned refs with a regex over surface text, so binder names occurring inside string literals changed the stream; the decoder's alpha-renaming then re-encoded to a different token stream than the training target",
+    "children-first prop emission: _encode_component_props emitted children before the declared positional prop order, so decoded surfaces reparsed with values assigned to the wrong props (Modal children landed in title)",
+    "v0.5 decode reorder: _decode_v05 moved root to the first output line while the v0.5 encoder preserves source statement order, breaking token idempotence for state-first programs"
+  ],
+  "fail_closed": "forward references (including references to root, which is now always the final statement) raise ParseError at encode instead of emitting a stream that decodes to a different program",
+  "regression_tests": [
+    "tests/test_dsl/test_production_codec.py::test_dead_binding_keeps_root_binding",
+    "tests/test_dsl/test_production_codec.py::test_positional_prop_order_survives_roundtrip",
+    "tests/test_dsl/test_production_codec.py::test_forward_reference_to_root_fails_closed",
+    "tests/test_dsl/test_production_codec.py::test_token_stream_is_fixed_point_of_decode",
+    "tests/test_dsl/test_production_codec.py::test_fixture_corpus_token_streams_are_canonical_fixed_points",
+    "tests/test_dsl/test_production_codec.py::test_fixture_corpus_roundtrip_is_langcore_canonical_equal",
+    "tests/test_harnesses/model_build/test_dsl_tokenizer.py::test_canonicalize_is_idempotent_per_example"
+  ],
+  "caveats": [
+    "fixture-corpus wiring evidence only; no checkpoint, matrix, or ship claim",
+    "production token streams changed for programs hit by the fixed divergences, so X-series checkpoints trained on pre-fix streams need retraining before comparison",
+    "eval-side exact-match asymmetry remains: eval_runner._tree_match compares codec-canonical predictions against echo-normalized gold; deferred to D2 (e-graph canonicalizer, SLM-30)"
+  ],
+  "conclusion": "encode_openui token streams are now fixed points of the deterministic decode collapse, verified per-record over both fixture corpora and canonically equal (resolved AST modulo statementId) through the official lang-core bridge; B1 choice-sequence work can build on a codec whose training targets and decode-time collapse agree."
+}

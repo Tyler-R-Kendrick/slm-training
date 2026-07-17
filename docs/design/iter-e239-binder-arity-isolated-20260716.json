@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "experiment": "E239",
+  "date": "2026-07-16",
+  "status": "rejected_not_ship",
+  "hypothesis": "Grammar-derived binder-reference arity reranking improves strict semantic quality after auxiliary-head isolation.",
+  "preflight": {
+    "before_every_training_command": true,
+    "fetched_origin_main": true,
+    "rebased": true,
+    "clean": true,
+    "commits_behind": 0
+  },
+  "recipe": {
+    "train_version": "e230_diverse_judged_roots_v2",
+    "records": 126,
+    "device": "cpu",
+    "steps": 32,
+    "batch_size": 4,
+    "learning_rate": 0.0003,
+    "seed": 0,
+    "context_backend": "hf",
+    "hf_model": "HuggingFaceTB/SmolLM2-135M",
+    "freeze_context": true,
+    "output_tokenizer": "lexer",
+    "compiler_alignment_loss_weight": 1.0,
+    "compiler_alignment_margin": 1.0,
+    "compiler_alignment_semantic_exhaustive": true,
+    "component_plan_loss_weight": 1.0,
+    "component_plan_decode_weight": 1.0,
+    "binder_arity_loss_weight": 1.0,
+    "binder_arity_decode_weight": 1.0,
+    "mixture_sampling_policy": "capacity_aware",
+    "honesty_mode": "no-design-md-context",
+    "checkpoint_sync": false
+  },
+  "invalidated_matched_pairs": [
+    {
+      "candidate_run_id": "e239-binder-arity-corrected-32step",
+      "candidate_trace_id": "14136eb54ac5b303fa2691cf6db65b47",
+      "control_run_id": "e239-no-arity-control-32step",
+      "control_trace_id": "4568cc930806e400053767ca3ae41da9",
+      "reason": "initialization isolation alone left optimizer and combined-backward coupling"
+    },
+    {
+      "candidate_run_id": "e239b-binder-arity-isolated-32step",
+      "candidate_trace_id": "c70a75997036ab74c989e514db38297a",
+      "control_run_id": "e239b-no-arity-isolated-control-32step",
+      "control_trace_id": "7a1d4befb6c354498589808164caffd0",
+      "reason": "combined backward still changed shared tensors after optimizer grouping"
+    },
+    {
+      "candidate_run_id": "e239c-binder-arity-detached-32step",
+      "candidate_trace_id": "5638677e326fbd1c266caa5fbd53fa40",
+      "control_run_id": "e239c-no-arity-detached-control-32step",
+      "control_trace_id": "cbf3e5d4562f0ac900d10ff86f9f6b49",
+      "different_shared_tensors": 100,
+      "shared_tensors": 104,
+      "reason": "global gradient clipping coupled auxiliary norm into base updates"
+    }
+  ],
+  "candidate_train": {
+    "run_id": "e239d-binder-arity-fully-isolated-32step",
+    "trace_id": "03c38dcbbc9f967d58c6c03435e8253d",
+    "checkpoint_sha256": "677e80efb4ae1585334ba9bb6741472d3780aa0d80f7dc1adc471aeeed86774d",
+    "wall_ms": 224637.567,
+    "last_loss": 23.765493392944336,
+    "binder_arity_loss_first": 4.098786354064941,
+    "binder_arity_loss_last": 2.4903433322906494,
+    "binder_arity_accuracy_first": 0.0,
+    "binder_arity_accuracy_last": 0.47058823704719543,
+    "binder_arity_rows_first": 17,
+    "binder_arity_rows_last": 34
+  },
+  "control_train": {
+    "run_id": "e239d-no-arity-fully-isolated-control-32step",
+    "trace_id": "48c9ab5f8c66ea1134f5cf861aed16c5",
+    "checkpoint_sha256": "456638b0e031dca4d1bbcb96f5785e287684a32982152aa885f09751110588bd",
+    "wall_ms": 267748.013,
+    "last_loss": 21.275150299072266
+  },
+  "isolation_audit": {
+    "shared_checkpoint_tensors": 104,
+    "different_shared_tensors": 0,
+    "candidate_only_tensors": [
+      "binder_arity_head.bias",
+      "binder_arity_head.weight"
+    ]
+  },
+  "evaluation": {
+    "policy": "full committed ship-gate suites, honest slot contract, compiler tree, no unconstrained fallback",
+    "on_trace_id": "da7fa668594f6b9d8e32eafac891b9e6",
+    "off_trace_id": "d173385dbac75542d3a3ed9f9d6f85ab",
+    "arity_applications": 1606,
+    "arity_choice_changes": 29,
+    "on": {
+      "gate_pass": false,
+      "failed_thresholds": 11,
+      "agentv_passed": 0,
+      "agentv_total": 5,
+      "suites": {
+        "smoke": {"n": 3, "syntax": 0.3333333333333333, "meaningful": 0.0, "fidelity": 0.5833333333333334, "structure": 0.2591, "reward": 0.0, "latency_ms_p95": 80284.83},
+        "held_out": {"n": 5, "syntax": 0.2, "meaningful": 0.0, "fidelity": 0.5666666666666667, "structure": 0.13382, "reward": 0.0, "latency_ms_p95": 85493.37},
+        "adversarial": {"n": 4, "syntax": 0.0, "meaningful": 0.0, "fidelity": 0.8333333333333333, "structure": 0.19119999999999998, "reward": 0.0, "latency_ms_p95": 81590.14},
+        "ood": {"n": 4, "syntax": 0.0, "meaningful": 0.0, "fidelity": 0.5249999999999999, "structure": 0.17745, "reward": 0.0, "latency_ms_p95": 83893.46},
+        "rico_held": {"n": 3, "syntax": 0.0, "meaningful": 0.0, "fidelity": 0.375, "structure": 0.09713333333333334, "reward": 0.0, "latency_ms_p95": 82054.78}
+      }
+    },
+    "off": {
+      "gate_pass": false,
+      "failed_thresholds": 11,
+      "agentv_passed": 0,
+      "agentv_total": 5,
+      "suites": {
+        "smoke": {"n": 3, "syntax": 0.0, "meaningful": 0.0, "fidelity": 0.8055555555555555, "structure": 0.1591, "reward": 0.0, "latency_ms_p95": 105959.04},
+        "held_out": {"n": 5, "syntax": 0.0, "meaningful": 0.0, "fidelity": 0.6, "structure": 0.13936, "reward": 0.0, "latency_ms_p95": 86670.21},
+        "adversarial": {"n": 4, "syntax": 0.0, "meaningful": 0.0, "fidelity": 0.8333333333333333, "structure": 0.19119999999999998, "reward": 0.0, "latency_ms_p95": 56907.81},
+        "ood": {"n": 4, "syntax": 0.0, "meaningful": 0.0, "fidelity": 0.6083333333333333, "structure": 0.2066, "reward": 0.0, "latency_ms_p95": 48104.7},
+        "rico_held": {"n": 3, "syntax": 0.0, "meaningful": 0.0, "fidelity": 0.375, "structure": 0.0956, "reward": 0.0, "latency_ms_p95": 55950.08}
+      }
+    }
+  },
+  "decision": "Retain generalized arity and auxiliary-isolation mechanisms; reject checkpoint and arity reranking as sufficient; correct pathological compiler-tree trajectories next."
+}

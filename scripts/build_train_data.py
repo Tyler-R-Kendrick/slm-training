@@ -138,6 +138,30 @@ def main(argv: list[str] | None = None) -> int:
         default=True,
     )
     parser.add_argument(
+        "--scope-corpus",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Emit scope-graded families per AST scope: identity anchors, "
+            "canonical-form pairs, scoped repairs, typed lexical maps."
+        ),
+    )
+    parser.add_argument(
+        "--scope-kinds",
+        default="document,statement,expression,lexical",
+        help="Comma-separated AST scopes for the scope-graded families.",
+    )
+    parser.add_argument("--scope-identity-per-scope", type=int, default=3)
+    parser.add_argument("--scope-canonical-pairs-per-scope", type=int, default=3)
+    parser.add_argument("--scoped-repairs-per-scope", type=int, default=2)
+    parser.add_argument("--typed-lexical-per-program", type=int, default=4)
+    parser.add_argument(
+        "--preference-pairs",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Write canonical-bias ranking pairs to preference_pairs.jsonl.",
+    )
+    parser.add_argument(
         "--diffusion-online",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -262,6 +286,15 @@ def main(argv: list[str] | None = None) -> int:
             include_edit_derivatives=args.edit_derivatives,
             include_scope_derivatives=args.scope_derivatives,
             include_design_md_contrastive=args.design_md_contrastive,
+            include_scope_corpus=args.scope_corpus,
+            scope_kinds=tuple(
+                kind.strip() for kind in args.scope_kinds.split(",") if kind.strip()
+            ),
+            scope_identity_per_scope=args.scope_identity_per_scope,
+            scope_canonical_pairs_per_scope=args.scope_canonical_pairs_per_scope,
+            scoped_repairs_per_scope=args.scoped_repairs_per_scope,
+            typed_lexical_per_program=args.typed_lexical_per_program,
+            emit_preference_pairs=args.preference_pairs,
             diffusion_online=args.diffusion_online,
             governance_artifacts=args.governance_artifacts,
             mixture_manifest=args.mixture_manifest,

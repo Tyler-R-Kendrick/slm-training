@@ -215,6 +215,99 @@ def build_corruption(
     )
 
 
+@dataclass(frozen=True)
+class ScopedCorruption:
+    """One verified sub-document corruption (statement / expression / lexical)."""
+
+    kind: str  # validate_output kind of the clean fragment
+    clean_text: str
+    broken_text: str
+    operator: CorruptionOperator
+    family: OperatorFamily
+    location: str
+
+
+# Text-local operators that make sense on a fragment (no document invariants).
+_SCOPED_OPERATORS = (
+    CorruptionOperator.MISSING_QUOTE,
+    CorruptionOperator.EXTRA_QUOTE,
+    CorruptionOperator.INVALID_ESCAPE,
+    CorruptionOperator.BROKEN_NUMBER_BOOL,
+    CorruptionOperator.WRONG_CAPITALIZATION,
+    CorruptionOperator.MISSING_ASSIGNMENT,
+    CorruptionOperator.TRUNCATED_LINE,
+)
+
+
+def _lexical_typos(text: str) -> list[tuple[str, CorruptionOperator, str]]:
+    """Deterministic meaningful typos for a single lexical token."""
+    typos: list[tuple[str, CorruptionOperator, str]] = []
+    if text and text[0] == text[-1] and text[0] in {'"', "'"} and len(text) >= 2:
+        typos.append((text[:-1], CorruptionOperator.MISSING_QUOTE, "closing_quote"))
+    elif len(text) >= 3:
+        # Transpose the two middle-most characters: true -> ture, 3.14 -> 31.4.
+        mid = len(text) // 2
+        swapped = text[: mid - 1] + text[mid] + text[mid - 1] + text[mid + 1 :]
+        if swapped != text:
+            typos.append(
+                (swapped, CorruptionOperator.BROKEN_NUMBER_BOOL, "transposed_chars")
+            )
+    if len(text) >= 2 and not text.startswith(('"', "'")):
+        typos.append((text[:-1], CorruptionOperator.TRUNCATED_LINE, "dropped_char"))
+    return typos
+
+
+def build_scoped_corruptions(
+    text: str,
+    kind: str,
+    *,
+    category: str | None = None,
+    limit: int = 2,
+) -> tuple[ScopedCorruption, ...]:
+    """Verified corruptions of one sub-document fragment, fail-closed.
+
+    The clean fragment must pass ``validate_output`` for its kind and every
+    emitted corruption must be *rejected* by the same validator — mirroring
+    ``build_corruption``'s contract at fragment granularity.
+    """
+    from slm_training.dsl.parser import validate_output
+
+    clean = validate_output(text, kind, category)  # raises if not valid
+    candidates: list[tuple[str, CorruptionOperator, str]] = []
+    if kind == "lexical":
+        candidates.extend(_lexical_typos(clean))
+    else:
+        for operator in _SCOPED_OPERATORS:
+            try:
+                broken, location = _apply(text, operator)
+            except (CorruptionNotApplicable, ValueError, IndexError):
+                continue
+            candidates.append((broken, operator, location))
+
+    cases: list[ScopedCorruption] = []
+    seen: set[str] = set()
+    for broken, operator, location in candidates:
+        if len(cases) >= limit:
+            break
+        if broken == text or broken in seen or not broken.strip():
+            continue
+        try:
+            validate_output(broken, kind, category)
+        except ParseError:
+            seen.add(broken)
+            cases.append(
+                ScopedCorruption(
+                    kind=kind,
+                    clean_text=text,
+                    broken_text=broken,
+                    operator=operator,
+                    family=operator.family,
+                    location=location,
+                )
+            )
+    return tuple(cases)
+
+
 def generate_corruptions(clean_openui: str) -> tuple[CorruptionCase, ...]:
     """Generate every applicable catalog corruption in stable enum order."""
     cases = []
@@ -503,6 +596,8 @@ __all__ = [
     "CorruptionNotApplicable",
     "CorruptionOperator",
     "OperatorFamily",
+    "ScopedCorruption",
     "build_corruption",
+    "build_scoped_corruptions",
     "generate_corruptions",
 ]

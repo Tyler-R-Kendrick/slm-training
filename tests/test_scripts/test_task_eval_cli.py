@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from scripts.evaluate_tasks import main as evaluate_tasks_main
 from scripts.run_mixture_search import main as mixture_search_main
 from slm_training.dsl.schema import ExampleRecord, write_jsonl
@@ -67,11 +69,12 @@ def test_mixture_search_dry_run_profiles_task_corpus(tmp_path: Path) -> None:
     summary = json.loads((out / "search_summary.json").read_text(encoding="utf-8"))
     assert summary["scored"] is False
     assert summary["task_weights"] == {
-        "generation": 0.2,
-        "noop_adversarial": 0.2,
-        "patch_edit": 0.2,
-        "repair_completion_inpaint": 0.2,
-        "state_behavior": 0.2,
+        "generation": pytest.approx(1 / 6),
+        "identity_echo": pytest.approx(1 / 6),
+        "noop_adversarial": pytest.approx(1 / 6),
+        "patch_edit": pytest.approx(1 / 6),
+        "repair_completion_inpaint": pytest.approx(1 / 6),
+        "state_behavior": pytest.approx(1 / 6),
     }
     assert summary["corpus_diagnostics"]["unique_program_families"] == 1
     assert len(summary["probes"]) == 3

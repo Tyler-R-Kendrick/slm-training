@@ -211,6 +211,7 @@ def passing_evaluation() -> dict:
                 "n": 10,
                 "parse_rate": 1,
                 "structural_similarity": 1,
+                "component_type_recall": 1,
                 "placeholder_fidelity": 1,
                 "reward_score": 1,
             },
@@ -218,11 +219,27 @@ def passing_evaluation() -> dict:
                 "n": 10,
                 "parse_rate": 1,
                 "structural_similarity": 1,
+                "component_type_recall": 1,
                 "placeholder_fidelity": 1,
             },
-            "adversarial": {"n": 10, "parse_rate": 1, "structural_similarity": 1},
-            "ood": {"n": 10, "parse_rate": 1, "structural_similarity": 1},
-            "rico_held": {"n": 1500, "parse_rate": 1, "structural_similarity": 1},
+            "adversarial": {
+                "n": 10,
+                "parse_rate": 1,
+                "structural_similarity": 1,
+                "component_type_recall": 1,
+            },
+            "ood": {
+                "n": 10,
+                "parse_rate": 1,
+                "structural_similarity": 1,
+                "component_type_recall": 1,
+            },
+            "rico_held": {
+                "n": 1500,
+                "parse_rate": 1,
+                "structural_similarity": 1,
+                "component_type_recall": 1,
+            },
         },
         "agentv": {"passed": True},
         "reward_samples": [0.1, 0.4, 0.8],
@@ -718,6 +735,24 @@ def test_dsl_program_source_manifest_is_complete() -> None:
         assert not {row.uri for row in rows} & {row.uri for row in other_rows}
 
 
+def test_local_decision_source_manifest_is_complete() -> None:
+    from scripts.autoresearch import _load_sources
+
+    path = Path("src/slm_training/resources/autoresearch/local-decision-sources.json")
+    manifest = json.loads(path.read_text())
+    rows = _load_sources(path)
+    papers = [row for row in rows if row.uri.startswith("https://arxiv.org/abs/")]
+    assert "6a593158-85c4-83ea-80b1-b6fb893b26bc" in manifest["source_scope"]
+    assert len(rows) == 33
+    assert len(papers) == 25
+    assert len({row.uri for row in rows}) == len(rows)
+    assert all(row.metadata.get("local_decision_takeaway") for row in rows)
+    assert {row.metadata.get("implementation_status") for row in rows} == {
+        "Adapted",
+        "Adjacent",
+    }
+
+
 class FakeResponses:
     def create(self, **kwargs):
         assert kwargs["store"] is False
@@ -1139,6 +1174,8 @@ def test_compile_resolves_canonical_published_train_version() -> None:
             binder_component_plan_decode_weight=0.2,
             binder_topology_loss_weight=1.3,
             binder_topology_decode_weight=0.4,
+            binder_arity_loss_weight=1.2,
+            binder_arity_decode_weight=0.3,
             compiler_decode_mode="tree",
             compiler_search_mode="ptrm",
             compiler_search_trigger="stagnation",
@@ -1177,6 +1214,8 @@ def test_compile_resolves_canonical_published_train_version() -> None:
     assert commands[0][commands[0].index("--binder-component-plan-decode-weight") + 1] == "0.2"
     assert commands[0][commands[0].index("--binder-topology-loss-weight") + 1] == "1.3"
     assert commands[0][commands[0].index("--binder-topology-decode-weight") + 1] == "0.4"
+    assert commands[0][commands[0].index("--binder-arity-loss-weight") + 1] == "1.2"
+    assert commands[0][commands[0].index("--binder-arity-decode-weight") + 1] == "0.3"
     assert "--schema-in-context" in commands[0]
     assert "--slot-contract-in-context" in commands[0]
     assert "--no-design-md-context" in commands[0]

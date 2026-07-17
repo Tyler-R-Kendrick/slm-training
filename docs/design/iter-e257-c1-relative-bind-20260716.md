@@ -52,7 +52,7 @@ in `tests/test_dsl/test_canonicalize.py`.
 - Unit tests: nameless definitions + expected deltas on a forward-reference
   program, root-first enforcement, out-of-scope rejection via `stream_check`,
   grammar-gate NAME coverage, sidecar persistence, matched-row registration
-  (`tests/test_scripts/test_quality_matrix_v10.py`).
+  (`tests/test_scripts/test_quality_matrix_v11.py`).
 
 ## Fixture result (wiring evidence only)
 

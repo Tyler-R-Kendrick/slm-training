@@ -16,6 +16,9 @@ from slm_training.harnesses.model_build.factory import (
     _resolve_freeze_context,
     apply_runtime_overrides,
 )
+from slm_training.harnesses.model_build.train_loop import (
+    _clip_optimizer_parameter_groups,
+)
 from slm_training.harnesses.test_data import TestDataConfig, build_test_data
 from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
 from slm_training.models.tokenizer import OpenUITokenizer, tokenize_text
@@ -141,6 +144,8 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
             binder_component_plan_decode_weight=0.3,
             binder_topology_loss_weight=0.8,
             binder_topology_decode_weight=0.2,
+            binder_arity_loss_weight=0.7,
+            binder_arity_decode_weight=0.1,
         ),
     )
     assert model.component_inventory_head is not None
@@ -155,6 +160,7 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     assert loaded.component_edge_head is not None
     assert loaded.binder_component_plan_head is not None
     assert loaded.binder_topology_head is not None
+    assert loaded.binder_arity_head is not None
     assert loaded.config.component_inventory_loss_weight == 1.0
     assert loaded.config.component_inventory_decode_weight == 0.75
     assert loaded.config.component_plan_loss_weight == 1.0
@@ -166,6 +172,8 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     assert loaded.config.binder_component_plan_decode_weight == 0.3
     assert loaded.config.binder_topology_loss_weight == 0.8
     assert loaded.config.binder_topology_decode_weight == 0.2
+    assert loaded.config.binder_arity_loss_weight == 0.7
+    assert loaded.config.binder_arity_decode_weight == 0.1
 
     apply_runtime_overrides(
         loaded,
@@ -176,6 +184,7 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
             component_edge_decode_weight=0.0,
             binder_component_plan_decode_weight=0.0,
             binder_topology_decode_weight=0.0,
+            binder_arity_decode_weight=0.0,
         ),
     )
     assert loaded.config.component_inventory_decode_weight == 0.0
@@ -183,6 +192,111 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     assert loaded.config.component_edge_decode_weight == 0.0
     assert loaded.config.binder_component_plan_decode_weight == 0.0
     assert loaded.config.binder_topology_decode_weight == 0.0
+    assert loaded.config.binder_arity_decode_weight == 0.0
+
+
+def test_optional_heads_do_not_shift_training_rng() -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+
+    def state_after(**kwargs) -> torch.Tensor:
+        torch.manual_seed(123)
+        TwoTowerModel.from_records(
+            records,
+            config=TwoTowerConfig(
+                d_model=32,
+                n_heads=4,
+                context_layers=1,
+                denoiser_layers=1,
+                output_tokenizer="lexer",
+                **kwargs,
+            ),
+        )
+        return torch.random.get_rng_state()
+
+    baseline = state_after()
+    assert torch.equal(baseline, state_after(binder_arity_loss_weight=1.0))
+    assert torch.equal(baseline, state_after(binder_topology_loss_weight=1.0))
+    assert torch.equal(baseline, state_after(component_plan_loss_weight=1.0))
+
+
+def test_auxiliary_heads_do_not_change_base_optimizer_updates() -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+
+    def model(**kwargs) -> TwoTowerModel:
+        torch.manual_seed(123)
+        return TwoTowerModel.from_records(
+            records,
+            config=TwoTowerConfig(
+                d_model=32,
+                n_heads=4,
+                context_layers=1,
+                denoiser_layers=1,
+                output_tokenizer="lexer",
+                **kwargs,
+            ),
+        )
+
+    baseline = model()
+    arity = model(binder_arity_loss_weight=1.0)
+    baseline_optimizer = torch.optim.AdamW(baseline.optimizer_parameter_groups())
+    arity_optimizer = torch.optim.AdamW(arity.optimizer_parameter_groups())
+    for candidate in (baseline, arity):
+        for name, parameter in candidate.named_parameters():
+            if parameter.requires_grad:
+                scale = 100.0 if name.startswith("binder_arity_head.") else 1.0
+                parameter.grad = torch.full_like(parameter, scale)
+    _clip_optimizer_parameter_groups(baseline_optimizer, 1.0)
+    _clip_optimizer_parameter_groups(arity_optimizer, 1.0)
+    baseline_optimizer.step()
+    arity_optimizer.step()
+    arity_state = dict(arity.named_parameters())
+    for name, parameter in baseline.named_parameters():
+        if name in arity_state:
+            assert torch.equal(parameter, arity_state[name]), name
+
+
+def test_auxiliary_loss_does_not_change_base_gradients() -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+
+    def model(**kwargs) -> TwoTowerModel:
+        torch.manual_seed(123)
+        return TwoTowerModel.from_records(
+            records,
+            config=TwoTowerConfig(
+                d_model=32,
+                n_heads=4,
+                context_layers=1,
+                denoiser_layers=1,
+                output_tokenizer="lexer",
+                **kwargs,
+            ),
+        )
+
+    baseline = model()
+    arity = model(binder_arity_loss_weight=1.0)
+    rng_state = baseline._rng.getstate()
+    torch.manual_seed(456)
+    baseline.training_loss(records).backward()
+    baseline._rng.setstate(rng_state)
+    arity._rng.setstate(rng_state)
+    torch.manual_seed(456)
+    arity.training_loss(records).backward()
+
+    arity_parameters = dict(arity.named_parameters())
+    for name, parameter in baseline.named_parameters():
+        if name.startswith("binder_arity_head."):
+            continue
+        other = arity_parameters[name]
+        if parameter.grad is None or other.grad is None:
+            assert parameter.grad is other.grad
+        else:
+            assert torch.equal(parameter.grad, other.grad), name
+
+    auxiliary_loss = arity.take_detached_auxiliary_loss()
+    assert auxiliary_loss is not None
+    auxiliary_loss.backward()
+    assert arity.binder_arity_head is not None
+    assert arity.binder_arity_head.weight.grad is not None
 
 
 def test_surface_syntax_repair_preserves_string_literals() -> None:

@@ -74,7 +74,111 @@ def main(argv: list[str] | None = None) -> int:
     train.add_argument("--steps", type=int, default=50)
     train.add_argument("--device", default="cpu")
 
+    events = sub.add_parser(
+        "build-local-events", help="Mine exact local decision events from traces"
+    )
+    events.add_argument("--traces", type=Path, required=True)
+    events.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/data/preference/local_decisions.jsonl"),
+    )
+    events.add_argument("--manifest-out", type=Path, default=None)
+    events.add_argument("--dataset-id", default=None)
+    events.add_argument("--source-record-manifest", type=Path, default=None)
+    events.add_argument(
+        "--evidence-kind",
+        choices=("all", "constraint_shadow", "counterfactual"),
+        default="all",
+        help="Filter mined events; semantic training must use counterfactual.",
+    )
+
+    local = sub.add_parser("train-local", help="Train on exact local decision events")
+    local.add_argument("--checkpoint", type=Path, required=True)
+    local.add_argument("--events", type=Path, required=True)
+    local.add_argument("--out-dir", type=Path, default=Path("outputs/runs/local_preference"))
+    local.add_argument(
+        "--objective",
+        choices=("ce_margin", "unlikelihood", "ftpo_single", "ftpo_set"),
+        required=True,
+    )
+    local.add_argument("--reference-checkpoint", type=Path, default=None)
+    local.add_argument("--steps", type=int, default=50)
+    local.add_argument("--lr", type=float, default=5e-5)
+    local.add_argument("--epsilon", type=float, default=2.0)
+    local.add_argument("--tau", type=float, default=1.0)
+    local.add_argument("--non-target-tether", type=float, default=0.0)
+    local.add_argument("--target-tether", type=float, default=0.0)
+    local.add_argument("--target-grace", type=float, default=1.0)
+    local.add_argument("--balanced", action="store_true")
+    local.add_argument("--seed", type=int, default=0)
+    local.add_argument("--device", default="cpu")
+
     args = parser.parse_args(argv)
+
+    if args.cmd == "build-local-events":
+        from slm_training.harnesses.preference.local_decisions import (
+            decision_event_manifest,
+            events_from_trace,
+            load_trace_rows,
+            write_decision_events,
+            write_decision_event_manifest,
+        )
+
+        traces = load_trace_rows(args.traces)
+        mined = [
+            event
+            for trace in traces
+            for event in events_from_trace(trace)
+            if args.evidence_kind == "all"
+            or event.evidence_kind == args.evidence_kind
+        ]
+        count = write_decision_events(args.out, mined)
+        if args.manifest_out is not None:
+            if not args.dataset_id:
+                parser.error("--manifest-out requires --dataset-id")
+            source_fingerprint = None
+            if args.source_record_manifest is not None:
+                source_fingerprint = json.loads(
+                    args.source_record_manifest.read_text(encoding="utf-8")
+                ).get("content_fingerprint")
+            manifest = decision_event_manifest(
+                mined,
+                dataset_id=args.dataset_id,
+                records_path=args.out.name,
+                source_trace_ids=(
+                    str(trace.get("trace_id"))
+                    for trace in traces
+                    if trace.get("trace_id")
+                ),
+                source_record_fingerprint=source_fingerprint,
+            )
+            write_decision_event_manifest(args.manifest_out, manifest)
+        print(json.dumps({"events": count, "out": str(args.out)}, indent=2))
+        return 0
+
+    if args.cmd == "train-local":
+        from slm_training.harnesses.preference.local_train import train_local_from_paths
+
+        summary = train_local_from_paths(
+            args.checkpoint,
+            args.events,
+            out_dir=args.out_dir,
+            objective=args.objective,
+            reference_checkpoint=args.reference_checkpoint,
+            steps=args.steps,
+            device=args.device,
+            lr=args.lr,
+            epsilon=args.epsilon,
+            tau=args.tau,
+            non_target_tether=args.non_target_tether,
+            target_tether=args.target_tether,
+            target_grace=args.target_grace,
+            balanced=args.balanced,
+            seed=args.seed,
+        )
+        print(json.dumps(summary, indent=2))
+        return 0
 
     if args.cmd == "build-pairs":
         records = load_jsonl(args.train_records)

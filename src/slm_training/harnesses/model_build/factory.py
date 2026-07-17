@@ -31,6 +31,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
     cfg = getattr(model, "config", None)
     if cfg is None:
         return model
+    allowed = config.runtime_override_fields
     for key in (
         "grammar_constrained",
         "grammar_top_k",
@@ -68,6 +69,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "compiler_search_noise",
         "compiler_search_stagnation_patience",
         "compiler_search_backtrack_limit",
+        "compiler_search_local_nogoods",
         "decode_min_content",
         "fastpath_aux_weight",
         "fastpath_gate_threshold",
@@ -106,6 +108,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "component_edge_decode_weight",
         "binder_component_plan_decode_weight",
         "binder_topology_decode_weight",
+        "binder_arity_decode_weight",
         "remask_span",
         "teacher_init_embeddings",
         "runtime_symbol_features",
@@ -145,6 +148,8 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "speculative_fanout",
         "speculative_overlap",
     ):
+        if allowed is not None and key not in allowed:
+            continue
         if hasattr(config, key) and hasattr(cfg, key):
             value = getattr(config, key)
             if value is not None:
@@ -152,6 +157,8 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
     # Preserve checkpoint DESIGN.md conditioning unless caller sets an explicit bool.
     # Eval defaults must not force-enable gold DESIGN.md on no-design-md checkpoints.
     dm = getattr(config, "design_md_in_context", None)
+    if allowed is not None and "design_md_in_context" not in allowed:
+        dm = None
     if dm is not None and hasattr(cfg, "design_md_in_context"):
         cfg.design_md_in_context = bool(dm)
     # Decode quality defaults often wanted at eval time.
@@ -278,6 +285,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         compiler_search_noise=max(0.0, float(getattr(config, "compiler_search_noise", 0.0) or 0.0)),
         compiler_search_stagnation_patience=max(1, int(getattr(config, "compiler_search_stagnation_patience", 2) or 2)),
         compiler_search_backtrack_limit=max(0, int(getattr(config, "compiler_search_backtrack_limit", 8) or 0)),
+        compiler_search_local_nogoods=bool(
+            getattr(config, "compiler_search_local_nogoods", False)
+        ),
         decode_min_content=max(-1, int(getattr(config, "decode_min_content", 0) or 0)),
         fastpath_aux_weight=getattr(config, "fastpath_aux_weight", 0.0),
         fastpath_gate_threshold=float(
@@ -351,6 +361,12 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         ),
         binder_topology_decode_weight=float(
             getattr(config, "binder_topology_decode_weight", 0.0) or 0.0
+        ),
+        binder_arity_loss_weight=float(
+            getattr(config, "binder_arity_loss_weight", 0.0) or 0.0
+        ),
+        binder_arity_decode_weight=float(
+            getattr(config, "binder_arity_decode_weight", 0.0) or 0.0
         ),
         symbol_boundary_loss_weight=float(
             getattr(config, "symbol_boundary_loss_weight", 0.0) or 0.0

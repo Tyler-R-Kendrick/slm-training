@@ -2,6 +2,7 @@ $version = ""
 
 train = Query("data_train", { version: $version }, { tiles: [], composition: [], versions: [], version: "" }, 3)
 test = Query("data_test", {}, { rows: [] }, 0)
+preference = Query("data_preference", {}, { rows: [], provenance: "committed" }, 3)
 head = PageHead("Training Data", "Review the examples the model learns from, or create a new ready-to-train dataset.")
 
 versionTabs = ChipTabs($version, train.versions)
@@ -14,6 +15,9 @@ row1 = Row([compPanel, suitesPanel])
 
 recordsPanel = Panel("Training examples", [DataBrowser(train.version)], Note("search · scroll all · inspect details", "hint"))
 
+preferenceCols = [{ key: "dataset_id", label: "dataset" }, { key: "kind", label: "kind" }, { key: "records", label: "events", align: "right" }, { key: "train", label: "train", align: "right" }, { key: "held_out", label: "held-out", align: "right" }, { key: "evidence", label: "evidence" }, { key: "usage", label: "used by" }, { key: "fingerprint", label: "fingerprint" }]
+preferencePanel = Panel("Preference and decision data", [DataTable(preferenceCols, preference.rows)], ProvenanceBadge(preference.provenance))
+
 genPanel = Panel("Create a training dataset", [DataGenerator(train.versions)], Note("recommended settings included", "hint"))
 
-root = Page([head, versionTabs, tileRow, recordsPanel, genPanel, row1])
+root = Page([head, versionTabs, tileRow, recordsPanel, preferencePanel, genPanel, row1])

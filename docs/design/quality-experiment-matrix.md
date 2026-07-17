@@ -1002,7 +1002,36 @@ mechanism and telemetry, reject the checkpoint, and require normalized/staged
 topology learning plus explicit reference arity before retrying. Full evidence:
 [iter-e236-binder-topology-20260716.md](iter-e236-binder-topology-20260716.md).
 
-## V9 lattice-guided recursive compiler search (fixture-run 2026-07-16)
+E237 detaches pooled context before the topology head to test shared-feature
+interference. Because the HF context tower is already frozen, the change is a
+no-op: train diagnostics and every suite aggregate reproduce E236, 38 decode
+applications change zero choices, twelve thresholds fail, and AgentV is 0/5.
+Retain the defensive detach for future unfrozen runs, reject the hypothesis and
+checkpoint, and reformulate topology around reference arity/stop decisions.
+Full evidence:
+[iter-e237-detached-topology-20260716.md](iter-e237-detached-topology-20260716.md).
+
+E238 adds grammar-derived binder-reference arity and directly scores
+continue/stop completion paths. The head learns, but the run is invalidated:
+optional-head initialization advanced global Torch RNG and silently changed
+matched masking/dropout draws. Strict evaluation failed ten thresholds and
+AgentV was 0/5; decode on/off aggregates were identical despite three changed
+choices. Auxiliary modules now use isolated stable seeds, and E239 is the
+corrected rerun. Full evidence:
+[iter-e238-binder-arity-confounded-20260716.md](iter-e238-binder-arity-confounded-20260716.md).
+
+E239 removes every observed optional-head coupling: isolated initialization,
+detached auxiliary backward, separate optimizer groups, and per-group clipping.
+The matched candidate/control checkpoints have 104/104 bit-exact shared tensors.
+The arity target learns and 1,606 applications change 29 legal choices, improving
+smoke syntax 0→0.3333 and structure 0.1591→0.2591. Meaningful-program rate is
+still 0 on all five suites, however; both on/off settings fail 11 thresholds and
+AgentV is 0/5. Retain the generalized mechanism and isolation invariants, reject
+the checkpoint, and correct pathological long compiler-tree trajectories before
+wider search. Full evidence:
+[iter-e239-binder-arity-isolated-20260716.md](iter-e239-binder-arity-isolated-20260716.md).
+
+## V9 lattice-guided recursive compiler search (two fixture-grade runs 2026-07-16)
 
 The research synthesis and implementation boundary are in
 [`lattice-recursive-search.md`](lattice-recursive-search.md). These rows keep the
@@ -1012,14 +1041,18 @@ trajectory policies. They do not reproduce those papers' training methods.
 
 | ID | Isolated lever | Required diagnostics | Status |
 | --- | --- | --- | --- |
-| E240 | Corrected greedy compiler-tree control | Standard scoreboard, coverage, fallbacks, calls | fixture-run |
-| E241 | Hard/soft lattice plus bounded rollback | Bottoms, rollbacks, nogoods, termination | fixture-run |
-| E242 | Stagnation-triggered localized nogoods | Conflict recurrence and false-prune audit | fixture-run |
-| E243 | Triggered PTRM-style width 4 | Triggers, trajectories, unique valid ASTs, calls | fixture-run |
-| E244 | Always-on PTRM-style width 4 control | Matched quality/calls against E243 | fixture-run |
-| E245 | GRAM-style semantic diversity width 4 | Unique validated AST fingerprints | fixture-run |
-| E246 | Full stack width 4 | Quality, validity, abstention, regret, latency | fixture-run |
-| E247 | Full stack width 8 | Width scaling benefit versus verifier/call cost | fixture-run |
+| E240 | Corrected greedy compiler-tree control | Standard scoreboard, coverage, fallbacks, calls | measured; fail |
+| E241 | Hard/soft lattice plus bounded rollback | Bottoms, rollbacks, nogoods, termination | measured; identical to E240; fail |
+| E242 | Stagnation-triggered localized nogoods | Conflict recurrence and false-prune audit | measured; no trigger; fail |
+| E243 | Triggered PTRM-style width 4 | Triggers, trajectories, unique valid ASTs, calls | measured; no trigger; fail |
+| E244 | Always-on PTRM-style width 4 control | Matched quality/calls against E243 | measured; semantic collapse; fail |
+| E245 | GRAM-style semantic diversity width 4 | Unique validated AST fingerprints | measured; no trigger; fail |
+| E246 | Full stack width 4 | Quality, validity, abstention, regret, latency | stopped by continuation rule (E228 campaign); fixture-run (scratch campaign) |
+| E247 | Full stack width 8 | Width scaling benefit versus verifier/call cost | stopped by continuation rule (E228 campaign); fixture-run (scratch campaign) |
+
+Statuses above are from the E228-checkpoint evaluation-only campaign; a second
+fixture-grade campaign the same day ran all eight rows eval-only from a fresh
+E240 scratch control (see "V9 measured results" below).
 
 Preview only:
 
@@ -1030,6 +1063,29 @@ python -m scripts.run_quality_matrix --matrix v9 --list
 Listing must not create output artifacts. Any execution requires the full honest
 five-suite scoreboard, AgentEvals, AgentV, result JSON, recipe/suite sizes, and a
 measured-results update in this document.
+
+### Measured E240-E245 result (2026-07-16 UTC)
+
+The CPU evaluation-only campaign used the unchanged E228 checkpoint (SHA-256
+`7a9be4a665e216d7f7e73883ad74ad972bbf30846896d0c29188d6482f5b093a`), seed
+0, honest schema/slot context, and suite sizes 3/5/4/4/3. E240-E243 and E245
+were output-identical: syntax was 1.0, but smoke meaningful was 0.333,
+held-out and OOD meaningful were 0, and RICO structure was 0.163, leaving four
+gates failed. The triggered policies never activated.
+
+E244 always-on width 4 made 76 verifier calls and found only one valid AST per
+selected-valid record; meaningful rate and component recall became 0 on all
+five suites, structure fell to 0.017-0.057, and median latency rose to
+52.4-68.5 seconds. Syntax stayed 1.0 and false hard eliminations remained zero,
+but the semantic regression rejects the hypothesis. E246-E247 were not run
+because E244 failed the predeclared continuation rule. Full recipe, telemetry,
+scoreboards, AgentV evidence, and applicability boundary:
+[`lattice-recursive-search.md`](lattice-recursive-search.md) and
+[`iter-e240-e245-lattice-search-20260716.json`](iter-e240-e245-lattice-search-20260716.json).
+
+The trace-backed E240 control, including exact suite metrics, aggregate decode
+telemetry, checkpoint lineage, and the four gate failures, is recorded separately
+in [iter-e240-greedy-tree-control-20260716.md](iter-e240-greedy-tree-control-20260716.md).
 
 ### V9 measured results (CPU, fixture-grade, 2026-07-16)
 
@@ -1060,7 +1116,80 @@ full suites) is still required, and E241/E242's conflict machinery has not been
 exercised outside unit/integration tests because greedy decode never stalls on
 this checkpoint.
 
-## V10 B4 AR→diffusion adaptation baseline (fixture-run 2026-07-16)
+## V10 exact-state local preference (E248 control measured)
+
+The full 25-paper audit, source manifest, objective definition, and honesty boundary
+are in [`local-decision-interventions.md`](local-decision-interventions.md). V10
+reuses the existing preference harness and append-only decode traces. It does not
+introduce an adapter/SAE trainer and does not claim that a local loss produces a
+local parameter update.
+
+All rows require one immutable `DecisionEventV1` JSONL, the same parent checkpoint,
+split, steps, learning rate, and seed. E252-E254 fail closed unless the training
+split contains at least one same-state-verified multi-good or multi-bad event.
+
+| ID | Isolated lever | Required diagnostics | Status |
+| --- | --- | --- | --- |
+| E248 | Unchanged parent control | Standard five-suite scoreboard | measured; matched control; 4 gates failed |
+| E249 | Exact-event CE plus margin | Event win/margin and per-kind recurrence | measured; lexical objective generalized; semantic quality regressed; rejected |
+| E250 | Bad-token unlikelihood | Bad probability mass and held-out recurrence | proposed/unrun |
+| E251 | Single-pair clipped FTPO | Active weight, chosen/margin win, drift | proposed/unrun |
+| E252 | Verifier-backed set FTPO | Set coverage, evidence source, held-out recurrence | prerequisite measured; no admissible events; training unrun |
+| E253 | E252 plus frozen-reference tether | Non-target MSE, target excess MSE, unchanged decisions | proposed/unrun |
+| E254 | E253 plus balanced sampling | Source/kind/rejected-set exposure and all E253 metrics | proposed/unrun |
+
+Preview without artifacts:
+
+```bash
+python -m scripts.run_quality_matrix --matrix v10 --list
+```
+
+Execution requires a parent and mined events:
+
+```bash
+python -m scripts.run_quality_matrix --matrix v10 --only E248,E249,E250,E251 \
+  --parent <checkpoint.pt> --decision-events <local_decisions.jsonl>
+```
+
+Initial hypothesis constants are margin `epsilon=2`, temperature `tau=1`,
+non-target tether `0.4`, target tether `0.05`, and target grace `1.0`. They are
+borrowed starting points, not validated TwoTower settings. Any future execution
+must update the canonical result JSON and this measured-results ledger, publish
+AgentEvals/AgentV, preserve unchanged ship gates, and update the model card for
+every checkpoint created.
+
+E248 evaluates the unchanged E228 parent without copying or training a
+checkpoint. The corrected strict policy exactly reproduces E240: syntax is 1.0
+on all 19 examples, four gates fail, and AgentV passes 1/5. An earlier parse-zero
+attempt was invalidated as harness policy drift; V9 and V10 now consume one
+shared strict compiler-tree policy. Full evidence:
+[iter-e248-local-parent-control-20260716.md](iter-e248-local-parent-control-20260716.md).
+
+The E249 prerequisite mined 2,035 exact production compiler-tree constraint
+shadows from 65 document groups and committed the identity-bound train/held-out
+corpus. These events certify grammar legality, not semantic preference. E252-E254
+remain fail-closed because no counterfactual set-valued evidence exists. Full
+telemetry and diagnostics:
+[iter-e249-exact-event-mining-20260716.md](iter-e249-exact-event-mining-20260716.md).
+
+E249 then moved all 319 held-out constraint shadows strongly in the requested
+direction (chosen win `0→0.7649`, margin win `0→0.6489`) while structural
+similarity and reward regressed on every suite. Syntax remained 1.0, eight ship
+thresholds failed, and AgentV passed 0/5. This falsifies constraint shadows as
+semantic preference labels: keep their legality guarantee in deterministic
+decoding and require counterfactual semantic evidence before another local
+preference train. Full evidence:
+[iter-e249-local-ce-margin-20260716.md](iter-e249-local-ce-margin-20260716.md).
+
+The E252 prerequisite now replays grammar-legal alternatives from one exact
+production compiler state and requires independent-judge, meaningful-program,
+and Pareto evidence before corpus admission. The bounded diagnostic produced
+zero verified candidates: both legal branches collapsed to the same off-task
+fallback and failed component recall. No corpus or checkpoint was created, and
+constraint-shadow events are now rejected by local semantic training. Full
+evidence:
+[iter-e252-counterfactual-prerequisite-20260716.md](iter-e252-counterfactual-prerequisite-20260716.md).
+## V11 B4 AR→diffusion adaptation baseline (fixture-run 2026-07-16)
 
 Track B4 (DiffuGPT/DiffuLLaMA, [arXiv:2410.17891](https://arxiv.org/abs/2410.17891),
 **Adapted**: only the drop-the-causal-mask move is reused — no attention-mask
@@ -1077,7 +1206,7 @@ differing only in the denoiser backbone; parallel MaskGIT decode on both rows.
 | E256 | SmolLM2-135M AR→masked-denoiser adaptation | 135M | fixture-run |
 | E257 | C1 De Bruijn relative binder references (`bind_encoding=relative`) | 1.1M | fixture-run |
 
-### V10 measured results (CPU, fixture-grade, 2026-07-16)
+### V11 measured results (CPU, fixture-grade, 2026-07-16)
 
 Recipe: `--scratch-control --steps 200 --lr 3e-4` (matrix default), batch 4, seed
 0, scratch context tower, fixture v1 corpus (108 records), no DESIGN.md context;
@@ -1087,7 +1216,7 @@ has no RICO records; ship bar remains n=1500). AgentV published per row. JSON:
 narrative: [iter-e255-e256-b4-ar-adaptation-20260716.md](iter-e255-e256-b4-ar-adaptation-20260716.md).
 
 Both rows fail the honest gates (syntax/meaningful parse 0.0 — placeholder-policy
-rejections, as across V9/V10 fixture runs). At this budget the adaptation is
+rejections, as across the V9/V11 fixture runs). At this budget the adaptation is
 **behind** the matched scratch control on every secondary signal: train loss 8.51
 vs 3.75, structural similarity 0.09–0.16 vs 0.28–0.37, component_type_recall
 0–0.19 vs 0.22–0.75, decode latency ~2× (30–37s vs ~15s per record). An
@@ -1111,7 +1240,6 @@ C1's). JSON:
 narrative:
 [iter-e257-c1-relative-bind-20260716.md](iter-e257-c1-relative-bind-20260716.md).
 Same honesty envelope as the B4 pair.
-
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

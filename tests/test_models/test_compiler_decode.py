@@ -8,7 +8,9 @@ import torch
 from slm_training.dsl.grammar.fastpath.compiler_draft import (
     CompletionPath,
     active_declaration_binder_id,
+    active_declaration_reference_count,
     active_parent_component_ids,
+    binder_reference_arities,
     build_completion_forest,
     gold_compiler_decisions,
     gold_compiler_decision_positions,
@@ -21,6 +23,8 @@ from slm_training.models.decode_stats import collect_decode_stats
 from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
 from slm_training.models.grammar import make_grammar_state
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
+from slm_training.harnesses.distill.trace_store import DecodeTraceRecorder
+from slm_training.harnesses.preference.local_decisions import events_from_trace
 
 
 def _model(**config_overrides) -> TwoTowerModel:
@@ -696,6 +700,23 @@ def test_component_edges_come_from_ast_and_partial_reference_graph() -> None:
     assert active_declaration_binder_id(tokenizer, prefix) == tokenizer.bind_id(1)
 
 
+def test_binder_reference_arities_follow_grammar_token_roles() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    ids = tokenizer.encode(
+        'root = Card([title, body])\ntitle = TextContent(":hero.title")\n'
+        'body = Stack([copy], "column")\ncopy = TextContent(":hero.body")',
+        add_special=False,
+    )
+    assert binder_reference_arities(tokenizer, ids) == (
+        (tokenizer.bind_id(0), 2),
+        (tokenizer.bind_id(1), 0),
+        (tokenizer.bind_id(2), 1),
+        (tokenizer.bind_id(3), 0),
+    )
+    prefix = tokenizer.encode("root = Card([title,", add_special=False)
+    assert active_declaration_reference_count(tokenizer, prefix) == 1
+
+
 def test_component_edge_supervision_and_parent_conditioned_bias() -> None:
     model = _model(
         component_edge_loss_weight=1.0,
@@ -852,6 +873,61 @@ def test_binder_topology_supervises_and_biases_legal_references() -> None:
     assert bias[1] > bias[0]
 
 
+def test_binder_arity_supervises_and_biases_continue_stop_paths() -> None:
+    model = _model(
+        binder_arity_loss_weight=1.0,
+        binder_arity_decode_weight=2.0,
+    )
+    model.train()
+    record = ExampleRecord(
+        id="binder-arity",
+        prompt="card with title and body",
+        openui=(
+            'root = Card([title, body])\n'
+            'title = TextContent(":hero.title")\n'
+            'body = TextContent(":hero.body")'
+        ),
+        placeholders=[":hero.title", ":hero.body"],
+        split="train",
+        source="fixture",
+    )
+    loss = model.training_loss([record])
+    loss.backward()
+    auxiliary_loss = model.take_detached_auxiliary_loss()
+    assert auxiliary_loss is not None
+    auxiliary_loss.backward()
+    assert torch.isfinite(loss)
+    assert model.binder_arity_head is not None
+    assert model.binder_arity_head.weight.grad is not None
+    assert model.binder_arity_head.weight.grad.abs().sum() > 0
+    assert model.last_training_metrics["binder_arity_rows"] == 3
+    assert model.last_training_metrics["binder_arity_loss"] > 0
+
+    tokenizer = model.tokenizer
+    binders = model._binder_component_token_ids()
+    root = binders.index(tokenizer.bind_id(0))
+    buckets = len(binders) + 1
+    with torch.no_grad():
+        model.binder_arity_head.weight.zero_()
+        model.binder_arity_head.bias.zero_()
+        model.binder_arity_head.bias[root * buckets + 2] = 3.0
+    ctx, ctx_pad = model._encode_context(["card with title and body"])
+    prefix = tokenizer.encode("root = Card([title", add_special=False)
+    paths = (
+        CompletionPath(
+            (tokenizer.token_to_id[","], tokenizer.bind_id(2)),
+            "grammar_comma",
+        ),
+        CompletionPath(
+            (tokenizer.token_to_id["]"], tokenizer.token_to_id[")"]),
+            "grammar_rsqb",
+        ),
+    )
+    bias = model._binder_arity_path_bias(ctx, ctx_pad, prefix, paths)
+    assert bias is not None
+    assert bias[0] > bias[1]
+
+
 def test_tree_verifier_packs_prefix_nodes_and_avoids_full_projection() -> None:
     model = _model()
     model.config.structural_bias = 0.0
@@ -890,6 +966,63 @@ def test_tree_verifier_packs_prefix_nodes_and_avoids_full_projection() -> None:
     assert "first_edge_score" in stats.constrained_selection_traces[0][
         "top_candidates"
     ][0]
+
+
+def test_tree_verifier_records_exact_branch_support_for_event_mining(
+    monkeypatch,
+) -> None:
+    model = _model()
+    model.config.structural_bias = 0.0
+    tokenizer = model.tokenizer
+    prefix = [tokenizer.bos_id, *tokenizer.encode("root=", add_special=False)]
+    paths = (
+        CompletionPath(
+            (tokenizer.token_to_id["Card"], tokenizer.token_to_id["("]),
+            "component",
+        ),
+        CompletionPath(
+            (tokenizer.token_to_id["Stack"], tokenizer.token_to_id["("]),
+            "component",
+        ),
+    )
+    ctx, ctx_pad = model._encode_context(["card"])
+    original_project = model.denoiser.project
+
+    def project(hidden, candidate_ids=None):
+        scores = original_project(hidden, candidate_ids)
+        if candidate_ids is None:
+            scores = scores.clone()
+            scores[tokenizer.mask_id] = scores.max() + 100.0
+        return scores
+
+    monkeypatch.setattr(model.denoiser, "project", project)
+    recorder = DecodeTraceRecorder(record_support=True)
+    model.trace_recorder = recorder
+    selected = model._select_compiler_path(prefix, paths, ctx, ctx_pad, 24, tree=True)
+    model.trace_recorder = None
+
+    trace = recorder.finalize(
+        record_id="record-1",
+        context_text="card",
+        policy_checkpoint_sha="checkpoint-sha",
+        tokenizer_sha="tokenizer-sha",
+        decode_config_hash="decode-sha",
+        seed=0,
+    )
+    trace["trajectory_id"] = "trajectory-1"
+    commits = [commit for step in trace["steps"] for commit in step["commits"]]
+    assert commits
+    assert commits[0]["id"] == selected[0]
+    assert commits[0]["raw_id"] == tokenizer.mask_id
+    assert set(commits[0]["allowed_id_set"]) == {
+        tokenizer.token_to_id["Card"],
+        tokenizer.token_to_id["Stack"],
+    }
+    assert commits[0]["pre_canvas"][: len(prefix)] == prefix
+    events = events_from_trace(trace)
+    assert len(events) == 1
+    assert events[0].good_token_ids == (selected[0],)
+    assert events[0].bad_token_ids == (tokenizer.mask_id,)
 
 
 def test_maskgit_fallback_keeps_compiler_prefix_visible() -> None:

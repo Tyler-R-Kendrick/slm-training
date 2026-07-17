@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E252-prerequisite",
+  "status": "measured_rejected_no_admissible_events",
+  "run": {
+    "run_id": "e250-counterfactual-diagnostic-v2",
+    "trace_id": "f04946404c984c36b524274a221d1e99",
+    "recorded_at": "2026-07-16T23:33:17.954268+00:00",
+    "device": "cpu",
+    "seed": 250,
+    "records": 1,
+    "source_records": "src/slm_training/resources/data/train/e230_diverse_judged_roots_v2/records.jsonl",
+    "record_id": "lc_forward_reference",
+    "decode_policy": "strict_compiler_tree",
+    "states_per_record": 1,
+    "candidates_per_state": 2
+  },
+  "identity": {
+    "source_commit": "fefd592f1064873247590dd691cab2eb51001ccf",
+    "checkpoint": "outputs/autoresearch/e228-candidate-margin-alignment/runs/e228-candidate-margin-matched/checkpoints/last.pt",
+    "policy_checkpoint_sha": "7a9be4a665e216d7f7e73883ad74ad972bbf30846896d0c29188d6482f5b093a",
+    "decode_config_hash": "8c2a2ae5cb5c4ad0ab44de74a172fc2c887fbdc7e5e7e20ede953184a0c3fe5b",
+    "state_hash": "3ad3aa5680965ccb1ab65e186e0ad59818d9ab7dc44d96efab51748d0a5d6638"
+  },
+  "verifier": {
+    "name": "independent_judge+meaningful_program+pareto_v1",
+    "metrics": [
+      "placeholder_fidelity",
+      "component_recall",
+      "structural_similarity",
+      "reward"
+    ],
+    "same_state_verified": true
+  },
+  "scoreboard": {
+    "traces": 1,
+    "accepted_traces": 0,
+    "states": 1,
+    "legal_candidates": 2,
+    "independent_judge_passed": 2,
+    "meaningful_program_passed": 0,
+    "verified_candidates": 0,
+    "qualified_counterfactual_events": 0,
+    "training_started": false,
+    "checkpoint_written": false
+  },
+  "probe": {
+    "position": 1,
+    "selected_token_id": 272,
+    "legal_token_ids": [30, 272],
+    "good_token_ids": [],
+    "bad_token_ids": [30, 272],
+    "qualified": false,
+    "rejection_reason": "no_verified_frontier",
+    "production_final_text": "root = Button(\":cta.label\")",
+    "candidates": [
+      {
+        "token_id": 272,
+        "token": "<BIND_0>",
+        "selected": true,
+        "raw_text_chars": 169,
+        "raw_text_sha256": "58af8fa18894161dda2c1d954d880dad8d8fa3903f32a47522ad5a0541343e17",
+        "finalization_changed": true,
+        "final_text": "root = Button(\":cta.label\")",
+        "independent_judge_passed": true,
+        "meaningful_program_passed": false,
+        "meaningful_error": "low_component_recall:0.00",
+        "verified": false,
+        "metrics": {
+          "placeholder_fidelity": 0.0,
+          "component_recall": 0.0,
+          "structural_similarity": 0.06,
+          "reward": 0.0
+        }
+      },
+      {
+        "token_id": 30,
+        "token": "NL",
+        "selected": false,
+        "raw_text_chars": 167,
+        "raw_text_sha256": "fe9fb8df78affa888513707f434f7c30c82c59e4805bbe6b72e78e5f6f5fd7b3",
+        "finalization_changed": true,
+        "final_text": "root = Button(\":cta.label\")",
+        "independent_judge_passed": true,
+        "meaningful_program_passed": false,
+        "meaningful_error": "low_component_recall:0.00",
+        "verified": false,
+        "metrics": {
+          "placeholder_fidelity": 0.0,
+          "component_recall": 0.0,
+          "structural_similarity": 0.06,
+          "reward": 0.0
+        }
+      }
+    ]
+  },
+  "decision": {
+    "ship": false,
+    "build_training_corpus": false,
+    "run_e252_training": false,
+    "reason": "No legal continuation passed both the independent judge and meaningful-program verifier; both candidates collapsed to the same off-contract fallback."
+  }
+}

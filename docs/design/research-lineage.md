@@ -162,6 +162,20 @@ of [XGrammar](https://arxiv.org/abs/2411.15100). Implementation and exact gates:
 | **Code** | [`harnesses/preference/train.py`](../../src/slm_training/harnesses/preference/train.py) (`dpo_loss`), pair builders in [`harnesses/preference/`](../../src/slm_training/harnesses/preference/) |
 | **CLI** | `scripts/train_preference.py` |
 
+### Exact-state local decision preference
+
+| | |
+| --- | --- |
+| **Papers** | [Unlikelihood](https://arxiv.org/abs/1908.04319), [Token-level DPO](https://arxiv.org/abs/2404.11999), [TIS-DPO](https://arxiv.org/abs/2410.04350), [ConfPO](https://arxiv.org/abs/2506.08712), [TGDPO](https://arxiv.org/abs/2506.14574), [Antislop](https://arxiv.org/abs/2510.15061), [TokenRatio](https://arxiv.org/abs/2605.12288) |
+| **Fidelity** | **Adapted** — exact masked-token states, verifier-backed good/bad action sets, clipped logit margins, and optional frozen-reference tethering; not sequence DPO or a faithful reproduction of any cited objective |
+| **Code** | Existing preference/trace owners; detailed boundary and full 25-paper audit in [`local-decision-interventions.md`](local-decision-interventions.md) |
+| **Matrix** | Proposed/unrun V10 rows E248-E254 in [`quality-experiment-matrix.md`](quality-experiment-matrix.md) |
+
+SAE/ReFT discovery, removable LoRA/DoRA/PiSSA actuators, adapter routing, iterative
+remine, and RLVR are **Adjacent**. The first TwoTower implementation is a localized
+loss with a global full-parameter update. It makes no locality or ship claim until
+the registered controls run under unchanged gates.
+
 ### GRPO-lite
 
 | | |
@@ -447,14 +461,16 @@ gain, or ship status is inherited, and V8 rows E200-E207/C5-C8 remain unrun.
 
 ## Lattice-guided recursive compiler search (V9)
 
-The shared tiny-reasoner review and its 25 academic references are normalized in
-[`lattice-recursive-search.md`](lattice-recursive-search.md). V9 treats the
+The shared tiny-reasoner review and its 25 academic references, plus its video and
+community-reproduction context, are normalized as R0-R26 in
+[`lattice-recursive-sources.json`](../../src/slm_training/resources/autoresearch/lattice-recursive-sources.json)
+and summarized in [`lattice-recursive-search.md`](lattice-recursive-search.md). V9 treats the
 existing compiler completion forest as the hard partial-information state, keeps
 neural scores soft, and plans bounded rollback plus selectively triggered
 PTRM/GRAM-style trajectories. The controller is **Adapted**: it does not reproduce
 LDT, TRM, PTRM, or GRAM training, and their reported results do not transfer.
 
-Rows E240-E247 are plan-only hypotheses until the standard quality suites,
+Rows E240-E247 are implemented but remain unrun hypotheses until the standard quality suites,
 AgentEvals, AgentV bundle, measured-results JSON, and markdown scoreboard exist.
 
 ## Contract-conditioned scope diffusion (X16-X21)

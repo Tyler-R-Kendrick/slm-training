@@ -30,8 +30,19 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", type=Path, default=None)
     parser.add_argument("--run-id", default="trajectory-latest")
     parser.add_argument("--limit", type=int, default=None)
+    parser.add_argument(
+        "--output-kind",
+        default=None,
+        help="Collect only records with this target kind (for example, document).",
+    )
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument(
+        "--decode-policy",
+        choices=("maskgit", "strict_compiler_tree"),
+        default="maskgit",
+        help="Decode policy to trace; strict compiler-tree matches V9/V10 controls.",
+    )
     parser.add_argument(
         "--samples-per-prompt",
         type=int,
@@ -48,7 +59,22 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Persist grammar allowed_id_set on each commit (E64 support match).",
     )
+    parser.add_argument(
+        "--counterfactual-semantic",
+        action="store_true",
+        help="Replay and independently judge grammar-legal exact-state alternatives.",
+    )
+    parser.add_argument("--counterfactual-states-per-record", type=int, default=4)
+    parser.add_argument("--counterfactual-candidates", type=int, default=4)
     args = parser.parse_args(argv)
+
+    if args.counterfactual_semantic and (
+        args.decode_policy != "strict_compiler_tree" or not args.record_support
+    ):
+        parser.error(
+            "--counterfactual-semantic requires --decode-policy "
+            "strict_compiler_tree and --record-support"
+        )
 
     import torch
 
@@ -76,14 +102,31 @@ def main(argv: list[str] | None = None) -> int:
     else:
         parser.error("provide --records or --test-dir")
         return 2
+    if args.output_kind is not None:
+        records = [
+            record for record in records if record.target_kind == args.output_kind
+        ]
     if args.limit is not None:
         records = records[: max(0, int(args.limit))]
+    if args.decode_policy == "strict_compiler_tree" and any(
+        record.target_kind != "document" for record in records
+    ):
+        parser.error(
+            "strict_compiler_tree supports document records only; "
+            "pass --output-kind document"
+        )
 
     torch.manual_seed(int(args.seed))
     model = TwoTowerModel.from_checkpoint(args.checkpoint, device=args.device)
-    # Trajectories come from the MaskGIT diffusion path (E64 target), not the
-    # LTR-primary shortcut.
-    model.config.grammar_ltr_primary = False
+    if args.decode_policy == "strict_compiler_tree":
+        from slm_training.harnesses.model_build.eval_policy import (
+            apply_strict_compiler_tree_policy,
+        )
+
+        apply_strict_compiler_tree_policy(model.config)
+    else:
+        # E64 trajectories come from MaskGIT, not the LTR-primary shortcut.
+        model.config.grammar_ltr_primary = False
 
     policy_sha = checkpoint_sha(args.checkpoint)
     decode_hash = decode_config_hash(model.config)
@@ -101,6 +144,13 @@ def main(argv: list[str] | None = None) -> int:
 
     appended = 0
     accepted = 0
+    counterfactual = {
+        "states": 0,
+        "candidates": 0,
+        "judge_passed": 0,
+        "verified": 0,
+        "events": 0,
+    }
     for record in records:
         for sample_index in range(max(1, int(args.samples_per_prompt))):
             recorder = DecodeTraceRecorder(
@@ -108,10 +158,58 @@ def main(argv: list[str] | None = None) -> int:
                 record_support=bool(args.record_support),
             )
             model.trace_recorder = recorder
+            request = None
+            if args.decode_policy == "strict_compiler_tree":
+                from slm_training.data.contract import GenerationRequest
+                from slm_training.harnesses.quality import compact_schema_snippet
+                from slm_training.models.template_fill import ensure_prompt_inventory
+
+                request = GenerationRequest.from_record(
+                    record,
+                    schema=compact_schema_snippet(budget=600),
+                    include_design_md=False,
+                )
+                visible_prompt = ensure_prompt_inventory(
+                    request.prompt, list(request.slot_contract)
+                )
+                context_text = model._context_prompts(
+                    [visible_prompt],
+                    golds=[None],
+                    design_mds=[request.design_md],
+                    slot_contracts=[list(request.slot_contract)],
+                    schemas=[request.schema],
+                    output_kinds=[request.output_kind],
+                    output_categories=[request.output_category],
+                )[0]
+            else:
+                context_text = model._context_prompts(
+                    [record.prompt], golds=[None], design_mds=[None]
+                )[0]
             try:
-                text = model.generate(record.prompt, gold=None, design_md=None)
+                text = (
+                    model.generate_batch_requests([request])[0]
+                    if request is not None
+                    else model.generate(record.prompt, gold=None, design_md=None)
+                )
             finally:
                 model.trace_recorder = None
+
+            if args.counterfactual_semantic:
+                from slm_training.harnesses.preference.counterfactuals import (
+                    mine_semantic_counterfactuals,
+                )
+
+                mined = mine_semantic_counterfactuals(
+                    model,
+                    recorder,
+                    record,
+                    context_text,
+                    max_states=int(args.counterfactual_states_per_record),
+                    max_candidates=int(args.counterfactual_candidates),
+                    seed=int(args.seed),
+                )
+                for key, value in mined.items():
+                    counterfactual[key] += value
 
             g = grammar_score(text)
             reward = {
@@ -136,6 +234,8 @@ def main(argv: list[str] | None = None) -> int:
                 policy_checkpoint=str(args.checkpoint),
                 decode_config_hash=decode_hash,
                 tokenizer_version=getattr(model.tokenizer, "version", None),
+                tokenizer_sha=model.artifact_identity()["tokenizer_sha"],
+                context_text=context_text,
                 seed=int(args.seed),
             )
             store.append(trace)
@@ -152,6 +252,8 @@ def main(argv: list[str] | None = None) -> int:
                 "accept_rate": round(accepted / appended, 4) if appended else None,
                 "policy_checkpoint_sha": policy_sha,
                 "decode_config_hash": decode_hash,
+                "decode_policy": args.decode_policy,
+                "counterfactual": counterfactual,
             },
             indent=2,
         )

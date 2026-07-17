@@ -119,6 +119,41 @@ def test_train_records_supports_browsing_filters_and_pagination(tmp_path) -> Non
     assert filtered["records"][0]["id"] == "row-3"
 
 
+def test_preference_data_lists_committed_event_corpora(tmp_path) -> None:
+    directory = (
+        tmp_path
+        / "src/slm_training/resources/data/preference/events-v1"
+    )
+    directory.mkdir(parents=True)
+    (directory / "manifest.json").write_text(
+        json.dumps(
+            {
+                "kind": "decision_event_corpus",
+                "dataset_id": "events-v1",
+                "record_count": 12,
+                "splits": {"train": 9, "held_out": 3},
+                "evidence_kinds": {"constraint_shadow": 12},
+                "set_valued_events": 0,
+                "content_fingerprint": "abcdef1234567890",
+            }
+        )
+    )
+    data = Readers(tmp_path).preference_data()
+    assert data["provenance"] == "committed"
+    assert data["rows"] == [
+        {
+            "dataset_id": "events-v1",
+            "kind": "exact-state decisions",
+            "records": 12,
+            "train": 9,
+            "held_out": 3,
+            "evidence": "constraint_shadow:12",
+            "usage": "E249–E251",
+            "fingerprint": "abcdef123456",
+        }
+    ]
+
+
 def test_committed_train_version_is_default_and_browsable(tmp_path) -> None:
     from slm_training.dsl.schema import ExampleRecord, write_jsonl
 

@@ -41,11 +41,11 @@ candidate-gathering equivalence, TwoTower train step with backbone gradients,
 save/`from_checkpoint` round-trip preserving `denoiser_backend`, and V10
 registration asserting the pair differs **only** in `denoiser_backend`
 (`tests/test_models/test_hf_denoiser.py`,
-`tests/test_scripts/test_quality_matrix_v10.py`).
+`tests/test_scripts/test_quality_matrix_v11.py`).
 
 ## Recipe
 
-`run_quality_matrix --matrix v10 --scratch-control --steps 200 --device cpu
+`run_quality_matrix --matrix v11 --scratch-control --steps 200 --device cpu
 --context-backend scratch --no-design-md-context --rico-limit 3` (lr 3e-4,
 batch 4, seed 0), fixture v1 corpus (108 records, `--source fixture`), suites
 smoke 3 / held_out 5 / adversarial 4 / ood 4 / **rico_held 0** (fixture corpus

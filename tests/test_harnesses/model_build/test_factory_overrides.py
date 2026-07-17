@@ -52,3 +52,26 @@ def test_compiler_search_overrides_are_typed() -> None:
     apply_runtime_overrides(model, config)
     assert model.config.compiler_search_mode == "gram"
     assert model.config.compiler_search_width == 8
+
+
+def test_explicit_runtime_override_fields_preserve_unrelated_checkpoint_config() -> None:
+    model = SimpleNamespace(
+        config=SimpleNamespace(
+            compiler_search_mode="greedy",
+            schema_in_context=True,
+            output_tokenizer="lexer",
+        )
+    )
+    config = ModelBuildConfig(
+        train_dir=Path("."),
+        runtime_override_fields=frozenset({"compiler_search_mode"}),
+        compiler_search_mode="gram",
+        schema_in_context=False,
+        output_tokenizer="compositional",
+    )
+
+    apply_runtime_overrides(model, config)
+
+    assert model.config.compiler_search_mode == "gram"
+    assert model.config.schema_in_context is True
+    assert model.config.output_tokenizer == "lexer"

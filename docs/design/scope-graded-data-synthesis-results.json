@@ -1,0 +1,77 @@
+{
+  "campaign": "scope-graded-data-synthesis",
+  "date": "2026-07-16",
+  "dataset_version": "scope_graded_v1",
+  "recipe": {
+    "command": "python -m scripts.build_train_data --source all --version scope_graded_v1 --output-root outputs/data/train",
+    "bridge": "openui-langcore (Node 22, npm ci in src/apps/openui_bridge)",
+    "device": "cpu",
+    "determinism": "two independent builds"
+  },
+  "reproducibility": {
+    "content_fingerprint": "56db51d38947b090fb901c740e7035549743437e935b0047ea124997544d623a",
+    "builds_identical": true
+  },
+  "corpus": {
+    "record_count": 1223,
+    "quality_rejected": 26,
+    "verifier_rejected": 108,
+    "errors": 0,
+    "preference_pairs": 189
+  },
+  "scope_corpus_check": {
+    "status": "pass",
+    "family_counts": {
+      "lexical_typed_map": 27,
+      "scope_canonical_document": 39,
+      "scope_canonical_expression": 43,
+      "scope_canonical_lexical": 19,
+      "scope_canonical_statement": 43,
+      "scope_identity_document": 39,
+      "scope_identity_expression": 72,
+      "scope_identity_lexical": 30,
+      "scope_identity_statement": 86,
+      "scope_repair_expression": 27,
+      "scope_repair_lexical": 9,
+      "scope_repair_statement": 32
+    },
+    "group_counts": {
+      "scope_identity": 227,
+      "scope_canonical": 144,
+      "scope_repair": 68,
+      "lexical_typed_map": 27
+    },
+    "invariants": [
+      "identity rows echo the prompt-embedded source byte-for-byte",
+      "scope_canonical_document rows equal validate(embedded).serialized",
+      "typed rows equal typed_render(surface terminal)",
+      "preference pairs: chosen != rejected and chosen ranked higher",
+      "all spans exact: source[span] == slice text"
+    ],
+    "failures": []
+  },
+  "task_weights": {
+    "generation": 0.16666666666666666,
+    "identity_echo": 0.16666666666666666,
+    "noop_adversarial": 0.16666666666666666,
+    "patch_edit": 0.16666666666666666,
+    "repair_completion_inpaint": 0.16666666666666666,
+    "state_behavior": 0.16666666666666666
+  },
+  "tests": {
+    "suites": [
+      "tests/test_data/test_scope_extract.py",
+      "tests/test_harnesses/train_data/test_scope_corpus.py",
+      "tests/test_dsl/test_output_kinds.py",
+      "tests/test_data/test_mixture.py",
+      "tests/test_scripts/test_verify_data_synthesis.py"
+    ],
+    "affected_suite_result": "326 passed, 2 skipped (tests/test_data tests/test_harnesses/train_data tests/test_dsl)",
+    "full_suite_note": "remaining failures (gpu_multi_farm, agentv, eval_gates, loop stub, lineage browser export, evaluate_tasks scoreboard) reproduce on the pristine tree in this container and are environmental"
+  },
+  "caveats": [
+    "Data-only campaign: no training run, no checkpoint, no ship claim.",
+    "Document-scope identity/canonical rows for roots that fail the document quality bar (no placeholders / off-library components) are rejected by the same gates as any document row; their sub-document scopes still pass.",
+    "The single_quote_strings variant is used as input only; the layered verifier quarantines it as a target, so its document identity twin is skipped fail-closed."
+  ]
+}

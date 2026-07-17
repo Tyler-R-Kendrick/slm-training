@@ -46,6 +46,14 @@ def _ship_score(metrics: dict) -> float | None:
     return total / weight if weight else None
 
 
+def _clip_optimizer_parameter_groups(optimizer, max_norm: float) -> None:
+    """Clip independent optimizer groups without coupling auxiliary heads."""
+    import torch
+
+    for group in optimizer.param_groups:
+        torch.nn.utils.clip_grad_norm_(group["params"], max_norm)
+
+
 def train(config: ModelBuildConfig, model=None) -> dict:
     from slm_training.runtime.accel import (
         autocast_context,
@@ -224,10 +232,12 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     if is_twotower:
         import torch
 
-        optimizer = torch.optim.AdamW(
-            plugin.trainable_parameters(),
-            lr=config.lr,
+        parameters = (
+            plugin.optimizer_parameter_groups()
+            if hasattr(plugin, "optimizer_parameter_groups")
+            else plugin.trainable_parameters()
         )
+        optimizer = torch.optim.AdamW(parameters, lr=config.lr)
         scaler = grad_scaler(config.device, enabled=use_amp)
 
     # ── Token accounting / full-state resume ────────────────────────────────
@@ -515,11 +525,21 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 with timed("forward"):
                     with autocast_context(config.device, enabled=use_amp):
                         raw_loss_t = plugin.training_loss(batch)
+                        auxiliary_loss_t = (
+                            plugin.take_detached_auxiliary_loss()
+                            if hasattr(plugin, "take_detached_auxiliary_loss")
+                            else None
+                        )
                         loss_t = raw_loss_t / grad_accum
                 with timed("backward"):
                     scaler.scale(loss_t).backward()
+                    if auxiliary_loss_t is not None:
+                        scaler.scale(auxiliary_loss_t / grad_accum).backward()
                 _count_tokens(batch)
-                accum_loss_sum += float(raw_loss_t.detach().cpu())
+                reported_loss_t = raw_loss_t.detach()
+                if auxiliary_loss_t is not None:
+                    reported_loss_t = reported_loss_t + auxiliary_loss_t.detach()
+                accum_loss_sum += float(reported_loss_t.cpu())
                 accum_loss_count += 1
                 accum_batch_meta.extend(_batch_meta(batch))
                 accum_example_losses.extend(
@@ -530,9 +550,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 if micro >= grad_accum:
                     with timed("optim_step"):
                         scaler.unscale_(optimizer)
-                        torch.nn.utils.clip_grad_norm_(
-                            list(plugin.trainable_parameters()), 1.0
-                        )
+                        _clip_optimizer_parameter_groups(optimizer, 1.0)
                         scaler.step(optimizer)
                         scaler.update()
                     micro = 0
@@ -588,7 +606,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
 
             with timed("optim_step"):
                 scaler.unscale_(optimizer)
-                torch.nn.utils.clip_grad_norm_(list(plugin.trainable_parameters()), 1.0)
+                _clip_optimizer_parameter_groups(optimizer, 1.0)
                 scaler.step(optimizer)
                 scaler.update()
             micro = 0
@@ -744,6 +762,12 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             ),
             "binder_topology_decode_weight": getattr(
                 config, "binder_topology_decode_weight", 0.0
+            ),
+            "binder_arity_loss_weight": getattr(
+                config, "binder_arity_loss_weight", 0.0
+            ),
+            "binder_arity_decode_weight": getattr(
+                config, "binder_arity_decode_weight", 0.0
             ),
             "fuse_ltr_loss": bool(getattr(config, "fuse_ltr_loss", True)),
             "fidelity_loss_weight": getattr(config, "fidelity_loss_weight", 0.0),
