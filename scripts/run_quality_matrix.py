@@ -1396,6 +1396,23 @@ def _v12_experiments(train_dir: Path) -> list[Experiment]:
     ]
 
 
+def _v13_experiments(train_dir: Path) -> list[Experiment]:
+    """E260: C2 dynamic pseudo-embeddings (SLM-26).
+
+    ``runtime_symbol_features="replace"`` cancels the learned symbol-pool row
+    with a deterministic byte-compositional vector (DyVo-style; weight tying
+    and batching untouched). Matched against E255 on everything but the mode.
+    """
+    base = dict(
+        output_tokenizer="lexer",
+        mask_pattern="diffusion",
+        grammar_ltr_primary=False,
+    )
+    return [
+        Experiment("E260", "qx_e260_c2_pseudo_embeddings", "C2 dynamic pseudo-embeddings for symbol tokens", train_dir, runtime_symbol_features="replace", **base),
+    ]
+
+
 def _apply_eval_checkpoint(
     experiments: list[Experiment], eval_checkpoint: Path | None
 ) -> list[Experiment]:
@@ -2269,12 +2286,13 @@ def main(argv: list[str] | None = None) -> int:
             "v10",
             "v11",
             "v12",
+            "v13",
             "all",
         ),
         default="v3",
         help="Experiment set through v10 local-decision rows E248-E254,"
         " v11 representation rows E255-E257, v12 decode-distortion row E259,"
-        " or all.",
+        " v13 pseudo-embedding row E260, or all.",
     )
     parser.add_argument(
         "--list",
@@ -2312,7 +2330,7 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(f"unknown suites: {','.join(unknown_suites)}")
     if not args.suites:
         parser.error("--suites must select at least one suite")
-    if args.matrix in {"v4", "v5", "v6", "v7", "v8", "v9", "v10", "v11", "v12", "all"}:
+    if args.matrix in {"v4", "v5", "v6", "v7", "v8", "v9", "v10", "v11", "v12", "v13", "all"}:
         if (
             args.parent is None
             and not args.scratch_control
@@ -2456,6 +2474,8 @@ def main(argv: list[str] | None = None) -> int:
         experiments.extend(_v11_experiments(args.train_dir))
     if args.matrix in {"v12", "all"}:
         experiments.extend(_v12_experiments(args.train_dir))
+    if args.matrix in {"v13", "all"}:
+        experiments.extend(_v13_experiments(args.train_dir))
     if args.only:
         experiments = [e for e in experiments if e.eid in selected_ids]
     if args.list:

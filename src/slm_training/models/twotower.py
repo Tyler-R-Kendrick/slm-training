@@ -314,7 +314,9 @@ class TwoTowerConfig:
     # Optional teacher-init of symbol embeddings from HF context (E45).
     teacher_init_embeddings: bool = False
     # V8 request-conditioned dynamic vocabulary; ``none`` is checkpoint-identical.
-    runtime_symbol_features: str = "none"  # none | surface | role_gated
+    # none | surface | role_gated | replace (C2: dynamic pseudo-embeddings —
+    # symbol rows become deterministic byte-compositional vectors).
+    runtime_symbol_features: str = "none"
     symbol_slot_augmentation: bool = False
     semantic_candidate_masks: bool = False
     constraint_graph_mode: str = "off"  # off | grammar | hybrid
@@ -1226,7 +1228,7 @@ class TwoTowerModel(nn.Module):
         mode = str(getattr(self.config, "runtime_symbol_features", "none") or "none")
         if mode == "none" or not tables:
             return None
-        if mode not in {"surface", "role_gated"}:
+        if mode not in {"surface", "role_gated", "replace"}:
             raise ValueError(f"unknown runtime_symbol_features mode {mode!r}")
         from slm_training.models.dsl_tokenizer import SymbolTable
 
@@ -1275,7 +1277,18 @@ class TwoTowerModel(nn.Module):
                 byte_ids = self.tokenizer._encode_bytes(text) if text else []
                 if byte_ids:
                     index = torch.tensor(byte_ids, device=weight.device)
-                    features[row, token_id] = weight.index_select(0, index).mean(0)
+                    composed = weight.index_select(0, index).mean(0)
+                    if mode == "replace":
+                        # C2 (SLM-26): dynamic pseudo-embedding — the delta
+                        # cancels the learned pool row, so the symbol's tied
+                        # input embedding AND output projection become the
+                        # deterministic byte-compositional vector (DyVo-style;
+                        # same embedding matrix rows, so weight tying and
+                        # batching are untouched). Same surface → identical
+                        # vector at every slot and position by construction.
+                        features[row, token_id] = composed - weight[token_id]
+                    else:
+                        features[row, token_id] = composed
         return features
 
     def _set_runtime_symbol_features(self, tables: list[object]) -> torch.Tensor | None:
@@ -1415,9 +1428,17 @@ class TwoTowerModel(nn.Module):
             self._set_runtime_symbol_features(
                 [self._symbol_tables.get(key) for key in cache_keys]
             )
-            logits = self.denoiser(
-                noisy, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
-            )
+            try:
+                logits = self.denoiser(
+                    noisy, ctx, pad_id=self.tokenizer.pad_id, ctx_pad_mask=ctx_pad
+                )
+            finally:
+                # Request-local features must not outlive their batch: a later
+                # forward with a different batch size (loss suites, eval)
+                # would crash on the batch-dimension mismatch or silently
+                # bias it. (Same defect class as PR #275's loss-suite fix —
+                # cleared here at the source.)
+                self.denoiser.set_runtime_symbol_features(None)
         if predict_mask.any():
             flat_logits = logits.reshape(-1, logits.size(-1))
             flat_targets = target_ids.reshape(-1)

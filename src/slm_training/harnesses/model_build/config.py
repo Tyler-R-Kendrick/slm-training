@@ -209,7 +209,7 @@ class ModelBuildConfig:
     symbol_boundary_loss_weight: float = 0.0
     remask_span: str = "token"  # token | statement
     teacher_init_embeddings: bool = False
-    runtime_symbol_features: str = "none"  # none | surface | role_gated
+    runtime_symbol_features: str = "none"  # none | surface | role_gated | replace (C2)
     symbol_slot_augmentation: bool = False
     semantic_candidate_masks: bool = False
     constraint_graph_mode: str = "off"  # off | grammar | hybrid

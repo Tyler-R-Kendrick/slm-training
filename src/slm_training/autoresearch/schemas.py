@@ -306,7 +306,9 @@ class ExperimentKnobs(StrictModel):
     denoiser_backend: Literal["scratch", "hf"] | None = None
     bind_encoding: Literal["absolute", "relative"] | None = None
     mask_pattern: Literal["random", "mixed", "diffusion"] | None = None
-    runtime_symbol_features: Literal["none", "surface", "role_gated"] | None = None
+    runtime_symbol_features: (
+        Literal["none", "surface", "role_gated", "replace"] | None
+    ) = None
     symbol_slot_augmentation: bool | None = None
     semantic_candidate_masks: bool | None = None
     constraint_graph_mode: Literal["off", "grammar", "hybrid"] | None = None

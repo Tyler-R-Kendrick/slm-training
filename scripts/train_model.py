@@ -172,7 +172,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--runtime-symbol-features",
-        choices=("none", "surface", "role_gated"),
+        choices=("none", "surface", "role_gated", "replace"),
         default="none",
     )
     parser.add_argument(

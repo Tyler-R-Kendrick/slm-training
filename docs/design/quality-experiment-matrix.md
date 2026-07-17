@@ -1272,6 +1272,31 @@ narrative + honesty envelope:
 Ledger telemetry proves the lever is live: 204–334 `asap_penalties` across
 32–53 distinct positions per suite; two runs produced byte-identical metrics.
 
+## V13 C2 dynamic pseudo-embeddings (fixture-run 2026-07-17)
+
+Track C2 (DyVo [2410.07722](https://arxiv.org/abs/2410.07722), **Adapted**:
+dynamic-vocabulary embedding only): `runtime_symbol_features="replace"`
+cancels the learned `<SYM_i>`/`<BIND_j>` pool rows with deterministic
+byte-compositional vectors through the V8 delta path (weight tying and
+batching untouched; same surface → identical vector at every slot, by
+construction and by test).
+
+| ID | Isolated lever | Baseline | Status |
+| --- | --- | --- | --- |
+| E260 | `runtime_symbol_features="replace"` (C2) | E255 recorded eval | fixture-run |
+
+Recipe: scratch-control 200 CPU steps, fixture v1 corpus, matched vs E255 on
+everything but the mode. JSON:
+[quality-matrix-results-iter-v13-c2-20260717.json](quality-matrix-results-iter-v13-c2-20260717.json);
+narrative: [iter-e260-c2-pseudo-embeddings-20260717.md](iter-e260-c2-pseudo-embeddings-20260717.md).
+Honest gates fail on both rows; structural similarity dips vs control
+(0.19–0.29 vs 0.28–0.37) — an honest fixture-scale negative. The
+binding-consistency probe on the trained checkpoint reports same-surface
+hidden cosine 0.9998 vs cross-surface 0.9679 (margin +0.032):
+[binding-consistency-e260-20260717.json](binding-consistency-e260-20260717.json).
+The run also flushed a latent stale-feature leak (fixed at the source in
+`training_loss`; complementary to PR #275).
+
 Honest gates still fail on both rows (syntax/meaningful parse 0.0 — the
 fixture-scale placeholder-policy wall Track A targets at frontier scale, not
 here). Secondary signals, structural similarity E255 → E259:
