@@ -196,6 +196,54 @@ one verdict with a replayable `SupportCertificate`:
 Non-goals honored: no multi-candidate closure loop, no model ranking, no SMT
 dependency, no decode/runtime flag, and no production-scale performance claim.
 
+## Implemented exact closure (VSS1-01 / SLM-61)
+
+[`dsl/solver/closure.py`](../../src/slm_training/dsl/solver/closure.py) adds the
+monotone fixed-point operator `exact_closure(state, provider, *, query_order, cache,
+certificate_store, max_queries)`. It is a **pure orchestration layer** over the
+VSS0-04 oracle (a `SupportProvider` = the oracle + its replay checker) — it never
+reimplements the support search — and removes only candidates carrying a
+replay-valid `UNSUPPORTED` certificate. Reference fixed-point:
+
+```text
+def exact_closure(state, provider):
+    while True:
+        if state.is_bottom: return certified_bottom(state)       # every value certified-removed
+        holes = unresolved_holes(state)                          # domains with > 1 value
+        if not holes: return structurally_solved(state)          # every domain singleton
+        removals = {}
+        for hole in order(holes):                                # smallest domain, then HoleId
+            for value in hole.values:                            # canonical value order
+                r = provider.check(state, query(state, hole, value))   # cached by (fp,hole,value,backend)
+                if r.verdict is SUPPORTED: keep_witness(r)             # kept; alternatives not collapsed
+                elif r.verdict is UNSUPPORTED:
+                    if provider.replay(r.certificate, state=state).ok:  # REQUIRED: replay vs pass-start state
+                        removals[hole].add(value, because=r.certificate)  # DESTRUCTIVE — cites certificate
+                    else: record_unknown(value)                         # stale/tampered proof never removes
+                else: record_unknown(value)                             # UNKNOWN never shrinks a domain
+        if not removals: return fixed_point(state)
+        state = apply_all(removals, against=state)               # one new state per pass (pass-consistent)
+```
+
+- **Pass consistency.** Every deduction in a pass is computed against the same
+  pass-start state and applied together to form one new immutable state; the next
+  pass re-queries against the new fingerprint. A proof that went stale after a
+  reduction is therefore never reused — the cache is keyed by `state.fingerprint`
+  (plus hole/value/backend version), so a shrunk state is a cache miss and forces a
+  fresh query, and every removal replays against the exact pre-refinement state.
+- **Three distinct terminal states.** *Structurally solved* = every domain is a
+  singleton (a candidate chosen per hole; still not a verified terminal). *Certified
+  bottom* = some domain is empty **because every one of its values was removed under
+  an accepted certificate** (`reached_fixed_point=True`). *Partial closure* = a
+  `max_queries` budget stopped the loop with live domains (`reached_fixed_point=False`,
+  `stop_reason="budget:max_queries"`) — an honest partial, never a bottom or a
+  solved claim.
+- **Honesty.** `UNKNOWN` (and any `UNSUPPORTED` whose certificate fails replay)
+  never decreases a domain; `result.state` is always a subset of the input and every
+  `CertifiedDeduction` cites one certificate id per removed value. `CertifiedDeduction`
+  stores certificate **references** (digests) plus compact summaries; full
+  certificates live in a caller-provided `certificate_store`.
+
 ## Reference support semantics
 
 | Verdict | Requirement | Removal permitted? |
@@ -406,4 +454,18 @@ implementation — no train/eval/benchmark/checkpoint ran and **no ship or
 speed claim** is made. Verified: `python -m pytest
 tests/test_dsl/test_solver_support.py tests/test_dsl/test_solver_state.py
 tests/test_models/test_compiler_decode.py -q` (92 passed) and
+`python -m scripts.repo_policy`.
+
+2026-07-17 — VSS1-01 / SLM-61 implements certificate-checked exact closure
+(`dsl/solver/closure.py`): the deterministic monotone fixed point that orchestrates
+the VSS0-04 oracle and removes only replay-valid `UNSUPPORTED` candidates, with
+pass-consistent application, stale/tampered-proof rejection, certified bottom, and
+honest partial-budget stops. Pinned by tiny closed fixtures
+(`tests/test_dsl/test_solver_closure.py`): multi-pass propagation, `UNKNOWN`/`SUPPORTED`
+retention, a forged `UNSUPPORTED` certificate leaving state identity unchanged,
+all-unsupported certified bottom, budgeted partial closure, determinism, and
+cache-identity. It adds no branching/decision stack, no model ranker, and no decode
+integration; existing runtime paths are untouched and **no ship or speed claim** is
+made. Verified: `python -m pytest tests/test_dsl/test_solver_closure.py
+tests/test_dsl/test_solver_support.py -q` (31 passed) and
 `python -m scripts.repo_policy`.
