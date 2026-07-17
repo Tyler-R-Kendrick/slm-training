@@ -107,7 +107,7 @@ def _canonical(source: str) -> str:
     """Official lang-core serialized form — the canonical reference."""
     serialized = validate(source).serialized
     assert serialized, "bridge must produce a serialized canonical form"
-    return serialized.strip()
+    return serialized
 
 
 def _alpha_normalized_ast(source: str) -> Any:
@@ -162,7 +162,7 @@ def test_production_decode_emits_langcore_canonical_form() -> None:
         canonical = _canonical(source)
         contract = canonical_slot_contract(canonical, declared=placeholders)
         program = encode_openui(canonical, slot_contract=contract)
-        decoded = decode_productions(program.tokens, program.slot_contract).strip()
+        decoded = decode_productions(program.tokens, program.slot_contract)
         assert _canonical(decoded) == decoded, name
 
 
@@ -208,7 +208,7 @@ def test_dsl_native_canonicalize_agrees_with_langcore_serializer(
         table = SymbolTable.from_placeholders(
             placeholders, max_slots=dsl_tok.sym_slots
         )
-        collapsed = dsl_tok.canonicalize(canonical, table=table).strip()
+        collapsed = dsl_tok.canonicalize(canonical, table=table)
         assert _canonical(collapsed) == collapsed, name
 
 
@@ -253,10 +253,10 @@ def test_normalized_records_are_langcore_canonical_fixed_points() -> None:
     """
     raw_divergent = 0
     for record in _fixture_records():
-        if record.openui.strip() != _canonical(record.openui):
+        if record.openui != _canonical(record.openui):
             raw_divergent += 1
         normalized = normalize_example_record(record)
-        assert normalized.openui.strip() == _canonical(normalized.openui), record.id
+        assert normalized.openui == _canonical(normalized.openui), record.id
         again = normalize_example_record(normalized)
         assert again.openui == normalized.openui, record.id
     # The seam does real work: some committed seeds are not serializer
@@ -271,7 +271,7 @@ def test_compositional_targets_from_normalized_records_are_decode_fixed() -> Non
     for record in records:
         decoded = tokenizer.decode(tokenizer.encode(record.openui))
         assert decoded == record.openui, record.id
-        assert decoded.strip() == _canonical(decoded), record.id
+        assert decoded == _canonical(decoded), record.id
 
 
 def test_lexer_targets_from_normalized_records_are_decode_fixed(
@@ -290,4 +290,4 @@ def test_lexer_targets_from_normalized_records_are_decode_fixed(
         assert (
             dsl_tok.encode(decoded, add_special=False, table=fresh) == ids
         ), record.id
-        assert _canonical(decoded) == decoded.strip(), record.id
+        assert _canonical(decoded) == decoded, record.id

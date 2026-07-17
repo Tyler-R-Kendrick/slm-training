@@ -1,0 +1,48 @@
+{
+  "iteration": "b2-canonical-alignment-audit",
+  "linear_issue": "SLM-22",
+  "date": "2026-07-17",
+  "recipe": {
+    "device": "cpu",
+    "steps": null,
+    "backend": "node lang-core bridge (@openuidev/lang-core, pinned)",
+    "matrix_set": null,
+    "honesty_mode": "bridge-required",
+    "ship_gate": null,
+    "note": "codec invariant audit; no training run, no checkpoint, no ship claim"
+  },
+  "suite": {
+    "codec_cases": 42,
+    "codec_case_composition": "36 fixture seeds + 6 targeted programs (dead-binding chain, Modal bool/null padding, escaped strings, name-in-literal, v0.5 state/query)"
+  },
+  "codec_checks": {
+    "production_codec": {
+      "serializer_fixed_point_of_decode_failures": 0,
+      "loss_space_idempotence_failures": 0,
+      "canonical_equality_mod_alpha_failures": 0
+    },
+    "dsl_native_tokenizer": {
+      "serializer_fixed_point_of_canonicalize_failures": 0,
+      "loss_space_idempotence_failures": 0,
+      "canonical_equality_mod_alpha_failures": 0,
+      "canonicalize_idempotence_failures": 0
+    },
+    "openui_tokenizer": {
+      "verdict": "identity codec; alignment delegated to normalize_example_record seam",
+      "loss_space_idempotence_failures": 0
+    }
+  },
+  "corpus_sweep": [
+    {"corpus": "train_seeds+test_seeds (raw)", "docs": 36, "divergent": 6, "verdict": "statement order only; collapsed by normalize_example_record"},
+    {"corpus": "outputs/data/train/scope_graded_v1", "docs": 774, "divergent": 26, "verdict": "all scope_identity_* preserve_verbatim echoes - intentional"},
+    {"corpus": "resources/data/train/remediated", "docs": 585, "divergent": 0, "verdict": "canonical"},
+    {"corpus": "resources/data/train/e218_schema_normalized_judge_v5", "docs": 480, "divergent": 0, "verdict": "canonical"},
+    {"corpus": "resources/data/train/e230_diverse_judged_roots_v2", "docs": 65, "divergent": 0, "verdict": "canonical"},
+    {"corpus": "resources/data/eval/remediated suites", "docs": 12, "divergent": 0, "verdict": "canonical"}
+  ],
+  "verdict": "no unintentional train/decode canonical divergence; deliverable is the invariant suite tests/test_dsl/test_canonical_alignment.py (9 bridge-gated property tests)",
+  "caveats": [
+    "without the Node bridge the Lark fallback echoes source as serialized - normalization silently degrades (D2/SLM-30 scope)",
+    "alpha-renaming is the documented, loss-space-mirrored collapse; serializer preserves names"
+  ]
+}

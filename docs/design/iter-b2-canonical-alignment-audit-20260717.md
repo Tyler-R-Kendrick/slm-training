@@ -42,6 +42,18 @@ canonical-fixed-point status of document records. Invariants per codec:
 
 ## Measured results
 
+Machine-readable mirror: [iter-b2-canonical-alignment-audit-20260717.json](iter-b2-canonical-alignment-audit-20260717.json).
+
+| Run metadata | Value |
+| --- | --- |
+| Device | CPU |
+| Steps | n/a — codec audit, no training run |
+| Backend | Node lang-core bridge (`@openuidev/lang-core`, pinned) |
+| Matrix set | n/a |
+| Suite size (`n`) | 42 codec cases (36 fixtures + 6 targeted); corpus sweep sizes below |
+| Honesty mode | bridge-required (tests skip without the bridge; no fallback evidence) |
+| Ship gate / guardrail | n/a — invariant audit only, no checkpoint, no ship claim |
+
 | Check | production codec | DSLNativeTokenizer | OpenUITokenizer |
 | --- | --- | --- | --- |
 | Serializer fixed point of decode (36 fixtures + 6 targeted) | 0 failures | 0 failures (`canonicalize`) | identity codec (trivial) |
