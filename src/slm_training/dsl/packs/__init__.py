@@ -42,12 +42,16 @@ def _ensure_builtins() -> None:
     if _REGISTRY:
         return
     from slm_training.dsl.packs.arith_sketch import build_pack as _arith
+    from slm_training.dsl.packs.graphql import build_pack as _graphql
     from slm_training.dsl.packs.openui import build_pack as _openui
     from slm_training.dsl.packs.toy_layout import build_pack as _toy
 
     register_pack(_openui())
     register_pack(_toy())
     register_pack(_arith())
+    # Registered unconditionally; its oracle needs the optional graphql-core
+    # dependency, gated by `backend().available()` at use sites.
+    register_pack(_graphql())
 
 
 __all__ = [

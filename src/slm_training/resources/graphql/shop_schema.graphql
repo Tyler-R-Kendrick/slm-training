@@ -1,0 +1,47 @@
+# F2 (SLM-43) fixture schema: the introspection schema IS the symbol table.
+# Small on purpose — enough surface for scope-aware validation (fields, args,
+# enums, nesting, non-null/list wrappers) without curating external schemas.
+
+type Query {
+  product(id: ID!): Product
+  products(first: Int, category: Category): [Product!]!
+  order(id: ID!): Order
+  me: Customer
+}
+
+type Product {
+  id: ID!
+  name: String!
+  price: Float!
+  category: Category!
+  inStock: Boolean!
+  reviews(first: Int): [Review!]!
+}
+
+type Review {
+  id: ID!
+  rating: Int!
+  body: String
+  author: Customer!
+}
+
+type Customer {
+  id: ID!
+  displayName: String!
+  email: String!
+  orders(first: Int): [Order!]!
+}
+
+type Order {
+  id: ID!
+  total: Float!
+  items: [Product!]!
+  placedBy: Customer!
+}
+
+enum Category {
+  ELECTRONICS
+  GROCERY
+  CLOTHING
+  TOYS
+}

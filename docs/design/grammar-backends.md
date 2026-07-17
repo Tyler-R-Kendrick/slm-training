@@ -61,11 +61,25 @@ scope check, placeholder policy} — is a **pack**:
 [`src/slm_training/dsl/packs/`](../../src/slm_training/dsl/packs/)
 (`DSLPack` in `types.py`; registry `get_pack`/`register_pack`/`list_packs`
 mirroring this backend registry). Builtin instances: `openui` (codec
-round-trip canonicalizer, `validate_output` oracle, progspec generator) and
+round-trip canonicalizer, `validate_output` oracle, progspec generator),
 `toy-layout` (identity canonicalizer + template generator — the
-contract-shape guard). `grammar` and `validity_oracle` are independent pack
-fields on purpose: the F4 ontology packs validate by consistency check, not
-CFG parse.
+contract-shape guard), `arith-sketch` (G4 reasoning traces; deterministic
+evaluator oracle), and `graphql` (F2). `grammar` and `validity_oracle` are
+independent pack fields on purpose: the F4 ontology packs validate by
+consistency check, not CFG parse.
+
+The **`graphql` pack** (F2, SLM-43) is the first schema-native backend:
+`GraphQLQueryBackend` implements the `GrammarBackend` Protocol directly on
+graphql-core (parse/print/validate) rather than a `.lark` grammar. Its
+oracle is `graphql.validate` against a committed SDL fixture
+(`resources/graphql/shop_schema.graphql`) — the introspection schema *is*
+the symbol table (`component_names()` returns schema type names,
+`library_schema()` the per-type field map), so "valid" means schema-correct
+(field/argument existence), not merely well-formed. The canonicalizer is a
+real normal form (`print_ast(parse(x))`, idempotent). graphql-core is an
+**optional** dependency (`pip install -e '.[graphql]'`); the backend's
+`available()` gates its tests the same way `bridge_available()` does, and
+graphql-js byte parity is a stated non-goal.
 
 Pack seams added in F1: `fastpath/engine.engine_for_dsl` resolves any
 registered backend's `grammar_path` (no more hard-coded path table), and

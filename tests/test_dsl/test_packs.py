@@ -17,11 +17,15 @@ def test_builtin_packs_registered() -> None:
         get_pack("no-such-dsl")
 
 
-@pytest.mark.parametrize("pack_id", ["openui", "toy-layout", "arith-sketch"])
+@pytest.mark.parametrize(
+    "pack_id", ["openui", "toy-layout", "arith-sketch", "graphql"]
+)
 def test_pack_contract_invariants(pack_id: str) -> None:
     """Every pack: generated corpus is valid by its own oracle, scope-clean,
     and canonicalization is an idempotent normal form."""
     pack = get_pack(pack_id)
+    if not pack.backend().available():
+        pytest.skip(f"{pack_id} backend unavailable (optional dependency)")
     assert pack.backend().info.id == pack.grammar
     assert pack.corpus_generator is not None
     records = pack.corpus_generator(3, 0)

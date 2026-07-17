@@ -12,7 +12,7 @@ The first two targets have a *free* validity oracle:
 | DSL | Grammar | Validity oracle |
 | --- | --- | --- |
 | OpenUI | `@openuidev/lang-core` | parser + renderer (a program renders or it does not) |
-| GraphQL | graphql-js | parser + schema validation against the introspection schema |
+| GraphQL | graphql-core (F2, landed) | parser + schema validation against the introspection schema (`packs/graphql.py`; graphql-js byte parity is a non-goal) |
 | **Patterns** | (to design) | **none free — must be defined** |
 
 A "software design pattern / algorithm / data-structure" DSL describes an
