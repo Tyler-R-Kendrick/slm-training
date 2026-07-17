@@ -45,6 +45,8 @@ jobs:
       - run: pytest -q
       - name: Validate dashboard OpenUI page programs are in sync
         run: python scripts/validate_page_dsl.py --check
+      - name: Verify checkpoint references are resolvable and provenanced
+        run: python -m scripts.verify_checkpoint_references --check
       - name: Verify documented disjoint data build
         run: |
           python -m scripts.build_train_data --source all --version ci --synthesizer none
