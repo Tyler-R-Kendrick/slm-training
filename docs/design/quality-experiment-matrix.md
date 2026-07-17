@@ -2018,6 +2018,26 @@ promote or claim ship. See
 [train result](iter-e316-semantic-slot-train-20260717.md) and
 [JSON](semantic-slot-train-results-iter-e316-20260717.json).
 
+## E317 slot-conditioned component plan (2026-07-17)
+
+A decision-local head learns to map each visible slot plus the prompt to its
+direct containing component, reaching 0.7008 final-20 train accuracy. The
+matched 20k CPU scratch train has weighted/broad NLL 5.4483/5.5233 and leaves
+the global component-plan diagnostics effectively unchanged.
+
+The frozen-checkpoint decode sweep falsifies the useful-intervention
+hypothesis. Weight 0 exactly reproduces E316 with two failures / AgentV 3/5.
+Weight 0.25 changes 15 legal choices but clears no gate and cuts OOD
+meaningful/recall from 1.0/0.5417 to 0.50/0.25. Weights 0.5 and 1.0 also cut
+held-out meaningful/recall from 0.40/0.20 to 0.20/0.10, producing three metric
+failures. Parse and visible-slot fidelity remain 1.0.
+
+**Verdict:** reject E317 decode use; do not promote or claim ship. Retain E316
+as the strongest scratch candidate and pursue compositional role evidence
+rather than more weight tuning. See
+[results](iter-e317-slot-component-plan-20260717.md) and
+[JSON](slot-component-plan-results-iter-e317-20260717.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

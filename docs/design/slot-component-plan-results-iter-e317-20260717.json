@@ -1,0 +1,166 @@
+{
+  "id": "E317",
+  "date": "2026-07-17",
+  "status": "negative_not_promotable",
+  "intervention": "Train a decision-local visible-slot to direct-component head and apply it only to compiler-legal component choices for the next unconsumed slot.",
+  "train": {
+    "run_id": "e317-slot-component-plan-20k-r1",
+    "device": "cpu",
+    "context_backend": "scratch",
+    "output_tokenizer": "choice",
+    "steps": 446,
+    "seen_prompt_tokens": 53747,
+    "seen_target_tokens": 20044,
+    "elapsed_wall_seconds": 144.5716,
+    "trainable_params": 405717,
+    "checkpoint": "outputs/runs/e317-slot-component-plan-20k-r1/checkpoints/last.pt",
+    "checkpoint_sha256": "42476f4ccf97adf1249981eee9481ec81c3816af320c71747299144c2734e130",
+    "trace_id": "c2de7872573b3cbfb22e3982dae6679a",
+    "checkpoint_sync": false,
+    "scratch_reason": "CPU matched experiment; explicit --no-sync-checkpoints"
+  },
+  "loss": {
+    "weighted_nll": 5.448347847761098,
+    "broad_mean_nll": 5.523263662647118,
+    "loss_agentv": {
+      "total": 1,
+      "passed": 1,
+      "failed": 0
+    },
+    "final_20": {
+      "component_plan_loss": 1.917584443092346,
+      "component_plan_root_accuracy": 0.95,
+      "component_plan_bound_topk_recall": 0.4620833367109299,
+      "component_plan_bound_count_mae": 0.2829016588628292,
+      "slot_component_loss": 1.205552587658167,
+      "slot_component_accuracy": 0.7008333392441273,
+      "slot_component_rows": 3.8
+    }
+  },
+  "evaluation": {
+    "run_id": "e317-slot-component-plan-20k-honest-r1",
+    "slot_component_decode_weight": 1.0,
+    "honesty": {
+      "ship_gates": true,
+      "compiler_decode_mode": "tree",
+      "decode_min_content": -1,
+      "honest_slot_contract": true,
+      "slot_contract_constrained_decode": true,
+      "allow_unconstrained_fallback": false
+    },
+    "suites": {
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "placeholder_fidelity": 1.0,
+        "structural_similarity": 0.5464,
+        "meaningful_program_rate": 0.666667,
+        "component_type_recall": 0.333333,
+        "reward_score": 0.640667,
+        "slot_choice_changes": 2,
+        "pass": false
+      },
+      "held_out": {
+        "n": 5,
+        "parse_rate": 1.0,
+        "placeholder_fidelity": 1.0,
+        "structural_similarity": 0.40114,
+        "meaningful_program_rate": 0.2,
+        "component_type_recall": 0.1,
+        "reward_score": 0.1994,
+        "slot_choice_changes": 6,
+        "pass": false
+      },
+      "adversarial": {
+        "n": 4,
+        "parse_rate": 1.0,
+        "placeholder_fidelity": 1.0,
+        "structural_similarity": 0.597025,
+        "meaningful_program_rate": 0.5,
+        "component_type_recall": 0.375,
+        "reward_score": 0.4805,
+        "slot_choice_changes": 4,
+        "pass": true
+      },
+      "ood": {
+        "n": 4,
+        "parse_rate": 1.0,
+        "placeholder_fidelity": 1.0,
+        "structural_similarity": 0.4304,
+        "meaningful_program_rate": 0.5,
+        "component_type_recall": 0.25,
+        "reward_score": 0.49925,
+        "slot_choice_changes": 4,
+        "pass": true
+      },
+      "rico_held": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "placeholder_fidelity": 1.0,
+        "structural_similarity": 0.534967,
+        "meaningful_program_rate": 1.0,
+        "component_type_recall": 0.555556,
+        "reward_score": 1.0,
+        "slot_choice_changes": 12,
+        "pass": true
+      }
+    },
+    "failures": [
+      "smoke:component_type_recall actual=0.3333333333333333 need>=0.35",
+      "held_out:meaningful_program_rate actual=0.2 need>=0.4",
+      "held_out:component_type_recall actual=0.1 need>=0.3"
+    ],
+    "agentv": {
+      "total": 5,
+      "passed": 3,
+      "failed": 2
+    }
+  },
+  "decode_ablation": [
+    {
+      "run_id": "e317-slot-component-plan-20k-decode0-r1",
+      "weight": 0.0,
+      "choice_changes": 0,
+      "failures": 2,
+      "agentv_passed": 3,
+      "held_meaningful": 0.4,
+      "held_component_recall": 0.2,
+      "ood_meaningful": 1.0,
+      "ood_component_recall": 0.541667
+    },
+    {
+      "run_id": "e317-slot-component-plan-20k-decode025-r1",
+      "weight": 0.25,
+      "choice_changes": 15,
+      "failures": 2,
+      "agentv_passed": 3,
+      "held_meaningful": 0.4,
+      "held_component_recall": 0.2,
+      "ood_meaningful": 0.5,
+      "ood_component_recall": 0.25
+    },
+    {
+      "run_id": "e317-slot-component-plan-20k-decode05-r1",
+      "weight": 0.5,
+      "choice_changes": 24,
+      "failures": 3,
+      "agentv_passed": 3,
+      "held_meaningful": 0.2,
+      "held_component_recall": 0.1,
+      "ood_meaningful": 0.5,
+      "ood_component_recall": 0.25
+    },
+    {
+      "run_id": "e317-slot-component-plan-20k-honest-r1",
+      "weight": 1.0,
+      "choice_changes": 28,
+      "failures": 3,
+      "agentv_passed": 3,
+      "held_meaningful": 0.2,
+      "held_component_recall": 0.1,
+      "ood_meaningful": 0.5,
+      "ood_component_recall": 0.25
+    }
+  ],
+  "verdict": "Reject the slot-component decode mechanism: weight zero exactly reproduces E316, while every nonzero weight provides no gate gain and regresses OOD or held-out quality. Not promotable or ship."
+}
