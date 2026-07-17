@@ -176,7 +176,7 @@ def _normalize_record(record: ExampleRecord) -> ExampleRecord:
     meta.setdefault("parent_id", root_id)
     meta.setdefault("provenance", {})
     prompt = record.prompt.strip()
-    if str(meta["task"]) == "generation" and isinstance(meta.get("edit"), dict):
+    if str(meta["task"]) == "generation":
         from slm_training.data.quality import (
             render_semantic_contract_prompt,
             semantic_contract_for_openui,

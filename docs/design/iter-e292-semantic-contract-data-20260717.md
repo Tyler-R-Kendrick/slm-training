@@ -20,6 +20,14 @@ data API discover the same version without a local output store.
 Publication now copies synthesis telemetry instead of moving it out of the
 dataset and rewrites all manifest paths to the source-controlled destination.
 
+Post-run corpus inspection found that the inherited snapshot still contained
+29 explicit generation rows and 15 default-generation fixtures that passed the
+older prose judge without an exact AST contract. E292 remains immutable as the
+historical training input, but future admission now fails closed when any
+effective generation row lacks `semantic_contract`; normalization remediates
+all such rows, not only edit-derived generation rows. The next corpus version
+must therefore rebuild and judge all 119 generation rows before training.
+
 ## Bounded recipe
 
 The matched B3 CPU choice arm used width 64, depth 2, seed 0, a 5,000-target
@@ -88,11 +96,11 @@ The judged semantic-contract corpus improves best weighted NLL from E291's
 placeholder fidelity, reward, and AgentV show that lower teacher-forced NLL did
 not transfer to semantic generation. E292 is not promotable or ship-ready.
 
-The next quality iteration should measure decision-kind coverage and loss for
-root component, child occupancy, component inventory, and slot selection on
-this committed corpus, then adjust the data mixture or objective against the
-identified weak decision kinds. More syntax patches or a larger training budget
-would not address this failure.
+The next quality iteration must first publish the fully remediated 119-row
+generation subset under a new immutable corpus version. It should then measure
+decision-kind coverage and loss for root component, child occupancy, component
+inventory, and slot selection before adjusting the mixture or objective. More
+syntax patches or a larger training budget would not address this failure.
 
 Machine-readable evidence:
 [`iter-e292-semantic-contract-data-20260717.json`](iter-e292-semantic-contract-data-20260717.json).

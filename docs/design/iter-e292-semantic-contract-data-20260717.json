@@ -11,7 +11,10 @@
     "content_fingerprint": "1e1815e2b658c618b0b556853f7c7b009c384ab98749b3786eebd379a54290a9",
     "future_run_published": true,
     "synthesis_telemetry_committed": true,
-    "manifest_paths_relocated": true
+    "manifest_paths_relocated": true,
+    "historical_generation_contracts": 90,
+    "effective_generation_rows": 119,
+    "future_generation_contract_required": true
   },
   "training": {
     "run_id": "capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0",
@@ -126,6 +129,6 @@
     "data_nll_improved_vs_e291": true,
     "semantic_transfer_improved": false,
     "ship": false,
-    "next": "Profile decision-kind coverage and held-out loss on root choice, child occupancy, component inventory, and slot selection before changing the judged mixture or objective."
+    "next": "Publish a new immutable corpus with all 119 generation rows remediated, then profile decision-kind coverage and held-out loss before changing the judged mixture or objective."
   }
 }

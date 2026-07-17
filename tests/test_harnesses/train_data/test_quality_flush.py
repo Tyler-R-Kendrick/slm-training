@@ -134,6 +134,7 @@ def test_independent_judge_reads_ordinary_component_mentions_from_schema(
         prompt="Show two buttons.",
         openui='root = Stack([a, b])\na = Button(":a")\nb = Button(":b")',
         placeholders=[":a", ":b"],
+        meta={"task": "edit"},
     )
     assert quality.independent_judge(plural_record)["ok"]
 
@@ -145,7 +146,7 @@ def test_independent_judge_reads_ordinary_component_mentions_from_schema(
         ),
         openui='root = TextContent(":title")',
         placeholders=[":title"],
-        meta={"edit": {"instruction": "Update the title copy."}},
+        meta={"task": "edit", "edit": {"instruction": "Update the title copy."}},
     )
     assert quality.independent_judge(edit_record)["ok"]
 
@@ -170,6 +171,7 @@ def test_independent_judge_rejects_under_specified_contract_prompt() -> None:
     report = assess_record(record, require_design_md=False)
     assert not report.ok
     assert "prompt_under_specified_for_layout" in report.reasons
+    assert "generation_semantic_contract_missing" in report.reasons
 
 
 def test_independent_judge_enforces_ast_semantic_contract() -> None:
@@ -218,6 +220,7 @@ def test_independent_judge_checks_generated_schema_value_roles() -> None:
             'input = Input("email", ":placeholder")'
         ),
         placeholders=[":label", ":placeholder"],
+        meta={"task": "edit"},
     )
     assert independent_judge(valid)["ok"]
 
@@ -240,6 +243,7 @@ def test_independent_judge_checks_generated_schema_value_roles() -> None:
             'body = TextContent(":body")'
         ),
         placeholders=[":title", ":body"],
+        meta={"task": "edit"},
     )
     assert independent_judge(optional_omission)["ok"]
 

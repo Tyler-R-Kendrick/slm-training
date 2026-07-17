@@ -374,6 +374,11 @@ def independent_judge(record: ExampleRecord) -> dict[str, Any]:
             reasons.append("identity_echo_mismatch")
     if not prompt or not openui:
         reasons.append("judge_missing_prompt_or_output")
+    if (
+        str(record.meta.get("task") or "generation") == "generation"
+        and not isinstance(record.meta.get("semantic_contract"), dict)
+    ):
+        reasons.append("generation_semantic_contract_missing")
     reasons.extend(_semantic_contract_reasons(record))
     if record.target_kind == "document":
         reasons.extend(_schema_semantic_reasons(openui))

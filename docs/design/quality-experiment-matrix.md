@@ -1701,6 +1701,10 @@ derived from output AST contracts and independently judged for exact
 prompt/output agreement. Ninety under-specified generation prompts were
 remediated. A matched five-minute choice run stopped at 107 steps / 5,022
 target tokens; best weighted NLL improved from E291's 7.09848 to 6.50945.
+Post-run inspection found 29 explicit and 15 default-generation rows that still
+used the weaker prose judge. Future admission now requires an AST contract for
+every effective generation row; E292 remains the immutable historical input,
+and the fully remediated replacement must use a new corpus version.
 
 Initial parse0 was a deterministic decoder-policy defect, not undertraining.
 Restricting names to object keys and deriving placeholder-valued component
