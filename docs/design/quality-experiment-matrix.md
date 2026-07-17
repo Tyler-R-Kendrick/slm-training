@@ -1412,6 +1412,19 @@ next lever is train/held-out gradient-alignment and provenance diagnosis, not
 another optimizer or scalar tuning pass. Full evidence:
 [iter-e269-mgda-stratified-ftpo-20260717.md](iter-e269-mgda-stratified-ftpo-20260717.md).
 
+E270 profiled frozen-parent train and held-out FTPO gradients without an
+optimizer. Same-kind split gradients are nonnegative for every shared
+decision kind, but the full matrix exposes severe cross-kind conflicts (for
+example held-out `grammar_comma` vs train
+`grammar_rsqb_bound_populated`, cosine `-0.9941`). MGDA still produces a raw
+combined direction with positive dot product against every active held-out
+FTPO-loss gradient; `grammar_comma` is weakest at cosine `0.0032`. Therefore
+E269's rejected finite steps are an optimizer-geometry mismatch: AdamW's
+preconditioned/sign-like first update is not the raw gradient direction the
+MGDA certificate covers. The next diagnostic must certify the actual
+optimizer-transformed step before any new training. Full evidence:
+[iter-e270-preference-gradient-alignment-20260717.md](iter-e270-preference-gradient-alignment-20260717.md).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
