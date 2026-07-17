@@ -844,7 +844,9 @@ class Readers:
                             if int(value or 0) > 0
                         ),
                         "usage": (
-                            "E252–E254" if counterfactual else "decoder evidence only"
+                            "semantic preference training"
+                            if counterfactual
+                            else "decoder evidence only"
                         ),
                         "fingerprint": str(
                             manifest.get("content_fingerprint") or ""

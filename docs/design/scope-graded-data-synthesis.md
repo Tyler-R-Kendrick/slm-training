@@ -69,7 +69,10 @@ split isolation holds). Key mechanics:
 ## Measured results (2026-07-16, CPU, pinned bridge)
 
 Recipe: `python -m scripts.build_train_data --source all --version
-scope_graded_v1 --output-root outputs/data/train`, built twice.
+scope_graded_v1 --output-root outputs/data/train`, built twice. The snapshot
+is published at `src/slm_training/resources/data/train/scope_graded_v1/`
+(builds now publish by default; see
+[published-training-corpus.md](published-training-corpus.md)).
 
 | Check | Result |
 | --- | --- |

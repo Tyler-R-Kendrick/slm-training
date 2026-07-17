@@ -154,6 +154,29 @@ def test_preference_data_lists_committed_event_corpora(tmp_path) -> None:
     ]
 
 
+def test_preference_data_describes_counterfactual_corpora_by_capability(
+    tmp_path,
+) -> None:
+    directory = tmp_path / "src/slm_training/resources/data/preference/events-v1"
+    directory.mkdir(parents=True)
+    (directory / "manifest.json").write_text(
+        json.dumps(
+            {
+                "kind": "decision_event_corpus",
+                "dataset_id": "events-v1",
+                "record_count": 12,
+                "splits": {"train": 9, "held_out": 3},
+                "evidence_kinds": {"counterfactual": 12},
+                "content_fingerprint": "abcdef1234567890",
+            }
+        )
+    )
+
+    assert Readers(tmp_path).preference_data()["rows"][0]["usage"] == (
+        "semantic preference training"
+    )
+
+
 def test_committed_train_version_is_default_and_browsable(tmp_path) -> None:
     from slm_training.dsl.schema import ExampleRecord, write_jsonl
 

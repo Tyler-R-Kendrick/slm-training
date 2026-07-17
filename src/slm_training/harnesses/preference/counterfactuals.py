@@ -189,6 +189,46 @@ def select_counterfactual_states(
     ]
 
 
+def gold_counterfactual_commits(
+    tokenizer: Any,
+    token_ids: list[int],
+    *,
+    canvas_length: int,
+    slot_contract: list[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Build exact masked states from grammar-derived gold branch decisions."""
+    from slm_training.dsl.grammar.fastpath.compiler_draft import (
+        gold_compiler_decisions,
+    )
+
+    target = list(map(int, token_ids[:canvas_length]))
+    if len(target) == canvas_length and target[-1] != int(tokenizer.eos_id):
+        target[-1] = int(tokenizer.eos_id)
+    padded = target + [int(tokenizer.pad_id)] * (canvas_length - len(target))
+    commits: list[dict[str, Any]] = []
+    for decision in gold_compiler_decisions(
+        tokenizer,
+        target,
+        slot_contract=slot_contract,
+    ):
+        position = int(decision.position)
+        canvas = list(padded)
+        for index in range(position, len(target)):
+            canvas[index] = int(tokenizer.mask_id)
+        commits.append(
+            {
+                "phase": "compiler_tree",
+                "allowed_id_set": list(decision.candidate_ids),
+                "pre_canvas": canvas,
+                "t": position,
+                "id": int(target[position]),
+                "decision_kind": decision.kind,
+                "state_source": "gold_ast",
+            }
+        )
+    return commits
+
+
 def mine_semantic_counterfactuals(
     model: Any,
     recorder: Any,
@@ -198,6 +238,7 @@ def mine_semantic_counterfactuals(
     max_states: int = 4,
     max_candidates: int = 4,
     seed: int = 0,
+    state_source: str = "policy",
 ) -> dict[str, int]:
     """Replay bounded grammar-legal alternatives and append qualified evidence."""
     import torch
@@ -206,7 +247,24 @@ def mine_semantic_counterfactuals(
         raise ValueError("counterfactual mining requires states >= 1 and candidates >= 2")
     if bool(getattr(model.config, "grammar_sample_decode", False)):
         raise ValueError("same-state counterfactual replay requires deterministic decode")
-    commits = [commit for step in recorder.steps for commit in step.get("commits", ())]
+    if state_source == "gold_ast":
+        target_ids = model._encode_openui(
+            record.openui,
+            placeholders=list(record.placeholders),
+            cache_key=record.id or record.prompt,
+        )
+        commits = gold_counterfactual_commits(
+            model.tokenizer,
+            target_ids,
+            canvas_length=int(model.config.max_target_len),
+            slot_contract=list(record.placeholders),
+        )
+    elif state_source == "policy":
+        commits = [
+            commit for step in recorder.steps for commit in step.get("commits", ())
+        ]
+    else:
+        raise ValueError(f"unknown counterfactual state source {state_source!r}")
     unique = select_counterfactual_states(
         commits,
         max_states=max_states,
@@ -254,27 +312,33 @@ def mine_semantic_counterfactuals(
                 candidate_ids = candidate_ids[:max_candidates]
                 outcomes: list[dict[str, Any]] = []
                 for token_id in candidate_ids:
-                    prefix = tuple(canvas[:position]) + (int(token_id),)
-                    decoded = model._compiler_ltr_decode_one(
-                        ctx,
-                        ctx_pad,
-                        len(canvas),
-                        mode="tree",
-                        slot_contract=contract,
-                        _initial_prefix=prefix,
-                        _disable_trajectory_fork=True,
-                    )
-                    raw_text = model._decode_openui(
-                        decoded, placeholders=list(record.placeholders)
-                    )
-                    text = model._ensure_valid_openui(
-                        raw_text,
-                        ctx,
-                        ctx_pad,
-                        len(canvas),
-                        attempts=0,
-                        slot_contract=contract,
-                    )
+                    completion_source = "policy"
+                    if state_source == "gold_ast" and int(token_id) == selected:
+                        raw_text = record.openui
+                        text = record.openui
+                        completion_source = "gold_ast"
+                    else:
+                        prefix = tuple(canvas[:position]) + (int(token_id),)
+                        decoded = model._compiler_ltr_decode_one(
+                            ctx,
+                            ctx_pad,
+                            len(canvas),
+                            mode="tree",
+                            slot_contract=contract,
+                            _initial_prefix=prefix,
+                            _disable_trajectory_fork=True,
+                        )
+                        raw_text = model._decode_openui(
+                            decoded, placeholders=list(record.placeholders)
+                        )
+                        text = model._ensure_valid_openui(
+                            raw_text,
+                            ctx,
+                            ctx_pad,
+                            len(canvas),
+                            attempts=0,
+                            slot_contract=contract,
+                        )
                     outcome = semantic_outcome(record, text)
                     outcomes.append(
                         {
@@ -283,6 +347,7 @@ def mine_semantic_counterfactuals(
                                 int(token_id), ""
                             ),
                             "selected": int(token_id) == selected,
+                            "completion_source": completion_source,
                             "raw_text": raw_text,
                             "text": text,
                             "finalization_changed": raw_text.strip() != text.strip(),
@@ -302,6 +367,7 @@ def mine_semantic_counterfactuals(
                     "pre_canvas": canvas,
                     "position": position,
                     "seed": int(seed),
+                    "state_source": state_source,
                 }
                 state_hash = _sha(state_identity)
                 recorder.event(
@@ -314,6 +380,7 @@ def mine_semantic_counterfactuals(
                         commit.get("decision_kind") or "compiler_tree"
                     ),
                     trajectory_depth_bucket=int(commit["counterfactual_depth_bucket"]),
+                    state_source=state_source,
                     selected_token_id=selected,
                     legal_token_ids=legal,
                     good_token_ids=good,
@@ -343,6 +410,7 @@ def mine_semantic_counterfactuals(
                     pre_canvas=canvas,
                     position=position,
                     trajectory_depth_bucket=int(commit["counterfactual_depth_bucket"]),
+                    state_source=state_source,
                     selected_token_id=selected,
                     good_token_ids=good,
                     bad_token_ids=bad,

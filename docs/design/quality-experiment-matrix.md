@@ -1271,6 +1271,34 @@ groups and one held-out group qualified, so this export is not admitted for
 training. E253/E254 remain blocked pending broader group support. Full evidence:
 [iter-e258-counterfactual-depth-probe-20260716.md](iter-e258-counterfactual-depth-probe-20260716.md).
 
+E259 doubled the uniform budget to eight states per record: 520 states and 1,528
+legal candidates produced 38 qualified events across eight decision kinds. The
+extra depth added roles but no prompt groups; support remained eight groups with
+one held-out group. This falsifies state-count scaling as the group-coverage fix,
+so the export is not admitted and E253/E254 remain blocked. The next data lever
+must derive broad exact states from grammar/AST-aligned judged trajectories, not
+probe more states from the same poor model completions. Full evidence:
+[iter-e259-expanded-counterfactual-probe-20260716.md](iter-e259-expanded-counterfactual-probe-20260716.md).
+
+E260 tested that grammar/AST lever on 10 records. Forty exact gold-derived states
+produced 30 qualified events across 11 decision kinds and nine prompt groups,
+including six events from two stable held-out groups. Gold remained outside model
+context; retained probes pair a gold-selected completion with policy-completed
+legal alternatives and independent judge evidence. The bounded hypothesis is
+confirmed, but training remains blocked until the identical all-record run is
+persisted and audited. Full evidence:
+[iter-e260-gold-ast-counterfactual-probe-20260716.md](iter-e260-gold-ast-counterfactual-probe-20260716.md).
+
+E261 completed that all-record run. Across 65 accepted document traces, 260
+exact gold-AST states and 736 legal candidates produced 239 independently judged
+events across 14 decision kinds and 64 prompt groups. The immutable committed
+corpus contains 200 train and 39 held-out events across 53/11 groups, including
+108 set-valued comparisons; every retained probe is same-state verified and
+pairs a gold-AST selected completion with policy-completed alternatives. The
+corpus prerequisite is satisfied and a new semantic preference experiment is
+unblocked, but model quality and ship gates remain unmeasured. Full evidence:
+[iter-e261-gold-ast-counterfactual-corpus-20260716.md](iter-e261-gold-ast-counterfactual-corpus-20260716.md).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
