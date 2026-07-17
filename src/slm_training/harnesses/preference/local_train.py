@@ -444,6 +444,13 @@ def diagnose_decision_gradient_alignment(
             }
     train_kinds = set(gradients["train"])
     held_kinds = set(gradients["held_out"])
+    ordered_train_kinds = sorted(train_kinds)
+    combined, solver = _minimum_norm_gradient(
+        [gradients["train"][kind] for kind in ordered_train_kinds]
+    )
+    solver["weight_by_decision_kind"] = dict(
+        zip(ordered_train_kinds, solver.pop("weights"), strict=True)
+    )
     return {
         "objective": objective,
         "by_decision_kind": {
@@ -458,6 +465,21 @@ def diagnose_decision_gradient_alignment(
         },
         "train_only_decision_kinds": sorted(train_kinds - held_kinds),
         "held_out_only_decision_kinds": sorted(held_kinds - train_kinds),
+        "train_minimum_norm_solver": solver,
+        "held_out_to_train_combination": {
+            kind: _gradient_alignment(gradients["held_out"][kind], combined)
+            for kind in sorted(held_kinds)
+        },
+        "cross_kind_alignment": {
+            held_kind: {
+                train_kind: _gradient_alignment(
+                    gradients["held_out"][held_kind],
+                    gradients["train"][train_kind],
+                )
+                for train_kind in ordered_train_kinds
+            }
+            for held_kind in sorted(held_kinds)
+        },
     }
 
 

@@ -1,0 +1,277 @@
+{
+  "objective": "ftpo_set",
+  "by_decision_kind": {
+    "bind_declaration_root": {
+      "dot": 0.0,
+      "cosine": 0.0,
+      "left_norm": 0.0,
+      "right_norm": 0.0,
+      "train": {
+        "event_count": 19,
+        "group_count": 19,
+        "evidence_kinds": {
+          "counterfactual": 19
+        },
+        "mean_evidence_confidence": 1.0
+      },
+      "held_out": {
+        "event_count": 6,
+        "group_count": 6,
+        "evidence_kinds": {
+          "counterfactual": 6
+        },
+        "mean_evidence_confidence": 1.0
+      }
+    },
+    "bind_reference_bound_children": {
+      "dot": 88.33185995717662,
+      "cosine": 0.10507285096958498,
+      "left_norm": 43.754827390303014,
+      "right_norm": 19.213252225704796,
+      "train": {
+        "event_count": 16,
+        "group_count": 16,
+        "evidence_kinds": {
+          "counterfactual": 16
+        },
+        "mean_evidence_confidence": 1.0
+      },
+      "held_out": {
+        "event_count": 4,
+        "group_count": 4,
+        "evidence_kinds": {
+          "counterfactual": 4
+        },
+        "mean_evidence_confidence": 1.0
+      }
+    },
+    "bind_reference_root_children": {
+      "dot": 57.546547297278295,
+      "cosine": 0.9948101471152285,
+      "left_norm": 5.619297081969763,
+      "right_norm": 10.294305968491775,
+      "train": {
+        "event_count": 17,
+        "group_count": 17,
+        "evidence_kinds": {
+          "counterfactual": 17
+        },
+        "mean_evidence_confidence": 1.0
+      },
+      "held_out": {
+        "event_count": 2,
+        "group_count": 2,
+        "evidence_kinds": {
+          "counterfactual": 2
+        },
+        "mean_evidence_confidence": 1.0
+      }
+    },
+    "component_bound": {
+      "dot": 1520.1932451238274,
+      "cosine": 0.6232151588061385,
+      "left_norm": 42.941920807494895,
+      "right_norm": 56.80405292404963,
+      "train": {
+        "event_count": 21,
+        "group_count": 21,
+        "evidence_kinds": {
+          "counterfactual": 21
+        },
+        "mean_evidence_confidence": 1.0
+      },
+      "held_out": {
+        "event_count": 4,
+        "group_count": 4,
+        "evidence_kinds": {
+          "counterfactual": 4
+        },
+        "mean_evidence_confidence": 1.0
+      }
+    },
+    "component_root": {
+      "dot": 30.459193935196538,
+      "cosine": 0.9988893642297844,
+      "left_norm": 4.589545506952468,
+      "right_norm": 6.644026205398998,
+      "train": {
+        "event_count": 18,
+        "group_count": 18,
+        "evidence_kinds": {
+          "counterfactual": 18
+        },
+        "mean_evidence_confidence": 1.0
+      },
+      "held_out": {
+        "event_count": 3,
+        "group_count": 3,
+        "evidence_kinds": {
+          "counterfactual": 3
+        },
+        "mean_evidence_confidence": 1.0
+      }
+    },
+    "grammar_comma": {
+      "dot": 14146.778064774346,
+      "cosine": 0.9166053966315074,
+      "left_norm": 117.07276722210226,
+      "right_norm": 131.83151611863263,
+      "train": {
+        "event_count": 23,
+        "group_count": 23,
+        "evidence_kinds": {
+          "counterfactual": 23
+        },
+        "mean_evidence_confidence": 1.0
+      },
+      "held_out": {
+        "event_count": 4,
+        "group_count": 4,
+        "evidence_kinds": {
+          "counterfactual": 4
+        },
+        "mean_evidence_confidence": 1.0
+      }
+    },
+    "grammar_rpar": {
+      "dot": 3398.3333025861457,
+      "cosine": 0.9840836991745808,
+      "left_norm": 67.11805106412206,
+      "right_norm": 51.45109194909457,
+      "train": {
+        "event_count": 21,
+        "group_count": 21,
+        "evidence_kinds": {
+          "counterfactual": 21
+        },
+        "mean_evidence_confidence": 1.0
+      },
+      "held_out": {
+        "event_count": 1,
+        "group_count": 1,
+        "evidence_kinds": {
+          "counterfactual": 1
+        },
+        "mean_evidence_confidence": 1.0
+      }
+    },
+    "grammar_rsqb_bound_empty": {
+      "dot": 7793.083306065336,
+      "cosine": 0.8959116431141707,
+      "left_norm": 73.03987602244887,
+      "right_norm": 119.09241736546535,
+      "train": {
+        "event_count": 3,
+        "group_count": 3,
+        "evidence_kinds": {
+          "counterfactual": 3
+        },
+        "mean_evidence_confidence": 1.0
+      },
+      "held_out": {
+        "event_count": 1,
+        "group_count": 1,
+        "evidence_kinds": {
+          "counterfactual": 1
+        },
+        "mean_evidence_confidence": 1.0
+      }
+    },
+    "grammar_rsqb_bound_populated": {
+      "dot": 21456.123246699957,
+      "cosine": 0.9917491547812864,
+      "left_norm": 140.41998640606238,
+      "right_norm": 154.07085387822463,
+      "train": {
+        "event_count": 7,
+        "group_count": 7,
+        "evidence_kinds": {
+          "counterfactual": 7
+        },
+        "mean_evidence_confidence": 1.0
+      },
+      "held_out": {
+        "event_count": 2,
+        "group_count": 2,
+        "evidence_kinds": {
+          "counterfactual": 2
+        },
+        "mean_evidence_confidence": 1.0
+      }
+    },
+    "grammar_rsqb_root_populated": {
+      "dot": 6219.977825025332,
+      "cosine": 0.9964950685594481,
+      "left_norm": 85.49563213118795,
+      "right_norm": 73.00788290134129,
+      "train": {
+        "event_count": 23,
+        "group_count": 23,
+        "evidence_kinds": {
+          "counterfactual": 23
+        },
+        "mean_evidence_confidence": 1.0
+      },
+      "held_out": {
+        "event_count": 4,
+        "group_count": 4,
+        "evidence_kinds": {
+          "counterfactual": 4
+        },
+        "mean_evidence_confidence": 1.0
+      }
+    },
+    "lit": {
+      "dot": 868.0689225485953,
+      "cosine": 0.8802789937220112,
+      "left_norm": 33.94266196670921,
+      "right_norm": 29.052798440689745,
+      "train": {
+        "event_count": 15,
+        "group_count": 15,
+        "evidence_kinds": {
+          "counterfactual": 15
+        },
+        "mean_evidence_confidence": 1.0
+      },
+      "held_out": {
+        "event_count": 5,
+        "group_count": 5,
+        "evidence_kinds": {
+          "counterfactual": 5
+        },
+        "mean_evidence_confidence": 1.0
+      }
+    },
+    "sym": {
+      "dot": 1497.1364975392416,
+      "cosine": 0.5616316709562523,
+      "left_norm": 48.16508867206165,
+      "right_norm": 55.34487916207116,
+      "train": {
+        "event_count": 15,
+        "group_count": 15,
+        "evidence_kinds": {
+          "counterfactual": 15
+        },
+        "mean_evidence_confidence": 1.0
+      },
+      "held_out": {
+        "event_count": 3,
+        "group_count": 3,
+        "evidence_kinds": {
+          "counterfactual": 3
+        },
+        "mean_evidence_confidence": 1.0
+      }
+    }
+  },
+  "train_only_decision_kinds": [
+    "bind_reference_bound_input",
+    "grammar_lsqb"
+  ],
+  "held_out_only_decision_kinds": [],
+  "checkpoint": "/home/codex/repos/slm-training/outputs/autoresearch/e228-candidate-margin-alignment/runs/e228-candidate-margin-matched/checkpoints/last.pt",
+  "checkpoint_sha": "7a9be4a665e216d7f7e73883ad74ad972bbf30846896d0c29188d6482f5b093a",
+  "events_path": "src/slm_training/resources/data/preference/e261_gold_ast_counterfactual_v1/events.jsonl"
+}
