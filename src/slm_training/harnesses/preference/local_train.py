@@ -23,6 +23,7 @@ from slm_training.models.twotower import TwoTowerModel
 
 LocalObjective = Literal["ce_margin", "unlikelihood", "ftpo_single", "ftpo_set"]
 GradientCombination = Literal["proposal", "pcgrad", "mgda"]
+LocalOptimizer = Literal["adamw", "sgd"]
 
 _GUARD_DIRECTIONS = {
     "loss": "min",
@@ -680,9 +681,12 @@ def train_local_decisions(
     guard_by_decision_kind: bool = False,
     block_by_decision_kind: bool = False,
     gradient_combination: GradientCombination = "proposal",
+    optimizer_name: LocalOptimizer = "adamw",
 ) -> dict:
     if steps <= 0 or lr <= 0:
         raise ValueError("steps and learning rate must be positive")
+    if optimizer_name not in ("adamw", "sgd"):
+        raise ValueError("local optimizer must be adamw or sgd")
     if any(event.evidence_kind == "constraint_shadow" for event in events):
         raise ValueError(
             "constraint shadows encode decoder legality, not semantic preferences; "
@@ -724,7 +728,8 @@ def train_local_decisions(
         for parameter in reference_model.parameters():
             parameter.requires_grad_(False)
     model.train()
-    optimizer = torch.optim.AdamW(model.trainable_parameters(), lr=lr)
+    optimizer_type = torch.optim.AdamW if optimizer_name == "adamw" else torch.optim.SGD
+    optimizer = optimizer_type(model.trainable_parameters(), lr=lr)
     totals: dict[str, float] = defaultdict(float)
     by_kind: dict[str, int] = defaultdict(int)
     selection: dict | None = None
@@ -982,6 +987,7 @@ def train_local_decisions(
         "guard_by_decision_kind": bool(guard_by_decision_kind),
         "block_by_decision_kind": bool(block_by_decision_kind),
         "gradient_combination": gradient_combination,
+        "optimizer": optimizer_name,
         "gradient_projection": dict(sorted(gradient_projection_totals.items())),
         "gradient_solver_history": gradient_solver_history,
         "validation_every": (
@@ -1028,6 +1034,7 @@ def train_local_from_paths(
     guard_by_decision_kind: bool = False,
     block_by_decision_kind: bool = False,
     gradient_combination: GradientCombination = "proposal",
+    optimizer_name: LocalOptimizer = "adamw",
 ) -> dict:
     events = load_decision_events(events_path)
     model = TwoTowerModel.from_checkpoint(checkpoint, device=device)
@@ -1067,6 +1074,7 @@ def train_local_from_paths(
         guard_by_decision_kind=guard_by_decision_kind,
         block_by_decision_kind=block_by_decision_kind,
         gradient_combination=gradient_combination,
+        optimizer_name=optimizer_name,
     )
     held_out_after = evaluate_local_decisions(
         model,

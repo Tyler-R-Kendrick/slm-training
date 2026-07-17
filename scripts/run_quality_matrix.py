@@ -170,6 +170,7 @@ class Experiment:
     local_preference_guard_by_decision_kind: bool = False
     local_preference_block_by_decision_kind: bool = False
     local_preference_gradient_combination: Literal["proposal", "pcgrad", "mgda"] = "proposal"
+    local_preference_optimizer: Literal["adamw", "sgd"] = "adamw"
     binder_arity_loss_weight: float = 0.0
     binder_arity_decode_weight: float = 0.0
 
@@ -1422,6 +1423,18 @@ def _v10_experiments(train_dir: Path) -> list[Experiment]:
             local_preference_gradient_combination="mgda",
             **base,
         ),
+        Experiment(
+            "E272",
+            "qx_e272_mgda_sgd_stratified_safe_gold_ast_ftpo_set",
+            "Minimum-norm decision-kind safe set FTPO with collinear SGD",
+            train_dir,
+            local_preference_objective="ftpo_set",
+            local_preference_guarded_updates=True,
+            local_preference_guard_by_decision_kind=True,
+            local_preference_gradient_combination="mgda",
+            local_preference_optimizer="sgd",
+            **base,
+        ),
     ]
 
 
@@ -1918,6 +1931,8 @@ def _maybe_local_preference(
             == bool(exp.local_preference_block_by_decision_kind)
             and summary.get("gradient_combination", "proposal")
             == exp.local_preference_gradient_combination
+            and summary.get("optimizer", "adamw")
+            == exp.local_preference_optimizer
             and summary.get("source_checkpoint_sha") == expected_sha
             and int(summary.get("train_events", -1)) == expected_counts["train"]
             and int(summary.get("held_out_events", -1))
@@ -1957,6 +1972,7 @@ def _maybe_local_preference(
                 exp.local_preference_block_by_decision_kind
             ),
             gradient_combination=exp.local_preference_gradient_combination,
+            optimizer_name=exp.local_preference_optimizer,
         )
         summary["duration_seconds"] = time.perf_counter() - started
         selection = summary.get("validation_selection") or {}
@@ -2292,6 +2308,7 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
         "local_preference_gradient_combination": (
             exp.local_preference_gradient_combination
         ),
+        "local_preference_optimizer": exp.local_preference_optimizer,
         "local_preference_summary": local_preference_summary,
         **_summarize_board(board),
     }

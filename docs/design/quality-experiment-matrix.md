@@ -1435,6 +1435,17 @@ MGDA plus SGD preflight under the unchanged stratified guard, not another
 gradient mixer or AdamW scalar tune. Full evidence:
 [iter-e271-preference-optimizer-geometry-20260717.md](iter-e271-preference-optimizer-geometry-20260717.md).
 
+E272 applied the certified MGDA raw gradient with collinear SGD under the
+unchanged strict guard. Aggregate held-out FTPO loss improved at every scale,
+but all five scales regressed nine guarded probability/margin metrics across
+six decision kinds. The parent was restored; five ship gates fail and AgentV
+is 2/5. This rules out optimizer geometry as the final blocker: the solver's
+objective is incomplete because it certifies only loss while the contract also
+guards bad mass, good mass, and mean margin per kind. The next diagnostic must
+cover the full metric-gradient constraint set before any training. Full
+evidence:
+[iter-e272-mgda-sgd-preflight-20260717.md](iter-e272-mgda-sgd-preflight-20260717.md).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

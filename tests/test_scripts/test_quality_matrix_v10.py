@@ -23,12 +23,14 @@ def test_v10_registers_exact_state_ablation_rows() -> None:
         "E267",
         "E268",
         "E269",
+        "E272",
     ]
     assert rows[0].local_parent_control is True
     assert [row.local_preference_objective for row in rows[1:]] == [
         "ce_margin",
         "unlikelihood",
         "ftpo_single",
+        "ftpo_set",
         "ftpo_set",
         "ftpo_set",
         "ftpo_set",
@@ -53,6 +55,8 @@ def test_v10_registers_exact_state_ablation_rows() -> None:
     assert by_id["E267"].local_preference_block_by_decision_kind is True
     assert by_id["E268"].local_preference_gradient_combination == "pcgrad"
     assert by_id["E269"].local_preference_gradient_combination == "mgda"
+    assert by_id["E272"].local_preference_gradient_combination == "mgda"
+    assert by_id["E272"].local_preference_optimizer == "sgd"
     assert all(row.compiler_decode_mode == "tree" for row in rows)
 
 
