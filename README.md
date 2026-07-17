@@ -111,6 +111,7 @@ summary and the full card whenever a checkpoint is created or promoted.
 | E304 20k-token component plan | `e304-choice-plan-20k-r1/last.pt` | `outputs/runs/e304-choice-plan-20k-r1/…` (local) | NLL 5.1647; E305 slot-safe decode restores parse and RICO reward 0.8515, but held/OOD remain zero at 7 failures/AgentV 2/5 — not promoted or ship |
 | E308 component-prompt plan | `e308-component-prompt-20k-r1/last.pt` | `outputs/runs/e308-component-prompt-20k-r1/…` (local) | NLL 4.8836, but four suites equal E305 and limited RICO regresses; 7 failures/AgentV 2/5 — not promoted or ship |
 | E309 plan-weight scaling | `e309-component-plan4-20k-r1/last.pt` | `outputs/runs/e309-component-plan4-20k-r1/…` (local) | Plan weight 4 leaves head recall and every suite metric equal E308; 7 failures/AgentV 2/5 — not promoted or ship |
+| E310 attention-pooled plan | `e310-component-plan-attention-20k-r1/last.pt` | `outputs/runs/e310-component-plan-attention-20k-r1/…` (local) | Attention pooling leaves head accuracy/recall and every suite metric equal E308/E309; 7 failures/AgentV 2/5 — not promoted or ship |
 | Production HF ship | *(none yet)* | [HF Bucket `TKendrick/OpenUI`](https://huggingface.co/buckets/TKendrick/OpenUI) `checkpoints/<run_id>/` | Register here after first full HF sync + `--ship-gates` |
 
 **Load demo:** `python -m scripts.serve_playground` · **Full train sync:** set

@@ -1908,6 +1908,18 @@ representation next. See
 [results](iter-e309-component-plan-weight-20260717.md) and
 [JSON](component-plan-weight-results-iter-e309-20260717.json).
 
+## E310 component-plan attention pooling (CPU scratch, 2026-07-17)
+
+On the matched E308 recipe, replacing mean prompt pooling with a learned
+attention pool leaves final-20 root accuracy 0.85 and bound recall 0.4104
+unchanged. Weighted/broad NLL are effectively tied, and all five frozen
+selected-metric suites exactly match E308/E309: seven failures, AgentV 2/5.
+
+**Verdict:** reject attention pooling. Change the supervision target or add
+direct token-to-component alignment next. See
+[results](iter-e310-component-plan-attention-20260717.md) and
+[JSON](component-plan-attention-results-iter-e310-20260717.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
