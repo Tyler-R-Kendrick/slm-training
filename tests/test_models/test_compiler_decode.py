@@ -330,7 +330,7 @@ def test_min_content_contract_withholds_eos_until_components_emitted() -> None:
 
 
 def test_effective_min_content_auto_from_inventory() -> None:
-    # decode_min_content == -1 derives the floor from distinct slot roots.
+    # decode_min_content == -1 derives the floor from distinct declared slots.
     model = TwoTowerModel.from_records(
         [
             ExampleRecord(
@@ -346,8 +346,9 @@ def test_effective_min_content_auto_from_inventory() -> None:
         ),
         device="cpu",
     )
-    assert model._effective_min_content([":hero.title", ":hero.body"]) == 1
+    assert model._effective_min_content([":hero.title", ":hero.body"]) == 2
     assert model._effective_min_content([":a.x", ":b.y"]) == 2
+    assert model._effective_min_content([":hero.title", ":hero.title"]) == 1
     assert model._effective_min_content(None) == 0
     model.config.decode_min_content = 3
     assert model._effective_min_content(None) == 3

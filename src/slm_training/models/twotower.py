@@ -744,10 +744,10 @@ class TwoTowerModel(nn.Module):
             return raw
         if not slot_contract:
             return 0
-        # Distinct placeholder roots ≈ the number of content-bearing components
-        # the prompt asks for; the empty layout binds none of them.
-        roots = {str(slot).split(".", 1)[0] for slot in slot_contract if slot}
-        return len(roots)
+        # Each distinct declared slot needs a content-bearing component. Namespace
+        # prefixes are not content groups: ``:hero.title`` and ``:hero.body`` are
+        # two obligations, not one ``:hero`` obligation.
+        return len({str(slot) for slot in slot_contract if slot})
 
     def _coverage_deficit(
         self, ids: torch.Tensor, known: torch.Tensor
