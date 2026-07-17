@@ -20,6 +20,9 @@ from slm_training.harnesses.preference.decision_events_v2 import (
     decision_state_manifest,
     materialize_constraint_shadow,
     materialize_pareto,
+    materialize_set_valued,
+    materialize_single_best_worst,
+    materialize_thresholded,
     migrate_v1_event,
     write_action_outcomes,
 )
@@ -236,6 +239,49 @@ def test_v1_constraint_shadow_migrates_as_legality_diagnostic() -> None:
     migrated = migrate_v1_event(_v1_event(evidence_kind="constraint_shadow"))
     assert migrated.complete is False
     assert "legality diagnostic" in migrated.note
+
+
+def test_v1_migration_is_idempotent() -> None:
+    event = _v1_event()
+    assert migrate_v1_event(event) == migrate_v1_event(event)
+
+
+# --------------------------------------------------------------------------- #
+# Remaining materializer views.
+# --------------------------------------------------------------------------- #
+def test_thresholded_view_respects_threshold_and_confidence() -> None:
+    state = _state()
+    high = _outcome(4, reward=0.8)
+    low = _outcome(9, reward=0.2)
+    unsure = _outcome(10, reward=0.9, evidence_confidence=0.1)
+    view = materialize_thresholded(
+        state, [high, low, unsure], metric="reward", threshold=0.5, min_confidence=0.5
+    )
+    assert view.good_action_ids == (4,)
+    assert view.bad_action_ids == (9,)
+    assert view.ambiguous_action_ids == (10,)  # below the confidence floor
+    assert view.trainable is True
+
+
+def test_single_best_worst_view() -> None:
+    state = _state()
+    view = materialize_single_best_worst(
+        state, [_outcome(4, reward=0.9), _outcome(9, reward=0.1)], metric="reward"
+    )
+    assert view.good_action_ids == (4,)
+    assert view.bad_action_ids == (9,)
+
+
+def test_set_valued_view_uses_verifier_verdicts() -> None:
+    state = _state()
+    passing = _outcome(4)  # all-skip gate vector -> no failing gate -> verified
+    failing = _outcome(
+        9, verifier_vectors=(tuple((gate, "fail" if gate == "G2" else "skip") for gate in GATE_ORDER),)
+    )
+    view = materialize_set_valued(state, [passing, failing])
+    assert view.good_action_ids == (4,)
+    assert view.bad_action_ids == (9,)
+    assert view.trainable is True
 
 
 # --------------------------------------------------------------------------- #

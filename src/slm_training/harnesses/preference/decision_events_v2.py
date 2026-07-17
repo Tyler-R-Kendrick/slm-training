@@ -63,6 +63,9 @@ __all__ = [
     "append_action_outcomes",
     "materialize_constraint_shadow",
     "materialize_pareto",
+    "materialize_set_valued",
+    "materialize_single_best_worst",
+    "materialize_thresholded",
     "migrate_v1_event",
     "verifier_bundle_hash",
 ]
@@ -462,6 +465,151 @@ def materialize_constraint_shadow(
         materializer_id="constraint_shadow_diagnostic_v2",
         materializer_config_hash=content_sha({"rule": "legality_only", "semantic": False}),
         trainable=False,
+    )
+
+
+def _verified(outcome: ActionOutcomeV2) -> bool | None:
+    """True if every rollout G-vector has no failing gate; None if no evidence."""
+    if not outcome.verifier_vectors:
+        return None
+    return all(status != "fail" for vector in outcome.verifier_vectors for _, status in vector)
+
+
+def _action_summary(
+    state: DecisionStateV2, outcomes: Sequence[ActionOutcomeV2]
+) -> dict[int, tuple[dict[str, float] | None, bool | None, float]]:
+    """Aggregate append-only evidence per action -> (mean reward, verified, confidence).
+
+    Multiple rollout batches for one action are combined, so a materializer never
+    double-classifies an action that carries more than one outcome row.
+    """
+    rewards: dict[int, list[dict[str, float]]] = {}
+    verified: dict[int, list[bool]] = {}
+    confidence: dict[int, float] = {}
+    for outcome in outcomes:
+        if outcome.state_id != state.state_id:
+            raise ValueError("action outcome does not belong to this state")
+        reward = _observed_reward(outcome)
+        if reward is not None:
+            rewards.setdefault(outcome.action_id, []).append(reward)
+        verdict = _verified(outcome)
+        if verdict is not None:
+            verified.setdefault(outcome.action_id, []).append(verdict)
+        confidence[outcome.action_id] = max(
+            confidence.get(outcome.action_id, 0.0), float(outcome.evidence_confidence)
+        )
+    summary: dict[int, tuple[dict[str, float] | None, bool | None, float]] = {}
+    for action in set(confidence) | set(rewards) | set(verified):
+        rows = rewards.get(action)
+        mean = (
+            {name: sum(row[name] for row in rows) / len(rows) for name in _METRICS}
+            if rows
+            else None
+        )
+        verdicts = verified.get(action)
+        summary[action] = (mean, (all(verdicts) if verdicts else None), confidence.get(action, 0.0))
+    return summary
+
+
+def materialize_thresholded(
+    state: DecisionStateV2,
+    outcomes: Sequence[ActionOutcomeV2],
+    *,
+    metric: str = "reward",
+    threshold: float = 0.5,
+    min_confidence: float = 0.0,
+) -> ObjectiveView:
+    """Threshold one scalar reward metric, gated by an evidence-confidence floor.
+
+    Actions below the confidence floor, or with no reward evidence, stay
+    ``ambiguous`` rather than being labeled good or bad.
+    """
+    if metric not in _METRICS:
+        raise ValueError(f"unknown metric {metric!r}; expected one of {list(_METRICS)}")
+    if not 0.0 <= min_confidence <= 1.0:
+        raise ValueError("min_confidence must be in [0, 1]")
+    summary = _action_summary(state, outcomes)
+    good: list[int] = []
+    bad: list[int] = []
+    ambiguous: list[int] = []
+    for action, (mean, _verdict, confidence) in summary.items():
+        if mean is None or confidence < min_confidence:
+            ambiguous.append(action)
+        elif mean[metric] >= threshold:
+            good.append(action)
+        else:
+            bad.append(action)
+    unobserved = [action for action in state.legal_action_ids if action not in summary]
+    return ObjectiveView(
+        good_action_ids=good,
+        bad_action_ids=bad,
+        ambiguous_action_ids=ambiguous,
+        unobserved_action_ids=unobserved,
+        weights=tuple((action, 1.0) for action in sorted(good)),
+        materializer_id="thresholded_v2",
+        materializer_config_hash=content_sha(
+            {"metric": metric, "threshold": threshold, "min_confidence": min_confidence}
+        ),
+        trainable=True,
+    )
+
+
+def materialize_single_best_worst(
+    state: DecisionStateV2, outcomes: Sequence[ActionOutcomeV2], *, metric: str = "reward"
+) -> ObjectiveView:
+    """Single-best (good) and single-worst (bad) control over one metric."""
+    if metric not in _METRICS:
+        raise ValueError(f"unknown metric {metric!r}; expected one of {list(_METRICS)}")
+    summary = _action_summary(state, outcomes)
+    scored = {action: mean[metric] for action, (mean, _v, _c) in summary.items() if mean is not None}
+    good: list[int] = []
+    bad: list[int] = []
+    if scored:
+        best = max(scored, key=lambda action: (scored[action], -action))
+        worst = min(scored, key=lambda action: (scored[action], action))
+        good = [best]
+        if worst != best:
+            bad = [worst]
+    chosen = set(good) | set(bad)
+    ambiguous = [action for action in summary if action not in chosen]
+    unobserved = [action for action in state.legal_action_ids if action not in summary]
+    return ObjectiveView(
+        good_action_ids=good,
+        bad_action_ids=bad,
+        ambiguous_action_ids=ambiguous,
+        unobserved_action_ids=unobserved,
+        weights=tuple((action, 1.0) for action in sorted(good)),
+        materializer_id="single_best_worst_v2",
+        materializer_config_hash=content_sha({"metric": metric, "rule": "single_best_worst"}),
+        trainable=True,
+    )
+
+
+def materialize_set_valued(
+    state: DecisionStateV2, outcomes: Sequence[ActionOutcomeV2]
+) -> ObjectiveView:
+    """Set-valued good/bad partitions from verifier verdicts (all gates pass => good)."""
+    summary = _action_summary(state, outcomes)
+    good: list[int] = []
+    bad: list[int] = []
+    ambiguous: list[int] = []
+    for action, (_mean, verdict, _confidence) in summary.items():
+        if verdict is True:
+            good.append(action)
+        elif verdict is False:
+            bad.append(action)
+        else:
+            ambiguous.append(action)
+    unobserved = [action for action in state.legal_action_ids if action not in summary]
+    return ObjectiveView(
+        good_action_ids=good,
+        bad_action_ids=bad,
+        ambiguous_action_ids=ambiguous,
+        unobserved_action_ids=unobserved,
+        weights=tuple((action, 1.0) for action in sorted(good)),
+        materializer_id="set_valued_v2",
+        materializer_config_hash=content_sha({"rule": "verifier_all_pass"}),
+        trainable=True,
     )
 
 
