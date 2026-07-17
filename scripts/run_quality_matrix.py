@@ -1925,6 +1925,9 @@ def _maybe_local_preference(
             int(summary["validation_trials"])
             * int(summary.get("held_out_events") or 0)
         )
+        summary["validation_batches"] = int(summary["validation_trials"]) * int(
+            summary.get("validation_batch_groups") or 0
+        )
         summary["trace_id"] = trace.trace_id
         summary["traceparent"] = trace.traceparent
         summary["trace_bundle"] = trace.bundle.as_posix()

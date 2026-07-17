@@ -1367,6 +1367,17 @@ validation must be batched/cached without weakening the contract. Full
 evidence:
 [iter-e265-safe-gold-ast-ftpo-20260717.md](iter-e265-safe-gold-ast-ftpo-20260717.md).
 
+E266 replaced the aggregate-only contract with the same four guards applied to
+every grammar/AST `decision_kind`, and batched same-length held-out states with
+cached frozen context. All 30 proposals and 150 scales were rejected, proving
+the tested global FTPO direction has no safe per-kind Pareto update. The model
+was restored bit-identically to E228 and a same-code parent control reproduced
+every suite metric. Batching cut the local stage from 3,009.05s to 79.77s
+(37.7×) despite checking more scales. Retain the guard and batching; reject the
+artifact. The next lever is decision-kind block-coordinate proposals, not more
+global FTPO duration or a literal special case. Full evidence:
+[iter-e266-stratified-safe-ftpo-20260717.md](iter-e266-stratified-safe-ftpo-20260717.md).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

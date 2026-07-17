@@ -510,7 +510,11 @@ def test_guarded_updates_reject_aggregate_gain_with_stratum_regression(
 
     trial = summary["validation_selection"]["history"][1]["trials"][0]
     assert trial["eligible"] is False
-    assert trial["strata_regressions"][0]["decision_kind"] == "component"
+    assert trial["strata_regression_count"] == 1
+    assert trial["strata_regression_kinds"] == ["component"]
+    assert summary["validation_selection"]["strata_regression_counts"] == {
+        "component:loss": 1
+    }
     assert all(
         torch.equal(before[key], value) for key, value in model.state_dict().items()
     )

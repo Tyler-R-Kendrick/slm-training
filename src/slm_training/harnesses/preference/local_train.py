@@ -6,7 +6,7 @@ import copy
 import hashlib
 import json
 import random
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Literal
 
@@ -366,6 +366,7 @@ def train_local_decisions(
     best_metrics: dict[str, float] = {}
     best_report: dict = {}
     best_step = 0
+    strata_regression_counts: Counter[str] = Counter()
     if guarded_selection or guarded_updates:
         baseline = validation_baseline or evaluate_local_decisions(
             model,
@@ -438,12 +439,22 @@ def train_local_decisions(
                     _guard_dominates(candidate, best_metrics)
                     and not strata_regressions
                 )
+                strata_regression_counts.update(
+                    f"{item['decision_kind']}:{item['metric']}"
+                    for item in strata_regressions
+                )
                 trials.append(
                     {
                         "scale": scale,
                         "eligible": eligible,
                         "metrics": candidate,
-                        "strata_regressions": strata_regressions,
+                        "strata_regression_count": len(strata_regressions),
+                        "strata_regression_kinds": sorted(
+                            {item["decision_kind"] for item in strata_regressions}
+                        ),
+                        "strata_regression_metrics": sorted(
+                            {item["metric"] for item in strata_regressions}
+                        ),
                     }
                 )
                 if eligible:
@@ -506,12 +517,22 @@ def train_local_decisions(
             bool(item.get("eligible")) for item in selection["history"][1:]
         )
         selection["rejected_steps"] = count - selection["accepted_steps"]
+        selection["strata_regression_counts"] = dict(
+            sorted(strata_regression_counts.items())
+        )
     return {
         "objective": objective,
         "steps": count,
         "train_events": len(train_events),
         "excluded_train_events": len(all_train_events) - len(train_events),
         "held_out_events": len(events) - len(train_events),
+        "validation_batch_groups": len(
+            {
+                len(event.canvas_ids)
+                for event in validation
+                if event.split == "held_out"
+            }
+        ),
         "balanced": bool(balanced),
         "reference_tethered": bool(non_target_tether > 0 or target_tether > 0),
         "guarded_selection": bool(guarded_selection),
