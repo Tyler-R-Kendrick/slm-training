@@ -1,0 +1,115 @@
+{
+  "iteration": "B3 capacity ladder: quality-vs-d_model, surface tokens vs choice codec (SLM-23)",
+  "date": "2026-07-17",
+  "reference": "docs/design/iter-b3-capacity-ladder-20260717.md",
+  "cross_reference": {
+    "e1_bits_study": "docs/design/iter-e249-semantic-bits-20260716.md",
+    "b1_choice_codec": "docs/design/iter-b1-choice-sequence-codec-20260717.md",
+    "harness": "src/slm_training/harnesses/experiments/ladder.py",
+    "runner": "scripts/run_scaling_ladder.py",
+    "quality_matrix_controls": {"lexer": "E255", "choice": "E262"}
+  },
+  "matrix_set": "capacity_v1 (from-scratch track)",
+  "registered_rows": {
+    "status": "registered",
+    "n_rungs": 3,
+    "n_arms": 2,
+    "n_rows": 6,
+    "matched_recipe": {
+      "mask_pattern": "diffusion",
+      "grammar_ltr_primary": false,
+      "context_backend": "scratch",
+      "differs_only_in": "output_tokenizer"
+    },
+    "arms": {
+      "lexer": {
+        "ladder_id": "capacity_lexer_v1",
+        "output_tokenizer": "lexer",
+        "matched_control": "E255",
+        "points": [
+          "d64_h2_c1_dn2_t12500_x1",
+          "d128_h4_c2_dn4_t50000_x1",
+          "d192_h6_c3_dn6_t112500_x1"
+        ]
+      },
+      "choice": {
+        "ladder_id": "capacity_choice_v1",
+        "output_tokenizer": "choice",
+        "matched_control": "E262",
+        "points": [
+          "d64_h2_c1_dn2_t12500_x1",
+          "d128_h4_c2_dn4_t50000_x1",
+          "d192_h6_c3_dn6_t112500_x1"
+        ]
+      }
+    }
+  },
+  "semantic_density": {
+    "note": "The honest headline. Corpus information over grammar-decision streams; tokenizer-independent, meaningful at any scale. Per-arm target-stream total_bits is the denominator for params_per_bit once trained models exist.",
+    "corpus": "src/slm_training/resources/{train,test}_seeds.jsonl",
+    "n_records": 36,
+    "surface": {
+      "n_decisions": 1535,
+      "total_bits": 8368.009503371515,
+      "bits_per_decision": 5.451471989167111
+    },
+    "production": {
+      "n_decisions": 1019,
+      "total_bits": 4391.938302737241,
+      "bits_per_decision": 4.310047402097391
+    },
+    "choice": {
+      "n_decisions": 842,
+      "total_bits": 3713.1838687708782,
+      "bits_per_decision": 4.4099570888015185
+    },
+    "surface_to_production_bit_ratio": 1.905311260441937,
+    "surface_to_choice_bit_ratio": 2.253594165844919,
+    "production_to_choice_bit_ratio": 1.1827958048818739,
+    "decision_reduction_ratio": 1.506378802747792,
+    "choice_decision_reduction_ratio": 1.823040380047506
+  },
+  "wiring_smoke": {
+    "honesty": "wiring-evidence-only; honest non-finite/zero quality; no capacity-vs-quality curve claimed",
+    "device": "cpu",
+    "backend": "scratch",
+    "path": "scripts/run_scaling_ladder.py --capacity-arm {arm}",
+    "train_corpus": "24-record slice of resources/data/train/remediated",
+    "test_suites": "resources/data/eval/remediated/suites (5 suites)",
+    "steps": 4,
+    "batch_size": 2,
+    "runs": [
+      {
+        "ladder_id": "capacity_choice_v1",
+        "output_tokenizer": "choice",
+        "point_id": "d64_h2_c1_dn2_t1000_x1",
+        "weighted_nll": "inf (untrained; 4 steps)",
+        "cost_time_s": 7.09
+      },
+      {
+        "ladder_id": "capacity_lexer_v1",
+        "output_tokenizer": "lexer",
+        "point_id": "d64_h2_c1_dn2_t1000_x1",
+        "weighted_nll": "inf (untrained; 4 steps)",
+        "cost_time_s": 2.17
+      }
+    ]
+  },
+  "run_metadata": {
+    "device": "cpu",
+    "backend": "scratch",
+    "matrix_set": "capacity_v1",
+    "suite_size_n": 36,
+    "honesty_mode": "wiring-only",
+    "ship_gate_outcome": "n/a (wiring; no checkpoint promoted, no quality claim)"
+  },
+  "params_per_bit": {
+    "status": "unrun-at-scale",
+    "note": "The B3 quality headline (capacity spent per bit of externalized grammar at matched quality) requires trained models at each rung on a production budget. Not computed here; the per-arm target-stream total_bits above are its denominators. Do not infer a capacity-vs-quality curve from the wiring smoke."
+  },
+  "meaningful_parse_primary": {
+    "note": "Parse is a meaningful primary for the choice arm because the deterministic detokenizer is fail-closed (never invents syntax for an invalid stream). At this wiring budget parse is not scored (untrained); measured verdicts require the production run."
+  },
+  "model_card_updated": false,
+  "checkpoint_created": false
+}

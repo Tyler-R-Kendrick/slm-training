@@ -325,6 +325,16 @@ class OpenUIIncrementalEngine:
 
 def engine_for_dsl(dsl: str | None = None) -> OpenUIIncrementalEngine | None:
     key = (dsl or "openui").strip().lower()
+    # F1: a registered DSL pack's incremental_engine slot wins; the alias
+    # list below stays as the registry-free fallback.
+    try:
+        from slm_training.dsl.pack import get_pack
+
+        pack = get_pack(key)
+        if pack.incremental_engine is not None:
+            return pack.incremental_engine()
+    except KeyError:
+        pass
     if key in {
         "openui",
         "openui-lark",

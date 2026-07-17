@@ -9,7 +9,7 @@ from functools import lru_cache
 from typing import Any, Callable
 
 from slm_training.data.verify.runtime import RuntimeEvidence
-from slm_training.dsl.grammar.backends.openui_lark import OpenUILarkBackend
+from slm_training.dsl.grammar.backends import GrammarBackend, get_backend
 from slm_training.dsl.lang_core import ParseError, validate
 from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.schema import ExampleRecord
@@ -192,15 +192,14 @@ def _skip(gate: Gate, detail: str) -> GateResult:
 
 
 @lru_cache(maxsize=8)
-def _grammar_backend(dsl: str | None = None):
-    # F1 pack seam: default stays the OpenUI Lark backend (the G0-G12 gate
-    # stack is OpenUI-semantic), but the syntactic gate can be pointed at any
-    # registered backend by id.
-    if dsl is None or dsl == "openui-lark":
-        return OpenUILarkBackend()
-    from slm_training.dsl.grammar.backends import get_backend
+def _grammar_backend(dsl: str | None = None) -> GrammarBackend:
+    """Grammar-gate backend via the pluggable registry.
 
-    return get_backend(dsl)
+    F1 pack seam: defaults to the strict OpenUI Lark CFG (the G1 gate is a
+    pure grammar check, deliberately separate from the lang-core schema gate
+    G2), but the syntactic gate can be pointed at any registered backend by id.
+    """
+    return get_backend(dsl or "openui-lark")
 
 
 def _lexical(source: str) -> GateResult:

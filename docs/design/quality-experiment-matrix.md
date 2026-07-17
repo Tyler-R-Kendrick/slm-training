@@ -1271,7 +1271,91 @@ groups and one held-out group qualified, so this export is not admitted for
 training. E253/E254 remain blocked pending broader group support. Full evidence:
 [iter-e258-counterfactual-depth-probe-20260716.md](iter-e258-counterfactual-depth-probe-20260716.md).
 
-## V12 C3 corpus-mined macro tokens (fixture-run 2026-07-17)
+E259 doubled the uniform budget to eight states per record: 520 states and 1,528
+legal candidates produced 38 qualified events across eight decision kinds. The
+extra depth added roles but no prompt groups; support remained eight groups with
+one held-out group. This falsifies state-count scaling as the group-coverage fix,
+so the export is not admitted and E253/E254 remain blocked. The next data lever
+must derive broad exact states from grammar/AST-aligned judged trajectories, not
+probe more states from the same poor model completions. Full evidence:
+[iter-e259-expanded-counterfactual-probe-20260716.md](iter-e259-expanded-counterfactual-probe-20260716.md).
+
+E260 tested that grammar/AST lever on 10 records. Forty exact gold-derived states
+produced 30 qualified events across 11 decision kinds and nine prompt groups,
+including six events from two stable held-out groups. Gold remained outside model
+context; retained probes pair a gold-selected completion with policy-completed
+legal alternatives and independent judge evidence. The bounded hypothesis is
+confirmed, but training remains blocked until the identical all-record run is
+persisted and audited. Full evidence:
+[iter-e260-gold-ast-counterfactual-probe-20260716.md](iter-e260-gold-ast-counterfactual-probe-20260716.md).
+
+E261 completed that all-record run. Across 65 accepted document traces, 260
+exact gold-AST states and 736 legal candidates produced 239 independently judged
+events across 14 decision kinds and 64 prompt groups. The immutable committed
+corpus contains 200 train and 39 held-out events across 53/11 groups, including
+108 set-valued comparisons; every retained probe is same-state verified and
+pairs a gold-AST selected completion with policy-completed alternatives. The
+corpus prerequisite is satisfied and a new semantic preference experiment is
+unblocked, but model quality and ship gates remain unmeasured. Full evidence:
+[iter-e261-gold-ast-counterfactual-corpus-20260716.md](iter-e261-gold-ast-counterfactual-corpus-20260716.md).
+
+## V12 B1 choice-sequence codec (registered 2026-07-17; matrix row unrun)
+
+Track B1 (SLM-42): a pure grammar-choice output stream — the model predicts
+only semantic decisions (which production, which slot filler); all non-lexical
+surface syntax is reconstructed by a deterministic detokenizer through the
+official lang-core serializer (fail-closed, so parse is a meaningful honest
+primary — the detokenizer never invents syntax for an invalid stream). New
+`--output-tokenizer choice` beside compositional/lexer; codec in
+`dsl/production_codec.py` (`encode_choices`/`decode_choices`), tokenizer in
+`models/choice_tokenizer.py` (sidecar kind `choice_codec`). B2 canonical
+alignment laws pinned in `tests/test_dsl/test_choice_codec.py`.
+
+| ID | Isolated lever | Status |
+| --- | --- | --- |
+| E262 | B1 pure grammar-choice output stream (`output_tokenizer=choice`) vs E255 lexer control (same diffusion masking, non-LTR MaskGIT decode) | registered / unrun |
+
+E2 semantic density (36 fixture seeds, measured 2026-07-17): choice stream
+carries 842 decisions / 3713.2 bits vs production 1019 / 4391.9 and surface
+1535 / 8368.0 — `surface_to_choice_bit_ratio` 2.254 (production: 1.905),
+`production_to_choice_bit_ratio` 1.183; structural/punct/name categories
+collapse to 0 (arity choices remain, honestly categorized). A fixture-scale
+CPU wiring smoke of the identical harness path (choice + matched lexer
+control) scored honest 0.0 parse on both arms at 120–2500 steps —
+wiring evidence only; the matrix row needs the standard eval corpus and
+budget. JSON + narrative:
+[iter-b1-choice-sequence-codec-20260717.json](iter-b1-choice-sequence-codec-20260717.json),
+[iter-b1-choice-sequence-codec-20260717.md](iter-b1-choice-sequence-codec-20260717.md).
+No checkpoint was created or promoted; MODEL_CARD unchanged. v1 caveat: the
+surface-DFA token gate is bypassed for choice ids (validation moves entirely
+to the fail-closed detokenizer); a choice-native legal-decision gate is the
+follow-up.
+
+E263 then repeated E252's matched 30-step set-FTPO recipe using the committed
+E261 corpus. Broad support prevented the E252 fidelity collapse: fidelity and
+meaningful-program rates exactly matched the E248 parent, while deterministic
+syntax remained 1.0 with no fallback or timeout. The objective still failed:
+held-out FTPO loss worsened from 2.7660 to 3.0144, bad-token mass more than
+doubled, structure regressed on all five suites, ten thresholds failed, and
+AgentV passed 0/5. The checkpoint is rejected. The next lever must guard updates
+against held-out exact-state and parent-semantic regressions, not add syntax
+training or duration. This run originally emitted E262 before concurrent B1
+claimed that ID; the measured preference result is canonically E263. Full
+evidence:
+[iter-e263-broad-gold-ast-ftpo-20260716.md](iter-e263-broad-gold-ast-ftpo-20260716.md).
+
+E264 added a generalized held-out Pareto guard to that same objective. Every
+five steps, held-out loss and bad-token mass had to be no worse while
+good-token mass and mean margin had to be no worse. None of steps 5–30 was
+eligible, so the harness restored step 0. All 374 restored tensors, the config,
+and tokenizer sidecars are bit-identical to E228. A current-code E248 parent
+control exactly reproduced every E264 suite metric and gate failure, proving
+that differences from the historical E248 report are evaluator/decoder drift,
+not a training gain. The guard is retained; the parent-equivalent E264 artifact
+is rejected and not promoted. Full evidence:
+[iter-e264-guarded-gold-ast-ftpo-20260716.md](iter-e264-guarded-gold-ast-ftpo-20260716.md).
+
+## V13 C3 corpus-mined macro tokens (fixture-run 2026-07-17)
 
 Track C3 (Stitch [arXiv:2211.16605](https://arxiv.org/abs/2211.16605) /
 LILO [arXiv:2310.19791](https://arxiv.org/abs/2310.19791), **Adapted**: only
@@ -1288,14 +1372,14 @@ and decode cannot disagree. Macros never contain `<SYM_i>`/`<BIND_j>`/
 
 | ID | Isolated lever | Status |
 | --- | --- | --- |
-| E259 | C3 `macro_tokens=true` on the lexer/diffusion base | fixture-run |
+| E265 | C3 `macro_tokens=true` on the lexer/diffusion base | fixture-run |
 
-### V12 measured results (CPU, fixture-grade, 2026-07-17)
+### V13 measured results (CPU, fixture-grade, 2026-07-17)
 
 Recipe: `--steps 80 --scratch-control --no-design-md-context --rico-limit 3`,
 batch 4, seed 0, lr 3e-4, fixture v1 corpus (108 records). JSON:
-[quality-matrix-results-iter-v12-c3-20260717.json](quality-matrix-results-iter-v12-c3-20260717.json);
-narrative: [iter-e259-c3-macro-tokens-20260717.md](iter-e259-c3-macro-tokens-20260717.md).
+[quality-matrix-results-iter-v13-c3-20260717.json](quality-matrix-results-iter-v13-c3-20260717.json);
+narrative: [iter-e265-c3-macro-tokens-20260717.md](iter-e265-c3-macro-tokens-20260717.md).
 
 Induction: 16 macros (cap), corpus 4,964 → 3,261 tokens incl. table (−34.3%),
 description length −35.5%; matched-recipe training throughput
@@ -1307,7 +1391,7 @@ only**: no matched no-macro control row in this run; whether sequence
 compression buys quality is the open frontier-scale matched pair. No gate
 weakened; nothing promoted.
 
-## V13 C4 names-disappear matched pair (fixture-run 2026-07-17)
+## V14 C4 names-disappear matched pair (fixture-run 2026-07-17)
 
 Track C4 ("When Names Disappear" [arXiv:2510.03178](https://arxiv.org/abs/2510.03178)):
 does anonymizing binder/state identifiers to `<BIND_j>`/`<STATE_k>` — the
@@ -1320,15 +1404,15 @@ relative binding fail closed.
 
 | ID | Isolated lever | Status |
 | --- | --- | --- |
-| E260 | Anonymized-symbol control (unconstrained decode) | fixture-run |
-| E261 | Surface binder/state identifiers via byte channel | fixture-run |
+| E266 | Anonymized-symbol control (unconstrained decode) | fixture-run |
+| E267 | Surface binder/state identifiers via byte channel | fixture-run |
 
-### V13 measured results (CPU, fixture-grade, 2026-07-17)
+### V14 measured results (CPU, fixture-grade, 2026-07-17)
 
 Recipe: `--steps 80 --scratch-control --no-design-md-context --rico-limit 3`,
 batch 4, seed 0, lr 3e-4, fixture v1 corpus. JSON:
-[quality-matrix-results-iter-v13-c4-20260717.json](quality-matrix-results-iter-v13-c4-20260717.json);
-narrative: [iter-e260-e261-c4-names-disappear-20260717.md](iter-e260-e261-c4-names-disappear-20260717.md).
+[quality-matrix-results-iter-v14-c4-20260717.json](quality-matrix-results-iter-v14-c4-20260717.json);
+narrative: [iter-e266-e267-c4-names-disappear-20260717.md](iter-e266-e267-c4-names-disappear-20260717.md).
 
 Syntax/meaningful parse 0.0 on both arms (fixture wall); structural
 similarity favors the **surface** arm on 5/5 suites (0.23/0.17/0.16/0.18/0.11

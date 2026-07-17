@@ -28,7 +28,7 @@ infrastructure, per the issue):
 ## Fixture evidence
 
 - **Real-artifact harvest**: 76 records from four of this session's run
-  dirs (E259, E260, E261, X22-reeval) into corpus
+  dirs (E265, E266, E267, X22-reeval) into corpus
   `outputs/experiments/meta_traces/g5_fixture_20260717/` — trace-id joins,
   suite verdicts, and predictions all populated from the artifacts as they
   already exist on disk.

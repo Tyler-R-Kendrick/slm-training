@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import signal
 from dataclasses import dataclass, replace
@@ -169,6 +170,7 @@ class Experiment:
     ] | None = None
     local_preference_reference_tether: bool = False
     local_preference_balanced: bool = False
+    local_preference_guarded_selection: bool = False
     binder_arity_loss_weight: float = 0.0
     binder_arity_decode_weight: float = 0.0
 
@@ -1290,7 +1292,7 @@ def _v9_experiments(train_dir: Path) -> list[Experiment]:
 
 
 def _v10_experiments(train_dir: Path) -> list[Experiment]:
-    """E248-E254: exact-state local preference campaign (proposed/unrun)."""
+    """Exact-state local preference campaign."""
     base = _strict_compiler_tree_policy()
     return [
         Experiment(
@@ -1352,6 +1354,23 @@ def _v10_experiments(train_dir: Path) -> list[Experiment]:
             local_preference_balanced=True,
             **base,
         ),
+        Experiment(
+            "E263",
+            "qx_e263_broad_gold_ast_ftpo_set",
+            "Broad grammar/AST-aligned set FTPO",
+            train_dir,
+            local_preference_objective="ftpo_set",
+            **base,
+        ),
+        Experiment(
+            "E264",
+            "qx_e264_guarded_gold_ast_ftpo_set",
+            "Held-out Pareto-guarded gold-AST set FTPO",
+            train_dir,
+            local_preference_objective="ftpo_set",
+            local_preference_guarded_selection=True,
+            **base,
+        ),
     ]
 
 
@@ -1379,7 +1398,36 @@ def _v11_experiments(train_dir: Path) -> list[Experiment]:
 
 
 def _v12_experiments(train_dir: Path) -> list[Experiment]:
-    """E259 (C3, SLM-27): corpus-mined macro tokens, matched against E255."""
+    """E262: B1 choice-sequence codec (pure grammar-choice output stream).
+
+    Trains/decodes over the ``choice`` output tokenizer: the model predicts
+    only semantic decisions (which production, which slot filler) and the
+    deterministic detokenizer reconstructs all surface syntax through the
+    official lang-core serializer (fail-closed, so parse is a meaningful
+    primary — the detokenizer never invents syntax for an invalid stream).
+    Matched against E255 (v11 lexer-stream scratch control): identical
+    diffusion masking and non-LTR MaskGIT decode, differing only in the
+    output representation. v1 bypasses the surface-DFA token gate (choice
+    ids are not surface lexemes; follow-up is a choice-native legal-decision
+    gate). E2 semantic-density gates for the representation itself are
+    pinned in tests/test_dsl/test_choice_codec.py and measured in
+    docs/design/iter-b1-choice-sequence-codec-20260717.md.
+    """
+    return [
+        Experiment(
+            "E262",
+            "qx_e262_b1_choice_codec",
+            "B1 pure grammar-choice output stream (choice tokenizer)",
+            train_dir,
+            output_tokenizer="choice",
+            mask_pattern="diffusion",
+            grammar_ltr_primary=False,
+        ),
+    ]
+
+
+def _v13_experiments(train_dir: Path) -> list[Experiment]:
+    """E265 (C3, SLM-27): corpus-mined macro tokens, matched against E255."""
     base = dict(
         output_tokenizer="lexer",
         mask_pattern="diffusion",
@@ -1387,8 +1435,8 @@ def _v12_experiments(train_dir: Path) -> list[Experiment]:
     )
     return [
         Experiment(
-            "E259",
-            "qx_e259_c3_macro_tokens",
+            "E265",
+            "qx_e265_c3_macro_tokens",
             "C3 corpus-mined macro tokens with deterministic expansion",
             train_dir,
             macro_tokens=True,
@@ -1397,8 +1445,8 @@ def _v12_experiments(train_dir: Path) -> list[Experiment]:
     ]
 
 
-def _v13_experiments(train_dir: Path) -> list[Experiment]:
-    """E260/E261 (C4, SLM-28): names-disappear matched pair.
+def _v14_experiments(train_dir: Path) -> list[Experiment]:
+    """E266/E267 (C4, SLM-28): names-disappear matched pair.
 
     Both arms decode unconstrained (grammar_constrained=False) because the
     NAME gate admits only <BIND_j> ids — the surface arm could never emit a
@@ -1413,15 +1461,15 @@ def _v13_experiments(train_dir: Path) -> list[Experiment]:
     )
     return [
         Experiment(
-            "E260",
-            "qx_e260_c4_anon_control",
+            "E266",
+            "qx_e266_c4_anon_control",
             "C4 anonymized-symbol control (unconstrained decode)",
             train_dir,
             **base,
         ),
         Experiment(
-            "E261",
-            "qx_e261_c4_surface_ids",
+            "E267",
+            "qx_e267_c4_surface_ids",
             "C4 surface binder/state identifiers via byte channel",
             train_dir,
             symbol_anonymization=False,
@@ -1837,6 +1885,38 @@ def _maybe_local_preference(
 
     tethered = bool(exp.local_preference_reference_tether)
     out_dir = args.run_root / exp.run_id / "local_preference"
+    summary_path = out_dir / "local_preference_summary.json"
+    if args.resume and summary_path.is_file():
+        from slm_training.harnesses.preference.local_decisions import (
+            load_decision_events,
+        )
+
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        trained = Path(str(summary.get("checkpoint") or ""))
+        expected_sha = hashlib.sha256(ckpt.read_bytes()).hexdigest()
+        events = load_decision_events(args.decision_events)
+        expected_counts = {
+            split: sum(event.split == split for event in events)
+            for split in ("train", "held_out")
+        }
+        matches = (
+            summary.get("objective") == objective
+            and int(summary.get("steps") or -1) == int(args.pref_steps)
+            and bool(summary.get("balanced"))
+            == bool(exp.local_preference_balanced)
+            and bool(summary.get("reference_tethered")) == tethered
+            and bool(summary.get("guarded_selection"))
+            == bool(exp.local_preference_guarded_selection)
+            and summary.get("source_checkpoint_sha") == expected_sha
+            and int(summary.get("train_events", -1)) == expected_counts["train"]
+            and int(summary.get("held_out_events", -1))
+            == expected_counts["held_out"]
+            and trained.is_file()
+        )
+        if matches:
+            dest = args.run_root / exp.run_id / "checkpoints" / "last.pt"
+            return _copy_checkpoint(trained, dest), summary
+        raise RuntimeError(f"{exp.eid} resume artifacts do not match this recipe")
     with run_trace(exp.run_id, "local_preference.train", run_dir=out_dir) as trace:
         summary = train_local_from_paths(
             ckpt,
@@ -1854,11 +1934,13 @@ def _maybe_local_preference(
             target_grace=1.0,
             balanced=bool(exp.local_preference_balanced),
             seed=args.seed,
+            validation_every=args.local_pref_validation_every,
+            guarded_selection=bool(exp.local_preference_guarded_selection),
         )
         summary["trace_id"] = trace.trace_id
         summary["traceparent"] = trace.traceparent
         summary["trace_bundle"] = trace.bundle.as_posix()
-        (out_dir / "local_preference_summary.json").write_text(
+        summary_path.write_text(
             json.dumps(summary, indent=2) + "\n", encoding="utf-8"
         )
     trained = Path(summary["checkpoint"])
@@ -2160,6 +2242,9 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
             exp.local_preference_reference_tether
         ),
         "local_preference_balanced": exp.local_preference_balanced,
+        "local_preference_guarded_selection": (
+            exp.local_preference_guarded_selection
+        ),
         "local_preference_summary": local_preference_summary,
         **_summarize_board(board),
     }
@@ -2219,6 +2304,12 @@ def main(argv: list[str] | None = None) -> int:
         help="DecisionEventV1 JSONL required by V10 intervention rows.",
     )
     parser.add_argument("--local-pref-lr", type=float, default=5e-5)
+    parser.add_argument("--local-pref-validation-every", type=int, default=5)
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Reuse completed, recipe-matching local preference stage artifacts.",
+    )
     parser.add_argument("--rl-steps", type=int, default=30)
     parser.add_argument("--rl-group-size", type=int, default=4)
     parser.add_argument("--rl-readiness-report", type=Path, default=None)
@@ -2305,11 +2396,13 @@ def main(argv: list[str] | None = None) -> int:
             "v11",
             "v12",
             "v13",
+            "v14",
             "all",
         ),
         default="v3",
-        help="Experiment set through v11 representation rows E255-E257, the"
-        " v12 macro-token row E259, and the v13 names-disappear pair"
+        help="Experiment set through v10 local-decision rows E248-E254,"
+        " v11 representation rows E255-E257, the v12 choice-codec row E262,"
+        " the v13 macro-token row E265, and the v14 names-disappear pair"
         " E260/E261, or all.",
     )
     parser.add_argument(
@@ -2494,6 +2587,8 @@ def main(argv: list[str] | None = None) -> int:
         experiments.extend(_v12_experiments(args.train_dir))
     if args.matrix in {"v13", "all"}:
         experiments.extend(_v13_experiments(args.train_dir))
+    if args.matrix in {"v14", "all"}:
+        experiments.extend(_v14_experiments(args.train_dir))
     if args.only:
         experiments = [e for e in experiments if e.eid in selected_ids]
     if args.list:

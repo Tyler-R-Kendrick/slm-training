@@ -16,6 +16,12 @@ frontend grammar; the same stack can train against any backend that implements
 Register more DSLs with `register_backend(...)` or drop a `.lark` file and wrap
 it with `LarkFileBackend`.
 
+A backend is the **grammar slot** of the wider F1 **DSL-pack contract**
+(`slm_training.dsl.pack.DslPack`: backend + canonicalizer + validity oracle +
+typed-AST generator + scope rules + placeholder policy + reward honesty
+label). See [dsl-pack-contract.md](dsl-pack-contract.md); new languages should
+register a pack (`register_pack`), not just a backend.
+
 ## Real AST extraction
 
 - **Official path:** `get_backend("openui-langcore").parse(src).root` is the

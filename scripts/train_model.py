@@ -144,7 +144,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--output-tokenizer",
-        choices=("compositional", "lexer"),
+        choices=("compositional", "lexer", "choice"),
         default="compositional",
     )
     parser.add_argument(

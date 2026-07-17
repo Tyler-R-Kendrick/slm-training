@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.run_quality_matrix import _v10_experiments, main
+from scripts.run_quality_matrix import _maybe_local_preference, _v10_experiments, main
 
 
 def test_v10_registers_exact_state_ablation_rows() -> None:
@@ -16,6 +16,8 @@ def test_v10_registers_exact_state_ablation_rows() -> None:
         "E252",
         "E253",
         "E254",
+        "E263",
+        "E264",
     ]
     assert rows[0].local_parent_control is True
     assert [row.local_preference_objective for row in rows[1:]] == [
@@ -25,9 +27,15 @@ def test_v10_registers_exact_state_ablation_rows() -> None:
         "ftpo_set",
         "ftpo_set",
         "ftpo_set",
+        "ftpo_set",
+        "ftpo_set",
     ]
-    assert rows[-2].local_preference_reference_tether is True
-    assert rows[-1].local_preference_balanced is True
+    by_id = {row.eid: row for row in rows}
+    assert by_id["E253"].local_preference_reference_tether is True
+    assert by_id["E254"].local_preference_balanced is True
+    assert by_id["E263"].local_preference_reference_tether is False
+    assert by_id["E263"].local_preference_balanced is False
+    assert by_id["E264"].local_preference_guarded_selection is True
     assert all(row.compiler_decode_mode == "tree" for row in rows)
 
 
@@ -101,3 +109,69 @@ def test_v10_parent_control_is_read_only(tmp_path, monkeypatch) -> None:
     assert result["training_executed"] is False
     assert result["checkpoint"] == str(parent)
     assert not (run_root / "qx_e248_local_parent_control" / "checkpoints").exists()
+
+
+def test_local_preference_resume_reuses_only_matching_stage(tmp_path) -> None:
+    import hashlib
+    from types import SimpleNamespace
+
+    from slm_training.harnesses.preference.local_decisions import DecisionEventV1
+
+    exp = next(row for row in _v10_experiments(tmp_path) if row.eid == "E263")
+    parent = tmp_path / "parent.pt"
+    parent.write_bytes(b"parent")
+    trained = tmp_path / "trained.pt"
+    trained.write_bytes(b"trained")
+    for suffix in (".tokenizer.json", ".meta.json"):
+        trained.with_suffix(suffix).write_text("{}")
+    events = tmp_path / "events.jsonl"
+    event = DecisionEventV1(
+        version=1,
+        event_id="event",
+        trajectory_id="trajectory",
+        group_id="group",
+        split="train",
+        seed=0,
+        context_text="context",
+        canvas_ids=(1, 3),
+        position=1,
+        good_token_ids=(2,),
+        bad_token_ids=(4,),
+        legal_token_ids=(2, 4),
+        decision_kind="sym",
+        evidence_kind="counterfactual",
+        evidence_confidence=1.0,
+        policy_checkpoint_sha="policy",
+        tokenizer_sha="tokenizer",
+        decode_config_hash="decode",
+        source_suite=None,
+    )
+    events.write_text(json.dumps(event.to_dict()) + "\n")
+    run_root = tmp_path / "runs"
+    summary_path = run_root / exp.run_id / "local_preference/local_preference_summary.json"
+    summary_path.parent.mkdir(parents=True)
+    summary_path.write_text(
+        json.dumps(
+            {
+                "objective": "ftpo_set",
+                "steps": 30,
+                "balanced": False,
+                "reference_tethered": False,
+                "source_checkpoint_sha": hashlib.sha256(parent.read_bytes()).hexdigest(),
+                "train_events": 1,
+                "held_out_events": 0,
+                "checkpoint": str(trained),
+            }
+        )
+    )
+    args = SimpleNamespace(
+        decision_events=events,
+        run_root=run_root,
+        resume=True,
+        pref_steps=30,
+    )
+
+    checkpoint, summary = _maybe_local_preference(exp, parent, args)
+
+    assert checkpoint == run_root / exp.run_id / "checkpoints/last.pt"
+    assert summary["checkpoint"] == str(trained)

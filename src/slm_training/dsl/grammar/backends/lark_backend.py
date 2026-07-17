@@ -302,6 +302,10 @@ class LarkFileBackend:
     def is_available(self) -> bool:
         return self.available()
 
+    def prop_order(self) -> dict[str, list[str]]:
+        """Declared positional prop order per component (pack contract slot)."""
+        return self._order()
+
     def _order(self) -> dict[str, list[str]]:
         if self._prop_order is not None:
             return self._prop_order

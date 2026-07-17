@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "kind": "decision_event_corpus",
+  "dataset_id": "e261_gold_ast_counterfactual_v1",
+  "immutable": true,
+  "records": "events.jsonl",
+  "record_count": 239,
+  "group_count": 64,
+  "content_fingerprint": "76544d8eaf0f687144b2dc1442a6b8a69a38c4088ebe04e31997358ea0e1b121",
+  "policy_checkpoint_sha": "7a9be4a665e216d7f7e73883ad74ad972bbf30846896d0c29188d6482f5b093a",
+  "tokenizer_sha": "8dbf8142068860eed06463fa2e0013bb298267a305bcfd85a0c24df0f7f61efe",
+  "decode_config_hash": "8c2a2ae5cb5c4ad0ab44de74a172fc2c887fbdc7e5e7e20ede953184a0c3fe5b",
+  "evidence_kinds": {
+    "constraint_shadow": 0,
+    "counterfactual": 239
+  },
+  "splits": {
+    "train": 200,
+    "held_out": 39
+  },
+  "split_groups": {
+    "train": 53,
+    "held_out": 11
+  },
+  "set_valued_events": 108,
+  "source_trace_ids": [
+    "1c578ecc8d011a9eed8f4a14d9d2f25f",
+    "bd225dfe343adaca16626516a07dce96",
+    "eefdac58c5888c293759876194597ed7",
+    "f05413aa2fd8c3582ed35af115ea364e"
+  ],
+  "source_record_fingerprint": "9f72d85b6cc7118e0f69e010d0debdd2b40ede514e03178dded8e164daaae9bb",
+  "judge_evidence": "evidence.jsonl",
+  "judge_evidence_count": 239,
+  "judge_evidence_fingerprint": "5735333128d003303ee71f7dd68f035ab658d6f58e8f32ebe879ed93c1e0c2ab"
+}
