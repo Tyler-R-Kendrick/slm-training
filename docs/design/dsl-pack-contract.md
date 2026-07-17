@@ -93,6 +93,23 @@ over GraphQL corpora requires a GraphQL-aware output tokenizer and suite
 definitions — that is the training half of F2 and lands separately; this
 change is the pack foundation (oracle, scope, generator, canonical form).
 
+## Latent packs (G3, SLM-47)
+
+[`harnesses/experiments/latent_dsl.py`](../../src/slm_training/harnesses/experiments/latent_dsl.py)
+instantiates a pack *per task*: a typed `TaskSpec` (components, prop orders,
+content slots) → deterministic minimal Lark grammar → registered
+`LarkFileBackend` (the oracle) → registered `DslPack` → deterministic typed
+corpus (every record passes the pack's own oracle) → tiny scratch model with
+real gradient steps. This is Grammar Prompting's task-scoped-grammar idea
+(Wang et al., NeurIPS 2023) instantiated as a trained-model pipeline instead
+of a frozen-LLM prompt — the reasoning substrate G4 consumes.
+
+Fixture honesty: grammar synthesis is template instantiation (no model
+proposes TaskSpecs yet — that meta-model trains later on G5 traces), and the
+`run_fixture` summary *reports* whether the tiny decode passed the oracle
+rather than asserting it (2 CPU steps legitimately may not clear a fresh
+grammar). End-to-end evidence: `tests/test_harnesses/experiments/test_latent_dsl.py`.
+
 ## What F2+ must implement
 
 1. A `GrammarBackend` (register in `dsl/grammar/backends`) whose
