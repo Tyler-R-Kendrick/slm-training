@@ -21,6 +21,8 @@ from slm_training.dsl.production_codec import (
     MUTATION_STMT,
     OPEN_PREFIX,
     QUERY_STMT,
+    REF_PREFIX,
+    REL_REF_PREFIX,
     ROOT_STMT,
     SLOT_PREFIX,
     STATE_STMT,
@@ -29,7 +31,9 @@ from slm_training.dsl.production_codec import (
     build_vocab_from_corpus,
     decode_productions,
     encode_openui,
+    from_relative_refs,
     roundtrip_openui,
+    to_relative_refs,
 )
 from slm_training.dsl.lang_core import ParseError, bridge_available
 from slm_training.dsl.lang_core import parse as lang_core_parse
@@ -360,3 +364,73 @@ def test_fixture_corpus_roundtrip_is_langcore_canonical_equal() -> None:
         expected = _strip_statement_ids(lang_core_parse(record.openui).root)
         actual = _strip_statement_ids(lang_core_parse(decoded).root)
         assert actual == expected, record.id
+
+
+# --- C1: relative-index (De Bruijn) references -----------------------------
+
+
+def test_relative_refs_emit_debruijn_deltas() -> None:
+    absolute = encode_openui(HERO)
+    relative = encode_openui(HERO, relative_refs=True)
+    # Same length, refs converted from absolute (&i) to relative (~delta).
+    assert len(relative.tokens) == len(absolute.tokens)
+    assert any(t.startswith(REF_PREFIX) for t in absolute.tokens)
+    assert not any(t.startswith(REF_PREFIX) for t in relative.tokens)
+    rel_refs = [t for t in relative.tokens if t.startswith(REL_REF_PREFIX)]
+    assert rel_refs
+    # HERO's refs are all backward in canonical order → positive deltas.
+    assert all(int(t[len(REL_REF_PREFIX):]) >= 1 for t in rel_refs)
+
+
+def test_relative_refs_roundtrip_document() -> None:
+    _, decoded = roundtrip_openui(HERO, relative_refs=True)
+    assert normalize_openui_structure(decoded) == normalize_openui_structure(HERO)
+
+
+def test_relative_refs_roundtrip_v05() -> None:
+    program, decoded = roundtrip_openui(V05_PROGRAM, relative_refs=True)
+    assert program.tokens[0] == V05
+    assert any(t.startswith(REL_REF_PREFIX) for t in program.tokens)
+    assert not any(t.startswith(REF_PREFIX) for t in program.tokens)
+    assert normalize_openui_structure(decoded) == normalize_openui_structure(
+        V05_PROGRAM
+    )
+
+
+def test_relative_and_absolute_decode_identically() -> None:
+    absolute = encode_openui(HERO)
+    relative = to_relative_refs(absolute.tokens)
+    assert from_relative_refs(relative) == absolute.tokens
+    assert decode_productions(relative, absolute.slot_contract) == decode_productions(
+        absolute.tokens, absolute.slot_contract
+    )
+
+
+def test_relative_refs_are_translation_invariant() -> None:
+    # Prepending an unrelated leaf renumbers absolute slots but not the local
+    # def→use distance for refs that do not cross the inserted statement.
+    base = encode_openui(HERO, relative_refs=True)
+    shifted_src = (
+        'root = Stack([extra, hero], "column")\n'
+        'extra = TextContent(":extra")\n'
+        'hero_title = TextContent(":hero.title")\n'
+        'hero_body = TextContent(":hero.body")\n'
+        'hero = Card([hero_title, hero_body])'
+    )
+    shifted = encode_openui(shifted_src, relative_refs=True)
+    # The Card→children distances (hero_title, hero_body) survive the insertion.
+    base_deltas = {t for t in base.tokens if t.startswith(REL_REF_PREFIX)}
+    shifted_deltas = {t for t in shifted.tokens if t.startswith(REL_REF_PREFIX)}
+    assert base_deltas & shifted_deltas
+
+
+def test_relative_ref_illegal_delta_rejected() -> None:
+    # A delta that resolves before the start of scope is not legal binding —
+    # enforced here, not learned.
+    # Stream: one statement (cur=0) whose ref points 5 statements back → idx -5.
+    try:
+        from_relative_refs(("=", f"{REL_REF_PREFIX}5", ";"))
+    except ParseError:
+        pass
+    else:  # pragma: no cover - guard
+        raise AssertionError("expected ParseError for out-of-scope relative ref")

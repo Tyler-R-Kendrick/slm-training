@@ -20,6 +20,7 @@ CLOSE = "-"
 DIR_PREFIX = "^"
 SLOT_PREFIX = "@"
 REF_PREFIX = "&"
+REL_REF_PREFIX = "~"
 LIT_PREFIX = "#"
 LIST_OPEN = "["
 LIST_CLOSE = "]"
@@ -502,15 +503,34 @@ def _encode_v05(
     return ProductionProgram(tokens=tuple(tokens), slot_contract=tuple(contract))
 
 
+def _with_relative_refs(
+    program: ProductionProgram, *, relative_refs: bool
+) -> ProductionProgram:
+    if not relative_refs:
+        return program
+    return ProductionProgram(
+        tokens=to_relative_refs(program.tokens),
+        slot_contract=program.slot_contract,
+    )
+
+
 def encode_openui(
     source: str,
     *,
     slot_contract: Iterable[str] | None = None,
+    relative_refs: bool = False,
 ) -> ProductionProgram:
-    """Parse OpenUI and emit a compact production token sequence."""
+    """Parse OpenUI and emit a compact production token sequence.
+
+    When ``relative_refs`` is set, statement references are emitted as
+    scope-relative De Bruijn deltas (C1) instead of absolute slot indices.
+    """
     scrubbed = strip_style_literals(source or "").strip()
     if _requires_v05_codec(scrubbed):
-        return _encode_v05(scrubbed, slot_contract=slot_contract)
+        return _with_relative_refs(
+            _encode_v05(scrubbed, slot_contract=slot_contract),
+            relative_refs=relative_refs,
+        )
     _parse_program(scrubbed)
     bindings = _parse_bindings(scrubbed)
     contract = (
@@ -534,7 +554,10 @@ def encode_openui(
                 stmt_limit=position,
             )
         )
-    return ProductionProgram(tokens=tuple(tokens), slot_contract=tuple(contract))
+    return _with_relative_refs(
+        ProductionProgram(tokens=tuple(tokens), slot_contract=tuple(contract)),
+        relative_refs=relative_refs,
+    )
 
 
 def encode_output(
@@ -542,10 +565,13 @@ def encode_output(
     *,
     output_kind: str = "document",
     slot_contract: Iterable[str] | None = None,
+    relative_refs: bool = False,
 ) -> ProductionProgram:
     """Encode a full document or a validated compact output surface."""
     if output_kind == "document":
-        return encode_openui(source, slot_contract=slot_contract)
+        return encode_openui(
+            source, slot_contract=slot_contract, relative_refs=relative_refs
+        )
     from slm_training.dsl.parser import lexical_tokens, validate_output
 
     validate_output(source, output_kind)  # type: ignore[arg-type]
@@ -616,6 +642,9 @@ def decode_productions(
     """Reconstruct deterministic OpenUI source from production tokens + contract."""
     contract = tuple(slot_contract)
     stream = list(tokens)
+    # De Bruijn refs (C1) are self-describing; restore absolute indices first.
+    if any(tok.startswith(REL_REF_PREFIX) for tok in stream):
+        stream = list(from_relative_refs(stream))
     if stream[:1] and stream[0] in FRAGMENT_MARKERS.values():
         return _decode_output_tokens(stream, contract)
     if stream[:1] == [V05]:
@@ -781,13 +810,81 @@ def _decode_v05(
     return "\n".join(lines)
 
 
+_V05_MARKERS = frozenset(
+    {ROOT_STMT, STATE_STMT, QUERY_STMT, MUTATION_STMT, ACTION_STMT, STMT}
+)
+
+
+def _statement_markers(stream: list[str]) -> frozenset[str]:
+    """Tokens that open a new statement (used to index De Bruijn ref distances)."""
+    if stream[:1] == [V05]:
+        return _V05_MARKERS
+    return frozenset({STMT})
+
+
+def to_relative_refs(tokens: Iterable[str]) -> tuple[str, ...]:
+    """Rewrite absolute statement refs (``&i``) as scope-relative De Bruijn deltas.
+
+    A reference token ``&i`` inside the statement at index ``cur`` becomes
+    ``~{cur - i}`` — the signed distance, in canonical statement order, from the
+    use site back to the binder's definition. This makes references
+    translation-invariant: inserting or deleting an unrelated earlier statement
+    renumbers absolute slots but leaves the local ``def→use`` distance unchanged,
+    so a diffusion edit near one binder does not perturb refs elsewhere.
+
+    Fragment streams carry no refs and are returned unchanged. See C1 /
+    ``docs/design/iter-relative-index-refs-20260717.md``.
+    """
+    stream = list(tokens)
+    markers = _statement_markers(stream)
+    out: list[str] = []
+    cur = -1
+    for tok in stream:
+        if tok in markers:
+            cur += 1
+        if tok.startswith(REF_PREFIX):
+            idx = int(tok[len(REF_PREFIX):])
+            out.append(f"{REL_REF_PREFIX}{cur - idx}")
+        else:
+            out.append(tok)
+    return tuple(out)
+
+
+def from_relative_refs(tokens: Iterable[str]) -> tuple[str, ...]:
+    """Inverse of :func:`to_relative_refs` (``~delta`` → ``&i``), verifier-enforced.
+
+    Legality is enforced here, not learned: a delta that resolves to a negative
+    (undefined) statement index raises :class:`ParseError`. The absolute-ref
+    decoders already range-check the upper bound against the decoded binder set.
+    """
+    stream = list(tokens)
+    markers = _statement_markers(stream)
+    out: list[str] = []
+    cur = -1
+    for tok in stream:
+        if tok in markers:
+            cur += 1
+        if tok.startswith(REL_REF_PREFIX):
+            delta = int(tok[len(REL_REF_PREFIX):])
+            idx = cur - delta
+            if idx < 0:
+                raise ParseError(f"relative ref {tok} resolves before scope start")
+            out.append(f"{REF_PREFIX}{idx}")
+        else:
+            out.append(tok)
+    return tuple(out)
+
+
 def roundtrip_openui(
     source: str,
     *,
     slot_contract: Iterable[str] | None = None,
+    relative_refs: bool = False,
 ) -> tuple[ProductionProgram, str]:
     """Encode then decode; returns (program, reconstructed OpenUI)."""
-    program = encode_openui(source, slot_contract=slot_contract)
+    program = encode_openui(
+        source, slot_contract=slot_contract, relative_refs=relative_refs
+    )
     decoded = decode_productions(program.tokens, program.slot_contract)
     return program, decoded
 
@@ -948,19 +1045,26 @@ class ProductionCodec:
     mask_id: int = 3
     unk_id: int = 4
     slot_none_id: int = 0
+    relative_refs: bool = False
 
     _SPECIALS: tuple[str, ...] = ("<pad>", "<bos>", "<eos>", "<mask>", "<unk>")
 
     @classmethod
     def build(
-        cls, texts: list[str], output_kinds: list[str] | None = None
+        cls,
+        texts: list[str],
+        output_kinds: list[str] | None = None,
+        *,
+        relative_refs: bool = False,
     ) -> ProductionCodec:
         vocab: dict[str, int] = {tok: i for i, tok in enumerate(cls._SPECIALS)}
         if output_kinds and any(kind != "document" for kind in output_kinds):
             vocab[FRAGMENT_CHUNK] = len(vocab)
         for index, text in enumerate(texts):
             kind = output_kinds[index] if output_kinds else "document"
-            program = encode_output(text, output_kind=kind)
+            program = encode_output(
+                text, output_kind=kind, relative_refs=relative_refs
+            )
             for tok in program.tokens:
                 if tok not in vocab:
                     vocab[tok] = len(vocab)
@@ -993,7 +1097,10 @@ class ProductionCodec:
             else canonical_slot_contract(openui)
         )
         program = encode_output(
-            openui, output_kind=output_kind, slot_contract=contract
+            openui,
+            output_kind=output_kind,
+            slot_contract=contract,
+            relative_refs=self.relative_refs,
         )
         prod_ids = [self.bos_id]
         slot_ids = [self.slot_none_id]
@@ -1068,6 +1175,7 @@ __all__ = [
     "NAME_PREFIX",
     "OPEN_PREFIX",
     "REF_PREFIX",
+    "REL_REF_PREFIX",
     "ROOT_STMT",
     "SLOT_PREFIX",
     "STMT",
@@ -1081,5 +1189,7 @@ __all__ = [
     "build_vocab_from_corpus",
     "decode_productions",
     "encode_openui",
+    "from_relative_refs",
     "roundtrip_openui",
+    "to_relative_refs",
 ]
