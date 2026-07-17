@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import signal
 from dataclasses import dataclass, replace
@@ -1283,7 +1284,7 @@ def _v9_experiments(train_dir: Path) -> list[Experiment]:
 
 
 def _v10_experiments(train_dir: Path) -> list[Experiment]:
-    """E248-E254: exact-state local preference campaign (proposed/unrun)."""
+    """Exact-state local preference campaign."""
     base = _strict_compiler_tree_policy()
     return [
         Experiment(
@@ -1343,6 +1344,14 @@ def _v10_experiments(train_dir: Path) -> list[Experiment]:
             local_preference_objective="ftpo_set",
             local_preference_reference_tether=True,
             local_preference_balanced=True,
+            **base,
+        ),
+        Experiment(
+            "E263",
+            "qx_e263_broad_gold_ast_ftpo_set",
+            "Broad grammar/AST-aligned set FTPO",
+            train_dir,
+            local_preference_objective="ftpo_set",
             **base,
         ),
     ]
@@ -1805,6 +1814,36 @@ def _maybe_local_preference(
 
     tethered = bool(exp.local_preference_reference_tether)
     out_dir = args.run_root / exp.run_id / "local_preference"
+    summary_path = out_dir / "local_preference_summary.json"
+    if args.resume and summary_path.is_file():
+        from slm_training.harnesses.preference.local_decisions import (
+            load_decision_events,
+        )
+
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        trained = Path(str(summary.get("checkpoint") or ""))
+        expected_sha = hashlib.sha256(ckpt.read_bytes()).hexdigest()
+        events = load_decision_events(args.decision_events)
+        expected_counts = {
+            split: sum(event.split == split for event in events)
+            for split in ("train", "held_out")
+        }
+        matches = (
+            summary.get("objective") == objective
+            and int(summary.get("steps") or -1) == int(args.pref_steps)
+            and bool(summary.get("balanced"))
+            == bool(exp.local_preference_balanced)
+            and bool(summary.get("reference_tethered")) == tethered
+            and summary.get("source_checkpoint_sha") == expected_sha
+            and int(summary.get("train_events", -1)) == expected_counts["train"]
+            and int(summary.get("held_out_events", -1))
+            == expected_counts["held_out"]
+            and trained.is_file()
+        )
+        if matches:
+            dest = args.run_root / exp.run_id / "checkpoints" / "last.pt"
+            return _copy_checkpoint(trained, dest), summary
+        raise RuntimeError(f"{exp.eid} resume artifacts do not match this recipe")
     with run_trace(exp.run_id, "local_preference.train", run_dir=out_dir) as trace:
         summary = train_local_from_paths(
             ckpt,
@@ -1826,7 +1865,7 @@ def _maybe_local_preference(
         summary["trace_id"] = trace.trace_id
         summary["traceparent"] = trace.traceparent
         summary["trace_bundle"] = trace.bundle.as_posix()
-        (out_dir / "local_preference_summary.json").write_text(
+        summary_path.write_text(
             json.dumps(summary, indent=2) + "\n", encoding="utf-8"
         )
     trained = Path(summary["checkpoint"])
@@ -2187,6 +2226,11 @@ def main(argv: list[str] | None = None) -> int:
         help="DecisionEventV1 JSONL required by V10 intervention rows.",
     )
     parser.add_argument("--local-pref-lr", type=float, default=5e-5)
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Reuse completed, recipe-matching local preference stage artifacts.",
+    )
     parser.add_argument("--rl-steps", type=int, default=30)
     parser.add_argument("--rl-group-size", type=int, default=4)
     parser.add_argument("--rl-readiness-report", type=Path, default=None)
