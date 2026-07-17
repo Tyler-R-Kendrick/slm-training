@@ -651,7 +651,15 @@ class ChoiceDecodeState:
         token = self.tokenizer.id_to_token.get(int(token_id), "")
         if not token.startswith(OPEN_PREFIX):
             return False
-        contract = _component_contracts().get(token[len(OPEN_PREFIX) :])
+        return self.is_slot_content_component_type(
+            f"element:{token[len(OPEN_PREFIX) :]}"
+        )
+
+    def is_slot_content_component_type(self, expr_type: str) -> bool:
+        """Whether a completed element type consumes required string content."""
+        if not expr_type.startswith("element:"):
+            return False
+        contract = _component_contracts().get(expr_type[len("element:") :])
         if contract is None:
             return False
         schemas, required_args = contract
@@ -711,6 +719,9 @@ class ChoiceDecodeState:
                 return False
             if not self._schema_accepts(frame.schemas[frame.arg_index], expr_type):
                 return False
+            frame.arg_index += 1
+            return True
+        elif frame.kind == "variadic":
             frame.arg_index += 1
             return True
         return True

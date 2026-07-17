@@ -4046,18 +4046,13 @@ class TwoTowerModel(nn.Module):
                 if state.bound_component_count >= floor
                 else {bind_id}
             )
-            if state.bound_component_count == floor - 1:
-                markers.add(root_id)
             constrained = legal & markers
             return constrained or legal
         if (
             state.mode == "v05"
-            and state.current_marker in {"=", "r="}
+            and state.current_marker == "="
             and not state.frames
-            and (
-                state.current_marker == "r="
-                or floor > state.bound_component_count
-            )
+            and floor > state.bound_component_count
         ):
             content = {
                 token_id
@@ -4065,6 +4060,58 @@ class TwoTowerModel(nn.Module):
                 if state.is_slot_content_component_id(token_id)
             }
             return content or legal
+        if (
+            state.mode == "v05"
+            and state.current_marker == "r="
+            and not state.frames
+        ):
+            stack_id = tok.token_to_id["+Stack"]
+            return {stack_id} if stack_id in legal else legal
+        if (
+            state.mode == "v05"
+            and state.current_marker == "r="
+            and len(state.frames) == 1
+            and state.frames[0].kind == "component"
+            and state.frames[0].expr_type == "element:Stack"
+            and state.frames[0].arg_index == 0
+        ):
+            list_id = tok.token_to_id["["]
+            return {list_id} if list_id in legal else legal
+        if (
+            state.mode == "v05"
+            and state.current_marker == "r="
+            and len(state.frames) >= 2
+            and state.frames[-1].kind == "variadic"
+            and state.frames[-1].expr_type == "array"
+            and state.frames[-2].kind == "component"
+            and state.frames[-2].expr_type == "element:Stack"
+        ):
+            content_refs = [
+                tok.token_to_id[f"&{index}"]
+                for index, expr_type in enumerate(state.section_types)
+                if state.is_slot_content_component_type(expr_type)
+                and f"&{index}" in tok.token_to_id
+            ]
+            child_index = state.frames[-1].arg_index
+            if child_index < min(floor, len(content_refs)):
+                reference_id = content_refs[child_index]
+                return {reference_id} if reference_id in legal else legal
+            list_close_id = tok.token_to_id["]"]
+            return {list_close_id} if list_close_id in legal else legal
+        if (
+            state.mode == "v05"
+            and state.current_marker == "r="
+            and len(state.frames) == 1
+            and state.frames[0].kind == "component"
+            and state.frames[0].expr_type == "element:Stack"
+            and state.frames[0].arg_index >= 1
+        ):
+            component_close_id = tok.token_to_id["-"]
+            return (
+                {component_close_id}
+                if component_close_id in legal
+                else legal
+            )
         return legal
 
     def _choice_ltr_decode_batch(

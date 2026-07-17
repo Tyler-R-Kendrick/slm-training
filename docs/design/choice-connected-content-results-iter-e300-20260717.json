@@ -1,0 +1,25 @@
+{
+  "iteration": "E300",
+  "date": "2026-07-17",
+  "run_id": "e300-choice-connected-content-honest-r1",
+  "checkpoint_sha256": "a78193f91ee12d07791cab008a75267e3f6e19cfd223fbc726b3896dd98d14ee",
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "decode_min_content": -1,
+    "root_policy": "Stack list references required string-bearing bound components",
+    "honesty_mode": "prompt-visible slot inventory; no DESIGN.md context",
+    "allow_unconstrained_fallback": false
+  },
+  "suites": {
+    "smoke": {"n": 3, "parse": 0.6666666666666666, "meaningful": 0.3333333333333333, "fidelity": 0.38888888888888884, "structure": 0.4597333333333333, "component_recall": 0.16666666666666666, "reward": 0.283},
+    "held_out": {"n": 5, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.5599999999999999, "structure": 0.29964, "component_recall": 0.0, "reward": 0.0},
+    "adversarial": {"n": 4, "parse": 1.0, "meaningful": 0.25, "fidelity": 0.8333333333333333, "structure": 0.4635, "component_recall": 0.125, "reward": 0.21225},
+    "ood": {"n": 4, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.5166666666666666, "structure": 0.43457500000000004, "component_recall": 0.0, "reward": 0.0},
+    "rico_held": {"n": 3, "parse": 1.0, "meaningful": 0.6666666666666666, "fidelity": 0.20833333333333334, "structure": 0.3037666666666667, "component_recall": 0.3333333333333333, "reward": 0.5066666666666667}
+  },
+  "gate_failure_count": 9,
+  "failure_breakdown": {"parse_error": 1, "pathological_overgeneration": 1, "low_component_recall": 13},
+  "agentv": {"total": 5, "passed": 1, "failed": 4, "execution_errors": 0},
+  "verdict": "Connected content improves structure and AgentV but remains non-ship; close the root list after required references next."
+}

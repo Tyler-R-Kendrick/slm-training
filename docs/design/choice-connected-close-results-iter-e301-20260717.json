@@ -1,0 +1,24 @@
+{
+  "iteration": "E301",
+  "date": "2026-07-17",
+  "run_id": "e301-choice-connected-content-close-honest-r1",
+  "checkpoint_sha256": "a78193f91ee12d07791cab008a75267e3f6e19cfd223fbc726b3896dd98d14ee",
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "decode_min_content": -1,
+    "root_policy": "close Stack list and component after required connected content references",
+    "honesty_mode": "prompt-visible slot inventory; no DESIGN.md context",
+    "allow_unconstrained_fallback": false
+  },
+  "suites": {
+    "smoke": {"n": 3, "parse": 1.0, "meaningful": 0.3333333333333333, "fidelity": 0.5277777777777778, "structure": 0.46416666666666667, "component_recall": 0.16666666666666666, "reward": 0.24966666666666668, "latency_ms_p50": 258.46},
+    "held_out": {"n": 5, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.27999999999999997, "structure": 0.33686, "component_recall": 0.0, "reward": 0.0, "latency_ms_p50": 248.22},
+    "adversarial": {"n": 4, "parse": 1.0, "meaningful": 0.5, "fidelity": 0.5416666666666666, "structure": 0.474375, "component_recall": 0.375, "reward": 0.4245, "latency_ms_p50": 252.56},
+    "ood": {"n": 4, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.2583333333333333, "structure": 0.375, "component_recall": 0.0, "reward": 0.0, "latency_ms_p50": 233.64},
+    "rico_held": {"n": 3, "parse": 1.0, "meaningful": 0.6666666666666666, "fidelity": 0.20833333333333334, "structure": 0.3037666666666667, "component_recall": 0.3333333333333333, "reward": 0.5066666666666667, "latency_ms_p50": 426.71}
+  },
+  "gate_failure_count": 7,
+  "agentv": {"total": 5, "passed": 2, "failed": 3, "execution_errors": 0},
+  "verdict": "Best opt-in choice decode policy so far: concise connected topology restores parse and prevents overgeneration, but component selection still blocks smoke, held-out, and OOD."
+}

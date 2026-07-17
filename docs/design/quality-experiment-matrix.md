@@ -1781,6 +1781,33 @@ next experiment must connect content to a structured container root. See
 [results](iter-e299-choice-min-content-20260717.md) and
 [JSON](choice-min-content-results-iter-e299-20260717.json).
 
+## E300 choice connected content (CPU scratch eval-only, 2026-07-17)
+
+The opt-in choice floor now binds string-bearing content and forces the Stack
+root list to reference it. Against the unchanged E297 checkpoint, failed
+thresholds fall 12→9 and AgentV improves 0/5→1/5. Smoke/held/OOD/RICO
+structure rises to 0.4597/0.2996/0.4346/0.3038, but held/OOD meaningful remain
+zero. An unconstrained list tail causes one parse failure and one pathological
+overgeneration.
+
+**Verdict:** connectivity is promising but not ship-ready. Close the list after
+the required references next. See
+[results](iter-e300-choice-connected-content-20260717.md) and
+[JSON](choice-connected-content-results-iter-e300-20260717.json).
+
+## E301 concise connected content (CPU scratch eval-only, 2026-07-17)
+
+Closing the Stack list immediately after required connected references restores
+parse 1.0, removes E300's pathological output, cuts failed thresholds 9→7,
+and improves AgentV 1/5→2/5. Adversarial and limited RICO clear their suite
+rows. Smoke, held, and OOD remain blocked by TextContent-only component
+selection rather than syntax or topology.
+
+**Verdict:** retain this as the best opt-in floor policy, but do not promote or
+ship. Target component-type selection next. See
+[results](iter-e301-choice-connected-close-20260717.md) and
+[JSON](choice-connected-close-results-iter-e301-20260717.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
