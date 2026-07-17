@@ -30,6 +30,24 @@ _GUARD_DIRECTIONS = {
 }
 
 
+def _guard_dominates(
+    candidate: dict[str, float], baseline: dict[str, float]
+) -> bool:
+    weak = all(
+        candidate[key] <= baseline[key]
+        if direction == "min"
+        else candidate[key] >= baseline[key]
+        for key, direction in _GUARD_DIRECTIONS.items()
+    )
+    strict = any(
+        candidate[key] < baseline[key]
+        if direction == "min"
+        else candidate[key] > baseline[key]
+        for key, direction in _GUARD_DIRECTIONS.items()
+    )
+    return weak and strict
+
+
 def _indices(values: tuple[int, ...], logits: torch.Tensor) -> torch.Tensor:
     return torch.tensor(values, dtype=torch.long, device=logits.device)
 
@@ -242,6 +260,8 @@ def train_local_decisions(
     validation_baseline: dict | None = None,
     validation_every: int = 0,
     guarded_selection: bool = False,
+    guarded_updates: bool = False,
+    guard_backtrack_steps: int = 4,
 ) -> dict:
     if steps <= 0 or lr <= 0:
         raise ValueError("steps and learning rate must be positive")
@@ -262,8 +282,12 @@ def train_local_decisions(
     if guarded_selection and validation_every <= 0:
         raise ValueError("guarded selection requires positive validation_every")
     validation = validation_events or []
-    if guarded_selection and not any(event.split == "held_out" for event in validation):
-        raise ValueError("guarded selection requires held-out decision events")
+    if (guarded_selection or guarded_updates) and not any(
+        event.split == "held_out" for event in validation
+    ):
+        raise ValueError("guarded training requires held-out decision events")
+    if guard_backtrack_steps < 0:
+        raise ValueError("guard backtrack steps must be non-negative")
     schedule = event_schedule(
         train_events, steps=max(0, int(steps)), seed=int(seed), balanced=balanced
     )
@@ -279,7 +303,7 @@ def train_local_decisions(
     best_state = None
     best_metrics: dict[str, float] = {}
     best_step = 0
-    if guarded_selection:
+    if guarded_selection or guarded_updates:
         baseline = validation_baseline or evaluate_local_decisions(
             model,
             validation,
@@ -295,6 +319,7 @@ def train_local_decisions(
             "guard": dict(_GUARD_DIRECTIONS),
             "baseline": best_metrics,
             "history": [{"step": 0, "eligible": True, "metrics": best_metrics}],
+            "mode": "updates" if guarded_updates else "selection",
         }
     for step, event in enumerate(schedule, start=1):
         logits = _event_logits(model, event)
@@ -317,7 +342,54 @@ def train_local_decisions(
         )
         optimizer.zero_grad(set_to_none=True)
         loss.backward()
-        optimizer.step()
+        if guarded_updates:
+            model_state = copy.deepcopy(model.state_dict())
+            optimizer_state = copy.deepcopy(optimizer.state_dict())
+            base_lrs = [group["lr"] for group in optimizer.param_groups]
+            trials = []
+            accepted = False
+            for backtrack in range(guard_backtrack_steps + 1):
+                if backtrack:
+                    model.load_state_dict(model_state)
+                    optimizer.load_state_dict(optimizer_state)
+                scale = 0.5**backtrack
+                for group, base_lr in zip(optimizer.param_groups, base_lrs, strict=True):
+                    group["lr"] = base_lr * scale
+                optimizer.step()
+                report = evaluate_local_decisions(
+                    model,
+                    validation,
+                    objective=objective,
+                    epsilon=epsilon,
+                    tau=tau,
+                )
+                candidate = dict(report.get("metrics") or {})
+                eligible = _guard_dominates(candidate, best_metrics)
+                trials.append(
+                    {"scale": scale, "eligible": eligible, "metrics": candidate}
+                )
+                if eligible:
+                    accepted = True
+                    best_metrics = candidate
+                    best_step = step
+                    best_state = copy.deepcopy(model.state_dict())
+                    break
+            for group, base_lr in zip(optimizer.param_groups, base_lrs, strict=True):
+                group["lr"] = base_lr
+            if not accepted:
+                model.load_state_dict(model_state)
+                optimizer.load_state_dict(optimizer_state)
+            selection["history"].append(
+                {
+                    "step": step,
+                    "eligible": accepted,
+                    "accepted_scale": trials[-1]["scale"] if accepted else None,
+                    "metrics": best_metrics,
+                    "trials": trials,
+                }
+            )
+        else:
+            optimizer.step()
         for name, value in metrics.items():
             totals[name] += value
         by_kind[event.decision_kind] += 1
@@ -348,6 +420,13 @@ def train_local_decisions(
         model.load_state_dict(best_state)
         selection["selected_step"] = best_step
         selection["restored"] = best_step != count
+    elif guarded_updates:
+        selection["selected_step"] = best_step
+        selection["restored"] = False
+        selection["accepted_steps"] = sum(
+            bool(item.get("eligible")) for item in selection["history"][1:]
+        )
+        selection["rejected_steps"] = count - selection["accepted_steps"]
     return {
         "objective": objective,
         "steps": count,
@@ -357,7 +436,11 @@ def train_local_decisions(
         "balanced": bool(balanced),
         "reference_tethered": bool(non_target_tether > 0 or target_tether > 0),
         "guarded_selection": bool(guarded_selection),
-        "validation_every": int(validation_every) if guarded_selection else 0,
+        "guarded_updates": bool(guarded_updates),
+        "guard_backtrack_steps": int(guard_backtrack_steps) if guarded_updates else 0,
+        "validation_every": (
+            1 if guarded_updates else int(validation_every) if guarded_selection else 0
+        ),
         "validation_selection": selection,
         "metrics": {name: value / count for name, value in sorted(totals.items())},
         "decision_kind_steps": dict(sorted(by_kind.items())),
@@ -394,6 +477,8 @@ def train_local_from_paths(
     seed: int = 0,
     validation_every: int = 0,
     guarded_selection: bool = False,
+    guarded_updates: bool = False,
+    guard_backtrack_steps: int = 4,
 ) -> dict:
     events = load_decision_events(events_path)
     model = TwoTowerModel.from_checkpoint(checkpoint, device=device)
@@ -428,6 +513,8 @@ def train_local_from_paths(
         validation_baseline=held_out_before,
         validation_every=validation_every,
         guarded_selection=guarded_selection,
+        guarded_updates=guarded_updates,
+        guard_backtrack_steps=guard_backtrack_steps,
     )
     held_out_after = evaluate_local_decisions(
         model,

@@ -256,6 +256,142 @@ def test_guarded_selection_restores_parent_when_validation_regresses(
     assert all(torch.equal(before[key], value) for key, value in model.state_dict().items())
 
 
+def test_guarded_updates_backtrack_and_accept_pareto_improvement(monkeypatch) -> None:
+    model = _model()
+    event = _event(
+        good=(model.tokenizer.eos_id, model.tokenizer.pad_id),
+        bad=(model.tokenizer.mask_id,),
+    )
+    event = DecisionEventV1.from_dict(
+        {
+            **event.to_dict(),
+            "canvas_ids": [model.tokenizer.bos_id]
+            + [model.tokenizer.mask_id] * 3,
+        }
+    )
+    held_group = "held"
+    while split_for_group(held_group) != "held_out":
+        held_group += "x"
+    held = replace(
+        event, split="held_out", group_id=held_group, event_id="held"
+    )
+    baseline = {
+        "event_count": 1,
+        "metrics": {
+            "loss": 1.0,
+            "bad_probability_mass": 0.1,
+            "good_probability_mass": 0.2,
+            "mean_margin": 1.0,
+        },
+    }
+    reports = iter(
+        [
+            {
+                "metrics": {
+                    "loss": 1.1,
+                    "bad_probability_mass": 0.11,
+                    "good_probability_mass": 0.21,
+                    "mean_margin": 1.1,
+                }
+            },
+            {
+                "metrics": {
+                    "loss": 0.9,
+                    "bad_probability_mass": 0.09,
+                    "good_probability_mass": 0.21,
+                    "mean_margin": 1.1,
+                }
+            },
+        ]
+    )
+    monkeypatch.setattr(
+        "slm_training.harnesses.preference.local_train.evaluate_local_decisions",
+        lambda *args, **kwargs: next(reports),
+    )
+    before = copy.deepcopy(model.state_dict())
+
+    summary = train_local_decisions(
+        model,
+        [event],
+        objective="ftpo_set",
+        steps=1,
+        validation_events=[held],
+        validation_baseline=baseline,
+        guarded_updates=True,
+    )
+
+    selection = summary["validation_selection"]
+    assert selection["accepted_steps"] == 1
+    assert selection["rejected_steps"] == 0
+    assert selection["history"][1]["accepted_scale"] == 0.5
+    assert any(
+        not torch.equal(before[key], value)
+        for key, value in model.state_dict().items()
+    )
+
+
+def test_guarded_updates_restore_model_when_all_scales_regress(monkeypatch) -> None:
+    model = _model()
+    event = _event(
+        good=(model.tokenizer.eos_id, model.tokenizer.pad_id),
+        bad=(model.tokenizer.mask_id,),
+    )
+    event = DecisionEventV1.from_dict(
+        {
+            **event.to_dict(),
+            "canvas_ids": [model.tokenizer.bos_id]
+            + [model.tokenizer.mask_id] * 3,
+        }
+    )
+    held_group = "held"
+    while split_for_group(held_group) != "held_out":
+        held_group += "x"
+    held = replace(
+        event, split="held_out", group_id=held_group, event_id="held"
+    )
+    baseline = {
+        "event_count": 1,
+        "metrics": {
+            "loss": 1.0,
+            "bad_probability_mass": 0.1,
+            "good_probability_mass": 0.2,
+            "mean_margin": 1.0,
+        },
+    }
+    regressed = {
+        "metrics": {
+            "loss": 1.1,
+            "bad_probability_mass": 0.11,
+            "good_probability_mass": 0.21,
+            "mean_margin": 1.1,
+        }
+    }
+    monkeypatch.setattr(
+        "slm_training.harnesses.preference.local_train.evaluate_local_decisions",
+        lambda *args, **kwargs: regressed,
+    )
+    before = copy.deepcopy(model.state_dict())
+
+    summary = train_local_decisions(
+        model,
+        [event],
+        objective="ftpo_set",
+        steps=1,
+        validation_events=[held],
+        validation_baseline=baseline,
+        guarded_updates=True,
+        guard_backtrack_steps=2,
+    )
+
+    selection = summary["validation_selection"]
+    assert selection["accepted_steps"] == 0
+    assert selection["rejected_steps"] == 1
+    assert len(selection["history"][1]["trials"]) == 3
+    assert all(
+        torch.equal(before[key], value) for key, value in model.state_dict().items()
+    )
+
+
 def test_train_local_from_paths_checks_identity_and_writes_checkpoint(tmp_path) -> None:
     model = _model()
     checkpoint = tmp_path / "parent.pt"

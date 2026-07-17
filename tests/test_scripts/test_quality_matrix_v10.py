@@ -18,12 +18,14 @@ def test_v10_registers_exact_state_ablation_rows() -> None:
         "E254",
         "E263",
         "E264",
+        "E265",
     ]
     assert rows[0].local_parent_control is True
     assert [row.local_preference_objective for row in rows[1:]] == [
         "ce_margin",
         "unlikelihood",
         "ftpo_single",
+        "ftpo_set",
         "ftpo_set",
         "ftpo_set",
         "ftpo_set",
@@ -36,6 +38,8 @@ def test_v10_registers_exact_state_ablation_rows() -> None:
     assert by_id["E263"].local_preference_reference_tether is False
     assert by_id["E263"].local_preference_balanced is False
     assert by_id["E264"].local_preference_guarded_selection is True
+    assert by_id["E265"].local_preference_guarded_updates is True
+    assert by_id["E265"].local_preference_guard_backtrack_steps == 4
     assert all(row.compiler_decode_mode == "tree" for row in rows)
 
 
