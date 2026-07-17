@@ -1,0 +1,1004 @@
+{
+  "version": "scope_graded_v1",
+  "source": "all",
+  "derive_from": null,
+  "seed_path": "src/slm_training/resources/train_seeds.jsonl",
+  "rico_path": "src/slm_training/resources/rico/semantic_train.jsonl",
+  "rico_hf_split": null,
+  "seed_count": 921,
+  "collected_count": 1705,
+  "verifier_rejected": 108,
+  "verifier_rejected_samples": [
+    {
+      "id": "2058e15c360aea91_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "25858608d6088f3c_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "7643f9985a41fa29_scope",
+      "failing_gate": "G11",
+      "governance_status": null
+    },
+    {
+      "id": "aww_app_01",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_app_01_aug_dir",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_app_01_syn_0",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_app_01_syn_1",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_app_01_syn_2",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_app_01_design_contrastive",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_contact_01",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_contact_01_aug_dir",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_contact_01_syn_0",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_contact_01_syn_1",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_contact_01_syn_2",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_contact_01_design_contrastive",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_creative_01",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_creative_01_aug_dir",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_creative_01_syn_0",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_creative_01_syn_1",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    },
+    {
+      "id": "aww_creative_01_syn_2",
+      "failing_gate": "G10",
+      "governance_status": "Quarantined"
+    }
+  ],
+  "verification_tier_rejected": 0,
+  "verification_tier_rejected_samples": [],
+  "quality_rejected": 26,
+  "quality_rejected_samples": [
+    {
+      "id": "0072a4a4626efe70_scope",
+      "ok": false,
+      "score": 0.6,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 4,
+      "n_placeholders": 0,
+      "component_diversity": 4,
+      "openui_chars": 175,
+      "design_lint_score": 1.0,
+      "components": {
+        "Stack": 1,
+        "Separator": 1,
+        "Series": 1,
+        "SingleStackedBarChart": 1
+      },
+      "independent_judge": {
+        "ok": true,
+        "score": 1.0,
+        "reasons": []
+      }
+    },
+    {
+      "id": "0072a4a4626efe70_scope",
+      "ok": false,
+      "score": 0.6,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 4,
+      "n_placeholders": 0,
+      "component_diversity": 4,
+      "openui_chars": 175,
+      "design_lint_score": 1.0,
+      "components": {
+        "Stack": 1,
+        "Separator": 1,
+        "Series": 1,
+        "SingleStackedBarChart": 1
+      },
+      "independent_judge": {
+        "ok": true,
+        "score": 1.0,
+        "reasons": []
+      }
+    },
+    {
+      "id": "66bafbdf1a3c568b_scope",
+      "ok": false,
+      "score": 0.6,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 4,
+      "n_placeholders": 0,
+      "component_diversity": 4,
+      "openui_chars": 175,
+      "design_lint_score": 1.0,
+      "components": {
+        "Stack": 1,
+        "Separator": 1,
+        "Series": 1,
+        "SingleStackedBarChart": 1
+      },
+      "independent_judge": {
+        "ok": true,
+        "score": 1.0,
+        "reasons": []
+      }
+    },
+    {
+      "id": "7e5c675ff7f935df_scope",
+      "ok": false,
+      "score": 0.6,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 4,
+      "n_placeholders": 0,
+      "component_diversity": 4,
+      "openui_chars": 150,
+      "design_lint_score": 1.0,
+      "components": {
+        "Stack": 1,
+        "Point": 1,
+        "RadarChart": 1,
+        "RadialChart": 1
+      },
+      "independent_judge": {
+        "ok": true,
+        "score": 1.0,
+        "reasons": []
+      }
+    },
+    {
+      "id": "7e5c675ff7f935df_scope",
+      "ok": false,
+      "score": 0.6,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 4,
+      "n_placeholders": 0,
+      "component_diversity": 4,
+      "openui_chars": 150,
+      "design_lint_score": 1.0,
+      "components": {
+        "Stack": 1,
+        "Point": 1,
+        "RadarChart": 1,
+        "RadialChart": 1
+      },
+      "independent_judge": {
+        "ok": true,
+        "score": 1.0,
+        "reasons": []
+      }
+    },
+    {
+      "id": "888683d79ec85608_scope",
+      "ok": false,
+      "score": 0.6,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 4,
+      "n_placeholders": 0,
+      "component_diversity": 4,
+      "openui_chars": 136,
+      "design_lint_score": 1.0,
+      "components": {
+        "Stack": 1,
+        "Point": 1,
+        "RadarChart": 1,
+        "RadialChart": 1
+      },
+      "independent_judge": {
+        "ok": true,
+        "score": 1.0,
+        "reasons": []
+      }
+    },
+    {
+      "id": "8acc2f7887629a39_scope",
+      "ok": false,
+      "score": 0.6,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 4,
+      "n_placeholders": 0,
+      "component_diversity": 4,
+      "openui_chars": 150,
+      "design_lint_score": 1.0,
+      "components": {
+        "Stack": 1,
+        "Point": 1,
+        "RadarChart": 1,
+        "RadialChart": 1
+      },
+      "independent_judge": {
+        "ok": true,
+        "score": 1.0,
+        "reasons": []
+      }
+    },
+    {
+      "id": "b595c4e2248f97ae_scope",
+      "ok": false,
+      "score": 0.6,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 4,
+      "n_placeholders": 0,
+      "component_diversity": 4,
+      "openui_chars": 150,
+      "design_lint_score": 1.0,
+      "components": {
+        "Point": 1,
+        "RadarChart": 1,
+        "RadialChart": 1,
+        "Stack": 1
+      },
+      "independent_judge": {
+        "ok": true,
+        "score": 1.0,
+        "reasons": []
+      }
+    },
+    {
+      "id": "bd49a1b0274d58f2_scope",
+      "ok": false,
+      "score": 0.6,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 4,
+      "n_placeholders": 0,
+      "component_diversity": 4,
+      "openui_chars": 175,
+      "design_lint_score": 1.0,
+      "components": {
+        "Stack": 1,
+        "Separator": 1,
+        "Series": 1,
+        "SingleStackedBarChart": 1
+      },
+      "independent_judge": {
+        "ok": true,
+        "score": 1.0,
+        "reasons": []
+      }
+    },
+    {
+      "id": "d8681f4c474402a0_scope",
+      "ok": false,
+      "score": 0.6,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 4,
+      "n_placeholders": 0,
+      "component_diversity": 4,
+      "openui_chars": 150,
+      "design_lint_score": 1.0,
+      "components": {
+        "Stack": 1,
+        "Point": 1,
+        "RadarChart": 1,
+        "RadialChart": 1
+      },
+      "independent_judge": {
+        "ok": true,
+        "score": 1.0,
+        "reasons": []
+      }
+    },
+    {
+      "id": "dfd5532c4944dc81_scope",
+      "ok": false,
+      "score": 0.6,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 4,
+      "n_placeholders": 0,
+      "component_diversity": 4,
+      "openui_chars": 175,
+      "design_lint_score": 1.0,
+      "components": {
+        "Separator": 1,
+        "Series": 1,
+        "SingleStackedBarChart": 1,
+        "Stack": 1
+      },
+      "independent_judge": {
+        "ok": true,
+        "score": 1.0,
+        "reasons": []
+      }
+    },
+    {
+      "id": "f6b714a71a655ac3_scope",
+      "ok": false,
+      "score": 0.6,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 4,
+      "n_placeholders": 0,
+      "component_diversity": 4,
+      "openui_chars": 162,
+      "design_lint_score": 1.0,
+      "components": {
+        "Stack": 1,
+        "Separator": 1,
+        "Series": 1,
+        "SingleStackedBarChart": 1
+      },
+      "independent_judge": {
+        "ok": true,
+        "score": 1.0,
+        "reasons": []
+      }
+    },
+    {
+      "id": "program_6154681f3a809853",
+      "ok": false,
+      "score": 0.6,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 4,
+      "n_placeholders": 0,
+      "component_diversity": 4,
+      "openui_chars": 175,
+      "design_lint_score": 1.0,
+      "components": {
+        "Stack": 1,
+        "Separator": 1,
+        "Series": 1,
+        "SingleStackedBarChart": 1
+      },
+      "independent_judge": {
+        "ok": true,
+        "score": 1.0,
+        "reasons": []
+      }
+    },
+    {
+      "id": "program_6154681f3a809853_aug_dir",
+      "ok": false,
+      "score": 0.6,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 4,
+      "n_placeholders": 0,
+      "component_diversity": 4,
+      "openui_chars": 178,
+      "design_lint_score": 1.0,
+      "components": {
+        "Stack": 1,
+        "Separator": 1,
+        "Series": 1,
+        "SingleStackedBarChart": 1
+      },
+      "independent_judge": {
+        "ok": true,
+        "score": 1.0,
+        "reasons": []
+      }
+    },
+    {
+      "id": "program_6154681f3a809853_design_contrastive",
+      "ok": false,
+      "score": 0.6,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 4,
+      "n_placeholders": 0,
+      "component_diversity": 4,
+      "openui_chars": 175,
+      "design_lint_score": 1.0,
+      "components": {
+        "Stack": 1,
+        "Separator": 1,
+        "Series": 1,
+        "SingleStackedBarChart": 1
+      },
+      "independent_judge": {
+        "ok": true,
+        "score": 1.0,
+        "reasons": []
+      }
+    },
+    {
+      "id": "program_6154681f3a809853_repair_c1eb27eb373d",
+      "ok": false,
+      "score": 0.6,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 4,
+      "n_placeholders": 0,
+      "component_diversity": 4,
+      "openui_chars": 175,
+      "design_lint_score": 1.0,
+      "components": {
+        "Stack": 1,
+        "Separator": 1,
+        "Series": 1,
+        "SingleStackedBarChart": 1
+      },
+      "independent_judge": {
+        "ok": true,
+        "score": 1.0,
+        "reasons": []
+      }
+    },
+    {
+      "id": "program_6154681f3a809853_syn_0",
+      "ok": false,
+      "score": 0.6,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 4,
+      "n_placeholders": 0,
+      "component_diversity": 4,
+      "openui_chars": 175,
+      "design_lint_score": 1.0,
+      "components": {
+        "Stack": 1,
+        "Separator": 1,
+        "Series": 1,
+        "SingleStackedBarChart": 1
+      },
+      "independent_judge": {
+        "ok": true,
+        "score": 1.0,
+        "reasons": []
+      }
+    },
+    {
+      "id": "program_6154681f3a809853_syn_1",
+      "ok": false,
+      "score": 0.6,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 4,
+      "n_placeholders": 0,
+      "component_diversity": 4,
+      "openui_chars": 175,
+      "design_lint_score": 1.0,
+      "components": {
+        "Stack": 1,
+        "Separator": 1,
+        "Series": 1,
+        "SingleStackedBarChart": 1
+      },
+      "independent_judge": {
+        "ok": true,
+        "score": 1.0,
+        "reasons": []
+      }
+    },
+    {
+      "id": "program_6154681f3a809853_syn_2",
+      "ok": false,
+      "score": 0.6,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 4,
+      "n_placeholders": 0,
+      "component_diversity": 4,
+      "openui_chars": 175,
+      "design_lint_score": 1.0,
+      "components": {
+        "Stack": 1,
+        "Separator": 1,
+        "Series": 1,
+        "SingleStackedBarChart": 1
+      },
+      "independent_judge": {
+        "ok": true,
+        "score": 1.0,
+        "reasons": []
+      }
+    },
+    {
+      "id": "program_7a100aea1fb8dbba",
+      "ok": false,
+      "score": 0.6,
+      "reasons": [
+        "too_few_placeholders",
+        "unknown_components"
+      ],
+      "n_components": 4,
+      "n_placeholders": 0,
+      "component_diversity": 4,
+      "openui_chars": 150,
+      "design_lint_score": 1.0,
+      "components": {
+        "Stack": 1,
+        "Point": 1,
+        "RadarChart": 1,
+        "RadialChart": 1
+      },
+      "independent_judge": {
+        "ok": true,
+        "score": 1.0,
+        "reasons": []
+      }
+    }
+  ],
+  "record_count": 1223,
+  "error_count": 0,
+  "errors": [],
+  "synthesizer": "quality",
+  "min_quality_score": 0.55,
+  "min_verification_tier": null,
+  "max_openui_chars": null,
+  "max_components": null,
+  "curriculum": false,
+  "prompt_slot_contract": false,
+  "structure_reserved_rejected": 20,
+  "structure_reserved_rejected_samples": [
+    {
+      "id": "rico_train_169",
+      "source": "rico",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "rico_train_169_design_contrastive",
+      "source": "rico+design_md_contrastive",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "rico_train_169_syn_0",
+      "source": "rico+template",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "rico_train_169_syn_1",
+      "source": "rico+template",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "rico_train_169_syn_2",
+      "source": "rico+template",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_card_stack_01",
+      "source": "fixture",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_card_stack_01_design_contrastive",
+      "source": "fixture+design_md_contrastive",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_card_stack_01_syn_0",
+      "source": "fixture+template",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_card_stack_01_syn_1",
+      "source": "fixture+template",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_card_stack_01_syn_2",
+      "source": "fixture+template",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_metrics_01",
+      "source": "fixture",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_metrics_01_design_contrastive",
+      "source": "fixture+design_md_contrastive",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_metrics_01_syn_0",
+      "source": "fixture+template",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_metrics_01_syn_1",
+      "source": "fixture+template",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_metrics_01_syn_2",
+      "source": "fixture+template",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_tabs_01",
+      "source": "fixture",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_tabs_01_design_contrastive",
+      "source": "fixture+design_md_contrastive",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_tabs_01_syn_0",
+      "source": "fixture+template",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_tabs_01_syn_1",
+      "source": "fixture+template",
+      "reason": "test_fixture_structure"
+    },
+    {
+      "id": "train_tabs_01_syn_2",
+      "source": "fixture+template",
+      "reason": "test_fixture_structure"
+    }
+  ],
+  "max_records_per_parent": null,
+  "parent_cap_dropped": 0,
+  "parent_cap_dropped_samples": [],
+  "fuzzy_dedup": false,
+  "fuzzy_dropped": 0,
+  "fuzzy_dropped_samples": [],
+  "semantic_cluster_cap": null,
+  "semantic_dropped": 0,
+  "semantic_dropped_samples": [],
+  "producer_inputs": {
+    "programspec_path": "outputs/data/programspec/programs.jsonl",
+    "programspec_count": 16,
+    "programspec_seed": 0,
+    "language_contract": true,
+    "deconstruct_path": "src/slm_training/resources/deconstruct/pipeline.jsonl",
+    "render_path": "src/slm_training/resources/render/sample_program.json",
+    "frontier_artifacts": true,
+    "repairs_per_program": 1,
+    "edit_derivatives": true,
+    "scope_derivatives": false,
+    "design_md_contrastive": true,
+    "scope_corpus": true,
+    "scope_kinds": [
+      "document",
+      "statement",
+      "expression",
+      "lexical"
+    ],
+    "scope_identity_per_scope": 3,
+    "scope_canonical_pairs_per_scope": 3,
+    "scoped_repairs_per_scope": 2,
+    "typed_lexical_per_program": 4
+  },
+  "preference_pairs": 189,
+  "preference_pairs_path": "outputs/data/train/scope_graded_v1/preference_pairs.jsonl",
+  "mixture": {
+    "manifest": {
+      "mixture_id": "scope_graded_v1-base",
+      "weights": {
+        "abstraction_ladder": 0.046875,
+        "awwwards_real": 0.03125,
+        "corruption_repair": 0.046875,
+        "diffusion_corruption": 0.015625,
+        "edit_trajectory": 0.046875,
+        "frontier_described": 0.0078125,
+        "frontier_product": 0.0078125,
+        "frontier_semantic": 0.0078125,
+        "frontier_simplified": 0.0078125,
+        "frontier_user": 0.0078125,
+        "gold_correction": 0.01171875,
+        "human_curated": 0.0625,
+        "human_feedback": 0.046875,
+        "language_contract": 0.0625,
+        "layout_augment": 0.01953125,
+        "lexical_typed_map": 0.015625,
+        "namespace_augment": 0.01171875,
+        "programspec_generated": 0.09375,
+        "prompt_paraphrase": 0.0234375,
+        "renderer_visual": 0.0390625,
+        "rico_real": 0.09375,
+        "scope_canonical_document": 0.0234375,
+        "scope_canonical_expression": 0.0234375,
+        "scope_canonical_lexical": 0.0234375,
+        "scope_canonical_statement": 0.0234375,
+        "scope_contract": 0.015625,
+        "scope_identity_document": 0.015625,
+        "scope_identity_expression": 0.015625,
+        "scope_identity_lexical": 0.015625,
+        "scope_identity_statement": 0.015625,
+        "scope_repair_expression": 0.015625,
+        "scope_repair_lexical": 0.015625,
+        "scope_repair_statement": 0.015625,
+        "self_distilled_repair": 0.015625,
+        "self_distilled_success": 0.015625,
+        "stress_adversarial": 0.01953125,
+        "web_distilled": 0.0234375
+      },
+      "task_weights": {
+        "generation": 0.16666666666666666,
+        "identity_echo": 0.16666666666666666,
+        "noop_adversarial": 0.16666666666666666,
+        "patch_edit": 0.16666666666666666,
+        "repair_completion_inpaint": 0.16666666666666666,
+        "state_behavior": 0.16666666666666666
+      },
+      "notes": "P12 deterministic build; P11-owned weights.",
+      "version": 2
+    },
+    "hash": "288c8f20cace237abd4390364b38629dad42745202c1d59f3cf45c8ed77cede3",
+    "diagnostics": {
+      "records": 1223,
+      "family_counts": {
+        "abstraction_ladder": 5,
+        "corruption_repair": 13,
+        "edit_trajectory": 52,
+        "frontier_described": 3,
+        "human_curated": 34,
+        "language_contract": 63,
+        "layout_augment": 153,
+        "lexical_typed_map": 27,
+        "programspec_generated": 26,
+        "prompt_paraphrase": 297,
+        "renderer_visual": 1,
+        "rico_real": 108,
+        "scope_canonical_document": 39,
+        "scope_canonical_expression": 43,
+        "scope_canonical_lexical": 19,
+        "scope_canonical_statement": 43,
+        "scope_identity_document": 39,
+        "scope_identity_expression": 72,
+        "scope_identity_lexical": 30,
+        "scope_identity_statement": 86,
+        "scope_repair_expression": 27,
+        "scope_repair_lexical": 9,
+        "scope_repair_statement": 32,
+        "web_distilled": 2
+      },
+      "task_counts": {
+        "edit": 158,
+        "generation": 744,
+        "identity": 227,
+        "patch": 13,
+        "repair": 81
+      },
+      "task_group_counts": {
+        "generation": 744,
+        "identity_echo": 227,
+        "patch_edit": 171,
+        "repair_completion_inpaint": 81
+      },
+      "unclassified_tasks": 0,
+      "unique_program_families": 80,
+      "unique_structural_families": 343,
+      "observed_component_counts": {
+        "Accordion": 29,
+        "AccordionItem": 31,
+        "AreaChart": 24,
+        "BarChart": 1,
+        "Button": 186,
+        "Buttons": 19,
+        "Callout": 38,
+        "Card": 1306,
+        "CardHeader": 31,
+        "Carousel": 29,
+        "CheckBoxGroup": 30,
+        "CheckBoxItem": 25,
+        "CodeBlock": 31,
+        "Col": 31,
+        "DatePicker": 24,
+        "Form": 19,
+        "FormControl": 16,
+        "HorizontalBarChart": 1,
+        "Image": 29,
+        "ImageBlock": 47,
+        "ImageGallery": 24,
+        "Input": 55,
+        "Label": 28,
+        "LineChart": 26,
+        "MarkDownRenderer": 29,
+        "Modal": 37,
+        "Null": 1,
+        "Number": 1,
+        "PieChart": 26,
+        "Point": 11,
+        "RadarChart": 6,
+        "RadialChart": 2,
+        "RadioGroup": 31,
+        "RadioItem": 31,
+        "ScatterChart": 24,
+        "ScatterSeries": 32,
+        "Select": 30,
+        "SelectItem": 25,
+        "Separator": 14,
+        "Series": 13,
+        "SingleStackedBarChart": 2,
+        "Slice": 1,
+        "Slider": 8,
+        "Stack": 1192,
+        "Steps": 29,
+        "StepsItem": 31,
+        "String": 25,
+        "SwitchGroup": 26,
+        "SwitchItem": 39,
+        "TabItem": 33,
+        "Table": 24,
+        "Tabs": 31,
+        "Tag": 28,
+        "TagBlock": 24,
+        "TextArea": 29,
+        "TextCallout": 28,
+        "TextContent": 2941
+      },
+      "configured_but_absent_families": [
+        "awwwards_real",
+        "diffusion_corruption",
+        "frontier_product",
+        "frontier_semantic",
+        "frontier_simplified",
+        "frontier_user",
+        "gold_correction",
+        "human_feedback",
+        "namespace_augment",
+        "scope_contract",
+        "self_distilled_repair",
+        "self_distilled_success",
+        "stress_adversarial"
+      ],
+      "present_but_unweighted_families": []
+    }
+  },
+  "mean_quality_score": 0.9862,
+  "placeholder_vocab_size": 319,
+  "with_design_md": 774,
+  "component_histogram": {
+    "Accordion": 29,
+    "AccordionItem": 31,
+    "AreaChart": 24,
+    "BarChart": 1,
+    "Button": 186,
+    "Buttons": 19,
+    "Callout": 38,
+    "Card": 1306,
+    "CardHeader": 31,
+    "Carousel": 29,
+    "CheckBoxGroup": 30,
+    "CheckBoxItem": 25,
+    "CodeBlock": 31,
+    "Col": 31,
+    "DatePicker": 24,
+    "Form": 19,
+    "FormControl": 16,
+    "HorizontalBarChart": 1,
+    "Image": 29,
+    "ImageBlock": 47,
+    "ImageGallery": 24,
+    "Input": 55,
+    "Label": 28,
+    "LineChart": 26,
+    "MarkDownRenderer": 29,
+    "Modal": 37,
+    "Null": 1,
+    "Number": 1,
+    "PieChart": 26,
+    "Point": 11,
+    "RadarChart": 6,
+    "RadialChart": 2,
+    "RadioGroup": 31,
+    "RadioItem": 31,
+    "ScatterChart": 24,
+    "ScatterSeries": 32,
+    "Select": 30,
+    "SelectItem": 25,
+    "Separator": 14,
+    "Series": 13,
+    "SingleStackedBarChart": 2,
+    "Slice": 1,
+    "Slider": 8,
+    "Stack": 1192,
+    "Steps": 29,
+    "StepsItem": 31,
+    "String": 25,
+    "SwitchGroup": 26,
+    "SwitchItem": 39,
+    "TabItem": 33,
+    "Table": 24,
+    "Tabs": 31,
+    "Tag": 28,
+    "TagBlock": 24,
+    "TextArea": 29,
+    "TextCallout": 28,
+    "TextContent": 2941
+  },
+  "built_at": "2026-07-16T21:39:50.451519+00:00"
+}

@@ -244,6 +244,22 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="P1a: max representatives per semantic cluster (default: uncapped).",
     )
+    parser.add_argument(
+        "--publish",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Publish the built version into the committed resources root after "
+            "the build (immutable snapshot; identical rebuilds are a no-op, a "
+            "changed rebuild of the same version fails — bump --version)."
+        ),
+    )
+    parser.add_argument(
+        "--publish-root",
+        type=Path,
+        default=Path("src/slm_training/resources/data/train"),
+        help="Destination root for the published snapshot.",
+    )
     args = parser.parse_args(argv)
 
     config = TrainDataConfig(
@@ -328,7 +344,33 @@ def main(argv: list[str] | None = None) -> int:
     print(json.dumps(result["stats"], indent=2))
     print(f"wrote {result['output_dir']}")
     print(f"content_fingerprint={result['manifest'].get('content_fingerprint')}")
+    if args.publish:
+        published = _publish(args.version, args.output_root, args.publish_root)
+        print(f"published {published}")
     return 0
+
+
+def _publish(version: str, output_root: Path, publish_root: Path) -> Path:
+    """Publish the freshly built version as an immutable committed snapshot.
+
+    An identical already-published version is a no-op; a content mismatch for
+    the same version fails loudly (DataStore enforces immutability) — bump
+    ``--version`` instead of overwriting evidence.
+    """
+    from slm_training.data.store import DataStore
+
+    if output_root.name != "train" or publish_root.name != "train":
+        raise ValueError(
+            "publishing requires the conventional <root>/train layout for "
+            f"--output-root and --publish-root (got {output_root} and "
+            f"{publish_root}); pass --no-publish for ad-hoc roots"
+        )
+    store = DataStore(local_root=output_root.parent, published_root=publish_root.parent)
+    try:
+        return store.publish("train", version).path
+    except FileExistsError:
+        # resolve() already proved local and published fingerprints match.
+        return store.published_path("train", version)
 
 
 if __name__ == "__main__":
