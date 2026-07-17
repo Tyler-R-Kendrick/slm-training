@@ -19,6 +19,7 @@ import json
 import os
 import re
 import tempfile
+from functools import cached_property
 from pathlib import Path
 from typing import Any
 
@@ -160,6 +161,28 @@ def _parse_markdown_table(text: str, heading: str) -> list[dict[str, str]]:
 def _plain_markdown(value: str | None) -> str:
     text = re.sub(r"\[([^]]+)]\([^)]+\)", r"\1", value or "")
     return text.replace("`", "").replace("**", "").strip()
+
+
+def _format_parameters(value: int | None, *, estimated: bool = False) -> str:
+    if not value:
+        return "—"
+    prefix = "≈" if estimated else ""
+    if value >= 1_000_000_000:
+        return f"{prefix}{value / 1_000_000_000:.1f}B"
+    if value >= 1_000_000:
+        return f"{prefix}{value / 1_000_000:.1f}M"
+    if value >= 1_000:
+        return f"{prefix}{value / 1_000:.0f}K"
+    return f"{prefix}{value}"
+
+
+def _format_bytes(value: int | None, *, estimated: bool = False) -> str:
+    if not value:
+        return "—"
+    prefix = "≈" if estimated else ""
+    if value >= 1_000_000_000:
+        return f"{prefix}{value / 1_000_000_000:.2f} GB"
+    return f"{prefix}{value / 1_000_000:.2f} MB"
 
 
 _METRIC_LABELS = {
@@ -645,6 +668,186 @@ class Readers:
 
     # ---- checkpoints roster ---------------------------------------------------
 
+    @cached_property
+    def _comparable_twotower_metrics(self) -> dict[str, Any]:
+        checkpoint = self.fixtures / "checkpoints" / "playground_demo" / "last.pt"
+        meta = _read_json(checkpoint.with_suffix(".meta.json")) or {}
+        parameter_count = meta.get("parameter_count")
+        if not isinstance(parameter_count, int):
+            parameter_count = None
+        checkpoint_bytes = checkpoint.stat().st_size if checkpoint.exists() else None
+
+        perf = _read_json(self.docs_design / "perf-matrix-results.json") or {}
+        rates = [
+            float(row["tokens_per_sec"])
+            for row in _results_of(perf)
+            if isinstance(row.get("tokens_per_sec"), (int, float))
+        ]
+        throughput = f"{min(rates):.0f}–{max(rates):.0f} tok/s CPU" if rates else "—"
+        return {
+            "parameter_count": parameter_count,
+            "checkpoint_bytes": checkpoint_bytes,
+            "throughput": throughput,
+        }
+
+    @cached_property
+    def _perf_throughput(self) -> dict[str, float]:
+        return {
+            str(row.get("run_id") or row.get("id")): float(row["tokens_per_sec"])
+            for row in self.scoreboard("perf")["results"]
+            if isinstance(row.get("tokens_per_sec"), (int, float))
+        }
+
+    def _checkpoint_resource_metrics(
+        self, *, run_id: str, role: str, kind: str, location: str, status: str
+    ) -> dict[str, str]:
+        evidence = " ".join((role, kind, location, status)).casefold()
+        architecture = (
+            "Causal LM"
+            if "causal_lm" in evidence
+            else "TwoTower · frozen HF"
+            if any(token in evidence for token in ("hf-context", "smollm", "135m"))
+            else "Grammar diffusion"
+            if "grammar" in evidence
+            else "TwoTower · scratch"
+        )
+
+        checkpoint: Path | None = None
+        raw_path = _plain_markdown(location).split(" ", 1)[0]
+        if raw_path.endswith(".pt"):
+            candidate = Path(raw_path)
+            candidate = candidate if candidate.is_absolute() else self.root / candidate
+            try:
+                candidate.relative_to(self.root)
+                if candidate.exists():
+                    checkpoint = candidate
+            except ValueError:
+                pass
+
+        parameter_count: int | None = None
+        checkpoint_bytes: int | None = None
+        throughput: float | None = None
+        measured: list[str] = []
+        if checkpoint is not None:
+            checkpoint_bytes = checkpoint.stat().st_size
+            measured.append("checkpoint size")
+            meta = _read_json(checkpoint.with_suffix(".meta.json")) or {}
+            if isinstance(meta.get("parameter_count"), int):
+                parameter_count = meta["parameter_count"]
+                measured.append("parameters")
+            summary = _read_json(checkpoint.parent.parent / "train_summary.json") or {}
+            track = (
+                summary.get("track") if isinstance(summary.get("track"), dict) else {}
+            )
+            counts = [
+                track.get("trainable_params"),
+                track.get("frozen_params"),
+            ]
+            if any(isinstance(value, int) for value in counts):
+                parameter_count = sum(
+                    value for value in counts if isinstance(value, int)
+                )
+                if "parameters" not in measured:
+                    measured.append("parameters")
+
+        if run_id in self._perf_throughput:
+            throughput = self._perf_throughput[run_id]
+            measured.append("throughput")
+
+        if parameter_count or checkpoint_bytes or throughput is not None:
+            comparable = (
+                self._comparable_twotower_metrics
+                if architecture == "TwoTower · scratch"
+                else {}
+            )
+            return {
+                "architecture": architecture,
+                "parameters": (
+                    _format_parameters(parameter_count)
+                    if parameter_count
+                    else _format_parameters(
+                        comparable.get("parameter_count"), estimated=True
+                    )
+                    if comparable
+                    else "≈135M"
+                    if architecture == "TwoTower · frozen HF"
+                    else "—"
+                ),
+                "model_size": (
+                    _format_bytes(checkpoint_bytes)
+                    if checkpoint_bytes
+                    else _format_bytes(
+                        comparable.get("checkpoint_bytes"), estimated=True
+                    )
+                    if comparable
+                    else "≈270 MB BF16"
+                    if architecture == "TwoTower · frozen HF"
+                    else "—"
+                ),
+                "throughput": (
+                    f"{throughput:.1f} tok/s"
+                    if throughput is not None
+                    else f"≈{comparable['throughput']}"
+                    if comparable and comparable.get("throughput") != "—"
+                    else "—"
+                ),
+                "resource_basis": (
+                    f"Measured from local {', '.join(measured)}; missing fields "
+                    "use the marked comparable architecture estimate."
+                ),
+            }
+
+        if architecture == "TwoTower · frozen HF":
+            return {
+                "architecture": architecture,
+                "parameters": "≈135M",
+                "model_size": "≈270 MB BF16",
+                "throughput": "—",
+                "resource_basis": (
+                    "Architecture estimate for the frozen SmolLM2-135M context; "
+                    "checkpoint footprint and throughput were not recorded."
+                ),
+            }
+        if architecture == "TwoTower · scratch":
+            comparable = self._comparable_twotower_metrics
+            return {
+                "architecture": architecture,
+                "parameters": _format_parameters(
+                    comparable["parameter_count"], estimated=True
+                ),
+                "model_size": _format_bytes(
+                    comparable["checkpoint_bytes"], estimated=True
+                ),
+                "throughput": (
+                    f"≈{comparable['throughput']}"
+                    if comparable["throughput"] != "—"
+                    else "—"
+                ),
+                "resource_basis": (
+                    "Comparable estimate from the committed scratch TwoTower "
+                    "fixture and CPU perf matrix; not measured for this checkpoint."
+                ),
+            }
+        return {
+            "architecture": architecture,
+            "parameters": "—",
+            "model_size": "—",
+            "throughput": "—",
+            "resource_basis": "No comparable architecture benchmark is recorded.",
+        }
+
+    def _with_resource_metrics(self, row: dict[str, Any]) -> dict[str, Any]:
+        return {
+            **row,
+            **self._checkpoint_resource_metrics(
+                run_id=str(row.get("run_id") or ""),
+                role=str(row.get("role") or row.get("track") or ""),
+                kind=str(row.get("kind") or ""),
+                location=str(row.get("location") or ""),
+                status=str(row.get("status") or ""),
+            ),
+        }
+
     def checkpoints(self) -> dict[str, Any]:
         roster: list[dict[str, Any]] = []
         card_text = ""
@@ -694,7 +897,10 @@ class Readers:
                         "provenance": "committed",
                     }
                 )
-        return {"checkpoints": roster, "deployment": self.deployment_state()}
+        return {
+            "checkpoints": [self._with_resource_metrics(row) for row in roster],
+            "deployment": self.deployment_state(),
+        }
 
     def gates_for_run(self, run_id: str) -> dict[str, Any]:
         if not _RUN_ID_RE.fullmatch(run_id):
@@ -1146,7 +1352,7 @@ class Readers:
                 ),
             }
         )
-        return references, identity
+        return [self._with_resource_metrics(row) for row in references], identity
 
     def _performance_rows(
         self, references: list[dict[str, Any]]
