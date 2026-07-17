@@ -27,7 +27,8 @@ from slm_training.data.contract import RuntimeSymbol
 from slm_training.dsl.openui_tokens import STRUCTURAL_TOKENS
 
 # Bump when serialization / vocab layout changes.
-DSL_TOKENIZER_VERSION = 2
+# v3: appended <MACRO_i> rows (C3/SLM-27); all prior ids unchanged.
+DSL_TOKENIZER_VERSION = 3
 SYMBOL_TABLE_VERSION = 3
 
 PAD = "<pad>"
@@ -41,6 +42,10 @@ SPECIAL = [PAD, BOS, EOS, MASK, UNK]
 DEFAULT_SYM_SLOTS = 64
 DEFAULT_BIND_SLOTS = 64
 DEFAULT_STATE_SLOTS = 64
+# C3 (SLM-27): reserved rows for corpus-mined macro tokens. The vocabulary
+# rows are fixed; which expansion each row denotes comes from a per-corpus
+# macro table persisted with the tokenizer.
+DEFAULT_MACRO_SLOTS = 64
 
 LIT_STR = "LIT_STR"
 LIT_NUM = "LIT_NUM"
@@ -60,6 +65,22 @@ class TokenKind(str, Enum):
     BUILTIN = "builtin"
     LIT = "lit"
     BYTE = "byte"
+    MACRO = "macro"
+
+
+# Fixed-vocabulary kinds a macro expansion may contain (C3). Dynamic
+# per-example rows (SYM/BIND/STATE) are excluded by construction so every
+# expansion is context-free and the α-equivalence pitfall documented in
+# dsl/canonicalize.py cannot arise.
+MACRO_EXPANDABLE_KINDS = frozenset(
+    {
+        TokenKind.STRUCT.value,
+        TokenKind.COMPONENT.value,
+        TokenKind.BUILTIN.value,
+        TokenKind.LIT.value,
+        TokenKind.BYTE.value,
+    }
+)
 
 
 # Common closed string atoms that appear as OpenUI props (layout / size / tone).
@@ -250,6 +271,10 @@ def _bind_rel_token(delta: int) -> str:
 
 def _state_token(i: int) -> str:
     return f"<STATE_{i}>"
+
+
+def _macro_token(i: int) -> str:
+    return f"<MACRO_{i}>"
 
 
 def _bind_surface_name(i: int) -> str:
@@ -451,6 +476,12 @@ class DSLNativeTokenizer:
     state_slots: int = DEFAULT_STATE_SLOTS
     # absolute (<BIND_j> identity slots) | relative (C1: <BINDDEF>/<BINDREL_±k>)
     bind_encoding: str = "absolute"
+    macro_slots: int = DEFAULT_MACRO_SLOTS
+    # C3 (SLM-27): per-corpus macro table — slot index → expansion token
+    # strings. Deterministic and lossless: encode greedily substitutes
+    # <MACRO_i> for its expansion, decode splices the expansion back before
+    # rendering. One level only (expansions never contain macro tokens).
+    macro_expansions: tuple[tuple[str, ...], ...] = ()
     # Overflow counter (byte-path used when symbol table is full).
     overflow_count: int = 0
 
@@ -507,6 +538,104 @@ class DSLNativeTokenizer:
     def state_id(self, slot: int) -> int:
         return self.token_to_id[_state_token(slot)]
 
+    def is_macro_id(self, tid: int) -> bool:
+        return self.kind_of(tid) == TokenKind.MACRO
+
+    def macro_id(self, slot: int) -> int:
+        return self.token_to_id[_macro_token(slot)]
+
+    def macro_slot_of(self, tid: int) -> int | None:
+        tok = self.id_to_token.get(int(tid), "")
+        if tok.startswith("<MACRO_") and tok.endswith(">"):
+            try:
+                return int(tok[7:-1])
+            except ValueError:
+                return None
+        return None
+
+    def set_macro_expansions(
+        self, expansions: Iterable[Iterable[str]]
+    ) -> None:
+        """Install a per-corpus macro table (C3), validating fail-closed.
+
+        Every expansion must be at least two tokens long, fit the reserved
+        slot count, and consist solely of fixed-vocabulary tokens
+        (``MACRO_EXPANDABLE_KINDS``) — never per-example SYM/BIND/STATE rows
+        and never other macros, so decode-time expansion is a single
+        deterministic splice.
+        """
+        table: list[tuple[str, ...]] = []
+        for expansion in expansions:
+            tokens = tuple(str(tok) for tok in expansion)
+            if len(tokens) < 2:
+                raise ValueError(f"macro expansion too short: {tokens!r}")
+            for tok in tokens:
+                tid = self.token_to_id.get(tok)
+                if tid is None:
+                    raise ValueError(f"macro expansion token not in vocab: {tok!r}")
+                if self.id_to_kind.get(tid) not in MACRO_EXPANDABLE_KINDS:
+                    raise ValueError(
+                        f"macro expansion token {tok!r} has non-fixed kind "
+                        f"{self.id_to_kind.get(tid)!r}"
+                    )
+            table.append(tokens)
+        if len(table) > self.macro_slots:
+            raise ValueError(
+                f"{len(table)} macros exceed the {self.macro_slots} reserved slots"
+            )
+        self.macro_expansions = tuple(table)
+
+    def _macro_expansion_ids(self) -> list[tuple[int, tuple[int, ...]]]:
+        """(macro_id, expansion_ids) pairs, longest expansion first."""
+        pairs = [
+            (self.macro_id(slot), tuple(self.token_to_id[tok] for tok in tokens))
+            for slot, tokens in enumerate(self.macro_expansions)
+        ]
+        return sorted(pairs, key=lambda item: len(item[1]), reverse=True)
+
+    def apply_macros(self, ids: list[int]) -> list[int]:
+        """Greedy longest-first macro substitution over an id sequence."""
+        if not self.macro_expansions:
+            return list(ids)
+        out = list(ids)
+        for macro_tid, expansion in self._macro_expansion_ids():
+            span = len(expansion)
+            replaced: list[int] = []
+            index = 0
+            while index < len(out):
+                if tuple(out[index : index + span]) == expansion:
+                    replaced.append(macro_tid)
+                    index += span
+                else:
+                    replaced.append(out[index])
+                    index += 1
+            out = replaced
+        return out
+
+    def expand_macros(self, ids: list[int]) -> list[int]:
+        """Deterministically splice macro expansions back into an id sequence.
+
+        Macro rows without a table entry are dropped (fail closed) — an
+        orphaned macro must never render as fake surface content.
+        """
+        expansion_by_id = {
+            macro_tid: expansion
+            for macro_tid, expansion in self._macro_expansion_ids()
+        }
+        out: list[int] = []
+        for raw in ids:
+            tid = int(raw)
+            expansion = expansion_by_id.get(tid)
+            if expansion is not None:
+                out.extend(expansion)
+            elif self.is_macro_id(tid):
+                # Fail closed: a macro row with no table entry renders as
+                # nothing rather than silently standing in for content.
+                continue
+            else:
+                out.append(tid)
+        return out
+
     def sym_slot_of(self, tid: int) -> int | None:
         tok = self.id_to_token.get(int(tid), "")
         if tok.startswith("<SYM_") and tok.endswith(">"):
@@ -556,6 +685,7 @@ class DSLNativeTokenizer:
         bind_slots: int = DEFAULT_BIND_SLOTS,
         state_slots: int = DEFAULT_STATE_SLOTS,
         bind_encoding: str = "absolute",
+        macro_slots: int = DEFAULT_MACRO_SLOTS,
     ) -> DSLNativeTokenizer:
         """Build the fixed corpus-independent vocabulary."""
         vocab: list[str] = []
@@ -606,6 +736,9 @@ class DSLNativeTokenizer:
             raise ValueError(f"unknown bind_encoding {bind_encoding!r}")
         for i in range(state_slots):
             _add(_state_token(i), TokenKind.STATE)
+        # C3: macro rows appended last so all prior ids are unchanged.
+        for i in range(macro_slots):
+            _add(_macro_token(i), TokenKind.MACRO)
 
         token_to_id = {t: i for i, t in enumerate(vocab)}
         id_to_token = {i: t for t, i in token_to_id.items()}
@@ -619,6 +752,7 @@ class DSLNativeTokenizer:
             bind_slots=bind_slots,
             state_slots=state_slots,
             bind_encoding=bind_encoding,
+            macro_slots=macro_slots,
         )
 
     # --- surface lexing / canonicalize ---------------------------------
@@ -756,6 +890,7 @@ class DSLNativeTokenizer:
                 )
             )
 
+        ids = self.apply_macros(ids)
         if add_special:
             return [self.bos_id, *ids, self.eos_id]
         return ids
@@ -863,6 +998,9 @@ class DSLNativeTokenizer:
     ) -> str:
         """Pretty-print lexer-native ids back to OpenUI source."""
         table = table or SymbolTable()
+        # C3: splice macro expansions first so the rendering loop below only
+        # ever sees base-vocabulary tokens (deterministic, one level).
+        ids = self.expand_macros(list(ids))
         special = {self.pad_id, self.bos_id, self.eos_id, self.mask_id}
         pieces: list[str] = []
         i = 0
@@ -1100,6 +1238,8 @@ class DSLNativeTokenizer:
                     "bind_slots": self.bind_slots,
                     "state_slots": self.state_slots,
                     "bind_encoding": self.bind_encoding,
+                    "macro_slots": self.macro_slots,
+                    "macro_expansions": [list(exp) for exp in self.macro_expansions],
                     "token_to_id": self.token_to_id,
                     "id_to_kind": {str(k): v for k, v in self.id_to_kind.items()},
                 },
@@ -1141,6 +1281,11 @@ class DSLNativeTokenizer:
             bind_slots=int(data.get("bind_slots") or DEFAULT_BIND_SLOTS),
             state_slots=int(data.get("state_slots") or DEFAULT_STATE_SLOTS),
             bind_encoding=str(data.get("bind_encoding") or "absolute"),
+            macro_slots=int(data.get("macro_slots") or 0),
+            macro_expansions=tuple(
+                tuple(str(tok) for tok in exp)
+                for exp in data.get("macro_expansions") or ()
+            ),
         )
 
 

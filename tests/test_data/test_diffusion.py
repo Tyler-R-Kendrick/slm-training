@@ -80,6 +80,43 @@ def test_disjoint_policy_has_separate_mask_islands() -> None:
     assert any(right - left > 1 for left, right in zip(positions, positions[1:]))
 
 
+def test_macro_substitution_policy_masks_whole_blocks() -> None:
+    """C3 (SLM-27): the macro corruption policy masks every macro token (one
+    token = one bound block) and falls back to uniform when none exist."""
+    from slm_training.data.macro_induction import induce_macros
+    from slm_training.dsl.canonicalize import canonicalize
+
+    tokenizer = DSLNativeTokenizer.build()
+    result = induce_macros([PROGRAM], tokenizer)
+    if not result.expansions:
+        pytest.skip("fixture program mined no macros")
+    tokenizer.set_macro_expansions(result.expansions)
+    ids = tokenizer.encode(canonicalize(PROGRAM))
+    macro_positions = [
+        index for index, tid in enumerate(ids) if tokenizer.is_macro_id(tid)
+    ]
+    assert macro_positions, "expected macro tokens in the encoded program"
+    corruption = corrupt_tokens(
+        ids,
+        tokenizer,
+        policy="macro_substitution",
+        rng=random.Random(0),
+    )
+    for index in macro_positions:
+        assert corruption.predict_mask[index]
+    assert list(corruption.reconstruct(list(corruption.target_ids))) == list(ids)
+    # Fallback: no macros present -> still a valid corruption.
+    plain = DSLNativeTokenizer.build()
+    plain_ids = plain.encode(PROGRAM)
+    fallback = corrupt_tokens(
+        plain_ids,
+        plain,
+        policy="macro_substitution",
+        rng=random.Random(0),
+    )
+    assert any(fallback.predict_mask)
+
+
 def test_reference_policy_masks_definition_and_uses() -> None:
     tokenizer = DSLNativeTokenizer.build()
     ids = tokenizer.encode(PROGRAM)

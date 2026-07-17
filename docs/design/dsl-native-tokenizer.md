@@ -73,6 +73,32 @@ Non-inventory strings and numbers: `LIT_STR` / `LIT_NUM` + printable-byte tokens
 + `LIT_END` (ByT5-style robustness without putting every identifier permanently
 in the vocab).
 
+### Macro tokens (C3, tokenizer v3)
+
+64 reserved `<MACRO_i>` rows appended after the `<STATE_k>` pool
+(`DSL_TOKENIZER_VERSION = 3`; all prior ids unchanged). A macro binds one id to
+a fixed span of **fixed-vocabulary** token ids only
+(`MACRO_EXPANDABLE_KINDS = {struct, component, builtin, lit, byte}` — never
+`NL` and never the dynamic `<SYM_i>`/`<BIND_j>`/`<STATE_k>` pools, so macros
+are alpha-independent by construction and the pitfall of context-sensitive
+alpha-equivalence hashing never arises). The expansion table is mined offline
+by [`data/macro_induction.py`](../../src/slm_training/data/macro_induction.py):
+greedy iterative MDL over canonicalized training sources, picking the n-gram
+(length 2..8) with the best `net_gain = freq * (len - 1) - len` until gains
+fall below threshold (Stitch/LILO-style compression, deterministic and
+lossless — no learning, no anti-unification).
+
+`encode()` greedily substitutes table spans (longest-first) after lexing;
+`decode()` splices expansions back before any other processing, so everything
+downstream (verifier, grammar masks, evals) sees the expanded program. The
+table is persisted inside the tokenizer JSON — train and decode can never
+disagree. Fail-closed rules: `set_macro_expansions` rejects spans containing
+dynamic-pool or unknown tokens; `decode` drops a `<MACRO_i>` id that has no
+table entry rather than emitting the raw sentinel. Enabled per-run via
+`macro_tokens=true` (config → factory → `TwoTowerModel.from_records`), and the
+diffusion adapter gains a `macro_substitution` corruption policy that masks
+whole macro tokens (one id = one block edit).
+
 ### Factorized embeddings (Stage 2)
 
 Optional `E_tok[id] + E_kind[kind(id)] + E_pos[i]` in

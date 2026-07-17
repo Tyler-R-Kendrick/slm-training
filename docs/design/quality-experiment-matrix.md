@@ -1271,6 +1271,42 @@ groups and one held-out group qualified, so this export is not admitted for
 training. E253/E254 remain blocked pending broader group support. Full evidence:
 [iter-e258-counterfactual-depth-probe-20260716.md](iter-e258-counterfactual-depth-probe-20260716.md).
 
+## V12 C3 corpus-mined macro tokens (fixture-run 2026-07-17)
+
+Track C3 (Stitch [arXiv:2211.16605](https://arxiv.org/abs/2211.16605) /
+LILO [arXiv:2310.19791](https://arxiv.org/abs/2310.19791), **Adapted**: only
+the greedy-MDL compression objective is reused — no lambda-calculus
+anti-unification, no learned library): recurring fixed-vocabulary token spans
+are mined offline from the canonicalized training corpus
+(`data/macro_induction.py`, `net_gain = freq*(len-1) - len`) and bound to
+reserved `<MACRO_i>` ids (tokenizer v3, 64 rows). Expansion is deterministic
+and lossless at decode; the table persists in the tokenizer sidecar so train
+and decode cannot disagree. Macros never contain `<SYM_i>`/`<BIND_j>`/
+`<STATE_k>` or `NL`, sidestepping the alpha-equivalence hashing pitfall
+([arXiv:2401.02948](https://arxiv.org/abs/2401.02948)). New
+`macro_substitution` diffusion policy masks whole macro blocks.
+
+| ID | Isolated lever | Status |
+| --- | --- | --- |
+| E259 | C3 `macro_tokens=true` on the lexer/diffusion base | fixture-run |
+
+### V12 measured results (CPU, fixture-grade, 2026-07-17)
+
+Recipe: `--steps 80 --scratch-control --no-design-md-context --rico-limit 3`,
+batch 4, seed 0, lr 3e-4, fixture v1 corpus (108 records). JSON:
+[quality-matrix-results-iter-v12-c3-20260717.json](quality-matrix-results-iter-v12-c3-20260717.json);
+narrative: [iter-e259-c3-macro-tokens-20260717.md](iter-e259-c3-macro-tokens-20260717.md).
+
+Induction: 16 macros (cap), corpus 4,964 → 3,261 tokens incl. table (−34.3%),
+description length −35.5%; matched-recipe training throughput
+`seen_target_tokens` 15,417 → 10,118 (−34.4%). The 16-entry table round-trips
+through the checkpoint sidecar and evals score expanded output. All honest
+gates fail (syntax/meaningful parse 0.0, struct sim 0.05–0.17, train loss
+5.61 @80) — consistent with every 80-step fixture row. **Wiring evidence
+only**: no matched no-macro control row in this run; whether sequence
+compression buys quality is the open frontier-scale matched pair. No gate
+weakened; nothing promoted.
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

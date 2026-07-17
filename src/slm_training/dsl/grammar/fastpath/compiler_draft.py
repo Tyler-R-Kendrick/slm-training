@@ -61,7 +61,7 @@ def _token_piece(tokenizer: Any, token_id: int) -> str:
     if raw in {"LIT_STR", "LIT_END"}:
         return '"'
     decoded = tokenizer.decode([int(token_id)])
-    if decoded or raw.startswith(("<BIND_", "<SYM_", "<STATE_")):
+    if decoded or raw.startswith(("<BIND_", "<SYM_", "<STATE_", "<MACRO_")):
         return decoded
     return raw
 
