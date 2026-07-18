@@ -34,6 +34,12 @@ contracts, eight generation steps, three attempts, and no fallback.
 | 10b | `[504,528)` | 24 | 1.0 | 1.0 | 0.8525 | 1.0 | 0.9912 | 0 / 0 / 0 |
 | 11a | `[528,552)` | 24 | 1.0 | 1.0 | 0.8524 | 1.0 | 0.9907 | 0 / 0 / 0 |
 | 11b | `[552,576)` | 24 | 1.0 | 1.0 | 0.9088 | 1.0 | 0.9957 | 0 / 0 / 0 |
+| 12a | `[576,600)` | 24 | 1.0 | 1.0 | 0.8822 | 1.0 | 0.9920 | 0 / 0 / 0 |
+| 12b | `[600,624)` | 24 | 1.0 | 1.0 | 0.8907 | 1.0 | 0.9920 | 0 / 0 / 0 |
+| 13a | `[624,640)` | 16 | 1.0 | 1.0 | 0.8863 | 1.0 | 0.9878 | 0 / 0 / 0 |
+| 13b | `[640,656)` | 16 | 1.0 | 1.0 | 0.8974 | 1.0 | 0.9938 | 0 / 0 / 0 |
+| 13c | `[656,672)` | 16 | 1.0 | 1.0 | 0.8523 | 1.0 | 0.9991 | 0 / 0 / 0 |
+| 14a | `[672,688)` | 16 | 1.0 | 1.0 | 0.8525 | 1.0 | 0.9948 | 0 / 0 / 0 |
 
 Shard 0 completed normally in about 177 seconds and is metric-identical to the
 corresponding E477 rows, with zero failures, fallback, or timeouts.
@@ -81,4 +87,35 @@ Shards 11a and 11b completed normally in about 99 and 150 seconds. Together
 they are prediction-identical to the corresponding E477 rows, with structure
 0.8806, reward 0.9932, and zero failures, fallback, or timeouts.
 
-**Status:** 576/1500 rows complete. No merged or ship claim yet.
+Shard 12a completed normally under the external cap and is
+prediction-identical to the corresponding E477 rows, with structure 0.8822,
+reward 0.9920, and zero failures, fallback, or timeouts. Two setup attempts
+failed before model load or row evaluation because of an incorrect dataset
+lookup and an invalid all-suite offset; neither attempt counts as evidence.
+
+Shard 12b completed normally under the external cap and is
+prediction-identical to the corresponding E477 rows, with structure 0.8907,
+reward 0.9920, and zero failures, fallback, or timeouts.
+
+After row 624, the hard command policy changes to a three-minute total maximum:
+interrupt at 170 seconds and force-kill ten seconds later. Future E487 shards
+are limited to at most 16 rows; earlier normally completed evidence retains
+its historical 290-second policy.
+
+Shard 13a completed normally in about one minute under the new three-minute
+policy and is prediction-identical to the corresponding E477 rows, with
+structure 0.8863, reward 0.9878, and zero failures, fallback, or timeouts.
+
+Shard 13b completed normally under the three-minute policy and is
+prediction-identical to the corresponding E477 rows, with structure 0.8974,
+reward 0.9938, and zero failures, fallback, or timeouts.
+
+Shard 13c completed normally in about 68 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.8523, reward 0.9991, and zero failures, fallback, or timeouts.
+
+Shard 14a completed normally in about 68 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.8525, reward 0.9948, and zero failures, fallback, or timeouts.
+
+**Status:** 688/1500 rows complete. No merged or ship claim yet.
