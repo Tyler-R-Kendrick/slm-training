@@ -11,6 +11,7 @@ from slm_training.harnesses.preference.adapter_geometry import (  # noqa: E402
     PROTECTED_QUANTITIES,
     legal_space_quantities,
     profile_adapter_objective_geometry,
+    profile_adapter_solvers,
 )
 from slm_training.harnesses.preference.local_decisions import (  # noqa: E402
     DecisionEventV1,
@@ -144,3 +145,35 @@ def test_good_mass_gradient_matches_finite_differences() -> None:
         target.view(-1)[local] += step  # restore
     finite_difference = (plus - minus) / (2 * step)
     assert abs(finite_difference - analytic) < 3e-2
+
+
+def test_solver_panel_reports_pcgrad_mgda_and_is_deterministic() -> None:
+    model = _model()
+    _attach(model)
+    event = _event()
+    report = profile_adapter_solvers(model, event)
+    assert report.pcgrad["task_count"] == len(PROTECTED_QUANTITIES)
+    assert isinstance(report.common_descent_certified, bool)
+    assert set(report.pairwise_cosine) == {
+        "loss|good_mass",
+        "loss|bad_mass",
+        "loss|margin",
+        "good_mass|bad_mass",
+        "good_mass|margin",
+        "bad_mass|margin",
+    }
+    # Deterministic for a fixed model + event (same seed/order).
+    again = profile_adapter_solvers(model, event)
+    assert again.mgda["weights"] == report.mgda["weights"]
+    assert again.pcgrad == report.pcgrad
+
+
+def test_mgda_weights_form_a_convex_combination() -> None:
+    model = _model()
+    _attach(model)
+    report = profile_adapter_solvers(model, _event())
+    weights = report.mgda["weights"]
+    total = sum(weights)
+    # A non-degenerate problem yields a convex combination summing to one.
+    assert abs(total - 1.0) < 1e-6 or total == 0.0
+    assert all(w >= -1e-9 for w in weights)

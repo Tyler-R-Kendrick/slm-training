@@ -27,14 +27,22 @@ import torch
 import torch.nn.functional as F
 
 from slm_training.harnesses.preference.local_decisions import DecisionEventV1
-from slm_training.harnesses.preference.local_train import _event_logits, local_decision_loss
+from slm_training.harnesses.preference.local_train import (
+    _event_logits,
+    _gradient_alignment,
+    _minimum_norm_gradient,
+    _project_conflicting_gradients,
+    local_decision_loss,
+)
 from slm_training.models.twotower import TwoTowerModel
 
 __all__ = [
     "PROTECTED_QUANTITIES",
     "AdapterGeometryReport",
+    "AdapterSolverReport",
     "legal_space_quantities",
     "profile_adapter_objective_geometry",
+    "profile_adapter_solvers",
 ]
 
 PROTECTED_QUANTITIES: tuple[str, ...] = ("loss", "good_mass", "bad_mass", "margin")
@@ -170,4 +178,102 @@ def profile_adapter_objective_geometry(
         cosine_alignment=cosine,
         common_descent=min_pair > 0.0,
         unit_normalized_norms=unit_norms,
+    )
+
+
+@dataclass(frozen=True)
+class AdapterSolverReport:
+    """Multi-objective solver panel over the adapter-subspace descent gradients."""
+
+    weighted_mean_norm: float
+    pcgrad: dict[str, float | int]
+    mgda: dict[str, object]
+    pairwise_cosine: dict[str, float]
+    common_descent_certified: bool
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "weighted_mean_norm": self.weighted_mean_norm,
+            "pcgrad": self.pcgrad,
+            "mgda": self.mgda,
+            "pairwise_cosine": self.pairwise_cosine,
+            "common_descent_certified": self.common_descent_certified,
+        }
+
+
+def _per_parameter_descent(
+    model: TwoTowerModel,
+    event: DecisionEventV1,
+    params: Sequence[torch.nn.Parameter],
+    *,
+    objective: str,
+    epsilon: float,
+    tau: float,
+) -> list[list[torch.Tensor | None]]:
+    """Per-parameter descent gradients (task-major), preserving the param layout the
+    reused PCGrad/MGDA solvers expect."""
+    logits = _event_logits(model, event)
+    quantities = legal_space_quantities(
+        logits, event, objective=objective, epsilon=epsilon, tau=tau
+    )
+    tasks: list[list[torch.Tensor | None]] = []
+    for name in PROTECTED_QUANTITIES:
+        grads = torch.autograd.grad(
+            quantities[name], params, retain_graph=True, allow_unused=True
+        )
+        sign = _DESCENT_SIGN[name]
+        tasks.append([sign * g if g is not None else None for g in grads])
+    return tasks
+
+
+def profile_adapter_solvers(
+    model: TwoTowerModel,
+    event: DecisionEventV1,
+    *,
+    objective: str = "ftpo_single",
+    epsilon: float = 2.0,
+    tau: float = 1.0,
+) -> AdapterSolverReport:
+    """Run the weighted-mean / PCGrad / MGDA solver panel in the adapter subspace.
+
+    Reuses the repository's existing multi-objective geometry solvers rather than
+    reimplementing them, and reports whether MGDA certifies a strictly common
+    descent direction against the original unscaled protected objectives. A solver
+    result is diagnostic evidence, not authorization to run a training campaign.
+    """
+    if not model.has_adapter():
+        raise ValueError("profiling requires an attached adapter (frozen parent)")
+    params = [p for p in model.adapter_parameters() if p.requires_grad]
+    if not params:
+        raise ValueError("the attached adapter exposes no trainable parameters")
+
+    tasks = _per_parameter_descent(
+        model, event, params, objective=objective, epsilon=epsilon, tau=tau
+    )
+
+    mean: list[torch.Tensor | None] = []
+    for index in range(len(params)):
+        column = [row[index] for row in tasks if row[index] is not None]
+        mean.append(torch.stack(column).mean(0) if column else None)
+    mean_sq = sum(v.square().sum() for v in mean if v is not None)
+    mean_norm = float(torch.as_tensor(mean_sq).sqrt()) if not isinstance(mean_sq, int) else 0.0
+
+    _pcgrad_combined, pcgrad_stats = _project_conflicting_gradients(tasks)
+    _mgda_combined, mgda_stats = _minimum_norm_gradient(tasks)
+
+    names = list(PROTECTED_QUANTITIES)
+    pairwise: dict[str, float] = {}
+    for i, left in enumerate(names):
+        for j in range(i + 1, len(names)):
+            pairwise[f"{left}|{names[j]}"] = _gradient_alignment(tasks[i], tasks[j])["cosine"]
+
+    return AdapterSolverReport(
+        weighted_mean_norm=mean_norm,
+        pcgrad=pcgrad_stats,
+        mgda={
+            key: mgda_stats[key]
+            for key in ("common_descent", "converged", "norm_sq", "min_task_dot", "weights")
+        },
+        pairwise_cosine=pairwise,
+        common_descent_certified=bool(mgda_stats["common_descent"]),
     )
