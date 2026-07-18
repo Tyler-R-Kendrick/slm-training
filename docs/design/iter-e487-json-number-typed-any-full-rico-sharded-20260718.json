@@ -1103,10 +1103,26 @@
       "fallback_count": 0,
       "decode_timeout_count": 0,
       "completed_normally": true
+    },
+    {
+      "index": "23a",
+      "run_id": "e487-e396-json-number-typed-any-rico-shard23a-r1",
+      "eval_offset": 1344,
+      "eval_end": 1360,
+      "n": 16,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8207125,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9971874999999999,
+      "failure_count": 0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "completed_normally": true
     }
   ],
   "coverage": {
-    "completed_n": 1344,
+    "completed_n": 1360,
     "total_n": 1500,
     "exact_contiguous": false
   },
