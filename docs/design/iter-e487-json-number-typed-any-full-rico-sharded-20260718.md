@@ -34,6 +34,7 @@ contracts, eight generation steps, three attempts, and no fallback.
 | 10b | `[504,528)` | 24 | 1.0 | 1.0 | 0.8525 | 1.0 | 0.9912 | 0 / 0 / 0 |
 | 11a | `[528,552)` | 24 | 1.0 | 1.0 | 0.8524 | 1.0 | 0.9907 | 0 / 0 / 0 |
 | 11b | `[552,576)` | 24 | 1.0 | 1.0 | 0.9088 | 1.0 | 0.9957 | 0 / 0 / 0 |
+| 12a | `[576,600)` | 24 | 1.0 | 1.0 | 0.8822 | 1.0 | 0.9920 | 0 / 0 / 0 |
 
 Shard 0 completed normally in about 177 seconds and is metric-identical to the
 corresponding E477 rows, with zero failures, fallback, or timeouts.
@@ -81,4 +82,10 @@ Shards 11a and 11b completed normally in about 99 and 150 seconds. Together
 they are prediction-identical to the corresponding E477 rows, with structure
 0.8806, reward 0.9932, and zero failures, fallback, or timeouts.
 
-**Status:** 576/1500 rows complete. No merged or ship claim yet.
+Shard 12a completed normally under the external cap and is
+prediction-identical to the corresponding E477 rows, with structure 0.8822,
+reward 0.9920, and zero failures, fallback, or timeouts. Two setup attempts
+failed before model load or row evaluation because of an incorrect dataset
+lookup and an invalid all-suite offset; neither attempt counts as evidence.
+
+**Status:** 600/1500 rows complete. No merged or ship claim yet.
