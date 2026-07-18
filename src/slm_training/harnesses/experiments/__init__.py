@@ -39,6 +39,17 @@ from slm_training.harnesses.experiments.scaling_fit import (
     observation_from_summary,
     predict_loss,
 )
+from slm_training.harnesses.experiments.verified_solver_matrix import (
+    MATRIX_SET,
+    MATRIX_VERSION,
+    VerifiedSolverMatrixReport,
+    VerifiedSolverRow,
+    build_matrix_rows,
+    describe_matrix,
+    evaluate_hard_gates,
+    render_markdown,
+    run_fixture_matrix,
+)
 
 try:
     from slm_training.harnesses.experiments.cap2_bottleneck import (
@@ -61,6 +72,15 @@ __all__ = [
     "BottleneckArm",
     "BottleneckMatrixReport",
     "BottleneckResult",
+    "MATRIX_SET",
+    "MATRIX_VERSION",
+    "VerifiedSolverMatrixReport",
+    "VerifiedSolverRow",
+    "build_matrix_rows",
+    "describe_matrix",
+    "evaluate_hard_gates",
+    "render_markdown",
+    "run_fixture_matrix",
     "LadderPoint",
     "PromotionCriteria",
     "ScalingLadder",
