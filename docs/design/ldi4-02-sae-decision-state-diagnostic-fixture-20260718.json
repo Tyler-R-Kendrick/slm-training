@@ -1,0 +1,82 @@
+{
+  "arms": [
+    {
+      "arm_id": "S0",
+      "classification": "diagnostic_only",
+      "method": "no_intervention",
+      "preservation_damage": 0.0,
+      "target_effect": 0.0,
+      "trainable_params": 0,
+      "wrong_site_effect": 0.0
+    },
+    {
+      "arm_id": "S1",
+      "classification": "rejected",
+      "method": "random_normalized_direction",
+      "preservation_damage": 0.5023236274719238,
+      "target_effect": 0.5023235082626343,
+      "trainable_params": 0,
+      "wrong_site_effect": 0.0
+    },
+    {
+      "arm_id": "S2",
+      "classification": "rejected",
+      "method": "raw_diffmean",
+      "preservation_damage": 0.9335488080978394,
+      "target_effect": 0.9335488080978394,
+      "trainable_params": 0,
+      "wrong_site_effect": 0.0
+    },
+    {
+      "arm_id": "S3",
+      "classification": "rejected",
+      "method": "linear_probe_direction",
+      "preservation_damage": 0.8519433736801147,
+      "target_effect": 0.8519434928894043,
+      "trainable_params": null,
+      "wrong_site_effect": 0.0
+    },
+    {
+      "arm_id": "S4",
+      "classification": "rejected",
+      "method": "reft_r1",
+      "preservation_damage": 0.9335488080978394,
+      "target_effect": 0.9335488080978394,
+      "trainable_params": null,
+      "wrong_site_effect": 0.0
+    },
+    {
+      "arm_id": "S5",
+      "classification": "rejected",
+      "method": "direct_weight_adapter",
+      "preservation_damage": 0.9335488080978394,
+      "target_effect": 0.9335488080978394,
+      "trainable_params": null,
+      "wrong_site_effect": 0.0
+    },
+    {
+      "arm_id": "S6",
+      "classification": "rejected",
+      "method": "top_sae_feature",
+      "preservation_damage": 0.6927635669708252,
+      "target_effect": 0.6927635669708252,
+      "trainable_params": null,
+      "wrong_site_effect": 0.0
+    },
+    {
+      "arm_id": "S7",
+      "classification": "rejected",
+      "method": "sparse_sae_feature_set",
+      "preservation_damage": 0.6927635669708252,
+      "target_effect": 0.6927635669708252,
+      "trainable_params": null,
+      "wrong_site_effect": 0.0
+    }
+  ],
+  "best_baseline_effect": 0.9335488080978394,
+  "d_in": 16,
+  "n": 64,
+  "note": "synthetic fixture; no real model/checkpoint; no steering or superiority claim",
+  "site": "denoiser.block.0.residual",
+  "status": "wiring_only"
+}
