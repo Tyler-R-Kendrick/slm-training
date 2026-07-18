@@ -16,9 +16,13 @@ import torch.nn.functional as F
 from slm_training.harnesses.distill.trace_store import checkpoint_sha
 from slm_training.harnesses.preference.local_decisions import (
     DecisionEventV1,
+    DecisionEventV2,
     decision_signature,
     decision_signature_metadata,
     load_decision_events,
+    load_decision_events_v1_or_v2,
+    materialize_objective_pareto,
+    materialize_v1_from_v2,
     objective_signature_support,
 )
 from slm_training.models.twotower import TwoTowerModel
@@ -1200,14 +1204,27 @@ def train_local_decisions(
 
 
 def _validate_identity(
-    events: list[DecisionEventV1], checkpoint: Path, model: TwoTowerModel
+    events: list[DecisionEventV1] | list[DecisionEventV2],
+    checkpoint: Path,
+    model: TwoTowerModel,
 ) -> None:
     sha = checkpoint_sha(checkpoint)
     tokenizer_sha = model.artifact_identity()["tokenizer_sha"]
-    if any(event.policy_checkpoint_sha != sha for event in events):
-        raise ValueError("decision events do not match the policy checkpoint")
-    if any(event.tokenizer_sha != tokenizer_sha for event in events):
-        raise ValueError("decision events do not match the checkpoint tokenizer")
+    for event in events:
+        if isinstance(event, DecisionEventV2):
+            if event.state.policy_checkpoint_sha != sha:
+                raise ValueError("decision events do not match the policy checkpoint")
+            if event.state.tokenizer_sha != tokenizer_sha:
+                raise ValueError(
+                    "decision events do not match the checkpoint tokenizer"
+                )
+        else:
+            if event.policy_checkpoint_sha != sha:
+                raise ValueError("decision events do not match the policy checkpoint")
+            if event.tokenizer_sha != tokenizer_sha:
+                raise ValueError(
+                    "decision events do not match the checkpoint tokenizer"
+                )
 
 
 def train_local_from_paths(
@@ -1237,7 +1254,23 @@ def train_local_from_paths(
     optimizer_name: LocalOptimizer = "adamw",
     require_objective_support: bool = False,
 ) -> dict:
-    events = load_decision_events(events_path)
+    raw_events = load_decision_events_v1_or_v2(events_path)
+    events: list[DecisionEventV1]
+    if raw_events and isinstance(raw_events[0], DecisionEventV2):
+        materialized: list[DecisionEventV1] = []
+        for event in raw_events:
+            assert isinstance(event, DecisionEventV2)
+            view = materialize_objective_pareto(
+                event, metric_thresholds={"reward": 0.0}
+            )
+            materialized.append(
+                materialize_v1_from_v2(
+                    event, view, trajectory_id="v2-materialized", seed=seed
+                )
+            )
+        events = materialized
+    else:
+        events = [event for event in raw_events if isinstance(event, DecisionEventV1)]
     if require_objective_support:
         support = objective_signature_support(events)
         if not support["held_out_coverage"]["passed"]:

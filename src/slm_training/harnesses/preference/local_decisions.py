@@ -532,3 +532,865 @@ def write_decision_event_manifest(path: Path | str, manifest: dict[str, Any]) ->
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+# ── V2 state + action evidence contract (SLM-116 / LDI0-02) ─────────────
+
+# Re-exported for consumers that import from this module.
+__all__ = [
+    "Split",
+    "EvidenceKind",
+    "split_for_group",
+    "DecisionEventV1",
+    "decision_signature",
+    "decision_signature_metadata",
+    "decision_support_signature",
+    "decision_support_signature_metadata",
+    "decision_signature_support",
+    "objective_signature_support",
+    "events_from_trace",
+    "load_trace_rows",
+    "load_decision_events",
+    "write_decision_events",
+    "counterfactual_evidence_from_traces",
+    "write_counterfactual_evidence",
+    "decision_event_manifest",
+    "write_decision_event_manifest",
+    "DecisionStateV2",
+    "ActionOutcomeV2",
+    "ObjectiveView",
+    "DecisionEventV2",
+    "compute_state_id",
+    "merge_action_evidence",
+    "materialize_objective_pareto",
+    "materialize_objective_threshold",
+    "materialize_objective_single_best_worst",
+    "materialize_objective_set_partition",
+    "materialize_constraint_shadow",
+    "guard_semantic_view",
+    "migrate_v1_to_v2",
+    "load_decision_events_v2",
+    "write_decision_events_v2",
+    "load_decision_events_v1_or_v2",
+    "decision_event_manifest_v2",
+    "write_decision_event_manifest_v2",
+]
+
+
+def _canonical_state_hash(
+    *,
+    architecture: str,
+    context_text: str | None,
+    context_ids: tuple[int, ...] | None,
+    canvas_ids: tuple[int, ...] | None,
+    decision_position: int,
+    generation_step: int | None,
+    legal_action_ids: tuple[int, ...],
+    decision_kind: str,
+    abstract_state_role: str,
+    grammar_state_hash: str,
+    policy_checkpoint_sha: str,
+    tokenizer_sha: str,
+    decode_config_hash: str,
+    verifier_bundle_hash: str,
+    group_id: str,
+) -> str:
+    """Stable identity over the exact model state and immutable runtime hashes.
+
+    Excludes sampled labels, rollout outcomes, ordinal file position, and
+    candidate order. A reordered or augmented action table must not change this
+    value.
+    """
+    payload: dict[str, Any] = {
+        "architecture": architecture,
+        "decision_position": int(decision_position),
+        "generation_step": generation_step,
+        "legal_action_ids": list(legal_action_ids),
+        "decision_kind": str(decision_kind),
+        "abstract_state_role": str(abstract_state_role),
+        "grammar_state_hash": str(grammar_state_hash),
+        "policy_checkpoint_sha": str(policy_checkpoint_sha),
+        "tokenizer_sha": str(tokenizer_sha),
+        "decode_config_hash": str(decode_config_hash),
+        "verifier_bundle_hash": str(verifier_bundle_hash),
+        "group_id": str(group_id),
+    }
+    if context_ids is not None:
+        payload["context_ids"] = list(context_ids)
+    elif context_text is not None:
+        payload["context_text"] = str(context_text)
+    if canvas_ids is not None:
+        payload["canvas_ids"] = list(canvas_ids)
+    return _sha(payload)
+
+
+def compute_state_id(state: dict[str, Any]) -> str:
+    """Canonical state_id from a dict payload."""
+    return _canonical_state_hash(
+        architecture=str(state["architecture"]),
+        context_text=state.get("context_text"),
+        context_ids=state.get("context_ids"),
+        canvas_ids=state.get("canvas_ids"),
+        decision_position=int(state["decision_position"]),
+        generation_step=state.get("generation_step"),
+        legal_action_ids=_ids(state["legal_action_ids"]),
+        decision_kind=str(state["decision_kind"]),
+        abstract_state_role=str(state.get("abstract_state_role") or ""),
+        grammar_state_hash=str(state["grammar_state_hash"]),
+        policy_checkpoint_sha=str(state["policy_checkpoint_sha"]),
+        tokenizer_sha=str(state["tokenizer_sha"]),
+        decode_config_hash=str(state["decode_config_hash"]),
+        verifier_bundle_hash=str(state["verifier_bundle_hash"]),
+        group_id=str(state["group_id"]),
+    )
+
+
+@dataclass(frozen=True)
+class DecisionStateV2:
+    state_id: str
+    group_id: str
+    architecture: Literal["twotower", "causal"]
+    context_text: str
+    context_ids: tuple[int, ...] | None
+    canvas_ids: tuple[int, ...] | None
+    decision_position: int
+    generation_step: int | None
+    legal_action_ids: tuple[int, ...]
+    decision_kind: str
+    abstract_state_role: str
+    grammar_state_hash: str
+    policy_checkpoint_sha: str
+    tokenizer_sha: str
+    decode_config_hash: str
+    verifier_bundle_hash: str
+    split: Split
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self, "legal_action_ids", _ids(self.legal_action_ids)
+        )
+        if self.context_ids is not None:
+            object.__setattr__(
+                self, "context_ids", tuple(map(int, self.context_ids))
+            )
+        if self.canvas_ids is not None:
+            object.__setattr__(
+                self, "canvas_ids", tuple(map(int, self.canvas_ids))
+            )
+        if self.split != split_for_group(self.group_id):
+            raise ValueError("split must be derived from group_id")
+        if not self.policy_checkpoint_sha or not self.tokenizer_sha:
+            raise ValueError("policy and tokenizer identity hashes are required")
+        if not self.decode_config_hash or not self.verifier_bundle_hash:
+            raise ValueError("decode and verifier bundle hashes are required")
+        canonical = _canonical_state_hash(
+            architecture=self.architecture,
+            context_text=self.context_text or None,
+            context_ids=self.context_ids,
+            canvas_ids=self.canvas_ids,
+            decision_position=self.decision_position,
+            generation_step=self.generation_step,
+            legal_action_ids=self.legal_action_ids,
+            decision_kind=self.decision_kind,
+            abstract_state_role=self.abstract_state_role,
+            grammar_state_hash=self.grammar_state_hash,
+            policy_checkpoint_sha=self.policy_checkpoint_sha,
+            tokenizer_sha=self.tokenizer_sha,
+            decode_config_hash=self.decode_config_hash,
+            verifier_bundle_hash=self.verifier_bundle_hash,
+            group_id=self.group_id,
+        )
+        if not self.state_id:
+            object.__setattr__(self, "state_id", canonical)
+        elif self.state_id != canonical:
+            raise ValueError(
+                f"state_id mismatch: provided {self.state_id} != canonical {canonical}"
+            )
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class ActionOutcomeV2:
+    state_id: str
+    action_id: int
+    legal: bool
+    rollout_policy_sha: str
+    continuation_seeds: tuple[int, ...]
+    outcome_hashes: tuple[str, ...]
+    verifier_vectors: tuple[dict[str, str], ...]
+    reward_vectors: tuple[dict[str, float], ...]
+    mean_value: float | None
+    confidence_interval: tuple[float, float] | None
+    evidence_ids: tuple[str, ...]
+    evidence_confidence: float
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "action_id", int(self.action_id))
+        object.__setattr__(
+            self,
+            "continuation_seeds",
+            tuple(map(int, self.continuation_seeds or ())),
+        )
+        object.__setattr__(
+            self, "outcome_hashes", tuple(str(value) for value in self.outcome_hashes or ())
+        )
+        object.__setattr__(
+            self,
+            "verifier_vectors",
+            tuple(dict(value) for value in self.verifier_vectors or ()),
+        )
+        object.__setattr__(
+            self,
+            "reward_vectors",
+            tuple(dict(value) for value in self.reward_vectors or ()),
+        )
+        object.__setattr__(
+            self, "evidence_ids", tuple(str(value) for value in self.evidence_ids or ())
+        )
+        if not 0.0 <= self.evidence_confidence <= 1.0:
+            raise ValueError("evidence_confidence must be in [0, 1]")
+        if len(self.continuation_seeds) != len(self.outcome_hashes):
+            raise ValueError("continuation_seeds and outcome_hashes must match")
+        if self.confidence_interval is not None and len(self.confidence_interval) != 2:
+            raise ValueError("confidence_interval must be a 2-tuple")
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class ObjectiveView:
+    good_action_ids: tuple[int, ...]
+    bad_action_ids: tuple[int, ...]
+    ambiguous_action_ids: tuple[int, ...]
+    unobserved_action_ids: tuple[int, ...]
+    weights: dict[str, float]
+    materializer_id: str
+    materializer_config_hash: str
+
+    def __post_init__(self) -> None:
+        for field in ("good_action_ids", "bad_action_ids", "ambiguous_action_ids", "unobserved_action_ids"):
+            object.__setattr__(self, field, _ids(getattr(self, field)))
+        good = set(self.good_action_ids)
+        bad = set(self.bad_action_ids)
+        ambiguous = set(self.ambiguous_action_ids)
+        if good & bad or good & ambiguous or bad & ambiguous:
+            raise ValueError("objective partitions must be disjoint")
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class DecisionEventV2:
+    state: DecisionStateV2
+    outcomes: tuple[ActionOutcomeV2, ...]
+    evidence_kind: EvidenceKind
+    version: int = 2
+
+    def __post_init__(self) -> None:
+        if self.version != 2:
+            raise ValueError("unsupported decision event version")
+        if not self.outcomes:
+            raise ValueError("V2 event requires at least one action outcome")
+        state_ids = {outcome.state_id for outcome in self.outcomes}
+        if len(state_ids) != 1 or self.state.state_id not in state_ids:
+            raise ValueError("all outcomes must share the state's state_id")
+        legal = set(self.state.legal_action_ids)
+        for outcome in self.outcomes:
+            is_legal_action = outcome.action_id in legal
+            if self.evidence_kind == "counterfactual":
+                if not is_legal_action:
+                    raise ValueError(
+                        f"action {outcome.action_id} is not in the state's legal set"
+                    )
+                if not outcome.legal:
+                    raise ValueError(
+                        "counterfactual semantic outcomes must be verifier-legal"
+                    )
+            elif self.evidence_kind == "constraint_shadow" and not is_legal_action:
+                if outcome.legal:
+                    raise ValueError(
+                        "constraint-shadow outcome outside the legal set must be marked illegal"
+                    )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "version": self.version,
+            "evidence_kind": self.evidence_kind,
+            "state": self.state.to_dict(),
+            "outcomes": [outcome.to_dict() for outcome in self.outcomes],
+        }
+
+    @classmethod
+    def from_dict(cls, value: dict[str, Any]) -> "DecisionEventV2":
+        fields = set(cls.__dataclass_fields__)
+        unknown = set(value) - fields
+        if unknown:
+            raise ValueError(f"unknown decision event v2 fields: {sorted(unknown)}")
+        state = DecisionStateV2(**value["state"])
+        outcomes = tuple(
+            ActionOutcomeV2(**outcome) for outcome in value.get("outcomes", ())
+        )
+        return cls(
+            state=state,
+            outcomes=outcomes,
+            evidence_kind=value["evidence_kind"],
+            version=int(value.get("version", 2)),
+        )
+
+
+def merge_action_evidence(
+    events: Iterable[DecisionEventV2],
+) -> list[DecisionEventV2]:
+    """Append-only deduplication of action evidence by content identity.
+
+    Two samples for the same exact state merge into one state table; row order
+    does not affect the state identity.
+    """
+    by_state: dict[str, dict[str, Any]] = {}
+    for event in events:
+        sid = event.state.state_id
+        if sid not in by_state:
+            by_state[sid] = {
+                "state": event.state,
+                "evidence_kind": event.evidence_kind,
+                "outcomes": {},
+            }
+        state_entry = by_state[sid]
+        if event.state != state_entry["state"]:
+            raise ValueError(f"conflicting state metadata for state_id {sid}")
+        if event.evidence_kind != state_entry["evidence_kind"]:
+            raise ValueError(
+                f"conflicting evidence_kind for state_id {sid}"
+            )
+        for outcome in event.outcomes:
+            key = _sha(outcome.to_dict())
+            state_entry["outcomes"][key] = outcome
+    return [
+        DecisionEventV2(
+            state=entry["state"],
+            outcomes=tuple(sorted(entry["outcomes"].values(), key=lambda o: o.action_id)),
+            evidence_kind=entry["evidence_kind"],
+        )
+        for entry in by_state.values()
+    ]
+
+
+# ── Materializers ────────────────────────────────────────────────────────
+
+
+def _average_rewards(
+    reward_vectors: tuple[dict[str, float], ...],
+) -> dict[str, float]:
+    if not reward_vectors:
+        return {}
+    keys = sorted({key for vector in reward_vectors for key in vector})
+    return {
+        key: sum(vector.get(key, 0.0) for vector in reward_vectors) / len(reward_vectors)
+        for key in keys
+    }
+
+
+def _materializer_config_hash(
+    materializer_id: str, config: dict[str, Any]
+) -> str:
+    return _sha({"materializer_id": materializer_id, "config": config})
+
+
+def materialize_objective_pareto(
+    event: DecisionEventV2,
+    *,
+    metric_thresholds: dict[str, float],
+    require_all_metrics: bool = True,
+) -> ObjectiveView:
+    """Pareto pass/fail over named verifier metrics.
+
+    An action is good iff it passes every threshold; bad iff it fails at least
+    one. Actions with no usable reward evidence are ambiguous.
+    """
+    config = {"metric_thresholds": dict(metric_thresholds), "require_all_metrics": require_all_metrics}
+    materializer_id = "pareto_v1"
+    config_hash = _materializer_config_hash(materializer_id, config)
+    legal = set(event.state.legal_action_ids)
+    observed: dict[int, dict[str, float]] = {}
+    for outcome in event.outcomes:
+        rewards = _average_rewards(outcome.reward_vectors)
+        if rewards:
+            observed[outcome.action_id] = rewards
+    good: set[int] = set()
+    bad: set[int] = set()
+    ambiguous: set[int] = set()
+    for action_id, rewards in observed.items():
+        if require_all_metrics and not all(
+            metric in rewards for metric in metric_thresholds
+        ):
+            ambiguous.add(action_id)
+            continue
+        if all(
+            rewards.get(metric, float("-inf")) >= threshold
+            for metric, threshold in metric_thresholds.items()
+        ):
+            good.add(action_id)
+        else:
+            bad.add(action_id)
+    unobserved = legal - set(observed)
+    ambiguous = (ambiguous | (set(observed) - good - bad)) & legal
+    return ObjectiveView(
+        good_action_ids=tuple(sorted(good)),
+        bad_action_ids=tuple(sorted(bad)),
+        ambiguous_action_ids=tuple(sorted(ambiguous)),
+        unobserved_action_ids=tuple(sorted(unobserved)),
+        weights={"uniform": 1.0},
+        materializer_id=materializer_id,
+        materializer_config_hash=config_hash,
+    )
+
+
+def materialize_objective_threshold(
+    event: DecisionEventV2,
+    *,
+    threshold: float,
+    min_confidence_lower: float | None = None,
+) -> ObjectiveView:
+    """Thresholded scalar value with confidence requirements."""
+    config = {"threshold": threshold, "min_confidence_lower": min_confidence_lower}
+    materializer_id = "threshold_v1"
+    config_hash = _materializer_config_hash(materializer_id, config)
+    legal = set(event.state.legal_action_ids)
+    good: set[int] = set()
+    bad: set[int] = set()
+    ambiguous: set[int] = set()
+    observed: set[int] = set()
+    for outcome in event.outcomes:
+        observed.add(outcome.action_id)
+        mean = outcome.mean_value
+        if mean is None:
+            ambiguous.add(outcome.action_id)
+            continue
+        lower = None
+        if outcome.confidence_interval is not None:
+            lower = min(outcome.confidence_interval)
+        if mean >= threshold:
+            if min_confidence_lower is None or (
+                lower is not None and lower >= min_confidence_lower
+            ):
+                good.add(outcome.action_id)
+            else:
+                ambiguous.add(outcome.action_id)
+        else:
+            bad.add(outcome.action_id)
+    unobserved = legal - observed
+    return ObjectiveView(
+        good_action_ids=tuple(sorted(good)),
+        bad_action_ids=tuple(sorted(bad)),
+        ambiguous_action_ids=tuple(sorted(ambiguous)),
+        unobserved_action_ids=tuple(sorted(unobserved)),
+        weights={"uniform": 1.0},
+        materializer_id=materializer_id,
+        materializer_config_hash=config_hash,
+    )
+
+
+def materialize_objective_single_best_worst(
+    event: DecisionEventV2,
+) -> ObjectiveView:
+    """Single-best / single-worst control."""
+    materializer_id = "single_best_worst_v1"
+    config_hash = _materializer_config_hash(materializer_id, {})
+    legal = set(event.state.legal_action_ids)
+    scored: dict[int, float] = {}
+    for outcome in event.outcomes:
+        if outcome.mean_value is not None:
+            scored[outcome.action_id] = outcome.mean_value
+        elif outcome.reward_vectors:
+            averaged = _average_rewards(outcome.reward_vectors)
+            if averaged:
+                scored[outcome.action_id] = sum(averaged.values()) / len(averaged)
+    good: set[int] = set()
+    bad: set[int] = set()
+    ambiguous: set[int] = set()
+    if len(scored) >= 2:
+        best_value = max(scored.values())
+        worst_value = min(scored.values())
+        if best_value != worst_value:
+            good = {aid for aid, value in scored.items() if value == best_value}
+            bad = {aid for aid, value in scored.items() if value == worst_value}
+            ambiguous = (set(scored) - good - bad) & legal
+        else:
+            ambiguous = set(scored) & legal
+    elif scored:
+        ambiguous = set(scored) & legal
+    unobserved = legal - set(scored)
+    return ObjectiveView(
+        good_action_ids=tuple(sorted(good)),
+        bad_action_ids=tuple(sorted(bad)),
+        ambiguous_action_ids=tuple(sorted(ambiguous)),
+        unobserved_action_ids=tuple(sorted(unobserved)),
+        weights={"uniform": 1.0},
+        materializer_id=materializer_id,
+        materializer_config_hash=config_hash,
+    )
+
+
+def _dominates(
+    left: dict[str, float], right: dict[str, float]
+) -> bool:
+    no_worse = all(left.get(name, 0.0) >= right.get(name, 0.0) for name in set(left) | set(right))
+    better = any(left.get(name, 0.0) > right.get(name, 0.0) for name in set(left) | set(right))
+    return no_worse and better
+
+
+def materialize_objective_set_partition(
+    event: DecisionEventV2,
+    *,
+    metric_thresholds: dict[str, float] | None = None,
+) -> ObjectiveView:
+    """Set-valued good/bad partitions via Pareto frontier."""
+    config = {"metric_thresholds": dict(metric_thresholds or {})}
+    materializer_id = "set_partition_v1"
+    config_hash = _materializer_config_hash(materializer_id, config)
+    legal = set(event.state.legal_action_ids)
+    scored: dict[int, dict[str, float]] = {}
+    for outcome in event.outcomes:
+        rewards = _average_rewards(outcome.reward_vectors)
+        if rewards:
+            scored[outcome.action_id] = rewards
+    failed: set[int] = set()
+    if metric_thresholds:
+        for action_id, rewards in scored.items():
+            if any(
+                rewards.get(metric, float("-inf")) < threshold
+                for metric, threshold in metric_thresholds.items()
+            ):
+                failed.add(action_id)
+    eligible = {aid: rewards for aid, rewards in scored.items() if aid not in failed}
+    frontier: set[int] = set()
+    for action_id, rewards in eligible.items():
+        if not any(
+            other_id != action_id and _dominates(other_rewards, rewards)
+            for other_id, other_rewards in eligible.items()
+        ):
+            frontier.add(action_id)
+    good = frontier
+    bad = failed | {
+        action_id
+        for action_id, rewards in eligible.items()
+        if any(
+            frontier_id != action_id and _dominates(frontier_rewards, rewards)
+            for frontier_id, frontier_rewards in eligible.items()
+            if frontier_id in frontier
+        )
+    }
+    ambiguous = (set(scored) - good - bad) & legal
+    unobserved = legal - set(scored)
+    return ObjectiveView(
+        good_action_ids=tuple(sorted(good)),
+        bad_action_ids=tuple(sorted(bad)),
+        ambiguous_action_ids=tuple(sorted(ambiguous)),
+        unobserved_action_ids=tuple(sorted(unobserved)),
+        weights={"uniform": 1.0},
+        materializer_id=materializer_id,
+        materializer_config_hash=config_hash,
+    )
+
+
+def materialize_constraint_shadow(
+    event: DecisionEventV2,
+) -> ObjectiveView:
+    """Diagnostic view for constraint-shadow evidence; explicitly non-semantic."""
+    materializer_id = "constraint_shadow_diagnostic_v1"
+    config_hash = _materializer_config_hash(materializer_id, {})
+    good = {outcome.action_id for outcome in event.outcomes if outcome.legal}
+    bad = {
+        outcome.action_id
+        for outcome in event.outcomes
+        if not outcome.legal and outcome.action_id in event.state.legal_action_ids
+    }
+    observed = {outcome.action_id for outcome in event.outcomes}
+    unobserved = set(event.state.legal_action_ids) - observed
+    return ObjectiveView(
+        good_action_ids=tuple(sorted(good)),
+        bad_action_ids=tuple(sorted(bad)),
+        ambiguous_action_ids=(),
+        unobserved_action_ids=tuple(sorted(unobserved)),
+        weights={"uniform": 1.0},
+        materializer_id=materializer_id,
+        materializer_config_hash=config_hash,
+    )
+
+
+def guard_semantic_view(view: ObjectiveView) -> None:
+    """Raise if the view comes from a non-semantic constraint-shadow materializer."""
+    if "constraint_shadow" in view.materializer_id:
+        raise ValueError(
+            "constraint-shadow objective view is diagnostic-only and cannot be "
+            "consumed by semantic trainers"
+        )
+
+
+def materialize_v1_from_v2(
+    event: DecisionEventV2,
+    view: ObjectiveView,
+    *,
+    trajectory_id: str = "v2-materialized",
+    seed: int = 0,
+) -> DecisionEventV1:
+    """Materialize a V1-shaped exact-state event from a V2 state + objective view."""
+    guard_semantic_view(view)
+    if not view.good_action_ids or not view.bad_action_ids:
+        raise ValueError(
+            "materialized V1 view requires non-empty good and bad action sets"
+        )
+    if set(view.good_action_ids) & set(view.bad_action_ids):
+        raise ValueError("materialized good and bad actions must be disjoint")
+    if not set(view.good_action_ids).issubset(event.state.legal_action_ids):
+        raise ValueError("materialized good actions must be verifier-legal")
+    identity = {
+        "state_id": event.state.state_id,
+        "materializer_id": view.materializer_id,
+        "materializer_config_hash": view.materializer_config_hash,
+    }
+    return DecisionEventV1(
+        event_id=_sha(identity),
+        group_id=event.state.group_id,
+        context_text=event.state.context_text,
+        canvas_ids=event.state.canvas_ids or (),
+        position=event.state.decision_position,
+        good_token_ids=view.good_action_ids,
+        bad_token_ids=view.bad_action_ids,
+        legal_token_ids=event.state.legal_action_ids,
+        evidence_kind=event.evidence_kind,
+        evidence_confidence=max(
+            (outcome.evidence_confidence for outcome in event.outcomes),
+            default=1.0,
+        ),
+        decision_kind=event.state.decision_kind,
+        split=event.state.split,
+        policy_checkpoint_sha=event.state.policy_checkpoint_sha,
+        tokenizer_sha=event.state.tokenizer_sha,
+        decode_config_hash=event.state.decode_config_hash,
+        seed=seed,
+        trajectory_id=trajectory_id,
+    )
+
+
+# ── V1 migration ─────────────────────────────────────────────────────────
+
+
+def migrate_v1_to_v2(event: DecisionEventV1) -> DecisionEventV2:
+    """One-way V1 → V2 migration that never fabricates evidence.
+
+    Semantic counterfactuals become complete-enough action evidence; constraint
+    shadows remain incomplete legality diagnostics.
+    """
+    state = DecisionStateV2(
+        state_id="",
+        group_id=event.group_id,
+        architecture="twotower",
+        context_text=event.context_text,
+        context_ids=None,
+        canvas_ids=event.canvas_ids,
+        decision_position=event.position,
+        generation_step=None,
+        legal_action_ids=event.legal_token_ids,
+        decision_kind=event.decision_kind,
+        abstract_state_role="",
+        grammar_state_hash=decision_signature(event),
+        policy_checkpoint_sha=event.policy_checkpoint_sha,
+        tokenizer_sha=event.tokenizer_sha,
+        decode_config_hash=event.decode_config_hash,
+        verifier_bundle_hash=event.decode_config_hash,
+        split=event.split,
+    )
+    outcomes: list[ActionOutcomeV2] = []
+    for action_id in event.good_token_ids:
+        outcomes.append(
+            ActionOutcomeV2(
+                state_id=state.state_id,
+                action_id=action_id,
+                legal=True,
+                rollout_policy_sha=event.policy_checkpoint_sha,
+                continuation_seeds=(),
+                outcome_hashes=(),
+                verifier_vectors=(),
+                reward_vectors=(),
+                mean_value=None,
+                confidence_interval=None,
+                evidence_ids=(event.event_id,),
+                evidence_confidence=event.evidence_confidence,
+            )
+        )
+    for action_id in event.bad_token_ids:
+        is_legal = action_id in event.legal_token_ids
+        outcomes.append(
+            ActionOutcomeV2(
+                state_id=state.state_id,
+                action_id=action_id,
+                legal=is_legal,
+                rollout_policy_sha=event.policy_checkpoint_sha,
+                continuation_seeds=(),
+                outcome_hashes=(),
+                verifier_vectors=(),
+                reward_vectors=(),
+                mean_value=None,
+                confidence_interval=None,
+                evidence_ids=(event.event_id,),
+                evidence_confidence=event.evidence_confidence,
+            )
+        )
+    return DecisionEventV2(
+        state=state,
+        outcomes=tuple(outcomes),
+        evidence_kind=event.evidence_kind,
+    )
+
+
+# ── V2 I/O and manifest ──────────────────────────────────────────────────
+
+
+def load_decision_events_v2(path: Path | str) -> list[DecisionEventV2]:
+    with Path(path).open("r", encoding="utf-8") as handle:
+        return [
+            DecisionEventV2.from_dict(json.loads(line))
+            for line in handle
+            if line.strip()
+        ]
+
+
+def write_decision_events_v2(
+    path: Path | str, events: Iterable[DecisionEventV2]
+) -> int:
+    path = Path(path)
+    rows = merge_action_evidence(events)
+    if len({event.state.state_id for event in rows}) != len(rows):
+        raise ValueError("duplicate state ids after merge")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        "w", encoding="utf-8", dir=path.parent, delete=False
+    ) as handle:
+        tmp = Path(handle.name)
+        for event in sorted(rows, key=lambda event: event.state.state_id):
+            handle.write(json.dumps(event.to_dict(), sort_keys=True) + "\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.replace(tmp, path)
+    return len(rows)
+
+
+def load_decision_events_v1_or_v2(path: Path | str) -> list[DecisionEventV1 | DecisionEventV2]:
+    """Dispatch on the first row's version field."""
+    path = Path(path)
+    with path.open("r", encoding="utf-8") as handle:
+        lines = [line for line in handle if line.strip()]
+    if not lines:
+        return []
+    first = json.loads(lines[0])
+    version = first.get("version", 1)
+    if version == 2:
+        return [DecisionEventV2.from_dict(json.loads(line)) for line in lines]
+    return [DecisionEventV1.from_dict(json.loads(line)) for line in lines]
+
+
+def decision_event_manifest_v2(
+    events: Iterable[DecisionEventV2],
+    *,
+    dataset_id: str,
+    records_path: str = "events.jsonl",
+    source_trace_ids: Iterable[str] = (),
+    source_record_fingerprint: str | None = None,
+    source_record_fingerprints: Iterable[str] = (),
+    evidence_path: str | None = None,
+) -> dict[str, Any]:
+    """Manifest with separate state, action-evidence, and objective fingerprints."""
+    rows = merge_action_evidence(events)
+    if not rows:
+        raise ValueError("decision event corpus must not be empty")
+    identities = {
+        (
+            event.state.policy_checkpoint_sha,
+            event.state.tokenizer_sha,
+            event.state.decode_config_hash,
+            event.state.verifier_bundle_hash,
+        )
+        for event in rows
+    }
+    if len(identities) != 1:
+        raise ValueError("decision event corpus mixes policy identities")
+    (
+        checkpoint_sha,
+        tokenizer_sha,
+        decode_hash,
+        verifier_hash,
+    ) = identities.pop()
+    split_counts = {
+        split: sum(event.state.split == split for event in rows)
+        for split in ("train", "held_out")
+    }
+    split_groups = {
+        split: len({event.state.group_id for event in rows if event.state.split == split})
+        for split in ("train", "held_out")
+    }
+    states = [event.state.to_dict() for event in rows]
+    # Drop state_id from the state content fingerprint? No: state_id is canonical
+    # and derived from the same fields, so including it is harmless and stable.
+    state_fingerprint = _sha(states)
+    evidence_fingerprint = _sha(
+        [outcome.to_dict() for event in rows for outcome in event.outcomes]
+    )
+    objective_view = [
+        materialize_objective_single_best_worst(event).to_dict()
+        for event in rows
+    ]
+    objective_fingerprint = _sha(objective_view)
+    payload: dict[str, Any] = {
+        "schema_version": 2,
+        "kind": "decision_event_corpus",
+        "dataset_id": dataset_id,
+        "immutable": True,
+        "records": records_path,
+        "record_count": len(rows),
+        "group_count": len({event.state.group_id for event in rows}),
+        "state_fingerprint": state_fingerprint,
+        "evidence_fingerprint": evidence_fingerprint,
+        "objective_fingerprint": objective_fingerprint,
+        "policy_checkpoint_sha": checkpoint_sha,
+        "tokenizer_sha": tokenizer_sha,
+        "decode_config_hash": decode_hash,
+        "verifier_bundle_hash": verifier_hash,
+        "evidence_kinds": {
+            kind: sum(event.evidence_kind == kind for event in rows)
+            for kind in ("constraint_shadow", "counterfactual")
+        },
+        "splits": split_counts,
+        "split_groups": split_groups,
+        "source_trace_ids": sorted(set(source_trace_ids)),
+    }
+    source_fingerprints = sorted(
+        {
+            *(
+                [source_record_fingerprint]
+                if source_record_fingerprint is not None
+                else []
+            ),
+            *(str(value) for value in source_record_fingerprints if value),
+        }
+    )
+    if source_fingerprints:
+        payload["source_record_fingerprint"] = (
+            source_fingerprints[0]
+            if len(source_fingerprints) == 1
+            else _sha(source_fingerprints)
+        )
+        payload["source_record_fingerprints"] = source_fingerprints
+    if evidence_path is not None:
+        payload["evidence_path"] = evidence_path
+    return payload
+
+
+def write_decision_event_manifest_v2(
+    path: Path | str, manifest: dict[str, Any]
+) -> None:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
