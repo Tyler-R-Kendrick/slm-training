@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -435,3 +436,69 @@ def test_estimate_additive_interaction_ignores_incompatible_arms() -> None:
     estimate = estimate_additive_interaction((baseline, all_off))
     assert estimate["needs_stage_b"] is False
     assert estimate["residual"] == pytest.approx(0.0)
+
+
+def test_run_arm_wires_real_eval_path(
+    base_config: ModelBuildConfig, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Mock the heavy checkpoint load/eval to verify the wiring path."""
+    from slm_training.harnesses.eval.ablate_decode_scaffolding import (
+        AblateArm,
+        ScaffoldFactors,
+        run_arm,
+    )
+
+    checkpoint = tmp_path / "fake.pt"
+    checkpoint.write_bytes(b"checkpoint bytes")
+
+    calls: dict[str, Any] = {}
+
+    class FakeModel:
+        config = None
+
+    def fake_from_checkpoint(path: str, *, device: str) -> FakeModel:
+        calls["from_checkpoint"] = {"path": path, "device": device}
+        return FakeModel()
+
+    def fake_evaluate_suites(
+        config: ModelBuildConfig,
+        suites: tuple[str, ...],
+        *,
+        model: Any,
+        write_gates: bool,
+    ) -> dict[str, Any]:
+        calls["evaluate_suites"] = {
+            "run_root": str(config.run_root),
+            "run_id": config.run_id,
+            "suites": suites,
+            "write_gates": write_gates,
+        }
+        return {"meaningful_program_rate": 0.70, "placeholder_fidelity": 0.85}
+
+    monkeypatch.setattr(
+        "slm_training.models.twotower.TwoTowerModel.from_checkpoint",
+        fake_from_checkpoint,
+    )
+    monkeypatch.setattr(
+        "slm_training.harnesses.model_build.eval_runner.evaluate_suites",
+        fake_evaluate_suites,
+    )
+
+    arm = AblateArm(
+        arm_id="baseline",
+        factors=ScaffoldFactors(),
+        decode_path_id="current_exact_or_compiler",
+        best_of_n=4,
+    )
+    result = run_arm(
+        arm,
+        base_config=base_config,
+        output_codec="choice",
+        checkpoint_path=checkpoint,
+        suites=("smoke",),
+    )
+    assert result.compatible
+    assert result.metrics["meaningful_program_rate"] == pytest.approx(0.70)
+    assert calls["from_checkpoint"]["path"] == str(checkpoint)
+    assert calls["evaluate_suites"]["run_id"] == "baseline"
+    assert calls["evaluate_suites"]["write_gates"] is True

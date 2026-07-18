@@ -401,7 +401,7 @@ def run_arm(
         model=model,
         write_gates=True,
     )
-    gates = evaluate_ship_gates(scoreboard, DEFAULT_SHIP_GATES)
+    gates = evaluate_ship_gates(scoreboard, thresholds=DEFAULT_SHIP_GATES)
     notes.append("evaluated with frozen checkpoint")
 
     return ArmResult(
