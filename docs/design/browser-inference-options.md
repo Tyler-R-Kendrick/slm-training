@@ -8,7 +8,7 @@ have to change to adopt an alternative runtime. Updated 2026-07-18.
 | Role | Model | Where it runs |
 | --- | --- | --- |
 | Training-model candidate | TwoTower checkpoint | Server: PyTorch CPU, or committed ONNX (`onnx_inference.py`) when torch is absent |
-| Browser baseline (generate / review / run insights) | Prompt API model, else `onnx-community/gemma-3-270m-it-ONNX` | Browser: built-in Prompt API, else transformers.js |
+| Browser baseline (generate / review / run insights) | Prompt API model, else `HuggingFaceTB/SmolLM2-360M-Instruct` | Browser: built-in Prompt API, else transformers.js |
 
 The browser baseline is the annotate-playground quality gate and fallback
 generator, so it must initialize on ordinary hardware without server help.
@@ -58,8 +58,36 @@ workgroup-storage guard from the 2026-07-15 run is retained. The session
 runtime string now records device **and** dtype
 (`transformers-js:webgpu:q4f16`) so attempt/review records say which variant
 produced the data. All variants exist in the model repo
-(`model_fp16.onnx` 570 MB, `model_q4f16.onnx` 273 MB, `model_quantized.onnx`
-545 MB, verified against the HF tree 2026-07-18).
+(`model_fp16.onnx` 725 MB, `model_q4f16.onnx` 273 MB, `model_quantized.onnx`
+365 MB, verified against the HF tree 2026-07-18).
+
+### 2026-07-18 follow-up: model swap + once-only download semantics
+
+The baseline model is now `HuggingFaceTB/SmolLM2-360M-Instruct` (same family
+as the frozen HF-context experiments). gemma-3-270m's q8 export is a 545 MB
+terminal-rung download, and behavioral testing showed the cheaper
+`SmolLM2-135M-Instruct` cannot hold the DSL or review-JSON output formats even
+with few-shot anchoring — 360M holds both (`model_quantized.onnx` 365 MB,
+`model_q4f16.onnx` 273 MB). Robustness added around the ladder:
+
+- the working `{device, dtype}` profile is memoized in `localStorage`
+  (`twotower_browser_inference_profile_v1`), so later visits initialize the
+  proven rung directly instead of re-walking (and re-downloading) failed
+  candidates; Cache API keeps weights across sessions, so downloads happen
+  once per browser profile;
+- the WebGPU rung additionally probes the adapter (`requestAdapter` null,
+  workgroup storage, `shader-f16` → plain `q4` downgrade) before any fetch;
+- per-request few-shot exchanges (selected by the `TASK:` marker) anchor the
+  small model to the DSL / review-JSON formats;
+- generation is capped at 192 new tokens and prompt budgets scale by runtime
+  (240 s WASM-CPU, 90 s GPU/NPU-class, 30 s Prompt API) via
+  `browserPromptTimeoutMs`; playground readiness waits on download *progress*
+  (stall detection) rather than a fixed 10 s.
+
+Verified live in this container (headless Chromium, WASM rung): the module
+initialized `transformers-js:wasm:q8`, persisted the profile, and browser
+attempt 1/3 produced lint-valid OpenUI in 16.2 s — the annotate card became
+gradable from a real model source with no fixture involved.
 
 **Evidence (wiring-level, this container):** Node capability smoke over the
 module (full/webgpu-only/wasm-only navigators produce the intended
@@ -73,9 +101,9 @@ transformers.js pin `@huggingface/transformers@4.2.0` confirmed latest on npm.
 | Option | Accelerators | Model format | Verdict |
 | --- | --- | --- | --- |
 | Chrome/Edge built-in Prompt API | Managed by browser | Built-in (Gemini Nano class) | **Keep as first choice** — zero download, but availability is flag/OS dependent |
-| transformers.js 4.2.0 (ONNX Runtime Web) | WebNN-NPU, WebGPU, WebNN-GPU, WASM | ONNX (our exports included) | **Current choice** — only runtime covering NPU *and* GPU *and* universal fallback with our 270 MB-class model |
+| transformers.js 4.2.0 (ONNX Runtime Web) | WebNN-NPU, WebGPU, WebNN-GPU, WASM | ONNX (our exports included) | **Current choice** — only runtime covering NPU *and* GPU *and* universal fallback with our sub-1B baseline model |
 | LiteRT.js `@litertjs/core` 2.5.3 (updated 2026-07-17) | WebGPU, WebNN (NPU), XNNPack WASM | `.tflite` | Credible alternative; parity on accelerator targets, but requires `ai-edge-torch` conversion of PyTorch models and brings no LLM orchestration (KV cache, chat template, sampling) — transformers.js keeps that for free |
-| LiteRT-LM JS `@litert-lm/core` 0.14.0 | WebGPU only (early preview) | `.litertlm`, **only** Gemma 4 `E2B`/`E4B` web builds | Not adoptable yet: smallest supported model is ~2 B effective params vs our 270 M baseline, no WebNN, no WASM fallback. **Watch** — revisit when general `.litertlm` + WebNN land |
+| LiteRT-LM JS `@litert-lm/core` 0.14.0 | WebGPU only (early preview) | `.litertlm`, **only** Gemma 4 `E2B`/`E4B` web builds | Not adoptable yet: smallest supported model is ~2 B effective params vs our 360 M baseline, no WebNN, no WASM fallback. **Watch** — revisit when general `.litertlm` + WebNN land |
 | WebLLM (MLC) | WebGPU only | MLC-compiled | No NPU path, bespoke model compilation — no advantage over the current ladder |
 | TwoTower ONNX in-browser (onnxruntime-web directly) | WebGPU/WebNN/WASM | Committed `.context.onnx` / `.denoiser.onnx` | Future option: artifacts already export, but the grammar-constrained decode loop (`dfa_admits_token`, force-emit, certify) lives in Python and would need a JS port; server ONNX stays until that is worth owning |
 
