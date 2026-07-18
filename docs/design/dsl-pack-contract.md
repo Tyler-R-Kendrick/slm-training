@@ -26,6 +26,10 @@ pack-contract table already committed in
 | canonicalizer | `canonicalize` | D2 confluent codec round-trip, `dsl/canonicalize.py` |
 | scope rules | `scope_extractor` | grammar-generic `data/scope_extract.extract_scope_slices` |
 | placeholder policy | `placeholder_policy: PlaceholderPolicy` | `dsl/placeholders.py` regex + content props + `canonical_slot_contract` |
+| surface slot extractor | `surface_slot_extractor` | VSS3-04 classifier in `dsl/pack.py` (`_openui_surface_slot_extractor`) |
+| surface validator | `surface_assignment_validator` | reserved for per-language override; default pipeline uses generic validation |
+| surface applier | `surface_applier` | reserved for per-language override; default pipeline uses direct substitution + VSS2-04 splicing |
+| surface oracle | `surface_oracle` | reserved for per-language override; default pipeline uses `oracle` |
 
 Plus contract metadata the F3/F4 docs require:
 
@@ -38,6 +42,12 @@ Plus contract metadata the F3/F4 docs require:
   (positional-prop declaration order for the production codec; streaming
   DFA engine for constrained decode, consulted by
   `dsl/grammar/fastpath/engine.engine_for_dsl` before its alias list).
+- `surface_slot_extractor`, `surface_assignment_validator`, `surface_applier`,
+  `surface_oracle` — optional VSS3-04 surface-realization slots. The OpenUI
+  pack provides the classifier; the other three are reserved for per-language
+  overrides, and the default `realize_surface_and_verify` pipeline falls back
+  to generic validation, direct placeholder-aware substitution, VSS2-04
+  opaque-region splicing, `canonicalize`, and `oracle`.
 - Slots are typed as Protocol-shaped callables/objects
   (`Canonicalizer`, `ValidityOracle`), **not** concrete Lark paths — so the
   F4 ontology variant (grammar → graph-walk constraint, oracle → ontology

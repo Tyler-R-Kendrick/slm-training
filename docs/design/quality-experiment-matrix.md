@@ -369,6 +369,21 @@ E50/E53/E55 clear honest `--ship-gates` (including rico_held n=20). Full 1500
 `rico_held` + HF context remains the production claim. Grammar-diffusion (E54/X2)
 needs longer train / capacity before competing with the TwoTower V5 stack.
 
+## VSS3 solver-realization infrastructure (not trainable matrix rows)
+
+These issues build the verified-scope-solver and surface-realization boundary
+that later matrix rows may depend on. They produce fixture wiring and
+regression tests, not model checkpoints or ship-gate results.
+
+| ID | Issue | What was added | Tests | Status |
+| --- | --- | --- | --- | --- |
+| VSS3-04 | SLM-72 | Typed late-surface-realization slots, conservative classifier, deterministic baseline realizer, and `realize_surface_and_verify` pipeline. | `tests/test_dsl/test_surface_realization.py` | wiring |
+
+This is **fixture evidence only**; no train/eval matrix run, no `--ship-gates`
+claim, and no checkpoint. It keeps the solver→realizer→verifier authority clean
+so that future matrix levers (e.g., constrained AR surface realization in
+VSS3-05 / SLM-73) can plug in without changing solver or verifier ownership.
+
 ### E121 judged-corpus follow-up (2026-07-16)
 
 E121 reran the E53 stack against the committed `remediated_roots_judged`

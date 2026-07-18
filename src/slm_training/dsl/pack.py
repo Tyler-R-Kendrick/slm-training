@@ -107,6 +107,10 @@ class DslPack:
     opaque_region_extractor: Callable[..., Any] | None = None
     fragment_parser: Callable[..., Any] | None = None
     region_splicer: Callable[..., Any] | None = None
+    surface_slot_extractor: Callable[..., Any] | None = None
+    surface_assignment_validator: Callable[..., Any] | None = None
+    surface_applier: Callable[..., Any] | None = None
+    surface_oracle: Callable[..., Any] | None = None
 
     def filled_slots(self) -> tuple[str, ...]:
         return tuple(
@@ -258,6 +262,73 @@ def _openui_opaque_region_extractor(source: str) -> tuple[Any, ...]:
     return tuple(regions)
 
 
+def _openui_surface_slot_extractor(source: str) -> tuple[Any, ...]:
+    """Classify late-realization slots for OpenUI V1.
+
+    * Binder definitions (left-hand side of ``name = ...``) are internal
+      identifiers: their surface spelling is not externally observable and the
+      canonicalizer normalizes them to ``v0, v1, ...``.
+    * Content placeholders for user-facing string props (``text``, ``label``,
+      etc.) are opaque user values; they are realized through the VSS2-04
+      opaque-region splice path.
+    * Everything else is left out of the surface slot set and therefore remains
+      semantic by default.
+    """
+    import hashlib
+
+    from slm_training.data.contract import _BINDER_RE
+    from slm_training.dsl.placeholders import CONTENT_PROPS, extract_placeholders
+    from slm_training.dsl.surface import (
+        SurfaceAuthority,
+        SurfaceConstraint,
+        SurfaceSlot,
+        SurfaceSlotKind,
+    )
+
+    slots: list[Any] = []
+    seen_binders: set[str] = set()
+    for index, match in enumerate(_BINDER_RE.finditer(source)):
+        name = match.group(1)
+        # The program root binder is syntactically required to be spelled "root";
+        # it is therefore externally observable and remains semantic.
+        if name == "root" or name in seen_binders:
+            continue
+        seen_binders.add(name)
+        digest = hashlib.sha256(name.encode("utf-8")).hexdigest()[:16]
+        slots.append(
+            SurfaceSlot(
+                slot_id=f"openui:binder:{name}",
+                kind=SurfaceSlotKind.INTERNAL_IDENTIFIER,
+                authority=SurfaceAuthority.SURFACE_ONLY,
+                ast_path=("statement", index),
+                semantic_symbol_id=name,
+                opaque_region_id=None,
+                constraints=SurfaceConstraint(),
+                current_value_digest=digest,
+            )
+        )
+
+    for placeholder in extract_placeholders(source):
+        prop = placeholder.lstrip(":").split(".")[-1]
+        if prop not in CONTENT_PROPS:
+            continue
+        digest = hashlib.sha256(placeholder.encode("utf-8")).hexdigest()[:16]
+        slots.append(
+            SurfaceSlot(
+                slot_id=f"openui:content:{placeholder}",
+                kind=SurfaceSlotKind.DECORATIVE_TEXT,
+                authority=SurfaceAuthority.OPAQUE_USER_VALUE,
+                ast_path=("placeholder", placeholder),
+                semantic_symbol_id=None,
+                opaque_region_id=f"openui:content:{placeholder}",
+                constraints=SurfaceConstraint(),
+                current_value_digest=digest,
+            )
+        )
+
+    return tuple(slots)
+
+
 def _toy_layout_scope_extractor(source: str, **kwargs: Any) -> list[Any]:
     from slm_training.data.scope_extract import extract_scope_slices
 
@@ -304,6 +375,7 @@ def _ensure_builtin_packs() -> None:
             prop_order=_openui_prop_order,
             incremental_engine=_openui_engine,
             opaque_region_extractor=_openui_opaque_region_extractor,
+            surface_slot_extractor=_openui_surface_slot_extractor,
         )
     )
     # Partial pack: toy-layout genuinely fills grammar, scope rules,

@@ -387,6 +387,35 @@ the closure.
   certificate.
 - Semantic fields never take the autoregressive path.
 
+## Implemented surface-realization boundary (VSS3-04 / SLM-72)
+
+[`dsl/surface.py`](../../src/slm_training/dsl/surface.py) adds the typed,
+pack-owned surface boundary and a deterministic baseline realizer. It is
+Torch-free, model-free, and not wired into decode by default.
+
+The classifier lives on the pack (`surface_slot_extractor`). For OpenUI V1:
+
+- non-`root` binder definitions are `INTERNAL_IDENTIFIER` / `SURFACE_ONLY`;
+- user-facing content placeholders are `DECORATIVE_TEXT` /
+  `OPAQUE_USER_VALUE` and route through the VSS2-04 opaque-region splicer;
+- `root`, component names, property keys, operators, and structured fields are
+  left out and remain semantic by default.
+
+`realize_surface_and_verify` fails closed unless the input carries a solved
+semantic-IR fingerprint and prior `solved`/`verified` status. It applies
+identifier substitutions whole-word and placeholder-aware, splices opaque
+content through `realize_opaque_regions`, canonicalizes, and re-verifies with
+`pack.oracle`. A failed verifier returns no certified source.
+
+`DeterministicSurfaceRealizer` assigns canonical binder names (`v0`, `v1`, ...),
+enforces grammar/reserved-word/uniqueness constraints with deterministic
+collision repair, and never hallucinates missing required opaque values.
+Pinned by closed fixtures (`tests/test_dsl/test_surface_realization.py`):
+conservative classifier defaults, alpha-equivalent internal renaming,
+opaque-region routing, missing/unknown/duplicate/tampered assignment rejection,
+JSON round-trip, and historical pack/opaque compatibility. No autoregressive
+model, train/eval run, checkpoint, or ship claim.
+
 ## Relationship to existing implementation
 
 | Symbol (file:line) | Existing role | Disposition under this contract |
