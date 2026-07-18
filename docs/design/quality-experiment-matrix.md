@@ -2391,6 +2391,16 @@ Continue with 48-row shards under the hard 290-second command cap. See
 [results](iter-e380-e382-structural-capacity-rico192-20260717.md) and
 [JSON](iter-e380-e382-structural-capacity-rico192-20260717.json).
 
+E383 covers disjoint RICO rows 192–240 under the unchanged capacity-safe
+policy: parse/meaningful 1.0, fidelity 0.9878, structure 0.6253, recall 0.9896,
+reward 0.9939, and zero failures in approximately 83s. E384 merges
+E377+E378+E381+E383 into exact contiguous 240/1500 evidence: fidelity 0.9903,
+structure 0.6422, recall 0.9816, reward 0.9952, and zero failures. The merged
+AgentV bundle remains fail-closed because bounded suites and full RICO are
+absent. Continue 48-row shards under the hard 290-second command cap. See
+[results](iter-e383-e384-structural-capacity-rico240-20260717.md) and
+[JSON](iter-e383-e384-structural-capacity-rico240-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
