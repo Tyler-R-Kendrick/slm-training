@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E455",
+  "date": "2026-07-18",
+  "status": "complete",
+  "run_id": "e455-e396-repaired-bounded-prompt-role-r1",
+  "checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0"
+  },
+  "data": {
+    "version": "e451_root_binder_v1",
+    "rico_records_sha256": "35ecf5596933cb06e04184c99733fa56954355e9534ad9a24d060412d8f46432"
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "grammar_ltr_max_tokens": 320,
+    "decode_min_content": -1,
+    "component_plan_decode_weight": 2.0,
+    "slot_component_decode_weight": 8.0,
+    "prompt_role_constrained_decode": true,
+    "slot_contract_constrained_decode": true,
+    "honest_slot_contract": true,
+    "allow_unconstrained_fallback": false,
+    "gen_steps": 8,
+    "max_attempts": 3
+  },
+  "suites": {
+    "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.56, "component_type_recall": 0.5, "reward_score": 0.977},
+    "held_out": {"n": 5, "parse_rate": 1.0, "meaningful_program_rate": 0.6, "placeholder_fidelity": 1.0, "structural_similarity": 0.64004, "component_type_recall": 0.5047619047619047, "reward_score": 0.5922},
+    "adversarial": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.76605, "component_type_recall": 1.0, "reward_score": 0.976},
+    "ood": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.5835250000000001, "component_type_recall": 0.8125, "reward_score": 0.9834999999999999}
+  },
+  "agentv": {"passed": 4, "total": 4, "execution_errors": 0},
+  "timing": {
+    "elapsed_seconds": 26,
+    "external_timeout_seconds": 290,
+    "external_kill_after_seconds": 10,
+    "completed_normally": true
+  },
+  "verdict": "Complete bounded-suite evidence; not a five-suite, promotion, or production HF claim."
+}

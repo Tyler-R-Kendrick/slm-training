@@ -21,6 +21,12 @@ Interrupted or timed-out shards are excluded rather than merged.
 | 7 | 672–768 | 96 | 1.0 | 1.0 | 0.8637 | 0.9896 | 0.9934 | complete |
 | 8 | 768–864 | 96 | 1.0 | 1.0 | 0.8631 | 1.0 | 0.9946 | complete |
 | 9 | 864–960 | 96 | 1.0 | 1.0 | 0.8922 | 1.0 | 0.9931 | complete |
+| 10 | 960–1056 | 96 | 1.0 | 1.0 | 0.8529 | 0.9896 | 0.9931 | complete |
+| 11 | 1056–1152 | 96 | 1.0 | 1.0 | 0.8625 | 0.9948 | 0.9944 | complete |
+| 12 | 1152–1248 | 96 | 1.0 | 1.0 | 0.8642 | 0.9948 | 0.9949 | complete |
+| 13 | 1248–1344 | 96 | 1.0 | 1.0 | 0.8880 | 1.0 | 0.9945 | complete |
+| 14 | 1344–1440 | 96 | 1.0 | 1.0 | 0.8609 | 1.0 | 0.9956 | reused E453 |
+| 15 | 1440–1500 | 60 | 1.0 | 1.0 | 0.8610 | 1.0 | 0.9957 | complete |
 
 Shard 0 completes normally in about 183 seconds with zero failure, fallback,
 or decode timeout. Its diagnostic AgentV bundle is 0/5 with zero execution
@@ -43,6 +49,36 @@ Shard 8 completes normally in about 242 seconds with zero
 failure/fallback/timeout counts.
 Shard 9 completes normally in about 243 seconds with zero
 failure/fallback/timeout counts.
+Shard 10 completes normally in about 207 seconds with zero
+failure/fallback/timeout counts.
+Shard 11 completes normally in about 203 seconds with zero
+failure/fallback/timeout counts.
+Shard 12 completes normally in about 226 seconds with zero
+failure/fallback/timeout counts.
+Shard 13 completes normally in about 218 seconds with zero
+failure/fallback/timeout counts. Protocol-identical E453 is reused for shard
+14; it completed normally in about 218 seconds and is already documented
+independently. Shard 15 completes normally in about 137 seconds with zero
+failure/fallback/timeout counts.
 
-**Current verdict:** 960/1500 rows are complete. This is a partial diagnostic,
-not a full-RICO, ship-gate, champion, or promotion claim.
+## Canonical full-suite aggregate
+
+The canonical shard merger verified identical checkpoint SHA and evaluation
+policy, exact contiguous `[0, 1500)` coverage, and unique record IDs. The
+merged artifact is
+`outputs/runs/e454-e396-repaired-full-rico-merged-r1/eval_rico_held.json`.
+
+| n | Parse | Meaningful | Fidelity | Structure | Type recall | Reward | Failures |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1500 | 1.0 | 1.0 | 1.0 | 0.8683 | 0.9960 | 0.9940 | 0 |
+
+The aggregate is not a diagnostic subset. Median/p95 latency is
+1807.1/5503.9 ms, fallback and decode timeout counts are zero, and the
+full-RICO AgentV result passes 1/1 with zero execution errors.
+
+**Verdict:** the repaired full-RICO evaluation is complete and materially
+improves E441's meaningful rate (0.9847 → 1.0), structure
+(0.6390 → 0.8683), type recall (0.8652 → 0.9960), and reward
+(0.9827 → 0.9940), while restoring fidelity from 0.9993 to 1.0. This is
+full-RICO evidence only, not a five-suite ship-gate, champion, promotion, or
+production HF claim.

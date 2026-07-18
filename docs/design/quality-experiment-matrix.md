@@ -2691,8 +2691,41 @@ the campaign remains partial and non-ship. Shard 7 passes halfway through row
 0.9934. Shard 8 reaches row 863 at meaningful/fidelity/recall 1.0, structure
 0.8631, and reward 0.9946. Shard 9 reaches row 959 at
 meaningful/fidelity/recall 1.0, structure 0.8922, and reward 0.9931; coverage
-is 960/1500. See
+is 960/1500. Shard 10 reaches row 1055 at meaningful/fidelity 1.0, structure
+0.8529, recall 0.9896, and reward 0.9931. Shard 11 reaches row 1151 at
+meaningful/fidelity 1.0, structure 0.8625, recall 0.9948, and reward 0.9944;
+shard 12 reaches row 1247 at meaningful/fidelity 1.0, structure 0.8642, recall
+0.9948, and reward 0.9949. Shard 13 reaches row 1343 at
+meaningful/fidelity/recall 1.0, structure 0.8880, and reward 0.9945.
+Protocol-identical E453 is reused for rows 1344–1439 at
+meaningful/fidelity/recall 1.0, structure 0.8609, and reward 0.9956. Coverage
+reaches 1440/1500. Shard 15 completes rows 1440–1499 at
+meaningful/fidelity/recall 1.0, structure 0.8610, and reward 0.9957. All 1500
+shard rows completed normally. Before merge, that evidence remained
+diagnostic. The merger validates identical checkpoint/policy,
+contiguous non-overlapping `[0,1500)` coverage, and unique record IDs. The
+canonical full result is meaningful/fidelity 1.0, structure 0.8683, type
+recall 0.9960, reward 0.9940, zero fallback/timeouts, and AgentV 1/1. It
+improves E441 on every headline quality metric, but is not a five-suite ship
+claim. See
 [`iter-e454-e396-repaired-full-rico-sharded-20260718.md`](iter-e454-e396-repaired-full-rico-sharded-20260718.md).
+
+E455 applies E454's exact repaired-corpus prompt-role policy to all four
+complete bounded suites. AgentV passes 4/4 with zero execution errors and no
+fallback/timeouts. Smoke is unchanged from E398. Held-out structure improves
+0.5933→0.6400 and recall 0.4833→0.5048. Adversarial meaningful rate improves
+0.75→1.0, structure 0.6762→0.7661, and recall 0.75→1.0. OOD structure improves
+0.5511→0.5835 and recall 0.7292→0.8125. This remains bounded-suite evidence
+until combined with E454. See
+[`iter-e455-e396-repaired-bounded-prompt-role-20260718.md`](iter-e455-e396-repaired-bounded-prompt-role-20260718.md).
+
+E456 fail-closed merges E455 and E454 under their identical checkpoint and
+evaluation policy. All five authoritative ship gates pass with no failures;
+AgentV passes 5/5 with zero execution errors. E396 remains the local champion
+with substantially stronger repaired-corpus full-RICO structure/recall
+0.8683/0.9960. Production HF ship remains blocked on durable bucket sync and
+URI registration. See
+[`iter-e456-e396-repaired-full-ship-gates-20260718.md`](iter-e456-e396-repaired-full-ship-gates-20260718.md).
 
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
