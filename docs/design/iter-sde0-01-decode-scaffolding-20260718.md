@@ -18,17 +18,20 @@ from decode-time scaffolding.
   - `build_stage_a_arms()` — baseline, four one-factor-off arms, and all-off.
   - `resolve_arm_config()` — maps factors onto existing `ModelBuildConfig` /
     `DecodePathSpec` levers and checks compatibility.
+  - `_verify_checkpoint()` — fail-closed SHA-256 provenance check.
   - `run_arm()` — fixture mode (config resolution only) or real eval mode via
     `TwoTowerModel.from_checkpoint` + `evaluate_suites`.
-  - `run_stage_a()` — runs Stage A and produces an `AblateReport`.
+  - `run_stage_a()` — runs provenance check, then Stage A, and produces an
+    `AblateReport`.
   - `stage_a_needs_stage_b()` — heuristic trigger for the remaining `2^4` cells.
 - `scripts/ablate_decode_scaffolding.py`
   - CLI entry point with `--checkpoint`, `--checkpoint-id`, `--checkpoint-sha256`,
     `--checkpoint-remote-uri`, `--output-codec`, `--suites`, `--out-dir`, and
     `--dry-run`.
 - `tests/test_harnesses/eval/test_ablate_decode_scaffolding.py`
-  - 9 regression tests covering arm generation, factor isolation, config
-    resolution, fixture-mode compatibility, and Stage B triggering.
+  - 13 regression tests covering arm generation, factor isolation, config
+    resolution, fixture-mode compatibility, Stage B triggering, and checkpoint
+    SHA-256 provenance.
 
 ## Design
 
@@ -47,7 +50,7 @@ that every arm resolves to a legal, compatible config override set.
 
 ## Regression tests
 
-`pytest tests/test_harnesses/eval/test_ablate_decode_scaffolding.py` — 9 passed.
+`pytest tests/test_harnesses/eval/test_ablate_decode_scaffolding.py` — 13 passed.
 
 - Stage A produces 6 arms with expected IDs.
 - Baseline has all factors enabled; all-off has none.
@@ -57,6 +60,8 @@ that every arm resolves to a legal, compatible config override set.
 - Fixture mode returns compatible for every arm.
 - Stage B trigger fires on a non-additive residual and stays off when additivity
   holds.
+- Missing or hash-mismatched checkpoint marks every arm incompatible.
+- Matching SHA-256 passes the fail-closed provenance check.
 
 ## Fixture harness results
 
@@ -106,8 +111,8 @@ Hard gates:
 
 ## Verification checklist
 
-- [x] `pytest tests/test_harnesses/eval/test_ablate_decode_scaffolding.py` — 9 passed.
-- [x] `.githooks/check-changed` — 118 passed.
+- [x] `pytest tests/test_harnesses/eval/test_ablate_decode_scaffolding.py` — 13 passed.
+- [x] `.githooks/check-changed` — 13 passed.
 - [x] `python -m scripts.repo_policy` — ok.
 - [x] `git diff --check` — clean.
 - [x] `python -m scripts.ablate_decode_scaffolding --dry-run` — 6 arms described.
