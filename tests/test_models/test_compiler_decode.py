@@ -916,12 +916,15 @@ def test_slot_component_bias_uses_next_unfilled_slot() -> None:
     }
 
     def logits(self, slots, context, pad_mask, context_rows):
-        row = torch.zeros(
-            (1, len(component_ids)), dtype=context.dtype, device=context.device
+        rows = torch.zeros(
+            (len(slots), len(component_ids)),
+            dtype=context.dtype,
+            device=context.device,
         )
-        target = "Input" if slots == [":form.email"] else "Button"
-        row[0, component_index[target]] = 3.0
-        return row
+        for index, slot in enumerate(slots):
+            target = "Input" if slot == ":form.email" else "Button"
+            rows[index, component_index[target]] = 3.0
+        return rows
 
     model._slot_component_logits = MethodType(logits, model)
     ctx, ctx_pad = model._encode_context(
@@ -952,6 +955,45 @@ def test_slot_component_bias_uses_next_unfilled_slot() -> None:
 
     assert email_bias is not None and email_bias[0] > email_bias[1]
     assert submit_bias is not None and submit_bias[1] > submit_bias[0]
+
+
+def test_slot_component_bias_averages_every_consumed_slot() -> None:
+    from types import MethodType
+
+    model = _model(slot_component_decode_weight=2.0)
+    tokenizer = model.tokenizer
+    component_ids = model._component_inventory_token_ids()
+    def logits(self, slots, context, pad_mask, context_rows):
+        rows = torch.zeros(
+            (len(slots), len(component_ids)),
+            dtype=context.dtype,
+            device=context.device,
+        )
+        rows[0, 0] = 4.0
+        rows[1, 0] = 2.0
+        return rows
+
+    model._slot_component_logits = MethodType(logits, model)
+    ctx, ctx_pad = model._encode_context(["faq title and body"])
+    accordion, text = component_ids[:2]
+
+    def required_slot_count(self, token_id):
+        return 2 if token_id == accordion else 1
+
+    tokenizer.required_slot_count = MethodType(required_slot_count, tokenizer)
+    bias = model._slot_component_bias(
+        ctx,
+        ctx_pad,
+        [tokenizer.bos_id],
+        (accordion, text),
+        ("component_bound", "component_bound"),
+        [":faq.title", ":faq.body"],
+    )
+
+    assert tokenizer.required_slot_count(accordion) == 2
+    assert tokenizer.required_slot_count(text) == 1
+    assert bias is not None
+    assert bias.tolist() == [6.0, 0.0]
 
 
 def test_component_edges_come_from_ast_and_partial_reference_graph() -> None:

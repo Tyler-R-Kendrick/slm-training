@@ -648,11 +648,20 @@ class ChoiceDecodeState:
 
     def is_slot_content_component_id(self, token_id: int) -> bool:
         """Whether a component must consume a string-bearing content argument."""
+        return self.required_slot_count(token_id) > 0
+
+    def required_slot_count(self, token_id: int) -> int:
+        """Required positional strings consumed by a component choice."""
         token = self.tokenizer.id_to_token.get(int(token_id), "")
         if not token.startswith(OPEN_PREFIX):
-            return False
-        return self.is_slot_content_component_type(
-            f"element:{token[len(OPEN_PREFIX) :]}"
+            return 0
+        contract = _component_contracts().get(token[len(OPEN_PREFIX) :])
+        if contract is None:
+            return 0
+        schemas, required_args = contract
+        return sum(
+            self._schema_accepts(schema, "string")
+            for schema in schemas[:required_args]
         )
 
     def is_slot_content_component_type(self, expr_type: str) -> bool:

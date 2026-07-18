@@ -3238,23 +3238,24 @@ class TwoTowerModel(nn.Module):
             or "component_bound" not in candidate_kinds
         ):
             return None
-        next_slot: str | None = None
+        remaining_slots: list[str] = []
         for index, slot in enumerate(slot_contract):
             try:
                 slot_id = int(self.tokenizer.sym_id(index))
             except (AttributeError, KeyError, ValueError):
                 return None
             if slot_id not in prefix:
-                next_slot = str(slot)
-                break
-        if next_slot is None:
+                remaining_slots.append(str(slot))
+        if not remaining_slots:
             return None
         logits = self._slot_component_logits(
-            [next_slot],
+            remaining_slots,
             ctx,
             ctx_pad,
-            torch.zeros(1, dtype=torch.long, device=ctx.device),
-        )[0]
+            torch.zeros(
+                len(remaining_slots), dtype=torch.long, device=ctx.device
+            ),
+        )
         component_index = {
             token_id: index
             for index, token_id in enumerate(self._component_inventory_token_ids())
@@ -3266,8 +3267,18 @@ class TwoTowerModel(nn.Module):
         ):
             index = component_index.get(token_id)
             if index is not None and kind == "component_bound":
-                bias[position] = weight * logits[index]
-                applied = True
+                required_slot_count = getattr(
+                    self.tokenizer, "required_slot_count", None
+                )
+                required = (
+                    int(required_slot_count(token_id))
+                    if callable(required_slot_count)
+                    else 1
+                )
+                if required > 0:
+                    consumed = min(required, len(remaining_slots))
+                    bias[position] = weight * logits[:consumed, index].mean()
+                    applied = True
         return bias if applied else None
 
     def _component_edge_bias(
