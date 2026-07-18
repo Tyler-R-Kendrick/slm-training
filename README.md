@@ -136,6 +136,11 @@ pip install -e ".[rico]"
 
 ## Quick start (train / disjoint test)
 
+Every pipeline phase is also reachable through the unified `slm` CLI
+(`slm list` shows the full command map; `slm guide <phase>` prints the
+matching operating reference from `.agents/skills/train/references/`). The
+`python -m scripts.<name>` forms below remain the direct equivalents.
+
 ```bash
 # High-quality versioned corpus (default: all sources + quality synthesizer)
 python -m scripts.build_train_data --source all --version v1 --synthesizer quality

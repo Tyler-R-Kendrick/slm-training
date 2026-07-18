@@ -55,6 +55,7 @@ copy; Codex and GitHub Copilot discover `.agents/skills/` directly.
 | `running-experiment-matrices` | Running or extending E* / X* / PQR / phase matrices |
 | `openui-autoresearch` | Evidence-grounded campaigns, data/researcher repair, telemetry persistence, and RL readiness |
 | `improve-openui-harnesses` | Enhancing canonical research, data, model, eval, preference, distill, promotion, annotation, quality, or RL harnesses without parallel paths or artifact sprawl |
+| `train` | Running any training pipeline phase (train/test data, SFT, eval, distill, preference, RL, experiments, checkpoints, annotations, bench, autoresearch self-improvement) — per-phase references load on demand |
 | `ponytail` (+ `-review` / `-audit` / …) | Any coding task — write the minimum that works (YAGNI ladder) |
 | `organize-repository` | Creating, moving, renaming, deleting, or duplicating tracked paths; adding modules/docs/src/apps/skills; repository-sprawl review |
 | `caveman` (+ `-commit` / `-review` / …) | Opt-in terse chat / short commits / one-line review comments |
@@ -244,7 +245,8 @@ WITHOUT UPDATING DOCS
 
 Numbers only in `outputs/`, chat, or a PR comment = incomplete work.
 
-**Triggers (complete):** `train_model`, `train_rl`, `train_preference`,
+**Triggers (complete, whether invoked directly or via the `slm` wrapper):**
+`train_model`, `train_rl`, `train_preference`,
 `remote_train`, `hf_jobs_train`, `evaluate_model`, `evaluate_loss_suites`, `diagnose_eval`,
 `run_quality_matrix`, `run_grammar_matrix`, `run_perf_matrix`,
 `run_phase_pipeline`, `reproduce_baseline`, `run_scaling_ladder`,
