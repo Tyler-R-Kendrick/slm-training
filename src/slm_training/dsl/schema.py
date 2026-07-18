@@ -26,6 +26,7 @@ TASK_TOKENS = frozenset(
         "noop",
         "adversarial",
         "identity",
+        "surface_realization",
     }
 )
 

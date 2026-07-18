@@ -48,6 +48,9 @@ Plus contract metadata the F3/F4 docs require:
   overrides, and the default `realize_surface_and_verify` pipeline falls back
   to generic validation, direct placeholder-aware substitution, VSS2-04
   opaque-region splicing, `canonicalize`, and `oracle`.
+- The VSS3-05 autoregressive `NeuralSurfaceRealizer` is a caller-supplied
+  `SurfaceRealizer`, not a new pack slot, so it cannot become a second program
+  generator. The default pipeline still uses `DeterministicSurfaceRealizer`.
 - Slots are typed as Protocol-shaped callables/objects
   (`Canonicalizer`, `ValidityOracle`), **not** concrete Lark paths — so the
   F4 ontology variant (grammar → graph-walk constraint, oracle → ontology

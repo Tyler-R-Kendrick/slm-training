@@ -378,11 +378,12 @@ regression tests, not model checkpoints or ship-gate results.
 | ID | Issue | What was added | Tests | Status |
 | --- | --- | --- | --- | --- |
 | VSS3-04 | SLM-72 | Typed late-surface-realization slots, conservative classifier, deterministic baseline realizer, and `realize_surface_and_verify` pipeline. | `tests/test_dsl/test_surface_realization.py` | wiring |
+| VSS3-05 | SLM-73 | Constrained autoregressive surface realizer (`SurfaceAutoregressor`, `NeuralSurfaceRealizer`) with per-slot deterministic fallback. | `tests/test_models/test_surface_autoregressor.py`, `tests/test_dsl/test_surface_realization.py`, `tests/test_data/test_progspec.py` | wiring |
 
 This is **fixture evidence only**; no train/eval matrix run, no `--ship-gates`
 claim, and no checkpoint. It keeps the solver→realizer→verifier authority clean
-so that future matrix levers (e.g., constrained AR surface realization in
-VSS3-05 / SLM-73) can plug in without changing solver or verifier ownership.
+so that future matrix levers can plug in without changing solver or verifier
+ownership.
 
 ### E121 judged-corpus follow-up (2026-07-16)
 
