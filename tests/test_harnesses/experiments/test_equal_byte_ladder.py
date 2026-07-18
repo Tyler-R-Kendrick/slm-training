@@ -18,6 +18,26 @@ from slm_training.harnesses.experiments.ladder import (
 )
 
 
+def test_web_entrypoint_imports_without_torch() -> None:
+    repo = Path(__file__).resolve().parents[3]
+    subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import sys; "
+                "sys.modules['torch'] = None; "
+                "import slm_training.web.vercel"
+            ),
+        ],
+        cwd=repo,
+        env={**os.environ, "PYTHONPATH": str(repo / "src")},
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+
 def test_estimate_bytes_scales_with_width_and_format() -> None:
     """Modeled bytes should grow with width and shrink with lower bit width."""
     fp16_32 = estimate_bytes(32, 2, 1, 2, "fp16")
