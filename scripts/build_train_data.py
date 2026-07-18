@@ -295,6 +295,14 @@ def main(argv: list[str] | None = None) -> int:
         help="Committed eval-suite root walked for the decontamination index.",
     )
     parser.add_argument(
+        "--dedup-against",
+        default="",
+        help=(
+            "Comma-separated committed dataset ids (or dataset paths) whose "
+            "exact prompt+openui pairs are excluded from this build."
+        ),
+    )
+    parser.add_argument(
         "--publish",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -358,6 +366,9 @@ def main(argv: list[str] | None = None) -> int:
             ngram_size=args.ngram_size,
             ngram_overlap_threshold=args.ngram_overlap_threshold,
             decontam_eval_root=args.decontam_eval_root,
+            dedup_against=tuple(
+                item.strip() for item in args.dedup_against.split(",") if item.strip()
+            ),
             programspec_path=args.programspec_path,
             programspec_count=args.programspec_count,
             programspec_seed=args.programspec_seed,

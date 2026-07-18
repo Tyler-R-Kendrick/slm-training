@@ -85,6 +85,9 @@ class TrainDataConfig:
     ngram_size: int = 8
     ngram_overlap_threshold: float = 0.5
     decontam_eval_root: Path | None = Path("src/slm_training/resources/data/eval")
+    # Cross-corpus dedup: drop records whose exact prompt⊕openui pair already
+    # exists in these committed dataset ids (or explicit dataset paths).
+    dedup_against: tuple[str, ...] = ()
     # P12 producer inputs. ProgramSpecs fall back to deterministic generation
     # when the configured file has not been materialized yet.
     programspec_path: Path | None = Path("outputs/data/programspec/programs.jsonl")
@@ -1344,6 +1347,40 @@ def build_train_data(
                 )
             )
 
+    cross_corpus_dropped: list[dict] = []
+    if config.dedup_against:
+        from slm_training.data.store import DataStore
+
+        store = DataStore()
+        index: set[str] = set()
+        for value in config.dedup_against:
+            base = Path(store.resolve_path("train", value))
+            pairs: set[str] = set()
+            manifest_path = base / "manifest.json"
+            if manifest_path.is_file():
+                payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+                pairs = {str(item) for item in payload.get("pair_fingerprints") or []}
+            if not pairs and (base / "records.jsonl").is_file():
+                pairs = {
+                    fingerprint_pair(record.prompt, record.openui)
+                    for record in load_jsonl(base / "records.jsonl")
+                }
+            if not pairs:
+                raise ValueError(
+                    f"--dedup-against target has no resolvable fingerprints: {value}"
+                )
+            index |= pairs
+        remaining: list[ExampleRecord] = []
+        for record in deduped:
+            if fingerprint_pair(record.prompt, record.openui) in index:
+                cross_corpus_dropped.append(
+                    {"id": record.id, "reason": "cross_corpus_duplicate"}
+                )
+            else:
+                remaining.append(record)
+        deduped = remaining
+        _mirror_drops("dedup", cross_corpus_dropped)
+
     decontam_flagged: list[dict] = []
     decontam_suites: list[str] = []
     if config.ngram_decontam:
@@ -1554,6 +1591,9 @@ def build_train_data(
         "ngram_decontam": bool(config.ngram_decontam),
         "decontam_flagged": len(decontam_flagged),
         "decontam_flagged_samples": decontam_flagged[:20],
+        "dedup_against": list(config.dedup_against),
+        "cross_corpus_dropped": len(cross_corpus_dropped),
+        "cross_corpus_dropped_samples": cross_corpus_dropped[:20],
         "producer_inputs": {
             "programspec_path": (
                 str(config.programspec_path) if config.programspec_path else None

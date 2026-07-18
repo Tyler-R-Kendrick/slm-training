@@ -1,7 +1,7 @@
 {
   "version": "e177_semantic_judge_v2",
   "source": "existing",
-  "derive_from": "src/slm_training/resources/train_data/remediated_roots_judged/records.jsonl",
+  "derive_from": "src/slm_training/resources/data/train/remediated_roots_judged/records.jsonl",
   "seed_path": null,
   "rico_path": null,
   "rico_hf_split": null,

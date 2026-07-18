@@ -1,9 +1,9 @@
 {
   "version": "e214_schema_role_judge_v3",
-  "kind": "train_data",
+  "kind": "train",
   "source": "existing",
-  "records": "src/slm_training/resources/train_data/e214_schema_role_judge_v3/records.jsonl",
-  "stats": "src/slm_training/resources/train_data/e214_schema_role_judge_v3/stats.json",
+  "records": "src/slm_training/resources/data/train/e214_schema_role_judge_v3/records.jsonl",
+  "stats": "src/slm_training/resources/data/train/e214_schema_role_judge_v3/stats.json",
   "record_count": 447,
   "ids": [
     "lc_boolean_literal_edit_61a8cc3d261a",
@@ -2182,12 +2182,12 @@
     }
   },
   "governance": {
-    "croissant.json": "src/slm_training/resources/train_data/e214_schema_role_judge_v3/governance/croissant.json",
-    "data_card.json": "src/slm_training/resources/train_data/e214_schema_role_judge_v3/governance/data_card.json",
-    "dataset.spdx.json": "src/slm_training/resources/train_data/e214_schema_role_judge_v3/governance/dataset.spdx.json"
+    "croissant.json": "src/slm_training/resources/data/train/e214_schema_role_judge_v3/governance/croissant.json",
+    "data_card.json": "src/slm_training/resources/data/train/e214_schema_role_judge_v3/governance/data_card.json",
+    "dataset.spdx.json": "src/slm_training/resources/data/train/e214_schema_role_judge_v3/governance/dataset.spdx.json"
   },
-  "mixture": "src/slm_training/resources/train_data/e214_schema_role_judge_v3/mixture.json",
-  "synthesis_telemetry": "src/slm_training/resources/train_data/e214_schema_role_judge_v3/synthesis_telemetry.jsonl",
+  "mixture": "src/slm_training/resources/data/train/e214_schema_role_judge_v3/mixture.json",
+  "synthesis_telemetry": "src/slm_training/resources/data/train/e214_schema_role_judge_v3/synthesis_telemetry.jsonl",
   "synthesis_telemetry_sha256": "41c636fea76e91f5b7107bfffd685ac2865dcec9161f75a75fc1ed375536c22d",
   "diffusion_online": {
     "policies": [
@@ -2218,5 +2218,56 @@
     ],
     "max_length": null
   },
-  "built_at": "2026-07-16T12:48:32.499928+00:00"
+  "built_at": "2026-07-16T12:48:32.499928+00:00",
+  "schema_version": 2,
+  "dataset_id": "e214_schema_role_judge_v3",
+  "immutable": true,
+  "trace_id": null,
+  "artifacts": [
+    {
+      "path": "governance/croissant.json",
+      "sha256": "862e6b9b106be3349532844b345ad92d6f29f4d1a61e01e858617524f74858df",
+      "size": 2521
+    },
+    {
+      "path": "governance/data_card.json",
+      "sha256": "79890eff04404e09f166b43eff6adfd42d8c9cecdba2b43ac648e5c975fb2464",
+      "size": 477
+    },
+    {
+      "path": "governance/dataset.spdx.json",
+      "sha256": "9e1a4a2fa1d0440f378023a293a2790e99fc79cff126a65577f05f4ffc7b45eb",
+      "size": 1023
+    },
+    {
+      "path": "governance/records.jsonl",
+      "sha256": "be3488f233c3e0977daa2b5c9b15ce755cbc02c16a1459a8b8721bd5511a99c7",
+      "size": 3629213
+    },
+    {
+      "path": "mixture.json",
+      "sha256": "a3fe712eeade6fcc2a27bf2222f3cc5cc6b12908cf8de529f64836d33efda758",
+      "size": 3645
+    },
+    {
+      "path": "mixture_semantic_balanced.json",
+      "sha256": "2aca532fd1eae5a5a97dcee65c68255ded17e3a7521387613e086d95d56f39f5",
+      "size": 411
+    },
+    {
+      "path": "records.jsonl",
+      "sha256": "478676991d2ddc1b103b1d56f80901b7f05de0bb59ca96b040c00211d41c458b",
+      "size": 3785876
+    },
+    {
+      "path": "stats.json",
+      "sha256": "45d392283aee311bc8adc5235dd4a23e73c05151014fe2293e474a3b3d5acf5c",
+      "size": 9391
+    },
+    {
+      "path": "synthesis_telemetry.jsonl",
+      "sha256": "41c636fea76e91f5b7107bfffd685ac2865dcec9161f75a75fc1ed375536c22d",
+      "size": 1206
+    }
+  ]
 }

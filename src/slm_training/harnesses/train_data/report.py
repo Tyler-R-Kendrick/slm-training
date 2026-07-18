@@ -244,6 +244,7 @@ def build_quality_report(
                 "fuzzy_minhash": dedup_reasons.get("fuzzy_minhash", 0),
                 "semantic_cluster_cap": dedup_reasons.get("semantic_cluster_cap", 0),
                 "semantic_cosine": dedup_reasons.get("semantic_cosine", 0),
+                "cross_corpus": dedup_reasons.get("cross_corpus_duplicate", 0),
                 "max_records_per_parent": by_stage.get("exposure", 0),
             },
             "cluster_exposure": cluster_exposure,

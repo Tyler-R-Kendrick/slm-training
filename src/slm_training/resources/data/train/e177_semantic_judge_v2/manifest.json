@@ -529,9 +529,9 @@
     ]
   },
   "governance": {
-    "croissant.json": "src/slm_training/resources/train_data/e177_semantic_judge_v2/governance/croissant.json",
-    "data_card.json": "src/slm_training/resources/train_data/e177_semantic_judge_v2/governance/data_card.json",
-    "dataset.spdx.json": "src/slm_training/resources/train_data/e177_semantic_judge_v2/governance/dataset.spdx.json"
+    "croissant.json": "src/slm_training/resources/data/train/e177_semantic_judge_v2/governance/croissant.json",
+    "data_card.json": "src/slm_training/resources/data/train/e177_semantic_judge_v2/governance/data_card.json",
+    "dataset.spdx.json": "src/slm_training/resources/data/train/e177_semantic_judge_v2/governance/dataset.spdx.json"
   },
   "ids": [
     "lc_boolean_literal_edit_61a8cc3d261a",
@@ -1031,8 +1031,8 @@
     "web_fixture_launch_repair_5539799516e1",
     "web_fixture_launch_repair_cd0eec9d5e2a"
   ],
-  "kind": "train_data",
-  "mixture": "src/slm_training/resources/train_data/e177_semantic_judge_v2/mixture.json",
+  "kind": "train",
+  "mixture": "src/slm_training/resources/data/train/e177_semantic_judge_v2/mixture.json",
   "openui_fingerprints": [
     "000f55b3602300a4f51d8865f0126c94fc637f59fc2f88ec8843dcdbc83e4b9c",
     "00cc489ab50c9e2ed48f971fdb92be8c80b23dbd8ac82d6f8f76ad32350f2357",
@@ -2154,7 +2154,7 @@
     "ff6cd065723cbe5da994e5468f2a19b5796656e5019ca0a33a6101828f9888aa"
   ],
   "record_count": 496,
-  "records": "src/slm_training/resources/train_data/e177_semantic_judge_v2/records.jsonl",
+  "records": "src/slm_training/resources/data/train/e177_semantic_judge_v2/records.jsonl",
   "source": "existing",
   "source_families": {
     "cluster_exposure": {
@@ -2343,7 +2343,7 @@
     "train_text_only_01",
     "web_3b69eaefd8bc6064"
   ],
-  "stats": "src/slm_training/resources/train_data/e177_semantic_judge_v2/stats.json",
+  "stats": "src/slm_training/resources/data/train/e177_semantic_judge_v2/stats.json",
   "structure_fingerprints": [
     "00208478e3096609b2c85f0e2564e7bf75eb288a8b2a04e8bf04755a1628218e",
     "009febce80bb4ee2beeb6eaf0463866eb946b224a8df702d07124ecf8939a17e",
@@ -2438,7 +2438,53 @@
     "f8321e56f87b71055a175cb79cdd0b564daa6dd989e0132bca9b8697e738479c",
     "faaa84e91917ff59c0cb6885f2f1f5c49d28da6dad996627a1c78f8020690423"
   ],
-  "synthesis_telemetry": "src/slm_training/resources/train_data/e177_semantic_judge_v2/synthesis_telemetry.jsonl",
+  "synthesis_telemetry": "src/slm_training/resources/data/train/e177_semantic_judge_v2/synthesis_telemetry.jsonl",
   "synthesis_telemetry_sha256": "0659bc16f437c8e35a346ee2ff7f938a1e7771f3d8f842afa49e9a581c9ee4e3",
-  "version": "e177_semantic_judge_v2"
+  "version": "e177_semantic_judge_v2",
+  "schema_version": 2,
+  "dataset_id": "e177_semantic_judge_v2",
+  "immutable": true,
+  "trace_id": null,
+  "artifacts": [
+    {
+      "path": "governance/croissant.json",
+      "sha256": "662ab0b40fff6aa7c456576bc541266b30047e2eb3ceb8720a020436d3814bf4",
+      "size": 2518
+    },
+    {
+      "path": "governance/data_card.json",
+      "sha256": "0d067ed52bdb331b9d7dc1095f6381cc87753947fdc1cf41986c2350fb5a6467",
+      "size": 474
+    },
+    {
+      "path": "governance/dataset.spdx.json",
+      "sha256": "a0d57448661068be4c7e05bb998039c5dbff5c13913f38ad11b52b9b04b4533b",
+      "size": 1020
+    },
+    {
+      "path": "mixture.json",
+      "sha256": "7d563f6dd98377453bcc90af0da52fcac01aa1db903a5e22c652de2564332812",
+      "size": 3676
+    },
+    {
+      "path": "mixture_semantic_balanced.json",
+      "sha256": "da0b952a9b33d8fa190baa5da999bf54852fe575f7b2d6240d21c91160dda3bd",
+      "size": 407
+    },
+    {
+      "path": "records.jsonl",
+      "sha256": "fae6c5dd0f941f90f40f78fa416e18b920e4349b64359c304097dd7cfceae93c",
+      "size": 4080547
+    },
+    {
+      "path": "stats.json",
+      "sha256": "cc719a07fc4072d2961bf699384424ca12472ffa3714240ba51348ec4aa97395",
+      "size": 7041
+    },
+    {
+      "path": "synthesis_telemetry.jsonl",
+      "sha256": "0659bc16f437c8e35a346ee2ff7f938a1e7771f3d8f842afa49e9a581c9ee4e3",
+      "size": 1208
+    }
+  ]
 }

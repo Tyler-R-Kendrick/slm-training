@@ -164,6 +164,30 @@ def test_build_emits_quality_report_and_rejected_ledger(tmp_path: Path) -> None:
     assert manifest["rejected"].endswith("rejected.jsonl")
 
 
+def test_dedup_against_excludes_pairs_already_in_other_corpora(tmp_path: Path) -> None:
+    first = _build(tmp_path)
+    second = build_train_data(
+        TrainDataConfig(
+            seed_path=tmp_path / "seeds.jsonl",
+            rico_path=None,
+            source="fixture",
+            output_root=tmp_path / "train_data",
+            version="vderived",
+            synthesizer="template",
+            max_components=8,
+            dedup_against=(first["output_dir"],),
+        )
+    )
+    stats = second["stats"]
+    assert stats["dedup_against"] == [first["output_dir"]]
+    assert stats["cross_corpus_dropped"] > 0
+    assert second["quality_report"]["redundancy"]["dropped"]["cross_corpus"] > 0
+    # Everything admitted by the identical first build is excluded now.
+    assert stats["record_count"] < first["stats"]["record_count"] or (
+        stats["record_count"] == 0
+    )
+
+
 def test_permissive_profile_still_emits_report(tmp_path: Path) -> None:
     result = _build(tmp_path, profile="permissive")
     stats = result["stats"]
