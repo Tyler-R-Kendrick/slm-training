@@ -26,6 +26,11 @@ class LowRankAdapter(nn.Module):
     """Wrap a frozen ``nn.Linear`` with a removable low-rank delta."""
 
     def __init__(self, base: nn.Linear, *, rank: int, alpha: float, dropout: float) -> None:
+        """Freeze ``base`` and attach zero-initialized ``A``/``B`` factors of the given rank.
+
+        The parent weight and bias are frozen in place; ``lora_A`` is kaiming-initialized
+        and ``lora_B`` stays zero so the fresh adapter's delta is exactly zero.
+        """
         super().__init__()
         if not isinstance(base, nn.Linear):
             raise TypeError("LowRankAdapter wraps an nn.Linear module")
@@ -54,15 +59,19 @@ class LowRankAdapter(nn.Module):
 
     @property
     def enabled(self) -> bool:
+        """Whether the low-rank delta is currently added to the parent's output."""
         return self._enabled
 
     def enable_adapter(self) -> None:
+        """Add the low-rank delta to the parent's output on subsequent forward passes."""
         self._enabled = True
 
     def disable_adapter(self) -> None:
+        """Bypass the delta so ``forward`` reproduces the frozen parent exactly."""
         self._enabled = False
 
     def adapter_parameters(self) -> list[nn.Parameter]:
+        """The two trainable factors ``[lora_A, lora_B]`` (the parent stays frozen)."""
         return [self.lora_A, self.lora_B]
 
     def delta_weight(self) -> torch.Tensor:
@@ -90,6 +99,7 @@ class LowRankAdapter(nn.Module):
         return merged
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Return the parent output, plus the scaled low-rank delta when enabled."""
         out = self.base(x)
         if not self._enabled:
             return out

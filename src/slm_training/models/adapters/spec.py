@@ -79,9 +79,11 @@ class TwoTowerAdapterSpec:
 
     @property
     def scaling(self) -> float:
+        """The low-rank delta multiplier ``alpha / rank`` applied to ``B(A(x))``."""
         return self.alpha / self.rank
 
     def to_dict(self) -> dict[str, Any]:
+        """Return a plain-JSON dict (lists, not tuples) round-trippable via ``from_dict``."""
         return {
             "schema_version": self.schema_version,
             "method": self.method,
@@ -103,6 +105,11 @@ class TwoTowerAdapterSpec:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> TwoTowerAdapterSpec:
+        """Rebuild a spec from ``to_dict`` output, failing closed on unknown fields.
+
+        An unrecognized key raises ``ValueError`` rather than being silently dropped, so a
+        newer or corrupted config never round-trips into a partially-applied adapter.
+        """
         known = {
             "schema_version",
             "method",

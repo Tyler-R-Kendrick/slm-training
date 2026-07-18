@@ -38,6 +38,7 @@ TARGET_MODULE_PATHS: dict[str, tuple[Any, ...]] = {
 
 
 def _child(module: Any, key: Any) -> Any:
+    """Index (int key) or attribute-access (str key) one step into ``module``, or ``None``."""
     if isinstance(key, int):
         try:
             return module[key]
@@ -47,6 +48,11 @@ def _child(module: Any, key: Any) -> Any:
 
 
 def _resolve_leaf(block: nn.Module, path: tuple[Any, ...]) -> tuple[Any, Any, Any]:
+    """Walk ``path`` to its leaf, returning ``(parent, leaf_key, leaf)`` or a ``None`` triple.
+
+    Any missing intermediate short-circuits to ``(None, None, None)`` so the caller can
+    fail closed on an unresolved target.
+    """
     parent: Any = block
     for key in path[:-1]:
         parent = _child(parent, key)

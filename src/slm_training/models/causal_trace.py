@@ -162,6 +162,7 @@ class RawStepObservation:
 
     @property
     def legal_set_reference(self) -> str:
+        """Content hash of this step's legal-candidate set (order-independent)."""
         return legal_set_reference(self.legal_token_ids)
 
     @property
@@ -174,6 +175,7 @@ class RawStepObservation:
         return self.legal_topk[0][1] - self.legal_topk[1][1]
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize this observation to plain JSON (tuples flattened to lists)."""
         return {
             "decision_index": self.decision_index,
             "generated_ordinal": self.generated_ordinal,
@@ -206,9 +208,11 @@ class CaptureResult:
 
     @property
     def constraint_shadow_count(self) -> int:
+        """How many retained observations are constraint shadows (raw pick was illegal)."""
         return sum(1 for obs in self.observations if obs.constraint_shadow)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the retained observations and full continuation to plain JSON."""
         return {
             "observations": [obs.to_dict() for obs in self.observations],
             "generated_token_ids": list(self.generated_token_ids),
@@ -217,6 +221,7 @@ class CaptureResult:
 
 
 def _log_softmax(logits: Sequence[float]) -> list[float]:
+    """Numerically stable log-softmax over the full vocabulary logit row."""
     peak = max(logits)
     shifted = [float(value) - peak for value in logits]
     log_denom = math.log(sum(math.exp(value) for value in shifted))
@@ -226,6 +231,7 @@ def _log_softmax(logits: Sequence[float]) -> list[float]:
 def _raw_topk(
     logits: Sequence[float], log_probs: Sequence[float], top_k: int
 ) -> tuple[tuple[int, float, float], ...]:
+    """Top-``k`` ``(token_id, logit, log_prob)`` over the unmasked row, ties broken by id."""
     order = sorted(range(len(logits)), key=lambda i: (logits[i], -i), reverse=True)
     return tuple(
         (int(i), float(logits[i]), float(log_probs[i])) for i in order[:top_k]
@@ -235,6 +241,7 @@ def _raw_topk(
 def _legal_topk(
     logits: Sequence[float], legal: Sequence[int], top_k: int
 ) -> tuple[tuple[int, float], ...]:
+    """Top-``k`` ``(token_id, prob)`` re-normalized over just the legal candidate set."""
     peak = max(logits[token] for token in legal)
     weights = {int(token): math.exp(float(logits[token]) - peak) for token in legal}
     total = sum(weights.values())
@@ -457,6 +464,7 @@ class CausalTraceWriter:
     """Append captured causal decisions to a ``TraceStore`` and track a manifest."""
 
     def __init__(self, store: TraceStore, identity: CausalTraceIdentity) -> None:
+        """Bind the writer to an append-only ``store`` and the shared trajectory identity."""
         self._store = store
         self._identity = identity
         self._state_count = 0
@@ -465,6 +473,7 @@ class CausalTraceWriter:
         self.trajectory_ids: list[str] = []
 
     def record(self, obs: RawStepObservation) -> str:
+        """Append one observation's causal state to the store and return its trajectory id."""
         state, outcomes, _view = emit_causal_decision(obs, self._identity)
         trajectory_id = self._store.append(
             causal_trace_row(state, outcomes, obs, self._identity)
@@ -478,9 +487,11 @@ class CausalTraceWriter:
         return trajectory_id
 
     def record_all(self, result: CaptureResult) -> list[str]:
+        """Append every retained observation from a capture, returning their trajectory ids."""
         return [self.record(obs) for obs in result.observations]
 
     def manifest(self) -> dict[str, Any]:
+        """Summarize what was written: identity, counts, legal-set reuse, and byte totals."""
         traces_path = Path(self._store.traces_path)
         total_bytes = traces_path.stat().st_size if traces_path.exists() else 0
         duplicate_set_reuse = sum(count - 1 for count in self._legal_set_refs.values())
@@ -503,6 +514,7 @@ class CausalTraceWriter:
         }
 
     def write_manifest(self, path: Path | str) -> None:
+        """Atomically write the manifest JSON to ``path`` (tmp file + fsync + replace)."""
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         fd, raw = tempfile.mkstemp(prefix=f".{path.name}.", dir=str(path.parent))
@@ -568,6 +580,7 @@ class GeneratedOutcome:
     completion_source: str = "policy"
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize the full replay outcome (including the raw/canonical program) to JSON."""
         return {
             "action_id": self.action_id,
             "continuation_seed": self.continuation_seed,
@@ -579,6 +592,7 @@ class GeneratedOutcome:
         }
 
     def to_candidate(self) -> dict[str, Any]:
+        """Project to the pre-judge candidate dict the counterfactual owner scores."""
         canonical = self.canonical_program
         return {
             "token_id": self.action_id,
