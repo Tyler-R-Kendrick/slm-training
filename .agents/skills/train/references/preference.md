@@ -44,7 +44,6 @@ tree.
 
 ## Close out
 
-- Iron law docs; model-card duty if a new serving checkpoint is written
-  (`documenting-experiment-results`).
+- Shared duties: [contracts.md](contracts.md).
 - Checks: `pytest -q tests/test_harnesses/quality/test_preference_corpora.py
   tests/test_harnesses/quality/test_quality_helpers.py`.

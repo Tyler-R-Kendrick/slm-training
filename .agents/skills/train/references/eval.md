@@ -46,13 +46,12 @@ rico_held / adversarial / ood.
 
 ## Gates & invariants
 
-- Readiness requires `--ship-gates` on the full scoreboard — smoke-only or
-  fixture fail-unders are wiring, not ship evidence (`honest-ship-eval`).
 - Every evaluation emits AgentEvals JSONL + an AgentV result bundle; no
-  alternate run envelope.
+  alternate run envelope (`docs/design/agentv-evaluation.md`).
+- Readiness = `--ship-gates` on the full scoreboard; anything less is wiring
+  (`honest-ship-eval` owns readiness language).
 
 ## Close out
 
-- Iron law: matching `docs/design/` JSON + markdown scoreboard
-  (`documenting-experiment-results`); readiness language → `honest-ship-eval`.
+- Shared duties: [contracts.md](contracts.md).
 - Checks: `pytest -q tests/test_harnesses/model_build tests/test_evals`.

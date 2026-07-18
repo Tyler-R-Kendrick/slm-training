@@ -109,6 +109,67 @@ def test_unknown_group_and_action_exit_two(capsys) -> None:
     assert main(["data", "-h"]) == 0
 
 
+SKILL_DIR = REPO / ".agents" / "skills" / "train"
+REFERENCES = SKILL_DIR / "references"
+
+
+def test_registry_guides_have_reference_files() -> None:
+    guides = {command.guide for command in COMMANDS.values()}
+    for guide in guides:
+        assert (REFERENCES / f"{guide}.md").is_file(), guide
+    on_disk = {path.stem for path in REFERENCES.glob("*.md")}
+    assert on_disk == guides | {"contracts"}
+
+
+def _skill_corpus() -> str:
+    parts = [(SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")]
+    parts += [p.read_text(encoding="utf-8") for p in sorted(REFERENCES.glob("*.md"))]
+    return "\n".join(parts)
+
+
+def test_references_and_skill_only_use_registered_commands() -> None:
+    corpus = _skill_corpus()
+    meta = {"list", "guide", "help"}
+    for match in re.finditer(r"\bslm ([a-z][a-z-]*)(?: ([a-z][a-z-]*))?", corpus):
+        first, second = match.group(1), match.group(2)
+        if first in meta:
+            continue
+        ok = (
+            (second is not None and (first, second) in COMMANDS)
+            or (first,) in COMMANDS
+            or first in GROUP_SUMMARIES
+        )
+        assert ok, f"unregistered command in skill docs: {match.group(0)!r}"
+
+
+def test_every_registry_command_is_documented_in_the_skill() -> None:
+    corpus = _skill_corpus()
+    for key in COMMANDS:
+        assert f"slm {' '.join(key)}" in corpus, key
+
+
+def test_train_skill_frontmatter_sane() -> None:
+    lines = (SKILL_DIR / "SKILL.md").read_text(encoding="utf-8").splitlines()
+    assert lines[0] == "---"
+    closing = lines.index("---", 1)
+    fields = dict(
+        line.split(":", 1) for line in lines[1:closing] if ":" in line
+    )
+    assert fields["name"].strip() == "train"
+    description = fields["description"].strip()
+    assert description
+    assert len(description) <= 1024
+
+
+def test_train_skill_discovery_symlinks() -> None:
+    import os
+
+    for root in (".claude", ".cursor"):
+        link = REPO / root / "skills" / "train"
+        assert link.is_symlink(), link
+        assert os.readlink(link) == "../../.agents/skills/train"
+
+
 def test_end_to_end_dispatch_builds_fixture_corpus(tmp_path: Path) -> None:
     assert (
         main(

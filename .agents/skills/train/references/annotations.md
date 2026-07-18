@@ -37,6 +37,7 @@ under their configured output root; no new root folders.
 
 ## Close out
 
+- Shared duties: [contracts.md](contracts.md).
 - Checks: `pytest -q tests/test_web/test_annotation_store.py
   tests/test_web/test_annotations.py tests/test_web/test_bad_outputs.py`.
 - Changing the harness itself → `improve-openui-harnesses`.

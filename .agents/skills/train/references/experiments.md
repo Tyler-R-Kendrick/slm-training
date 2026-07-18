@@ -50,8 +50,7 @@ Run roots under `outputs/runs/`, matrix scoreboards mirrored to
 
 ## Close out
 
-- Iron law docs are the point of a matrix run
-  (`documenting-experiment-results`); doc homes:
+- Shared duties: [contracts.md](contracts.md). Doc homes:
   `quality-experiment-matrix.md`, `grammar-experiment-matrix.md`,
   `perf-experiment-matrix.md`.
 - Checks: `pytest -q tests/test_harnesses/experiments`.

@@ -49,8 +49,7 @@ sibling typed roots hold preference/trajectory/ProgramSpec/mixture data.
 
 ## Close out
 
-- Data builds feeding a documented run follow the iron law: update matching
-  `docs/design/` JSON + markdown (`documenting-experiment-results`).
+- Shared duties: [contracts.md](contracts.md).
 - Docs: `docs/design/data-synthesis.md`. Checks:
   `pytest -q tests/test_harnesses/train_data tests/test_data`.
 - Changing the harness itself → `improve-openui-harnesses`.

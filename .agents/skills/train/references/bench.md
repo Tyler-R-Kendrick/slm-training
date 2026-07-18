@@ -43,7 +43,6 @@ JSON results (pass `--out`) destined for `docs/design/` perf scoreboards.
 
 ## Close out
 
-- Iron law: results land in `docs/design/perf-experiment-matrix.md` /
-  `runtime-performance.md` with recipe metadata
-  (`documenting-experiment-results`).
+- Shared duties: [contracts.md](contracts.md). Doc homes:
+  `docs/design/perf-experiment-matrix.md`, `runtime-performance.md`.
 - Checks: `pytest -q tests/test_runtime`.

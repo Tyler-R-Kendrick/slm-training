@@ -42,8 +42,7 @@ ood) with leakage fingerprints.
 
 ## Close out
 
-- Iron law applies when suites feed a documented run
-  (`documenting-experiment-results`).
+- Shared duties: [contracts.md](contracts.md).
 - Checks: `pytest -q tests/test_harnesses/test_data
   tests/test_integration/test_ship_disjoint.py`.
 - Changing the harness itself → `improve-openui-harnesses`.

@@ -43,13 +43,10 @@ into canonical lineage.
 ## Gates & invariants
 
 - RL readiness is fail-closed; a rejected report is evidence, never an obstacle
-  to route around.
-- Hardware smoke is never promotion evidence.
-- No paid GPU or remote job without explicit user approval.
+  to route around. Hardware smoke is never promotion evidence.
 
 ## Close out
 
-- Iron law docs; model-card duty when a new serving checkpoint is written
-  (`documenting-experiment-results`).
+- Shared duties (incl. paid-GPU/remote approvals): [contracts.md](contracts.md).
 - Checks: `pytest -q tests/test_harnesses/rl
   tests/test_harnesses/quality/test_rl_curriculum_telemetry.py`.

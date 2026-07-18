@@ -43,17 +43,10 @@ successful `checkpoint_bucket` URI
 (`hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/`) or a documented
 scratch reason.
 
-## Gates & invariants
-
-- Every created/synced checkpoint updates `docs/MODEL_CARD.md` **and** the
-  README "Model card (summary)".
-- Fixture/scratch trains are wiring evidence only — never ship claims.
-
 ## Close out
 
-- Iron law: `docs/design/` JSON + markdown for the run
-  (`documenting-experiment-results`).
+- Shared duties (iron law, model-card, fixture ≠ ship): [contracts.md](contracts.md).
 - Docs: `docs/design/hf-jobs-train.md`, `docs/design/checkpoint-bucket.md`.
   Checks: `pytest -q tests/test_harnesses/model_build tests/test_models`.
-- Next: evaluate with the eval phase; changing the harness →
+- Next: evaluate with [eval.md](eval.md); changing the harness →
   `improve-openui-harnesses`.

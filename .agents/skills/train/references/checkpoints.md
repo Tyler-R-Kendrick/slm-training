@@ -53,7 +53,7 @@ provenance records; lineage state under the cycle's roots.
 
 ## Close out
 
-- Docs: `docs/design/checkpoint-bucket.md`,
-  `docs/design/checkpoint-provenance.md`, `docs/MODEL_CARD.md`
-  (`documenting-experiment-results`).
+- Shared duties: [contracts.md](contracts.md). Docs:
+  `docs/design/checkpoint-bucket.md`, `docs/design/checkpoint-provenance.md`,
+  `docs/MODEL_CARD.md`.
 - Inspect with `hf-cli` bucket skills (`hf buckets list TKendrick/OpenUI -R`).

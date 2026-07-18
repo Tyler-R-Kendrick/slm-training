@@ -48,11 +48,10 @@ slm autoresearch propose|materialize-mixture ...
   its own code, frozen cases, or acceptance thresholds.
 - Self-improvement claims need frozen evaluation cases, held-out results, and
   explicit human promotion.
-- No paid GPU, remote job, or HF write without explicit user approval.
 
 ## Close out
 
-- Iron law docs per executed experiment (`documenting-experiment-results`);
-  lineage in `docs/design/research-lineage.md`.
+- Shared duties (incl. approvals): [contracts.md](contracts.md). Lineage:
+  `docs/design/research-lineage.md`.
 - Checks: `pytest -q tests/test_autoresearch` and
-  `python -m scripts.autoresearch --help`.
+  `slm autoresearch --help`.

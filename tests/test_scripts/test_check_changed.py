@@ -17,6 +17,12 @@ def test_select_tests_deduplicates_nested_targets() -> None:
     ) == ["tests/test_dsl", "tests/test_harnesses/model_build"]
 
 
+def test_train_skill_reference_edits_run_the_cli_parity_suite() -> None:
+    assert select_tests([".agents/skills/train/references/sft.md"]) == [
+        "tests/test_scripts/test_slm_cli.py"
+    ]
+
+
 def test_script_changes_include_their_domain_suite() -> None:
     assert select_tests(["scripts/train_model.py"]) == [
         "tests/test_harnesses/model_build",

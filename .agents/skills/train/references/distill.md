@@ -49,6 +49,5 @@ Trace stores and distilled checkpoints inside the owning run/campaign
 
 ## Close out
 
-- Iron law docs + model-card duty when a new serving checkpoint is written
-  (`documenting-experiment-results`).
+- Shared duties: [contracts.md](contracts.md).
 - Checks: `pytest -q tests/test_harnesses/distill tests/test_models/test_trace_store.py`.
