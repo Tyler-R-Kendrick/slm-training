@@ -21,13 +21,50 @@ test.describe("mission control dashboard", () => {
     await expect(page.locator(".verdict")).toBeVisible();
   });
 
+  test("Experiments derives metric columns in both renderer modes", async ({ page }) => {
+    await page.route("**/api/scoreboards/research", (route) => route.fulfill({ json: {
+      metric_columns: [{
+        key: "smoke__component_type_recall",
+        suite: "smoke",
+        metric: "component_type_recall",
+        label: "smoke type recall",
+      }],
+      results: [{ id: "dynamic-column", suites: { smoke: { component_type_recall: 0.42 } } }],
+    } }));
+
+    await page.goto("/experiments");
+    await expect(page.getByRole("columnheader", { name: "smoke type recall" })).toBeVisible();
+    await expect(page.getByRole("cell", { name: "0.42" })).toBeVisible();
+
+    await page.locator(".mode-btn", { hasText: "Compiled" }).click();
+    await expect(page.getByRole("columnheader", { name: "smoke type recall" })).toBeVisible();
+    await expect(page.getByRole("cell", { name: "0.42" })).toBeVisible();
+  });
+
   test("editing a gate threshold re-evaluates live", async ({ page }) => {
+    const passingSuite = {
+      n: 1,
+      meaningful_program_rate: 1,
+      structural_similarity: 0.5,
+      component_type_recall: 0.5,
+      placeholder_fidelity: 0.5,
+      reward_score: 0.5,
+    };
+    await page.route("**/api/scoreboards/quality", (route) => route.fulfill({ json: {
+      results: [{ id: "passing-fixture", run_id: "passing-fixture", suites: {
+        smoke: passingSuite,
+        held_out: passingSuite,
+        adversarial: passingSuite,
+        ood: passingSuite,
+        rico_held: passingSuite,
+      } }],
+    } }));
     await page.goto("/checkpoints");
     await expect(page.getByText("GATES PASS")).toBeVisible({ timeout: 10_000 });
 
     // Raise smoke structural_similarity threshold above the actual value.
     const smoke = page.locator(".thr-suite", { hasText: "smoke" });
-    await smoke.locator("input").nth(1).fill("0.99");
+    await smoke.locator("label", { hasText: "structural_similarity" }).locator("input").fill("0.99");
 
     // The pure-compute /api/gates/evaluate endpoint recolors the matrix.
     await expect(page.getByText("GATES FAIL")).toBeVisible({ timeout: 5_000 });

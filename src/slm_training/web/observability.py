@@ -213,6 +213,20 @@ def metric_label(key: str) -> str:
     return _METRIC_LABELS.get(key, key.replace("_", " "))
 
 
+def scoreboard_metric_columns() -> list[dict[str, str]]:
+    """Return policy-ordered per-suite columns for experiment scoreboards."""
+    return [
+        {
+            "key": f"{suite}__{metric}",
+            "suite": suite,
+            "metric": metric,
+            "label": f"{suite.replace('_', ' ')} {metric_label(metric).lower()}",
+        }
+        for suite, minimums in DEFAULT_SHIP_GATES.items()
+        for metric in minimums
+    ]
+
+
 def _normalize_metrics(metrics: Any) -> dict[str, float]:
     """Re-key an arbitrary metrics dict onto the ship-gate levers.
 
@@ -370,6 +384,7 @@ class Readers:
                 "provenance": "committed",
                 "reference": "docs/design/iter-*.json",
                 "meta": {"latest": results[0].get("date") if results else None},
+                "metric_columns": scoreboard_metric_columns(),
                 "count": len(results),
                 "passed": sum(row.get("pass") is True for row in results),
                 "results": results,
@@ -393,6 +408,7 @@ class Readers:
             "provenance": "committed",
             "reference": f"docs/design/{filename}",
             "meta": meta,
+            "metric_columns": scoreboard_metric_columns(),
             "count": len(results),
             "passed": passed,
             "results": results,
