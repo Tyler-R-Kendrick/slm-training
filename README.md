@@ -120,6 +120,7 @@ summary and the full card whenever a checkpoint is created or promoted.
 | E318 slot-only component plan | `e318-slot-only-component-20k-r2/last.pt` | `outputs/runs/e318-slot-only-component-20k-r2/…` (local) | E319 restores limited-RICO fidelity/reward to 1.0, but smoke/held recall still fail and OOD stays regressed — not promoted or ship |
 | E322 focal slot-owner arm | `e322-focal-slot-owner-20k-r1/last.pt` | `outputs/runs/e322-focal-slot-owner-20k-r1/…` (local) | Negative: raw slot accuracy rises slightly, but held-out meaningful/recall regress to 0.20/0.10 — not promoted or ship |
 | E323 balanced slot-owner arm | `e323-balanced-slot-owner-20k-r1/last.pt` | `outputs/runs/e323-balanced-slot-owner-20k-r1/…` (local) | Negative: corpus-derived class weights still leave held-out meaningful/recall at 0.20/0.10 — not promoted or ship |
+| E324 next-slot context arm | `e324-next-slot-context-20k-r1/last.pt` | `outputs/runs/e324-next-slot-context-20k-r1/…` (local) | Negative: ordered slot concatenation leaves held-out meaningful/recall at 0.20/0.10 — not promoted or ship |
 | Production HF ship | *(none yet)* | [HF Bucket `TKendrick/OpenUI`](https://huggingface.co/buckets/TKendrick/OpenUI) `checkpoints/<run_id>/` | Register here after first full HF sync + `--ship-gates` |
 
 **Load demo:** `python -m scripts.serve_playground` · **Full train sync:** set

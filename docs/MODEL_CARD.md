@@ -115,6 +115,7 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 | E318 slot-only component plan | `e318-slot-only-component-20k-r2` | CPU scratch local-role ablation | `outputs/runs/e318-slot-only-component-20k-r2/checkpoints/last.pt` (local) | Negative: restores E316 held quality but clears no gate, OOD stays regressed, and limited-RICO fidelity falls to 0.4167; 2 failures / AgentV 3/5 — **not promotable or ship** ([results](design/iter-e318-slot-only-component-plan-20260717.md)) |
 | E322 focal slot-owner arm | `e322-focal-slot-owner-20k-r1` | CPU scratch imbalance objective arm | `outputs/runs/e322-focal-slot-owner-20k-r1/checkpoints/last.pt` (local) | Negative: raw slot accuracy 0.7050 but held-out meaningful/recall regress to 0.20/0.10; 3 failures / AgentV 3/5 — **not promotable or ship** ([results](design/iter-e322-focal-slot-owner-20260717.md)) |
 | E323 balanced slot-owner arm | `e323-balanced-slot-owner-20k-r1` | CPU scratch corpus-frequency arm | `outputs/runs/e323-balanced-slot-owner-20k-r1/checkpoints/last.pt` (local) | Negative: explicit 22-class weights still leave held-out meaningful/recall at 0.20/0.10; 3 failures / AgentV 3/5 — **not promotable or ship** ([results](design/iter-e323-balanced-slot-owner-20260717.md)) |
+| E324 next-slot context arm | `e324-next-slot-context-20k-r1` | CPU scratch ordered-local-context arm | `outputs/runs/e324-next-slot-context-20k-r1/checkpoints/last.pt` (local) | Negative: ordered slot concatenation leaves held-out meaningful/recall at 0.20/0.10; 3 failures / AgentV 3/5 — **not promotable or ship** ([results](design/iter-e324-next-slot-context-20260717.md)) |
 | Production HF ship | — | — | `hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/` | **None registered yet** — fill this row after the first full HF sync |
 
 Update the table in place when a checkpoint is written or superseded. Keep
@@ -356,6 +357,11 @@ Leakage: structural fingerprints + train/test isolation
 | `adversarial` (E323 balanced slot owner) | 4 | 1.0 | 1.0000 | 0.5970 | 0.4805 | Yes for suite thresholds; no global ship |
 | `ood` (E323 balanced slot owner) | 4 | 1.0 | 1.0000 | 0.4304 | 0.4992 | Yes for suite thresholds; no global ship |
 | `rico_held` (E323 balanced slot owner) | 3 | 1.0 | 1.0000 | 0.3676 | 1.0000 | Yes for limited suite thresholds; no global ship |
+| `smoke` (E324 next-slot context) | 3 | 1.0 | 1.0000 | 0.5464 | 0.6407 | No — component recall 0.3333 < 0.35 |
+| `held_out` (E324 next-slot context) | 5 | 1.0 | 1.0000 | 0.4155 | 0.1994 | No — meaningful 0.20 and component recall 0.10 |
+| `adversarial` (E324 next-slot context) | 4 | 1.0 | 1.0000 | 0.5970 | 0.4805 | Yes for suite thresholds; no global ship |
+| `ood` (E324 next-slot context) | 4 | 1.0 | 1.0000 | 0.4304 | 0.4992 | Yes for suite thresholds; no global ship |
+| `rico_held` (E324 next-slot context) | 3 | 1.0 | 1.0000 | 0.3794 | 1.0000 | Yes for limited suite thresholds; no global ship |
 | `smoke` (`e177-semantic-judge-32step`, E180 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1542 | 0.607 | No — syntax 1.0, but meaningful component recall 0.25; not a ship evaluation |
 | `smoke` (`e181-semantic-balanced-32step`, E181 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1542 | 0.607 | No — mixture-only control did not improve quality; not a ship evaluation |
 | `smoke` (`e184-compiler-aligned-32step`, E194 diagnostic subset) | 1 | 0.0 | 0.0 | 0.3600 | 0.0 | No — root/schema constraints improved, but output remained incomplete; not a ship evaluation |
@@ -690,6 +696,7 @@ suites because they contain no scope metadata. Evidence:
 | 2026-07-17 | `e319-distinct-slot-consumption-honest-r1` (E319 eval-only) | `outputs/runs/e319-distinct-slot-consumption-honest-r1/` (local) | Unchanged E318 r2 SHA; required strings consume distinct emitted-prefix slots | Restores limited-RICO fidelity/reward to 1.0; smoke/held recall still fail, AgentV 3/5; no checkpoint promotion |
 | 2026-07-17 | `e322-focal-slot-owner-20k-r1` (E322 focal arm) | `outputs/runs/e322-focal-slot-owner-20k-r1/` (local) | 446 CPU scratch steps / 20,044 target tokens; focal gamma 2; NLL 5.4247; SHA `2d69cbfd710e16d939b8bba53e09f3d426cf1deb67384ba77fd9a9618e7e8507`; explicit no-sync | Held-out regresses to 0.20 meaningful / 0.10 recall; 3 failures / AgentV 3/5, no promotion |
 | 2026-07-17 | `e323-balanced-slot-owner-20k-r1` (E323 balance arm) | `outputs/runs/e323-balanced-slot-owner-20k-r1/` (local) | 446 CPU scratch steps / 20,044 target tokens; class-balance power 0.5; NLL 5.4269; SHA `0df34163083d7959c1de94385d5a2ff984b9ad20ebcff08a11991793f6d5ffdc`; explicit no-sync | Explicit class weights do not recover held-out quality; 3 failures / AgentV 3/5, no promotion |
+| 2026-07-17 | `e324-next-slot-context-20k-r1` (E324 local context arm) | `outputs/runs/e324-next-slot-context-20k-r1/` (local) | 446 CPU scratch steps / 20,044 target tokens; ordered next-slot context; NLL 5.4238; SHA `53fcf5eec79d3a839d94f2474b4611439c94c638b2f95fdcf96a507db4991cb5`; explicit no-sync | Ordered concatenation gives no gate gain; 3 failures / AgentV 3/5, no promotion |
 
 Append a row for every new or replaced checkpoint. Do not delete history.
 

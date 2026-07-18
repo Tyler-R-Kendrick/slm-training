@@ -2098,6 +2098,12 @@ the checkpoint: weighting alone is insufficient; ordered local slot context is
 the next lever. See [results](iter-e323-balanced-slot-owner-20260717.md) and
 [JSON](balanced-slot-owner-results-iter-e323-20260717.json).
 
+E324 ordered current+next slot text also leaves held-out at 0.20/0.10 and
+AgentV 3/5. Reject pooled text concatenation; the next arm needs separate
+current/neighbor vectors and an explicit interaction. See
+[results](iter-e324-next-slot-context-20260717.md) and
+[JSON](next-slot-context-results-iter-e324-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
