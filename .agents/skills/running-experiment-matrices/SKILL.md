@@ -60,7 +60,11 @@ Do not add matrix rows without a runnable script path.
 
 ## Interpretation rules
 
-- Compare only against runs that share honesty mode and suite sizes.
+- Compare only against runs that share honesty mode, suite sizes, **and the
+  same `version_stamp` component versions** (matrix, eval harness, metric,
+  gate policy). After a component bump, find the invalidated rows worth
+  re-running with `python -m scripts.verify_version_stamps --stale
+  [--component <id>]`.
 - Perf optimizations fail if parse/fidelity drop >5 points abs vs P0.
 - Vacuous guardrails (broken OpenUI bridge zeroing parse) are hard errors —
   fix the bridge, do not accept empty scoreboards.
@@ -69,7 +73,7 @@ Do not add matrix rows without a runnable script path.
 ## Completion checklist
 
 - [ ] Intended IDs ran (or blockers recorded)
-- [ ] Results JSON under `docs/design/` current
+- [ ] Results JSON under `docs/design/` current and carrying a `version_stamp`
 - [ ] Measured-results markdown updated
 - [ ] Ship/perf pass-fail stated with caveats
 - [ ] No silent gold channels on honest rows

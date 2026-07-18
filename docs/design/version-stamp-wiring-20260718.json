@@ -1,0 +1,61 @@
+{
+  "iteration": "versioning-wiring",
+  "date": "2026-07-18",
+  "reference": "docs/design/version-stamp-wiring-20260718.md",
+  "cross_reference": {
+    "contract": "docs/design/version-stamp-contract.md",
+    "registry": "src/slm_training/resources/versions.json",
+    "checker": "scripts/verify_version_stamps.py",
+    "stamp_helper": "src/slm_training/versioning.py"
+  },
+  "recipe": {
+    "script": "python -m scripts.evaluate_model",
+    "suite": "smoke",
+    "checkpoint": "src/slm_training/resources/checkpoints/playground_demo/last.pt",
+    "test_dir": "outputs/data/eval/ci",
+    "eval_limit": 4,
+    "gen_steps": 4,
+    "max_attempts": 1,
+    "device": "cpu",
+    "honesty_mode": "wiring-only fixture probe; diagnostic subset; no quality or ship claim"
+  },
+  "results": {
+    "probe_eval": {
+      "n": 3,
+      "diagnostic_subset": true,
+      "parse_rate": 0.3333333333333333,
+      "stamp_present_in": [
+        "eval_smoke.json",
+        "eval.json"
+      ],
+      "stamped_components": {
+        "harness.model_build.eval": "v1",
+        "evals.meaningful_program": "2.0.0",
+        "evals.scoring": "v1"
+      },
+      "stamped_code_commit": "903b8a8aea1f4781eea91de5842c343ecfd01daa"
+    },
+    "checker_probes": {
+      "unbumped_gate_edit_blocked": true,
+      "no_bump_history_note_accepted": true,
+      "post_tool_use_nudge_fired_then_silenced": true,
+      "stale_report": {
+        "stale": 0,
+        "legacy_unstamped": 118,
+        "fresh_with_outputs": 2
+      }
+    }
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "5788a635c22591e25361e26563eb2c4abefd658b",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.eval": "v1",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v1",
+      "gates.ship": "openui_ship_gates_v1"
+    },
+    "stamped_at": "2026-07-18T19:56:19.269875+00:00"
+  }
+}
