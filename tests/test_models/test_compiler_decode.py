@@ -887,6 +887,49 @@ def test_slot_component_supervises_each_visible_slot_owner() -> None:
     assert 0 < model.last_training_metrics["slot_component_majority_baseline"] <= 1
 
 
+def test_slot_component_class_weights_come_from_training_owners() -> None:
+    records = [
+        ExampleRecord(
+            id=f"text-{index}",
+            prompt="text",
+            openui=f'root = TextContent(":text.{index}")',
+            placeholders=[f":text.{index}"],
+            split="train",
+            source="fixture",
+        )
+        for index in range(2)
+    ]
+    records.append(
+        ExampleRecord(
+            id="input",
+            prompt="input",
+            openui='root = Input("email", ":form.email")',
+            placeholders=[":form.email"],
+            split="train",
+            source="fixture",
+        )
+    )
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            context_backend="scratch",
+            output_tokenizer="lexer",
+            d_model=32,
+            n_heads=2,
+            context_layers=1,
+            denoiser_layers=1,
+            slot_component_loss_weight=1.0,
+            slot_component_class_balance_power=0.5,
+        ),
+        device="cpu",
+    )
+    component_index = model._component_name_index()
+    weights = model.config.slot_component_class_weights
+
+    assert len(weights) == len(component_index)
+    assert weights[component_index["Input"]] > weights[component_index["TextContent"]]
+
+
 def test_slot_component_can_exclude_whole_prompt_context() -> None:
     model = _model(
         slot_component_loss_weight=1.0,

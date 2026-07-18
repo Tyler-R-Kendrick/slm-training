@@ -362,6 +362,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         slot_component_focal_gamma=float(
             getattr(config, "slot_component_focal_gamma", 0.0) or 0.0
         ),
+        slot_component_class_balance_power=float(
+            getattr(config, "slot_component_class_balance_power", 0.0) or 0.0
+        ),
         slot_component_decode_weight=float(
             getattr(config, "slot_component_decode_weight", 0.0) or 0.0
         ),

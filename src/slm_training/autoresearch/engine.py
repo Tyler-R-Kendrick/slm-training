@@ -418,6 +418,13 @@ def compile_commands(
             train.extend(
                 ["--slot-component-focal-gamma", str(knobs.slot_component_focal_gamma)]
             )
+        if knobs.slot_component_class_balance_power is not None:
+            train.extend(
+                [
+                    "--slot-component-class-balance-power",
+                    str(knobs.slot_component_class_balance_power),
+                ]
+            )
         if knobs.slot_component_decode_weight is not None:
             train.extend(
                 [

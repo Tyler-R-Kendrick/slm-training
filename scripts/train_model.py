@@ -406,6 +406,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Focal exponent for slot-owner loss (0 preserves cross-entropy).",
     )
     parser.add_argument(
+        "--slot-component-class-balance-power",
+        type=float,
+        default=0.0,
+        help="Power applied to inverse corpus owner frequency (0 disables).",
+    )
+    parser.add_argument(
         "--slot-component-decode-weight",
         type=float,
         default=0.0,
@@ -810,6 +816,9 @@ def main(argv: list[str] | None = None) -> int:
             component_plan_token_pool=args.component_plan_token_pool,
             slot_component_loss_weight=args.slot_component_loss_weight,
             slot_component_focal_gamma=args.slot_component_focal_gamma,
+            slot_component_class_balance_power=(
+                args.slot_component_class_balance_power
+            ),
             slot_component_decode_weight=args.slot_component_decode_weight,
             slot_component_prompt_context=args.slot_component_prompt_context,
             component_edge_loss_weight=args.component_edge_loss_weight,

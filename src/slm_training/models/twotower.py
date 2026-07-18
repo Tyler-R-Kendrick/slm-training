@@ -214,6 +214,8 @@ class TwoTowerConfig:
     component_plan_token_pool: bool = False
     slot_component_loss_weight: float = 0.0
     slot_component_focal_gamma: float = 0.0
+    slot_component_class_balance_power: float = 0.0
+    slot_component_class_weights: tuple[float, ...] = ()
     slot_component_decode_weight: float = 0.0
     slot_component_prompt_context: bool = True
     component_edge_loss_weight: float = 0.0
@@ -2152,7 +2154,18 @@ class TwoTowerModel(nn.Module):
                     slots, ctx, ctx_pad, rows_tensor
                 )
                 slot_raw = F.cross_entropy(
-                    slot_logits, targets_tensor, reduction="none"
+                    slot_logits,
+                    targets_tensor,
+                    weight=(
+                        torch.as_tensor(
+                            self.config.slot_component_class_weights,
+                            dtype=slot_logits.dtype,
+                            device=slot_logits.device,
+                        )
+                        if self.config.slot_component_class_weights
+                        else None
+                    ),
+                    reduction="none",
                 )
                 focal_gamma = float(
                     getattr(self.config, "slot_component_focal_gamma", 0.0) or 0.0
@@ -6739,6 +6752,37 @@ class TwoTowerModel(nn.Module):
             device=device,
             context_tokenizer=context_tokenizer,
         )
+        balance_power = float(
+            getattr(cfg, "slot_component_class_balance_power", 0.0) or 0.0
+        )
+        if balance_power > 0.0 and model.slot_component_head is not None:
+            component_index = model._component_name_index()
+            counts = [0] * len(component_index)
+            for record in records:
+                owners = model._slot_component_owners(record.openui)
+                for slot in record.placeholders:
+                    target = component_index.get(owners.get(slot, ""))
+                    if target is not None:
+                        counts[target] += 1
+            observed = [count for count in counts if count > 0]
+            if observed:
+                total = float(sum(observed))
+                classes = float(len(observed))
+                weights = [
+                    (total / (classes * count)) ** balance_power
+                    if count > 0
+                    else 0.0
+                    for count in counts
+                ]
+                observed_mean = sum(
+                    weight * count
+                    for weight, count in zip(weights, counts, strict=True)
+                    if count > 0
+                ) / total
+                cfg.slot_component_class_weights = tuple(
+                    weight / observed_mean if weight > 0.0 else 0.0
+                    for weight in weights
+                )
         model.gen_len = max(max_target + 2, 16)
         if bool(getattr(cfg, "teacher_init_embeddings", False)):
             model._try_teacher_init_embeddings(records)
