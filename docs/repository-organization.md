@@ -17,6 +17,7 @@ Keep one obvious owner for every tracked file. Before adding a path, search with
 | Self-contained Node/frontend packages | `src/apps/` |
 | Canonical agent skills | `.agents/skills/` |
 | Client discovery links and hooks | `.claude/`, `.cursor/`, `.codex/`, `.github/hooks/` |
+| Static, Torch-free DSL analyses (exact grammar arity / capacity certificates) | `src/slm_training/dsl/analysis/` (extend, do not add a sibling) |
 
 The repository root is an allowlist for required manifests and cross-agent
 instructions. Application code and owned resources belong below `src/`; generated
