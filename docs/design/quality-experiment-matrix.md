@@ -1693,3 +1693,4 @@ self-distillation, trajectory RL) are in
 | E63 | Gate calibration | ECE / selective accuracy / abstention on `FastPathGate` | proposed |
 | E64 | Trajectory-aligned RL | MDPO/d1-style on intermediate MaskGIT states | proposed |
 | E65 | Schema generalization | Held-out schemas / rename / `toy-layout` transfer | proposed |
+| VSS3-02 | Cost-to-go energy ranker | `cost_to_go_loss_weight` + `cost_to_go_hidden_dim` | wired |

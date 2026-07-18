@@ -386,6 +386,9 @@ class TwoTowerConfig:
     speculative_successor: bool = False
     speculative_fanout: int = 2
     speculative_overlap: bool = False
+    # VSS3-02 (SLM-70): cost-to-go energy head for solver candidate ranking.
+    cost_to_go_loss_weight: float = 0.0
+    cost_to_go_hidden_dim: int = 0  # 0 disables the head
 
 
 def _pad_batch(
@@ -432,6 +435,8 @@ def _load_checkpoint_state(
     allowed_missing |= {key for key in missing if key.startswith("trust_gate.")}
     # V7 survival head is likewise a plug-in (trained via survival_train, E73).
     allowed_missing |= {key for key in missing if key.startswith("survival_head.")}
+    # VSS3-02 (SLM-70): cost-to-go head is a plug-in trained from solver supervision.
+    allowed_missing |= {key for key in missing if key.startswith("cost_to_go_head.")}
     bad_missing = sorted(set(missing) - allowed_missing)
     # V5 may have checkpointed a zero kind_lookup even when unused; the
     # non-factorized path now uses a non-persistent stub, so treat that legacy
@@ -679,6 +684,23 @@ class TwoTowerModel(nn.Module):
         self.survival_head = isolated_aux_init(
             lambda: FastPathGate(self.config.d_model), 109
         )
+        # VSS3-02 (SLM-70): cost-to-go energy head for solver candidate ranking.
+        cost_to_go_dim = int(getattr(self.config, "cost_to_go_hidden_dim", 0) or 0)
+        cost_to_go_weight = float(
+            getattr(self.config, "cost_to_go_loss_weight", 0.0) or 0.0
+        )
+        self.cost_to_go_head = (
+            isolated_aux_init(
+                lambda: nn.Sequential(
+                    nn.Linear(self.config.d_model, max(1, cost_to_go_dim)),
+                    nn.ReLU(),
+                    nn.Linear(max(1, cost_to_go_dim), 1),
+                ),
+                110,
+            )
+            if cost_to_go_dim > 0 or cost_to_go_weight > 0.0
+            else None
+        )
         # V7 decode telemetry (MaskGIT path): forwards, successor hits/misses.
         self.speculative_stats = SpeculativeStats()
         self._rng = random.Random(self.config.seed)
@@ -841,6 +863,7 @@ class TwoTowerModel(nn.Module):
             "binder_arity_head.",
             "trust_gate.",
             "survival_head.",
+            "cost_to_go_head.",
         )
         grouped: dict[str, list[nn.Parameter]] = {"base": []}
         for name, parameter in self.named_parameters():
@@ -2371,6 +2394,161 @@ class TwoTowerModel(nn.Module):
                 mask_loss = mask_loss + aux_w * aux
 
         return mask_loss
+
+    def score_candidates(
+        self,
+        state: Any,
+        hole_id: Any,
+        values: tuple[Any, ...],
+        context_prompt: str | None = None,
+    ) -> Any:
+        """Score live solver candidates with the cost-to-go head.
+
+        Returns a ``CandidateEnergyOutput``. The state/hole_id are accepted as
+        opaque identities; the model only needs the candidate values and an
+        optional user prompt for context encoding.
+        """
+        from slm_training.dsl.solver.energy_ranker import CandidateEnergyOutput
+
+        if self.cost_to_go_head is None:
+            raise RuntimeError("cost_to_go_head is disabled in config")
+        if not values:
+            return CandidateEnergyOutput(
+                energies=torch.empty(0),
+                candidate_ids=values,
+                scorer_id="twotower-cost-to-go-v1",
+            )
+
+        device = self.device_name
+        prompts = [context_prompt or ""] * len(values)
+        ctx, ctx_pad = self._encode_context(prompts)
+        canvases: list[list[int]] = []
+        for value in values:
+            payload = getattr(value, "payload", None)
+            token_ids = (
+                list(payload.get("token_ids", []))
+                if isinstance(payload, dict)
+                else []
+            )
+            canvases.append([self.tokenizer.bos_id] + token_ids)
+        ids = _pad_batch(canvases, self.tokenizer.pad_id, device=device)
+        hidden = self._denoiser_hidden(ids, ctx, ctx_pad)
+        lengths = (ids != self.tokenizer.pad_id).sum(dim=1)
+        last_idx = (lengths - 1).clamp_min(0)
+        pooled = hidden[torch.arange(hidden.size(0), device=hidden.device), last_idx]
+        energies = self.cost_to_go_head(pooled).squeeze(-1)
+        return CandidateEnergyOutput(
+            energies=energies,
+            candidate_ids=values,
+            scorer_id="twotower-cost-to-go-v1",
+        )
+
+    def cost_to_go_loss(
+        self,
+        rows: list[Any],
+        prompts: list[str] | None = None,
+    ) -> torch.Tensor:
+        """Regression + pairwise ranking loss over solver-supervision rows.
+
+        Rows are expected to expose the same fields as
+        ``CandidateCostRow`` from the VSS3-01 supervision corpus.
+        """
+        if self.cost_to_go_head is None:
+            return torch.tensor(0.0, device=self.device_name)
+
+        from slm_training.harnesses.distill.solver_supervision import CandidateCostRow
+
+        valid_rows: list[CandidateCostRow] = []
+        for row in rows:
+            if isinstance(row, CandidateCostRow):
+                valid_rows.append(row)
+            elif isinstance(row, dict):
+                valid_rows.append(CandidateCostRow.from_dict(row))
+            else:
+                raise TypeError(f"unexpected cost row type: {type(row)}")
+
+        if not valid_rows:
+            return torch.tensor(0.0, device=self.device_name)
+
+        device = self.device_name
+        if prompts is None:
+            prompts = [""] * len(valid_rows)
+
+        # Build one candidate canvas per row using the row's chosen candidate.
+        canvases: list[list[int]] = []
+        for row, prompt in zip(valid_rows, prompts, strict=True):
+            token_ids = list(row.candidate.payload.get("token_ids", [])) if isinstance(
+                row.candidate.payload, dict
+            ) else []
+            canvases.append([self.tokenizer.bos_id] + token_ids)
+        ids = _pad_batch(canvases, self.tokenizer.pad_id, device=device)
+        ctx, ctx_pad = self._encode_context(prompts)
+        hidden = self._denoiser_hidden(ids, ctx, ctx_pad)
+        lengths = (ids != self.tokenizer.pad_id).sum(dim=1)
+        last_idx = (lengths - 1).clamp_min(0)
+        pooled = hidden[torch.arange(hidden.size(0), device=hidden.device), last_idx]
+        pred = self.cost_to_go_head(pooled).squeeze(-1)
+
+        # Target: log1p(work). Work = nodes + verifier_calls + backtracks + depth.
+        work = torch.tensor(
+            [
+                float(row.nodes)
+                + float(row.verifier_calls)
+                + float(row.backtracks)
+                + float(row.depth)
+                for row in valid_rows
+            ],
+            device=device,
+            dtype=pred.dtype,
+        )
+        target = torch.log1p(work)
+        observed = torch.tensor(
+            [bool(row.cost_observed) for row in valid_rows],
+            device=device,
+            dtype=torch.bool,
+        )
+
+        regression_loss = torch.tensor(0.0, device=device, dtype=pred.dtype)
+        if observed.any():
+            delta = pred[observed] - target[observed]
+            regression_loss = torch.where(
+                delta.abs() < 1.0,
+                0.5 * delta * delta,
+                delta.abs() - 0.5,
+            ).mean()
+
+        pairwise_loss = torch.tensor(0.0, device=device, dtype=pred.dtype)
+        groups: dict[tuple[str, str], list[int]] = {}
+        for idx, row in enumerate(valid_rows):
+            if not row.cost_observed:
+                continue
+            key = (row.state_fingerprint, str(row.hole_id))
+            groups.setdefault(key, []).append(idx)
+        margins: list[torch.Tensor] = []
+        for indices in groups.values():
+            if len(indices) < 2:
+                continue
+            p = pred[indices]
+            t = target[indices]
+            # For each ordered pair where target_i < target_j, require energy_i < energy_j.
+            for i in range(len(indices)):
+                for j in range(len(indices)):
+                    if i == j:
+                        continue
+                    if t[i] < t[j]:
+                        margins.append(F.relu(1.0 + p[i] - p[j]))
+        if margins:
+            pairwise_loss = torch.stack(margins).mean()
+
+        weight = float(self.config.cost_to_go_loss_weight or 0.0)
+        total = weight * (regression_loss + pairwise_loss)
+        self.last_training_metrics = {
+            "cost_to_go_regression_loss": float(regression_loss.detach().cpu()),
+            "cost_to_go_pairwise_loss": float(pairwise_loss.detach().cpu()),
+            "cost_to_go_total_loss": float(total.detach().cpu()),
+            "cost_to_go_observed_rows": int(observed.sum().cpu()),
+        }
+        return total
 
     def _format_one_context(
         self,

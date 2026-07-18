@@ -253,6 +253,9 @@ class ModelBuildConfig:
     speculative_successor: bool = False  # E74 successor-state cache
     speculative_fanout: int = 2
     speculative_overlap: bool = False
+    # VSS3-02 (SLM-70): cost-to-go energy head for solver candidate ranking.
+    cost_to_go_loss_weight: float = 0.0
+    cost_to_go_hidden_dim: int = 0
     # Hugging Face Bucket for durable checkpoints (full HF-context trains).
     # None → default hf://buckets/TKendrick/OpenUI when sync is enabled.
     # Empty string → disable auto bucket selection.

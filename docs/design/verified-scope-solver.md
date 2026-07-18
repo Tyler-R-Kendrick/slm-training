@@ -286,6 +286,35 @@ controller validates the returned sequence is a permutation and rejects any
 missing/extra/duplicate); `CERTIFIED_UNSAT` is impossible when any required branch
 was UNKNOWN or budget-truncated; every `SOLVED` carries a final verifier report.
 
+## Implemented cost-to-go energy ranker (VSS3-02 / SLM-70)
+
+[`dsl/solver/energy_ranker.py`](../../src/slm_training/dsl/solver/energy_ranker.py)
+adds `CandidateEnergyInput`, `CandidateEnergyOutput`, and `EnergyCandidateRanker`.
+The ranker wraps a `CandidateEnergyScorer` and returns a **permutation** of the
+exact live candidates supplied by the solver. It fail-closed falls back to the
+canonical value order when the scorer returns the wrong length, non-finite
+values, a membership change, or raises an exception.
+
+[`models/twotower.py`](../../src/slm_training/models/twotower.py) adds an optional
+`cost_to_go_head` auxiliary MLP, plus `score_candidates(...)` and
+`cost_to_go_loss(...)`. The loss consumes `CandidateCostRow` records from the
+VSS3-01 replay-verified supervision corpus and:
+
+- masks rows where `cost_observed=False` from the regression loss,
+- adds a pairwise ranking loss over candidates sharing the same `(state_fingerprint, hole_id)`,
+- reports `cost_to_go_regression_loss`, `cost_to_go_pairwise_loss`, and `cost_to_go_observed_rows`.
+
+[`harnesses/model_build/cost_to_go_train.py`](../../src/slm_training/harnesses/model_build/cost_to_go_train.py)
+provides a head-only trainer that freezes the TwoTower backbone and optimizes only
+the new head, analogous to `trust_train.py`.
+
+Runtime contract:
+
+- Exact closure computes the hard live set **before** energy scoring.
+- Energy output may change candidate order, expanded nodes, backtracks, and latency only.
+- Invalid scorer output triggers the configured deterministic fallback and records the fallback; membership is unchanged.
+- The ranker never certifies support, suppresses `UNKNOWN`, or bypasses the final verifier.
+
 ## Reference support semantics
 
 | Verdict | Requirement | Removal permitted? |
@@ -401,6 +430,7 @@ the closure.
 | `HoleId`, `SolverBounds`, `DomainValue`, `HoleDomain`, `FiniteDomainState` (`dsl/solver/state.py`) | Immutable JSON-safe finite-domain carrier with canonical hard-state identity and monotone operations. | **Implemented by VSS0-03.** Torch-free and not invoked by default; soft scores and proof artifacts remain outside the state. |
 | `completion_forest_state` (`dsl/solver/adapters.py`) | One-hole projection of full compiler completion paths plus coverage and `UNKNOWN` provenance. | **Implemented by VSS0-03.** Retains the compiler as owner; a singleton solves only the projection. |
 | `verification capsule`, `proof certificate` | Not implemented yet. | **Future VSS issues.** Capsule solving and replayable proof ownership are not duplicated here. |
+| `EnergyCandidateRanker` / `cost_to_go_head` (`dsl/solver/energy_ranker.py`, `models/twotower.py`) | Optional learned cost-to-go ranking over the exact live candidate set. | **Implemented by VSS3-02.** Permutation-only; fail-closed fallback on invalid output. No support certification or verifier bypass. |
 
 ## End-to-end example (partial coverage → live `UNKNOWN`)
 
@@ -527,3 +557,16 @@ integration, no learned energy, no persistent clause DB, and **no ship claim**.
 Verified: `python -m pytest tests/test_dsl/test_solver_controller.py
 tests/test_dsl/test_lattice_search.py -q` (94 in the full solver+compat suite) and
 `python -m scripts.repo_policy`.
+
+2026-07-18 — VSS3-02 / SLM-70 implements the cost-to-go energy scorer wiring:
+`EnergyCandidateRanker` enforces permutation-only ordering with fail-closed
+fallback, `TwoTowerModel` grows an optional `cost_to_go_head` trained from
+`CandidateCostRow` records, and `cost_to_go_train.py` provides a head-only trainer.
+Pinned by tiny closed fixtures (`tests/test_dsl/test_energy_ranker.py`,
+`tests/test_models/test_cost_to_go.py`): ranker permutation/fallback, lower-cost
+candidates receiving lower energy after overfit, `cost_observed=False` rows masked
+from regression, and old checkpoints loading with the new head allowed as missing.
+No full train/eval/benchmark/checkpoint was run, and **no ship or speed claim** is
+made. Verified: `python -m pytest tests/test_dsl/test_energy_ranker.py
+tests/test_models/test_cost_to_go.py tests/test_dsl/test_solver_controller.py -q`
+(45 passed) and `python -m scripts.repo_policy`.

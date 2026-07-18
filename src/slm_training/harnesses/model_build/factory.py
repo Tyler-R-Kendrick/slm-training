@@ -150,6 +150,8 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "speculative_successor",
         "speculative_fanout",
         "speculative_overlap",
+        "cost_to_go_loss_weight",
+        "cost_to_go_hidden_dim",
     ):
         if allowed is not None and key not in allowed:
             continue
@@ -437,6 +439,10 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         speculative_successor=bool(getattr(config, "speculative_successor", False)),
         speculative_fanout=int(getattr(config, "speculative_fanout", 2) or 2),
         speculative_overlap=bool(getattr(config, "speculative_overlap", False)),
+        cost_to_go_loss_weight=float(
+            getattr(config, "cost_to_go_loss_weight", 0.0) or 0.0
+        ),
+        cost_to_go_hidden_dim=int(getattr(config, "cost_to_go_hidden_dim", 0) or 0),
         seed=config.seed,
     )
 

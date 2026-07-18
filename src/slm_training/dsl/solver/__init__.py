@@ -25,6 +25,13 @@ from slm_training.dsl.solver.controller import (
     default_hole_selector,
     search,
 )
+from slm_training.dsl.solver.energy_ranker import (
+    CandidateEnergyInput,
+    CandidateEnergyOutput,
+    CandidateEnergyScorer,
+    EnergyCandidateRanker,
+    make_stub_energy_scorer,
+)
 from slm_training.dsl.solver.closure import (
     CertifiedDeduction,
     ClosureCounters,
@@ -54,8 +61,12 @@ from slm_training.dsl.solver.support import (
 
 __all__ = [
     "BaselineRanker",
+    "CandidateEnergyInput",
+    "CandidateEnergyOutput",
+    "CandidateEnergyScorer",
     "CandidateRanker",
     "CertifiedDeduction",
+    "EnergyCandidateRanker",
     "ClosureCounters",
     "ClosureResult",
     "DomainValue",
@@ -93,5 +104,6 @@ __all__ = [
     "completion_forest_state",
     "default_query_order",
     "exact_closure",
+    "make_stub_energy_scorer",
     "replay_support_certificate",
 ]

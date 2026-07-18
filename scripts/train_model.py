@@ -572,6 +572,18 @@ def main(argv: list[str] | None = None) -> int:
         help="Cheap structural force-align aux loss weight (0 disables).",
     )
     parser.add_argument(
+        "--cost-to-go-loss-weight",
+        type=float,
+        default=0.0,
+        help="VSS3-02: weight for solver cost-to-go regression+pairwise loss (0 disables).",
+    )
+    parser.add_argument(
+        "--cost-to-go-hidden-dim",
+        type=int,
+        default=0,
+        help="VSS3-02: hidden dimension for the cost-to-go MLP head (0 disables).",
+    )
+    parser.add_argument(
         "--grad-accum",
         type=int,
         default=1,
@@ -798,6 +810,8 @@ def main(argv: list[str] | None = None) -> int:
             fuse_ltr_loss=fuse_ltr,
             grammar_fastpath=True,
             fastpath_aux_weight=args.fastpath_aux_weight,
+            cost_to_go_loss_weight=args.cost_to_go_loss_weight,
+            cost_to_go_hidden_dim=args.cost_to_go_hidden_dim,
             grammar_trust_model=args.grammar_trust_model,
             noise_rate=args.noise_rate,
             eval_every=args.eval_every,
