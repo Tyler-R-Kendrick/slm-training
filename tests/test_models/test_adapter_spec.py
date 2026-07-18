@@ -40,6 +40,7 @@ def test_spec_round_trips_through_dict() -> None:
         ({"target_modules": ()}, "must not be empty"),
         ({"target_modules": ("attn_q", "attn_q")}, "must be unique"),
         ({"base_checkpoint_sha": ""}, "must be non-empty"),
+        ({"schema_version": 2}, "unsupported adapter schema version"),
     ],
 )
 def test_spec_validation_rejects_bad_configs(overrides, match) -> None:

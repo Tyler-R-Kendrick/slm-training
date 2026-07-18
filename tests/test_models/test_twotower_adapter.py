@@ -119,6 +119,15 @@ def test_attach_rejects_mismatched_base_fingerprint() -> None:
         model.attach_adapter(_spec(model, base_compatibility_fingerprint="not-this-model"))
 
 
+def test_attach_rejects_include_output_head() -> None:
+    # The output head is not a resolvable target, so the flag must fail closed rather
+    # than silently have no effect.
+    model = _model()
+    with pytest.raises(ValueError, match="include_output_head"):
+        model.attach_adapter(_spec(model, include_output_head=True))
+    assert not model.has_adapter()
+
+
 def test_merge_adapter_copy_matches_enabled_and_leaves_original() -> None:
     model = _model()
     model.attach_adapter(_spec(model))
@@ -182,6 +191,23 @@ def test_load_adapter_fails_closed_on_base_mismatch(tmp_path) -> None:
     )
     with pytest.raises(ValueError, match="fingerprint"):
         other.load_adapter(tmp_path / "adapter")
+
+
+def test_load_adapter_rejects_truncated_artifact_without_mutating(tmp_path) -> None:
+    model = _model()
+    model.attach_adapter(_spec(model))
+    model.save_adapter(tmp_path / "adapter")
+    # Drop a required lora factor from the saved tensors (a truncated/corrupt artifact).
+    tensors = torch.load(tmp_path / "adapter" / "adapter_model.pt", weights_only=True)
+    del tensors[sorted(tensors)[0]]
+    torch.save(tensors, tmp_path / "adapter" / "adapter_model.pt")
+
+    fresh = _model()
+    with pytest.raises(ValueError, match="manifest parameter set"):
+        fresh.load_adapter(tmp_path / "adapter")
+    # The whole artifact is validated before any mutation, so the failed load leaves the
+    # model untouched (no adapter attached, base parameters still trainable).
+    assert not fresh.has_adapter()
 
 
 def test_active_adapter_identity_tracks_adapter_weights() -> None:

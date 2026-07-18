@@ -40,6 +40,12 @@ class TwoTowerAdapterSpec:
     schema_version: int = ADAPTER_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
+        if self.schema_version != ADAPTER_SCHEMA_VERSION:
+            raise ValueError(
+                f"unsupported adapter schema version {self.schema_version}; "
+                f"expected {ADAPTER_SCHEMA_VERSION} — a newer schema must not be "
+                "reinterpreted as the current format"
+            )
         object.__setattr__(self, "rank", int(self.rank))
         object.__setattr__(self, "alpha", float(self.alpha))
         object.__setattr__(self, "dropout", float(self.dropout))

@@ -36,6 +36,14 @@ class LowRankAdapter(nn.Module):
             raise TypeError("LowRankAdapter wraps an nn.Linear module")
         if int(rank) <= 0:
             raise ValueError("adapter rank must be positive")
+        # Mirror the spec's trust-boundary checks so direct construction (which bypasses
+        # TwoTowerAdapterSpec) can never produce a silently-invalid adapter: a non-finite
+        # or non-positive alpha would poison `scaling`, and a negative dropout would
+        # silently degrade to Identity.
+        if not math.isfinite(float(alpha)) or float(alpha) <= 0.0:
+            raise ValueError("adapter alpha must be a positive finite number")
+        if not math.isfinite(float(dropout)) or not 0.0 <= float(dropout) < 1.0:
+            raise ValueError("adapter dropout must be a finite number in [0, 1)")
         self.base = base
         self.base.weight.requires_grad_(False)
         if self.base.bias is not None:

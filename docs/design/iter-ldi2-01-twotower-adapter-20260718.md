@@ -48,8 +48,18 @@ The removable adapter directory landed: `save_adapter(path, provenance=...)` wri
 `adapter_config.json` (the spec), `adapter_model.pt` (only the lora tensors — the base
 checkpoint is never duplicated), and `adapter_manifest.json` (resolved module map,
 parameter names/shapes, trainable parameter count, adapter bytes, base/tokenizer
-identity). `load_adapter(path, trainable=...)` fails closed on a tokenizer or base
-compatibility-fingerprint mismatch before copying any tensor, then attaches and loads.
+identity). `load_adapter(path, trainable=...)` validates the whole artifact **before**
+mutating the model — tokenizer identity, config/manifest agreement on base fingerprint,
+and the exact tensor key set and shapes against the manifest — so a mismatched or
+truncated adapter never leaves the model half-attached; only then does it attach (which
+fails closed on a base compatibility-fingerprint mismatch) and copy the tensors.
+
+`base_checkpoint_sha` is recorded for **provenance only**: attachment is gated on the
+architecture-level `compatibility_fingerprint` plus `tokenizer_sha`, which do not
+distinguish two different checkpoints of the *same* architecture. Rejecting an adapter
+trained against a different base checkpoint requires the model to carry its loaded
+checkpoint identity (it does not today — a `from_records` model has none), so that
+enforcement is deferred with the checkpoint-identity work below and is not yet claimed.
 
 ## Honest remaining scope
 

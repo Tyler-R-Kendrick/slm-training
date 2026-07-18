@@ -73,6 +73,14 @@ def resolve_adapter_targets(
     layers = getattr(denoiser, "layers", None)
     if layers is None:
         raise ValueError("denoiser exposes no `layers` to adapt")
+    if spec.include_output_head:
+        # The output head is not among the resolvable transformer-block targets, so
+        # honoring the flag would require dedicated support. Fail closed rather than let
+        # `include_output_head=True` silently have no effect.
+        raise ValueError(
+            "include_output_head=True is not supported by the low_rank backend yet; "
+            "the denoiser output head is not an adaptable target"
+        )
     count = len(layers)
     indices = (
         tuple(range(count))
@@ -119,7 +127,13 @@ def attach_low_rank_adapters(
     resolved = resolve_adapter_targets(denoiser, spec)
     wrappers: dict[str, LowRankAdapter] = {}
     for offset, (key, (parent, leaf_key, linear)) in enumerate(sorted(resolved.items())):
-        with torch.random.fork_rng(devices=[]):
+        # Fork whichever generator the adapter factors are initialized on. LowRankAdapter
+        # builds `lora_A` on the base weight's device, so on CUDA an empty `devices` list
+        # would let attachment advance the external CUDA generator (breaking the
+        # "attachment never shifts the training RNG" guarantee); include the CUDA device.
+        device = linear.weight.device
+        fork_devices = [device] if device.type == "cuda" else []
+        with torch.random.fork_rng(devices=fork_devices):
             torch.manual_seed(int(seed) + 4096 + offset)
             wrapper = LowRankAdapter(
                 linear, rank=spec.rank, alpha=spec.alpha, dropout=spec.dropout

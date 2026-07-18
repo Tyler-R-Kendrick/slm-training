@@ -80,3 +80,13 @@ def test_rank_must_be_positive_and_wraps_only_linear() -> None:
         LowRankAdapter(_base(), rank=0, alpha=1.0, dropout=0.0)
     with pytest.raises(TypeError, match="wraps an nn.Linear"):
         LowRankAdapter(nn.ReLU(), rank=2, alpha=1.0, dropout=0.0)  # type: ignore[arg-type]
+
+
+def test_alpha_and_dropout_are_validated() -> None:
+    # Direct construction bypasses TwoTowerAdapterSpec, so the wrapper mirrors its checks.
+    for bad_alpha in (0.0, -1.0, float("nan"), float("inf")):
+        with pytest.raises(ValueError, match="alpha must be a positive finite"):
+            LowRankAdapter(_base(), rank=2, alpha=bad_alpha, dropout=0.0)
+    for bad_dropout in (-0.1, 1.0, float("nan")):
+        with pytest.raises(ValueError, match=r"dropout must be a finite number in \[0, 1\)"):
+            LowRankAdapter(_base(), rank=2, alpha=1.0, dropout=bad_dropout)

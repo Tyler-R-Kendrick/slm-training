@@ -874,6 +874,10 @@ class TwoTowerModel(nn.Module):
             raise ValueError(
                 "adapter base compatibility fingerprint does not match this model"
             )
+        # NB: spec.base_checkpoint_sha is provenance only. The architecture fingerprint
+        # above does not distinguish two checkpoints of the same shape; enforcing the
+        # exact base checkpoint needs the model to carry its loaded checkpoint identity,
+        # which is deferred with the checkpoint-interplay work (see the LDI2-01 memo).
         self._adapter_modules = attach_low_rank_adapters(
             self.denoiser, spec, seed=int(self.config.seed)
         )
@@ -996,17 +1000,46 @@ class TwoTowerModel(nn.Module):
         spec = TwoTowerAdapterSpec.from_dict(
             json.loads((path / "adapter_config.json").read_text(encoding="utf-8"))
         )
+        manifest_path = path / "adapter_manifest.json"
+        if not manifest_path.exists():
+            raise ValueError("adapter directory is missing adapter_manifest.json")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+        # --- Validate the whole artifact BEFORE mutating the model ---------------------
+        # Tokenizer + config/manifest integrity are all checked up front so a mismatched
+        # or truncated adapter never leaves the model half-attached.
         expected_tokenizer = self.artifact_identity()["tokenizer_sha"]
         if spec.tokenizer_sha and spec.tokenizer_sha != expected_tokenizer:
             raise ValueError("adapter tokenizer identity does not match this model")
+        if manifest.get("base_compatibility_fingerprint") != spec.base_compatibility_fingerprint:
+            raise ValueError("adapter manifest disagrees with its config on base identity")
+        tensors = torch.load(path / "adapter_model.pt", map_location="cpu", weights_only=True)
+        loaded_names = set(tensors)
+        expected_names = set(manifest.get("parameter_names", []))
+        if loaded_names != expected_names:
+            raise ValueError(
+                "adapter tensors do not match the manifest parameter set "
+                f"(missing={sorted(expected_names - loaded_names)}, "
+                f"unexpected={sorted(loaded_names - expected_names)})"
+            )
+        expected_shapes = manifest.get("parameter_shapes", {})
+        for name, tensor in tensors.items():
+            if list(tensor.shape) != list(expected_shapes.get(name, [])):
+                raise ValueError(
+                    f"adapter tensor {name!r} shape {list(tensor.shape)} does not match "
+                    f"manifest shape {expected_shapes.get(name)}"
+                )
+
+        # --- Mutate only after every check above has passed ---------------------------
         # attach_adapter fails closed on a base-fingerprint mismatch before wrapping.
         self.attach_adapter(spec)
-        tensors = torch.load(path / "adapter_model.pt", map_location="cpu", weights_only=True)
         parameters = dict(self.named_parameters())
-        missing = [name for name in tensors if name not in parameters]
-        if missing:
+        model_adapter_names = {name for name in parameters if "lora_" in name.lower()}
+        if loaded_names != model_adapter_names:
             raise ValueError(
-                f"adapter tensors do not match the model module map: {sorted(missing)}"
+                "adapter tensors do not match the attached module map "
+                f"(missing={sorted(model_adapter_names - loaded_names)}, "
+                f"unexpected={sorted(loaded_names - model_adapter_names)})"
             )
         with torch.no_grad():
             for name, tensor in tensors.items():
