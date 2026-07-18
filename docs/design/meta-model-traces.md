@@ -15,6 +15,7 @@ infrastructure). Fixture evidence: `tests/test_harnesses/distill/test_meta_trace
 | `decode` (default) | `DecodeTraceRecorder` via `model.trace_recorder` | per-step canvases, commits (`t`, `id`, log-prob, constrained/forced flags), remasks with reasons, NFE counters, final text, reward vector, labels |
 | `harness_decision` | `record_harness_decision` | harness name, bounded decision, typed inputs/outcome |
 | `matrix_outcome` | `record_matrix_outcome` | experiment id, matrix set, pass/fail, failures, per-suite scoreboards |
+| `solver` | `scripts/build_solver_supervision.py` | `SearchResult`, certificate store, support events, state snapshots, and lineage; consumed by the replay-verified supervision builder |
 
 Every row carries the shared identity envelope: `trajectory_id` (index +
 content hash), `run_id` / `trace_id` / `span_id` (from active runtime
@@ -46,6 +47,16 @@ hf://buckets/TKendrick/OpenUI/traces/<run_id>/   ← sync_traces(root, run_id)
 `hf buckets sync … --no-delete`, command-plan by default, `push=True` to
 execute. The store is append-only (existing rows are never rewritten), so
 `--no-delete` retention is safe by construction.
+
+## Solver traces (VSS3-01)
+
+`kind: solver` rows carry a `SolverTrace` envelope: a `SearchResult`, a
+`certificate_store` keyed by certificate id, support events for every
+`(state_fingerprint, hole_id, candidate)` triplet that was evaluated, and
+state snapshots so certificates can be replayed independently. The builder in
+`src/slm_training/harnesses/distill/solver_supervision.py` replays every
+certificate through the pack's expander/verifier before emitting a hard label;
+tampered or unreplayable traces are skipped with a reason.
 
 ## Honesty
 

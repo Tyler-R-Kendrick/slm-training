@@ -12,7 +12,14 @@ from pathlib import Path
 from typing import Any, Literal
 
 DataKind = Literal[
-    "train", "eval", "preference", "annotation", "trajectory", "programspec", "mixture"
+    "train",
+    "eval",
+    "preference",
+    "annotation",
+    "trajectory",
+    "programspec",
+    "mixture",
+    "solver_supervision",
 ]
 DATA_KINDS: tuple[DataKind, ...] = (
     "train",
@@ -22,8 +29,9 @@ DATA_KINDS: tuple[DataKind, ...] = (
     "trajectory",
     "programspec",
     "mixture",
+    "solver_supervision",
 )
-PUBLISHABLE_KINDS = frozenset(DATA_KINDS) - {"annotation"}
+PUBLISHABLE_KINDS = frozenset(DATA_KINDS) - {"annotation", "solver_supervision"}
 MAX_GIT_FILE_BYTES = 50 * 1024 * 1024
 _ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}")
 _LEGACY_ROOTS: dict[DataKind, Path] = {
@@ -34,6 +42,7 @@ _LEGACY_ROOTS: dict[DataKind, Path] = {
     "trajectory": Path("outputs/traces"),
     "programspec": Path("outputs/progspec"),
     "mixture": Path("outputs/mixtures"),
+    "solver_supervision": Path("outputs/solver_supervision"),
 }
 
 
