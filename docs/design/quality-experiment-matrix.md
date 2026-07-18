@@ -2153,6 +2153,14 @@ n=3 and scratch context do not support production ship. See
 [E333](iter-e333-lexeme-slot-weight4-train-20260717.md), and
 [E333 JSON](lexeme-slot-weight4-results-iter-e333-20260717.json).
 
+E334 evaluates E333 on 1,500 leakage-filtered cached-HF RICO records. Full RICO
+passes with parse/fidelity/structure/meaningful/recall/reward
+1.0/0.6490/0.4582/0.9327/0.5148/0.8271; AgentV remains 5/5. This clears the
+full local RICO bar, not production ship: HF-context training and checkpoint
+bucket sync remain outstanding. See
+[results](iter-e334-full-rico-20260717.md) and
+[JSON](full-rico-results-iter-e334-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

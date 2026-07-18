@@ -125,7 +125,7 @@ summary and the full card whenever a checkpoint is created or promoted.
 | E326 lexeme slot-prior arm | `e326-lexeme-slot-prior-20k-r1/last.pt` | `outputs/runs/e326-lexeme-slot-prior-20k-r1/…` (local) | Superseded by E333; default weight 1 reaches AgentV 4/5 — not ship |
 | E328 ordered span-prior arm | `e328-span-slot-prior-20k-r1/last.pt` | `outputs/runs/e328-span-slot-prior-20k-r1/…` (local) | Negative: corrected schema arity is retained, but span prior leaves smoke unchanged and regresses held recall to 0.30 — not promoted or ship |
 | E330 prompt-conditioned lexeme arm | `e330-prompt-lexeme-slot-prior-20k-r1/last.pt` | `outputs/runs/e330-prompt-lexeme-slot-prior-20k-r1/…` (local) | Negative: auxiliary accuracy improves, but smoke is unchanged and held recall regresses to 0.30 — not promoted or ship |
-| E333 lexical weight-4 scratch champion | `e333-lexeme-slot-weight4-20k-r1/last.pt` | `outputs/runs/e333-lexeme-slot-weight4-20k-r1/…` (local) | Scratch gates pass / AgentV 5/5; limited RICO n=3 + scratch/no-sync mean not production ship |
+| E333 lexical weight-4 scratch champion | `e333-lexeme-slot-weight4-20k-r1/last.pt` | `outputs/runs/e333-lexeme-slot-weight4-20k-r1/…` (local) | Full local RICO n=1500 + AgentV 5/5 pass; scratch context/no-sync still mean not production ship |
 | Production HF ship | *(none yet)* | [HF Bucket `TKendrick/OpenUI`](https://huggingface.co/buckets/TKendrick/OpenUI) `checkpoints/<run_id>/` | Register here after first full HF sync + `--ship-gates` |
 
 **Load demo:** `python -m scripts.serve_playground` · **Full train sync:** set

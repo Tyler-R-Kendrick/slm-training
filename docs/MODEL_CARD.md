@@ -120,7 +120,7 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 | E326 lexeme slot-prior arm | `e326-lexeme-slot-prior-20k-r1` | CPU scratch training-derived lexical prior arm | `outputs/runs/e326-lexeme-slot-prior-20k-r1/checkpoints/last.pt` (local) | Superseded by E333; held-out and adversarial improve, but default weight 1 has AgentV 4/5 — **not ship** ([results](design/iter-e326-lexeme-slot-prior-20260717.md)) |
 | E328 ordered span-prior arm | `e328-span-slot-prior-20k-r1` | CPU scratch schema-arity + lexical span arm | `outputs/runs/e328-span-slot-prior-20k-r1/checkpoints/last.pt` (local) | Negative: smoke unchanged and held recall regresses 0.40→0.30; AgentV 4/5 — **not promotable or ship** ([results](design/iter-e328-span-slot-prior-20260717.md)) |
 | E330 prompt-conditioned lexeme arm | `e330-prompt-lexeme-slot-prior-20k-r1` | CPU scratch prompt + lexical prior arm | `outputs/runs/e330-prompt-lexeme-slot-prior-20k-r1/checkpoints/last.pt` (local) | Negative: slot accuracy improves but smoke is unchanged and held recall regresses to 0.30; AgentV 4/5 — **not promotable or ship** ([results](design/iter-e330-prompt-lexeme-slot-20260717.md)) |
-| E333 lexical weight-4 scratch champion | `e333-lexeme-slot-weight4-20k-r1` | CPU scratch corpus-derived lexical prior | `outputs/runs/e333-lexeme-slot-weight4-20k-r1/checkpoints/last.pt` (local) | **Scratch gates pass / AgentV 5/5**, but limited RICO n=3, scratch context, and no sync mean **not production ship** ([results](design/iter-e333-lexeme-slot-weight4-train-20260717.md)) |
+| E333 lexical weight-4 scratch champion | `e333-lexeme-slot-weight4-20k-r1` | CPU scratch corpus-derived lexical prior | `outputs/runs/e333-lexeme-slot-weight4-20k-r1/checkpoints/last.pt` (local) | **Full local RICO n=1500 + AgentV 5/5 pass**, but scratch context and no sync mean **not production ship** ([train](design/iter-e333-lexeme-slot-weight4-train-20260717.md), [full RICO](design/iter-e334-full-rico-20260717.md)) |
 | Production HF ship | — | — | `hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/` | **None registered yet** — fill this row after the first full HF sync |
 
 Update the table in place when a checkpoint is written or superseded. Keep
@@ -392,6 +392,11 @@ Leakage: structural fingerprints + train/test isolation
 | `adversarial` (E333 scratch champion) | 4 | 1.0 | 1.0000 | 0.6304 | 0.7238 | Yes for scratch thresholds; not production ship |
 | `ood` (E333 scratch champion) | 4 | 1.0 | 1.0000 | 0.6213 | 0.7425 | Yes for scratch thresholds; not production ship |
 | `rico_held` (E333 scratch champion) | 3 | 1.0 | 1.0000 | 0.6717 | 1.0000 | Yes for limited suite thresholds; not production ship |
+| `smoke` (E334 full local RICO run) | 3 | 1.0 | 1.0000 | 0.6281 | 0.6407 | Yes; not production ship |
+| `held_out` (E334 full local RICO run) | 5 | 1.0 | 1.0000 | 0.5443 | 0.3868 | Yes; not production ship |
+| `adversarial` (E334 full local RICO run) | 4 | 1.0 | 1.0000 | 0.6874 | 0.9700 | Yes; not production ship |
+| `ood` (E334 full local RICO run) | 4 | 1.0 | 1.0000 | 0.6662 | 0.7425 | Yes; not production ship |
+| `rico_held` (E334 full local RICO run) | 1500 | 1.0 | 0.6490 | 0.4582 | 0.8271 | Yes for full local suite; HF context/sync still missing |
 | `smoke` (`e177-semantic-judge-32step`, E180 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1542 | 0.607 | No — syntax 1.0, but meaningful component recall 0.25; not a ship evaluation |
 | `smoke` (`e181-semantic-balanced-32step`, E181 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1542 | 0.607 | No — mixture-only control did not improve quality; not a ship evaluation |
 | `smoke` (`e184-compiler-aligned-32step`, E194 diagnostic subset) | 1 | 0.0 | 0.0 | 0.3600 | 0.0 | No — root/schema constraints improved, but output remained incomplete; not a ship evaluation |
@@ -736,6 +741,7 @@ suites because they contain no scope metadata. Evidence:
 | 2026-07-17 | `e331-lexeme-component-plan2-honest-r1` (E331 eval-only) | `outputs/runs/e331-lexeme-component-plan2-honest-r1/` (local) | Unchanged E326 SHA; component-plan decode weight 2 | Smoke unchanged; held and limited-RICO regress; AgentV 4/5, no promotion |
 | 2026-07-17 | `e332-lexeme-slot-weight4-honest-r1` (E332 eval-only) | `outputs/runs/e332-lexeme-slot-weight4-honest-r1/` (local) | Unchanged E326 SHA; frozen slot decode weight 4 | First current scratch-gate pass / AgentV 5/5; accepted as serving policy, not a checkpoint promotion |
 | 2026-07-17 | `e333-lexeme-slot-weight4-20k-r1` (E333 scratch champion) | `outputs/runs/e333-lexeme-slot-weight4-20k-r1/` (local) | 446 CPU scratch steps / 20,044 target tokens; lexical prior + persisted decode weight 4; NLL 5.4084; SHA `ca6c290d2617f31c4c5eae6061690974e62d5232252d83d583d03310b4eca9a1`; explicit no-sync | AgentV 5/5 and scratch gates pass; local scratch champion only, not production ship |
+| 2026-07-17 | `e334-e333-full-rico-honest-r1` (E334 eval-only) | `outputs/runs/e334-e333-full-rico-honest-r1/` (local) | Unchanged E333 SHA; full leakage-filtered RICO n=1500 | AgentV 5/5 and all full local gates pass; HF-context training and checkpoint sync still required |
 
 Append a row for every new or replaced checkpoint. Do not delete history.
 

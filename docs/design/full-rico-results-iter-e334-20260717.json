@@ -1,0 +1,25 @@
+{
+  "id": "E334",
+  "date": "2026-07-17",
+  "status": "full_local_rico_gate_pass_not_production",
+  "run_id": "e334-e333-full-rico-honest-r1",
+  "checkpoint_sha256": "ca6c290d2617f31c4c5eae6061690974e62d5232252d83d583d03310b4eca9a1",
+  "eval_manifest_sha256": "6b02e7544782bf51f5d64dc1073c9d920446dd04f97fe25a23e9f5728c7c6983",
+  "rico_records_sha256": "55e58123b988574a0fbc8804ad3ff8feaa7f78b05a7495c28f5d8208708747cf",
+  "rico_n": 1500,
+  "leakage_rejected": 158,
+  "conversion_errors": 0,
+  "rico_metrics": {
+    "parse": 1.0,
+    "fidelity": 0.6490393939394008,
+    "structure": 0.4581775333333297,
+    "meaningful": 0.9326666666666666,
+    "component_recall": 0.5147777777777764,
+    "reward": 0.8271033333333275,
+    "latency_ms_p50": 448.69,
+    "latency_ms_p95": 948.52
+  },
+  "agentv": {"passed": 5, "total": 5},
+  "gates_pass": true,
+  "verdict": "E333 clears the full local RICO bar. HF-context training and successful checkpoint bucket sync are still required for production ship."
+}
