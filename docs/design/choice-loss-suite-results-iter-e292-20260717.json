@@ -1,0 +1,86 @@
+{
+  "iteration": "E292",
+  "date": "2026-07-17",
+  "hypothesis": "ChoiceTokenizer binding masks were missing from the frozen loss suite because generic token kinds were not classified.",
+  "change": {
+    "scope": "measurement_only",
+    "binding_kinds": ["sym", "bind", "state"],
+    "structural_kinds": ["struct", "component", "builtin"],
+    "regression_test": "tests/test_evals/test_denoising_nll.py::test_position_filters_support_choice_tokens"
+  },
+  "calibration": {
+    "run_id": "capacity_choice_v1__d64_h2_c1_dn2_t1250_x1__s0",
+    "device": "cpu",
+    "context_backend": "scratch",
+    "design_md_context": true,
+    "summary_honesty_mode_invalidated": "The original train summary said no-design-md-context because None was interpreted inconsistently; checkpoint config and prompt tokens prove DESIGN context was enabled.",
+    "steps": 26,
+    "seen_target_tokens": 1263,
+    "weighted_nll": 18.515012286280474,
+    "loss_suite_complete": true,
+    "checkpoint_sha256": "78334790da71535f1b65edd7073b8c66a21bda35d3da87cfd6d33ab1ece11211",
+    "status": "budget calibration only; not matched or promotable"
+  },
+  "matched_run": {
+    "run_id": "capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0",
+    "device": "cpu",
+    "context_backend": "scratch",
+    "output_tokenizer": "choice",
+    "model": "twotower",
+    "width": 64,
+    "depth": 2,
+    "seed": 0,
+    "batch_size": 2,
+    "steps": 107,
+    "seen_target_tokens": 5022,
+    "target_token_budget": 5000,
+    "elapsed_wall_seconds": 35.18760398700033,
+    "last_loss": 13.686403274536133,
+    "checkpoint_sha256": "7cad143139f91369b4780878f634e7fa24434d7ccb8f9813a00f5412f3051c99",
+    "checkpoint_bucket": null,
+    "checkpoint_sync_reason": "scratch matrix diagnostic; local only",
+    "loss_suite": {
+      "version": "v1",
+      "complete": true,
+      "missing_categories": [],
+      "weighted_nll": 7.22651698651093,
+      "binding": {"mean_nll": 8.020086382648774, "masked_tokens": 112},
+      "structural": {"mean_nll": 5.641910152775901, "masked_tokens": 210},
+      "repair": {"mean_nll": 7.694286561012268},
+      "schema_ood": {"mean_nll": 7.0693419143838705, "masked_tokens": 265},
+      "broad": {"mean_nll": 8.107549341622885, "masked_tokens": 385},
+      "history": [
+        {"step": 20, "weighted_nll": 20.4595},
+        {"step": 40, "weighted_nll": 14.5726},
+        {"step": 60, "weighted_nll": 10.6305},
+        {"step": 80, "weighted_nll": 8.6687},
+        {"step": 100, "weighted_nll": 7.4410},
+        {"step": 107, "weighted_nll": 7.22651698651093}
+      ],
+      "agentv": {"total": 1, "passed": 1, "failed": 0, "execution_errors": 0}
+    }
+  },
+  "honest_evaluation": {
+    "run_id": "e292-choice-loss-suite-frozen-r1",
+    "policy": {
+      "ship_gates": true,
+      "context_backend": "scratch",
+      "grammar_constrained": true,
+      "slot_contract_constrained_decode": true,
+      "honest_slot_contract": true,
+      "design_md_context": false,
+      "allow_unconstrained_fallback": false
+    },
+    "suites": {
+      "smoke": {"n": 3, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.7222222222222222, "structure": 0.29583333333333334, "component_recall": 0.0, "reward": 0.0},
+      "held_out": {"n": 5, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.48, "structure": 0.27842, "component_recall": 0.04, "reward": 0.1414},
+      "adversarial": {"n": 4, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.4166666666666667, "structure": 0.23299999999999998, "component_recall": 0.0, "reward": 0.0},
+      "ood": {"n": 4, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.16666666666666666, "structure": 0.273125, "component_recall": 0.0, "reward": 0.0},
+      "rico_held": {"n": 3, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.0, "structure": 0.09006666666666667, "component_recall": 0.0, "reward": 0.0}
+    },
+    "gate_pass": false,
+    "gate_failure_count": 15,
+    "agentv": {"total": 5, "passed": 0, "failed": 5, "execution_errors": 0, "mean_score": 0.5}
+  },
+  "verdict": "Measurement defect fixed; checkpoint is not promotable or ship-ready. Binding and component selection are the next quality targets."
+}

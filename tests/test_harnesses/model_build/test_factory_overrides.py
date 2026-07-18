@@ -54,6 +54,15 @@ def test_compiler_search_overrides_are_typed() -> None:
     assert model.config.compiler_search_width == 8
 
 
+def test_design_md_dropout_overrides_resumed_checkpoint() -> None:
+    model = SimpleNamespace(config=SimpleNamespace(design_md_dropout=0.0))
+    config = ModelBuildConfig(train_dir=Path("."), design_md_dropout=0.5)
+
+    apply_runtime_overrides(model, config)
+
+    assert model.config.design_md_dropout == 0.5
+
+
 def test_explicit_runtime_override_fields_preserve_unrelated_checkpoint_config() -> None:
     model = SimpleNamespace(
         config=SimpleNamespace(
