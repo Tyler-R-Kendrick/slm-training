@@ -2355,6 +2355,30 @@ diagnostic subset. See
 [results](iter-e372-e375-structural-terminal-coverage-20260717.md) and
 [JSON](iter-e372-e375-structural-terminal-coverage-20260717.json).
 
+E376 applies E375 to all four complete bounded suites. Parse and fidelity are
+1.0 throughout; smoke/held/adversarial/OOD structure is
+0.5600/0.5136/0.5546/0.5114 and AgentV passes 4/4 with zero execution errors.
+The aggregate ship gate remains false because full RICO is missing. Retain for
+broader RICO evaluation, not production ship. See
+[results](iter-e376-structural-bounded-suites-20260717.md) and
+[JSON](iter-e376-structural-bounded-suites-20260717.json).
+
+E377 evaluates the same policy on frozen RICO rows 0–64 in approximately
+167s. Parse/meaningful/recall are 1.0, fidelity is 0.9922, structure is 0.6695,
+reward is 0.9971, and no row fails. AgentV remains 0/1 because 64/1500 is
+partial evidence. Continue disjoint shards; do not claim full RICO or ship.
+See [results](iter-e377-structural-rico64-20260717.md) and
+[JSON](iter-e377-structural-rico64-20260717.json).
+
+E378 covers disjoint RICO rows 64–128: parse/meaningful 1.0, fidelity 0.9909,
+structure 0.6508, recall 0.9779, reward 0.9951, and zero failures in
+approximately 212s. E379 merges E377+E378 into exact contiguous 128/1500
+evidence: fidelity 0.9915, structure 0.6602, recall 0.9889, reward 0.9961, and
+zero failures. The merged AgentV bundle fails closed because bounded suites and
+full RICO are absent. See
+[results](iter-e378-e379-structural-rico128-20260717.md) and
+[JSON](iter-e378-e379-structural-rico128-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
