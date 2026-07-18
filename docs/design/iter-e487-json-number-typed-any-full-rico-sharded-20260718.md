@@ -28,6 +28,12 @@ contracts, eight generation steps, three attempts, and no fallback.
 | 7b | `[360,384)` | 24 | 1.0 | 1.0 | 0.8402 | 1.0 | 0.9950 | 0 / 0 / 0 |
 | 8a | `[384,408)` | 24 | 1.0 | 1.0 | 0.8729 | 1.0 | 0.9915 | 0 / 0 / 0 |
 | 8b | `[408,432)` | 24 | 1.0 | 1.0 | 0.8482 | 1.0 | 0.9945 | 0 / 0 / 0 |
+| 9a | `[432,456)` | 24 | 1.0 | 1.0 | 0.9227 | 1.0 | 0.9891 | 0 / 0 / 0 |
+| 9b | `[456,480)` | 24 | 1.0 | 1.0 | 0.8701 | 1.0 | 0.9948 | 0 / 0 / 0 |
+| 10a | `[480,504)` | 24 | 1.0 | 1.0 | 0.8852 | 1.0 | 0.9962 | 0 / 0 / 0 |
+| 10b | `[504,528)` | 24 | 1.0 | 1.0 | 0.8525 | 1.0 | 0.9912 | 0 / 0 / 0 |
+| 11a | `[528,552)` | 24 | 1.0 | 1.0 | 0.8524 | 1.0 | 0.9907 | 0 / 0 / 0 |
+| 11b | `[552,576)` | 24 | 1.0 | 1.0 | 0.9088 | 1.0 | 0.9957 | 0 / 0 / 0 |
 
 Shard 0 completed normally in about 177 seconds and is metric-identical to the
 corresponding E477 rows, with zero failures, fallback, or timeouts.
@@ -63,4 +69,16 @@ Shards 8a and 8b completed normally in about 105 and 95 seconds. Together they
 are prediction-identical to the corresponding E477 rows, with structure
 0.8605, reward 0.9930, and zero failures, fallback, or timeouts.
 
-**Status:** 432/1500 rows complete. No merged or ship claim yet.
+Shards 9a and 9b completed normally in about 105 and 120 seconds. Together
+they are prediction-identical to the corresponding E477 rows, with structure
+0.8964, reward 0.9919, and zero failures, fallback, or timeouts.
+
+Shards 10a and 10b completed normally in about 142 and 128 seconds. Together
+they are prediction-identical to the corresponding E477 rows, with structure
+0.8688, reward 0.9938, and zero failures, fallback, or timeouts.
+
+Shards 11a and 11b completed normally in about 99 and 150 seconds. Together
+they are prediction-identical to the corresponding E477 rows, with structure
+0.8806, reward 0.9932, and zero failures, fallback, or timeouts.
+
+**Status:** 576/1500 rows complete. No merged or ship claim yet.
