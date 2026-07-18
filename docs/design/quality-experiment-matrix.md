@@ -2493,6 +2493,14 @@ continuation. See
 [results](iter-e411-e412-23k-continuation-boundary-20260718.md) and
 [JSON](iter-e411-e412-23k-continuation-boundary-20260718.json).
 
+E413 tests one power-zero resumed optimizer step and stops at 22,074 target
+tokens in 7.5s. E414 keeps smoke meaningful/recall at 1.0/0.5 and passes all
+four bounded suites with AgentV 4/4; only full RICO is missing. This places the
+smoke failure boundary between 2 and 19 additional steps. E413 is a boundary
+control, not a new champion. See
+[results](iter-e413-e414-one-step-continuation-20260718.md) and
+[JSON](iter-e413-e414-one-step-continuation-20260718.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

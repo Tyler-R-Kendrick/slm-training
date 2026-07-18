@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "run_id": "e414-component-plan-one-step-control-bounded-r1",
+  "date": "2026-07-18",
+  "status": "Bounded pass: one resumed optimizer step remains healthy; full RICO missing",
+  "checkpoint": {
+    "id": "E413",
+    "run_id": "e413-component-plan-one-step-control-r1",
+    "path": "outputs/runs/e413-component-plan-one-step-control-r1/checkpoints/last.pt",
+    "sha256": "b3cca00c06337d25fd908a3168b295a05b0b1f4f602dcd034f847866a8da66cb",
+    "device": "cpu",
+    "context_backend": "hf",
+    "output_tokenizer": "choice",
+    "sync": "explicit_no_sync",
+    "promoted": false,
+    "rejected": false
+  },
+  "train": {
+    "steps": 428,
+    "additional_steps": 1,
+    "seen_target_tokens": 22074,
+    "target_token_budget": 22050,
+    "elapsed_wall_seconds": 7.4505103820047225,
+    "max_wall_minutes": 4.5,
+    "stopped_on": "token_budget",
+    "record_count": 998,
+    "data_manifest_sha": "a4f212a3444d0f219fe1b3604f70929fe1a1b91d4fdc11a73167cb74c55b6a51",
+    "resumed_from": "outputs/runs/e396-balanced-type-head-continuation-r1/checkpoints/last_full_state.pt",
+    "component_plan_class_balance_power": 0.0,
+    "best_weighted_nll": 5.809070931803047,
+    "fresh_loss_eval": false
+  },
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.5599999999999999,
+      "component_type_recall": 0.5,
+      "reward_score": 0.977
+    },
+    "held_out": {
+      "n": 5,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.6,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.5932799999999999,
+      "component_type_recall": 0.4833333333333333,
+      "reward_score": 0.5915999999999999
+    },
+    "adversarial": {
+      "n": 4,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.75,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.63035,
+      "component_type_recall": 0.625,
+      "reward_score": 0.72375
+    },
+    "ood": {
+      "n": 4,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.5511250000000001,
+      "component_type_recall": 0.7291666666666666,
+      "reward_score": 0.9827499999999999
+    }
+  },
+  "ship_gates": {
+    "pass": false,
+    "failures": [
+      "rico_held:missing_suite"
+    ],
+    "bounded_suites_pass": true
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "passed": 4,
+    "total": 4,
+    "execution_errors": 0
+  },
+  "timing_policy": {
+    "external_timeout_seconds": 290,
+    "external_kill_after_seconds": 10,
+    "training_internal_max_wall_minutes": 4.5,
+    "timed_out_runs_used_as_evidence": 0
+  },
+  "verdict": "bounded-safe control only; retain E396 and bisect failure boundary between 2 and 19 steps"
+}

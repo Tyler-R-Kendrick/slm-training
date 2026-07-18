@@ -139,6 +139,7 @@ summary and the full card whenever a checkpoint is created or promoted.
 | E407 unbalanced continuation rejection | `e407-component-plan-unbalanced-control-r1/last.pt` | `outputs/runs/e407-component-plan-unbalanced-control-r1/…` (local) | Power-zero control at matched 29,066 tokens exactly repeats smoke collapse and worsens OOD, proving continuation length is causal — rejected, not ship |
 | E409 25k continuation rejection | `e409-component-plan-25k-control-r1/last.pt` | `outputs/runs/e409-component-plan-25k-control-r1/…` (local) | Power-zero control at 25,036 tokens already collapses smoke while OOD stays healthy — rejected, not ship |
 | E411 23k continuation rejection | `e411-component-plan-23k-control-r1/last.pt` | `outputs/runs/e411-component-plan-23k-control-r1/…` (local) | Only 19 resumed steps / 23,019 tokens; smoke already collapses while held recall remains 0.4833 — rejected, not ship |
+| E413 one-step continuation control | `e413-component-plan-one-step-control-r1/last.pt` | `outputs/runs/e413-component-plan-one-step-control-r1/…` (local) | One resumed step / 22,074 tokens; bounded AgentV 4/4 and E396 held metrics retained, but no selection benefit or full RICO — control only, not ship |
 | Production HF ship | *(none yet)* | [HF Bucket `TKendrick/OpenUI`](https://huggingface.co/buckets/TKendrick/OpenUI) `checkpoints/<run_id>/` | Register here after first full HF sync + `--ship-gates` |
 
 **Load demo:** `python -m scripts.serve_playground` · **Full train sync:** set
