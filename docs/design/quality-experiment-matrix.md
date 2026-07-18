@@ -2220,6 +2220,12 @@ now also records both slot-contract flags in train-summary recipes. See
 [results](iter-e343-hf-context-visible-slot-train-20260717.md) and
 [JSON](hf-context-visible-slot-train-results-iter-e343-20260717.json).
 
+E344 repeats E343 from the same parent at 10x lower learning rate. Its weights
+differ, but all 16 predictions and aggregate metrics exactly reproduce E343;
+AgentV remains 0/4. Reject learning-rate reduction. See
+[results](iter-e344-hf-context-visible-slot-low-lr-20260717.md) and
+[JSON](hf-context-visible-slot-low-lr-results-iter-e344-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

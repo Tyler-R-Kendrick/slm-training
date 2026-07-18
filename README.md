@@ -129,6 +129,7 @@ summary and the full card whenever a checkpoint is created or promoted.
 | E336 frozen HF-context rejection | `e336-hf-context-e333-recipe-20k-local-r1/last.pt` | `outputs/runs/e336-hf-context-e333-recipe-20k-local-r1/…` (local) | NLL 6.2014; four completed suites fail meaningful quality; RICO/ship AgentV incomplete under five-minute cap — rejected, not ship |
 | E337 frozen HF-context 30k rejection | `e337-hf-context-e333-recipe-30k-local-r1/last.pt` | `outputs/runs/e337-hf-context-e333-recipe-30k-local-r1/…` (local) | Best NLL 5.7512; bounded four-suite AgentV 0/4 and all semantic signals zero — rejected, not ship |
 | E343 visible-slot HF adaptation rejection | `e343-hf-context-visible-slot-35k-local-r1/last.pt` | `outputs/runs/e343-hf-context-visible-slot-35k-local-r1/…` (local) | NLL 6.0674; honest bounded AgentV 0/4 and E341 semantic signal erased — rejected, not ship |
+| E344 low-LR visible-slot rejection | `e344-hf-context-visible-slot-lr3e5-35k-r1/last.pt` | `outputs/runs/e344-hf-context-visible-slot-lr3e5-35k-r1/…` (local) | Distinct weights but all 16 predictions equal E343; honest bounded AgentV 0/4 — rejected, not ship |
 | Production HF ship | *(none yet)* | [HF Bucket `TKendrick/OpenUI`](https://huggingface.co/buckets/TKendrick/OpenUI) `checkpoints/<run_id>/` | Register here after first full HF sync + `--ship-gates` |
 
 **Load demo:** `python -m scripts.serve_playground` · **Full train sync:** set

@@ -1,0 +1,31 @@
+{
+  "id": "E344",
+  "date": "2026-07-17",
+  "status": "rejected_bounded_low_lr_adaptation",
+  "run_id": "e344-hf-context-visible-slot-lr3e5-35k-r1",
+  "checkpoint_sha256": "b2fe39324cb649f07b8d55208c9c7374116ed99aacff0c31f5f06a87e545b074",
+  "checkpoint_source": "resumed from e337-hf-context-e333-recipe-30k-local-r1",
+  "learning_rate": 0.00003,
+  "slot_contract_in_context": true,
+  "slot_contract_constrained_decode": true,
+  "component_plan_decode_weight": 0.0,
+  "steps": 737,
+  "seen_target_tokens": 35044,
+  "elapsed_wall_seconds": 115.65013614199779,
+  "hard_run_cap_seconds": 300,
+  "weighted_nll": 6.06742967697857,
+  "broad_nll": 6.100102512396373,
+  "best_weighted_nll": 5.75118110542205,
+  "loss_agentv": {"passed": 2, "total": 2},
+  "evaluation_agentv": {"passed": 0, "total": 4, "execution_errors": 0},
+  "checkpoint_sync": "disabled; bounded local validation",
+  "evaluation_scope": "honest smoke, held_out, adversarial, ood only; no RICO or ship claim",
+  "predictions_equal_to_e343": true,
+  "suites": {
+    "smoke": {"n": 3, "parse": 1.0, "fidelity": 0.1111111111111111, "structure": 0.315, "meaningful": 0.0, "recall": 0.0, "reward": 0.0},
+    "held_out": {"n": 5, "parse": 1.0, "fidelity": 0.13999999999999999, "structure": 0.28844, "meaningful": 0.0, "recall": 0.0, "reward": 0.0},
+    "adversarial": {"n": 4, "parse": 1.0, "fidelity": 0.14583333333333331, "structure": 0.198625, "meaningful": 0.0, "recall": 0.0, "reward": 0.0},
+    "ood": {"n": 4, "parse": 1.0, "fidelity": 0.21666666666666667, "structure": 0.23660000000000003, "meaningful": 0.0, "recall": 0.0, "reward": 0.0}
+  },
+  "verdict": "Reject. A 10x lower adaptation learning rate yields distinct weights but exactly reproduces E343 predictions and quality."
+}
