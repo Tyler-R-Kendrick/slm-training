@@ -1,0 +1,67 @@
+{
+  "issue": "SLM-94",
+  "branch": "agent/slm-94-cap3-05-equal-byte-ladder",
+  "date": "2026-07-18",
+  "status": "wiring evidence / plan-only dry-run",
+  "track": "CAP3",
+  "reference": "docs/design/iter-cap3-05-equal-byte-ladder-20260718.md",
+  "harness": "src/slm_training/harnesses/experiments/ladder.py",
+  "runner": "scripts/run_scaling_ladder.py",
+  "tests": "tests/test_harnesses/experiments/test_equal_byte_ladder.py",
+  "matrix_set": "cap3_v1",
+  "recipe": {
+    "device": "cpu",
+    "backend": "scratch",
+    "byte_budgets": [65536, 262144, 1048576],
+    "precision_formats": ["fp16", "int8", "int4", "ternary"],
+    "widths": [32, 64, 96, 128, 192],
+    "horizons": [1.0],
+    "depth_policy": "proportional",
+    "head_policy": "proportional",
+    "group_size": 128,
+    "tolerance": 0.05,
+    "suite_size_n": null,
+    "honesty_mode": "wiring-only",
+    "ship_gate_outcome": "n/a"
+  },
+  "manifest": "outputs/runs/cap3-05-equal-byte/equal_byte_plan_20260718225126.json",
+  "n_ladders": 12,
+  "feasible_points": [
+    {
+      "ladder_id": "equal_byte_262144_fp16_v1",
+      "point_id": "d64_h2_c1_dn2_t2000_x1_b262144_pfp16",
+      "d_model": 64,
+      "context_layers": 1,
+      "denoiser_layers": 2,
+      "precision_format": "fp16",
+      "byte_budget": 262144,
+      "actual_bytes": 265584,
+      "budget_delta": 0.01312255859375,
+      "status": "feasible"
+    },
+    {
+      "ladder_id": "equal_byte_1048576_int8_v1",
+      "point_id": "d128_h4_c2_dn4_t2000_x1_b1048576_pint8",
+      "d_model": 128,
+      "context_layers": 2,
+      "denoiser_layers": 4,
+      "precision_format": "int8",
+      "byte_budget": 1048576,
+      "actual_bytes": 1012704,
+      "budget_delta": -0.034210205078125,
+      "status": "feasible"
+    }
+  ],
+  "infeasible_count": 10,
+  "hypothesis": "CAP-H5",
+  "hypothesis_verdict": "unrun-at-scale",
+  "model_card_updated": false,
+  "checkpoint_created": false,
+  "verification": {
+    "unit_tests": "pytest tests/test_harnesses/experiments/test_equal_byte_ladder.py tests/test_harnesses/experiments/test_capacity_ladder.py tests/test_harnesses/experiments/test_ladder_promotion.py -q",
+    "unit_tests_result": "17 passed",
+    "repo_policy": "ok",
+    "check_changed": "passed",
+    "diff_check": "clean"
+  }
+}
