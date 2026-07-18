@@ -1,5 +1,9 @@
 # E489 E396 JSON-number and typed-any bounded evaluation — 2026-07-18
 
+> Provenance correction: this is branch-only diagnostic evidence. E496 proved
+> that current `main` cannot load E396 because the experimental slot-component
+> head is absent.
+
 E489 freshly evaluates all four bounded suites under E487's exact generalized
 decoder policy. It uses the unchanged E396 checkpoint and E451 corpus, CPU,
 local HF context, 320-token grammar LTR, component-plan weight 2,
