@@ -1,0 +1,77 @@
+{
+  "id": "E347",
+  "date": "2026-07-17",
+  "status": "retained_bounded_decode_policy",
+  "run_id": "e347-hf-context-best-nll-content2-honest-slot-r1",
+  "checkpoint_sha256": "6f0ecf7cce2ebc7c61f133c13456ac91bcd4861bd3e2f4f70a3a72473c211985",
+  "checkpoint_source": "e337-hf-context-e333-recipe-30k-local-r1/checkpoints/best_weighted_nll.pt",
+  "slot_contract_in_context": true,
+  "slot_contract_constrained_decode": true,
+  "honest_slot_contract": true,
+  "decode_min_content": 2,
+  "component_plan_decode_weight": 0.0,
+  "elapsed_wall_seconds": 22.9042,
+  "hard_run_cap_seconds": 300,
+  "evaluation_agentv": {
+    "passed": 3,
+    "total": 4,
+    "execution_errors": 0,
+    "passed_suites": [
+      "smoke",
+      "adversarial",
+      "ood"
+    ],
+    "failed_suites": [
+      "held_out"
+    ]
+  },
+  "checkpoint_sync": "disabled; eval-only bounded local validation",
+  "evaluation_scope": "honest smoke, held_out, adversarial, ood only; no RICO or ship claim",
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse": 1.0,
+      "fidelity": 0.8333333333333334,
+      "structure": 0.6966666666666667,
+      "meaningful": 0.6666666666666666,
+      "recall": 0.5,
+      "reward": 0.6406666666666666,
+      "slot_component_applications": 4,
+      "slot_component_choice_changes": 2
+    },
+    "held_out": {
+      "n": 5,
+      "parse": 1.0,
+      "fidelity": 0.6866666666666668,
+      "structure": 0.43752,
+      "meaningful": 0.4,
+      "recall": 0.2,
+      "reward": 0.38439999999999996,
+      "slot_component_applications": 9,
+      "slot_component_choice_changes": 3
+    },
+    "adversarial": {
+      "n": 4,
+      "parse": 1.0,
+      "fidelity": 0.7083333333333333,
+      "structure": 0.463125,
+      "meaningful": 0.75,
+      "recall": 0.5,
+      "reward": 0.65825,
+      "slot_component_applications": 7,
+      "slot_component_choice_changes": 0
+    },
+    "ood": {
+      "n": 4,
+      "parse": 1.0,
+      "fidelity": 0.5166666666666666,
+      "structure": 0.523475,
+      "meaningful": 0.75,
+      "recall": 0.5,
+      "reward": 0.60075,
+      "slot_component_applications": 8,
+      "slot_component_choice_changes": 3
+    }
+  },
+  "verdict": "Retain over E346 as the strongest bounded HF-context decode policy. Held-out component recall remains below its gate; this is not a promotion or ship result."
+}

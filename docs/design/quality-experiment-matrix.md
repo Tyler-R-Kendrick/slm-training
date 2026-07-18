@@ -2242,6 +2242,13 @@ checkpoint or ship result; smoke and held-out component recall still fail.
 See [results](iter-e346-hf-context-best-nll-content-floor-20260717.md) and
 [JSON](hf-context-best-nll-content-floor-results-iter-e346-20260717.json).
 
+E347 raises the floor to two content components. Smoke component recall rises
+to 0.50 and OOD meaningful/recall/reward to 0.75/0.50/0.6008; AgentV passes
+3/4 suites. Retain over E346, but held-out recall remains 0.20 versus its 0.30
+gate, and no RICO result exists. See
+[results](iter-e347-hf-context-best-nll-content-floor2-20260717.md) and
+[JSON](hf-context-best-nll-content-floor2-results-iter-e347-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
