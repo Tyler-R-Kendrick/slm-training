@@ -2485,6 +2485,14 @@ continuation. See
 [results](iter-e409-e410-25k-continuation-boundary-20260718.md) and
 [JSON](iter-e409-e410-25k-continuation-boundary-20260718.json).
 
+E411 narrows the power-zero boundary to only 19 resumed steps / 23,019 target
+tokens. E412 already fails smoke meaningful/recall at 0.3333/0.1667, although
+held recall remains 0.4833. Quality can therefore collapse almost immediately
+after E396. Reject E411 and require an immediate bounded gate for any future
+continuation. See
+[results](iter-e411-e412-23k-continuation-boundary-20260718.md) and
+[JSON](iter-e411-e412-23k-continuation-boundary-20260718.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
