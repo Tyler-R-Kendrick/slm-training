@@ -1,0 +1,22 @@
+{
+  "id": "E341",
+  "date": "2026-07-17",
+  "status": "retain_policy_signal_not_promotable",
+  "run_id": "e341-hf-context-honest-slot-contract-bounded-r1",
+  "checkpoint_source": "e337-hf-context-e333-recipe-30k-local-r1",
+  "checkpoint_sha256": "6f3c1fda0048dfe85ed254edf6adb0801b872d1ad8acfed16443309af959c9f6",
+  "component_plan_decode_weight": 0.0,
+  "slot_contract_in_context": true,
+  "slot_contract_constrained_decode": true,
+  "honest_slot_contract": true,
+  "hard_run_cap_seconds": 300,
+  "evaluation_scope": "smoke, held_out, adversarial, ood only; no RICO or ship claim",
+  "agentv": {"passed": 0, "total": 4, "execution_errors": 0},
+  "suites": {
+    "smoke": {"n": 3, "parse": 1.0, "fidelity": 0.6388888888888888, "structure": 0.3386, "meaningful": 0.0, "recall": 0.0, "reward": 0.0},
+    "held_out": {"n": 5, "parse": 0.8, "fidelity": 0.27, "structure": 0.16190000000000002, "meaningful": 0.0, "recall": 0.0, "reward": 0.0},
+    "adversarial": {"n": 4, "parse": 1.0, "fidelity": 0.14583333333333331, "structure": 0.289875, "meaningful": 0.0, "recall": 0.0, "reward": 0.0},
+    "ood": {"n": 4, "parse": 1.0, "fidelity": 0.21666666666666667, "structure": 0.18835, "meaningful": 0.5, "recall": 0.25, "reward": 0.3435}
+  },
+  "verdict": "Retain the honest visible-slot policy as a real lever, but do not promote: AgentV is 0/4 and held/adversarial semantics remain zero."
+}

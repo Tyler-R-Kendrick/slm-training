@@ -2200,6 +2200,13 @@ Reject forced termination as the missing mechanism. See
 [results](iter-e340-hf-context-content1-20260717.md) and
 [JSON](hf-context-content1-results-iter-e340-20260717.json).
 
+E341 enables only the honest visible-slot contract on E338. Smoke fidelity
+rises to 0.6389 and OOD recovers meaningful/recall/reward
+0.50/0.25/0.3435—the first bounded HF-context semantic signal—but AgentV is
+still 0/4 and held/adversarial semantics remain zero. Retain the policy lever,
+not the checkpoint. See [results](iter-e341-hf-context-honest-slot-20260717.md)
+and [JSON](hf-context-honest-slot-results-iter-e341-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
