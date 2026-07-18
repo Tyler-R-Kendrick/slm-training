@@ -2577,6 +2577,16 @@ is proven, but the active heads themselves overfit. No full RICO, sync, or
 promotion. See
 [`iter-e431-e433-auxiliary-only-continuation-20260718.md`](iter-e431-e433-auxiliary-only-continuation-20260718.md).
 
+E434 is a protocol-invalid low-LR auxiliary-only attempt because slot prompt
+context and the lexeme prior drift from E396/E431; it is not evaluated. E435
+corrects those settings and changes only auxiliary LR from `3e-4` to `3e-5`.
+E436 passes bounded AgentV 4/4 and improves adversarial structure/recall to
+0.6762/0.7500. E437 nearly preserves E396 on matched RICO rows 336–384, but
+structure/recall are still slightly lower at 0.6386/0.8889 versus
+0.6401/0.8993. Reject E435: near-preservation is not an improvement, and
+matched RICO remains authoritative. See
+[`iter-e434-e437-auxiliary-only-low-lr-20260718.md`](iter-e434-e437-auxiliary-only-low-lr-20260718.md).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
