@@ -137,6 +137,7 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 | E413 one-step continuation control | `e413-component-plan-one-step-control-r1` | CPU frozen SmolLM2 full-state continuation | `outputs/runs/e413-component-plan-one-step-control-r1/checkpoints/last.pt` (local) | One resumed step / 22,074 tokens; bounded AgentV 4/4 and E396 held metrics retained, but no selection benefit or full RICO — **control only, not ship** ([results](design/iter-e413-e414-one-step-continuation-20260718.md)) |
 | E415 ten-step continuation rejection | `e415-component-plan-ten-step-control-r1` | CPU frozen SmolLM2 full-state continuation | `outputs/runs/e415-component-plan-ten-step-control-r1/checkpoints/last.pt` (local) | Ten resumed steps / 22,561 tokens; held recall improves to 0.5833 but smoke collapses and AgentV is 3/4 — **rejected, not ship** ([results](design/iter-e415-e416-ten-step-boundary-20260718.md)) |
 | E417 five-step continuation rejection | `e417-component-plan-five-step-control-r1` | CPU frozen SmolLM2 full-state continuation | `outputs/runs/e417-component-plan-five-step-control-r1/checkpoints/last.pt` (local) | Five resumed steps / 22,277 tokens; smoke recall 0.3333 narrowly misses its floor despite held recall 0.5833 — **rejected, not ship** ([results](design/iter-e417-e418-five-step-boundary-20260718.md)) |
+| E419 three-step continuation rejection | `e419-component-plan-three-step-control-r1` | CPU frozen SmolLM2 full-state continuation | `outputs/runs/e419-component-plan-three-step-control-r1/checkpoints/last.pt` (local) | Three resumed steps / 22,197 tokens; smoke recall 0.3333 narrowly misses its floor — **rejected, not ship** ([results](design/iter-e419-e420-three-step-boundary-20260718.md)) |
 | Production HF ship | — | — | `hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/` | **None registered yet** — fill this row after the first full HF sync |
 
 Update the table in place when a checkpoint is written or superseded. Keep
@@ -488,6 +489,10 @@ Leakage: structural fingerprints + train/test isolation
 | `held_out` (E417/E418 five-step continuation) | 5 | 1.0 | 1.0 | 0.6633 | 0.7814 | Yes for bounded suite; recall 0.5833 |
 | `adversarial` (E417/E418 five-step continuation) | 4 | 1.0 | 1.0 | 0.6304 | 0.7238 | Yes for bounded suite; full RICO missing |
 | `ood` (E417/E418 five-step continuation) | 4 | 1.0 | 1.0 | 0.5352 | 0.7335 | Yes for bounded suite; full RICO missing |
+| `smoke` (E419/E420 three-step continuation) | 3 | 1.0 | 1.0 | 0.4628 | 0.6607 | No — recall 0.3333 below 0.35 |
+| `held_out` (E419/E420 three-step continuation) | 5 | 1.0 | 1.0 | 0.6633 | 0.7814 | Yes for bounded suite; recall 0.5833 |
+| `adversarial` (E419/E420 three-step continuation) | 4 | 1.0 | 1.0 | 0.6304 | 0.7238 | Yes for bounded suite; full RICO missing |
+| `ood` (E419/E420 three-step continuation) | 4 | 1.0 | 1.0 | 0.5352 | 0.7335 | Yes for bounded suite; full RICO missing |
 | `smoke` (E368/E376 structural policy) | 3 | 1.0 | 1.0 | 0.5600 | 0.6567 | Yes for bounded suite; no global ship |
 | `held_out` (E368/E376 structural policy) | 5 | 1.0 | 1.0 | 0.5136 | 0.7844 | Yes for bounded suite; no global ship |
 | `adversarial` (E368/E376 structural policy) | 4 | 1.0 | 1.0 | 0.5546 | 0.7358 | Yes for bounded suite; no global ship |
@@ -853,6 +858,7 @@ suites because they contain no scope metadata. Evidence:
 | 2026-07-18 | `e413-component-plan-one-step-control-r1` (E413 one-step control) | `outputs/runs/e413-component-plan-one-step-control-r1/` (local) | Full-state resume from E396; balance power zero; 428 cumulative CPU steps / 22,074 target tokens in 7.5s; SHA `b3cca00c06337d25fd908a3168b295a05b0b1f4f602dcd034f847866a8da66cb`; inherited best NLL 5.8091; explicit no-sync | Bounded AgentV 4/4; E396 held metrics retained, full RICO absent; boundary control only |
 | 2026-07-18 | `e415-component-plan-ten-step-control-r1` (E415 ten-step boundary) | `outputs/runs/e415-component-plan-ten-step-control-r1/` (local) | Full-state resume from E396; balance power zero; 437 cumulative CPU steps / 22,561 target tokens in 14.2s; SHA `99e3b6029e352e1b4066175733b3bb24e3778227d7879c14f01376d75b0d1fa5`; inherited best NLL 5.8091; explicit no-sync | Held recall 0.5833, but smoke collapses and AgentV is 3/4; rejected |
 | 2026-07-18 | `e417-component-plan-five-step-control-r1` (E417 five-step boundary) | `outputs/runs/e417-component-plan-five-step-control-r1/` (local) | Full-state resume from E396; balance power zero; 432 cumulative CPU steps / 22,277 target tokens in 10.1s; SHA `e74f46f0e45414ca3f30e89037a1676ecbce18346e898620ca01e859d6c6d177`; inherited best NLL 5.8091; explicit no-sync | Smoke recall 0.3333 narrowly fails; held recall 0.5833; rejected |
+| 2026-07-18 | `e419-component-plan-three-step-control-r1` (E419 three-step boundary) | `outputs/runs/e419-component-plan-three-step-control-r1/` (local) | Full-state resume from E396; balance power zero; 430 cumulative CPU steps / 22,197 target tokens in 9.4s; SHA `0b3c3bc7d04d5ffdbb477b0f8e2c36882399e7e1bd8bfbf8a3138c47cb542093`; inherited best NLL 5.8091; explicit no-sync | Smoke recall 0.3333 narrowly fails; rejected |
 
 Append a row for every new or replaced checkpoint. Do not delete history.
 

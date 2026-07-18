@@ -2514,6 +2514,13 @@ and AgentV is 3/4. Reject E417 and narrow the gate boundary to 2–4 steps. See
 [results](iter-e417-e418-five-step-boundary-20260718.md) and
 [JSON](iter-e417-e418-five-step-boundary-20260718.json).
 
+E419 tests three resumed steps / 22,197 target tokens. E420 reproduces the
+five-step result: smoke meaningful 0.6667, recall 0.3333, AgentV 3/4. Reject
+E419; only the two-step checkpoint remains between the safe one-step and
+failed three-step points. See
+[results](iter-e419-e420-three-step-boundary-20260718.md) and
+[JSON](iter-e419-e420-three-step-boundary-20260718.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

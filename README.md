@@ -142,6 +142,7 @@ summary and the full card whenever a checkpoint is created or promoted.
 | E413 one-step continuation control | `e413-component-plan-one-step-control-r1/last.pt` | `outputs/runs/e413-component-plan-one-step-control-r1/…` (local) | One resumed step / 22,074 tokens; bounded AgentV 4/4 and E396 held metrics retained, but no selection benefit or full RICO — control only, not ship |
 | E415 ten-step continuation rejection | `e415-component-plan-ten-step-control-r1/last.pt` | `outputs/runs/e415-component-plan-ten-step-control-r1/…` (local) | Ten resumed steps / 22,561 tokens; held recall improves to 0.5833 but smoke collapses and AgentV is 3/4 — rejected, not ship |
 | E417 five-step continuation rejection | `e417-component-plan-five-step-control-r1/last.pt` | `outputs/runs/e417-component-plan-five-step-control-r1/…` (local) | Five resumed steps / 22,277 tokens; smoke recall 0.3333 narrowly misses its floor despite held recall 0.5833 — rejected, not ship |
+| E419 three-step continuation rejection | `e419-component-plan-three-step-control-r1/last.pt` | `outputs/runs/e419-component-plan-three-step-control-r1/…` (local) | Three resumed steps / 22,197 tokens; smoke recall 0.3333 narrowly misses its floor — rejected, not ship |
 | Production HF ship | *(none yet)* | [HF Bucket `TKendrick/OpenUI`](https://huggingface.co/buckets/TKendrick/OpenUI) `checkpoints/<run_id>/` | Register here after first full HF sync + `--ship-gates` |
 
 **Load demo:** `python -m scripts.serve_playground` · **Full train sync:** set

@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "run_id": "e420-component-plan-three-step-control-bounded-r1",
+  "date": "2026-07-18",
+  "status": "Rejected: smoke recall misses floor after three resumed steps",
+  "checkpoint": {
+    "id": "E419",
+    "run_id": "e419-component-plan-three-step-control-r1",
+    "path": "outputs/runs/e419-component-plan-three-step-control-r1/checkpoints/last.pt",
+    "sha256": "0b3c3bc7d04d5ffdbb477b0f8e2c36882399e7e1bd8bfbf8a3138c47cb542093",
+    "sync": "explicit_no_sync",
+    "promoted": false,
+    "rejected": true
+  },
+  "train": {
+    "steps": 430,
+    "additional_steps": 3,
+    "seen_target_tokens": 22197,
+    "target_token_budget": 22150,
+    "elapsed_wall_seconds": 9.422397252994415,
+    "max_wall_minutes": 4.5,
+    "stopped_on": "token_budget",
+    "record_count": 998,
+    "data_manifest_sha": "a4f212a3444d0f219fe1b3604f70929fe1a1b91d4fdc11a73167cb74c55b6a51",
+    "resumed_from": "outputs/runs/e396-balanced-type-head-continuation-r1/checkpoints/last_full_state.pt",
+    "component_plan_class_balance_power": 0.0,
+    "best_weighted_nll": 5.809070931803047,
+    "fresh_loss_eval": false
+  },
+  "suites": {
+    "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.6666666666666666, "placeholder_fidelity": 1.0, "structural_similarity": 0.4627666666666666, "component_type_recall": 0.3333333333333333, "reward_score": 0.6606666666666666},
+    "held_out": {"n": 5, "parse_rate": 1.0, "meaningful_program_rate": 0.8, "placeholder_fidelity": 1.0, "structural_similarity": 0.66328, "component_type_recall": 0.5833333333333333, "reward_score": 0.7813999999999999},
+    "adversarial": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.75, "placeholder_fidelity": 1.0, "structural_similarity": 0.63035, "component_type_recall": 0.625, "reward_score": 0.72375},
+    "ood": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.75, "placeholder_fidelity": 1.0, "structural_similarity": 0.5352250000000001, "component_type_recall": 0.6041666666666666, "reward_score": 0.7334999999999999}
+  },
+  "ship_gates": {"pass": false, "failures": ["smoke:component_type_recall actual=0.3333333333333333 need>=0.35", "rico_held:missing_suite"]},
+  "agentv": {"format": "AgentEvals JSONL", "sdk": "@agentv/core", "passed": 3, "total": 4, "execution_errors": 0},
+  "timing_policy": {"external_timeout_seconds": 290, "external_kill_after_seconds": 10, "training_internal_max_wall_minutes": 4.5, "timed_out_runs_used_as_evidence": 0},
+  "verdict": "reject E419; test two-step checkpoint to resolve exact transition"
+}
