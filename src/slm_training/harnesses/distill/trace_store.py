@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterator
 
-TRACE_VERSION = 2
+TRACE_VERSION = 3
 
 # Config keys that change decode behavior (used for the decode-config hash).
 _DECODE_KEYS = (
@@ -109,6 +109,9 @@ class DecodeTraceRecorder:
         self.repair_commit_count = 0
         self.remask_count = 0
         self._depth = 0
+        # VSS1-04: mode-serialized solver certificates + aggregate counters the
+        # replay validator needs (None until record_solver is called).
+        self.solver: dict[str, Any] | None = None
 
     # ── model-side hooks ─────────────────────────────────────────────────
 
@@ -155,6 +158,16 @@ class DecodeTraceRecorder:
     def event(self, kind: str, **payload: Any) -> None:
         self.events.append({"kind": kind, "depth": self._depth, **payload})
 
+    def record_solver(self, solver_block: dict[str, Any]) -> None:
+        """Attach the VSS1-04 solver certificate/counter block for replay.
+
+        The typed solver transition events themselves are appended via
+        ``event("solver_state"|...)``; this stores the mode-serialized (bounded)
+        certificates and aggregate counters the replay validator cross-checks.
+        Overwrites any prior block (one solver run per decode trace).
+        """
+        self.solver = dict(solver_block)
+
     def end(self, *, canvas: list[int] | None = None, text: str | None = None) -> None:
         self._depth = max(0, self._depth - 1)
         if self._depth > 0:
@@ -178,7 +191,7 @@ class DecodeTraceRecorder:
         final = dict(self.final or {})
         if final_text is not None:
             final["text"] = final_text
-        return {
+        trace = {
             "version": TRACE_VERSION,
             "meta": {**self.meta, **meta},
             "steps": self.steps,
@@ -195,6 +208,11 @@ class DecodeTraceRecorder:
             "labels": labels or {},
             "recorded_at": datetime.now(timezone.utc).isoformat(),
         }
+        if self.solver is not None:
+            # VSS1-04 solver certificate/counter sidecar; absent on non-solver
+            # traces so historical v1/v2 readers are unaffected.
+            trace["solver"] = self.solver
+        return trace
 
 
 class TraceStore:
@@ -383,6 +401,28 @@ def replay_violations(trace: dict[str, Any]) -> list[str]:
     final = (trace.get("final") or {}).get("canvas")
     if steps and final is None:
         violations.append("trace has steps but no final canvas")
+
+    # VSS1-04: validate any solver-transition events via the solver replay
+    # checker. Decode-only traces carry no such events, so this is a no-op there
+    # and historical v1/v2 traces are unaffected.
+    from slm_training.dsl.solver.replay import (
+        SOLVER_EVENT_KINDS,
+        solver_replay_violations,
+    )
+
+    solver_events = [
+        e for e in trace.get("events", []) if e.get("kind") in SOLVER_EVENT_KINDS
+    ]
+    if solver_events:
+        solver = trace.get("solver") or {}
+        violations.extend(
+            solver_replay_violations(
+                solver_events,
+                certificates=solver.get("certificates"),
+                certificate_mode=solver.get("certificate_mode", "summary"),
+                counters=solver.get("counters"),
+            )
+        )
     return violations
 
 

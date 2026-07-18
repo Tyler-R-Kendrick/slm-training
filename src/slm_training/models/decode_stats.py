@@ -93,6 +93,26 @@ class DecodeStats:
     constraint_graph_edges: int = 0
     completion_bound_known: int = 0
     completion_bound_unknown: int = 0
+    # VSS1-04 (SLM-64): verified-solver decode work metrics. Zero on every
+    # historical/default path (solver disabled); solver wall time is separated
+    # from denoiser_ms/projection_ms. Names are stable and documented in
+    # docs/design/telemetry.md.
+    solver_ms: float = 0.0
+    solver_enabled: int = 0
+    solver_closure_passes: int = 0
+    solver_support_queries: int = 0
+    solver_support_cache_hits: int = 0
+    solver_supported: int = 0
+    solver_unsupported: int = 0
+    solver_unknown: int = 0
+    solver_certified_removed: int = 0
+    solver_decisions: int = 0
+    solver_backtracks: int = 0
+    solver_nogoods: int = 0
+    solver_expanded_nodes: int = 0
+    solver_verifier_calls: int = 0
+    solver_certificate_replay_failures: int = 0
+    solver_terminal_status: str = ""
     constrained_dead_ends: int = 0
     constrained_dead_end_last_position: int = -1
     constrained_dead_end_forced_rank: int = -1
@@ -247,6 +267,21 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "constraint_graph_edges",
         "completion_bound_known",
         "completion_bound_unknown",
+        "solver_ms",
+        "solver_enabled",
+        "solver_closure_passes",
+        "solver_support_queries",
+        "solver_support_cache_hits",
+        "solver_supported",
+        "solver_unsupported",
+        "solver_unknown",
+        "solver_certified_removed",
+        "solver_decisions",
+        "solver_backtracks",
+        "solver_nogoods",
+        "solver_expanded_nodes",
+        "solver_verifier_calls",
+        "solver_certificate_replay_failures",
     ]
     out: dict[str, Any] = {"n": len(rows)}
     for key in keys:

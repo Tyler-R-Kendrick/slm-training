@@ -3744,6 +3744,7 @@ class TwoTowerModel(nn.Module):
             OpenUIWellFormedVerifier,
         )
         from slm_training.dsl.solver.state import SolverBounds
+        from slm_training.models.decode_stats import get_active_stats, timed_ms
         from slm_training.models.dsl_tokenizer import is_dsl_native_tokenizer
 
         if not is_dsl_native_tokenizer(self.tokenizer):
@@ -3772,11 +3773,69 @@ class TwoTowerModel(nn.Module):
         )
         provider = EnumerativeSupportProvider(expander, OpenUIWellFormedVerifier())
         policy = str(getattr(self.config, "solver_unknown_policy", "keep_and_rank"))
-        pruned, _result = solver_prune(
-            forest, prefix, provider, pack_id="openui", constraint_version=cv,
-            bounds=bounds, unknown_policy=policy, state=expander.root_state(), cache={},
-        )
+        root_state = expander.root_state()
+        certificate_store: dict = {}
+        stats = get_active_stats()
+        # Solver wall time is separated from denoiser_ms/projection_ms (VSS1-04).
+        with timed_ms(stats, "solver_ms"):
+            pruned, result = solver_prune(
+                forest, prefix, provider, pack_id="openui", constraint_version=cv,
+                bounds=bounds, unknown_policy=policy, state=root_state, cache={},
+                certificate_store=certificate_store,
+            )
+        if result is not None:
+            self._record_solver_metrics(
+                result, root_state, certificate_store, stats
+            )
         return pruned
+
+    def _record_solver_metrics(self, result, root_state, certificate_store, stats):
+        """VSS1-04: fold solver work into decode stats and, when a trace recorder
+        is attached, emit replayable solver-transition events + a bounded
+        certificate/counter sidecar. Counters ride the existing DecodeStats
+        envelope; nothing is emitted when neither stats nor a recorder is active.
+        """
+        from slm_training.dsl.solver.replay import (
+            SOLVER_TRACE_SCHEMA_VERSION,
+            closure_status,
+            serialize_certificates,
+            solver_events_from_closure,
+            solver_trace_counters,
+        )
+
+        if stats is not None:
+            counters = result.counters
+            stats.solver_enabled = 1
+            stats.solver_closure_passes += counters.passes
+            stats.solver_support_queries += counters.support_queries
+            stats.solver_support_cache_hits += counters.cache_hits
+            stats.solver_supported += counters.supported
+            stats.solver_unsupported += counters.unsupported
+            stats.solver_unknown += counters.unknown
+            stats.solver_certified_removed += counters.candidates_removed
+            stats.solver_expanded_nodes += counters.expanded_nodes
+            stats.solver_verifier_calls += counters.verifier_calls
+            stats.solver_terminal_status = closure_status(result)
+
+        recorder = getattr(self, "trace_recorder", None)
+        if recorder is None:
+            return
+        mode = str(getattr(self.config, "solver_certificate_mode", "summary"))
+        events = solver_events_from_closure(
+            result, root_state, certificate_mode=mode
+        )
+        for event in events:
+            kind = event["kind"]
+            payload = {key: value for key, value in event.items() if key != "kind"}
+            recorder.event(kind, **payload)
+        recorder.record_solver(
+            {
+                "schema_version": SOLVER_TRACE_SCHEMA_VERSION,
+                "certificate_mode": mode,
+                "certificates": serialize_certificates(certificate_store, mode),
+                "counters": solver_trace_counters(events),
+            }
+        )
 
     def _compiler_ltr_decode_one(
         self,
