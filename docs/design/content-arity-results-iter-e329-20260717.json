@@ -1,0 +1,15 @@
+{
+  "id": "E329",
+  "date": "2026-07-17",
+  "status": "negative_eval_only",
+  "checkpoint_sha256": "eb5683cf13231cae0f25b07fd66187c7e4534cb415e709093adeeb5109f363a8",
+  "agentv": {"passed": 4, "total": 5},
+  "failures": ["smoke component recall 0.3333 < 0.35"],
+  "deltas_vs_e326": {
+    "smoke": "unchanged",
+    "held_out_recall": "0.40 -> 0.30",
+    "held_out_structure": "0.5458 -> 0.4758",
+    "other_suite_headlines": "unchanged"
+  },
+  "verdict": "Keep the truthful tokenizer content-arity API, but make multi-slot score averaging opt-in because it degrades the strongest checkpoint."
+}

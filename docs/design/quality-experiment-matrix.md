@@ -2125,6 +2125,12 @@ ordered span prior. Smoke is unchanged and held-out recall regresses
 fix. See [results](iter-e328-span-slot-prior-20260717.md) and
 [JSON](span-slot-prior-results-iter-e328-20260717.json).
 
+E329 isolates corrected content-arity averaging on the frozen E326 checkpoint
+and exactly reproduces E328, proving the span prior had no effect. Retain the
+truthful tokenizer API but keep averaging opt-in to preserve E326 quality. See
+[results](iter-e329-content-arity-fix-20260717.md) and
+[JSON](content-arity-results-iter-e329-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
