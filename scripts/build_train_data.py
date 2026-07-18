@@ -310,6 +310,17 @@ def main(argv: list[str] | None = None) -> int:
         default=Path("src/slm_training/resources/data/train"),
         help="Destination root for the published snapshot.",
     )
+    parser.add_argument(
+        "--register-lineage",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Register the built dataset as a lineage DataSnapshot (idempotent).",
+    )
+    parser.add_argument(
+        "--lineage-root",
+        type=Path,
+        default=Path("outputs/lineage"),
+    )
     args = parser.parse_args(argv)
 
     config = TrainDataConfig(
@@ -395,10 +406,26 @@ def main(argv: list[str] | None = None) -> int:
     print(json.dumps(result["stats"], indent=2))
     print(f"wrote {result['output_dir']}")
     print(f"content_fingerprint={result['manifest'].get('content_fingerprint')}")
+    if args.register_lineage:
+        snapshot, snapshot_path, created = _register_lineage(
+            args.lineage_root, output_dir, kind="train"
+        )
+        state = "registered" if created else "already-registered"
+        print(f"lineage_snapshot={snapshot.sha} ({state}: {snapshot_path})")
     if args.publish:
         published = _publish(args.version, args.output_root, args.publish_root)
         print(f"published {published}")
     return 0
+
+
+def _register_lineage(lineage_root: Path, dataset_dir: Path, *, kind: str):
+    """Bind the built dataset into the lineage store (content-fingerprint keyed)."""
+    from slm_training.lineage.data_cycle import register_dataset_snapshot
+    from slm_training.lineage.store import LineageStore
+
+    return register_dataset_snapshot(
+        LineageStore(lineage_root), dataset_dir=dataset_dir, kind=kind
+    )
 
 
 def _publish(version: str, output_root: Path, publish_root: Path) -> Path:
