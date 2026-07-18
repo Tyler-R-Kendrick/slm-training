@@ -345,6 +345,40 @@ removal/keep/bottom/coverage semantics are pinned Torch-free by
 or experiment ran; the enabled path is unmeasured and this makes no correctness,
 readiness, speed, or ship claim.**
 
+## Implemented trace + replay (VSS1-04 / SLM-64)
+
+[`dsl/solver/replay.py`](../../src/slm_training/dsl/solver/replay.py) turns the
+solver artifacts into typed, replayable events recorded inside the existing
+decode trace (`DecodeTraceRecorder.events`, schema bumped to `version = 3`), and
+`solver_replay_violations` validates them. Event kinds: `solver_state`,
+`support_result`, `certified_deduction`, `decision`, `backtrack`, `nogood`,
+`solver_terminal`. Exact-closure decode (`models/twotower.py`
+`_record_solver_metrics`, gated on an attached recorder) emits the closure subset;
+the reversible controller additionally emits decisions/backtracks/nogoods. A
+bounded `solver` sidecar carries `{schema_version, certificate_mode, certificates,
+counters}`; `solver_certificate_mode` gates certificate detail (`none` counters +
+honest status only, `summary` compact descriptors, `full` replay material). Only
+token/path ids and SHA-256 digests are stored — never raw region/user text.
+
+The replay validator (invoked by `harnesses/distill/trace_store.py`
+`replay_violations`) checks ten invariants: fingerprint lineage; certified
+deductions remove only live values and — in `full` mode — cite a present,
+digest-consistent certificate (tamper detection, using the same canonical-JSON
+digest as `SupportCertificate.digest`); `unknown` never removes; decisions select
+one live value and record the rest; backtracks restore a recorded state/level;
+a `nogood` is never a certified deduction; a `solved` terminal carries a verifier
+report; `certified_unsat` is impossible once any `unknown`/budget/truncation
+appears; event counts match the sidecar counters; truncated snapshots are
+reported non-replayable. Solver work metrics (`solver_ms` separated from
+denoiser/projection, plus tri-state and certified-removal counters) ride the
+existing `DecodeStats` → `metrics["decode_stats"]` envelope, zero on the default
+path. Closure never reports `solved` (it prunes; it does not materialize a
+verifier-accepted terminal). Pinned by `tests/test_dsl/test_solver_replay.py`
+(validator + closure round-trip + tamper) and
+`tests/test_harnesses/distill/test_solver_trace.py` (recorder capture, clean
+replay, counters, historical compat). **No train/eval/benchmark/checkpoint ran;
+this makes no solver-quality, correctness, speed, or ship claim.**
+
 ## Reference support semantics
 
 | Verdict | Requirement | Removal permitted? |
@@ -612,3 +646,25 @@ makes **no correctness, speed, or ship claim**. Verified: `python -m pytest
 tests/test_models/test_solver_decode_integration.py
 tests/test_models/test_compiler_decode.py tests/test_dsl/test_solver_decode.py
 tests/test_dsl/test_solver_controller.py -q` and `python -m scripts.repo_policy`.
+
+2026-07-18 — VSS1-04 / SLM-64 makes solver transitions replayable and measured
+without a second trace store (`dsl/solver/replay.py` event builders +
+`solver_replay_violations`; decode trace schema `version = 3` with backward-compat
+v1/v2 readers). `models/twotower._record_solver_metrics` (gated on an attached
+`DecodeTraceRecorder`) emits `solver_state`/`support_result`/`certified_deduction`/
+`solver_terminal` for closure decode; a bounded `solver` sidecar carries
+mode-serialized certificates + counters (`none`/`summary`/`full`); solver work
+counters + `solver_ms` ride the existing `DecodeStats` → `metrics["decode_stats"]`
+envelope (zero on the default path). `harnesses/distill/trace_store.replay_violations`
+now also runs the ten solver invariants (fingerprint lineage, live-only removals +
+`full`-mode certificate tamper detection, unknown-never-removes, single-live
+decisions, backtrack lineage, nogood-not-a-deduction, solved-has-report,
+certified-unsat purity, counter agreement, truncation honesty). Only ids/digests
+are stored — no raw region/user text; closure never claims `solved`. Pinned by
+`tests/test_dsl/test_solver_replay.py` and
+`tests/test_harnesses/distill/test_solver_trace.py`. No train/eval/benchmark/
+checkpoint ran; **no solver-quality or ship claim**. Verified: `python -m pytest
+tests/test_dsl/test_solver_replay.py tests/test_harnesses/distill/test_solver_trace.py
+tests/test_models/test_decode_stats.py tests/test_models/test_trace_store.py
+tests/test_harnesses/distill/test_meta_traces.py -q` and
+`python -m scripts.repo_policy`.
