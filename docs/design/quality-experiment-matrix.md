@@ -2188,6 +2188,12 @@ zero everywhere; AgentV stays 0/4. Reject the decode ablation. See
 [results](iter-e338-hf-context-plan-off-20260717.md) and
 [JSON](hf-context-plan-off-results-iter-e338-20260717.json).
 
+E339 adds the automatic minimum-content floor to E338 and exactly reproduces
+its aggregate quality. Without an active inventory prediction, the automatic
+policy derives no positive floor. Reject the no-effect arm. See
+[results](iter-e339-hf-context-content-floor-20260717.md) and
+[JSON](hf-context-content-floor-results-iter-e339-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
