@@ -141,13 +141,23 @@ def evaluate_ship_gates(
             # quality. New scoreboards persist both metrics explicitly.
             slim["meaningful_program_rate"] = metrics.get("parse_rate")
         actual[suite_name] = slim
-        fallback_count = int(metrics.get("fallback_count") or 0)
+        fallback_count = metrics.get("fallback_count")
         fallback_key = f"{suite_name}:certified_fallback"
-        checks[fallback_key] = fallback_count == 0
-        if fallback_count:
+        if fallback_count is None:
+            # Unmeasured must never certify: a board without fallback telemetry
+            # cannot claim learned (fallback-free) quality.
+            checks[fallback_key] = False
             failures.append(
-                f"{fallback_key} actual={fallback_count} need=0 for learned-quality claims"
+                f"{fallback_key} unmeasured (fallback_count absent) need=0 "
+                "for learned-quality claims"
             )
+        else:
+            fallback_count = int(fallback_count)
+            checks[fallback_key] = fallback_count == 0
+            if fallback_count:
+                failures.append(
+                    f"{fallback_key} actual={fallback_count} need=0 for learned-quality claims"
+                )
         for metric, minimum in mins.items():
             key = f"{suite_name}:{metric}"
             value = slim.get(metric, metrics.get(metric))

@@ -193,6 +193,9 @@ def _full_suite_metrics(**overrides: float) -> dict[str, dict[str, float]]:
             "component_type_recall": 0.9,
             "placeholder_fidelity": 0.9,
             "reward_score": 0.9,
+            # Measured (zero) fallback telemetry: certified_fallback requires
+            # evidence, not absence.
+            "fallback_count": 0,
         }
         for suite in DEFAULT_SHIP_GATES
     }
@@ -224,6 +227,34 @@ def test_ship_gates_pass_when_density_met() -> None:
     result = evaluate_ship_gates(_full_suite_metrics())
     assert result["pass"] is True
     assert not result["failures"]
+
+
+def test_ship_gates_fail_on_none_metric_values() -> None:
+    # None = unmeasured; unmeasured must fail the threshold, never pass it.
+    suites = _full_suite_metrics()
+    suites["smoke"]["meaningful_program_rate"] = None
+    result = evaluate_ship_gates(suites)
+    assert result["pass"] is False
+    assert any("smoke:meaningful_program_rate" in f for f in result["failures"])
+
+
+def test_certified_fallback_fails_when_unmeasured() -> None:
+    # A board without fallback telemetry cannot certify learned quality.
+    suites = _full_suite_metrics()
+    del suites["smoke"]["fallback_count"]
+    result = evaluate_ship_gates(suites)
+    assert result["pass"] is False
+    assert any(
+        "smoke:certified_fallback unmeasured" in f for f in result["failures"]
+    )
+
+
+def test_certified_fallback_fails_on_measured_fallbacks() -> None:
+    suites = _full_suite_metrics()
+    suites["smoke"]["fallback_count"] = 2
+    result = evaluate_ship_gates(suites)
+    assert result["pass"] is False
+    assert any("smoke:certified_fallback actual=2" in f for f in result["failures"])
 
 
 def test_custom_ship_thresholds_have_stable_distinct_provenance() -> None:

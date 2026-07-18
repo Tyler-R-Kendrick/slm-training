@@ -121,14 +121,29 @@ def ceiling_report(
             continue
         rows = [score_gold_as_prediction(r) for r in records]
         n = len(rows) or 1
+
+        def _defined_mean(name: str) -> float | None:
+            # Undefined (None) per-record metrics are excluded; a suite where
+            # nothing defines the metric reports None, not a fabricated mean.
+            values = [r[name] for r in rows if r[name] is not None]
+            return sum(values) / len(values) if values else None
+
         out[suite] = {
             "n": len(rows),
             "parse_rate": sum(1 for r in rows if r["parse_ok"]) / n,
-            "placeholder_fidelity": sum(r["placeholder_fidelity"] for r in rows) / n,
-            "placeholder_validity": sum(r["placeholder_validity"] for r in rows) / n,
-            "structural_similarity": sum(r["structural_similarity"] for r in rows) / n,
-            "component_type_recall": sum(r["component_type_recall"] for r in rows) / n,
-            "failures": [r for r in rows if not r["parse_ok"] or r["placeholder_fidelity"] < 1.0],
+            "placeholder_fidelity": _defined_mean("placeholder_fidelity"),
+            "placeholder_validity": _defined_mean("placeholder_validity"),
+            "structural_similarity": _defined_mean("structural_similarity"),
+            "component_type_recall": _defined_mean("component_type_recall"),
+            "failures": [
+                r
+                for r in rows
+                if not r["parse_ok"]
+                or (
+                    r["placeholder_fidelity"] is not None
+                    and r["placeholder_fidelity"] < 1.0
+                )
+            ],
         }
     return out
 
