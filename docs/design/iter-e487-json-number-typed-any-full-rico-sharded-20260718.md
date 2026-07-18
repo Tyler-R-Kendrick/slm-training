@@ -58,6 +58,7 @@ contracts, eight generation steps, three attempts, and no fallback.
 | 18e | `[928,944)` | 16 | 1.0 | 1.0 | 0.8666 | 1.0 | 0.9934 | 0 / 0 / 0 |
 | 18f | `[944,960)` | 16 | 1.0 | 1.0 | 0.9208 | 1.0 | 0.9940 | 0 / 0 / 0 |
 | 19a | `[960,976)` | 16 | 1.0 | 1.0 | 0.9113 | 1.0 | 0.9908 | 0 / 0 / 0 |
+| 19b | `[976,992)` | 16 | 1.0 | 1.0 | 0.9081 | 1.0 | 0.9927 | 0 / 0 / 0 |
 
 Shard 0 completed normally in about 177 seconds and is metric-identical to the
 corresponding E477 rows, with zero failures, fallback, or timeouts.
@@ -217,4 +218,8 @@ slider values/order. The current scorer reports no material metric delta
 (structure, fidelity, type recall, and reward are unchanged), so this is
 neutral type-constraint activation evidence rather than a quality win.
 
-**Status:** 976/1500 rows complete. No merged or ship claim yet.
+Shard 19b completed normally in about 55 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.9081, reward 0.9927, and zero failures, fallback, or timeouts.
+
+**Status:** 992/1500 rows complete. No merged or ship claim yet.
