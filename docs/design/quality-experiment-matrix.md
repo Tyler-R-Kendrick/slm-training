@@ -2379,6 +2379,18 @@ full RICO are absent. See
 [results](iter-e378-e379-structural-rico128-20260717.md) and
 [JSON](iter-e378-e379-structural-rico128-20260717.json).
 
+E380 exposes a remaining-capacity bug on RICO rows 128–192: one component
+requires three content slots when only one remains, producing one failed row
+and parse/meaningful 0.9844. E381 adds the generalized arity-capacity invariant
+and restores parse/meaningful 1.0, fidelity 0.9896, structure 0.6191, recall
+0.9609, reward 0.9945, and zero failures on the identical shard. E382 merges
+E377+E378+E381 into contiguous 192/1500 evidence: fidelity 0.9909, structure
+0.6465, recall 0.9796, reward 0.9956, and zero failures. The merged AgentV
+bundle remains fail-closed because bounded suites and full RICO are absent.
+Continue with 48-row shards under the hard 290-second command cap. See
+[results](iter-e380-e382-structural-capacity-rico192-20260717.md) and
+[JSON](iter-e380-e382-structural-capacity-rico192-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

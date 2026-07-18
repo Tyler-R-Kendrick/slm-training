@@ -470,6 +470,14 @@ def test_twotower_choice_wiring(tmp_path: Path) -> None:
     )
     assert model.tokenizer.token_to_id["+Button"] not in exhausted
     assert model.tokenizer.token_to_id["+Card"] in exhausted
+    one_slot_left = model._choice_min_content_legal_ids(
+        ChoiceDecodeState(model.tokenizer, slot_count=2),
+        ChoiceDecodeState(model.tokenizer, slot_count=2).allowed_ids(58),
+        [":hero.title", ":hero.body"],
+        [model.tokenizer.token_to_id["@0"]],
+    )
+    assert model.tokenizer.token_to_id["+CheckBoxItem"] not in one_slot_left
+    assert model.tokenizer.token_to_id["+Button"] in one_slot_left
     with torch.no_grad():
         assert model.component_plan_head is not None
         model.component_plan_head.weight.zero_()

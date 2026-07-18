@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "run_id": "e382-structural-terminal-rico192-merge-r1",
+  "date": "2026-07-17",
+  "checkpoint": {
+    "path": "outputs/runs/e368-card-hierarchy-adapt-18k-local-r1/checkpoints/last.pt",
+    "sha256": "a7dd2d79df0c3c36f80e1bb81349f7dad663d9796d201ffff492535a11982573",
+    "promoted": false
+  },
+  "negative_control": {
+    "run_id": "e380-structural-terminal-rico64-offset128-r1",
+    "offset": 128,
+    "end": 192,
+    "n": 64,
+    "parse_rate": 0.984375,
+    "meaningful_program_rate": 0.984375,
+    "placeholder_fidelity": 0.9739583333333334,
+    "structural_similarity": 0.614284375,
+    "component_type_recall": 0.953125,
+    "reward_score": 0.97909375,
+    "failure_breakdown": {
+      "parse_error": 1
+    },
+    "finding": "component content arity could exceed remaining visible-slot capacity"
+  },
+  "shards": [
+    {
+      "run_id": "e377-structural-terminal-rico64-r1",
+      "offset": 0,
+      "end": 64,
+      "n": 64
+    },
+    {
+      "run_id": "e378-structural-terminal-rico64-offset64-r1",
+      "offset": 64,
+      "end": 128,
+      "n": 64
+    },
+    {
+      "run_id": "e381-structural-capacity-rico64-offset128-r1",
+      "offset": 128,
+      "end": 192,
+      "n": 64,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 0.9895833333333334,
+      "structural_similarity": 0.6191015625,
+      "component_type_recall": 0.9609374999999999,
+      "reward_score": 0.9944843750000002,
+      "latency_ms_p50": 3019.13,
+      "latency_ms_p95": 5786.99,
+      "failure_breakdown": {}
+    }
+  ],
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "decode_min_content": -1,
+    "component_plan_decode_weight": 2.0,
+    "slot_component_decode_weight": 8.0,
+    "grammar_ltr_max_tokens": 320,
+    "max_command_seconds": 290,
+    "future_shard_rows": 48
+  },
+  "suites": {
+    "rico_held": {
+      "n": 192,
+      "suite_total_n": 1500,
+      "diagnostic_subset": true,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 0.9908854166666666,
+      "structural_similarity": 0.6464869791666668,
+      "component_type_recall": 0.9796006944444443,
+      "reward_score": 0.9955781250000001,
+      "latency_ms_p50": 2809.24,
+      "latency_ms_p95": 5939.83,
+      "failure_breakdown": {}
+    }
+  },
+  "ship_gates": {
+    "pass": false,
+    "failures": [
+      "complete bounded suite set missing",
+      "rico_held diagnostic subset 192/1500"
+    ]
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "passed": 0,
+    "total": 5,
+    "execution_errors": 0
+  },
+  "verdict": "strong contiguous partial evidence; retain capacity invariant and continue smaller shards"
+}

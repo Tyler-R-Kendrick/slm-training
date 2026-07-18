@@ -4464,6 +4464,10 @@ class TwoTowerModel(nn.Module):
             and state.mode in {None, "structural"}
         ):
             emitted = set(prefix or ())
+            remaining_slots = sum(
+                tok.token_to_id[f"@{index}"] not in emitted
+                for index in range(len(slot_contract or ()))
+            )
             content_count = (
                 sum(
                     tok.token_to_id[f"@{index}"] in emitted
@@ -4486,7 +4490,7 @@ class TwoTowerModel(nn.Module):
                     content = {
                         token_id
                         for token_id in legal
-                        if state.is_slot_content_component_id(token_id)
+                        if 0 < state.required_slot_count(token_id) <= remaining_slots
                     }
                     return content or legal
                 without_eos = legal - {tok.eos_id}
@@ -4494,11 +4498,11 @@ class TwoTowerModel(nn.Module):
                     tok.token_to_id[f"@{index}"]
                     for index in range(len(slot_contract or ()))
                 }
-                if slot_ids and slot_ids <= emitted:
+                if slot_ids:
                     without_eos = {
                         token_id
                         for token_id in without_eos
-                        if not state.is_slot_content_component_id(token_id)
+                        if state.required_slot_count(token_id) <= remaining_slots
                     }
                 return without_eos or legal
             if (
