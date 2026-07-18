@@ -450,10 +450,15 @@ class EnumerativeSupportOracle:
                 counters.backtracks += 1
                 failures["dead:child_bottom"] = failures.get("dead:child_bottom", 0) + 1
                 continue
-            # Push every live (hole, value) branch of the child in canonical order
-            # (reversed so the smallest value is popped first).
-            child_hole = child.holes[0].hole_id
-            for child_value in reversed(child.holes[0].values):
+            # Push every live (hole, value) branch of the child in canonical
+            # order (reversed so the smallest value is popped first). Prefer an
+            # unresolved hole to avoid re-expanding a singleton decision path;
+            # fall back to the first hole for expanders that emit a singleton
+            # hole and expect the caller to drive it to terminal.
+            unresolved = [h for h in child.holes if len(h.values) > 1]
+            chosen_hole = unresolved[0] if unresolved else child.holes[0]
+            child_hole = chosen_hole.hole_id
+            for child_value in reversed(chosen_hole.values):
                 stack.append((child, child_hole, child_value, depth + 1))
 
         verdict, exhausted = _decide(witness is not None, incomplete, stop_reason)

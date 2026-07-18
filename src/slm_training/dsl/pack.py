@@ -99,6 +99,11 @@ class DslPack:
     scope_extractor: Callable[..., list[Any]] | None = None
     prop_order: Callable[[], Mapping[str, Sequence[str]]] | None = None
     incremental_engine: Callable[[], Any] | None = None
+    capsule_problem_builder: Callable[..., Any] | None = None
+    capsule_summary_extractor: Callable[..., Any] | None = None
+    capsule_materializer: Callable[..., Any] | None = None
+    capsule_local_oracle: Callable[..., Any] | None = None
+    capsule_global_oracle: Callable[..., Any] | None = None
 
     def filled_slots(self) -> tuple[str, ...]:
         return tuple(
@@ -121,6 +126,7 @@ class DslPack:
 
 
 _PACKS: dict[str, DslPack] = {}
+_BUILTINS_LOADED: bool = False
 # Backend ids that resolve to the openui pack (same language, different parser).
 _ALIASES = {
     "openui-lark": "openui",
@@ -243,7 +249,8 @@ def _toy_layout_engine() -> Any:
 
 
 def _ensure_builtin_packs() -> None:
-    if _PACKS:
+    global _BUILTINS_LOADED
+    if _BUILTINS_LOADED:
         return
     shared_policy = PlaceholderPolicy(
         placeholder_re=PLACEHOLDER_RE,
@@ -292,6 +299,7 @@ def _ensure_builtin_packs() -> None:
         register_pack(build_graphql_pack())
     except Exception:  # noqa: BLE001 - graphql pack is optional
         pass
+    _BUILTINS_LOADED = True
 
 
 __all__ = [

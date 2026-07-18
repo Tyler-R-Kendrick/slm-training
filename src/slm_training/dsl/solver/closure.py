@@ -140,6 +140,17 @@ class CertifiedDeduction:
             "reason": self.reason,
         }
 
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> CertifiedDeduction:
+        return cls(
+            before_fingerprint=str(data["before_fingerprint"]),
+            after_fingerprint=str(data["after_fingerprint"]),
+            hole_id=HoleId.from_dict(data["hole_id"]),
+            removed=tuple(DomainValue.from_dict(d) for d in data.get("removed", [])),
+            certificate_ids=tuple(str(v) for v in data.get("certificate_ids", [])),
+            reason=str(data.get("reason", "")),
+        )
+
 
 @dataclass(frozen=True)
 class ClosureCounters:
