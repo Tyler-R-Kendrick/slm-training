@@ -2255,6 +2255,12 @@ suites. Reject in favor of E347 and stop the monotonic floor sweep. See
 [results](iter-e348-hf-context-best-nll-content-floor3-20260717.md) and
 [JSON](hf-context-best-nll-content-floor3-results-iter-e348-20260717.json).
 
+E349 adds a weak 0.1 component-plan bias to E347. The plan applies 32 times but
+changes only one choice, held-out recall remains 0.20, and AgentV remains 3/4.
+Reject the composition. See
+[results](iter-e349-hf-context-content2-plan01-20260717.md) and
+[JSON](hf-context-content2-plan01-results-iter-e349-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
