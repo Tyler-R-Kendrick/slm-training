@@ -2,7 +2,7 @@
   "schema_version": 1,
   "experiment_id": "E477",
   "date": "2026-07-18",
-  "status": "partial",
+  "status": "complete",
   "checkpoint": {
     "run_id": "e396-balanced-type-head-continuation-r1",
     "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0"
@@ -260,6 +260,102 @@
       "fallback_count": 0,
       "decode_timeout_count": 0,
       "completed_normally": true
+    },
+    {
+      "index": "13a",
+      "run_id": "e477-e396-array-items-rico-shard13a-r1",
+      "eval_offset": 1248,
+      "eval_end": 1296,
+      "n": 48,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8878166666666661,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9919999999999999,
+      "failure_count": 0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "completed_normally": true
+    },
+    {
+      "index": "13b",
+      "run_id": "e477-e396-array-items-rico-shard13b-r1",
+      "eval_offset": 1296,
+      "eval_end": 1344,
+      "n": 48,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8907749999999997,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9970624999999999,
+      "failure_count": 0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "completed_normally": true
+    },
+    {
+      "index": "14a",
+      "run_id": "e477-e396-array-items-rico-shard14a-r1",
+      "eval_offset": 1344,
+      "eval_end": 1392,
+      "n": 48,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8769395833333333,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9958124999999999,
+      "failure_count": 0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "completed_normally": true
+    },
+    {
+      "index": "14b",
+      "run_id": "e477-e396-array-items-rico-shard14b-r1",
+      "eval_offset": 1392,
+      "eval_end": 1440,
+      "n": 48,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8530270833333331,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9954374999999999,
+      "failure_count": 0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "completed_normally": true
+    },
+    {
+      "index": "15a",
+      "run_id": "e477-e396-array-items-rico-shard15a-r1",
+      "eval_offset": 1440,
+      "eval_end": 1470,
+      "n": 30,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8540666666666666,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9961,
+      "failure_count": 0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "completed_normally": true
+    },
+    {
+      "index": "15b",
+      "run_id": "e477-e396-array-items-rico-shard15b-r1",
+      "eval_offset": 1470,
+      "eval_end": 1500,
+      "n": 30,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8682733333333333,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9953999999999998,
+      "failure_count": 0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "completed_normally": true
     }
   ],
   "failed_attempts": [
@@ -283,13 +379,20 @@
     }
   ],
   "coverage": {
-    "completed_n": 1248,
+    "completed_n": 1500,
     "total_n": 1500,
-    "exact_contiguous": false
+    "exact_contiguous": true
   },
   "timing": {
     "external_timeout_seconds": 290,
     "external_kill_after_seconds": 10
   },
-  "verdict": "Partial; exact-coverage merge and five-suite evidence remain required."
+  "merge": {
+    "experiment_id": "E478",
+    "run_id": "e478-e396-array-items-full-rico-merged-r1",
+    "shard_count": 21,
+    "exact_contiguous": true,
+    "unique": true
+  },
+  "verdict": "Complete sharded evidence; E478 full RICO accepted."
 }

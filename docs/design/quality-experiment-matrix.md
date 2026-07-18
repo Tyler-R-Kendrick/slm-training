@@ -2977,8 +2977,35 @@ completes `[1152,1200)` at
 meaningful/fidelity/recall 1.0, structure 0.8627, reward 0.9966, and zero
 reliability counts. Replacement shard 12b completes `[1200,1248)` at
 structure 0.8711 and reward 0.9929; the weighted pair is metric-identical to
-E472 shard 12 and coverage is 1248/1500. See
+E472 shard 12. Replacement shard 13a completes `[1248,1296)` at
+meaningful/fidelity/recall 1.0, structure 0.8878, reward 0.9920, and zero
+reliability counts. Replacement shard 13b completes `[1296,1344)` at
+structure 0.8908 and reward 0.9971; the weighted pair is metric-identical to
+E472 shard 13. Replacement shard 14a completes `[1344,1392)` at
+meaningful/fidelity/recall 1.0, structure 0.8769, reward 0.9958, and zero
+reliability counts. Replacement shard 14b completes `[1392,1440)` at
+structure 0.8530 and reward 0.9954; the weighted pair is metric-identical to
+E472 shard 14. Final shard 15a completes `[1440,1470)` at
+meaningful/fidelity/recall 1.0, structure 0.8541, reward 0.9961, and zero
+reliability counts. Shard 15b completes `[1470,1500)` at structure 0.8683
+and reward 0.9954; the weighted pair is metric-identical to E472 shard 15.
+All 1500 contiguous rows have normally completed evidence. E478 verifies 21
+valid shard files, unique exact `[0,1500)` coverage, structure 0.8736, reward
+0.9939, perfect core rates, zero reliability counts, and AgentV 1/1. The two
+timed-out attempts are excluded. Accept full RICO; five-suite assembly remains
+required. See
 [`iter-e477-schema-array-items-full-rico-sharded-20260718.md`](iter-e477-schema-array-items-full-rico-sharded-20260718.md).
+See also
+[`iter-e478-e396-array-items-full-rico-merged-20260718.md`](iter-e478-e396-array-items-full-rico-merged-20260718.md).
+
+E479 assembles E476 bounded suites with E478 full RICO under one unchanged
+checkpoint and policy. All five local ship gates pass with zero
+failures/fallback/timeouts and AgentV 5/5. Relative to E474, OOD structure
+improves 0.6279→0.6343 at unchanged recall/reward; every other suite's
+aggregate metrics are unchanged, while audited schema-invalid array items are
+corrected. Accept E479 as current-policy local evidence; production HF ship
+remains pending bucket sync. See
+[`iter-e479-e396-array-items-full-ship-gates-20260718.md`](iter-e479-e396-array-items-full-ship-gates-20260718.md).
 
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;

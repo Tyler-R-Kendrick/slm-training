@@ -29,6 +29,12 @@ generation steps, three attempts, and no fallback.
 | 11 | `[1056,1152)` | 96 | 1.0 | 1.0 | 0.8669 | 1.0 | 0.9943 | 0 / 0 / 0 |
 | 12a | `[1152,1200)` | 48 | 1.0 | 1.0 | 0.8627 | 1.0 | 0.9966 | 0 / 0 / 0 |
 | 12b | `[1200,1248)` | 48 | 1.0 | 1.0 | 0.8711 | 1.0 | 0.9929 | 0 / 0 / 0 |
+| 13a | `[1248,1296)` | 48 | 1.0 | 1.0 | 0.8878 | 1.0 | 0.9920 | 0 / 0 / 0 |
+| 13b | `[1296,1344)` | 48 | 1.0 | 1.0 | 0.8908 | 1.0 | 0.9971 | 0 / 0 / 0 |
+| 14a | `[1344,1392)` | 48 | 1.0 | 1.0 | 0.8769 | 1.0 | 0.9958 | 0 / 0 / 0 |
+| 14b | `[1392,1440)` | 48 | 1.0 | 1.0 | 0.8530 | 1.0 | 0.9954 | 0 / 0 / 0 |
+| 15a | `[1440,1470)` | 30 | 1.0 | 1.0 | 0.8541 | 1.0 | 0.9961 | 0 / 0 / 0 |
+| 15b | `[1470,1500)` | 30 | 1.0 | 1.0 | 0.8683 | 1.0 | 0.9954 | 0 / 0 / 0 |
 
 Shard 0 completed normally in about 150 seconds and is metric-identical to
 E472's corresponding enum-constrained shard. Its diagnostic AgentV five-gate
@@ -94,4 +100,27 @@ Replacement shard 12b completed normally in about 221 seconds with the same
 perfect core rates and zero reliability counts. The weighted 12a+12b
 structure 0.8669 and reward 0.9948 are metric-identical to E472 shard 12.
 
-**Status:** 1248/1500 rows complete. No merged or ship claim yet.
+Replacement shard 13a completed normally in about 155 seconds with
+meaningful/fidelity/recall 1.0 and zero reliability counts.
+
+Replacement shard 13b completed normally in about 170 seconds with the same
+perfect core rates and zero reliability counts. The weighted 13a+13b
+structure 0.8893 and reward 0.9945 are metric-identical to E472 shard 13.
+
+Replacement shard 14a completed normally in about 225 seconds with
+meaningful/fidelity/recall 1.0 and zero reliability counts.
+
+Replacement shard 14b completed normally in about 209 seconds with the same
+perfect core rates and zero reliability counts. The weighted 14a+14b
+structure 0.8650 and reward 0.9956 are metric-identical to E472 shard 14.
+
+The final 60 rows are also split for runtime margin. Shard 15a completed
+normally in about 154 seconds with meaningful/fidelity/recall 1.0 and zero
+reliability counts.
+
+Shard 15b completed normally in about 115 seconds with the same perfect core
+rates and zero reliability counts. The weighted 15a+15b structure 0.8612 and
+reward 0.9957 are metric-identical to E472 shard 15.
+
+**Status:** 1500/1500 contiguous rows complete. E478 exact-coverage merge
+verified all 21 valid shard files; the two timed-out attempts remain excluded.
