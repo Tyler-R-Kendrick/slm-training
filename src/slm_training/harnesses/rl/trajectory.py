@@ -78,12 +78,21 @@ def trajectory_logprob(
     device = model.device_name
     total = None
     n = 0
+    # The prompt is constant across steps; re-encode per step only when the
+    # encoder is stochastic (train mode with dropout), where reuse would
+    # change the sampled masks.
+    encoder_deterministic = (
+        not model.training
+        or float(getattr(model.config, "dropout", 0.0) or 0.0) == 0.0
+    )
+    ctx = ctx_pad = None
     for step in steps:
         canvas = step.get("canvas")
         commits = step.get("commits") or []
         if not canvas or not commits:
             continue
-        ctx, ctx_pad = model._encode_context([prompt], cache_keys=None)
+        if ctx is None or not encoder_deterministic:
+            ctx, ctx_pad = model._encode_context([prompt], cache_keys=None)
         noisy = _pad_batch([list(canvas)], model.tokenizer.pad_id, device=device)
         logits = model.denoiser(
             noisy, ctx, pad_id=model.tokenizer.pad_id, ctx_pad_mask=ctx_pad

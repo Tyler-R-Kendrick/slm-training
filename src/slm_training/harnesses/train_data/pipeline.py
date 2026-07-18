@@ -512,11 +512,16 @@ def _load_progspecs(config: TrainDataConfig) -> tuple[list, list[dict]]:
 
 def _records_from_progspec(
     config: TrainDataConfig,
+    *,
+    preloaded: tuple[list, list[dict]] | None = None,
 ) -> tuple[list[ExampleRecord], list[dict]]:
     from slm_training.data.progspec import emit_record
     from slm_training.data.verify import VerificationContext, stamp_record
 
-    specs, errors = _load_progspecs(config)
+    specs, load_errors = (
+        preloaded if preloaded is not None else _load_progspecs(config)
+    )
+    errors = list(load_errors)
     out: list[ExampleRecord] = []
     for spec in sorted(specs, key=lambda item: item.id):
         if spec.split != config.require_split:
@@ -563,6 +568,8 @@ def _records_from_language_contract(
 
 def _records_from_scope_corpus(
     config: TrainDataConfig,
+    *,
+    preloaded: tuple[list, list[dict]] | None = None,
 ) -> tuple[list[ExampleRecord], list[dict], list]:
     """Scope-graded families (identity / canonical / repair / typed) per root."""
     if not config.include_scope_corpus:
@@ -572,7 +579,10 @@ def _records_from_scope_corpus(
         build_scope_corpus,
     )
 
-    specs, errors = _load_progspecs(config)
+    specs, load_errors = (
+        preloaded if preloaded is not None else _load_progspecs(config)
+    )
+    errors = list(load_errors)
     corpus_config = ScopeCorpusConfig(
         scopes=tuple(config.scope_kinds),
         identity_per_scope=config.scope_identity_per_scope,
@@ -1043,11 +1053,16 @@ def build_train_data(
         errors.extend(source_errors)
     scope_preference_pairs: list = []
     if source in {"programspec", "integrated", "all"}:
-        records, source_errors = _records_from_progspec(config)
+        # One committed-file parse / seeded generation feeds both consumers;
+        # each still reports the load errors it reported before.
+        preloaded_specs = _load_progspecs(config)
+        records, source_errors = _records_from_progspec(
+            config, preloaded=preloaded_specs
+        )
         seeds.extend(records)
         errors.extend(source_errors)
         records, source_errors, scope_preference_pairs = _records_from_scope_corpus(
-            config
+            config, preloaded=preloaded_specs
         )
         seeds.extend(records)
         errors.extend(source_errors)

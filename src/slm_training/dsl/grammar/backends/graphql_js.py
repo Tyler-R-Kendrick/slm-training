@@ -29,7 +29,9 @@ DEFAULT_SCHEMA_PATH = (
 )
 
 
+@lru_cache(maxsize=1)
 def _node_bin() -> str:
+    # PATH is stable for the process lifetime; availability checks run per parse.
     return shutil.which("node") or ""
 
 

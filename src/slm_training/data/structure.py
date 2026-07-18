@@ -7,6 +7,7 @@ Style (gaps, typography sizes, color-role variants) is out of scope for eval.
 from __future__ import annotations
 
 import re
+from functools import lru_cache
 
 # Quoted literals that encode visual style, not layout structure.
 # Keep direction (column/row), field kinds (email/text), and Callout variants (info).
@@ -44,9 +45,13 @@ _STYLE_ONLY_ARG_RE = re.compile(
 )
 
 
+@lru_cache(maxsize=1024)
 def strip_style_literals(openui: str) -> str:
     """
     Remove style-only quoted args from OpenUI source while preserving structure.
+
+    Pure str -> str, so the result is cached: eval metrics and leakage
+    fingerprints strip the same source several times per record.
 
     Examples:
       Stack([a], "column", "m") → Stack([a], "column")

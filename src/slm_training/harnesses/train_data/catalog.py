@@ -102,7 +102,7 @@ def classify_source_family(record: ExampleRecord) -> str:
     The *outermost* transformation wins: a namespace augment of a template
     paraphrase belongs to ``namespace_augment`` (its lineage records the rest).
     """
-    meta = dict(record.meta or {})
+    meta = record.meta or {}
     synth = str(meta.get("synth") or "")
     if synth in _SYNTH_TO_FAMILY:
         return _SYNTH_TO_FAMILY[synth]
@@ -123,7 +123,7 @@ LineageIndex = dict[str, tuple[str | None, str | None]]
 
 
 def lineage_entry(record: ExampleRecord) -> tuple[str | None, str | None]:
-    meta = dict(record.meta or {})
+    meta = record.meta or {}
     parent = meta.get("parent_id")
     synth = meta.get("synth")
     return (str(parent) if parent else None, str(synth) if synth else None)

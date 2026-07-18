@@ -242,12 +242,19 @@ class TraceStore:
         self.run_id = run_id or (active.run_id if active else None)
         self.trace_id = trace_id or (active.trace_id if active else None)
         self.span_id = span_id or (active.span_id if active else None)
+        # Under the documented append-only single-writer contract, the line
+        # count only changes through this instance's append(); re-scanning the
+        # whole file per append made a collection run O(n^2).
+        self._count: int | None = None
 
     def __len__(self) -> int:
-        if not self.traces_path.exists():
-            return 0
-        with self.traces_path.open("r", encoding="utf-8") as handle:
-            return sum(1 for line in handle if line.strip())
+        if self._count is None:
+            if not self.traces_path.exists():
+                self._count = 0
+            else:
+                with self.traces_path.open("r", encoding="utf-8") as handle:
+                    self._count = sum(1 for line in handle if line.strip())
+        return self._count
 
     def append(self, trace: dict[str, Any]) -> str:
         index = len(self)
@@ -266,6 +273,7 @@ class TraceStore:
             handle.write(json.dumps(row, default=str) + "\n")
             handle.flush()
             os.fsync(handle.fileno())
+        self._count = index + 1
         self._update_manifest(count=index + 1)
         return trajectory_id
 

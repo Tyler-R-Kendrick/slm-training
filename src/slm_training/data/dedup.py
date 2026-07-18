@@ -10,6 +10,7 @@ import hashlib
 import math
 import re
 from collections import Counter
+from functools import lru_cache
 from typing import Any
 
 from slm_training.data.leakage import fingerprint_openui_structure, norm_text
@@ -83,7 +84,7 @@ def family_priority(family: str) -> int:
 
 
 def _record_family(record: ExampleRecord) -> str:
-    meta = dict(record.meta or {})
+    meta = record.meta or {}
     return str(meta.get("source_family") or classify_source_family(record))
 
 
@@ -106,6 +107,15 @@ def _hash_to_uint64(payload: str) -> int:
     return int.from_bytes(digest[:8], "big")
 
 
+@lru_cache(maxsize=8)
+def _minhash_coefficients(seed: int, permutations: int) -> tuple[tuple[int, int], ...]:
+    """Permutation coefficients depend only on (seed, i); one SHA pass, reused."""
+    return tuple(
+        (_hash_to_uint64(f"a|{seed}|{i}") | 1, _hash_to_uint64(f"b|{seed}|{i}"))
+        for i in range(permutations)
+    )
+
+
 def minhash_signature(
     text: str,
     *,
@@ -118,13 +128,11 @@ def minhash_signature(
     if not grams:
         return tuple(0 for _ in range(permutations))
     gram_hashes = [_hash_to_uint64(g) for g in grams]
-    sig: list[int] = []
-    for i in range(permutations):
-        a = _hash_to_uint64(f"a|{seed}|{i}") | 1
-        b = _hash_to_uint64(f"b|{seed}|{i}")
-        best = min(((a * h + b) & ((1 << 64) - 1)) for h in gram_hashes)
-        sig.append(best)
-    return tuple(sig)
+    mask = (1 << 64) - 1
+    return tuple(
+        min(((a * h + b) & mask) for h in gram_hashes)
+        for a, b in _minhash_coefficients(seed, permutations)
+    )
 
 
 def jaccard_from_signatures(a: tuple[int, ...], b: tuple[int, ...]) -> float:

@@ -285,6 +285,13 @@ class LarkFileBackend:
         self._parser: Lark | None = None
         self._position_parser: Lark | None = None
         self._loaded_prop_order: dict[str, list[str]] | None = None
+        self._structural_token_cache: frozenset[str] | None = None
+        # Successful parses keyed by exact source, mirroring the lang_core
+        # bridge result cache: eval re-validates the same text several times
+        # per record, and the grammar is static for the backend's lifetime.
+        # Callers already treat Program objects as immutable (the bridge cache
+        # shares them the same way). Failures are never cached.
+        self._program_cache: dict[str, Program] = {}
 
     @property
     def info(self) -> GrammarInfo:
@@ -360,6 +367,9 @@ class LarkFileBackend:
         return transformer.transform(tree)
 
     def parse(self, source: str) -> Program:
+        cached = self._program_cache.get(source)
+        if cached is not None:
+            return cached
         text = source if source.endswith("\n") else source + "\n"
         try:
             tree = self._lark().parse(text)
@@ -368,7 +378,7 @@ class LarkFileBackend:
             raise ParseError(str(exc)) from exc
         root = data.get("root")
         ph = collect_placeholders_from_ast(root) or extract_placeholders(source)
-        return Program(
+        program = Program(
             source=source,
             root=root if isinstance(root, dict) else None,
             placeholders=ph,
@@ -382,6 +392,10 @@ class LarkFileBackend:
             },
             serialized=source.strip(),
         )
+        if len(self._program_cache) >= 1024:
+            self._program_cache.pop(next(iter(self._program_cache)))
+        self._program_cache[source] = program
+        return program
 
     def resolved_data(self, source: str) -> dict[str, Any]:
         """Transformer output with refs resolved: {'bindings', 'root', ...}.
@@ -456,12 +470,16 @@ class LarkFileBackend:
             )
 
     def structural_tokens(self) -> frozenset[str]:
-        text = self._path.read_text(encoding="utf-8")
-        names = set(re.findall(r"\b([A-Z][A-Za-z0-9]+)\b", text))
-        names.update({"root", "(", ")", "[", "]", ",", "=", '"', "true", "false"})
-        names.update(self._structural_extras)
-        names.update(self._order().keys())
-        return frozenset(names)
+        if self._structural_token_cache is None:
+            # The grammar file is static at runtime and this is consulted per
+            # decoded token when the Lark backend is active.
+            text = self._path.read_text(encoding="utf-8")
+            names = set(re.findall(r"\b([A-Z][A-Za-z0-9]+)\b", text))
+            names.update({"root", "(", ")", "[", "]", ",", "=", '"', "true", "false"})
+            names.update(self._structural_extras)
+            names.update(self._order().keys())
+            self._structural_token_cache = frozenset(names)
+        return self._structural_token_cache
 
     def component_names(self) -> frozenset[str]:
         order = self._order()

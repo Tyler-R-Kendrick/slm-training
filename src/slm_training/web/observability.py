@@ -21,7 +21,7 @@ import re
 import tempfile
 from functools import cached_property
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from slm_training.data.store import DataStore
 from slm_training.harnesses.model_build.ship_gates import (
@@ -344,6 +344,29 @@ class Readers:
             self.data_store.local_root / "annotation" / "comparisons.jsonl"
         )
         self.persist_insights = persist_insights
+        # Stat-fingerprint memo: the dashboard polls /api/overview every 15s per
+        # client and each request consults the same committed evidence files
+        # several times. Values are recomputed whenever any watched file's
+        # (mtime_ns, size) changes, so reads stay exactly as fresh as before.
+        self._stat_cache: dict[str, tuple[tuple[Any, ...], Any]] = {}
+
+    def _fresh(
+        self, name: str, watched: list[Path], compute: Callable[[], Any]
+    ) -> Any:
+        key: list[tuple[str, int | None, int | None]] = []
+        for path in watched:
+            try:
+                stat = path.stat()
+                key.append((str(path), stat.st_mtime_ns, stat.st_size))
+            except OSError:
+                key.append((str(path), None, None))
+        fingerprint = tuple(key)
+        hit = self._stat_cache.get(name)
+        if hit is not None and hit[0] == fingerprint:
+            return hit[1]
+        value = compute()
+        self._stat_cache[name] = (fingerprint, value)
+        return value
 
     # ---- scoreboards (experiment / perf matrices) -----------------------------
 
@@ -415,6 +438,18 @@ class Readers:
         return sorted(results, key=order, reverse=True)
 
     def scoreboard(self, kind: str) -> dict[str, Any]:
+        if kind == RESEARCH_SCOREBOARD_KIND:
+            watched = sorted(self.docs_design.glob("iter-*.json"))
+        else:
+            filename = SCOREBOARD_FILES.get(kind)
+            if filename is None:
+                return {"kind": kind, "provenance": "unknown", "results": [], "meta": {}}
+            watched = [self.docs_design / filename, self.dashboard_snapshot]
+        return self._fresh(
+            f"scoreboard:{kind}", watched, lambda: self._scoreboard_uncached(kind)
+        )
+
+    def _scoreboard_uncached(self, kind: str) -> dict[str, Any]:
         if kind == RESEARCH_SCOREBOARD_KIND:
             results = self._research_results()
             return {
@@ -546,21 +581,23 @@ class Readers:
         return None
 
     def _run_dir(self, run_id: str, scoreboard: dict[str, Any] | None = None) -> Path:
-        candidates: list[Path] = []
         declared = (scoreboard or {}).get("run_dir")
         if isinstance(declared, str):
-            candidates.append(self.root / declared)
-        candidates.extend(
-            [
-                self.outputs / "runs" / run_id,
-                *self.outputs.glob(f"runs/*/{run_id}"),
-                *self.outputs.glob(f"autoresearch/*/runs/{run_id}"),
-            ]
-        )
-        for candidate in candidates:
+            candidate = self.root / declared
             if candidate.is_dir():
                 return candidate
-        return self.outputs / "runs" / run_id
+        # runs() probes this per scoreboard row; try the canonical location
+        # with one stat before falling back to the recursive globs.
+        direct = self.outputs / "runs" / run_id
+        if direct.is_dir():
+            return direct
+        for candidate in (
+            *self.outputs.glob(f"runs/*/{run_id}"),
+            *self.outputs.glob(f"autoresearch/*/runs/{run_id}"),
+        ):
+            if candidate.is_dir():
+                return candidate
+        return direct
 
     def run(self, run_id: str) -> dict[str, Any]:
         if not _RUN_ID_RE.fullmatch(run_id):
@@ -903,14 +940,12 @@ class Readers:
             ),
         }
 
-    def checkpoints(self) -> dict[str, Any]:
+    def checkpoints(
+        self, *, deployment: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         roster: list[dict[str, Any]] = []
-        card_text = ""
-        try:
-            card_text = self.model_card.read_text(encoding="utf-8")
-        except OSError:
-            card_text = ""
-        for row in _parse_markdown_table(card_text, "## Current checkpoint roster"):
+        card_roster, _ = self._model_card_rows()
+        for row in card_roster:
             roster.append(
                 {
                     "role": row.get("role", ""),
@@ -954,7 +989,9 @@ class Readers:
                 )
         return {
             "checkpoints": [self._with_resource_metrics(row) for row in roster],
-            "deployment": self.deployment_state(),
+            "deployment": deployment
+            if deployment is not None
+            else self.deployment_state(),
         }
 
     def gates_for_run(self, run_id: str) -> dict[str, Any]:
@@ -1401,6 +1438,13 @@ class Readers:
     # ---- reference model + persisted performance insights -------------------
 
     def _model_card_rows(self) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+        return self._fresh(
+            "model_card_rows", [self.model_card], self._model_card_rows_uncached
+        )
+
+    def _model_card_rows_uncached(
+        self,
+    ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
         try:
             text = self.model_card.read_text(encoding="utf-8")
         except OSError:
@@ -1780,7 +1824,7 @@ class Readers:
 
     # ---- system + overview aggregate -----------------------------------------
 
-    def system(self) -> dict[str, Any]:
+    def system(self, *, deployment: dict[str, Any] | None = None) -> dict[str, Any]:
         try:
             # An existing-but-empty outputs/ is still a cold start.
             outputs_present = self.outputs.exists() and any(self.outputs.iterdir())
@@ -1788,7 +1832,9 @@ class Readers:
             outputs_present = False
         return {
             "checkpoint_bucket": "hf://buckets/TKendrick/OpenUI",
-            "deployment": self.deployment_state(),
+            "deployment": deployment
+            if deployment is not None
+            else self.deployment_state(),
             "outputs_present": outputs_present,
         }
 
@@ -1797,15 +1843,17 @@ class Readers:
         total = sum(b["count"] for b in boards)
         passed = sum(b["passed"] for b in boards)
         runs = self.runs()
+        # Deployment state is embedded by two sub-views; read it once per request.
+        deployment = self.deployment_state()
         return {
             "scoreboards": boards,
             "experiment_totals": {"count": total, "passed": passed},
             "runs": runs["runs"][:12],
             "runs_provenance": runs["provenance"],
-            "checkpoints": self.checkpoints(),
+            "checkpoints": self.checkpoints(deployment=deployment),
             "data": self.train_data(),
             "test_data": self.test_data(),
             "annotations": self.annotations_summary(),
-            "system": self.system(),
+            "system": self.system(deployment=deployment),
             "performance": self.performance_insights(),
         }

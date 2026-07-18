@@ -580,7 +580,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 reported_loss_t = raw_loss_t.detach()
                 if auxiliary_loss_t is not None:
                     reported_loss_t = reported_loss_t + auxiliary_loss_t.detach()
-                accum_loss_sum += float(reported_loss_t.cpu())
+                accum_loss_sum += float(reported_loss_t)
                 accum_loss_count += 1
                 accum_batch_meta.extend(_batch_meta(batch))
                 accum_example_losses.extend(

@@ -456,12 +456,27 @@ class JobRegistry:
             await asyncio.sleep(poll)
 
     def tail(self, job_id: str, *, lines: int = 200) -> list[str]:
+        # Polled per job-detail request; read a bounded window from the end
+        # instead of the whole (potentially large) log file.
         log_path = self.jobs_dir / job_id / "log.txt"
         try:
-            text = log_path.read_text(encoding="utf-8", errors="replace")
+            with open(log_path, "rb") as handle:
+                handle.seek(0, 2)
+                size = handle.tell()
+                window = 8192
+                while True:
+                    start = max(0, size - window)
+                    handle.seek(start)
+                    data = handle.read()
+                    # > lines newlines guarantees the last `lines` lines are
+                    # complete, so the (dropped) window-boundary line is the
+                    # only partial one.
+                    if start == 0 or data.count(b"\n") > lines:
+                        break
+                    window *= 2
         except OSError:
             return []
-        return text.splitlines()[-lines:]
+        return data.decode("utf-8", errors="replace").splitlines()[-lines:]
 
     # -- helpers ------------------------------------------------------------
     def _write_meta(self, job: Job) -> None:
