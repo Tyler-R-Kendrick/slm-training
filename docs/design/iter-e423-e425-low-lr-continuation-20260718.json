@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "run_id": "e425-component-plan-23k-low-lr-bounded-320-r1",
+  "date": "2026-07-18",
+  "status": "Bounded pass: low learning rate prevents the matched 23k continuation collapse",
+  "harness_fix": {
+    "problem": "full-state optimizer restore silently replaced the configured learning rate",
+    "resolution": "reapply config.lr after optimizer.load_state_dict",
+    "tests": [
+      "test_full_state_resume_honors_configured_learning_rate",
+      "test_full_state_resume_is_bit_exact"
+    ]
+  },
+  "checkpoint": {
+    "id": "E423",
+    "run_id": "e423-component-plan-23k-low-lr-r1",
+    "path": "outputs/runs/e423-component-plan-23k-low-lr-r1/checkpoints/last.pt",
+    "sha256": "2a6b84ba7259937bbaf1e3edb712f2adde4ce8cdef0be6cbcc55e7ffa260e3ad",
+    "sync": "explicit_no_sync",
+    "promoted": false,
+    "rejected": false
+  },
+  "train": {
+    "steps": 446,
+    "additional_steps": 19,
+    "seen_target_tokens": 23019,
+    "target_token_budget": 23000,
+    "elapsed_wall_seconds": 21.60298531599983,
+    "max_wall_minutes": 4.5,
+    "stopped_on": "token_budget",
+    "record_count": 998,
+    "data_manifest_sha": "a4f212a3444d0f219fe1b3604f70929fe1a1b91d4fdc11a73167cb74c55b6a51",
+    "resumed_from": "outputs/runs/e396-balanced-type-head-continuation-r1/checkpoints/last_full_state.pt",
+    "learning_rate": 0.00003,
+    "saved_optimizer_learning_rates": [0.00003, 0.00003, 0.00003, 0.00003, 0.00003],
+    "best_weighted_nll": 5.809070931803047,
+    "fresh_loss_eval": false
+  },
+  "protocol_variant": {
+    "id": "E424",
+    "run_id": "e424-component-plan-23k-low-lr-bounded-r1",
+    "grammar_ltr_max_tokens": 256,
+    "agentv_passed": 4,
+    "agentv_total": 4,
+    "aggregate_metrics_equal_matched_protocol": true
+  },
+  "suites": {
+    "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.5599999999999999, "component_type_recall": 0.5, "reward_score": 0.977},
+    "held_out": {"n": 5, "parse_rate": 1.0, "meaningful_program_rate": 0.8, "placeholder_fidelity": 1.0, "structural_similarity": 0.66328, "component_type_recall": 0.5833333333333333, "reward_score": 0.7813999999999999},
+    "adversarial": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.75, "placeholder_fidelity": 1.0, "structural_similarity": 0.63035, "component_type_recall": 0.625, "reward_score": 0.72375},
+    "ood": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.75, "placeholder_fidelity": 1.0, "structural_similarity": 0.5352250000000001, "component_type_recall": 0.6041666666666666, "reward_score": 0.7334999999999999}
+  },
+  "ship_gates": {"pass": false, "failures": ["rico_held:missing_suite"], "bounded_suites_pass": true},
+  "agentv": {"format": "AgentEvals JSONL", "sdk": "@agentv/core", "passed": 4, "total": 4, "execution_errors": 0},
+  "matched_high_rate_control": {
+    "run_id": "e411-component-plan-23k-control-r1",
+    "learning_rate": 0.0003,
+    "steps": 446,
+    "seen_target_tokens": 23019,
+    "smoke_meaningful_program_rate": 0.3333333333333333,
+    "smoke_component_type_recall": 0.16666666666666666,
+    "agentv_passed": 3,
+    "agentv_total": 4
+  },
+  "timing_policy": {"external_timeout_seconds": 290, "external_kill_after_seconds": 10, "training_internal_max_wall_minutes": 4.5, "timed_out_runs_used_as_evidence": 0},
+  "verdict": "retain low-rate bounded candidate; no full RICO, promotion, sync, or ship claim"
+}

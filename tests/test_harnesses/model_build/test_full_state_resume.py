@@ -63,7 +63,7 @@ def _cfg(train_dir: Path, tmp_path: Path, run_id: str, steps: int, **kw):
         run_id=run_id,
         steps=steps,
         batch_size=2,
-        lr=3e-3,
+        lr=kw.pop("lr", 3e-3),
         seed=0,
         model_name="twotower",
         d_model=32,
@@ -142,6 +142,37 @@ def test_full_state_resume_is_bit_exact(train_dir: Path, tmp_path: Path) -> None
     assert set(full_sd) == set(resumed_sd)
     for key, value in full_sd.items():
         assert torch.equal(value, resumed_sd[key]), key
+
+
+def test_full_state_resume_honors_configured_learning_rate(
+    train_dir: Path, tmp_path: Path
+) -> None:
+    train(_cfg(train_dir, tmp_path, "source_lr", 2))
+    source_state = (
+        tmp_path / "runs" / "source_lr" / "checkpoints" / "last_full_state.pt"
+    )
+
+    resumed = train(
+        _cfg(
+            train_dir,
+            tmp_path,
+            "resumed_lr",
+            3,
+            lr=3e-4,
+            resume_from=source_state,
+        )
+    )
+
+    resumed_state = torch.load(
+        tmp_path / "runs" / "resumed_lr" / "checkpoints" / "last_full_state.pt",
+        map_location="cpu",
+        weights_only=False,
+    )
+    assert resumed["recipe"]["learning_rate"] == pytest.approx(3e-4)
+    assert all(
+        group["lr"] == pytest.approx(3e-4)
+        for group in resumed_state["optimizer"]["param_groups"]
+    )
 
 
 def test_resume_rejects_different_corpus(train_dir: Path, tmp_path: Path) -> None:

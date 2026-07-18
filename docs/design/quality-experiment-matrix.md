@@ -2529,6 +2529,17 @@ top-k recall 0.125; diagnose it before any further continuation. See
 [results](iter-e421-e422-exact-step-boundary-20260718.md) and
 [JSON](iter-e421-e422-exact-step-boundary-20260718.json).
 
+E423 fixes full-state resume so an explicitly requested learning rate is
+reapplied after optimizer-state restoration, then repeats E411's 19 batches at
+`3e-5`. It reaches the identical step 446 / 23,019-token boundary in 21.6s
+with all saved optimizer groups at `3e-5`. E424's 256-token protocol variant
+and matched 320-token E425 both pass AgentV 4/4 with identical aggregates.
+Unlike high-rate E412, smoke remains meaningful with recall 0.5; held
+structure/recall improve to 0.6633/0.5833. Retain E423 as the stronger bounded
+candidate, but do not promote or run full RICO before fresh loss evidence.
+See [results](iter-e423-e425-low-lr-continuation-20260718.md) and
+[JSON](iter-e423-e425-low-lr-continuation-20260718.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

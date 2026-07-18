@@ -55,6 +55,12 @@ def _clip_optimizer_parameter_groups(optimizer, max_norm: float) -> None:
         torch.nn.utils.clip_grad_norm_(group["params"], max_norm)
 
 
+def _set_optimizer_learning_rate(optimizer, learning_rate: float) -> None:
+    """Honor the configured learning rate after restoring optimizer state."""
+    for group in optimizer.param_groups:
+        group["lr"] = learning_rate
+
+
 def train(config: ModelBuildConfig, model=None) -> dict:
     from slm_training.runtime.accel import (
         autocast_context,
@@ -300,6 +306,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 plugin.load_state_dict(payload["model"], strict=False)
         if optimizer is not None and payload.get("optimizer") is not None:
             optimizer.load_state_dict(payload["optimizer"])
+            _set_optimizer_learning_rate(optimizer, config.lr)
         if (
             scaler is not None
             and payload.get("scaler") is not None
