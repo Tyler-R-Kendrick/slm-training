@@ -316,8 +316,10 @@ export const toolProvider: Record<string, QueryFn> = {
       rows: (d.checkpoints ?? []).map((c: any) => ({
         role: c.role,
         run_id: c.run_id || "—",
-        kind: c.kind,
-        source: c.source,
+        architecture: c.architecture,
+        parameters: c.parameters,
+        model_size: c.model_size,
+        throughput: c.throughput,
         status: c.status,
       })),
     };
