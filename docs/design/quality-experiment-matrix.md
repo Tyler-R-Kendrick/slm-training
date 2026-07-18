@@ -2956,7 +2956,18 @@ and reward 0.9940. Shard 3 remains metric-identical through row 383 at
 structure 0.8781 and reward 0.9925. Coverage is 384/1500; no merged or ship
 claim yet. Shard 4 is metric-identical through row 479 at structure 0.8785
 and reward 0.9925. Shard 5 is metric-identical through row 575 at structure
-0.8747 and reward 0.9935, bringing coverage to 576/1500. See
+0.8747 and reward 0.9935. Shard 6 is metric-identical through row 671 at
+structure 0.8826 and reward 0.9928. Shard 7 is metric-identical through row
+767 at structure 0.8747 and reward 0.9932, bringing coverage to 768/1500.
+The initial 96-row shard-8 attempt hit the external 290-second ceiling,
+emitted no evaluation JSON, and is excluded; smaller capped replacement
+shards are required. Replacement shard 8a completes `[768,816)` at
+meaningful/fidelity/recall 1.0, structure 0.8454, reward 0.9951, and zero
+reliability counts; audited row `rico_hf_test_1773` now emits schema-valid
+`AreaChart([], [])`. Replacement shard 8b completes `[816,864)` at
+meaningful/fidelity/recall 1.0, structure 0.8813, reward 0.9941, and zero
+reliability counts. The weighted replacement pair is metric-identical to E472
+shard 8; coverage is 864/1500. See
 [`iter-e477-schema-array-items-full-rico-sharded-20260718.md`](iter-e477-schema-array-items-full-rico-sharded-20260718.md).
 
 Verifier-guided repair status from

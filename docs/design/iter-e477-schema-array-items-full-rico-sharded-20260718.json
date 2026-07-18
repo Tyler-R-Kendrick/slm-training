@@ -116,10 +116,85 @@
       "fallback_count": 0,
       "decode_timeout_count": 0,
       "completed_normally": true
+    },
+    {
+      "index": 6,
+      "run_id": "e477-e396-array-items-rico-shard06-r1",
+      "eval_offset": 576,
+      "eval_end": 672,
+      "n": 96,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.882554166666667,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9927812499999998,
+      "failure_count": 0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "completed_normally": true
+    },
+    {
+      "index": 7,
+      "run_id": "e477-e396-array-items-rico-shard07-r1",
+      "eval_offset": 672,
+      "eval_end": 768,
+      "n": 96,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8746718750000002,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9931874999999998,
+      "failure_count": 0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "completed_normally": true
+    },
+    {
+      "index": "8a",
+      "run_id": "e477-e396-array-items-rico-shard08a-r1",
+      "eval_offset": 768,
+      "eval_end": 816,
+      "n": 48,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8454437499999999,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9950625,
+      "failure_count": 0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "completed_normally": true
+    },
+    {
+      "index": "8b",
+      "run_id": "e477-e396-array-items-rico-shard08b-r1",
+      "eval_offset": 816,
+      "eval_end": 864,
+      "n": 48,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8813145833333332,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9940625,
+      "failure_count": 0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "completed_normally": true
+    }
+  ],
+  "failed_attempts": [
+    {
+      "run_id": "e477-e396-array-items-rico-shard08-r1",
+      "eval_offset": 768,
+      "requested_n": 96,
+      "external_timeout_seconds": 290,
+      "exit_code": 124,
+      "evaluation_json_emitted": false,
+      "counted_as_evidence": false
     }
   ],
   "coverage": {
-    "completed_n": 576,
+    "completed_n": 864,
     "total_n": 1500,
     "exact_contiguous": false
   },
