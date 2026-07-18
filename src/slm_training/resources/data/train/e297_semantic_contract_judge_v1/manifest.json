@@ -1,9 +1,9 @@
 {
-  "version": "e292_semantic_contract_judge_v1",
+  "version": "e297_semantic_contract_judge_v1",
   "kind": "train",
   "source": "existing",
-  "records": "src/slm_training/resources/data/train/e292_semantic_contract_judge_v1/records.jsonl",
-  "stats": "src/slm_training/resources/data/train/e292_semantic_contract_judge_v1/stats.json",
+  "records": "src/slm_training/resources/data/train/e297_semantic_contract_judge_v1/records.jsonl",
+  "stats": "src/slm_training/resources/data/train/e297_semantic_contract_judge_v1/stats.json",
   "record_count": 480,
   "ids": [
     "lc_boolean_literal_edit_61a8cc3d261a",
@@ -2366,12 +2366,12 @@
     }
   },
   "governance": {
-    "croissant.json": "src/slm_training/resources/data/train/e292_semantic_contract_judge_v1/governance/croissant.json",
-    "data_card.json": "src/slm_training/resources/data/train/e292_semantic_contract_judge_v1/governance/data_card.json",
-    "dataset.spdx.json": "src/slm_training/resources/data/train/e292_semantic_contract_judge_v1/governance/dataset.spdx.json"
+    "croissant.json": "src/slm_training/resources/data/train/e297_semantic_contract_judge_v1/governance/croissant.json",
+    "data_card.json": "src/slm_training/resources/data/train/e297_semantic_contract_judge_v1/governance/data_card.json",
+    "dataset.spdx.json": "src/slm_training/resources/data/train/e297_semantic_contract_judge_v1/governance/dataset.spdx.json"
   },
-  "mixture": "src/slm_training/resources/data/train/e292_semantic_contract_judge_v1/mixture.json",
-  "synthesis_telemetry": "src/slm_training/resources/data/train/e292_semantic_contract_judge_v1/synthesis_telemetry.jsonl",
+  "mixture": "src/slm_training/resources/data/train/e297_semantic_contract_judge_v1/mixture.json",
+  "synthesis_telemetry": "src/slm_training/resources/data/train/e297_semantic_contract_judge_v1/synthesis_telemetry.jsonl",
   "synthesis_telemetry_sha256": "4dbb4471245755a58945e28b5119bfc48d35072535b8e80718ae0bcd6e880b51",
   "diffusion_online": {
     "policies": [
@@ -2405,23 +2405,23 @@
   },
   "built_at": "2026-07-17T17:30:22.994223+00:00",
   "schema_version": 2,
-  "dataset_id": "e292_semantic_contract_judge_v1",
+  "dataset_id": "e297_semantic_contract_judge_v1",
   "immutable": true,
   "trace_id": "9b3032a3e71c51be870666b76d8703fd",
   "artifacts": [
     {
       "path": "governance/croissant.json",
-      "sha256": "2046bdd130d922ab025be69813e4c05234f56ecf167d7964f72d9a70204a5bfb",
+      "sha256": "f5ff94a4fd083873f2337b24547a586bd9062b836e1a06da50cabd104f4918fe",
       "size": 2527
     },
     {
       "path": "governance/data_card.json",
-      "sha256": "29ec2fc34597401f629dd93fc3232b4a4683749e3f46d7d117de211e3feeeac3",
+      "sha256": "e052b1a24683546626efb4d1c8022d0c0aa4ad8af150fc898c6ecba36e0fc535",
       "size": 483
     },
     {
       "path": "governance/dataset.spdx.json",
-      "sha256": "44f6b515a69fe296ef83ff1620c2dc54ed3b81c105ceeff69b405e04afbaa1dc",
+      "sha256": "c35755357db29a9086dd3377b67703b4f1b7f30b5bc0311fe3e74c1f6e164ef1",
       "size": 1029
     },
     {
@@ -2431,7 +2431,7 @@
     },
     {
       "path": "mixture.json",
-      "sha256": "7665a1aab9f007589bf12d7dbe71dc15a62cc0f1e6ffca4c945c1f6e17594ee3",
+      "sha256": "6e037709eed74757d01416848444083e70c76fc8f5a3574c02cd763b26e8c012",
       "size": 4822
     },
     {
@@ -2441,7 +2441,7 @@
     },
     {
       "path": "stats.json",
-      "sha256": "cc5fcf7485458b4b7dcfa28ba18a2297271ef0f77ec562114a40015c135ae39c",
+      "sha256": "50823db7da2eb211f24d5bc99914d76b7f2970d26d6d23edef60a580593edaee",
       "size": 8382
     },
     {

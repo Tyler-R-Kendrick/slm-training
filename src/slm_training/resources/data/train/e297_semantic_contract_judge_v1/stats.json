@@ -1,5 +1,5 @@
 {
-  "version": "e292_semantic_contract_judge_v1",
+  "version": "e297_semantic_contract_judge_v1",
   "source": "existing",
   "derive_from": "src/slm_training/resources/data/train/e218_schema_normalized_judge_v5/records.jsonl",
   "seed_path": null,
@@ -62,7 +62,7 @@
   "preference_pairs_path": null,
   "mixture": {
     "manifest": {
-      "mixture_id": "e292_semantic_contract_judge_v1-base",
+      "mixture_id": "e297_semantic_contract_judge_v1-base",
       "weights": {
         "abstraction_ladder": 0.046875,
         "awwwards_real": 0.03125,
@@ -113,7 +113,7 @@
       "notes": "P12 deterministic build; P11-owned weights.",
       "version": 2
     },
-    "hash": "3593e653207a422f0500406c9b9e0ef875265b466fef7341b9b4361b25908241",
+    "hash": "b5351f09d9e8ac32284481063e96b9f0c94794dda521749e00e08416a33e39a9",
     "diagnostics": {
       "records": 480,
       "family_counts": {
