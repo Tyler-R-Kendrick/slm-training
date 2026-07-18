@@ -913,6 +913,36 @@ class TwoTowerModel(nn.Module):
             }
         )
 
+    def merge_adapter_copy(self) -> "TwoTowerModel":
+        """Return a wrapper-free copy with the adapter delta folded into the weights.
+
+        Merge is one-way and on a **copy**: this model and its removable adapter are
+        left untouched. Every ``LowRankAdapter`` in the copy's denoiser is replaced by a
+        plain ``nn.Linear`` equal to the adapter-enabled map, so the merged model carries
+        no active wrappers and trains as an ordinary full model.
+        """
+        import copy
+
+        from slm_training.models.adapters.low_rank import LowRankAdapter
+
+        if not self.has_adapter():
+            raise ValueError("no adapter is attached to merge")
+        merged = copy.deepcopy(self)
+
+        def _fold(module: nn.Module) -> None:
+            for name, child in list(module.named_children()):
+                if isinstance(child, LowRankAdapter):
+                    setattr(module, name, child.merged_linear())
+                else:
+                    _fold(child)
+
+        _fold(merged.denoiser)
+        merged._adapter_modules = {}
+        merged._adapter_spec = None
+        for parameter in merged.parameters():
+            parameter.requires_grad_(True)
+        return merged
+
     def _count_context_tokens(self, text: str) -> int:
         """Context token count under the active backend (capped at max_prompt_len)."""
         if is_hf_context(self.context):

@@ -117,6 +117,32 @@ def test_attach_rejects_mismatched_base_fingerprint() -> None:
         model.attach_adapter(_spec(model, base_compatibility_fingerprint="not-this-model"))
 
 
+def test_merge_adapter_copy_matches_enabled_and_leaves_original() -> None:
+    model = _model()
+    model.attach_adapter(_spec(model))
+    with torch.no_grad():
+        for wrapper in model._adapter_modules.values():
+            wrapper.lora_B.add_(0.03)
+    model.enable_adapter()
+
+    merged = model.merge_adapter_copy()
+    assert not merged.has_adapter()
+    merged_linear = merged.denoiser.layers[0].self_attn.q_proj
+    assert not isinstance(merged_linear, LowRankAdapter)
+
+    x = torch.randn(2, 5, 32)
+    wrapper = model.denoiser.layers[0].self_attn.q_proj
+    assert torch.allclose(merged_linear(x), wrapper(x), atol=1e-6)
+    # Merge is one-way on a copy: the original still carries its removable adapter.
+    assert model.has_adapter()
+    assert isinstance(model.denoiser.layers[0].self_attn.q_proj, LowRankAdapter)
+
+
+def test_merge_requires_an_attached_adapter() -> None:
+    with pytest.raises(ValueError, match="no adapter is attached"):
+        _model().merge_adapter_copy()
+
+
 def test_active_adapter_identity_tracks_adapter_weights() -> None:
     model = _model()
     assert model.active_adapter_identity() == ""
