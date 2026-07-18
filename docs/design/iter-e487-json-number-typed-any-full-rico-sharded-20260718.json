@@ -70,13 +70,102 @@
       "fallback_count": 0,
       "decode_timeout_count": 0,
       "completed_normally": true
+    },
+    {
+      "index": 3,
+      "run_id": "e487-e396-json-number-typed-any-rico-shard03-r1",
+      "eval_offset": 144,
+      "eval_end": 192,
+      "n": 48,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8743583333333333,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9934999999999999,
+      "failure_count": 0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "completed_normally": true
+    },
+    {
+      "index": "4a",
+      "run_id": "e487-e396-json-number-typed-any-rico-shard04a-r1",
+      "eval_offset": 192,
+      "eval_end": 216,
+      "n": 24,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8926333333333335,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9929999999999999,
+      "failure_count": 0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "completed_normally": true
+    },
+    {
+      "index": "4b",
+      "run_id": "e487-e396-json-number-typed-any-rico-shard04b-r1",
+      "eval_offset": 216,
+      "eval_end": 240,
+      "n": 24,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8187083333333333,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9932499999999997,
+      "failure_count": 0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "completed_normally": true
+    },
+    {
+      "index": "5a",
+      "run_id": "e487-e396-json-number-typed-any-rico-shard05a-r1",
+      "eval_offset": 240,
+      "eval_end": 264,
+      "n": 24,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8630749999999999,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9948749999999998,
+      "failure_count": 0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "completed_normally": true
+    },
+    {
+      "index": "5b",
+      "run_id": "e487-e396-json-number-typed-any-rico-shard05b-r1",
+      "eval_offset": 264,
+      "eval_end": 288,
+      "n": 24,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8501458333333334,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9947499999999999,
+      "failure_count": 0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "completed_normally": true
     }
   ],
   "coverage": {
-    "completed_n": 144,
+    "completed_n": 288,
     "total_n": 1500,
     "exact_contiguous": false
   },
+  "excluded_attempts": [
+    {
+      "run_id": "e487-e396-json-number-typed-any-rico-shard04-r1",
+      "eval_offset": 192,
+      "eval_limit": 48,
+      "reason": "interrupted by external 290-second cap",
+      "completed_normally": false
+    }
+  ],
   "timing": {
     "external_timeout_seconds": 290,
     "external_kill_after_seconds": 10
