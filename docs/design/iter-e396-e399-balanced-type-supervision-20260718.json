@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "run_id": "e398-balanced-type-bounded-r1",
+  "date": "2026-07-18",
+  "status": "Bounded AgentV 4/4; held recall 0.4833; full RICO missing",
+  "checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "path": "outputs/runs/e396-balanced-type-head-continuation-r1/checkpoints/last.pt",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0",
+    "device": "cpu",
+    "context_backend": "hf",
+    "output_tokenizer": "choice",
+    "sync": "verified_diagnostic_bucket_sync_after_e479",
+    "remote_uri": "hf://buckets/TKendrick/OpenUI/checkpoints/e396-balanced-type-head-continuation-r1",
+    "verification_timestamp": "2026-07-18T16:39:53Z",
+    "claim_class": "diagnostic",
+    "promoted": true
+  },
+  "train": {
+    "id": "E396",
+    "steps": 427,
+    "seen_target_tokens": 22044,
+    "target_token_budget": 22000,
+    "elapsed_wall_seconds": 104.55357363099756,
+    "max_wall_minutes": 4.5,
+    "stopped_on": "token_budget",
+    "record_count": 998,
+    "data_manifest_sha": "a4f212a3444d0f219fe1b3604f70929fe1a1b91d4fdc11a73167cb74c55b6a51",
+    "resumed_from": "outputs/runs/e368-card-hierarchy-adapt-18k-local-r1/checkpoints/last_full_state.pt",
+    "best_weighted_nll": 5.809070931803047,
+    "fresh_loss_eval": false
+  },
+  "recipe": {
+    "learning_rate": 0.0003,
+    "batch_size": 2,
+    "component_plan_loss_weight": 4.0,
+    "component_plan_token_pool": true,
+    "slot_component_loss_weight": 1.0,
+    "slot_component_class_balance_power": 0.5,
+    "slot_component_decode_weight_train_default": 4.0,
+    "slot_component_lexeme_prior_weight": 1.0,
+    "ltr_loss_weight": 0.5,
+    "fidelity_loss_weight": 0.5,
+    "honesty_mode": "no-design-md-context"
+  },
+  "evaluation_policy": {
+    "component_plan_decode_weight": 2.0,
+    "slot_component_decode_weight": 8.0,
+    "decode_min_content": -1,
+    "grammar_ltr_primary": true,
+    "grammar_ltr_requested_tokens": 320,
+    "effective_decode_canvas": 256,
+    "slot_contract_constrained_decode": true,
+    "honest_slot_contract": true,
+    "skip_exact_stream_probe": true
+  },
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.5599999999999999,
+      "component_type_recall": 0.5,
+      "reward_score": 0.977
+    },
+    "held_out": {
+      "n": 5,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.6,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.5932799999999999,
+      "component_type_recall": 0.4833333333333333,
+      "reward_score": 0.5915999999999999
+    },
+    "adversarial": {
+      "n": 4,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.75,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.6762,
+      "component_type_recall": 0.75,
+      "reward_score": 0.72675
+    },
+    "ood": {
+      "n": 4,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.5511250000000001,
+      "component_type_recall": 0.7291666666666666,
+      "reward_score": 0.9827499999999999
+    }
+  },
+  "rico_diagnostic": {
+    "id": "E399",
+    "run_id": "e399-balanced-type-rico48-offset336-r2",
+    "n": 48,
+    "suite_total_n": 1500,
+    "eval_offset": 336,
+    "diagnostic_subset": true,
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 1.0,
+    "placeholder_fidelity": 1.0,
+    "structural_similarity": 0.6400541666666664,
+    "component_type_recall": 0.8993055555555555,
+    "reward_score": 0.9991249999999999,
+    "failure_count": 0
+  },
+  "comparison": {
+    "held_out_e393": {
+      "meaningful_program_rate": 0.4,
+      "structural_similarity": 0.50612,
+      "component_type_recall": 0.2333333333333333,
+      "reward_score": 0.3922
+    },
+    "rico_e392": {
+      "structural_similarity": 0.651414583333333,
+      "component_type_recall": 0.9930555555555555,
+      "reward_score": 0.999375
+    }
+  },
+  "ship_gates": {
+    "pass": false,
+    "bounded_suites_pass": true,
+    "failures": [
+      "rico_held:missing_suite"
+    ]
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "passed": 4,
+    "total": 4,
+    "execution_errors": 0
+  },
+  "timing_policy": {
+    "external_timeout_seconds": 290,
+    "external_kill_after_seconds": 10,
+    "training_internal_max_wall_minutes": 4.5,
+    "timed_out_runs_used_as_evidence": 0
+  },
+  "verdict": "retained as the diagnostic HF-context champion; later E479 full-RICO gates pass and the bucket copy is verified, but incomplete provenance prevents a production HF ship claim"
+}

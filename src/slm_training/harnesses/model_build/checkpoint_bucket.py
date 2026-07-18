@@ -15,8 +15,10 @@ Layout in the bucket::
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
@@ -132,6 +134,61 @@ def _require_hub() -> Any:
     return HfApi, get_token
 
 
+def _cli_token_args(token: str | bool | None) -> list[str]:
+    return ["--token", token] if isinstance(token, str) and token else []
+
+
+def _cli_sync_bucket(
+    *, source: str, dest: str, dry_run: bool, token: str | bool | None
+) -> dict[str, Any]:
+    command = ["hf", "buckets", "sync", source, dest]
+    if dry_run:
+        command.append("--dry-run")
+    command.extend(["--json", *_cli_token_args(token)])
+    completed = subprocess.run(
+        command,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    rows: list[dict[str, Any]] = []
+    for line in completed.stdout.splitlines():
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(row, dict):
+            rows.append(row)
+    header = next((row for row in rows if row.get("type") == "header"), {})
+    return {
+        **header.get("summary", {}),
+        "operations": [row for row in rows if row.get("type") == "operation"],
+    }
+
+
+def _sync_bucket(
+    api: Any,
+    *,
+    source: str,
+    dest: str,
+    dry_run: bool,
+    token: str | bool | None,
+) -> Any:
+    if hasattr(api, "sync_bucket"):
+        return api.sync_bucket(
+            source=source,
+            dest=dest,
+            dry_run=dry_run,
+            token=token,
+        )
+    return _cli_sync_bucket(
+        source=source,
+        dest=dest,
+        dry_run=dry_run,
+        token=token,
+    )
+
+
 def ensure_checkpoint_bucket(
     bucket: str | None = None,
     *,
@@ -149,14 +206,25 @@ def ensure_checkpoint_bucket(
             "Set HF_TOKEN or run `hf auth login`."
         )
     api = HfApi(token=tok)
-    url = api.create_bucket(bid, private=private, exist_ok=True, token=tok)
-    info = api.bucket_info(bid, token=tok)
+    if hasattr(api, "create_bucket"):
+        url = api.create_bucket(bid, private=private, exist_ok=True, token=tok)
+        info = api.bucket_info(bid, token=tok)
+        api_url = str(url)
+        is_private = bool(getattr(info, "private", private))
+    else:
+        command = ["hf", "buckets", "create", bid, "--exist-ok"]
+        if private:
+            command.append("--private")
+        command.extend(_cli_token_args(tok))
+        subprocess.run(command, check=True, capture_output=True, text=True)
+        api_url = f"https://huggingface.co/buckets/{bid}"
+        is_private = private
     return {
         "bucket_id": bid,
         "uri": uri,
         "url": f"https://huggingface.co/buckets/{bid}",
-        "api_url": str(url),
-        "private": bool(getattr(info, "private", private)),
+        "api_url": api_url,
+        "private": is_private,
     }
 
 
@@ -243,7 +311,13 @@ def _verify_remote_sync(
     reference unverified (and therefore unpublishable as frontier/ship).
     """
     plan = _plan_to_dict(
-        api.sync_bucket(source=str(stage), dest=remote, dry_run=True, token=token)
+        _sync_bucket(
+            api,
+            source=str(stage),
+            dest=remote,
+            dry_run=True,
+            token=token,
+        )
     )
     pending = _pending_uploads(plan, names)
     if pending is None:
@@ -345,8 +419,12 @@ def sync_run_checkpoints(
         )
 
         api = HfApi(token=tok)
-        plan = api.sync_bucket(
-            source=str(stage), dest=remote, dry_run=dry_run, token=tok
+        plan = _sync_bucket(
+            api,
+            source=str(stage),
+            dest=remote,
+            dry_run=dry_run,
+            token=tok,
         )
 
         verification: dict[str, Any] | None = None
@@ -371,7 +449,13 @@ def sync_run_checkpoints(
                     ),
                 )
                 # Push the now-verified sidecars/manifest (checkpoints unchanged).
-                api.sync_bucket(source=str(stage), dest=remote, dry_run=False, token=tok)
+                _sync_bucket(
+                    api,
+                    source=str(stage),
+                    dest=remote,
+                    dry_run=False,
+                    token=tok,
+                )
 
         summary = {
             "ok": True,
@@ -459,7 +543,9 @@ def _provenance_from_config(config: Any) -> dict[str, Any]:
     return {key: value for key, value in prov.items() if value is not None}
 
 
-def maybe_sync_train_checkpoints(config: Any, checkpoint_dir: Path) -> dict[str, Any] | None:
+def maybe_sync_train_checkpoints(
+    config: Any, checkpoint_dir: Path
+) -> dict[str, Any] | None:
     """Hook used by ``train()`` — returns sync report or None when disabled."""
     enabled = resolve_sync_checkpoints(
         sync_checkpoints=getattr(config, "sync_checkpoints", None),
