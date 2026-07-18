@@ -2780,7 +2780,9 @@ meaningful/fidelity/recall 1.0, structure 0.8836 (up from 0.8768), reward
 0.9922 (from 0.9926), and zero failures/fallback/timeouts. Coverage is
 672/1500. Shard 7 reaches row 767 at meaningful/fidelity/recall 1.0,
 structure 0.8766 (up from 0.8637), reward 0.9932 (from 0.9934), and zero
-failures/fallback/timeouts. Coverage is 768/1500. See
+failures/fallback/timeouts. Slider-bearing shard 8 reaches row 863 at
+meaningful/fidelity/recall 1.0, structure 0.8639 (up from 0.8631), unchanged
+reward 0.9946, and zero failures/fallback/timeouts. Coverage is 864/1500. See
 [`iter-e460-e396-semantic-slot-full-rico-sharded-20260718.md`](iter-e460-e396-semantic-slot-full-rico-sharded-20260718.md).
 
 Verifier-guided repair status from

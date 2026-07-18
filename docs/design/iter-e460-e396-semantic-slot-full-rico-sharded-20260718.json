@@ -16,7 +16,7 @@
     "affected_shards": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
     "reusable_unaffected_shards": [15]
   },
-  "coverage": {"completed_n": 768, "suite_n": 1500},
+  "coverage": {"completed_n": 864, "suite_n": 1500},
   "shards": [
     {
       "index": 0,
@@ -165,6 +165,24 @@
       "decode_timeout_count": 0,
       "agentv": {"passed": 0, "total": 5, "execution_errors": 0},
       "completed_normally": true
+    },
+    {
+      "index": 8,
+      "run_id": "e460-e396-semantic-slot-full-rico-shard08-r1",
+      "offset": 768,
+      "end": 864,
+      "affected_rows": 4,
+      "n": 96,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8638697916666667,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9945624999999999,
+      "failure_breakdown": {},
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "agentv": {"passed": 0, "total": 5, "execution_errors": 0},
+      "completed_normally": true
     }
   ],
   "timing_policy": {
@@ -172,5 +190,5 @@
     "external_kill_after_seconds": 10,
     "timed_out_runs_used_as_evidence": false
   },
-  "verdict": "Partial diagnostic: 768 of 1500 repaired RICO rows refreshed; no full-suite or ship claim."
+  "verdict": "Partial diagnostic: 864 of 1500 repaired RICO rows refreshed; no full-suite or ship claim."
 }

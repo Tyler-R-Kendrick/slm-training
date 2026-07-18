@@ -21,6 +21,7 @@ contracts, eight generation steps, three attempts, and no fallback.
 | 5 | 480–576 | 3 | 96 | 1.0 | 1.0 | 0.8761 | 1.0 | 0.9935 | complete |
 | 6 | 576–672 | 2 | 96 | 1.0 | 1.0 | 0.8836 | 1.0 | 0.9922 | complete |
 | 7 | 672–768 | 6 | 96 | 1.0 | 1.0 | 0.8766 | 1.0 | 0.9932 | complete |
+| 8 | 768–864 | 4 | 96 | 1.0 | 1.0 | 0.8639 | 1.0 | 0.9946 | complete |
 
 Shard 0 completes normally in about 187 seconds with zero failures, fallback,
 or decode timeouts. Its affected row improves structure 0.9069→1.0 while
@@ -51,6 +52,9 @@ or decode timeouts. Structure improves 0.8768→0.8836 and recall
 Shard 7 completes normally in about 220 seconds with zero failures, fallback,
 or decode timeouts. Structure improves 0.8637→0.8766 and recall
 0.9896→1.0; reward changes 0.9934→0.9932.
+Shard 8 completes normally in about 220 seconds with zero failures, fallback,
+or decode timeouts. Structure improves 0.8631→0.8639 while recall remains
+1.0 and reward remains 0.9946. This is the first Slider-bearing shard.
 
-**Current verdict:** 768/1500 refreshed rows are complete. This is a partial
+**Current verdict:** 864/1500 refreshed rows are complete. This is a partial
 diagnostic, not a full-RICO, ship-gate, champion, or production HF claim.
