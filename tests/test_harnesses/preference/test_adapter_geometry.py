@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 torch = pytest.importorskip("torch")
@@ -13,6 +15,7 @@ from slm_training.harnesses.preference.adapter_geometry import (  # noqa: E402
     profile_adapter_objective_geometry,
     profile_adapter_solvers,
     profile_rank_matrix,
+    write_geometry_evidence,
 )
 from slm_training.harnesses.preference.local_decisions import (  # noqa: E402
     DecisionEventV1,
@@ -221,3 +224,24 @@ def test_rank_matrix_emits_expired_record_over_budget() -> None:
     assert record["results"] == {}  # no valid geometry survives expiry
     assert record["ranks_profiled"] == []
     assert record["wall_seconds"] >= 0.0
+
+
+def test_geometry_evidence_writes_deterministic_json(tmp_path) -> None:
+    model = _model()
+    _attach(model)
+    out = tmp_path / "evidence.json"
+    evidence = write_geometry_evidence(out, model, _event())
+    assert out.exists()
+    loaded = json.loads(out.read_text(encoding="utf-8"))
+    assert loaded == evidence
+    assert loaded["schema"] == "adapter-geometry-evidence-v1"
+    # Honesty marker: fixture evidence is never a training/quality claim.
+    assert "no training" in loaded["claim"] and "quality claim" in loaded["claim"]
+    assert loaded["parameter_dim"] > 0
+    assert "geometry" in loaded and "solvers" in loaded
+    assert isinstance(loaded["solvers"]["mgda"]["converged"], bool)
+
+
+def test_geometry_evidence_requires_an_adapter() -> None:
+    with pytest.raises(ValueError, match="attached adapter"):
+        write_geometry_evidence("unused.json", _model(), _event())

@@ -20,9 +20,11 @@ quality claim is produced here.
 
 from __future__ import annotations
 
+import json
 import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from pathlib import Path
 
 import torch
 import torch.nn.functional as F
@@ -42,10 +44,12 @@ __all__ = [
     "PROTECTED_QUANTITIES",
     "AdapterGeometryReport",
     "AdapterSolverReport",
+    "build_geometry_evidence",
     "legal_space_quantities",
     "profile_adapter_objective_geometry",
     "profile_adapter_solvers",
     "profile_rank_matrix",
+    "write_geometry_evidence",
 ]
 
 PROTECTED_QUANTITIES: tuple[str, ...] = ("loss", "good_mass", "bad_mass", "margin")
@@ -354,3 +358,57 @@ def profile_rank_matrix(
         # No valid geometry survives an expired run — operational telemetry only.
         "results": {} if expired else {str(rank): row for rank, row in results.items()},
     }
+
+
+def build_geometry_evidence(
+    model: TwoTowerModel,
+    event: DecisionEventV1,
+    *,
+    objective: str = "ftpo_single",
+    epsilon: float = 2.0,
+    tau: float = 1.0,
+) -> dict[str, object]:
+    """Assemble a JSON-serializable diagnostic evidence record for one state.
+
+    Folds the base/adapter identities and the geometry + solver reports into a
+    versioned record carrying an explicit no-quality-claim marker, so a fixture
+    profile can never be mistaken for a training or ship result.
+    """
+    if not model.has_adapter():
+        raise ValueError("evidence requires an attached adapter (frozen parent)")
+    geometry = profile_adapter_objective_geometry(
+        model, event, objective=objective, epsilon=epsilon, tau=tau
+    )
+    solvers = profile_adapter_solvers(
+        model, event, objective=objective, epsilon=epsilon, tau=tau
+    )
+    return {
+        "schema": "adapter-geometry-evidence-v1",
+        "claim": "diagnostic only; no training, checkpoint, or quality claim",
+        "base_fingerprint": model.compatibility_fingerprint(),
+        "adapter_identity": model.active_adapter_identity(),
+        "objective": objective,
+        "event_group": event.group_id,
+        "parameter_dim": geometry.parameter_dim,
+        "geometry": geometry.to_dict(),
+        "solvers": solvers.to_dict(),
+    }
+
+
+def write_geometry_evidence(
+    path: str | Path,
+    model: TwoTowerModel,
+    event: DecisionEventV1,
+    *,
+    objective: str = "ftpo_single",
+    epsilon: float = 2.0,
+    tau: float = 1.0,
+) -> dict[str, object]:
+    """Write :func:`build_geometry_evidence` to ``path`` as deterministic JSON."""
+    evidence = build_geometry_evidence(
+        model, event, objective=objective, epsilon=epsilon, tau=tau
+    )
+    Path(path).write_text(
+        json.dumps(evidence, indent=2, sort_keys=True), encoding="utf-8"
+    )
+    return evidence
