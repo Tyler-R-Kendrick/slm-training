@@ -81,6 +81,42 @@ certified-deduction / reversible-decision / local-nogood / certified-contradicti
 timeout table live in
 [verified-scope-solver.md](verified-scope-solver.md). Not wired into decode.
 
+### Decode integration behind a flag (VSS1-03)
+
+[`dsl/solver/decode.py`](../../src/slm_training/dsl/solver/decode.py)
+`solver_prune` and [`models/twotower.py`](../../src/slm_training/models/twotower.py)
+`_solver_prune_forest` finally wire this hard/soft split into the compiler-tree
+lattice decode: inside `_compiler_ltr_decode_one`, right after
+`build_completion_forest`, the authoritative forest is projected to a
+`FiniteDomainState`, exact closure runs, and the forest is pruned to the
+certificate-checked live subset **before** `rank_forest` scores anything. So a
+learned ranker only ever reorders candidates that survived certified deduction; it
+can neither reintroduce a certified-removed path (survivors are a subset that keeps
+`CompletionPath` identity and forest order) nor rescue an `UNKNOWN` into removal
+(`keep_and_rank` keeps it live). A certified bottom empties the forest and reuses
+the existing `LatticeSearchState` rollback rather than emitting an unverified
+fallback. The whole seam is gated by `verified_solver_decode` (**default off**);
+off, the lattice decode and its stats/trace output are byte-identical, so the V9
+campaign rows and all measured results below are unaffected. The enabled path is
+**unmeasured** — no new campaign row, checkpoint, or ship claim.
+## Constraint evidence (VSS0-02)
+
+The hard-lattice projection can now explain itself. `build_completion_forest(...,
+explain=True)` (and `ChoiceDecodeState.allowed_ids_with_evidence`) attach
+reason-coded `ConstraintEvidence` — `ConstraintStage` ∈ {grammar, schema,
+binding, slot_contract, dataflow, literal_frame, min_content, terminal,
+coverage} — for every *considered* action, plus a `ConstraintEvidenceSummary`.
+This is instrumentation only: it does not change candidate membership, ordering,
+or the default decode cost (nothing is allocated when `explain=False`).
+
+Honesty rule: evidence about considered candidates is **not** an exhaustive
+support proof. A `partial`/`none` forest `coverage` leaves exclusions
+un-certified (its `coverage` record is `admitted=False`); only a `complete`
+forest makes an exclusion exact, and minimum-content EOS withholding is recorded
+distinctly from a grammar rejection. See
+[verified-scope-solver.md](verified-scope-solver.md) for the support contract
+this evidence feeds.
+
 ## Campaign design (V9)
 
 The registered runnable rows are hypotheses, not results. The matched controls separate the

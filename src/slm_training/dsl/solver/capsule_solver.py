@@ -736,5 +736,3 @@ def _add_search_counters(counters: CapsuleCounters, sc: SearchCounters) -> Capsu
         capsule_count=counters.capsule_count,
         joint_count=counters.joint_count,
     )
-
-

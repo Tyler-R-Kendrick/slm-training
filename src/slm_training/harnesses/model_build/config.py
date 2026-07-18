@@ -57,6 +57,8 @@ class ModelBuildConfig:
     fidelity_loss_weight: float = 0.5
     # None = preserve checkpoint on load; factory defaults new models to True.
     design_md_in_context: bool | None = None
+    # Deterministic record-level train-time omission; evaluation is unaffected.
+    design_md_dropout: float = 0.0
     design_md_budget: int = 1800
     schema_in_context: bool = False
     slot_contract_in_context: bool = False
@@ -120,6 +122,15 @@ class ModelBuildConfig:
     compiler_search_stagnation_patience: int = 2
     compiler_search_backtrack_limit: int = 8
     compiler_search_local_nogoods: bool = False
+    # VSS1-03 certified-solver decode (disabled by default; decode-time only).
+    verified_solver_decode: bool = False
+    solver_max_nodes: int = 512
+    solver_max_depth: int = 64
+    solver_max_backtracks: int = 64
+    solver_max_verifier_calls: int = 64
+    solver_max_wall_ms: int = 0
+    solver_unknown_policy: str = "keep_and_rank"
+    solver_certificate_mode: str = "summary"
     decode_min_content: int = 0  # A4: 0 off | >0 floor | -1 auto-from-inventory
     asap_decode: bool = False  # A2: ASAp-style constraint-mass removal in MaskGIT
     fastpath_aux_weight: float = 0.0

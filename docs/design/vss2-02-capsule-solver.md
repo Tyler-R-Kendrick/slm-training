@@ -1,6 +1,6 @@
 # VSS2-02: Capsule solve plans, SCC joint solving, and interface summaries
 
-**Issue:** SLM-66  
+**Issue:** SLM-66
 **Status:** wiring / fixture evidence. No train, eval, benchmark, model, checkpoint, or ship claim.
 
 ## What was added

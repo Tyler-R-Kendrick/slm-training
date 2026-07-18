@@ -1,0 +1,77 @@
+{
+  "action_alphabet_size": 8,
+  "bounds": {
+    "max_ast_depth": null,
+    "max_ast_nodes": 6,
+    "max_live_bindings": 2,
+    "result_types": [
+      "number"
+    ],
+    "template_classes": [
+      "N"
+    ]
+  },
+  "branching_histogram": {
+    "0": 1,
+    "1": 11,
+    "2": 5,
+    "3": 2,
+    "4": 2,
+    "5": 4,
+    "6": 3
+  },
+  "canonical_ast_count": 400,
+  "capacity": {
+    "d": 4,
+    "min_k": 3,
+    "state_count": 28
+  },
+  "codec_version": 1,
+  "complete": true,
+  "completion_counts": {
+    "0": 3,
+    "1": 8,
+    "2": 7,
+    "3": 6,
+    "4": 4
+  },
+  "fixture": "bounded-expr",
+  "forced_visit_fraction": {
+    "denominator": 27,
+    "numerator": 9,
+    "value": 0.3333333333333333
+  },
+  "grammar_hash": "f54c881fce9170dabb2d78b9c894a839e7df50ecb2b392f5a8115af2bbfd9601",
+  "max_local_branching": 6,
+  "minimized_state_count": 28,
+  "parser_version": 1,
+  "provenance": {
+    "backend": "arith-sketch",
+    "external_estimates_reproduced": false,
+    "external_reference": "docs/design/calculated-arity-adaptive-precision.md",
+    "grammar_file": "arith_sketch.lark",
+    "language_contract_id": "45dbde08ece24fa0",
+    "operators": [
+      "+",
+      "-",
+      "*",
+      "/"
+    ]
+  },
+  "raw_state_count": 11,
+  "schema_version": 1,
+  "scope_signature_count": 3,
+  "signature_version": 1,
+  "trie_state_count": 844,
+  "work_counters": {
+    "candidates_enumerated": 597,
+    "candidates_not_live": 194,
+    "canonical_ast_count": 400,
+    "dedup_collisions": 0,
+    "minimize_classes": 28,
+    "minimize_node_sweeps": 844,
+    "trie_nodes": 844,
+    "validate_calls": 403,
+    "validate_rejected": 3
+  }
+}

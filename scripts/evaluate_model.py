@@ -215,6 +215,20 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--compiler-search-stagnation-patience", type=int, default=2)
     parser.add_argument("--compiler-search-backtrack-limit", type=int, default=8)
     parser.add_argument(
+        "--verified-solver-decode",
+        action="store_true",
+        help="VSS1-03: prune the compiler forest via certified exact closure before ranking",
+    )
+    parser.add_argument("--solver-max-nodes", type=int, default=512)
+    parser.add_argument(
+        "--solver-unknown-policy", choices=("keep_and_rank",), default="keep_and_rank"
+    )
+    parser.add_argument(
+        "--solver-certificate-mode",
+        choices=("none", "summary", "full"),
+        default="summary",
+    )
+    parser.add_argument(
         "--schema-in-context",
         action="store_true",
         help="Override: inject compact schema into context.",
@@ -414,6 +428,10 @@ def main(argv: list[str] | None = None) -> int:
         grammar_verify_chosen_only=(True if args.verify_chosen_only else None),
         grammar_top_k=args.grammar_top_k,
         compiler_decode_mode=args.compiler_decode_mode,
+        verified_solver_decode=args.verified_solver_decode,
+        solver_max_nodes=args.solver_max_nodes,
+        solver_unknown_policy=args.solver_unknown_policy,
+        solver_certificate_mode=args.solver_certificate_mode,
         component_inventory_decode_weight=args.component_inventory_decode_weight,
         component_plan_decode_weight=args.component_plan_decode_weight,
         component_edge_decode_weight=args.component_edge_decode_weight,

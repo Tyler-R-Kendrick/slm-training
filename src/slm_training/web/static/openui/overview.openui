@@ -8,8 +8,9 @@ head = PageHead("Mission control", "Champion status, ship-gate verdict, and what
 hero = HeroStrip(heroData)
 inflight = Row([Panel("Live jobs", [JobList(jobs)], JobsBadge(jobs)), Panel("Remote dispatches", [DispatchList(disp)], Badge("hf jobs / pods", "committed"))])
 
-referenceCols = [{ key: "role", label: "Reference role" }, { key: "track", label: "Track" }, { key: "run_id", label: "Run" }, { key: "kind", label: "Kind" }, { key: "location", label: "Artifact" }, { key: "evaluation_status", label: "Evaluation" }, { key: "card_state", label: "Model-card status" }]
-referencePanel = Panel("Current model card", [DataTable(referenceCols, perf.references, 26, "run_id"), Hint(perf.comparison_basis, true)], [ProvenanceBadge(perf.references.provenance), " ", NavChip("open checkpoints →", "/checkpoints")])
+referenceCols = [{ key: "role", label: "Reference role" }, { key: "run_id", label: "Run" }, { key: "architecture", label: "Architecture" }, { key: "parameters", label: "Parameters", align: "right" }, { key: "model_size", label: "Model size", align: "right" }, { key: "throughput", label: "Throughput", align: "right" }, { key: "evaluation_status", label: "Evaluation" }, { key: "card_state", label: "Model-card status" }]
+resourceNote = "Resource figures marked ≈ are architecture-comparable estimates; exact figures come from local checkpoint, train-summary, or performance evidence. Throughput varies by hardware and decode settings."
+referencePanel = Panel("Current model card", [DataTable(referenceCols, perf.references, 26, "run_id"), Hint(perf.comparison_basis, true), Hint(resourceNote, true)], [ProvenanceBadge(perf.references.provenance), " ", NavChip("open checkpoints →", "/checkpoints")])
 
 tileRow = Grid(@Each(perf.tiles.rows, "t", StatTile(t.label, t.value, t.sub, t.accent)), "210px")
 

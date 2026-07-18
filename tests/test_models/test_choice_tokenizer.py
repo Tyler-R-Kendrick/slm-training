@@ -214,6 +214,41 @@ def test_direct_candidates_avoid_most_vocabulary_ids(tok: ChoiceTokenizer) -> No
     assert len(literal_candidates) < tok.vocab_size // 2
 
 
+def test_choice_allowed_ids_with_evidence_matches_allowed_ids(
+    tok: ChoiceTokenizer,
+) -> None:
+    # VSS0-02: the explain companion returns the identical allowed set plus
+    # reason-coded evidence for every considered candidate, without disturbing
+    # the default hot path.
+    import json
+
+    from slm_training.dsl.grammar.fastpath.compiler_draft import (
+        ConstraintEvidence,
+        ConstraintStage,
+    )
+
+    for slot_count, remaining in ((0, 3), (1, 8), (3, 8), (2, 4)):
+        state = ChoiceDecodeState(tok, slot_count=slot_count)
+        expected = state.allowed_ids(remaining)
+        allowed, evidence = state.allowed_ids_with_evidence(remaining)
+        assert allowed == expected
+        assert evidence
+        admitted = {e.candidate_id for e in evidence if e.admitted}
+        assert admitted == set(allowed)
+        assert all(
+            e.reason_code and e.stage is ConstraintStage.GRAMMAR for e in evidence
+        )
+        excluded = {e.candidate_id for e in evidence if not e.admitted}
+        assert excluded.isdisjoint(allowed)
+        _, evidence_again = state.allowed_ids_with_evidence(remaining)
+        assert evidence_again == evidence
+        for record in evidence:
+            assert (
+                ConstraintEvidence.from_dict(json.loads(json.dumps(record.as_dict())))
+                == record
+            )
+
+
 def test_expression_candidates_are_reused_and_request_scoped(
     tok: ChoiceTokenizer,
 ) -> None:
