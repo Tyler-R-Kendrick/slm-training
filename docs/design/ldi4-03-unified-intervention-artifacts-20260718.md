@@ -56,7 +56,7 @@ rather than modifying `ModelPlugin` or `factory.build_model`.
 
 ```bash
 python -m pytest tests/test_lineage_interventions.py -q     # 15 passed
-python -m pytest tests/test_lineage.py -q
+python -m pytest tests/test_lineage/test_lineage.py -q
 python -m ruff check src/slm_training/lineage tests/test_lineage_interventions.py
 python -m scripts.repo_policy
 ```
