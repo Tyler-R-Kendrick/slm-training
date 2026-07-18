@@ -27,6 +27,11 @@ from slm_training.models.context import (
 )
 from slm_training.models.tokenizer import OpenUITokenizer, tokenize_text
 from slm_training.models.twotower import format_context_text
+from slm_training.dsl.solver.topology_solver import (
+    TopologyAdapterConfig,
+    topology_solver_prune,
+)
+from slm_training.dsl.solver.state import SolverBounds
 
 
 def _load_production_codec(
@@ -662,6 +667,17 @@ class GrammarDiffusionConfig:
     scope_independent_noise: bool = False
     scope_local_oracle: bool = False
     scope_contract_negatives: bool = False
+    # VSS3-03: topology finite-domain solver integration (disabled by default).
+    topology_verified_solver: bool = False
+    topology_capsule_solver: bool = False
+    topology_solver_ranker: str = "model"  # deterministic | model | energy
+    topology_solver_unknown_policy: str = "keep_and_rank"
+    topology_solver_max_nodes: int = 256
+    topology_solver_max_backtracks: int = 64
+    topology_solver_max_verifier_calls: int = 64
+    topology_solver_certificate_mode: str = "summary"
+    topology_solver_local_oracle: bool = True
+    topology_solver_global_verify: bool = True
     seed: int = 0
     eval_mode_no_fallback: bool = True
 
@@ -1562,6 +1578,74 @@ class GrammarDiffusionModel(nn.Module):
             : self.config.topology_max_nodes
         ]
 
+    def _topology_solver_survivors(
+        self,
+        root: TopologyNode,
+        slot_inventory: list[str],
+        output_kind: str,
+    ) -> tuple[set[tuple[int, str, int, int, int]] | None, dict[str, Any]]:
+        """Run exact closure over the active topology tree.
+
+        Returns ``None`` when the solver is disabled or an error occurs, leaving
+        the model's default proposal path untouched.  The survivor set is keyed
+        by ``(node_id, action_name, production_id, arity, slot_id)``.
+        """
+        if not getattr(self.config, "topology_verified_solver", False):
+            return None, {"enabled": False}
+        try:
+            adapter_config = TopologyAdapterConfig(
+                topology_max_nodes=self.config.topology_max_nodes,
+                topology_max_active=self.config.topology_max_active,
+                topology_max_arity=self.config.topology_max_arity,
+                topology_max_depth=self.config.topology_max_depth,
+                topology_bounded_buffer=self.config.topology_bounded_buffer,
+                topology_global_sync_interval=self.config.topology_global_sync_interval,
+            )
+            bounds = SolverBounds(
+                max_tokens=self.config.topology_max_nodes * 64,
+                max_nodes=int(
+                    getattr(self.config, "topology_solver_max_nodes", 256)
+                ),
+                max_depth=int(
+                    getattr(self.config, "topology_solver_max_depth", 32)
+                ),
+                max_backtracks=int(
+                    getattr(self.config, "topology_solver_max_backtracks", 64)
+                ),
+                max_verifier_calls=int(
+                    getattr(
+                        self.config, "topology_solver_max_verifier_calls", 64
+                    )
+                ),
+            )
+            survivors, result = topology_solver_prune(
+                root,
+                self.codec,
+                adapter_config,
+                slot_inventory,
+                output_kind,
+                bounds,
+                max_queries=max(
+                    1,
+                    min(
+                        self.config.topology_max_active * 4,
+                        self.config.topology_solver_max_verifier_calls or 64,
+                    ),
+                ),
+            )
+            trace = {
+                "enabled": True,
+                "reached_fixed_point": result.reached_fixed_point,
+                "stop_reason": result.stop_reason,
+                "candidates_removed": result.counters.candidates_removed,
+                "support_queries": result.counters.support_queries,
+                "verifier_calls": result.counters.verifier_calls,
+                "survivor_count": len(survivors),
+            }
+            return survivors, trace
+        except Exception as exc:  # noqa: BLE001
+            return None, {"enabled": True, "error": str(exc)[:200]}
+
     def _decode_one(
         self,
         ctx: torch.Tensor,
@@ -1640,7 +1724,9 @@ class GrammarDiffusionModel(nn.Module):
                 _failure_cone,
             ) = outputs
             index_by_id = {node.node_id: index for index, node in enumerate(selected)}
-            proposals: list[tuple[TopologyNode, int, int, int, float, float]] = []
+            proposals: list[
+                tuple[TopologyNode, int, int, int, int, float, float]
+            ] = []
             proposal_nodes = list(active_selected)
             if (
                 self.config.topology_actions
@@ -1659,12 +1745,16 @@ class GrammarDiffusionModel(nn.Module):
                         < self.config.topology_contract_threshold
                         and not any(child.active for child in _flatten(node)[1:])
                     ):
-                        proposals.append((node, -2, 0, 0, 1.0, 1.0))
+                        proposals.append(
+                            (node, int(TopologyAction.CONTRACT), -2, 0, 0, 1.0, 1.0)
+                        )
                     continue
                 if not self.config.topology_actions:
                     action = int(TopologyAction.EXPAND)
                 if action == int(TopologyAction.DELETE) and node.parent_id >= 0:
-                    proposals.append((node, -1, 0, 0, 1.0, 1.0))
+                    proposals.append(
+                        (node, int(TopologyAction.DELETE), -1, 0, 0, 1.0, 1.0)
+                    )
                     continue
                 if action not in {int(TopologyAction.EXPAND), int(TopologyAction.KEEP)}:
                     stats["invalid_actions"] += 1
@@ -1706,10 +1796,56 @@ class GrammarDiffusionModel(nn.Module):
                 ):
                     stats["deferred"] += 1
                     continue
-                proposals.append((node, production_id, arity, slot_id, validity, conf))
+                edit_action = (
+                    int(TopologyAction.KEEP)
+                    if production_id == node.production_id
+                    else int(TopologyAction.EXPAND)
+                )
+                proposals.append(
+                    (node, edit_action, production_id, arity, slot_id, validity, conf)
+                )
+
+            # VSS3-03: exact closure prunes the hard edit domain before the model
+            # commits any ranked expansion decision.  Contract/delete proposals are
+            # outside the finite edit domain and are left untouched.
+            solver_survivors, solver_trace = self._topology_solver_survivors(
+                root, slot_inventory, output_kind
+            )
+            stats["topology_solver"] = solver_trace
+            if solver_survivors is not None:
+                filtered: list[
+                    tuple[TopologyNode, int, int, int, int, float, float]
+                ] = []
+                for (
+                    node,
+                    action,
+                    production_id,
+                    arity,
+                    slot_id,
+                    validity,
+                    conf,
+                ) in proposals:
+                    if production_id < 0:
+                        filtered.append(
+                            (node, action, production_id, arity, slot_id, validity, conf)
+                        )
+                        continue
+                    action_name = TopologyAction(action).name
+                    if (
+                        node.node_id,
+                        action_name,
+                        production_id,
+                        arity,
+                        slot_id,
+                    ) in solver_survivors:
+                        filtered.append(
+                            (node, action, production_id, arity, slot_id, validity, conf)
+                        )
+                proposals = filtered
+
             proposed_children = sum(
                 arity
-                for _node, production_id, arity, *_rest in proposals
+                for _node, _action, production_id, arity, *_rest in proposals
                 if production_id >= 0
             )
             if len(all_nodes) + proposed_children > self.config.topology_max_nodes:
@@ -1717,6 +1853,7 @@ class GrammarDiffusionModel(nn.Module):
                 break
             for (
                 node,
+                _action,
                 production_id,
                 arity,
                 slot_id,

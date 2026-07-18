@@ -4,6 +4,15 @@ from slm_training.dsl.solver.adapters import (
     TopologyDomainAdapter,
     completion_forest_state,
 )
+from slm_training.dsl.solver.topology_adapter import (
+    TopologyAction,
+    TopologyAdapterConfig,
+    TopologyEdit,
+    TopologyNodeLike,
+    derive_topology_holes,
+    derive_topology_state,
+    legal_topology_productions,
+)
 from slm_training.dsl.solver.state import (
     DomainValue,
     FiniteDomainState,
@@ -73,6 +82,14 @@ from slm_training.dsl.solver.capsule_solver import (
 __all__ = [
     "BaselineRanker",
     "BindingSummary",
+    "TopologyAction",
+    "TopologyAdapterConfig",
+    "TopologyEdit",
+    "TopologyNodeLike",
+    "derive_topology_holes",
+    "derive_topology_state",
+    "legal_topology_productions",
+
     "CandidateRanker",
     "CapsuleCounters",
     "CapsuleGlobalVerifier",

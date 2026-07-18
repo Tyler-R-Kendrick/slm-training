@@ -668,3 +668,25 @@ tests/test_dsl/test_solver_replay.py tests/test_harnesses/distill/test_solver_tr
 tests/test_models/test_decode_stats.py tests/test_models/test_trace_store.py
 tests/test_harnesses/distill/test_meta_traces.py -q` and
 `python -m scripts.repo_policy`.
+
+2026-07-18 — VSS3-03 / SLM-71 extends the solver seam to the grammar-diffusion
+production-tree decoder (`models/grammar_diffusion.py`).  Ten new
+`topology_solver_*` config fields round-trip on `GrammarDiffusionConfig` /
+`ModelBuildConfig`, plumb through `factory.apply_runtime_overrides`, and default
+safely on old checkpoints.  When `topology_verified_solver=True`, each reverse
+phase snapshots the active tree, derives a `FiniteDomainState` of complete edit
+tuples `(action, production_id, arity, slot_id)` via
+`dsl/solver/topology_adapter.py`, and runs `exact_closure` with the torch-free
+`TopologyProblemExpander` / `TopologyVerifier` in `dsl/solver/topology_solver.py`
+before the model's ranked expansion decisions.  Survivors filter the proposal
+list; contract/delete remasking proposals are outside the finite edit domain and
+stay untouched.  `topology_capsule_solver=True` is gated to require
+`topology_verified_solver=True`; full capsule-plan/SCC integration is future
+work.  Pinned by `tests/test_models/test_grammar_diffusion_solver.py` and the
+existing topology/solver DSL tests.  No train/eval/matrix/checkpoint ran; the
+enabled path is **unmeasured** and makes **no correctness, speed, or ship
+claim**. Verified: `python -m pytest
+tests/test_models/test_grammar_diffusion.py
+tests/test_models/test_grammar_diffusion_solver.py
+tests/test_dsl/test_topology_adapter.py tests/test_dsl/test_capsule_solver.py -q`
+and `python -m scripts.repo_policy`.

@@ -10,7 +10,7 @@ from slm_training.dsl.solver import (
     derive_topology_holes,
     legal_topology_productions,
 )
-from slm_training.dsl.solver.state import DomainValue, FiniteDomainState, HoleId
+from slm_training.dsl.solver.state import FiniteDomainState, HoleId
 
 
 @dataclass
@@ -118,14 +118,29 @@ def test_topology_edit_round_trips_through_domain_value():
 
 
 def test_finite_domain_state_fingerprints_are_stable():
+    from slm_training.dsl.solver.state import HoleDomain, SolverBounds
+
     hole_id = HoleId(namespace="topology", path=(0,), kind="document")
-    domain = hole_id, (
-        DomainValue.topology_edit("KEEP", 1, 0, 0),
-        DomainValue.topology_edit("EXPAND", 5, 1, 0),
+    values = (
+        TopologyEdit(
+            action=TopologyAction.KEEP, production_id=1, arity=0, slot_id=0
+        ).to_value(),
+        TopologyEdit(
+            action=TopologyAction.EXPAND, production_id=5, arity=1, slot_id=0
+        ).to_value(),
     )
-    from slm_training.dsl.solver.state import HoleDomain
     state = FiniteDomainState(
-        domains={str(hole_id): HoleDomain(hole_id=hole_id, values=domain[1])}
+        problem_id="topology",
+        pack_id="test",
+        constraint_version="v1",
+        bounds=SolverBounds(
+            max_tokens=256,
+            max_nodes=8,
+            max_depth=8,
+            max_backtracks=0,
+            max_verifier_calls=0,
+        ),
+        holes=(HoleDomain(hole_id=hole_id, values=values),),
     )
     assert state.fingerprint
     state2 = FiniteDomainState.from_dict(state.to_dict())

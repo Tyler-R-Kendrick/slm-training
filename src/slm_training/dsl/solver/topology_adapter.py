@@ -5,7 +5,13 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import Any, Protocol, runtime_checkable
 
-from slm_training.dsl.solver.state import DomainValue, HoleDomain, HoleId
+from slm_training.dsl.solver.state import (
+    DomainValue,
+    FiniteDomainState,
+    HoleDomain,
+    HoleId,
+    SolverBounds,
+)
 
 
 class TopologyAction(IntEnum):
@@ -50,21 +56,24 @@ class TopologyEdit:
     slot_id: int
 
     def to_value(self) -> DomainValue:
-        return DomainValue.topology_edit(
-            action=self.action.name,
-            production_id=self.production_id,
-            arity=self.arity,
-            slot_id=self.slot_id,
+        return DomainValue.create(
+            "topology_edit",
+            {
+                "action": self.action.name,
+                "production_id": self.production_id,
+                "arity": self.arity,
+                "slot_id": self.slot_id,
+            },
         )
 
     @classmethod
     def from_value(cls, value: DomainValue) -> TopologyEdit:
-        action_name, production_id, arity, slot_id = value.payload
+        payload = value.payload
         return cls(
-            action=TopologyAction[action_name],
-            production_id=int(production_id),
-            arity=int(arity),
-            slot_id=int(slot_id),
+            action=TopologyAction[payload["action"]],
+            production_id=int(payload["production_id"]),
+            arity=int(payload["arity"]),
+            slot_id=int(payload["slot_id"]),
         )
 
 
@@ -255,12 +264,46 @@ def derive_topology_holes(
                 domain=HoleDomain(
                     hole_id=hole_id,
                     values=tuple(dict.fromkeys(values)),
-                    metadata={
-                        "depth": node.depth,
-                        "production_id": node.production_id,
-                        "slot_count": len(slots),
-                    },
+                    metadata=(
+                        ("depth", node.depth),
+                        ("parent_id", node.parent_id),
+                        ("production_id", node.production_id),
+                        ("slot_count", len(slots)),
+                    ),
                 ),
             )
         )
     return holes
+
+
+def derive_topology_state(
+    root: TopologyNodeLike,
+    codec: Any,
+    config: TopologyAdapterConfig,
+    *,
+    slot_inventory: list[str] | None = None,
+    problem_id: str = "topology",
+    pack_id: str = "openui",
+    constraint_version: str = "v1",
+    bounds: SolverBounds | None = None,
+    phase: int = 0,
+) -> FiniteDomainState:
+    """Build a finite-domain state covering the active topology nodes."""
+    holes = derive_topology_holes(
+        root, codec, config, slot_inventory=slot_inventory, phase=phase
+    )
+    if bounds is None:
+        bounds = SolverBounds(
+            max_tokens=config.topology_max_nodes * 64,
+            max_nodes=config.topology_max_nodes,
+            max_depth=config.topology_max_depth,
+            max_backtracks=0,
+            max_verifier_calls=0,
+        )
+    return FiniteDomainState(
+        problem_id=problem_id,
+        pack_id=pack_id,
+        constraint_version=constraint_version,
+        bounds=bounds,
+        holes=tuple(h.domain for h in holes),
+    )

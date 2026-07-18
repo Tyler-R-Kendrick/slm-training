@@ -279,3 +279,76 @@ express v0.5 state/query/action statements (RICO meaningful parse 0.0).
 Evidence:
 [iter-x22-d3-kapur-tree-edit-20260717.md](iter-x22-d3-kapur-tree-edit-20260717.md)
 + [grammar-matrix-results-iter-x22-kapur-20260717.json](grammar-matrix-results-iter-x22-kapur-20260717.json).
+
+## VSS3-03 decode wiring: capsule-aware exact closure (2026-07-18 UTC)
+
+SLM-71 added a guarded, disabled-by-default finite-domain solver seam to
+`GrammarDiffusionModel._decode_one`.  It is *wiring and replay evidence only*;
+it makes no quality or ship claim and does not change default decode behavior.
+
+New config fields (all default off/fallback):
+
+| Field | Default | Semantics |
+| --- | --- | --- |
+| `topology_verified_solver` | `False` | enable exact closure before ranked expansion decisions |
+| `topology_capsule_solver` | `False` | use capsule plan/SCC joint solving (requires `topology_verified_solver=True`) |
+| `topology_solver_ranker` | `"model"` | candidate ordering: `deterministic`, `model`, or `energy` |
+| `topology_solver_unknown_policy` | `"keep_and_rank"` | only V1 policy; unknowns stay scoreable |
+| `topology_solver_max_nodes` | 256 | solver node budget per closure call |
+| `topology_solver_max_backtracks` | 64 | solver backtrack budget |
+| `topology_solver_max_verifier_calls` | 64 | verifier calls per closure call |
+| `topology_solver_certificate_mode` | `"summary"` | certificate detail level |
+| `topology_solver_local_oracle` | `True` | classify pack-local checks as local evidence |
+| `topology_solver_global_verify` | `True` | require whole-program pack oracle before `SOLVED` |
+
+When `topology_verified_solver=True`, each reverse phase:
+
+1. Snapshots the active tree into the torch-free topology adapter.
+2. Builds a `FiniteDomainState` whose holes are complete edit tuples
+   `(action, production_id, arity, slot_id)` for every active node.
+3. Runs `exact_closure` with a torch-free `TopologyProblemExpander` and
+   `TopologyVerifier` that materializes the tree and calls the official
+   `validate_output` pack oracle.
+4. Filters model proposals to closure survivors; contract/delete proposals are
+   left untouched because they are remasking operations outside the finite edit
+   domain.
+5. Records `topology_solver` trace fields (`support_queries`,
+   `candidates_removed`, `verifier_calls`, `reached_fixed_point`, etc.) in
+   generation evidence.
+
+The capsule-aware path (`topology_capsule_solver=True`) is gated: the factory
+raises if it is enabled without `topology_verified_solver=True`.  The full
+`CapsuleProblemBuilder`/`solve_capsule_graph` integration is future work; the
+current wiring reserves the flag and validates the dependency.
+
+Key files:
+
+- `src/slm_training/models/grammar_diffusion.py` — config fields and
+  `_topology_solver_survivors` hook inside `_decode_one`.
+- `src/slm_training/dsl/solver/topology_solver.py` — torch-free expander,
+  verifier, and `topology_solver_prune` helper.
+- `src/slm_training/dsl/solver/topology_adapter.py` — finite-domain mapping
+  from active topology nodes; now carries `parent_id` metadata for tree
+  reconstruction.
+- `src/slm_training/harnesses/model_build/config.py` and `factory.py` —
+  `ModelBuildConfig` fields, runtime overrides, and invalid-combination
+  validation.
+- `tests/test_models/test_grammar_diffusion_solver.py` — regression tests for
+  defaults, config round-trip, disabled decode parity, enabled seam invocation,
+  and the capsule/verified dependency.
+
+Run used for this wiring check:
+
+```bash
+python -m pytest tests/test_models/test_grammar_diffusion.py tests/test_models/test_grammar_diffusion_solver.py tests/test_dsl/test_topology_adapter.py tests/test_dsl/test_capsule_solver.py -q
+python -m scripts.repo_policy
+.githooks/check-changed
+```
+
+All passed.  No checkpoint was trained, no matrix was run, and no ship gate is
+claimed.  A future issue will wire the capsule plan, model/energy ranker, and
+reversible backtracking paths and evaluate them against the honest ship gate
+battery.
+
+See also the dated fixture note:
+[iter-slm71-topology-solver-decode-wiring-20260718.md](iter-slm71-topology-solver-decode-wiring-20260718.md).
