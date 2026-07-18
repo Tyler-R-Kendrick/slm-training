@@ -22,6 +22,24 @@ telemetry), and — for decode rows — policy checkpoint SHA, decode-config
 hash (`decode_config_hash`), tokenizer/grammar versions, and seed. Rollouts
 from different checkpoints are never mixed unlabeled.
 
+### Solver-transition events (VSS1-04 / SLM-64)
+
+When the verified solver runs during decode (`verified_solver_decode`, default
+off), each decision emits typed events into the same decode row's `events`
+list — `solver_state`, `support_result`, `certified_deduction`, `decision`,
+`backtrack`, `nogood`, `solver_terminal` — built by
+[`dsl/solver/replay.py`](../../src/slm_training/dsl/solver/replay.py). Exact-closure
+decode emits the `solver_state` / `support_result` / `certified_deduction` /
+`solver_terminal` subset; the reversible search controller additionally emits
+`decision` / `backtrack` / `nogood`. The row also carries a bounded `solver`
+sidecar — `{schema_version, certificate_mode, certificates, counters}` — where
+`certificate_mode` (`none`/`summary`/`full`) gates certificate detail: `none`
+keeps only counters + honest status, `summary` compact descriptors, `full` the
+replay material (each certificate's `to_dict()`, whose recomputed digest must
+equal its id). Events and certificates carry only token/path ids and SHA-256
+digests — never raw region/user text. The schema bumps the decode trace to
+`version = 3`; v1/v2 rows load and replay unchanged.
+
 ## Replayability
 
 `replay_violations(trace)` certifies the decode stream is self-consistent:
@@ -30,6 +48,19 @@ same step's remasks removed them (or EOS truncation padded the tail), and a
 trace with steps must carry a final canvas. Empty list = replayable; the
 fixture test proves both directions (a clean fixture decode passes, a
 corrupted canvas is caught).
+
+For solver-transition events it additionally invokes
+`solver_replay_violations` ([`dsl/solver/replay.py`](../../src/slm_training/dsl/solver/replay.py)),
+which checks the ten VSS1-04 invariants: fingerprint lineage (each transition's
+`before_fingerprint` matches the active replay state), certified deductions
+remove only live values and — in `full` mode — cite a present, digest-consistent
+certificate (tamper detection), `unknown` support never removes, decisions select
+exactly one live value and record the rest, backtracks restore a recorded
+state/level, a `nogood` is never a certified deduction, a `solved` terminal
+carries a verifier report, `certified_unsat` is impossible once any
+`unknown`/budget/truncation appears, event counts match the sidecar counters, and
+a truncated snapshot is reported non-replayable rather than accepted as an
+exhaustive proof. Violations are human-readable strings, never assertions.
 
 ## Retention and bucket layout
 

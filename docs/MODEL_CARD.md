@@ -125,6 +125,7 @@ scratch-matrix clears as production readiness; silent gold-placeholder channels.
 | Output tokenizer | Compositional `OpenUITokenizer` (default) or V5 lexer (`DSLNativeTokenizer`) |
 | Decode | Grammar-constrained LTR / MaskGIT + repair levers (see design docs) |
 | Topology experiment | `grammar_diffusion` v2: typed production-tree expansion/contraction with bounded active nodes; no fixed canvas |
+| Verified-solver decode | `verified_solver_decode` (VSS1-03) **off by default**: opt-in certificate-checked exact-closure pruning of the compiler-tree forest before soft ranking, on the DSL-native path only. **Experimental and unmeasured — no checkpoint uses it and it carries no ship/quality claim** ([config glossary](design/quality-experiment-matrix.md#configuration-glossary--verified-solver-decode-vss1-03)). |
 | Eval gates | Multi-suite `--ship-gates` (parse, structural, `placeholder_fidelity`, reward) |
 
 ---

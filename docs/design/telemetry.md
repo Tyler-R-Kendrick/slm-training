@@ -41,6 +41,32 @@ the remote endpoint is missing or unavailable.
 **Generate:** `generate_batch` → `generate_once` / `best_of_n_rank`, plus
 `context_encode` inside the model.
 
+## Decode-stats solver work metrics (VSS1-04 / SLM-64)
+
+The verified solver's per-decode work is measured on the existing
+[`DecodeStats`](../../src/slm_training/models/decode_stats.py) envelope (not a new
+owner). All fields default to zero on every historical/default path (solver
+disabled), and solver wall time is separated from `denoiser_ms` / `projection_ms`.
+Stable names:
+
+| Field | Meaning |
+| --- | --- |
+| `solver_ms` | Solver wall time (`timed_ms`), separate from denoiser/projection. |
+| `solver_enabled` | `1` when the solver ran on a decision, else `0`. |
+| `solver_closure_passes` | Exact-closure fixed-point passes. |
+| `solver_support_queries` / `solver_support_cache_hits` | Support-oracle queries and request-local cache hits. |
+| `solver_supported` / `solver_unsupported` / `solver_unknown` | Tri-state support verdict counts. |
+| `solver_certified_removed` | Candidates removed by replay-valid certificates. |
+| `solver_decisions` / `solver_backtracks` / `solver_nogoods` | Reversible-search work (controller path). |
+| `solver_expanded_nodes` / `solver_verifier_calls` | Enumeration nodes and verifier calls. |
+| `solver_certificate_replay_failures` | Certificate replays that failed (0 at decode — closure never removes on a failed replay; populated by offline trace audits). |
+| `solver_terminal_status` | Honest terminal: `unknown` / `certified_unsat` / `budget_exhausted` (closure never claims `solved`). |
+
+They surface **only** under `metrics["decode_stats"]` in `eval_<suite>.json` (and,
+transitively, `scoreboard.json`) via `aggregate_stats`; no new top-level metric
+keys or files. They do not overload the existing grammar/lattice candidate
+counters.
+
 ## How to use
 
 ```bash

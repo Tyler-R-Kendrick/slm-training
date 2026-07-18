@@ -149,6 +149,35 @@ python -m scripts.train_rl \
 python -m scripts.bench_telemetry --train-steps 8 --gen-prompts 8
 ```
 
+## Configuration glossary — verified-solver decode (VSS1-03)
+
+Experimental, **disabled by default**, and **unmeasured**. These flags gate the
+certificate-checked exact-closure pruning of the compiler-tree forest before soft
+ranking (`docs/design/verified-scope-solver.md` → "Implemented decode
+integration"). They are **not** part of any honest gate, champion recipe, or
+matrix row; no row above enables them, and the honest ship policy
+(`STRICT_COMPILER_TREE_POLICY`) does not set them. Enabling changes decode
+behavior only for the semantic choice/compiler path on a DSL-native pack; an
+unsupported tokenizer/pack raises a capability error.
+
+| Flag (`TwoTowerConfig` / `ModelBuildConfig`) | CLI (`evaluate_model.py`) | Default | Meaning |
+| --- | --- | --- | --- |
+| `verified_solver_decode` | `--verified-solver-decode` | `False` | Master switch. Off ⇒ decode is byte-identical to today. |
+| `solver_max_nodes` | `--solver-max-nodes` | `512` | Enumeration node budget per decision (also bounds the token budget). |
+| `solver_max_depth` | — (config/checkpoint) | `64` | Search depth budget. |
+| `solver_max_backtracks` | — (config/checkpoint) | `64` | Backtrack budget. |
+| `solver_max_verifier_calls` | — (config/checkpoint) | `64` | Verifier-call budget. |
+| `solver_max_wall_ms` | — (config/checkpoint) | `0` | `0` = no wall timer; deterministic budgets stay authoritative. |
+| `solver_unknown_policy` | `--solver-unknown-policy` | `keep_and_rank` | Only supported value: `UNKNOWN` candidates stay live for the soft ranker. |
+| `solver_certificate_mode` | `--solver-certificate-mode` | `summary` | `none \| summary \| full` certificate detail. |
+
+```bash
+# Opt-in solver-pruned decode on the honest compiler-tree path (experimental).
+python -m scripts.evaluate_model --checkpoint <ckpt> \
+  --verified-solver-decode --solver-max-nodes 512 \
+  --solver-unknown-policy keep_and_rank --solver-certificate-mode summary
+```
+
 ## Measured results (CPU, 800 steps, scratch, no DESIGN.md in context)
 
 See [quality-matrix-results.json](quality-matrix-results.json). Headline deltas vs ship memorizer:
