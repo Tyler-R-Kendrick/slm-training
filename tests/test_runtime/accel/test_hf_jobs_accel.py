@@ -6,6 +6,7 @@ import io
 import json
 from contextlib import redirect_stdout
 
+import pytest
 import torch
 
 from scripts import hf_jobs_train, remote_train
@@ -73,6 +74,7 @@ def test_hf_jobs_train_dry_run() -> None:
     plan = json.loads(buf.getvalue())
     assert plan["flavor"] == "a10g-large"
     assert plan["run_id"] == "unit_jobs"
+    assert plan["timeout"] == "3m"
     assert "--fast-train" in plan["entrypoint"]
     assert "reduce-overhead" in plan["entrypoint"]
     assert "SLM_FAST_TRAIN=1" in plan["entrypoint"]
@@ -87,7 +89,7 @@ def test_hf_jobs_train_dry_run() -> None:
 def test_hf_jobs_build_command_no_mount() -> None:
     cmd = hf_jobs_train.build_hf_jobs_command(
         flavor="a100-large",
-        timeout="2h",
+        timeout="3m",
         image="pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime",
         entrypoint="echo hi",
         checkpoint_bucket="hf://buckets/TKendrick/OpenUI",
@@ -95,6 +97,18 @@ def test_hf_jobs_build_command_no_mount() -> None:
     )
     assert "--volume" not in cmd
     assert cmd[-3:] == ["bash", "-lc", "echo hi"]
+
+
+def test_hf_jobs_rejects_overlong_timeout() -> None:
+    with pytest.raises(ValueError, match="must be 3m"):
+        hf_jobs_train.build_hf_jobs_command(
+            flavor="a100-large",
+            timeout="4m",
+            image="pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime",
+            entrypoint="echo hi",
+            checkpoint_bucket="hf://buckets/TKendrick/OpenUI",
+            mount_bucket=False,
+        )
 
 
 def test_remote_train_includes_fast_train() -> None:
@@ -118,6 +132,7 @@ def test_remote_train_includes_fast_train() -> None:
     assert "--compile-mode reduce-overhead" in script
     assert "--device auto" in script
     assert "SLM_FAST_TRAIN=1" in script
+    assert "timeout --signal=INT --kill-after=10s 170s" in script
 
 
 def test_detect_device_cpu_fallback() -> None:

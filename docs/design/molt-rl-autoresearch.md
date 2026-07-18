@@ -87,7 +87,9 @@ python -m scripts.model_cycle --lineage-root outputs/lineage \
 ```
 
 A future paid smoke requires a separate explicit decision and
-`--ack-paid-gpu`. After completion:
+`--ack-paid-gpu`. Submission is fixed to a three-minute HF Jobs timeout; a
+timeout is a failed hardware smoke, never partial RL or checkpoint evidence.
+After completion:
 
 ```bash
 python -m scripts.model_cycle --lineage-root outputs/lineage \

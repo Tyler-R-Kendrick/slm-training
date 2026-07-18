@@ -1116,6 +1116,19 @@ def test_researcher_config_and_timeout_fail_closed(tmp_path: Path) -> None:
     checkout.mkdir()
     (checkout / "README.md").write_text("fixture")
     revision = _commit_fixture_repo(checkout)
+    with pytest.raises(ValueError, match=r"\(0, 180\]"):
+        IsolatedResearcher(
+            ResearcherSpec(
+                "open-deep-research",
+                "https://example.com/researcher",
+                revision,
+                OpenDeepResearchConfig,
+            ),
+            checkout=checkout,
+            python=sys.executable,
+            worker=tmp_path / "unused.py",
+            timeout_seconds=180.01,
+        )
     worker = tmp_path / "sleeping_worker.py"
     worker.write_text("import time\ntime.sleep(1)\n")
     researcher = IsolatedResearcher(

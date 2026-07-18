@@ -283,7 +283,7 @@ Surfaces (React 19 + Vite SPA, dark-first "mission control" design system):
 | --- | --- |
 | `/` Overview | Live jobs, experiment scoreboard, checkpoint roster, corpus health, system status, **remote dispatches** |
 | `/data` | Navigate + generate versioned corpora (`build_train_data` / `build_test_data`) |
-| `/experiments` | Quality / grammar / perf / phase matrices; run `run_*_matrix`; **dispatch full GPU trains** (`hf_jobs_train` / `remote_train`); drill into any run |
+| `/experiments` | Quality / grammar / perf / phase matrices; run `run_*_matrix`; **dispatch bounded GPU checkpoint smokes** (`hf_jobs_train` / `remote_train`); drill into any run |
 | `/smoke` | Smoke canary + perf & telemetry; launch wiring runs |
 | `/checkpoints` | Roster + **live configurable ship gates** + promote / deploy + blinded A/B |
 | `/runs/<id>` | Per-run detail — gate matrix, telemetry spans, `train_summary` metrics, durable-checkpoint link |

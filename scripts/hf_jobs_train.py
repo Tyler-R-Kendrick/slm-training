@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Submit a full TwoTower train on Hugging Face Jobs (managed GPUs).
+"""Submit a bounded TwoTower checkpoint smoke on Hugging Face Jobs.
 
 ZeroGPU Spaces are **not** used for full training — short ``@spaces.GPU`` quotas
 and no ``torch.compile``. Prefer HF Jobs (this launcher) or multi-farm pods
@@ -20,6 +20,7 @@ DEFAULT_BUCKET = "hf://buckets/TKendrick/OpenUI"
 DEFAULT_REPO = "https://github.com/Tyler-R-Kendrick/slm-training.git"
 # Mount point for the durable checkpoint bucket inside the Job container.
 BUCKET_MOUNT = "/mnt/openui-bucket"
+JOB_TIMEOUT = "3m"
 
 
 def build_entrypoint_script(
@@ -120,6 +121,8 @@ def build_hf_jobs_command(
     mount_bucket: bool,
     env: dict[str, str] | None = None,
 ) -> list[str]:
+    if timeout != JOB_TIMEOUT:
+        raise ValueError(f"HF Jobs timeout must be {JOB_TIMEOUT}")
     cmd: list[str] = [
         "hf",
         "jobs",
@@ -148,7 +151,12 @@ def build_hf_jobs_command(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--flavor", default=DEFAULT_FLAVOR, help="Jobs hardware flavor")
-    parser.add_argument("--timeout", default="8h", help="Job wall-clock timeout")
+    parser.add_argument(
+        "--timeout",
+        choices=(JOB_TIMEOUT,),
+        default=JOB_TIMEOUT,
+        help="Hard-capped Job wall-clock timeout.",
+    )
     parser.add_argument("--image", default=DEFAULT_IMAGE, help="Docker image for hf jobs run")
     parser.add_argument("--repo-url", default=DEFAULT_REPO)
     parser.add_argument("--branch", default="main")
@@ -223,7 +231,7 @@ def main(argv: list[str] | None = None) -> int:
         "mount_bucket": not args.no_mount_bucket,
         "entrypoint": entrypoint,
         "note": (
-            "ZeroGPU Spaces are unsuitable for this multi-hour train; "
+            "ZeroGPU Spaces are unsuitable for this bounded checkpoint smoke; "
             "use HF Jobs (this command) or scripts.remote_train pods. "
             "Docs: https://huggingface.co/docs/hub/jobs-quickstart"
         ),
@@ -242,7 +250,10 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
 
-    proc = subprocess.run(cmd, check=False)
+    try:
+        proc = subprocess.run(cmd, check=False, timeout=180)
+    except subprocess.TimeoutExpired:
+        return 124
     return int(proc.returncode)
 
 

@@ -1,11 +1,11 @@
-# Hugging Face Jobs for full training (not ZeroGPU)
+# Hugging Face Jobs for bounded checkpoint smoke (not ZeroGPU)
 
-**Full TwoTower trains** run on [Hugging Face Jobs](https://huggingface.co/docs/hub/jobs-quickstart)
+**Bounded TwoTower checkpoint smokes** run on [Hugging Face Jobs](https://huggingface.co/docs/hub/jobs-quickstart)
 or multi-farm pods — **not** on Spaces [ZeroGPU](https://huggingface.co/docs/hub/spaces-zerogpu).
 
 | Surface | Best for | Why |
 | --- | --- | --- |
-| **HF Jobs** (`scripts.hf_jobs_train`) | Managed A10G / A100 / RTX PRO full trains | Paid flavors, multi-hour timeout, `torch.compile`, bucket volumes |
+| **HF Jobs** (`scripts.hf_jobs_train`) | Managed A10G / A100 / RTX PRO checkpoint smoke | Paid flavors, hard three-minute timeout, `torch.compile`, bucket volumes |
 | **Pods** (`scripts.remote_train` + multi-farm MCP) | Bring-your-own GPU / cheapest spot | Same `--fast-train` knobs over SSH |
 | **ZeroGPU** Gradio Spaces | Short **demo inference** only | `@spaces.GPU` minutes of quota; **no** `torch.compile`; process isolation |
 
@@ -30,11 +30,11 @@ Prerequisites: Hub Pro/Team/Enterprise credits, write `HF_TOKEN`, `hf` CLI
 python -m scripts.hf_jobs_train --dry-run \
   --run-id twotower_jobs_v1 --steps 200 --branch main
 
-# Submit (A10G large, 8h timeout, mounts checkpoint bucket)
+# Submit (A10G large, hard 3m timeout, mounts checkpoint bucket)
 export HF_TOKEN=hf_...
 python -m scripts.hf_jobs_train \
   --flavor a10g-large \
-  --timeout 8h \
+  --timeout 3m \
   --run-id twotower_jobs_v1 \
   --steps 200 \
   --branch main
@@ -45,7 +45,7 @@ Equivalent raw CLI shape (built by the launcher):
 ```bash
 hf jobs run \
   --flavor a10g-large \
-  --timeout 8h \
+  --timeout 3m \
   --secrets HF_TOKEN \
   --env SLM_FAST_TRAIN=1 \
   --volume hf://buckets/TKendrick/OpenUI:/mnt/openui-bucket \
@@ -81,10 +81,11 @@ ZeroGPU Spaces never auto-enable `--fast-train` (`accel.is_zerogpu_environment`)
 Pick with `hf jobs hardware`. Common choices:
 
 - `a10g-large` — default for this repo’s small TwoTower footprint
-- `a100-large` / `a100-large` variants — longer curricula / larger backends
+- `a100-large` variants — maximize work completed inside the fixed run cap
 - `rtx-pro-6000` family — when available on Jobs (same generation as ZeroGPU backing)
 
-Timeout must exceed train + eval + export; ephemeral disk vanishes without bucket sync.
+The timeout is fixed at three minutes. Size the recipe so checkpoint sync finishes
+inside that envelope; an interrupted or platform-timed-out Job is not evidence.
 
 ## Related
 
