@@ -30,6 +30,7 @@ import torch.nn.functional as F
 from slm_training.harnesses.preference.local_decisions import DecisionEventV1
 from slm_training.harnesses.preference.local_train import (
     _event_logits,
+    _fresh_adamw_direction,
     _gradient_alignment,
     _minimum_norm_gradient,
     _project_conflicting_gradients,
@@ -191,6 +192,7 @@ class AdapterSolverReport:
     pcgrad: dict[str, float | int]
     mgda: dict[str, object]
     pairwise_cosine: dict[str, float]
+    optimizer_first_step: dict[str, float]
     common_descent_certified: bool
 
     def to_dict(self) -> dict[str, object]:
@@ -199,6 +201,7 @@ class AdapterSolverReport:
             "pcgrad": self.pcgrad,
             "mgda": self.mgda,
             "pairwise_cosine": self.pairwise_cosine,
+            "optimizer_first_step": self.optimizer_first_step,
             "common_descent_certified": self.common_descent_certified,
         }
 
@@ -269,6 +272,20 @@ def profile_adapter_solvers(
         for j in range(i + 1, len(names)):
             pairwise[f"{left}|{names[j]}"] = _gradient_alignment(tasks[i], tasks[j])["cosine"]
 
+    # Optimizer first-step transforms of the weighted-mean descent direction:
+    # SGD steps along the mean, so sgd_min_task_cosine tells whether that step
+    # descends *every* protected objective; adam_vs_mean_cosine tells whether
+    # AdamW's per-coordinate rescaling preserves that direction.
+    adam_direction = _fresh_adamw_direction(mean, params)
+    sgd_min_task_cosine = min(
+        _gradient_alignment(task, mean)["cosine"] for task in tasks
+    )
+    optimizer_first_step = {
+        "sgd_min_task_cosine": sgd_min_task_cosine,
+        "adam_vs_mean_cosine": _gradient_alignment(adam_direction, mean)["cosine"],
+        "adam_norm": _gradient_alignment(adam_direction, adam_direction)["left_norm"],
+    }
+
     return AdapterSolverReport(
         weighted_mean_norm=mean_norm,
         pcgrad=pcgrad_stats,
@@ -277,6 +294,7 @@ def profile_adapter_solvers(
             for key in ("common_descent", "converged", "norm_sq", "min_task_dot", "weights")
         },
         pairwise_cosine=pairwise,
+        optimizer_first_step=optimizer_first_step,
         common_descent_certified=bool(mgda_stats["common_descent"]),
     )
 

@@ -163,10 +163,19 @@ def test_solver_panel_reports_pcgrad_mgda_and_is_deterministic() -> None:
         "good_mass|margin",
         "bad_mass|margin",
     }
+    # Optimizer first-step transforms are reported with in-range cosines.
+    assert set(report.optimizer_first_step) == {
+        "sgd_min_task_cosine",
+        "adam_vs_mean_cosine",
+        "adam_norm",
+    }
+    assert -1.0001 <= report.optimizer_first_step["adam_vs_mean_cosine"] <= 1.0001
+    assert report.optimizer_first_step["adam_norm"] >= 0.0
     # Deterministic for a fixed model + event (same seed/order).
     again = profile_adapter_solvers(model, event)
     assert again.mgda["weights"] == report.mgda["weights"]
     assert again.pcgrad == report.pcgrad
+    assert again.optimizer_first_step == report.optimizer_first_step
 
 
 def test_mgda_weights_form_a_convex_combination() -> None:
