@@ -23,6 +23,7 @@ from slm_training.harnesses.model_build.data import (
     load_train_records,
 )
 from slm_training.harnesses.model_build.factory import build_model
+from slm_training.harnesses.model_build.full_state import _git_dirty, _git_sha
 from slm_training.harnesses.model_build.plugin import GenerationRequest
 from slm_training.harnesses.model_build.ship_gates import DEFAULT_SHIP_GATES
 from slm_training.models.decode_stats import collect_decode_stats
@@ -816,6 +817,8 @@ def evaluate(
             Path(config.test_dir) / "suites" / config.suite
         ),
         "model": config.model_name,
+        "code_git_sha": _git_sha(),
+        "code_dirty": _git_dirty(),
         "evaluated_at": datetime.now(timezone.utc).isoformat(),
         "failure_breakdown": failure_breakdown,
         "decode_timeout_count": decode_timeout_count,
@@ -986,6 +989,8 @@ def evaluate_suites(
         "eval_data_manifest_sha": next(iter(board.values()), {}).get(
             "eval_data_manifest_sha"
         ),
+        "code_git_sha": next(iter(board.values()), {}).get("code_git_sha"),
+        "code_dirty": next(iter(board.values()), {}).get("code_dirty"),
         "suites": board,
         "evaluated_at": datetime.now(timezone.utc).isoformat(),
     }

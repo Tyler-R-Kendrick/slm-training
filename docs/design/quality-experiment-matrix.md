@@ -1803,6 +1803,26 @@ adversarial success is not broad transfer and the checkpoint is not promotable.
 See [the narrative](iter-e295-design-context-dropout-20260717.md) and
 [machine-readable results](choice-design-dropout-results-iter-e295-20260717.json).
 
+## E496–E497 current-main provenance audits
+
+E496 syncs and verifies the durable E396 checkpoint SHA, then attempts to load
+it on clean current-main-derived revision `bccf2355`. Loading fails before
+evaluation because `slot_component_head.{weight,bias}` exists in the checkpoint
+but not current code. This falsifies current-main reproducibility of E490.
+E490's 5/5 result remains branch-only diagnostic evidence from an unreconciled
+decoder stack; it is not a deployable-code champion claim.
+
+E497 validates the repaired provenance envelope using the loadable committed
+playground fixture. Exact code SHA and clean-worktree state are persisted.
+Complete smoke n=3 finishes in 113.9 seconds: parse/meaningful/fidelity 0.0,
+structure 0.2203, type recall 0.1667, reward 0.0, one timeout, and AgentV 0/5.
+This is fixture-grade negative evidence, not a ship regression.
+
+Full evidence: [E496 compatibility audit](iter-e496-current-main-e396-honest-smoke-20260718.md),
+[E496 JSON](iter-e496-current-main-e396-honest-smoke-20260718.json),
+[E497 provenance smoke](iter-e497-current-main-playground-provenance-smoke-20260718.md),
+and [E497 JSON](iter-e497-current-main-playground-provenance-smoke-20260718.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

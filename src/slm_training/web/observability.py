@@ -401,6 +401,14 @@ class Readers:
                 evaluation.get("failed_gates"), int
             ):
                 gate_pass = evaluation["failed_gates"] == 0
+            reproducibility = payload.get("reproducibility")
+            reproducibility = (
+                reproducibility if isinstance(reproducibility, dict) else {}
+            )
+            claim_class = reproducibility.get("classification")
+            raw_gate_pass = gate_pass
+            if claim_class == "branch_only_diagnostic":
+                gate_pass = False
             agentv = payload.get("agentv") or evaluation.get("agentv")
             agentv = agentv if isinstance(agentv, dict) else {}
             scoreboard_path = payload.get("scoreboard") or evaluation.get("scoreboard")
@@ -419,6 +427,8 @@ class Readers:
                     or path.stem,
                     "date": payload.get("date_utc") or payload.get("date"),
                     "pass": gate_pass,
+                    "raw_gate_pass": raw_gate_pass,
+                    "claim_class": claim_class,
                     "suites": suites,
                     "agentv": agentv,
                     "trace_id": train_result.get("trace_id") or train.get("trace_id"),

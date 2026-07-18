@@ -290,6 +290,8 @@ def test_evaluate_suites_scoreboard(tmp_path: Path) -> None:
     assert metrics["test_dir"] == str(test_dir)
     assert metrics["eval_data_manifest_sha"] == fingerprint
     assert metrics["eval_suite_manifest_sha"]
+    assert metrics["code_git_sha"]
+    assert metrics["code_dirty"] is not None
     assert metrics["parse_rate"] == 1.0
     assert metrics["meaningful_program_v1_rate"] == metrics["meaningful_program_rate"]
     assert metrics["meaningful_metric_primary"] == "meaningful_program_v1"
@@ -308,6 +310,8 @@ def test_evaluate_suites_scoreboard(tmp_path: Path) -> None:
         board["eval_data_manifest_sha"]
         == board["suites"]["smoke"]["eval_data_manifest_sha"]
     )
+    assert board["code_git_sha"] == board["suites"]["smoke"]["code_git_sha"]
+    assert board["code_dirty"] == board["suites"]["smoke"]["code_dirty"]
 
     checkpoint = config.checkpoint_dir / "last.pt"
     model.save(checkpoint)
