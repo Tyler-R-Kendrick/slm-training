@@ -8,6 +8,7 @@ import math
 import random
 import re
 import warnings
+from collections import Counter, defaultdict
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -70,7 +71,7 @@ from slm_training.models.template_fill import (
     template_mask_positions,
 )
 from slm_training.dsl.grammar.fastpath.gate import FastPathGate
-from slm_training.models.tokenizer import OpenUITokenizer
+from slm_training.models.tokenizer import OpenUITokenizer, tokenize_text
 
 # _repair_surface_syntax runs per generated candidate; precompile its patterns.
 _QUOTED_SPAN_RE = re.compile(r'("(?:\\.|[^"\\])*")')
@@ -216,6 +217,23 @@ class TwoTowerConfig:
     # Grammar-role plan: root class plus bound-component multiplicities.
     component_plan_loss_weight: float = 0.0
     component_plan_decode_weight: float = 0.0
+    slot_component_loss_weight: float = 0.0
+    slot_component_focal_gamma: float = 0.0
+    slot_component_class_balance_power: float = 0.0
+    slot_component_class_weights: tuple[float, ...] = ()
+    slot_component_decode_weight: float = 0.0
+    slot_component_prompt_context: bool = True
+    slot_component_next_context: bool = False
+    slot_component_pair_interaction: bool = False
+    slot_component_lexeme_prior_weight: float = 0.0
+    slot_component_lexeme_priors: tuple[
+        tuple[str, tuple[float, ...]], ...
+    ] = ()
+    slot_component_span_prior_weight: float = 0.0
+    slot_component_span_priors: tuple[
+        tuple[str, tuple[float, ...]], ...
+    ] = ()
+    slot_component_content_arity: bool = False
     component_edge_loss_weight: float = 0.0
     component_edge_alignment_loss_weight: float = 0.0
     component_edge_decode_weight: float = 0.0
@@ -476,13 +494,6 @@ def _load_checkpoint_state(
         if key == "denoiser.kind_lookup"
         and getattr(getattr(model, "denoiser", None), "kind", None) is None
     }
-    # E396/E479 and earlier type-head runs saved a slot_component_head that
-    # the current architecture no longer instantiates. Dropping it is safe:
-    # generation uses component_plan_head / denoiser.lm_head instead.
-    if not hasattr(model, "slot_component_head"):
-        allowed_unexpected |= {
-            key for key in unexpected if key.startswith("slot_component_head.")
-        }
     bad_unexpected = sorted(set(unexpected) - allowed_unexpected)
     if bad_missing or bad_unexpected:
         raise ValueError(
@@ -638,6 +649,22 @@ class TwoTowerModel(nn.Module):
             component_edge_ids = tuple(sorted(tokenizer.kind_ids("component")))
         except (AttributeError, TypeError, ValueError):
             component_edge_ids = ()
+        slot_component_enabled = (
+            float(getattr(self.config, "slot_component_loss_weight", 0.0) or 0.0)
+            > 0.0
+            or float(
+                getattr(self.config, "slot_component_decode_weight", 0.0) or 0.0
+            )
+            > 0.0
+        )
+        self.slot_component_head = (
+            isolated_aux_init(
+                lambda: nn.Linear(self.config.d_model, len(component_edge_ids)),
+                114,
+            )
+            if slot_component_enabled and component_edge_ids
+            else None
+        )
         edge_enabled = (
             float(getattr(self.config, "component_edge_loss_weight", 0.0) or 0.0) > 0.0
             or float(
@@ -881,6 +908,7 @@ class TwoTowerModel(nn.Module):
             "length_head.",
             "component_inventory_head.",
             "component_plan_head.",
+            "slot_component_head.",
             "component_edge_head.",
             "binder_component_plan_head.",
             "binder_topology_head.",
@@ -2261,6 +2289,88 @@ class TwoTowerModel(nn.Module):
                     }
                 )
 
+        slot_component_w = float(
+            getattr(self.config, "slot_component_loss_weight", 0.0) or 0.0
+        )
+        if slot_component_w > 0.0 and self.slot_component_head is not None:
+            component_index = self._component_name_index()
+            slots: list[str] = []
+            next_slots: list[str | None] = []
+            slot_rows: list[int] = []
+            slot_targets: list[int] = []
+            for row, record in enumerate(batch):
+                owners = self._slot_component_owners(record.openui)
+                slot_texts = self._slot_component_texts(list(record.placeholders))
+                for slot_index, (slot, slot_text) in enumerate(
+                    zip(record.placeholders, slot_texts, strict=True)
+                ):
+                    target = component_index.get(owners.get(slot, ""))
+                    if target is None:
+                        continue
+                    slots.append(slot_text)
+                    next_slots.append(
+                        record.placeholders[slot_index + 1]
+                        if slot_index + 1 < len(record.placeholders)
+                        else None
+                    )
+                    slot_rows.append(row)
+                    slot_targets.append(target)
+            if slots:
+                rows_tensor = torch.as_tensor(slot_rows, device=ctx.device)
+                targets_tensor = torch.as_tensor(slot_targets, device=ctx.device)
+                slot_logits = self._slot_component_logits(
+                    slots,
+                    ctx,
+                    ctx_pad,
+                    rows_tensor,
+                    next_slots=(
+                        next_slots
+                        if self.config.slot_component_pair_interaction
+                        else None
+                    ),
+                )
+                slot_raw = F.cross_entropy(
+                    slot_logits,
+                    targets_tensor,
+                    weight=(
+                        torch.as_tensor(
+                            self.config.slot_component_class_weights,
+                            dtype=slot_logits.dtype,
+                            device=slot_logits.device,
+                        )
+                        if self.config.slot_component_class_weights
+                        else None
+                    ),
+                    reduction="none",
+                )
+                focal_gamma = float(
+                    getattr(self.config, "slot_component_focal_gamma", 0.0) or 0.0
+                )
+                slot_loss = (
+                    ((1.0 - (-slot_raw).exp()).pow(focal_gamma) * slot_raw).mean()
+                    if focal_gamma > 0.0
+                    else slot_raw.mean()
+                )
+                mask_loss = mask_loss + slot_component_w * slot_loss
+                target_counts = torch.bincount(targets_tensor)
+                self.last_training_metrics.update(
+                    {
+                        "slot_component_loss": float(slot_loss.detach().cpu()),
+                        "slot_component_accuracy": float(
+                            slot_logits.argmax(dim=1)
+                            .eq(targets_tensor)
+                            .float()
+                            .mean()
+                            .detach()
+                            .cpu()
+                        ),
+                        "slot_component_majority_baseline": float(
+                            target_counts.max().float().div(len(slots)).cpu()
+                        ),
+                        "slot_component_rows": len(slots),
+                    }
+                )
+
         edge_w = float(getattr(self.config, "component_edge_loss_weight", 0.0) or 0.0)
         if edge_w > 0.0 and self.component_edge_head is not None:
             from slm_training.dsl.grammar.fastpath.compiler_draft import (
@@ -3270,6 +3380,115 @@ class TwoTowerModel(nn.Module):
         self._component_token_ids_cache = ids
         return ids
 
+    @staticmethod
+    def _slot_component_owners(source: str) -> dict[str, str]:
+        from slm_training.dsl.lang_core import parse
+
+        owners: dict[str, str] = {}
+
+        def walk(value: object, component: str | None = None) -> None:
+            if isinstance(value, dict):
+                owner = (
+                    str(value["typeName"])
+                    if value.get("type") == "element" and value.get("typeName")
+                    else component
+                )
+                for child in value.values():
+                    walk(child, owner)
+            elif isinstance(value, list):
+                for child in value:
+                    walk(child, component)
+            elif (
+                isinstance(value, str)
+                and value.startswith(":")
+                and component is not None
+            ):
+                owners.setdefault(value, component)
+
+        walk(parse(source).root)
+        return owners
+
+    def _component_name_index(self) -> dict[str, int]:
+        result: dict[str, int] = {}
+        for index, token_id in enumerate(self._component_inventory_token_ids()):
+            token = str(self.tokenizer.id_to_token.get(token_id, ""))
+            for prefix in ("COMP:", "+"):
+                if token.startswith(prefix):
+                    token = token[len(prefix) :]
+                    break
+            if token:
+                result[token] = index
+        return result
+
+    def _slot_component_logits(
+        self,
+        slots: list[str],
+        context: torch.Tensor,
+        pad_mask: torch.Tensor | None,
+        context_rows: torch.Tensor,
+        next_slots: list[str | None] | None = None,
+    ) -> torch.Tensor:
+        assert self.slot_component_head is not None
+        slot_context, slot_pad = self._encode_context(slots)
+        slot_pooled = self._pool_context(slot_context, slot_pad)
+        if (
+            bool(getattr(self.config, "slot_component_pair_interaction", False))
+            and next_slots is not None
+        ):
+            next_context, next_pad = self._encode_context(
+                [slot or "" for slot in next_slots]
+            )
+            next_pooled = self._pool_context(next_context, next_pad)
+            present = torch.as_tensor(
+                [slot is not None for slot in next_slots],
+                dtype=slot_pooled.dtype,
+                device=slot_pooled.device,
+            ).unsqueeze(1)
+            slot_pooled = slot_pooled + slot_pooled * next_pooled * present
+        if bool(getattr(self.config, "slot_component_prompt_context", True)):
+            slot_pooled = slot_pooled + self._pool_context(
+                context, pad_mask
+            ).index_select(0, context_rows)
+        logits = self.slot_component_head(slot_pooled)
+        weight = float(
+            getattr(self.config, "slot_component_lexeme_prior_weight", 0.0) or 0.0
+        )
+        priors = getattr(self.config, "slot_component_lexeme_priors", ()) or ()
+        if weight > 0.0 and priors:
+            lookup = {
+                str(token): torch.as_tensor(
+                    scores, dtype=logits.dtype, device=logits.device
+                )
+                for token, scores in priors
+            }
+            bias = torch.zeros_like(logits)
+            for row, slot in enumerate(slots):
+                for token in set(tokenize_text(slot)):
+                    scores = lookup.get(token)
+                    if scores is not None:
+                        bias[row] += scores
+            logits = logits + weight * bias
+        return logits
+
+    def _slot_component_texts(self, slots: list[str]) -> list[str]:
+        if not bool(getattr(self.config, "slot_component_next_context", False)):
+            return list(slots)
+        return [
+            f"{slot}\n{slots[index + 1]}" if index + 1 < len(slots) else slot
+            for index, slot in enumerate(slots)
+        ]
+
+    @staticmethod
+    def _slot_role_token(slot: str) -> str:
+        return next(
+            (
+                token
+                for token in reversed(tokenize_text(slot))
+                if any(char.isalnum() for char in token)
+            ),
+            "",
+        )
+
     def _binder_component_token_ids(self) -> tuple[int, ...]:
         if self._binder_token_ids_cache is not None:
             return self._binder_token_ids_cache
@@ -3353,6 +3572,99 @@ class TwoTowerModel(nn.Module):
                     logits[0, token_id], remaining.log()
                 )
         return bias
+
+    def _slot_component_bias(
+        self,
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor | None,
+        prefix: list[int],
+        candidate_ids: tuple[int, ...],
+        candidate_kinds: tuple[str, ...],
+        slot_contract: list[str] | None,
+    ) -> torch.Tensor | None:
+        weight = float(
+            getattr(self.config, "slot_component_decode_weight", 0.0) or 0.0
+        )
+        if (
+            weight <= 0.0
+            or self.slot_component_head is None
+            or not slot_contract
+            or "component_bound" not in candidate_kinds
+        ):
+            return None
+        remaining_slots: list[str] = []
+        for index, slot in enumerate(slot_contract):
+            try:
+                slot_id = int(self.tokenizer.sym_id(index))
+            except (AttributeError, KeyError, ValueError):
+                return None
+            if slot_id not in prefix:
+                remaining_slots.append(str(slot))
+        if not remaining_slots:
+            return None
+        slot_texts = self._slot_component_texts(remaining_slots)
+        slot_rows = torch.zeros(
+            len(remaining_slots), dtype=torch.long, device=ctx.device
+        )
+        logits = self._slot_component_logits(
+            slot_texts,
+            ctx,
+            ctx_pad,
+            slot_rows,
+            next_slots=(
+                [
+                    remaining_slots[index + 1]
+                    if index + 1 < len(remaining_slots)
+                    else None
+                    for index in range(len(remaining_slots))
+                ]
+                if bool(
+                    getattr(self.config, "slot_component_pair_interaction", False)
+                )
+                else None
+            ),
+        )
+        component_index = {
+            token_id: index
+            for index, token_id in enumerate(self._component_inventory_token_ids())
+        }
+        span_weight = float(
+            getattr(self.config, "slot_component_span_prior_weight", 0.0) or 0.0
+        )
+        use_content_arity = bool(
+            getattr(self.config, "slot_component_content_arity", False)
+        ) or span_weight > 0.0
+        span_lookup = dict(
+            getattr(self.config, "slot_component_span_priors", ()) or ()
+        )
+        bias = logits.new_zeros(len(candidate_ids))
+        applied = False
+        for position, (token_id, kind) in enumerate(
+            zip(candidate_ids, candidate_kinds, strict=True)
+        ):
+            index = component_index.get(token_id)
+            if index is None or kind != "component_bound":
+                continue
+            slot_content_count = getattr(self.tokenizer, "slot_content_count", None)
+            required = (
+                int(slot_content_count(token_id))
+                if use_content_arity and callable(slot_content_count)
+                else 1
+            )
+            if required <= 0:
+                continue
+            consumed = min(required, len(remaining_slots))
+            bias[position] = weight * logits[:consumed, index].mean()
+            if span_weight > 0.0 and consumed == required and required > 1:
+                key = "\x1f".join(
+                    self._slot_role_token(slot)
+                    for slot in remaining_slots[:consumed]
+                )
+                scores = span_lookup.get(key)
+                if scores is not None:
+                    bias[position] += span_weight * float(scores[index])
+            applied = True
+        return bias if applied else None
 
     def _component_edge_bias(
         self,
@@ -3529,6 +3841,7 @@ class TwoTowerModel(nn.Module):
         length: int,
         *,
         tree: bool,
+        slot_contract: list[str] | None = None,
     ) -> tuple[int, ...]:
         """Rank completion paths using gathered rows of the tied LM head."""
         if len(paths) == 1:
@@ -3596,6 +3909,22 @@ class TwoTowerModel(nn.Module):
                     stats.component_plan_applications += 1
                     stats.component_plan_choice_changes += int(
                         int(scores.argmax().item()) != before_plan
+                    )
+            slot_bias = self._slot_component_bias(
+                ctx,
+                ctx_pad,
+                prefix,
+                candidates,
+                tuple(path.kind for path in paths),
+                slot_contract,
+            )
+            if slot_bias is not None:
+                before_slot = int(scores.argmax().item())
+                scores = scores + slot_bias
+                if stats is not None:
+                    stats.slot_component_applications += 1
+                    stats.slot_component_choice_changes += int(
+                        int(scores.argmax().item()) != before_slot
                     )
             edge_bias = self._component_edge_bias(
                 ctx, ctx_pad, prefix, candidates, tuple(path.kind for path in paths)
@@ -3702,6 +4031,25 @@ class TwoTowerModel(nn.Module):
                             stats.component_plan_applications += 1
                             stats.component_plan_choice_changes += int(
                                 int(scores.argmax().item()) != before_plan
+                            )
+                    slot_bias = self._slot_component_bias(
+                        ctx,
+                        ctx_pad,
+                        prefix,
+                        candidate_ids,
+                        tuple(
+                            first_edge_kinds.get(token_id, "")
+                            for token_id in candidate_ids
+                        ),
+                        slot_contract,
+                    )
+                    if slot_bias is not None:
+                        before_slot = int(scores.argmax().item())
+                        scores = scores + slot_bias
+                        if stats is not None:
+                            stats.slot_component_applications += 1
+                            stats.slot_component_choice_changes += int(
+                                int(scores.argmax().item()) != before_slot
                             )
                     edge_bias = self._component_edge_bias(
                         ctx,
@@ -4186,6 +4534,7 @@ class TwoTowerModel(nn.Module):
                     ctx_pad,
                     length,
                     tree=mode == "tree",
+                    slot_contract=slot_contract,
                 )
             if search_mode != "greedy":
                 hard_signature = rank_forest(forest).signature
@@ -4550,7 +4899,7 @@ class TwoTowerModel(nn.Module):
                             "component_root"
                             if states[row].current_marker == "r="
                             else "component_bound"
-                            if states[row].mode == "v05"
+                            if states[row].mode in {"v05", "structural"}
                             else "component_root_or_bound"
                         )
                         if tok.kind_of(token_id) == "component"
@@ -4572,6 +4921,27 @@ class TwoTowerModel(nn.Module):
                             stats.component_plan_applications += 1
                             stats.component_plan_choice_changes += int(
                                 int(scores.argmax().item()) != before_plan
+                            )
+                    slot_bias = self._slot_component_bias(
+                        ctx[row : row + 1],
+                        ctx_pad[row : row + 1],
+                        ids[row, :position].tolist(),
+                        candidate_ids,
+                        candidate_kinds,
+                        (
+                            self._slot_contracts[row]
+                            if self._slot_contracts
+                            and row < len(self._slot_contracts)
+                            else None
+                        ),
+                    )
+                    if slot_bias is not None:
+                        before_slot = int(scores.argmax().item())
+                        scores = scores + slot_bias
+                        if stats is not None:
+                            stats.slot_component_applications += 1
+                            stats.slot_component_choice_changes += int(
+                                int(scores.argmax().item()) != before_slot
                             )
                     best = scores.argmax()
                     choice = int(legal_ids[int(best)].item())
@@ -6735,6 +7105,139 @@ class TwoTowerModel(nn.Module):
             device=device,
             context_tokenizer=context_tokenizer,
         )
+        balance_power = float(
+            getattr(cfg, "slot_component_class_balance_power", 0.0) or 0.0
+        )
+        if balance_power > 0.0 and model.slot_component_head is not None:
+            component_index = model._component_name_index()
+            counts = [0] * len(component_index)
+            for record in records:
+                owners = model._slot_component_owners(record.openui)
+                for slot in record.placeholders:
+                    target = component_index.get(owners.get(slot, ""))
+                    if target is not None:
+                        counts[target] += 1
+            observed = [count for count in counts if count > 0]
+            if observed:
+                total = float(sum(observed))
+                classes = float(len(observed))
+                weights = [
+                    (total / (classes * count)) ** balance_power
+                    if count > 0
+                    else 0.0
+                    for count in counts
+                ]
+                observed_mean = sum(
+                    weight * count
+                    for weight, count in zip(weights, counts, strict=True)
+                    if count > 0
+                ) / total
+                cfg.slot_component_class_weights = tuple(
+                    weight / observed_mean if weight > 0.0 else 0.0
+                    for weight in weights
+                )
+        prior_weight = float(
+            getattr(cfg, "slot_component_lexeme_prior_weight", 0.0) or 0.0
+        )
+        if prior_weight > 0.0 and model.slot_component_head is not None:
+            component_index = model._component_name_index()
+            class_counts: Counter[int] = Counter()
+            token_counts: dict[str, Counter[int]] = defaultdict(Counter)
+            token_totals: Counter[str] = Counter()
+            for record in records:
+                owners = model._slot_component_owners(record.openui)
+                for slot in record.placeholders:
+                    target = component_index.get(owners.get(slot, ""))
+                    if target is None:
+                        continue
+                    class_counts[target] += 1
+                    for token in set(tokenize_text(slot)):
+                        if not any(char.isalnum() for char in token):
+                            continue
+                        token_counts[token][target] += 1
+                        token_totals[token] += 1
+            total = sum(class_counts.values())
+            classes = len(component_index)
+            if total and classes:
+                base = [
+                    (class_counts[index] + 1.0) / (total + classes)
+                    for index in range(classes)
+                ]
+                cfg.slot_component_lexeme_priors = tuple(
+                    (
+                        token,
+                        tuple(
+                            math.log(
+                                (counts[index] + 0.5)
+                                / (token_totals[token] + 0.5 * classes)
+                            )
+                            - math.log(base[index])
+                            for index in range(classes)
+                        ),
+                    )
+                    for token, counts in sorted(token_counts.items())
+                    if token_totals[token] >= 2
+                )
+        span_weight = float(
+            getattr(cfg, "slot_component_span_prior_weight", 0.0) or 0.0
+        )
+        if span_weight > 0.0 and model.slot_component_head is not None:
+            component_index = model._component_name_index()
+            component_ids = model._component_inventory_token_ids()
+            slot_content_count = getattr(model.tokenizer, "slot_content_count", None)
+            class_counts: Counter[int] = Counter()
+            span_counts: dict[str, Counter[int]] = defaultdict(Counter)
+            span_totals: Counter[str] = Counter()
+            for record in records:
+                owners = model._slot_component_owners(record.openui)
+                slots = list(record.placeholders)
+                for slot in slots:
+                    target = component_index.get(owners.get(slot, ""))
+                    if target is not None:
+                        class_counts[target] += 1
+                for index in range(len(slots) - 1):
+                    owner = owners.get(slots[index], "")
+                    if not owner or owner != owners.get(slots[index + 1], ""):
+                        continue
+                    target = component_index.get(owner)
+                    if (
+                        target is None
+                        or not callable(slot_content_count)
+                        or int(slot_content_count(component_ids[target])) != 2
+                    ):
+                        continue
+                    key = "\x1f".join(
+                        model._slot_role_token(slot)
+                        for slot in slots[index : index + 2]
+                    )
+                    span_counts[key][target] += 1
+                    span_totals[key] += 1
+            total = sum(class_counts.values())
+            classes = len(component_index)
+            if total and classes:
+                base = [
+                    (class_counts[index] + 1.0) / (total + classes)
+                    for index in range(classes)
+                ]
+                cfg.slot_component_span_priors = tuple(
+                    (
+                        key,
+                        tuple(
+                            (
+                                math.log(
+                                    (counts[index] + 0.5)
+                                    / (span_totals[key] + 0.5 * classes)
+                                )
+                                - math.log(base[index])
+                            )
+                            if counts[index] > 0
+                            else 0.0
+                            for index in range(classes)
+                        ),
+                    )
+                    for key, counts in sorted(span_counts.items())
+                    if span_totals[key] >= 2
+                )
         model.gen_len = max(max_target + 2, 16)
         if bool(getattr(cfg, "teacher_init_embeddings", False)):
             model._try_teacher_init_embeddings(records)

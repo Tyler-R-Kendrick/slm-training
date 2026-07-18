@@ -389,6 +389,36 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         component_plan_decode_weight=float(
             getattr(config, "component_plan_decode_weight", 0.0) or 0.0
         ),
+        slot_component_loss_weight=float(
+            getattr(config, "slot_component_loss_weight", 0.0) or 0.0
+        ),
+        slot_component_focal_gamma=float(
+            getattr(config, "slot_component_focal_gamma", 0.0) or 0.0
+        ),
+        slot_component_class_balance_power=float(
+            getattr(config, "slot_component_class_balance_power", 0.0) or 0.0
+        ),
+        slot_component_decode_weight=float(
+            getattr(config, "slot_component_decode_weight", 0.0) or 0.0
+        ),
+        slot_component_prompt_context=bool(
+            getattr(config, "slot_component_prompt_context", True)
+        ),
+        slot_component_next_context=bool(
+            getattr(config, "slot_component_next_context", False)
+        ),
+        slot_component_pair_interaction=bool(
+            getattr(config, "slot_component_pair_interaction", False)
+        ),
+        slot_component_lexeme_prior_weight=float(
+            getattr(config, "slot_component_lexeme_prior_weight", 0.0) or 0.0
+        ),
+        slot_component_span_prior_weight=float(
+            getattr(config, "slot_component_span_prior_weight", 0.0) or 0.0
+        ),
+        slot_component_content_arity=bool(
+            getattr(config, "slot_component_content_arity", False)
+        ),
         component_edge_loss_weight=float(
             getattr(config, "component_edge_loss_weight", 0.0) or 0.0
         ),
