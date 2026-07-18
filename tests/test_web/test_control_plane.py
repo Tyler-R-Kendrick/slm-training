@@ -329,6 +329,31 @@ def test_research_evidence_accepts_nested_train_and_evaluation(tmp_path) -> None
     assert result["run_dir"].endswith("e230-diverse-roots-32step")
 
 
+def test_research_evidence_does_not_green_branch_only_result(tmp_path) -> None:
+    design = tmp_path / "docs" / "design"
+    design.mkdir(parents=True)
+    (design / "iter-e9.json").write_text(
+        json.dumps(
+            {
+                "run_id": "e9-run",
+                "date": "2026-07-18",
+                "suites": {"smoke": {"n": 1, "parse_rate": 1.0}},
+                "ship_gates": {"pass": True, "failures": []},
+                "reproducibility": {
+                    "classification": "branch_only_diagnostic",
+                    "current_main_reproduced": False,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = Readers(tmp_path).scoreboard("research")["results"][0]
+    assert result["raw_gate_pass"] is True
+    assert result["pass"] is False
+    assert result["claim_class"] == "branch_only_diagnostic"
+
+
 def test_rl_traces_are_paginated_and_malformed_rows_are_skipped(tmp_path) -> None:
     path = tmp_path / "outputs" / "runs" / "molt-smoke" / "rl_traces.jsonl"
     path.parent.mkdir(parents=True)

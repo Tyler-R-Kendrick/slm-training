@@ -28,11 +28,11 @@ The exact checkpoint is durable at
 This satisfies checkpoint persistence; it does not change the serving
 deployment or constitute a new checkpoint promotion.
 
-E496 later loaded the same checkpoint SHA on clean current `main`. Its honest
-smoke result retained syntax parse 1.0 but fell to meaningful 0.0, fidelity
-0.5556, structure 0.1131, type recall 0.0, and AgentV 0/5. The experimental
-decoder branch used here was never reconciled into `main`, and this result did
-not record an exact code revision.
+E496 later verified the same checkpoint SHA and attempted to load it on a clean
+current-main-derived revision. Loading fails before evaluation because the
+checkpoint contains `slot_component_head` weights absent from current code.
+The experimental decoder branch used here was never reconciled into `main`,
+and this result did not record an exact code revision.
 
 **Verdict:** retain E490 as branch-only diagnostic evidence for the durable E396
 checkpoint. It is not current-main or deployable-code evidence; E496 is the

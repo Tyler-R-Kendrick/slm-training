@@ -1803,20 +1803,25 @@ adversarial success is not broad transfer and the checkpoint is not promotable.
 See [the narrative](iter-e295-design-context-dropout-20260717.md) and
 [machine-readable results](choice-design-dropout-results-iter-e295-20260717.json).
 
-## E496 current-main checkpoint reproducibility audit
+## E496–E497 current-main provenance audits
 
-E496 loads the durable E396 checkpoint SHA on clean current `main`
-(`2351c1f10bbda16fee0a00707434a1e057f8abde`) and runs the complete three-record
-smoke suite under the hard three-minute policy. With local HF context, honest
-constrained slots, no fallback, and the 320-token LTR canvas, syntax parse is
-1.0 but meaningful rate and component type recall are 0.0; fidelity is 0.5556,
-structure 0.1131, reward 0.3023, and AgentV 0/5.
+E496 syncs and verifies the durable E396 checkpoint SHA, then attempts to load
+it on clean current-main-derived revision `bccf2355`. Loading fails before
+evaluation because `slot_component_head.{weight,bias}` exists in the checkpoint
+but not current code. This falsifies current-main reproducibility of E490.
+E490's 5/5 result remains branch-only diagnostic evidence from an unreconciled
+decoder stack; it is not a deployable-code champion claim.
 
-This falsifies current-main reproducibility of E490. E490's 5/5 result remains
-branch-only diagnostic evidence from an unreconciled decoder stack; it is not a
-deployable-code champion claim. The checkpoint remains durable and unchanged.
-Full evidence: [narrative](iter-e496-current-main-e396-honest-smoke-20260718.md)
-and [JSON](iter-e496-current-main-e396-honest-smoke-20260718.json).
+E497 validates the repaired provenance envelope using the loadable committed
+playground fixture. Exact code SHA and clean-worktree state are persisted.
+Complete smoke n=3 finishes in 113.9 seconds: parse/meaningful/fidelity 0.0,
+structure 0.2203, type recall 0.1667, reward 0.0, one timeout, and AgentV 0/5.
+This is fixture-grade negative evidence, not a ship regression.
+
+Full evidence: [E496 compatibility audit](iter-e496-current-main-e396-honest-smoke-20260718.md),
+[E496 JSON](iter-e496-current-main-e396-honest-smoke-20260718.json),
+[E497 provenance smoke](iter-e497-current-main-playground-provenance-smoke-20260718.md),
+and [E497 JSON](iter-e497-current-main-playground-provenance-smoke-20260718.json).
 
 ## Verifier-guided repair (mixed status)
 
