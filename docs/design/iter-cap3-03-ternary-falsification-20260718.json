@@ -1,0 +1,80 @@
+{
+  "issue": "SLM-92",
+  "branch": "agent/slm-92-cap3-03-ternary-falsification",
+  "date": "2026-07-18",
+  "status": "wiring evidence / fixture dry-run",
+  "harness": "src/slm_training/harnesses/experiments/cap3_03_ternary_falsification.py",
+  "runner": "scripts/run_cap3_03_ternary_falsification.py",
+  "tests": "tests/test_harnesses/experiments/test_cap3_03_ternary_falsification.py",
+  "recipe": {
+    "device": "CPU",
+    "checkpoint": "toy LocalFlatHead",
+    "trace_source": "256 synthetic grammar_decision records",
+    "formats": ["ternary", "learned4zero"],
+    "group_size": 128,
+    "sampling_strategy": "hybrid_coverage_margin",
+    "samples": 64,
+    "seeds": [0],
+    "qat_steps": 0
+  },
+  "run_id": "cap3-03-20260718221810",
+  "run_artifact": "outputs/runs/cap3-03-toy/cap3_03_ternary_falsification_cap3-03-20260718221810.json",
+  "metrics": {
+    "arm_count": 2,
+    "ok_count": 2,
+    "error_count": 0,
+    "arms": [
+      {
+        "arm_id": "ternary_gs128_s0",
+        "format_id": "ternary",
+        "top1_accuracy": 0.59375,
+        "teacher_top1_accuracy": 0.796875,
+        "action_flip_rate": 0.203125,
+        "kl_to_teacher": 0.0030828930903226137,
+        "margin_preservation": 0.00887383230838168,
+        "mean_regret": 0.203125,
+        "cvar90_regret": 1.0,
+        "zero_rate": 0.815625011920929,
+        "support_rate": 0.18437498807907104,
+        "symbol_entropy_bits": -0.0,
+        "physical_weight_bytes": 32,
+        "total_bytes": 140,
+        "status": "ok"
+      },
+      {
+        "arm_id": "learned4zero_gs128_s0",
+        "format_id": "learned4zero",
+        "top1_accuracy": 0.5625,
+        "teacher_top1_accuracy": 0.484375,
+        "action_flip_rate": 0.515625,
+        "kl_to_teacher": 0.00719270040281117,
+        "margin_preservation": 0.10307933051444707,
+        "mean_regret": 0.515625,
+        "cvar90_regret": 1.0,
+        "zero_rate": 1.0,
+        "support_rate": 0.0,
+        "symbol_entropy_bits": -0.0,
+        "physical_weight_bytes": 32,
+        "total_bytes": 140,
+        "status": "ok"
+      }
+    ]
+  },
+  "coverage": {
+    "n": 256,
+    "unique_states": 8,
+    "state_action_pairs": 40,
+    "scope_signatures": 3,
+    "template_signatures": 2,
+    "forced_decision_fraction": 0.21875
+  },
+  "caveat": "CPU/toy fixture wiring evidence; ship-grade falsification requires GPU + local E224+ checkpoints + full --ship-gates.",
+  "verification": {
+    "unit_tests": "9 passed",
+    "dry_run": "ok",
+    "fixture_run": "2/2 arms OK",
+    "repo_policy": "ok",
+    "check_changed": "passed",
+    "diff_check": "passed"
+  }
+}
