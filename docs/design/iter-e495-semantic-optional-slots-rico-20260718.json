@@ -46,6 +46,21 @@
     "latency_ms_p50": 3625.87,
     "latency_ms_p95": 7372.69
   },
+  "suites": {
+    "rico_held": {
+      "n": 24,
+      "suite_total_n": 1500,
+      "diagnostic_subset": true,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8910833333333333,
+      "component_type_recall": 1.0,
+      "reward_score": 0.991375,
+      "fallback_count": 0,
+      "decode_timeout_count": 0
+    }
+  },
   "matched_e487_slice": {
     "structural_similarity": 0.8403666666666667,
     "structural_similarity_delta": 0.05071666666666663,
