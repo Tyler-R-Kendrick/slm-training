@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E469",
+  "date": "2026-07-18",
+  "status": "rejected_reverted",
+  "run_id": "e469-e396-qualified-note-callout-ood-r1",
+  "checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0"
+  },
+  "data": {
+    "version": "e451_root_binder_v1",
+    "suite": "ood",
+    "n": 4
+  },
+  "lever": {
+    "name": "qualified_note_callout_contract",
+    "corpus_note_prompts": 15,
+    "corpus_note_prompts_with_callout_gold": 15,
+    "reverted": true
+  },
+  "baseline": {
+    "run_id": "e467-e396-reference-array-fail-closed-bounded-r1",
+    "meaningful_program_rate": 1.0,
+    "placeholder_fidelity": 1.0,
+    "structural_similarity": 0.6278999999999999,
+    "component_type_recall": 0.875,
+    "reward_score": 0.9864999999999999
+  },
+  "result": {
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 0.75,
+    "placeholder_fidelity": 0.8333333333333333,
+    "structural_similarity": 0.611775,
+    "component_type_recall": 0.6875,
+    "reward_score": 0.7364999999999999,
+    "failure_breakdown": {
+      "low_component_recall": 1
+    },
+    "fallback_count": 0,
+    "decode_timeout_count": 0
+  },
+  "timing": {
+    "external_timeout_seconds": 290,
+    "external_kill_after_seconds": 10,
+    "completed_normally": true
+  },
+  "verdict": "Reject and revert; E468 remains authoritative."
+}

@@ -2860,6 +2860,14 @@ AgentV 5/5. E396 remains the current-policy local champion, with production HF
 ship pending durable bucket sync. See
 [`iter-e468-e396-reference-array-full-ship-gates-20260718.md`](iter-e468-e396-reference-array-full-ship-gates-20260718.md).
 
+E469 tests a qualified-note→Callout prompt contract after finding 15/15
+E357/E451 `note` prompts have Callout gold. The constraint nevertheless
+collapses `ood_gallery_01`: OOD meaningful/fidelity/recall/reward fall
+1.0/1.0/0.8750/0.9865→0.7500/0.8333/0.6875/0.7365 with one
+low-component-recall failure. Reject and revert the lever; E468 remains
+authoritative. See
+[`iter-e469-qualified-note-callout-rejection-20260718.md`](iter-e469-qualified-note-callout-rejection-20260718.md).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
