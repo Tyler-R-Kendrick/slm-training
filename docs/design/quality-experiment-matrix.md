@@ -2587,6 +2587,14 @@ structure/recall are still slightly lower at 0.6386/0.8889 versus
 matched RICO remains authoritative. See
 [`iter-e434-e437-auxiliary-only-low-lr-20260718.md`](iter-e434-e437-auxiliary-only-low-lr-20260718.md).
 
+E438–E440 lower the controlled auxiliary-only LR again to `1e-5`. Bounded
+AgentV remains 4/4, but all 16 bounded and all 48 matched RICO predictions are
+byte-identical to E435 at `3e-5`. Matched RICO therefore remains below E396 at
+structure/recall 0.6386/0.8889 versus 0.6401/0.8993. Reject E438 and close the
+auxiliary LR sweep; the response is already in the same discrete regime at
+`1e-5`. See
+[`iter-e438-e440-auxiliary-only-lr1e5-20260718.md`](iter-e438-e440-auxiliary-only-lr1e5-20260718.md).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

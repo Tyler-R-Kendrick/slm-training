@@ -148,6 +148,7 @@ summary and the full card whenever a checkpoint is created or promoted.
 | E431 auxiliary-only continuation rejection | `e431-component-plan-23k-aux-only-r1/last.pt` | `outputs/runs/e431-component-plan-23k-aux-only-r1/…` (local) | Zero base drift and bounded AgentV 4/4, but matched RICO-48 structure/recall regress to 0.6211/0.6007 — rejected, not ship |
 | E434 low-LR auxiliary-only protocol rejection | `e434-component-plan-23k-aux-only-low-lr-r1/last.pt` | `outputs/runs/e434-component-plan-23k-aux-only-low-lr-r1/…` (local) | Slot prompt context and lexeme prior drifted from the control — protocol-invalid, not evaluated or ship |
 | E435 controlled low-LR auxiliary-only rejection | `e435-component-plan-23k-aux-only-low-lr-controlled-r1/last.pt` | `outputs/runs/e435-component-plan-23k-aux-only-low-lr-controlled-r1/…` (local) | Bounded AgentV 4/4, but matched RICO-48 structure/recall 0.6386/0.8889 remain below E396 — rejected, not ship |
+| E438 `1e-5` auxiliary-only rejection | `e438-component-plan-23k-aux-only-lr1e5-r1/last.pt` | `outputs/runs/e438-component-plan-23k-aux-only-lr1e5-r1/…` (local) | All bounded/RICO predictions duplicate E435 and matched RICO remains below E396 — rejected, not ship |
 | Production HF ship | *(none yet)* | [HF Bucket `TKendrick/OpenUI`](https://huggingface.co/buckets/TKendrick/OpenUI) `checkpoints/<run_id>/` | Register here after first full HF sync + `--ship-gates` |
 
 **Load demo:** `python -m scripts.serve_playground` · **Full train sync:** set

@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "run_id": "e440-component-plan-23k-aux-only-lr1e5-rico48-offset336-r1",
+  "date": "2026-07-18",
+  "status": "Rejected: prediction-identical to E435 and below E396 on matched RICO",
+  "checkpoint": {
+    "id": "E438",
+    "run_id": "e438-component-plan-23k-aux-only-lr1e5-r1",
+    "path": "outputs/runs/e438-component-plan-23k-aux-only-lr1e5-r1/checkpoints/last.pt",
+    "sha256": "eebb6d31645bf49643c5887085c735b810357b06eea49dad244ef90a5f622bff",
+    "sync": "explicit_no_sync",
+    "promoted": false,
+    "rejected": true
+  },
+  "train": {
+    "steps": 446,
+    "additional_steps": 19,
+    "seen_target_tokens": 23019,
+    "target_token_budget": 23000,
+    "elapsed_wall_seconds": 21.214760431001196,
+    "max_wall_minutes": 4.5,
+    "stopped_on": "token_budget",
+    "record_count": 998,
+    "data_manifest_sha": "a4f212a3444d0f219fe1b3604f70929fe1a1b91d4fdc11a73167cb74c55b6a51",
+    "resumed_from": "outputs/runs/e396-balanced-type-head-continuation-r1/checkpoints/last_full_state.pt",
+    "learning_rate": 0.00001,
+    "saved_optimizer_learning_rates": [0.00001],
+    "auxiliary_only": true,
+    "trainable_parameters": 183309,
+    "frozen_parameters": 135765696,
+    "changed_auxiliary_tensors": 4,
+    "changed_base_tensors": 0,
+    "best_weighted_nll": 5.809070931803047,
+    "fresh_loss_eval": false
+  },
+  "bounded_evaluation": {
+    "id": "E439",
+    "run_id": "e439-component-plan-23k-aux-only-lr1e5-bounded-r1",
+    "suites": {
+      "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.5599999999999999, "component_type_recall": 0.5, "reward_score": 0.977},
+      "held_out": {"n": 5, "parse_rate": 1.0, "meaningful_program_rate": 0.6, "placeholder_fidelity": 1.0, "structural_similarity": 0.5932799999999999, "component_type_recall": 0.4833333333333333, "reward_score": 0.5915999999999999},
+      "adversarial": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.75, "placeholder_fidelity": 1.0, "structural_similarity": 0.6762, "component_type_recall": 0.75, "reward_score": 0.72675},
+      "ood": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.5511250000000001, "component_type_recall": 0.7291666666666666, "reward_score": 0.9827499999999999}
+    },
+    "ship_gates": {"pass": false, "failures": ["rico_held:missing_suite"], "bounded_suites_pass": true},
+    "agentv": {"passed": 4, "total": 4, "execution_errors": 0}
+  },
+  "matched_rico_slice": {
+    "id": "E440",
+    "run_id": "e440-component-plan-23k-aux-only-lr1e5-rico48-offset336-r1",
+    "suite": "rico_held",
+    "offset": 336,
+    "n": 48,
+    "suite_total_n": 1500,
+    "diagnostic_subset": true,
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 1.0,
+    "placeholder_fidelity": 1.0,
+    "structural_similarity": 0.6386270833333331,
+    "component_type_recall": 0.8888888888888888,
+    "reward_score": 0.9991249999999999,
+    "failure_breakdown": {},
+    "agentv": {"passed": 0, "total": 5, "execution_errors": 0},
+    "e396_control": {
+      "meaningful_program_rate": 1.0,
+      "structural_similarity": 0.6400541666666664,
+      "component_type_recall": 0.8993055555555555,
+      "reward_score": 0.9991249999999999
+    }
+  },
+  "prediction_identity_with_e435": {
+    "bounded_identical": 16,
+    "bounded_total": 16,
+    "rico_identical": 48,
+    "rico_total": 48
+  },
+  "timing_policy": {
+    "external_timeout_seconds": 290,
+    "external_kill_after_seconds": 10,
+    "training_internal_max_wall_minutes": 4.5,
+    "timed_out_runs_used_as_evidence": 0
+  },
+  "verdict": "reject and close auxiliary LR sweep; no full RICO, sync, promotion, or ship claim"
+}
