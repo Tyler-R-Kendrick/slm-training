@@ -235,4 +235,8 @@ Shard 19e completed normally in about 90 seconds under the three-minute policy
 and is prediction-identical to the corresponding E477 rows, with structure
 0.8258, reward 0.9957, and zero failures, fallback, or timeouts.
 
-**Status:** 1040/1500 rows complete. No merged or ship claim yet.
+Shard 19f completed normally in about 70 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.8471, reward 0.9944, and zero failures, fallback, or timeouts.
+
+**Status:** 1056/1500 rows complete. No merged or ship claim yet.
