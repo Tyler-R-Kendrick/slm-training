@@ -833,6 +833,12 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "fidelity_loss_weight": getattr(config, "fidelity_loss_weight", 0.0),
             "fastpath_aux_weight": getattr(config, "fastpath_aux_weight", 0.0),
             "schema_in_context": bool(getattr(config, "schema_in_context", False)),
+            "slot_contract_in_context": bool(
+                getattr(config, "slot_contract_in_context", False)
+            ),
+            "slot_contract_constrained_decode": bool(
+                getattr(config, "slot_contract_constrained_decode", False)
+            ),
             "retrieval_k": getattr(config, "retrieval_k", 0),
             "grammar_constrained": bool(getattr(config, "grammar_constrained", False)),
             "design_md_dropout": float(

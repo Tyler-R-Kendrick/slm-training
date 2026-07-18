@@ -94,9 +94,13 @@ def test_train_and_eval_stub(tmp_path: Path) -> None:
         batch_size=2,
         model_name="stub",
         eval_every=1,
+        slot_contract_in_context=True,
+        slot_contract_constrained_decode=True,
     )
     summary = train(config)
     assert summary["steps"] == 2
+    assert summary["recipe"]["slot_contract_in_context"] is True
+    assert summary["recipe"]["slot_contract_constrained_decode"] is True
     assert summary["eval_history"]
     assert summary["best_ship_score"] is not None
     assert (config.run_dir / "eval_history.jsonl").exists()

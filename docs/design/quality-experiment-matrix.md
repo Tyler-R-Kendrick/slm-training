@@ -2213,6 +2213,13 @@ Reject the composition; train the visible-slot path instead. See
 [results](iter-e342-hf-context-honest-slot-plan-20260717.md) and
 [JSON](hf-context-honest-slot-plan-results-iter-e342-20260717.json).
 
+E343 adapts E337 for 5,028 tokens with visible-slot context/constrained decode.
+All suites parse, but smoke fidelity falls 0.6389→0.1111 and E341's OOD
+semantic signal disappears; AgentV is 0/4. Reject the checkpoint. The harness
+now also records both slot-contract flags in train-summary recipes. See
+[results](iter-e343-hf-context-visible-slot-train-20260717.md) and
+[JSON](hf-context-visible-slot-train-results-iter-e343-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
