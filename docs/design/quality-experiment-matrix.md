@@ -2868,6 +2868,26 @@ low-component-recall failure. Reject and revert the lever; E468 remains
 authoritative. See
 [`iter-e469-qualified-note-callout-rejection-20260718.md`](iter-e469-qualified-note-callout-rejection-20260718.md).
 
+E470–E471 constrain component string-enum arguments to their pinned schema
+values without changing the choice vocabulary or E396 checkpoint. All four
+fresh bounded suites exactly preserve E468's metrics, failures, fallback, and
+timeout counts while the smoke Callout severity changes from invalid `"itin"`
+to valid `"info"` and held-out Slider mode from invalid `"in"` to valid
+`"continuous"`; AgentV passes 4/4 across two complete envelopes. Replay cannot
+certify all stored RICO strings, so fresh full-RICO evidence remains required
+and E468 stays authoritative. See
+[`iter-e470-schema-enum-constrained-decode-20260718.md`](iter-e470-schema-enum-constrained-decode-20260718.md).
+
+E472 starts a fresh, externally capped, exact-coverage RICO refresh for the
+accepted enum constraint. Shard 0 completes rows `[0,96)` at
+meaningful/fidelity/recall 1.0, structure 0.8852, reward 0.9955, and zero
+failures/fallback/timeouts, exactly matching E460's corresponding shard.
+Shard 1 reaches row 191 with all gate metrics unchanged and structure
+0.8652→0.8658. Shard 2 reaches row 287 at structure 0.8561 (from
+0.8541), reward 0.9940 (from 0.9943), and unchanged perfect gate metrics.
+Coverage is 288/1500; no merged or ship claim yet. See
+[`iter-e472-schema-enum-full-rico-sharded-20260718.md`](iter-e472-schema-enum-full-rico-sharded-20260718.md).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

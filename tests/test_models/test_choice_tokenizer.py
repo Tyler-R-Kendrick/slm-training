@@ -69,7 +69,17 @@ def test_load_rejects_foreign_sidecar(tmp_path: Path) -> None:
 def test_kind_ids_partition(tok: ChoiceTokenizer) -> None:
     all_ids = set(range(tok.vocab_size))
     covered: set[int] = set()
-    for kind in ("special", "struct", "component", "builtin", "lit", "byte", "sym", "bind", "state"):
+    for kind in (
+        "special",
+        "struct",
+        "component",
+        "builtin",
+        "lit",
+        "byte",
+        "sym",
+        "bind",
+        "state",
+    ):
         ids = tok.kind_ids(kind)
         assert not (ids & covered)
         covered |= ids
@@ -151,7 +161,7 @@ def test_choice_state_rejects_unavailable_slots_and_forward_refs(
 
 def test_choice_state_counts_bound_components(tok: ChoiceTokenizer) -> None:
     state = ChoiceDecodeState(tok, slot_count=1)
-    for token in ("=", "+TextContent", '@0', "-"):
+    for token in ("=", "+TextContent", "@0", "-"):
         assert state.advance_id(tok.token_to_id[token])
     assert state.bound_component_count == 1
 
@@ -184,6 +194,29 @@ def test_choice_state_identifies_slot_content_components(
     assert tok.slot_content_count(tok.token_to_id["+CardHeader"]) == 2
     assert tok.slot_content_count(tok.token_to_id["+Callout"]) == 2
     assert tok.slot_content_count(tok.token_to_id["+Input"]) == 2
+
+
+def test_choice_state_enforces_schema_string_enums(tok: ChoiceTokenizer) -> None:
+    callout = ChoiceDecodeState(tok, slot_count=2)
+    assert callout.advance_id(tok.token_to_id["+Callout"])
+
+    allowed = callout.allowed_ids(32)
+    assert tok.token_to_id['#"info"'] in allowed
+    assert tok.token_to_id['#"m"'] not in allowed
+    assert tok.token_to_id[LIT_STR] in allowed
+
+    invalid = callout.clone()
+    assert not invalid.advance_id(tok.token_to_id['#"m"'])
+
+    spelled = callout.clone()
+    assert spelled.advance_id(tok.token_to_id[LIT_STR])
+    for char in "success":
+        byte_id = tok.token_to_id[f"B:{ord(char):02x}"]
+        assert byte_id in spelled.allowed_ids(32)
+        assert spelled.advance_id(byte_id)
+    assert spelled.allowed_ids(32) == {tok.token_to_id["LIT_END"]}
+    assert spelled.advance_id(tok.token_to_id["LIT_END"])
+    assert spelled.frames[-1].arg_index == 1
 
 
 def test_choice_state_initial_bind_path_can_satisfy_content_floor(
@@ -219,9 +252,7 @@ def test_direct_candidates_match_exhaustive_oracle_on_reachable_states(
         assert state.advance_id(tok.token_to_id[token])
         return state
 
-    component = next(
-        token for token in tok.token_to_id if token.startswith("+")
-    )
+    component = next(token for token in tok.token_to_id if token.startswith("+"))
     object_state = advanced("{")
     states = [
         ChoiceDecodeState(tok, slot_count=3),
@@ -278,9 +309,7 @@ def test_minimum_completion_cache_collapses_equivalent_literal_states(
     tok: ChoiceTokenizer,
 ) -> None:
     literals = [
-        token
-        for token in tok.token_to_id
-        if token.startswith(LIT_PREFIX + '"')
+        token for token in tok.token_to_id if token.startswith(LIT_PREFIX + '"')
     ][:2]
     assert len(literals) == 2
     states = []
@@ -456,9 +485,7 @@ def test_twotower_choice_wiring(
             structural,
             structural.allowed_ids(64),
             [":hero.title", ":hero.body"],
-            [model.tokenizer.token_to_id["@0"]]
-            if token == "@1"
-            else None,
+            [model.tokenizer.token_to_id["@0"]] if token == "@1" else None,
         )
         assert model.tokenizer.token_to_id[token] in legal, token
         assert structural.advance_id(model.tokenizer.token_to_id[token]), token

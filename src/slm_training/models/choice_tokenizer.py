@@ -79,6 +79,7 @@ _BYTE_PREFIX = "B:"
 def _byte_token(ch: str) -> str:
     return f"{_BYTE_PREFIX}{ord(ch):02x}"
 
+
 DEFAULT_SYM_SLOTS = 64
 DEFAULT_REF_SLOTS = 64
 DEFAULT_STATE_SLOTS = 64
@@ -278,52 +279,47 @@ class ChoiceTokenizer:
             return cached
 
         def _is_expression_start(token: str) -> bool:
-            return (
-                token.startswith(
-                    (
-                        OPEN_PREFIX,
-                        BUILTIN_PREFIX,
-                        OP_PREFIX,
-                        MEMBER_PREFIX,
-                        REF_PREFIX,
-                        SLOT_PREFIX,
-                        STATE_REF_PREFIX,
-                        DIR_PREFIX,
-                        NAME_PREFIX,
-                        LIT_PREFIX,
-                    )
+            return token.startswith(
+                (
+                    OPEN_PREFIX,
+                    BUILTIN_PREFIX,
+                    OP_PREFIX,
+                    MEMBER_PREFIX,
+                    REF_PREFIX,
+                    SLOT_PREFIX,
+                    STATE_REF_PREFIX,
+                    DIR_PREFIX,
+                    NAME_PREFIX,
+                    LIT_PREFIX,
                 )
-                or token
-                in {
-                    LIST_OPEN,
-                    OBJ_OPEN,
-                    TERNARY_OP,
-                    NOT_OP,
-                    NEG_OP,
-                    INDEX_OP,
-                    LIT_STR,
-                    LIT_NUM,
-                    NAME_STR,
-                    MEMBER_STR,
-                }
-            )
+            ) or token in {
+                LIST_OPEN,
+                OBJ_OPEN,
+                TERNARY_OP,
+                NOT_OP,
+                NEG_OP,
+                INDEX_OP,
+                LIT_STR,
+                LIT_NUM,
+                NAME_STR,
+                MEMBER_STR,
+            }
 
         predicates = {
             "byte": lambda token: token.startswith(_BYTE_PREFIX),
             "bind": lambda token: token.startswith(REF_PREFIX),
             "expression": _is_expression_start,
             "marker": lambda token: token in CHOICE_STMT_MARKERS,
-            "object_key": lambda token: token.startswith(NAME_PREFIX)
-            or token == NAME_STR,
+            "object_key": lambda token: (
+                token.startswith(NAME_PREFIX) or token == NAME_STR
+            ),
             "slot": lambda token: token.startswith(SLOT_PREFIX),
         }
         predicate = predicates.get(name)
         if predicate is None:
             raise ValueError(f"unknown choice candidate partition: {name}")
         result = frozenset(
-            token_id
-            for token_id, token in self.id_to_token.items()
-            if predicate(token)
+            token_id for token_id, token in self.id_to_token.items() if predicate(token)
         )
         self.candidate_partitions[name] = result
         return result
@@ -618,9 +614,7 @@ class ChoiceTokenizer:
             sym_slots=int(data.get("sym_slots") or DEFAULT_SYM_SLOTS),
             ref_slots=int(data.get("ref_slots") or DEFAULT_REF_SLOTS),
             state_slots=int(data.get("state_slots") or DEFAULT_STATE_SLOTS),
-            max_int_literal=int(
-                data.get("max_int_literal") or DEFAULT_MAX_INT_LITERAL
-            ),
+            max_int_literal=int(data.get("max_int_literal") or DEFAULT_MAX_INT_LITERAL),
         )
 
 
@@ -650,6 +644,7 @@ class ChoiceDecodeState:
     bound_component_count: int = 0
     literal_frame: str | None = None
     literal_size: int = 0
+    literal_body: str = ""
     literal_is_object_key: bool = False
 
     def clone(self) -> ChoiceDecodeState:
@@ -664,6 +659,7 @@ class ChoiceDecodeState:
             bound_component_count=self.bound_component_count,
             literal_frame=self.literal_frame,
             literal_size=self.literal_size,
+            literal_body=self.literal_body,
             literal_is_object_key=self.literal_is_object_key,
         )
 
@@ -672,8 +668,7 @@ class ChoiceDecodeState:
             return False
         if self.mode == "structural":
             return bool(
-                self.section_types
-                and self.section_types[-1].startswith("element:")
+                self.section_types and self.section_types[-1].startswith("element:")
             )
         return self.mode == "v05" and self.valid_root_seen
 
@@ -691,8 +686,7 @@ class ChoiceDecodeState:
             return 0
         schemas, required_args = contract
         return sum(
-            self._schema_accepts(schema, "string")
-            for schema in schemas[:required_args]
+            self._schema_accepts(schema, "string") for schema in schemas[:required_args]
         )
 
     def is_slot_content_component_type(self, expr_type: str) -> bool:
@@ -704,8 +698,7 @@ class ChoiceDecodeState:
             return False
         schemas, required_args = contract
         return any(
-            self._schema_accepts(schema, "string")
-            for schema in schemas[:required_args]
+            self._schema_accepts(schema, "string") for schema in schemas[:required_args]
         )
 
     @staticmethod
@@ -730,7 +723,43 @@ class ChoiceDecodeState:
             expected = "number"
         return expected is None or expr_type in {str(expected), "any"}
 
-    def _complete_expr(self, expr_type: str) -> bool:
+    @classmethod
+    def _schema_string_enum(cls, schema: dict[str, Any]) -> tuple[str, ...] | None:
+        if "anyOf" in schema:
+            values: list[str] = []
+            options = [
+                dict(option)
+                for option in schema["anyOf"]
+                if cls._schema_accepts(dict(option), "string")
+            ]
+            if not options:
+                return None
+            for option in options:
+                option_values = cls._schema_string_enum(option)
+                if option_values is None:
+                    return None
+                values.extend(option_values)
+            return tuple(dict.fromkeys(values))
+        enum = schema.get("enum")
+        if (
+            not isinstance(enum, list)
+            or not enum
+            or not all(isinstance(value, str) for value in enum)
+        ):
+            return None
+        return tuple(enum)
+
+    def _current_string_enum(self) -> tuple[str, ...] | None:
+        if not self.frames:
+            return None
+        frame = self.frames[-1]
+        if frame.kind != "component" or frame.arg_index >= len(frame.schemas):
+            return None
+        return self._schema_string_enum(frame.schemas[frame.arg_index])
+
+    def _complete_expr(
+        self, expr_type: str, *, string_value: str | None = None
+    ) -> bool:
         if not self.frames:
             self.section_types.append(expr_type)
             if self.mode == "v05":
@@ -757,7 +786,11 @@ class ChoiceDecodeState:
         elif frame.kind == "component":
             if frame.arg_index >= len(frame.schemas):
                 return False
-            if not self._schema_accepts(frame.schemas[frame.arg_index], expr_type):
+            schema = frame.schemas[frame.arg_index]
+            if not self._schema_accepts(schema, expr_type):
+                return False
+            enum = self._schema_string_enum(schema)
+            if enum is not None and string_value not in enum:
                 return False
             frame.arg_index += 1
             return True
@@ -833,7 +866,8 @@ class ChoiceDecodeState:
         if token.startswith(STATE_REF_PREFIX):
             return self._complete_expr("any")
         if token.startswith((DIR_PREFIX, NAME_PREFIX)):
-            return self._complete_expr("string")
+            prefix = DIR_PREFIX if token.startswith(DIR_PREFIX) else NAME_PREFIX
+            return self._complete_expr("string", string_value=token[len(prefix) :])
         if token.startswith(LIT_PREFIX):
             payload = token[len(LIT_PREFIX) :]
             if payload.startswith('"'):
@@ -844,10 +878,15 @@ class ChoiceDecodeState:
                 expr_type = "null"
             else:
                 expr_type = "number"
-            return self._complete_expr(expr_type)
+            value = json.loads(payload)
+            return self._complete_expr(
+                expr_type,
+                string_value=value if isinstance(value, str) else None,
+            )
         if token in {LIT_STR, LIT_NUM, NAME_STR, MEMBER_STR}:
             self.literal_frame = token
             self.literal_size = 0
+            self.literal_body = ""
             self.literal_is_object_key = False
             return True
         return False
@@ -869,6 +908,8 @@ class ChoiceDecodeState:
                 object_key = self.literal_is_object_key
                 self.literal_frame = None
                 self.literal_size = 0
+                body = self.literal_body
+                self.literal_body = ""
                 self.literal_is_object_key = False
                 if object_key:
                     self.frames[-1].phase = "value"
@@ -876,11 +917,23 @@ class ChoiceDecodeState:
                     self.frames.append(_ChoiceFrame("fixed", "other", remaining=1))
                 else:
                     return self._complete_expr(
-                        "string" if marker in {LIT_STR, NAME_STR} else "number"
+                        "string" if marker in {LIT_STR, NAME_STR} else "number",
+                        string_value=body if marker in {LIT_STR, NAME_STR} else None,
                     )
                 return True
             if token.startswith(_BYTE_PREFIX):
+                char = chr(int(token[len(_BYTE_PREFIX) :], 16))
+                enum = (
+                    self._current_string_enum()
+                    if self.literal_frame == LIT_STR
+                    else None
+                )
+                if enum is not None and not any(
+                    value.startswith(self.literal_body + char) for value in enum
+                ):
+                    return False
                 self.literal_size += 1
+                self.literal_body += char
                 return True
             return False
 
@@ -918,6 +971,7 @@ class ChoiceDecodeState:
             if token == NAME_STR:
                 self.literal_frame = token
                 self.literal_size = 0
+                self.literal_body = ""
                 self.literal_is_object_key = True
                 return True
             return False
@@ -934,6 +988,16 @@ class ChoiceDecodeState:
     def _completion_id(self) -> int:
         tok = self.tokenizer
         if self.literal_frame is not None:
+            enum = (
+                self._current_string_enum() if self.literal_frame == LIT_STR else None
+            )
+            if enum is not None:
+                if self.literal_body in enum:
+                    return tok.token_to_id[LIT_END]
+                suffix = min(
+                    value for value in enum if value.startswith(self.literal_body)
+                )[len(self.literal_body)]
+                return tok.token_to_id[_byte_token(suffix)]
             if self.literal_size or self.literal_frame == LIT_STR:
                 return tok.token_to_id[LIT_END]
             return tok.token_to_id[_byte_token("0")]
@@ -959,6 +1023,10 @@ class ChoiceDecodeState:
         tok = self.tokenizer
         if "anyOf" in schema:
             return self._minimal_schema_id(dict(schema["anyOf"][0]))
+        enum = self._schema_string_enum(schema)
+        if enum is not None:
+            fixed = tok.token_to_id.get(f"{LIT_PREFIX}{json.dumps(enum[0])}")
+            return fixed if fixed is not None else tok.token_to_id[LIT_STR]
         expected = schema.get("type")
         if isinstance(expected, list):
             expected = expected[0] if expected else None
@@ -1021,6 +1089,7 @@ class ChoiceDecodeState:
             self.bound_component_count,
             self.literal_frame,
             self.literal_size,
+            self.literal_body,
             self.literal_is_object_key,
         )
 
@@ -1037,9 +1106,20 @@ class ChoiceDecodeState:
             )
 
         if self.literal_frame is not None:
-            return set(tok.candidate_partition("byte")) | {
-                tok.token_to_id[LIT_END]
-            }
+            enum = (
+                self._current_string_enum() if self.literal_frame == LIT_STR else None
+            )
+            if enum is not None:
+                candidates = {
+                    tok.token_to_id[_byte_token(value[len(self.literal_body)])]
+                    for value in enum
+                    if value.startswith(self.literal_body)
+                    and len(value) > len(self.literal_body)
+                }
+                if self.literal_body in enum:
+                    candidates.add(tok.token_to_id[LIT_END])
+                return candidates
+            return set(tok.candidate_partition("byte")) | {tok.token_to_id[LIT_END]}
 
         if self.frames:
             frame = self.frames[-1]
@@ -1095,8 +1175,8 @@ class ChoiceDecodeState:
         self.tokenizer.allowed_cache_misses += 1
         candidates = self._candidate_ids()
         self.tokenizer.candidates_considered += len(candidates)
-        self.tokenizer.vocab_candidates_avoided += (
-            self.tokenizer.vocab_size - len(candidates)
+        self.tokenizer.vocab_candidates_avoided += self.tokenizer.vocab_size - len(
+            candidates
         )
         allowed = self._filter_allowed(candidates, int(remaining_positions))
         if len(self.tokenizer.allowed_cache) >= 4096:
