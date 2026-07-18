@@ -32,7 +32,7 @@ vectors. V1 corpora and their loaders are untouched.
 ## Fixture-corpus demonstration
 
 The executable version of this walk-through is
-`tests/test_harnesses/preference/test_decision_events_v2.py` (25 tests). One exact
+`tests/test_harnesses/preference/test_decision_events_v2.py` (26 tests). One exact
 state with two independently-observed actions:
 
 1. **One exact state** — a `DecisionStateV2` for a `component` decision with

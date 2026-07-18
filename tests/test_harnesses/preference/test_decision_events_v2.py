@@ -233,6 +233,12 @@ def test_semantic_materializer_rejects_illegal_or_out_of_domain_outcome() -> Non
         materialize_thresholded(state, [_outcome(99)])
 
 
+def test_action_outcome_rejects_incomplete_reward_vector() -> None:
+    # A partial reward vector must fail at construction, not fabricate a 0.0 later.
+    with pytest.raises(ValueError, match="exactly the metrics"):
+        _outcome(4, reward_vectors=((("reward", 0.5),),))
+
+
 # --------------------------------------------------------------------------- #
 # V1 migration is honest about incompleteness.
 # --------------------------------------------------------------------------- #

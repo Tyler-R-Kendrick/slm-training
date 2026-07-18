@@ -326,7 +326,15 @@ def _normalize_gate_vector(vector: Sequence[Any]) -> tuple[tuple[str, str], ...]
 
 
 def _normalize_reward_vector(vector: Sequence[Any]) -> tuple[tuple[str, float], ...]:
-    return tuple((str(name), float(score)) for name, score in vector)
+    # Validate at the boundary: a non-empty reward vector must carry exactly the
+    # expected metrics, so a downstream mean never fabricates a 0.0 for a missing one.
+    pairs = tuple((str(name), float(score)) for name, score in vector)
+    names = [name for name, _ in pairs]
+    if len(names) != len(set(names)):
+        raise ValueError("reward vector has duplicate metrics")
+    if set(names) != set(_METRICS):
+        raise ValueError(f"reward vector must carry exactly the metrics {sorted(_METRICS)}")
+    return pairs
 
 
 def append_action_outcomes(
