@@ -3042,6 +3042,16 @@ remain zero. Accept bounded evidence; fresh full RICO is still required and
 E479 remains authoritative. See
 [`iter-e486-json-number-typed-any-bounded-20260718.md`](iter-e486-json-number-typed-any-bounded-20260718.md).
 
+E487 starts the required fresh full-RICO campaign with 48-row shards under
+JSON-number and typed-any constraints. Shard 0 completes `[0,48)` at
+meaningful/fidelity/recall 1.0, structure 0.9052, reward 0.9959, and zero
+reliability counts, metric-identical to the corresponding E477 rows. Coverage
+extends through row 95 with shard 1 structure 0.8652, reward 0.9951, and zero
+reliability counts. Shard 2 extends through row 143 at structure 0.8572 and
+reward 0.9936, also metric-identical to E477. Coverage is 144/1500; no merged
+or ship claim yet. See
+[`iter-e487-json-number-typed-any-full-rico-sharded-20260718.md`](iter-e487-json-number-typed-any-full-rico-sharded-20260718.md).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
