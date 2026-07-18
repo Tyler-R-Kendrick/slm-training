@@ -1145,11 +1145,36 @@ full suites) is still required, and E241/E242's conflict machinery has not been
 exercised outside unit/integration tests because greedy decode never stalls on
 this checkpoint.
 
+## LDI campaign index (local decision interventions)
+
+The **LDI** campaign is the local-decision-intervention line of work. Its canonical
+architecture/research contract, invariants, named owners, and the 42-source manifest
+are in [`local-decision-interventions.md`](local-decision-interventions.md). This
+index is a namespace pointer, not a new set of rows: it claims **no** unrun row and
+allocates **no** E ID.
+
+Measured record (authoritative): the **V10 exact-state local preference** rows
+E248-E254 (below) and the measured **E265-E286 local-preference ledger** recorded in
+this matrix and the per-run `iter-e2*.md` docs (broad/guarded FTPO, reference
+tethers, balanced sampling). The chain is negative — E249 and E252 are rejected
+(local metrics moved, semantic quality regressed), and no LDI intervention has
+cleared the unchanged five-suite ship gates or been promoted. Current blocker:
+**stable state support does not imply objective/action-partition support**; exact
+state identity does not prove the good/bad action partition is verifier-supported.
+`DecisionEventV2` action-verdict tables (LDI0-02) target this gap.
+
+**E-ID allocation rule.** New LDI experiments take a globally unique E ID from the
+existing allocation process; the `LDI` name is prose/config only and reserves no ID.
+As of 2026-07-17 the highest allocated ID is **E291** (B1/B3 tracks; see the
+[`README.md`](../../README.md) run ledger), and E248-E291 plus the E263/E264
+local-preference rows are consumed. Do not assume "the next number after E286" is
+free — the next free ID is **≥ E292**.
+
 ## V10 exact-state local preference (E248 control measured)
 
-The full 25-paper audit, source manifest, objective definition, and honesty boundary
-are in [`local-decision-interventions.md`](local-decision-interventions.md). V10
-reuses the existing preference harness and append-only decode traces. It does not
+The full source audit (34 works), source manifest, objective definition, and honesty
+boundary are in [`local-decision-interventions.md`](local-decision-interventions.md).
+V10 reuses the existing preference harness and append-only decode traces. It does not
 introduce an adapter/SAE trainer and does not claim that a local loss produces a
 local parameter update.
 
@@ -1701,6 +1726,76 @@ threat is neither confirmed nor refuted; the secondary signal is a small
 adverse data point for the anonymization defense, to be settled by a
 frontier-scale replicated pair. No gate weakened; nothing promoted.
 
+## E292 complete ChoiceTokenizer loss suite (CPU scratch, 2026-07-17)
+
+E292 fixes a measurement-only omission: generic ChoiceTokenizer kinds
+(`sym`/`bind`/`state`) now contribute binding masks, and generic structural
+kinds contribute structural masks. The matched d64/h2 choice arm ran 107 steps
+and 5,022 target tokens. Its frozen suite is complete with weighted NLL 7.2265
+(binding 8.0201 over 112 masks; structural 5.6419 over 210 masks). The
+checkpoint SHA is byte-identical to E288-E291, proving the accounting fix did
+not alter model behavior.
+
+Frozen honest ship evaluation kept grammar constraints, prompt-derived
+slot-contract constraints, no DESIGN.md context, and no unconstrained fallback.
+Parse is 1.0 on all five small suites, but meaningful rate is 0.0 everywhere;
+component recall is 0.04 on held_out and 0.0 elsewhere. AgentV is 0/5 and 15
+gates fail. **Verdict:** measurement fixed, model rejected. Binding and
+component selection—not syntax/runtime—are the next bounded quality lever.
+See [the narrative](iter-e292-choice-loss-suite-completeness-20260717.md) and
+[machine-readable results](choice-loss-suite-results-iter-e292-20260717.json).
+
+## E293 choice-native component plan (CPU scratch, 2026-07-17)
+
+The choice arm now supports grammar-role component-plan supervision by replaying
+its native pushdown state rather than the surface compiler. A provenance audit
+also fixed a summary bug: E292's unset outer context flag was reported as
+no-DESIGN even though the factory and checkpoint enabled DESIGN context.
+
+The actual E292-matched DESIGN-context arm reaches adversarial meaningful 0.5
+and AgentV 1/5 with plan decode bias off, versus E292's 0.0 / 0/5; bias 1 erases
+that gain. In the policy-correct no-DESIGN follow-up (107 steps / 5,022 tokens),
+plan loss falls 5.6761→3.2616 and root/bound metrics reach 0.5, but meaningful
+rate remains zero.
+
+The frozen honest same-checkpoint ablation confirms the path is active: decode
+bias 1 applies 752 times, changes 38 choices, and reduces gate failures 17→13
+versus bias off. It improves most fidelity/structure cells, but meaningful rate
+remains 0.0 everywhere and AgentV remains 0/5. An earlier DESIGN-context
+calibration produced one meaningful adversarial row, but is not a matched
+comparison. **Verdict:** harness/provenance repaired; a DESIGN-context training
+signal does not transfer to the no-DESIGN policy; no promotion. See
+[the narrative](iter-e293-choice-component-plan-20260717.md) and
+[machine-readable results](choice-component-plan-results-iter-e293-20260717.json).
+
+## E294 no-DESIGN no-plan control (CPU scratch, 2026-07-17)
+
+E294 supplies the missing control for E293 `r3`: identical 107-step /
+5,022-token choice recipe with no DESIGN context and both plan weights zero.
+Weighted NLL is 7.4977 versus E293's 7.5550. Its frozen honest board is exactly
+identical to E293 with decode bias off, despite 69/73 shared non-head tensors
+differing: meaningful 0.0 everywhere, AgentV 0/5, 17 failures.
+
+**Verdict:** plan training alone does not change discrete outputs at this
+resolution; enabling its learned legal-candidate bias cuts failures 17→13 but
+still produces no meaningful programs. Secondary-ranking evidence only; no
+promotion. See [the narrative](iter-e294-no-design-plan-control-20260717.md)
+and [machine-readable results](choice-plan-control-results-iter-e294-20260717.json).
+
+## E295 deterministic DESIGN-context dropout (CPU scratch, 2026-07-17)
+
+E295 adds cache-safe record-level `--design-md-dropout` and runs a matched 50%
+arm: exactly 240/480 DESIGN contexts are omitted. Complete weighted NLL 7.3785
+interpolates between E292 all-DESIGN (7.2265) and E294 no-DESIGN (7.4977).
+Frozen prompt-only evaluation produces one meaningful adversarial program
+(0.25), AgentV 1/5, and 14 failures versus 0.0 / 0/5 / 15–17 in the controls.
+The other four suite scoreboards exactly match E294.
+
+**Verdict:** retain and replicate the generalized lever; the isolated
+adversarial success is not broad transfer and the checkpoint is not promotable.
+See [the narrative](iter-e295-design-context-dropout-20260717.md) and
+[machine-readable results](choice-design-dropout-results-iter-e295-20260717.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
@@ -1722,3 +1817,21 @@ self-distillation, trajectory RL) are in
 | E63 | Gate calibration | ECE / selective accuracy / abstention on `FastPathGate` | proposed |
 | E64 | Trajectory-aligned RL | MDPO/d1-style on intermediate MaskGIT states | proposed |
 | E65 | Schema generalization | Held-out schemas / rename / `toy-layout` transfer | proposed |
+
+## LDI (local decision interventions) index
+
+LDI0-01 recommits the local-decision architecture and its 34-work source inventory
+([`local-decision-interventions.md`](local-decision-interventions.md),
+[`local-decision-sources.json`](../../src/slm_training/resources/autoresearch/local-decision-sources.json)).
+The runnable local-decision experiments already live in the **V10** section above
+(E248 control and E249 measured; E250–E254 unrun / fail-closed). LDI reuses that
+campaign, the existing preference harness, and the append-only decode traces, and
+introduces no second trainer or orchestration stack.
+
+No LDI matrix rows are claimed here and no E-IDs are reserved: future LDI
+experiments draw globally unique E-IDs from the existing allocation process and are
+registered as ordinary E rows when they run.
+
+| Namespace | Scope | Status |
+| --- | --- | --- |
+| LDI0 | Evidence contract and bounded diagnostics — source inventory, separation-of-concerns invariants, E249–E284 falsification chain | inventory registered; no matrix rows claimed |

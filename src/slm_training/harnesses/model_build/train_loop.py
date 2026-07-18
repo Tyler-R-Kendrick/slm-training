@@ -688,6 +688,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             frozen_params = None
 
     tel_path = tel.write(run_dir / "train_telemetry.json")
+    effective_plugin_config = getattr(plugin, "config", config)
     summary = {
         "run_id": config.run_id,
         "steps": step,
@@ -798,7 +799,16 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "schema_in_context": bool(getattr(config, "schema_in_context", False)),
             "retrieval_k": getattr(config, "retrieval_k", 0),
             "grammar_constrained": bool(getattr(config, "grammar_constrained", False)),
-            "honesty_mode": "no-design-md-context" if not getattr(config, "design_md_in_context", True) else "design-md-context",
+            "design_md_dropout": float(
+                getattr(effective_plugin_config, "design_md_dropout", 0.0) or 0.0
+            ),
+            "honesty_mode": (
+                "no-design-md-context"
+                if not getattr(
+                    effective_plugin_config, "design_md_in_context", True
+                )
+                else "design-md-context"
+            ),
         },
         "mixture": mixture_meta,
         "eval_history": eval_history,

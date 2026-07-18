@@ -742,19 +742,46 @@ def test_dsl_program_source_manifest_is_complete() -> None:
 def test_local_decision_source_manifest_is_complete() -> None:
     from scripts.autoresearch import _load_sources
 
+    allowed_status = {"Faithful", "Adapted", "Surrogate", "Adjacent"}
+    required_metadata = (
+        "category",
+        "local_decision_takeaway",
+        "repo_relevance",
+        "implementation_status",
+        "limitations",
+    )
     path = Path("src/slm_training/resources/autoresearch/local-decision-sources.json")
-    manifest = json.loads(path.read_text())
+    manifest = json.loads(path.read_text(encoding="utf-8"))
     rows = _load_sources(path)
     papers = [row for row in rows if row.uri.startswith("https://arxiv.org/abs/")]
+
     assert "6a593158-85c4-83ea-80b1-b6fb893b26bc" in manifest["source_scope"]
-    assert len(rows) == 33
-    assert len(papers) == 25
+    # LDI0-01 (SLM-114) expanded the inventory from 33 rows / 25 papers to 42 / 34.
+    assert len(rows) == 42
+    assert len(papers) == 34
+    # Unique source IDs and canonical URIs: no paper duplicated under an alternate URL.
+    assert len({row.source_id for row in rows}) == len(rows)
     assert len({row.uri for row in rows}) == len(rows)
-    assert all(row.metadata.get("local_decision_takeaway") for row in rows)
-    assert {row.metadata.get("implementation_status") for row in rows} == {
-        "Adapted",
-        "Adjacent",
+    assert all(row.source_id for row in rows)
+    # Required metadata is present on every row.
+    for row in rows:
+        for field in required_metadata:
+            assert row.metadata.get(field), (row.source_id, field)
+    # Implementation-status vocabulary is constrained to the research-lineage set.
+    assert {row.metadata.get("implementation_status") for row in rows} <= allowed_status
+    # The nine LDI0-01 additions are present with verified arXiv IDs.
+    added = {
+        "arxiv-1810.04650",
+        "arxiv-2001.06782",
+        "arxiv-2106.09685",
+        "arxiv-2109.05093",
+        "arxiv-2303.10512",
+        "arxiv-2402.03300",
+        "arxiv-2405.21047",
+        "arxiv-2407.01082",
+        "arxiv-2603.00025",
     }
+    assert added <= {row.source_id for row in rows}
 
 
 class FakeResponses:

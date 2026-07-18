@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+from collections import Counter
 from dataclasses import dataclass
+from enum import Enum
 from functools import lru_cache
 from typing import Any, Literal
 
@@ -18,6 +20,91 @@ from slm_training.dsl.grammar.fastpath.token_map import (
 Coverage = Literal["complete", "partial", "none"]
 
 
+class ConstraintStage(str, Enum):
+    """Hard-constraint stage that admitted or excluded a considered action.
+
+    Stages name the *owner* of a decision inside ``build_completion_forest``;
+    they are not a proof that the exclusion holds in every completion. Only a
+    ``complete``-coverage forest turns an exclusion into an exact fact (VSS0-01,
+    ``verified-scope-solver.md``): under ``partial``/``none`` coverage this
+    evidence is diagnostic, not exhaustive support proof.
+    """
+
+    GRAMMAR = "grammar"
+    SCHEMA = "schema"
+    BINDING = "binding"
+    SLOT_CONTRACT = "slot_contract"
+    DATAFLOW = "dataflow"
+    LITERAL_FRAME = "literal_frame"
+    MIN_CONTENT = "min_content"
+    TERMINAL = "terminal"
+    COVERAGE = "coverage"
+
+
+@dataclass(frozen=True)
+class ConstraintEvidence:
+    """Reason-coded record for one considered action at one constraint stage.
+
+    Immutable and JSON-serializable (``as_dict``/``from_dict``). Evidence is
+    emitted only for actions the compiler actually enumerated; it never asserts
+    anything about un-enumerated vocabulary. ``admitted=False`` records the stage
+    that excluded a considered candidate; ``admitted=True`` records an accepted
+    path (or the EOS/coverage decision).
+    """
+
+    candidate_id: int | None
+    path_token_ids: tuple[int, ...]
+    stage: ConstraintStage
+    admitted: bool
+    reason_code: str
+    details: tuple[tuple[str, str], ...] = ()
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "candidate_id": self.candidate_id,
+            "path_token_ids": list(self.path_token_ids),
+            "stage": self.stage.value,
+            "admitted": self.admitted,
+            "reason_code": self.reason_code,
+            "details": [list(item) for item in self.details],
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> ConstraintEvidence:
+        return cls(
+            candidate_id=(
+                None if data["candidate_id"] is None else int(data["candidate_id"])
+            ),
+            path_token_ids=tuple(int(token) for token in data["path_token_ids"]),
+            stage=ConstraintStage(data["stage"]),
+            admitted=bool(data["admitted"]),
+            reason_code=str(data["reason_code"]),
+            details=tuple(
+                (str(key), str(value)) for key, value in data.get("details", ())
+            ),
+        )
+
+
+@dataclass(frozen=True)
+class ConstraintEvidenceSummary:
+    """Aggregate stage counts plus the forest coverage for an explained forest."""
+
+    coverage: Coverage
+    considered: int
+    admitted: int
+    excluded: int
+    stage_excluded: tuple[tuple[str, int], ...] = ()
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "coverage": self.coverage,
+            "considered": self.considered,
+            "admitted": self.admitted,
+            "excluded": self.excluded,
+            "stage_excluded": [list(item) for item in self.stage_excluded],
+        }
+
+
 @dataclass(frozen=True)
 class CompletionPath:
     """One compiler-valid semantic action plus its maximal forced suffix."""
@@ -28,15 +115,34 @@ class CompletionPath:
 
 @dataclass(frozen=True)
 class CompletionForest:
-    """All known next actions for a prefix and their coverage guarantee."""
+    """All known next actions for a prefix and their coverage guarantee.
+
+    ``evidence``/``evidence_summary`` are populated only when
+    ``build_completion_forest`` is called with ``explain=True``; they default to
+    empty so a default forest is byte-for-byte identical to earlier releases.
+    """
 
     paths: tuple[CompletionPath, ...]
     coverage: Coverage
     terminals: tuple[str, ...] = ()
+    evidence: tuple[ConstraintEvidence, ...] = ()
+    evidence_summary: ConstraintEvidenceSummary | None = None
 
     @property
     def candidate_ids(self) -> tuple[int, ...]:
         return tuple(path.token_ids[0] for path in self.paths if path.token_ids)
+
+    def evidence_as_json(self) -> dict[str, Any]:
+        """Deterministic JSON-ready view of the evidence and its summary."""
+        return {
+            "coverage": self.coverage,
+            "summary": (
+                self.evidence_summary.as_dict()
+                if self.evidence_summary is not None
+                else None
+            ),
+            "evidence": [item.as_dict() for item in self.evidence],
+        }
 
 
 @dataclass(frozen=True)
@@ -70,7 +176,8 @@ def _semantic_kind(tokenizer: Any, token_id: int) -> str:
     kind_of = getattr(tokenizer, "kind_of", None)
     if callable(kind_of):
         try:
-            return str(kind_of(int(token_id)).value)
+            kind = kind_of(int(token_id))
+            return str(getattr(kind, "value", kind))
         except Exception:  # noqa: BLE001
             pass
     piece = _token_piece(tokenizer, token_id)
@@ -624,6 +731,7 @@ def build_completion_forest(
     slot_contract: list[str] | None = None,
     max_path_tokens: int = 8,
     min_content: int = 0,
+    explain: bool = False,
 ) -> CompletionForest:
     """Enumerate every mapped, globally extendable action at ``prefix_ids``.
 
@@ -637,7 +745,75 @@ def build_completion_forest(
     grammatically valid but empty/underfull layout is not a legal completion
     while the grammar still offers a way to add content. The gate never creates
     a dead end — it only withholds EOS when a non-EOS continuation remains.
+
+    ``explain`` (VSS0-02): when True the returned forest also carries reason-coded
+    :class:`ConstraintEvidence` for every considered action plus a
+    :class:`ConstraintEvidenceSummary`. Explanation is purely observational — the
+    returned ``paths``, ``candidate_ids``, ``coverage``, and ``terminals`` are
+    byte-for-byte identical to the default path, nothing is collected or
+    allocated when ``explain`` is False, and evidence about *considered*
+    candidates is not, on its own, an exhaustive support proof (see
+    ``verified-scope-solver.md``): only a ``complete`` coverage certifies an
+    exclusion as exact.
     """
+    evidence: list[ConstraintEvidence] | None = [] if explain else None
+
+    def _snapshot() -> set[int] | None:
+        return set(candidates) if evidence is not None else None
+
+    def _record_excluded(
+        stage: ConstraintStage, reason: str, before: set[int] | None
+    ) -> None:
+        if evidence is None or before is None:
+            return
+        for token_id in sorted(before - candidates):
+            evidence.append(
+                ConstraintEvidence(int(token_id), (int(token_id),), stage, False, reason)
+            )
+
+    def _record_one(
+        stage: ConstraintStage, reason: str, token_id: int, *, admitted: bool
+    ) -> None:
+        if evidence is None:
+            return
+        evidence.append(
+            ConstraintEvidence(int(token_id), (int(token_id),), stage, admitted, reason)
+        )
+
+    def _finalize(paths: list[CompletionPath], coverage: Coverage) -> CompletionForest:
+        terminals_tuple = tuple(sorted(str(term) for term in terminals))
+        if evidence is None:
+            return CompletionForest(tuple(paths), coverage, terminals_tuple)
+        evidence.append(
+            ConstraintEvidence(
+                None,
+                (),
+                ConstraintStage.COVERAGE,
+                coverage == "complete",
+                f"coverage_{coverage}",
+            )
+        )
+        admitted_ids = {
+            item.candidate_id
+            for item in evidence
+            if item.admitted and item.candidate_id is not None
+        }
+        excluded = [item for item in evidence if not item.admitted]
+        excluded_ids = {
+            item.candidate_id for item in excluded if item.candidate_id is not None
+        } - admitted_ids
+        stage_counts = Counter(item.stage.value for item in excluded)
+        summary = ConstraintEvidenceSummary(
+            coverage=coverage,
+            considered=len(admitted_ids | excluded_ids),
+            admitted=len(admitted_ids),
+            excluded=len(excluded_ids),
+            stage_excluded=tuple(sorted(stage_counts.items())),
+        )
+        return CompletionForest(
+            tuple(paths), coverage, terminals_tuple, tuple(evidence), summary
+        )
+
     engine = getattr(state, "engine", None) if state is not None else None
     if not isinstance(engine, OpenUIIncrementalEngine):
         engine = OpenUIIncrementalEngine()
@@ -646,14 +822,19 @@ def build_completion_forest(
     else:
         prefix_text = decode_prefix(tokenizer, prefix_ids)
     if not engine.set_prefix(prefix_text) and prefix_text.strip():
+        if evidence is not None:
+            summary = ConstraintEvidenceSummary("none", 0, 0, 0, ())
+            return CompletionForest((), "none", (), (), summary)
         return CompletionForest((), "none")
 
     terminals = engine.next_terminals()
     candidates = allowed_id_set(tokenizer, terminals) or set()
+    before_stage = _snapshot()
     if prefix_ids and tokenizer.id_to_token.get(int(prefix_ids[-1])) == "NL":
         newline_id = tokenizer.token_to_id.get("NL")
         if newline_id is not None:
             candidates.discard(int(newline_id))
+    _record_excluded(ConstraintStage.GRAMMAR, "grammar_newline_repeat", before_stage)
     ast_complete = _generated_ast_is_complete(prefix_text)
     references_resolved = _references_resolved(tokenizer, prefix_ids)
     # A4: withhold EOS while the layout has fewer than ``min_content`` components,
@@ -668,6 +849,19 @@ def build_completion_forest(
         candidates.add(int(tokenizer.eos_id))
     else:
         candidates.discard(int(tokenizer.eos_id))
+    if evidence is not None and "$END" in terminals:
+        # Distinguish *why* EOS is withheld so a certificate builder can tell a
+        # min-content floor apart from a grammar/dataflow rejection.
+        eos_id = int(tokenizer.eos_id)
+        if not ast_complete:
+            _record_one(ConstraintStage.TERMINAL, "eos_withheld_incomplete_ast", eos_id, admitted=False)
+        elif not references_resolved:
+            _record_one(ConstraintStage.DATAFLOW, "eos_withheld_unresolved_reference", eos_id, admitted=False)
+        elif not content_met:
+            _record_one(ConstraintStage.MIN_CONTENT, "eos_withheld_min_content", eos_id, admitted=False)
+        else:
+            _record_one(ConstraintStage.TERMINAL, "eos_admitted", eos_id, admitted=True)
+    before_stage = _snapshot()
     if "$END" in terminals and ast_complete:
         # Lark accepts postfix operators after any expression. Once the
         # generated AST has a complete document, retain only the grammar's
@@ -678,8 +872,10 @@ def build_completion_forest(
         )
         continuation_ids = allowed_id_set(tokenizer, continuation_terminals) or set()
         candidates &= continuation_ids | {int(tokenizer.eos_id)}
+    _record_excluded(ConstraintStage.TERMINAL, "terminal_document_continuation", before_stage)
     needs_schema = bool(terminals & {"COMPONENT", "STRING"}) or _active_call(engine) is not None
     schema = _official_schema() if needs_schema else None
+    before_stage = _snapshot()
     if schema is not None and "COMPONENT" in terminals:
         component_names = set(schema.get("properties") or {})
         candidates = {
@@ -688,20 +884,26 @@ def build_completion_forest(
             if _semantic_kind(tokenizer, token_id) != "component"
             or _token_piece(tokenizer, token_id) in component_names
         }
+    _record_excluded(ConstraintStage.SCHEMA, "schema_component_not_in_library", before_stage)
     enum_sequences = (
         _schema_enum_sequences(tokenizer, engine, schema) if schema else None
     )
+    before_stage = _snapshot()
     if enum_sequences is not None:
         candidates = {sequence[0] for sequence in enum_sequences if sequence}
+    _record_excluded(ConstraintStage.SCHEMA, "schema_enum_restricted", before_stage)
     schema_type = _schema_slot_type(engine, schema) if schema else None
     schema_slot = _schema_slot_name(engine, schema) if schema else None
     type_terminals = _schema_type_terminals(schema_type)
     arity = _schema_call_arity(engine, schema) if schema else None
     current_started = arity[3] if arity is not None else False
     if type_terminals is not None and enum_sequences is None and not current_started:
+        before_stage = _snapshot()
         typed_ids = allowed_id_set(tokenizer, type_terminals) or set()
         candidates &= typed_ids
+        _record_excluded(ConstraintStage.SCHEMA, "schema_type_mismatch", before_stage)
         if schema_type == "string" and slot_contract:
+            before_stage = _snapshot()
             try:
                 from slm_training.dsl.placeholders import CONTENT_PROPS
                 from slm_training.models.grammar import contract_allowed_token_ids
@@ -718,13 +920,17 @@ def build_completion_forest(
                     candidates = contract_ids
             except Exception:  # noqa: BLE001
                 pass
+            _record_excluded(ConstraintStage.SLOT_CONTRACT, "slot_contract_restricted", before_stage)
 
     if schema_type == "array" and schema_slot == "children" and current_started:
+        before_stage = _snapshot()
         node_terminals = frozenset({"NAME", "COMPONENT", "COMMA", "RSQB", "RPAR"})
         node_ids = allowed_id_set(tokenizer, node_terminals) or set()
         candidates &= node_ids
+        _record_excluded(ConstraintStage.SCHEMA, "schema_array_children", before_stage)
 
     if arity is not None:
+        before_stage = _snapshot()
         minimum, maximum, arg_count, current_started = arity
         separator_ids = allowed_id_set(tokenizer, frozenset({"COMMA", "RPAR"})) or set()
         if current_started and "RPAR" in terminals:
@@ -735,15 +941,19 @@ def build_completion_forest(
         if arg_count >= maximum:
             comma_ids = allowed_id_set(tokenizer, frozenset({"COMMA"})) or set()
             candidates -= comma_ids
+        _record_excluded(ConstraintStage.SCHEMA, "schema_arity", before_stage)
 
     # Apply tokenizer framing after parser/schema filtering. LIT_STR renders as
     # a quote, so the surface parser sees an empty completed string while the
     # lexer-native token stream still requires BYTE* + LIT_END.
+    before_stage = _snapshot()
     candidates = apply_literal_frame(tokenizer, prefix_ids, candidates) or set()
+    _record_excluded(ConstraintStage.LITERAL_FRAME, "literal_frame", before_stage)
 
     inventory_complete = not (needs_schema and schema is None)
     kind_of = getattr(tokenizer, "kind_of", None)
     if callable(kind_of):
+        before_stage = _snapshot()
         try:
             from slm_training.models.dsl_tokenizer import TokenKind
 
@@ -804,13 +1014,18 @@ def build_completion_forest(
                 candidates -= sym_ids
         except Exception:  # noqa: BLE001
             inventory_complete = False
+        _record_excluded(ConstraintStage.BINDING, "binding_scope", before_stage)
 
     if _at_declaration_value(tokenizer, prefix_ids):
+        before_stage = _snapshot()
         candidates = {
             token_id
             for token_id in candidates
             if _semantic_kind(tokenizer, token_id) == "component"
         }
+        _record_excluded(
+            ConstraintStage.SCHEMA, "declaration_value_requires_component", before_stage
+        )
 
     specials = {
         int(tokenizer.pad_id),
@@ -818,6 +1033,9 @@ def build_completion_forest(
         int(tokenizer.bos_id),
         int(tokenizer.unk_id),
     }
+    if evidence is not None:
+        for token_id in sorted(candidates & specials):
+            _record_one(ConstraintStage.GRAMMAR, "special_token_excluded", token_id, admitted=False)
     paths: list[CompletionPath] = []
     max_path_tokens = max(1, int(max_path_tokens))
     candidate_sequences = (
@@ -834,6 +1052,7 @@ def build_completion_forest(
             continue
         branch = OpenUIIncrementalEngine(engine.grammar_path)
         if not branch.set_prefix(prefix_text):
+            _record_one(ConstraintStage.GRAMMAR, "branch_prefix_rejected", candidate, admitted=False)
             continue
         branch_text = prefix_text
         admitted = True
@@ -852,6 +1071,7 @@ def build_completion_forest(
         # InteractiveParser accepted the edge and exposes at least one follow
         # terminal, which is the exact CFG reachability guarantee we need.
         if not admitted or not branch.next_terminals():
+            _record_one(ConstraintStage.GRAMMAR, "branch_unreachable", candidate, admitted=False)
             continue
         drafted = [int(token_id) for token_id in sequence]
         while len(drafted) < max_path_tokens:
@@ -873,6 +1093,12 @@ def build_completion_forest(
                 ),
             )
         )
+        if evidence is not None:
+            evidence.append(
+                ConstraintEvidence(
+                    candidate, tuple(drafted), ConstraintStage.GRAMMAR, True, "admitted"
+                )
+            )
 
     if not paths:
         coverage: Coverage = "partial" if terminals else "none"
@@ -880,9 +1106,7 @@ def build_completion_forest(
         coverage = "complete"
     else:
         coverage = "partial"
-    return CompletionForest(
-        tuple(paths), coverage, tuple(sorted(str(term) for term in terminals))
-    )
+    return _finalize(paths, coverage)
 
 
 def gold_compiler_decisions(
@@ -893,6 +1117,68 @@ def gold_compiler_decisions(
     max_path_tokens: int = 8,
 ) -> tuple[CompilerDecision, ...]:
     """Replay a gold stream and classify every Lark-derived branch decision."""
+    try:
+        from slm_training.models.choice_tokenizer import (
+            ChoiceDecodeState,
+            is_choice_tokenizer,
+        )
+
+        if is_choice_tokenizer(tokenizer):
+            ids = tuple(int(token_id) for token_id in token_ids)
+            top_level_components: list[int] = []
+            probe = ChoiceDecodeState(
+                tokenizer, slot_count=len(slot_contract or ())
+            )
+            probe_cursor = 1 if ids and ids[0] == int(tokenizer.bos_id) else 0
+            while (
+                probe_cursor < len(ids)
+                and ids[probe_cursor]
+                not in {int(tokenizer.pad_id), int(tokenizer.eos_id)}
+            ):
+                if (
+                    _semantic_kind(tokenizer, ids[probe_cursor]) == "component"
+                    and not probe.frames
+                ):
+                    top_level_components.append(probe_cursor)
+                if not probe.advance_id(ids[probe_cursor]):
+                    break
+                probe_cursor += 1
+            structural_root = (
+                top_level_components[-1] if top_level_components else None
+            )
+            state = ChoiceDecodeState(
+                tokenizer, slot_count=len(slot_contract or ())
+            )
+            stop_ids = {int(tokenizer.pad_id), int(tokenizer.eos_id)}
+            cursor = 1 if ids and ids[0] == int(tokenizer.bos_id) else 0
+            decisions: list[CompilerDecision] = []
+            while cursor < len(ids) and ids[cursor] not in stop_ids:
+                remaining = len(ids) - cursor
+                candidates = tuple(sorted(state.allowed_ids(remaining)))
+                gold = ids[cursor]
+                token_kind = _semantic_kind(tokenizer, gold)
+                kind = token_kind
+                if token_kind == "component" and not state.frames:
+                    kind = (
+                        "component_root"
+                        if state.current_marker == "r="
+                        or (
+                            state.mode != "v05"
+                            and cursor == structural_root
+                        )
+                        else "component_bound"
+                    )
+                if len(candidates) > 1:
+                    decisions.append(
+                        CompilerDecision(cursor, kind, token_kind, candidates)
+                    )
+                if not state.advance_id(gold):
+                    break
+                cursor += 1
+            return tuple(decisions)
+    except Exception:  # noqa: BLE001
+        pass
+
     ids = tuple(int(token_id) for token_id in token_ids)
     stop_ids = {int(tokenizer.pad_id), int(tokenizer.eos_id)}
     cursor = 1 if ids and ids[0] == int(tokenizer.bos_id) else 0
@@ -955,6 +1241,9 @@ __all__ = [
     "CompletionForest",
     "CompletionPath",
     "CompilerDecision",
+    "ConstraintEvidence",
+    "ConstraintEvidenceSummary",
+    "ConstraintStage",
     "Coverage",
     "build_completion_forest",
     "gold_compiler_decisions",

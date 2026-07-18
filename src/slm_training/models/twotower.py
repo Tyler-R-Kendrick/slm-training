@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import random
@@ -222,6 +223,8 @@ class TwoTowerConfig:
     # Extra CE weight on gold placeholder token positions (fidelity signal).
     fidelity_loss_weight: float = 0.5
     design_md_in_context: bool = True
+    # Static by (seed, record key) so context caching remains sound.
+    design_md_dropout: float = 0.0
     design_md_budget: int = 1800
     schema_in_context: bool = False
     slot_contract_in_context: bool = False
@@ -477,6 +480,8 @@ class TwoTowerModel(nn.Module):
         self.tokenizer = tokenizer
         self.context_tokenizer = context_tokenizer or tokenizer
         self.config = config or TwoTowerConfig()
+        if not 0.0 <= float(self.config.design_md_dropout) <= 1.0:
+            raise ValueError("design_md_dropout must be between 0 and 1")
         self.output_contract_version = 1
         self.device_name = str(device)
         # Seed before module construction so a configured run is reproducible.
@@ -868,6 +873,199 @@ class TwoTowerModel(nn.Module):
             if grouped.get(owner)
         ]
 
+    def attach_adapter(self, spec: Any) -> None:
+        """Attach a removable low-rank adapter to the denoiser (adapter-only training).
+
+        Fails closed if an adapter is already attached or the spec's base compatibility
+        fingerprint does not match this model. Every non-adapter parameter is frozen, so
+        ``trainable_parameters()`` yields only the adapter tensors while the parent
+        weights stay untouched — ``disable_adapter()`` therefore restores the exact
+        parent map. The context tower is never adapted.
+        """
+        from slm_training.models.adapters.twotower_adapter import attach_low_rank_adapters
+
+        if getattr(self, "_adapter_spec", None) is not None:
+            raise ValueError("an adapter is already attached to this model")
+        expected = getattr(spec, "base_compatibility_fingerprint", "")
+        if expected and expected != self.compatibility_fingerprint():
+            raise ValueError(
+                "adapter base compatibility fingerprint does not match this model"
+            )
+        # NB: spec.base_checkpoint_sha is provenance only. The architecture fingerprint
+        # above does not distinguish two checkpoints of the same shape; enforcing the
+        # exact base checkpoint needs the model to carry its loaded checkpoint identity,
+        # which is deferred with the checkpoint-interplay work (see the LDI2-01 memo).
+        self._adapter_modules = attach_low_rank_adapters(
+            self.denoiser, spec, seed=int(self.config.seed)
+        )
+        for name, parameter in self.named_parameters():
+            parameter.requires_grad_("lora_" in name.lower())
+        self._adapter_spec = spec
+
+    def has_adapter(self) -> bool:
+        return getattr(self, "_adapter_spec", None) is not None
+
+    def enable_adapter(self) -> None:
+        for wrapper in getattr(self, "_adapter_modules", {}).values():
+            wrapper.enable_adapter()
+
+    def disable_adapter(self) -> None:
+        for wrapper in getattr(self, "_adapter_modules", {}).values():
+            wrapper.disable_adapter()
+
+    def adapter_parameters(self):
+        for wrapper in getattr(self, "_adapter_modules", {}).values():
+            yield from wrapper.adapter_parameters()
+
+    def active_adapter_identity(self) -> str:
+        """Content digest of the active adapter tensors, or "" when none are attached."""
+        from slm_training.lineage.records import content_sha
+
+        modules = getattr(self, "_adapter_modules", {})
+        if not modules:
+            return ""
+        return content_sha(
+            {
+                key: [
+                    parameter.detach().to(torch.float64).cpu().flatten().tolist()
+                    for parameter in wrapper.adapter_parameters()
+                ]
+                for key, wrapper in sorted(modules.items())
+            }
+        )
+
+    def merge_adapter_copy(self) -> "TwoTowerModel":
+        """Return a wrapper-free copy with the adapter delta folded into the weights.
+
+        Merge is one-way and on a **copy**: this model and its removable adapter are
+        left untouched. Every ``LowRankAdapter`` in the copy's denoiser is replaced by a
+        plain ``nn.Linear`` equal to the adapter-enabled map, so the merged model carries
+        no active wrappers and trains as an ordinary full model.
+        """
+        import copy
+
+        from slm_training.models.adapters.low_rank import LowRankAdapter
+
+        if not self.has_adapter():
+            raise ValueError("no adapter is attached to merge")
+        merged = copy.deepcopy(self)
+
+        def _fold(module: nn.Module) -> None:
+            for name, child in list(module.named_children()):
+                if isinstance(child, LowRankAdapter):
+                    setattr(module, name, child.merged_linear())
+                else:
+                    _fold(child)
+
+        _fold(merged.denoiser)
+        merged._adapter_modules = {}
+        merged._adapter_spec = None
+        for parameter in merged.parameters():
+            parameter.requires_grad_(True)
+        return merged
+
+    def save_adapter(self, path: Path | str, *, provenance: dict[str, Any] | None = None) -> None:
+        """Write the removable adapter (config + tensors + manifest) to its own directory.
+
+        The base checkpoint is not duplicated — only the adapter tensors and the identity
+        needed to fail closed on load. Requires an attached adapter.
+        """
+        import json
+
+        if not self.has_adapter():
+            raise ValueError("no adapter is attached to save")
+        path = Path(path)
+        path.mkdir(parents=True, exist_ok=True)
+        spec = self._adapter_spec
+        (path / "adapter_config.json").write_text(
+            json.dumps(spec.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        tensors = {
+            name: parameter.detach().cpu()
+            for name, parameter in self.named_parameters()
+            if "lora_" in name.lower()
+        }
+        torch.save(tensors, path / "adapter_model.pt")
+        manifest = {
+            "kind": "twotower_low_rank_adapter",
+            "schema_version": spec.schema_version,
+            "module_map": sorted(self._adapter_modules),
+            "parameter_names": sorted(tensors),
+            "parameter_shapes": {name: list(t.shape) for name, t in tensors.items()},
+            "trainable_parameter_count": int(sum(t.numel() for t in tensors.values())),
+            "adapter_bytes": int((path / "adapter_model.pt").stat().st_size),
+            "base_compatibility_fingerprint": spec.base_compatibility_fingerprint,
+            "base_checkpoint_sha": spec.base_checkpoint_sha,
+            "tokenizer_sha": spec.tokenizer_sha,
+            "provenance": provenance or {},
+        }
+        (path / "adapter_manifest.json").write_text(
+            json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+
+    def load_adapter(self, path: Path | str, *, trainable: bool = False) -> Any:
+        """Attach and load a removable adapter, failing closed on an identity mismatch.
+
+        The adapter's base fingerprint, tokenizer identity, and resolved module map must
+        match this model, or loading raises before any tensor is copied.
+        """
+        import json
+
+        from slm_training.models.adapters.spec import TwoTowerAdapterSpec
+
+        path = Path(path)
+        spec = TwoTowerAdapterSpec.from_dict(
+            json.loads((path / "adapter_config.json").read_text(encoding="utf-8"))
+        )
+        manifest_path = path / "adapter_manifest.json"
+        if not manifest_path.exists():
+            raise ValueError("adapter directory is missing adapter_manifest.json")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+        # --- Validate the whole artifact BEFORE mutating the model ---------------------
+        # Tokenizer + config/manifest integrity are all checked up front so a mismatched
+        # or truncated adapter never leaves the model half-attached.
+        expected_tokenizer = self.artifact_identity()["tokenizer_sha"]
+        if spec.tokenizer_sha and spec.tokenizer_sha != expected_tokenizer:
+            raise ValueError("adapter tokenizer identity does not match this model")
+        if manifest.get("base_compatibility_fingerprint") != spec.base_compatibility_fingerprint:
+            raise ValueError("adapter manifest disagrees with its config on base identity")
+        tensors = torch.load(path / "adapter_model.pt", map_location="cpu", weights_only=True)
+        loaded_names = set(tensors)
+        expected_names = set(manifest.get("parameter_names", []))
+        if loaded_names != expected_names:
+            raise ValueError(
+                "adapter tensors do not match the manifest parameter set "
+                f"(missing={sorted(expected_names - loaded_names)}, "
+                f"unexpected={sorted(loaded_names - expected_names)})"
+            )
+        expected_shapes = manifest.get("parameter_shapes", {})
+        for name, tensor in tensors.items():
+            if list(tensor.shape) != list(expected_shapes.get(name, [])):
+                raise ValueError(
+                    f"adapter tensor {name!r} shape {list(tensor.shape)} does not match "
+                    f"manifest shape {expected_shapes.get(name)}"
+                )
+
+        # --- Mutate only after every check above has passed ---------------------------
+        # attach_adapter fails closed on a base-fingerprint mismatch before wrapping.
+        self.attach_adapter(spec)
+        parameters = dict(self.named_parameters())
+        model_adapter_names = {name for name in parameters if "lora_" in name.lower()}
+        if loaded_names != model_adapter_names:
+            raise ValueError(
+                "adapter tensors do not match the attached module map "
+                f"(missing={sorted(model_adapter_names - loaded_names)}, "
+                f"unexpected={sorted(loaded_names - model_adapter_names)})"
+            )
+        with torch.no_grad():
+            for name, tensor in tensors.items():
+                target = parameters[name]
+                target.copy_(tensor.to(target.device, target.dtype))
+        for name, parameter in self.named_parameters():
+            parameter.requires_grad_(bool(trainable) and "lora_" in name.lower())
+        return spec
+
     def _count_context_tokens(self, text: str) -> int:
         """Context token count under the active backend (capped at max_prompt_len)."""
         if is_hf_context(self.context):
@@ -913,12 +1111,13 @@ class TwoTowerModel(nn.Module):
             if count is None:
                 text = self._context_text_cache.get(key) if cache_on else None
                 if text is None:
+                    design_md = self._training_design_md(r.design_md, key)
                     text = self._format_one_context(
                         r.prompt,
-                        r.design_md,
+                        design_md,
                         query_prompt=r.prompt,
                         slot_contract=self._resolve_slot_contract(
-                            r.prompt, r, r.design_md
+                            r.prompt, r, design_md, use_gold_design=False
                         )
                         if getattr(self.config, "slot_contract_in_context", False)
                         else None,
@@ -1430,11 +1629,14 @@ class TwoTowerModel(nn.Module):
             if cache_on and key in self._context_text_cache:
                 prompts.append(self._context_text_cache[key])
             else:
+                design_md = self._training_design_md(r.design_md, key)
                 text = self._format_one_context(
                     r.prompt,
-                    r.design_md,
+                    design_md,
                     query_prompt=r.prompt,
-                    slot_contract=self._resolve_slot_contract(r.prompt, r, r.design_md)
+                    slot_contract=self._resolve_slot_contract(
+                        r.prompt, r, design_md, use_gold_design=False
+                    )
                     if getattr(self.config, "slot_contract_in_context", False)
                     else None,
                     output_kind=r.target_kind,
@@ -2384,6 +2586,18 @@ class TwoTowerModel(nn.Module):
 
         return mask_loss
 
+    def _training_design_md(self, design_md: str | None, key: str) -> str | None:
+        """Deterministically omit DESIGN.md for a configured share of records."""
+        rate = float(getattr(self.config, "design_md_dropout", 0.0) or 0.0)
+        if not design_md or rate <= 0.0:
+            return design_md
+        if rate >= 1.0:
+            return None
+        seed = int(getattr(self.config, "seed", 0))
+        digest = hashlib.sha256(f"{seed}:{key}".encode()).digest()
+        sample = int.from_bytes(digest[:8], "big") / float(1 << 64)
+        return None if sample < rate else design_md
+
     def _format_one_context(
         self,
         prompt: str,
@@ -3021,6 +3235,13 @@ class TwoTowerModel(nn.Module):
                     F.softplus(logits[1, token_id]) - emitted_bound.get(token_id, 0)
                 ).clamp_min(1e-4)
                 bias[position] = weight * remaining.log()
+            elif kind == "component_root_or_bound":
+                remaining = (
+                    F.softplus(logits[1, token_id]) - emitted_bound.get(token_id, 0)
+                ).clamp_min(1e-4)
+                bias[position] = weight * torch.logaddexp(
+                    logits[0, token_id], remaining.log()
+                )
         return bias
 
     def _component_edge_bias(
@@ -4198,10 +4419,47 @@ class TwoTowerModel(nn.Module):
                         stats.forced_tokens += 1
                 else:
                     assert logits is not None
+                    candidate_ids = tuple(sorted(legal))
                     legal_ids = torch.tensor(
-                        sorted(legal), dtype=torch.long, device=logits.device
+                        candidate_ids, dtype=torch.long, device=logits.device
                     )
-                    best = logits[row, position].index_select(0, legal_ids).argmax()
+                    scores = logits[row, position].index_select(0, legal_ids)
+                    inventory_bias = self._component_inventory_bias(
+                        ctx[row : row + 1],
+                        ctx_pad[row : row + 1],
+                        candidate_ids,
+                    )
+                    if inventory_bias is not None:
+                        scores = scores + inventory_bias
+                    candidate_kinds = tuple(
+                        (
+                            "component_root"
+                            if states[row].current_marker == "r="
+                            else "component_bound"
+                            if states[row].mode == "v05"
+                            else "component_root_or_bound"
+                        )
+                        if tok.kind_of(token_id) == "component"
+                        and not states[row].frames
+                        else tok.kind_of(token_id)
+                        for token_id in candidate_ids
+                    )
+                    plan_bias = self._component_plan_bias(
+                        ctx[row : row + 1],
+                        ctx_pad[row : row + 1],
+                        ids[row, :position].tolist(),
+                        candidate_ids,
+                        candidate_kinds,
+                    )
+                    if plan_bias is not None:
+                        before_plan = int(scores.argmax().item())
+                        scores = scores + plan_bias
+                        if stats is not None:
+                            stats.component_plan_applications += 1
+                            stats.component_plan_choice_changes += int(
+                                int(scores.argmax().item()) != before_plan
+                            )
+                    best = scores.argmax()
                     choice = int(legal_ids[int(best)].item())
                 ids[row, position] = choice
                 if stats is not None:
@@ -4579,6 +4837,8 @@ class TwoTowerModel(nn.Module):
         prompt: str,
         gold: ExampleRecord | None = None,
         design_md: str | None = None,
+        *,
+        use_gold_design: bool = True,
     ) -> list[str] | None:
         """Return inventory for decode/context.
 
@@ -4588,7 +4848,7 @@ class TwoTowerModel(nn.Module):
         falls back to gold placeholders for template fill / conditioning.
         """
         dm = design_md
-        if dm is None and gold is not None:
+        if dm is None and gold is not None and use_gold_design:
             dm = gold.design_md
         honest = bool(getattr(self.config, "honest_slot_contract", False))
         if honest:

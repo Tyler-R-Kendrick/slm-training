@@ -24,7 +24,7 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Iterable
+from typing import TYPE_CHECKING, Any, Iterable
 
 from slm_training.dsl.lang_core import ParseError
 from slm_training.dsl.production_codec import (
@@ -52,6 +52,9 @@ from slm_training.dsl.production_codec import (
     decode_choices,
     encode_choices,
 )
+
+if TYPE_CHECKING:  # pragma: no cover - typing-only import
+    from slm_training.dsl.grammar.fastpath.compiler_draft import ConstraintEvidence
 
 # Bump when vocab layout / serialization changes.
 CHOICE_TOKENIZER_VERSION = 1
@@ -1029,6 +1032,52 @@ class ChoiceDecodeState:
             self.tokenizer.allowed_cache.clear()
         self.tokenizer.allowed_cache[key] = frozenset(allowed)
         return allowed
+
+    def allowed_ids_with_evidence(
+        self, remaining_positions: int
+    ) -> tuple[set[int], tuple["ConstraintEvidence", ...]]:
+        """Explain-mode companion to :meth:`allowed_ids` (VSS0-02).
+
+        Returns ``(allowed, evidence)`` where ``allowed`` is byte-for-byte the
+        set :meth:`allowed_ids` would return and ``evidence`` is reason-coded
+        :class:`ConstraintEvidence` for every candidate the choice frame
+        actually considered. Purely observational: it recomputes from
+        ``_candidate_ids``/``_filter_allowed`` and deliberately does not touch
+        the ``allowed_cache`` or the ``candidates_considered`` counters that the
+        default hot path maintains. Evidence over considered candidates is not an
+        exhaustive support proof (see ``verified-scope-solver.md``).
+        """
+        from slm_training.dsl.grammar.fastpath.compiler_draft import (
+            ConstraintEvidence,
+            ConstraintStage,
+        )
+
+        remaining = int(remaining_positions)
+        considered = self._candidate_ids()
+        allowed = self._filter_allowed(considered, remaining)
+        evidence: list[ConstraintEvidence] = []
+        for token_id in sorted(considered):
+            token = int(token_id)
+            if token in allowed:
+                evidence.append(
+                    ConstraintEvidence(
+                        token, (token,), ConstraintStage.GRAMMAR, True, "choice_admitted"
+                    )
+                )
+                continue
+            probe = self.clone()
+            # Not in ``allowed`` ⇒ either the frame rejected the edge or the
+            # token cannot be completed within the remaining budget.
+            if not probe.advance_id(token):
+                reason = "choice_advance_rejected"
+            else:
+                reason = "choice_length_infeasible"
+            evidence.append(
+                ConstraintEvidence(
+                    token, (token,), ConstraintStage.GRAMMAR, False, reason
+                )
+            )
+        return allowed, tuple(evidence)
 
 
 def is_choice_tokenizer(obj: object) -> bool:

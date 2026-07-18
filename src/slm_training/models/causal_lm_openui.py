@@ -12,8 +12,19 @@ from typing import Any, Iterable
 from slm_training.data.contract import GenerationRequest
 from slm_training.dsl.parser import stream_check, validate
 from slm_training.dsl.schema import ExampleRecord
+from slm_training.harnesses.distill.trace_store import decode_config_hash
 from slm_training.lineage.records import content_sha
 from slm_training.lineage.tracks import CAUSAL_LORA_RECIPE
+from slm_training.models.causal_trace import (
+    AllowedIds,
+    CausalTracedGeneration,
+    CausalTraceIdentity,
+    CausalTraceWriter,
+    GeneratedOutcome,
+    TracePolicy,
+    capture_raw_steps,
+    fold_policy_identity,
+)
 
 
 @dataclass(frozen=True)
@@ -248,6 +259,189 @@ class CausalLMOpenUIPlugin:
         result = tuple(allowed)
         self._grammar_mask_cache[prefix] = result
         return result
+
+    def _encode_prompt(self, prompt: str) -> Any:
+        """Encode the OpenUI chat prompt to input ids (shared by the traced paths)."""
+        system = "Return only one valid OpenUI program using placeholder content."
+        messages = [
+            {"role": "system", "content": system},
+            {"role": "user", "content": prompt},
+        ]
+        if hasattr(self.tokenizer, "apply_chat_template"):
+            return self.tokenizer.apply_chat_template(
+                messages, add_generation_prompt=True, return_tensors="pt"
+            ).to(self.model.device)
+        return self.tokenizer(f"{system}\n{prompt}\n", return_tensors="pt")[
+            "input_ids"
+        ].to(self.model.device)
+
+    def active_adapter_identity(self) -> str:
+        """Content digest of the active adapter tensors, or "" when none are active.
+
+        Hashing the tensor *values* (not just their names) means any mutation of an
+        adapter weight changes the folded ``policy_checkpoint_sha`` — so a trace
+        captured under one adapter cannot silently load as another.
+        """
+        import torch
+
+        adapters = [
+            (name, param)
+            for name, param in self.model.named_parameters()
+            if "lora" in name.lower()
+        ]
+        if not adapters:
+            return ""
+        return content_sha(
+            {
+                name: param.detach().to(torch.float64).cpu().flatten().tolist()
+                for name, param in sorted(adapters, key=lambda item: item[0])
+            }
+        )
+
+    def capture_identity(self, *, group_id: str, context_text: str) -> CausalTraceIdentity:
+        """Build the trajectory identity stamped onto every captured causal state.
+
+        Base and adapter identity are folded into a single policy fingerprint because
+        the shared ``DecisionStateV2`` schema carries no dedicated adapter field, so an
+        adapter-enabled and adapter-disabled capture receive different state identities.
+        """
+        adapter = self.active_adapter_identity()
+        return CausalTraceIdentity(
+            group_id=group_id,
+            context_text=context_text,
+            policy_checkpoint_sha=fold_policy_identity(
+                self.compatibility_fingerprint(), adapter
+            ),
+            tokenizer_sha=self.artifact_identity()["tokenizer_sha"],
+            decode_config_hash=decode_config_hash(getattr(self.model, "config", {})),
+            base_model_revision=self.config.base_model_revision,
+            adapter_identity=adapter,
+        )
+
+    def generate_constrained_traced(
+        self,
+        prompt: str,
+        *,
+        group_id: str,
+        policy: TracePolicy | None = None,
+        trace_writer: CausalTraceWriter | None = None,
+        max_new_tokens: int | None = None,
+        allowed_ids_fn: AllowedIds | None = None,
+    ) -> CausalTracedGeneration:
+        """Greedy constrained generation that captures exact per-step decision evidence.
+
+        Unlike :meth:`generate_constrained` (unchanged and trace-free by default), this
+        drives a per-step loop so the raw pre-mask logits, raw argmax, legal set, and
+        constrained selection are all recoverable from integer prefix ids. The stored
+        ``context_ids`` are the full prefix (prompt + generated suffix), so a consumer
+        can replay ``model(context_ids).logits[:, -1, :]`` exactly. ``allowed_ids_fn``
+        overrides the grammar legal-set seam (defaulting to :meth:`_allowed_ids`).
+        """
+        import torch
+
+        input_ids = self._encode_prompt(prompt)
+        prompt_row = tuple(int(value) for value in input_ids[0].tolist())
+        prompt_len = len(prompt_row)
+        device = self.model.device
+
+        def forward_logits(prefix: tuple[int, ...]) -> list[float]:
+            row = torch.tensor([list(prefix)], device=device)
+            with torch.inference_mode():
+                logits = self.model(row).logits[0, -1, :]
+            return logits.to(torch.float32).cpu().tolist()
+
+        def grammar_allowed(prefix: tuple[int, ...]) -> tuple[int, ...]:
+            return self._allowed_ids(tuple(int(token) for token in prefix[prompt_len:]))
+
+        result = capture_raw_steps(
+            forward_logits=forward_logits,
+            allowed_ids=allowed_ids_fn or grammar_allowed,
+            eos_id=int(self.tokenizer.eos_token_id),
+            max_new_tokens=int(
+                max_new_tokens if max_new_tokens is not None else self.config.max_length
+            ),
+            initial_prefix=prompt_row,
+            policy=policy,
+        )
+        text = self.tokenizer.decode(
+            result.generated_token_ids, skip_special_tokens=True
+        ).strip()
+        try:
+            program = validate(text)
+            final_text = (program.serialized or text).strip()
+            valid = True
+        except Exception:  # noqa: BLE001 - honest: an unfinished decode is not valid
+            final_text = text
+            valid = False
+        if trace_writer is not None:
+            trace_writer.record_all(result)
+        return CausalTracedGeneration(text=final_text, result=result, valid=valid)
+
+    def replay_causal_action(
+        self,
+        state: Any,
+        forced_action_id: int,
+        continuation_seed: int,
+        generation_config: dict[str, Any] | None = None,
+        *,
+        allowed_ids_fn: AllowedIds | None = None,
+    ) -> GeneratedOutcome:
+        """Replay a forced first action on the exact stored prefix, then continue.
+
+        The forced action is applied to ``state.context_ids`` (the exact integer prefix
+        recovered without re-encoding text); continuation uses the deterministic
+        constrained policy, so the same seed/config reproduces the outcome. No judge
+        runs here — the pre-judge outcome is returned for the shared counterfactual
+        owner to score.
+        """
+        import torch
+
+        if state.context_ids is None:
+            raise ValueError("causal replay requires a stored integer prefix (context_ids)")
+        if int(forced_action_id) not in state.legal_action_ids:
+            raise ValueError("forced causal action is not legal for the stored state")
+        prompt_len = len(state.context_ids) - int(state.decision_position)
+        if prompt_len < 0:
+            raise ValueError("stored decision position exceeds the recorded prefix length")
+        base_prefix = tuple(int(token) for token in state.context_ids) + (
+            int(forced_action_id),
+        )
+        device = self.model.device
+        config = generation_config or {}
+
+        def forward_logits(prefix: tuple[int, ...]) -> list[float]:
+            row = torch.tensor([list(prefix)], device=device)
+            with torch.inference_mode():
+                logits = self.model(row).logits[0, -1, :]
+            return logits.to(torch.float32).cpu().tolist()
+
+        def grammar_allowed(prefix: tuple[int, ...]) -> tuple[int, ...]:
+            return self._allowed_ids(tuple(int(token) for token in prefix[prompt_len:]))
+
+        result = capture_raw_steps(
+            forward_logits=forward_logits,
+            allowed_ids=allowed_ids_fn or grammar_allowed,
+            eos_id=int(self.tokenizer.eos_token_id),
+            max_new_tokens=int(config.get("max_new_tokens", self.config.max_length)),
+            initial_prefix=base_prefix,
+        )
+        # The stored prefix already holds the tokens generated before this decision;
+        # keep them so a decision_position > 0 replay materializes the full program.
+        generated_suffix = tuple(int(token) for token in state.context_ids[prompt_len:])
+        generated = (*generated_suffix, int(forced_action_id), *result.generated_token_ids)
+        raw_text = self.tokenizer.decode(generated, skip_special_tokens=True).strip()
+        try:
+            program = validate(raw_text)
+            canonical: str | None = (program.serialized or raw_text).strip()
+        except Exception:  # noqa: BLE001 - unfinished continuation has no canonical form
+            canonical = None
+        return GeneratedOutcome(
+            action_id=int(forced_action_id),
+            continuation_seed=int(continuation_seed),
+            finish_reason=result.stop_reason,
+            raw_program=raw_text,
+            canonical_program=canonical,
+        )
 
     def save(self, path: Path) -> None:
         path.mkdir(parents=True, exist_ok=False)
