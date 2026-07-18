@@ -1,0 +1,33 @@
+{
+  "id": "E337",
+  "date": "2026-07-17",
+  "status": "rejected_bounded_four_suite",
+  "run_id": "e337-hf-context-e333-recipe-30k-local-r1",
+  "checkpoint_sha256": "6f3c1fda0048dfe85ed254edf6adb0801b872d1ad8acfed16443309af959c9f6",
+  "device": "cpu",
+  "context_backend": "hf",
+  "hf_model": "HuggingFaceTB/SmolLM2-135M",
+  "hf_model_revision": "93efa2f097d58c2a74874c7e644dbc9b0cee75a2",
+  "resumed_from": "e336-hf-context-e333-recipe-20k-local-r1",
+  "steps": 629,
+  "seen_target_tokens": 30016,
+  "elapsed_wall_seconds": 256.32602408099774,
+  "hard_run_cap_seconds": 300,
+  "weighted_nll": 5.924046466332462,
+  "best_weighted_nll": 5.75118110542205,
+  "broad_nll": 5.907003650498439,
+  "slot_accuracy_final20": 0.9380555570125579,
+  "slot_majority_final20": 0.6386508017778396,
+  "loss_agentv": {"passed": 3, "total": 3},
+  "evaluation_agentv": {"passed": 0, "total": 4, "execution_errors": 0},
+  "checkpoint_sync": "disabled; bounded local validation",
+  "evaluation_scope": "smoke, held_out, adversarial, ood only; no RICO or ship claim",
+  "suites": {
+    "smoke": {"n": 3, "parse": 0.6666666666666666, "fidelity": 0.0, "structure": 0.25110000000000005, "meaningful": 0.0, "recall": 0.0, "reward": 0.0},
+    "held_out": {"n": 5, "parse": 0.8, "fidelity": 0.0, "structure": 0.20435999999999996, "meaningful": 0.0, "recall": 0.0, "reward": 0.0},
+    "adversarial": {"n": 4, "parse": 0.75, "fidelity": 0.0, "structure": 0.23395, "meaningful": 0.0, "recall": 0.0, "reward": 0.0},
+    "ood": {"n": 4, "parse": 1.0, "fidelity": 0.0, "structure": 0.28835, "meaningful": 0.0, "recall": 0.0, "reward": 0.0}
+  },
+  "harness_fix": "Invalid model-generated literal payloads are quoted as strings instead of raising JSONDecodeError and aborting evaluation.",
+  "verdict": "Reject. Ten thousand additional target tokens improve NLL but do not recover any meaningful, fidelity, recall, or reward signal."
+}

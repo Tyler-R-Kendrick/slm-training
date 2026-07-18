@@ -122,6 +122,7 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 | E330 prompt-conditioned lexeme arm | `e330-prompt-lexeme-slot-prior-20k-r1` | CPU scratch prompt + lexical prior arm | `outputs/runs/e330-prompt-lexeme-slot-prior-20k-r1/checkpoints/last.pt` (local) | Negative: slot accuracy improves but smoke is unchanged and held recall regresses to 0.30; AgentV 4/5 — **not promotable or ship** ([results](design/iter-e330-prompt-lexeme-slot-20260717.md)) |
 | E333 lexical weight-4 scratch champion | `e333-lexeme-slot-weight4-20k-r1` | CPU scratch corpus-derived lexical prior | `outputs/runs/e333-lexeme-slot-weight4-20k-r1/checkpoints/last.pt` (local) | **Full local RICO n=1500 + AgentV 5/5 pass**, but scratch context and no sync mean **not production ship** ([train](design/iter-e333-lexeme-slot-weight4-train-20260717.md), [full RICO](design/iter-e334-full-rico-20260717.md)) |
 | E336 frozen HF-context rejection | `e336-hf-context-e333-recipe-20k-local-r1` | CPU frozen SmolLM2 context | `outputs/runs/e336-hf-context-e333-recipe-20k-local-r1/checkpoints/last.pt` (local) | NLL 6.2014; four completed suites fail meaningful quality; RICO/ship AgentV incomplete under five-minute cap — **rejected, not ship** ([results](design/iter-e336-hf-context-20k-20260717.md)) |
+| E337 frozen HF-context 30k rejection | `e337-hf-context-e333-recipe-30k-local-r1` | CPU frozen SmolLM2 continuation | `outputs/runs/e337-hf-context-e333-recipe-30k-local-r1/checkpoints/last.pt` (local) | Best NLL 5.7512; bounded four-suite AgentV 0/4 with zero fidelity/meaningful/recall/reward — **rejected, not ship** ([results](design/iter-e337-hf-context-30k-20260717.md)) |
 | Production HF ship | — | — | `hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/` | **None registered yet** — fill this row after the first full HF sync |
 
 Update the table in place when a checkpoint is written or superseded. Keep
@@ -403,6 +404,10 @@ Leakage: structural fingerprints + train/test isolation
 | `adversarial` (E336 frozen HF context) | 4 | 1.0 | 0.2292 | 0.2899 | 0.0 | No — meaningful/recall/reward 0.0 |
 | `ood` (E336 frozen HF context) | 4 | 1.0 | 0.5917 | 0.2133 | 0.2268 | No — meaningful 0.25 / recall 0.125 |
 | `rico_held` (E336 frozen HF context) | 0 | — | — | — | — | Not completed — evaluation interrupted on five-minute cap |
+| `smoke` (E337 frozen HF context 30k) | 3 | 0.6667 | 0.0 | 0.2511 | 0.0 | No — bounded suite; AgentV fail |
+| `held_out` (E337 frozen HF context 30k) | 5 | 0.8 | 0.0 | 0.2044 | 0.0 | No — bounded suite; AgentV fail |
+| `adversarial` (E337 frozen HF context 30k) | 4 | 0.75 | 0.0 | 0.2340 | 0.0 | No — bounded suite; AgentV fail |
+| `ood` (E337 frozen HF context 30k) | 4 | 1.0 | 0.0 | 0.2884 | 0.0 | No — bounded suite; AgentV fail |
 | `smoke` (`e177-semantic-judge-32step`, E180 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1542 | 0.607 | No — syntax 1.0, but meaningful component recall 0.25; not a ship evaluation |
 | `smoke` (`e181-semantic-balanced-32step`, E181 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1542 | 0.607 | No — mixture-only control did not improve quality; not a ship evaluation |
 | `smoke` (`e184-compiler-aligned-32step`, E194 diagnostic subset) | 1 | 0.0 | 0.0 | 0.3600 | 0.0 | No — root/schema constraints improved, but output remained incomplete; not a ship evaluation |
@@ -749,6 +754,7 @@ suites because they contain no scope metadata. Evidence:
 | 2026-07-17 | `e333-lexeme-slot-weight4-20k-r1` (E333 scratch champion) | `outputs/runs/e333-lexeme-slot-weight4-20k-r1/` (local) | 446 CPU scratch steps / 20,044 target tokens; lexical prior + persisted decode weight 4; NLL 5.4084; SHA `ca6c290d2617f31c4c5eae6061690974e62d5232252d83d583d03310b4eca9a1`; explicit no-sync | AgentV 5/5 and scratch gates pass; local scratch champion only, not production ship |
 | 2026-07-17 | `e334-e333-full-rico-honest-r1` (E334 eval-only) | `outputs/runs/e334-e333-full-rico-honest-r1/` (local) | Unchanged E333 SHA; full leakage-filtered RICO n=1500 | AgentV 5/5 and all full local gates pass; HF-context training and checkpoint sync still required |
 | 2026-07-17 | `e336-hf-context-e333-recipe-20k-local-r1` (E336 frozen HF context) | `outputs/runs/e336-hf-context-e333-recipe-20k-local-r1/` (local) | 421 CPU steps / 20,008 target tokens; pinned frozen SmolLM2; NLL 6.2014; SHA `5ce51a406744c58bf5b48c843d329295ffb590921a53e92a9299d50cd6403cbf`; explicit no-sync | Four completed suites fail meaningful quality; RICO and ship AgentV incomplete under five-minute cap; rejected |
+| 2026-07-17 | `e337-hf-context-e333-recipe-30k-local-r1` (E337 bounded continuation) | `outputs/runs/e337-hf-context-e333-recipe-30k-local-r1/` (local) | 629 total CPU steps / 30,016 target tokens; 256.3s continuation; best NLL 5.7512; SHA `6f3c1fda0048dfe85ed254edf6adb0801b872d1ad8acfed16443309af959c9f6`; explicit no-sync | Bounded four-suite AgentV 0/4 and all semantic signals zero; rejected, no RICO/ship claim |
 
 Append a row for every new or replaced checkpoint. Do not delete history.
 

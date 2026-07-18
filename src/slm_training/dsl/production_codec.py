@@ -1862,7 +1862,13 @@ def _decode_literal(payload: str) -> str:
         return payload
     except ValueError:
         pass
-    return json.dumps(json.loads(payload))
+    try:
+        return json.dumps(json.loads(payload))
+    except json.JSONDecodeError:
+        # Model-generated choice streams can contain incomplete literal
+        # payloads. Keep decode total and preserve the payload as a string so
+        # evaluators can score the malformed prediction instead of crashing.
+        return json.dumps(payload)
 
 
 @dataclass

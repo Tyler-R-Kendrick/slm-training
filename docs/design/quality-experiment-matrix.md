@@ -2174,6 +2174,14 @@ so full RICO and ship AgentV are absent. Reject the checkpoint and make no full
 eval/ship claim. See [results](iter-e336-hf-context-20k-20260717.md) and
 [JSON](hf-context-results-iter-e336-20260717.json).
 
+E337 resumes E336 to 30,016 tokens within 256.3s. Best weighted NLL improves
+to 5.7512, but the bounded four-suite evaluation has zero fidelity,
+meaningful-program rate, component recall, and reward everywhere; AgentV is
+0/4. Reject token scaling. The run also hardens malformed literal decoding so
+invalid model payloads are scored instead of crashing evaluation. See
+[results](iter-e337-hf-context-30k-20260717.md) and
+[JSON](hf-context-results-iter-e337-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

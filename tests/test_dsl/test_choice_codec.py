@@ -35,6 +35,7 @@ from slm_training.dsl.production_codec import (
     encode_choices,
     encode_openui,
     roundtrip_choices,
+    _decode_literal,
 )
 from slm_training.dsl.schema import ExampleRecord, load_jsonl
 from slm_training.evals.semantic_bits import (
@@ -279,6 +280,11 @@ def test_choice_invalid_reconstruction_fails_closed() -> None:
     # Truncated stream: unterminated component call.
     with pytest.raises(ParseError):
         decode_choices(("+Card", "@0"), (":card.title",))
+
+
+def test_choice_invalid_literal_payload_decodes_as_string() -> None:
+    assert _decode_literal("") == '""'
+    assert _decode_literal('"unterminated') == '"\\"unterminated"'
 
 
 def test_choice_empty_stream_fails_closed() -> None:
