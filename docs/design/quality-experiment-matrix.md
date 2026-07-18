@@ -2552,6 +2552,20 @@ from 0.8993 to 0.7326, and reward from 0.9991 to 0.9571. Lower LR therefore
 fixes the bounded decode boundary and improves NLL while harming RICO
 generalization. Stop full-RICO expansion, reject E423, and retain E396.
 
+E428 increases component-plan decode weight 2→4 on the same E423 RICO slice.
+Recall is unchanged at 0.7326 and structure worsens to 0.4947. Reject stronger
+plan authority; test weight zero only as a source-localization diagnostic.
+
+E429 sets plan weight to zero. Structure rises above E396 to 0.6703 and the
+trivial layout disappears, but recall collapses to 0.5486. The trained plan
+head supplies component types while distorting hierarchy. Test weight 1 as the
+single interpolation point; do not expand this into an open-ended scalar sweep.
+
+E430 closes that scalar test. Weight 1 yields recall 0.7326 and structure
+0.6186, effectively the same rejected plan-active regime as weight 2. There is
+no useful scalar interpolation. The next lever must supervise hierarchy
+separately rather than retune plan decode weight.
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

@@ -74,3 +74,24 @@ small-suite decode boundary and improves NLL, but materially regresses matched
 RICO structure and type recall. Do not spend full-RICO coverage, sync, or
 promotion resources on this checkpoint. Retain E396 while seeking a lever that
 preserves both bounded and RICO quality.
+
+## E428 component-plan decode-weight diagnostic
+
+E428 repeats E427 with only component-plan decode weight increased from 2 to
+4. Meaningful rate and type recall remain 0.9583/0.7326, while structure
+regresses further from 0.6170 to 0.4947 and reward is 0.9568. The same one
+trivial and one low-recall failure remain. AgentV is again an expected 0/5
+diagnostic envelope with no execution errors. Increasing plan-head authority
+amplifies the wrong hierarchy signal and is rejected.
+
+E429 sets component-plan decode weight to zero. Structure improves to 0.6703,
+above E396's 0.6401, and meaningful rate reaches 0.9792 with no trivial-layout
+failure. Type recall, however, collapses to 0.5486 and one low-recall failure
+remains. The plan head supplies needed component types but trades away
+hierarchy quality; neither endpoint is acceptable as an E396 replacement.
+
+E430 tests the sole interpolation point, component-plan weight 1. It remains
+in the rejected plan-active regime: meaningful 0.9583, structure 0.6186,
+recall 0.7326, and reward 0.9571, with the same two failures. Weight 1 does
+not interpolate recall between weights 0 and 2; the response is discrete.
+Close the scalar sweep. A separate hierarchy objective is required.

@@ -504,6 +504,9 @@ Leakage: structural fingerprints + train/test isolation
 | `adversarial` (E423/E425 low-LR 23k continuation) | 4 | 1.0 | 1.0 | 0.6304 | 0.7238 | Yes for bounded suite; full RICO missing |
 | `ood` (E423/E425 low-LR 23k continuation) | 4 | 1.0 | 1.0 | 0.5352 | 0.7335 | Yes for bounded suite; full RICO missing |
 | `rico_held` (E423/E427 rows 336–384) | 48/1500 | 1.0 | 1.0 | 0.6170 | 0.9571 | Diagnostic subset only; meaningful 0.9583 and recall 0.7326 regress E396 |
+| `rico_held` (E423/E428 plan weight 4, rows 336–384) | 48/1500 | 1.0 | 1.0 | 0.4947 | 0.9568 | Diagnostic subset only; recall unchanged at 0.7326 and structure worsens |
+| `rico_held` (E423/E429 plan weight 0, rows 336–384) | 48/1500 | 1.0 | 1.0 | 0.6703 | 0.9768 | Diagnostic subset only; meaningful 0.9792 but recall collapses to 0.5486 |
+| `rico_held` (E423/E430 plan weight 1, rows 336–384) | 48/1500 | 1.0 | 1.0 | 0.6186 | 0.9571 | Diagnostic subset only; recall remains 0.7326, no useful interpolation |
 | `smoke` (E368/E376 structural policy) | 3 | 1.0 | 1.0 | 0.5600 | 0.6567 | Yes for bounded suite; no global ship |
 | `held_out` (E368/E376 structural policy) | 5 | 1.0 | 1.0 | 0.5136 | 0.7844 | Yes for bounded suite; no global ship |
 | `adversarial` (E368/E376 structural policy) | 4 | 1.0 | 1.0 | 0.5546 | 0.7358 | Yes for bounded suite; no global ship |

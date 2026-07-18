@@ -104,6 +104,48 @@
       "reward_score": 0.9991249999999999
     }
   },
+  "component_plan_weight_diagnostic": {
+    "id": "E428",
+    "run_id": "e428-component-plan-23k-low-lr-plan4-rico48-offset336-r1",
+    "component_plan_decode_weight": 4.0,
+    "n": 48,
+    "meaningful_program_rate": 0.9583333333333334,
+    "placeholder_fidelity": 1.0,
+    "structural_similarity": 0.49474791666666634,
+    "component_type_recall": 0.732638888888889,
+    "reward_score": 0.9568333333333333,
+    "failure_breakdown": {"trivial_layout": 1, "low_component_recall": 1},
+    "agentv": {"passed": 0, "total": 5, "execution_errors": 0},
+    "verdict": "reject; stronger plan bias leaves recall unchanged and worsens structure"
+  },
+  "component_plan_zero_diagnostic": {
+    "id": "E429",
+    "run_id": "e429-component-plan-23k-low-lr-plan0-rico48-offset336-r1",
+    "component_plan_decode_weight": 0.0,
+    "n": 48,
+    "meaningful_program_rate": 0.9791666666666666,
+    "placeholder_fidelity": 1.0,
+    "structural_similarity": 0.6703395833333331,
+    "component_type_recall": 0.5486111111111112,
+    "reward_score": 0.9767916666666666,
+    "failure_breakdown": {"low_component_recall": 1},
+    "agentv": {"passed": 0, "total": 5, "execution_errors": 0},
+    "verdict": "source localization only; structure improves but type recall collapses"
+  },
+  "component_plan_one_diagnostic": {
+    "id": "E430",
+    "run_id": "e430-component-plan-23k-low-lr-plan1-rico48-offset336-r1",
+    "component_plan_decode_weight": 1.0,
+    "n": 48,
+    "meaningful_program_rate": 0.9583333333333334,
+    "placeholder_fidelity": 1.0,
+    "structural_similarity": 0.6186041666666666,
+    "component_type_recall": 0.732638888888889,
+    "reward_score": 0.9571458333333333,
+    "failure_breakdown": {"trivial_layout": 1, "low_component_recall": 1},
+    "agentv": {"passed": 0, "total": 5, "execution_errors": 0},
+    "verdict": "reject; discrete plan-active regime, no useful scalar interpolation"
+  },
   "timing_policy": {"external_timeout_seconds": 290, "external_kill_after_seconds": 10, "training_internal_max_wall_minutes": 4.5, "timed_out_runs_used_as_evidence": 0},
   "verdict": "reject as E396 replacement because matched RICO regresses; no full RICO, promotion, sync, or ship claim"
 }
