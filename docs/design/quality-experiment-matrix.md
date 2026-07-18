@@ -3055,7 +3055,12 @@ the 290-second cap and is excluded; two normally completed 24-row replacements
 are prediction-identical to E477 at combined structure 0.8557 and reward
 0.9931. Two more normally completed 24-row shards extend through row 287 and
 are prediction-identical to E477 at combined structure 0.8566 and reward
-0.9948. Coverage is 288/1500; no merged or ship claim yet. See
+0.9948. Shards 6a and 6b extend through row 335 and are prediction-identical
+to E477 at combined structure 0.8894 and reward 0.9907. Shards 7a and 7b
+extend through row 383 and are prediction-identical to E477 at combined
+structure 0.8667 and reward 0.9944. Shards 8a and 8b extend through row 431
+and are prediction-identical to E477 at combined structure 0.8605 and reward
+0.9930. Coverage is 432/1500; no merged or ship claim yet. See
 [`iter-e487-json-number-typed-any-full-rico-sharded-20260718.md`](iter-e487-json-number-typed-any-full-rico-sharded-20260718.md).
 
 Verifier-guided repair status from
