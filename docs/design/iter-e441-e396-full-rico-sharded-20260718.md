@@ -12,12 +12,19 @@ ten-second forced kill. Only normally completed shards count.
 | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
 | 0 | 0–96 | 96 | 1.0 | 1.0 | 1.0 | 0.6568 | 0.9158 | 0.9989 | complete |
 | 1 | 96–192 | 96 | 1.0 | 0.9688 | 1.0 | 0.6262 | 0.8594 | 0.9665 | complete |
+| 2 | 192–288 | 96 | 1.0 | 0.9896 | 1.0 | 0.6186 | 0.8576 | 0.9867 | complete |
+| 3a | 288–336 | 48 | 1.0 | 1.0 | 1.0 | 0.6343 | 0.8090 | 0.9973 | complete |
+| 3b | 336–384 | 48 | 1.0 | 1.0 | 1.0 | 0.6401 | 0.8993 | 0.9991 | reused E399 |
 
 Both shards completed normally. Their diagnostic AgentV envelopes are 0/5
 because four required suites are absent and RICO is a subset; both have zero
 execution errors. Decoded record time is 141.3 and 171.3 seconds,
-respectively. Shard 1 records three low-component-recall failures. No timed-out
-process contributes evidence.
+respectively; shard 2 decoded in 159.7 seconds. Shards 1 and 2 record three and
+one low-component-recall failures. No timed-out process contributes evidence.
 
-**Interim status:** 192/1500 RICO rows complete. This is partial coverage, not
+Rows 336–384 reuse E399 because its checkpoint SHA and complete evaluation
+policy are identical to E441. That prior run completed normally with zero
+execution errors and decoded in 104.5 seconds; it is not rerun.
+
+**Interim status:** 384/1500 RICO rows complete. This is partial coverage, not
 a ship gate, promotion, or full-RICO claim.

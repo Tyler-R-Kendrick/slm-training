@@ -2596,11 +2596,12 @@ auxiliary LR sweep; the response is already in the same discrete regime at
 [`iter-e438-e440-auxiliary-only-lr1e5-20260718.md`](iter-e438-e440-auxiliary-only-lr1e5-20260718.md).
 
 E441 begins the missing full-RICO evaluation for E396 using deterministic
-96-row shards, each externally capped at 290 seconds. Shards 0–1 (rows 0–192)
-complete normally. Shard 0 has structure/recall 0.6568/0.9158 with no failures;
-shard 1 has meaningful 0.9688, structure/recall 0.6262/0.8594, and three
-low-recall failures. Coverage is 192/1500; this remains a partial diagnostic,
-not a ship claim. See
+96-row shards, each externally capped at 290 seconds. Shards 0–2 (rows 0–288)
+complete normally. Structure/recall are 0.6568/0.9158, 0.6262/0.8594, and
+0.6186/0.8576 respectively; shards 1–2 record four total low-recall failures.
+Rows 288–336 add structure/recall 0.6343/0.8090, and protocol-identical E399 is
+reused for rows 336–384 at 0.6401/0.8993. Coverage is 384/1500; this remains a
+partial diagnostic, not a ship claim. See
 [`iter-e441-e396-full-rico-sharded-20260718.md`](iter-e441-e396-full-rico-sharded-20260718.md).
 
 Verifier-guided repair status from
