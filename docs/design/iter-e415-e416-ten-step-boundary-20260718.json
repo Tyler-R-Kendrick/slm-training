@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "run_id": "e416-component-plan-ten-step-control-bounded-r1",
+  "date": "2026-07-18",
+  "status": "Rejected: smoke collapse by 10 resumed optimizer steps",
+  "checkpoint": {
+    "id": "E415",
+    "run_id": "e415-component-plan-ten-step-control-r1",
+    "path": "outputs/runs/e415-component-plan-ten-step-control-r1/checkpoints/last.pt",
+    "sha256": "99e3b6029e352e1b4066175733b3bb24e3778227d7879c14f01376d75b0d1fa5",
+    "sync": "explicit_no_sync",
+    "promoted": false,
+    "rejected": true
+  },
+  "train": {
+    "steps": 437,
+    "additional_steps": 10,
+    "seen_target_tokens": 22561,
+    "target_token_budget": 22550,
+    "elapsed_wall_seconds": 14.19069631700404,
+    "max_wall_minutes": 4.5,
+    "stopped_on": "token_budget",
+    "record_count": 998,
+    "data_manifest_sha": "a4f212a3444d0f219fe1b3604f70929fe1a1b91d4fdc11a73167cb74c55b6a51",
+    "resumed_from": "outputs/runs/e396-balanced-type-head-continuation-r1/checkpoints/last_full_state.pt",
+    "component_plan_class_balance_power": 0.0,
+    "best_weighted_nll": 5.809070931803047,
+    "fresh_loss_eval": false
+  },
+  "suites": {
+    "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 0.3333333333333333, "placeholder_fidelity": 1.0, "structural_similarity": 0.49750000000000005, "component_type_recall": 0.16666666666666666, "reward_score": 0.3203333333333333},
+    "held_out": {"n": 5, "parse_rate": 1.0, "meaningful_program_rate": 0.8, "placeholder_fidelity": 1.0, "structural_similarity": 0.59242, "component_type_recall": 0.5833333333333333, "reward_score": 0.7789999999999999},
+    "adversarial": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.5, "placeholder_fidelity": 1.0, "structural_similarity": 0.513675, "component_type_recall": 0.375, "reward_score": 0.4865},
+    "ood": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.75, "placeholder_fidelity": 1.0, "structural_similarity": 0.5352250000000001, "component_type_recall": 0.6041666666666666, "reward_score": 0.7334999999999999}
+  },
+  "ship_gates": {
+    "pass": false,
+    "failures": [
+      "smoke:meaningful_program_rate actual=0.3333333333333333 need>=0.66",
+      "smoke:component_type_recall actual=0.16666666666666666 need>=0.35",
+      "rico_held:missing_suite"
+    ]
+  },
+  "agentv": {"format": "AgentEvals JSONL", "sdk": "@agentv/core", "passed": 3, "total": 4, "execution_errors": 0},
+  "timing_policy": {"external_timeout_seconds": 290, "external_kill_after_seconds": 10, "training_internal_max_wall_minutes": 4.5, "timed_out_runs_used_as_evidence": 0},
+  "verdict": "reject E415; bisect smoke failure between 2 and 9 additional steps"
+}

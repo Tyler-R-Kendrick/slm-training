@@ -2501,6 +2501,13 @@ control, not a new champion. See
 [results](iter-e413-e414-one-step-continuation-20260718.md) and
 [JSON](iter-e413-e414-one-step-continuation-20260718.json).
 
+E415 bisects the continuation boundary at 10 additional steps / 22,561 target
+tokens. E416 fails smoke meaningful/recall at 0.3333/0.1667 and AgentV is 3/4,
+despite held recall improving to 0.5833. Reject E415; the failure begins
+between 2 and 9 steps. See
+[results](iter-e415-e416-ten-step-boundary-20260718.md) and
+[JSON](iter-e415-e416-ten-step-boundary-20260718.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
