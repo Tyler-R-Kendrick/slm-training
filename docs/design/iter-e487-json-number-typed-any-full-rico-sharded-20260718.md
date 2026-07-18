@@ -347,4 +347,8 @@ Shard 24b completed normally in about 122 seconds under the three-minute policy
 and is prediction-identical to the corresponding E477 rows, with structure
 0.8743, reward 0.9957, and zero failures, fallback, or timeouts.
 
-**Status:** 1470/1500 rows complete. No merged or ship claim yet.
+Shard 24c completed normally in about 155 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.8969, reward 0.9960, and zero failures, fallback, or timeouts.
+
+**Status:** 1485/1500 rows complete. No merged or ship claim yet.
