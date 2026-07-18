@@ -2249,6 +2249,12 @@ gate, and no RICO result exists. See
 [results](iter-e347-hf-context-best-nll-content-floor2-20260717.md) and
 [JSON](hf-context-best-nll-content-floor2-results-iter-e347-20260717.json).
 
+E348 raises the floor to three. Fidelity and reward improve, but held-out
+recall remains 0.20, AgentV remains 3/4, and structure regresses on three
+suites. Reject in favor of E347 and stop the monotonic floor sweep. See
+[results](iter-e348-hf-context-best-nll-content-floor3-20260717.md) and
+[JSON](hf-context-best-nll-content-floor3-results-iter-e348-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
