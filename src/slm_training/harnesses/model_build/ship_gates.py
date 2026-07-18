@@ -15,6 +15,12 @@ from typing import Any
 # emits shorter-but-emptier output cannot green these gates on syntax alone. The
 # floors sit at or below the structural bars (density must be at least as present
 # as structure) and only make the policy stricter — never weaker.
+# Minimum evidence per suite before its gate can pass. Fixture-scale suites
+# (n=3-5) quantize every rate to k/n steps and cannot support a ship claim —
+# per AGENTS.md, production claims need full scoreboards. A policy dict may
+# override per suite via a "min_n" entry (never treated as a metric bar).
+DEFAULT_MIN_SUITE_N = 20
+
 DEFAULT_SHIP_GATES: dict[str, dict[str, float]] = {
     "smoke": {
         "meaningful_program_rate": 0.66,
@@ -141,14 +147,33 @@ def evaluate_ship_gates(
             # quality. New scoreboards persist both metrics explicitly.
             slim["meaningful_program_rate"] = metrics.get("parse_rate")
         actual[suite_name] = slim
-        fallback_count = int(metrics.get("fallback_count") or 0)
+        fallback_count = metrics.get("fallback_count")
         fallback_key = f"{suite_name}:certified_fallback"
-        checks[fallback_key] = fallback_count == 0
-        if fallback_count:
+        if fallback_count is None:
+            # Unmeasured must never certify: a board without fallback telemetry
+            # cannot claim learned (fallback-free) quality.
+            checks[fallback_key] = False
             failures.append(
-                f"{fallback_key} actual={fallback_count} need=0 for learned-quality claims"
+                f"{fallback_key} unmeasured (fallback_count absent) need=0 "
+                "for learned-quality claims"
             )
+        else:
+            fallback_count = int(fallback_count)
+            checks[fallback_key] = fallback_count == 0
+            if fallback_count:
+                failures.append(
+                    f"{fallback_key} actual={fallback_count} need=0 for learned-quality claims"
+                )
+        min_n = int(mins.get("min_n", DEFAULT_MIN_SUITE_N))
+        n_value = metrics.get("n")
+        n_key = f"{suite_name}:insufficient_n"
+        n_ok = isinstance(n_value, (int, float)) and int(n_value) >= min_n
+        checks[n_key] = n_ok
+        if not n_ok:
+            failures.append(f"{n_key} actual={n_value!r} need>={min_n}")
         for metric, minimum in mins.items():
+            if metric == "min_n":
+                continue
             key = f"{suite_name}:{metric}"
             value = slim.get(metric, metrics.get(metric))
             ok = value is not None and float(value) >= float(minimum)

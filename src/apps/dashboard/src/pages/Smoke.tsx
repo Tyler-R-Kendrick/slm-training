@@ -40,10 +40,15 @@ export function Smoke({ navigate }: { navigate: (to: string) => void }) {
   const gate = smokeGate(gatePolicy.data?.policy);
   const perfRows = perf.data?.results ?? [];
   const first = perfRows[0] ?? {};
+  // The server normalizes dialects and tags the guarded legacy fallback; a
+  // client-side parse_rate substitution would present decoder-guaranteed
+  // syntax as the headline lever.
   const smokeRows = (quality.data?.results ?? []).map((r: any) => ({
     id: r.id,
     run_id: r.run_id,
-    parse: r.suites?.smoke?.[gate.lever] ?? r.suites?.smoke?.parse_rate,
+    parse: r.suites?.smoke?.[gate.lever],
+    parseLegacy: r.suites?.smoke?.meaningful_source === "parse_rate_legacy",
+    parseCi: r.suites?.smoke?.[`${gate.lever}_ci95`],
     fidelity: r.suites?.smoke?.placeholder_fidelity,
     reward: r.suites?.smoke?.reward_score,
     n: r.suites?.smoke?.n,
@@ -97,7 +102,7 @@ export function Smoke({ navigate }: { navigate: (to: string) => void }) {
         <DataTable
           columns={[
             { key: "id", label: "experiment" },
-            { key: "parse", label: metricLabel(gate.lever), align: "right", digits: 2, help: "Headline smoke lever from the ship-gate policy." },
+            { key: "parse", label: metricLabel(gate.lever), align: "right", digits: 2, help: "Headline smoke lever from the ship-gate policy. * = legacy board where parse_rate stood in for meaningful." },
             { key: "fidelity", label: "fidelity", align: "right", digits: 2, help: "Placeholder fidelity against the expected target." },
             { key: "reward", label: "reward", align: "right", digits: 2, help: "Aggregate smoke reward; higher is better." },
             { key: "gate", label: gate.label },
@@ -107,7 +112,12 @@ export function Smoke({ navigate }: { navigate: (to: string) => void }) {
           searchPlaceholder="Search smoke experiments"
           render={{
             id: (r) => <a className="mono runlink" onClick={() => navigate(`/runs/${encodeURIComponent(r.run_id || r.id)}`)}>{r.id}</a>,
-            parse: (r) => fmt(r.parse, 2),
+            parse: (r) =>
+              `${fmt(r.parse, 2)}${r.parse != null && r.parseLegacy ? "*" : ""}${
+                r.parse != null && Array.isArray(r.parseCi)
+                  ? ` [${fmt(r.parseCi[0], 2)}, ${fmt(r.parseCi[1], 2)}]`
+                  : ""
+              }`,
             fidelity: (r) => fmt(r.fidelity, 2),
             reward: (r) => fmt(r.reward, 2),
             gate: (r) =>

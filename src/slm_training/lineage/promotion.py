@@ -16,7 +16,10 @@ HARD_METRICS = (
     "parse_rate",
     "meaningful_program_rate",
     "placeholder_fidelity",
-    "request_coverage",
+    # Coverage of the requested slot contract. The evaluator emits this as
+    # contract_recall; the old "request_coverage" name had no writer anywhere,
+    # which made this gate impossible to satisfy.
+    "contract_recall",
     "structural_similarity",
 )
 

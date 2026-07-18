@@ -24,6 +24,10 @@ from pathlib import Path
 from typing import Any, Callable
 
 from slm_training.data.store import DataStore
+from slm_training.evals.record_schema import (
+    normalize_experiment_record,
+    normalize_suite_metrics,
+)
 from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
     evaluate_ship_gates,
@@ -230,17 +234,16 @@ def scoreboard_metric_columns() -> list[dict[str, str]]:
 def _normalize_metrics(metrics: Any) -> dict[str, float]:
     """Re-key an arbitrary metrics dict onto the ship-gate levers.
 
-    Legacy evaluation reports predate the meaningful/parse split; their
-    parse_rate feeds the meaningful lever so cross-era comparisons stay on
-    one metric vocabulary.
+    Dialect re-keying and the *guarded* legacy parse_rate fallback live in
+    ``record_schema.normalize_suite_metrics`` — an unguarded substitution
+    would present decoder-guaranteed syntax as meaningful quality.
     """
     if not isinstance(metrics, dict):
         return {}
+    normalized = normalize_suite_metrics(metrics)
     out: dict[str, float] = {}
     for key in gate_metric_keys():
-        value = metrics.get(key)
-        if value is None and key == "meaningful_program_rate":
-            value = metrics.get("parse_rate")
+        value = normalized.get(key)
         if isinstance(value, (int, float)):
             out[key] = float(value)
     return out
@@ -257,13 +260,11 @@ def _suite_metrics(suites: Any) -> tuple[dict[str, float], int]:
     for suite in suites.values():
         if not isinstance(suite, dict):
             continue
-        weight = max(1, int(suite.get("n") or 0))
-        sample_count += int(suite.get("n") or 0)
+        normalized = normalize_suite_metrics(suite)
+        weight = max(1, int(normalized.get("n") or 0))
+        sample_count += int(normalized.get("n") or 0)
         for key in keys:
-            value = suite.get(key)
-            if value is None and key == "meaningful_program_rate":
-                # Legacy scoreboard rows predate the meaningful/parse split.
-                value = suite.get("parse_rate")
+            value = normalized.get(key)
             if isinstance(value, (int, float)):
                 totals[key] += float(value) * weight
                 weights[key] += weight
@@ -371,36 +372,46 @@ class Readers:
     # ---- scoreboards (experiment / perf matrices) -----------------------------
 
     def _research_results(self) -> list[dict[str, Any]]:
-        """Normalize current per-iteration evidence into the dashboard contract."""
+        """Normalize committed per-experiment evidence into the dashboard contract.
+
+        Every ``docs/design/*.json`` is considered; files that are not
+        experiment records are collected into ``self.last_unparsed`` with a
+        typed reason instead of being silently dropped.
+        """
         results: list[dict[str, Any]] = []
-        for path in self.docs_design.glob("iter-*.json"):
+        unparsed: list[dict[str, str]] = []
+        for path in sorted(self.docs_design.glob("*.json")):
             payload = _read_json(path)
-            if not isinstance(payload, dict):
+            record, reason = normalize_experiment_record(payload, stem=path.stem)
+            if record is None:
+                unparsed.append(
+                    {"path": f"docs/design/{path.name}", "reason": str(reason)}
+                )
                 continue
+            context = record["board_context"]
             evaluation = payload.get("evaluation")
             evaluation = evaluation if isinstance(evaluation, dict) else {}
-            suites = payload.get("suites") or evaluation.get("suites")
-            if not isinstance(suites, dict):
-                continue
             train_result = payload.get("train_result")
             train_result = train_result if isinstance(train_result, dict) else {}
             train = payload.get("train")
             train = train if isinstance(train, dict) else {}
-            run_id = (
-                payload.get("run_id")
-                or train_result.get("run_id")
-                or train.get("run_id")
-                or evaluation.get("run_id")
+            gates = (
+                payload.get("ship_gates")
+                or evaluation.get("ship_gates")
+                or context.get("ship_gates")
             )
-            if not isinstance(run_id, str) or not _RUN_ID_RE.fullmatch(run_id):
-                continue
-            gates = payload.get("ship_gates") or evaluation.get("ship_gates")
             gates = gates if isinstance(gates, dict) else {}
             gate_pass = gates.get("pass")
-            if not isinstance(gate_pass, bool) and isinstance(
-                evaluation.get("failed_gates"), int
-            ):
-                gate_pass = evaluation["failed_gates"] == 0
+            if not isinstance(gate_pass, bool):
+                failed = (
+                    evaluation.get("failed_gates")
+                    if isinstance(evaluation.get("failed_gates"), int)
+                    else context.get("gate_failure_count")
+                )
+                if isinstance(failed, int):
+                    gate_pass = failed == 0
+                else:
+                    gate_pass = None
             reproducibility = payload.get("reproducibility")
             reproducibility = (
                 reproducibility if isinstance(reproducibility, dict) else {}
@@ -409,7 +420,11 @@ class Readers:
             raw_gate_pass = gate_pass
             if claim_class == "branch_only_diagnostic":
                 gate_pass = False
-            agentv = payload.get("agentv") or evaluation.get("agentv")
+            agentv = (
+                payload.get("agentv")
+                or evaluation.get("agentv")
+                or context.get("agentv")
+            )
             agentv = agentv if isinstance(agentv, dict) else {}
             scoreboard_path = payload.get("scoreboard") or evaluation.get("scoreboard")
             run_dir = (
@@ -419,23 +434,27 @@ class Readers:
             )
             results.append(
                 {
-                    "id": run_id,
-                    "run_id": run_id,
+                    "id": record["run_id"],
+                    "run_id": record["run_id"],
                     "description": payload.get("campaign")
                     or payload.get("conclusion")
+                    or payload.get("decision")
+                    or payload.get("verdict")
                     or payload.get("status")
                     or path.stem,
                     "date": payload.get("date_utc") or payload.get("date"),
                     "pass": gate_pass,
                     "raw_gate_pass": raw_gate_pass,
                     "claim_class": claim_class,
-                    "suites": suites,
+                    "suites": record["suites"],
+                    "source_schema": record["source_schema"],
                     "agentv": agentv,
                     "trace_id": train_result.get("trace_id") or train.get("trace_id"),
                     "run_dir": run_dir,
                     "source": f"docs/design/{path.name}",
                 }
             )
+        self.last_unparsed = unparsed
 
         def order(row: dict[str, Any]) -> tuple[str, int, str]:
             match = re.search(r"[Ee](\d+)", str(row.get("id") or ""))
@@ -462,15 +481,19 @@ class Readers:
     def _scoreboard_uncached(self, kind: str) -> dict[str, Any]:
         if kind == RESEARCH_SCOREBOARD_KIND:
             results = self._research_results()
+            unparsed = getattr(self, "last_unparsed", [])
             return {
                 "kind": kind,
                 "provenance": "committed",
-                "reference": "docs/design/iter-*.json",
+                "reference": "docs/design/*.json",
                 "meta": {"latest": results[0].get("date") if results else None},
                 "metric_columns": scoreboard_metric_columns(),
                 "count": len(results),
                 "passed": sum(row.get("pass") is True for row in results),
                 "results": results,
+                # Files that did not normalize, with typed reasons — drops are
+                # visible evidence, never silent.
+                "unparsed": {"count": len(unparsed), "entries": unparsed},
             }
         filename = SCOREBOARD_FILES.get(kind)
         if filename is None:
@@ -482,6 +505,20 @@ class Readers:
             published = _results_of(snapshot.get("quality_results"))
             known = {r.get("run_id") or r.get("id") for r in results}
             results.extend(r for r in published if (r.get("run_id") or r.get("id")) not in known)
+        # One metric vocabulary for every board: dialect re-keying plus the
+        # guarded (tagged) legacy parse_rate fallback happen server-side so no
+        # client needs its own — unguarded — substitution.
+        for row in results:
+            suites = row.get("suites") if isinstance(row, dict) else None
+            if isinstance(suites, dict):
+                row["suites"] = {
+                    str(name): (
+                        normalize_suite_metrics(member)
+                        if isinstance(member, dict)
+                        else member
+                    )
+                    for name, member in suites.items()
+                }
         meta = {k: v for k, v in (payload or {}).items() if k != "results"} if isinstance(
             payload, dict
         ) else {}
@@ -583,8 +620,13 @@ class Readers:
         }
 
     def _scoreboard_row(self, run_id: str) -> dict[str, Any] | None:
-        """Find the matrix row (with suites) whose run_id or experiment id matches."""
-        for kind in (RESEARCH_SCOREBOARD_KIND, "quality", "grammar", "perf"):
+        """Find the matrix row (with suites) whose run_id or experiment id matches.
+
+        Specific matrix boards outrank the research catch-all: research now
+        normalizes essentially every committed record, so it would otherwise
+        shadow the richer matrix rows.
+        """
+        for kind in ("quality", "grammar", "perf", RESEARCH_SCOREBOARD_KIND):
             for row in self.scoreboard(kind)["results"]:
                 if run_id in (row.get("run_id"), row.get("id")):
                     return {"matrix": kind, **row}

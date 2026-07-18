@@ -7,6 +7,7 @@ import argparse
 import json
 from pathlib import Path
 
+from slm_training.evals.record_schema import RUN_CLASSES
 from slm_training.harnesses.model_build import ModelBuildConfig, evaluate
 from slm_training.harnesses.model_build.eval_runner import evaluate_suites
 from slm_training.harnesses.model_build.ship_gates import (
@@ -105,6 +106,16 @@ def main(argv: list[str] | None = None) -> int:
         help=(
             "Apply honest multi-suite ship gates (see docs/design/adversarial-review.md) "
             "and write gates.json. Implies checking every suite in the policy."
+        ),
+    )
+    parser.add_argument(
+        "--run-class",
+        choices=RUN_CLASSES,
+        default=None,
+        help=(
+            "Honesty label stamped into the eval payload. Defaults to ship_eval "
+            "under --ship-gates, else scratch_matrix; pass fixture_demo for "
+            "committed-fixture wiring runs."
         ),
     )
     parser.add_argument(
@@ -394,6 +405,8 @@ def main(argv: list[str] | None = None) -> int:
         train_dir=args.train_dir,
         test_dir=args.test_dir,
         suite=args.suite,
+        run_class=args.run_class
+        or ("ship_eval" if args.ship_gates else "scratch_matrix"),
         run_root=args.run_root,
         run_id=args.run_id,
         model_name=args.model,

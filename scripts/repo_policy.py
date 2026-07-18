@@ -54,6 +54,10 @@ ALLOWED_TRACKED_IGNORED = {
     ".env.example",
 }
 MAX_PUBLISHED_DATA_BYTES = 50 * 1024 * 1024
+# Machine-absolute artifact paths make committed evidence unreproducible from a
+# clone (330 dangling references incl. foreign /home/codex/... paths shipped
+# before this guard). Applies to NEW design records only; history is immutable.
+ABSOLUTE_ARTIFACT_PATH_RE = re.compile(r'"(?:/home/|/Users/|/root/|/tmp/)[^"]*"')
 MAX_WORKFLOW_MINUTES = 3
 
 
@@ -149,6 +153,48 @@ def repository_paths(*, root: Path = ROOT) -> list[str]:
     return sorted({*tracked, *untracked})
 
 
+def validate_new_design_record_paths(*, root: Path = ROOT) -> list[str]:
+    """Reject machine-absolute paths in newly added docs/design JSON records.
+
+    Scope is git-diff based (added vs HEAD, plus untracked) so committed
+    history stays untouched while new evidence must reference repo-relative
+    or remote artifact locations.
+    """
+    added = set(
+        _git(
+            [
+                "diff",
+                "--name-only",
+                "--diff-filter=A",
+                "HEAD",
+                "--",
+                "docs/design/*.json",
+            ],
+            root=root,
+        ).splitlines()
+    )
+    added.update(
+        _git(
+            ["ls-files", "--others", "--exclude-standard", "--", "docs/design/*.json"],
+            root=root,
+        ).splitlines()
+    )
+    errors: list[str] = []
+    for rel in sorted(added):
+        path = root / rel
+        if not path.is_file():
+            continue
+        match = ABSOLUTE_ARTIFACT_PATH_RE.search(
+            path.read_text(encoding="utf-8", errors="replace")
+        )
+        if match:
+            errors.append(
+                f"machine-absolute artifact path in new design record {rel}: "
+                f"{match.group(0)[:80]} (use repo-relative or remote URIs)"
+            )
+    return errors
+
+
 def validate_repository(*, root: Path = ROOT) -> list[str]:
     paths = repository_paths(root=root)
     errors = validate_top_level(paths)
@@ -161,6 +207,7 @@ def validate_repository(*, root: Path = ROOT) -> list[str]:
         if path not in ALLOWED_TRACKED_IGNORED
     )
     errors.extend(validate_skill_mirrors(root))
+    errors.extend(validate_new_design_record_paths(root=root))
     return errors
 
 

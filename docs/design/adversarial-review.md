@@ -140,3 +140,34 @@ python -m scripts.evaluate_model \
   --run-id twotower_v1_ship \
   --ship-gates
 ```
+
+## 2026-07-18 — measurement-honesty remediation (policy delta)
+
+Full audit + fixes: `measurement-honesty-remediation-20260718.md`. Gate-policy
+changes (all strictly tightening; thresholds in `DEFAULT_SHIP_GATES` unchanged):
+
+- **Evidence floor.** Every suite gate now also requires `n >= min_n`
+  (`DEFAULT_MIN_SUITE_N = 20`, per-suite `min_n` override in a custom policy).
+  Fixture-scale suites (n=3-5) quantize rates to k/n — smoke meaningful could
+  never exceed 0.6667 — and no longer read as gateable evidence
+  (`<suite>:insufficient_n`).
+- **certified_fallback fails closed when unmeasured.** `fallback_count` was
+  hardcoded 0 in the evaluator, so the gate was vacuously green. It is now
+  summed from real decode telemetry (unconstrained retries, compiler/seeded
+  fallbacks, template fallbacks) and a board without decode stats fails
+  `certified_fallback unmeasured`.
+- **Undefined ≠ perfect ≠ zero.** Empty-set metrics (contract precision/recall,
+  placeholder fidelity/validity, component type recall) return null instead of
+  a vacuous 1.0; unmeasured aggregates are null, never a fabricated 0.0; the
+  existing missing-metric-fails rule turns null into an honest gate failure.
+  `metric_defined_n` discloses every mean's denominator.
+- **Decoder-guaranteed labeling.** Payloads list metrics enforced by the active
+  decode policy (`decoder_guaranteed`) — post-E226 `parse_rate` is
+  grammar/compiler-guaranteed and must not be read as model skill. Readers only
+  substitute `parse_rate` for the meaningful lever on pre-split boards (both
+  meaningful and `syntax_parse_rate` absent) and tag it
+  `meaningful_source=parse_rate_legacy` (rendered with `*`).
+- **Promotion unblocked from a phantom metric.** `lineage` HARD_METRICS and
+  `model_cycle` required `request_coverage`, which no evaluator has emitted
+  since the rename — promotion now reads `contract_recall`, and a key-contract
+  test pins every consumer-required metric to the evaluator's real output.

@@ -130,6 +130,7 @@ def create_app(
     model_factory: Callable[[Path, str], Any] | None = None,
     deployment_root: Path | None = None,
     comparisons_path: Path | None = None,
+    require_onnx: bool | None = None,
 ) -> FastAPI:
     service = PlaygroundService(
         checkpoint=checkpoint,
@@ -141,6 +142,7 @@ def create_app(
         generation_attempts_path=generation_attempts_path,
         annotation_store=annotation_store,
         model_factory=model_factory,
+        require_onnx=require_onnx,
     )
     deployments = DeploymentRegistry(deployment_root or Path("outputs/lineage/deployments"))
     comparisons = BlindedComparisonStore(

@@ -194,6 +194,9 @@ def _full_suite_metrics(**overrides: float) -> dict[str, dict[str, float]]:
             "component_type_recall": 0.9,
             "placeholder_fidelity": 0.9,
             "reward_score": 0.9,
+            # Measured (zero) fallback telemetry: certified_fallback requires
+            # evidence, not absence.
+            "fallback_count": 0,
         }
         for suite in DEFAULT_SHIP_GATES
     }
@@ -225,6 +228,55 @@ def test_ship_gates_pass_when_density_met() -> None:
     result = evaluate_ship_gates(_full_suite_metrics())
     assert result["pass"] is True
     assert not result["failures"]
+
+
+def test_ship_gates_fail_on_none_metric_values() -> None:
+    # None = unmeasured; unmeasured must fail the threshold, never pass it.
+    suites = _full_suite_metrics()
+    suites["smoke"]["meaningful_program_rate"] = None
+    result = evaluate_ship_gates(suites)
+    assert result["pass"] is False
+    assert any("smoke:meaningful_program_rate" in f for f in result["failures"])
+
+
+def test_certified_fallback_fails_when_unmeasured() -> None:
+    # A board without fallback telemetry cannot certify learned quality.
+    suites = _full_suite_metrics()
+    del suites["smoke"]["fallback_count"]
+    result = evaluate_ship_gates(suites)
+    assert result["pass"] is False
+    assert any(
+        "smoke:certified_fallback unmeasured" in f for f in result["failures"]
+    )
+
+
+def test_certified_fallback_fails_on_measured_fallbacks() -> None:
+    suites = _full_suite_metrics()
+    suites["smoke"]["fallback_count"] = 2
+    result = evaluate_ship_gates(suites)
+    assert result["pass"] is False
+    assert any("smoke:certified_fallback actual=2" in f for f in result["failures"])
+
+
+def test_ship_gates_fail_on_insufficient_suite_n() -> None:
+    # Fixture-scale evidence (n=3) quantizes every rate to thirds — it cannot
+    # support a ship claim regardless of the values.
+    suites = _full_suite_metrics()
+    suites["smoke"]["n"] = 3
+    result = evaluate_ship_gates(suites)
+    assert result["pass"] is False
+    assert any("smoke:insufficient_n actual=3 need>=20" in f for f in result["failures"])
+
+
+def test_ship_gates_min_n_overridable_per_suite_policy() -> None:
+    # A custom policy may set its own evidence floor; it is a policy knob,
+    # never treated as a metric bar.
+    suites = _full_suite_metrics()
+    suites["smoke"]["n"] = 3
+    thresholds = {"smoke": {"meaningful_program_rate": 0.5, "min_n": 3}}
+    result = evaluate_ship_gates(suites, thresholds=thresholds)
+    assert result["pass"] is True
+    assert "smoke:min_n" not in result["gates"]
 
 
 def test_custom_ship_thresholds_have_stable_distinct_provenance() -> None:

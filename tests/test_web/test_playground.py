@@ -181,6 +181,10 @@ def test_react_playground_has_full_annotate_surface() -> None:
     assert "TRANSFORMERS_DEVICE_DTYPES" in browser_js
     assert "assertWebnnBackend" in browser_js
     assert "ml.createContext" in browser_js
+    # The baseline model actually holds the DSL/review formats, and the working
+    # device/dtype profile is remembered so a later visit initializes directly.
+    assert "SmolLM2-360M-Instruct" in browser_js
+    assert "twotower_browser_inference_profile_v1" in browser_js
     assert "wasm.numThreads = capabilities.wasmThreads" in browser_js
     assert "browserAccelerationCapabilities" in browser_js
     assert "RUN_INSIGHTS_SYSTEM_PROMPT" in browser_js
