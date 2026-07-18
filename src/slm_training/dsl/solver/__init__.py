@@ -69,6 +69,14 @@ from slm_training.dsl.solver.capsule_solver import (
     build_capsule_solve_plan,
     solve_capsule_graph,
 )
+from slm_training.dsl.solver.topology_adapter import (
+    TopologyAction,
+    TopologyAdapterConfig,
+    TopologyEdit,
+    TopologyHole,
+    derive_topology_holes,
+    legal_topology_productions,
+)
 
 __all__ = [
     "BaselineRanker",
@@ -115,7 +123,11 @@ __all__ = [
     "SupportVerdict",
     "TerminalChecker",
     "TerminalOutcome",
+    "TopologyAction",
+    "TopologyAdapterConfig",
     "TopologyDomainAdapter",
+    "TopologyEdit",
+    "TopologyHole",
     "Verifier",
     "VerifyOutcome",
     "VerifyStatus",
@@ -124,7 +136,9 @@ __all__ = [
     "completion_forest_state",
     "default_hole_selector",
     "default_query_order",
+    "derive_topology_holes",
     "exact_closure",
+    "legal_topology_productions",
     "replay_support_certificate",
     "search",
     "solve_capsule_graph",
