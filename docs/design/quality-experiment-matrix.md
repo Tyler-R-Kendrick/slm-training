@@ -2755,9 +2755,11 @@ RICO prompts explicitly requesting Switch/Slider still require refresh before
 a new full five-suite claim. See
 [`iter-e459-e396-semantic-slot-density-20260718.md`](iter-e459-e396-semantic-slot-density-20260718.md).
 
-E460 begins the fail-closed full-RICO refresh for E459. The impact audit finds
-49 explicit Switch/Slider rows across shards 0–14; only unaffected shard 15
-is reusable. Shard 0 completes rows 0–95 normally: meaningful/fidelity/recall
+E460 begins the fail-closed full-RICO refresh for E459. The prompt audit finds
+49 explicit Switch/Slider rows across shards 0–14. Shard 15 has no explicit
+affected prompt but is rerun because prior predictions contain incidental
+SwitchItem choices. Shard 0 completes rows 0–95 normally:
+meaningful/fidelity/recall
 1.0, structure 0.8852, reward 0.9955, and zero failures/fallback/timeouts. Its
 one affected row improves structure 0.9069→1.0 without regression. Coverage
 reaches 96/1500. Shard 1 `r2` completes rows 96–191 at
@@ -2782,8 +2784,48 @@ meaningful/fidelity/recall 1.0, structure 0.8836 (up from 0.8768), reward
 structure 0.8766 (up from 0.8637), reward 0.9932 (from 0.9934), and zero
 failures/fallback/timeouts. Slider-bearing shard 8 reaches row 863 at
 meaningful/fidelity/recall 1.0, structure 0.8639 (up from 0.8631), unchanged
-reward 0.9946, and zero failures/fallback/timeouts. Coverage is 864/1500. See
+reward 0.9946, and zero failures/fallback/timeouts. Shard 9 reaches row 959 at
+meaningful/fidelity/recall 1.0, structure 0.8981 (up from 0.8922), reward
+0.9932 (up from 0.9931), and zero failures/fallback/timeouts. Coverage is
+960/1500. Slider-heavy shard 10 reaches row 1055 at
+meaningful/fidelity/recall 1.0, structure 0.8662 (up from 0.8529), reward
+0.9932 (up from 0.9931), and zero failures/fallback/timeouts. Coverage is
+1056/1500. Shard 11 reaches row 1151 at meaningful/fidelity/recall 1.0,
+structure 0.8679 (up from 0.8625), reward 0.9946 (up from 0.9944), and zero
+failures/fallback/timeouts. Shard 12 reaches row 1247 at
+meaningful/fidelity/recall 1.0, structure 0.8712 (up from 0.8642), reward
+0.9948 (from 0.9949), and zero failures/fallback/timeouts. Coverage is
+1248/1500. Shard 13 reaches row 1343 at meaningful/fidelity/recall 1.0,
+structure 0.8889 (up from 0.8880), unchanged reward 0.9945, and zero
+failures/fallback/timeouts. Shard 14 reaches row 1439 at
+meaningful/fidelity/recall 1.0, structure 0.8644 (up from 0.8609), unchanged
+reward 0.9956, and zero failures/fallback/timeouts. Shard 15 completes the
+remaining 60 rows at meaningful/fidelity/recall 1.0, structure 0.8612,
+unchanged reward 0.9957, and zero failures/fallback/timeouts. All 1500 shard
+rows completed normally; exact-coverage merge remains required. See
 [`iter-e460-e396-semantic-slot-full-rico-sharded-20260718.md`](iter-e460-e396-semantic-slot-full-rico-sharded-20260718.md).
+
+The E460 canonical merger verifies identical checkpoint/policy, unique IDs,
+and exact contiguous `[0,1500)` coverage. Full RICO reaches
+meaningful/fidelity/recall 1.0, structure 0.8740, reward 0.9939, zero
+failures/fallback/timeouts, and AgentV 1/1. Relative to E454, structure
+improves 0.8683→0.8740 and recall 0.9960→1.0 while reward is effectively
+flat. Five-suite evidence remains pending.
+
+E461 freshly repeats all four bounded suites under E459's final decoder and
+the corrected reward evaluator. It exactly reproduces E459: smoke
+structure/recall 0.5600/0.5000, held 0.8023/0.9048, adversarial
+0.8061/1.0, and OOD 0.5835/0.8125; every suite has parse, meaningful, and
+fidelity 1.0. AgentV passes 4/4 with zero execution errors and no
+failures/fallback/timeouts. See
+[`iter-e461-e396-semantic-slot-bounded-20260718.md`](iter-e461-e396-semantic-slot-bounded-20260718.md).
+
+E462 merges E461 with E460's exact 1500-row RICO result. All five local ship
+gates pass with zero failures/fallback/timeouts and AgentV 5/5. Full RICO has
+meaningful/fidelity/recall 1.0, structure 0.8740, and reward 0.9939. E396
+remains the local champion; production HF ship remains pending durable bucket
+sync. See
+[`iter-e462-e396-semantic-slot-full-ship-gates-20260718.md`](iter-e462-e396-semantic-slot-full-ship-gates-20260718.md).
 
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;

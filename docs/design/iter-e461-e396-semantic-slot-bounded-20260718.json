@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E461",
+  "date": "2026-07-18",
+  "status": "complete",
+  "run_id": "e461-e396-semantic-slot-bounded-r1",
+  "checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0"
+  },
+  "data": {"version": "e451_root_binder_v1"},
+  "suites": {
+    "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.56, "component_type_recall": 0.5, "reward_score": 0.977},
+    "held_out": {"n": 5, "parse_rate": 1.0, "meaningful_program_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.80234, "component_type_recall": 0.9047619047619048, "reward_score": 0.9862},
+    "adversarial": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.80605, "component_type_recall": 1.0, "reward_score": 0.9767499999999999},
+    "ood": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.5835250000000001, "component_type_recall": 0.8125, "reward_score": 0.9834999999999999}
+  },
+  "agentv": {"passed": 4, "total": 4, "execution_errors": 0},
+  "timing": {
+    "elapsed_seconds": 30,
+    "external_timeout_seconds": 290,
+    "external_kill_after_seconds": 10,
+    "completed_normally": true
+  },
+  "verdict": "Complete current-policy bounded evidence; five-suite merge remains required."
+}
