@@ -2432,6 +2432,38 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
     return result
 
 
+def _run_verified_solver_matrix_set(args: argparse.Namespace) -> int:
+    """Delegate the ``verified-solver`` matrix set (VSS4-02/SLM-75) to the shared
+    verified-solver-matrix functions, short-circuiting the quality-training run.
+
+    ``--describe`` resolves configs without loading any checkpoint/data; otherwise a
+    CPU fixture matrix runs over the committed VSS4-01 benchmark. A non-zero return
+    signals a fail-closed correctness-gate violation.
+    """
+    from slm_training.harnesses.experiments.verified_solver_matrix import (
+        describe_matrix,
+        render_markdown,
+        run_fixture_matrix,
+    )
+
+    report = describe_matrix() if args.describe else run_fixture_matrix()
+    if not args.describe:
+        out_dir = Path(args.run_root) / "vss4_02"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / f"vss4_02_{report.mode}_{report.run_id}.json").write_text(
+            report.to_json(indent=2), encoding="utf-8"
+        )
+        (out_dir / f"vss4_02_{report.mode}_{report.run_id}.md").write_text(
+            render_markdown(report), encoding="utf-8"
+        )
+    print(report.to_json(indent=2))
+    print(
+        f"matrix_set=verified-solver mode={report.mode} rows={len(report.rows)} "
+        f"gate_failures={len(report.gate_failures)} passed={report.passed}"
+    )
+    return 0 if report.passed else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--train-dir", type=Path, default=Path("outputs/data/train/v1"))
@@ -2602,7 +2634,21 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Run deferred E34 latent MoE placeholder (normally skipped).",
     )
+    parser.add_argument(
+        "--matrix-set",
+        default=None,
+        help="Alternate matched matrix set. 'verified-solver' (VSS4-02) resolves the"
+        " verified-scope-solver rows/gates and short-circuits the quality run.",
+    )
+    parser.add_argument(
+        "--describe",
+        action="store_true",
+        help="For --matrix-set verified-solver: resolve configs without loading any"
+        " checkpoint or data (no model run).",
+    )
     args = parser.parse_args(argv)
+    if args.matrix_set == "verified-solver":
+        return _run_verified_solver_matrix_set(args)
     # Modern curriculum rows (notably E53) use ``curriculum_dir`` as their
     # actual training input.  If a caller explicitly supplies a different
     # train corpus, do not silently substitute the stale default curriculum
