@@ -14,6 +14,17 @@ from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
+        "--profile",
+        default="strict",
+        choices=["strict", "permissive"],
+        help=(
+            "Curation profile. 'strict' (default) enables fuzzy dedup, the "
+            "semantic cluster cap, the Bronze verification-tier floor, and the "
+            "per-parent exposure cap; explicit flags below override individual "
+            "knobs. 'permissive' keeps every gate at its legacy opt-in default."
+        ),
+    )
+    parser.add_argument(
         "--source",
         default="all",
         choices=[
@@ -264,6 +275,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     config = TrainDataConfig(
+            profile=args.profile,
             seed_path=args.seed_path
             if args.source in {"fixture", "both", "all"}
             else None,
