@@ -755,3 +755,21 @@ model-independent data structure and a projection adapter that the default
 decode path does not invoke; no checkpoint, experiment, or eval run is involved.
 Exact closure, proof certificates, capsule solving, and learned guidance remain
 later VSS issues.
+
+2026-07-18 — VSS4-02 / SLM-75 adds the matched `verified-solver` evaluation
+matrix (R0-R6) and the eight fail-closed correctness/proof gates to the existing
+quality runner (`scripts/run_quality_matrix.py --matrix-set verified-solver`),
+plus the typed `verified-scope-solver` autoresearch campaign. Correctness
+authority is gated separately from search efficiency and output quality, and the
+gates are evaluated before any quality gain. Fixture wiring is CPU/torch-free:
+the control row (R0) and the closed exact-search row (R1, driving the VSS4-01
+family-A benchmark) run — status_counts `solved 1 · certified_unsat 2 ·
+unknown 1`, `false_unsupported_count 0`, `unknown_preservation_violations 0`,
+`certificate_replay_failures 0`, hard gates PASS. R2-R6 require trained
+checkpoints or benchmark families that are not committed and are marked
+`blocked/not_run` with explicit reasons, never silently substituted. Verified by
+`tests/test_scripts/test_quality_matrix_verified_solver.py`,
+`tests/test_autoresearch/test_verified_scope_matrix.py`, and `python -m
+scripts.repo_policy`. **No model or ship claim**: no checkpoint was created or
+promoted; the frontier campaign is VSS4-03 (SLM-76). See
+[verified-scope-solver-benchmark.md](verified-scope-solver-benchmark.md).

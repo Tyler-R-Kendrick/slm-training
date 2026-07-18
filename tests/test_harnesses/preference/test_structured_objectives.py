@@ -177,3 +177,64 @@ def test_refuses_nontrainable_view_and_out_of_legal_actions() -> None:
     good_view = _view(good=(0,), bad=(9,))  # 9 not legal
     with pytest.raises(StructuredObjectiveError):
         structured_decision_loss(torch.tensor([1.0, 0.0]), good_view, legal_action_ids=(0, 1), config=cfg)
+
+
+def test_ambiguous_unobserved_mass_reported_separately_and_validated() -> None:
+    logits = torch.tensor([1.0, 0.0, 0.5, -0.5])
+    view = _view(good=(0,), bad=(1,), ambiguous=(2,), unobserved=(3,))
+    cfg = StructuredObjectiveConfig(name="legal_set_ftpo", variant="mass")
+    _, m = structured_decision_loss(logits, view, legal_action_ids=(0, 1, 2, 3), config=cfg)
+    # The four legal partitions cover the legal set -> masses sum to 1, each reported.
+    total = (
+        m["good_legal_mass"] + m["bad_legal_mass"]
+        + m["ambiguous_legal_mass"] + m["unobserved_legal_mass"]
+    )
+    assert total == pytest.approx(1.0, rel=1e-5)
+    assert m["ambiguous_legal_mass"] > 0.0 and m["unobserved_legal_mass"] > 0.0
+    assert m["num_ambiguous"] == 1.0 and m["num_unobserved"] == 1.0
+    # Ambiguous/unobserved ids must be legal (validated here, never silently mislabeled).
+    with pytest.raises(StructuredObjectiveError, match="inside the legal set"):
+        structured_decision_loss(
+            logits, _view(good=(0,), bad=(1,), ambiguous=(9,)),
+            legal_action_ids=(0, 1, 2, 3), config=cfg,
+        )
+
+
+def test_locality_tether_composes_and_is_separately_metered() -> None:
+    logits = torch.tensor([1.0, 0.0, 1.0, 0.0])  # off-target token 2 drifts from reference
+    ref = torch.zeros(4)
+    view = _view(good=(0,), bad=(1,))
+    plain = StructuredObjectiveConfig(name="legal_set_ftpo", variant="pairwise")
+    tethered = StructuredObjectiveConfig(
+        name="legal_set_ftpo", variant="pairwise", non_target_tether=1.0
+    )
+    base, _ = structured_decision_loss(logits, view, legal_action_ids=(0, 1, 2, 3), config=plain)
+    loss, m = structured_decision_loss(
+        logits, view, legal_action_ids=(0, 1, 2, 3), config=tethered, reference_logits=ref
+    )
+    assert m["non_target_logit_mse"] == pytest.approx(0.5)  # (1^2 + 0^2) / 2 off-target
+    assert loss.item() == pytest.approx(base.item() + 0.5, rel=1e-5)  # separately metered
+    with pytest.raises(StructuredObjectiveError, match="reference"):
+        structured_decision_loss(logits, view, legal_action_ids=(0, 1, 2, 3), config=tethered)
+
+
+def test_barrier_role_weight_down_weights_structural_tokens() -> None:
+    logits = torch.tensor([-2.0, 3.0, 0.0])  # good action 0 under-confident + critical
+    view = _view(good=(0,), bad=(1,))
+    cfg = StructuredObjectiveConfig(name="tab_barrier", barrier_p=0.5)
+    mask = torch.tensor([1.0])
+    _, full = structured_decision_loss(
+        logits, view, legal_action_ids=(0, 1, 2), config=cfg, critical_good_mask=mask
+    )
+    _, low = structured_decision_loss(
+        logits, view, legal_action_ids=(0, 1, 2), config=cfg,
+        critical_good_mask=mask, good_role_weights=torch.tensor([0.1]),
+    )
+    assert low["barrier_loss"] < full["barrier_loss"]  # structural down-weight shrinks anchor
+    assert low["mean_role_weight"] == pytest.approx(0.1)
+    # default_role_weight is now honored (previously a dead config field).
+    zero_cfg = StructuredObjectiveConfig(name="tab_barrier", barrier_p=0.5, default_role_weight=0.0)
+    _, zeroed = structured_decision_loss(
+        logits, view, legal_action_ids=(0, 1, 2), config=zero_cfg, critical_good_mask=mask
+    )
+    assert zeroed["barrier_loss"] == pytest.approx(0.0)
