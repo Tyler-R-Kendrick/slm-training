@@ -123,6 +123,12 @@ def test_prompt_role_contract_uses_only_visible_counts() -> None:
     assert prompt_role_component_counts(
         "Two-tab panel with overview and details content."
     ) == Counter({"TabItem": 2, "Tabs": 1})
+    assert prompt_role_component_counts(
+        "Show an informational callout with title and body."
+    ) == Counter({"Callout": 1})
+    assert prompt_role_placeholder_count(
+        "Show an informational callout with title and body."
+    ) == 2
 
 
 def test_honest_zero_slot_role_contract_stays_empty() -> None:

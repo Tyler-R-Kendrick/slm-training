@@ -2827,6 +2827,22 @@ remains the local champion; production HF ship remains pending durable bucket
 sync. See
 [`iter-e462-e396-semantic-slot-full-ship-gates-20260718.md`](iter-e462-e396-semantic-slot-full-ship-gates-20260718.md).
 
+E463 adds the missing generalized contract for explicitly named Callouts and
+restricts its semantic placeholder slots to arguments 1 and 2. The complete
+smoke diagnostic improves structure/recall 0.5600/0.5000→0.6822/0.6667 while
+reward changes 0.9770→0.9730. E464 repeats all four bounded suites: the other
+three are metric-identical to E461, AgentV passes 4/4, and every suite has
+zero failures/fallback/timeouts. Accept the bounded correction. See
+[`iter-e463-e464-explicit-callout-contract-20260718.md`](iter-e463-e464-explicit-callout-contract-20260718.md).
+
+E465's fail-closed impact audit finds zero E451 RICO prompts matching the new
+explicit-Callout contract, so E460's exact 1500-row artifact is reusable.
+Merged with E464, all five local gates pass with zero
+failures/fallback/timeouts and AgentV 5/5. E396 remains the current-policy
+local champion, with production HF ship still pending durable bucket sync.
+See
+[`iter-e465-e396-explicit-callout-full-ship-gates-20260718.md`](iter-e465-e396-explicit-callout-full-ship-gates-20260718.md).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

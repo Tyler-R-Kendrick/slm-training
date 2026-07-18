@@ -157,6 +157,7 @@ _PROMPT_ROLE_COMPONENTS = {
     "slider": ("form", "Slider"),
     "datepicker": ("form", "DatePicker"),
     "image": ("image", "ImageBlock"),
+    "callout": ("callout", "Callout"),
 }
 _PROMPT_COMPONENT_PLACEHOLDER_ARITY = {
     "Button": 1,
@@ -169,10 +170,12 @@ _PROMPT_COMPONENT_PLACEHOLDER_ARITY = {
     "Slider": 1,
     "DatePicker": 0,
     "ImageBlock": 2,
+    "Callout": 2,
     "Tabs": 0,
     "TabItem": 1,
 }
 _COMPONENT_SLOT_ARGUMENTS = {
+    "Callout": frozenset({1, 2}),
     "Slider": frozenset({6}),
     "SwitchItem": frozenset({0, 1}),
     "TabItem": frozenset({1}),
@@ -213,6 +216,10 @@ _PROMPT_EXPLICIT_COMPONENT_PATTERNS = {
     ),
     "Slider": re.compile(
         rf"\b{_PROMPT_COUNT_PATTERN}\s+sliders?\b", re.IGNORECASE
+    ),
+    "Callout": re.compile(
+        rf"\b{_PROMPT_COUNT_PATTERN}\s+(?:\w+\s+)?callouts?\b",
+        re.IGNORECASE,
     ),
 }
 _PROMPT_TAB_PANEL_RE = re.compile(
