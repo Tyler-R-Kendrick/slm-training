@@ -1,0 +1,25 @@
+{
+  "id": "E325",
+  "date": "2026-07-17",
+  "status": "negative_not_promotable",
+  "run_id": "e325-slot-pair-interaction-20k-r1",
+  "checkpoint_sha256": "e0f8e1266ba3199a4ee2dfda19e46a9e617541701ddeb96e27dc6d1ee7c8da6b",
+  "steps": 446,
+  "seen_target_tokens": 20044,
+  "elapsed_wall_seconds": 123.63792967700283,
+  "weighted_nll": 5.432759989210426,
+  "broad_nll": 5.50495003705675,
+  "slot_accuracy": 0.710526319318696,
+  "slot_majority_baseline": 0.6184210620428386,
+  "agentv": {"passed": 3, "total": 5},
+  "failures": [
+    "smoke component recall 0.3333 < 0.35",
+    "held_out component recall 0.20 < 0.30"
+  ],
+  "baseline_regressions": [
+    "OOD meaningful program rate 1.00 -> 0.50",
+    "OOD component recall 0.5417 -> 0.25",
+    "OOD reward 0.9857 -> 0.4992"
+  ],
+  "verdict": "Reject: explicit adjacent-slot interaction ties E316's gate count but changes 16/19 predictions and loses E316's OOD strength."
+}

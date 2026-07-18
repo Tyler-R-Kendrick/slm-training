@@ -2104,6 +2104,12 @@ current/neighbor vectors and an explicit interaction. See
 [results](iter-e324-next-slot-context-20260717.md) and
 [JSON](next-slot-context-results-iter-e324-20260717.json).
 
+E325's explicit current/next-vector interaction restores E316's two-failure
+gate count but changes 16/19 predictions and cuts OOD meaningful/recall from
+1.00/0.5417 to 0.50/0.25. Reject the checkpoint; adjacent position is not the
+missing relation. See [results](iter-e325-slot-pair-interaction-20260717.md)
+and [JSON](slot-pair-interaction-results-iter-e325-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
