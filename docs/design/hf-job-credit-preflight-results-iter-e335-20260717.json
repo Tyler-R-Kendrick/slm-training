@@ -1,0 +1,22 @@
+{
+  "id": "E335",
+  "date": "2026-07-17",
+  "status": "blocked_before_schedule_zero_compute",
+  "account": "TKendrick",
+  "hardware": "a10g-large",
+  "timeout": "8h",
+  "hourly_price_usd": 1.5,
+  "maximum_cost_usd": 12.0,
+  "source_branch": "codex/e292-e293-choice-plan",
+  "source_commit": "7a10b96a59637636eef9e40493252633077af226",
+  "hf_model": "HuggingFaceTB/SmolLM2-135M",
+  "hf_model_revision": "93efa2f097d58c2a74874c7e644dbc9b0cee75a2",
+  "checkpoint_bucket": "hf://buckets/TKendrick/OpenUI",
+  "scheduled": false,
+  "compute_started": false,
+  "cost_usd": 0.0,
+  "error": "402 Payment Required: Pre-paid credit balance is insufficient - add more credits to your account to use Jobs.",
+  "agentv": null,
+  "checkpoint": null,
+  "verdict": "No experiment ran and no checkpoint was created. Continue with bounded local HF-context validation; retry Jobs only after credits are available and with a five-minute timeout."
+}

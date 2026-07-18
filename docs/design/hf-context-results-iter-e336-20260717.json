@@ -1,0 +1,32 @@
+{
+  "id": "E336",
+  "date": "2026-07-17",
+  "status": "rejected_partial_eval_capped",
+  "run_id": "e336-hf-context-e333-recipe-20k-local-r1",
+  "checkpoint_sha256": "5ce51a406744c58bf5b48c843d329295ffb590921a53e92a9299d50cd6403cbf",
+  "device": "cpu",
+  "context_backend": "hf",
+  "hf_model": "HuggingFaceTB/SmolLM2-135M",
+  "hf_model_revision": "93efa2f097d58c2a74874c7e644dbc9b0cee75a2",
+  "context_frozen": true,
+  "steps": 421,
+  "seen_target_tokens": 20008,
+  "elapsed_wall_seconds": 330.36494911299815,
+  "weighted_nll": 6.201388944164732,
+  "broad_nll": 6.450083886271316,
+  "loss_agentv": {"passed": 5, "total": 5},
+  "checkpoint_sync": "disabled; bounded local validation",
+  "evaluation": {
+    "complete": false,
+    "interrupted_reason": "User imposed a non-negotiable five-minute maximum for every run.",
+    "ship_agentv": null,
+    "rico_held": null,
+    "suites": {
+      "smoke": {"n": 3, "parse": 1.0, "fidelity": 0.611111111111111, "structure": 0.4072, "meaningful": 0.0, "recall": 0.0, "reward": 0.0},
+      "held_out": {"n": 5, "parse": 1.0, "fidelity": 0.22333333333333333, "structure": 0.23793999999999998, "meaningful": 0.0, "recall": 0.0, "reward": 0.0},
+      "adversarial": {"n": 4, "parse": 1.0, "fidelity": 0.22916666666666663, "structure": 0.289875, "meaningful": 0.0, "recall": 0.0, "reward": 0.0},
+      "ood": {"n": 4, "parse": 1.0, "fidelity": 0.5916666666666667, "structure": 0.213275, "meaningful": 0.25, "recall": 0.125, "reward": 0.22675}
+    }
+  },
+  "verdict": "Reject. The frozen HF-context transition regressed loss and collapsed meaningful quality on every completed suite. No production or full-RICO claim."
+}

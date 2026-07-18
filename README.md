@@ -126,6 +126,7 @@ summary and the full card whenever a checkpoint is created or promoted.
 | E328 ordered span-prior arm | `e328-span-slot-prior-20k-r1/last.pt` | `outputs/runs/e328-span-slot-prior-20k-r1/…` (local) | Negative: corrected schema arity is retained, but span prior leaves smoke unchanged and regresses held recall to 0.30 — not promoted or ship |
 | E330 prompt-conditioned lexeme arm | `e330-prompt-lexeme-slot-prior-20k-r1/last.pt` | `outputs/runs/e330-prompt-lexeme-slot-prior-20k-r1/…` (local) | Negative: auxiliary accuracy improves, but smoke is unchanged and held recall regresses to 0.30 — not promoted or ship |
 | E333 lexical weight-4 scratch champion | `e333-lexeme-slot-weight4-20k-r1/last.pt` | `outputs/runs/e333-lexeme-slot-weight4-20k-r1/…` (local) | Full local RICO n=1500 + AgentV 5/5 pass; scratch context/no-sync still mean not production ship |
+| E336 frozen HF-context rejection | `e336-hf-context-e333-recipe-20k-local-r1/last.pt` | `outputs/runs/e336-hf-context-e333-recipe-20k-local-r1/…` (local) | NLL 6.2014; four completed suites fail meaningful quality; RICO/ship AgentV incomplete under five-minute cap — rejected, not ship |
 | Production HF ship | *(none yet)* | [HF Bucket `TKendrick/OpenUI`](https://huggingface.co/buckets/TKendrick/OpenUI) `checkpoints/<run_id>/` | Register here after first full HF sync + `--ship-gates` |
 
 **Load demo:** `python -m scripts.serve_playground` · **Full train sync:** set

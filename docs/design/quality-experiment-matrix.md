@@ -2161,6 +2161,19 @@ bucket sync remain outstanding. See
 [results](iter-e334-full-rico-20260717.md) and
 [JSON](full-rico-results-iter-e334-20260717.json).
 
+E335's pinned A10G-large HF Jobs submission was rejected before scheduling
+because the account had insufficient prepaid credit. Compute and cost were
+zero; no model evidence or checkpoint exists. See
+[preflight](iter-e335-hf-job-credit-preflight-20260717.md) and
+[JSON](hf-job-credit-preflight-results-iter-e335-20260717.json).
+
+E336 locally moves E333's recipe to frozen pinned SmolLM2 context. At 20,008
+tokens, NLL regresses to 6.2014 and all four completed suites fail meaningful
+quality. The evaluation was interrupted on the newly imposed five-minute cap,
+so full RICO and ship AgentV are absent. Reject the checkpoint and make no full
+eval/ship claim. See [results](iter-e336-hf-context-20k-20260717.md) and
+[JSON](hf-context-results-iter-e336-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
