@@ -347,6 +347,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         component_plan_loss_weight=float(
             getattr(config, "component_plan_loss_weight", 0.0) or 0.0
         ),
+        component_plan_class_balance_power=float(
+            getattr(config, "component_plan_class_balance_power", 0.0) or 0.0
+        ),
         component_plan_decode_weight=float(
             getattr(config, "component_plan_decode_weight", 0.0) or 0.0
         ),

@@ -210,6 +210,8 @@ class TwoTowerConfig:
     component_inventory_decode_weight: float = 0.0
     # Grammar-role plan: root class plus bound-component multiplicities.
     component_plan_loss_weight: float = 0.0
+    component_plan_class_balance_power: float = 0.0
+    component_plan_class_weights: tuple[float, ...] = ()
     component_plan_decode_weight: float = 0.0
     component_plan_attention_pool: bool = False
     component_plan_token_pool: bool = False
@@ -1283,6 +1285,25 @@ class TwoTowerModel(nn.Module):
                 result[token] = index
         return result
 
+    @staticmethod
+    def _component_type_counts(source: str) -> Counter[str]:
+        from slm_training.dsl.lang_core import parse
+
+        counts: Counter[str] = Counter()
+
+        def walk(value: object) -> None:
+            if isinstance(value, dict):
+                if value.get("type") == "element" and value.get("typeName"):
+                    counts[str(value["typeName"])] += 1
+                for child in value.values():
+                    walk(child)
+            elif isinstance(value, list):
+                for child in value:
+                    walk(child)
+
+        walk(parse(source).root)
+        return counts
+
     def _slot_component_logits(
         self,
         slots: list[str],
@@ -2132,8 +2153,21 @@ class TwoTowerModel(nn.Module):
                 bound_logits = plan_logits[:, 1].index_select(1, index)
                 root_tensor = torch.as_tensor(root_targets, device=ctx.device)
                 root_mask = root_tensor.ge(0)
+                class_weights = (
+                    torch.as_tensor(
+                        self.config.component_plan_class_weights,
+                        dtype=root_logits.dtype,
+                        device=root_logits.device,
+                    )
+                    if self.config.component_plan_class_weights
+                    else None
+                )
                 root_loss = (
-                    F.cross_entropy(root_logits[root_mask], root_tensor[root_mask])
+                    F.cross_entropy(
+                        root_logits[root_mask],
+                        root_tensor[root_mask],
+                        weight=class_weights,
+                    )
                     if root_mask.any()
                     else root_logits.sum() * 0.0
                 )
@@ -2147,11 +2181,17 @@ class TwoTowerModel(nn.Module):
                 )
                 bound_positive = bound_targets.gt(0)
                 bound_negative = ~bound_positive
-                positive_loss = (
-                    bound_raw[bound_positive].mean()
-                    if bound_positive.any()
-                    else bound_raw.sum() * 0.0
-                )
+                if bound_positive.any() and class_weights is not None:
+                    positive_weights = class_weights.unsqueeze(0).expand_as(bound_raw)[
+                        bound_positive
+                    ]
+                    positive_loss = (
+                        bound_raw[bound_positive] * positive_weights
+                    ).sum() / positive_weights.sum().clamp_min(1e-9)
+                elif bound_positive.any():
+                    positive_loss = bound_raw[bound_positive].mean()
+                else:
+                    positive_loss = bound_raw.sum() * 0.0
                 negative_loss = bound_raw[bound_negative].mean()
                 bound_loss = positive_loss + negative_loss
                 plan_loss = root_loss + bound_loss
@@ -7055,6 +7095,38 @@ class TwoTowerModel(nn.Module):
             device=device,
             context_tokenizer=context_tokenizer,
         )
+        plan_balance_power = float(
+            getattr(cfg, "component_plan_class_balance_power", 0.0) or 0.0
+        )
+        if plan_balance_power > 0.0 and model.component_plan_head is not None:
+            component_index = model._component_name_index()
+            counts = [0] * len(component_index)
+            for record in records:
+                for component, count in model._component_type_counts(
+                    record.openui
+                ).items():
+                    target = component_index.get(component)
+                    if target is not None:
+                        counts[target] += count
+            observed = [count for count in counts if count > 0]
+            if observed:
+                total = float(sum(observed))
+                classes = float(len(observed))
+                weights = [
+                    (total / (classes * count)) ** plan_balance_power
+                    if count > 0
+                    else 0.0
+                    for count in counts
+                ]
+                observed_mean = sum(
+                    weight * count
+                    for weight, count in zip(weights, counts, strict=True)
+                    if count > 0
+                ) / total
+                cfg.component_plan_class_weights = tuple(
+                    weight / observed_mean if weight > 0.0 else 0.0
+                    for weight in weights
+                )
         balance_power = float(
             getattr(cfg, "slot_component_class_balance_power", 0.0) or 0.0
         )

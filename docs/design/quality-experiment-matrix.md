@@ -2446,6 +2446,16 @@ not promote: full RICO, checkpoint sync, and fresh loss evidence are absent.
 See [results](iter-e396-e399-balanced-type-supervision-20260718.md) and
 [JSON](iter-e396-e399-balanced-type-supervision-20260718.json).
 
+E400 adds opt-in inverse-frequency weighting to the component-plan root and
+positive bound-count losses, then continues E396 to 29,066 target tokens in
+106.8s. E401 fixes the settings row and raises held meaningful rate 0.6→0.8,
+but E402 rejects the checkpoint: smoke meaningful/recall regress to
+0.3333/0.1667, OOD parse/fidelity fall to 0.75, and AgentV is 3/4. Retain the
+generalized default-off harness lever; reject E400 and keep E396 as the
+bounded candidate. RICO was not run after the bounded failure. See
+[results](iter-e400-e402-component-plan-balance-20260718.md) and
+[JSON](iter-e400-e402-component-plan-balance-20260718.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

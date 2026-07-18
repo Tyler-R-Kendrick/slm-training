@@ -388,6 +388,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Grammar-role root and bound-component count plan loss weight.",
     )
     parser.add_argument(
+        "--component-plan-class-balance-power",
+        type=float,
+        default=0.0,
+        help="Power applied to inverse corpus component frequency (0 disables).",
+    )
+    parser.add_argument(
         "--component-plan-decode-weight",
         type=float,
         default=0.0,
@@ -855,6 +861,9 @@ def main(argv: list[str] | None = None) -> int:
             component_inventory_loss_weight=args.component_inventory_loss_weight,
             component_inventory_decode_weight=args.component_inventory_decode_weight,
             component_plan_loss_weight=args.component_plan_loss_weight,
+            component_plan_class_balance_power=(
+                args.component_plan_class_balance_power
+            ),
             component_plan_decode_weight=args.component_plan_decode_weight,
             component_plan_attention_pool=args.component_plan_attention_pool,
             component_plan_token_pool=args.component_plan_token_pool,

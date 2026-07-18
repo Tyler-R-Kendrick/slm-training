@@ -210,6 +210,7 @@ class ModelBuildConfig:
     component_inventory_loss_weight: float = 0.0
     component_inventory_decode_weight: float | None = None
     component_plan_loss_weight: float = 0.0
+    component_plan_class_balance_power: float = 0.0
     component_plan_decode_weight: float | None = None
     component_plan_attention_pool: bool = False
     component_plan_token_pool: bool = False
