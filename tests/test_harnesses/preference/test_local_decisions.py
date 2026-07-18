@@ -14,6 +14,7 @@ from slm_training.harnesses.preference.local_decisions import (
     events_from_trace,
     load_decision_events,
     load_trace_rows,
+    objective_signature_support,
     split_for_group,
     write_decision_events,
 )
@@ -284,3 +285,68 @@ def test_support_signature_ignores_sampled_negative_variation() -> None:
 
     assert decision_support_signature(changed_bad) == decision_support_signature(event)
     assert decision_support_signature(changed_legal) != decision_support_signature(event)
+
+
+def _objective_event(group: str, split: str, bad: int) -> DecisionEventV1:
+    return DecisionEventV1(
+        event_id=f"e-{group}-{bad}",
+        group_id=group,
+        context_text="root=Stack([",
+        canvas_ids=(1, 2, 3),
+        position=1,
+        good_token_ids=(4,),
+        bad_token_ids=(bad,),
+        legal_token_ids=(4, 9, 10),
+        evidence_kind="counterfactual",
+        evidence_confidence=0.9,
+        decision_kind="component",
+        split=split,
+        policy_checkpoint_sha="pcs",
+        tokenizer_sha="tsha",
+        decode_config_hash="dch",
+        seed=0,
+        trajectory_id="traj",
+    )
+
+
+def _grow_group(prefix: str, split: str) -> str:
+    group = prefix
+    while split_for_group(group) != split:
+        group += "x"
+    return group
+
+
+def test_objective_signature_support_catches_e284_pattern() -> None:
+    train = _objective_event(_grow_group("obj-train", "train"), "train", 9)
+    held = _objective_event(_grow_group("obj-held", "held_out"), "held_out", 10)
+    # The state-support signature (good-only) matches, so state support passes...
+    assert decision_signature_support([train, held])["held_out_coverage"]["passed"] is True
+    # ...but the objective signature (good + bad) differs, so objective support fails.
+    objective = objective_signature_support([train, held])
+    assert objective["held_out_coverage"]["passed"] is False
+    assert len(objective["held_out_coverage"]["uncovered"]) == 1
+
+
+def test_train_local_from_paths_refuses_objective_unsupported_corpus(tmp_path) -> None:
+    from pathlib import Path
+
+    from slm_training.harnesses.preference.local_train import train_local_from_paths
+
+    events_path = tmp_path / "events.jsonl"
+    write_decision_events(
+        events_path,
+        [
+            _objective_event(_grow_group("obj-train", "train"), "train", 9),
+            _objective_event(_grow_group("obj-held", "held_out"), "held_out", 10),
+        ],
+    )
+    # The admission refusal fires before the checkpoint is loaded, so the missing
+    # checkpoint is never reached.
+    with pytest.raises(ValueError, match="objective signature"):
+        train_local_from_paths(
+            Path("nonexistent.pt"),
+            events_path,
+            out_dir=tmp_path / "out",
+            objective="ce_margin",
+            require_objective_support=True,
+        )
