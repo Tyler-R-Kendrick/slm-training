@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "run_id": "e371-structural-reference-fix-rico16-r1",
+  "date": "2026-07-17",
+  "checkpoint": {
+    "run_id": "e368-card-hierarchy-adapt-18k-local-r1",
+    "path": "outputs/runs/e368-card-hierarchy-adapt-18k-local-r1/checkpoints/last.pt",
+    "sha256": "a7dd2d79df0c3c36f80e1bb81349f7dad663d9796d201ffff492535a11982573",
+    "device": "cpu",
+    "context_backend": "hf",
+    "output_tokenizer": "choice",
+    "steps": 293,
+    "seen_target_tokens": 15091,
+    "target_token_budget": 18000,
+    "elapsed_wall_seconds": 270.4046488239983,
+    "max_wall_minutes": 4.5,
+    "stopped_on": "wall_time_budget",
+    "best_weighted_nll": 5.809070931803047,
+    "sync": "explicit_no_sync",
+    "promoted": false
+  },
+  "experiments": [
+    {
+      "id": "E367",
+      "run_id": "e367-structural-choice-floor-plan2-rico16-r1",
+      "checkpoint_sha256": "f2ec84b0c7d7105b2c4e281ba660591e85e6f9ffe0b1e337758e02297b95e378",
+      "n": 16,
+      "parse_rate": 0.6875,
+      "meaningful_program_rate": 0.625,
+      "placeholder_fidelity": 0.20004734848484843,
+      "structural_similarity": 0.17475000000000002,
+      "component_type_recall": 0.3125,
+      "reward_score": 0.46250625000000006,
+      "agentv": {"passed": 0, "total": 1}
+    },
+    {
+      "id": "E368",
+      "run_id": "e368-card-hierarchy-adapt-18k-local-r1",
+      "kind": "bounded_train",
+      "stopped_on": "wall_time_budget",
+      "elapsed_wall_seconds": 270.4046488239983
+    },
+    {
+      "id": "E369",
+      "run_id": "e369-plan-guided-structural-rico16-r1",
+      "n": 16,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.00625,
+      "structural_similarity": 0.08934999999999998,
+      "component_type_recall": 0.0,
+      "reward_score": 0.0,
+      "agentv": {"passed": 0, "total": 1}
+    },
+    {
+      "id": "E370",
+      "run_id": "e370-structural-reference-fix-rico16-r1",
+      "suite": "remediated_rico_smoke",
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3333333333333333,
+      "placeholder_fidelity": 0.125,
+      "structural_similarity": 0.15623333333333334,
+      "component_type_recall": 0.2222222222222222,
+      "reward_score": 0.23283333333333334,
+      "agentv": {"passed": 0, "total": 1}
+    }
+  ],
+  "suites": {
+    "rico_held": {
+      "n": 16,
+      "suite_total_n": 1500,
+      "diagnostic_subset": true,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.1875,
+      "placeholder_fidelity": 0.1256628787878788,
+      "structural_similarity": 0.14053125,
+      "component_type_recall": 0.16666666666666666,
+      "reward_score": 0.13565624999999998,
+      "latency_ms_p50": 1568.78,
+      "latency_ms_p95": 4814.4
+    }
+  },
+  "ship_gates": {
+    "pass": false,
+    "failures": [
+      "complete bounded suite set missing",
+      "rico_held diagnostic subset 16/1500",
+      "rico_held structural_similarity 0.14053125 below 0.2"
+    ]
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "verdict": "retain generalized structural reference fix; reject checkpoint and policy promotion"
+}

@@ -2322,6 +2322,39 @@ Reject both variants and stop the weight sweep. See
 [results](iter-e363-e364-card-topology-diagnosis-20260717.md) and
 [JSON](iter-e363-e364-card-topology-diagnosis-20260717.json).
 
+E365 temporarily interprets the content floor as a true minimum and permits
+additional learned binders. On 16 RICO rows it emits zero Cards, creates six
+trivial roots, drops structure to 0.1447, and raises p95 latency to 13.66s.
+E366 adds plan weight 2 and exactly reproduces the regression. Reject and
+revert the opening; optional unbounded continuation is not a topology model.
+See [results](iter-e365-e366-optional-binder-rejection-20260717.md) and
+[JSON](iter-e365-e366-optional-binder-rejection-20260717.json).
+
+E367 aligns minimum-content decoding with the marker-free structural choice
+codec but leaves arrays unrestricted; parse falls to 0.6875 and no Card
+survives. E368 resumes Card-hierarchy adaptation for 270.4s and stops cleanly
+on its 4.5-minute budget after 15,091 target tokens. E369 exposes a reference
+kind mismatch that permits empty arrays and yields 16 trivial layouts. E370
+smokes the generalized `&` reference fix, and E371 confirms it on frozen RICO
+rows 0–16: parse 1.0, meaningful 0.1875, fidelity 0.1257, structure 0.1405,
+recall 0.1667, reward 0.1357, AgentV 0/1. Retain the codec fix, but reject the
+checkpoint/policy for promotion. See
+[results](iter-e367-e371-structural-choice-alignment-20260717.md) and
+[JSON](iter-e367-e371-structural-choice-alignment-20260717.json).
+
+E372 derives the floor from all visible slots but leaves definitions
+unreachable, so fidelity remains 0.1257. E373 makes the structural root cover
+every unconsumed terminal and raises fidelity/structure/reward to
+0.9271/0.6224/0.9340, with one parse failure. E374 shows that blocking
+post-exhaustion slot components alone does not fix the failure. E375 counts
+emitted slots rather than components, including multi-slot components, and
+scores parse/meaningful/recall 1.0, fidelity 0.9896, structure 0.6619, reward
+0.9965, and zero row failures. AgentV remains 0/1 because this is only 16/1500
+RICO rows. Retain the generalized decoder invariants; do not promote from a
+diagnostic subset. See
+[results](iter-e372-e375-structural-terminal-coverage-20260717.md) and
+[JSON](iter-e372-e375-structural-terminal-coverage-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

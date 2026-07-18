@@ -331,6 +331,7 @@ def test_twotower_choice_wiring(tmp_path: Path) -> None:
         denoiser_layers=2,
         max_prompt_len=64,
         max_target_len=64,
+        component_plan_loss_weight=1.0,
     )
     model = TwoTowerModel.from_records(records, config=cfg, device="cpu")
     assert is_choice_tokenizer(model.tokenizer)
@@ -342,13 +343,17 @@ def test_twotower_choice_wiring(tmp_path: Path) -> None:
     assert text
     assert validate(text).serialized == text
     model.config.decode_min_content = -1
+    model.config.component_plan_decode_weight = 2.0
     state = ChoiceDecodeState(model.tokenizer, slot_count=2)
     initial = model._choice_min_content_legal_ids(
         state,
         state.allowed_ids(63),
         [":hero.title", ":hero.body"],
     )
-    assert initial == {model.tokenizer.token_to_id["="]}
+    assert model.tokenizer.token_to_id["="] not in initial
+    assert model.tokenizer.token_to_id["+TextContent"] in initial
+    assert all(state.is_slot_content_component_id(token_id) for token_id in initial)
+    state = ChoiceDecodeState(model.tokenizer, slot_count=2)
     for token in ("=", "+TextContent"):
         assert state.advance_id(model.tokenizer.token_to_id[token])
     slot = model._choice_min_content_legal_ids(
@@ -430,6 +435,114 @@ def test_twotower_choice_wiring(tmp_path: Path) -> None:
         [":hero.title", ":hero.body"],
     )
     assert component_close == {model.tokenizer.token_to_id["-"]}
+
+    structural = ChoiceDecodeState(model.tokenizer, slot_count=2)
+    for token in ("+TextContent", "@0", "-", "+TextContent", "@1", "-"):
+        legal = model._choice_min_content_legal_ids(
+            structural,
+            structural.allowed_ids(64),
+            [":hero.title", ":hero.body"],
+            [model.tokenizer.token_to_id["@0"]]
+            if token == "@1"
+            else None,
+        )
+        assert model.tokenizer.token_to_id[token] in legal, token
+        assert structural.advance_id(model.tokenizer.token_to_id[token]), token
+    after_floor = model._choice_min_content_legal_ids(
+        structural,
+        structural.allowed_ids(58),
+        [":hero.title", ":hero.body"],
+        [
+            model.tokenizer.token_to_id["@0"],
+            model.tokenizer.token_to_id["@1"],
+        ],
+    )
+    assert model.tokenizer.eos_id not in after_floor
+    assert model.tokenizer.token_to_id["+Card"] in after_floor
+    exhausted = model._choice_min_content_legal_ids(
+        structural,
+        structural.allowed_ids(58),
+        [":hero.title", ":hero.body"],
+        [
+            model.tokenizer.token_to_id["@0"],
+            model.tokenizer.token_to_id["@1"],
+        ],
+    )
+    assert model.tokenizer.token_to_id["+Button"] not in exhausted
+    assert model.tokenizer.token_to_id["+Card"] in exhausted
+    with torch.no_grad():
+        assert model.component_plan_head is not None
+        model.component_plan_head.weight.zero_()
+        model.component_plan_head.bias.fill_(-10.0)
+        card_id = model.tokenizer.token_to_id["+Card"]
+        model.component_plan_head.bias[model.tokenizer.vocab_size + card_id] = 1.25
+    ctx = torch.zeros(1, 1, model.config.d_model)
+    ctx_pad = torch.zeros(1, 1, dtype=torch.bool)
+    planned = model._choice_structural_plan_legal_ids(
+        structural, after_floor, ctx, ctx_pad
+    )
+    assert planned == {card_id}
+    for token in ("+Card", "["):
+        assert structural.advance_id(model.tokenizer.token_to_id[token]), token
+    card_children = model._choice_min_content_legal_ids(
+        structural,
+        structural.allowed_ids(56),
+        [":hero.title", ":hero.body"],
+    )
+    assert card_children == {
+        model.tokenizer.token_to_id["&0"],
+        model.tokenizer.token_to_id["&1"],
+    }
+    for token in ("&0", "]", "-"):
+        assert structural.advance_id(model.tokenizer.token_to_id[token]), token
+    root = model._choice_structural_plan_legal_ids(
+        structural,
+        model._choice_min_content_legal_ids(
+            structural,
+            structural.allowed_ids(52),
+            [":hero.title", ":hero.body"],
+            [
+                model.tokenizer.token_to_id["@0"],
+                model.tokenizer.token_to_id["@1"],
+            ],
+        ),
+        ctx,
+        ctx_pad,
+    )
+    assert root == {model.tokenizer.token_to_id["+Stack"]}
+    for token in ("+Stack", "["):
+        assert structural.advance_id(model.tokenizer.token_to_id[token]), token
+    root_children = model._choice_min_content_legal_ids(
+        structural,
+        structural.allowed_ids(49),
+        [":hero.title", ":hero.body"],
+        [
+            model.tokenizer.token_to_id["&0"],
+            model.tokenizer.token_to_id["&0"],
+        ],
+    )
+    assert model.tokenizer.token_to_id["]"] not in root_children
+    assert model.tokenizer.token_to_id["&1"] in root_children
+    assert model.tokenizer.token_to_id["&2"] in root_children
+    assert structural.advance_id(model.tokenizer.token_to_id["&1"])
+    root_last_child = model._choice_min_content_legal_ids(
+        structural,
+        structural.allowed_ids(48),
+        [":hero.title", ":hero.body"],
+        [
+            model.tokenizer.token_to_id["&0"],
+            model.tokenizer.token_to_id["&1"],
+        ],
+    )
+    assert root_last_child == {model.tokenizer.token_to_id["&2"]}
+    for token in ("&2", "]", "-"):
+        assert structural.advance_id(model.tokenizer.token_to_id[token]), token
+    complete = model._choice_min_content_legal_ids(
+        structural,
+        structural.allowed_ids(47),
+        [":hero.title", ":hero.body"],
+    )
+    assert complete == {model.tokenizer.eos_id}
 
     multi = ChoiceDecodeState(model.tokenizer, slot_count=3)
     prefix = [model.tokenizer.bos_id]

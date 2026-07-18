@@ -1,0 +1,59 @@
+{
+  "id": "E365-E366",
+  "date": "2026-07-17",
+  "status": "rejected_and_reverted",
+  "run_id": "e366-extra-binder-plan2-rico16-r1",
+  "hard_run_cap_seconds": 300,
+  "ship_gates": {
+    "pass": false,
+    "failures": [
+      "rico_held diagnostic subset 16/1500",
+      "rico_held structural_similarity 0.144675 below 0.2",
+      "complete bounded suite set missing"
+    ]
+  },
+  "suites": {
+    "rico_held": {
+      "n": 16,
+      "suite_total_n": 1500,
+      "diagnostic_subset": true,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.625,
+      "placeholder_fidelity": 0.10132575757575758,
+      "structural_similarity": 0.144675,
+      "component_type_recall": 0.3125,
+      "reward_score": 0.4420000000000001
+    }
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "runs": [
+    {
+      "id": "E365",
+      "run_id": "e365-extra-binder-rico16-r1",
+      "component_plan_decode_weight": 0.0,
+      "elapsed_wall_seconds": 134.8071,
+      "card_predictions": 0,
+      "trivial_layouts": 6,
+      "latency_ms_p50": 5708.2,
+      "latency_ms_p95": 13656.07,
+      "agentv": "0/1"
+    },
+    {
+      "id": "E366",
+      "run_id": "e366-extra-binder-plan2-rico16-r1",
+      "component_plan_decode_weight": 2.0,
+      "elapsed_wall_seconds": 90.0154,
+      "predictions_changed_vs_e365": 0,
+      "card_predictions": 0,
+      "trivial_layouts": 6,
+      "latency_ms_p50": 3408.42,
+      "latency_ms_p95": 8317.74,
+      "agentv": "0/1"
+    }
+  ],
+  "verdict": "Reject and revert the optional-binder opening; require an explicit bounded topology contract."
+}

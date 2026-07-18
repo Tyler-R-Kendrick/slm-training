@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "run_id": "e375-structural-slot-accounting-rico16-r1",
+  "date": "2026-07-17",
+  "checkpoint": {
+    "path": "outputs/runs/e368-card-hierarchy-adapt-18k-local-r1/checkpoints/last.pt",
+    "sha256": "a7dd2d79df0c3c36f80e1bb81349f7dad663d9796d201ffff492535a11982573",
+    "source": "checkpoint",
+    "promoted": false
+  },
+  "experiments": [
+    {
+      "id": "E372",
+      "run_id": "e372-structural-auto-floor-rico16-r1",
+      "lever": "visible contract derived content floor",
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.3125,
+      "placeholder_fidelity": 0.1256628787878788,
+      "structural_similarity": 0.12298750000000001,
+      "component_type_recall": 0.15625,
+      "reward_score": 0.21765625
+    },
+    {
+      "id": "E373",
+      "run_id": "e373-structural-terminal-coverage-rico16-r1",
+      "lever": "root references every unconsumed terminal",
+      "parse_rate": 0.9375,
+      "meaningful_program_rate": 0.9375,
+      "placeholder_fidelity": 0.9270833333333334,
+      "structural_similarity": 0.6223500000000001,
+      "component_type_recall": 0.9375,
+      "reward_score": 0.9339999999999999,
+      "failure_breakdown": {"parse_error": 1}
+    },
+    {
+      "id": "E374",
+      "run_id": "e374-structural-honest-exhaustion-rico16-r1",
+      "lever": "remove slot-bearing components after inventory exhaustion",
+      "parse_rate": 0.9375,
+      "meaningful_program_rate": 0.9375,
+      "placeholder_fidelity": 0.9270833333333334,
+      "structural_similarity": 0.6223500000000001,
+      "component_type_recall": 0.9375,
+      "reward_score": 0.9339999999999999,
+      "failure_breakdown": {"parse_error": 1}
+    }
+  ],
+  "suites": {
+    "rico_held": {
+      "n": 16,
+      "suite_total_n": 1500,
+      "diagnostic_subset": true,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 0.9895833333333334,
+      "structural_similarity": 0.6618812500000001,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9964999999999999,
+      "latency_ms_p50": 1539.01,
+      "latency_ms_p95": 5302.25,
+      "failure_breakdown": {}
+    }
+  },
+  "ship_gates": {
+    "pass": false,
+    "failures": [
+      "complete bounded suite set missing",
+      "rico_held diagnostic subset 16/1500"
+    ]
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "verdict": "retain decoder invariants; no checkpoint or policy promotion from diagnostic evidence"
+}

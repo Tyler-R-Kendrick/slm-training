@@ -4456,6 +4456,126 @@ class TwoTowerModel(nn.Module):
         if floor <= 0:
             return legal
         tok = self.tokenizer
+        if (
+            float(
+                getattr(self.config, "component_plan_decode_weight", 0.0) or 0.0
+            )
+            > 0.0
+            and state.mode in {None, "structural"}
+        ):
+            emitted = set(prefix or ())
+            content_count = (
+                sum(
+                    tok.token_to_id[f"@{index}"] in emitted
+                    for index in range(len(slot_contract))
+                )
+                if slot_contract
+                else sum(
+                    state.is_slot_content_component_type(expr_type)
+                    for expr_type in state.section_types
+                )
+            )
+            if not state.frames:
+                if (
+                    state.mode == "structural"
+                    and state.section_types
+                    and state.section_types[-1] == "element:Stack"
+                ):
+                    return {tok.eos_id} if tok.eos_id in legal else legal
+                if content_count < floor:
+                    content = {
+                        token_id
+                        for token_id in legal
+                        if state.is_slot_content_component_id(token_id)
+                    }
+                    return content or legal
+                without_eos = legal - {tok.eos_id}
+                slot_ids = {
+                    tok.token_to_id[f"@{index}"]
+                    for index in range(len(slot_contract or ()))
+                }
+                if slot_ids and slot_ids <= emitted:
+                    without_eos = {
+                        token_id
+                        for token_id in without_eos
+                        if not state.is_slot_content_component_id(token_id)
+                    }
+                return without_eos or legal
+            if (
+                len(state.frames) == 1
+                and state.frames[0].kind == "component"
+            ):
+                frame = state.frames[0]
+                if frame.arg_index >= frame.required_args:
+                    component_close_id = tok.token_to_id["-"]
+                    return (
+                        {component_close_id}
+                        if component_close_id in legal
+                        else legal
+                    )
+                schema = frame.schemas[frame.arg_index]
+                if state._schema_accepts(schema, "string") and slot_contract:
+                    emitted = set(prefix or ())
+                    slot_id = next(
+                        (
+                            tok.token_to_id[f"@{index}"]
+                            for index in range(len(slot_contract))
+                            if tok.token_to_id[f"@{index}"] not in emitted
+                        ),
+                        None,
+                    )
+                    if slot_id is not None and slot_id in legal:
+                        return {slot_id}
+            if (
+                len(state.frames) >= 2
+                and state.frames[-1].kind == "variadic"
+                and state.frames[-1].expr_type == "array"
+                and state.frames[-2].kind == "component"
+            ):
+                parent = state.frames[-2]
+                schema = (
+                    parent.schemas[parent.arg_index]
+                    if parent.arg_index < len(parent.schemas)
+                    else {}
+                )
+                items = dict(schema.get("items") or {})
+                reference_items = parent.expr_type == "element:Stack" or bool(
+                    items.get("$ref") or items.get("anyOf")
+                )
+                if reference_items:
+                    if parent.expr_type == "element:Stack":
+                        consumed = {
+                            int(token[1:])
+                            for token_id in prefix or ()
+                            if (token := tok.id_to_token.get(token_id, "")).startswith(
+                                "&"
+                            )
+                            and token[1:].isdigit()
+                        }
+                        terminals = {
+                            tok.token_to_id[f"&{index}"]
+                            for index in range(len(state.section_types))
+                            if index not in consumed
+                            and f"&{index}" in tok.token_to_id
+                        }
+                        candidates = legal & terminals
+                        if candidates:
+                            return candidates
+                        list_close_id = tok.token_to_id["]"]
+                        return (
+                            {list_close_id}
+                            if list_close_id in legal
+                            else legal
+                        )
+                    references = {
+                        token_id
+                        for token_id in legal
+                        if tok.id_to_token[token_id].startswith("&")
+                    }
+                    if state.frames[-1].arg_index:
+                        references.add(tok.token_to_id["]"])
+                    return references or legal
+            return legal
         if state.valid_root_seen and tok.eos_id in legal:
             return {tok.eos_id}
         if state.mode in {None, "v05"} and state.current_marker is None:
@@ -4561,6 +4681,52 @@ class TwoTowerModel(nn.Module):
             )
         return legal
 
+    def _choice_structural_plan_legal_ids(
+        self,
+        state: Any,
+        legal: set[int],
+        ctx: torch.Tensor,
+        ctx_pad: torch.Tensor | None,
+    ) -> set[int]:
+        """Use trained Poisson bound counts to stop structural choice streams."""
+        weight = float(
+            getattr(self.config, "component_plan_decode_weight", 0.0) or 0.0
+        )
+        if (
+            weight <= 0.0
+            or self.component_plan_head is None
+            or state.mode != "structural"
+            or state.frames
+            or (
+                state.section_types
+                and state.section_types[-1] == "element:Stack"
+            )
+        ):
+            return legal
+        tok = self.tokenizer
+        component_ids = self._component_inventory_token_ids()
+        component_index = torch.as_tensor(component_ids, device=ctx.device)
+        logits = self._component_plan_logits(ctx, ctx_pad).view(
+            1, 2, self.tokenizer.vocab_size
+        )
+        rates = F.softplus(
+            logits[0, 1].index_select(0, component_index)
+        )
+        emitted = Counter(state.section_types)
+        pending = {
+            token_id
+            for token_id, rate in zip(component_ids, rates, strict=True)
+            if tok.id_to_token[token_id] != "+Stack"
+            and float(rate.item())
+            - emitted.get(f"element:{tok.id_to_token[token_id][1:]}", 0)
+            >= 1.0
+        }
+        candidates = legal & pending
+        if candidates:
+            return candidates
+        stack_id = tok.token_to_id["+Stack"]
+        return {stack_id} if stack_id in legal else legal
+
     def _choice_ltr_decode_batch(
         self,
         ctx: torch.Tensor,
@@ -4606,6 +4772,12 @@ class TwoTowerModel(nn.Module):
                     allowed[row],
                     contracts[row],
                     ids[row, :position].tolist(),
+                )
+                allowed[row] = self._choice_structural_plan_legal_ids(
+                    states[row],
+                    allowed[row],
+                    ctx[row : row + 1],
+                    ctx_pad[row : row + 1],
                 )
             if stats is not None:
                 stats.choice_state_cache_hits += tok.allowed_cache_hits - cache_hits
@@ -4657,8 +4829,13 @@ class TwoTowerModel(nn.Module):
                         (
                             "component_root"
                             if states[row].current_marker == "r="
+                            or (
+                                states[row].mode == "structural"
+                                and token_id == tok.token_to_id["+Stack"]
+                                and legal == {token_id}
+                            )
                             else "component_bound"
-                            if states[row].mode == "v05"
+                            if states[row].mode in {"v05", "structural"}
                             else "component_root_or_bound"
                         )
                         if tok.kind_of(token_id) == "component"
