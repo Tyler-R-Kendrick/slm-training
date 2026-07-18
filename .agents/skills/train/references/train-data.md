@@ -33,22 +33,38 @@ mapping). Aux synthesis helpers stay direct:
 
 ## Key flags
 
+`--profile strict|permissive` (strict default: fuzzy + semantic dedup, tier
+floor, n-gram decontamination, exposure caps; explicit flags override),
 `--rico-limit`, `--programspec-count`, `--min-quality-score`,
+`--dedup-against <ids>` (exclude pairs already in committed corpora),
+`--difficulty-from <run>/record_nll.jsonl` (Superfiltering curation weight;
+produce it with `slm sft train … --emit-record-nll`),
 `--mixture-manifest`, `--publish` / `--publish-root`, `--frontier-artifacts`.
 
 ## Outputs
 
-`outputs/data/train/<version>/` with `manifest.json` + structural fingerprints;
-sibling typed roots hold preference/trajectory/ProgramSpec/mixture data.
+`outputs/data/train/<version>/` with `manifest.json` + structural fingerprints
+**plus the quality loop artifacts**: `quality_report.json` (fitness / garbage /
+redundancy / decontamination / warnings), `rejected.jsonl` (every drop with
+stage + reason), `synthesis_feedback.json` (per-family and per-synthesizer
+yields, recommendations, experiment candidates). Builds register a lineage
+DataSnapshot; sibling typed roots hold preference/trajectory/ProgramSpec/
+mixture data. Rejected-ledger preference negatives:
+`python -m scripts.mine_rejected_preferences --dataset <version>`.
 
 ## Gates & invariants
 
 - Source/license governance and structural hashes preserved.
 - Committed tiny fixtures live in `src/slm_training/resources/`, never a new root.
 - The train manifest is required downstream for test-data disjointness.
+- Nothing is dropped silently; gates are never relaxed to raise yield.
 
 ## Close out
 
+- **REQUIRED after every build**: read `synthesis_feedback.json` and act on it
+  per the `synthesis-feedback` skill (fix producers/synthesizers, file the
+  experiment candidates). Cross-snapshot overlap:
+  `python -m scripts.audit_data_corpora`.
 - Shared duties: [contracts.md](contracts.md).
 - Docs: `docs/design/data-synthesis.md`. Checks:
   `pytest -q tests/test_harnesses/train_data tests/test_data`.

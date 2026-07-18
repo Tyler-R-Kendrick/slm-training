@@ -119,7 +119,22 @@ CODE_SUFFIXES = {".c", ".css", ".html", ".js", ".json", ".mjs", ".py", ".ts", ".
 HOOK_TEST_FILE_LIMIT = 100
 
 
-def changed_files(*, staged: bool) -> list[str]:
+def changed_files(*, staged: bool, base_ref: str | None = None) -> list[str]:
+    if base_ref:
+        return sorted(
+            path
+            for path in _git(
+                [
+                    "git",
+                    "diff",
+                    "--name-only",
+                    "--diff-filter=ACMRD",
+                    f"{base_ref}...HEAD",
+                    "--",
+                ]
+            ).splitlines()
+            if path
+        )
     diff = ["git", "diff"]
     diff += ["--cached"] if staged else ["HEAD"]
     diff += ["--name-only", "--diff-filter=ACMRD", "--"]
@@ -226,6 +241,10 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--staged", action="store_true", help="check only staged paths")
     parser.add_argument(
+        "--base-ref",
+        help="check committed changes since this ref (for bounded CI validation)",
+    )
+    parser.add_argument(
         "--changed-tests-only",
         action="store_true",
         help="prefer explicitly changed test files; intended for latency-bounded hooks",
@@ -237,7 +256,7 @@ def main(argv: list[str] | None = None) -> int:
         help="emit an agent Stop-hook decision instead of regular output",
     )
     args = parser.parse_args(argv)
-    paths = changed_files(staged=args.staged)
+    paths = changed_files(staged=args.staged, base_ref=args.base_ref)
     if args.list:
         selected = (
             hook_test_targets(paths) if args.changed_tests_only else select_tests(paths)

@@ -7,8 +7,14 @@ const SESSION_KEY = "twotower_annotate_session";
 const VIEW_KEY = "twotower_annotate_view";
 const ANNOTATION_TOKEN_KEY = "twotower_annotation_token";
 const ANNOTATOR_IDENTITY_KEY = "twotower_annotator_identity";
-const BROWSER_READY_TIMEOUT_MS = 10_000;
-const BROWSER_PROMPT_TIMEOUT_MS = 30_000;
+// How long the browser fallback may sit with no download/init activity at all
+// before we stop waiting. Actual model downloads keep this alive via progress
+// events, so a first visit on a slow link still initializes once. Generous
+// because ONNX session compilation after the download emits no events and can
+// take a while for a ~365MB graph on a slow CPU.
+const BROWSER_READY_STALL_MS = 90_000;
+// Fallback prompt budget when the module cannot tell us a runtime-specific one.
+const BROWSER_PROMPT_TIMEOUT_MS = 240_000;
 const DIFFUSION_GLYPHS = ["·", "░", "▒", "▓", "#", "∷", "□", "◇"];
 
 type View = "render" | "dsl";
@@ -130,7 +136,7 @@ function waitForPreviewApi(timeoutMs = 15_000): Promise<any> {
   });
 }
 
-const browserModuleUrl = "/static/browser_inference.js?v=20260715-1";
+const browserModuleUrl = "/static/browser_inference.js?v=20260718-1";
 const editorModuleUrl = "/static/openui_editor.js?v=20260713-1";
 let browserModulePromise: Promise<any> | null = null;
 let editorModulePromise: Promise<any> | null = null;
@@ -186,7 +192,7 @@ export function Playground() {
   const lintTimerRef = useRef<number | null>(null);
   const lintTokenRef = useRef(0);
   const logIdRef = useRef(0);
-  const browserRef = useRef<any>({ session: null, promise: null, runtime: null, availability: null, error: null, waiters: new Set<AbortSignal>() });
+  const browserRef = useRef<any>({ session: null, promise: null, runtime: null, model: null, availability: null, error: null, lastActivity: 0, waiters: new Set<AbortSignal>() });
   const editorRef = useRef<any>(null);
   const [, forceRender] = useReducer((value) => value + 1, 0);
 
@@ -251,11 +257,12 @@ export function Playground() {
   function browserModelIdentity(role = "output") {
     const runtime = browserRef.current.runtime || "browser";
     const transformers = runtime.startsWith("transformers-js:");
+    const model = browserRef.current.model || "browser-baseline";
     return {
       kind: "model",
       provider: transformers ? "huggingface-transformers-js" : "browser-built-in-ai",
-      id: transformers ? "onnx-community/gemma-3-270m-it-ONNX" : "prompt-api-default",
-      model: transformers ? "gemma-3-270m-it-ONNX" : role === "review" ? "prompt-api-baseline-reviewer" : "prompt-api-default",
+      id: transformers ? model : "prompt-api-default",
+      model: transformers ? model.split("/").pop() : role === "review" ? "prompt-api-baseline-reviewer" : "prompt-api-default",
       runtime,
     };
   }
@@ -283,20 +290,24 @@ export function Playground() {
       if (state.session) return state.session;
       if (!state.promise) {
         let creation: Promise<any>;
+        state.lastActivity = performance.now();
         creation = loadBrowserModule().then(async (browser) => {
           if (![...state.waiters].some((waiter: AbortSignal) => !waiter.aborted)) throw abortError();
           const acceleration = browser.browserAccelerationCapabilities();
           appendLog(`Browser acceleration: ${acceleration.promptApi ? "built-in Prompt API" : acceleration.webnn ? "WebNN/NPU preferred" : acceleration.webgpu ? "WebGPU preferred" : "WASM fallback"}.`);
+          appendLog(`Backend plan: ${acceleration.devices.map((device: string) => `${device} (${acceleration.dtypes?.[device] || "q8"})`).join(" → ")}.`);
           appendLog(`Local compute: ${acceleration.hardwareConcurrency} logical cores; ${acceleration.wasmThreads} WASM thread${acceleration.wasmThreads === 1 ? "" : "s"}; ${acceleration.crossOriginIsolated ? "cross-origin isolated" : "single-thread compatibility mode"}.`);
           appendLog("Initializing browser baseline model once for this page…");
+          state.lastActivity = performance.now();
           return browser.createBrowserModelSession({
             mode: "shared",
             onProgress(progress: any) {
               if (![...state.waiters].some((waiter: AbortSignal) => !waiter.aborted)) return;
+              state.lastActivity = performance.now();
               const previous = state.availability;
               state.availability = progress.status;
-              if (progress.status === "downloading" && previous !== "downloading") appendLog("Downloading and caching browser baseline model assets…");
-              else if (progress.status !== previous) appendLog(`Browser baseline availability: ${progress.status}.`);
+              if (progress.status === "downloading" && previous !== "downloading") appendLog("Downloading browser baseline model assets (one-time; cached for future visits)…");
+              else if (progress.status !== previous && progress.status !== "downloading") appendLog(`Browser baseline availability: ${progress.status}.`);
             },
           });
         }).then((created: any) => {
@@ -307,9 +318,10 @@ export function Playground() {
           }
           state.session = created.session;
           state.runtime = created.runtime;
+          state.model = created.model || null;
           state.availability = created.availability;
           state.promise = null;
-          appendLog(`Browser baseline ready (${created.runtime}); it will be reused for every sample.`, "success");
+          appendLog(`Browser baseline ready (${created.runtime}${created.model ? ` · ${created.model}` : ""}); it will be reused for every sample.`, "success");
           return created.session;
         }).catch((error: any) => {
           if (isAbortError(error)) {
@@ -343,12 +355,16 @@ export function Playground() {
       if (session !== base) session.destroy?.();
       throw abortError();
     }
+    // WASM-CPU inference is legitimately slow; budget by runtime instead of
+    // declaring a working backend dead after a fixed 30s.
+    const browser = await loadBrowserModule().catch(() => null);
+    const promptTimeoutMs = browser?.browserPromptTimeoutMs?.(state.runtime) || BROWSER_PROMPT_TIMEOUT_MS;
     let timer = 0;
     try {
       const result = await Promise.race([
         callback(session),
         new Promise<never>((_, reject) => {
-          timer = window.setTimeout(() => reject(new BrowserTimeoutError(`Browser inference exceeded ${BROWSER_PROMPT_TIMEOUT_MS / 1000}s`)), BROWSER_PROMPT_TIMEOUT_MS);
+          timer = window.setTimeout(() => reject(new BrowserTimeoutError(`Browser inference exceeded ${Math.round(promptTimeoutMs / 1000)}s`)), promptTimeoutMs);
         }),
       ]);
       signal.throwIfAborted();
@@ -394,6 +410,7 @@ export function Playground() {
 
   async function persistBrowserReview(candidate: Sample, judgement: any, priorFailures: string[], signal: AbortSignal) {
     signal.throwIfAborted();
+    const reviewerUnavailable = judgement.reviewerUnavailable === true;
     const res = await fetch("/api/generation-review", {
       method: "POST", headers: { "Content-Type": "application/json" },
       signal,
@@ -402,12 +419,18 @@ export function Playground() {
         prompt: candidate.prompt, openui: candidate.serialized || candidate.openui,
         attempt: candidate.attempt, passed: judgement.passed, score: judgement.score,
         reasons: judgement.reasons, prior_failures: priorFailures, session_id: sessionId(),
-        meta: { runtime: browserRef.current.runtime || "unavailable", availability: browserRef.current.availability || "unknown", role: "baseline_gate", identities: { ...(candidate.identities || {}), reviewer: browserModelIdentity("review") } },
+        meta: {
+          runtime: browserRef.current.runtime || "unavailable", availability: browserRef.current.availability || "unknown", role: "baseline_gate",
+          identities: { ...(candidate.identities || {}), reviewer: browserModelIdentity("review") },
+          // A reviewer that never ran produced no verdict: keep the record for
+          // observability but do not let it train as a real rejection.
+          ...(reviewerUnavailable ? { reviewer_unavailable: true, usable_for_training: false, label: "reviewer_unavailable" } : {}),
+        },
       }),
     });
     const data = await responseJSON(res, "Browser review could not be stored");
     signal.throwIfAborted();
-    return data;
+    return { ...data, reviewer_unavailable: reviewerUnavailable };
   }
 
   async function gradeServerCandidate(candidate: Sample, priorFailures: string[], signal: AbortSignal) {
@@ -433,7 +456,9 @@ export function Playground() {
       }
     } catch (error: any) {
       if (isAbortError(error)) throw error;
-      judgement = { passed: false, score: 0, reasons: [`Browser baseline review failed: ${error?.message || String(error)}`] };
+      // The reviewer errored (module/model unavailable, timeout, or unusable
+      // verdict) — that is not a rejection of the candidate.
+      judgement = { passed: false, score: 0, reasons: [`Browser baseline review failed: ${error?.message || String(error)}`], reviewerUnavailable: true };
     }
     return persistBrowserReview(candidate, judgement, priorFailures, signal);
   }
@@ -460,17 +485,29 @@ export function Playground() {
   }
 
   async function waitForBrowserSession(signal: AbortSignal) {
-    if (browserRef.current.session) return browserRef.current.session;
-    let timer = 0;
+    const state = browserRef.current;
+    if (state.session) return state.session;
+    // A first-time model download can take minutes on a slow link. That is
+    // still progress, so only give up when initialization goes quiet: no
+    // download/init event for BROWSER_READY_STALL_MS.
+    let cancelled = false;
+    const stallWatch = new Promise<never>((_, reject) => {
+      const tick = () => {
+        if (cancelled) return;
+        const idleMs = performance.now() - (state.lastActivity || 0);
+        if (state.session || state.promise === null) return; // settled; race resolves via preload
+        if (idleMs > BROWSER_READY_STALL_MS) {
+          reject(new BrowserTimeoutError(`Browser model initialization stalled for ${Math.round(idleMs / 1000)}s`));
+          return;
+        }
+        window.setTimeout(tick, 1_000);
+      };
+      window.setTimeout(tick, 1_000);
+    });
     try {
-      return await Promise.race([
-        preloadBrowserModel(signal),
-        new Promise<never>((_, reject) => {
-          timer = window.setTimeout(() => reject(new BrowserTimeoutError(`Browser model was not ready after ${BROWSER_READY_TIMEOUT_MS / 1000}s`)), BROWSER_READY_TIMEOUT_MS);
-        }),
-      ]);
+      return await Promise.race([preloadBrowserModel(signal), stallWatch]);
     } finally {
-      window.clearTimeout(timer);
+      cancelled = true;
     }
   }
 
@@ -610,6 +647,18 @@ export function Playground() {
       appendLog(`Sample ${slot + 1}: browser baseline grading training attempt ${attempt}/3.`);
       const review = await gradeServerCandidate(candidate, failureReasons, signal);
       signal.throwIfAborted();
+      if (review.reviewer_unavailable) {
+        // No verdict exists. The candidate already passed lint, and the human
+        // grading it IS the scorer — showing it beats discarding real model
+        // output for a canned fixture.
+        appendLog(`Sample ${slot + 1}: browser baseline unavailable — surfacing lint-passing training attempt ${attempt}/3 unreviewed (${(review.reasons || []).join("; ") || "no reviewer verdict"}).`, "warning");
+        const openui = candidate.serialized || candidate.openui;
+        return {
+          ...candidate, openui, serialized: openui, valid: true, error: null, status: "ready", source: "server", phase: "ready",
+          originalOpenui: openui, identities: { ...(candidate.identities || {}) },
+          browserApproved: false, browserReview: review, note: "",
+        };
+      }
       appendLog(`Sample ${slot + 1}: browser baseline ${review.passed ? "approved" : "rejected"} training attempt ${attempt}/3 (score ${Number(review.score).toFixed(2)}); review record ${review.id}.`, review.passed ? "success" : "warning");
       if (review.passed) {
         const openui = candidate.serialized || candidate.openui;
@@ -944,7 +993,18 @@ export function Playground() {
 
   useEffect(() => {
     const item = current();
-    if (view !== "render" || !item || item.status !== "ready" || !item.valid || item.dslDiagnostics?.valid === false || renderedItemRef.current === item || previewRenderingRef.current) return;
+    if (view !== "render" || !item || item.status !== "ready" || !item.valid || renderedItemRef.current === item || previewRenderingRef.current) return;
+    if (item.dslDiagnostics?.valid === false) {
+      // A clean sample the client lint rejects can never render: surface the
+      // error instead of leaving the card stuck on "rendering" forever.
+      if (!item.dirty && !item.renderError) {
+        item.renderError = item.dslDiagnostics.errors?.[0] || "OpenUI failed client-side lint";
+        renderedItemRef.current = item;
+        appendLog(`Sample ${indexRef.current + 1}: client lint rejected the generated OpenUI — ${item.renderError}`, "error");
+        forceRender();
+      }
+      return;
+    }
     void startPreviewRender(item);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   });
@@ -960,6 +1020,8 @@ export function Playground() {
       state.session = null;
       state.promise = null;
       state.error = null;
+      state.model = null;
+      state.lastActivity = 0;
     };
     const unmountPreviews = () => {
       const preview = (window as any).OpenUIPreview;
@@ -1134,7 +1196,7 @@ export function Playground() {
   const gradable = !!item && item.status === "ready" && item.valid && !item.renderError && !editing && !busyGradeRef.current && !busy;
   const diagnostics = item?.dslDiagnostics || { valid: !!item?.valid, pending: false, errors: item?.valid ? [] : [item?.error || "OpenUI is not valid"], warnings: [] };
   const badge = !item ? "loading" : item.status === "loading" ? "generating" : editing && diagnostics.pending ? "checking DSL" : editing && !diagnostics.valid ? "invalid DSL" : item.status === "error" || item.renderError ? "error" : previewRenderingRef.current || previewNeeded ? "rendering" : item.valid ? "valid" : "invalid";
-  const modelSource = item?.phase === "browser-review" ? "Browser baseline reviewing" : item?.source === "server" ? item.status === "ready" ? "Training model · browser-approved" : `Training model · attempt ${item.attempt || 1}/3` : item?.source === "browser" ? item.status === "ready" ? "Browser baseline · fallback" : `Browser baseline · attempt ${item.attempt || 1}/3` : item?.source === "fixture" ? "Wiring fallback · not training data" : "Selecting model";
+  const modelSource = item?.phase === "browser-review" ? "Browser baseline reviewing" : item?.source === "server" ? item.status === "ready" ? item.browserApproved ? "Training model · browser-approved" : "Training model · unreviewed (baseline offline)" : `Training model · attempt ${item.attempt || 1}/3` : item?.source === "browser" ? item.status === "ready" ? "Browser baseline · fallback" : `Browser baseline · attempt ${item.attempt || 1}/3` : item?.source === "fixture" ? "Wiring fallback · not training data" : "Selecting model";
   const modelClass = item?.phase === "browser-review" ? "review" : item?.source === "server" ? "training" : item?.source === "browser" ? "baseline" : item?.source === "fixture" ? "fixture" : "pending";
   const total = Math.max(stackRef.current.length, 1);
   const position = Math.min(indexRef.current + 1, total);

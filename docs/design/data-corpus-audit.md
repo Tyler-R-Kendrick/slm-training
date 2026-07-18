@@ -45,3 +45,26 @@ Generated 2026-07-18T19:04:36.221667+00:00 by `scripts/audit_data_corpora.py` (s
 - Semantic dedup on the union would drop 3108 of 4724 records (2384 cross-snapshot).
 
 Full detail: `docs/design/data-corpus-audit.json`.
+
+## Queued experiment: strict-profile corpus vs permissive baseline
+
+Evidence above (66% union redundancy; `remediated_roots` 60% hard-fail) plus
+the strict build measurement (`--version qa-strict`: 1073 candidates → 451
+admitted, 559 redundancy drops, 6 eval n-gram overlaps rejected) motivates a
+matrix rerun on curated data.
+
+- **Hypothesis**: a strict-profile corpus matches or beats the permissive
+  build of the same sources on `meaningful_program_rate`,
+  `component_type_recall`, and `placeholder_fidelity` at equal token budget,
+  despite ~58% fewer records (quality-over-quantity, phi/SmolLM2).
+- **Design**: build the same `--source all` corpus twice (`--profile
+  permissive` vs default strict), same seed/recipe/steps via
+  `run_quality_matrix` rows; evaluate on the shared frozen suites with
+  `--ship-gates`; compare per-suite metrics and `docs/design/`-document both.
+- **Success**: strict ≥ permissive on the gated metrics for smoke + held_out
+  with `n` reported; **falsification**: strict loses >2 points on any gated
+  metric at equal budget.
+- **Knobs**: `profile`, `semantic_dedup_threshold`, `ngram_overlap_threshold`,
+  `max_records_per_parent`, `--dedup-against`.
+- Per-build feedback (`synthesis_feedback.json`) decides the follow-up
+  synthesis fixes (`synthesis-feedback` skill).

@@ -61,6 +61,11 @@ class ModelBuildConfig:
     design_md_in_context: bool | None = None
     # Deterministic record-level train-time omission; evaluation is unaffected.
     design_md_dropout: float = 0.0
+    # Superfiltering-style difficulty evidence: after training, score every
+    # train record's NLL under the final model and write record_nll.jsonl so
+    # derived-data builds can weight curation by difficulty (opt-in; one
+    # no-grad forward per record).
+    emit_record_nll: bool = False
     design_md_budget: int = 1800
     schema_in_context: bool = False
     slot_contract_in_context: bool = False
@@ -229,6 +234,16 @@ class ModelBuildConfig:
     component_inventory_decode_weight: float | None = None
     component_plan_loss_weight: float = 0.0
     component_plan_decode_weight: float | None = None
+    slot_component_loss_weight: float = 0.0
+    slot_component_focal_gamma: float = 0.0
+    slot_component_class_balance_power: float = 0.0
+    slot_component_decode_weight: float | None = None
+    slot_component_prompt_context: bool = True
+    slot_component_next_context: bool = False
+    slot_component_pair_interaction: bool = False
+    slot_component_lexeme_prior_weight: float = 0.0
+    slot_component_span_prior_weight: float = 0.0
+    slot_component_content_arity: bool = False
     component_edge_loss_weight: float = 0.0
     component_edge_alignment_loss_weight: float = 0.0
     component_edge_decode_weight: float | None = None

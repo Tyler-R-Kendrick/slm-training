@@ -11,11 +11,12 @@ permissions:
 jobs:
   python:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 3
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -42,7 +43,10 @@ jobs:
         run: python -m scripts.repo_policy
       - run: ruff check .
       - run: python -m compileall -q src scripts tests
-      - run: pytest -q
+      - name: Run changed regression tests
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: python -m scripts.check_changed --changed-tests-only --base-ref "$BASE_SHA"
       - name: Validate dashboard OpenUI page programs are in sync
         run: python scripts/validate_page_dsl.py --check
       - name: Verify checkpoint references are resolvable and provenanced

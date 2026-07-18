@@ -25,7 +25,6 @@ from slm_training.dsl.parser import (
     validate,
 )
 from slm_training.models.onnx_inference import OnnxTwoTowerModel
-from slm_training.models.paths import PLAYGROUND_DEMO_CHECKPOINT
 from slm_training.web.app import create_app
 
 
@@ -55,7 +54,13 @@ else:
     )
 
 app = create_app(
-    checkpoint=PLAYGROUND_DEMO_CHECKPOINT,
+    # Auto-resolve the newest deployed/bundled checkpoint; without a lineage
+    # pointer or SLM_PLAYGROUND_CHECKPOINT pin this still lands on the
+    # committed demo fixture, but a deploy that ships real weights is picked
+    # up without an entrypoint change. ONNX sidecars are required because this
+    # runtime has no torch.
+    checkpoint=None,
+    require_onnx=True,
     device="cpu",
     annotations_path=runtime_root / "annotations.jsonl",
     human_train_path=runtime_root / "human_train.jsonl",

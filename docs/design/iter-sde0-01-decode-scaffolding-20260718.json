@@ -1,0 +1,154 @@
+{
+  "schema_version": 1,
+  "experiment_id": "SDE0-01",
+  "run_id": "sde0-01-e396-baseline",
+  "linear_issue": "SLM-161",
+  "date": "2026-07-18",
+  "campaign": "SDE0-01 decode-scaffolding factorial baseline",
+  "status": "complete",
+  "branch": "agent/slm-161-decode-scaffolding",
+  "checkpoint": {
+    "id": "e396-balanced-type-head-continuation-r1",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0",
+    "remote_uri": "hf://buckets/TKendrick/OpenUI/checkpoints/e396-balanced-type-head-continuation-r1/",
+    "local_path": "outputs/runs/e396-balanced-type-head-continuation-r1/checkpoints/last.pt"
+  },
+  "factors": {
+    "content_floor": {"true": "decode_min_content=-1", "false": "decode_min_content=0"},
+    "prompt_inventory": {"true": "honest_slot_contract=True, slot_contract_in_context=True, slot_contract_constrained_decode=True", "false": "all False"},
+    "semantic_constraints": {"true": "current_exact_or_compiler, schema_in_context=True, allow_unconstrained_fallback=False", "false": "current_native, schema_in_context=False, allow_unconstrained_fallback=True"},
+    "attempts": {"true": "best_of_n=4, generate_max_attempts=3", "false": "best_of_n=1, generate_max_attempts=1"}
+  },
+  "recipe_constants": {
+    "component_plan_decode_weight": 2.0,
+    "component_inventory_decode_weight": 8.0,
+    "grammar_constrained": true,
+    "grammar_ltr_primary": true,
+    "gen_steps": 8,
+    "grammar_ltr_max_tokens": 320
+  },
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.1111111111111111,
+      "structural_similarity": 0.17196666666666668,
+      "component_type_recall": 0.0,
+      "reward_score": 0.0,
+      "decode_timeout_count": 0,
+      "fallback_count": 0,
+      "latency_ms_p50": 4577.82
+    },
+    "held_out": {
+      "n": 5,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.21333333333333332,
+      "structural_similarity": 0.2844,
+      "component_type_recall": 0.09,
+      "reward_score": 0.2952,
+      "decode_timeout_count": 0,
+      "fallback_count": 0,
+      "latency_ms_p50": 8931.86
+    },
+    "adversarial": {
+      "n": 4,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.3333333333333333,
+      "structural_similarity": 0.22225,
+      "component_type_recall": 0.0,
+      "reward_score": 0.0,
+      "decode_timeout_count": 0,
+      "fallback_count": 0,
+      "latency_ms_p50": 3845.56
+    },
+    "ood": {
+      "n": 4,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.0,
+      "structural_similarity": 0.3175,
+      "component_type_recall": 0.0,
+      "reward_score": 0.0,
+      "decode_timeout_count": 0,
+      "fallback_count": 0,
+      "latency_ms_p50": 6298.72
+    },
+    "rico_held": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.0,
+      "structural_similarity": 0.09006666666666667,
+      "component_type_recall": 0.0,
+      "reward_score": 0.0,
+      "decode_timeout_count": 0,
+      "fallback_count": 0,
+      "latency_ms_p50": 8758.53,
+      "diagnostic_subset": true
+    }
+  },
+  "ship_gates": {
+    "pass": false,
+    "failures": [
+      "smoke:meaningful_program_rate",
+      "held_out:meaningful_program_rate",
+      "adversarial:meaningful_program_rate",
+      "ood:meaningful_program_rate",
+      "rico_held:meaningful_program_rate"
+    ]
+  },
+  "agentv": {
+    "total": 5,
+    "passed": 0,
+    "execution_errors": 0
+  },
+  "scoreboard": "outputs/runs/sde0-01/scratch/eval/baseline/scoreboard.json",
+  "stage_a": {
+    "compatible_arms_per_suite": {
+      "smoke": "6/6",
+      "held_out": "6/6",
+      "adversarial": "6/6",
+      "ood": "6/6",
+      "rico_held": "6/6"
+    },
+    "stage_b_recommended": {
+      "smoke": false,
+      "held_out": false,
+      "adversarial": true,
+      "ood": false,
+      "rico_held": false
+    },
+    "artifacts": {
+      "smoke": "outputs/runs/sde0-01/sde0_01_0d064fd3402d0a60.json",
+      "held_out": "outputs/runs/sde0-01/sde0_01_41bdf3df8080fa55.json",
+      "adversarial": "outputs/runs/sde0-01/sde0_01_0d12959b8327ac54.json",
+      "ood": "outputs/runs/sde0-01/sde0_01_cf02ad961a78def8.json",
+      "rico_held": "outputs/runs/sde0-01/sde0_01_8f1452307921b6ce.json"
+    },
+    "metrics": {
+      "smoke": {"baseline_meaningful_program_rate": 0.0, "all_off_meaningful_program_rate": 0.0, "baseline_placeholder_fidelity": 0.1111, "all_off_placeholder_fidelity": 0.0},
+      "held_out": {"baseline_meaningful_program_rate": 0.0, "all_off_meaningful_program_rate": 0.0, "baseline_placeholder_fidelity": 0.2133, "all_off_placeholder_fidelity": 0.0},
+      "adversarial": {"baseline_meaningful_program_rate": 0.0, "all_off_meaningful_program_rate": 0.0, "baseline_placeholder_fidelity": 0.3333, "all_off_placeholder_fidelity": 0.0},
+      "ood": {"baseline_meaningful_program_rate": 0.0, "all_off_meaningful_program_rate": 0.0, "baseline_placeholder_fidelity": 0.0, "all_off_placeholder_fidelity": 0.0},
+      "rico_held": {"baseline_meaningful_program_rate": 0.0, "all_off_meaningful_program_rate": 0.0, "baseline_placeholder_fidelity": 0.0, "all_off_placeholder_fidelity": 0.0, "note": "50-record CPU cap"}
+    }
+  },
+  "attribution": {
+    "meaningful_program_rate": "inconclusive",
+    "placeholder_fidelity": "scaffolded (prompt inventory)",
+    "component_type_recall": "inconclusive",
+    "structure": "inconclusive",
+    "agentv": "inconclusive",
+    "latency": "learned"
+  },
+  "honest_caveats": [
+    "The E396 checkpoint loads and all Stage A arms complete, but the baseline does not reproduce the reported E479 gate pass (MPR=1.0).",
+    "Because the control arm fails locally, the hypothesis test is not informative: we cannot attribute a gate pass that does not occur.",
+    "rico_held was capped at 50 records due to the 3-minute CPU hard run cap; a full 1500-record rerun requires GPU/HF Jobs and the correct recipe.",
+    "No production ship claim is made; this is diagnostic harness + evidence."
+  ],
+  "verdict": "Harness complete and tested. Local evidence is inconclusive because the frozen E396 baseline does not pass the preregistered gates under the current decoder/recipe."
+}

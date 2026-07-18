@@ -1,5 +1,9 @@
 # E488 E396 JSON-number and typed-any full RICO merge — 2026-07-18
 
+> Provenance correction: this is branch-only diagnostic evidence. E496 proved
+> that current `main` cannot load E396 because the experimental slot-component
+> head is absent.
+
 E488 canonically merges E487's 77 normally completed RICO shards. The merger
 verified one checkpoint and evaluation policy, unique records, and exact
 contiguous `[0,1500)` coverage before producing full-suite metrics. One earlier

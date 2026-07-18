@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E496",
+  "date": "2026-07-18",
+  "status": "failed",
+  "run_id": "e496-current-main-e396-compatibility-audit",
+  "checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0",
+    "bucket_uri": "hf://buckets/TKendrick/OpenUI/checkpoints/e396-balanced-type-head-continuation-r1"
+  },
+  "provenance": {
+    "code_git_sha": "bccf2355db8fc4487375ad68a95a7f5220dc770a",
+    "code_dirty": false,
+    "branch": "agent/e496-current-main-provenance",
+    "import_root": "/tmp/slm-training-loop-3m/src"
+  },
+  "evaluation_started": false,
+  "load_error": {
+    "type": "ValueError",
+    "message": "checkpoint state mismatch: missing=[] unexpected=['slot_component_head.bias', 'slot_component_head.weight']"
+  },
+  "timing": {
+    "elapsed_seconds": 3.0,
+    "maximum_total_seconds": 180,
+    "completed_normally": true
+  },
+  "excluded_attempts": [
+    {
+      "reason": "The shared editable virtualenv imported another checkout before PYTHONPATH was pinned.",
+      "metrics_admitted": false
+    }
+  ],
+  "verdict": "Persistence passes, but current main cannot load E396 because the checkpoint depends on an unreconciled slot-component decoder head. E490 remains branch-only diagnostic evidence."
+}

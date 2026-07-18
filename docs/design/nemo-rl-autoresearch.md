@@ -97,6 +97,9 @@ python -m scripts.model_cycle --lineage-root outputs/lineage \
   --rl-readiness-report outputs/runs/<causal-run-id>/rl_readiness.json
 ```
 
+Submission is fixed to a three-minute HF Jobs timeout. A timeout is a failed
+hardware smoke, never partial RL or checkpoint evidence.
+
 Reconciliation reads HF Jobs status and the durable summary:
 
 ```bash
@@ -138,4 +141,3 @@ existing promote/merge/deploy path.
 The previous smoke-first ordering is intentionally superseded: even a wiring-only
 GRPO optimizer step is RL, so `submit-nemo` embeds and revalidates the approved
 readiness report inside the remote container before NeMo imports or training.
-

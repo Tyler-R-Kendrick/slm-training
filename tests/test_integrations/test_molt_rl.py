@@ -141,6 +141,8 @@ def test_molt_job_recipe_is_pinned_and_secret_safe(approved_rl_report) -> None:
     assert command[command.index("--secrets") + 1] == "HF_TOKEN"
     assert MOLT_IMAGE in command
     assert f"hf://buckets/TKendrick/OpenUI:{BUCKET_MOUNT}" in command
+    with pytest.raises(ValueError, match="timeout must be 3m"):
+        build_hf_jobs_command(entrypoint=script, timeout="4m")
     with pytest.raises(ValueError, match="exact 40-character"):
         build_entrypoint_script(
             run_id="molt-smoke",
@@ -194,6 +196,7 @@ def test_lineage_dry_run_paid_guard_and_reconcile(
     plan = json.loads(capsys.readouterr().out)
     assert plan["kind"] == "hardware_smoke"
     assert plan["molt_git_sha"] == MOLT_GIT_SHA
+    assert plan["command"][plan["command"].index("--timeout") + 1] == "3m"
     with pytest.raises(ValueError, match="ack-paid-gpu"):
         model_cycle_main(base)
 

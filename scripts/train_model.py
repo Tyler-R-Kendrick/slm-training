@@ -382,6 +382,66 @@ def main(argv: list[str] | None = None) -> int:
         help="Bias compiler-legal components by role and remaining planned count.",
     )
     parser.add_argument(
+        "--slot-component-loss-weight",
+        type=float,
+        default=0.0,
+        help="Per-visible-slot containing-component classification loss weight.",
+    )
+    parser.add_argument(
+        "--slot-component-focal-gamma",
+        type=float,
+        default=0.0,
+        help="Focal exponent for slot-owner loss (0 preserves cross-entropy).",
+    )
+    parser.add_argument(
+        "--slot-component-class-balance-power",
+        type=float,
+        default=0.0,
+        help="Power applied to inverse corpus owner frequency (0 disables).",
+    )
+    parser.add_argument(
+        "--slot-component-decode-weight",
+        type=float,
+        default=0.0,
+        help="Bias legal bound components for the next unfilled visible slot.",
+    )
+    parser.add_argument(
+        "--slot-component-prompt-context",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Add pooled whole-prompt context to each slot-owner prediction.",
+    )
+    parser.add_argument(
+        "--slot-component-next-context",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Encode the next visible slot with each slot-owner query.",
+    )
+    parser.add_argument(
+        "--slot-component-pair-interaction",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Multiply current and next slot vectors for owner prediction.",
+    )
+    parser.add_argument(
+        "--slot-component-lexeme-prior-weight",
+        type=float,
+        default=0.0,
+        help="Add corpus-derived slot-lexeme owner log odds.",
+    )
+    parser.add_argument(
+        "--slot-component-span-prior-weight",
+        type=float,
+        default=0.0,
+        help="Bias multi-slot owners from ordered role spans.",
+    )
+    parser.add_argument(
+        "--slot-component-content-arity",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Average owner evidence across schema-derived content slots.",
+    )
+    parser.add_argument(
         "--component-edge-loss-weight",
         type=float,
         default=0.0,
@@ -445,6 +505,15 @@ def main(argv: list[str] | None = None) -> int:
         type=_probability,
         default=0.0,
         help="Deterministically omit DESIGN.md for this fraction of training records.",
+    )
+    parser.add_argument(
+        "--emit-record-nll",
+        action="store_true",
+        help=(
+            "After training, score every train record's NLL under the final "
+            "model and write record_nll.jsonl (difficulty evidence for "
+            "build_train_data --difficulty-from)."
+        ),
     )
     parser.add_argument(
         "--grammar-ltr-primary",
@@ -758,6 +827,7 @@ def main(argv: list[str] | None = None) -> int:
             structural_bias=args.structural_bias,
             design_md_in_context=not args.no_design_md_context,
             design_md_dropout=args.design_md_dropout,
+            emit_record_nll=bool(args.emit_record_nll),
             ltr_loss_weight=args.ltr_loss_weight,
             ltr_prefix_loss_weight=args.ltr_prefix_loss_weight,
             compiler_alignment_loss_weight=args.compiler_alignment_loss_weight,
@@ -770,6 +840,22 @@ def main(argv: list[str] | None = None) -> int:
             component_inventory_decode_weight=args.component_inventory_decode_weight,
             component_plan_loss_weight=args.component_plan_loss_weight,
             component_plan_decode_weight=args.component_plan_decode_weight,
+            slot_component_loss_weight=args.slot_component_loss_weight,
+            slot_component_focal_gamma=args.slot_component_focal_gamma,
+            slot_component_class_balance_power=(
+                args.slot_component_class_balance_power
+            ),
+            slot_component_decode_weight=args.slot_component_decode_weight,
+            slot_component_prompt_context=args.slot_component_prompt_context,
+            slot_component_next_context=args.slot_component_next_context,
+            slot_component_pair_interaction=args.slot_component_pair_interaction,
+            slot_component_lexeme_prior_weight=(
+                args.slot_component_lexeme_prior_weight
+            ),
+            slot_component_span_prior_weight=(
+                args.slot_component_span_prior_weight
+            ),
+            slot_component_content_arity=args.slot_component_content_arity,
             component_edge_loss_weight=args.component_edge_loss_weight,
             component_edge_alignment_loss_weight=(
                 args.component_edge_alignment_loss_weight

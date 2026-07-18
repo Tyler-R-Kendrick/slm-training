@@ -412,6 +412,14 @@ class Readers:
                     gate_pass = failed == 0
                 else:
                     gate_pass = None
+            reproducibility = payload.get("reproducibility")
+            reproducibility = (
+                reproducibility if isinstance(reproducibility, dict) else {}
+            )
+            claim_class = reproducibility.get("classification")
+            raw_gate_pass = gate_pass
+            if claim_class == "branch_only_diagnostic":
+                gate_pass = False
             agentv = (
                 payload.get("agentv")
                 or evaluation.get("agentv")
@@ -436,6 +444,8 @@ class Readers:
                     or path.stem,
                     "date": payload.get("date_utc") or payload.get("date"),
                     "pass": gate_pass,
+                    "raw_gate_pass": raw_gate_pass,
+                    "claim_class": claim_class,
                     "suites": record["suites"],
                     "source_schema": record["source_schema"],
                     "agentv": agentv,
@@ -1177,6 +1187,7 @@ class Readers:
             "storage": ref.storage,
             "report": report,
             "summary": _quality_summary(report),
+            "feedback": _read_json(ref.path / "synthesis_feedback.json"),
         }
 
     def train_rejected(

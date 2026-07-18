@@ -1,3 +1,4 @@
+from scripts import check_changed
 from scripts.check_changed import hook_test_targets, select_changed_tests, select_tests
 
 
@@ -52,3 +53,27 @@ def test_hook_defers_pytest_for_large_diffs() -> None:
     paths = [f"docs/design/run-{i}.json" for i in range(101)]
     paths.append("tests/test_dsl/test_parser.py")
     assert hook_test_targets(paths) == []
+
+
+def test_changed_files_can_compare_a_ci_base(monkeypatch) -> None:
+    commands = []
+
+    def fake_git(command):
+        commands.append(command)
+        return "tests/test_b.py\nsrc/a.py\n"
+
+    monkeypatch.setattr(check_changed, "_git", fake_git)
+    assert check_changed.changed_files(staged=False, base_ref="base-sha") == [
+        "src/a.py",
+        "tests/test_b.py",
+    ]
+    assert commands == [
+        [
+            "git",
+            "diff",
+            "--name-only",
+            "--diff-filter=ACMRD",
+            "base-sha...HEAD",
+            "--",
+        ]
+    ]
