@@ -2885,7 +2885,12 @@ failures/fallback/timeouts, exactly matching E460's corresponding shard.
 Shard 1 reaches row 191 with all gate metrics unchanged and structure
 0.8652→0.8658. Shard 2 reaches row 287 at structure 0.8561 (from
 0.8541), reward 0.9940 (from 0.9943), and unchanged perfect gate metrics.
-Coverage is 288/1500; no merged or ship claim yet. See
+Shard 3 reaches row 383 at structure 0.8781 (from 0.8770), reward 0.9925
+(from 0.9928), and unchanged perfect gate metrics. Shard 4 reaches row 479 at
+structure 0.8785 (from 0.8803), unchanged reward 0.9925, and unchanged
+perfect gate metrics. Shard 5 reaches row 575 at structure 0.8747 (from
+0.8761), unchanged reward 0.9935, and unchanged perfect gate metrics. Coverage
+is 576/1500; no merged or ship claim yet. See
 [`iter-e472-schema-enum-full-rico-sharded-20260718.md`](iter-e472-schema-enum-full-rico-sharded-20260718.md).
 
 Verifier-guided repair status from

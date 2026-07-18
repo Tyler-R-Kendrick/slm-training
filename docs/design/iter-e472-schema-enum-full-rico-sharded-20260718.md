@@ -16,6 +16,9 @@ three attempts, and no fallback.
 | 0 | `[0,96)` | 96 | 1.0 | 1.0 | 0.8852 | 1.0 | 0.9955 | 0 / 0 / 0 |
 | 1 | `[96,192)` | 96 | 1.0 | 1.0 | 0.8658 | 1.0 | 0.9936 | 0 / 0 / 0 |
 | 2 | `[192,288)` | 96 | 1.0 | 1.0 | 0.8561 | 1.0 | 0.9940 | 0 / 0 / 0 |
+| 3 | `[288,384)` | 96 | 1.0 | 1.0 | 0.8781 | 1.0 | 0.9925 | 0 / 0 / 0 |
+| 4 | `[384,480)` | 96 | 1.0 | 1.0 | 0.8785 | 1.0 | 0.9925 | 0 / 0 / 0 |
+| 5 | `[480,576)` | 96 | 1.0 | 1.0 | 0.8747 | 1.0 | 0.9935 | 0 / 0 / 0 |
 
 Shard 0 completed normally in about 145 seconds and is metric-identical to the
 corresponding E460 shard. Its diagnostic AgentV five-gate envelope reports 0/5
@@ -30,4 +33,16 @@ Shard 2 completed normally in about 169 seconds. Structure improves
 0.8541→0.8561 versus E460 while reward changes 0.9943→0.9940; all gate metrics
 remain perfect with zero failures, fallback, or timeouts.
 
-**Status:** 288/1500 rows complete. No merged or ship claim yet.
+Shard 3 completed normally in about 180 seconds. Structure improves
+0.8770→0.8781 versus E460 while reward changes 0.9928→0.9925; all gate metrics
+remain perfect with zero failures, fallback, or timeouts.
+
+Shard 4 completed normally in about 171 seconds. Structure changes
+0.8803→0.8785 versus E460 while reward and all gate metrics are unchanged;
+failures, fallback, and timeouts remain zero.
+
+Shard 5 completed normally in about 199 seconds. Structure changes
+0.8761→0.8747 versus E460 while reward and all gate metrics are unchanged;
+failures, fallback, and timeouts remain zero.
+
+**Status:** 576/1500 rows complete. No merged or ship claim yet.
