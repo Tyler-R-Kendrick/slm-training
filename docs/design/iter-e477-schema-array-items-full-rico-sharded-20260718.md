@@ -27,6 +27,8 @@ generation steps, three attempts, and no fallback.
 | 9 | `[864,960)` | 96 | 1.0 | 1.0 | 0.8981 | 1.0 | 0.9932 | 0 / 0 / 0 |
 | 10 | `[960,1056)` | 96 | 1.0 | 1.0 | 0.8671 | 1.0 | 0.9932 | 0 / 0 / 0 |
 | 11 | `[1056,1152)` | 96 | 1.0 | 1.0 | 0.8669 | 1.0 | 0.9943 | 0 / 0 / 0 |
+| 12a | `[1152,1200)` | 48 | 1.0 | 1.0 | 0.8627 | 1.0 | 0.9966 | 0 / 0 / 0 |
+| 12b | `[1200,1248)` | 48 | 1.0 | 1.0 | 0.8711 | 1.0 | 0.9929 | 0 / 0 / 0 |
 
 Shard 0 completed normally in about 150 seconds and is metric-identical to
 E472's corresponding enum-constrained shard. Its diagnostic AgentV five-gate
@@ -79,4 +81,17 @@ E472's corresponding shard, with zero failures, fallback, or timeouts.
 Shard 11 completed normally in about 201 seconds and is metric-identical to
 E472's corresponding shard, with zero failures, fallback, or timeouts.
 
-**Status:** 1152/1500 rows complete. No merged or ship claim yet.
+The initial 96-row shard-12 attempt
+`e477-e396-array-items-rico-shard12-r1` for `[1152,1248)` also reached the
+external 290-second ceiling and exited 124 after `KeyboardInterrupt`. It
+emitted no evaluation JSON and is excluded from coverage. Remaining 96-row
+blocks will use independently capped 48-row replacements.
+
+Replacement shard 12a completed normally in about 158 seconds with
+meaningful/fidelity/recall 1.0 and zero failures, fallback, or timeouts.
+
+Replacement shard 12b completed normally in about 221 seconds with the same
+perfect core rates and zero reliability counts. The weighted 12a+12b
+structure 0.8669 and reward 0.9948 are metric-identical to E472 shard 12.
+
+**Status:** 1248/1500 rows complete. No merged or ship claim yet.

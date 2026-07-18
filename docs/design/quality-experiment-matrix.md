@@ -2970,7 +2970,14 @@ reliability counts. The weighted replacement pair is metric-identical to E472
 shard 8. Shard 9 is metric-identical through row 959 at structure 0.8981 and
 reward 0.9932. Shard 10 is metric-identical through row 1055 at structure
 0.8671 and reward 0.9932. Shard 11 is metric-identical through row 1151 at
-structure 0.8669 and reward 0.9943; coverage is 1152/1500. See
+structure 0.8669 and reward 0.9943. The initial 96-row shard-12 attempt hit
+the 290-second ceiling and emitted no evaluation JSON, so it is excluded and
+remaining 96-row blocks use 48-row replacements. Replacement shard 12a
+completes `[1152,1200)` at
+meaningful/fidelity/recall 1.0, structure 0.8627, reward 0.9966, and zero
+reliability counts. Replacement shard 12b completes `[1200,1248)` at
+structure 0.8711 and reward 0.9929; the weighted pair is metric-identical to
+E472 shard 12 and coverage is 1248/1500. See
 [`iter-e477-schema-array-items-full-rico-sharded-20260718.md`](iter-e477-schema-array-items-full-rico-sharded-20260718.md).
 
 Verifier-guided repair status from
