@@ -2226,6 +2226,14 @@ AgentV remains 0/4. Reject learning-rate reduction. See
 [results](iter-e344-hf-context-visible-slot-low-lr-20260717.md) and
 [JSON](hf-context-visible-slot-low-lr-results-iter-e344-20260717.json).
 
+E345 evaluates E337's best-weighted-NLL checkpoint with E341's honest
+visible-slot policy. All suites parse and held-out meaningful/recall/reward
+recover to 0.20/0.1333/0.1658, but the other suites remain semantically zero
+and AgentV is 0/4. Reject the checkpoint while retaining best-NLL selection as
+the stronger bounded selection policy. See
+[results](iter-e345-hf-context-best-nll-honest-slot-20260717.md) and
+[JSON](hf-context-best-nll-honest-slot-results-iter-e345-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

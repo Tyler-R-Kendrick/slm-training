@@ -1,0 +1,60 @@
+{
+  "id": "E345",
+  "date": "2026-07-17",
+  "status": "rejected_bounded_best_nll_checkpoint",
+  "run_id": "e345-hf-context-best-nll-honest-slot-r1",
+  "checkpoint_sha256": "6f0ecf7cce2ebc7c61f133c13456ac91bcd4861bd3e2f4f70a3a72473c211985",
+  "checkpoint_source": "e337-hf-context-e333-recipe-30k-local-r1/checkpoints/best_weighted_nll.pt",
+  "slot_contract_in_context": true,
+  "slot_contract_constrained_decode": true,
+  "honest_slot_contract": true,
+  "component_plan_decode_weight": 0.0,
+  "elapsed_wall_seconds_approx": 56,
+  "hard_run_cap_seconds": 300,
+  "evaluation_agentv": {
+    "passed": 0,
+    "total": 4,
+    "execution_errors": 0
+  },
+  "checkpoint_sync": "disabled; bounded local validation",
+  "evaluation_scope": "honest smoke, held_out, adversarial, ood only; no RICO or ship claim",
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse": 1.0,
+      "fidelity": 0.27777777777777773,
+      "structure": 0.40609999999999996,
+      "meaningful": 0.0,
+      "recall": 0.0,
+      "reward": 0.0
+    },
+    "held_out": {
+      "n": 5,
+      "parse": 1.0,
+      "fidelity": 0.4533333333333333,
+      "structure": 0.18422,
+      "meaningful": 0.2,
+      "recall": 0.13333333333333333,
+      "reward": 0.1658
+    },
+    "adversarial": {
+      "n": 4,
+      "parse": 1.0,
+      "fidelity": 0.16666666666666666,
+      "structure": 0.35452500000000003,
+      "meaningful": 0.0,
+      "recall": 0.0,
+      "reward": 0.0
+    },
+    "ood": {
+      "n": 4,
+      "parse": 1.0,
+      "fidelity": 0.16666666666666666,
+      "structure": 0.30122499999999997,
+      "meaningful": 0.0,
+      "recall": 0.0,
+      "reward": 0.0
+    }
+  },
+  "verdict": "Reject. Best-NLL selection recovers limited held-out semantic signal but passes no AgentV gate and does not generalize across bounded suites."
+}
