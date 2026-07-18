@@ -1,0 +1,99 @@
+{
+  "iteration": "E293",
+  "date": "2026-07-17",
+  "preflight": {
+    "run_id": "e293-choice-component-plan-r1",
+    "status": "failed before checkpoint",
+    "cause": "ChoiceTokenizer was routed through the surface compiler terminal mapper.",
+    "repair": "Replay ChoiceDecodeState for gold decisions and apply plan bias only to choice-state legal candidates."
+  },
+  "matched_design_context_train": {
+    "run_id": "e293-choice-component-plan-r2",
+    "status": "matches E292 actual checkpoint policy; E292 summary label was invalid",
+    "seen_prompt_tokens": 54476,
+    "checkpoint_sha256": "8c6b7595373d623cc821ddfb7a362faaedd4f3aa87bf360133fb167889a9157d",
+    "weighted_nll": 7.313237051850419,
+    "plan_step_107": {"loss": 3.4399163722991943, "root_accuracy": 0.5, "bound_topk_recall": 0.5, "bound_count_mae": 0.36189860105514526},
+    "observation": "Bias-off adversarial meaningful rate reached 0.5 and AgentV 1/5 versus E292 0.0 and 0/5; direct bias erased the gain.",
+    "boundary": "DESIGN-context training only; not evidence of no-DESIGN transfer",
+    "decode_on": {
+      "gate_failure_count": 12,
+      "agentv": {"total": 5, "passed": 0, "execution_errors": 0},
+      "meaningful": {"smoke": 0.0, "held_out": 0.0, "adversarial": 0.0, "ood": 0.0, "rico_held": 0.0}
+    },
+    "decode_off": {
+      "gate_failure_count": 11,
+      "agentv": {"total": 5, "passed": 1, "execution_errors": 0},
+      "meaningful": {"smoke": 0.0, "held_out": 0.0, "adversarial": 0.5, "ood": 0.0, "rico_held": 0.0}
+    }
+  },
+  "matched_train": {
+    "run_id": "e293-choice-component-plan-r3",
+    "device": "cpu",
+    "context_backend": "scratch",
+    "design_md_context": false,
+    "output_tokenizer": "choice",
+    "d_model": 64,
+    "denoiser_layers": 2,
+    "seed": 0,
+    "batch_size": 2,
+    "steps": 107,
+    "seen_prompt_tokens": 12739,
+    "seen_target_tokens": 5022,
+    "elapsed_wall_seconds": 66.59715833999962,
+    "component_plan_loss_weight": 1.0,
+    "component_plan_decode_weight": 1.0,
+    "checkpoint_sha256": "78b70c81bd16395e22718baa91b50427c205f38136269c6248b85562cdec5308",
+    "checkpoint_bucket": null,
+    "checkpoint_sync_reason": "scratch diagnostic; local only",
+    "plan_metrics": {
+      "step_1": {"loss": 5.676092147827148, "root_accuracy": 0.0, "bound_topk_recall": 0.0, "bound_count_mae": 0.68071049451828},
+      "step_107": {"loss": 3.261573314666748, "root_accuracy": 0.5, "bound_topk_recall": 0.5, "bound_count_mae": 0.39069846272468567}
+    },
+    "loss_suite": {
+      "complete": true,
+      "weighted_nll": 7.5550015432172595,
+      "binding_nll": 8.225996446396623,
+      "structural_nll": 5.890128109852473,
+      "repair_nll": 8.405138945579528,
+      "schema_ood_nll": 7.355733939386764,
+      "broad_nll": 8.302827018112332,
+      "agentv": {"total": 1, "passed": 1, "execution_errors": 0}
+    }
+  },
+  "evaluation_policy": {
+    "ship_gates": true,
+    "honest_slot_contract": true,
+    "slot_contract_constrained_decode": true,
+    "design_md_context": false,
+    "allow_unconstrained_fallback": false
+  },
+  "decode_on": {
+    "run_id": "e293-choice-component-plan-honest-r2",
+    "plan_applications": 752,
+    "plan_choice_changes": 38,
+    "suites": {
+      "smoke": {"n": 3, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.7222222222222222, "structure": 0.2680666666666667, "component_recall": 0.0, "reward": 0.0},
+      "held_out": {"n": 5, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.56, "structure": 0.33284, "component_recall": 0.04, "reward": 0.1474},
+      "adversarial": {"n": 4, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.8333333333333334, "structure": 0.284275, "component_recall": 0.0, "reward": 0.0},
+      "ood": {"n": 4, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.5166666666666667, "structure": 0.361675, "component_recall": 0.0625, "reward": 0.18925},
+      "rico_held": {"n": 3, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.25, "structure": 0.13806666666666667, "component_recall": 0.0, "reward": 0.0}
+    },
+    "gate_failure_count": 13,
+    "agentv": {"total": 5, "passed": 0, "failed": 5, "execution_errors": 0}
+  },
+  "decode_off": {
+    "run_id": "e293-choice-component-plan-off-r2",
+    "suites": {
+      "smoke": {"n": 3, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.3333333333333333, "structure": 0.3499999999999999, "component_recall": 0.0, "reward": 0.0},
+      "held_out": {"n": 5, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.0, "structure": 0.25139999999999996, "component_recall": 0.0, "reward": 0.0},
+      "adversarial": {"n": 4, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.25, "structure": 0.236325, "component_recall": 0.0, "reward": 0.0},
+      "ood": {"n": 4, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.0, "structure": 0.236875, "component_recall": 0.0, "reward": 0.0},
+      "rico_held": {"n": 3, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.0, "structure": 0.09006666666666667, "component_recall": 0.0, "reward": 0.0}
+    },
+    "gate_failure_count": 17,
+    "agentv": {"total": 5, "passed": 0, "failed": 5, "execution_errors": 0}
+  },
+  "e294_followup": "A separately trained no-DESIGN no-plan control exactly matches E293 decode-off metrics; plan training alone has no discrete-output effect at this resolution.",
+  "verdict": "Harness and provenance reporting repaired. Plan training helps one suite under the actual E292 DESIGN-context recipe, but the no-DESIGN effect is entirely decode-head ranking and never improves meaningful rate. Reject both checkpoints."
+}

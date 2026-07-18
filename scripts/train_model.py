@@ -11,6 +11,13 @@ from slm_training.data.store import DataStore
 from slm_training.harnesses.model_build import ModelBuildConfig, train
 
 
+def _probability(value: str) -> float:
+    parsed = float(value)
+    if not 0.0 <= parsed <= 1.0:
+        raise argparse.ArgumentTypeError("must be between 0 and 1")
+    return parsed
+
+
 def resolve_published_train_version(
     version: str,
     *,
@@ -434,6 +441,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Do not concatenate DESIGN.md into the context tower prompt.",
     )
     parser.add_argument(
+        "--design-md-dropout",
+        type=_probability,
+        default=0.0,
+        help="Deterministically omit DESIGN.md for this fraction of training records.",
+    )
+    parser.add_argument(
         "--grammar-ltr-primary",
         action="store_true",
         help="Prefer greedy LTR decode at generate time.",
@@ -744,6 +757,7 @@ def main(argv: list[str] | None = None) -> int:
             grammar_top_k=args.grammar_top_k,
             structural_bias=args.structural_bias,
             design_md_in_context=not args.no_design_md_context,
+            design_md_dropout=args.design_md_dropout,
             ltr_loss_weight=args.ltr_loss_weight,
             ltr_prefix_loss_weight=args.ltr_prefix_loss_weight,
             compiler_alignment_loss_weight=args.compiler_alignment_loss_weight,

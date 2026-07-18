@@ -162,6 +162,45 @@ def decision_signature_support(
     }
 
 
+def objective_signature_support(
+    events: Iterable[DecisionEventV1], *, min_train_support: int = 1
+) -> dict[str, Any]:
+    """Held-out coverage of the OBJECTIVE signature (which includes sampled negatives).
+
+    Unlike ``decision_signature_support`` (state support, good-only), this keys on
+    ``decision_signature`` (good + bad). A corpus can therefore pass state support
+    yet fail here when the sampled bad-action set at a held-out state has no train
+    support — the E284 blocker (stable state support does not imply objective
+    support).
+    """
+    if min_train_support < 1:
+        raise ValueError("minimum train signature support must be positive")
+    rows = list(events)
+    counts = {
+        split: Counter(
+            decision_signature(event) for event in rows if event.split == split
+        )
+        for split in ("train", "held_out")
+    }
+    held = set(counts["held_out"])
+    covered = sorted(
+        signature for signature in held if counts["train"][signature] >= min_train_support
+    )
+    uncovered = sorted(held - set(covered))
+    return {
+        "minimum_train_support": min_train_support,
+        "counts": {
+            split: dict(sorted(split_counts.items()))
+            for split, split_counts in counts.items()
+        },
+        "held_out_coverage": {
+            "covered": covered,
+            "uncovered": uncovered,
+            "passed": not uncovered,
+        },
+    }
+
+
 def _event(
     trace: dict[str, Any],
     payload: dict[str, Any],

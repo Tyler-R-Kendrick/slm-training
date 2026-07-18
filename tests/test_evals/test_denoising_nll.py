@@ -23,6 +23,7 @@ from slm_training.evals.loss_suites import (
     load_suite_spec,
     structural_positions,
 )
+from slm_training.models.choice_tokenizer import ChoiceTokenizer
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 
 HERO = (
@@ -152,6 +153,22 @@ def test_position_filters_partition_sensibly() -> None:
     structural = structural_positions(model, _records()[0], ids)
     assert binding and structural
     assert not (set(binding) & set(structural))
+
+
+def test_position_filters_support_choice_tokens() -> None:
+    tokenizer = ChoiceTokenizer.build()
+    model = type("ChoiceModel", (), {"tokenizer": tokenizer})()
+    ids = [
+        tokenizer.bos_id,
+        tokenizer.token_to_id["r="],
+        tokenizer.token_to_id["+Stack"],
+        tokenizer.token_to_id["&0"],
+        tokenizer.token_to_id["@0"],
+        tokenizer.eos_id,
+    ]
+    record = _records()[0]
+    assert binding_positions(model, record, ids) == [3, 4]
+    assert structural_positions(model, record, ids) == [1, 2]
 
 
 def test_repair_nll_deterministic() -> None:

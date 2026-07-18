@@ -41,6 +41,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "grammar_ltr_stages",
         "grammar_ltr_primary",
         "grammar_finalize_validate",
+        "design_md_dropout",
         "design_md_budget",
         "schema_in_context",
         "slot_contract_in_context",
@@ -247,6 +248,7 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
             if config.design_md_in_context is None
             else bool(config.design_md_in_context)
         ),
+        design_md_dropout=float(getattr(config, "design_md_dropout", 0.0) or 0.0),
         design_md_budget=config.design_md_budget,
         schema_in_context=getattr(config, "schema_in_context", False),
         slot_contract_in_context=getattr(config, "slot_contract_in_context", False),
