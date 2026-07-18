@@ -96,6 +96,23 @@ class TerminalOutcome:
     report: JsonValue | None = None
     detail: str = ""
 
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "accepted": self.accepted,
+            "source": self.source,
+            "report": self.report,
+            "detail": self.detail,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> TerminalOutcome:
+        return cls(
+            accepted=bool(data["accepted"]),
+            source=data.get("source"),
+            report=data.get("report"),
+            detail=str(data.get("detail", "")),
+        )
+
 
 class TerminalChecker(Protocol):
     """Materializes a structurally-solved state and runs the final verifier."""
@@ -131,6 +148,21 @@ class SearchDecision:
             "ranker_id": self.ranker_id,
         }
 
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> SearchDecision:
+        return cls(
+            decision_id=str(data["decision_id"]),
+            before_fingerprint=str(data["before_fingerprint"]),
+            after_fingerprint=str(data["after_fingerprint"]),
+            level=int(data["level"]),
+            hole_id=HoleId.from_dict(data["hole_id"]),
+            chosen=DomainValue.from_dict(data["chosen"]),
+            alternatives=tuple(
+                DomainValue.from_dict(d) for d in data.get("alternatives", [])
+            ),
+            ranker_id=str(data["ranker_id"]),
+        )
+
 
 @dataclass(frozen=True)
 class Nogood:
@@ -152,6 +184,21 @@ class Nogood:
             ],
             "provenance": self.provenance,
         }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> Nogood:
+        assignment: list[tuple[HoleId, DomainValue]] = []
+        for pair in data.get("assignment", []):
+            if not isinstance(pair, (list, tuple)) or len(pair) != 2:
+                raise ValueError("Nogood assignment entries must be [hole, value] pairs")
+            assignment.append((HoleId.from_dict(pair[0]), DomainValue.from_dict(pair[1])))
+        return cls(
+            problem_id=str(data["problem_id"]),
+            constraint_version=str(data["constraint_version"]),
+            bounds=SolverBounds.from_dict(data["bounds"]),
+            assignment=tuple(assignment),
+            provenance=str(data.get("provenance", "")),
+        )
 
     @property
     def key(self) -> str:
@@ -178,6 +225,37 @@ class SearchResult:
     nogoods: tuple[Nogood, ...]
     counters: SearchCounters
     stop_reason: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "status": self.status.value,
+            "state": self.state.to_dict(),
+            "source": self.source,
+            "verifier_report": self.verifier_report,
+            "deductions": [d.to_dict() for d in self.deductions],
+            "decisions": [d.to_dict() for d in self.decisions],
+            "nogoods": [n.to_dict() for n in self.nogoods],
+            "counters": self.counters.to_dict(),
+            "stop_reason": self.stop_reason,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> SearchResult:
+        return cls(
+            status=SearchStatus(data["status"]),
+            state=FiniteDomainState.from_dict(data["state"]),
+            source=data.get("source"),
+            verifier_report=data.get("verifier_report"),
+            deductions=tuple(
+                CertifiedDeduction.from_dict(d) for d in data.get("deductions", [])
+            ),
+            decisions=tuple(
+                SearchDecision.from_dict(d) for d in data.get("decisions", [])
+            ),
+            nogoods=tuple(Nogood.from_dict(d) for d in data.get("nogoods", [])),
+            counters=SearchCounters.from_dict(data["counters"]),
+            stop_reason=data.get("stop_reason"),
+        )
 
 
 def default_hole_selector(state: FiniteDomainState) -> HoleId | None:
