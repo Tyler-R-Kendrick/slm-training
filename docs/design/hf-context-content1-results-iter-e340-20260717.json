@@ -1,0 +1,20 @@
+{
+  "id": "E340",
+  "date": "2026-07-17",
+  "status": "rejected_bounded_decode_ablation",
+  "run_id": "e340-hf-context-content1-bounded-r1",
+  "checkpoint_source": "e337-hf-context-e333-recipe-30k-local-r1",
+  "checkpoint_sha256": "6f3c1fda0048dfe85ed254edf6adb0801b872d1ad8acfed16443309af959c9f6",
+  "component_plan_decode_weight": 0.0,
+  "decode_min_content": 1,
+  "hard_run_cap_seconds": 300,
+  "evaluation_scope": "smoke, held_out, adversarial, ood only; no RICO or ship claim",
+  "agentv": {"passed": 0, "total": 4, "execution_errors": 0},
+  "suites": {
+    "smoke": {"n": 3, "parse": 0.0, "fidelity": 0.0, "structure": 0.0, "meaningful": 0.0, "recall": 0.0, "reward": 0.0},
+    "held_out": {"n": 5, "parse": 0.6, "fidelity": 0.0, "structure": 0.20825999999999997, "meaningful": 0.0, "recall": 0.0, "reward": 0.0},
+    "adversarial": {"n": 4, "parse": 0.25, "fidelity": 0.0, "structure": 0.07375, "meaningful": 0.0, "recall": 0.0, "reward": 0.0},
+    "ood": {"n": 4, "parse": 0.5, "fidelity": 0.0, "structure": 0.09765, "meaningful": 0.0, "recall": 0.0, "reward": 0.0}
+  },
+  "verdict": "Reject. An explicit one-component floor materially regresses parse and recovers no semantic signal."
+}

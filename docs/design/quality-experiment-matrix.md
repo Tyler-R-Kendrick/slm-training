@@ -2194,6 +2194,12 @@ policy derives no positive floor. Reject the no-effect arm. See
 [results](iter-e339-hf-context-content-floor-20260717.md) and
 [JSON](hf-context-content-floor-results-iter-e339-20260717.json).
 
+E340 forces an explicit one-component floor. Smoke parse collapses to 0 and
+the other suites fall to 0.25–0.60, while all semantic signals remain zero.
+Reject forced termination as the missing mechanism. See
+[results](iter-e340-hf-context-content1-20260717.md) and
+[JSON](hf-context-content1-results-iter-e340-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
