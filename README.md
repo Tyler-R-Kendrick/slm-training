@@ -123,6 +123,7 @@ summary and the full card whenever a checkpoint is created or promoted.
 | E324 next-slot context arm | `e324-next-slot-context-20k-r1/last.pt` | `outputs/runs/e324-next-slot-context-20k-r1/…` (local) | Negative: ordered slot concatenation leaves held-out meaningful/recall at 0.20/0.10 — not promoted or ship |
 | E325 slot-pair interaction arm | `e325-slot-pair-interaction-20k-r1/last.pt` | `outputs/runs/e325-slot-pair-interaction-20k-r1/…` (local) | Negative: ties E316's gate count but cuts OOD meaningful/recall to 0.50/0.25 — not promoted or ship |
 | E326 lexeme slot-prior arm | `e326-lexeme-slot-prior-20k-r1/last.pt` | `outputs/runs/e326-lexeme-slot-prior-20k-r1/…` (local) | Best current scratch: AgentV 4/5; held/adversarial improve, but smoke recall 0.3333<0.35 — not promoted or ship |
+| E328 ordered span-prior arm | `e328-span-slot-prior-20k-r1/last.pt` | `outputs/runs/e328-span-slot-prior-20k-r1/…` (local) | Negative: corrected schema arity is retained, but span prior leaves smoke unchanged and regresses held recall to 0.30 — not promoted or ship |
 | Production HF ship | *(none yet)* | [HF Bucket `TKendrick/OpenUI`](https://huggingface.co/buckets/TKendrick/OpenUI) `checkpoints/<run_id>/` | Register here after first full HF sync + `--ship-gates` |
 
 **Load demo:** `python -m scripts.serve_playground` · **Full train sync:** set

@@ -2119,6 +2119,12 @@ checkpoint, but smoke recall 0.3333 still misses 0.35. E327 frozen weights
 [E327](iter-e327-lexeme-slot-weight-20260717.md), and
 [E327 JSON](lexeme-slot-weight-results-iter-e327-20260717.json).
 
+E328 corrects choice-tokenizer content arity and tests a training-derived
+ordered span prior. Smoke is unchanged and held-out recall regresses
+0.40→0.30, so reject the checkpoint while retaining the generalized tokenizer
+fix. See [results](iter-e328-span-slot-prior-20260717.md) and
+[JSON](span-slot-prior-results-iter-e328-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

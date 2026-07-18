@@ -1,0 +1,17 @@
+{
+  "id": "E328",
+  "date": "2026-07-17",
+  "status": "negative_not_promotable",
+  "run_id": "e328-span-slot-prior-20k-r1",
+  "checkpoint_sha256": "888cf8ac495f0349a8347132c3121c08561d0759567844984b40d19b9ccc4ebe",
+  "steps": 446,
+  "seen_target_tokens": 20044,
+  "elapsed_wall_seconds": 139.44265363100203,
+  "weighted_nll": 5.408435743583585,
+  "broad_nll": 5.4961322911180455,
+  "slot_accuracy": 0.8026315793395042,
+  "slot_majority_baseline": 0.6184210620428386,
+  "agentv": {"passed": 4, "total": 5},
+  "failures": ["smoke component recall 0.3333 < 0.35"],
+  "verdict": "Reject the span-prior checkpoint: smoke is unchanged and held-out recall regresses 0.40 to 0.30. Retain the corrected tokenizer content-arity API."
+}
