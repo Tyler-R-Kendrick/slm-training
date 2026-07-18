@@ -263,4 +263,8 @@ invalid string argument from a numeric slider, changing its bounds from
 so this is neutral type-constraint activation evidence rather than a quality
 win.
 
-**Status:** 1136/1500 rows complete. No merged or ship claim yet.
+Shard 20f completed normally in about 58 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.8840, reward 0.9914, and zero failures, fallback, or timeouts.
+
+**Status:** 1152/1500 rows complete. No merged or ship claim yet.
