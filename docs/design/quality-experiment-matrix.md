@@ -2508,6 +2508,12 @@ between 2 and 9 steps. See
 [results](iter-e415-e416-ten-step-boundary-20260718.md) and
 [JSON](iter-e415-e416-ten-step-boundary-20260718.json).
 
+E417 tests five resumed steps / 22,277 target tokens. E418 nearly passes, but
+smoke recall 0.3333 misses the 0.35 floor; meaningful rate is exactly 0.6667
+and AgentV is 3/4. Reject E417 and narrow the gate boundary to 2–4 steps. See
+[results](iter-e417-e418-five-step-boundary-20260718.md) and
+[JSON](iter-e417-e418-five-step-boundary-20260718.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
