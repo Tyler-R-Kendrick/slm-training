@@ -266,6 +266,11 @@ or any ad-hoc run whose scoreboard / gates / latency inform a decision.
 6. If a checkpoint was written/promoted: update `docs/MODEL_CARD.md` **and**
    README “Model card (summary)”.
 7. Commit docs with the experiment — no “docs later” TODO.
+8. Result JSON carries a `version_stamp` (schema `version_stamp/v1`; canonical
+   writers emit it). If you changed any metric, gate, harness, matrix, or
+   data-builder file watched by `src/slm_training/resources/versions.json`,
+   bump that component (or append a `no-bump: <reason>` history note) in the
+   same change — `python -m scripts.verify_version_stamps --check` enforces it.
 
 **Doc homes:** quality/ship → `quality-experiment-matrix.md` (+ adversarial
 review on policy changes); perf → `perf-experiment-matrix.md` /
@@ -302,8 +307,35 @@ lineage `DataSnapshot`); derived curation uses `--derive-from`,
 | "Failed/partial — skip docs" | Document failure + recipe. |
 | "It's in the PR body" | PR text is ephemeral. |
 | "Bucket URI is enough; skip the model card" | Card + README summary are how humans find the checkpoint. |
+| "The code SHA is enough" | Component versions are what make results comparable and retestable. |
 
 **REQUIRED SKILL:** `documenting-experiment-results`.
+
+## Normalized component versioning
+
+The eval/smoke/checkpoint stack is self-improving, so every result must say
+which revision of the constraints produced it. Contract:
+`docs/design/version-stamp-contract.md`.
+
+- **Registry:** `src/slm_training/resources/versions.json` maps component ids
+  (`harness.model_build.eval`, `evals.meaningful_program`, `gates.ship`,
+  `matrix.quality`, …) to their current version, watched `paths`, and an
+  append-only `history` (newest first).
+- **Stamp:** canonical writers embed a `version_stamp` envelope
+  (`stamp_schema: version_stamp/v1` — code commit, dirty flag, component
+  versions, timestamp) in every eval/scoreboard/gates/matrix/bench/train
+  payload via `slm_training.versioning.build_version_stamp`.
+- **Bump rule:** changing a watched file requires touching that component's
+  registry entry in the same change — a version bump (new ids use monotonic
+  `v1, v2, …`) or a same-version history entry whose note starts with
+  `no-bump:` for behavior-neutral edits. Enforced by
+  `python -m scripts.verify_version_stamps --check` (CI, pre-commit, agent
+  hooks).
+- **Re-test discovery:** after a bump, `python -m scripts.verify_version_stamps
+  --stale [--component <id>] [--include-outputs]` lists results produced under
+  older constraints — the candidates worth re-running. Experiments that ran
+  against since-fixed constraints stay valuable; keep them discoverable, never
+  silently comparable.
 
 ## Engineering norms
 

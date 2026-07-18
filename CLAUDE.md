@@ -16,6 +16,10 @@ harness from that evidence (never weaken the gates). Token stack: `ponytail`, `c
 [huggingface/skills](https://github.com/huggingface/skills)
 (`hf skills add --claude --force` / `hf skills update` to refresh).
 When a checkpoint is created or promoted, update `docs/MODEL_CARD.md` and the README model-card summary.
+Version stamps: results carry `version_stamp`; changing a metric/gate/harness/matrix
+file requires a component bump (or `no-bump:` note) in
+`src/slm_training/resources/versions.json` — see AGENTS.md “Normalized component
+versioning” and `docs/design/version-stamp-contract.md`.
 When you change a dashboard page (`src/apps/dashboard/src/pages/*.tsx`), keep its interpreted-mode
 `src/slm_training/web/static/openui/*.openui` program at parity and run `scripts/validate_page_dsl.py` —
 use the `dashboard-openui-parity` skill.

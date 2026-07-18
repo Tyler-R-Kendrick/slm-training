@@ -19,6 +19,7 @@ from slm_training.harnesses.model_build.eval_policy import (
     STRICT_COMPILER_TREE_POLICY,
 )
 from slm_training.runtime.telemetry import run_trace
+from slm_training.versioning import build_version_stamp
 from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
     evaluate_ship_gates,
@@ -2467,6 +2468,10 @@ def _run_verified_solver(args: argparse.Namespace) -> int:
         only_rows=only_rows,
         recipe={"seed": args.seed},
     )
+    report["version_stamp"] = build_version_stamp(
+        "matrix.verified_solver",
+        "harness.solver_bench",
+    )
 
     # Persist JSON + Markdown evidence under the run root and mirror to docs.
     # Use a dedicated, non-colliding filename so historical E-matrix result
@@ -3068,6 +3073,12 @@ def main(argv: list[str] | None = None) -> int:
         "context_backend": args.context_backend,
         "matrix_set": args.matrix,
         "results": results,
+        "version_stamp": build_version_stamp(
+            "matrix.quality",
+            "harness.model_build.eval",
+            "evals.meaningful_program",
+            "gates.ship",
+        ),
     }
     out_path = args.run_root / "quality_matrix_summary.json"
     out_path.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")

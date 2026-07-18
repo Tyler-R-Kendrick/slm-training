@@ -13,11 +13,9 @@ from __future__ import annotations
 
 import hashlib
 import json
-import subprocess
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 
 from slm_training.harnesses.experiments.verified_solver_matrix import (
@@ -75,22 +73,15 @@ class ArtifactLock:
 
 
 def _git_commit() -> str:
-    try:
-        return subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], text=True, cwd=Path(__file__).resolve().parents[4]
-        ).strip()
-    except (OSError, subprocess.CalledProcessError):
-        return "unknown"
+    from slm_training.versioning import git_commit
+
+    return git_commit()
 
 
 def _git_dirty() -> bool:
-    try:
-        out = subprocess.check_output(
-            ["git", "status", "--porcelain"], text=True, cwd=Path(__file__).resolve().parents[4]
-        ).strip()
-        return bool(out)
-    except (OSError, subprocess.CalledProcessError):
-        return False
+    from slm_training.versioning import git_dirty
+
+    return bool(git_dirty())
 
 
 def _torch_version() -> str | None:

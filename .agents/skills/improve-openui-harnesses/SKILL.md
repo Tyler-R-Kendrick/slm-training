@@ -23,12 +23,18 @@ of adding a parallel trainer, evaluator, artifact tree, or policy.
 3. Trace its public script to the library owner, downstream artifact consumers,
    tests, and ship/promotion gates.
 4. Change the shared owner. Keep schemas strict, paths canonical, and untrusted
-   model/research output behind typed compilation and validation.
+   model/research output behind typed compilation and validation. If the file
+   is watched by a component in `src/slm_training/resources/versions.json`
+   (metrics, gates, eval/train harnesses, matrices, test-data builder), bump
+   that component's version — or append a same-version `no-bump: <reason>`
+   history entry for behavior-neutral edits — in the same change
+   (`docs/design/version-stamp-contract.md`).
 5. Add the smallest regression test that proves the new invariant. For a train,
    eval, benchmark, profile, telemetry, matrix, or reproduction run, also use
    `documenting-experiment-results`; for readiness claims use `honest-ship-eval`.
 6. Run the family checks from the reference, `python -m scripts.repo_policy`,
-   `.githooks/check-changed`, and `git diff --check`.
+   `python -m scripts.verify_version_stamps --check`, `.githooks/check-changed`,
+   and `git diff --check`.
 
 ## Shared contracts
 

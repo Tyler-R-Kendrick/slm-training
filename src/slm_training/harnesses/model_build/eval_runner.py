@@ -1081,6 +1081,13 @@ def evaluate(
     run_dir = config.run_dir
     run_dir.mkdir(parents=True, exist_ok=True)
     suite_path = run_dir / f"eval_{config.suite}.json"
+    from slm_training.versioning import build_version_stamp
+
+    metrics["version_stamp"] = build_version_stamp(
+        "harness.model_build.eval",
+        "evals.meaningful_program",
+        "evals.scoring",
+    )
     metrics["output"] = str(suite_path)
     if publish_agentv:
         if config.suite in DEFAULT_SHIP_GATES:
@@ -1129,6 +1136,7 @@ def evaluate_suites(
         )
         board[suite] = {k: v for k, v in metrics.items() if k != "details"}
     from slm_training.evals.record_schema import RUN_CLASSES, SCHEMA_VERSION
+    from slm_training.versioning import build_version_stamp
 
     scoreboard = {
         "schema_version": SCHEMA_VERSION,
@@ -1151,6 +1159,11 @@ def evaluate_suites(
         "code_dirty": next(iter(board.values()), {}).get("code_dirty"),
         "suites": board,
         "evaluated_at": datetime.now(timezone.utc).isoformat(),
+        "version_stamp": build_version_stamp(
+            "harness.model_build.eval",
+            "evals.meaningful_program",
+            "evals.scoring",
+        ),
     }
     # Ceiling + length-budget diagnostics ride with every board so a zero
     # scoreboard is attributable: harness/data breakage (ceiling < 1, budget

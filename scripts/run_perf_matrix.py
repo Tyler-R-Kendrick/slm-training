@@ -21,6 +21,7 @@ from slm_training.dsl.schema import load_jsonl
 from slm_training.models.decode_stats import DecodeStats, aggregate_stats
 from slm_training.models.paths import PLAYGROUND_DEMO_CHECKPOINT
 from slm_training.models.twotower import TwoTowerModel
+from slm_training.versioning import build_version_stamp
 
 
 @dataclass(frozen=True)
@@ -721,6 +722,10 @@ def main(argv: list[str] | None = None) -> int:
             for row in results
             if row["id"].startswith("C")
         ],
+    )
+    board["version_stamp"] = build_version_stamp(
+        "matrix.perf",
+        "harness.model_build.eval",
     )
     args.out_dir.mkdir(parents=True, exist_ok=True)
     board_path = args.out_dir / "scoreboard.json"

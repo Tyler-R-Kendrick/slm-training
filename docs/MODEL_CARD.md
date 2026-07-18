@@ -578,4 +578,8 @@ Append a row for every new or replaced checkpoint. Do not delete history.
 3. Refresh the **Model card (summary)** section in [`README.md`](../README.md)
    (keep it short; link here for detail).
 4. Point measured-results / matrix docs at the new run id when relevant.
-5. Commit docs with the checkpoint-producing change.
+5. Record the run's version stamp with the eval table: `code_commit` plus the
+   `harness.model_build.eval` / `evals.meaningful_program` / `gates.ship`
+   versions from `scoreboard.json`
+   ([version-stamp-contract.md](design/version-stamp-contract.md)).
+6. Commit docs with the checkpoint-producing change.
