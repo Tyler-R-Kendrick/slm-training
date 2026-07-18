@@ -37,6 +37,7 @@ from slm_training.models.quantization.observers import (
     observe_asymmetric_scale,
     observe_symmetric_scale,
 )
+from slm_training.models.quantization.residual_planes import PlaneOutput, ResidualTritStack
 
 __all__ = [
     "QuantFormat",
@@ -51,6 +52,8 @@ __all__ = [
     "binary_plus_mask_format",
     "residual_binary_plane_format",
     "residual_ternary_plane_format",
+    "PlaneOutput",
+    "ResidualTritStack",
     "KERNEL_REGISTRY",
     "observe_symmetric_scale",
     "observe_asymmetric_scale",

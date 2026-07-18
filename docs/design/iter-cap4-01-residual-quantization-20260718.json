@@ -1,0 +1,47 @@
+{
+  "experiment": "CAP4-01 residual ternary planes fixture",
+  "fixture": "residual-trit-local-scorer",
+  "artifact": "outputs/runs/cap4-01-residual-trit/residual_trit_fixture_20260718_230801.json",
+  "recipe": {
+    "hidden_dim": 16,
+    "num_actions": 8,
+    "n_train": 256,
+    "n_test": 64,
+    "R": 2,
+    "scale_mode": "geometric_balanced"
+  },
+  "fixture_outputs": {
+    "fp16": {
+      "test_mse": 2.735846996307373,
+      "bytes": 432,
+      "final_train_mse": 3.193319935235195e-05
+    },
+    "ternary_direct": {
+      "test_mse": 3.9043750762939453,
+      "bytes": 210,
+      "final_train_mse": 2.23633074760437
+    },
+    "residual_trit": {
+      "test_mse": 3.4065401554107666,
+      "bytes": 632,
+      "final_train_mse": 1.119019627571106
+    }
+  },
+  "caveats": [
+    "wiring fixture only; no ship gate or checkpoint claim",
+    "byte costs are analytical packing estimates, not measured on-device",
+    "synthetic teacher linear may favor the FP16 baseline",
+    "local CPU run; no GPU or full-context train",
+    "action embedding hashing can collide for large vocabularies"
+  ],
+  "claim": "Wiring evidence only: ResidualTritStack + ResidualTritPlaneHead compile, train, and cost correctly. No ship gate or checkpoint promotion.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "b82b5e69ee427e6e24c9be011418849ff6046f1c",
+    "code_dirty": true,
+    "components": {
+      "model.quantization": "v1"
+    },
+    "stamped_at": "2026-07-18T23:09:23.172783+00:00"
+  }
+}
