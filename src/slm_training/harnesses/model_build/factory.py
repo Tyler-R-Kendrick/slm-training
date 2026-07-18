@@ -154,6 +154,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "grammar_multitoken_max",
         "grammar_canvas_lookahead",
         "use_dynamic_quant",
+        "quant_format",
         "generate_max_attempts",
         "grammar_finalize_on_last_attempt_only",
         "allow_unconstrained_fallback",
@@ -200,6 +201,12 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
     ):
         try:
             model.apply_dynamic_quant()
+        except Exception:  # noqa: BLE001
+            pass
+    quant_format = getattr(config, "quant_format", None)
+    if quant_format and hasattr(model, "apply_quant_format"):
+        try:
+            model.apply_quant_format(quant_format)
         except Exception:  # noqa: BLE001
             pass
     if bool(getattr(config, "use_compile", False)) and hasattr(model, "denoiser"):
@@ -446,6 +453,7 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
             getattr(config, "grammar_canvas_lookahead", 0) or 0
         ),
         use_dynamic_quant=bool(getattr(config, "use_dynamic_quant", False)),
+        quant_format=getattr(config, "quant_format", None),
         generate_max_attempts=int(getattr(config, "generate_max_attempts", 3) or 3),
         grammar_finalize_on_last_attempt_only=bool(
             getattr(config, "grammar_finalize_on_last_attempt_only", False)
