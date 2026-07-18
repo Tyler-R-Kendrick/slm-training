@@ -42,6 +42,22 @@
     "fallback_count": 0,
     "decode_timeout_count": 0
   },
+  "suites": {
+    "rico_held": {
+      "n": 1500,
+      "suite_total_n": 1500,
+      "diagnostic_subset": false,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8736732,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9939199999999999,
+      "failure_breakdown": {},
+      "fallback_count": 0,
+      "decode_timeout_count": 0
+    }
+  },
   "comparison_to_e478": {
     "prediction_differences": 3,
     "structural_similarity_delta": 0.00004313333333345759,
