@@ -417,8 +417,13 @@ def _halving_score(suites: dict[str, Any], suite: str) -> float:
     topology = m.get("topology_composite")
     if topology is not None:
         return float(topology)
+    meaningful_v1 = m.get("meaningful_program_v1_rate")
+    if meaningful_v1 is None:
+        meaningful_v1 = m.get("meaningful_program_rate")
+    if meaningful_v1 is None:
+        meaningful_v1 = m.get("parse_rate")
     return (
-        2.0 * float(m.get("parse_rate") or 0.0)
+        2.0 * float(meaningful_v1 or 0.0)
         + 2.0 * float(m.get("placeholder_fidelity") or 0.0)
         + 1.0 * float(m.get("structural_similarity") or 0.0)
         + 0.5 * float(m.get("reward_score") or 0.0)
@@ -431,6 +436,20 @@ def _summarize_board(board: dict[str, Any]) -> dict[str, Any]:
     slim = {
         name: {
             "parse_rate": m.get("parse_rate"),
+            "syntax_parse_rate": m.get("syntax_parse_rate"),
+            "meaningful_program_rate": m.get("meaningful_program_rate"),
+            "meaningful_program_v1_rate": m.get("meaningful_program_v1_rate"),
+            "binding_aware_meaningful_v2_rate_strict": m.get(
+                "binding_aware_meaningful_v2_rate_strict"
+            ),
+            "binding_aware_meaningful_v2_rate_coverage_conditioned": m.get(
+                "binding_aware_meaningful_v2_rate_coverage_conditioned"
+            ),
+            "binding_aware_meaningful_v2_coverage": m.get(
+                "binding_aware_meaningful_v2_coverage"
+            ),
+            "meaningful_metric_primary": m.get("meaningful_metric_primary"),
+            "meaningful_metric_versions": m.get("meaningful_metric_versions"),
             "placeholder_fidelity": m.get("placeholder_fidelity"),
             "structural_similarity": m.get("structural_similarity"),
             "reward_score": m.get("reward_score"),

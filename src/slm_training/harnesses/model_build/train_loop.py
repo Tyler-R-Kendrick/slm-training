@@ -406,6 +406,18 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                     "meaningful_program_rate": metrics.get(
                         "meaningful_program_rate"
                     ),
+                    "meaningful_program_v1_rate": metrics.get(
+                        "meaningful_program_v1_rate"
+                    ),
+                    "binding_aware_meaningful_v2_rate_strict": metrics.get(
+                        "binding_aware_meaningful_v2_rate_strict"
+                    ),
+                    "binding_aware_meaningful_v2_rate_coverage_conditioned": metrics.get(
+                        "binding_aware_meaningful_v2_rate_coverage_conditioned"
+                    ),
+                    "binding_aware_meaningful_v2_coverage": metrics.get(
+                        "binding_aware_meaningful_v2_coverage"
+                    ),
                     "placeholder_fidelity": metrics.get("placeholder_fidelity"),
                     "structural_similarity": metrics.get("structural_similarity"),
                     "reward_score": metrics.get("reward_score"),
@@ -417,6 +429,18 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                         "parse_rate": metrics.get("parse_rate"),
                         "meaningful_program_rate": metrics.get(
                             "meaningful_program_rate"
+                        ),
+                        "meaningful_program_v1_rate": metrics.get(
+                            "meaningful_program_v1_rate"
+                        ),
+                        "binding_aware_meaningful_v2_rate_strict": metrics.get(
+                            "binding_aware_meaningful_v2_rate_strict"
+                        ),
+                        "binding_aware_meaningful_v2_rate_coverage_conditioned": metrics.get(
+                            "binding_aware_meaningful_v2_rate_coverage_conditioned"
+                        ),
+                        "binding_aware_meaningful_v2_coverage": metrics.get(
+                            "binding_aware_meaningful_v2_coverage"
                         ),
                         "placeholder_fidelity": metrics.get("placeholder_fidelity"),
                         "structural_similarity": metrics.get("structural_similarity"),

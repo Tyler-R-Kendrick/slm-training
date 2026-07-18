@@ -1,0 +1,256 @@
+{
+  "metric_family": {
+    "historical": "meaningful_program_v1",
+    "candidate": "binding_aware_meaningful_v2",
+    "active_primary": "meaningful_program_v1",
+    "v2_threshold": null
+  },
+  "status": "complete",
+  "blockers": [],
+  "minimum_frontier_sets": 0,
+  "replayable_frontier_sets": 0,
+  "unique_checkpoint_sha256s": [],
+  "frontier_comparison": {
+    "v1_vs_v2": {
+      "n": 0,
+      "tp": 0,
+      "tn": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "accuracy": null,
+      "cohen_kappa": null
+    },
+    "reason_prevalence": {},
+    "label_comparisons": {
+      "independent_judge": {
+        "status": "UNKNOWN",
+        "n": 0,
+        "tp": 0,
+        "tn": 0,
+        "fp": 0,
+        "fn": 0,
+        "precision": null,
+        "recall": null,
+        "accuracy": null,
+        "kappa": null
+      },
+      "human": {
+        "status": "UNKNOWN",
+        "n": 0,
+        "tp": 0,
+        "tn": 0,
+        "fp": 0,
+        "fn": 0,
+        "precision": null,
+        "recall": null,
+        "accuracy": null,
+        "kappa": null
+      },
+      "agentv": {
+        "status": "UNKNOWN",
+        "n": 0,
+        "tp": 0,
+        "tn": 0,
+        "fp": 0,
+        "fn": 0,
+        "precision": null,
+        "recall": null,
+        "accuracy": null,
+        "kappa": null
+      },
+      "efs0_04": {
+        "status": "UNKNOWN",
+        "n": 0,
+        "tp": 0,
+        "tn": 0,
+        "fp": 0,
+        "fn": 0,
+        "precision": null,
+        "recall": null,
+        "accuracy": null,
+        "kappa": null
+      }
+    }
+  },
+  "unavailable_named_sets": [],
+  "sets": [
+    {
+      "label": "deterministic_gaming_corpus",
+      "source": "src/slm_training/resources/evals/meaningful_v2_gaming.jsonl",
+      "replayable": true,
+      "n": 16,
+      "failures": [],
+      "v2": {
+        "metric_name": "binding_aware_meaningful_v2",
+        "metric_version": "2.0.0",
+        "metric_implementation_hash": "a5604e640b0c9abd0631ed2d697327921466581f1e1eacad1cebe430f39d03ae",
+        "n": 16,
+        "covered_n": 16,
+        "strict_rate": 0.3125,
+        "coverage_conditioned_rate": 0.3125,
+        "coverage": 1.0,
+        "reason_prevalence": {
+          "duplicate_subtree_spam": 1,
+          "no_nontrivial_content": 1,
+          "placeholder_semantic_role_mismatch": 3,
+          "placeholder_spam": 1,
+          "prompt_component_missing": 2,
+          "reference_graph_invalid": 2,
+          "required_component_missing": 2,
+          "required_placeholder_missing": 4,
+          "schema_value_role_mismatch:Button.label": 1,
+          "schema_value_role_mismatch:Input.name": 1,
+          "unexpected_placeholder_identity": 1,
+          "unreachable_binding": 2,
+          "unresolved_binding": 1
+        }
+      }
+    }
+  ],
+  "durable_replay_bundle": null,
+  "frontier_aggregate": {
+    "v1_v2": {
+      "n": 0,
+      "tp": 0,
+      "tn": 0,
+      "fp": 0,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "accuracy": null,
+      "cohen_kappa": null
+    },
+    "external_labels": {
+      "independent_judge": {
+        "v1_vs_label": {
+          "status": "UNKNOWN",
+          "n": 0,
+          "tp": 0,
+          "tn": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": null,
+          "recall": null,
+          "accuracy": null,
+          "kappa": null
+        },
+        "v2_vs_label": {
+          "status": "UNKNOWN",
+          "n": 0,
+          "tp": 0,
+          "tn": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": null,
+          "recall": null,
+          "accuracy": null,
+          "kappa": null
+        }
+      },
+      "human": {
+        "v1_vs_label": {
+          "status": "UNKNOWN",
+          "n": 0,
+          "tp": 0,
+          "tn": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": null,
+          "recall": null,
+          "accuracy": null,
+          "kappa": null
+        },
+        "v2_vs_label": {
+          "status": "UNKNOWN",
+          "n": 0,
+          "tp": 0,
+          "tn": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": null,
+          "recall": null,
+          "accuracy": null,
+          "kappa": null
+        }
+      },
+      "agentv": {
+        "v1_vs_label": {
+          "status": "UNKNOWN",
+          "n": 0,
+          "tp": 0,
+          "tn": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": null,
+          "recall": null,
+          "accuracy": null,
+          "kappa": null
+        },
+        "v2_vs_label": {
+          "status": "UNKNOWN",
+          "n": 0,
+          "tp": 0,
+          "tn": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": null,
+          "recall": null,
+          "accuracy": null,
+          "kappa": null
+        }
+      },
+      "efs0_04": {
+        "v1_vs_label": {
+          "status": "UNKNOWN",
+          "n": 0,
+          "tp": 0,
+          "tn": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": null,
+          "recall": null,
+          "accuracy": null,
+          "kappa": null
+        },
+        "v2_vs_label": {
+          "status": "UNKNOWN",
+          "n": 0,
+          "tp": 0,
+          "tn": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": null,
+          "recall": null,
+          "accuracy": null,
+          "kappa": null
+        }
+      }
+    }
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "spec": "outputs/runs/slm105-meaningful-v2-gaming/agentv/binding-aware-meaningful-v2-audit.eval.jsonl",
+    "summary": {
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "executionErrors": 0,
+      "durationMs": 24,
+      "meanScore": 1
+    },
+    "artifacts": {
+      "runDir": "outputs/runs/slm105-meaningful-v2-gaming/agentv/binding-aware-meaningful-v2-audit",
+      "benchmarkPath": "outputs/runs/slm105-meaningful-v2-gaming/agentv/binding-aware-meaningful-v2-audit/benchmark.json",
+      "indexPath": "outputs/runs/slm105-meaningful-v2-gaming/agentv/binding-aware-meaningful-v2-audit/index.jsonl",
+      "timingPath": "outputs/runs/slm105-meaningful-v2-gaming/agentv/binding-aware-meaningful-v2-audit/timing.json"
+    }
+  },
+  "caveats": [
+    "UNKNOWN is never positive.",
+    "EFS0-04 labels are unavailable until follow-on SLM-106 and remain UNKNOWN.",
+    "No v1 threshold is copied to v2 before calibration."
+  ]
+}

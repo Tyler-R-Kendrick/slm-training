@@ -2214,6 +2214,18 @@ def _summarize_board(board: dict[str, Any]) -> dict[str, Any]:
             "parse_rate": m.get("parse_rate"),
             "syntax_parse_rate": m.get("syntax_parse_rate"),
             "meaningful_program_rate": m.get("meaningful_program_rate"),
+            "meaningful_program_v1_rate": m.get("meaningful_program_v1_rate"),
+            "binding_aware_meaningful_v2_rate_strict": m.get(
+                "binding_aware_meaningful_v2_rate_strict"
+            ),
+            "binding_aware_meaningful_v2_rate_coverage_conditioned": m.get(
+                "binding_aware_meaningful_v2_rate_coverage_conditioned"
+            ),
+            "binding_aware_meaningful_v2_coverage": m.get(
+                "binding_aware_meaningful_v2_coverage"
+            ),
+            "meaningful_metric_primary": m.get("meaningful_metric_primary"),
+            "meaningful_metric_versions": m.get("meaningful_metric_versions"),
             "placeholder_fidelity": m.get("placeholder_fidelity"),
             "structural_similarity": m.get("structural_similarity"),
             "reward_score": m.get("reward_score"),

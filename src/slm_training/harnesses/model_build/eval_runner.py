@@ -374,6 +374,10 @@ def _is_meaningful_program(
     return True, None, serialized
 
 
+# Public version lock: historical scoreboards and ship thresholds remain v1.
+meaningful_program_v1 = _is_meaningful_program
+
+
 def evaluate(
     config: ModelBuildConfig,
     model=None,
@@ -440,6 +444,7 @@ def evaluate(
     gold_design_scores: list[float] = []
     latencies: list[float] = []
     details: list[dict] = []
+    semantic_meaning_reports_v2: list[Any] = []
     task_cases: list[dict] = []
     topology_evidence: list[dict[str, Any]] = []
     topology_target_evidence: list[dict[str, Any]] = []
@@ -472,9 +477,21 @@ def evaluate(
         budget = min(600, int(getattr(config, "design_md_budget", 1800) or 1800))
         return compact_schema_snippet(budget=budget)
 
-    def _requests_for(chunk: list[ExampleRecord]) -> list[GenerationRequest]:
+    def _request_for(record: ExampleRecord) -> GenerationRequest:
         schema = _eval_schema()
-        return [GenerationRequest.from_record(r, schema=schema) for r in chunk]
+        return GenerationRequest.from_record(record, schema=schema)
+
+    def _effective_request_for(record: ExampleRecord) -> GenerationRequest:
+        request = _request_for(record)
+        data = request.to_dict()
+        if not getattr(config, "design_md_in_context", False):
+            data.pop("design_md", None)
+        if not getattr(config, "slot_contract_in_context", False):
+            data["slot_contract"] = []
+        return GenerationRequest.from_dict(data)
+
+    def _requests_for(chunk: list[ExampleRecord]) -> list[GenerationRequest]:
+        return [_request_for(record) for record in chunk]
 
     def _generate_chunk_unbounded(
         chunk: list[ExampleRecord],
@@ -581,6 +598,12 @@ def evaluate(
             )
             return
         ok, error, serialized = _is_meaningful_program(pred, gold=record)
+        from slm_training.evals.meaningful_program import binding_aware_meaningful_v2
+
+        semantic_report_v2 = binding_aware_meaningful_v2(
+            pred, record=record, request=_effective_request_for(record)
+        )
+        semantic_meaning_reports_v2.append(semantic_report_v2)
         scored_pred = serialized or pred
         if not ok:
             from slm_training.harnesses.model_build.decode_feasibility import (
@@ -641,6 +664,9 @@ def evaluate(
             {
                 "id": record.id,
                 "parse_ok": ok,
+                "meaningful_program_v1": ok,
+                "binding_aware_meaningful_v2": semantic_report_v2.verdict,
+                "semantic_meaning_report_v2": semantic_report_v2.to_dict(),
                 "syntax_parse_valid": syntax_ok,
                 "raw_syntax_valid": _raw_syntax_valid(scored_pred),
                 "error": error,
@@ -657,8 +683,16 @@ def evaluate(
                 "gold_design_lint_score": gold_dscore,
                 "design_lint_score": gold_dscore,
                 "latency_ms": round(latency_ms, 2),
-                "prediction": pred[:500],
-                "serialized": (serialized or "")[:500] if serialized else None,
+                # Full text + digest make every new metric report replayable.
+                "prediction": pred,
+                "prediction_sha256": hashlib.sha256(pred.encode("utf-8")).hexdigest(),
+                "generation_request": _effective_request_for(record).to_dict(),
+                "source_record_sha256": hashlib.sha256(
+                    json.dumps(
+                        record.to_dict(), sort_keys=True, separators=(",", ":")
+                    ).encode("utf-8")
+                ).hexdigest(),
+                "serialized": serialized,
                 "topology_evidence": evidence or None,
             }
         )
@@ -762,6 +796,24 @@ def evaluate(
         "decode_canvas_cap": canvas_cap,
         "details": details,
     }
+    from slm_training.evals.meaningful_program import aggregate_meaning_reports_v2
+
+    meaning_v2 = aggregate_meaning_reports_v2(semantic_meaning_reports_v2)
+    metrics.update(
+        {
+            "meaningful_program_v1_rate": metrics["meaningful_program_rate"],
+            "binding_aware_meaningful_v2_rate_strict": meaning_v2["strict_rate"],
+            "binding_aware_meaningful_v2_rate_coverage_conditioned": meaning_v2[
+                "coverage_conditioned_rate"
+            ],
+            "binding_aware_meaningful_v2_coverage": meaning_v2["coverage"],
+            "meaningful_metric_primary": "meaningful_program_v1",
+            "meaningful_metric_versions": {
+                "meaningful_program_v1": "1.0.0",
+                "binding_aware_meaningful_v2": meaning_v2,
+            },
+        }
+    )
     from slm_training.evals.task_scoreboard import build_task_scoreboard
 
     metrics["task_scoreboard"] = build_task_scoreboard(task_cases)
