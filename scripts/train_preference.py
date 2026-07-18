@@ -131,6 +131,28 @@ def main(argv: list[str] | None = None) -> int:
     local.add_argument("--balanced", action="store_true")
     local.add_argument("--seed", type=int, default=0)
     local.add_argument("--device", default="cpu")
+    local.add_argument(
+        "--require-admission",
+        action="store_true",
+        default=False,
+        help="Require V2 objective-support admission before training.",
+    )
+    local.add_argument(
+        "--no-require-admission",
+        action="store_true",
+        default=False,
+        help="Do not require V2 objective-support admission (default).",
+    )
+    local.add_argument(
+        "--materializer",
+        default="pareto_v1",
+        help="V2 objective materializer to materialize and admit (default: pareto_v1).",
+    )
+    local.add_argument(
+        "--materializer-config-hash",
+        default=None,
+        help="Optional expected materializer config hash; fails closed if mismatched.",
+    )
 
     args = parser.parse_args(argv)
 
@@ -201,6 +223,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "train-local":
         from slm_training.harnesses.preference.local_train import train_local_from_paths
 
+        require_admission = bool(args.require_admission) and not bool(args.no_require_admission)
         summary = train_local_from_paths(
             args.checkpoint,
             args.events,
@@ -217,6 +240,9 @@ def main(argv: list[str] | None = None) -> int:
             target_grace=args.target_grace,
             balanced=args.balanced,
             seed=args.seed,
+            require_admission=require_admission,
+            materializer_id=args.materializer,
+            materializer_config_hash=args.materializer_config_hash,
         )
         print(json.dumps(summary, indent=2))
         return 0
