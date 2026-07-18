@@ -7,10 +7,13 @@ import math
 import random
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Iterable, Mapping, Sequence
 
 from slm_training.lineage.records import DataSnapshot, content_sha
 from slm_training.lineage.store import utc_now
+
+if TYPE_CHECKING:
+    from slm_training.lineage.store import LineageStore
 
 
 @dataclass(frozen=True)
@@ -172,6 +175,69 @@ def snapshot_directory(
         created_at=utc_now(),
         metadata={**dict(metadata or {}), "files": inventory},
     )
+
+
+def register_dataset_snapshot(
+    store: "LineageStore",
+    *,
+    dataset_dir: Path,
+    kind: str,
+    snapshot_id: str | None = None,
+    metadata: Mapping[str, Any] | None = None,
+) -> tuple[DataSnapshot, Path, bool]:
+    """Register a built dataset directory as a lineage DataSnapshot.
+
+    Keyed on the dataset's stable content fingerprint (manifest
+    ``content_fingerprint``; records hash fallback), NOT on file bytes, so
+    re-running an identical build reuses the existing snapshot instead of
+    piling up timestamp-only variants. Returns (snapshot, path, created).
+    """
+    from slm_training.data.store import dataset_fingerprint
+
+    dataset_dir = Path(dataset_dir)
+    manifest_path = dataset_dir / "manifest.json"
+    manifest: dict[str, Any] = {}
+    if manifest_path.is_file():
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    fingerprint = dataset_fingerprint(dataset_dir)
+    if not fingerprint:
+        raise ValueError(f"dataset has no content fingerprint: {dataset_dir}")
+    snapshot_id = snapshot_id or f"{kind}-{manifest.get('version') or dataset_dir.name}"
+
+    snapshot_root = store.root / "data_snapshots"
+    if snapshot_root.is_dir():
+        for existing in sorted(snapshot_root.glob(f"{snapshot_id}-*.json")):
+            payload = json.loads(existing.read_text(encoding="utf-8"))
+            if payload.get("records_sha") == fingerprint:
+                payload["sources"] = tuple(payload.get("sources") or ())
+                return DataSnapshot(**payload), existing, False
+
+    record_count = int(manifest.get("record_count") or 0)
+    if not record_count:
+        record_count = sum(
+            _jsonl_rows(path) for path in sorted(dataset_dir.rglob("records.jsonl"))
+        )
+    target_token_count = sum(
+        _jsonl_target_tokens(path)
+        for path in sorted(dataset_dir.rglob("records.jsonl"))
+    )
+    snapshot = DataSnapshot(
+        snapshot_id=snapshot_id,
+        sources=(str(dataset_dir),),
+        records_sha=fingerprint,
+        record_count=record_count,
+        target_token_count=int(target_token_count),
+        created_at=utc_now(),
+        metadata={
+            "kind": kind,
+            "manifest": str(manifest_path) if manifest_path.is_file() else None,
+            "profile": manifest.get("profile"),
+            "trace_id": manifest.get("trace_id"),
+            **dict(metadata or {}),
+        },
+    )
+    path = store.write_snapshot(snapshot)
+    return snapshot, path, True
 
 
 def _jsonl_rows(path: Path) -> int:

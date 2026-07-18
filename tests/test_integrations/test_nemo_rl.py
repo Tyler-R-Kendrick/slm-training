@@ -94,6 +94,8 @@ def test_hf_job_recipe_is_pinned_and_secret_safe(approved_rl_report) -> None:
     assert command[command.index("--secrets") + 1] == "HF_TOKEN"
     assert NEMO_RL_IMAGE in command
     assert f"hf://buckets/TKendrick/OpenUI:{BUCKET_MOUNT}" in command
+    with pytest.raises(ValueError, match="timeout must be 3m"):
+        build_hf_jobs_command(entrypoint=script, timeout="4m")
     with pytest.raises(ValueError, match="exact 40-character"):
         build_entrypoint_script(
             run_id="nemo-smoke",
@@ -151,6 +153,7 @@ def test_lineage_dry_run_and_reconcile(
     plan = json.loads(capsys.readouterr().out)
     assert plan["kind"] == "hardware_smoke"
     assert plan["nemo_rl_git_sha"] == NEMO_RL_GIT_SHA
+    assert plan["command"][plan["command"].index("--timeout") + 1] == "3m"
 
     status_path = tmp_path / "status.json"
     status_path.write_text(json.dumps({"status": {"stage": "COMPLETED"}}))

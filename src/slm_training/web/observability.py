@@ -21,7 +21,7 @@ import re
 import tempfile
 from functools import cached_property
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from slm_training.data.store import DataStore
 from slm_training.harnesses.model_build.ship_gates import (
@@ -286,6 +286,44 @@ def _atomic_json(path: Path, payload: dict[str, Any]) -> None:
         tmp.unlink(missing_ok=True)
 
 
+def _quality_summary(report: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Compact quality_report.json digest for tiles (None when absent)."""
+    if not isinstance(report, dict):
+        return None
+    counts = report.get("counts") or {}
+    fitness = report.get("constraint_fitness") or {}
+    garbage = report.get("garbage") or {}
+    redundancy = report.get("redundancy") or {}
+    dropped = redundancy.get("dropped") or {}
+    decontamination = report.get("decontamination") or {}
+    admitted = counts.get("admitted")
+    rejected_total = counts.get("rejected_total")
+    candidates = counts.get("candidates")
+    return {
+        "schema_version": report.get("schema_version"),
+        "profile": report.get("profile"),
+        "admitted": admitted,
+        "rejected_total": rejected_total,
+        "rejected_by_stage": counts.get("by_stage") or {},
+        "admission_rate": (
+            round(admitted / candidates, 4)
+            if isinstance(admitted, int) and isinstance(candidates, int) and candidates
+            else None
+        ),
+        "parse_rate": fitness.get("parse_rate"),
+        "judge_pass_rate": fitness.get("judge_pass_rate"),
+        "placeholder_contract_violations": fitness.get(
+            "placeholder_contract_violations"
+        ),
+        "mean_quality_score": garbage.get("mean_quality_score"),
+        "redundancy_dropped": sum(
+            value for value in dropped.values() if isinstance(value, int)
+        ),
+        "decontam_flagged": decontamination.get("ngram_flagged", 0),
+        "engines": report.get("engines") or {},
+    }
+
+
 class Readers:
     """Facade over the repo's evidence tree. ``root`` is the repo root."""
 
@@ -306,6 +344,29 @@ class Readers:
             self.data_store.local_root / "annotation" / "comparisons.jsonl"
         )
         self.persist_insights = persist_insights
+        # Stat-fingerprint memo: the dashboard polls /api/overview every 15s per
+        # client and each request consults the same committed evidence files
+        # several times. Values are recomputed whenever any watched file's
+        # (mtime_ns, size) changes, so reads stay exactly as fresh as before.
+        self._stat_cache: dict[str, tuple[tuple[Any, ...], Any]] = {}
+
+    def _fresh(
+        self, name: str, watched: list[Path], compute: Callable[[], Any]
+    ) -> Any:
+        key: list[tuple[str, int | None, int | None]] = []
+        for path in watched:
+            try:
+                stat = path.stat()
+                key.append((str(path), stat.st_mtime_ns, stat.st_size))
+            except OSError:
+                key.append((str(path), None, None))
+        fingerprint = tuple(key)
+        hit = self._stat_cache.get(name)
+        if hit is not None and hit[0] == fingerprint:
+            return hit[1]
+        value = compute()
+        self._stat_cache[name] = (fingerprint, value)
+        return value
 
     # ---- scoreboards (experiment / perf matrices) -----------------------------
 
@@ -340,6 +401,14 @@ class Readers:
                 evaluation.get("failed_gates"), int
             ):
                 gate_pass = evaluation["failed_gates"] == 0
+            reproducibility = payload.get("reproducibility")
+            reproducibility = (
+                reproducibility if isinstance(reproducibility, dict) else {}
+            )
+            claim_class = reproducibility.get("classification")
+            raw_gate_pass = gate_pass
+            if claim_class == "branch_only_diagnostic":
+                gate_pass = False
             agentv = payload.get("agentv") or evaluation.get("agentv")
             agentv = agentv if isinstance(agentv, dict) else {}
             scoreboard_path = payload.get("scoreboard") or evaluation.get("scoreboard")
@@ -358,6 +427,8 @@ class Readers:
                     or path.stem,
                     "date": payload.get("date_utc") or payload.get("date"),
                     "pass": gate_pass,
+                    "raw_gate_pass": raw_gate_pass,
+                    "claim_class": claim_class,
                     "suites": suites,
                     "agentv": agentv,
                     "trace_id": train_result.get("trace_id") or train.get("trace_id"),
@@ -377,6 +448,18 @@ class Readers:
         return sorted(results, key=order, reverse=True)
 
     def scoreboard(self, kind: str) -> dict[str, Any]:
+        if kind == RESEARCH_SCOREBOARD_KIND:
+            watched = sorted(self.docs_design.glob("iter-*.json"))
+        else:
+            filename = SCOREBOARD_FILES.get(kind)
+            if filename is None:
+                return {"kind": kind, "provenance": "unknown", "results": [], "meta": {}}
+            watched = [self.docs_design / filename, self.dashboard_snapshot]
+        return self._fresh(
+            f"scoreboard:{kind}", watched, lambda: self._scoreboard_uncached(kind)
+        )
+
+    def _scoreboard_uncached(self, kind: str) -> dict[str, Any]:
         if kind == RESEARCH_SCOREBOARD_KIND:
             results = self._research_results()
             return {
@@ -508,21 +591,23 @@ class Readers:
         return None
 
     def _run_dir(self, run_id: str, scoreboard: dict[str, Any] | None = None) -> Path:
-        candidates: list[Path] = []
         declared = (scoreboard or {}).get("run_dir")
         if isinstance(declared, str):
-            candidates.append(self.root / declared)
-        candidates.extend(
-            [
-                self.outputs / "runs" / run_id,
-                *self.outputs.glob(f"runs/*/{run_id}"),
-                *self.outputs.glob(f"autoresearch/*/runs/{run_id}"),
-            ]
-        )
-        for candidate in candidates:
+            candidate = self.root / declared
             if candidate.is_dir():
                 return candidate
-        return self.outputs / "runs" / run_id
+        # runs() probes this per scoreboard row; try the canonical location
+        # with one stat before falling back to the recursive globs.
+        direct = self.outputs / "runs" / run_id
+        if direct.is_dir():
+            return direct
+        for candidate in (
+            *self.outputs.glob(f"runs/*/{run_id}"),
+            *self.outputs.glob(f"autoresearch/*/runs/{run_id}"),
+        ):
+            if candidate.is_dir():
+                return candidate
+        return direct
 
     def run(self, run_id: str) -> dict[str, Any]:
         if not _RUN_ID_RE.fullmatch(run_id):
@@ -574,6 +659,7 @@ class Readers:
             "manifest": lineage_manifest,
             "scoreboard": scoreboard,
             "insights": insights,
+            "training_data": self.run_training_data(run_id),
             **artifacts,
         }
 
@@ -864,14 +950,12 @@ class Readers:
             ),
         }
 
-    def checkpoints(self) -> dict[str, Any]:
+    def checkpoints(
+        self, *, deployment: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         roster: list[dict[str, Any]] = []
-        card_text = ""
-        try:
-            card_text = self.model_card.read_text(encoding="utf-8")
-        except OSError:
-            card_text = ""
-        for row in _parse_markdown_table(card_text, "## Current checkpoint roster"):
+        card_roster, _ = self._model_card_rows()
+        for row in card_roster:
             roster.append(
                 {
                     "role": row.get("role", ""),
@@ -915,7 +999,9 @@ class Readers:
                 )
         return {
             "checkpoints": [self._with_resource_metrics(row) for row in roster],
-            "deployment": self.deployment_state(),
+            "deployment": deployment
+            if deployment is not None
+            else self.deployment_state(),
         }
 
     def gates_for_run(self, run_id: str) -> dict[str, Any]:
@@ -994,6 +1080,9 @@ class Readers:
             or manifest.get("source_families")
             or {},
             "record_count": stats.get("record_count"),
+            "profile": manifest.get("profile") or stats.get("profile"),
+            "quality": _quality_summary(_read_json(vdir / "quality_report.json")),
+            "used_by_runs": self._runs_using_fingerprint(ref.fingerprint),
         }
 
     def train_records(
@@ -1039,6 +1128,151 @@ class Readers:
             "limit": limit,
             "sources": sources,
             "records": rows[start : start + limit],
+        }
+
+    def train_quality(self, version: str) -> dict[str, Any]:
+        """Serve a dataset version's full quality_report.json."""
+        if not re.fullmatch(r"[A-Za-z0-9._,-]{1,64}", version):
+            return {"version": version, "provenance": "missing", "report": None}
+        try:
+            ref = self.data_store.resolve("train", version)
+        except (FileNotFoundError, ValueError):
+            return {"version": version, "provenance": "missing", "report": None}
+        report = _read_json(ref.path / "quality_report.json")
+        return {
+            "version": version,
+            "provenance": "live" if ref.storage in {"local", "legacy"} else "committed",
+            "storage": ref.storage,
+            "report": report,
+            "summary": _quality_summary(report),
+            "feedback": _read_json(ref.path / "synthesis_feedback.json"),
+        }
+
+    def train_rejected(
+        self,
+        version: str,
+        *,
+        stage: str | None = None,
+        offset: int = 0,
+        limit: int = 50,
+    ) -> dict[str, Any]:
+        """Page the rejected-record ledger written beside records.jsonl."""
+        if not re.fullmatch(r"[A-Za-z0-9._,-]{1,64}", version):
+            return {"version": version, "count": 0, "offset": 0, "rejected": []}
+        try:
+            path = self.data_store.resolve("train", version).path / "rejected.jsonl"
+        except (FileNotFoundError, ValueError):
+            path = Path("/__missing__")
+        rows = _read_jsonl(path, limit=None)
+        stages = sorted({str(r.get("stage") or "unknown") for r in rows})
+        if stage:
+            rows = [r for r in rows if str(r.get("stage") or "unknown") == stage]
+        start = max(0, offset)
+        return {
+            "version": version,
+            "count": len(rows),
+            "offset": start,
+            "limit": limit,
+            "stages": stages,
+            "rejected": rows[start : start + limit],
+        }
+
+    def _find_data_snapshot(self, fingerprint: str) -> dict[str, Any] | None:
+        """Locate the lineage DataSnapshot registered for a content fingerprint."""
+        snapshot_root = self.lineage.root / "data_snapshots"
+        if not snapshot_root.is_dir():
+            return None
+        for path in sorted(snapshot_root.glob("*.json")):
+            payload = _read_json(path)
+            if not isinstance(payload, dict):
+                continue
+            if payload.get("records_sha") == fingerprint:
+                return {
+                    "snapshot_id": payload.get("snapshot_id"),
+                    "records_sha": payload.get("records_sha"),
+                    "record_count": payload.get("record_count"),
+                    "created_at": payload.get("created_at"),
+                    "path": path.relative_to(self.root).as_posix()
+                    if path.is_relative_to(self.root)
+                    else path.as_posix(),
+                }
+        return None
+
+    def _runs_using_fingerprint(self, fingerprint: str | None) -> list[str]:
+        """Reverse join: run ids whose train_summary pinned this dataset."""
+        if not fingerprint:
+            return []
+        run_ids: set[str] = set()
+        for summary_path in (
+            *self.outputs.glob("runs/*/train_summary.json"),
+            *self.outputs.glob("autoresearch/*/runs/*/train_summary.json"),
+        ):
+            summary = _read_json(summary_path)
+            if not isinstance(summary, dict):
+                continue
+            if summary.get("data_manifest_sha") == fingerprint:
+                run_ids.add(str(summary.get("run_id") or summary_path.parent.name))
+        return sorted(run_ids)
+
+    def run_training_data(self, run_id: str) -> dict[str, Any]:
+        """Join a run to the exact training dataset bytes it consumed."""
+        if not _RUN_ID_RE.fullmatch(run_id):
+            return {
+                "run_id": run_id,
+                "provenance": "missing",
+                "train_dir": None,
+                "data_manifest_sha": None,
+                "dataset": None,
+                "lineage_snapshot": None,
+            }
+        summary = (
+            _read_json(
+                self._run_dir(run_id, self._scoreboard_row(run_id))
+                / "train_summary.json"
+            )
+            or {}
+        )
+        train_dir_value = str(summary.get("train_dir") or "")
+        fingerprint = summary.get("data_manifest_sha")
+        version = Path(train_dir_value).name if train_dir_value else None
+        dataset: dict[str, Any] | None = None
+        if version:
+            try:
+                ref = self.data_store.resolve("train", version)
+            except (FileNotFoundError, ValueError):
+                ref = None
+            if ref is not None:
+                manifest = _read_json(ref.path / "manifest.json") or {}
+                stats = _read_json(ref.path / "stats.json") or {}
+                report = _read_json(ref.path / "quality_report.json")
+                dataset = {
+                    "version": ref.dataset_id,
+                    "storage": ref.storage,
+                    "path": ref.path.relative_to(self.root).as_posix()
+                    if ref.path.is_relative_to(self.root)
+                    else ref.path.as_posix(),
+                    "fingerprint": ref.fingerprint,
+                    "fingerprint_matches_run": bool(
+                        fingerprint and ref.fingerprint == fingerprint
+                    ),
+                    "record_count": stats.get("record_count")
+                    or manifest.get("record_count"),
+                    "profile": manifest.get("profile") or stats.get("profile"),
+                    "quality": _quality_summary(report),
+                }
+        return {
+            "run_id": run_id,
+            "provenance": (
+                "live"
+                if summary
+                else ("committed" if dataset is not None else "missing")
+            ),
+            "train_dir": train_dir_value or None,
+            "data_manifest_sha": fingerprint,
+            "dataset": dataset,
+            "lineage_snapshot": (
+                self._find_data_snapshot(str(fingerprint)) if fingerprint else None
+            ),
         }
 
     def preference_data(self) -> dict[str, Any]:
@@ -1215,6 +1449,13 @@ class Readers:
     # ---- reference model + persisted performance insights -------------------
 
     def _model_card_rows(self) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+        return self._fresh(
+            "model_card_rows", [self.model_card], self._model_card_rows_uncached
+        )
+
+    def _model_card_rows_uncached(
+        self,
+    ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
         try:
             text = self.model_card.read_text(encoding="utf-8")
         except OSError:
@@ -1594,7 +1835,7 @@ class Readers:
 
     # ---- system + overview aggregate -----------------------------------------
 
-    def system(self) -> dict[str, Any]:
+    def system(self, *, deployment: dict[str, Any] | None = None) -> dict[str, Any]:
         try:
             # An existing-but-empty outputs/ is still a cold start.
             outputs_present = self.outputs.exists() and any(self.outputs.iterdir())
@@ -1602,7 +1843,9 @@ class Readers:
             outputs_present = False
         return {
             "checkpoint_bucket": "hf://buckets/TKendrick/OpenUI",
-            "deployment": self.deployment_state(),
+            "deployment": deployment
+            if deployment is not None
+            else self.deployment_state(),
             "outputs_present": outputs_present,
         }
 
@@ -1611,15 +1854,17 @@ class Readers:
         total = sum(b["count"] for b in boards)
         passed = sum(b["passed"] for b in boards)
         runs = self.runs()
+        # Deployment state is embedded by two sub-views; read it once per request.
+        deployment = self.deployment_state()
         return {
             "scoreboards": boards,
             "experiment_totals": {"count": total, "passed": passed},
             "runs": runs["runs"][:12],
             "runs_provenance": runs["provenance"],
-            "checkpoints": self.checkpoints(),
+            "checkpoints": self.checkpoints(deployment=deployment),
             "data": self.train_data(),
             "test_data": self.test_data(),
             "annotations": self.annotations_summary(),
-            "system": self.system(),
+            "system": self.system(deployment=deployment),
             "performance": self.performance_insights(),
         }

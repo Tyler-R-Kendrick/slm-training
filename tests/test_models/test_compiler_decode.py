@@ -126,6 +126,98 @@ def test_choice_component_plan_trains_without_surface_compiler() -> None:
     assert model.last_training_metrics["component_plan_root_accuracy"] >= 0.0
 
 
+def test_slot_component_head_trains_on_visible_slot_owners() -> None:
+    record = ExampleRecord(
+        id="slot-components",
+        prompt="email field and submit action",
+        openui=(
+            'root = Stack([field, submit])\n'
+            'field = Input("email", ":form.email")\n'
+            'submit = Button(":form.submit")'
+        ),
+        placeholders=[":form.email", ":form.submit"],
+        split="train",
+        source="fixture",
+    )
+    model = TwoTowerModel.from_records(
+        [record],
+        config=TwoTowerConfig(
+            context_backend="scratch",
+            output_tokenizer="choice",
+            d_model=32,
+            n_heads=2,
+            context_layers=1,
+            denoiser_layers=1,
+            max_prompt_len=32,
+            max_target_len=64,
+            slot_component_loss_weight=1.0,
+            slot_component_decode_weight=2.0,
+            seed=0,
+        ),
+        device="cpu",
+    )
+
+    loss = model.training_loss([record])
+    loss.backward()
+
+    assert torch.isfinite(loss)
+    assert model.slot_component_head is not None
+    assert model.slot_component_head.weight.grad is not None
+    assert model.slot_component_head.weight.grad.abs().sum() > 0
+    assert model.last_training_metrics["slot_component_rows"] == 2
+
+
+def test_slot_component_bias_uses_next_unfilled_visible_slot() -> None:
+    from types import MethodType
+
+    model = _model(slot_component_decode_weight=2.0)
+    assert model.slot_component_head is not None
+    tokenizer = model.tokenizer
+    component_ids = model._component_inventory_token_ids()
+    component_index = {
+        tokenizer.id_to_token[token_id]: index
+        for index, token_id in enumerate(component_ids)
+    }
+
+    def logits(self, slots, context, pad_mask, context_rows, next_slots=None):
+        rows = torch.zeros(
+            (len(slots), len(component_ids)),
+            dtype=context.dtype,
+            device=context.device,
+        )
+        for index, slot in enumerate(slots):
+            target = "Input" if slot == ":form.email" else "Button"
+            rows[index, component_index[target]] = 3.0
+        return rows
+
+    model._slot_component_logits = MethodType(logits, model)
+    ctx, ctx_pad = model._encode_context(["email field and submit action"])
+    input_id = tokenizer.token_to_id["Input"]
+    button_id = tokenizer.token_to_id["Button"]
+    candidates = (input_id, button_id)
+    kinds = ("component_bound", "component_bound")
+
+    email_bias = model._slot_component_bias(
+        ctx,
+        ctx_pad,
+        [tokenizer.bos_id],
+        candidates,
+        kinds,
+        [":form.email", ":form.submit"],
+    )
+    submit_bias = model._slot_component_bias(
+        ctx,
+        ctx_pad,
+        [tokenizer.bos_id, tokenizer.sym_id(0)],
+        candidates,
+        kinds,
+        [":form.email", ":form.submit"],
+    )
+
+    assert email_bias is not None and email_bias[0] > email_bias[1]
+    assert submit_bias is not None and submit_bias[1] > submit_bias[0]
+
+
 def test_projection_with_features_accepts_sliced_hidden() -> None:
     """Compiler/tree scorers project [D] and [N,D] slices; with one request's
     runtime symbol features active the projection must match the [B,T,D]

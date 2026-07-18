@@ -1,0 +1,365 @@
+{
+  "arms": [
+    {
+      "active_parameters": 4640,
+      "arm_id": "implicit_s0",
+      "capacity": null,
+      "elapsed_seconds": 1.179137441009516,
+      "forced_decisions": 0,
+      "leakage": false,
+      "mode": "implicit",
+      "notes": [
+        "trainable_parameters=4704, active_parameters=4640",
+        "oracle_accuracy=1.0000, random_init_accuracy=1.0000"
+      ],
+      "oracle_accuracy": 1.0,
+      "random_init_accuracy": 1.0,
+      "trainable_parameters": 4704,
+      "unseen_state_accuracy": 1.0
+    },
+    {
+      "active_parameters": 4624,
+      "arm_id": "explicit_exact_s0",
+      "capacity": null,
+      "elapsed_seconds": 0.5427647379983682,
+      "forced_decisions": 0,
+      "leakage": false,
+      "mode": "explicit_exact",
+      "notes": [
+        "trainable_parameters=4704, active_parameters=4624",
+        "oracle_accuracy=1.0000, random_init_accuracy=1.0000"
+      ],
+      "oracle_accuracy": 1.0,
+      "random_init_accuracy": 1.0,
+      "trainable_parameters": 4704,
+      "unseen_state_accuracy": 1.0
+    },
+    {
+      "active_parameters": 4704,
+      "arm_id": "discrete_code_s0",
+      "capacity": 16,
+      "elapsed_seconds": 0.6072753029875457,
+      "forced_decisions": 0,
+      "leakage": false,
+      "mode": "discrete_code",
+      "notes": [
+        "trainable_parameters=4704, active_parameters=4704",
+        "oracle_accuracy=1.0000, random_init_accuracy=1.0000",
+        "discrete_code capacity=16"
+      ],
+      "oracle_accuracy": 1.0,
+      "random_init_accuracy": 1.0,
+      "trainable_parameters": 4704,
+      "unseen_state_accuracy": 1.0
+    },
+    {
+      "active_parameters": 81,
+      "arm_id": "compiler_owned_s0",
+      "capacity": null,
+      "elapsed_seconds": 0.032973141002003103,
+      "forced_decisions": 0,
+      "leakage": false,
+      "mode": "compiler_owned",
+      "notes": [
+        "trainable_parameters=4704, active_parameters=81",
+        "oracle_accuracy=1.0000, random_init_accuracy=0.0000"
+      ],
+      "oracle_accuracy": 1.0,
+      "random_init_accuracy": 0.0,
+      "trainable_parameters": 4704,
+      "unseen_state_accuracy": 0.0
+    },
+    {
+      "active_parameters": 33,
+      "arm_id": "compiler_owned_no_state_s0",
+      "capacity": null,
+      "elapsed_seconds": 0.03255494100449141,
+      "forced_decisions": 0,
+      "leakage": false,
+      "mode": "compiler_owned_no_state",
+      "notes": [
+        "trainable_parameters=4704, active_parameters=33",
+        "oracle_accuracy=1.0000, random_init_accuracy=0.2500"
+      ],
+      "oracle_accuracy": 1.0,
+      "random_init_accuracy": 0.25,
+      "trainable_parameters": 4704,
+      "unseen_state_accuracy": 0.0
+    }
+  ],
+  "hidden_dim": 16,
+  "run_id": "01dcdd51a62f3902",
+  "semantic_dim": 8,
+  "states": [
+    {
+      "correct_action": "action:00",
+      "decision_id": "d000",
+      "history": [
+        0.8444218515250481,
+        0.7579544029403025,
+        0.420571580830845,
+        0.25891675029296335,
+        0.5112747213686085,
+        0.4049341374504143,
+        0.7837985890347726,
+        0.30331272607892745
+      ],
+      "legal_actions": [
+        "action:00",
+        "action:01",
+        "action:02",
+        "action:03",
+        "action:04"
+      ],
+      "semantic_input": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "state_family_id": "family_0",
+      "state_id": 0
+    },
+    {
+      "correct_action": "action:02",
+      "decision_id": "d001",
+      "history": [
+        0.4765969541523558,
+        0.5833820394550312,
+        0.9081128851953352,
+        0.5046868558173903,
+        0.28183784439970383,
+        0.7558042041572239,
+        0.6183689966753316,
+        0.25050634136244054
+      ],
+      "legal_actions": [
+        "action:01",
+        "action:02",
+        "action:03",
+        "action:04",
+        "action:00"
+      ],
+      "semantic_input": [
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "state_family_id": "family_1",
+      "state_id": 1
+    },
+    {
+      "correct_action": "action:04",
+      "decision_id": "d002",
+      "history": [
+        0.9097462559682401,
+        0.9827854760376531,
+        0.8102172359965896,
+        0.9021659504395827,
+        0.3101475693193326,
+        0.7298317482601286,
+        0.8988382879679935,
+        0.6839839319154413
+      ],
+      "legal_actions": [
+        "action:02",
+        "action:03",
+        "action:04",
+        "action:00",
+        "action:01"
+      ],
+      "semantic_input": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "state_family_id": "family_2",
+      "state_id": 2
+    },
+    {
+      "correct_action": "action:01",
+      "decision_id": "d003",
+      "history": [
+        0.47214271545271336,
+        0.1007012080683658,
+        0.4341718354537837,
+        0.6108869734438016,
+        0.9130110532378982,
+        0.9666063677707588,
+        0.47700977655271704,
+        0.8653099277716401
+      ],
+      "legal_actions": [
+        "action:03",
+        "action:04",
+        "action:00",
+        "action:01",
+        "action:02"
+      ],
+      "semantic_input": [
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "state_family_id": "family_0",
+      "state_id": 3
+    },
+    {
+      "correct_action": "action:03",
+      "decision_id": "d004",
+      "history": [
+        0.2604923103919594,
+        0.8050278270130223,
+        0.5486993038355893,
+        0.014041700164018955,
+        0.7197046864039541,
+        0.39882354222426875,
+        0.824844977148233,
+        0.6681532012318508
+      ],
+      "legal_actions": [
+        "action:04",
+        "action:00",
+        "action:01",
+        "action:02",
+        "action:03"
+      ],
+      "semantic_input": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "state_family_id": "family_1",
+      "state_id": 4
+    },
+    {
+      "correct_action": "action:00",
+      "decision_id": "d005",
+      "history": [
+        0.0011428193144282783,
+        0.49357786646532464,
+        0.8676027754927809,
+        0.24391087688713198,
+        0.32520436274739006,
+        0.8704712321086546,
+        0.19106709150239054,
+        0.5675107406206719
+      ],
+      "legal_actions": [
+        "action:00",
+        "action:01",
+        "action:02",
+        "action:03",
+        "action:04"
+      ],
+      "semantic_input": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0
+      ],
+      "state_family_id": "family_2",
+      "state_id": 5
+    },
+    {
+      "correct_action": "action:02",
+      "decision_id": "d006",
+      "history": [
+        0.23861592861522019,
+        0.9675402502901433,
+        0.80317946927987,
+        0.44796957143557037,
+        0.08044581855253541,
+        0.32005460467254576,
+        0.5079406425205739,
+        0.9328338242269067
+      ],
+      "legal_actions": [
+        "action:01",
+        "action:02",
+        "action:03",
+        "action:04",
+        "action:00"
+      ],
+      "semantic_input": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "state_family_id": "family_0",
+      "state_id": 6
+    },
+    {
+      "correct_action": "action:04",
+      "decision_id": "d007",
+      "history": [
+        0.10905784593110368,
+        0.5512672460905512,
+        0.7065614098668896,
+        0.5474409113284238,
+        0.814466863291336,
+        0.540283606970324,
+        0.9638385459738009,
+        0.603185627961383
+      ],
+      "legal_actions": [
+        "action:02",
+        "action:03",
+        "action:04",
+        "action:00",
+        "action:01"
+      ],
+      "semantic_input": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "state_family_id": "family_1",
+      "state_id": 7
+    }
+  ],
+  "timestamp": "2026-07-18T21:35:05.612327+00:00",
+  "unseen_state_ids": [
+    3,
+    6
+  ],
+  "version": "cap2-04-v1"
+}

@@ -32,6 +32,12 @@ dev = [
 grammar = [
   "lark>=1.1",
 ]
+# Optional embedding engine for cross-structure semantic dedup
+# (slm_training.data.semantic_dedup); the hashed TF-IDF fallback keeps
+# default installs and CI hermetic.
+embeddings = [
+  "sentence-transformers>=3.0,<6",
+]
 # Required for TwoTower training / generation
 torch = [
   "torch>=2.2,<2.6",
@@ -94,6 +100,7 @@ sync-checkpoints = "scripts.sync_checkpoints:main"
 model-cycle = "scripts.model_cycle:main"
 analyze-grammar-arity = "scripts.analyze_grammar_arity:main"
 autoresearch = "scripts.autoresearch:main"
+slm = "scripts.slm:main"
 slm-data = "scripts.data_store:main"
 
 [tool.setuptools.packages.find]

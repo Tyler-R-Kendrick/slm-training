@@ -136,6 +136,178 @@ export function TrainingDataBrowser({ version }: { version?: string }) {
   );
 }
 
+export function DataQualityCard({
+  version,
+  usedByRuns = [],
+  navigate,
+}: {
+  version?: string;
+  usedByRuns?: string[];
+  navigate?: (to: string) => void;
+}) {
+  const [payload, setPayload] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPayload(null);
+    setError(null);
+    if (!version || version === "examples") return;
+    let cancelled = false;
+    getJSON<any>(`/api/data/train/${encodeURIComponent(version)}/quality`)
+      .then((d) => !cancelled && setPayload(d))
+      .catch((e) => !cancelled && setError(String(e?.message ?? e)));
+    return () => { cancelled = true; };
+  }, [version]);
+
+  const summary = payload?.summary;
+  const stageRows = Object.entries(summary?.rejected_by_stage ?? {}).map(([label, value]) => ({ label, value: value as number }));
+  const engines = summary?.engines ?? {};
+  return (
+    <div className="data-quality">
+      <ErrorNote error={error} />
+      {!summary ? (
+        <p className="hint">
+          {version === "examples"
+            ? "Built-in examples carry no build-time quality report."
+            : "No quality report for this dataset version (rebuild with the strict profile to generate one)."}
+        </p>
+      ) : (
+        <>
+          <Grid min="150px">
+            <StatTile label="Profile" value={summary.profile ?? "—"} accent="moss" />
+            <StatTile label="Admitted" value={summary.admitted ?? "—"} sub={summary.admission_rate != null ? `${Math.round(summary.admission_rate * 100)}% of candidates` : null} />
+            <StatTile label="Rejected" value={summary.rejected_total ?? "—"} accent={summary.rejected_total ? "ember" : undefined} sub="see audit ledger" />
+            <StatTile label="Parse rate" value={summary.parse_rate != null ? `${Math.round(summary.parse_rate * 100)}%` : "—"} />
+            <StatTile label="Judge pass" value={summary.judge_pass_rate != null ? `${Math.round(summary.judge_pass_rate * 100)}%` : "—"} />
+            <StatTile label="Mean quality" value={summary.mean_quality_score ?? "—"} />
+            <StatTile label="Redundancy dropped" value={summary.redundancy_dropped ?? 0} accent={summary.redundancy_dropped ? "ember" : undefined} />
+            <StatTile label="Decontam flagged" value={summary.decontam_flagged ?? 0} accent={summary.decontam_flagged ? "failed" : undefined} />
+          </Grid>
+          {stageRows.length > 0 && <Bars data={stageRows} />}
+          <p className="hint">
+            Engines: similarity {engines.similarity ?? "—"}
+            {engines.semantic_dedup ? ` · semantic ${engines.semantic_dedup}` : ""}
+            {engines.decontam ? ` · decontam ${engines.decontam}` : ""}
+          </p>
+          {(payload?.feedback?.recommendations ?? []).length > 0 && (
+            <div className="generated-insights">
+              <strong>Synthesis feedback</strong>
+              {(payload.feedback.recommendations as any[]).map((rec, index) => (
+                <div className="insight-cause" key={index}>
+                  <strong>{rec.code}</strong> <span className="hint">{rec.target_kind}: {rec.target}</span>
+                  <p className="hint">{rec.suggestion}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+      {usedByRuns.length > 0 && (
+        <div className="chip-row" style={{ marginTop: "0.6rem" }}>
+          <span className="hint">Used by runs:</span>
+          {usedByRuns.map((id) => (
+            <span key={id} className="chip" onClick={() => navigate?.(`/runs/${encodeURIComponent(id)}`)}>{id}</span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function RejectedRecordsBrowser({ version }: { version?: string }) {
+  const LIMIT = 50;
+  const [stage, setStage] = useState("");
+  const [offset, setOffset] = useState(0);
+  const [page, setPage] = useState<any>(null);
+  const [selected, setSelected] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setStage("");
+    setOffset(0);
+    setSelected(null);
+  }, [version]);
+
+  useEffect(() => {
+    setPage(null);
+    setError(null);
+    if (!version || version === "examples") return;
+    let cancelled = false;
+    const params = new URLSearchParams({ limit: String(LIMIT), offset: String(offset) });
+    if (stage) params.set("stage", stage);
+    getJSON<any>(`/api/data/train/${encodeURIComponent(version)}/rejected?${params}`)
+      .then((d) => !cancelled && setPage(d))
+      .catch((e) => !cancelled && setError(String(e?.message ?? e)));
+    return () => { cancelled = true; };
+  }, [version, stage, offset]);
+
+  if (!version || version === "examples") {
+    return <p className="hint">Built-in examples carry no rejection ledger.</p>;
+  }
+  const rows = page?.rejected ?? [];
+  return (
+    <div className="data-browser">
+      <div className="data-browser-tools">
+        <label className="launcher-field">
+          <span>Stage</span>
+          <select value={stage} onChange={(e) => { setOffset(0); setStage(e.target.value); }}>
+            <option value="">All stages</option>
+            {(page?.stages ?? []).map((item: string) => (
+              <option key={item} value={item}>{item}</option>
+            ))}
+          </select>
+        </label>
+        <span className="hint data-browser-count">
+          {page ? `${page.count} rejected candidate${page.count === 1 ? "" : "s"}` : "Loading…"}
+        </span>
+      </div>
+      <ErrorNote error={error} />
+      {rows.length === 0 && page ? (
+        <p className="hint">Nothing was rejected{stage ? ` at stage ${stage}` : ""} — or this version predates the audit ledger.</p>
+      ) : (
+        <DataTable
+          columns={[
+            { key: "id", label: "id" },
+            { key: "stage", label: "stage" },
+            { key: "reason", label: "reason" },
+            { key: "view", label: "" },
+          ]}
+          rows={rows}
+          maxHeight="24rem"
+          render={{
+            id: (r) => <span className="mono">{r.id}</span>,
+            view: (r) => (
+              <button className="btn btn-small" onClick={() => setSelected(r)}>View</button>
+            ),
+          }}
+        />
+      )}
+      {page && page.count > LIMIT && (
+        <div className="data-browser-pages">
+          <button className="btn btn-small" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - LIMIT))}>Previous</button>
+          <span className="hint">{offset + 1}–{Math.min(offset + LIMIT, page.count)} of {page.count}</span>
+          <button className="btn btn-small" disabled={offset + LIMIT >= page.count} onClick={() => setOffset(offset + LIMIT)}>Next</button>
+        </div>
+      )}
+      {selected && (
+        <div className="record-detail">
+          <div className="record-detail-head">
+            <div>
+              <strong className="mono">{selected.id}</strong>
+              <div className="hint">{selected.stage} · {selected.reason}</div>
+            </div>
+            <button className="btn btn-small" onClick={() => setSelected(null)}>Close</button>
+          </div>
+          {selected.record?.prompt && (<><h3>Prompt</h3><p>{selected.record.prompt}</p></>)}
+          {selected.record?.openui && (<><h3>OpenUI target</h3><pre>{selected.record.openui}</pre></>)}
+          <h3>Complete entry</h3>
+          <pre>{JSON.stringify(selected, null, 2)}</pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function TrainingDataGenerator({
   versions = [],
 }: {
@@ -204,8 +376,14 @@ export function TrainingDataWorkspace({
   return <TrainingDataGenerator versions={versions} />;
 }
 
-export function Data({ navigate: _navigate }: { navigate: (to: string) => void }) {
-  const [version, setVersion] = useState<string | null>(null);
+export function Data({ navigate }: { navigate: (to: string) => void }) {
+  const [version, setVersion] = useState<string | null>(() => {
+    try {
+      return new URLSearchParams(window.location.search).get("version");
+    } catch {
+      return null;
+    }
+  });
   const train = usePoll<any>(version ? `/api/data/train?version=${version}` : "/api/data/train", 3000);
   const test = usePoll<any>("/api/data/test", 0);
   const preference = usePoll<any>("/api/data/preference", 3000);
@@ -240,10 +418,21 @@ export function Data({ navigate: _navigate }: { navigate: (to: string) => void }
         <StatTile label="Quality rejected" value={stats?.quality_rejected ?? "—"} accent={stats?.quality_rejected ? "failed" : undefined} />
         <StatTile label="Synthesizer" value={stats?.synthesizer ?? "—"} />
         <StatTile label="Errors" value={stats?.error_count ?? "—"} accent={stats?.error_count ? "failed" : undefined} />
+        <StatTile label="Profile" value={train.data?.profile ?? "—"} sub={train.data?.quality ? "curation profile" : null} />
+        <StatTile label="Redundancy dropped" value={train.data?.quality?.redundancy_dropped ?? "—"} accent={train.data?.quality?.redundancy_dropped ? "ember" : undefined} />
+        <StatTile label="Decontam flagged" value={train.data?.quality?.decontam_flagged ?? "—"} accent={train.data?.quality?.decontam_flagged ? "failed" : undefined} />
       </Grid>
+
+      <Card title="Data quality report" right={<ProvenanceBadge provenance={train.data?.provenance} />}>
+        <DataQualityCard version={v} usedByRuns={train.data?.used_by_runs ?? []} navigate={navigate} />
+      </Card>
 
       <Card title="Training examples" right={<span className="hint">search · filter · inspect</span>}>
         <TrainingDataBrowser version={v} />
+      </Card>
+
+      <Card title="Rejected records (audit ledger)" right={<span className="hint">nothing is dropped silently</span>}>
+        <RejectedRecordsBrowser version={v} />
       </Card>
 
       <Card title="Preference and decision data" right={<ProvenanceBadge provenance={preference.data?.provenance} />}>

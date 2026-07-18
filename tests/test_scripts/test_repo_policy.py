@@ -7,6 +7,7 @@ from scripts.repo_policy import (
     validate_skill_mirrors,
     validate_top_level,
     validate_published_data_sizes,
+    validate_workflow_timeouts,
 )
 
 
@@ -26,6 +27,19 @@ def test_published_data_size_cap(tmp_path) -> None:
 def test_top_level_allowlist_rejects_sprawl() -> None:
     assert validate_top_level(["src/slm_training/app.py", "scratch/note.py"]) == [
         "unapproved top-level path: scratch"
+    ]
+
+
+def test_workflows_require_three_minute_timeout(tmp_path: Path) -> None:
+    workflows = tmp_path / ".github/workflows"
+    workflows.mkdir(parents=True)
+    workflow = workflows / "ci.yml"
+    workflow.write_text("jobs:\n  test:\n    timeout-minutes: 3\n", encoding="utf-8")
+    assert validate_workflow_timeouts(root=tmp_path) == []
+
+    workflow.write_text("jobs:\n  test:\n    timeout-minutes: 30\n", encoding="utf-8")
+    assert validate_workflow_timeouts(root=tmp_path) == [
+        "workflow exceeds three-minute timeout: .github/workflows/ci.yml"
     ]
 
 

@@ -11,14 +11,14 @@ permissions:
 jobs:
   python:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 3
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-          # Full history: the version-stamp bump check diffs against the PR
-          # base commit, and post-checkout fetches are unreliable without
-          # persisted credentials.
+          # Full history: the version-stamp bump check and changed-regression
+          # selection diff against the PR base commit, and post-checkout
+          # fetches are unreliable without persisted credentials.
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
@@ -46,7 +46,10 @@ jobs:
         run: python -m scripts.repo_policy
       - run: ruff check .
       - run: python -m compileall -q src scripts tests
-      - run: pytest -q
+      - name: Run changed regression tests
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: python -m scripts.check_changed --changed-tests-only --base-ref "$BASE_SHA"
       - name: Validate dashboard OpenUI page programs are in sync
         run: python scripts/validate_page_dsl.py --check
       - name: Verify checkpoint references are resolvable and provenanced
@@ -62,3 +65,16 @@ jobs:
         run: |
           python -m scripts.build_train_data --source all --version ci --synthesizer none
           python -m scripts.build_test_data --source both --version ci --train-manifest outputs/data/train/ci/manifest.json
+          test -s outputs/data/train/ci/quality_report.json
+          test -f outputs/data/train/ci/rejected.jsonl
+      - name: Persist CI dataset metadata (manifest + stats + quality report)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-dataset-metadata
+          path: |
+            outputs/data/train/ci/manifest.json
+            outputs/data/train/ci/stats.json
+            outputs/data/train/ci/quality_report.json
+            outputs/data/eval/ci/manifest.json
+            outputs/data/eval/ci/stats.json
+          if-no-files-found: error

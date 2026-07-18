@@ -55,6 +55,41 @@ def _clip_optimizer_parameter_groups(optimizer, max_norm: float) -> None:
         torch.nn.utils.clip_grad_norm_(group["params"], max_norm)
 
 
+def _write_record_nll(run_dir: Path, plugin, records) -> Path:
+    """Per-record NLL under the final model — Superfiltering difficulty evidence.
+
+    Consumed by derived-data builds (`build_train_data --difficulty-from`) to
+    weight curation scores; a scoring failure records the error per row and
+    never fails the run.
+    """
+    try:
+        import torch
+
+        no_grad = torch.no_grad
+    except ImportError:  # pragma: no cover - torch is a train-time dependency
+        from contextlib import nullcontext as no_grad
+    if callable(getattr(plugin, "eval", None)):
+        try:
+            plugin.eval()
+        except Exception:  # noqa: BLE001 - stub plugins may not support eval()
+            pass
+    rows: list[dict] = []
+    for record in records:
+        try:
+            with no_grad():
+                loss = plugin.training_loss([record])
+            value = float(loss.item() if hasattr(loss, "item") else loss)
+            rows.append({"id": record.id, "nll": round(value, 6)})
+        except Exception as exc:  # noqa: BLE001 - evidence stays per-row honest
+            rows.append({"id": record.id, "nll": None, "error": str(exc)[:200]})
+    path = run_dir / "record_nll.jsonl"
+    path.write_text(
+        "".join(json.dumps(row, sort_keys=True) + "\n" for row in rows),
+        encoding="utf-8",
+    )
+    return path
+
+
 def train(config: ModelBuildConfig, model=None) -> dict:
     from slm_training.runtime.accel import (
         autocast_context,
@@ -583,7 +618,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 reported_loss_t = raw_loss_t.detach()
                 if auxiliary_loss_t is not None:
                     reported_loss_t = reported_loss_t + auxiliary_loss_t.detach()
-                accum_loss_sum += float(reported_loss_t.cpu())
+                accum_loss_sum += float(reported_loss_t)
                 accum_loss_count += 1
                 accum_batch_meta.extend(_batch_meta(batch))
                 accum_example_losses.extend(
@@ -713,6 +748,10 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             trainable_params = None
             frozen_params = None
 
+    record_nll_path: Path | None = None
+    if getattr(config, "emit_record_nll", False):
+        record_nll_path = _write_record_nll(run_dir, plugin, records)
+
     tel_path = tel.write(run_dir / "train_telemetry.json")
     effective_plugin_config = getattr(plugin, "config", config)
     summary = {
@@ -732,6 +771,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         "elapsed_wall_seconds": time.monotonic() - wall_started,
         "resumed_from": resumed_from,
         "data_manifest_sha": manifest_sha,
+        "record_nll": str(record_nll_path.as_posix()) if record_nll_path else None,
         # Scratch-context and frozen-HF runs are different scientific tracks —
         # never pool their results on one scaling curve.
         "track": {

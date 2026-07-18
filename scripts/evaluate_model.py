@@ -84,7 +84,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--train-version",
         default=None,
-        help="Use a published source-controlled corpus from src/slm_training/resources/train_data.",
+        help="Use a published source-controlled corpus from src/slm_training/resources/data/train.",
     )
     parser.add_argument(
         "--model",

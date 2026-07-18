@@ -151,11 +151,13 @@ def build_hf_jobs_command(
     entrypoint: str,
     image: str = MOLT_IMAGE,
     flavor: str = DEFAULT_FLAVOR,
-    timeout: str = "2h",
+    timeout: str = "3m",
     checkpoint_bucket: str = DEFAULT_BUCKET,
 ) -> list[str]:
     if image != MOLT_IMAGE:
         raise ValueError(f"Molt image must remain pinned to {MOLT_IMAGE}")
+    if timeout != "3m":
+        raise ValueError("Molt RL timeout must be 3m")
     return [
         "hf",
         "jobs",

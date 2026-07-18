@@ -574,9 +574,10 @@ class SolverSupervisionBuilder:
             domain_sizes[len(row.domain_values)] += 1
             capsule_widths[row.capsule_id] += 1
             state_repeats[row.state_fingerprint] += 1
-        observed_costs = sorted(
+        # _quantiles sorts internally and len() is order-free; no outer sort.
+        observed_costs = [
             r.remaining_decisions for r in result.cost_rows if r.cost_observed
-        )
+        ]
         total_verdicts = sum(verdict_freq.values()) or 1
         n_classes = max(1, len([v for v in verdict_freq.values() if v]))
         inverse_freq_weights = {

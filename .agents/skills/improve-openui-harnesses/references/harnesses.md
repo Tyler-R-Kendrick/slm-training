@@ -102,7 +102,19 @@ their actual boundary.
 - Owner: `src/slm_training/harnesses/train_data/`; CLI: `scripts/build_train_data.py`.
 - Improve source adapters, catalog classification, synthesis, verification, mixture,
   or immutable derivation. Preserve source/license/governance and structural hashes.
+- Builds are strict-by-default (`resolve_profile` in `pipeline.py`): fuzzy +
+  cross-structure semantic dedup (`data/semantic_dedup.py`), n-gram
+  decontamination vs eval suites (`data/decontam.py`), tier floor, exposure
+  caps. Every build must keep emitting `quality_report.json`, `rejected.jsonl`
+  (every drop has a stage + reason — no silent discards), and
+  `synthesis_feedback.json` (`train_data/report.py`, `train_data/feedback.py`).
+- Synthesis changes cite feedback evidence: read the previous build's
+  `synthesis_feedback.json` recommendations before editing `synth.py` or a
+  producer, and prove the fix with a rebuilt report (see the
+  `synthesis-feedback` skill). Never relax a gate/threshold to raise yield —
+  threshold changes go through `honest-ship-eval`.
 - Version outputs under `outputs/data/train/<version>/`; committed tiny fixtures
   belong in `src/slm_training/resources/`, never a new root data directory.
+  Builds register lineage DataSnapshots keyed on `content_fingerprint`.
 - Check: `pytest -q tests/test_harnesses/train_data tests/test_data` and the
   train/test disjoint integration test.

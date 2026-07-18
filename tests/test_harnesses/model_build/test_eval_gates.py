@@ -280,6 +280,11 @@ def test_evaluate_suites_scoreboard(tmp_path: Path) -> None:
         ],
     )
 
+    fingerprint = "c" * 64
+    (test_dir / "manifest.json").write_text(
+        '{"content_fingerprint": "' + fingerprint + '"}\n', encoding="utf-8"
+    )
+
     config = ModelBuildConfig(
         train_dir=train_dir,
         test_dir=test_dir,
@@ -301,6 +306,12 @@ def test_evaluate_suites_scoreboard(tmp_path: Path) -> None:
         "evals.scoring",
     }
     assert metrics["n"] == 1
+    # Every eval output pins the exact dataset it scored against.
+    assert metrics["test_dir"] == str(test_dir)
+    assert metrics["eval_data_manifest_sha"] == fingerprint
+    assert metrics["eval_suite_manifest_sha"]
+    assert metrics["code_git_sha"]
+    assert metrics["code_dirty"] is not None
     assert metrics["parse_rate"] == 1.0
     assert metrics["meaningful_program_v1_rate"] == metrics["meaningful_program_rate"]
     assert metrics["meaningful_metric_primary"] == "meaningful_program_v1"
@@ -316,6 +327,13 @@ def test_evaluate_suites_scoreboard(tmp_path: Path) -> None:
     assert board["checkpoint_sha256"] is None
     assert board["checkpoint_source"] == "preloaded_model"
     assert board["suites"]["smoke"]["checkpoint_source"] == "preloaded_model"
+    assert board["test_dir"] == str(test_dir)
+    assert (
+        board["eval_data_manifest_sha"]
+        == board["suites"]["smoke"]["eval_data_manifest_sha"]
+    )
+    assert board["code_git_sha"] == board["suites"]["smoke"]["code_git_sha"]
+    assert board["code_dirty"] == board["suites"]["smoke"]["code_dirty"]
 
     checkpoint = config.checkpoint_dir / "last.pt"
     model.save(checkpoint)

@@ -277,11 +277,11 @@ def _parse_rhs_value(token: str, dsl: str | None = None) -> Any:
         return token == "true"
     if token == "null":
         return None
-    if re.fullmatch(r"-?\d+(?:\.\d+)?", token):
+    if _RHS_NUMBER_RE.fullmatch(token):
         return float(token) if "." in token else int(token)
-    if re.fullmatch(r"[a-z_][A-Za-z0-9_]*", token):
+    if _LOWER_IDENT_RE.fullmatch(token):
         return {"type": "ref", "name": token}
-    match = re.match(r"^([A-Z][A-Za-z0-9_]*)\s*\((.*)\)\s*$", token, re.DOTALL)
+    match = _RHS_CALL_RE.match(token)
     if match:
         type_name = match.group(1)
         args = [
@@ -499,16 +499,16 @@ def _encode_v05(
             if piece.startswith("@"):
                 tokens.append(f"{BUILTIN_PREFIX}{piece[1:]}")
                 continue
-            if re.fullmatch(r"-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?", piece):
+            if _CHOICE_NUMBER_RE.fullmatch(piece):
                 tokens.append(f"{LIT_PREFIX}{piece}")
                 continue
             if piece in {"true", "false", "null"}:
                 tokens.append(f"{LIT_PREFIX}{piece}")
                 continue
-            if re.fullmatch(r"[A-Z][A-Za-z0-9_]*", piece):
+            if _UPPER_IDENT_RE.fullmatch(piece):
                 tokens.append(f"{OPEN_PREFIX}{piece}")
                 continue
-            if re.fullmatch(r"[a-z_][A-Za-z0-9_]*", piece):
+            if _LOWER_IDENT_RE.fullmatch(piece):
                 literal_name = (
                     (i + 1 < len(pieces) and pieces[i + 1] == ":")
                     or (i > 0 and pieces[i - 1] == ".")
@@ -610,7 +610,7 @@ def encode_output(
                 tokens.append(f"{SLOT_PREFIX}{slot_index[value]}")
             else:
                 tokens.append(_literal_token(value))
-        elif re.fullmatch(r"-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?", piece):
+        elif _CHOICE_NUMBER_RE.fullmatch(piece):
             tokens.append(f"{LIT_PREFIX}{piece}")
         elif piece in {"true", "false", "null"}:
             tokens.append(f"{LIT_PREFIX}{piece}")
@@ -1103,6 +1103,8 @@ _IDENT_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 _LOWER_IDENT_RE = re.compile(r"[a-z_][A-Za-z0-9_]*")
 _UPPER_IDENT_RE = re.compile(r"[A-Z][A-Za-z0-9_]*")
 _CHOICE_NUMBER_RE = re.compile(r"-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?")
+_RHS_NUMBER_RE = re.compile(r"-?\d+(?:\.\d+)?")
+_RHS_CALL_RE = re.compile(r"^([A-Z][A-Za-z0-9_]*)\s*\((.*)\)\s*$", re.DOTALL)
 
 
 def _v05_normalize_pieces(pieces: list[str]) -> list[str]:
@@ -1850,6 +1852,8 @@ def _literal_token(value: Any) -> str:
 
 
 def _decode_literal(payload: str) -> str:
+    if payload == "":
+        return json.dumps("")
     if payload == "null":
         return "null"
     if payload in {"true", "false"}:
@@ -1862,7 +1866,10 @@ def _decode_literal(payload: str) -> str:
         return payload
     except ValueError:
         pass
-    return json.dumps(json.loads(payload))
+    try:
+        return json.dumps(json.loads(payload))
+    except json.JSONDecodeError:
+        return json.dumps(payload)
 
 
 @dataclass

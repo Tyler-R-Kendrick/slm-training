@@ -7,7 +7,10 @@ Load skills from `.agents/skills/` (mirrored / symlinked under `.claude/skills/`
 Use `organize-repository` before changing tracked file placement and use
 `git mv` for every tracked relocation.
 After any train / eval / benchmark / matrix run, use
-`documenting-experiment-results`. Token stack: `ponytail`, `caveman`,
+`documenting-experiment-results`. After any training-data build or synthesis,
+use `synthesis-feedback` — read the build's `quality_report.json` /
+`rejected.jsonl` / `synthesis_feedback.json` and improve the synthesis
+harness from that evidence (never weaken the gates). Token stack: `ponytail`, `caveman`,
 `headroom`, `rtk` (see `AGENTS.md` / `RTK.md`). Hugging Face pack:
 `hf-cli` + marketplace skills from
 [huggingface/skills](https://github.com/huggingface/skills)

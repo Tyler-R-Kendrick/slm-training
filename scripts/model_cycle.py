@@ -623,8 +623,57 @@ def cmd_promote(args: argparse.Namespace) -> int:
         previous_run_id=champion.run_id if champion else None,
     )
     path = store.promote(pointer)
-    print(json.dumps({"pointer_sha": pointer.sha, "path": str(path)}, indent=2))
+    train_data_publication = None
+    if getattr(args, "publish_train_data", True):
+        # Register-all / publish-promoted policy: the champion's training data
+        # becomes a durable committed snapshot the moment the run is promoted.
+        train_data_publication = _publish_promoted_train_data(manifest.run_id)
+    print(
+        json.dumps(
+            {
+                "pointer_sha": pointer.sha,
+                "path": str(path),
+                "train_data": train_data_publication,
+            },
+            indent=2,
+        )
+    )
     return 0
+
+
+def _publish_promoted_train_data(run_id: str) -> dict[str, Any]:
+    """Publish the promoted run's train dataset into the committed store."""
+    from slm_training.data.store import DataStore
+
+    summary_path = Path("outputs/runs") / run_id / "train_summary.json"
+    if not summary_path.is_file():
+        return {"published": False, "reason": f"missing {summary_path}"}
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    train_dir = Path(str(summary.get("train_dir") or ""))
+    if not train_dir.name:
+        return {"published": False, "reason": "train_summary has no train_dir"}
+    store = DataStore()
+    try:
+        ref = store.resolve("train", train_dir.name)
+    except (FileNotFoundError, ValueError) as exc:
+        return {"published": False, "reason": str(exc)}
+    if ref.storage == "git":
+        return {
+            "published": True,
+            "dataset_id": ref.dataset_id,
+            "path": ref.path.as_posix(),
+            "already_published": True,
+        }
+    try:
+        published = store.publish("train", ref.dataset_id)
+    except (FileExistsError, ValueError) as exc:
+        return {"published": False, "dataset_id": ref.dataset_id, "reason": str(exc)}
+    return {
+        "published": True,
+        "dataset_id": published.dataset_id,
+        "path": published.path.as_posix(),
+        "already_published": False,
+    }
 
 
 def _nemo_recipe(
@@ -1309,6 +1358,12 @@ def build_parser() -> argparse.ArgumentParser:
     promote.add_argument("--parent-report")
     promote.add_argument("--finalist-report", action="append", default=[])
     promote.add_argument("--deployment-artifact", type=Path)
+    promote.add_argument(
+        "--publish-train-data",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Publish the promoted run's train dataset to the committed store.",
+    )
     promote.set_defaults(func=cmd_promote)
 
     submit_nemo = sub.add_parser("submit-nemo")
@@ -1320,7 +1375,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     submit_nemo.add_argument("--checkpoint-bucket", default=NEMO_DEFAULT_BUCKET)
     submit_nemo.add_argument("--flavor", default=NEMO_DEFAULT_FLAVOR)
-    submit_nemo.add_argument("--timeout", default="2h")
+    submit_nemo.add_argument("--timeout", choices=("3m",), default="3m")
     submit_nemo.add_argument("--dry-run", action="store_true")
     submit_nemo.add_argument("--ack-paid-gpu", action="store_true")
     submit_nemo.add_argument("--rl-readiness-report", type=Path, required=True)
@@ -1343,7 +1398,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     submit_molt.add_argument("--checkpoint-bucket", default=MOLT_DEFAULT_BUCKET)
     submit_molt.add_argument("--flavor", default=MOLT_DEFAULT_FLAVOR)
-    submit_molt.add_argument("--timeout", default="2h")
+    submit_molt.add_argument("--timeout", choices=("3m",), default="3m")
     submit_molt.add_argument("--dry-run", action="store_true")
     submit_molt.add_argument("--ack-paid-gpu", action="store_true")
     submit_molt.add_argument("--rl-readiness-report", type=Path, required=True)

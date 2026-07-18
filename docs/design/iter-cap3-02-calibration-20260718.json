@@ -1,0 +1,70 @@
+{
+  "run_id": "calibration-toy",
+  "timestamp": "2026-07-18T21:56:26.011530+00:00",
+  "checkpoint": "toy",
+  "format": "ternary",
+  "group_size": 128,
+  "strategy": "hybrid_coverage_margin",
+  "samples": 64,
+  "calibration_mode": "qat",
+  "manifest_schema": "cap3-02.v1",
+  "adaptation": [
+    {
+      "status": "ok",
+      "steps": 4,
+      "final_loss": 0.0669556496432051,
+      "loss_history": [
+        0.1379187221173197,
+        0.10886835143901408,
+        0.07969329820480198,
+        0.0669556496432051
+      ],
+      "target_path": "local_head"
+    }
+  ],
+  "evidence": {
+    "selected_count": 64,
+    "unique_selected_states": 8,
+    "coverage": {
+      "n": 64,
+      "unique_states": 8,
+      "state_action_pairs": 40,
+      "scope_signatures": 3,
+      "template_signatures": 2,
+      "branching": {
+        "min": 1,
+        "max": 5,
+        "mean": 3.125
+      },
+      "margin_histogram": {
+        "2.485-4.049": 4,
+        "-0.6431-0.9209": 39,
+        "0.9209-2.485": 12,
+        "4.049-5.613": 3,
+        "-2.207--0.6431": 6
+      },
+      "entropy_histogram": {
+        "0-0.4367": 16,
+        "0.8734-1.31": 13,
+        "1.747-2.183": 17,
+        "1.31-1.747": 13,
+        "0.4367-0.8734": 5
+      },
+      "partial_coverage_records": 64,
+      "missing_score_records": 0,
+      "forced_decision_fraction": 0.15625,
+      "provenance": {
+        "checkpoints": [
+          ""
+        ],
+        "datasets": [
+          ""
+        ],
+        "seeds": [
+          0
+        ]
+      }
+    }
+  },
+  "caveat": "Reference fake-quantization calibration on CPU/toy data; ship-grade run requires GPU + local E224+ checkpoints + full --ship-gates."
+}

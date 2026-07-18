@@ -36,7 +36,7 @@ summary and the full card whenever a checkpoint is created or promoted.
 
 | Role | Checkpoint | Where | Claim |
 | --- | --- | --- | --- |
-| Playground demo | `playground_demo/last.pt` | `src/slm_training/resources/checkpoints/playground_demo/` (git) | Wiring / annotate UI only |
+| Playground demo | `playground_demo/last.pt` | `src/slm_training/resources/checkpoints/playground_demo/` (git) | E497 clean-revision honest smoke: parse/meaningful/fidelity 0.0, structure 0.2203, AgentV 0/5; wiring only |
 | Restructure CPU verify | `restructure_cpu_scratch_v0/last.pt` | `outputs/runs/…` (local) | Fixture scratch train OK; smoke parse 0.0 — not ship |
 | Local DirectML verify | `local_directml_adreno_20260714/last.pt` | `outputs/runs/…` (local) | Adreno GPU train/checkpoint OK; 5-step wiring run, not evaluated or ship |
 | Overnight retrain | `overnight_retrain_200/last.pt` | `/tmp/slm-training-overnight/outputs/runs/…` (local) | 200-step CPU scratch; honest parse 0.0, not ship |
@@ -109,7 +109,7 @@ summary and the full card whenever a checkpoint is created or promoted.
 | E293 choice-native component plan | `e293-choice-component-plan-r3/last.pt` | `outputs/runs/e293-choice-component-plan-r3/…` (local) | Plan target learns and legal bias reduces failures 17→13, but matched no-DESIGN meaningful rate is 0.0 and AgentV 0/5 — not promoted or ship |
 | E294 no-DESIGN choice control | `e294-choice-no-design-control-r1/last.pt` | `outputs/runs/e294-choice-no-design-control-r1/…` (local) | No-plan control exactly matches E293 bias-off; meaningful 0.0, AgentV 0/5, 17 failures — not promoted or ship |
 | E295 DESIGN-dropout choice arm | `e295-choice-design-dropout-r1/last.pt` | `outputs/runs/e295-choice-design-dropout-r1/…` (local) | 50% deterministic context dropout yields adversarial meaningful 0.25 and AgentV 1/5, but four suites remain 0.0 and 14 gates fail — not promoted or ship |
-| E396 diagnostic ship-gate champion | `e396-balanced-type-head-continuation-r1/last.pt` | `hf://buckets/TKendrick/OpenUI/checkpoints/e396-balanced-type-head-continuation-r1/` | E479 five-suite gates pass with AgentV 5/5 and full RICO n=1500. Exact SHA `feefa056…c2f2eee0`; bucket artifacts are verified, but incomplete provenance keeps the claim diagnostic rather than production HF ship |
+| E396 durable diagnostic checkpoint | `e396-balanced-type-head-continuation-r1/last.pt` | `hf://buckets/TKendrick/OpenUI/checkpoints/e396-balanced-type-head-continuation-r1/` | Exact SHA `feefa056…c2f2eee0`; bucket verified. E498 restores current-main loading and learned-head application (smoke structure 0.27057), but semantic gates and AgentV remain red. Diagnostic, not champion or ship |
 | Production HF ship | *(none yet)* | [HF Bucket `TKendrick/OpenUI`](https://huggingface.co/buckets/TKendrick/OpenUI) `checkpoints/<run_id>/` | Register here after first full HF sync + `--ship-gates` |
 
 **Load demo:** `python -m scripts.serve_playground` · **Full train sync:** set
@@ -135,6 +135,11 @@ pip install -e ".[rico]"
 ```
 
 ## Quick start (train / disjoint test)
+
+Every pipeline phase is also reachable through the unified `slm` CLI
+(`slm list` shows the full command map; `slm guide <phase>` prints the
+matching operating reference from `.agents/skills/train/references/`). The
+`python -m scripts.<name>` forms below remain the direct equivalents.
 
 ```bash
 # High-quality versioned corpus (default: all sources + quality synthesizer)
@@ -278,7 +283,7 @@ Surfaces (React 19 + Vite SPA, dark-first "mission control" design system):
 | --- | --- |
 | `/` Overview | Live jobs, experiment scoreboard, checkpoint roster, corpus health, system status, **remote dispatches** |
 | `/data` | Navigate + generate versioned corpora (`build_train_data` / `build_test_data`) |
-| `/experiments` | Quality / grammar / perf / phase matrices; run `run_*_matrix`; **dispatch full GPU trains** (`hf_jobs_train` / `remote_train`); drill into any run |
+| `/experiments` | Quality / grammar / perf / phase matrices; run `run_*_matrix`; **dispatch bounded GPU checkpoint smokes** (`hf_jobs_train` / `remote_train`); drill into any run |
 | `/smoke` | Smoke canary + perf & telemetry; launch wiring runs |
 | `/checkpoints` | Roster + **live configurable ship gates** + promote / deploy + blinded A/B |
 | `/runs/<id>` | Per-run detail — gate matrix, telemetry spans, `train_summary` metrics, durable-checkpoint link |

@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E497",
+  "date": "2026-07-18",
+  "status": "complete",
+  "run_id": "e497-current-main-playground-provenance-smoke",
+  "checkpoint": {
+    "run_id": "playground_demo",
+    "sha256": "df517cf9b0071deda66e53ddc082159f9c2f74f909f24baf07807c58348f8504",
+    "path": "src/slm_training/resources/checkpoints/playground_demo/last.pt"
+  },
+  "provenance": {
+    "code_git_sha": "bccf2355db8fc4487375ad68a95a7f5220dc770a",
+    "code_dirty": false,
+    "branch": "agent/e496-current-main-provenance",
+    "import_root": "/tmp/slm-training-loop-3m/src"
+  },
+  "data": {
+    "version": "remediated",
+    "suite": "smoke",
+    "n": 3,
+    "diagnostic_subset": true,
+    "manifest_sha256": "2c53a3f6d03f319dceb173f82d8a651dbf52d304fbe1bc3a242eed66b9d8c500"
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "grammar_ltr_max_tokens": 256,
+    "gen_steps": 8,
+    "max_attempts": 3,
+    "slot_contract_constrained_decode": true,
+    "honest_slot_contract": true,
+    "allow_unconstrained_fallback": false,
+    "decode_timeout_seconds": 45,
+    "maximum_total_seconds": 180
+  },
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse_rate": 0.0,
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.0,
+      "structural_similarity": 0.2202666666666667,
+      "component_type_recall": 0.16666666666666666,
+      "reward_score": 0.0,
+      "fallback_count": 0,
+      "decode_timeout_count": 1,
+      "latency_ms_p50": 42002.38,
+      "latency_ms_p95": 45000.53
+    }
+  },
+  "ship_gates": {
+    "pass": false,
+    "failures": [
+      "smoke.parse_rate",
+      "smoke.meaningful_program_rate",
+      "smoke.placeholder_fidelity",
+      "smoke.structural_similarity",
+      "smoke.component_type_recall",
+      "smoke.reward_score"
+    ]
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 5,
+    "execution_errors": 0
+  },
+  "timing": {
+    "elapsed_seconds": 113.9,
+    "completed_normally": true
+  },
+  "verdict": "The provenance envelope works on a clean current-main-derived revision. The committed playground fixture remains wiring-only and fails honest smoke quality."
+}

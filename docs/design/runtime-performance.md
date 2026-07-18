@@ -100,6 +100,30 @@ non-training wiring fallback then rendered successfully. This is fixture-demo
 runtime evidence, not an eval or ship-readiness claim; no checkpoint, suite, or
 ship gate changed.
 
+## Browser inference ladder repair (2026-07-18)
+
+The 2026-07-15 reproduction above showed the browser baseline had no working
+rung on Windows ARM64: q4 weights everywhere meant the WASM terminal rung
+always rejected `GatherBlockQuantized`, and the 32 KB-workgroup Adreno adapter
+was (correctly) skipped for WebGPU, so real sessions ended in the wiring
+fixture. `browser_inference.js` now pins one dtype per execution provider
+(`webnn-npu`/`webnn-gpu` fp16, `webgpu` q4f16, `wasm` q8 — all variants
+verified present in the model repo), reorders the ladder to
+`webnn-npu → webgpu → webnn-gpu → wasm`, probes
+`navigator.ml.createContext` before any WebNN download, and stamps the session
+runtime as `transformers-js:<device>:<dtype>` for attempt/review records. The
+options survey and decision record live in
+[browser-inference-options.md](browser-inference-options.md).
+
+Wiring evidence for this change: Node capability smoke over the module,
+`pytest tests/test_web` 75 passed, Playwright desktop-chrome 16/16 and
+mobile-chrome 16/16 (the checkpoints-page `GATES PASS` locator needed
+`exact: true` after the E479 roster note landed; pre-existing collision,
+unrelated to this change). This is fixture-demo runtime evidence, not an eval
+or ship-readiness claim; no checkpoint, suite, or ship gate changed. A native
+Windows ARM64 browser run per the steps in browser-inference-options.md is the
+remaining hardware verification.
+
 ## Kernel boundary (unchanged)
 
 ```
@@ -207,6 +231,48 @@ are the only path that skips neural inference entirely. See the C-series in
 [`perf-experiment-matrix.md`](perf-experiment-matrix.md). The feature remains
 opt-in because the current committed checkpoint cannot provide a valid quality
 anchor.
+
+### Hot-path waste removal (2026-07-18)
+
+A repo-wide audit removed redundant per-call work without changing any
+output ([evidence JSON](hotpath-waste-removal-20260718.json)): eval metrics
+re-derived placeholder sets/style-stripped text up to 7× per record (and
+computed `tree_edit_similarity` twice — it is an alias of
+`structural_similarity`); the hybrid grammar backend re-ran
+`shutil.which("node")` and the Lark backend re-read the grammar file per
+constrained pick; lattice trajectory decode used O(n²) `paths.index()` score
+lookups; the task-weighted mixture sampler re-sorted family pools on every
+draw; the anti-gaming duplicate-subtree check re-serialized every subtree
+(O(n²) → one bottom-up hash pass); grammar-diffusion eval deep-copied the
+codec vocab per record and topology decode issued ~6 per-node `.item()`
+device syncs per phase; and the dashboard re-parsed all committed
+`docs/design/iter-*.json` (260 files, ~1.7 MB) three to four times per
+15-second `/api/overview` poll.
+
+Measured: `/api/overview` mean 113 ms → 32 ms (**3.6×**) with a
+byte-identical payload; scoreboard/model-card caches invalidate by
+`(mtime_ns, size)` stat fingerprints, verified fresh under file add,
+in-place modify, and delete. Eval metrics, mixture draw sequences,
+fingerprint partitions, and codec accuracy metrics were verified
+byte-identical against the previous implementations; the full pytest tree
+reproduces exactly the base commit's pre-existing environment failures and
+nothing else. No decode-latency claim is made (no matched perf-matrix A/B
+ran), and no quality gate, checkpoint, or ship claim changed.
+
+A second wave extended the sweep to the training harnesses (same evidence
+JSON): a bounded source-keyed Lark `Program` cache mirroring the lang_core
+bridge cache (collapses eval's repeated re-validations in-process), a memoized
+tree-edit distance and cached `_Tree.size`, a container-copy
+`LatticeSearchState.clone()` replacing per-trajectory `deepcopy`, lockstep
+weight lists in the capacity-aware sampler (bit-exact draws), an O(motifs²)→
+O(motifs) slop-forensics bootstrap, once-per-trace/pair prompt encoding in
+trajectory-RL and DPO (deterministic-encoder guard), process-cached component
+phrase matchers in the data judge, cached MinHash coefficients, a shared
+programspec load in the train-data pipeline, an O(n²)→O(n) trace-store append
+count, and assorted read-path cleanups. All verified by byte-identical
+differential checks (signatures, mentions, bootstrap CIs, tree distances) and
+an unchanged full-tree failure set; still no decode-latency, gate, or
+checkpoint claim.
 
 ### Local Qualcomm DirectML train (2026-07-14)
 

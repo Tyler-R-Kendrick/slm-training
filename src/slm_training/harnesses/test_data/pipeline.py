@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -225,6 +226,18 @@ def build_test_data(config: TestDataConfig) -> dict:
         suite_counts[suite] = len(records)
         all_ids.extend(r.id for r in records)
 
+    # Stable eval-corpus identity (suite ⊕ id ⊕ prompt ⊕ openui in sorted
+    # suite order) so eval runs can pin the exact dataset they scored against.
+    fingerprint_hash = hashlib.sha256()
+    for suite in sorted(by_suite):
+        for record in by_suite[suite]:
+            fingerprint_hash.update(
+                f"{suite}\n{record.id}\n{record.prompt}\n{record.openui}\n".encode(
+                    "utf-8"
+                )
+            )
+    content_fingerprint = fingerprint_hash.hexdigest()
+
     built_at = datetime.now(timezone.utc).isoformat()
     stats = {
         "version": config.version,
@@ -256,6 +269,7 @@ def build_test_data(config: TestDataConfig) -> dict:
         "stats": str(stats_path.as_posix()),
         "ids": all_ids,
         "suite_counts": suite_counts,
+        "content_fingerprint": content_fingerprint,
         "train_manifest": str(config.train_manifest) if config.train_manifest else None,
         "built_at": built_at,
     }
