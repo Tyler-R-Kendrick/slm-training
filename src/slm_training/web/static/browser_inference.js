@@ -60,6 +60,19 @@ const OPENUI_REVIEW_SCHEMA = {
 const TRANSFORMERS_JS_URL =
   "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.2.0";
 const TRANSFORMERS_JS_MODEL = "onnx-community/gemma-3-270m-it-ONNX";
+// Weight format per execution provider. The q4 variant needs the ORT contrib
+// ops MatMulNBits + GatherBlockQuantized: the WASM EP rejects it
+// (`GatherBlockQuantized(1)` observed 2026-07-15) and the WebNN EP cannot map
+// contrib quant ops onto WebNN graph ops, so only WebGPU may use a 4-bit
+// variant (q4f16, fp16 activations — its smallest working download). WebNN
+// devices get plain fp16 (native DirectML type) and WASM gets q8, which uses
+// standard integer ops.
+const TRANSFORMERS_DEVICE_DTYPES = {
+  "webnn-npu": "fp16",
+  "webnn-gpu": "fp16",
+  webgpu: "q4f16",
+  wasm: "q8",
+};
 
 function browserAccelerationCapabilities() {
   const promptApi = Boolean(
@@ -67,9 +80,13 @@ function browserAccelerationCapabilities() {
   );
   const webnn = Boolean(globalThis.navigator?.ml);
   const webgpu = Boolean(globalThis.navigator?.gpu);
+  // Ladder order: NPU first (the only path to it), then WebGPU before
+  // webnn-gpu — both target the same silicon, but WebGPU runs the q4f16
+  // variant while webnn-gpu would first fetch the larger fp16 weights.
   const devices = [];
-  if (webnn) devices.push("webnn-npu", "webnn-gpu");
+  if (webnn) devices.push("webnn-npu");
   if (webgpu) devices.push("webgpu");
+  if (webnn) devices.push("webnn-gpu");
   devices.push("wasm");
   const hardwareConcurrency = Math.max(
     1,
@@ -86,8 +103,25 @@ function browserAccelerationCapabilities() {
     hardwareConcurrency,
     wasmThreads,
     devices,
+    dtypes: Object.fromEntries(
+      devices.map((device) => [device, TRANSFORMERS_DEVICE_DTYPES[device] || "q4"])
+    ),
     preferred: promptApi ? "prompt-api" : devices[0],
   };
+}
+
+async function assertWebnnBackend(device) {
+  const ml = globalThis.navigator?.ml;
+  if (!ml?.createContext) {
+    throw new Error("navigator.ml.createContext is unavailable");
+  }
+  const deviceType = device === "webnn-npu" ? "npu" : "gpu";
+  // Probe the MLContext before pipeline() so an absent WebNN backend fails
+  // here instead of after a multi-hundred-megabyte weight download.
+  const context = await ml.createContext({ deviceType });
+  if (!context) {
+    throw new Error(`WebNN did not create a ${deviceType} context`);
+  }
 }
 
 function browserLanguageModelApi() {
@@ -123,6 +157,7 @@ async function createTransformersSession(systemPrompt, onProgress) {
 
   let generator = null;
   let selectedDevice = null;
+  let selectedDtype = null;
   let selectedIndex = -1;
   const failures = [];
   let disposed = false;
@@ -130,7 +165,8 @@ async function createTransformersSession(systemPrompt, onProgress) {
     for (let index = startIndex; index < capabilities.devices.length; index += 1) {
       if (disposed) throw new Error("Browser inference session has been disposed");
       const device = capabilities.devices[index];
-      onProgress({ status: `trying ${device}`, progress: null });
+      const dtype = TRANSFORMERS_DEVICE_DTYPES[device] || "q4";
+      onProgress({ status: `trying ${device} (${dtype})`, progress: null });
       try {
         if (device === "webgpu") {
           const adapter = await globalThis.navigator?.gpu?.requestAdapter?.();
@@ -139,15 +175,16 @@ async function createTransformersSession(systemPrompt, onProgress) {
             throw new Error(`WebGPU workgroup storage ${storage} is below the model requirement 65536`);
           }
         }
+        if (device.startsWith("webnn")) await assertWebnnBackend(device);
         generator = await pipeline("text-generation", TRANSFORMERS_JS_MODEL, {
           device,
-          dtype: "q4",
+          dtype,
           progress_callback(info) {
             const raw = Number(info?.progress);
             const progress = Number.isFinite(raw) ? (raw > 1 ? raw / 100 : raw) : null;
             if (progress !== null) onProgress({ status: "downloading", progress });
             else if (info?.status === "ready") {
-              onProgress({ status: `ready ${device}`, progress: null });
+              onProgress({ status: `ready ${device} (${dtype})`, progress: null });
             }
           },
         });
@@ -157,6 +194,7 @@ async function createTransformersSession(systemPrompt, onProgress) {
           throw new Error("Browser inference session has been disposed");
         }
         selectedDevice = device;
+        selectedDtype = dtype;
         selectedIndex = index;
         return;
       } catch (error) {
@@ -171,6 +209,7 @@ async function createTransformersSession(systemPrompt, onProgress) {
   await initializeFrom(0);
   return {
     device: selectedDevice,
+    dtype: selectedDtype,
     session: {
       async prompt(content) {
         if (disposed) throw new Error("Browser inference session has been disposed");
@@ -194,6 +233,7 @@ async function createTransformersSession(systemPrompt, onProgress) {
             await generator?.dispose?.();
             generator = null;
             selectedDevice = null;
+            selectedDtype = null;
             if (disposed) throw new Error("Browser inference session has been disposed");
             await initializeFrom(selectedIndex + 1);
             if (disposed) {
@@ -267,7 +307,7 @@ async function createBrowserModelSession({ mode = "generate", onProgress = () =>
   const created = await createTransformersSession(systemPrompt, onProgress);
   return {
     session: created.session,
-    runtime: `transformers-js:${created.device}`,
+    runtime: `transformers-js:${created.device}:${created.dtype}`,
     availability: "available",
   };
 }
@@ -382,6 +422,7 @@ export {
   OPENUI_REVIEW_SCHEMA,
   OPENUI_REVIEW_SYSTEM_PROMPT,
   RUN_INSIGHTS_SYSTEM_PROMPT,
+  TRANSFORMERS_DEVICE_DTYPES,
   buildBrowserGradePrompt,
   buildBrowserRepairPrompt,
   buildRunInsightsPrompt,

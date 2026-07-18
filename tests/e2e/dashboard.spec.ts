@@ -60,7 +60,9 @@ test.describe("mission control dashboard", () => {
       } }],
     } }));
     await page.goto("/checkpoints");
-    await expect(page.getByText("GATES PASS")).toBeVisible({ timeout: 10_000 });
+    // exact: the roster note "E479 five-suite gates pass" also matches a
+    // case-insensitive substring locator.
+    await expect(page.getByText("GATES PASS", { exact: true })).toBeVisible({ timeout: 10_000 });
 
     // Raise smoke structural_similarity threshold above the actual value.
     const smoke = page.locator(".thr-suite", { hasText: "smoke" });

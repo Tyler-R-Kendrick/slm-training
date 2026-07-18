@@ -100,6 +100,30 @@ non-training wiring fallback then rendered successfully. This is fixture-demo
 runtime evidence, not an eval or ship-readiness claim; no checkpoint, suite, or
 ship gate changed.
 
+## Browser inference ladder repair (2026-07-18)
+
+The 2026-07-15 reproduction above showed the browser baseline had no working
+rung on Windows ARM64: q4 weights everywhere meant the WASM terminal rung
+always rejected `GatherBlockQuantized`, and the 32 KB-workgroup Adreno adapter
+was (correctly) skipped for WebGPU, so real sessions ended in the wiring
+fixture. `browser_inference.js` now pins one dtype per execution provider
+(`webnn-npu`/`webnn-gpu` fp16, `webgpu` q4f16, `wasm` q8 — all variants
+verified present in the model repo), reorders the ladder to
+`webnn-npu → webgpu → webnn-gpu → wasm`, probes
+`navigator.ml.createContext` before any WebNN download, and stamps the session
+runtime as `transformers-js:<device>:<dtype>` for attempt/review records. The
+options survey and decision record live in
+[browser-inference-options.md](browser-inference-options.md).
+
+Wiring evidence for this change: Node capability smoke over the module,
+`pytest tests/test_web` 75 passed, Playwright desktop-chrome 16/16 and
+mobile-chrome 16/16 (the checkpoints-page `GATES PASS` locator needed
+`exact: true` after the E479 roster note landed; pre-existing collision,
+unrelated to this change). This is fixture-demo runtime evidence, not an eval
+or ship-readiness claim; no checkpoint, suite, or ship gate changed. A native
+Windows ARM64 browser run per the steps in browser-inference-options.md is the
+remaining hardware verification.
+
 ## Kernel boundary (unchanged)
 
 ```

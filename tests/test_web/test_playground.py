@@ -160,9 +160,27 @@ def test_react_playground_has_full_annotate_surface() -> None:
     assert "OPENUI_REVIEW_SCHEMA" in browser_js
     assert "browser baseline reviewer" in browser_js
     assert "@huggingface/transformers@4.2.0" in browser_js
-    assert 'devices.push("webnn-npu", "webnn-gpu")' in browser_js
+    # NPU first, WebGPU before webnn-gpu (same silicon, smaller q4f16 weights),
+    # WASM always last; each execution provider gets a dtype it can execute.
+    assert 'devices.push("webnn-npu")' in browser_js
     assert 'devices.push("webgpu")' in browser_js
+    assert 'devices.push("webnn-gpu")' in browser_js
     assert 'devices.push("wasm")' in browser_js
+    assert browser_js.index('devices.push("webnn-npu")') < browser_js.index(
+        'devices.push("webgpu")'
+    ) < browser_js.index('devices.push("webnn-gpu")') < browser_js.index(
+        'devices.push("wasm")'
+    )
+    assert '"webnn-npu": "fp16"' in browser_js
+    assert '"webnn-gpu": "fp16"' in browser_js
+    assert 'webgpu: "q4f16"' in browser_js
+    # The q4 variant needs GatherBlockQuantized, which the WASM execution
+    # provider rejects; q8 keeps the ladder's terminal device functional.
+    assert 'wasm: "q8"' in browser_js
+    assert 'dtype: "q4"' not in browser_js
+    assert "TRANSFORMERS_DEVICE_DTYPES" in browser_js
+    assert "assertWebnnBackend" in browser_js
+    assert "ml.createContext" in browser_js
     assert "wasm.numThreads = capabilities.wasmThreads" in browser_js
     assert "browserAccelerationCapabilities" in browser_js
     assert "RUN_INSIGHTS_SYSTEM_PROMPT" in browser_js
