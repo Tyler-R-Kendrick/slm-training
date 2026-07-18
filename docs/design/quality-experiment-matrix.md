@@ -2286,6 +2286,13 @@ full-RICO campaign with rows 0–64 in 66.2s; meaningful/structure/recall are
 [results](iter-e352-e353-bounded-rico-sharding-20260717.md) and
 [JSON](iter-e352-e353-bounded-rico-sharding-20260717.json).
 
+E354 covers RICO rows 64–128 in 110.7s. Meaningful/structure/recall are
+0.9063/0.3004/0.5104, with six low-recall failures. E355 exactly merges the
+first two shards: 128/1500 rows, meaningful 0.9453, structure 0.2719, recall
+0.5104, and AgentV 0/1 because coverage remains partial. See
+[results](iter-e354-e355-rico-shard-and-merge-20260717.md) and
+[JSON](iter-e354-e355-rico-shard-and-merge-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

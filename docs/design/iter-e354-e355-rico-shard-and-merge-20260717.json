@@ -1,0 +1,52 @@
+{
+  "id": "E354-E355",
+  "date": "2026-07-17",
+  "status": "retained_partial_rico_merge",
+  "run_id": "e355-hf-context-slot8-rico-merge-0000-0128-r1",
+  "checkpoint_sha256": "6f0ecf7cce2ebc7c61f133c13456ac91bcd4861bd3e2f4f70a3a72473c211985",
+  "hard_run_cap_seconds": 300,
+  "honesty_mode": "honest slot contract; partial merged coverage fails closed",
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "suites": {
+    "rico_held": {
+      "n": 128,
+      "suite_total_n": 1500,
+      "eval_offset": 0,
+      "eval_end": 128,
+      "diagnostic_subset": true,
+      "shard_count": 2,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.9453125,
+      "placeholder_fidelity": 0.2732886904761904,
+      "structural_similarity": 0.2719421875000001,
+      "component_type_recall": 0.5104166666666667,
+      "reward_score": 0.7002124999999993,
+      "low_component_recall_failures": 7
+    }
+  },
+  "runs": [
+    {
+      "id": "E354",
+      "run_id": "e354-hf-context-slot8-rico-shard-0064-0128-r1",
+      "elapsed_wall_seconds": 110.7,
+      "offset": 64,
+      "end": 128,
+      "n": 64,
+      "agentv": "0/1"
+    },
+    {
+      "id": "E355",
+      "run_id": "e355-hf-context-slot8-rico-merge-0000-0128-r1",
+      "elapsed_wall_seconds": 1.5398,
+      "offset": 0,
+      "end": 128,
+      "n": 128,
+      "agentv": "0/1"
+    }
+  ],
+  "verdict": "Retain. The merge is exact and gap-free for rows 0-127, but remains diagnostic until all 1500 RICO rows are covered."
+}
