@@ -13,16 +13,19 @@ Supervised training from a versioned train snapshot. Owner:
 
 ```bash
 # Local/full train (full HF-context runs sync checkpoints to the OpenUI bucket)
-python -m scripts.train_model --train-dir outputs/data/train/v1 \
+slm sft train --train-dir outputs/data/train/v1 \
   --model twotower --context-backend hf --steps 200 --run-id twotower_v1
 
 # Managed GPU job (A10G+) — always inspect the plan first
-python -m scripts.hf_jobs_train --run-id twotower_v1 --steps 200 --branch main --dry-run
-python -m scripts.hf_jobs_train --run-id twotower_v1 --steps 200 --branch main
+slm sft hf-jobs --run-id twotower_v1 --steps 200 --branch main --dry-run
+slm sft hf-jobs --run-id twotower_v1 --steps 200 --branch main
 
 # Remote pod
-python -m scripts.remote_train --host <pod> --run-id twotower_v1 --steps 200
+slm sft remote --host <pod> --run-id twotower_v1 --steps 200
 ```
+
+(`slm sft train|hf-jobs|remote` ≡ `python -m scripts.train_model` /
+`scripts.hf_jobs_train` / `scripts.remote_train`.)
 
 Scratch/CI runs add `--no-sync-checkpoints`. Do not use Spaces ZeroGPU for full
 trains (short quotas, no `torch.compile`).

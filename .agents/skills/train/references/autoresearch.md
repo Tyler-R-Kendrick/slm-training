@@ -14,26 +14,29 @@ evidence contracts: **`openui-autoresearch`** — follow it alongside this phase
 ## Commands
 
 ```bash
-python -m scripts.autoresearch init --campaign-id <id> \
+slm autoresearch init --campaign-id <id> \
   --objective "<falsifiable objective>" --primary-metric <metric>
-python -m scripts.autoresearch research --campaign-id <id>
-python -m scripts.autoresearch hypothesize --campaign-id <id> --provider agent|openai
-python -m scripts.autoresearch validate --campaign-id <id>
-python -m scripts.autoresearch run --campaign-id <id>            # plan first
-python -m scripts.autoresearch run --campaign-id <id> --execute  # typed commands only
-python -m scripts.autoresearch diagnose --campaign-id <id>
-python -m scripts.autoresearch status --campaign-id <id>
-python -m scripts.autoresearch sync --campaign-id <id> [--push]
+slm autoresearch research --campaign-id <id>
+slm autoresearch hypothesize --campaign-id <id> --provider agent|openai
+slm autoresearch validate --campaign-id <id>
+slm autoresearch run --campaign-id <id>            # plan first
+slm autoresearch run --campaign-id <id> --execute  # typed commands only
+slm autoresearch diagnose --campaign-id <id>
+slm autoresearch status --campaign-id <id>
+slm autoresearch sync --campaign-id <id> [--push]
 
 # Self-evaluation (frozen benchmarks; human promotion only)
-python -m scripts.autoresearch evaluate-researcher ...
-python -m scripts.autoresearch evaluate-hypothesizer ...
+slm autoresearch evaluate-researcher ...
+slm autoresearch evaluate-hypothesizer ...
 
-# RL gate: produces the approved report train_rl requires
-python -m scripts.autoresearch validate-rl --evaluation <bundle> --output <report.json>
+# RL gate: produces the approved report `slm rl train` requires
+slm autoresearch validate-rl --evaluation <bundle> --output <report.json>
 
-python -m scripts.autoresearch propose|materialize-mixture ...
+slm autoresearch propose|materialize-mixture ...
 ```
+
+(`slm autoresearch <subcommand>` passes through to
+`python -m scripts.autoresearch`.)
 
 ## Gates & invariants
 

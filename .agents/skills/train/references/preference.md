@@ -12,16 +12,19 @@ Composite-reward pair building + surrogate-DPO training. Owner:
 
 ```bash
 # Build preference pairs from train records (soft-corrupt negatives)
-python -m scripts.train_preference build-pairs --limit 48 --out <pairs.jsonl>
+slm preference build-pairs --limit 48 --out <pairs.jsonl>
 
 # Bounded preference training from a checkpoint
-python -m scripts.train_preference train --from-checkpoint outputs/runs/<id>/last.pt \
+slm preference train --from-checkpoint outputs/runs/<id>/last.pt \
   --pairs <pairs.jsonl> --steps 20
 
 # Variants: annotation/decision-event driven
-python -m scripts.train_preference train-events --events <events.jsonl> ...
-python -m scripts.train_preference train-local ...
+slm preference train-events --events <events.jsonl> ...
+slm preference train-local ...
 ```
+
+(`slm preference <subcommand>` passes through to
+`python -m scripts.train_preference`.)
 
 ## Key flags
 

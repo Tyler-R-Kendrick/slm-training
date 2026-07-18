@@ -12,14 +12,16 @@ Held-out suites with structure-disjoint enforcement. Owner:
 
 ```bash
 # Test suites with strict leakage checks against the train manifest
-python -m scripts.build_test_data --source both --version v1 \
+slm data build-test --source both --version v1 \
   --train-manifest outputs/data/train/v1/manifest.json
 
 # Expand rico_held with additional HF RICO screens
-python -m scripts.build_test_data --source both --version v1 \
+slm data build-test --source both --version v1 \
   --train-manifest outputs/data/train/v1/manifest.json \
   --rico-hf-split test --rico-limit 2600 --target-records 1500
 ```
+
+(`slm data build-test` ≡ `python -m scripts.build_test_data`.)
 
 ## Key flags
 

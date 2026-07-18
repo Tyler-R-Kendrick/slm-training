@@ -12,10 +12,12 @@ read only when that phase is being run. To modify a harness, use
 
 ## Workflow
 
-1. Pick the phase from the routing table below.
+1. Pick the phase from the routing table below (`slm list` shows every
+   command; `slm guide <slug>` prints a reference from the terminal).
 2. Read `references/<slug>.md` — only the one you need — plus
    [references/contracts.md](references/contracts.md) once per session.
-3. Run its commands; keep artifacts in the canonical roots it names.
+3. Run its `slm` commands (each ≡ `python -m scripts.<module>`); keep
+   artifacts in the canonical roots it names.
 4. Close out: docs + model-card duties per contracts
    (`documenting-experiment-results`).
 5. Hand off: ship claims → `honest-ship-eval`; matrix methodology →
@@ -23,20 +25,20 @@ read only when that phase is being run. To modify a harness, use
 
 ## Phase routing
 
-| Phase | Reference |
-| --- | --- |
-| Build/publish training corpora | [references/train-data.md](references/train-data.md) |
-| Build held-out/adversarial/OOD suites | [references/test-data.md](references/test-data.md) |
-| SFT / model build (Phase A; local, pod, HF Jobs) | [references/sft.md](references/sft.md) |
-| Evaluate + ship gates | [references/eval.md](references/eval.md) |
-| Distillation / P1–P3 climb | [references/distill.md](references/distill.md) |
-| Preference / surrogate-DPO (Phase B) | [references/preference.md](references/preference.md) |
-| RL / GRPO-lite (Phase C; NeMo/MOLT) | [references/rl.md](references/rl.md) |
-| Experiment matrices, scaling, recipes | [references/experiments.md](references/experiments.md) |
-| Checkpoint sync, lineage, promotion | [references/checkpoints.md](references/checkpoints.md) |
-| Annotation export → preference inputs | [references/annotations.md](references/annotations.md) |
-| Benchmarks + generation profiling | [references/bench.md](references/bench.md) |
-| Autoresearch self-improvement + RL gate | [references/autoresearch.md](references/autoresearch.md) |
+| Phase | Command | Reference |
+| --- | --- | --- |
+| Build/publish training corpora | `slm data build-train` / `publish-train` / `store` | [references/train-data.md](references/train-data.md) |
+| Build held-out/adversarial/OOD suites | `slm data build-test` | [references/test-data.md](references/test-data.md) |
+| SFT / model build (Phase A) | `slm sft train` / `remote` / `hf-jobs` | [references/sft.md](references/sft.md) |
+| Evaluate + ship gates | `slm eval model` / `diagnose` / `loss-suites` / `tasks` | [references/eval.md](references/eval.md) |
+| Distillation / P1–P3 climb | `slm distill collect` / `self` / `resume-climb` | [references/distill.md](references/distill.md) |
+| Preference / surrogate-DPO (Phase B) | `slm preference <subcommand>` | [references/preference.md](references/preference.md) |
+| RL / GRPO-lite (Phase C; NeMo/MOLT) | `slm rl train` / `nemo` / `molt` | [references/rl.md](references/rl.md) |
+| Experiment matrices, scaling, recipes | `slm experiments <matrix>` | [references/experiments.md](references/experiments.md) |
+| Checkpoint sync, lineage, promotion | `slm checkpoints sync` / `migrate`; `slm cycle <sub>` | [references/checkpoints.md](references/checkpoints.md) |
+| Annotation export → preference inputs | `slm annotations export` | [references/annotations.md](references/annotations.md) |
+| Benchmarks + generation profiling | `slm bench telemetry` / `accel` / `cactus` / `profile` | [references/bench.md](references/bench.md) |
+| Autoresearch self-improvement + RL gate | `slm autoresearch <subcommand>` | [references/autoresearch.md](references/autoresearch.md) |
 
 ## Non-negotiable contracts
 

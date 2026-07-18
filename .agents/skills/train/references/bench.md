@@ -11,18 +11,21 @@ Perf guardrail measurements. Consumers: perf matrix + runtime docs.
 
 ```bash
 # Telemetry decode bench (train + generate probes)
-python -m scripts.bench_telemetry --train-dir outputs/data/train/v1 --out <json>
+slm bench telemetry --train-dir outputs/data/train/v1 --out <json>
 
 # Acceleration / microbench comparison
-python -m scripts.bench_accel --train-dir outputs/data/train/v1 [--microbench] [--skip-hf]
+slm bench accel --train-dir outputs/data/train/v1 [--microbench] [--skip-hf]
 
 # Cactus export bench
-python -m scripts.bench_cactus --checkpoint outputs/runs/<id>/last.pt [--with-design-md]
+slm bench cactus --checkpoint outputs/runs/<id>/last.pt [--with-design-md]
 
 # Generation hot-path profile
-python -m scripts.profile_generate --checkpoint outputs/runs/<id>/last.pt \
+slm bench profile --checkpoint outputs/runs/<id>/last.pt \
   [--quant] [--compile] [--maskgit]
 ```
+
+(`slm bench <action>` ≡ `python -m scripts.bench_telemetry` /
+`scripts.bench_accel` / `scripts.bench_cactus` / `scripts.profile_generate`.)
 
 ## Key flags
 

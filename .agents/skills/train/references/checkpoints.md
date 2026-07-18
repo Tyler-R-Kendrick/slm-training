@@ -13,16 +13,20 @@ Durable checkpoints + immutable lineage. Owners:
 
 ```bash
 # Manual / rescue sync of a run's checkpoints to the bucket
-python -m scripts.sync_checkpoints --run-dir outputs/runs/<id> --ensure-bucket
+slm checkpoints sync --run-dir outputs/runs/<id> --ensure-bucket
 
 # Format migration
-python -m scripts.migrate_checkpoint --checkpoint <old.pt> --output <new.pt>
+slm checkpoints migrate --checkpoint <old.pt> --output <new.pt>
 
-# Immutable lifecycle (16 subcommands)
-python -m scripts.model_cycle snapshot-data ...
-python -m scripts.model_cycle init|branch|train|evaluate|promote|merge|deploy ...
-python -m scripts.model_cycle submit-nemo|reconcile-nemo|submit-molt|reconcile-molt ...
+# Immutable lifecycle (16 subcommands, passthrough)
+slm cycle snapshot-data ...
+slm cycle init|branch|train|evaluate|promote|merge|deploy ...
+slm cycle submit-nemo|reconcile-nemo|submit-molt|reconcile-molt ...
 ```
+
+(`slm checkpoints <action>` ≡ `python -m scripts.sync_checkpoints` /
+`scripts.migrate_checkpoint`; `slm cycle <subcommand>` passes through to
+`python -m scripts.model_cycle`.)
 
 Hygiene: `python -m scripts.verify_checkpoint_references --check` (fail-closed
 provenance; runs in CI). `python -m scripts.bootstrap_playground` copies a

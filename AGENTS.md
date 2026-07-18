@@ -245,7 +245,8 @@ WITHOUT UPDATING DOCS
 
 Numbers only in `outputs/`, chat, or a PR comment = incomplete work.
 
-**Triggers (complete):** `train_model`, `train_rl`, `train_preference`,
+**Triggers (complete, whether invoked directly or via the `slm` wrapper):**
+`train_model`, `train_rl`, `train_preference`,
 `remote_train`, `hf_jobs_train`, `evaluate_model`, `evaluate_loss_suites`, `diagnose_eval`,
 `run_quality_matrix`, `run_grammar_matrix`, `run_perf_matrix`,
 `run_phase_pipeline`, `reproduce_baseline`, `run_scaling_ladder`,

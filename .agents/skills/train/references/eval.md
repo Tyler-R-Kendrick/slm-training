@@ -13,19 +13,23 @@ Multi-suite, honesty-constrained evaluation. Owner:
 
 ```bash
 # Honest multi-suite scoreboard with ship gates
-python -m scripts.evaluate_model --test-dir outputs/data/eval/v1 \
+slm eval model --test-dir outputs/data/eval/v1 \
   --model twotower --run-id twotower_v1 --ship-gates
 
 # Loss suites (base + OOD)
-python -m scripts.evaluate_loss_suites --checkpoint outputs/runs/<id>/last.pt \
+slm eval loss-suites --checkpoint outputs/runs/<id>/last.pt \
   --test-dir outputs/data/eval/v1
 
 # AgentEvals task cases → scoreboard JSON
-python -m scripts.evaluate_tasks --cases <cases.yaml> --out <scoreboard.json>
+slm eval tasks --cases <cases.yaml> --out <scoreboard.json>
 
 # Decode diagnostics
-python -m scripts.diagnose_eval --test-dir outputs/data/eval/v1 --out <dir>
+slm eval diagnose --test-dir outputs/data/eval/v1 --out <dir>
 ```
+
+(`slm eval <action>` ≡ `python -m scripts.evaluate_model` /
+`scripts.evaluate_loss_suites` / `scripts.evaluate_tasks` /
+`scripts.diagnose_eval`.)
 
 ## Key flags
 

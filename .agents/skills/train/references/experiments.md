@@ -13,21 +13,24 @@ phase.
 
 ```bash
 # Quality matrix (honest ship path example)
-python -m scripts.run_quality_matrix --matrix v6 --only E53 --steps 80 \
+slm experiments quality-matrix --matrix v6 --only E53 --steps 80 \
   --device cpu --context-backend scratch --no-design-md-context --scratch-control
 
-python -m scripts.run_grammar_matrix --only X22 ...
-python -m scripts.run_perf_matrix --list        # then --only <ids>
+slm experiments grammar-matrix --only X22 ...
+slm experiments perf-matrix --list        # then --only <ids>
 
 # Phases A→B→C to completion (RL leg gated)
-python -m scripts.run_phase_pipeline --rl-readiness-report <approved.json>
+slm experiments phase-pipeline --rl-readiness-report <approved.json>
 
 # Scaling / mixture / recipe evolution / reproduction
-python -m scripts.run_scaling_ladder --family <f> --arms <n>
-python -m scripts.run_mixture_search --train-dir ... --test-dir ...
-python -m scripts.run_recipe_evolution --campaign-id g2 --dry-run
-python -m scripts.reproduce_baseline --train-dir ... --test-dir ... --seeds 3
+slm experiments scaling-ladder --family <f> --arms <n>
+slm experiments mixture-search --train-dir ... --test-dir ...
+slm experiments recipe-evolution --campaign-id g2 --dry-run
+slm experiments reproduce-baseline --train-dir ... --test-dir ... --seeds 3
 ```
+
+(`slm experiments <action>` ≡ `python -m scripts.run_*` — `slm list` shows the
+mapping.)
 
 ## Key flags
 

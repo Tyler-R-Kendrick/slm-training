@@ -16,18 +16,20 @@ GRPO-lite online RL plus external backends. Owner:
 
 ```bash
 # GRPO-lite online RL (fail-closed on the readiness report)
-python -m scripts.train_rl --checkpoint outputs/runs/<id>/last.pt \
+slm rl train --checkpoint outputs/runs/<id>/last.pt \
   --train-records outputs/data/train/v1 \
   --rl-readiness-report <approved.json> --steps 15 --group-size 4
 
 # External backends (env-configured wrappers; no argparse flags):
-python -m scripts.run_nemo_rl    # NVIDIA NeMo-RL — see nemo-rl-hf-jobs-etiquette
-python -m scripts.run_molt_rl    # MOLT
+slm rl nemo    # NVIDIA NeMo-RL — see nemo-rl-hf-jobs-etiquette
+slm rl molt    # MOLT
 ```
 
-Prefer submitting/reconciling external jobs through the lifecycle CLI so lineage
-stays canonical: `python -m scripts.model_cycle submit-nemo|reconcile-nemo|
-submit-molt|reconcile-molt` (checkpoints phase).
+(`slm rl <action>` ≡ `python -m scripts.train_rl` / `scripts.run_nemo_rl` /
+`scripts.run_molt_rl`.) Prefer submitting/reconciling external jobs through the
+lifecycle CLI so lineage stays canonical:
+`slm cycle submit-nemo|reconcile-nemo|submit-molt|reconcile-molt`
+(checkpoints reference).
 
 ## Key flags
 

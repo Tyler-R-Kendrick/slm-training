@@ -12,23 +12,24 @@ Versioned, immutable, quality-gated training corpora. Owner:
 
 ```bash
 # High-quality versioned corpus (default: all sources + quality synthesizer)
-python -m scripts.build_train_data --source all --version v1 --synthesizer quality
+slm data build-train --source all --version v1 --synthesizer quality
 
 # Fast fixture-only rebuild (CI/scratch)
-python -m scripts.build_train_data --source fixture --version v0 --synthesizer quality
+slm data build-train --source fixture --version v0 --synthesizer quality
 
 # Immutable Git publish of a selected snapshot
-python -m scripts.publish_train_data --version v1
+slm data publish-train --version v1
 
 # Resolve/verify canonical data roots instead of memorizing paths
-python -m scripts.data_store list
-python -m scripts.data_store resolve train v1
-python -m scripts.data_store verify train v1
+slm data store list
+slm data store resolve train v1
+slm data store verify train v1
 ```
 
-Aux synthesis helpers (same phase): `python -m scripts.generate_progspecs`,
-`scripts.synthesize_pack`, `scripts.build_solver_supervision`,
-`scripts.verify_data_synthesis`.
+Every `slm` command equals `python -m scripts.<module> …` (`slm list` shows the
+mapping). Aux synthesis helpers stay direct:
+`python -m scripts.generate_progspecs`, `scripts.synthesize_pack`,
+`scripts.build_solver_supervision`, `scripts.verify_data_synthesis`.
 
 ## Key flags
 

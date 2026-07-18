@@ -13,12 +13,13 @@ Human feedback → typed training inputs. Owner:
 
 ```bash
 # Export annotations for downstream consumers
-python -m scripts.export_annotations --pairs <pairs-out.jsonl> \
+slm annotations export --pairs <pairs-out.jsonl> \
   [--human-train <records-out.jsonl>] [--feedback <summary-out.json>]
 ```
 
+(`slm annotations export` ≡ `python -m scripts.export_annotations`.)
 Downstream: feed `--pairs` into the preference phase
-(`python -m scripts.train_preference train-events` / pair building).
+(`slm preference train-events` / pair building).
 
 ## Key flags
 

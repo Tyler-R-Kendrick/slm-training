@@ -12,18 +12,21 @@ Trace-driven self-distillation. Owner: `src/slm_training/harnesses/distill/`.
 
 ```bash
 # P1: collect decision trajectories from a checkpoint
-python -m scripts.collect_trajectories --checkpoint outputs/runs/<id>/last.pt \
+slm distill collect --checkpoint outputs/runs/<id>/last.pt \
   --out <trace-store> --limit 200
 
 # P2: stratified selection, then SFT from selected traces (+ anchor mix)
-python -m scripts.self_distill select --traces <trace-store> --out <corpus>
-python -m scripts.self_distill train --corpus <corpus> \
+slm distill self select --traces <trace-store> --out <corpus>
+slm distill self train --corpus <corpus> \
   --checkpoint outputs/runs/<id>/last.pt --anchor-train-dir outputs/data/train/v1
 
 # P3: resume-climb rollouts → trajectory RL → ship gates (RL gated)
-python -m scripts.resume_climb --checkpoint <pt> --test-dir outputs/data/eval/v1 \
+slm distill resume-climb --checkpoint <pt> --test-dir outputs/data/eval/v1 \
   --rl-readiness-report <approved.json>   # or --skip-rl for the SFT-only climb
 ```
+
+(`slm distill <action>` ≡ `python -m scripts.collect_trajectories` /
+`scripts.self_distill` / `scripts.resume_climb`.)
 
 ## Key flags
 
