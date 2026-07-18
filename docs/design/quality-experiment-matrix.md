@@ -2038,6 +2038,26 @@ rather than more weight tuning. See
 [results](iter-e317-slot-component-plan-20260717.md) and
 [JSON](slot-component-plan-results-iter-e317-20260717.json).
 
+## E318 slot-only component plan (2026-07-17)
+
+Removing pooled whole-prompt context from E317 is a strict one-variable matched
+arm after invalidating an initial random-mask setup run. The corrected
+diffusion run keeps identical state shapes/parameter count and reaches the same
+0.7008 slot-head accuracy, with slightly better weighted/broad NLL
+5.4271/5.5002.
+
+At decode weight 1, held-out quality returns to E316's 0.40 meaningful / 0.20
+recall, but neither remaining gate clears. OOD remains regressed at
+0.50/0.25, and limited-RICO fidelity falls from 1.0 to 0.4167 because the head
+scores only the next slot even when a component consumes multiple slots.
+AgentV remains 3/5 with two metric failures.
+
+**Verdict:** reject the E318 checkpoint and retain E316 as strongest scratch.
+Keep the slot-only representation only as evidence for a future
+all-consumed-slot candidate scorer. See
+[results](iter-e318-slot-only-component-plan-20260717.md) and
+[JSON](slot-only-component-results-iter-e318-20260717.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

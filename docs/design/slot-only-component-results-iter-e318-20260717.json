@@ -1,0 +1,135 @@
+{
+  "id": "E318",
+  "date": "2026-07-17",
+  "status": "negative_not_promotable",
+  "intervention": "Remove pooled whole-prompt context from the E317 slot-component head while preserving its compositional slot representation.",
+  "invalid_setup_run": {
+    "run_id": "e318-slot-only-component-20k-r1",
+    "reason": "Omitted --mask-pattern diffusion, changing the objective and removing the diffusion length head.",
+    "steps": 446,
+    "seen_target_tokens": 20044,
+    "trainable_params": 405197,
+    "checkpoint_sha256": "a16a00f27649b31dc1a2125ea9f15bbf4fb83ad372c685237f52ab1832a9e205",
+    "loss_agentv_passed": 1,
+    "quality_evaluated": false
+  },
+  "train": {
+    "run_id": "e318-slot-only-component-20k-r2",
+    "device": "cpu",
+    "context_backend": "scratch",
+    "output_tokenizer": "choice",
+    "mask_pattern": "diffusion",
+    "steps": 446,
+    "seen_prompt_tokens": 53747,
+    "seen_target_tokens": 20044,
+    "elapsed_wall_seconds": 126.9952146380001,
+    "trainable_params": 405717,
+    "saved_params": 449301,
+    "checkpoint": "outputs/runs/e318-slot-only-component-20k-r2/checkpoints/last.pt",
+    "checkpoint_sha256": "b4e5a87b158e9c2b184f3d850d45948c76ac613f6d2034c92e5787f126f534d9",
+    "trace_id": "58568a08502d9c23e649260852a42edf",
+    "checkpoint_sync": false,
+    "scratch_reason": "CPU matched experiment; explicit --no-sync-checkpoints",
+    "matched_config_difference_from_e317": {
+      "slot_component_prompt_context": false
+    }
+  },
+  "loss": {
+    "weighted_nll": 5.427068282426409,
+    "broad_mean_nll": 5.500161019625602,
+    "loss_agentv": {
+      "total": 1,
+      "passed": 1,
+      "failed": 0
+    },
+    "final_20": {
+      "component_plan_loss": 1.9233293652534484,
+      "component_plan_root_accuracy": 0.95,
+      "component_plan_bound_topk_recall": 0.4620833367109299,
+      "component_plan_bound_count_mae": 0.27906776070594785,
+      "slot_component_loss": 1.202239429205656,
+      "slot_component_accuracy": 0.7008333392441273,
+      "slot_component_rows": 3.8
+    }
+  },
+  "evaluation": {
+    "run_id": "e318-slot-only-component-20k-honest-r1",
+    "slot_component_decode_weight": 1.0,
+    "slot_component_prompt_context": false,
+    "honesty": {
+      "ship_gates": true,
+      "compiler_decode_mode": "tree",
+      "decode_min_content": -1,
+      "honest_slot_contract": true,
+      "slot_contract_constrained_decode": true,
+      "allow_unconstrained_fallback": false
+    },
+    "suites": {
+      "smoke": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "placeholder_fidelity": 1.0,
+        "structural_similarity": 0.5464,
+        "meaningful_program_rate": 0.666667,
+        "component_type_recall": 0.333333,
+        "reward_score": 0.640667,
+        "slot_choice_changes": 2,
+        "pass": false
+      },
+      "held_out": {
+        "n": 5,
+        "parse_rate": 1.0,
+        "placeholder_fidelity": 1.0,
+        "structural_similarity": 0.44314,
+        "meaningful_program_rate": 0.4,
+        "component_type_recall": 0.2,
+        "reward_score": 0.3916,
+        "slot_choice_changes": 5,
+        "pass": false
+      },
+      "adversarial": {
+        "n": 4,
+        "parse_rate": 1.0,
+        "placeholder_fidelity": 1.0,
+        "structural_similarity": 0.597025,
+        "meaningful_program_rate": 0.5,
+        "component_type_recall": 0.375,
+        "reward_score": 0.4805,
+        "slot_choice_changes": 4,
+        "pass": true
+      },
+      "ood": {
+        "n": 4,
+        "parse_rate": 1.0,
+        "placeholder_fidelity": 1.0,
+        "structural_similarity": 0.4304,
+        "meaningful_program_rate": 0.5,
+        "component_type_recall": 0.25,
+        "reward_score": 0.49925,
+        "slot_choice_changes": 4,
+        "pass": true
+      },
+      "rico_held": {
+        "n": 3,
+        "parse_rate": 1.0,
+        "placeholder_fidelity": 0.416667,
+        "structural_similarity": 0.2468,
+        "meaningful_program_rate": 1.0,
+        "component_type_recall": 0.555556,
+        "reward_score": 0.791,
+        "slot_choice_changes": 9,
+        "pass": true
+      }
+    },
+    "failures": [
+      "smoke:component_type_recall actual=0.3333333333333333 need>=0.35",
+      "held_out:component_type_recall actual=0.2 need>=0.3"
+    ],
+    "agentv": {
+      "total": 5,
+      "passed": 3,
+      "failed": 2
+    }
+  },
+  "verdict": "Reject the checkpoint. Slot-only context restores held-out quality relative to E317 but clears no gate, still regresses OOD, and damages limited-RICO fidelity because candidate scoring models only the next slot rather than all slots consumed by a component."
+}
