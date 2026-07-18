@@ -1,0 +1,327 @@
+{
+  "version": "dq_strict_fixture_r4_20260718",
+  "profile": "strict",
+  "source": "fixture",
+  "derive_from": null,
+  "seed_path": "src/slm_training/resources/train_seeds.jsonl",
+  "rico_path": null,
+  "rico_hf_split": null,
+  "seed_count": 20,
+  "collected_count": 118,
+  "verifier_rejected": 0,
+  "verifier_rejected_samples": [],
+  "verification_tier_rejected": 0,
+  "verification_tier_rejected_samples": [],
+  "quality_rejected": 0,
+  "quality_rejected_samples": [],
+  "record_count": 104,
+  "error_count": 0,
+  "errors": [],
+  "rejected_total": 14,
+  "rejected_path": "outputs/data/train/dq_strict_fixture_r4_20260718/rejected.jsonl",
+  "quality_report_path": "outputs/data/train/dq_strict_fixture_r4_20260718/quality_report.json",
+  "synthesis_feedback_path": "outputs/data/train/dq_strict_fixture_r4_20260718/synthesis_feedback.json",
+  "synthesis_recommendations": 0,
+  "synthesizer": "quality",
+  "min_quality_score": 0.55,
+  "min_verification_tier": "Bronze",
+  "max_openui_chars": null,
+  "max_components": null,
+  "curriculum": false,
+  "prompt_slot_contract": false,
+  "structure_reserved_rejected": 0,
+  "structure_reserved_rejected_samples": [],
+  "max_records_per_parent": 6,
+  "parent_cap_dropped": 8,
+  "parent_cap_dropped_samples": [
+    {
+      "id": "train_hero_01_ladder_L1",
+      "root_parent_id": "train_hero_01",
+      "source_family": "abstraction_ladder",
+      "reason": "max_records_per_parent"
+    },
+    {
+      "id": "train_hero_01_ladder_L2",
+      "root_parent_id": "train_hero_01",
+      "source_family": "abstraction_ladder",
+      "reason": "max_records_per_parent"
+    },
+    {
+      "id": "train_hero_01_ladder_L3",
+      "root_parent_id": "train_hero_01",
+      "source_family": "abstraction_ladder",
+      "reason": "max_records_per_parent"
+    },
+    {
+      "id": "train_hero_01_ladder_L4",
+      "root_parent_id": "train_hero_01",
+      "source_family": "abstraction_ladder",
+      "reason": "max_records_per_parent"
+    },
+    {
+      "id": "train_hero_01_ladder_L5",
+      "root_parent_id": "train_hero_01",
+      "source_family": "abstraction_ladder",
+      "reason": "max_records_per_parent"
+    },
+    {
+      "id": "train_hero_01_syn_0",
+      "root_parent_id": "train_hero_01",
+      "source_family": "prompt_paraphrase",
+      "reason": "max_records_per_parent"
+    },
+    {
+      "id": "train_hero_01_syn_1",
+      "root_parent_id": "train_hero_01",
+      "source_family": "prompt_paraphrase",
+      "reason": "max_records_per_parent"
+    },
+    {
+      "id": "train_hero_01_syn_2",
+      "root_parent_id": "train_hero_01",
+      "source_family": "prompt_paraphrase",
+      "reason": "max_records_per_parent"
+    }
+  ],
+  "fuzzy_dedup": true,
+  "fuzzy_dropped": 6,
+  "fuzzy_dropped_samples": [
+    {
+      "id": "train_auth_01_syn_1",
+      "duplicate_of": "train_auth_01",
+      "source_family": "prompt_paraphrase",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "train_card_stack_01_syn_1",
+      "duplicate_of": "train_card_stack_01",
+      "source_family": "prompt_paraphrase",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "train_card_stack_01_syn_2",
+      "duplicate_of": "train_card_stack_01",
+      "source_family": "prompt_paraphrase",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "train_form_01_syn_1",
+      "duplicate_of": "train_form_01",
+      "source_family": "prompt_paraphrase",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "train_form_control_01_syn_1",
+      "duplicate_of": "train_form_control_01",
+      "source_family": "prompt_paraphrase",
+      "reason": "fuzzy_minhash"
+    },
+    {
+      "id": "train_tabs_01_syn_1",
+      "duplicate_of": "train_tabs_01",
+      "source_family": "prompt_paraphrase",
+      "reason": "fuzzy_minhash"
+    }
+  ],
+  "semantic_cluster_cap": 8,
+  "semantic_dropped": 0,
+  "semantic_dropped_samples": [],
+  "semantic_dedup": true,
+  "semantic_dedup_engine": "lexical-tfidf",
+  "semantic_cosine_dropped": 0,
+  "semantic_cosine_dropped_samples": [],
+  "ngram_decontam": true,
+  "decontam_flagged": 0,
+  "decontam_flagged_samples": [],
+  "dedup_against": [],
+  "cross_corpus_dropped": 0,
+  "cross_corpus_dropped_samples": [],
+  "difficulty_from": null,
+  "difficulty_scored": 0,
+  "producer_inputs": {
+    "programspec_path": "outputs/data/programspec/programs.jsonl",
+    "programspec_count": 16,
+    "programspec_seed": 0,
+    "language_contract": true,
+    "deconstruct_path": "src/slm_training/resources/deconstruct/pipeline.jsonl",
+    "render_path": "src/slm_training/resources/render/sample_program.json",
+    "frontier_artifacts": true,
+    "repairs_per_program": 1,
+    "edit_derivatives": true,
+    "scope_derivatives": false,
+    "design_md_contrastive": true,
+    "scope_corpus": true,
+    "scope_kinds": [
+      "document",
+      "statement",
+      "expression",
+      "lexical"
+    ],
+    "scope_identity_per_scope": 3,
+    "scope_canonical_pairs_per_scope": 3,
+    "scoped_repairs_per_scope": 2,
+    "typed_lexical_per_program": 4
+  },
+  "preference_pairs": 0,
+  "preference_pairs_path": null,
+  "mixture": {
+    "manifest": {
+      "mixture_id": "dq_strict_fixture_r4_20260718-base",
+      "weights": {
+        "abstraction_ladder": 0.046875,
+        "awwwards_real": 0.03125,
+        "corruption_repair": 0.046875,
+        "diffusion_corruption": 0.015625,
+        "edit_trajectory": 0.046875,
+        "frontier_described": 0.0078125,
+        "frontier_product": 0.0078125,
+        "frontier_semantic": 0.0078125,
+        "frontier_simplified": 0.0078125,
+        "frontier_user": 0.0078125,
+        "gold_correction": 0.01171875,
+        "human_curated": 0.0625,
+        "human_feedback": 0.046875,
+        "language_contract": 0.0625,
+        "layout_augment": 0.01953125,
+        "lexical_typed_map": 0.015625,
+        "namespace_augment": 0.01171875,
+        "programspec_generated": 0.09375,
+        "prompt_paraphrase": 0.0234375,
+        "renderer_visual": 0.0390625,
+        "rico_real": 0.09375,
+        "scope_canonical_document": 0.0234375,
+        "scope_canonical_expression": 0.0234375,
+        "scope_canonical_lexical": 0.0234375,
+        "scope_canonical_statement": 0.0234375,
+        "scope_contract": 0.015625,
+        "scope_identity_document": 0.015625,
+        "scope_identity_expression": 0.015625,
+        "scope_identity_lexical": 0.015625,
+        "scope_identity_statement": 0.015625,
+        "scope_repair_expression": 0.015625,
+        "scope_repair_lexical": 0.015625,
+        "scope_repair_statement": 0.015625,
+        "self_distilled_repair": 0.015625,
+        "self_distilled_success": 0.015625,
+        "stress_adversarial": 0.01953125,
+        "web_distilled": 0.0234375
+      },
+      "task_weights": {
+        "generation": 0.16666666666666666,
+        "identity_echo": 0.16666666666666666,
+        "noop_adversarial": 0.16666666666666666,
+        "patch_edit": 0.16666666666666666,
+        "repair_completion_inpaint": 0.16666666666666666,
+        "state_behavior": 0.16666666666666666
+      },
+      "notes": "P12 deterministic build; P11-owned weights.",
+      "version": 2
+    },
+    "hash": "cd30e32d97863be16004a867c2e0c04f324b8f0e710e4a0a8062eb099ce81829",
+    "diagnostics": {
+      "records": 104,
+      "family_counts": {
+        "frontier_described": 3,
+        "human_curated": 20,
+        "layout_augment": 30,
+        "prompt_paraphrase": 51
+      },
+      "task_counts": {
+        "generation": 104
+      },
+      "task_group_counts": {
+        "generation": 104
+      },
+      "unclassified_tasks": 0,
+      "unique_program_families": 0,
+      "unique_structural_families": 48,
+      "observed_component_counts": {
+        "Button": 60,
+        "Buttons": 8,
+        "Callout": 6,
+        "Card": 39,
+        "CardHeader": 6,
+        "Form": 8,
+        "FormControl": 8,
+        "ImageBlock": 16,
+        "Input": 16,
+        "Modal": 6,
+        "Separator": 16,
+        "Slider": 6,
+        "Stack": 117,
+        "SwitchItem": 6,
+        "TabItem": 10,
+        "Tabs": 5,
+        "TextContent": 165
+      },
+      "configured_but_absent_families": [
+        "abstraction_ladder",
+        "awwwards_real",
+        "corruption_repair",
+        "diffusion_corruption",
+        "edit_trajectory",
+        "frontier_product",
+        "frontier_semantic",
+        "frontier_simplified",
+        "frontier_user",
+        "gold_correction",
+        "human_feedback",
+        "language_contract",
+        "lexical_typed_map",
+        "namespace_augment",
+        "programspec_generated",
+        "renderer_visual",
+        "rico_real",
+        "scope_canonical_document",
+        "scope_canonical_expression",
+        "scope_canonical_lexical",
+        "scope_canonical_statement",
+        "scope_contract",
+        "scope_identity_document",
+        "scope_identity_expression",
+        "scope_identity_lexical",
+        "scope_identity_statement",
+        "scope_repair_expression",
+        "scope_repair_lexical",
+        "scope_repair_statement",
+        "self_distilled_repair",
+        "self_distilled_success",
+        "stress_adversarial",
+        "web_distilled"
+      ],
+      "present_but_unweighted_families": []
+    }
+  },
+  "mean_quality_score": 1.0,
+  "placeholder_vocab_size": 67,
+  "with_design_md": 104,
+  "component_histogram": {
+    "Button": 60,
+    "Buttons": 8,
+    "Callout": 6,
+    "Card": 39,
+    "CardHeader": 6,
+    "Form": 8,
+    "FormControl": 8,
+    "ImageBlock": 16,
+    "Input": 16,
+    "Modal": 6,
+    "Separator": 16,
+    "Slider": 6,
+    "Stack": 117,
+    "SwitchItem": 6,
+    "TabItem": 10,
+    "Tabs": 5,
+    "TextContent": 165
+  },
+  "built_at": "2026-07-18T23:32:22.459617+00:00",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "b54906574d1d9f74c5b2599ae3ba7fe25771d95e",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v1"
+    },
+    "stamped_at": "2026-07-18T23:32:22.726896+00:00"
+  }
+}

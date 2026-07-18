@@ -34,6 +34,19 @@
         {"version": "v1", "date": "2026-07-18", "note": "initial registration"}
       ]
     },
+    "harness.train_data": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "scripts/build_train_data.py",
+        "src/slm_training/harnesses/train_data/",
+        "src/slm_training/resources/train_seeds.jsonl",
+        "src/slm_training/resources/frontier/"
+      ],
+      "history": [
+        {"version": "v1", "date": "2026-07-18", "note": "initial registration; strict build results carry version stamps and actionable rejection lineage"}
+      ]
+    },
     "evals.meaningful_program": {
       "version": "2.0.0",
       "kind": "metric",
