@@ -1,8 +1,3 @@
----
-name: phase-eval
-description: Evaluate checkpoints on honest multi-suite scoreboards — evaluate_model with ship gates, loss suites, task evals, and decode diagnostics — emitting AgentEvals JSONL plus AgentV bundles. Use when measuring a model or preparing a readiness claim.
----
-
 # Evaluation phase
 
 Multi-suite, honesty-constrained evaluation. Owner:

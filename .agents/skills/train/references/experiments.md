@@ -1,8 +1,3 @@
----
-name: phase-experiments
-description: Run experiment matrices and structured campaigns — quality (E*), grammar (X*), perf (P/Q/R), the A→B→C phase pipeline, scaling ladder, mixture search, recipe evolution, and baseline reproduction. Use when running or extending experiment matrices.
----
-
 # Experiments phase
 
 Matrices are the intended way to land levers. Owner:

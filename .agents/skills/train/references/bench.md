@@ -1,8 +1,3 @@
----
-name: phase-bench
-description: Performance benchmarking and generation profiling — decode/telemetry benches, acceleration microbenches, Cactus export benches, and profile_generate hot-path analysis. Use when measuring latency, throughput, or decode performance.
----
-
 # Bench & profile phase
 
 Perf guardrail measurements. Consumers: perf matrix + runtime docs.

@@ -1,8 +1,3 @@
----
-name: phase-test-data
-description: Build held-out, adversarial, and OOD evaluation suites disjoint from a train manifest with strict leakage fingerprints. Use when creating or expanding eval data under outputs/data/eval/.
----
-
 # Test-data phase
 
 Held-out suites with structure-disjoint enforcement. Owner:

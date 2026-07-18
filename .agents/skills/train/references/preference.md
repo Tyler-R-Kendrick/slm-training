@@ -1,8 +1,3 @@
----
-name: phase-preference
-description: Phase B preference learning (surrogate-DPO) — build preference pairs from train records, annotations, or decision events, then run bounded preference training from a checkpoint. Use when building pairs or training preference.
----
-
 # Preference phase
 
 Composite-reward pair building + surrogate-DPO training. Owner:

@@ -1,8 +1,3 @@
----
-name: phase-distill
-description: Distillation and the P1–P3 self-distill climb — collect decision trajectories, stratified trace selection, SFT from selected traces, and resume-climb rollouts behind the RL gate. Use when collecting traces or self-distilling.
----
-
 # Distillation phase
 
 Trace-driven self-distillation. Owner: `src/slm_training/harnesses/distill/`.

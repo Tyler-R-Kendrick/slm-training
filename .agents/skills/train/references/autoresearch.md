@@ -1,8 +1,3 @@
----
-name: phase-autoresearch
-description: Bounded self-improvement — evidence-grounded autoresearch campaigns (init, research, hypothesize, validate, run, diagnose, sync), researcher/hypothesizer self-evaluation, and the validate-rl gate that produces the RLReadinessReport. Use when running autonomous experiment selection or campaign loops.
----
-
 # Autoresearch (self-improvement) phase
 
 Bounded self-improvement by accumulated evidence and policy iteration

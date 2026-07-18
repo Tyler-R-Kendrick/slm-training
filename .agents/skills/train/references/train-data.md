@@ -1,8 +1,3 @@
----
-name: phase-train-data
-description: Build, publish, and resolve versioned OpenUI training corpora with the train-data harness — sources, quality synthesizer, immutable snapshots, and data-store lookup. Use when creating, refreshing, or publishing training data under outputs/data/train/.
----
-
 # Train-data phase
 
 Versioned, immutable, quality-gated training corpora. Owner:

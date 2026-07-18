@@ -1,8 +1,3 @@
----
-name: phase-annotations
-description: Human-feedback annotation capability — export raw annotation stores into preference pairs, human-train records, and feedback summaries for downstream preference runs. Use when exporting or wiring annotations into training.
----
-
 # Annotations phase
 
 Human feedback → typed training inputs. Owner:

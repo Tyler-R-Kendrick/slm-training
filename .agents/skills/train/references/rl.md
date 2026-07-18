@@ -1,8 +1,3 @@
----
-name: phase-rl
-description: Phase C reinforcement learning (GRPO-lite) with fail-closed readiness — train_rl requires an approved RLReadinessReport; external NeMo-RL / MOLT backends run via env-configured wrappers and reconcile through model_cycle. Use when running RL training.
----
-
 # RL phase
 
 GRPO-lite online RL plus external backends. Owner:

@@ -1,8 +1,3 @@
----
-name: phase-checkpoints
-description: Checkpoint lifecycle operations — sync runs to the OpenUI HF bucket, migrate checkpoint formats, and drive the immutable model_cycle lineage (snapshot, branch, train, evaluate, promote, merge, deploy). Use when syncing, promoting, or reconciling checkpoints.
----
-
 # Checkpoints & lineage phase
 
 Durable checkpoints + immutable lineage. Owners:

@@ -1,8 +1,3 @@
----
-name: phase-sft
-description: Phase A supervised model-build training of TwoTower/grammar models, locally or via remote pod and managed Hugging Face Jobs GPU, with checkpoint-bucket sync. Use when running SFT / train_model / hf_jobs_train / remote_train.
----
-
 # SFT (model build) phase
 
 Supervised training from a versioned train snapshot. Owner:
