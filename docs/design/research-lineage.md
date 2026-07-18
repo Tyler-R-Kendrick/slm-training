@@ -577,6 +577,34 @@ markers + deterministic identifier/macro expansion + canonicalizing denoiser,
 measured by bits-per-semantic-decision. No novelty is claimed until matched
 local runs exist.
 
+## Calculated arity and adaptive precision (CAP0)
+
+[calculated-arity-adaptive-precision.md](calculated-arity-adaptive-precision.md)
+is the specification-only contract separating exact symbolic capacity,
+task-relevant rate, neural precision, and measured deployment cost. SLM-77 runs no
+experiment and implements none of the mechanisms below, so all new anchors are
+**Adjacent**. Grammar-Aligned Decoding and Diffusion on Syntax Trees retain their
+existing A2/X22 fidelity records above; their inclusion here is a cross-reference,
+not a second or stronger implementation claim.
+
+| Paper / result | Fidelity | CAP use and transfer boundary |
+| --- | --- | --- |
+| Ma et al., [*The Era of 1-bit LLMs: All Large Language Models are in 1.58 Bits*](https://arxiv.org/abs/2402.17764) (BitNet b1.58) | **Adjacent** | Native ternary weight training motivates a `K_w=3` control. It does not show that post-hoc choice codes or latent quantizers preserve this tiny OpenUI model. |
+| Liu et al., [*ParetoQ: Scaling Laws in Extremely Low-bit LLM Quantization*](https://arxiv.org/abs/2502.02631) | **Adjacent** | Its unified low-bit QAT comparison motivates matched bit-width controls. Its empirical transition between at-most-two and at-least-three bits is model/recipe specific and does not transfer locally. |
+| Wang et al., [*CAT-Q: Cost-efficient and Accurate Ternary Quantization for LLMs*](https://arxiv.org/abs/2606.26650) | **Adjacent** | Learnable modulation and softened ternarization motivate a ternary PTQ control distinct from native training. Large-model/calibration results do not establish local arity or system optima. |
+| Mentzer et al., [*Finite Scalar Quantization: VQ-VAE Made Simple*](https://arxiv.org/abs/2309.15505) | **Adjacent** | Product scalar grids motivate explicit `K_z,d_z` accounting. FSQ is a latent quantizer, not an error-correcting code or weight-PTQ result. |
+| Zhu et al., [*Robust Residual Finite Scalar Quantization for Neural Compression*](https://arxiv.org/abs/2508.15860) | **Adjacent** | Learned scaling and invertible normalization motivate a residual-scale control. Audio/image neural-compression evidence does not establish an OpenUI rate-distortion gain. |
+| Dong et al., [*HAWQ-V2*](https://arxiv.org/abs/1911.03852) | **Adjacent** | Hessian-trace sensitivity and Pareto allocation motivate `CAP-H8`. They do not prove an optimal local `K_w`, `K_a`, or semantic-quality frontier. |
+| Maletti, [*Minimizing deterministic weighted tree automata*](https://doi.org/10.1016/j.ic.2009.01.004); Rabusseau et al., [*Low-Rank Approximation of Weighted Tree Automata*](https://arxiv.org/abs/1511.01442) | **Adjacent** | Exact minimization over deterministic WTA and approximate Hankel/SVD reduction motivate keeping exact `Q` separate from estimated task compression. Their algebraic assumptions do not automatically cover this compiler, CFG, or learned score algebra. |
+| Shin et al., [*Grammar-Aligned Decoding*](https://arxiv.org/abs/2405.21047) | Existing **Adapted** A2 boundary | The existing ASAp transplant concerns positionwise constraint-mass removal. It supplies no convergence, exact quotient, or precision optimum here. |
+| Kapur et al., [*Diffusion on Syntax Trees*](https://arxiv.org/abs/2405.20519) | Existing **Faithful (mechanism)** X22 boundary | The tree-edit mechanism and its missing rendered-observation half remain recorded above. Tree arity does not imply weight, activation, or deployment arity. |
+| Bogdanova and Kapralov, [*Bounds for Codes over Small Alphabets*](https://www.math.bas.bg/smb/2000_PK/tom_2000/pdf/149-154.pdf) | **Adjacent theorem provenance** | The computer-assisted `A_3(6,3) <= 39` bound proves the 41-message ternary length-six robust arm infeasible. It is a coding bound, not model evidence or a general ternary-optimality result. |
+
+No paper in this table supplies a model, checkpoint, local benchmark result, or
+ship evidence. Future CAP rows must use meaningful parse as primary quality,
+retain frozen multi-suite gates, and measure physical packing/kernel costs rather
+than infer them from nominal arity.
+
 ## Autoresearch systems and adjacent research directions
 
 ### Swappable deep-research systems
