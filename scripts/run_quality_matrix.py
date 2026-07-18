@@ -2432,6 +2432,75 @@ def run_one(exp: Experiment, args: argparse.Namespace) -> dict[str, Any]:
     return result
 
 
+def _run_verified_solver(args: argparse.Namespace) -> int:
+    """VSS4-02: dispatch the ``verified-solver`` matrix set.
+
+    The verified-solver rows (R0-R6) do not train a model: fixture mode runs the
+    torch-free VSS4-01 benchmark on CPU and evaluates the fail-closed hard gates.
+    ``--describe`` resolves configs without loading any model or writing a file.
+    """
+    from slm_training.harnesses.model_build import verified_solver_matrix as vsm
+
+    only_rows = (
+        tuple(value.strip() for value in args.row.split(",") if value.strip())
+        if args.row
+        else None
+    )
+    rows = vsm.verified_solver_rows()
+    if only_rows:
+        wanted = {value.upper() for value in only_rows}
+        unknown = sorted(wanted - {row.row_id for row in rows})
+        if unknown:
+            raise SystemExit(f"unknown verified-solver rows: {','.join(unknown)}")
+        rows = tuple(row for row in rows if row.row_id in wanted)
+
+    if args.describe:
+        # Resolve exact configs/dependencies/hashes without loading or writing.
+        print(json.dumps(vsm.describe_rows(rows, mode=args.mode), indent=2))
+        return 0
+
+    # The verified-solver rows drive the VSS4-01 solver benchmark, not the
+    # OpenUI eval suites, so only the seed is recorded in the recipe.  (The
+    # dispatch runs before the E-matrix suite-string normalization.)
+    report = vsm.run_matrix(
+        mode=args.mode,
+        only_rows=only_rows,
+        recipe={"seed": args.seed},
+    )
+
+    # Persist JSON + Markdown evidence under the run root and mirror to docs.
+    # Use a dedicated, non-colliding filename so historical E-matrix result
+    # files are never overwritten.
+    args.run_root.mkdir(parents=True, exist_ok=True)
+    json_path = args.run_root / "verified_solver_matrix_results.json"
+    json_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    md_path = args.run_root / "verified_solver_matrix_results.md"
+    md_path.write_text(vsm.render_markdown(report) + "\n", encoding="utf-8")
+
+    docs_out = args.docs_out or (
+        Path("docs/design/verified-scope-solver-matrix-results.json")
+        if args.run_root == Path("outputs/runs")
+        else args.run_root / "verified_solver_matrix_results.json"
+    )
+    if args.docs_out or args.run_root == Path("outputs/runs"):
+        docs_out.parent.mkdir(parents=True, exist_ok=True)
+        docs_out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+
+    print(
+        json.dumps(
+            {
+                "summary": str(json_path),
+                "matrix_set": report["matrix_set"],
+                "rows_ran": report["rows_ran"],
+                "rows_blocked": report["rows_blocked"],
+                "hard_gates_pass": report["hard_gates_pass"],
+            },
+            indent=2,
+        )
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--train-dir", type=Path, default=Path("outputs/data/train/v1"))
@@ -2590,6 +2659,37 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Print selected experiment definitions without running them.",
     )
+    parser.add_argument(
+        "--matrix-set",
+        default=None,
+        help=(
+            "Named matrix set outside the E-series. 'verified-solver' runs the "
+            "VSS4-02 matched R0-R6 verified-scope-solver rows and hard gates."
+        ),
+    )
+    parser.add_argument(
+        "--row",
+        default=None,
+        help="Comma-separated verified-solver row filter (e.g. R0,R1,R3).",
+    )
+    parser.add_argument(
+        "--mode",
+        choices=("fixture", "frontier"),
+        default="fixture",
+        help=(
+            "verified-solver execution mode: 'fixture' runs the CPU/torch-free "
+            "benchmark; 'frontier' resolves real artifacts and fails clearly "
+            "when they are unavailable."
+        ),
+    )
+    parser.add_argument(
+        "--describe",
+        action="store_true",
+        help=(
+            "Print exact resolved verified-solver configs, dependencies, hashes, "
+            "and hardware expectations without loading models or writing files."
+        ),
+    )
     parser.add_argument("--gen-steps", type=int, default=8)
     parser.add_argument(
         "--override-gen-steps",
@@ -2603,6 +2703,8 @@ def main(argv: list[str] | None = None) -> int:
         help="Run deferred E34 latent MoE placeholder (normally skipped).",
     )
     args = parser.parse_args(argv)
+    if args.matrix_set == "verified-solver":
+        return _run_verified_solver(args)
     # Modern curriculum rows (notably E53) use ``curriculum_dir`` as their
     # actual training input.  If a caller explicitly supplies a different
     # train corpus, do not silently substitute the stale default curriculum

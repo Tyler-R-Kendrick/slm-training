@@ -136,6 +136,23 @@ trail (A1 diagnosis E248, A2 fixture row E259, the E3 literature manifest).
 engine end-to-end — validation, bounded command compilation, and feedback
 acknowledgement — with the hypothesizer-eval benchmarks untouched.
 
+The verified-scope-solver campaign (VSS4-02, SLM-75) follows the same pattern on
+the `grammar_diffusion` track:
+[`autoresearch/verified_scope_matrix.py`](../../src/slm_training/autoresearch/verified_scope_matrix.py)
+encodes a matched control plus the four VSS4-02 hypotheses (proof-checked exact
+closure, dependency capsules vs lexical decomposition, cost-to-go energy ranking,
+and late surface realization) as a `HypothesisMatrix` grounded in the committed
+verified-scope-solver contract, the VSS4-02 fixture memo, and the fixture matrix
+results. Its scope/topology knobs (`scope_contracts`, `scope_local_oracle`,
+`scope_contract_negatives`, `topology_actions`) compile to bounded
+`scripts/train_model.py` flags with `--ship-gates` always appended, and each
+candidate carries the eight fail-closed correctness gates as falsification
+criteria. `tests/test_autoresearch/test_verified_scope_matrix.py` submits it
+through the engine end-to-end. The planning matrix does not replace the stable
+E/X/P/Q/R matrices: after a candidate demonstrates a lever, the stable
+verified-solver row, matched control, JSON, and markdown are registered through
+the normal matrix workflow.
+
 ## Evidence and literature order
 
 Evidence capture reads repository lineage first, then configured roots. The normal

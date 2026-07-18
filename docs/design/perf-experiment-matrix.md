@@ -213,6 +213,16 @@ python -m scripts.run_perf_matrix --only P0,Q9,R9,PG --limit 4
 `pick_ms`, `forwards_count`, `probes_count`, `tokens_emitted`,
 `accepted_run_tokens`.
 
+The verified-solver matrix (VSS4-02,
+[verified-scope-solver-benchmark.md](verified-scope-solver-benchmark.md)) reads
+the same `DecodeStats` but reports solver/certificate time
+(`solver_ms`, `certificate_ms`) **separately** from denoiser/projection/global-
+verifier time (`denoiser_ms`, `projection_ms`, `global_verifier_ms`), plus
+median/p95/p99 request latency and the exact-search work counters, so an
+apparent latency win cannot mask added verification cost. Those rows run under
+the fail-closed correctness gates before any latency comparison; a
+latency/throughput gain never overrides a correctness-gate failure.
+
 ## C-series: compiler-drafted constrained decoding (2026-07-15)
 
 ```bash
