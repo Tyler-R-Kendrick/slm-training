@@ -321,3 +321,117 @@ def test_stage_b_can_include_all_16_cells() -> None:
 
     stage_b = build_stage_b_arms(exclude_stage_a=False)
     assert len(stage_b) == 16
+
+
+def test_compute_paired_deltas() -> None:
+    from slm_training.harnesses.eval.ablate_decode_scaffolding import (
+        ArmResult,
+        ScaffoldFactors,
+        compute_paired_deltas,
+    )
+
+    baseline = ArmResult(
+        arm_id="baseline",
+        factors=ScaffoldFactors(),
+        decode_path_id="current_exact_or_compiler",
+        best_of_n=4,
+        compatible=True,
+        incompatible_reason=None,
+        metrics={"meaningful_program_rate": 0.80, "placeholder_fidelity": 0.90},
+    )
+    arm = ArmResult(
+        arm_id="one_off_content_floor",
+        factors=ScaffoldFactors(content_floor=False),
+        decode_path_id="current_exact_or_compiler",
+        best_of_n=4,
+        compatible=True,
+        incompatible_reason=None,
+        metrics={"meaningful_program_rate": 0.75, "placeholder_fidelity": 0.88},
+    )
+    deltas = compute_paired_deltas(baseline, (arm,))
+    by_metric = {d.metric: d for d in deltas}
+    assert "meaningful_program_rate" in by_metric
+    assert by_metric["meaningful_program_rate"].absolute_delta == pytest.approx(-0.05)
+    assert by_metric["meaningful_program_rate"].relative_delta == pytest.approx(-0.05 / 0.80)
+
+
+def test_estimate_additive_interaction_detects_nonadditivity() -> None:
+    from slm_training.harnesses.eval.ablate_decode_scaffolding import (
+        ArmResult,
+        ScaffoldFactors,
+        estimate_additive_interaction,
+    )
+
+    baseline = ArmResult(
+        arm_id="baseline",
+        factors=ScaffoldFactors(),
+        decode_path_id="current_exact_or_compiler",
+        best_of_n=4,
+        compatible=True,
+        incompatible_reason=None,
+        metrics={"meaningful_program_rate": 0.80},
+    )
+    one_offs = [
+        ArmResult(
+            arm_id=f"one_off_{name}",
+            factors=ScaffoldFactors(**{name: False}),
+            decode_path_id="current_exact_or_compiler",
+            best_of_n=4,
+            compatible=True,
+            incompatible_reason=None,
+            metrics={"meaningful_program_rate": 0.75},
+        )
+        for name in ScaffoldFactors().to_dict()
+    ]
+    all_off = ArmResult(
+        arm_id="all_off",
+        factors=ScaffoldFactors(
+            content_floor=False,
+            prompt_inventory=False,
+            semantic_constraints=False,
+            attempts=False,
+        ),
+        decode_path_id="current_native",
+        best_of_n=1,
+        compatible=True,
+        incompatible_reason=None,
+        metrics={"meaningful_program_rate": 0.50},
+    )
+    estimate = estimate_additive_interaction((baseline,) + tuple(one_offs) + (all_off,))
+    assert estimate["needs_stage_b"] is True
+    assert estimate["residual"] == pytest.approx(-0.10)
+
+
+def test_estimate_additive_interaction_ignores_incompatible_arms() -> None:
+    from slm_training.harnesses.eval.ablate_decode_scaffolding import (
+        ArmResult,
+        ScaffoldFactors,
+        estimate_additive_interaction,
+    )
+
+    baseline = ArmResult(
+        arm_id="baseline",
+        factors=ScaffoldFactors(),
+        decode_path_id="current_exact_or_compiler",
+        best_of_n=4,
+        compatible=True,
+        incompatible_reason=None,
+        metrics={"meaningful_program_rate": 0.80},
+    )
+    all_off = ArmResult(
+        arm_id="all_off",
+        factors=ScaffoldFactors(
+            content_floor=False,
+            prompt_inventory=False,
+            semantic_constraints=False,
+            attempts=False,
+        ),
+        decode_path_id="current_native",
+        best_of_n=1,
+        compatible=True,
+        incompatible_reason=None,
+        metrics={"meaningful_program_rate": 0.80},
+    )
+    estimate = estimate_additive_interaction((baseline, all_off))
+    assert estimate["needs_stage_b"] is False
+    assert estimate["residual"] == pytest.approx(0.0)

@@ -493,33 +493,123 @@ def run_stage_a(
     )
 
 
-def stage_a_needs_stage_b(results: tuple[ArmResult, ...]) -> bool:
-    """Heuristic: Stage B is needed when a one-factor-off residual is non-additive.
+@dataclass(frozen=True)
+class PairedDelta:
+    """Paired difference between an ablation arm and the baseline."""
 
-    For now this is intentionally conservative: if any one-factor-off arm
-    differs from baseline by more than a preregistered epsilon on any metric,
-    or if the all-off arm is outside the linear extrapolation, request Stage B.
+    arm_id: str
+    metric: str
+    baseline_value: float
+    arm_value: float
+    absolute_delta: float
+    relative_delta: float | None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "arm_id": self.arm_id,
+            "metric": self.metric,
+            "baseline_value": self.baseline_value,
+            "arm_value": self.arm_value,
+            "absolute_delta": self.absolute_delta,
+            "relative_delta": self.relative_delta,
+        }
+
+
+# Metrics reported for every factorial cell.  These are read from the
+# scoreboard produced by evaluate_suites; the helper tolerates missing keys.
+DELTA_METRICS: tuple[str, ...] = (
+    "meaningful_program_rate",
+    "placeholder_fidelity",
+    "parse_rate",
+    "exact_match_rate",
+)
+
+
+def _safe_float(value: Any) -> float:
+    """Return a float or NaN for missing/non-numeric metric values."""
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return float(value)
+    return math.nan
+
+
+def compute_paired_deltas(
+    baseline: ArmResult,
+    others: tuple[ArmResult, ...],
+    metrics: tuple[str, ...] = DELTA_METRICS,
+) -> tuple[PairedDelta, ...]:
+    """Compute absolute and relative deltas of ``others`` against ``baseline``."""
+    deltas: list[PairedDelta] = []
+    for arm in others:
+        if not arm.compatible:
+            continue
+        for metric in metrics:
+            base_val = _safe_float(baseline.metrics.get(metric))
+            arm_val = _safe_float(arm.metrics.get(metric))
+            if math.isnan(base_val) or math.isnan(arm_val):
+                continue
+            abs_delta = arm_val - base_val
+            rel_delta = abs_delta / base_val if base_val != 0 else None
+            deltas.append(
+                PairedDelta(
+                    arm_id=arm.arm_id,
+                    metric=metric,
+                    baseline_value=base_val,
+                    arm_value=arm_val,
+                    absolute_delta=abs_delta,
+                    relative_delta=rel_delta,
+                )
+            )
+    return tuple(deltas)
+
+
+def estimate_additive_interaction(
+    results: tuple[ArmResult, ...],
+    metric: str = "meaningful_program_rate",
+    threshold: float = 0.05,
+) -> dict[str, Any]:
+    """Compare observed all-off rate with the additive extrapolation.
+
+    Returns a dict with ``additive_prediction``, ``observed_all_off``,
+    ``residual``, ``needs_stage_b``, and the per-factor main effects.
     """
     baseline = next((r for r in results if r.arm_id == "baseline"), None)
-    if baseline is None or not baseline.compatible:
-        return False
-    baseline_rate = baseline.metrics.get("meaningful_program_rate", math.nan)
-    if math.isnan(baseline_rate):
-        return False
+    all_off = next((r for r in results if r.arm_id == "all_off"), None)
+    if baseline is None or all_off is None:
+        return {"error": "missing baseline or all-off arm"}
+    if not baseline.compatible or not all_off.compatible:
+        return {"error": "baseline or all-off arm incompatible"}
 
-    additive_prediction = baseline_rate
+    baseline_val = _safe_float(baseline.metrics.get(metric))
+    all_off_val = _safe_float(all_off.metrics.get(metric))
+    if math.isnan(baseline_val) or math.isnan(all_off_val):
+        return {"error": f"missing {metric} for baseline or all-off"}
+
+    main_effects: dict[str, float] = {}
+    additive_prediction = baseline_val
     for r in results:
         if r.arm_id.startswith("one_off_") and r.compatible:
-            delta = baseline_rate - r.metrics.get("meaningful_program_rate", baseline_rate)
-            additive_prediction -= delta
+            factor_name = r.arm_id[len("one_off_") :]
+            arm_val = _safe_float(r.metrics.get(metric))
+            if math.isnan(arm_val):
+                continue
+            effect = baseline_val - arm_val
+            main_effects[factor_name] = effect
+            additive_prediction -= effect
 
-    all_off = next((r for r in results if r.arm_id == "all_off"), None)
-    if all_off is None or not all_off.compatible:
-        return False
-    all_off_rate = all_off.metrics.get("meaningful_program_rate", math.nan)
-    if math.isnan(all_off_rate):
-        return False
+    residual = all_off_val - additive_prediction
+    return {
+        "metric": metric,
+        "baseline_value": baseline_val,
+        "additive_prediction": additive_prediction,
+        "observed_all_off": all_off_val,
+        "residual": residual,
+        "threshold": threshold,
+        "needs_stage_b": abs(residual) > threshold,
+        "main_effects": main_effects,
+    }
 
-    # If the observed all-off rate deviates by more than 5 points from the
-    # additive extrapolation, suspect interactions.
-    return abs(all_off_rate - additive_prediction) > 0.05
+
+def stage_a_needs_stage_b(results: tuple[ArmResult, ...]) -> bool:
+    """Heuristic: Stage B is needed when a one-factor-off residual is non-additive."""
+    estimate = estimate_additive_interaction(results)
+    return bool(estimate.get("needs_stage_b", False))

@@ -25,6 +25,8 @@ from slm_training.harnesses.eval.ablate_decode_scaffolding import (
     AblateReport,
     ModelBuildConfig,
     build_stage_a_arms,
+    compute_paired_deltas,
+    estimate_additive_interaction,
     run_stage_a,
     stage_a_needs_stage_b,
 )
@@ -71,6 +73,41 @@ def _markdown_report(report: AblateReport) -> str:
     need_stage_b = stage_a_needs_stage_b(report.arms)
     lines.append(f"- Stage B recommended: {need_stage_b}")
     lines.append("")
+
+    baseline = next((a for a in report.arms if a.arm_id == "baseline"), None)
+    if baseline is not None and baseline.compatible:
+        others = tuple(a for a in report.arms if a.arm_id != "baseline")
+        deltas = compute_paired_deltas(baseline, others)
+        if deltas:
+            lines.append("## Paired deltas vs baseline")
+            lines.append("")
+            lines.append("| arm | metric | baseline | arm_value | abs_delta | rel_delta |")
+            lines.append("| --- | ------ | -------- | --------- | --------- | --------- |")
+            for d in deltas:
+                rel = f"{d.relative_delta:.4f}" if d.relative_delta is not None else "n/a"
+                lines.append(
+                    f"| {d.arm_id} | {d.metric} | {d.baseline_value:.4f} | "
+                    f"{d.arm_value:.4f} | {d.absolute_delta:+.4f} | {rel} |"
+                )
+            lines.append("")
+
+        interaction = estimate_additive_interaction(report.arms)
+        if "error" not in interaction:
+            lines.append("## Additive interaction estimate")
+            lines.append("")
+            lines.append(f"- Metric: `{interaction['metric']}`")
+            lines.append(f"- Baseline: `{interaction['baseline_value']:.4f}`")
+            lines.append(f"- Additive prediction for all-off: `{interaction['additive_prediction']:.4f}`")
+            lines.append(f"- Observed all-off: `{interaction['observed_all_off']:.4f}`")
+            lines.append(f"- Residual: `{interaction['residual']:+.4f}`")
+            lines.append(f"- Threshold: `{interaction['threshold']}`")
+            lines.append(f"- Needs Stage B: `{interaction['needs_stage_b']}`")
+            if interaction["main_effects"]:
+                lines.append("- Main effects:")
+                for factor, effect in interaction["main_effects"].items():
+                    lines.append(f"  - {factor}: `{effect:+.4f}`")
+            lines.append("")
+
     return "\n".join(lines)
 
 
