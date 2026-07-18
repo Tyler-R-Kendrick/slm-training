@@ -2727,6 +2727,34 @@ with substantially stronger repaired-corpus full-RICO structure/recall
 URI registration. See
 [`iter-e456-e396-repaired-full-ship-gates-20260718.md`](iter-e456-e396-repaired-full-ship-gates-20260718.md).
 
+E457 conservatively extends visible prompt-role contracts to directly counted
+natural-language component nouns. Only 5/16 bounded prompts activate it.
+Relative to E455, held-out meaningful rate improves 0.6→1.0, structure
+0.6400→0.7527, recall 0.5048→0.7381, and reward 0.5922→0.9790.
+Adversarial structure improves 0.7661→0.8061; smoke and OOD are unchanged.
+AgentV passes 4/4 with zero execution errors and no fallback/timeouts. Keep
+the parser, but required TabItem/Slider counts remain partially realized and
+full five-suite evidence still requires refresh. See
+[`iter-e457-e396-explicit-prompt-components-20260718.md`](iter-e457-e396-explicit-prompt-components-20260718.md).
+
+E458 reserves visible content slots for semantic arguments on SwitchItem,
+Slider, and TabItem. Relative to E457, held-out structure improves
+0.7527→0.7553, recall 0.7381→0.8048, and reward 0.9790→0.9838; the tab-panel
+row becomes type-complete and all other suites are unchanged. AgentV passes
+4/4 with zero execution errors and no fallback/timeouts. Slider remains
+blocked by the earlier density-feasibility count, so full-suite evidence is
+deferred. See
+[`iter-e458-e396-semantic-slot-arguments-20260718.md`](iter-e458-e396-semantic-slot-arguments-20260718.md).
+
+E459 aligns density feasibility with E458's semantic content-slot counts.
+Relative to E458, held-out structure improves 0.7553→0.8023, recall
+0.8048→0.9048, and reward 0.9838→0.9862; both the tab-panel and settings rows
+become type-complete. All other bounded suites are unchanged. AgentV passes
+4/4 with zero execution errors and no fallback/timeouts. Keep the change;
+RICO prompts explicitly requesting Switch/Slider still require refresh before
+a new full five-suite claim. See
+[`iter-e459-e396-semantic-slot-density-20260718.md`](iter-e459-e396-semantic-slot-density-20260718.md).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

@@ -169,6 +169,13 @@ _PROMPT_COMPONENT_PLACEHOLDER_ARITY = {
     "Slider": 1,
     "DatePicker": 0,
     "ImageBlock": 2,
+    "Tabs": 0,
+    "TabItem": 1,
+}
+_COMPONENT_SLOT_ARGUMENTS = {
+    "Slider": frozenset({6}),
+    "SwitchItem": frozenset({0, 1}),
+    "TabItem": frozenset({1}),
 }
 _PROMPT_CATEGORY_PATTERNS = {
     "button": re.compile(r"\b(\d+)\s+buttons?\b", re.IGNORECASE),
@@ -178,13 +185,60 @@ _PROMPT_CATEGORY_PATTERNS = {
     "image": re.compile(r"\b(\d+)\s+images?\b", re.IGNORECASE),
 }
 _PROMPT_ROLES_RE = re.compile(r"\(roles:\s*([^)]+)\)", re.IGNORECASE)
+_PROMPT_COUNT_WORDS = {
+    "a": 1,
+    "an": 1,
+    "one": 1,
+    "two": 2,
+    "three": 3,
+    "four": 4,
+    "five": 5,
+    "six": 6,
+    "seven": 7,
+    "eight": 8,
+    "nine": 9,
+    "ten": 10,
+}
+_PROMPT_COUNT_PATTERN = r"(a|an|one|two|three|four|five|six|seven|eight|nine|ten|\d+)"
+_PROMPT_EXPLICIT_COMPONENT_PATTERNS = {
+    "Button": re.compile(
+        rf"\b{_PROMPT_COUNT_PATTERN}\s+buttons?\b", re.IGNORECASE
+    ),
+    "Card": re.compile(
+        rf"\b{_PROMPT_COUNT_PATTERN}\s+(?:side-by-side\s+)?cards?\b",
+        re.IGNORECASE,
+    ),
+    "SwitchItem": re.compile(
+        rf"\b{_PROMPT_COUNT_PATTERN}\s+switch(?:es)?\b", re.IGNORECASE
+    ),
+    "Slider": re.compile(
+        rf"\b{_PROMPT_COUNT_PATTERN}\s+sliders?\b", re.IGNORECASE
+    ),
+}
+_PROMPT_TAB_PANEL_RE = re.compile(
+    rf"\b{_PROMPT_COUNT_PATTERN}[ -]tabs?\s+panels?\b", re.IGNORECASE
+)
+
+
+def _visible_count(value: str) -> int:
+    return int(value) if value.isdigit() else _PROMPT_COUNT_WORDS[value.casefold()]
 
 
 def prompt_role_component_counts(prompt: str) -> Counter[str]:
     """Resolve only explicit prompt role/count contracts into component counts."""
     match = _PROMPT_ROLES_RE.search(prompt or "")
     if match is None:
-        return Counter()
+        required = Counter(
+            {
+                component: _visible_count(match.group(1))
+                for component, pattern in _PROMPT_EXPLICIT_COMPONENT_PATTERNS.items()
+                if (match := pattern.search(prompt or ""))
+            }
+        )
+        if tabs := _PROMPT_TAB_PANEL_RE.search(prompt or ""):
+            required["Tabs"] = 1
+            required["TabItem"] = _visible_count(tabs.group(1))
+        return required
     category_counts = {
         category: int(count.group(1))
         for category, pattern in _PROMPT_CATEGORY_PATTERNS.items()
@@ -4591,6 +4645,17 @@ class TwoTowerModel(nn.Module):
         if floor <= 0:
             return legal
         tok = self.tokenizer
+
+        def required_slots(token_id: int) -> int:
+            token = tok.id_to_token.get(int(token_id), "")
+            component = token.removeprefix("+") if token.startswith("+") else ""
+            semantic_args = _COMPONENT_SLOT_ARGUMENTS.get(component)
+            return (
+                len(semantic_args)
+                if semantic_args is not None
+                else state.required_slot_count(token_id)
+            )
+
         if (
             float(
                 getattr(self.config, "component_plan_decode_weight", 0.0) or 0.0
@@ -4625,7 +4690,7 @@ class TwoTowerModel(nn.Module):
                     content = {
                         token_id
                         for token_id in legal
-                        if 0 < state.required_slot_count(token_id) <= remaining_slots
+                        if 0 < required_slots(token_id) <= remaining_slots
                     }
                     return content or legal
                 without_eos = legal - {tok.eos_id}
@@ -4637,7 +4702,7 @@ class TwoTowerModel(nn.Module):
                     without_eos = {
                         token_id
                         for token_id in without_eos
-                        if state.required_slot_count(token_id) <= remaining_slots
+                        if required_slots(token_id) <= remaining_slots
                     }
                 return without_eos or legal
             if (
@@ -4655,6 +4720,18 @@ class TwoTowerModel(nn.Module):
                 schema = frame.schemas[frame.arg_index]
                 if state._schema_accepts(schema, "string") and slot_contract:
                     emitted = set(prefix or ())
+                    slot_ids = {
+                        tok.token_to_id[f"@{index}"]
+                        for index in range(len(slot_contract))
+                    }
+                    component = frame.expr_type.removeprefix("element:")
+                    semantic_args = _COMPONENT_SLOT_ARGUMENTS.get(component)
+                    if (
+                        semantic_args is not None
+                        and frame.arg_index not in semantic_args
+                    ):
+                        without_slots = legal - slot_ids
+                        return without_slots or legal
                     slot_id = next(
                         (
                             tok.token_to_id[f"@{index}"]

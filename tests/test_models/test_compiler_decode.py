@@ -110,7 +110,19 @@ def test_prompt_role_contract_uses_only_visible_counts() -> None:
     ) == Counter(
         {"Card": 2, "TextContent": 1, "Input": 1, "SwitchItem": 1}
     )
-    assert not prompt_role_component_counts("Settings with a switch and slider.")
+    assert prompt_role_component_counts(
+        "Settings list with a switch and a slider."
+    ) == Counter({"SwitchItem": 1, "Slider": 1})
+    assert prompt_role_placeholder_count(
+        "Settings list with a switch and a slider."
+    ) == 3
+    assert prompt_role_component_counts("Two side-by-side cards.") == Counter(
+        {"Card": 2}
+    )
+    assert prompt_role_component_counts("Four cards.") == Counter({"Card": 4})
+    assert prompt_role_component_counts(
+        "Two-tab panel with overview and details content."
+    ) == Counter({"TabItem": 2, "Tabs": 1})
 
 
 def test_honest_zero_slot_role_contract_stays_empty() -> None:
@@ -160,6 +172,70 @@ def test_prompt_role_contract_forces_missing_zero_slot_controls() -> None:
     assert first == {datepicker}
     assert second == {datepicker}
     assert complete == {stack}
+
+
+def test_slot_contract_reserves_switch_identifier_for_literal() -> None:
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState, ChoiceTokenizer
+
+    model = _model(component_plan_decode_weight=2.0)
+    tokenizer = ChoiceTokenizer.build()
+    model.tokenizer = tokenizer
+    state = ChoiceDecodeState(tokenizer, slot_count=3)
+    switch = tokenizer.token_to_id["+SwitchItem"]
+    slots = [tokenizer.token_to_id[f"@{index}"] for index in range(3)]
+    assert state.advance_id(switch)
+
+    prefix = [tokenizer.bos_id, switch]
+    required = Counter({"SwitchItem": 1, "Slider": 1})
+    legal = state.allowed_ids(64)
+    assert model._choice_min_content_legal_ids(
+        state,
+        legal,
+        [":label", ":description", ":volume"],
+        prefix,
+        prompt_role_contract=required,
+    ) == {slots[0]}
+    assert state.advance_id(slots[0])
+    prefix.append(slots[0])
+
+    legal = state.allowed_ids(63)
+    assert model._choice_min_content_legal_ids(
+        state,
+        legal,
+        [":label", ":description", ":volume"],
+        prefix,
+        prompt_role_contract=required,
+    ) == {slots[1]}
+    assert state.advance_id(slots[1])
+    prefix.append(slots[1])
+
+    legal = state.allowed_ids(62)
+    constrained = model._choice_min_content_legal_ids(
+        state,
+        legal,
+        [":label", ":description", ":volume"],
+        prefix,
+        prompt_role_contract=required,
+    )
+    assert slots[2] not in constrained
+
+    completed = ChoiceDecodeState(tokenizer, slot_count=3)
+    completed.mode = "structural"
+    completed.section_types = ["element:SwitchItem"]
+    slider = tokenizer.token_to_id["+Slider"]
+    prefix = [tokenizer.bos_id, switch, slots[0], slots[1]]
+    legal = completed.allowed_ids(64)
+    density_legal = model._choice_min_content_legal_ids(
+        completed,
+        legal,
+        [":label", ":description", ":volume"],
+        prefix,
+        prompt_role_contract=required,
+    )
+    assert slider in density_legal
+    assert model._choice_prompt_role_legal_ids(
+        completed, density_legal, required, [":label", ":description", ":volume"]
+    ) == {slider}
 
 
 def test_choice_component_plan_trains_without_surface_compiler() -> None:

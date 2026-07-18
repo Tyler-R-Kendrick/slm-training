@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E458",
+  "date": "2026-07-18",
+  "status": "complete",
+  "run_id": "e458-e396-semantic-slot-arguments-r1",
+  "checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0"
+  },
+  "change": {
+    "semantic_slot_arguments": {
+      "SwitchItem": [0, 1],
+      "Slider": [6],
+      "TabItem": [1]
+    }
+  },
+  "suites": {
+    "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.56, "component_type_recall": 0.5, "reward_score": 0.977},
+    "held_out": {"n": 5, "parse_rate": 1.0, "meaningful_program_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.75534, "component_type_recall": 0.8047619047619048, "reward_score": 0.9837999999999999},
+    "adversarial": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.80605, "component_type_recall": 1.0, "reward_score": 0.9767499999999999},
+    "ood": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.5835250000000001, "component_type_recall": 0.8125, "reward_score": 0.9834999999999999}
+  },
+  "agentv": {"passed": 4, "total": 4, "execution_errors": 0},
+  "timing": {
+    "elapsed_seconds": 27,
+    "external_timeout_seconds": 290,
+    "external_kill_after_seconds": 10,
+    "completed_normally": true
+  },
+  "verdict": "Keep semantic slot positions; align density feasibility before full-suite refresh."
+}

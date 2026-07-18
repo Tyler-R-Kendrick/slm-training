@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E457",
+  "date": "2026-07-18",
+  "status": "complete",
+  "run_id": "e457-e396-explicit-prompt-components-r1",
+  "checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0"
+  },
+  "change": {
+    "explicit_prompt_components": ["Button", "Card", "SwitchItem", "Slider", "Tabs", "TabItem"],
+    "role_tag_precedence": true,
+    "bounded_prompts_with_contract": 5,
+    "bounded_prompt_n": 16
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "grammar_ltr_max_tokens": 320,
+    "decode_min_content": -1,
+    "component_plan_decode_weight": 2.0,
+    "slot_component_decode_weight": 8.0,
+    "prompt_role_constrained_decode": true,
+    "slot_contract_constrained_decode": true,
+    "honest_slot_contract": true,
+    "allow_unconstrained_fallback": false,
+    "gen_steps": 8,
+    "max_attempts": 3
+  },
+  "suites": {
+    "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.56, "component_type_recall": 0.5, "reward_score": 0.977},
+    "held_out": {"n": 5, "parse_rate": 1.0, "meaningful_program_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.75268, "component_type_recall": 0.738095238095238, "reward_score": 0.9789999999999999},
+    "adversarial": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.80605, "component_type_recall": 1.0, "reward_score": 0.9767499999999999},
+    "ood": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.5835250000000001, "component_type_recall": 0.8125, "reward_score": 0.9834999999999999}
+  },
+  "agentv": {"passed": 4, "total": 4, "execution_errors": 0},
+  "timing": {
+    "elapsed_seconds": 27,
+    "external_timeout_seconds": 290,
+    "external_kill_after_seconds": 10,
+    "completed_normally": true
+  },
+  "verdict": "Keep: bounded quality improves without measured regression; full five-suite refresh remains required."
+}
