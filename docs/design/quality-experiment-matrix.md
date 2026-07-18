@@ -2843,6 +2843,23 @@ local champion, with production HF ship still pending durable bucket sync.
 See
 [`iter-e465-e396-explicit-callout-full-ship-gates-20260718.md`](iter-e465-e396-explicit-callout-full-ship-gates-20260718.md).
 
+E466 closes reference-only component arrays instead of failing open to raw
+placeholder children when no prior reference exists. OOD
+structure/recall/reward improve
+0.5835/0.8125/0.9835→0.6279/0.8750/0.9865. E467 repeats all bounded suites:
+smoke/adversarial are unchanged; held structure falls 0.0185 while recall is
+unchanged and reward rises 0.0006. AgentV passes 4/4 and all suites retain
+zero failures/fallback/timeouts. Accept for bounded evaluation. See
+[`iter-e466-e467-reference-array-fail-closed-20260718.md`](iter-e466-e467-reference-array-fail-closed-20260718.md).
+
+E468's prediction-level impact audit finds none of E460's 1500 stored RICO
+predictions begins with a component array, the only state in which the
+repaired branch can fire. E460 is therefore exactly reusable. Merged with
+E467, all five local gates pass with zero failures/fallback/timeouts and
+AgentV 5/5. E396 remains the current-policy local champion, with production HF
+ship pending durable bucket sync. See
+[`iter-e468-e396-reference-array-full-ship-gates-20260718.md`](iter-e468-e396-reference-array-full-ship-gates-20260718.md).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

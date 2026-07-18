@@ -4797,7 +4797,14 @@ class TwoTowerModel(nn.Module):
                     }
                     if state.frames[-1].arg_index:
                         references.add(tok.token_to_id["]"])
-                    return references or legal
+                    if references:
+                        return references
+                    list_close_id = tok.token_to_id["]"]
+                    return (
+                        {list_close_id}
+                        if list_close_id in legal
+                        else legal
+                    )
             return legal
         if state.valid_root_seen and tok.eos_id in legal:
             return {tok.eos_id}

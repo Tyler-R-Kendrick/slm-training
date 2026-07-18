@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "experiment_ids": ["E466", "E467"],
+  "date": "2026-07-18",
+  "status": "complete_bounded",
+  "run_id": "e467-e396-reference-array-fail-closed-bounded-r1",
+  "diagnostic_run_id": "e466-e396-reference-array-fail-closed-ood-r1",
+  "checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0"
+  },
+  "data": {
+    "version": "e451_root_binder_v1"
+  },
+  "lever": {
+    "name": "reference_array_fail_closed",
+    "old_behavior": "fall back to all legal tokens when no prior child reference exists",
+    "new_behavior": "close the reference-only array when no prior child reference exists"
+  },
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.6822333333333334,
+      "component_type_recall": 0.6666666666666666,
+      "reward_score": 0.973
+    },
+    "held_out": {
+      "n": 5,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.78384,
+      "component_type_recall": 0.9047619047619048,
+      "reward_score": 0.9868
+    },
+    "adversarial": {
+      "n": 4,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.80605,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9767499999999999
+    },
+    "ood": {
+      "n": 4,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.6278999999999999,
+      "component_type_recall": 0.875,
+      "reward_score": 0.9864999999999999
+    }
+  },
+  "ship_gates": {
+    "pass": true,
+    "scope": "bounded_four_suite",
+    "failures": []
+  },
+  "agentv": {
+    "passed": 4,
+    "total": 4,
+    "execution_errors": 0
+  },
+  "timing": {
+    "external_timeout_seconds": 290,
+    "external_kill_after_seconds": 10,
+    "completed_normally": true
+  },
+  "rico_impact_audit": {
+    "rico_n": 1500,
+    "first_component_arrays": 0,
+    "affected_predictions": 0,
+    "refresh_required": false,
+    "full_gate_run_id": "e468-e396-reference-array-full-ship-gates-r1"
+  },
+  "verdict": "Accept for bounded evaluation; no E460 RICO prediction reaches the repaired branch, so exact reuse is valid in E468."
+}

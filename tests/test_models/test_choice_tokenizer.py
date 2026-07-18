@@ -484,6 +484,19 @@ def test_twotower_choice_wiring(
     )
     assert model.tokenizer.token_to_id["+Button"] not in exhausted
     assert model.tokenizer.token_to_id["+Card"] in exhausted
+    modal = ChoiceDecodeState(model.tokenizer, slot_count=3)
+    modal_prefix = [model.tokenizer.bos_id]
+    for token in ("+Modal", "@0", "#true", "["):
+        token_id = model.tokenizer.token_to_id[token]
+        assert modal.advance_id(token_id), token
+        modal_prefix.append(token_id)
+    modal_children = model._choice_min_content_legal_ids(
+        modal,
+        modal.allowed_ids(54),
+        [":modal.title", ":modal.body", ":modal.confirm"],
+        modal_prefix,
+    )
+    assert modal_children == {model.tokenizer.token_to_id["]"]}
     one_slot_left = model._choice_min_content_legal_ids(
         ChoiceDecodeState(model.tokenizer, slot_count=2),
         ChoiceDecodeState(model.tokenizer, slot_count=2).allowed_ids(58),
