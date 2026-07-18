@@ -8,6 +8,7 @@ Keep one obvious owner for every tracked file. Before adding a path, search with
 | Content | Location |
 | --- | --- |
 | Python implementation | `src/slm_training/` or the existing `src/gpu_multi_farm/` package |
+| DSL analysis helpers (arity, signatures, canonicalization) | `src/slm_training/dsl/analysis/` |
 | Runnable entrypoints and maintenance checks | `scripts/` |
 | Tests mirroring implementation domains | `tests/` |
 | Small committed inputs and expected artifacts | `src/slm_training/resources/` |
@@ -17,7 +18,6 @@ Keep one obvious owner for every tracked file. Before adding a path, search with
 | Self-contained Node/frontend packages | `src/apps/` |
 | Canonical agent skills | `.agents/skills/` |
 | Client discovery links and hooks | `.claude/`, `.cursor/`, `.codex/`, `.github/hooks/` |
-| Static, Torch-free DSL analyses (exact grammar arity / capacity certificates) | `src/slm_training/dsl/analysis/` (extend, do not add a sibling) |
 
 The repository root is an allowlist for required manifests and cross-agent
 instructions. Application code and owned resources belong below `src/`; generated

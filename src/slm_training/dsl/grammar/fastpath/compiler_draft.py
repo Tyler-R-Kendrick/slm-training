@@ -176,7 +176,8 @@ def _semantic_kind(tokenizer: Any, token_id: int) -> str:
     kind_of = getattr(tokenizer, "kind_of", None)
     if callable(kind_of):
         try:
-            return str(kind_of(int(token_id)).value)
+            kind = kind_of(int(token_id))
+            return str(getattr(kind, "value", kind))
         except Exception:  # noqa: BLE001
             pass
     piece = _token_piece(tokenizer, token_id)
@@ -1116,6 +1117,68 @@ def gold_compiler_decisions(
     max_path_tokens: int = 8,
 ) -> tuple[CompilerDecision, ...]:
     """Replay a gold stream and classify every Lark-derived branch decision."""
+    try:
+        from slm_training.models.choice_tokenizer import (
+            ChoiceDecodeState,
+            is_choice_tokenizer,
+        )
+
+        if is_choice_tokenizer(tokenizer):
+            ids = tuple(int(token_id) for token_id in token_ids)
+            top_level_components: list[int] = []
+            probe = ChoiceDecodeState(
+                tokenizer, slot_count=len(slot_contract or ())
+            )
+            probe_cursor = 1 if ids and ids[0] == int(tokenizer.bos_id) else 0
+            while (
+                probe_cursor < len(ids)
+                and ids[probe_cursor]
+                not in {int(tokenizer.pad_id), int(tokenizer.eos_id)}
+            ):
+                if (
+                    _semantic_kind(tokenizer, ids[probe_cursor]) == "component"
+                    and not probe.frames
+                ):
+                    top_level_components.append(probe_cursor)
+                if not probe.advance_id(ids[probe_cursor]):
+                    break
+                probe_cursor += 1
+            structural_root = (
+                top_level_components[-1] if top_level_components else None
+            )
+            state = ChoiceDecodeState(
+                tokenizer, slot_count=len(slot_contract or ())
+            )
+            stop_ids = {int(tokenizer.pad_id), int(tokenizer.eos_id)}
+            cursor = 1 if ids and ids[0] == int(tokenizer.bos_id) else 0
+            decisions: list[CompilerDecision] = []
+            while cursor < len(ids) and ids[cursor] not in stop_ids:
+                remaining = len(ids) - cursor
+                candidates = tuple(sorted(state.allowed_ids(remaining)))
+                gold = ids[cursor]
+                token_kind = _semantic_kind(tokenizer, gold)
+                kind = token_kind
+                if token_kind == "component" and not state.frames:
+                    kind = (
+                        "component_root"
+                        if state.current_marker == "r="
+                        or (
+                            state.mode != "v05"
+                            and cursor == structural_root
+                        )
+                        else "component_bound"
+                    )
+                if len(candidates) > 1:
+                    decisions.append(
+                        CompilerDecision(cursor, kind, token_kind, candidates)
+                    )
+                if not state.advance_id(gold):
+                    break
+                cursor += 1
+            return tuple(decisions)
+    except Exception:  # noqa: BLE001
+        pass
+
     ids = tuple(int(token_id) for token_id in token_ids)
     stop_ids = {int(tokenizer.pad_id), int(tokenizer.eos_id)}
     cursor = 1 if ids and ids[0] == int(tokenizer.bos_id) else 0

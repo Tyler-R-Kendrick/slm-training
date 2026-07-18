@@ -90,6 +90,54 @@ def test_context_exposes_compact_output_contract() -> None:
     assert "---OUTPUT_CONTRACT---\nlexical:boolean" in context
 
 
+def test_design_md_dropout_is_deterministic_and_cache_safe() -> None:
+    design_md = "# Design\nUse a card."
+    records = [
+        ExampleRecord(
+            id=f"record-{i}",
+            prompt="Hero",
+            design_md=design_md,
+            openui=HERO,
+            split="train",
+        )
+        for i in range(32)
+    ]
+    model = TwoTowerModel.from_records(
+        records,
+        config=TwoTowerConfig(
+            d_model=32,
+            n_heads=4,
+            context_layers=1,
+            denoiser_layers=1,
+            design_md_dropout=0.5,
+            seed=7,
+        ),
+        device="cpu",
+    )
+
+    first = [model._training_design_md(design_md, record.id) for record in records]
+    second = [model._training_design_md(design_md, record.id) for record in records]
+
+    assert first == second
+    assert set(first) == {None, design_md}
+    model.config.design_md_dropout = 0.0
+    assert model._training_design_md(design_md, "record") == design_md
+    model.config.design_md_dropout = 1.0
+    assert model._training_design_md(design_md, "record") is None
+    model.count_batch_tokens(records[:1])
+    assert "---DESIGN.md---" not in model._context_text_cache["record-0"]
+
+
+def test_design_md_dropout_rejects_invalid_rate() -> None:
+    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    with pytest.raises(ValueError, match="design_md_dropout"):
+        TwoTowerModel.from_records(
+            records,
+            config=TwoTowerConfig(design_md_dropout=1.1),
+            device="cpu",
+        )
+
+
 def test_ltr_suffix_always_masks_first_content_token() -> None:
     records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
     model = TwoTowerModel.from_records(

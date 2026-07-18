@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import random
@@ -222,6 +223,8 @@ class TwoTowerConfig:
     # Extra CE weight on gold placeholder token positions (fidelity signal).
     fidelity_loss_weight: float = 0.5
     design_md_in_context: bool = True
+    # Static by (seed, record key) so context caching remains sound.
+    design_md_dropout: float = 0.0
     design_md_budget: int = 1800
     schema_in_context: bool = False
     slot_contract_in_context: bool = False
@@ -465,6 +468,8 @@ class TwoTowerModel(nn.Module):
         self.tokenizer = tokenizer
         self.context_tokenizer = context_tokenizer or tokenizer
         self.config = config or TwoTowerConfig()
+        if not 0.0 <= float(self.config.design_md_dropout) <= 1.0:
+            raise ValueError("design_md_dropout must be between 0 and 1")
         self.output_contract_version = 1
         self.device_name = str(device)
         # Seed before module construction so a configured run is reproducible.
@@ -1094,12 +1099,13 @@ class TwoTowerModel(nn.Module):
             if count is None:
                 text = self._context_text_cache.get(key) if cache_on else None
                 if text is None:
+                    design_md = self._training_design_md(r.design_md, key)
                     text = self._format_one_context(
                         r.prompt,
-                        r.design_md,
+                        design_md,
                         query_prompt=r.prompt,
                         slot_contract=self._resolve_slot_contract(
-                            r.prompt, r, r.design_md
+                            r.prompt, r, design_md, use_gold_design=False
                         )
                         if getattr(self.config, "slot_contract_in_context", False)
                         else None,
@@ -1611,11 +1617,14 @@ class TwoTowerModel(nn.Module):
             if cache_on and key in self._context_text_cache:
                 prompts.append(self._context_text_cache[key])
             else:
+                design_md = self._training_design_md(r.design_md, key)
                 text = self._format_one_context(
                     r.prompt,
-                    r.design_md,
+                    design_md,
                     query_prompt=r.prompt,
-                    slot_contract=self._resolve_slot_contract(r.prompt, r, r.design_md)
+                    slot_contract=self._resolve_slot_contract(
+                        r.prompt, r, design_md, use_gold_design=False
+                    )
                     if getattr(self.config, "slot_contract_in_context", False)
                     else None,
                     output_kind=r.target_kind,
@@ -2565,6 +2574,18 @@ class TwoTowerModel(nn.Module):
 
         return mask_loss
 
+    def _training_design_md(self, design_md: str | None, key: str) -> str | None:
+        """Deterministically omit DESIGN.md for a configured share of records."""
+        rate = float(getattr(self.config, "design_md_dropout", 0.0) or 0.0)
+        if not design_md or rate <= 0.0:
+            return design_md
+        if rate >= 1.0:
+            return None
+        seed = int(getattr(self.config, "seed", 0))
+        digest = hashlib.sha256(f"{seed}:{key}".encode()).digest()
+        sample = int.from_bytes(digest[:8], "big") / float(1 << 64)
+        return None if sample < rate else design_md
+
     def _format_one_context(
         self,
         prompt: str,
@@ -3202,6 +3223,13 @@ class TwoTowerModel(nn.Module):
                     F.softplus(logits[1, token_id]) - emitted_bound.get(token_id, 0)
                 ).clamp_min(1e-4)
                 bias[position] = weight * remaining.log()
+            elif kind == "component_root_or_bound":
+                remaining = (
+                    F.softplus(logits[1, token_id]) - emitted_bound.get(token_id, 0)
+                ).clamp_min(1e-4)
+                bias[position] = weight * torch.logaddexp(
+                    logits[0, token_id], remaining.log()
+                )
         return bias
 
     def _component_edge_bias(
@@ -4263,10 +4291,47 @@ class TwoTowerModel(nn.Module):
                         stats.forced_tokens += 1
                 else:
                     assert logits is not None
+                    candidate_ids = tuple(sorted(legal))
                     legal_ids = torch.tensor(
-                        sorted(legal), dtype=torch.long, device=logits.device
+                        candidate_ids, dtype=torch.long, device=logits.device
                     )
-                    best = logits[row, position].index_select(0, legal_ids).argmax()
+                    scores = logits[row, position].index_select(0, legal_ids)
+                    inventory_bias = self._component_inventory_bias(
+                        ctx[row : row + 1],
+                        ctx_pad[row : row + 1],
+                        candidate_ids,
+                    )
+                    if inventory_bias is not None:
+                        scores = scores + inventory_bias
+                    candidate_kinds = tuple(
+                        (
+                            "component_root"
+                            if states[row].current_marker == "r="
+                            else "component_bound"
+                            if states[row].mode == "v05"
+                            else "component_root_or_bound"
+                        )
+                        if tok.kind_of(token_id) == "component"
+                        and not states[row].frames
+                        else tok.kind_of(token_id)
+                        for token_id in candidate_ids
+                    )
+                    plan_bias = self._component_plan_bias(
+                        ctx[row : row + 1],
+                        ctx_pad[row : row + 1],
+                        ids[row, :position].tolist(),
+                        candidate_ids,
+                        candidate_kinds,
+                    )
+                    if plan_bias is not None:
+                        before_plan = int(scores.argmax().item())
+                        scores = scores + plan_bias
+                        if stats is not None:
+                            stats.component_plan_applications += 1
+                            stats.component_plan_choice_changes += int(
+                                int(scores.argmax().item()) != before_plan
+                            )
+                    best = scores.argmax()
                     choice = int(legal_ids[int(best)].item())
                 ids[row, position] = choice
                 if stats is not None:
@@ -4644,6 +4709,8 @@ class TwoTowerModel(nn.Module):
         prompt: str,
         gold: ExampleRecord | None = None,
         design_md: str | None = None,
+        *,
+        use_gold_design: bool = True,
     ) -> list[str] | None:
         """Return inventory for decode/context.
 
@@ -4653,7 +4720,7 @@ class TwoTowerModel(nn.Module):
         falls back to gold placeholders for template fill / conditioning.
         """
         dm = design_md
-        if dm is None and gold is not None:
+        if dm is None and gold is not None and use_gold_design:
             dm = gold.design_md
         honest = bool(getattr(self.config, "honest_slot_contract", False))
         if honest:

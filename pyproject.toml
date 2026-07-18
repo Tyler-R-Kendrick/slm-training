@@ -92,6 +92,7 @@ bootstrap-playground = "scripts.bootstrap_playground:main"
 export-annotations = "scripts.export_annotations:main"
 sync-checkpoints = "scripts.sync_checkpoints:main"
 model-cycle = "scripts.model_cycle:main"
+analyze-grammar-arity = "scripts.analyze_grammar_arity:main"
 autoresearch = "scripts.autoresearch:main"
 slm-data = "scripts.data_store:main"
 
