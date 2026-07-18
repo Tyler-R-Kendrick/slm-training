@@ -104,6 +104,32 @@ fixture (`vss4-01/verified_scope_solver/v1`, 4 closed cases): status_counts
 `unknown_preservation_violations 0`, `certificate_replay_failures 0`, hard gates
 **PASS**. No model, quality, or ship claim.
 
+## VSS4-03 campaign execution (2026-07-18 UTC, CPU, torch-free)
+
+The matched campaign runner is now implemented and the fixture-only phases have
+been executed:
+
+- Campaign runner: `scripts/run_vss4_campaign.py`
+- Durable JSON evidence: [vss4-03-campaign-results.json](vss4-03-campaign-results.json)
+- Dated memo: [iter-vss4-03-campaign-20260718.md](iter-vss4-03-campaign-20260718.md)
+- Run artifact: `outputs/runs/vss4_03_campaign/campaign.{json,md}`
+
+Phases 0, 1, and 5 ran on CPU: artifact lock, VSS4-01 correctness reference
+(passed), and VSS4-02 fixture matrix (R0/R1 passed hard gates). Phases 2-4 and
+6 are blocked with explicit reasons:
+
+- **Phase 2 (on-policy supervision):** needs on-policy solver decode traces from
+  a train split and a trainable checkpoint/config.
+- **Phase 3 (energy training):** needs a `cost_to_go_energy_checkpoint` and an
+  energy-ranker training CLI.
+- **Phase 4 (surface training):** needs a `surface_ar_checkpoint` and a
+  surface-AR realizer training CLI.
+- **Phase 6 (adversarial/OOD):** needs frontier checkpoints and
+  solver-relevant adversarial/OOD suites.
+
+Matrix rows R2-R6 remain blocked for the same artifact reasons as in VSS4-02.
+No model, quality, or ship claim.
+
 ## Verification
 
 ```bash

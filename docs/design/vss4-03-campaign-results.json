@@ -1,0 +1,1536 @@
+{
+  "artifact_lock": {
+    "cuda_available": false,
+    "device": "cpu",
+    "python_version": "3.12.3",
+    "required_artifacts": {
+      "capsule_benchmark_family_c": {
+        "reason": "capsule-aware benchmark family C not committed (R3/R4/R5)",
+        "status": "missing"
+      },
+      "cost_to_go_energy_checkpoint": {
+        "reason": "energy-ranker training CLI/integration not wired (R4)",
+        "status": "missing"
+      },
+      "surface_ar_checkpoint": {
+        "reason": "surface-AR training CLI/integration not wired (R6)",
+        "status": "missing"
+      },
+      "surface_benchmark_family_e": {
+        "reason": "surface-realization benchmark family E not committed (R5/R6)",
+        "status": "missing"
+      },
+      "twotower_ranker_checkpoint": {
+        "reason": "no checkpoint referenced for topology-solver model ranker (R2/R3)",
+        "status": "missing"
+      },
+      "vss4_01_benchmark": {
+        "note": "committed closed word-tree fixture (family A)",
+        "path": "src/slm_training/harnesses/solver_bench.py",
+        "status": "embedded"
+      },
+      "vss4_02_matrix": {
+        "note": "committed R0-R6 schema + CPU fixture runner",
+        "path": "src/slm_training/harnesses/experiments/verified_solver_matrix.py",
+        "status": "embedded",
+        "version": "vss4-02-v1"
+      }
+    },
+    "schema_versions": {
+      "solver_supervision": "1",
+      "vss4_01_benchmark": "v1",
+      "vss4_02_matrix": "vss4-02-v1"
+    },
+    "source_commit": "4f92b3c9b3cd23fb789962399c8d0b548bf72fac",
+    "source_dirty": true,
+    "torch_version": "2.5.1"
+  },
+  "blocked_phases": [
+    "phase_2_on_policy_supervision",
+    "phase_3_energy_training",
+    "phase_4_surface_training",
+    "phase_6_adversarial_ood"
+  ],
+  "campaign_id": "vss4-03",
+  "honesty_note": "CPU/fixture wiring campaign. Phases 0, 1, and 5 run the committed VSS4-01 benchmark and VSS4-02 fixture matrix (R0/R1) on CPU. Phases 2-4 and 6 and matrix rows R2-R6 are blocked because the required frontier artifacts (trainable checkpoints, capsule/surface benchmark families, energy/surface training CLIs) are not present in this repository state. No model, quality, or ship claim is made.",
+  "phases": [
+    {
+      "blocked_reason": null,
+      "evidence": {
+        "lock": {
+          "cuda_available": false,
+          "device": "cpu",
+          "python_version": "3.12.3",
+          "required_artifacts": {
+            "capsule_benchmark_family_c": {
+              "reason": "capsule-aware benchmark family C not committed (R3/R4/R5)",
+              "status": "missing"
+            },
+            "cost_to_go_energy_checkpoint": {
+              "reason": "energy-ranker training CLI/integration not wired (R4)",
+              "status": "missing"
+            },
+            "surface_ar_checkpoint": {
+              "reason": "surface-AR training CLI/integration not wired (R6)",
+              "status": "missing"
+            },
+            "surface_benchmark_family_e": {
+              "reason": "surface-realization benchmark family E not committed (R5/R6)",
+              "status": "missing"
+            },
+            "twotower_ranker_checkpoint": {
+              "reason": "no checkpoint referenced for topology-solver model ranker (R2/R3)",
+              "status": "missing"
+            },
+            "vss4_01_benchmark": {
+              "note": "committed closed word-tree fixture (family A)",
+              "path": "src/slm_training/harnesses/solver_bench.py",
+              "status": "embedded"
+            },
+            "vss4_02_matrix": {
+              "note": "committed R0-R6 schema + CPU fixture runner",
+              "path": "src/slm_training/harnesses/experiments/verified_solver_matrix.py",
+              "status": "embedded",
+              "version": "vss4-02-v1"
+            }
+          },
+          "schema_versions": {
+            "solver_supervision": "1",
+            "vss4_01_benchmark": "v1",
+            "vss4_02_matrix": "vss4-02-v1"
+          },
+          "source_commit": "4f92b3c9b3cd23fb789962399c8d0b548bf72fac",
+          "source_dirty": true,
+          "torch_version": "2.5.1"
+        }
+      },
+      "phase": "phase_0_artifact_lock",
+      "status": "ran"
+    },
+    {
+      "blocked_reason": null,
+      "evidence": {
+        "benchmark_id": "vss4-01/verified_scope_solver/v1",
+        "manifest_digest": "1b0a2754d25d4c8d",
+        "passed": true,
+        "report": {
+          "case_count": 4,
+          "cases": [
+            {
+              "agrees": true,
+              "case_id": "A-supported",
+              "certificate_replays": true,
+              "expected_verdict": "supported",
+              "false_unsupported": false,
+              "family": "finite-domain",
+              "ground_truth_verdict": "supported",
+              "oracle_verdict": "supported",
+              "unknown_preservation_violation": false
+            },
+            {
+              "agrees": true,
+              "case_id": "A-unknown-incomplete",
+              "certificate_replays": true,
+              "expected_verdict": "unknown",
+              "false_unsupported": false,
+              "family": "finite-domain",
+              "ground_truth_verdict": "unknown",
+              "oracle_verdict": "unknown",
+              "unknown_preservation_violation": false
+            },
+            {
+              "agrees": true,
+              "case_id": "A-unsupported-subtree",
+              "certificate_replays": true,
+              "expected_verdict": "unsupported",
+              "false_unsupported": false,
+              "family": "finite-domain",
+              "ground_truth_verdict": "unsupported",
+              "oracle_verdict": "unsupported",
+              "unknown_preservation_violation": false
+            },
+            {
+              "agrees": true,
+              "case_id": "A-unsupported-terminal",
+              "certificate_replays": true,
+              "expected_verdict": "unsupported",
+              "false_unsupported": false,
+              "family": "finite-domain",
+              "ground_truth_verdict": "unsupported",
+              "oracle_verdict": "unsupported",
+              "unknown_preservation_violation": false
+            }
+          ],
+          "certificate_replay_failures": 0,
+          "false_unsupported_count": 0,
+          "manifest_digest": "1b0a2754d25d4c8d",
+          "passed": true,
+          "unknown_preservation_violations": 0
+        }
+      },
+      "phase": "phase_1_correctness_reference",
+      "status": "ran"
+    },
+    {
+      "blocked_reason": "requires on-policy solver decode traces from a train split and a trainable checkpoint/config; the VSS4-01 fixture is a closed benchmark, not an on-policy trace corpus",
+      "evidence": {},
+      "phase": "phase_2_on_policy_supervision",
+      "status": "blocked"
+    },
+    {
+      "blocked_reason": "requires cost_to_go_energy_checkpoint and an energy-ranker training CLI; CandidateEnergyScorer exists but no end-to-end training path is wired",
+      "evidence": {},
+      "phase": "phase_3_energy_training",
+      "status": "blocked"
+    },
+    {
+      "blocked_reason": "requires surface_ar_checkpoint and a surface-AR realizer training CLI; SurfaceAutoregressor exists but no end-to-end training path is wired",
+      "evidence": {},
+      "phase": "phase_4_surface_training",
+      "status": "blocked"
+    },
+    {
+      "blocked_reason": null,
+      "evidence": {
+        "gate_failure_count": 0,
+        "gates": [
+          {
+            "gate": "false_unsupported_count",
+            "observed": null,
+            "row_id": "R0",
+            "status": "not_applicable"
+          },
+          {
+            "gate": "unknown_preservation_violations",
+            "observed": 0,
+            "row_id": "R0",
+            "status": "pass"
+          },
+          {
+            "gate": "certificate_replay_failures",
+            "observed": 0,
+            "row_id": "R0",
+            "status": "pass"
+          },
+          {
+            "gate": "solved_without_final_verifier",
+            "observed": 0,
+            "row_id": "R0",
+            "status": "pass"
+          },
+          {
+            "gate": "certified_unsat_with_incomplete_proof",
+            "observed": 0,
+            "row_id": "R0",
+            "status": "pass"
+          },
+          {
+            "gate": "candidate_set_parity_failures",
+            "observed": 0,
+            "row_id": "R0",
+            "status": "pass"
+          },
+          {
+            "gate": "semantic_ir_mutation_violations",
+            "observed": 0,
+            "row_id": "R0",
+            "status": "pass"
+          },
+          {
+            "gate": "structured_or_observable_slots_routed_to_ar",
+            "observed": 0,
+            "row_id": "R0",
+            "status": "pass"
+          },
+          {
+            "gate": "false_unsupported_count",
+            "observed": 0,
+            "row_id": "R1",
+            "status": "pass"
+          },
+          {
+            "gate": "unknown_preservation_violations",
+            "observed": 0,
+            "row_id": "R1",
+            "status": "pass"
+          },
+          {
+            "gate": "certificate_replay_failures",
+            "observed": 0,
+            "row_id": "R1",
+            "status": "pass"
+          },
+          {
+            "gate": "solved_without_final_verifier",
+            "observed": 0,
+            "row_id": "R1",
+            "status": "pass"
+          },
+          {
+            "gate": "certified_unsat_with_incomplete_proof",
+            "observed": 0,
+            "row_id": "R1",
+            "status": "pass"
+          },
+          {
+            "gate": "candidate_set_parity_failures",
+            "observed": 0,
+            "row_id": "R1",
+            "status": "pass"
+          },
+          {
+            "gate": "semantic_ir_mutation_violations",
+            "observed": 0,
+            "row_id": "R1",
+            "status": "pass"
+          },
+          {
+            "gate": "structured_or_observable_slots_routed_to_ar",
+            "observed": 0,
+            "row_id": "R1",
+            "status": "pass"
+          },
+          {
+            "gate": "false_unsupported_count",
+            "observed": null,
+            "row_id": "R2",
+            "status": "not_applicable"
+          },
+          {
+            "gate": "unknown_preservation_violations",
+            "observed": 0,
+            "row_id": "R2",
+            "status": "pass"
+          },
+          {
+            "gate": "certificate_replay_failures",
+            "observed": 0,
+            "row_id": "R2",
+            "status": "pass"
+          },
+          {
+            "gate": "solved_without_final_verifier",
+            "observed": 0,
+            "row_id": "R2",
+            "status": "pass"
+          },
+          {
+            "gate": "certified_unsat_with_incomplete_proof",
+            "observed": 0,
+            "row_id": "R2",
+            "status": "pass"
+          },
+          {
+            "gate": "candidate_set_parity_failures",
+            "observed": 0,
+            "row_id": "R2",
+            "status": "pass"
+          },
+          {
+            "gate": "semantic_ir_mutation_violations",
+            "observed": 0,
+            "row_id": "R2",
+            "status": "pass"
+          },
+          {
+            "gate": "structured_or_observable_slots_routed_to_ar",
+            "observed": 0,
+            "row_id": "R2",
+            "status": "pass"
+          },
+          {
+            "gate": "false_unsupported_count",
+            "observed": null,
+            "row_id": "R3",
+            "status": "not_applicable"
+          },
+          {
+            "gate": "unknown_preservation_violations",
+            "observed": 0,
+            "row_id": "R3",
+            "status": "pass"
+          },
+          {
+            "gate": "certificate_replay_failures",
+            "observed": 0,
+            "row_id": "R3",
+            "status": "pass"
+          },
+          {
+            "gate": "solved_without_final_verifier",
+            "observed": 0,
+            "row_id": "R3",
+            "status": "pass"
+          },
+          {
+            "gate": "certified_unsat_with_incomplete_proof",
+            "observed": 0,
+            "row_id": "R3",
+            "status": "pass"
+          },
+          {
+            "gate": "candidate_set_parity_failures",
+            "observed": 0,
+            "row_id": "R3",
+            "status": "pass"
+          },
+          {
+            "gate": "semantic_ir_mutation_violations",
+            "observed": 0,
+            "row_id": "R3",
+            "status": "pass"
+          },
+          {
+            "gate": "structured_or_observable_slots_routed_to_ar",
+            "observed": 0,
+            "row_id": "R3",
+            "status": "pass"
+          },
+          {
+            "gate": "false_unsupported_count",
+            "observed": null,
+            "row_id": "R4",
+            "status": "not_applicable"
+          },
+          {
+            "gate": "unknown_preservation_violations",
+            "observed": 0,
+            "row_id": "R4",
+            "status": "pass"
+          },
+          {
+            "gate": "certificate_replay_failures",
+            "observed": 0,
+            "row_id": "R4",
+            "status": "pass"
+          },
+          {
+            "gate": "solved_without_final_verifier",
+            "observed": 0,
+            "row_id": "R4",
+            "status": "pass"
+          },
+          {
+            "gate": "certified_unsat_with_incomplete_proof",
+            "observed": 0,
+            "row_id": "R4",
+            "status": "pass"
+          },
+          {
+            "gate": "candidate_set_parity_failures",
+            "observed": 0,
+            "row_id": "R4",
+            "status": "pass"
+          },
+          {
+            "gate": "semantic_ir_mutation_violations",
+            "observed": 0,
+            "row_id": "R4",
+            "status": "pass"
+          },
+          {
+            "gate": "structured_or_observable_slots_routed_to_ar",
+            "observed": 0,
+            "row_id": "R4",
+            "status": "pass"
+          },
+          {
+            "gate": "false_unsupported_count",
+            "observed": null,
+            "row_id": "R5",
+            "status": "not_applicable"
+          },
+          {
+            "gate": "unknown_preservation_violations",
+            "observed": 0,
+            "row_id": "R5",
+            "status": "pass"
+          },
+          {
+            "gate": "certificate_replay_failures",
+            "observed": 0,
+            "row_id": "R5",
+            "status": "pass"
+          },
+          {
+            "gate": "solved_without_final_verifier",
+            "observed": 0,
+            "row_id": "R5",
+            "status": "pass"
+          },
+          {
+            "gate": "certified_unsat_with_incomplete_proof",
+            "observed": 0,
+            "row_id": "R5",
+            "status": "pass"
+          },
+          {
+            "gate": "candidate_set_parity_failures",
+            "observed": 0,
+            "row_id": "R5",
+            "status": "pass"
+          },
+          {
+            "gate": "semantic_ir_mutation_violations",
+            "observed": 0,
+            "row_id": "R5",
+            "status": "pass"
+          },
+          {
+            "gate": "structured_or_observable_slots_routed_to_ar",
+            "observed": 0,
+            "row_id": "R5",
+            "status": "pass"
+          },
+          {
+            "gate": "false_unsupported_count",
+            "observed": null,
+            "row_id": "R6",
+            "status": "not_applicable"
+          },
+          {
+            "gate": "unknown_preservation_violations",
+            "observed": 0,
+            "row_id": "R6",
+            "status": "pass"
+          },
+          {
+            "gate": "certificate_replay_failures",
+            "observed": 0,
+            "row_id": "R6",
+            "status": "pass"
+          },
+          {
+            "gate": "solved_without_final_verifier",
+            "observed": 0,
+            "row_id": "R6",
+            "status": "pass"
+          },
+          {
+            "gate": "certified_unsat_with_incomplete_proof",
+            "observed": 0,
+            "row_id": "R6",
+            "status": "pass"
+          },
+          {
+            "gate": "candidate_set_parity_failures",
+            "observed": 0,
+            "row_id": "R6",
+            "status": "pass"
+          },
+          {
+            "gate": "semantic_ir_mutation_violations",
+            "observed": 0,
+            "row_id": "R6",
+            "status": "pass"
+          },
+          {
+            "gate": "structured_or_observable_slots_routed_to_ar",
+            "observed": 0,
+            "row_id": "R6",
+            "status": "pass"
+          }
+        ],
+        "matrix_set": "verified-solver",
+        "mode": "fixture",
+        "passed": true,
+        "rows": [
+          {
+            "blocked_reason": null,
+            "capability_status": "run",
+            "capsule": {
+              "ast_scope_count": 0,
+              "capsule_count": 0,
+              "capsules_failed": 0,
+              "capsules_solved": 0,
+              "capsules_unknown": 0,
+              "conservative_edges": 0,
+              "graph_rebuilds": 0,
+              "interface_width_max": null,
+              "interface_width_mean": null,
+              "joint_scc_latency_seconds": null,
+              "lexical_scope_count": 0,
+              "local_global_disagreement_rate": null,
+              "local_global_disagreements": 0,
+              "scc_count": 0,
+              "scc_max_size": 0,
+              "singleton_latency_seconds": null,
+              "unknown_edges": 0
+            },
+            "config": {
+              "bounds": {
+                "max_backtracks": 10000,
+                "max_depth": 32,
+                "max_nodes": 10000,
+                "max_tokens": 10000,
+                "max_verifier_calls": 10000
+              },
+              "constraint_version": "v1",
+              "pack_id": "vss4-fixture-word",
+              "ranker": "current",
+              "realizer": "current",
+              "solver": "off"
+            },
+            "control_row_id": null,
+            "description": "Current matched control: production/fixture decode, verified solver off.",
+            "energy": {
+              "candidate_set_parity_assertions": 0,
+              "candidate_set_parity_failures": 0,
+              "cost_target_huber": null,
+              "cost_target_mae": null,
+              "listwise_ndcg": null,
+              "pairwise_ranking_accuracy": null,
+              "scorer_fallback_count": 0,
+              "scorer_invalid_outputs": 0,
+              "search_work_delta_vs_control": null
+            },
+            "exact_search": {
+              "backtracks": 0,
+              "certified_removals": 0,
+              "decisions": 0,
+              "dedup_hits": 0,
+              "deterministic_ranker_fallbacks": 0,
+              "domain_reduction_ratio": null,
+              "energy_ranker_fallbacks": 0,
+              "exact_closure_passes": 0,
+              "expanded_nodes": 0,
+              "final_domain_size": 0,
+              "initial_domain_size": 0,
+              "latency_p50_ms": null,
+              "latency_p95_ms": null,
+              "latency_p99_ms": null,
+              "local_nogoods": 0,
+              "model_ranker_fallbacks": 0,
+              "solver_seconds": 0.0,
+              "solver_verifier_calls": 0,
+              "support_cache_hits": 0,
+              "support_queries": 0,
+              "supported_queries": 0,
+              "unknown_queries": 0,
+              "unsupported_queries": 0,
+              "verifier_seconds": 0.0
+            },
+            "quality": {
+              "behavior": null,
+              "concept": null,
+              "dataflow": null,
+              "exact_match": null,
+              "meaningful": null,
+              "near_match": null,
+              "parse": null
+            },
+            "row_id": "R0",
+            "solver": {
+              "certificate_replay_failures": 0,
+              "certificates_emitted": 0,
+              "certificates_replayed": 0,
+              "certified_unsat_with_incomplete_proof": 0,
+              "enabled": false,
+              "false_unsupported_count": null,
+              "false_unsupported_rate": null,
+              "solved_without_final_verifier": 0,
+              "status_budget_exhausted": 0,
+              "status_certified_unsat": 0,
+              "status_solved": 0,
+              "status_unknown": 0,
+              "unknown_preservation_violations": 0
+            },
+            "surface": {
+              "alpha_equivalence_rate": null,
+              "ar_assignments_accepted": 0,
+              "ar_assignments_attempted": 0,
+              "ar_slots": 0,
+              "collision_repairs": 0,
+              "constrained_dead_ends": 0,
+              "deterministic_assignments_accepted": 0,
+              "deterministic_assignments_attempted": 0,
+              "deterministic_fallbacks": 0,
+              "deterministic_slots": 0,
+              "final_verifier_rate": null,
+              "first_pass_verifier_rate": null,
+              "model_forwards": 0,
+              "realization_seconds": 0.0,
+              "retries": 0,
+              "semantic_ir_mutation_violations": 0,
+              "slots_total": 0,
+              "structured_slots_routed_to_ar": 0,
+              "validation_rejects": 0
+            },
+            "topology": {
+              "active_holes": 0,
+              "atomic_batch_rollbacks": 0,
+              "canvas_tokens": 0,
+              "certified_removals_retained": 0,
+              "denoiser_nfe": 0,
+              "domain_size_max": 0,
+              "domain_size_mean": null,
+              "hard_domain_coverage_complete": 0,
+              "hard_domain_coverage_none": 0,
+              "hard_domain_coverage_partial": 0,
+              "proposals_accepted": 0,
+              "proposals_rejected": 0,
+              "remask_backtracks": 0,
+              "reversible_remasks": 0
+            },
+            "variable": "baseline"
+          },
+          {
+            "blocked_reason": null,
+            "capability_status": "run",
+            "capsule": {
+              "ast_scope_count": 0,
+              "capsule_count": 0,
+              "capsules_failed": 0,
+              "capsules_solved": 0,
+              "capsules_unknown": 0,
+              "conservative_edges": 0,
+              "graph_rebuilds": 0,
+              "interface_width_max": null,
+              "interface_width_mean": null,
+              "joint_scc_latency_seconds": null,
+              "lexical_scope_count": 0,
+              "local_global_disagreement_rate": null,
+              "local_global_disagreements": 0,
+              "scc_count": 0,
+              "scc_max_size": 0,
+              "singleton_latency_seconds": null,
+              "unknown_edges": 0
+            },
+            "config": {
+              "bounds": {
+                "max_backtracks": 10000,
+                "max_depth": 32,
+                "max_nodes": 10000,
+                "max_tokens": 10000,
+                "max_verifier_calls": 10000
+              },
+              "constraint_version": "v1",
+              "pack_id": "vss4-fixture-word",
+              "ranker": "deterministic",
+              "realizer": "deterministic",
+              "solver": "exact"
+            },
+            "control_row_id": "R0",
+            "description": "Exact deterministic solver: compiler-choice exact closure, deterministic ranker.",
+            "energy": {
+              "candidate_set_parity_assertions": 0,
+              "candidate_set_parity_failures": 0,
+              "cost_target_huber": null,
+              "cost_target_mae": null,
+              "listwise_ndcg": null,
+              "pairwise_ranking_accuracy": null,
+              "scorer_fallback_count": 0,
+              "scorer_invalid_outputs": 0,
+              "search_work_delta_vs_control": null
+            },
+            "exact_search": {
+              "backtracks": 0,
+              "certified_removals": 2,
+              "decisions": 0,
+              "dedup_hits": 0,
+              "deterministic_ranker_fallbacks": 0,
+              "domain_reduction_ratio": 0.5,
+              "energy_ranker_fallbacks": 0,
+              "exact_closure_passes": 4,
+              "expanded_nodes": 6,
+              "final_domain_size": 2,
+              "initial_domain_size": 4,
+              "latency_p50_ms": null,
+              "latency_p95_ms": null,
+              "latency_p99_ms": null,
+              "local_nogoods": 0,
+              "model_ranker_fallbacks": 0,
+              "solver_seconds": 0.0006925899942871183,
+              "solver_verifier_calls": 3,
+              "support_cache_hits": 0,
+              "support_queries": 4,
+              "supported_queries": 1,
+              "unknown_queries": 1,
+              "unsupported_queries": 2,
+              "verifier_seconds": 0.0
+            },
+            "quality": {
+              "behavior": null,
+              "concept": null,
+              "dataflow": null,
+              "exact_match": null,
+              "meaningful": null,
+              "near_match": null,
+              "parse": null
+            },
+            "row_id": "R1",
+            "solver": {
+              "certificate_replay_failures": 0,
+              "certificates_emitted": 4,
+              "certificates_replayed": 4,
+              "certified_unsat_with_incomplete_proof": 0,
+              "enabled": true,
+              "false_unsupported_count": 0,
+              "false_unsupported_rate": 0.0,
+              "solved_without_final_verifier": 0,
+              "status_budget_exhausted": 0,
+              "status_certified_unsat": 2,
+              "status_solved": 1,
+              "status_unknown": 1,
+              "unknown_preservation_violations": 0
+            },
+            "surface": {
+              "alpha_equivalence_rate": null,
+              "ar_assignments_accepted": 0,
+              "ar_assignments_attempted": 0,
+              "ar_slots": 0,
+              "collision_repairs": 0,
+              "constrained_dead_ends": 0,
+              "deterministic_assignments_accepted": 0,
+              "deterministic_assignments_attempted": 0,
+              "deterministic_fallbacks": 0,
+              "deterministic_slots": 0,
+              "final_verifier_rate": null,
+              "first_pass_verifier_rate": null,
+              "model_forwards": 0,
+              "realization_seconds": 0.0,
+              "retries": 0,
+              "semantic_ir_mutation_violations": 0,
+              "slots_total": 0,
+              "structured_slots_routed_to_ar": 0,
+              "validation_rejects": 0
+            },
+            "topology": {
+              "active_holes": 0,
+              "atomic_batch_rollbacks": 0,
+              "canvas_tokens": 0,
+              "certified_removals_retained": 0,
+              "denoiser_nfe": 0,
+              "domain_size_max": 0,
+              "domain_size_mean": null,
+              "hard_domain_coverage_complete": 0,
+              "hard_domain_coverage_none": 0,
+              "hard_domain_coverage_partial": 0,
+              "proposals_accepted": 0,
+              "proposals_rejected": 0,
+              "remask_backtracks": 0,
+              "reversible_remasks": 0
+            },
+            "variable": "exact_closure_on"
+          },
+          {
+            "blocked_reason": "requires frontier model/data resolution; deferred to VSS4-03",
+            "capability_status": "not_run",
+            "capsule": {
+              "ast_scope_count": 0,
+              "capsule_count": 0,
+              "capsules_failed": 0,
+              "capsules_solved": 0,
+              "capsules_unknown": 0,
+              "conservative_edges": 0,
+              "graph_rebuilds": 0,
+              "interface_width_max": null,
+              "interface_width_mean": null,
+              "joint_scc_latency_seconds": null,
+              "lexical_scope_count": 0,
+              "local_global_disagreement_rate": null,
+              "local_global_disagreements": 0,
+              "scc_count": 0,
+              "scc_max_size": 0,
+              "singleton_latency_seconds": null,
+              "unknown_edges": 0
+            },
+            "config": {
+              "bounds": {
+                "max_backtracks": 10000,
+                "max_depth": 32,
+                "max_nodes": 10000,
+                "max_tokens": 10000,
+                "max_verifier_calls": 10000
+              },
+              "constraint_version": "v1",
+              "pack_id": "vss4-fixture-word",
+              "ranker": "model",
+              "realizer": "deterministic",
+              "solver": "exact"
+            },
+            "control_row_id": "R1",
+            "description": "Exact solver + existing model ranking over the same live sets.",
+            "energy": {
+              "candidate_set_parity_assertions": 0,
+              "candidate_set_parity_failures": 0,
+              "cost_target_huber": null,
+              "cost_target_mae": null,
+              "listwise_ndcg": null,
+              "pairwise_ranking_accuracy": null,
+              "scorer_fallback_count": 0,
+              "scorer_invalid_outputs": 0,
+              "search_work_delta_vs_control": null
+            },
+            "exact_search": {
+              "backtracks": 0,
+              "certified_removals": 0,
+              "decisions": 0,
+              "dedup_hits": 0,
+              "deterministic_ranker_fallbacks": 0,
+              "domain_reduction_ratio": null,
+              "energy_ranker_fallbacks": 0,
+              "exact_closure_passes": 0,
+              "expanded_nodes": 0,
+              "final_domain_size": 0,
+              "initial_domain_size": 0,
+              "latency_p50_ms": null,
+              "latency_p95_ms": null,
+              "latency_p99_ms": null,
+              "local_nogoods": 0,
+              "model_ranker_fallbacks": 0,
+              "solver_seconds": 0.0,
+              "solver_verifier_calls": 0,
+              "support_cache_hits": 0,
+              "support_queries": 0,
+              "supported_queries": 0,
+              "unknown_queries": 0,
+              "unsupported_queries": 0,
+              "verifier_seconds": 0.0
+            },
+            "quality": {
+              "behavior": null,
+              "concept": null,
+              "dataflow": null,
+              "exact_match": null,
+              "meaningful": null,
+              "near_match": null,
+              "parse": null
+            },
+            "row_id": "R2",
+            "solver": {
+              "certificate_replay_failures": 0,
+              "certificates_emitted": 0,
+              "certificates_replayed": 0,
+              "certified_unsat_with_incomplete_proof": 0,
+              "enabled": false,
+              "false_unsupported_count": null,
+              "false_unsupported_rate": null,
+              "solved_without_final_verifier": 0,
+              "status_budget_exhausted": 0,
+              "status_certified_unsat": 0,
+              "status_solved": 0,
+              "status_unknown": 0,
+              "unknown_preservation_violations": 0
+            },
+            "surface": {
+              "alpha_equivalence_rate": null,
+              "ar_assignments_accepted": 0,
+              "ar_assignments_attempted": 0,
+              "ar_slots": 0,
+              "collision_repairs": 0,
+              "constrained_dead_ends": 0,
+              "deterministic_assignments_accepted": 0,
+              "deterministic_assignments_attempted": 0,
+              "deterministic_fallbacks": 0,
+              "deterministic_slots": 0,
+              "final_verifier_rate": null,
+              "first_pass_verifier_rate": null,
+              "model_forwards": 0,
+              "realization_seconds": 0.0,
+              "retries": 0,
+              "semantic_ir_mutation_violations": 0,
+              "slots_total": 0,
+              "structured_slots_routed_to_ar": 0,
+              "validation_rejects": 0
+            },
+            "topology": {
+              "active_holes": 0,
+              "atomic_batch_rollbacks": 0,
+              "canvas_tokens": 0,
+              "certified_removals_retained": 0,
+              "denoiser_nfe": 0,
+              "domain_size_max": 0,
+              "domain_size_mean": null,
+              "hard_domain_coverage_complete": 0,
+              "hard_domain_coverage_none": 0,
+              "hard_domain_coverage_partial": 0,
+              "proposals_accepted": 0,
+              "proposals_rejected": 0,
+              "remask_backtracks": 0,
+              "reversible_remasks": 0
+            },
+            "variable": "ranker=model"
+          },
+          {
+            "blocked_reason": "requires frontier model/data resolution; deferred to VSS4-03",
+            "capability_status": "not_run",
+            "capsule": {
+              "ast_scope_count": 0,
+              "capsule_count": 0,
+              "capsules_failed": 0,
+              "capsules_solved": 0,
+              "capsules_unknown": 0,
+              "conservative_edges": 0,
+              "graph_rebuilds": 0,
+              "interface_width_max": null,
+              "interface_width_mean": null,
+              "joint_scc_latency_seconds": null,
+              "lexical_scope_count": 0,
+              "local_global_disagreement_rate": null,
+              "local_global_disagreements": 0,
+              "scc_count": 0,
+              "scc_max_size": 0,
+              "singleton_latency_seconds": null,
+              "unknown_edges": 0
+            },
+            "config": {
+              "bounds": {
+                "max_backtracks": 10000,
+                "max_depth": 32,
+                "max_nodes": 10000,
+                "max_tokens": 10000,
+                "max_verifier_calls": 10000
+              },
+              "constraint_version": "v1",
+              "decomposition": "capsule",
+              "pack_id": "vss4-fixture-word",
+              "ranker": "model",
+              "solver": "topology"
+            },
+            "control_row_id": "R1",
+            "description": "Capsule-aware topology solver + dependency capsules/SCC joint solving.",
+            "energy": {
+              "candidate_set_parity_assertions": 0,
+              "candidate_set_parity_failures": 0,
+              "cost_target_huber": null,
+              "cost_target_mae": null,
+              "listwise_ndcg": null,
+              "pairwise_ranking_accuracy": null,
+              "scorer_fallback_count": 0,
+              "scorer_invalid_outputs": 0,
+              "search_work_delta_vs_control": null
+            },
+            "exact_search": {
+              "backtracks": 0,
+              "certified_removals": 0,
+              "decisions": 0,
+              "dedup_hits": 0,
+              "deterministic_ranker_fallbacks": 0,
+              "domain_reduction_ratio": null,
+              "energy_ranker_fallbacks": 0,
+              "exact_closure_passes": 0,
+              "expanded_nodes": 0,
+              "final_domain_size": 0,
+              "initial_domain_size": 0,
+              "latency_p50_ms": null,
+              "latency_p95_ms": null,
+              "latency_p99_ms": null,
+              "local_nogoods": 0,
+              "model_ranker_fallbacks": 0,
+              "solver_seconds": 0.0,
+              "solver_verifier_calls": 0,
+              "support_cache_hits": 0,
+              "support_queries": 0,
+              "supported_queries": 0,
+              "unknown_queries": 0,
+              "unsupported_queries": 0,
+              "verifier_seconds": 0.0
+            },
+            "quality": {
+              "behavior": null,
+              "concept": null,
+              "dataflow": null,
+              "exact_match": null,
+              "meaningful": null,
+              "near_match": null,
+              "parse": null
+            },
+            "row_id": "R3",
+            "solver": {
+              "certificate_replay_failures": 0,
+              "certificates_emitted": 0,
+              "certificates_replayed": 0,
+              "certified_unsat_with_incomplete_proof": 0,
+              "enabled": false,
+              "false_unsupported_count": null,
+              "false_unsupported_rate": null,
+              "solved_without_final_verifier": 0,
+              "status_budget_exhausted": 0,
+              "status_certified_unsat": 0,
+              "status_solved": 0,
+              "status_unknown": 0,
+              "unknown_preservation_violations": 0
+            },
+            "surface": {
+              "alpha_equivalence_rate": null,
+              "ar_assignments_accepted": 0,
+              "ar_assignments_attempted": 0,
+              "ar_slots": 0,
+              "collision_repairs": 0,
+              "constrained_dead_ends": 0,
+              "deterministic_assignments_accepted": 0,
+              "deterministic_assignments_attempted": 0,
+              "deterministic_fallbacks": 0,
+              "deterministic_slots": 0,
+              "final_verifier_rate": null,
+              "first_pass_verifier_rate": null,
+              "model_forwards": 0,
+              "realization_seconds": 0.0,
+              "retries": 0,
+              "semantic_ir_mutation_violations": 0,
+              "slots_total": 0,
+              "structured_slots_routed_to_ar": 0,
+              "validation_rejects": 0
+            },
+            "topology": {
+              "active_holes": 0,
+              "atomic_batch_rollbacks": 0,
+              "canvas_tokens": 0,
+              "certified_removals_retained": 0,
+              "denoiser_nfe": 0,
+              "domain_size_max": 0,
+              "domain_size_mean": null,
+              "hard_domain_coverage_complete": 0,
+              "hard_domain_coverage_none": 0,
+              "hard_domain_coverage_partial": 0,
+              "proposals_accepted": 0,
+              "proposals_rejected": 0,
+              "remask_backtracks": 0,
+              "reversible_remasks": 0
+            },
+            "variable": "decomposition=capsule_topology"
+          },
+          {
+            "blocked_reason": "requires a trained energy/surface head + checkpoint; deferred to VSS4-03",
+            "capability_status": "not_run",
+            "capsule": {
+              "ast_scope_count": 0,
+              "capsule_count": 0,
+              "capsules_failed": 0,
+              "capsules_solved": 0,
+              "capsules_unknown": 0,
+              "conservative_edges": 0,
+              "graph_rebuilds": 0,
+              "interface_width_max": null,
+              "interface_width_mean": null,
+              "joint_scc_latency_seconds": null,
+              "lexical_scope_count": 0,
+              "local_global_disagreement_rate": null,
+              "local_global_disagreements": 0,
+              "scc_count": 0,
+              "scc_max_size": 0,
+              "singleton_latency_seconds": null,
+              "unknown_edges": 0
+            },
+            "config": {
+              "bounds": {
+                "max_backtracks": 10000,
+                "max_depth": 32,
+                "max_nodes": 10000,
+                "max_tokens": 10000,
+                "max_verifier_calls": 10000
+              },
+              "constraint_version": "v1",
+              "decomposition": "capsule",
+              "pack_id": "vss4-fixture-word",
+              "ranker": "energy",
+              "solver": "topology"
+            },
+            "control_row_id": "R3",
+            "description": "Capsule solver + cost-to-go energy ranker (order-only; candidate-set parity asserted).",
+            "energy": {
+              "candidate_set_parity_assertions": 0,
+              "candidate_set_parity_failures": 0,
+              "cost_target_huber": null,
+              "cost_target_mae": null,
+              "listwise_ndcg": null,
+              "pairwise_ranking_accuracy": null,
+              "scorer_fallback_count": 0,
+              "scorer_invalid_outputs": 0,
+              "search_work_delta_vs_control": null
+            },
+            "exact_search": {
+              "backtracks": 0,
+              "certified_removals": 0,
+              "decisions": 0,
+              "dedup_hits": 0,
+              "deterministic_ranker_fallbacks": 0,
+              "domain_reduction_ratio": null,
+              "energy_ranker_fallbacks": 0,
+              "exact_closure_passes": 0,
+              "expanded_nodes": 0,
+              "final_domain_size": 0,
+              "initial_domain_size": 0,
+              "latency_p50_ms": null,
+              "latency_p95_ms": null,
+              "latency_p99_ms": null,
+              "local_nogoods": 0,
+              "model_ranker_fallbacks": 0,
+              "solver_seconds": 0.0,
+              "solver_verifier_calls": 0,
+              "support_cache_hits": 0,
+              "support_queries": 0,
+              "supported_queries": 0,
+              "unknown_queries": 0,
+              "unsupported_queries": 0,
+              "verifier_seconds": 0.0
+            },
+            "quality": {
+              "behavior": null,
+              "concept": null,
+              "dataflow": null,
+              "exact_match": null,
+              "meaningful": null,
+              "near_match": null,
+              "parse": null
+            },
+            "row_id": "R4",
+            "solver": {
+              "certificate_replay_failures": 0,
+              "certificates_emitted": 0,
+              "certificates_replayed": 0,
+              "certified_unsat_with_incomplete_proof": 0,
+              "enabled": false,
+              "false_unsupported_count": null,
+              "false_unsupported_rate": null,
+              "solved_without_final_verifier": 0,
+              "status_budget_exhausted": 0,
+              "status_certified_unsat": 0,
+              "status_solved": 0,
+              "status_unknown": 0,
+              "unknown_preservation_violations": 0
+            },
+            "surface": {
+              "alpha_equivalence_rate": null,
+              "ar_assignments_accepted": 0,
+              "ar_assignments_attempted": 0,
+              "ar_slots": 0,
+              "collision_repairs": 0,
+              "constrained_dead_ends": 0,
+              "deterministic_assignments_accepted": 0,
+              "deterministic_assignments_attempted": 0,
+              "deterministic_fallbacks": 0,
+              "deterministic_slots": 0,
+              "final_verifier_rate": null,
+              "first_pass_verifier_rate": null,
+              "model_forwards": 0,
+              "realization_seconds": 0.0,
+              "retries": 0,
+              "semantic_ir_mutation_violations": 0,
+              "slots_total": 0,
+              "structured_slots_routed_to_ar": 0,
+              "validation_rejects": 0
+            },
+            "topology": {
+              "active_holes": 0,
+              "atomic_batch_rollbacks": 0,
+              "canvas_tokens": 0,
+              "certified_removals_retained": 0,
+              "denoiser_nfe": 0,
+              "domain_size_max": 0,
+              "domain_size_mean": null,
+              "hard_domain_coverage_complete": 0,
+              "hard_domain_coverage_none": 0,
+              "hard_domain_coverage_partial": 0,
+              "proposals_accepted": 0,
+              "proposals_rejected": 0,
+              "remask_backtracks": 0,
+              "reversible_remasks": 0
+            },
+            "variable": "ranker=energy"
+          },
+          {
+            "blocked_reason": "requires frontier model/data resolution; deferred to VSS4-03",
+            "capability_status": "not_run",
+            "capsule": {
+              "ast_scope_count": 0,
+              "capsule_count": 0,
+              "capsules_failed": 0,
+              "capsules_solved": 0,
+              "capsules_unknown": 0,
+              "conservative_edges": 0,
+              "graph_rebuilds": 0,
+              "interface_width_max": null,
+              "interface_width_mean": null,
+              "joint_scc_latency_seconds": null,
+              "lexical_scope_count": 0,
+              "local_global_disagreement_rate": null,
+              "local_global_disagreements": 0,
+              "scc_count": 0,
+              "scc_max_size": 0,
+              "singleton_latency_seconds": null,
+              "unknown_edges": 0
+            },
+            "config": {
+              "bounds": {
+                "max_backtracks": 10000,
+                "max_depth": 32,
+                "max_nodes": 10000,
+                "max_tokens": 10000,
+                "max_verifier_calls": 10000
+              },
+              "constraint_version": "v1",
+              "pack_id": "vss4-fixture-word",
+              "realizer": "deterministic_late",
+              "solver": "exact"
+            },
+            "control_row_id": "R1",
+            "description": "Deterministic late realization on the solved semantic programs.",
+            "energy": {
+              "candidate_set_parity_assertions": 0,
+              "candidate_set_parity_failures": 0,
+              "cost_target_huber": null,
+              "cost_target_mae": null,
+              "listwise_ndcg": null,
+              "pairwise_ranking_accuracy": null,
+              "scorer_fallback_count": 0,
+              "scorer_invalid_outputs": 0,
+              "search_work_delta_vs_control": null
+            },
+            "exact_search": {
+              "backtracks": 0,
+              "certified_removals": 0,
+              "decisions": 0,
+              "dedup_hits": 0,
+              "deterministic_ranker_fallbacks": 0,
+              "domain_reduction_ratio": null,
+              "energy_ranker_fallbacks": 0,
+              "exact_closure_passes": 0,
+              "expanded_nodes": 0,
+              "final_domain_size": 0,
+              "initial_domain_size": 0,
+              "latency_p50_ms": null,
+              "latency_p95_ms": null,
+              "latency_p99_ms": null,
+              "local_nogoods": 0,
+              "model_ranker_fallbacks": 0,
+              "solver_seconds": 0.0,
+              "solver_verifier_calls": 0,
+              "support_cache_hits": 0,
+              "support_queries": 0,
+              "supported_queries": 0,
+              "unknown_queries": 0,
+              "unsupported_queries": 0,
+              "verifier_seconds": 0.0
+            },
+            "quality": {
+              "behavior": null,
+              "concept": null,
+              "dataflow": null,
+              "exact_match": null,
+              "meaningful": null,
+              "near_match": null,
+              "parse": null
+            },
+            "row_id": "R5",
+            "solver": {
+              "certificate_replay_failures": 0,
+              "certificates_emitted": 0,
+              "certificates_replayed": 0,
+              "certified_unsat_with_incomplete_proof": 0,
+              "enabled": false,
+              "false_unsupported_count": null,
+              "false_unsupported_rate": null,
+              "solved_without_final_verifier": 0,
+              "status_budget_exhausted": 0,
+              "status_certified_unsat": 0,
+              "status_solved": 0,
+              "status_unknown": 0,
+              "unknown_preservation_violations": 0
+            },
+            "surface": {
+              "alpha_equivalence_rate": null,
+              "ar_assignments_accepted": 0,
+              "ar_assignments_attempted": 0,
+              "ar_slots": 0,
+              "collision_repairs": 0,
+              "constrained_dead_ends": 0,
+              "deterministic_assignments_accepted": 0,
+              "deterministic_assignments_attempted": 0,
+              "deterministic_fallbacks": 0,
+              "deterministic_slots": 0,
+              "final_verifier_rate": null,
+              "first_pass_verifier_rate": null,
+              "model_forwards": 0,
+              "realization_seconds": 0.0,
+              "retries": 0,
+              "semantic_ir_mutation_violations": 0,
+              "slots_total": 0,
+              "structured_slots_routed_to_ar": 0,
+              "validation_rejects": 0
+            },
+            "topology": {
+              "active_holes": 0,
+              "atomic_batch_rollbacks": 0,
+              "canvas_tokens": 0,
+              "certified_removals_retained": 0,
+              "denoiser_nfe": 0,
+              "domain_size_max": 0,
+              "domain_size_mean": null,
+              "hard_domain_coverage_complete": 0,
+              "hard_domain_coverage_none": 0,
+              "hard_domain_coverage_partial": 0,
+              "proposals_accepted": 0,
+              "proposals_rejected": 0,
+              "remask_backtracks": 0,
+              "reversible_remasks": 0
+            },
+            "variable": "late_realization=deterministic"
+          },
+          {
+            "blocked_reason": "requires a trained energy/surface head + checkpoint; deferred to VSS4-03",
+            "capability_status": "not_run",
+            "capsule": {
+              "ast_scope_count": 0,
+              "capsule_count": 0,
+              "capsules_failed": 0,
+              "capsules_solved": 0,
+              "capsules_unknown": 0,
+              "conservative_edges": 0,
+              "graph_rebuilds": 0,
+              "interface_width_max": null,
+              "interface_width_mean": null,
+              "joint_scc_latency_seconds": null,
+              "lexical_scope_count": 0,
+              "local_global_disagreement_rate": null,
+              "local_global_disagreements": 0,
+              "scc_count": 0,
+              "scc_max_size": 0,
+              "singleton_latency_seconds": null,
+              "unknown_edges": 0
+            },
+            "config": {
+              "bounds": {
+                "max_backtracks": 10000,
+                "max_depth": 32,
+                "max_nodes": 10000,
+                "max_tokens": 10000,
+                "max_verifier_calls": 10000
+              },
+              "constraint_version": "v1",
+              "pack_id": "vss4-fixture-word",
+              "realizer": "ar_late",
+              "solver": "exact"
+            },
+            "control_row_id": "R5",
+            "description": "AR late realization with deterministic fallback (surface quality only).",
+            "energy": {
+              "candidate_set_parity_assertions": 0,
+              "candidate_set_parity_failures": 0,
+              "cost_target_huber": null,
+              "cost_target_mae": null,
+              "listwise_ndcg": null,
+              "pairwise_ranking_accuracy": null,
+              "scorer_fallback_count": 0,
+              "scorer_invalid_outputs": 0,
+              "search_work_delta_vs_control": null
+            },
+            "exact_search": {
+              "backtracks": 0,
+              "certified_removals": 0,
+              "decisions": 0,
+              "dedup_hits": 0,
+              "deterministic_ranker_fallbacks": 0,
+              "domain_reduction_ratio": null,
+              "energy_ranker_fallbacks": 0,
+              "exact_closure_passes": 0,
+              "expanded_nodes": 0,
+              "final_domain_size": 0,
+              "initial_domain_size": 0,
+              "latency_p50_ms": null,
+              "latency_p95_ms": null,
+              "latency_p99_ms": null,
+              "local_nogoods": 0,
+              "model_ranker_fallbacks": 0,
+              "solver_seconds": 0.0,
+              "solver_verifier_calls": 0,
+              "support_cache_hits": 0,
+              "support_queries": 0,
+              "supported_queries": 0,
+              "unknown_queries": 0,
+              "unsupported_queries": 0,
+              "verifier_seconds": 0.0
+            },
+            "quality": {
+              "behavior": null,
+              "concept": null,
+              "dataflow": null,
+              "exact_match": null,
+              "meaningful": null,
+              "near_match": null,
+              "parse": null
+            },
+            "row_id": "R6",
+            "solver": {
+              "certificate_replay_failures": 0,
+              "certificates_emitted": 0,
+              "certificates_replayed": 0,
+              "certified_unsat_with_incomplete_proof": 0,
+              "enabled": false,
+              "false_unsupported_count": null,
+              "false_unsupported_rate": null,
+              "solved_without_final_verifier": 0,
+              "status_budget_exhausted": 0,
+              "status_certified_unsat": 0,
+              "status_solved": 0,
+              "status_unknown": 0,
+              "unknown_preservation_violations": 0
+            },
+            "surface": {
+              "alpha_equivalence_rate": null,
+              "ar_assignments_accepted": 0,
+              "ar_assignments_attempted": 0,
+              "ar_slots": 0,
+              "collision_repairs": 0,
+              "constrained_dead_ends": 0,
+              "deterministic_assignments_accepted": 0,
+              "deterministic_assignments_attempted": 0,
+              "deterministic_fallbacks": 0,
+              "deterministic_slots": 0,
+              "final_verifier_rate": null,
+              "first_pass_verifier_rate": null,
+              "model_forwards": 0,
+              "realization_seconds": 0.0,
+              "retries": 0,
+              "semantic_ir_mutation_violations": 0,
+              "slots_total": 0,
+              "structured_slots_routed_to_ar": 0,
+              "validation_rejects": 0
+            },
+            "topology": {
+              "active_holes": 0,
+              "atomic_batch_rollbacks": 0,
+              "canvas_tokens": 0,
+              "certified_removals_retained": 0,
+              "denoiser_nfe": 0,
+              "domain_size_max": 0,
+              "domain_size_mean": null,
+              "hard_domain_coverage_complete": 0,
+              "hard_domain_coverage_none": 0,
+              "hard_domain_coverage_partial": 0,
+              "proposals_accepted": 0,
+              "proposals_rejected": 0,
+              "remask_backtracks": 0,
+              "reversible_remasks": 0
+            },
+            "variable": "late_realization=ar"
+          }
+        ],
+        "rows_blocked": [
+          "R2",
+          "R3",
+          "R4",
+          "R5",
+          "R6"
+        ],
+        "rows_ran": [
+          "R0",
+          "R1"
+        ],
+        "run_id": "aaad08463362586a",
+        "version": "vss4-02-v1"
+      },
+      "phase": "phase_5_matched_matrix",
+      "status": "ran"
+    },
+    {
+      "blocked_reason": "requires frontier checkpoints and solver-relevant adversarial/OOD suites beyond the VSS4-01 closed fixture; no CPU-runnable solver adversarial suite is committed",
+      "evidence": {},
+      "phase": "phase_6_adversarial_ood",
+      "status": "blocked"
+    }
+  ],
+  "run_id": "a81835a24cf818e5",
+  "timestamp": "2026-07-18T17:05:15.516969+00:00"
+}
