@@ -97,6 +97,19 @@ from slm_training.dsl.analysis.arity.render import (
     to_csv,
     to_markdown,
 )
+from slm_training.dsl.analysis.arity.task_quotient import (
+    AlignedActionRecord,
+    ConfusabilityGraph,
+    ColoringResult,
+    QuotientReport,
+    TaskDistortionSpec,
+    analyze_task_quotient,
+    build_confusability_graph,
+    build_state_profiles,
+    capacity_feasible,
+    color_graph,
+    refine_quotient,
+)
 
 __all__ = [
     "AnalysisBounds",
@@ -156,4 +169,16 @@ __all__ = [
     "report_view",
     "to_csv",
     "to_markdown",
+    # --- CAP1-03: task-confusability graph / neural state quotient (SLM-83) ---
+    "AlignedActionRecord",
+    "ConfusabilityGraph",
+    "ColoringResult",
+    "QuotientReport",
+    "TaskDistortionSpec",
+    "analyze_task_quotient",
+    "build_confusability_graph",
+    "build_state_profiles",
+    "capacity_feasible",
+    "color_graph",
+    "refine_quotient",
 ]
