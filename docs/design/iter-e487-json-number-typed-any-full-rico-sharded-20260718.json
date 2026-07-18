@@ -358,10 +358,26 @@
       "fallback_count": 0,
       "decode_timeout_count": 0,
       "completed_normally": true
+    },
+    {
+      "index": "12b",
+      "run_id": "e487-e396-json-number-typed-any-rico-shard12b-r1",
+      "eval_offset": 600,
+      "eval_end": 624,
+      "n": 24,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8907291666666667,
+      "component_type_recall": 1.0,
+      "reward_score": 0.992,
+      "failure_count": 0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "completed_normally": true
     }
   ],
   "coverage": {
-    "completed_n": 600,
+    "completed_n": 624,
     "total_n": 1500,
     "exact_contiguous": false
   },
@@ -376,7 +392,13 @@
   ],
   "timing": {
     "external_timeout_seconds": 290,
-    "external_kill_after_seconds": 10
+    "external_kill_after_seconds": 10,
+    "policy_after_offset_624": {
+      "interrupt_seconds": 170,
+      "kill_after_seconds": 10,
+      "maximum_total_seconds": 180,
+      "maximum_shard_rows": 16
+    }
   },
   "verdict": "Partial; exact-coverage merge and five-suite evidence remain required."
 }
