@@ -212,3 +212,21 @@ def test_capsule_solver_requires_verified_solver() -> None:
             ),
             records=records,
         )
+
+
+def test_capsule_mode_falls_back_when_pack_slots_missing() -> None:
+    """Honest fallback: capsule path is not yet implemented in the openui pack."""
+    model = _model(
+        topology_verified_solver=True,
+        topology_capsule_solver=True,
+        topology_solver_max_nodes=16,
+        topology_solver_max_verifier_calls=8,
+    )
+    request = _request()
+    model.generate_batch_requests([request])
+    stats = model.consume_generation_evidence()[0]
+    trace = stats["topology_solver"]
+    assert trace["enabled"] is True
+    assert trace["capsule_mode"] is True
+    assert trace["capsule_available"] is False
+    assert trace["capsule_fallback"] == "pack_capsule_slots_unimplemented"
