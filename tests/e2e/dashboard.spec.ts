@@ -62,14 +62,15 @@ test.describe("mission control dashboard", () => {
       } }],
     } }));
     await page.goto("/checkpoints");
-    await expect(page.getByText("GATES PASS")).toBeVisible({ timeout: 10_000 });
+    // exact: the checkpoint roster now includes pills like "E479 five-suite gates pass".
+    await expect(page.getByText("GATES PASS", { exact: true })).toBeVisible({ timeout: 10_000 });
 
     // Raise smoke structural_similarity threshold above the actual value.
     const smoke = page.locator(".thr-suite", { hasText: "smoke" });
     await smoke.locator("label", { hasText: "structural_similarity" }).locator("input").fill("0.99");
 
     // The pure-compute /api/gates/evaluate endpoint recolors the matrix.
-    await expect(page.getByText("GATES FAIL")).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText("GATES FAIL", { exact: true })).toBeVisible({ timeout: 5_000 });
   });
 
   test("react playground renders inside the SPA shell", async ({ page }) => {
@@ -100,10 +101,10 @@ test.describe("mission control dashboard", () => {
     await page.route("**/api/data/test", (route) => route.fulfill({ json: { suites: {} } }));
 
     await page.goto("/data");
-    await expect(page.locator(".data-browser-count")).toHaveText("Showing all 3 of 3");
+    await expect(page.locator(".data-browser-count").first()).toHaveText("Showing all 3 of 3");
     await expect(page.getByRole("button", { name: "View" })).toHaveCount(3);
     await page.getByPlaceholder("id, prompt, source, or OpenUI").fill("Third");
-    await expect(page.locator(".data-browser-count")).toHaveText("Showing all 1 of 1");
+    await expect(page.locator(".data-browser-count").first()).toHaveText("Showing all 1 of 1");
     await page.getByRole("button", { name: "View" }).click();
     await expect(page.locator(".record-detail")).toContainText('"quality": 3');
   });
