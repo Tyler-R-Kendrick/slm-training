@@ -104,6 +104,9 @@ class DslPack:
     capsule_materializer: Callable[..., Any] | None = None
     capsule_local_oracle: Callable[..., Any] | None = None
     capsule_global_oracle: Callable[..., Any] | None = None
+    opaque_region_extractor: Callable[..., Any] | None = None
+    fragment_parser: Callable[..., Any] | None = None
+    region_splicer: Callable[..., Any] | None = None
 
     def filled_slots(self) -> tuple[str, ...]:
         return tuple(
@@ -227,6 +230,34 @@ def _openui_slot_contract(
     return canonical_slot_contract(source, declared=declared)
 
 
+def _openui_opaque_region_extractor(source: str) -> tuple[Any, ...]:
+    """Classify user-facing content placeholders as opaque CONTENT_VALUE regions."""
+    import hashlib
+
+    from slm_training.dsl.opaque_regions import (
+        OpaqueRegion,
+        OpaqueRegionKind,
+        OpaqueRegionSummary,
+    )
+    from slm_training.dsl.placeholders import CONTENT_PROPS, extract_placeholders
+
+    regions: list[Any] = []
+    for placeholder in extract_placeholders(source):
+        prop = placeholder.lstrip(":").split(".")[-1]
+        if prop in CONTENT_PROPS:
+            digest = hashlib.sha256(placeholder.encode("utf-8")).hexdigest()[:16]
+            regions.append(
+                OpaqueRegion(
+                    region_id=f"openui:content:{placeholder}",
+                    kind=OpaqueRegionKind.CONTENT_VALUE,
+                    placeholder=placeholder,
+                    source_digest=digest,
+                    summary=OpaqueRegionSummary(),
+                )
+            )
+    return tuple(regions)
+
+
 def _toy_layout_scope_extractor(source: str, **kwargs: Any) -> list[Any]:
     from slm_training.data.scope_extract import extract_scope_slices
 
@@ -272,6 +303,7 @@ def _ensure_builtin_packs() -> None:
             scope_extractor=_openui_scope_extractor,
             prop_order=_openui_prop_order,
             incremental_engine=_openui_engine,
+            opaque_region_extractor=_openui_opaque_region_extractor,
         )
     )
     # Partial pack: toy-layout genuinely fills grammar, scope rules,

@@ -10,6 +10,7 @@ from dataclasses import asdict, dataclass, field
 from typing import Any
 
 from slm_training.dsl.language_contract import contract_id as current_contract_id
+from slm_training.dsl.opaque_regions import OpaqueRegion
 from slm_training.dsl.parser import validate
 from slm_training.dsl.schema import ALLOWED_SPLITS, TASK_TOKENS, ExampleRecord
 
@@ -31,6 +32,7 @@ class ProgramSpec:
     split: str = "train"
     derivative_refs: tuple[str, ...] = ()
     provenance: dict[str, Any] = field(default_factory=dict)
+    opaque_regions: tuple[OpaqueRegion, ...] = ()
 
     def __post_init__(self) -> None:
         for name in (
@@ -83,6 +85,7 @@ class ProgramSpec:
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
         data["derivative_refs"] = list(self.derivative_refs)
+        data["opaque_regions"] = [region.to_dict() for region in self.opaque_regions]
         return data
 
     @classmethod
@@ -99,6 +102,10 @@ class ProgramSpec:
             split=str(data.get("split") or "train"),
             derivative_refs=tuple(str(v) for v in data.get("derivative_refs") or ()),
             provenance=dict(data.get("provenance") or {}),
+            opaque_regions=tuple(
+                OpaqueRegion.from_dict(region)
+                for region in data.get("opaque_regions", ())
+            ),
         )
 
 
