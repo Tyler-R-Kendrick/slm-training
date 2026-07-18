@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -53,6 +54,7 @@ ALLOWED_TRACKED_IGNORED = {
     ".env.example",
 }
 MAX_PUBLISHED_DATA_BYTES = 50 * 1024 * 1024
+MAX_WORKFLOW_MINUTES = 3
 
 
 def validate_top_level(paths: Iterable[str]) -> list[str]:
@@ -110,6 +112,25 @@ def validate_published_data_sizes(
     return errors
 
 
+def validate_workflow_timeouts(*, root: Path = ROOT) -> list[str]:
+    errors: list[str] = []
+    for path in sorted((root / ".github/workflows").glob("*.y*ml")):
+        values = [
+            int(value)
+            for value in re.findall(
+                r"^\s*timeout-minutes:\s*(\d+)\s*$",
+                path.read_text(encoding="utf-8"),
+                flags=re.MULTILINE,
+            )
+        ]
+        relative = path.relative_to(root)
+        if not values:
+            errors.append(f"workflow lacks three-minute timeout: {relative}")
+        elif any(value > MAX_WORKFLOW_MINUTES for value in values):
+            errors.append(f"workflow exceeds three-minute timeout: {relative}")
+    return errors
+
+
 def _git(args: list[str], *, root: Path = ROOT) -> str:
     return subprocess.run(
         ["git", *args],
@@ -132,6 +153,7 @@ def validate_repository(*, root: Path = ROOT) -> list[str]:
     paths = repository_paths(root=root)
     errors = validate_top_level(paths)
     errors.extend(validate_published_data_sizes(paths, root=root))
+    errors.extend(validate_workflow_timeouts(root=root))
     ignored = _git(["ls-files", "-ci", "--exclude-standard"], root=root).splitlines()
     errors.extend(
         f"tracked ignored artifact: {path}"
