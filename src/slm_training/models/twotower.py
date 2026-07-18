@@ -389,6 +389,8 @@ class TwoTowerConfig:
     grammar_canvas_lookahead: int = 0  # 0 = disabled (use progressive stages)
     # P5: dynamic int8 quantization of Linear layers at eval time.
     use_dynamic_quant: bool = False
+    # CAP3-01: reference low-bit quantizer format id (None = disabled).
+    quant_format: str | None = None
     # P7: playground/generate attempt budget + finalize-only-on-last.
     generate_max_attempts: int = 3
     grammar_finalize_on_last_attempt_only: bool = False
@@ -1187,6 +1189,46 @@ class TwoTowerModel(nn.Module):
             )
             self.denoiser = quantized
             self.config.use_dynamic_quant = True
+            return True
+        except Exception:  # noqa: BLE001
+            return False
+
+    def apply_quant_format(self, format_id: str) -> bool:
+        """CAP3-01: apply a reference low-bit quantizer format to Linear weights.
+
+        This is a disabled-by-default reference path.  It records a conversion
+        ledger but does not claim speedup or quality retention.
+        """
+        from slm_training.models.quantization.convert import QuantizationPolicy, convert_twotower
+        from slm_training.models.quantization.formats import (
+            binary_format,
+            binary_plus_mask_format,
+            int4_format,
+            int8_format,
+            learned_four_level_zero_format,
+            symmetric_four_level_format,
+            ternary_format,
+        )
+
+        registry = {
+            "binary": binary_format,
+            "ternary": ternary_format,
+            "learned4zero": learned_four_level_zero_format,
+            "learned_four_level_zero": learned_four_level_zero_format,
+            "symmetric_four_level": symmetric_four_level_format,
+            "int4": int4_format,
+            "int8": int8_format,
+            "binary_plus_mask": binary_plus_mask_format,
+        }
+        factory = registry.get(format_id)
+        if factory is None:
+            return False
+        try:
+            fmt = factory(group_size=128)
+            policy = QuantizationPolicy(default_format=fmt)
+            _, records = convert_twotower(self, policy, fail_on_tied=False, in_place=True)
+            self.config.quant_format = format_id
+            self._quant_conversion_records = [r.as_dict() for r in records]
             return True
         except Exception:  # noqa: BLE001
             return False

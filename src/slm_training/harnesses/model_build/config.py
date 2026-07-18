@@ -257,6 +257,7 @@ class ModelBuildConfig:
     grammar_multitoken_max: int = 8
     grammar_canvas_lookahead: int = 0
     use_dynamic_quant: bool = False
+    quant_format: str | None = None  # CAP3-01: disabled-by-default reference quantizer
     generate_max_attempts: int = 3
     # Diagnostic per-record generation timeout; None/0 preserves unlimited eval.
     decode_timeout_seconds: float | None = None
