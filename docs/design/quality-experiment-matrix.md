@@ -2182,6 +2182,12 @@ invalid model payloads are scored instead of crashing evaluation. See
 [results](iter-e337-hf-context-30k-20260717.md) and
 [JSON](hf-context-results-iter-e337-20260717.json).
 
+E338 disables E337's component-plan decode bias. Parse returns to 1.0 on three
+suites, but fidelity, meaningful rate, component recall, and reward remain
+zero everywhere; AgentV stays 0/4. Reject the decode ablation. See
+[results](iter-e338-hf-context-plan-off-20260717.md) and
+[JSON](hf-context-plan-off-results-iter-e338-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
