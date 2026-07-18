@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E485",
+  "date": "2026-07-18",
+  "status": "complete",
+  "run_id": "e485-e396-typed-any-row801-r1",
+  "checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0"
+  },
+  "data": {
+    "version": "e451_root_binder_v1",
+    "suite": "rico_held",
+    "eval_offset": 801,
+    "n": 1,
+    "record_id": "rico_hf_test_1810"
+  },
+  "result": {
+    "meaningful_program_rate": 1.0,
+    "placeholder_fidelity": 1.0,
+    "structural_similarity": 0.575,
+    "component_type_recall": 1.0,
+    "reward_score": 1.0,
+    "failure_count": 0,
+    "fallback_count": 0,
+    "decode_timeout_count": 0,
+    "before": "Slider(\"row\", \"continuous\", 40, @Filter())",
+    "after": "Slider(\"row\", \"continuous\", 40, 40)"
+  },
+  "timing": {
+    "external_timeout_seconds": 290,
+    "external_kill_after_seconds": 10,
+    "elapsed_seconds": 6.5,
+    "completed_normally": true
+  },
+  "verdict": "Accept typed-any constraint; fresh bounded and full-RICO evidence required."
+}

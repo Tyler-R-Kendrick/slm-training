@@ -20,6 +20,7 @@ coverage for a stable loss space; see
 from __future__ import annotations
 
 import json
+import re
 from copy import deepcopy
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -74,6 +75,20 @@ NAME_STR = "NAME_STR"
 MEMBER_STR = "MEMBER_STR"
 LIT_END = "LIT_END"
 _BYTE_PREFIX = "B:"
+_NUMBER_RE = re.compile(r"-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?")
+
+
+def _number_completion(body: str) -> str | None:
+    """Shortest suffix that makes a JSON number, or None for an invalid prefix."""
+    if _NUMBER_RE.fullmatch(body):
+        return ""
+    if body in {"", "-"}:
+        return "0"
+    if re.fullmatch(r"-?(?:0|[1-9]\d*)\.", body):
+        return "0"
+    if re.fullmatch(r"-?(?:0|[1-9]\d*)(?:\.\d+)?[eE][+-]?", body):
+        return "0"
+    return None
 
 
 def _byte_token(ch: str) -> str:
@@ -721,7 +736,7 @@ class ChoiceDecodeState:
             )
         if expected == "integer":
             expected = "number"
-        return expected is None or expr_type in {str(expected), "any"}
+        return expected is None or expr_type == str(expected)
 
     @classmethod
     def _schema_string_enum(cls, schema: dict[str, Any]) -> tuple[str, ...] | None:
@@ -923,9 +938,11 @@ class ChoiceDecodeState:
                     return False
                 marker = self.literal_frame
                 object_key = self.literal_is_object_key
+                body = self.literal_body
+                if marker == LIT_NUM and not _NUMBER_RE.fullmatch(body):
+                    return False
                 self.literal_frame = None
                 self.literal_size = 0
-                body = self.literal_body
                 self.literal_body = ""
                 self.literal_is_object_key = False
                 if object_key:
@@ -940,6 +957,11 @@ class ChoiceDecodeState:
                 return True
             if token.startswith(_BYTE_PREFIX):
                 char = chr(int(token[len(_BYTE_PREFIX) :], 16))
+                if (
+                    self.literal_frame == LIT_NUM
+                    and _number_completion(self.literal_body + char) is None
+                ):
+                    return False
                 enum = (
                     self._current_string_enum()
                     if self.literal_frame == LIT_STR
@@ -1005,6 +1027,13 @@ class ChoiceDecodeState:
     def _completion_id(self) -> int:
         tok = self.tokenizer
         if self.literal_frame is not None:
+            if self.literal_frame == LIT_NUM:
+                suffix = _number_completion(self.literal_body)
+                if suffix is None:
+                    return tok.token_to_id[_byte_token("0")]
+                if not suffix:
+                    return tok.token_to_id[LIT_END]
+                return tok.token_to_id[_byte_token(suffix[0])]
             enum = (
                 self._current_string_enum() if self.literal_frame == LIT_STR else None
             )

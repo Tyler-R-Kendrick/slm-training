@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "experiment_ids": [
+    "E483",
+    "E484"
+  ],
+  "date": "2026-07-18",
+  "status": "complete",
+  "checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0"
+  },
+  "runs": [
+    {
+      "experiment_id": "E483",
+      "run_id": "e483-e396-json-number-row1126-r1",
+      "eval_offset": 1126,
+      "record_id": "rico_hf_test_2644",
+      "structural_similarity": 0.825,
+      "reward_score": 0.973,
+      "before": "Slider(\"n\", \"continuous\", \"nnu\", 40)",
+      "after": "Slider(\"n\", \"continuous\", 0, 100)",
+      "schema_valid": true,
+      "elapsed_seconds": 3.9
+    },
+    {
+      "experiment_id": "E484",
+      "run_id": "e484-e396-json-number-builtin-row801-r1",
+      "eval_offset": 801,
+      "record_id": "rico_hf_test_1810",
+      "structural_similarity": 0.5103,
+      "reward_score": 1.0,
+      "output": "Slider(\"row\", \"continuous\", 40, @Filter())",
+      "schema_valid": false,
+      "elapsed_seconds": 6.6
+    }
+  ],
+  "reliability": {
+    "failure_count": 0,
+    "fallback_count": 0,
+    "decode_timeout_count": 0
+  },
+  "timing": {
+    "external_timeout_seconds": 290,
+    "external_kill_after_seconds": 10,
+    "completed_normally": true
+  },
+  "verdict": "JSON-number fix generalizes; typed-any builtin bypass remains rejected."
+}

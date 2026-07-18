@@ -3007,6 +3007,35 @@ corrected. Accept E479 as current-policy local evidence; production HF ship
 remains pending bucket sync. See
 [`iter-e479-e396-array-items-full-ship-gates-20260718.md`](iter-e479-e396-array-items-full-ship-gates-20260718.md).
 
+E480–E481 reproduce E479 RICO row 960 and expose a deterministic numeric-frame
+bug. Both emit schema-invalid `Slider("item", "continuous", "nnu", 40)` at
+unchanged row metrics. Raw-choice instrumentation proves the state accepts
+`LIT_NUM B:6e B:6e B:75 LIT_END`, after which serialization quotes the invalid
+number. Reject this behavior and constrain byte-spelled numbers before broader
+evaluation. See
+[`iter-e480-e481-slider-numeric-frame-diagnostics-20260718.md`](iter-e480-e481-slider-numeric-frame-diagnostics-20260718.md).
+
+E482 constrains byte-spelled numeric frames to valid JSON-number prefixes and
+exact completions. On the same row, invalid Slider argument `"nnu"` becomes
+numeric `-1` with unchanged meaningful/fidelity/recall 1.0, structure 0.7292,
+reward 0.9970, and zero reliability counts. Accept the generalized constraint;
+other audited rows remain diagnostic-only. See
+[`iter-e482-json-number-frame-fix-20260718.md`](iter-e482-json-number-frame-fix-20260718.md).
+
+E483 confirms E482 generalizes: the second invalid Slider `"nnu"` becomes
+numeric `0` with unchanged metrics and zero reliability counts. E484 isolates
+the remaining bypass: `@Filter()` is typed `any`, which the schema predicate
+currently accepts in a numeric slot. Reject typed-`any` compatibility and
+allow `any` only for unconstrained expected schemas. See
+[`iter-e483-e484-json-number-builtin-diagnostics-20260718.md`](iter-e483-e484-json-number-builtin-diagnostics-20260718.md).
+
+E485 restricts `any` expressions to unconstrained schemas. On E484's row,
+invalid numeric-slot `@Filter()` becomes numeric `40`; structure improves
+0.5103→0.5750 while meaningful/fidelity/recall/reward remain 1.0 and
+reliability counts remain zero. Accept the generalized constraint, but keep
+E479 authoritative pending fresh bounded and full-RICO evidence. See
+[`iter-e485-typed-any-schema-fix-20260718.md`](iter-e485-typed-any-schema-fix-20260718.md).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

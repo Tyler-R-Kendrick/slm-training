@@ -11,7 +11,9 @@ from slm_training.dsl.parser import validate
 from slm_training.dsl.schema import ExampleRecord, load_jsonl
 from slm_training.models.choice_tokenizer import (
     CHOICE_TOKENIZER_KIND,
+    LIT_END,
     LIT_PREFIX,
+    LIT_NUM,
     LIT_STR,
     NAME_STR,
     TERNARY_OP,
@@ -239,6 +241,51 @@ def test_choice_state_enforces_schema_array_item_types(
     invalid = chart.clone()
     assert not invalid.advance_id(tok.token_to_id["&0"])
     assert chart.advance_id(tok.token_to_id["&1"])
+
+
+def test_choice_state_enforces_json_number_frames(tok: ChoiceTokenizer) -> None:
+    slider = ChoiceDecodeState(tok)
+    for token in ("+Slider", "^row", LIT_STR):
+        assert slider.advance_id(tok.token_to_id[token])
+    for char in "continuous":
+        assert slider.advance_id(tok.token_to_id[f"B:{ord(char):02x}"])
+    for token in ("LIT_END", LIT_NUM):
+        assert slider.advance_id(tok.token_to_id[token])
+
+    assert tok.token_to_id["B:6e"] not in slider.allowed_ids(16)
+    assert tok.token_to_id["B:2d"] in slider.allowed_ids(16)
+    assert tok.token_to_id[LIT_END] not in slider.allowed_ids(16)
+
+    valid = slider.clone()
+    for char in "1e+2":
+        assert valid.advance_id(tok.token_to_id[f"B:{ord(char):02x}"])
+    assert valid.advance_id(tok.token_to_id[LIT_END])
+    assert valid.frames[-1].arg_index == 3
+
+    incomplete = slider.clone()
+    assert incomplete.advance_id(tok.token_to_id["B:2d"])
+    assert tok.token_to_id["B:30"] in incomplete.allowed_ids(16)
+    assert tok.token_to_id["B:39"] in incomplete.allowed_ids(16)
+    assert tok.token_to_id["B:6e"] not in incomplete.allowed_ids(16)
+    assert tok.token_to_id[LIT_END] not in incomplete.allowed_ids(16)
+
+
+def test_choice_state_rejects_any_expression_for_typed_schema(
+    tok: ChoiceTokenizer,
+) -> None:
+    slider = ChoiceDecodeState(tok)
+    for token in ("+Slider", "^row", LIT_STR):
+        assert slider.advance_id(tok.token_to_id[token])
+    for char in "continuous":
+        assert slider.advance_id(tok.token_to_id[f"B:{ord(char):02x}"])
+    for token in ("LIT_END", "#40"):
+        assert slider.advance_id(tok.token_to_id[token])
+    assert tok.token_to_id["*Filter"] not in slider.allowed_ids(16)
+
+    unconstrained = ChoiceDecodeState(tok, slot_count=1)
+    for token in ("+Col", "@0"):
+        assert unconstrained.advance_id(tok.token_to_id[token])
+    assert tok.token_to_id["*Filter"] in unconstrained.allowed_ids(16)
 
 
 def test_choice_state_initial_bind_path_can_satisfy_content_floor(
