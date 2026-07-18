@@ -451,14 +451,14 @@
   },
   "suites": {
     "rico_held": {
-      "n": 576,
+      "n": 688,
       "suite_total_n": 1500,
       "diagnostic_subset": true,
       "meaningful_program_rate": 1.0,
       "placeholder_fidelity": 1.0,
-      "structural_similarity": 0.8730647569444444,
+      "structural_similarity": 0.8739111918604651,
       "component_type_recall": 1.0,
-      "reward_score": 0.9935885416666665
+      "reward_score": 0.9935029069767441
     }
   },
   "reliability": {
