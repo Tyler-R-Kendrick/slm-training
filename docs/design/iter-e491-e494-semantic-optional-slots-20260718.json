@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "experiment_ids": ["E491", "E492", "E493", "E494"],
+  "date": "2026-07-18",
+  "status": "complete",
+  "run_id": "e494-e396-semantic-optional-slots-bounded-r1",
+  "checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0"
+  },
+  "data": {"version": "e451_root_binder_v1"},
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "grammar_ltr_max_tokens": 320,
+    "gen_steps": 8,
+    "max_attempts": 3,
+    "component_plan_decode_weight": 2.0,
+    "slot_component_decode_weight": 8.0,
+    "prompt_role_constrained_decode": true,
+    "slot_contract_constrained_decode": true,
+    "honest_slot_contract": true,
+    "allow_unconstrained_fallback": false,
+    "maximum_total_seconds": 180
+  },
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.7655666666666666,
+      "component_type_recall": 0.6666666666666666,
+      "reward_score": 0.969
+    },
+    "held_out": {
+      "n": 5,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8083400000000001,
+      "component_type_recall": 0.9047619047619048,
+      "reward_score": 0.9862
+    },
+    "adversarial": {
+      "n": 4,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.80605,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9767499999999999
+    },
+    "ood": {
+      "n": 4,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.65455,
+      "component_type_recall": 0.875,
+      "reward_score": 0.9864999999999999
+    }
+  },
+  "comparison_to_e489": {
+    "structural_similarity_delta": {
+      "smoke": 0.08333333333333326,
+      "held_out": 0.024500000000000077,
+      "adversarial": 0.0,
+      "ood": 0.020275000000000043
+    },
+    "reward_score_delta": {
+      "smoke": -0.0040000000000000036,
+      "held_out": -0.0005999999999999339,
+      "adversarial": 0.0,
+      "ood": 0.0
+    }
+  },
+  "agentv": {"passed": 4, "total": 4, "execution_errors": 0},
+  "reliability": {
+    "failure_count": 0,
+    "fallback_count": 0,
+    "decode_timeout_count": 0
+  },
+  "targeted_diagnostics": [
+    {"experiment_id": "E491", "record_id": "rico_hf_test_293", "n": 1, "structural_similarity": 0.35, "verdict": "no change"},
+    {"experiment_id": "E492", "record_id": "rico_hf_test_293", "n": 1, "structural_similarity": 0.4889, "verdict": "partial improvement"},
+    {"experiment_id": "E493", "record_id": "rico_hf_test_293", "n": 1, "structural_similarity": 1.0, "verdict": "target fixed; diagnostic only"}
+  ],
+  "non_run_attempts": [
+    {
+      "scope": "rico_held offset 144 limit 48",
+      "outcome": "externally interrupted at 170 seconds",
+      "exit_code": 124,
+      "metrics_counted": false
+    }
+  ],
+  "verdict": "Bounded evidence accepted; small reward decreases remain explicit."
+}
