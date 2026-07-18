@@ -257,6 +257,44 @@ def main(argv: list[str] | None = None) -> int:
         help="P1a: max representatives per semantic cluster (default: uncapped).",
     )
     parser.add_argument(
+        "--semantic-dedup",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help=(
+            "Cross-structure semantic dedup (SemDeDup-style; embeddings when "
+            "the [embeddings] extra is installed, hashed TF-IDF fallback "
+            "otherwise). Default: the profile decides (strict=on)."
+        ),
+    )
+    parser.add_argument(
+        "--semantic-dedup-threshold",
+        type=float,
+        default=None,
+        help="Cosine cutoff; default is per-engine (embeddings 0.92, lexical 0.95).",
+    )
+    parser.add_argument(
+        "--ngram-decontam",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help=(
+            "Reject train rows whose token n-grams overlap committed eval "
+            "suites (Tülu-3-style). Default: the profile decides (strict=on)."
+        ),
+    )
+    parser.add_argument("--ngram-size", type=int, default=8)
+    parser.add_argument(
+        "--ngram-overlap-threshold",
+        type=float,
+        default=0.5,
+        help="Reject when this fraction of a record's n-grams appears in eval data.",
+    )
+    parser.add_argument(
+        "--decontam-eval-root",
+        type=Path,
+        default=Path("src/slm_training/resources/data/eval"),
+        help="Committed eval-suite root walked for the decontamination index.",
+    )
+    parser.add_argument(
         "--publish",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -303,6 +341,12 @@ def main(argv: list[str] | None = None) -> int:
             fuzzy_dedup=bool(args.fuzzy_dedup),
             fuzzy_jaccard=float(args.fuzzy_jaccard),
             semantic_cluster_cap=args.semantic_cluster_cap,
+            semantic_dedup=args.semantic_dedup,
+            semantic_dedup_threshold=args.semantic_dedup_threshold,
+            ngram_decontam=args.ngram_decontam,
+            ngram_size=args.ngram_size,
+            ngram_overlap_threshold=args.ngram_overlap_threshold,
+            decontam_eval_root=args.decontam_eval_root,
             programspec_path=args.programspec_path,
             programspec_count=args.programspec_count,
             programspec_seed=args.programspec_seed,

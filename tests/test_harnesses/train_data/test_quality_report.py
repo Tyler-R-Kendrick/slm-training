@@ -99,6 +99,9 @@ def test_build_emits_quality_report_and_rejected_ledger(tmp_path: Path) -> None:
     stats = result["stats"]
     assert stats["profile"] == "strict"
     assert stats["fuzzy_dedup"] is True  # strict profile applied
+    assert stats["semantic_dedup"] is True
+    assert stats["ngram_decontam"] is True
+    assert stats["semantic_dedup_engine"] in {"lexical-tfidf", "embeddings"}
 
     report = json.loads(report_path.read_text(encoding="utf-8"))
     assert report == result["quality_report"]
@@ -144,6 +147,13 @@ def test_build_emits_quality_report_and_rejected_ledger(tmp_path: Path) -> None:
     assert report["redundancy"]["dropped"]["exact_pair"] >= 1
     assert report["redundancy"]["top_clusters"]
 
+    # Decontamination ran against the committed eval suites with no flags on
+    # the fixture corpus, and the engines are recorded for reproducibility.
+    assert report["decontamination"]["ngram_size"] == 8
+    assert report["decontamination"]["suites_indexed"]
+    assert report["engines"]["semantic_dedup"] in {"lexical-tfidf", "embeddings"}
+    assert report["engines"]["decontam"] == "ngram-8"
+
     # Admitted corpus stayed healthy.
     assert report["counts"]["admitted"] == stats["record_count"] > 0
 
@@ -159,6 +169,8 @@ def test_permissive_profile_still_emits_report(tmp_path: Path) -> None:
     stats = result["stats"]
     assert stats["profile"] == "permissive"
     assert stats["fuzzy_dedup"] is False
+    assert stats["semantic_dedup"] is False
+    assert stats["ngram_decontam"] is False
     report = result["quality_report"]
     assert report["profile"] == "permissive"
     # Exact dedup + quality gate still run under permissive.

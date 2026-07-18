@@ -75,6 +75,16 @@ class TrainDataConfig:
     fuzzy_dedup: bool = False
     fuzzy_jaccard: float = 0.92
     semantic_cluster_cap: int | None = None
+    # Cross-structure semantic dedup (SemDeDup-style) + n-gram decontamination
+    # against committed eval suites. None = the profile decides; an explicit
+    # True/False always wins over the profile.
+    semantic_dedup: bool | None = None
+    # None = engine default (embeddings 0.92, lexical-tfidf fallback 0.95).
+    semantic_dedup_threshold: float | None = None
+    ngram_decontam: bool | None = None
+    ngram_size: int = 8
+    ngram_overlap_threshold: float = 0.5
+    decontam_eval_root: Path | None = Path("src/slm_training/resources/data/eval")
     # P12 producer inputs. ProgramSpecs fall back to deterministic generation
     # when the configured file has not been materialized yet.
     programspec_path: Path | None = Path("outputs/data/programspec/programs.jsonl")
@@ -122,6 +132,8 @@ PROFILES: dict[str, dict[str, Any]] = {
         "semantic_cluster_cap": 8,
         "min_verification_tier": "Bronze",
         "max_records_per_parent": 6,
+        "semantic_dedup": True,
+        "ngram_decontam": True,
     },
     "permissive": {},
 }
@@ -1332,6 +1344,23 @@ def build_train_data(
                 )
             )
 
+    decontam_flagged: list[dict] = []
+    decontam_suites: list[str] = []
+    if config.ngram_decontam:
+        from slm_training.data.decontam import apply_ngram_decontam, load_eval_suites
+
+        eval_suites = load_eval_suites(
+            config.decontam_eval_root, test_seed_path=config.test_seed_path
+        )
+        decontam_suites = sorted(eval_suites)
+        deduped, decontam_flagged = apply_ngram_decontam(
+            deduped,
+            eval_suites,
+            n=int(config.ngram_size),
+            overlap_threshold=float(config.ngram_overlap_threshold),
+        )
+        _mirror_drops("decontamination", decontam_flagged)
+
     fuzzy_dropped: list[dict] = []
     semantic_dropped: list[dict] = []
     if config.fuzzy_dedup:
@@ -1348,6 +1377,20 @@ def build_train_data(
             deduped, max_per_cluster=int(config.semantic_cluster_cap)
         )
         _mirror_drops("dedup", semantic_dropped)
+
+    semantic_cosine_dropped: list[dict] = []
+    semantic_engine: str | None = None
+    if config.semantic_dedup:
+        from slm_training.data.semantic_dedup import (
+            apply_semantic_dedup,
+            similarity_engine,
+        )
+
+        semantic_engine = similarity_engine()
+        deduped, semantic_cosine_dropped = apply_semantic_dedup(
+            deduped, threshold=config.semantic_dedup_threshold
+        )
+        _mirror_drops("dedup", semantic_cosine_dropped)
 
     deduped, parent_cap_dropped = apply_parent_cap(
         deduped,
@@ -1441,7 +1484,23 @@ def build_train_data(
         source_error_count=producer_error_count,
         cluster_exposure=source_families.get("cluster_exposure") or {},
         per_family=synthesis_rows,
-        engines={"similarity": "minhash-char4gram"},
+        engines={
+            "similarity": "minhash-char4gram",
+            "semantic_dedup": semantic_engine,
+            "decontam": (
+                f"ngram-{config.ngram_size}" if config.ngram_decontam else None
+            ),
+        },
+        decontamination_extra=(
+            {
+                "ngram_flagged": len(decontam_flagged),
+                "ngram_size": int(config.ngram_size),
+                "ngram_overlap_threshold": float(config.ngram_overlap_threshold),
+                "suites_indexed": decontam_suites,
+            }
+            if config.ngram_decontam
+            else None
+        ),
     )
     quality_report_path = write_quality_report(out_dir, quality_report)
 
@@ -1488,6 +1547,13 @@ def build_train_data(
         "semantic_cluster_cap": config.semantic_cluster_cap,
         "semantic_dropped": len(semantic_dropped),
         "semantic_dropped_samples": semantic_dropped[:20],
+        "semantic_dedup": bool(config.semantic_dedup),
+        "semantic_dedup_engine": semantic_engine,
+        "semantic_cosine_dropped": len(semantic_cosine_dropped),
+        "semantic_cosine_dropped_samples": semantic_cosine_dropped[:20],
+        "ngram_decontam": bool(config.ngram_decontam),
+        "decontam_flagged": len(decontam_flagged),
+        "decontam_flagged_samples": decontam_flagged[:20],
         "producer_inputs": {
             "programspec_path": (
                 str(config.programspec_path) if config.programspec_path else None
