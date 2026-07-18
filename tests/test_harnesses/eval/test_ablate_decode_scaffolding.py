@@ -201,6 +201,25 @@ def test_stage_b_not_triggered_when_additive_holds() -> None:
     assert not stage_a_needs_stage_b((baseline,) + tuple(one_offs) + (all_off,))
 
 
+def test_cli_enforces_fixed_run_deadline(monkeypatch: pytest.MonkeyPatch) -> None:
+    from scripts import ablate_decode_scaffolding as cli
+
+    timers: list[tuple[int, float]] = []
+    monkeypatch.setattr(cli.signal, "signal", lambda *_args: cli.signal.SIG_DFL)
+    monkeypatch.setattr(
+        cli.signal,
+        "setitimer",
+        lambda which, seconds: timers.append((which, seconds)),
+    )
+
+    assert cli.main(["--dry-run"]) == 0
+    assert timers == [
+        (cli.signal.ITIMER_REAL, cli.MAX_RUN_SECONDS),
+        (cli.signal.ITIMER_REAL, 0),
+    ]
+    assert cli.MAX_RUN_SECONDS == 170
+
+
 def test_checkpoint_sha256_mismatch_marks_all_arms_incompatible(
     base_config: ModelBuildConfig, tmp_path: Path
 ) -> None:

@@ -19,6 +19,7 @@ Dry-run (no checkpoint required)::
 from __future__ import annotations
 
 import argparse
+import signal
 from pathlib import Path
 
 from slm_training.harnesses.eval.ablate_decode_scaffolding import (
@@ -30,6 +31,8 @@ from slm_training.harnesses.eval.ablate_decode_scaffolding import (
     run_stage_a,
     stage_a_needs_stage_b,
 )
+
+MAX_RUN_SECONDS = 170
 
 
 def _markdown_report(report: AblateReport) -> str:
@@ -111,7 +114,7 @@ def _markdown_report(report: AblateReport) -> str:
     return "\n".join(lines)
 
 
-def main(argv: list[str] | None = None) -> int:
+def _main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--checkpoint",
@@ -226,6 +229,22 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Compatible arms: {compatible}/{len(report.arms)}")
     print(f"Stage B recommended: {stage_a_needs_stage_b(report.arms)}")
     return 0 if compatible == len(report.arms) else 1
+
+
+def main(argv: list[str] | None = None) -> int:
+    def stop_on_budget(_signum: int, _frame: object) -> None:
+        raise TimeoutError
+
+    previous_alarm = signal.signal(signal.SIGALRM, stop_on_budget)
+    signal.setitimer(signal.ITIMER_REAL, MAX_RUN_SECONDS)
+    try:
+        return _main(argv)
+    except TimeoutError:
+        print(f"SDE0-01 stopped at the {MAX_RUN_SECONDS}s hard run cap")
+        return 124
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous_alarm)
 
 
 if __name__ == "__main__":

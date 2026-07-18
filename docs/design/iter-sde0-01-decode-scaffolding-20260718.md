@@ -1,8 +1,8 @@
 # SDE0-01: frozen E396/E479 decode-scaffolding × prompt-inventory factorial
 
-**Linear issue:** SLM-161  
-**Branch:** `agent/slm-161-decode-scaffolding`  
-**Date:** 2026-07-18  
+**Linear issue:** SLM-161
+**Branch:** `agent/slm-161-decode-scaffolding`
+**Date:** 2026-07-18
 **Run artifacts:** `outputs/runs/sde0-01/`
 
 ## What changed
@@ -28,6 +28,8 @@ from decode-time scaffolding, then ran Stage A over the frozen E396 checkpoint.
   - CLI with `--checkpoint`, `--checkpoint-id`, `--checkpoint-sha256`,
     `--checkpoint-remote-uri`, `--output-codec`, `--suites`, `--out-dir`,
     `--test-dir`, `--rico-limit`, and `--dry-run`.
+  - Fixed 170-second process deadline; timeout exits `124`, leaving ten seconds
+    for the caller's mandatory kill grace.
 - `tests/test_harnesses/eval/test_ablate_decode_scaffolding.py`
   - 23 regression tests covering arm generation, factor isolation, config
     resolution, fixture compatibility, Stage B triggering, provenance, no-gold
@@ -71,7 +73,7 @@ the model.
 pytest tests/test_harnesses/eval/test_ablate_decode_scaffolding.py
 ```
 
-- 23 passed.
+- 24 passed.
 
 ## Measured Stage A results
 
@@ -142,7 +144,7 @@ removing semantic constraints has mixed or no effect.
 
 ## Verification checklist
 
-- [x] `pytest tests/test_harnesses/eval/test_ablate_decode_scaffolding.py` — 23 passed.
+- [x] `pytest tests/test_harnesses/eval/test_ablate_decode_scaffolding.py` — 24 passed.
 - [x] `.githooks/check-changed` — passed.
 - [x] `python -m scripts.repo_policy` — ok.
 - [x] `git diff --check` — clean.
