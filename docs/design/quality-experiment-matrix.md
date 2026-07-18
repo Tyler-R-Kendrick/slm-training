@@ -2946,6 +2946,15 @@ with zero failures/fallback/timeouts. Accept bounded, but fresh full RICO
 remains required and E474 stays authoritative. See
 [`iter-e476-schema-array-items-bounded-20260718.md`](iter-e476-schema-array-items-bounded-20260718.md).
 
+E477 starts the required fresh, externally capped RICO campaign under
+schema-array item constraints. Shard 0 completes rows `[0,96)` at
+meaningful/fidelity/recall 1.0, structure 0.8852, reward 0.9955, and zero
+failures/fallback/timeouts, metric-identical to E472. Shard 1 extends
+metric-identical coverage through row 191 at structure 0.8658 and reward
+0.9936. Shard 2 is also metric-identical through row 287 at structure 0.8561
+and reward 0.9940. Coverage is 288/1500; no merged or ship claim yet. See
+[`iter-e477-schema-array-items-full-rico-sharded-20260718.md`](iter-e477-schema-array-items-full-rico-sharded-20260718.md).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

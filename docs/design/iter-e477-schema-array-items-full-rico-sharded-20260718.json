@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E477",
+  "date": "2026-07-18",
+  "status": "partial",
+  "checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0"
+  },
+  "data": {
+    "version": "e451_root_binder_v1",
+    "suite": "rico_held",
+    "total_n": 1500
+  },
+  "policy": {
+    "schema_string_enum_constrained_decode": true,
+    "schema_array_item_constrained_decode": true,
+    "grammar_ltr_max_tokens": 320,
+    "gen_steps": 8,
+    "max_attempts": 3,
+    "allow_unconstrained_fallback": false
+  },
+  "shards": [
+    {
+      "index": 0,
+      "run_id": "e477-e396-array-items-rico-shard00-r1",
+      "eval_offset": 0,
+      "eval_end": 96,
+      "n": 96,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8852197916666668,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9954999999999998,
+      "failure_count": 0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "completed_normally": true
+    },
+    {
+      "index": 1,
+      "run_id": "e477-e396-array-items-rico-shard01-r1",
+      "eval_offset": 96,
+      "eval_end": 192,
+      "n": 96,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8658020833333335,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9935624999999998,
+      "failure_count": 0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "completed_normally": true
+    },
+    {
+      "index": 2,
+      "run_id": "e477-e396-array-items-rico-shard02-r1",
+      "eval_offset": 192,
+      "eval_end": 288,
+      "n": 96,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8561406249999998,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9939687499999997,
+      "failure_count": 0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "completed_normally": true
+    }
+  ],
+  "coverage": {
+    "completed_n": 288,
+    "total_n": 1500,
+    "exact_contiguous": false
+  },
+  "timing": {
+    "external_timeout_seconds": 290,
+    "external_kill_after_seconds": 10
+  },
+  "verdict": "Partial; exact-coverage merge and five-suite evidence remain required."
+}
