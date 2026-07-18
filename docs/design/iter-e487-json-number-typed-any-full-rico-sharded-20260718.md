@@ -37,6 +37,7 @@ contracts, eight generation steps, three attempts, and no fallback.
 | 12a | `[576,600)` | 24 | 1.0 | 1.0 | 0.8822 | 1.0 | 0.9920 | 0 / 0 / 0 |
 | 12b | `[600,624)` | 24 | 1.0 | 1.0 | 0.8907 | 1.0 | 0.9920 | 0 / 0 / 0 |
 | 13a | `[624,640)` | 16 | 1.0 | 1.0 | 0.8863 | 1.0 | 0.9878 | 0 / 0 / 0 |
+| 13b | `[640,656)` | 16 | 1.0 | 1.0 | 0.8974 | 1.0 | 0.9938 | 0 / 0 / 0 |
 
 Shard 0 completed normally in about 177 seconds and is metric-identical to the
 corresponding E477 rows, with zero failures, fallback, or timeouts.
@@ -103,4 +104,8 @@ Shard 13a completed normally in about one minute under the new three-minute
 policy and is prediction-identical to the corresponding E477 rows, with
 structure 0.8863, reward 0.9878, and zero failures, fallback, or timeouts.
 
-**Status:** 640/1500 rows complete. No merged or ship claim yet.
+Shard 13b completed normally under the three-minute policy and is
+prediction-identical to the corresponding E477 rows, with structure 0.8974,
+reward 0.9938, and zero failures, fallback, or timeouts.
+
+**Status:** 656/1500 rows complete. No merged or ship claim yet.
