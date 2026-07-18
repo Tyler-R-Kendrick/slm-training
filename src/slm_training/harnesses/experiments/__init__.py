@@ -68,19 +68,48 @@ except Exception:  # pragma: no cover - optional if torch unavailable
     evaluate_arm = None  # type: ignore[misc,assignment]
     run_matrix = None  # type: ignore[misc,assignment]
 
+try:
+    from slm_training.harnesses.experiments.cap2_04_state_ablation import (
+        ArmConfig,
+        ArmResult,
+        StateAblationReport,
+        build_arms,
+        evaluate_arm,
+        fixture_decisions,
+        match_active_parameters,
+        run_matrix,
+    )
+except Exception:  # pragma: no cover - optional if torch unavailable
+    ArmConfig = None  # type: ignore[misc,assignment]
+    ArmResult = None  # type: ignore[misc,assignment]
+    StateAblationReport = None  # type: ignore[misc,assignment]
+    build_arms = None  # type: ignore[misc,assignment]
+    evaluate_arm = None  # type: ignore[misc,assignment]
+    fixture_decisions = None  # type: ignore[misc,assignment]
+    match_active_parameters = None  # type: ignore[misc,assignment]
+    run_matrix = None  # type: ignore[misc,assignment]
+
 __all__ = [
+    "ArmConfig",
+    "ArmResult",
     "BottleneckArm",
     "BottleneckMatrixReport",
     "BottleneckResult",
     "MATRIX_SET",
     "MATRIX_VERSION",
+    "StateAblationReport",
     "VerifiedSolverMatrixReport",
     "VerifiedSolverRow",
+    "build_arms",
     "build_matrix_rows",
     "describe_matrix",
     "evaluate_hard_gates",
+    "evaluate_arm",
+    "fixture_decisions",
+    "match_active_parameters",
     "render_markdown",
     "run_fixture_matrix",
+    "run_matrix",
     "LadderPoint",
     "PromotionCriteria",
     "ScalingLadder",
@@ -95,7 +124,6 @@ __all__ = [
     "crossover",
     "efficiency_gain",
     "efficiency_gain_lcb",
-    "evaluate_arm",
     "evaluate_promotion",
     "fit_power_law",
     "gate_check",
@@ -110,7 +138,6 @@ __all__ = [
     "rank_candidates",
     "register_promoted_checkpoint",
     "run_evolution",
-    "run_matrix",
     "scratch_ladder_default",
     "train_eval_evaluator",
 ]
