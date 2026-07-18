@@ -255,4 +255,12 @@ Shard 20d completed normally in about 57 seconds under the three-minute policy
 and is prediction-identical to the corresponding E477 rows, with structure
 0.8794, reward 0.9970, and zero failures, fallback, or timeouts.
 
-**Status:** 1120/1500 rows complete. No merged or ship claim yet.
+Shard 20e completed normally in about 65 seconds under the three-minute policy
+with structure 0.8715, reward 0.9893, and zero failures, fallback, or timeouts.
+One of 16 predictions changed (`rico_hf_test_2644`): E487 removed E477's
+invalid string argument from a numeric slider, changing its bounds from
+(`"nnu"`, `40`) to (`0`, `100`). The current scorer reports no metric delta,
+so this is neutral type-constraint activation evidence rather than a quality
+win.
+
+**Status:** 1136/1500 rows complete. No merged or ship claim yet.
