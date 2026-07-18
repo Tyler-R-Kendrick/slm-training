@@ -73,6 +73,19 @@ python -m scripts.sync_checkpoints --run-dir outputs/runs/twotower_v1 --dry-run
 Artifacts: `outputs/runs/<id>/checkpoint_bucket.json` plus
 `train_summary.json` → `checkpoint_bucket` field.
 
+## Checkpoint references (fail-closed provenance)
+
+Every sync hashes each artifact before upload, writes a canonical
+`CheckpointReferenceV1` sidecar (`<checkpoint>.ref.json`) plus an aggregate
+`checkpoint_references.json` manifest into the uploaded set, and — for a real
+sync — re-verifies that the files landed remotely before stamping the reference
+`verified`. A verification mismatch raises (the train fails closed); a dry run is
+never persistence evidence. Frontier / ship-candidate references must be fully
+provenanced and verified to be publishable. Declare the class with
+`--claim-class` (default `diagnostic`). Full contract:
+[checkpoint-provenance.md](checkpoint-provenance.md); CI audit
+`python -m scripts.verify_checkpoint_references --check`.
+
 ## Model card (required)
 
 After every successful sync (or fixture bootstrap that writes a checkpoint),

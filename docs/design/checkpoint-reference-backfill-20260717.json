@@ -1,0 +1,2324 @@
+{
+  "generated_by": "scripts/backfill_checkpoint_references.py",
+  "note": "Migration record for SLM-103. Historical checkpoints are recorded honestly: gitignored local artifacts are UNRESOLVED (no remote URI is invented). None is promoted or reclassified.",
+  "counts": {
+    "tracked_local": 3,
+    "unresolved_local": 227,
+    "template": 1
+  },
+  "total": 231,
+  "unresolved_count": 227,
+  "champion_registry": {
+    "source": "src/slm_training/lineage/store.py",
+    "detail": "Champion pointers persist under outputs/lineage/champions/<track>/ which is gitignored; artifact_uri is absent from a fresh clone. Promote via the lineage store on a host with the durable checkpoint.",
+    "resolvable_from_clone": false
+  },
+  "entries": [
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "playground_demo",
+      "location": "`src/slm_training/resources/checkpoints/playground_demo/last.pt` (git)",
+      "local_path": "src/slm_training/resources/checkpoints/playground_demo/last.pt",
+      "classification": "tracked_local",
+      "resolvable_from_clone": true,
+      "durable_uri": null
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "restructure_cpu_scratch_v0",
+      "location": "`outputs/runs/restructure_cpu_scratch_v0/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/restructure_cpu_scratch_v0/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/restructure_cpu_scratch_v0 --run-id restructure_cpu_scratch_v0 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "local_directml_adreno_20260714",
+      "location": "`outputs/runs/local_directml_adreno_20260714/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/local_directml_adreno_20260714/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/local_directml_adreno_20260714 --run-id local_directml_adreno_20260714 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "overnight_retrain_200",
+      "location": "`/tmp/slm-training-overnight/outputs/runs/overnight_retrain_200/checkpoints/last.pt` (local)",
+      "local_path": "/tmp/slm-training-overnight/outputs/runs/overnight_retrain_200/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir /tmp/slm-training-overnight/outputs/runs/overnight_retrain_200 --run-id overnight_retrain_200 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "overnight_retrain_1000",
+      "location": "`/tmp/slm-training-overnight/outputs/runs/overnight_retrain_1000/checkpoints/last.pt` (local)",
+      "local_path": "/tmp/slm-training-overnight/outputs/runs/overnight_retrain_1000/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir /tmp/slm-training-overnight/outputs/runs/overnight_retrain_1000 --run-id overnight_retrain_1000 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e120_unsandboxed",
+      "location": "`outputs/runs/iter-e120-unsandboxed-20260715/e120_unsandboxed/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/iter-e120-unsandboxed-20260715/e120_unsandboxed/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e120-unsandboxed-20260715/e120_unsandboxed --run-id e120_unsandboxed --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e53_honest_v5_champion",
+      "location": "`outputs/runs/iter-e121d-e53-judged-20260715/qx_e53_honest_v5_champion/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/iter-e121d-e53-judged-20260715/qx_e53_honest_v5_champion/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e121d-e53-judged-20260715/qx_e53_honest_v5_champion --run-id qx_e53_honest_v5_champion --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e123_judged_32step_b",
+      "location": "`outputs/runs/iter-e123b-judged-20260715/e123_judged_32step_b/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/iter-e123b-judged-20260715/e123_judged_32step_b/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e123b-judged-20260715/e123_judged_32step_b --run-id e123_judged_32step_b --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e127_judged_schema_slots",
+      "location": "`outputs/runs/iter-e127-schema-slots-20260715/e127_judged_schema_slots/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/iter-e127-schema-slots-20260715/e127_judged_schema_slots/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e127-schema-slots-20260715/e127_judged_schema_slots --run-id e127_judged_schema_slots --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e128_judged_schema_slots_64",
+      "location": "`outputs/runs/iter-e128-schema-slots-20260715/e128_judged_schema_slots_64/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/iter-e128-schema-slots-20260715/e128_judged_schema_slots_64/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e128-schema-slots-20260715/e128_judged_schema_slots_64 --run-id e128_judged_schema_slots_64 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e129_judged_schema_slots_64_lowweights",
+      "location": "`outputs/runs/iter-e129-schema-slots-20260715/e129_judged_schema_slots_64_lowweights/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/iter-e129-schema-slots-20260715/e129_judged_schema_slots_64_lowweights/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e129-schema-slots-20260715/e129_judged_schema_slots_64_lowweights --run-id e129_judged_schema_slots_64_lowweights --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e130_judged_schema_slots_seed1",
+      "location": "`outputs/runs/iter-e130-schema-slots-20260715/e130_judged_schema_slots_seed1/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/iter-e130-schema-slots-20260715/e130_judged_schema_slots_seed1/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e130-schema-slots-20260715/e130_judged_schema_slots_seed1 --run-id e130_judged_schema_slots_seed1 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e132_generation_focus",
+      "location": "`outputs/runs/iter-e132-generation-focus-20260715/e132_generation_focus/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/iter-e132-generation-focus-20260715/e132_generation_focus/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e132-generation-focus-20260715/e132_generation_focus --run-id e132_generation_focus --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e133_no_fuse_ltr",
+      "location": "`outputs/runs/iter-e133-no-fuse-ltr-20260715/e133_no_fuse_ltr/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/iter-e133-no-fuse-ltr-20260715/e133_no_fuse_ltr/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e133-no-fuse-ltr-20260715/e133_no_fuse_ltr --run-id e133_no_fuse_ltr --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e135_hf_context_control",
+      "location": "`outputs/runs/iter-e135-hf-context-20260715/e135_hf_context_control/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/iter-e135-hf-context-20260715/e135_hf_context_control/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e135-hf-context-20260715/e135_hf_context_control --run-id e135_hf_context_control --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e136_hf_context_32",
+      "location": "`outputs/runs/iter-e136-hf-context-20260715/e136_hf_context_32/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/iter-e136-hf-context-20260715/e136_hf_context_32/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e136-hf-context-20260715/e136_hf_context_32 --run-id e136_hf_context_32 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e137_hf_context_16",
+      "location": "`outputs/runs/iter-e137-hf-context-20260715/e137_hf_context_16/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/iter-e137-hf-context-20260715/e137_hf_context_16/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e137-hf-context-20260715/e137_hf_context_16 --run-id e137_hf_context_16 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e138_hf_context_seed1_8",
+      "location": "`outputs/runs/iter-e138-hf-seed1-20260715/e138_hf_context_seed1_8/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/iter-e138-hf-seed1-20260715/e138_hf_context_seed1_8/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e138-hf-seed1-20260715/e138_hf_context_seed1_8 --run-id e138_hf_context_seed1_8 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e139_hf_context_seed2_8",
+      "location": "`outputs/runs/iter-e139-hf-seed2-20260715/e139_hf_context_seed2_8/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/iter-e139-hf-seed2-20260715/e139_hf_context_seed2_8/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e139-hf-seed2-20260715/e139_hf_context_seed2_8 --run-id e139_hf_context_seed2_8 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e173-schema-context-32step",
+      "location": "`outputs/runs/e173-schema-context-32step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/e173-schema-context-32step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e173-schema-context-32step --run-id e173-schema-context-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e174-unfrozen-context-8step",
+      "location": "`outputs/runs/e174-unfrozen-context-8step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/e174-unfrozen-context-8step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e174-unfrozen-context-8step --run-id e174-unfrozen-context-8step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e175-retrieval-8step",
+      "location": "`outputs/runs/e175-retrieval-8step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/e175-retrieval-8step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e175-retrieval-8step --run-id e175-retrieval-8step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e176-broad-corpus-8step",
+      "location": "`outputs/runs/e176-broad-corpus-8step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/e176-broad-corpus-8step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e176-broad-corpus-8step --run-id e176-broad-corpus-8step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e177-semantic-judge-32step",
+      "location": "`outputs/runs/e177-semantic-judge-32step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/e177-semantic-judge-32step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e177-semantic-judge-32step --run-id e177-semantic-judge-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e181-semantic-balanced-32step",
+      "location": "`outputs/runs/e181-semantic-balanced-32step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/e181-semantic-balanced-32step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e181-semantic-balanced-32step --run-id e181-semantic-balanced-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e184-compiler-aligned-32step",
+      "location": "`outputs/runs/e184-compiler-aligned-32step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/e184-compiler-aligned-32step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e184-compiler-aligned-32step --run-id e184-compiler-aligned-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e191-full-compiler-aligned-32step",
+      "location": "`outputs/runs/e191-full-compiler-aligned-32step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/e191-full-compiler-aligned-32step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e191-full-compiler-aligned-32step --run-id e191-full-compiler-aligned-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e195-stratified-compiler-aligned-32step",
+      "location": "`outputs/runs/e195-stratified-compiler-aligned-32step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/e195-stratified-compiler-aligned-32step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e195-stratified-compiler-aligned-32step --run-id e195-stratified-compiler-aligned-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e196-stratified-compiler-aligned-matched-32step",
+      "location": "`outputs/runs/e196-stratified-compiler-aligned-matched-32step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/e196-stratified-compiler-aligned-matched-32step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e196-stratified-compiler-aligned-matched-32step --run-id e196-stratified-compiler-aligned-matched-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e201-role-stratified-compiler-aligned-32step",
+      "location": "`outputs/runs/e201-role-stratified-compiler-aligned-32step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/e201-role-stratified-compiler-aligned-32step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e201-role-stratified-compiler-aligned-32step --run-id e201-role-stratified-compiler-aligned-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e205-lark-terminal-stratified-32step",
+      "location": "`outputs/runs/e205-lark-terminal-stratified-32step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/e205-lark-terminal-stratified-32step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e205-lark-terminal-stratified-32step --run-id e205-lark-terminal-stratified-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e208-list-occupancy-stratified-32step",
+      "location": "`outputs/runs/e208-list-occupancy-stratified-32step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/e208-list-occupancy-stratified-32step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e208-list-occupancy-stratified-32step --run-id e208-list-occupancy-stratified-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e210-list-scope-occupancy-stratified-32step",
+      "location": "`outputs/runs/e210-list-scope-occupancy-stratified-32step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/e210-list-scope-occupancy-stratified-32step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e210-list-scope-occupancy-stratified-32step --run-id e210-list-scope-occupancy-stratified-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e212-contextual-decision-stratified-32step",
+      "location": "`outputs/runs/e212-contextual-decision-stratified-32step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/e212-contextual-decision-stratified-32step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e212-contextual-decision-stratified-32step --run-id e212-contextual-decision-stratified-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e215-schema-role-judged-32step",
+      "location": "`outputs/runs/e215-schema-role-judged-32step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/e215-schema-role-judged-32step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e215-schema-role-judged-32step --run-id e215-schema-role-judged-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e219-schema-normalized-32step",
+      "location": "`outputs/runs/e219-schema-normalized-32step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/e219-schema-normalized-32step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e219-schema-normalized-32step --run-id e219-schema-normalized-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e221-canonical-task-balanced",
+      "location": "`outputs/autoresearch/e221-task-balanced-exposure-v4/runs/e221-canonical-task-balanced/checkpoints/last.pt` (local)",
+      "local_path": "outputs/autoresearch/e221-task-balanced-exposure-v4/runs/e221-canonical-task-balanced/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e221-task-balanced-exposure-v4/runs/e221-canonical-task-balanced --run-id e221-canonical-task-balanced --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e222-capacity-aware-matched",
+      "location": "`outputs/autoresearch/e222-capacity-aware-exposure/runs/e222-capacity-aware-matched/checkpoints/last.pt` (local)",
+      "local_path": "outputs/autoresearch/e222-capacity-aware-exposure/runs/e222-capacity-aware-matched/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e222-capacity-aware-exposure/runs/e222-capacity-aware-matched --run-id e222-capacity-aware-matched --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e223-quota-capacity-matched",
+      "location": "`outputs/autoresearch/e223-quota-capacity-exposure/runs/e223-quota-capacity-matched/checkpoints/last.pt` (local)",
+      "local_path": "outputs/autoresearch/e223-quota-capacity-exposure/runs/e223-quota-capacity-matched/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e223-quota-capacity-exposure/runs/e223-quota-capacity-matched --run-id e223-quota-capacity-matched --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e224-semantic-exhaustive-matched",
+      "location": "`outputs/autoresearch/e224-semantic-exhaustive-alignment/runs/e224-semantic-exhaustive-matched/checkpoints/last.pt` (local)",
+      "local_path": "outputs/autoresearch/e224-semantic-exhaustive-alignment/runs/e224-semantic-exhaustive-matched/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e224-semantic-exhaustive-alignment/runs/e224-semantic-exhaustive-matched --run-id e224-semantic-exhaustive-matched --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e227-candidate-set-matched",
+      "location": "`outputs/autoresearch/e227-candidate-set-alignment/runs/e227-candidate-set-matched/checkpoints/last.pt` (local)",
+      "local_path": "outputs/autoresearch/e227-candidate-set-alignment/runs/e227-candidate-set-matched/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e227-candidate-set-alignment/runs/e227-candidate-set-matched --run-id e227-candidate-set-matched --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e228-candidate-margin-matched",
+      "location": "`outputs/autoresearch/e228-candidate-margin-alignment/runs/e228-candidate-margin-matched/checkpoints/last.pt` (local)",
+      "local_path": "outputs/autoresearch/e228-candidate-margin-alignment/runs/e228-candidate-margin-matched/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e228-candidate-margin-alignment/runs/e228-candidate-margin-matched --run-id e228-candidate-margin-matched --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e229-margin-64step",
+      "location": "`outputs/autoresearch/e229-margin-continuation/runs/e229-margin-64step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/autoresearch/e229-margin-continuation/runs/e229-margin-64step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e229-margin-continuation/runs/e229-margin-64step --run-id e229-margin-64step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e230-diverse-roots-32step",
+      "location": "`outputs/autoresearch/e230-diverse-judged-roots/runs/e230-diverse-roots-32step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/autoresearch/e230-diverse-judged-roots/runs/e230-diverse-roots-32step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e230-diverse-judged-roots/runs/e230-diverse-roots-32step --run-id e230-diverse-roots-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e231-component-inventory-32step",
+      "location": "`outputs/autoresearch/e231-component-inventory/runs/e231-component-inventory-32step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/autoresearch/e231-component-inventory/runs/e231-component-inventory-32step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e231-component-inventory/runs/e231-component-inventory-32step --run-id e231-component-inventory-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e232-role-component-plan-32step",
+      "location": "`outputs/autoresearch/e232-role-component-plan/runs/e232-role-component-plan-32step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/autoresearch/e232-role-component-plan/runs/e232-role-component-plan-32step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e232-role-component-plan/runs/e232-role-component-plan-32step --run-id e232-role-component-plan-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e233-component-edges-32step",
+      "location": "`outputs/autoresearch/e233-component-edges/runs/e233-component-edges-32step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/autoresearch/e233-component-edges/runs/e233-component-edges-32step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e233-component-edges/runs/e233-component-edges-32step --run-id e233-component-edges-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e234-edge-decision-alignment-32step",
+      "location": "`outputs/autoresearch/e234-edge-decision-alignment/runs/e234-edge-decision-alignment-32step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/autoresearch/e234-edge-decision-alignment/runs/e234-edge-decision-alignment-32step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e234-edge-decision-alignment/runs/e234-edge-decision-alignment-32step --run-id e234-edge-decision-alignment-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e235-binder-instance-plan-32step",
+      "location": "`outputs/autoresearch/e235-binder-instance-plan/runs/e235-binder-instance-plan-32step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/autoresearch/e235-binder-instance-plan/runs/e235-binder-instance-plan-32step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e235-binder-instance-plan/runs/e235-binder-instance-plan-32step --run-id e235-binder-instance-plan-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e236-binder-topology-32step",
+      "location": "`outputs/autoresearch/e236-binder-topology/runs/e236-binder-topology-32step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/autoresearch/e236-binder-topology/runs/e236-binder-topology-32step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e236-binder-topology/runs/e236-binder-topology-32step --run-id e236-binder-topology-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e237-detached-topology-32step",
+      "location": "`outputs/autoresearch/e237-detached-topology/runs/e237-detached-topology-32step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/autoresearch/e237-detached-topology/runs/e237-detached-topology-32step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e237-detached-topology/runs/e237-detached-topology-32step --run-id e237-detached-topology-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e238-binder-arity-32step",
+      "location": "`outputs/autoresearch/e238-binder-arity/runs/e238-binder-arity-32step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/autoresearch/e238-binder-arity/runs/e238-binder-arity-32step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e238-binder-arity/runs/e238-binder-arity-32step --run-id e238-binder-arity-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e239d-binder-arity-fully-isolated-32step",
+      "location": "`outputs/autoresearch/e239-binder-arity-corrected/runs/e239d-binder-arity-fully-isolated-32step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/autoresearch/e239-binder-arity-corrected/runs/e239d-binder-arity-fully-isolated-32step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e239-binder-arity-corrected/runs/e239d-binder-arity-fully-isolated-32step --run-id e239d-binder-arity-fully-isolated-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e249_local_ce_margin",
+      "location": "`outputs/autoresearch/e249-local-ce-margin/runs/qx_e249_local_ce_margin/checkpoints/last.pt` (local)",
+      "local_path": "outputs/autoresearch/e249-local-ce-margin/runs/qx_e249_local_ce_margin/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e249-local-ce-margin/runs/qx_e249_local_ce_margin --run-id qx_e249_local_ce_margin --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e252_local_ftpo_set",
+      "location": "`outputs/autoresearch/e252-ftpo-set/runs/qx_e252_local_ftpo_set/checkpoints/last.pt` (local)",
+      "local_path": "outputs/autoresearch/e252-ftpo-set/runs/qx_e252_local_ftpo_set/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e252-ftpo-set/runs/qx_e252_local_ftpo_set --run-id qx_e252_local_ftpo_set --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e262_broad_gold_ast_ftpo_set",
+      "location": "`outputs/autoresearch/e262-broad-gold-ast-ftpo/runs/qx_e262_broad_gold_ast_ftpo_set/checkpoints/last.pt` (local)",
+      "local_path": "outputs/autoresearch/e262-broad-gold-ast-ftpo/runs/qx_e262_broad_gold_ast_ftpo_set/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e262-broad-gold-ast-ftpo/runs/qx_e262_broad_gold_ast_ftpo_set --run-id qx_e262_broad_gold_ast_ftpo_set --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e278_guarded_gold_ast_ftpo_set",
+      "location": "`outputs/autoresearch/e278-guarded-gold-ast-ftpo/runs/qx_e278_guarded_gold_ast_ftpo_set/checkpoints/last.pt` (local)",
+      "local_path": "outputs/autoresearch/e278-guarded-gold-ast-ftpo/runs/qx_e278_guarded_gold_ast_ftpo_set/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e278-guarded-gold-ast-ftpo/runs/qx_e278_guarded_gold_ast_ftpo_set --run-id qx_e278_guarded_gold_ast_ftpo_set --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e265_safe_gold_ast_ftpo_set",
+      "location": "`outputs/autoresearch/e265-safe-gold-ast-ftpo/runs/qx_e265_safe_gold_ast_ftpo_set/checkpoints/last.pt` (local)",
+      "local_path": "outputs/autoresearch/e265-safe-gold-ast-ftpo/runs/qx_e265_safe_gold_ast_ftpo_set/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e265-safe-gold-ast-ftpo/runs/qx_e265_safe_gold_ast_ftpo_set --run-id qx_e265_safe_gold_ast_ftpo_set --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e266_stratified_safe_gold_ast_ftpo_set",
+      "location": "`outputs/autoresearch/e266-stratified-safe-gold-ast-ftpo/runs/qx_e266_stratified_safe_gold_ast_ftpo_set/checkpoints/last.pt` (local)",
+      "local_path": "outputs/autoresearch/e266-stratified-safe-gold-ast-ftpo/runs/qx_e266_stratified_safe_gold_ast_ftpo_set/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e266-stratified-safe-gold-ast-ftpo/runs/qx_e266_stratified_safe_gold_ast_ftpo_set --run-id qx_e266_stratified_safe_gold_ast_ftpo_set --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e267_block_stratified_safe_gold_ast_ftpo_set",
+      "location": "`outputs/autoresearch/e267-block-stratified-safe-ftpo/runs/qx_e267_block_stratified_safe_gold_ast_ftpo_set/checkpoints/last.pt` (local)",
+      "local_path": "outputs/autoresearch/e267-block-stratified-safe-ftpo/runs/qx_e267_block_stratified_safe_gold_ast_ftpo_set/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e267-block-stratified-safe-ftpo/runs/qx_e267_block_stratified_safe_gold_ast_ftpo_set --run-id qx_e267_block_stratified_safe_gold_ast_ftpo_set --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e268_projected_stratified_safe_gold_ast_ftpo_set",
+      "location": "`outputs/autoresearch/e268-projected-stratified-safe-ftpo/runs/qx_e268_projected_stratified_safe_gold_ast_ftpo_set/checkpoints/last.pt` (local)",
+      "local_path": "outputs/autoresearch/e268-projected-stratified-safe-ftpo/runs/qx_e268_projected_stratified_safe_gold_ast_ftpo_set/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e268-projected-stratified-safe-ftpo/runs/qx_e268_projected_stratified_safe_gold_ast_ftpo_set --run-id qx_e268_projected_stratified_safe_gold_ast_ftpo_set --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e269_mgda_stratified_safe_gold_ast_ftpo_set",
+      "location": "`outputs/autoresearch/e269-mgda-one-step-final/runs/qx_e269_mgda_stratified_safe_gold_ast_ftpo_set/checkpoints/last.pt` (local)",
+      "local_path": "outputs/autoresearch/e269-mgda-one-step-final/runs/qx_e269_mgda_stratified_safe_gold_ast_ftpo_set/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e269-mgda-one-step-final/runs/qx_e269_mgda_stratified_safe_gold_ast_ftpo_set --run-id qx_e269_mgda_stratified_safe_gold_ast_ftpo_set --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e272_mgda_sgd_stratified_safe_gold_ast_ftpo_set",
+      "location": "`outputs/autoresearch/e272-mgda-sgd-one-step/runs/qx_e272_mgda_sgd_stratified_safe_gold_ast_ftpo_set/checkpoints/last.pt` (local)",
+      "local_path": "outputs/autoresearch/e272-mgda-sgd-one-step/runs/qx_e272_mgda_sgd_stratified_safe_gold_ast_ftpo_set/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e272-mgda-sgd-one-step/runs/qx_e272_mgda_sgd_stratified_safe_gold_ast_ftpo_set --run-id qx_e272_mgda_sgd_stratified_safe_gold_ast_ftpo_set --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e174-unfrozen-context-8step",
+      "location": "`outputs/runs/e174-unfrozen-context-8step/checkpoints/last.pt` (local)",
+      "local_path": "outputs/runs/e174-unfrozen-context-8step/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e174-unfrozen-context-8step --run-id e174-unfrozen-context-8step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e53_*",
+      "location": "Primarily `outputs/runs/` (+ docs matrix JSON)",
+      "local_path": "outputs/runs/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/ --run-id qx_e53_* --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e50_core_remask",
+      "location": "`/tmp/slm17-e50-fixture-honest/` (local)",
+      "local_path": "/tmp/slm17-e50-fixture-honest/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir /tmp/slm17-e50-fixture-honest/ --run-id qx_e50_core_remask --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e50_core_remask",
+      "location": "`/tmp/slm17-e50-new-honest/` (local)",
+      "local_path": "/tmp/slm17-e50-new-honest/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir /tmp/slm17-e50-new-honest/ --run-id qx_e50_core_remask --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "gx_x2_codec",
+      "location": "`/tmp/slm-training-fixed-baseline/outputs/topology_baseline/` (local)",
+      "local_path": "/tmp/slm-training-fixed-baseline/outputs/topology_baseline/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir /tmp/slm-training-fixed-baseline/outputs/topology_baseline/ --run-id gx_x2_codec --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "grammar_diffusion_overfit",
+      "location": "pytest temporary checkpoint (local)",
+      "local_path": null,
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/<run_id> --run-id grammar_diffusion_overfit --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "gx_x9_topology_base",
+      "location": "`/tmp/slm-training-grammar-topology/outputs/topology_confirm_4bf964d/` (local)",
+      "local_path": "/tmp/slm-training-grammar-topology/outputs/topology_confirm_4bf964d/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir /tmp/slm-training-grammar-topology/outputs/topology_confirm_4bf964d/ --run-id gx_x9_topology_base --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "gx_x18_scope_noise_confirm_200",
+      "location": "`outputs/runs/gx_x18_scope_noise_confirm_200/` (local)",
+      "local_path": "outputs/runs/gx_x18_scope_noise_confirm_200/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/gx_x18_scope_noise_confirm_200/ --run-id gx_x18_scope_noise_confirm_200 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "gx_x21_scoped_topology_confirm_200",
+      "location": "`outputs/runs/gx_x21_scoped_topology_confirm_200/` (local)",
+      "local_path": "outputs/runs/gx_x21_scoped_topology_confirm_200/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/gx_x21_scoped_topology_confirm_200/ --run-id gx_x21_scoped_topology_confirm_200 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "capacity_lexer_v1__d64_h2_c1_dn2_t5000_x1__s0",
+      "location": "`outputs/ladders/b3-matched-5m-e287-r2/runs/capacity_lexer_v1__d64_h2_c1_dn2_t5000_x1__s0/checkpoints/last.pt` (local)",
+      "local_path": "outputs/ladders/b3-matched-5m-e287-r2/runs/capacity_lexer_v1__d64_h2_c1_dn2_t5000_x1__s0/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/ladders/b3-matched-5m-e287-r2/runs/capacity_lexer_v1__d64_h2_c1_dn2_t5000_x1__s0 --run-id capacity_lexer_v1__d64_h2_c1_dn2_t5000_x1__s0 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0",
+      "location": "`outputs/ladders/b3-matched-5m-e287-r2/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/checkpoints/last.pt` (local)",
+      "local_path": "outputs/ladders/b3-matched-5m-e287-r2/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/ladders/b3-matched-5m-e287-r2/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0 --run-id capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0",
+      "location": "`outputs/ladders/e289-choice-state-cache/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/checkpoints/last.pt` (local)",
+      "local_path": "outputs/ladders/e289-choice-state-cache/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/ladders/e289-choice-state-cache/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0 --run-id capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0",
+      "location": "`outputs/ladders/e290-choice-direct-candidates/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/checkpoints/last.pt` (local)",
+      "local_path": "outputs/ladders/e290-choice-direct-candidates/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/ladders/e290-choice-direct-candidates/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0 --run-id capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0",
+      "location": "`outputs/ladders/e291-choice-completion-cache/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/checkpoints/last.pt` (local)",
+      "local_path": "outputs/ladders/e291-choice-completion-cache/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/checkpoints/last.pt",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/ladders/e291-choice-completion-cache/runs/capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0 --run-id capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "\u2014",
+      "location": "`hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/`",
+      "local_path": "hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/",
+      "classification": "template",
+      "resolvable_from_clone": false,
+      "durable_uri": null
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "playground_demo",
+      "location": "`src/slm_training/resources/checkpoints/playground_demo/`",
+      "local_path": "src/slm_training/resources/checkpoints/playground_demo/",
+      "classification": "tracked_local",
+      "resolvable_from_clone": true,
+      "durable_uri": null
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "restructure_cpu_scratch_v0",
+      "location": "`outputs/runs/restructure_cpu_scratch_v0/` (local)",
+      "local_path": "outputs/runs/restructure_cpu_scratch_v0/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/restructure_cpu_scratch_v0/ --run-id restructure_cpu_scratch_v0 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "restructure_cpu_scratch_v0_cont",
+      "location": "`outputs/runs/restructure_cpu_scratch_v0_cont/` (local)",
+      "local_path": "outputs/runs/restructure_cpu_scratch_v0_cont/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/restructure_cpu_scratch_v0_cont/ --run-id restructure_cpu_scratch_v0_cont --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e0_baseline",
+      "location": "`outputs/slm17/matrix-smoke-baseline/` (local)",
+      "local_path": "outputs/slm17/matrix-smoke-baseline/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/slm17/matrix-smoke-baseline/ --run-id qx_e0_baseline --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e50_core_remask",
+      "location": "`outputs/slm17/matrix-smoke-champion/` (local)",
+      "local_path": "outputs/slm17/matrix-smoke-champion/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/slm17/matrix-smoke-champion/ --run-id qx_e50_core_remask --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e50_core_remask",
+      "location": "`/tmp/slm17-e50-fixture-honest/` (local)",
+      "local_path": "/tmp/slm17-e50-fixture-honest/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir /tmp/slm17-e50-fixture-honest/ --run-id qx_e50_core_remask --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e50_core_remask",
+      "location": "`/tmp/slm17-e50-new-honest/` (local)",
+      "local_path": "/tmp/slm17-e50-new-honest/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir /tmp/slm17-e50-new-honest/ --run-id qx_e50_core_remask --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "local_directml_adreno_20260714",
+      "location": "`outputs/runs/local_directml_adreno_20260714/` (local)",
+      "local_path": "outputs/runs/local_directml_adreno_20260714/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/local_directml_adreno_20260714/ --run-id local_directml_adreno_20260714 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "overnight_retrain_200",
+      "location": "`/tmp/slm-training-overnight/outputs/runs/overnight_retrain_200/` (local)",
+      "local_path": "/tmp/slm-training-overnight/outputs/runs/overnight_retrain_200/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir /tmp/slm-training-overnight/outputs/runs/overnight_retrain_200/ --run-id overnight_retrain_200 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "overnight_retrain_1000",
+      "location": "`/tmp/slm-training-overnight/outputs/runs/overnight_retrain_1000/` (local)",
+      "local_path": "/tmp/slm-training-overnight/outputs/runs/overnight_retrain_1000/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir /tmp/slm-training-overnight/outputs/runs/overnight_retrain_1000/ --run-id overnight_retrain_1000 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "gx_x2_codec",
+      "location": "`/tmp/slm-training-fixed-baseline/outputs/topology_baseline/` (local)",
+      "local_path": "/tmp/slm-training-fixed-baseline/outputs/topology_baseline/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir /tmp/slm-training-fixed-baseline/outputs/topology_baseline/ --run-id gx_x2_codec --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "grammar_diffusion_overfit",
+      "location": "pytest temporary local checkpoint",
+      "local_path": null,
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/<run_id> --run-id grammar_diffusion_overfit --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "gx_x9_topology_base",
+      "location": "`/tmp/slm-training-grammar-topology/outputs/topology_confirm_4bf964d/` (local)",
+      "local_path": "/tmp/slm-training-grammar-topology/outputs/topology_confirm_4bf964d/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir /tmp/slm-training-grammar-topology/outputs/topology_confirm_4bf964d/ --run-id gx_x9_topology_base --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "gx_x14_buffer",
+      "location": "`/tmp/slm-training-grammar-topology/outputs/topology_confirm_4bf964d/` (local)",
+      "local_path": "/tmp/slm-training-grammar-topology/outputs/topology_confirm_4bf964d/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir /tmp/slm-training-grammar-topology/outputs/topology_confirm_4bf964d/ --run-id gx_x14_buffer --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "gx_x18_scope_noise_confirm_200",
+      "location": "`outputs/runs/gx_x18_scope_noise_confirm_200/` (local)",
+      "local_path": "outputs/runs/gx_x18_scope_noise_confirm_200/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/gx_x18_scope_noise_confirm_200/ --run-id gx_x18_scope_noise_confirm_200 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "gx_x21_scoped_topology_confirm_200",
+      "location": "`outputs/runs/gx_x21_scoped_topology_confirm_200/` (local)",
+      "local_path": "outputs/runs/gx_x21_scoped_topology_confirm_200/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/gx_x21_scoped_topology_confirm_200/ --run-id gx_x21_scoped_topology_confirm_200 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e53_honest_v5_champion",
+      "location": "`outputs/runs/iter-e121d-e53-judged-20260715/` (local)",
+      "local_path": "outputs/runs/iter-e121d-e53-judged-20260715/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e121d-e53-judged-20260715/ --run-id qx_e53_honest_v5_champion --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e123_judged_32step_b",
+      "location": "`outputs/runs/iter-e123b-judged-20260715/` (local)",
+      "local_path": "outputs/runs/iter-e123b-judged-20260715/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e123b-judged-20260715/ --run-id e123_judged_32step_b --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e127_judged_schema_slots",
+      "location": "`outputs/runs/iter-e127-schema-slots-20260715/` (local)",
+      "local_path": "outputs/runs/iter-e127-schema-slots-20260715/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e127-schema-slots-20260715/ --run-id e127_judged_schema_slots --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e128_judged_schema_slots_64",
+      "location": "`outputs/runs/iter-e128-schema-slots-20260715/` (local)",
+      "local_path": "outputs/runs/iter-e128-schema-slots-20260715/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e128-schema-slots-20260715/ --run-id e128_judged_schema_slots_64 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e129_judged_schema_slots_64_lowweights",
+      "location": "`outputs/runs/iter-e129-schema-slots-20260715/` (local)",
+      "local_path": "outputs/runs/iter-e129-schema-slots-20260715/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e129-schema-slots-20260715/ --run-id e129_judged_schema_slots_64_lowweights --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e130_judged_schema_slots_seed1",
+      "location": "`outputs/runs/iter-e130-schema-slots-20260715/` (local)",
+      "local_path": "outputs/runs/iter-e130-schema-slots-20260715/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e130-schema-slots-20260715/ --run-id e130_judged_schema_slots_seed1 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e132_generation_focus",
+      "location": "`outputs/runs/iter-e132-generation-focus-20260715/` (local)",
+      "local_path": "outputs/runs/iter-e132-generation-focus-20260715/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e132-generation-focus-20260715/ --run-id e132_generation_focus --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e133_no_fuse_ltr",
+      "location": "`outputs/runs/iter-e133-no-fuse-ltr-20260715/` (local)",
+      "local_path": "outputs/runs/iter-e133-no-fuse-ltr-20260715/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e133-no-fuse-ltr-20260715/ --run-id e133_no_fuse_ltr --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e135_hf_context_control",
+      "location": "`outputs/runs/iter-e135-hf-context-20260715/` (local)",
+      "local_path": "outputs/runs/iter-e135-hf-context-20260715/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e135-hf-context-20260715/ --run-id e135_hf_context_control --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e136_hf_context_32",
+      "location": "`outputs/runs/iter-e136-hf-context-20260715/` (local)",
+      "local_path": "outputs/runs/iter-e136-hf-context-20260715/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e136-hf-context-20260715/ --run-id e136_hf_context_32 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e137_hf_context_16",
+      "location": "`outputs/runs/iter-e137-hf-context-20260715/` (local)",
+      "local_path": "outputs/runs/iter-e137-hf-context-20260715/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e137-hf-context-20260715/ --run-id e137_hf_context_16 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e138_hf_context_seed1_8",
+      "location": "`outputs/runs/iter-e138-hf-seed1-20260715/` (local)",
+      "local_path": "outputs/runs/iter-e138-hf-seed1-20260715/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e138-hf-seed1-20260715/ --run-id e138_hf_context_seed1_8 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e139_hf_context_seed2_8",
+      "location": "`outputs/runs/iter-e139-hf-seed2-20260715/` (local)",
+      "local_path": "outputs/runs/iter-e139-hf-seed2-20260715/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e139-hf-seed2-20260715/ --run-id e139_hf_context_seed2_8 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e173-schema-context-32step",
+      "location": "`outputs/runs/e173-schema-context-32step/` (local)",
+      "local_path": "outputs/runs/e173-schema-context-32step/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e173-schema-context-32step/ --run-id e173-schema-context-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e174-unfrozen-context-8step",
+      "location": "`outputs/runs/e174-unfrozen-context-8step/` (local)",
+      "local_path": "outputs/runs/e174-unfrozen-context-8step/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e174-unfrozen-context-8step/ --run-id e174-unfrozen-context-8step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e175-retrieval-8step",
+      "location": "`outputs/runs/e175-retrieval-8step/` (local)",
+      "local_path": "outputs/runs/e175-retrieval-8step/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e175-retrieval-8step/ --run-id e175-retrieval-8step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e176-broad-corpus-8step",
+      "location": "`outputs/runs/e176-broad-corpus-8step/` (local)",
+      "local_path": "outputs/runs/e176-broad-corpus-8step/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e176-broad-corpus-8step/ --run-id e176-broad-corpus-8step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e177-semantic-judge-32step",
+      "location": "`outputs/runs/e177-semantic-judge-32step/` (local)",
+      "local_path": "outputs/runs/e177-semantic-judge-32step/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e177-semantic-judge-32step/ --run-id e177-semantic-judge-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e181-semantic-balanced-32step",
+      "location": "`outputs/runs/e181-semantic-balanced-32step/` (local)",
+      "local_path": "outputs/runs/e181-semantic-balanced-32step/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e181-semantic-balanced-32step/ --run-id e181-semantic-balanced-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e184-compiler-aligned-32step",
+      "location": "`outputs/runs/e184-compiler-aligned-32step/` (local)",
+      "local_path": "outputs/runs/e184-compiler-aligned-32step/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e184-compiler-aligned-32step/ --run-id e184-compiler-aligned-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e191-full-compiler-aligned-32step",
+      "location": "`outputs/runs/e191-full-compiler-aligned-32step/` (local)",
+      "local_path": "outputs/runs/e191-full-compiler-aligned-32step/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e191-full-compiler-aligned-32step/ --run-id e191-full-compiler-aligned-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e195-stratified-compiler-aligned-32step",
+      "location": "`outputs/runs/e195-stratified-compiler-aligned-32step/` (local)",
+      "local_path": "outputs/runs/e195-stratified-compiler-aligned-32step/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e195-stratified-compiler-aligned-32step/ --run-id e195-stratified-compiler-aligned-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e196-stratified-compiler-aligned-matched-32step",
+      "location": "`outputs/runs/e196-stratified-compiler-aligned-matched-32step/` (local)",
+      "local_path": "outputs/runs/e196-stratified-compiler-aligned-matched-32step/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e196-stratified-compiler-aligned-matched-32step/ --run-id e196-stratified-compiler-aligned-matched-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e201-role-stratified-compiler-aligned-32step",
+      "location": "`outputs/runs/e201-role-stratified-compiler-aligned-32step/` (local)",
+      "local_path": "outputs/runs/e201-role-stratified-compiler-aligned-32step/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e201-role-stratified-compiler-aligned-32step/ --run-id e201-role-stratified-compiler-aligned-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e205-lark-terminal-stratified-32step",
+      "location": "`outputs/runs/e205-lark-terminal-stratified-32step/` (local)",
+      "local_path": "outputs/runs/e205-lark-terminal-stratified-32step/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e205-lark-terminal-stratified-32step/ --run-id e205-lark-terminal-stratified-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e208-list-occupancy-stratified-32step",
+      "location": "`outputs/runs/e208-list-occupancy-stratified-32step/` (local)",
+      "local_path": "outputs/runs/e208-list-occupancy-stratified-32step/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e208-list-occupancy-stratified-32step/ --run-id e208-list-occupancy-stratified-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e210-list-scope-occupancy-stratified-32step",
+      "location": "`outputs/runs/e210-list-scope-occupancy-stratified-32step/` (local)",
+      "local_path": "outputs/runs/e210-list-scope-occupancy-stratified-32step/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e210-list-scope-occupancy-stratified-32step/ --run-id e210-list-scope-occupancy-stratified-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e212-contextual-decision-stratified-32step",
+      "location": "`outputs/runs/e212-contextual-decision-stratified-32step/` (local)",
+      "local_path": "outputs/runs/e212-contextual-decision-stratified-32step/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e212-contextual-decision-stratified-32step/ --run-id e212-contextual-decision-stratified-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e215-schema-role-judged-32step",
+      "location": "`outputs/runs/e215-schema-role-judged-32step/` (local)",
+      "local_path": "outputs/runs/e215-schema-role-judged-32step/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e215-schema-role-judged-32step/ --run-id e215-schema-role-judged-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e219-schema-normalized-32step",
+      "location": "`outputs/runs/e219-schema-normalized-32step/` (local)",
+      "local_path": "outputs/runs/e219-schema-normalized-32step/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e219-schema-normalized-32step/ --run-id e219-schema-normalized-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e221-canonical-task-balanced",
+      "location": "`outputs/autoresearch/e221-task-balanced-exposure-v4/runs/e221-canonical-task-balanced/` (local)",
+      "local_path": "outputs/autoresearch/e221-task-balanced-exposure-v4/runs/e221-canonical-task-balanced/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e221-task-balanced-exposure-v4/runs/e221-canonical-task-balanced/ --run-id e221-canonical-task-balanced --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e222-capacity-aware-matched",
+      "location": "`outputs/autoresearch/e222-capacity-aware-exposure/runs/e222-capacity-aware-matched/` (local)",
+      "local_path": "outputs/autoresearch/e222-capacity-aware-exposure/runs/e222-capacity-aware-matched/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e222-capacity-aware-exposure/runs/e222-capacity-aware-matched/ --run-id e222-capacity-aware-matched --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e223-quota-capacity-matched",
+      "location": "`outputs/autoresearch/e223-quota-capacity-exposure/runs/e223-quota-capacity-matched/` (local)",
+      "local_path": "outputs/autoresearch/e223-quota-capacity-exposure/runs/e223-quota-capacity-matched/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e223-quota-capacity-exposure/runs/e223-quota-capacity-matched/ --run-id e223-quota-capacity-matched --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e224-semantic-exhaustive-matched",
+      "location": "`outputs/autoresearch/e224-semantic-exhaustive-alignment/runs/e224-semantic-exhaustive-matched/` (local)",
+      "local_path": "outputs/autoresearch/e224-semantic-exhaustive-alignment/runs/e224-semantic-exhaustive-matched/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e224-semantic-exhaustive-alignment/runs/e224-semantic-exhaustive-matched/ --run-id e224-semantic-exhaustive-matched --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e227-candidate-set-matched",
+      "location": "`outputs/autoresearch/e227-candidate-set-alignment/runs/e227-candidate-set-matched/` (local)",
+      "local_path": "outputs/autoresearch/e227-candidate-set-alignment/runs/e227-candidate-set-matched/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e227-candidate-set-alignment/runs/e227-candidate-set-matched/ --run-id e227-candidate-set-matched --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e228-candidate-margin-matched",
+      "location": "`outputs/autoresearch/e228-candidate-margin-alignment/runs/e228-candidate-margin-matched/` (local)",
+      "local_path": "outputs/autoresearch/e228-candidate-margin-alignment/runs/e228-candidate-margin-matched/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e228-candidate-margin-alignment/runs/e228-candidate-margin-matched/ --run-id e228-candidate-margin-matched --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e229-margin-64step",
+      "location": "`outputs/autoresearch/e229-margin-continuation/runs/e229-margin-64step/` (local)",
+      "local_path": "outputs/autoresearch/e229-margin-continuation/runs/e229-margin-64step/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e229-margin-continuation/runs/e229-margin-64step/ --run-id e229-margin-64step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e230-diverse-roots-32step",
+      "location": "`outputs/autoresearch/e230-diverse-judged-roots/runs/e230-diverse-roots-32step/` (local)",
+      "local_path": "outputs/autoresearch/e230-diverse-judged-roots/runs/e230-diverse-roots-32step/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e230-diverse-judged-roots/runs/e230-diverse-roots-32step/ --run-id e230-diverse-roots-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e231-component-inventory-32step",
+      "location": "`outputs/autoresearch/e231-component-inventory/runs/e231-component-inventory-32step/` (local)",
+      "local_path": "outputs/autoresearch/e231-component-inventory/runs/e231-component-inventory-32step/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e231-component-inventory/runs/e231-component-inventory-32step/ --run-id e231-component-inventory-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e232-role-component-plan-32step",
+      "location": "`outputs/autoresearch/e232-role-component-plan/runs/e232-role-component-plan-32step/` (local)",
+      "local_path": "outputs/autoresearch/e232-role-component-plan/runs/e232-role-component-plan-32step/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e232-role-component-plan/runs/e232-role-component-plan-32step/ --run-id e232-role-component-plan-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e233-component-edges-32step",
+      "location": "`outputs/autoresearch/e233-component-edges/runs/e233-component-edges-32step/` (local)",
+      "local_path": "outputs/autoresearch/e233-component-edges/runs/e233-component-edges-32step/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e233-component-edges/runs/e233-component-edges-32step/ --run-id e233-component-edges-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e234-edge-decision-alignment-32step",
+      "location": "`outputs/autoresearch/e234-edge-decision-alignment/runs/e234-edge-decision-alignment-32step/` (local)",
+      "local_path": "outputs/autoresearch/e234-edge-decision-alignment/runs/e234-edge-decision-alignment-32step/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e234-edge-decision-alignment/runs/e234-edge-decision-alignment-32step/ --run-id e234-edge-decision-alignment-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e235-binder-instance-plan-32step",
+      "location": "`outputs/autoresearch/e235-binder-instance-plan/runs/e235-binder-instance-plan-32step/` (local)",
+      "local_path": "outputs/autoresearch/e235-binder-instance-plan/runs/e235-binder-instance-plan-32step/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e235-binder-instance-plan/runs/e235-binder-instance-plan-32step/ --run-id e235-binder-instance-plan-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e236-binder-topology-32step",
+      "location": "`outputs/autoresearch/e236-binder-topology/runs/e236-binder-topology-32step/` (local)",
+      "local_path": "outputs/autoresearch/e236-binder-topology/runs/e236-binder-topology-32step/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e236-binder-topology/runs/e236-binder-topology-32step/ --run-id e236-binder-topology-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e237-detached-topology-32step",
+      "location": "`outputs/autoresearch/e237-detached-topology/runs/e237-detached-topology-32step/` (local)",
+      "local_path": "outputs/autoresearch/e237-detached-topology/runs/e237-detached-topology-32step/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e237-detached-topology/runs/e237-detached-topology-32step/ --run-id e237-detached-topology-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e238-binder-arity-32step",
+      "location": "`outputs/autoresearch/e238-binder-arity/runs/e238-binder-arity-32step/` (local)",
+      "local_path": "outputs/autoresearch/e238-binder-arity/runs/e238-binder-arity-32step/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e238-binder-arity/runs/e238-binder-arity-32step/ --run-id e238-binder-arity-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "e239d-binder-arity-fully-isolated-32step",
+      "location": "`outputs/autoresearch/e239-binder-arity-corrected/runs/e239d-binder-arity-fully-isolated-32step/` (local)",
+      "local_path": "outputs/autoresearch/e239-binder-arity-corrected/runs/e239d-binder-arity-fully-isolated-32step/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e239-binder-arity-corrected/runs/e239d-binder-arity-fully-isolated-32step/ --run-id e239d-binder-arity-fully-isolated-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e249_local_ce_margin",
+      "location": "`outputs/autoresearch/e249-local-ce-margin/runs/qx_e249_local_ce_margin/` (local)",
+      "local_path": "outputs/autoresearch/e249-local-ce-margin/runs/qx_e249_local_ce_margin/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e249-local-ce-margin/runs/qx_e249_local_ce_margin/ --run-id qx_e249_local_ce_margin --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e252_local_ftpo_set",
+      "location": "`outputs/autoresearch/e252-ftpo-set/runs/qx_e252_local_ftpo_set/` (local)",
+      "local_path": "outputs/autoresearch/e252-ftpo-set/runs/qx_e252_local_ftpo_set/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e252-ftpo-set/runs/qx_e252_local_ftpo_set/ --run-id qx_e252_local_ftpo_set --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e262_broad_gold_ast_ftpo_set",
+      "location": "`outputs/autoresearch/e262-broad-gold-ast-ftpo/runs/qx_e262_broad_gold_ast_ftpo_set/` (local)",
+      "local_path": "outputs/autoresearch/e262-broad-gold-ast-ftpo/runs/qx_e262_broad_gold_ast_ftpo_set/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e262-broad-gold-ast-ftpo/runs/qx_e262_broad_gold_ast_ftpo_set/ --run-id qx_e262_broad_gold_ast_ftpo_set --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e278_guarded_gold_ast_ftpo_set",
+      "location": "`outputs/autoresearch/e278-guarded-gold-ast-ftpo/runs/qx_e278_guarded_gold_ast_ftpo_set/` (local)",
+      "local_path": "outputs/autoresearch/e278-guarded-gold-ast-ftpo/runs/qx_e278_guarded_gold_ast_ftpo_set/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e278-guarded-gold-ast-ftpo/runs/qx_e278_guarded_gold_ast_ftpo_set/ --run-id qx_e278_guarded_gold_ast_ftpo_set --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e265_safe_gold_ast_ftpo_set",
+      "location": "`outputs/autoresearch/e265-safe-gold-ast-ftpo/runs/qx_e265_safe_gold_ast_ftpo_set/` (local)",
+      "local_path": "outputs/autoresearch/e265-safe-gold-ast-ftpo/runs/qx_e265_safe_gold_ast_ftpo_set/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e265-safe-gold-ast-ftpo/runs/qx_e265_safe_gold_ast_ftpo_set/ --run-id qx_e265_safe_gold_ast_ftpo_set --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e266_stratified_safe_gold_ast_ftpo_set",
+      "location": "`outputs/autoresearch/e266-stratified-safe-gold-ast-ftpo/runs/qx_e266_stratified_safe_gold_ast_ftpo_set/` (local)",
+      "local_path": "outputs/autoresearch/e266-stratified-safe-gold-ast-ftpo/runs/qx_e266_stratified_safe_gold_ast_ftpo_set/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e266-stratified-safe-gold-ast-ftpo/runs/qx_e266_stratified_safe_gold_ast_ftpo_set/ --run-id qx_e266_stratified_safe_gold_ast_ftpo_set --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e267_block_stratified_safe_gold_ast_ftpo_set",
+      "location": "`outputs/autoresearch/e267-block-stratified-safe-ftpo/runs/qx_e267_block_stratified_safe_gold_ast_ftpo_set/` (local)",
+      "local_path": "outputs/autoresearch/e267-block-stratified-safe-ftpo/runs/qx_e267_block_stratified_safe_gold_ast_ftpo_set/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e267-block-stratified-safe-ftpo/runs/qx_e267_block_stratified_safe_gold_ast_ftpo_set/ --run-id qx_e267_block_stratified_safe_gold_ast_ftpo_set --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e268_projected_stratified_safe_gold_ast_ftpo_set",
+      "location": "`outputs/autoresearch/e268-projected-stratified-safe-ftpo/runs/qx_e268_projected_stratified_safe_gold_ast_ftpo_set/` (local)",
+      "local_path": "outputs/autoresearch/e268-projected-stratified-safe-ftpo/runs/qx_e268_projected_stratified_safe_gold_ast_ftpo_set/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e268-projected-stratified-safe-ftpo/runs/qx_e268_projected_stratified_safe_gold_ast_ftpo_set/ --run-id qx_e268_projected_stratified_safe_gold_ast_ftpo_set --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e269_mgda_stratified_safe_gold_ast_ftpo_set",
+      "location": "`outputs/autoresearch/e269-mgda-one-step-final/runs/qx_e269_mgda_stratified_safe_gold_ast_ftpo_set/` (local)",
+      "local_path": "outputs/autoresearch/e269-mgda-one-step-final/runs/qx_e269_mgda_stratified_safe_gold_ast_ftpo_set/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e269-mgda-one-step-final/runs/qx_e269_mgda_stratified_safe_gold_ast_ftpo_set/ --run-id qx_e269_mgda_stratified_safe_gold_ast_ftpo_set --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e272_mgda_sgd_stratified_safe_gold_ast_ftpo_set",
+      "location": "`outputs/autoresearch/e272-mgda-sgd-one-step/runs/qx_e272_mgda_sgd_stratified_safe_gold_ast_ftpo_set/` (local)",
+      "local_path": "outputs/autoresearch/e272-mgda-sgd-one-step/runs/qx_e272_mgda_sgd_stratified_safe_gold_ast_ftpo_set/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e272-mgda-sgd-one-step/runs/qx_e272_mgda_sgd_stratified_safe_gold_ast_ftpo_set/ --run-id qx_e272_mgda_sgd_stratified_safe_gold_ast_ftpo_set --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "A1 emptiness probe (E248, diagnostic \u2014 no new checkpoint)",
+      "location": "`playground_demo` fixture via `scripts/probe_emptiness.py`; evidence `docs/design/iter-e248-emptiness-probe-20260716.{md,json}`",
+      "local_path": "scripts/probe_emptiness.py",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir scripts/probe_emptiness.py --run-id A1 emptiness probe (E248, diagnostic \u2014 no new checkpoint) --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e255_b4_scratch_control",
+      "location": "`outputs/runs/` (local, not synced); evidence `docs/design/iter-e255-e256-b4-ar-adaptation-20260716.md` + v10 campaign JSONs",
+      "local_path": "outputs/runs/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/ --run-id qx_e255_b4_scratch_control --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e257_c1_relative_bind",
+      "location": "`outputs/runs/` (local, not synced); evidence `docs/design/iter-e257-c1-relative-bind-20260716.md` + `quality-matrix-results-iter-v10-c1-20260716.json`",
+      "local_path": "outputs/runs/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/ --run-id qx_e257_c1_relative_bind --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e280_c3_macro_tokens",
+      "location": "`outputs/runs/` (local, not synced); evidence `docs/design/iter-e280-c3-macro-tokens-20260717.md` + `quality-matrix-results-iter-v16-c3-20260717.json`",
+      "local_path": "outputs/runs/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/ --run-id qx_e280_c3_macro_tokens --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e281_c4_anon_control",
+      "location": "`outputs/runs/` (local, not synced); evidence `docs/design/iter-e281-e282-c4-names-disappear-20260717.md` + `quality-matrix-results-iter-v17-c4-20260717.json`",
+      "local_path": "outputs/runs/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/ --run-id qx_e281_c4_anon_control --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "gx_x22_kapur_tree_edit",
+      "location": "`outputs/runs/` (local, not synced); evidence `docs/design/iter-x22-d3-kapur-tree-edit-20260717.md` + `grammar-matrix-results-iter-x22-kapur-20260717.json`",
+      "local_path": "outputs/runs/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/ --run-id gx_x22_kapur_tree_edit --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "g2_fixture_20260717",
+      "location": "`outputs/experiments/g2_fixture_20260717/` (local); evidence `docs/design/iter-g2-recipe-evolution-20260717.md` + `recipe-evolution-results-iter-g2-20260717.json`",
+      "local_path": "outputs/experiments/g2_fixture_20260717/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/experiments/g2_fixture_20260717/ --run-id g2_fixture_20260717 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "g4_fixture_20260717",
+      "location": "`outputs/experiments/reasoning_bench/` (local); evidence `docs/design/iter-g4-reasoning-bench-20260717.md` + `reasoning-bench-results-iter-g4-20260717.json`",
+      "local_path": "outputs/experiments/reasoning_bench/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/experiments/reasoning_bench/ --run-id g4_fixture_20260717 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e240_compiler_tree_control",
+      "location": "`outputs/runs/qx_e240_compiler_tree_control/` (local scratch control); evidence `docs/design/iter-e240-e247-lattice-campaign-20260716.md` + `quality-matrix-results-iter-v9-lattice-20260716.json`",
+      "local_path": "outputs/runs/qx_e240_compiler_tree_control/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/qx_e240_compiler_tree_control/ --run-id qx_e240_compiler_tree_control --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "docs/MODEL_CARD.md",
+      "run_id": "qx_e277_a2_asap_decode",
+      "location": "eval overlay on frozen `qx_e255_b4_scratch_control` weights; evidence `docs/design/iter-e277-a2-asap-decode-20260717.md` + `quality-matrix-results-iter-v14-a2-20260717.json`",
+      "local_path": "docs/design/iter-e277-a2-asap-decode-20260717.md",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir docs/design/iter-e277-a2-asap-decode-20260717.md --run-id qx_e277_a2_asap_decode --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "playground_demo/last.pt",
+      "location": "`src/slm_training/resources/checkpoints/playground_demo/` (git)",
+      "local_path": "src/slm_training/resources/checkpoints/playground_demo/",
+      "classification": "tracked_local",
+      "resolvable_from_clone": true,
+      "durable_uri": null
+    },
+    {
+      "source": "README.md",
+      "run_id": "restructure_cpu_scratch_v0/last.pt",
+      "location": "`outputs/runs/\u2026` (local)",
+      "local_path": "outputs/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/\u2026 --run-id restructure_cpu_scratch_v0/last.pt --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "local_directml_adreno_20260714/last.pt",
+      "location": "`outputs/runs/\u2026` (local)",
+      "local_path": "outputs/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/\u2026 --run-id local_directml_adreno_20260714/last.pt --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "overnight_retrain_200/last.pt",
+      "location": "`/tmp/slm-training-overnight/outputs/runs/\u2026` (local)",
+      "local_path": "/tmp/slm-training-overnight/outputs/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir /tmp/slm-training-overnight/outputs/runs/\u2026 --run-id overnight_retrain_200/last.pt --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "overnight_retrain_1000/last.pt",
+      "location": "`/tmp/slm-training-overnight/outputs/runs/\u2026` (local)",
+      "local_path": "/tmp/slm-training-overnight/outputs/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir /tmp/slm-training-overnight/outputs/runs/\u2026 --run-id overnight_retrain_1000/last.pt --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e120_unsandboxed/last.pt",
+      "location": "`outputs/runs/iter-e120-unsandboxed-20260715/\u2026` (local)",
+      "local_path": "outputs/runs/iter-e120-unsandboxed-20260715/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e120-unsandboxed-20260715/\u2026 --run-id e120_unsandboxed/last.pt --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "qx_e53_honest_v5_champion/last.pt",
+      "location": "`outputs/runs/iter-e121d-e53-judged-20260715/\u2026` (local)",
+      "local_path": "outputs/runs/iter-e121d-e53-judged-20260715/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e121d-e53-judged-20260715/\u2026 --run-id qx_e53_honest_v5_champion/last.pt --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e123_judged_32step_b/last.pt",
+      "location": "`outputs/runs/iter-e123b-judged-20260715/\u2026` (local)",
+      "local_path": "outputs/runs/iter-e123b-judged-20260715/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e123b-judged-20260715/\u2026 --run-id e123_judged_32step_b/last.pt --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e127_judged_schema_slots/last.pt",
+      "location": "`outputs/runs/iter-e127-schema-slots-20260715/\u2026` (local)",
+      "local_path": "outputs/runs/iter-e127-schema-slots-20260715/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e127-schema-slots-20260715/\u2026 --run-id e127_judged_schema_slots/last.pt --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e128_judged_schema_slots_64/last.pt",
+      "location": "`outputs/runs/iter-e128-schema-slots-20260715/\u2026` (local)",
+      "local_path": "outputs/runs/iter-e128-schema-slots-20260715/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e128-schema-slots-20260715/\u2026 --run-id e128_judged_schema_slots_64/last.pt --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e129_judged_schema_slots_64_lowweights/last.pt",
+      "location": "`outputs/runs/iter-e129-schema-slots-20260715/\u2026` (local)",
+      "local_path": "outputs/runs/iter-e129-schema-slots-20260715/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e129-schema-slots-20260715/\u2026 --run-id e129_judged_schema_slots_64_lowweights/last.pt --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e130_judged_schema_slots_seed1/last.pt",
+      "location": "`outputs/runs/iter-e130-schema-slots-20260715/\u2026` (local)",
+      "local_path": "outputs/runs/iter-e130-schema-slots-20260715/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e130-schema-slots-20260715/\u2026 --run-id e130_judged_schema_slots_seed1/last.pt --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e132_generation_focus/last.pt",
+      "location": "`outputs/runs/iter-e132-generation-focus-20260715/\u2026` (local)",
+      "local_path": "outputs/runs/iter-e132-generation-focus-20260715/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e132-generation-focus-20260715/\u2026 --run-id e132_generation_focus/last.pt --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e133_no_fuse_ltr/last.pt",
+      "location": "`outputs/runs/iter-e133-no-fuse-ltr-20260715/\u2026` (local)",
+      "local_path": "outputs/runs/iter-e133-no-fuse-ltr-20260715/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e133-no-fuse-ltr-20260715/\u2026 --run-id e133_no_fuse_ltr/last.pt --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e135_hf_context_control/last.pt",
+      "location": "`outputs/runs/iter-e135-hf-context-20260715/\u2026` (local)",
+      "local_path": "outputs/runs/iter-e135-hf-context-20260715/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e135-hf-context-20260715/\u2026 --run-id e135_hf_context_control/last.pt --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e136_hf_context_32/last.pt",
+      "location": "`outputs/runs/iter-e136-hf-context-20260715/\u2026` (local)",
+      "local_path": "outputs/runs/iter-e136-hf-context-20260715/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e136-hf-context-20260715/\u2026 --run-id e136_hf_context_32/last.pt --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e137_hf_context_16/last.pt",
+      "location": "`outputs/runs/iter-e137-hf-context-20260715/\u2026` (local)",
+      "local_path": "outputs/runs/iter-e137-hf-context-20260715/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e137-hf-context-20260715/\u2026 --run-id e137_hf_context_16/last.pt --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e138_hf_context_seed1_8/last.pt",
+      "location": "`outputs/runs/iter-e138-hf-seed1-20260715/\u2026` (local)",
+      "local_path": "outputs/runs/iter-e138-hf-seed1-20260715/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e138-hf-seed1-20260715/\u2026 --run-id e138_hf_context_seed1_8/last.pt --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e139_hf_context_seed2_8/last.pt",
+      "location": "`outputs/runs/iter-e139-hf-seed2-20260715/\u2026` (local)",
+      "local_path": "outputs/runs/iter-e139-hf-seed2-20260715/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/iter-e139-hf-seed2-20260715/\u2026 --run-id e139_hf_context_seed2_8/last.pt --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e173-schema-context-32step/last.pt",
+      "location": "`outputs/runs/e173-schema-context-32step/\u2026` (local)",
+      "local_path": "outputs/runs/e173-schema-context-32step/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e173-schema-context-32step/\u2026 --run-id e173-schema-context-32step/last.pt --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e174-unfrozen-context-8step/last.pt",
+      "location": "`outputs/runs/e174-unfrozen-context-8step/\u2026` (local)",
+      "local_path": "outputs/runs/e174-unfrozen-context-8step/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e174-unfrozen-context-8step/\u2026 --run-id e174-unfrozen-context-8step/last.pt --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e175-retrieval-8step/last.pt",
+      "location": "`outputs/runs/e175-retrieval-8step/\u2026` (local)",
+      "local_path": "outputs/runs/e175-retrieval-8step/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e175-retrieval-8step/\u2026 --run-id e175-retrieval-8step/last.pt --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e176-broad-corpus-8step/last.pt",
+      "location": "`outputs/runs/e176-broad-corpus-8step/\u2026` (local)",
+      "local_path": "outputs/runs/e176-broad-corpus-8step/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e176-broad-corpus-8step/\u2026 --run-id e176-broad-corpus-8step/last.pt --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e177-semantic-judge-32step/last.pt",
+      "location": "`outputs/runs/e177-semantic-judge-32step/\u2026` (local)",
+      "local_path": "outputs/runs/e177-semantic-judge-32step/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e177-semantic-judge-32step/\u2026 --run-id e177-semantic-judge-32step/last.pt --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e181-semantic-balanced-32step",
+      "location": "`outputs/runs/\u2026` (local)",
+      "local_path": "outputs/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/\u2026 --run-id e181-semantic-balanced-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e195-stratified-compiler-aligned-32step",
+      "location": "`outputs/runs/\u2026` (local)",
+      "local_path": "outputs/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/\u2026 --run-id e195-stratified-compiler-aligned-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e201-role-stratified-compiler-aligned-32step",
+      "location": "`outputs/runs/\u2026` (local)",
+      "local_path": "outputs/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/\u2026 --run-id e201-role-stratified-compiler-aligned-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e205-lark-terminal-stratified-32step",
+      "location": "`outputs/runs/\u2026` (local)",
+      "local_path": "outputs/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/\u2026 --run-id e205-lark-terminal-stratified-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e208-list-occupancy-stratified-32step",
+      "location": "`outputs/runs/\u2026` (local)",
+      "local_path": "outputs/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/\u2026 --run-id e208-list-occupancy-stratified-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e215-schema-role-judged-32step",
+      "location": "`outputs/runs/e215-schema-role-judged-32step/\u2026` (local)",
+      "local_path": "outputs/runs/e215-schema-role-judged-32step/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e215-schema-role-judged-32step/\u2026 --run-id e215-schema-role-judged-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e219-schema-normalized-32step",
+      "location": "`outputs/runs/e219-schema-normalized-32step/\u2026` (local)",
+      "local_path": "outputs/runs/e219-schema-normalized-32step/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/e219-schema-normalized-32step/\u2026 --run-id e219-schema-normalized-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e221-canonical-task-balanced",
+      "location": "`outputs/autoresearch/e221-task-balanced-exposure-v4/runs/\u2026` (local)",
+      "local_path": "outputs/autoresearch/e221-task-balanced-exposure-v4/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e221-task-balanced-exposure-v4/runs/\u2026 --run-id e221-canonical-task-balanced --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e222-capacity-aware-matched",
+      "location": "`outputs/autoresearch/e222-capacity-aware-exposure/runs/\u2026` (local)",
+      "local_path": "outputs/autoresearch/e222-capacity-aware-exposure/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e222-capacity-aware-exposure/runs/\u2026 --run-id e222-capacity-aware-matched --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e223-quota-capacity-matched",
+      "location": "`outputs/autoresearch/e223-quota-capacity-exposure/runs/\u2026` (local)",
+      "local_path": "outputs/autoresearch/e223-quota-capacity-exposure/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e223-quota-capacity-exposure/runs/\u2026 --run-id e223-quota-capacity-matched --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e224-semantic-exhaustive-matched",
+      "location": "`outputs/autoresearch/e224-semantic-exhaustive-alignment/runs/\u2026` (local)",
+      "local_path": "outputs/autoresearch/e224-semantic-exhaustive-alignment/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e224-semantic-exhaustive-alignment/runs/\u2026 --run-id e224-semantic-exhaustive-matched --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e227-candidate-set-matched",
+      "location": "`outputs/autoresearch/e227-candidate-set-alignment/runs/\u2026` (local)",
+      "local_path": "outputs/autoresearch/e227-candidate-set-alignment/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e227-candidate-set-alignment/runs/\u2026 --run-id e227-candidate-set-matched --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e228-candidate-margin-matched",
+      "location": "`outputs/autoresearch/e228-candidate-margin-alignment/runs/\u2026` (local)",
+      "local_path": "outputs/autoresearch/e228-candidate-margin-alignment/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e228-candidate-margin-alignment/runs/\u2026 --run-id e228-candidate-margin-matched --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e229-margin-64step",
+      "location": "`outputs/autoresearch/e229-margin-continuation/runs/\u2026` (local)",
+      "local_path": "outputs/autoresearch/e229-margin-continuation/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e229-margin-continuation/runs/\u2026 --run-id e229-margin-64step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e230-diverse-roots-32step",
+      "location": "`outputs/autoresearch/e230-diverse-judged-roots/runs/\u2026` (local)",
+      "local_path": "outputs/autoresearch/e230-diverse-judged-roots/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e230-diverse-judged-roots/runs/\u2026 --run-id e230-diverse-roots-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e231-component-inventory-32step",
+      "location": "`outputs/autoresearch/e231-component-inventory/runs/\u2026` (local)",
+      "local_path": "outputs/autoresearch/e231-component-inventory/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e231-component-inventory/runs/\u2026 --run-id e231-component-inventory-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e232-role-component-plan-32step",
+      "location": "`outputs/autoresearch/e232-role-component-plan/runs/\u2026` (local)",
+      "local_path": "outputs/autoresearch/e232-role-component-plan/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e232-role-component-plan/runs/\u2026 --run-id e232-role-component-plan-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e233-component-edges-32step",
+      "location": "`outputs/autoresearch/e233-component-edges/runs/\u2026` (local)",
+      "local_path": "outputs/autoresearch/e233-component-edges/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e233-component-edges/runs/\u2026 --run-id e233-component-edges-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e234-edge-decision-alignment-32step",
+      "location": "`outputs/autoresearch/e234-edge-decision-alignment/runs/\u2026` (local)",
+      "local_path": "outputs/autoresearch/e234-edge-decision-alignment/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e234-edge-decision-alignment/runs/\u2026 --run-id e234-edge-decision-alignment-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e235-binder-instance-plan-32step",
+      "location": "`outputs/autoresearch/e235-binder-instance-plan/runs/\u2026` (local)",
+      "local_path": "outputs/autoresearch/e235-binder-instance-plan/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e235-binder-instance-plan/runs/\u2026 --run-id e235-binder-instance-plan-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e236-binder-topology-32step",
+      "location": "`outputs/autoresearch/e236-binder-topology/runs/\u2026` (local)",
+      "local_path": "outputs/autoresearch/e236-binder-topology/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e236-binder-topology/runs/\u2026 --run-id e236-binder-topology-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e237-detached-topology-32step",
+      "location": "`outputs/autoresearch/e237-detached-topology/runs/\u2026` (local)",
+      "local_path": "outputs/autoresearch/e237-detached-topology/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e237-detached-topology/runs/\u2026 --run-id e237-detached-topology-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e238-binder-arity-32step",
+      "location": "`outputs/autoresearch/e238-binder-arity/runs/\u2026` (local)",
+      "local_path": "outputs/autoresearch/e238-binder-arity/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e238-binder-arity/runs/\u2026 --run-id e238-binder-arity-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "e239d-binder-arity-fully-isolated-32step",
+      "location": "`outputs/autoresearch/e239-binder-arity-corrected/runs/\u2026` (local)",
+      "local_path": "outputs/autoresearch/e239-binder-arity-corrected/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e239-binder-arity-corrected/runs/\u2026 --run-id e239d-binder-arity-fully-isolated-32step --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "qx_e249_local_ce_margin",
+      "location": "`outputs/autoresearch/e249-local-ce-margin/runs/\u2026` (local)",
+      "local_path": "outputs/autoresearch/e249-local-ce-margin/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e249-local-ce-margin/runs/\u2026 --run-id qx_e249_local_ce_margin --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "qx_e252_local_ftpo_set",
+      "location": "`outputs/autoresearch/e252-ftpo-set/runs/\u2026` (local)",
+      "local_path": "outputs/autoresearch/e252-ftpo-set/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e252-ftpo-set/runs/\u2026 --run-id qx_e252_local_ftpo_set --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "qx_e262_broad_gold_ast_ftpo_set",
+      "location": "`outputs/autoresearch/e262-broad-gold-ast-ftpo/runs/\u2026` (local)",
+      "local_path": "outputs/autoresearch/e262-broad-gold-ast-ftpo/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e262-broad-gold-ast-ftpo/runs/\u2026 --run-id qx_e262_broad_gold_ast_ftpo_set --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "qx_e264_guarded_gold_ast_ftpo_set",
+      "location": "`outputs/autoresearch/e264-guarded-gold-ast-ftpo/runs/\u2026` (local)",
+      "local_path": "outputs/autoresearch/e264-guarded-gold-ast-ftpo/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e264-guarded-gold-ast-ftpo/runs/\u2026 --run-id qx_e264_guarded_gold_ast_ftpo_set --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "qx_e265_safe_gold_ast_ftpo_set",
+      "location": "`outputs/autoresearch/e265-safe-gold-ast-ftpo/runs/\u2026` (local)",
+      "local_path": "outputs/autoresearch/e265-safe-gold-ast-ftpo/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e265-safe-gold-ast-ftpo/runs/\u2026 --run-id qx_e265_safe_gold_ast_ftpo_set --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "qx_e266_stratified_safe_gold_ast_ftpo_set",
+      "location": "`outputs/autoresearch/e266-stratified-safe-gold-ast-ftpo/runs/\u2026` (local)",
+      "local_path": "outputs/autoresearch/e266-stratified-safe-gold-ast-ftpo/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e266-stratified-safe-gold-ast-ftpo/runs/\u2026 --run-id qx_e266_stratified_safe_gold_ast_ftpo_set --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "qx_e267_block_stratified_safe_gold_ast_ftpo_set",
+      "location": "`outputs/autoresearch/e267-block-stratified-safe-ftpo/runs/\u2026` (local)",
+      "local_path": "outputs/autoresearch/e267-block-stratified-safe-ftpo/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e267-block-stratified-safe-ftpo/runs/\u2026 --run-id qx_e267_block_stratified_safe_gold_ast_ftpo_set --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "qx_e268_projected_stratified_safe_gold_ast_ftpo_set",
+      "location": "`outputs/autoresearch/e268-projected-stratified-safe-ftpo/runs/\u2026` (local)",
+      "local_path": "outputs/autoresearch/e268-projected-stratified-safe-ftpo/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e268-projected-stratified-safe-ftpo/runs/\u2026 --run-id qx_e268_projected_stratified_safe_gold_ast_ftpo_set --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "qx_e269_mgda_stratified_safe_gold_ast_ftpo_set",
+      "location": "`outputs/autoresearch/e269-mgda-one-step-final/runs/\u2026` (local)",
+      "local_path": "outputs/autoresearch/e269-mgda-one-step-final/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e269-mgda-one-step-final/runs/\u2026 --run-id qx_e269_mgda_stratified_safe_gold_ast_ftpo_set --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "qx_e272_mgda_sgd_stratified_safe_gold_ast_ftpo_set",
+      "location": "`outputs/autoresearch/e272-mgda-sgd-one-step/runs/\u2026` (local)",
+      "local_path": "outputs/autoresearch/e272-mgda-sgd-one-step/runs/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/autoresearch/e272-mgda-sgd-one-step/runs/\u2026 --run-id qx_e272_mgda_sgd_stratified_safe_gold_ast_ftpo_set --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "V6 E53 family",
+      "location": "`outputs/runs/` + matrix docs",
+      "local_path": "outputs/runs/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/ --run-id V6 E53 family --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "fixture + integrated E50",
+      "location": "`/tmp/slm17-e50-*-honest/` (local scratch)",
+      "local_path": "/tmp/slm17-e50-*-honest/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir /tmp/slm17-e50-*-honest/ --run-id fixture + integrated E50 --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "gx_x2_codec",
+      "location": "`/tmp/slm-training-fixed-baseline/outputs/topology_baseline/`",
+      "local_path": "/tmp/slm-training-fixed-baseline/outputs/topology_baseline/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir /tmp/slm-training-fixed-baseline/outputs/topology_baseline/ --run-id gx_x2_codec --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "grammar_diffusion_overfit",
+      "location": "pytest temporary checkpoint",
+      "local_path": null,
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/<run_id> --run-id grammar_diffusion_overfit --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "6 seed checkpoints",
+      "location": "`/tmp/slm-training-grammar-topology/outputs/topology_confirm_4bf964d/`",
+      "local_path": "/tmp/slm-training-grammar-topology/outputs/topology_confirm_4bf964d/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir /tmp/slm-training-grammar-topology/outputs/topology_confirm_4bf964d/ --run-id 6 seed checkpoints --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "6 seed checkpoints",
+      "location": "`outputs/runs/gx_x{18,21}_*_confirm_200/` (local)",
+      "local_path": "outputs/runs/gx_x{18,21}_*_confirm_200/",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/runs/gx_x{18,21}_*_confirm_200/ --run-id 6 seed checkpoints --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "capacity_lexer_v1__d64_h2_c1_dn2_t5000_x1__s0/last.pt",
+      "location": "`outputs/ladders/b3-matched-5m-e287-r2/\u2026` (local)",
+      "local_path": "outputs/ladders/b3-matched-5m-e287-r2/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/ladders/b3-matched-5m-e287-r2/\u2026 --run-id capacity_lexer_v1__d64_h2_c1_dn2_t5000_x1__s0/last.pt --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/last.pt",
+      "location": "`outputs/ladders/b3-matched-5m-e287-r2/\u2026` (local)",
+      "local_path": "outputs/ladders/b3-matched-5m-e287-r2/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/ladders/b3-matched-5m-e287-r2/\u2026 --run-id capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/last.pt --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/last.pt",
+      "location": "`outputs/ladders/e289-choice-state-cache/\u2026` (local)",
+      "local_path": "outputs/ladders/e289-choice-state-cache/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/ladders/e289-choice-state-cache/\u2026 --run-id capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/last.pt --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/last.pt",
+      "location": "`outputs/ladders/e290-choice-direct-candidates/\u2026` (local)",
+      "local_path": "outputs/ladders/e290-choice-direct-candidates/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/ladders/e290-choice-direct-candidates/\u2026 --run-id capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/last.pt --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/last.pt",
+      "location": "`outputs/ladders/e291-choice-completion-cache/\u2026` (local)",
+      "local_path": "outputs/ladders/e291-choice-completion-cache/\u2026",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir outputs/ladders/e291-choice-completion-cache/\u2026 --run-id capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0/last.pt --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    },
+    {
+      "source": "README.md",
+      "run_id": "*(none yet)*",
+      "location": "[HF Bucket `TKendrick/OpenUI`](https://huggingface.co/buckets/TKendrick/OpenUI) `checkpoints/<run_id>/`",
+      "local_path": "TKendrick/OpenUI",
+      "classification": "unresolved_local",
+      "resolvable_from_clone": false,
+      "durable_uri": null,
+      "remediation": "python scripts/sync_checkpoints.py --run-dir TKendrick/OpenUI --run-id *(none yet)* --claim-class <frontier|diagnostic> --ensure-bucket  (requires the local checkpoint on the training host + HF auth)"
+    }
+  ]
+}

@@ -52,6 +52,18 @@ SUITES_BY_PREFIX = (
         "scripts/serve_playground.py",
         ("tests/test_web",),
     ),
+    # Checkpoint-reference audit: committed frontier/ship claims must stay
+    # resolvable, so model-card and README changes run it. (Design result JSON
+    # is covered by the always-on CI audit step; docs stay otherwise
+    # conservative for the local hook.)
+    (
+        "docs/MODEL_CARD.md",
+        ("tests/test_scripts/test_verify_checkpoint_references.py",),
+    ),
+    (
+        "README.md",
+        ("tests/test_scripts/test_verify_checkpoint_references.py",),
+    ),
     ("scripts/", ("tests/test_scripts",)),
     (
         "src/slm_training/data/",

@@ -138,3 +138,128 @@ def test_maybe_sync_respects_disabled(tmp_path: Path) -> None:
         checkpoint_bucket_dry_run=False,
     )
     assert maybe_sync_train_checkpoints(cfg, tmp_path) is None
+
+
+class _Plan:
+    def __init__(self, ops: list[SimpleNamespace]) -> None:
+        self.operations = ops
+
+
+class _FakeApi:
+    """HF api stub. Real syncs 'upload'; verify dry-runs report nothing pending
+    unless ``fail_verify`` is set (simulating an upload that did not land)."""
+
+    def __init__(self, token=None, *, fail_verify: bool = False) -> None:  # noqa: ANN001
+        self.fail_verify = fail_verify
+        self.dry_run_calls = 0
+        self.real_calls = 0
+
+    def sync_bucket(self, **kwargs):  # noqa: ANN003
+        if kwargs.get("dry_run"):
+            self.dry_run_calls += 1
+            if self.fail_verify:
+                return _Plan([SimpleNamespace(action="upload", path="last.pt", size=7)])
+            return _Plan([])
+        self.real_calls += 1
+        return _Plan([SimpleNamespace(action="upload", path="last.pt", size=7)])
+
+    def create_bucket(self, *args, **kwargs):  # noqa: ANN002, ANN003
+        return "https://huggingface.co/buckets/TKendrick/OpenUI"
+
+    def bucket_info(self, *args, **kwargs):  # noqa: ANN002, ANN003
+        return SimpleNamespace(private=False)
+
+
+def _make_checkpoint(tmp_path: Path) -> Path:
+    run_dir = tmp_path / "runs" / "demo"
+    ckpt = run_dir / "checkpoints"
+    ckpt.mkdir(parents=True)
+    (ckpt / "last.pt").write_bytes(b"weights")
+    (ckpt / "last.tokenizer.json").write_text("{}", encoding="utf-8")
+    (run_dir / "train_summary.json").write_text("{}", encoding="utf-8")
+    return ckpt
+
+
+def _patch_api(monkeypatch: pytest.MonkeyPatch, api: _FakeApi) -> None:
+    import slm_training.harnesses.model_build.checkpoint_bucket as cb
+
+    monkeypatch.setattr(cb, "_require_hub", lambda: (lambda token=None: api, lambda: "tok"))
+
+
+def test_dry_run_hashes_but_leaves_references_unverified(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _patch_api(monkeypatch, _FakeApi())
+    report = sync_run_checkpoints(
+        _make_checkpoint(tmp_path),
+        run_id="demo",
+        bucket="TKendrick/OpenUI",
+        run_dir=tmp_path / "runs" / "demo",
+        dry_run=True,
+        ensure_bucket=False,
+        claim_class="frontier",
+    )
+    assert report["verification"] is None
+    # Every artifact is hashed before upload.
+    assert report["inventory"]["last.pt"]["sha256"]
+    assert report["inventory"]["last.pt"]["size_bytes"] == len(b"weights")
+    ref = report["references"][0]
+    assert ref["verification_timestamp"] is None
+    # A dry run can never back a durable claim.
+    from slm_training.harnesses.model_build.checkpoint_reference import (
+        CheckpointReferenceV1,
+    )
+
+    assert CheckpointReferenceV1.from_dict(ref).is_publishable is False
+
+
+def test_real_sync_verifies_and_stamps_references(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    api = _FakeApi()
+    _patch_api(monkeypatch, api)
+    report = sync_run_checkpoints(
+        _make_checkpoint(tmp_path),
+        run_id="demo",
+        bucket="TKendrick/OpenUI",
+        run_dir=tmp_path / "runs" / "demo",
+        dry_run=False,
+        ensure_bucket=False,
+        claim_class="frontier",
+        provenance={
+            "training_source_commit": "c" * 40,
+            "evaluation_source_commit": "d" * 40,
+            "model_config_hash": "m",
+            "tokenizer_hash": "t",
+            "output_codec_hash": "o",
+            "corpus_manifest_hash": "cm",
+            "data_version": "v1",
+        },
+    )
+    assert report["verification"]["verified"] is True
+    assert report["verification"]["method"] == "resync_dry_run"
+    assert api.real_calls == 2  # initial upload + verified sidecar push
+    ref = report["references"][0]
+    assert ref["verification_timestamp"]
+    assert ref["verifier_version"]
+    # Fully-provenanced verified frontier reference is publishable.
+    from slm_training.harnesses.model_build.checkpoint_reference import (
+        CheckpointReferenceV1,
+    )
+
+    assert CheckpointReferenceV1.from_dict(ref).is_publishable is True
+
+
+def test_real_sync_fails_closed_when_verification_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _patch_api(monkeypatch, _FakeApi(fail_verify=True))
+    with pytest.raises(RuntimeError, match="verification failed"):
+        sync_run_checkpoints(
+            _make_checkpoint(tmp_path),
+            run_id="demo",
+            bucket="TKendrick/OpenUI",
+            run_dir=tmp_path / "runs" / "demo",
+            dry_run=False,
+            ensure_bucket=False,
+        )

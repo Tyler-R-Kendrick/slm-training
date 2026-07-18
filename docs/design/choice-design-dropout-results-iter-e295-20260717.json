@@ -1,0 +1,67 @@
+{
+  "iteration": "E295",
+  "date": "2026-07-17",
+  "run_id": "e295-choice-design-dropout-r1",
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "scratch",
+    "design_md_context": true,
+    "design_md_dropout": 0.5,
+    "design_records": 480,
+    "design_records_dropped": 240,
+    "design_records_retained": 240,
+    "output_tokenizer": "choice",
+    "d_model": 64,
+    "denoiser_layers": 2,
+    "seed": 0,
+    "batch_size": 2,
+    "steps": 107,
+    "seen_prompt_tokens": 35135,
+    "seen_target_tokens": 5022,
+    "elapsed_wall_seconds": 28.970786420999502
+  },
+  "checkpoint": {
+    "sha256": "5b4c50467454f7a9dddbc28da2e115c31a8eba8071587e95eda096729a16fb50",
+    "bucket": null,
+    "sync_reason": "scratch diagnostic; local only"
+  },
+  "loss_suite": {
+    "complete": true,
+    "weighted_nll": 7.378454768267873,
+    "binding_nll": 8.096296776086092,
+    "structural_nll": 5.78659538655054,
+    "repair_nll": 8.011815563837688,
+    "schema_ood_nll": 7.199680949157139,
+    "broad_nll": 8.206016336633013,
+    "agentv": {"total": 1, "passed": 1, "execution_errors": 0}
+  },
+  "honest_evaluation": {
+    "run_id": "e295-choice-design-dropout-honest-r1",
+    "policy": {
+      "ship_gates": true,
+      "honest_slot_contract": true,
+      "slot_contract_constrained_decode": true,
+      "design_md_context": false,
+      "allow_unconstrained_fallback": false
+    },
+    "suites": {
+      "smoke": {"n": 3, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.3333333333333333, "structure": 0.3499999999999999, "component_recall": 0.0, "reward": 0.0},
+      "held_out": {"n": 5, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.0, "structure": 0.25139999999999996, "component_recall": 0.0, "reward": 0.0},
+      "adversarial": {"n": 4, "parse": 1.0, "meaningful": 0.25, "fidelity": 0.25, "structure": 0.269675, "component_recall": 0.25, "reward": 0.23425},
+      "ood": {"n": 4, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.0, "structure": 0.236875, "component_recall": 0.0, "reward": 0.0},
+      "rico_held": {"n": 3, "parse": 1.0, "meaningful": 0.0, "fidelity": 0.0, "structure": 0.09006666666666667, "component_recall": 0.0, "reward": 0.0}
+    },
+    "gate_failure_count": 14,
+    "agentv": {"total": 5, "passed": 1, "failed": 4, "execution_errors": 0}
+  },
+  "comparison": {
+    "e292_all_design_weighted_nll": 7.2265,
+    "e292_all_design_gate_failures": 15,
+    "e292_all_design_agentv_passed": 0,
+    "e294_no_design_weighted_nll": 7.497654616691396,
+    "e294_no_design_gate_failures": 17,
+    "e294_no_design_agentv_passed": 0,
+    "adversarial_meaningful_gain_vs_both": 0.25
+  },
+  "verdict": "A narrow one-example context-robustness signal warrants replication, but four suites remain non-meaningful and 14 frozen thresholds fail. No promotion."
+}

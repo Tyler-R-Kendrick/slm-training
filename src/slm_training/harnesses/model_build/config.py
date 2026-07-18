@@ -57,6 +57,8 @@ class ModelBuildConfig:
     fidelity_loss_weight: float = 0.5
     # None = preserve checkpoint on load; factory defaults new models to True.
     design_md_in_context: bool | None = None
+    # Deterministic record-level train-time omission; evaluation is unaffected.
+    design_md_dropout: float = 0.0
     design_md_budget: int = 1800
     schema_in_context: bool = False
     slot_contract_in_context: bool = False

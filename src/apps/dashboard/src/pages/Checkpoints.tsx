@@ -77,8 +77,10 @@ export function Checkpoints({ navigate }: { navigate: (to: string) => void }) {
           columns={[
             { key: "role", label: "Role" },
             { key: "run_id", label: "Run" },
-            { key: "kind", label: "Kind" },
-            { key: "source", label: "Source" },
+            { key: "architecture", label: "Architecture" },
+            { key: "parameters", label: "Parameters", align: "right" },
+            { key: "model_size", label: "Model size", align: "right" },
+            { key: "throughput", label: "Throughput", align: "right" },
             { key: "status", label: "Status" },
           ]}
           rows={roster.data?.checkpoints ?? []}
@@ -87,6 +89,9 @@ export function Checkpoints({ navigate }: { navigate: (to: string) => void }) {
             status: (r) => <StatusPill value={r.status} label={(r.status || "—").slice(0, 26)} />,
           }}
         />
+        <p className="hint" style={{ marginTop: "0.6rem" }}>
+          ≈ denotes a comparable architecture estimate; throughput depends on hardware and decode settings.
+        </p>
       </Card>
 
       <Card

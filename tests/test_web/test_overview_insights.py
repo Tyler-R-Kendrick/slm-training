@@ -115,6 +115,7 @@ def test_live_champion_becomes_comparison_baseline(tmp_path) -> None:
     assert performance["stats"]["comparable"] == 1
     assert performance["comparisons"][0]["vs_reference"].endswith(" pp")
 
+
 def test_metric_surfaces_track_ship_gate_policy(tmp_path) -> None:
     """Overview metrics derive from the ship-gate policy: changing a lever
     (adding/dropping a gate metric) must re-shape the dashboard automatically."""
@@ -135,3 +136,48 @@ def test_metric_surfaces_track_ship_gate_policy(tmp_path) -> None:
     assert set(row["metrics"]) <= set(lever_keys)
     # Legacy parse_rate-only rows surface under the policy's meaningful lever.
     assert row["metrics"]["meaningful_program_rate"] == 1.0
+
+
+def test_model_card_surfaces_comparable_resource_metrics(tmp_path) -> None:
+    _write_evidence(tmp_path, "checkpoint-1")
+    fixture = (
+        tmp_path
+        / "src"
+        / "slm_training"
+        / "resources"
+        / "checkpoints"
+        / "playground_demo"
+    )
+    fixture.mkdir(parents=True)
+    (fixture / "last.pt").write_bytes(b"x" * 3_000_000)
+    (fixture / "last.meta.json").write_text(
+        json.dumps({"parameter_count": 740_352}),
+        encoding="utf-8",
+    )
+    (tmp_path / "docs" / "design" / "perf-matrix-results.json").write_text(
+        json.dumps(
+            {
+                "results": [
+                    {"run_id": "perf-a", "tokens_per_sec": 80.0},
+                    {"run_id": "perf-b", "tokens_per_sec": 120.0},
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    readers = Readers(tmp_path)
+    reference = readers.performance_insights()["references"][-1]
+    assert reference["architecture"] == "TwoTower · scratch"
+    assert reference["parameters"] == "≈740K"
+    assert reference["model_size"] == "≈3.00 MB"
+    assert reference["throughput"] == "≈80–120 tok/s CPU"
+
+    fixture_row = next(
+        row
+        for row in readers.checkpoints()["checkpoints"]
+        if row["run_id"] == "playground_demo"
+    )
+    assert fixture_row["parameters"] == "740K"
+    assert fixture_row["model_size"] == "3.00 MB"
+    assert fixture_row["throughput"] == "≈80–120 tok/s CPU"
