@@ -15,9 +15,12 @@ reproduced) from recent token-level preference work:
 
 Every objective consumes a materialized :class:`ObjectiveView` plus the exact
 legal set, operates on 1-D decision logits, and returns ``(loss, metrics)`` with
-the loss differentiable and the metrics detached. Names carry ``_inspired`` where
-they adapt rather than reproduce a paper. No model update or quality claim is
-made here.
+the loss differentiable and the metrics detached. Ambiguous and unobserved legal
+actions are kept in legal normalization and reported separately (never mislabeled
+as good/bad targets), the barrier honors a per-action semantic role weight, and any
+objective optionally composes with the target / non-target MSE locality tethers,
+each metered independently. Names carry ``_inspired`` where they adapt rather than
+reproduce a paper. No model update or quality claim is made here.
 """
 
 from __future__ import annotations
@@ -70,6 +73,9 @@ class StructuredObjectiveConfig:
     barrier_strength: float = 1.0
     critical_roles: tuple[str, ...] = ()
     default_role_weight: float = 1.0
+    non_target_tether: float = 0.0
+    target_tether: float = 0.0
+    target_grace: float = 1.0
     state_baseline: Literal["none", "advantage"] = "none"
     numeric_eps: float = 1e-8
     version: int = 1
@@ -84,7 +90,14 @@ class StructuredObjectiveConfig:
         for key in ("epsilon", "tau", "temperature", "numeric_eps"):
             if getattr(self, key) <= 0:
                 raise StructuredObjectiveError(f"{key} must be positive")
-        for key in ("barrier_strength", "default_role_weight", "evidence_clip"):
+        for key in (
+            "barrier_strength",
+            "default_role_weight",
+            "evidence_clip",
+            "non_target_tether",
+            "target_tether",
+            "target_grace",
+        ):
             if getattr(self, key) < 0:
                 raise StructuredObjectiveError(f"{key} must be non-negative")
         if not 0.0 < self.barrier_p < 1.0:
@@ -117,12 +130,16 @@ class _Prepared:
     good: tuple[int, ...]
     bad: tuple[int, ...]
     legal: tuple[int, ...]
+    ambiguous: tuple[int, ...]
+    unobserved: tuple[int, ...]
     good_logits: torch.Tensor
     bad_logits: torch.Tensor
     good_weights: torch.Tensor
     legal_probs: torch.Tensor
     good_legal_mass: torch.Tensor
     bad_legal_mass: torch.Tensor
+    ambiguous_legal_mass: torch.Tensor
+    unobserved_legal_mass: torch.Tensor
     good_legal_prob: torch.Tensor  # per-good legal-space probability
 
 
@@ -146,10 +163,22 @@ def _prepare(
         raise StructuredObjectiveError("legal_action_ids must be unique")
     good = tuple(int(a) for a in view.good_action_ids)
     bad = tuple(int(a) for a in view.bad_action_ids)
+    ambiguous = tuple(int(a) for a in view.ambiguous_action_ids)
+    unobserved = tuple(int(a) for a in view.unobserved_action_ids)
     if not good:
         raise StructuredObjectiveError("a trainable objective requires at least one good action")
-    if not legal_set.issuperset(good) or not legal_set.issuperset(bad):
-        raise StructuredObjectiveError("good/bad action ids must be inside the legal set")
+    for label, ids in (
+        ("good", good), ("bad", bad), ("ambiguous", ambiguous), ("unobserved", unobserved)
+    ):
+        if not legal_set.issuperset(ids):
+            raise StructuredObjectiveError(f"{label} action ids must be inside the legal set")
+    # Ambiguous/unobserved actions stay part of legal normalization but must never be
+    # mislabeled as a good/bad target: the four partitions are disjoint.
+    pooled = good + bad + ambiguous + unobserved
+    if len(pooled) != len(set(pooled)):
+        raise StructuredObjectiveError(
+            "good/bad/ambiguous/unobserved action sets must be disjoint"
+        )
 
     def idx(values: Sequence[int]) -> torch.Tensor:
         return torch.tensor(tuple(values), dtype=torch.long, device=logits.device)
@@ -166,23 +195,29 @@ def _prepare(
     legal_logits = logits.index_select(0, idx(legal))
     legal_probs = F.softmax(legal_logits / config.temperature, dim=-1)
     legal_pos = {a: p for p, a in enumerate(legal)}
+
+    def _mass(ids: Sequence[int]) -> torch.Tensor:
+        if not ids:
+            return legal_probs.new_zeros(())
+        return legal_probs.index_select(0, idx([legal_pos[a] for a in ids])).sum()
+
     good_legal_prob = legal_probs.index_select(0, idx([legal_pos[a] for a in good]))
     good_legal_mass = good_legal_prob.sum()
-    bad_legal_mass = (
-        legal_probs.index_select(0, idx([legal_pos[a] for a in bad])).sum()
-        if bad
-        else legal_probs.new_zeros(())
-    )
+    bad_legal_mass = _mass(bad)
     return _Prepared(
         good=good,
         bad=bad,
         legal=legal,
+        ambiguous=ambiguous,
+        unobserved=unobserved,
         good_logits=good_logits,
         bad_logits=bad_logits,
         good_weights=good_weights,
         legal_probs=legal_probs,
         good_legal_mass=good_legal_mass,
         bad_legal_mass=bad_legal_mass,
+        ambiguous_legal_mass=_mass(ambiguous),
+        unobserved_legal_mass=_mass(unobserved),
         good_legal_prob=good_legal_prob,
     )
 
@@ -191,11 +226,15 @@ def _base_metrics(p: _Prepared) -> dict[str, float]:
     return {
         "good_legal_mass": float(p.good_legal_mass.detach()),
         "bad_legal_mass": float(p.bad_legal_mass.detach()),
+        "ambiguous_legal_mass": float(p.ambiguous_legal_mass.detach()),
+        "unobserved_legal_mass": float(p.unobserved_legal_mass.detach()),
         "legal_entropy": float(
             -(p.legal_probs * (p.legal_probs + 1e-12).log()).sum().detach()
         ),
         "num_good": float(len(p.good)),
         "num_bad": float(len(p.bad)),
+        "num_ambiguous": float(len(p.ambiguous)),
+        "num_unobserved": float(len(p.unobserved)),
     }
 
 
@@ -235,6 +274,7 @@ def _tab_barrier(
     config: StructuredObjectiveConfig,
     *,
     critical_good_mask: torch.Tensor | None,
+    good_role_weights: torch.Tensor | None = None,
     reference_good_prob: torch.Tensor | None,
 ) -> tuple[torch.Tensor, dict[str, float]]:
     # Base preference term (reuse the pairwise set margin) so the barrier is an
@@ -249,15 +289,24 @@ def _tab_barrier(
         if critical_good_mask is not None
         else p.good_legal_prob.new_ones(len(p.good))
     )
+    # Semantic role weight per good action: structural tokens can be down-weighted by the
+    # caller (default ``default_role_weight``), so the barrier does not over-anchor
+    # low-criticality structural punctuation.
+    role_scale = (
+        good_role_weights.to(p.good_legal_prob.dtype)
+        if good_role_weights is not None
+        else p.good_legal_prob.new_full((len(p.good),), config.default_role_weight)
+    )
     # Anchor only under-confident (legal prob < barrier_p) critical good actions.
     under = (p.good_legal_prob < config.barrier_p).to(p.good_legal_prob.dtype)
-    anchor_w = config.barrier_strength * role_w * under * p.good_weights
+    anchor_w = config.barrier_strength * role_w * role_scale * under * p.good_weights
     barrier = (anchor_w * -(p.good_legal_prob + config.numeric_eps).log()).sum()
     loss = base + barrier
 
     metrics["objective_loss"] = float(loss.detach())
     metrics["barrier_loss"] = float(barrier.detach())
     metrics["barrier_active_fraction"] = float(under.mean().detach())
+    metrics["mean_role_weight"] = float(role_scale.mean().detach())
     if reference_good_prob is not None:
         # Likelihood-erosion: verified good actions whose absolute prob dropped.
         eroded = (p.good_legal_prob < reference_good_prob).to(p.good_legal_prob.dtype)
@@ -295,6 +344,40 @@ def _tbpo_inspired(
     return loss, metrics
 
 
+def _locality_tether(
+    logits: torch.Tensor,
+    reference_logits: torch.Tensor | None,
+    target_ids: Sequence[int],
+    config: StructuredObjectiveConfig,
+) -> tuple[torch.Tensor, dict[str, float]]:
+    """Target / non-target MSE locality tethers against the reference, separately metered.
+
+    Holds logits near the reference off-target (``non_target_tether``) and bounds on-target
+    drift beyond ``target_grace`` (``target_tether``), so a structured objective composes
+    with locality while the barrier and the target tether stay independently metered.
+    """
+    zero = logits.new_zeros(())
+    if config.non_target_tether <= 0 and config.target_tether <= 0:
+        return zero, {"non_target_logit_mse": 0.0, "target_excess_logit_mse": 0.0}
+    if reference_logits is None or reference_logits.shape != logits.shape:
+        raise StructuredObjectiveError("locality tethers require matching reference logits")
+    diff = logits - reference_logits.detach()
+    target_mask = torch.zeros_like(logits, dtype=torch.bool)
+    target_mask[torch.tensor(tuple(target_ids), dtype=torch.long, device=logits.device)] = True
+    non_target_mse = zero
+    target_excess_mse = zero
+    if config.non_target_tether > 0 and (~target_mask).any():
+        non_target_mse = diff[~target_mask].pow(2).mean()
+    if config.target_tether > 0 and target_mask.any():
+        excess = (diff[target_mask].abs() - config.target_grace).clamp(min=0.0)
+        target_excess_mse = excess.pow(2).mean()
+    loss = config.non_target_tether * non_target_mse + config.target_tether * target_excess_mse
+    return loss, {
+        "non_target_logit_mse": float(non_target_mse.detach()),
+        "target_excess_logit_mse": float(target_excess_mse.detach()),
+    }
+
+
 def structured_decision_loss(
     logits: torch.Tensor,
     view: ObjectiveView,
@@ -303,10 +386,16 @@ def structured_decision_loss(
     config: StructuredObjectiveConfig,
     reference_logits: torch.Tensor | None = None,
     critical_good_mask: torch.Tensor | None = None,
+    good_role_weights: torch.Tensor | None = None,
     state_baseline: float = 0.0,
 ) -> tuple[torch.Tensor, dict[str, float]]:
     """Dispatch one structured objective. Architecture-neutral: the same call
-    serves causal and TwoTower logits. Returns ``(loss, detached metrics)``."""
+    serves causal and TwoTower logits. Returns ``(loss, detached metrics)``.
+
+    Every objective optionally composes with the target / non-target MSE locality
+    tethers (``config.non_target_tether`` / ``target_tether``), metered separately from the
+    objective and any barrier so locality never double-counts the target anchor.
+    """
     p = _prepare(logits, view, legal_action_ids, config)
     if config.name == "legal_set_ftpo":
         loss, metrics = _legal_set_ftpo(p, config)
@@ -316,7 +405,11 @@ def structured_decision_loss(
             ref_p = _prepare(reference_logits, view, legal_action_ids, config)
             ref_good_prob = ref_p.good_legal_prob.detach()
         loss, metrics = _tab_barrier(
-            p, config, critical_good_mask=critical_good_mask, reference_good_prob=ref_good_prob
+            p,
+            config,
+            critical_good_mask=critical_good_mask,
+            good_role_weights=good_role_weights,
+            reference_good_prob=ref_good_prob,
         )
     else:  # tbpo_inspired
         ref_legal = None
@@ -325,5 +418,11 @@ def structured_decision_loss(
         loss, metrics = _tbpo_inspired(
             p, config, reference_legal_probs=ref_legal, state_baseline=state_baseline
         )
+    if config.non_target_tether > 0 or config.target_tether > 0:
+        tether_loss, tether_metrics = _locality_tether(
+            logits, reference_logits, sorted(set(p.good) | set(p.bad)), config
+        )
+        loss = loss + tether_loss
+        metrics.update(tether_metrics)
     metrics["config_fingerprint_present"] = 1.0
     return loss, metrics
