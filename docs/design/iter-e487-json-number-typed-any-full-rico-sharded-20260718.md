@@ -51,6 +51,12 @@ contracts, eight generation steps, three attempts, and no fallback.
 | 17a | `[816,832)` | 16 | 1.0 | 1.0 | 0.8747 | 1.0 | 0.9948 | 0 / 0 / 0 |
 | 17b | `[832,848)` | 16 | 1.0 | 1.0 | 0.9148 | 1.0 | 0.9957 | 0 / 0 / 0 |
 | 17c | `[848,864)` | 16 | 1.0 | 1.0 | 0.8544 | 1.0 | 0.9918 | 0 / 0 / 0 |
+| 18a | `[864,880)` | 16 | 1.0 | 1.0 | 0.9127 | 1.0 | 0.9901 | 0 / 0 / 0 |
+| 18b | `[880,896)` | 16 | 1.0 | 1.0 | 0.8747 | 1.0 | 0.9957 | 0 / 0 / 0 |
+| 18c | `[896,912)` | 16 | 1.0 | 1.0 | 0.9199 | 1.0 | 0.9916 | 0 / 0 / 0 |
+| 18d | `[912,928)` | 16 | 1.0 | 1.0 | 0.8939 | 1.0 | 0.9946 | 0 / 0 / 0 |
+| 18e | `[928,944)` | 16 | 1.0 | 1.0 | 0.8666 | 1.0 | 0.9934 | 0 / 0 / 0 |
+| 18f | `[944,960)` | 16 | 1.0 | 1.0 | 0.9208 | 1.0 | 0.9940 | 0 / 0 / 0 |
 
 Shard 0 completed normally in about 177 seconds and is metric-identical to the
 corresponding E477 rows, with zero failures, fallback, or timeouts.
@@ -178,4 +184,28 @@ Shard 17c completed normally in about 77 seconds under the three-minute policy
 and is prediction-identical to the corresponding E477 rows, with structure
 0.8544, reward 0.9918, and zero failures, fallback, or timeouts.
 
-**Status:** 864/1500 rows complete. No merged or ship claim yet.
+Shard 18a completed normally in about 57 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.9127, reward 0.9901, and zero failures, fallback, or timeouts.
+
+Shard 18b completed normally in about 78 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.8747, reward 0.9957, and zero failures, fallback, or timeouts.
+
+Shard 18c completed normally in about 76 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.9199, reward 0.9916, and zero failures, fallback, or timeouts.
+
+Shard 18d completed normally in about 60 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.8939, reward 0.9946, and zero failures, fallback, or timeouts.
+
+Shard 18e completed normally in about 75 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.8666, reward 0.9934, and zero failures, fallback, or timeouts.
+
+Shard 18f completed normally in about 76 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.9208, reward 0.9940, and zero failures, fallback, or timeouts.
+
+**Status:** 960/1500 rows complete. No merged or ship claim yet.
