@@ -554,10 +554,29 @@
       "fallback_count": 0,
       "decode_timeout_count": 0,
       "completed_normally": true
+    },
+    {
+      "index": "16c",
+      "run_id": "e487-e396-json-number-typed-any-rico-shard16c-r1",
+      "eval_offset": 800,
+      "eval_end": 816,
+      "n": 16,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.844125,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9971875,
+      "failure_count": 0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "completed_normally": true,
+      "prediction_identical_to_e477": false,
+      "changed_prediction_count": 1,
+      "structural_similarity_delta_vs_e477": 0.004043750000000013
     }
   ],
   "coverage": {
-    "completed_n": 800,
+    "completed_n": 816,
     "total_n": 1500,
     "exact_contiguous": false
   },
