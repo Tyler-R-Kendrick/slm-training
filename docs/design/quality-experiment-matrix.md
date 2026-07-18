@@ -3036,6 +3036,12 @@ reliability counts remain zero. Accept the generalized constraint, but keep
 E479 authoritative pending fresh bounded and full-RICO evidence. See
 [`iter-e485-typed-any-schema-fix-20260718.md`](iter-e485-typed-any-schema-fix-20260718.md).
 
+E486 runs all four fresh bounded suites after both deterministic fixes.
+Metrics are identical to E476, AgentV passes 4/4, and failures/fallback/timeouts
+remain zero. Accept bounded evidence; fresh full RICO is still required and
+E479 remains authoritative. See
+[`iter-e486-json-number-typed-any-bounded-20260718.md`](iter-e486-json-number-typed-any-bounded-20260718.md).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
