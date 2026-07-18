@@ -745,6 +745,36 @@ adaptation, not a faithful reproduction of a generative EBM.
 
 ---
 
+## Semantic planning & valid-state learning (SPV0)
+
+**Fidelity label: adapted / adjacent.** SPV0 introduces a `SemanticPlanV1`
+contract that separates learned semantic hypotheses from compiler-owned legality.
+The contract is documented in [`semantic-planning-valid-state.md`](semantic-planning-valid-state.md)
+and the source manifest is [`src/slm_training/resources/autoresearch/semantic-planning-sources.json`](../../src/slm_training/resources/autoresearch/semantic-planning-sources.json).
+
+The plan IR borrows structured-prediction ideas from Pointer Networks, Abstract
+Syntax Networks, Set Transformer, DETR, Diffusion On Syntax Trees, Retrieve-and-
+Edit, Structured Prediction Energy Networks, Sequence-Level Knowledge
+Distillation, DAgger, CDC, Discrete Flow Matching, and FS-DFM. All are applied
+only as **soft** candidates, seeds, scorer features, or oracle-diagnostic
+controls; the compiler's exact legal action set remains the sole hard authority.
+No plan predictor, X22 change, energy model, or training run is added by SPV0-01.
+
+| Source | Fidelity | SPV0 use |
+| --- | --- | --- |
+| Pointer Networks | Adjacent | Binding pointer candidates |
+| Abstract Syntax Networks | Adapted | Factored topology/terminal plan IR |
+| Set Transformer | Adjacent | Set-structured plan factors |
+| DETR | Adjacent | Variable-cardinality role-slot matching |
+| Diffusion On Syntax Trees | Adjacent | Plan-conditioned topology edits |
+| Retrieve-and-Edit | Adapted | Retrieved prototype plans |
+| Structured Prediction Energy Networks | Adjacent | Global plan energy / ranker regret |
+| Sequence-Level Knowledge Distillation | Adapted | Dense teacher plan supervision |
+| DAgger | Adjacent | On-policy plan aggregation |
+| CDC | Adjacent | Constraint-aware plan localization |
+| Discrete Flow Matching | Adjacent | Plan-conditioned valid-edit trajectories |
+| FS-DFM | Adjacent | Few-step latency-sensitive plan editing |
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.

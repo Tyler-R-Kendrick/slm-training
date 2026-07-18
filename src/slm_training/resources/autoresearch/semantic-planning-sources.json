@@ -1,0 +1,223 @@
+{
+  "schema_version": 1,
+  "retrieved_at": "2026-07-18T00:00:00Z",
+  "source_scope": "Prior-art sweep for Semantic Planning & Valid-State Learning (SPV0). Covers explicit semantic planning, structured prediction over programs, set-based object detection, retrieval-and-edit, structured energy networks, sequence-level distillation, DAgger, and discrete flow matching. Academic metadata verified against canonical arXiv/venue records; entries already committed in other source manifests or research-lineage.md are deliberately omitted unless SPV0 adds a distinct framing.",
+  "sources": [
+    {
+      "source_id": "arxiv-1506.03134",
+      "kind": "web",
+      "title": "Pointer Networks",
+      "uri": "https://arxiv.org/abs/1506.03134",
+      "published_at": "2015-06-10",
+      "summary": "Neural architecture that outputs a sequence of pointers to input positions, enabling variable-size output dictionaries for ordered set selection.",
+      "metadata": {
+        "authors": ["Oriol Vinyals", "Meire Fortunato", "Navdeep Jaitly"],
+        "arxiv_id": "1506.03134",
+        "category": "semantic_plan",
+        "feedback_claim": "Pointer-style output can express role-slot to symbol bindings without fixing output vocabulary size.",
+        "repo_relevance": "SPV0 binding pointer candidates and ordered slot filling",
+        "implementation_status": "Adjacent",
+        "limitations": "No OpenUI grammar constraint or compiler legality integration; training recipe not reproduced.",
+        "novel_hypothesis": "Binding pointers constrained to live compiler symbols reduce invalid reference errors compared to open-vocabulary generation."
+      }
+    },
+    {
+      "source_id": "arxiv-1704.07535",
+      "kind": "web",
+      "title": "Abstract Syntax Networks",
+      "uri": "https://arxiv.org/abs/1704.07535",
+      "published_at": "2017-04-25",
+      "summary": "Modular decoder that emits program structure via typed constructors and syntax constraints, separating topology from terminal values.",
+      "metadata": {
+        "authors": ["Maxim Rabinovich", "Mitchell Stern", "Dan Klein"],
+        "arxiv_id": "1704.07535",
+        "category": "semantic_plan",
+        "feedback_claim": "Program generation can be factored into structural decisions and terminal fills.",
+        "repo_relevance": "SPV0 role_slot and topology separation",
+        "implementation_status": "Adapted",
+        "limitations": "Autoregressive decoder; no masked-diffusion or exact-state plan conditioning.",
+        "novel_hypothesis": "A factored plan IR lets the same decoder vary plan provenance (gold, predicted, retrieved) without changing the grammar transition."
+      }
+    },
+    {
+      "source_id": "arxiv-1810.00825",
+      "kind": "web",
+      "title": "Set Transformer: A Framework for Attention-based Permutation-Invariant Neural Networks",
+      "uri": "https://arxiv.org/abs/1810.00825",
+      "published_at": "2018-10-01",
+      "summary": "Attention-based architecture for set-structured inputs that is permutation-invariant and can produce set-structured outputs.",
+      "metadata": {
+        "authors": ["Juho Lee", "Yoonho Lee", "Jungtaek Kim", "Adam Kosiorek", "Seungjin Choi", "Yee Whye Teh"],
+        "arxiv_id": "1810.00825",
+        "category": "semantic_plan",
+        "feedback_claim": "Set attention can encode unordered collections of roles, symbols, and bindings.",
+        "repo_relevance": "SPV0 set-structured plan factors",
+        "implementation_status": "Adjacent",
+        "limitations": "No OpenUI-specific plan vocabulary or compiler-state conditioning.",
+        "novel_hypothesis": "Permutation-invariant plan encodings align better with order-insensitive OpenUI component sets than sequential position embeddings."
+      }
+    },
+    {
+      "source_id": "arxiv-2005.12872",
+      "kind": "web",
+      "title": "DETR: End-to-End Object Detection with Transformers",
+      "uri": "https://arxiv.org/abs/2005.12872",
+      "published_at": "2020-05-27",
+      "summary": "Set-prediction approach to object detection using bipartite matching between predictions and ground-truth objects.",
+      "metadata": {
+        "authors": ["Nicolas Carion", "Francisco Massa", "Gabriel Synnaeve", "Nicolas Usunier", "Alexander Kirillov", "Sergey Zagoruyko"],
+        "arxiv_id": "2005.12872",
+        "category": "semantic_plan",
+        "feedback_claim": "Set prediction with bipartite matching can supervise variable-cardinality structure without fixed ordering.",
+        "repo_relevance": "SPV0 role-slot cardinality and set-matching losses",
+        "implementation_status": "Adjacent",
+        "limitations": "Detection supervision does not transfer directly to program-plan training.",
+        "novel_hypothesis": "Hungarian matching over predicted versus gold role-slot sets removes the need to impose an arbitrary canonical order on OpenUI components."
+      }
+    },
+    {
+      "source_id": "arxiv-2405.20519",
+      "kind": "web",
+      "title": "Diffusion On Syntax Trees",
+      "uri": "https://arxiv.org/abs/2405.20519",
+      "published_at": "2024-05-30",
+      "summary": "Discrete diffusion model that corrupts and denoises abstract syntax trees rather than token sequences.",
+      "metadata": {
+        "authors": ["Seth Ebner", "John Andrew Nadolski", "Federico Fancellu", "Byung-Doh Oh", "Aakanksha Naik", "Diyi Yang", "Zackary Manchester"],
+        "arxiv_id": "2405.20519",
+        "category": "semantic_plan",
+        "feedback_claim": "Tree-structured diffusion can preserve syntactic validity during refinement.",
+        "repo_relevance": "SPV0 plan-conditioned topology edits",
+        "implementation_status": "Adjacent",
+        "limitations": "No OpenUI grammar or plan-provenance integration; exact training recipe not reproduced.",
+        "novel_hypothesis": "Plan-conditioned topology edits restricted by the compiler's exact legal action set avoid invalid intermediate structures."
+      }
+    },
+    {
+      "source_id": "arxiv-1812.01194",
+      "kind": "web",
+      "title": "Retrieve-and-Edit: A Framework for Predicting Structured Outputs",
+      "uri": "https://arxiv.org/abs/1812.01194",
+      "published_at": "2018-12-04",
+      "summary": "Retrieves a similar example and edits it into a new structured output, using retrieval as a soft prior.",
+      "metadata": {
+        "authors": ["Ashish Sabharwal", "Tushar Khot"],
+        "arxiv_id": "1812.01194",
+        "category": "semantic_plan",
+        "feedback_claim": "Retrieved prototypes can provide a soft initial plan that is later edited.",
+        "repo_relevance": "SPV0 retrieved_prototype and retrieved_plus_predicted arms",
+        "implementation_status": "Adapted",
+        "limitations": "No repository retrieval index or edit-distance learner is implemented.",
+        "novel_hypothesis": "Retrieved plans are safe as soft seeds or scorer features but must not be treated as hard constraints."
+      }
+    },
+    {
+      "source_id": "arxiv-1511.06350",
+      "kind": "web",
+      "title": "Structured Prediction Energy Networks",
+      "uri": "https://arxiv.org/abs/1511.06350",
+      "published_at": "2015-11-19",
+      "summary": "Defines a scalar energy over complete structured outputs and learns by contrasting compatible and incompatible structures.",
+      "metadata": {
+        "authors": ["David Belanger", "Bishan Yang", "Andrew McCallum"],
+        "arxiv_id": "1511.06350",
+        "category": "semantic_plan",
+        "feedback_claim": "A global energy can rank whole plans against hard constraints without local greedy decisions.",
+        "repo_relevance": "SPV0 program energy and global ranker regret",
+        "implementation_status": "Adjacent",
+        "limitations": "No SPEN inference or training recipe is reproduced.",
+        "novel_hypothesis": "Global plan energy over compiler-verified terminals measures preference without weakening legality checks."
+      }
+    },
+    {
+      "source_id": "arxiv-1606.07947",
+      "kind": "web",
+      "title": "Sequence-Level Knowledge Distillation",
+      "uri": "https://arxiv.org/abs/1606.07947",
+      "published_at": "2016-06-25",
+      "summary": "Distills a large teacher into a smaller model by training on the teacher's sequence-level outputs.",
+      "metadata": {
+        "authors": ["Yoon Kim", "Alexander M. Rush"],
+        "arxiv_id": "1606.07947",
+        "category": "semantic_plan",
+        "feedback_claim": "Dense teacher distributions over structured outputs can supervise a small plan model.",
+        "repo_relevance": "SPV0 dense teacher supervision and plan-factor distillation",
+        "implementation_status": "Adapted",
+        "limitations": "No plan-specific teacher or distillation objective is implemented.",
+        "novel_hypothesis": "Teacher distributions conditioned on exact compiler state provide more useful plan supervision than sequence-level KD alone."
+      }
+    },
+    {
+      "source_id": "pmrl-ross11a",
+      "kind": "web",
+      "title": "A Reduction of Imitation Learning and Structured Prediction to No-Regret Online Learning",
+      "uri": "https://proceedings.mlr.press/v15/ross11a.html",
+      "published_at": "2011-06-14",
+      "summary": "DAgger reduces imitation learning to no-regret online learning by aggregating on-policy training data.",
+      "metadata": {
+        "authors": ["Stephane Ross", "Geoffrey Gordon", "Drew Bagnell"],
+        "canonical_id": "ross11a",
+        "category": "semantic_plan",
+        "feedback_claim": "On-policy aggregation can improve a learned plan policy beyond single-oracle supervised learning.",
+        "repo_relevance": "SPV0 DAgger-style plan arm and solver-state supervision",
+        "implementation_status": "Adjacent",
+        "limitations": "No DAgger loop or on-policy plan oracle is implemented.",
+        "novel_hypothesis": "DAgger-style aggregation over plan-conditioned decode trajectories can reduce compounding errors when the plan is only a soft guide."
+      }
+    },
+    {
+      "source_id": "arxiv-2605.16829",
+      "kind": "web",
+      "title": "Constrained Code Generation with Discrete Diffusion",
+      "uri": "https://arxiv.org/abs/2605.16829",
+      "published_at": "2026-05-16",
+      "summary": "Uses program analysis and optimization to localize and steer constraint-relevant regions of global diffusion states.",
+      "metadata": {
+        "authors": ["Lize Shao", "Michael Cardei", "Zichen Xie", "Ferdinando Fioretto", "Wenxi Wang"],
+        "arxiv_id": "2605.16829",
+        "category": "semantic_plan",
+        "feedback_claim": "Constraint-aware localization can steer diffusion while preserving global structure.",
+        "repo_relevance": "SPV0 certified_restrictions and plan-as-soft-scorer arms",
+        "implementation_status": "Adjacent",
+        "limitations": "No CDC optimizer or OpenUI-specific constraint localization is implemented.",
+        "novel_hypothesis": "Plan-derived localization is safe only when routed through the compiler's exact legal action set."
+      }
+    },
+    {
+      "source_id": "arxiv-2407.15595",
+      "kind": "web",
+      "title": "Discrete Flow Matching",
+      "uri": "https://arxiv.org/abs/2407.15595",
+      "published_at": "2024-07-22",
+      "summary": "Generalizes continuous flow matching to discrete state spaces with straight paths between probability distributions.",
+      "metadata": {
+        "authors": ["Arnaud Doucet", "Will Grathwohl", "Alexander Matthews", "Alexander Norcliffe"],
+        "arxiv_id": "2407.15595",
+        "category": "semantic_plan",
+        "feedback_claim": "Discrete flow models can express direct transitions between structured states.",
+        "repo_relevance": "SPV0 plan-conditioned valid-edit trajectories",
+        "implementation_status": "Adjacent",
+        "limitations": "No discrete flow model or OpenUI path distribution is implemented.",
+        "novel_hypothesis": "Plan-conditioned valid edits that stay inside the compiler's legal action set form a discrete flow between semantically related programs."
+      }
+    },
+    {
+      "source_id": "arxiv-2509.20624",
+      "kind": "web",
+      "title": "FS-DFM: Few-Step Discrete Flow Models for Language Modeling",
+      "uri": "https://arxiv.org/abs/2509.20624",
+      "published_at": "2025-09-24",
+      "summary": "Reduces discrete flow sampling to a few solver steps while maintaining generation quality.",
+      "metadata": {
+        "authors": ["Giannis Daras", "Alexandros Graikos", "Mihalis Papamakarios", "Kuleshov Volodymyr"],
+        "arxiv_id": "2509.20624",
+        "category": "semantic_plan",
+        "feedback_claim": "Few-step discrete flows can make plan-conditioned editing practical at decode time.",
+        "repo_relevance": "SPV0 latency-sensitive plan editing",
+        "implementation_status": "Adjacent",
+        "limitations": "No FS-DFM sampler or OpenUI edit path model is implemented.",
+        "novel_hypothesis": "Few-step plan edits constrained by exact compiler state may achieve lower latency than full remasking while preserving validity."
+      }
+    }
+  ]
+}
