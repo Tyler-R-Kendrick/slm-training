@@ -13,6 +13,16 @@ from slm_training.dsl.solver.state import (
     SolverBounds,
     SupportVerdict,
 )
+from slm_training.dsl.solver.closure import (
+    CertifiedDeduction,
+    ClosureCounters,
+    ClosureResult,
+    EnumerativeSupportProvider,
+    SupportProvider,
+    WitnessRef,
+    default_query_order,
+    exact_closure,
+)
 from slm_training.dsl.solver.support import (
     EnumerativeSupportOracle,
     ExpandStatus,
@@ -31,8 +41,12 @@ from slm_training.dsl.solver.support import (
 )
 
 __all__ = [
+    "CertifiedDeduction",
+    "ClosureCounters",
+    "ClosureResult",
     "DomainValue",
     "EnumerativeSupportOracle",
+    "EnumerativeSupportProvider",
     "ExpandStatus",
     "ExpandStep",
     "FiniteDomainState",
@@ -45,6 +59,7 @@ __all__ = [
     "SolverBounds",
     "SupportCertificate",
     "SupportOracle",
+    "SupportProvider",
     "SupportQuery",
     "SupportResult",
     "SupportVerdict",
@@ -52,6 +67,9 @@ __all__ = [
     "Verifier",
     "VerifyOutcome",
     "VerifyStatus",
+    "WitnessRef",
     "completion_forest_state",
+    "default_query_order",
+    "exact_closure",
     "replay_support_certificate",
 ]
