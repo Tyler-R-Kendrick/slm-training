@@ -2604,7 +2604,9 @@ reused for rows 336–384 at 0.6401/0.8993. Rows 384–480 add
 structure/recall 0.6440/0.8490 with three low-recall failures. Rows 480–576
 score 0.6429/0.8455 with three low-recall failures; rows 576–672 score
 0.6371/0.8698 with one. Rows 672–768 score 0.6432/0.8707 with no failures.
-Coverage is 768/1500; this remains a partial diagnostic, not a ship claim. See
+Rows 768–864 score 0.6310/0.9010 with one low-recall failure. Coverage is
+extended through row 960 at 0.6402/0.8212 with three low-recall failures.
+Coverage is 960/1500; this remains a partial diagnostic, not a ship claim. See
 [`iter-e441-e396-full-rico-sharded-20260718.md`](iter-e441-e396-full-rico-sharded-20260718.md).
 
 Verifier-guided repair status from
