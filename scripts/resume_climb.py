@@ -42,7 +42,10 @@ def main(argv: list[str] | None = None) -> int:
     from slm_training.harnesses.distill.trace_store import TraceStore, checkpoint_sha
     from slm_training.harnesses.experiments.promotion import register_promoted_checkpoint
     from slm_training.harnesses.model_build import ModelBuildConfig, evaluate_suites
-    from slm_training.harnesses.model_build.ship_gates import evaluate_ship_gates
+    from slm_training.harnesses.model_build.ship_gates import (
+        DEFAULT_SHIP_GATES,
+        evaluate_ship_gates,
+    )
     from slm_training.models.twotower import TwoTowerModel
     from slm_training.harnesses.rl.trajectory import TrajectoryRLConfig, train_trajectory_rl
 
@@ -110,13 +113,15 @@ def main(argv: list[str] | None = None) -> int:
         device=args.device,
         context_backend="scratch",
     )
+    # Promotion needs the full gate policy: a partial board can only produce
+    # missing_suite failures, so evaluate every policy suite before gating.
     board = evaluate_suites(
         eval_cfg,
-        [args.suite, "smoke"] if args.suite != "smoke" else ["smoke"],
+        sorted(DEFAULT_SHIP_GATES),
         checkpoint=model_out,
         write_gates=True,
     )
-    gates = evaluate_ship_gates(board)
+    gates = evaluate_ship_gates(board["suites"])
     if gates.get("pass"):
         register_promoted_checkpoint(
             out / "checkpoints",

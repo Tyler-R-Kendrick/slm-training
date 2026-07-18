@@ -367,7 +367,7 @@ def _report_from_scoreboard(
     for key in (
         "parse_rate",
         "placeholder_fidelity",
-        "request_coverage",
+        "contract_recall",
         "structural_similarity",
         "reward_score",
     ):
@@ -592,7 +592,7 @@ def cmd_promote(args: argparse.Namespace) -> int:
         for metric in (
             "parse_rate",
             "placeholder_fidelity",
-            "request_coverage",
+            "contract_recall",
             "structural_similarity",
         ):
             if metric not in candidate.metrics:
