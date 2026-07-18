@@ -2566,6 +2566,17 @@ E430 closes that scalar test. Weight 1 yields recall 0.7326 and structure
 no useful scalar interpolation. The next lever must supervise hierarchy
 separately rather than retune plan decode weight.
 
+E431–E433 test an auxiliary-only objective lever. E431 resumes E396 for 19
+batches while freezing every base tensor; only the four active component-plan
+and slot-component tensors change. E432 passes bounded AgentV 4/4 and improves
+OOD recall to 0.7292, but held-out meaningful/structure/recall regress to
+0.6/0.5933/0.4833. On the matched RICO rows 336–384, E433 reaches meaningful
+0.9792, structure 0.6211, and recall 0.6007 versus E396's
+1.0/0.6401/0.8993. Reject auxiliary-only continuation: base-weight isolation
+is proven, but the active heads themselves overfit. No full RICO, sync, or
+promotion. See
+[`iter-e431-e433-auxiliary-only-continuation-20260718.md`](iter-e431-e433-auxiliary-only-continuation-20260718.md).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

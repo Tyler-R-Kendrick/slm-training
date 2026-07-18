@@ -107,6 +107,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Skip writing last_full_state.pt (serving last.pt still written).",
     )
     parser.add_argument(
+        "--auxiliary-only",
+        action="store_true",
+        help="Freeze base model parameters and continue active auxiliary heads only.",
+    )
+    parser.add_argument(
         "--mixture-manifest",
         type=Path,
         default=None,
@@ -938,6 +943,7 @@ def main(argv: list[str] | None = None) -> int:
             resume_from=args.resume_from,
             init_from=args.init_from,
             full_state_checkpoint=not bool(args.no_full_state_checkpoint),
+            auxiliary_only=bool(args.auxiliary_only),
             mixture_manifest=args.mixture_manifest,
             mixture_min_quality_score=args.mixture_min_quality_score,
             mixture_sampling_policy=args.mixture_sampling_policy,

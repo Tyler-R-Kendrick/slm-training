@@ -914,6 +914,23 @@ class TwoTowerModel(nn.Module):
             if grouped.get(owner)
         ]
 
+    def set_auxiliary_only_training(self) -> None:
+        """Freeze the core while retaining active auxiliary heads."""
+        auxiliary = (
+            "length_head.",
+            "component_inventory_head.",
+            "component_plan_head.",
+            "slot_component_head.",
+            "component_edge_head.",
+            "binder_component_plan_head.",
+            "binder_topology_head.",
+            "binder_arity_head.",
+            "trust_gate.",
+            "survival_head.",
+        )
+        for name, parameter in self.named_parameters():
+            parameter.requires_grad_(name.startswith(auxiliary))
+
     def _count_context_tokens(self, text: str) -> int:
         """Context token count under the active backend (capped at max_prompt_len)."""
         if is_hf_context(self.context):

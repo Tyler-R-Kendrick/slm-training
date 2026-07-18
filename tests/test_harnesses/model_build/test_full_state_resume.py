@@ -175,6 +175,53 @@ def test_full_state_resume_honors_configured_learning_rate(
     )
 
 
+def test_auxiliary_only_resume_preserves_base_weights(
+    train_dir: Path, tmp_path: Path
+) -> None:
+    source = train(
+        _cfg(
+            train_dir,
+            tmp_path,
+            "source_aux",
+            2,
+            output_tokenizer="choice",
+            component_plan_loss_weight=1.0,
+            slot_component_loss_weight=1.0,
+        )
+    )
+    source_state = (
+        tmp_path / "runs" / "source_aux" / "checkpoints" / "last_full_state.pt"
+    )
+    resumed = train(
+        _cfg(
+            train_dir,
+            tmp_path,
+            "resumed_aux",
+            3,
+            output_tokenizer="choice",
+            component_plan_loss_weight=1.0,
+            slot_component_loss_weight=1.0,
+            auxiliary_only=True,
+            resume_from=source_state,
+        )
+    )
+
+    before = TwoTowerModel.from_checkpoint(source["checkpoint"]).state_dict()
+    after = TwoTowerModel.from_checkpoint(resumed["checkpoint"]).state_dict()
+    auxiliary = ("component_plan_head.", "slot_component_head.")
+    assert any(
+        not torch.equal(before[name], after[name])
+        for name in before
+        if name.startswith(auxiliary)
+    )
+    assert all(
+        torch.equal(before[name], after[name])
+        for name in before
+        if not name.startswith(auxiliary)
+    )
+    assert resumed["recipe"]["auxiliary_only"] is True
+
+
 def test_resume_rejects_different_corpus(train_dir: Path, tmp_path: Path) -> None:
     train(_cfg(train_dir, tmp_path, "orig", 2))
     full_state = tmp_path / "runs" / "orig" / "checkpoints" / "last_full_state.pt"

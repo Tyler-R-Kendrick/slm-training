@@ -94,6 +94,8 @@ class ModelBuildConfig:
     init_from: Path | None = None
     # Write full training state (optimizer/RNG/sampler) alongside last.pt.
     full_state_checkpoint: bool = True
+    # Continue only active auxiliary heads; keep core model weights frozen.
+    auxiliary_only: bool = False
     # Comma-separated suites for mid-train scoreboard (overrides single eval_suite when set).
     eval_suites: str = ""
     # Cap rico_held size during matrix / CPU evals (None = full suite).

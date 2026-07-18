@@ -333,6 +333,13 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 pending.append(batch)
         resumed_from = str(resume_path)
 
+    if bool(getattr(config, "auxiliary_only", False)):
+        if not hasattr(plugin, "set_auxiliary_only_training"):
+            raise ValueError(f"{config.model_name} does not support auxiliary_only")
+        plugin.set_auxiliary_only_training()
+        if not any(parameter.requires_grad for parameter in plugin.parameters()):
+            raise ValueError("auxiliary_only requires at least one active auxiliary head")
+
     def _count_tokens(batch: list) -> None:
         nonlocal seen_prompt_tokens, seen_target_tokens
         if hasattr(plugin, "count_batch_tokens"):
@@ -561,9 +568,17 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                         )
                         loss_t = raw_loss_t / grad_accum
                 with timed("backward"):
-                    scaler.scale(loss_t).backward()
-                    if auxiliary_loss_t is not None:
+                    backward_ran = False
+                    if loss_t.requires_grad:
+                        scaler.scale(loss_t).backward()
+                        backward_ran = True
+                    if auxiliary_loss_t is not None and auxiliary_loss_t.requires_grad:
                         scaler.scale(auxiliary_loss_t / grad_accum).backward()
+                        backward_ran = True
+                    if not backward_ran:
+                        raise ValueError(
+                            "training batch produced no gradient for trainable parameters"
+                        )
                 _count_tokens(batch)
                 reported_loss_t = raw_loss_t.detach()
                 if auxiliary_loss_t is not None:
@@ -750,6 +765,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         },
         "recipe": {
             "learning_rate": config.lr,
+            "auxiliary_only": bool(getattr(config, "auxiliary_only", False)),
             "seed": config.seed,
             "steps_requested": config.steps,
             "batch_size": config.batch_size,
