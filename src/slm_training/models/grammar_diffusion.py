@@ -32,6 +32,7 @@ from slm_training.dsl.solver.topology_solver import (
     TopologyAdapterConfig,
     topology_solver_prune,
 )
+from slm_training.dsl.pack import PackSlotUnavailable, get_pack
 
 
 def _load_production_codec(
@@ -1618,6 +1619,32 @@ class GrammarDiffusionModel(nn.Module):
                     )
                 ),
             )
+            use_capsules = bool(
+                getattr(self.config, "topology_capsule_solver", False)
+            )
+            capsule_available = False
+            if use_capsules:
+                try:
+                    pack = get_pack(getattr(self.config, "grammar_dsl", None))
+                    pack.require("capsule_problem_builder")
+                    pack.require("capsule_summary_extractor")
+                    pack.require("capsule_materializer")
+                    pack.require("capsule_global_oracle")
+                    capsule_available = True
+                except (PackSlotUnavailable, KeyError):
+                    pass
+
+            if use_capsules and capsule_available:
+                # VSS3-03 future work: drive solve_capsule_graph with topology
+                # capsule hooks.  Until those pack slots are implemented, fall
+                # back to whole-tree exact closure and record the honest gap.
+                trace = {
+                    "enabled": True,
+                    "capsule_mode": True,
+                    "capsule_fallback": "pack_capsule_slots_unimplemented",
+                }
+                # Fall through to the whole-tree prune below.
+
             survivors, result = topology_solver_prune(
                 root,
                 self.codec,
@@ -1635,6 +1662,8 @@ class GrammarDiffusionModel(nn.Module):
             )
             trace = {
                 "enabled": True,
+                "capsule_mode": use_capsules,
+                "capsule_available": capsule_available,
                 "reached_fixed_point": result.reached_fixed_point,
                 "stop_reason": result.stop_reason,
                 "candidates_removed": result.counters.candidates_removed,
@@ -1642,6 +1671,8 @@ class GrammarDiffusionModel(nn.Module):
                 "verifier_calls": result.counters.verifier_calls,
                 "survivor_count": len(survivors),
             }
+            if use_capsules and not capsule_available:
+                trace["capsule_fallback"] = "pack_capsule_slots_unimplemented"
             return survivors, trace
         except Exception as exc:  # noqa: BLE001
             return None, {"enabled": True, "error": str(exc)[:200]}
