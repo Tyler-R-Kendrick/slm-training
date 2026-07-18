@@ -198,3 +198,60 @@ def test_stage_b_not_triggered_when_additive_holds() -> None:
         metrics={"meaningful_program_rate": 0.60},
     )
     assert not stage_a_needs_stage_b((baseline,) + tuple(one_offs) + (all_off,))
+
+
+def test_checkpoint_sha256_mismatch_marks_all_arms_incompatible(
+    base_config: ModelBuildConfig, tmp_path: Path
+) -> None:
+    from slm_training.harnesses.eval.ablate_decode_scaffolding import run_stage_a
+
+    checkpoint = tmp_path / "fake.pt"
+    checkpoint.write_bytes(b"not the real checkpoint")
+    report = run_stage_a(
+        base_config,
+        checkpoint_id="fake",
+        checkpoint_sha256="0" * 64,
+        checkpoint_path=checkpoint,
+        output_codec="choice",
+    )
+    assert all(not a.compatible for a in report.arms)
+    assert any("sha256 mismatch" in (a.incompatible_reason or "") for a in report.arms)
+
+
+def test_missing_checkpoint_marks_all_arms_incompatible(
+    base_config: ModelBuildConfig, tmp_path: Path
+) -> None:
+    from slm_training.harnesses.eval.ablate_decode_scaffolding import run_stage_a
+
+    missing = tmp_path / "missing.pt"
+    report = run_stage_a(
+        base_config,
+        checkpoint_id="missing",
+        checkpoint_sha256="0" * 64,
+        checkpoint_path=missing,
+        output_codec="choice",
+    )
+    assert all(not a.compatible for a in report.arms)
+    assert any("not found" in (a.incompatible_reason or "") for a in report.arms)
+
+
+def test_verify_checkpoint_matching_sha256(tmp_path: Path) -> None:
+    import hashlib
+
+    from slm_training.harnesses.eval.ablate_decode_scaffolding import _verify_checkpoint
+
+    checkpoint = tmp_path / "fake.pt"
+    checkpoint.write_bytes(b"good checkpoint bytes")
+    sha = hashlib.sha256(b"good checkpoint bytes").hexdigest()
+    ok, reason = _verify_checkpoint(checkpoint, sha)
+    assert ok
+    assert reason is None
+
+
+def test_verify_checkpoint_missing_file(tmp_path: Path) -> None:
+    from slm_training.harnesses.eval.ablate_decode_scaffolding import _verify_checkpoint
+
+    missing = tmp_path / "missing.pt"
+    ok, reason = _verify_checkpoint(missing, "0" * 64)
+    assert not ok
+    assert "not found" in (reason or "")

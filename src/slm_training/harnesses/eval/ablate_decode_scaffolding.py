@@ -257,6 +257,35 @@ def resolve_arm_config(
     return config, path, True, None
 
 
+def _verify_checkpoint(
+    checkpoint_path: Path,
+    expected_sha256: str | None,
+) -> tuple[bool, str | None]:
+    """Fail-closed checkpoint provenance check.
+
+    Returns (ok, reason).  When ``expected_sha256`` is None the check is a
+    warning-level skip; when it is provided and does not match, the arm is
+    refused.
+    """
+    import hashlib
+
+    if expected_sha256 is None:
+        return True, "no expected sha256 provided; skipping hash verification"
+    if not checkpoint_path.exists():
+        return False, f"checkpoint not found: {checkpoint_path}"
+    sha = hashlib.sha256()
+    with checkpoint_path.open("rb") as f:
+        for chunk in iter(lambda: f.read(8192), b""):
+            sha.update(chunk)
+    observed = sha.hexdigest()
+    if observed.lower() != expected_sha256.lower():
+        return (
+            False,
+            f"checkpoint sha256 mismatch: expected {expected_sha256}, got {observed}",
+        )
+    return True, None
+
+
 def _empty_metrics() -> dict[str, Any]:
     return {
         "meaningful_program_rate": math.nan,
@@ -362,6 +391,36 @@ def run_stage_a(
     """Run Stage A of the SDE0-01 factorial."""
     arms = build_stage_a_arms()
     results: list[ArmResult] = []
+
+    # Fail-closed provenance check before any arm runs.
+    if checkpoint_path is not None:
+        ok, reason = _verify_checkpoint(checkpoint_path, checkpoint_sha256)
+        if not ok:
+            for arm in arms:
+                results.append(
+                    ArmResult(
+                        arm_id=arm.arm_id,
+                        factors=arm.factors,
+                        decode_path_id=arm.decode_path_id,
+                        best_of_n=arm.best_of_n,
+                        compatible=False,
+                        incompatible_reason=reason,
+                        notes=("provenance failure",),
+                    )
+                )
+            run_id = _hash_run_id(("sde0-01", checkpoint_id, output_codec, "provenance_failure"))
+            return AblateReport(
+                run_id=run_id,
+                version="sde0-01-v1",
+                timestamp=_utc_now(),
+                checkpoint_id=checkpoint_id,
+                checkpoint_sha256=checkpoint_sha256,
+                checkpoint_remote_uri=checkpoint_remote_uri,
+                suites=suites,
+                stage="A",
+                arms=tuple(results),
+            )
+
     for arm in arms:
         results.append(
             run_arm(
