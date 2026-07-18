@@ -1116,11 +1116,36 @@ full suites) is still required, and E241/E242's conflict machinery has not been
 exercised outside unit/integration tests because greedy decode never stalls on
 this checkpoint.
 
+## LDI campaign index (local decision interventions)
+
+The **LDI** campaign is the local-decision-intervention line of work. Its canonical
+architecture/research contract, invariants, named owners, and the 42-source manifest
+are in [`local-decision-interventions.md`](local-decision-interventions.md). This
+index is a namespace pointer, not a new set of rows: it claims **no** unrun row and
+allocates **no** E ID.
+
+Measured record (authoritative): the **V10 exact-state local preference** rows
+E248-E254 (below) and the measured **E265-E286 local-preference ledger** recorded in
+this matrix and the per-run `iter-e2*.md` docs (broad/guarded FTPO, reference
+tethers, balanced sampling). The chain is negative — E249 and E252 are rejected
+(local metrics moved, semantic quality regressed), and no LDI intervention has
+cleared the unchanged five-suite ship gates or been promoted. Current blocker:
+**stable state support does not imply objective/action-partition support**; exact
+state identity does not prove the good/bad action partition is verifier-supported.
+`DecisionEventV2` action-verdict tables (LDI0-02) target this gap.
+
+**E-ID allocation rule.** New LDI experiments take a globally unique E ID from the
+existing allocation process; the `LDI` name is prose/config only and reserves no ID.
+As of 2026-07-17 the highest allocated ID is **E291** (B1/B3 tracks; see the
+[`README.md`](../../README.md) run ledger), and E248-E291 plus the E263/E264
+local-preference rows are consumed. Do not assume "the next number after E286" is
+free — the next free ID is **≥ E292**.
+
 ## V10 exact-state local preference (E248 control measured)
 
-The full 25-paper audit, source manifest, objective definition, and honesty boundary
-are in [`local-decision-interventions.md`](local-decision-interventions.md). V10
-reuses the existing preference harness and append-only decode traces. It does not
+The full source audit (34 works), source manifest, objective definition, and honesty
+boundary are in [`local-decision-interventions.md`](local-decision-interventions.md).
+V10 reuses the existing preference harness and append-only decode traces. It does not
 introduce an adapter/SAE trainer and does not claim that a local loss produces a
 local parameter update.
 

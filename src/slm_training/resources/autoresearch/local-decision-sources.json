@@ -1,8 +1,17 @@
 {
   "schema_version": 1,
   "retrieved_at": "2026-07-16T00:00:00Z",
-  "source_scope": "34 distinct academic works and 8 implementation/documentation sources. Twenty-five works and all 8 implementation sources were cited by public ChatGPT share 6a593158-85c4-83ea-80b1-b6fb893b26bc; nine further works (LoRA, AdaLoRA, Gradient Surgery/PCGrad, Multi-Task Learning as Multi-Objective Optimization/MGDA, PICARD, Grammar-Aligned Decoding, Min-p sampling, DeepSeekMath/GRPO, and TAB-PO) were added by LDI0-01 as required prior-art coverage. Canonical paper metadata was verified against arXiv or OpenReview; alternate URLs from the share are preserved in metadata.",
+  "source_scope": "All 34 distinct academic works and 8 implementation/documentation sources: the 25 works cited by public ChatGPT share 6a593158-85c4-83ea-80b1-b6fb893b26bc plus 9 works added for the LDI0-01 architecture contract (SLM-114) covering multi-objective/gradient-conflict optimization, PEFT actuators, constrained decoding, and token-critical preference lineage. Canonical paper metadata was verified against arXiv (original 25 on 2026-07-16; the 9 additions on 2026-07-17); alternate URLs from the share are preserved in metadata.",
   "sources": [
+    {
+      "source_id": "arxiv-1810.04650",
+      "kind": "web",
+      "title": "Multi-Task Learning as Multi-Objective Optimization",
+      "uri": "https://arxiv.org/abs/1810.04650",
+      "published_at": "2018-10-10",
+      "summary": "Frames multi-task learning as multi-objective optimization and finds a Pareto-stationary descent direction with a multiple-gradient descent algorithm.",
+      "metadata": {"authors": ["Ozan Sener", "Vladlen Koltun"], "category": "objective_geometry", "local_decision_takeaway": "Locality preservation and semantic improvement are competing objectives to be measured, not blindly summed.", "repo_relevance": "Frames the E249-E284 objective/action-partition blocker", "implementation_status": "Adjacent", "limitations": "No MGDA solver is implemented; the TwoTower loss stays scalarized."}
+    },
     {
       "source_id": "arxiv-1908.04319",
       "kind": "web",
@@ -11,6 +20,42 @@
       "published_at": "2019-08-12",
       "summary": "Penalizes undesirable generations directly, including repetitive or otherwise disfavored tokens.",
       "metadata": {"authors": ["Sean Welleck", "Ilia Kulikov", "Stephen Roller", "Emily Dinan", "Kyunghyun Cho", "Jason Weston"], "category": "local_preference", "local_decision_takeaway": "Use bad-token unlikelihood as the simplest localized control.", "repo_relevance": "E250 bad-token control", "implementation_status": "Adapted", "limitations": "The paper studies autoregressive text, not masked OpenUI decisions."}
+    },
+    {
+      "source_id": "arxiv-2001.06782",
+      "kind": "web",
+      "title": "Gradient Surgery for Multi-Task Learning",
+      "uri": "https://arxiv.org/abs/2001.06782",
+      "published_at": "2020-01-19",
+      "summary": "Introduces PCGrad, which reduces destructive interference by projecting each conflicting task gradient onto the normal plane of the others.",
+      "metadata": {"authors": ["Tianhe Yu", "Saurabh Kumar", "Abhishek Gupta", "Sergey Levine", "Karol Hausman", "Chelsea Finn"], "category": "objective_geometry", "local_decision_takeaway": "Good/bad and locality/quality objectives can conflict; measure gradient geometry instead of assuming alignment.", "repo_relevance": "Diagnostic lens for the E249-E284 objective-support blocker", "implementation_status": "Adjacent", "limitations": "No gradient-surgery optimizer is implemented."}
+    },
+    {
+      "source_id": "arxiv-2106.09685",
+      "kind": "web",
+      "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+      "uri": "https://arxiv.org/abs/2106.09685",
+      "published_at": "2021-06-17",
+      "summary": "Freezes pretrained weights and injects trainable low-rank update matrices for parameter-efficient adaptation.",
+      "metadata": {"authors": ["Edward J. Hu", "Yelong Shen", "Phillip Wallis", "Zeyuan Allen-Zhu", "Yuanzhi Li", "Shean Wang", "Lu Wang", "Weizhu Chen"], "category": "adapter_actuator", "local_decision_takeaway": "A removable low-rank actuator is a later intervention choice, separate from the DecisionEventV2 objective.", "repo_relevance": "Removable causal adapter reused via the existing PEFT path (LDI2 TwoTower delta)", "implementation_status": "Adjacent", "limitations": "The first LDI actuator updates existing TwoTower parameters, not a LoRA adapter."}
+    },
+    {
+      "source_id": "arxiv-2109.05093",
+      "kind": "web",
+      "title": "PICARD: Parsing Incrementally for Constrained Auto-Regressive Decoding from Language Models",
+      "uri": "https://arxiv.org/abs/2109.05093",
+      "published_at": "2021-09-10",
+      "summary": "Constrains autoregressive decoding by incrementally parsing partial outputs and rejecting continuations that cannot complete a valid parse.",
+      "metadata": {"authors": ["Torsten Scholak", "Nathan Schucher", "Dzmitry Bahdanau"], "category": "constrained_decoding", "local_decision_takeaway": "Deterministic constrained decoding is retained; interventions reduce error mass on top of it, never replace it.", "repo_relevance": "Prior art for invariant 4 (hard grammar/compiler constraints stay deployed)", "implementation_status": "Adjacent", "limitations": "OpenUI uses its own incremental compiler forest, not PICARD's SQL parser."}
+    },
+    {
+      "source_id": "arxiv-2303.10512",
+      "kind": "web",
+      "title": "AdaLoRA: Adaptive Budget Allocation for Parameter-Efficient Fine-Tuning",
+      "uri": "https://arxiv.org/abs/2303.10512",
+      "published_at": "2023-03-18",
+      "summary": "Allocates the low-rank adaptation budget adaptively across weight matrices using importance-scored singular-value pruning.",
+      "metadata": {"authors": ["Qingru Zhang", "Minshuo Chen", "Alexander Bukharin", "Nikos Karampatziakis", "Pengcheng He", "Yu Cheng", "Weizhu Chen", "Tuo Zhao"], "category": "adapter_actuator", "local_decision_takeaway": "Rank budgeting is an actuator hyperparameter, not an event schema.", "repo_relevance": "Deferred adaptive-rank actuator ablation", "implementation_status": "Adjacent", "limitations": "No adaptive-rank adapter is introduced."}
     },
     {
       "source_id": "arxiv-2305.18290",
@@ -29,6 +74,15 @@
       "published_at": "2023-09-15",
       "summary": "Uses sparse autoencoders to decompose polysemantic language-model activations into interpretable features.",
       "metadata": {"authors": ["Hoagy Cunningham", "Aidan Ewart", "Logan Riggs", "Robert Huben", "Lee Sharkey"], "category": "representation_intervention", "local_decision_takeaway": "SAEs may diagnose states but should not replace explicit verifier evidence.", "repo_relevance": "Deferred structural-slop forensics", "implementation_status": "Adjacent", "limitations": "No SAE is trained or used as an oracle here."}
+    },
+    {
+      "source_id": "arxiv-2402.03300",
+      "kind": "web",
+      "title": "DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models",
+      "uri": "https://arxiv.org/abs/2402.03300",
+      "published_at": "2024-02-05",
+      "summary": "Introduces Group Relative Policy Optimization (GRPO) and scales verifiable-reward reinforcement learning for mathematical reasoning.",
+      "metadata": {"authors": ["Zhihong Shao", "Peiyi Wang", "Qihao Zhu", "Runxin Xu", "Junxiao Song", "Xiao Bi", "Haowei Zhang", "Mingchuan Zhang", "Y. K. Li", "Y. Wu", "Daya Guo"], "category": "verifiable_training", "local_decision_takeaway": "Group-relative verifiable RL follows local correction and an explicit readiness gate; it is not a first LDI step.", "repo_relevance": "Deferred RLVR stage kept behind the RL-readiness gate", "implementation_status": "Adjacent", "limitations": "No GRPO/RL loop is implemented and no reasoning claim is made."}
     },
     {
       "source_id": "arxiv-2402.09353",
@@ -67,6 +121,15 @@
       "metadata": {"authors": ["Yongcheng Zeng", "Guoqing Liu", "Weiyu Ma", "Ning Yang", "Haifeng Zhang", "Jun Wang"], "category": "local_preference", "local_decision_takeaway": "Train on the exact decision position rather than an entire generated program.", "repo_relevance": "DecisionEventV1 and E251-E254", "implementation_status": "Adapted", "limitations": "OpenUI decisions are masked-token states rather than autoregressive response tokens."}
     },
     {
+      "source_id": "arxiv-2405.21047",
+      "kind": "web",
+      "title": "Grammar-Aligned Decoding",
+      "uri": "https://arxiv.org/abs/2405.21047",
+      "published_at": "2024-05-31",
+      "summary": "Shows greedy grammar-constrained decoding is distributionally biased and corrects it with an adaptive sampling (ASAp) resampling scheme.",
+      "metadata": {"authors": ["Kanghee Park", "Jiayu Wang", "Taylor Berg-Kirkpatrick", "Nadia Polikarpova", "Loris D'Antoni"], "category": "constrained_decoding", "local_decision_takeaway": "Grammar alignment corrects the distribution but never itself creates semantic preference labels; constraint shadows stay legality-only evidence.", "repo_relevance": "Grounds invariant 2 (constraint shadows certify legality, not preference)", "implementation_status": "Adjacent", "limitations": "No ASAp resampling is implemented."}
+    },
+    {
       "source_id": "arxiv-2406.04093",
       "kind": "web",
       "title": "Scaling and Evaluating Sparse Autoencoders",
@@ -74,6 +137,15 @@
       "published_at": "2024-06-06",
       "summary": "Studies scaling laws and evaluation criteria for sparse autoencoders over language-model activations.",
       "metadata": {"authors": ["Leo Gao", "Tom Dupré la Tour", "Henk Tillman", "Gabriel Goh", "Rajan Troll", "Alec Radford", "Ilya Sutskever", "Jan Leike", "Jeffrey Wu"], "category": "representation_intervention", "local_decision_takeaway": "Any future SAE must have explicit coverage and causal evaluation.", "repo_relevance": "Deferred SAE audit", "implementation_status": "Adjacent", "limitations": "No SAE evaluation is run."}
+    },
+    {
+      "source_id": "arxiv-2407.01082",
+      "kind": "web",
+      "title": "Turning Up the Heat: Min-p Sampling for Creative and Coherent LLM Outputs",
+      "uri": "https://arxiv.org/abs/2407.01082",
+      "published_at": "2024-07-01",
+      "summary": "Introduces min-p truncation sampling, scaling the acceptance threshold by the top token's probability to balance coherence and diversity.",
+      "metadata": {"authors": ["Minh Nhat Nguyen", "Andrew Baker", "Clement Neo", "Allen Roush", "Andreas Kirsch", "Ravid Shwartz-Ziv"], "category": "decoding_sampling", "local_decision_takeaway": "Sampling-truncation controls are cheap baselines an intervention must beat, not a substitute for verified correction.", "repo_relevance": "Decoding-time control baseline distinct from a trained objective", "implementation_status": "Adjacent", "limitations": "TwoTower decode is compiler-constrained, not min-p sampled."}
     },
     {
       "source_id": "arxiv-2408.05147",
@@ -182,6 +254,15 @@
       "published_at": "2026-01-31",
       "summary": "Applies verifiable-reward reinforcement learning to structured cyber-threat outputs.",
       "metadata": {"authors": ["Md Tanvirul Alam", "Aritran Piplai", "Ionut Cardei", "Nidhi Rastogi", "Peter J Worth"], "category": "verifiable_training", "local_decision_takeaway": "Machine-checkable structure is useful supervision but does not remove the RL readiness gate.", "repo_relevance": "Deferred OpenUI RLVR", "implementation_status": "Adjacent", "limitations": "No Minerva recipe or CTI task is reproduced."}
+    },
+    {
+      "source_id": "arxiv-2603.00025",
+      "kind": "web",
+      "title": "TAB-PO: Preference Optimization with a Token-Level Adaptive Barrier for Token-Critical Structured Generation",
+      "uri": "https://arxiv.org/abs/2603.00025",
+      "published_at": "2026-02-03",
+      "summary": "Adds a token-level adaptive barrier to preference optimization so token-critical structured-generation decisions receive stronger, state-adaptive updates.",
+      "metadata": {"authors": ["Samah Fodeh", "Linhai Ma", "Ganesh Puthiaraju", "Srivani Talakokkul", "Afshan Khan", "Sreeraj Ramachandran", "Elyas Irankhah", "Muhammad Arif", "Ashley Hagaman", "Sarah R. Lowe", "Aimee Kendall Roundtree"], "category": "local_preference", "local_decision_takeaway": "Weight token-critical structured decisions with a state-adaptive barrier at the exact state; verify before labeling.", "repo_relevance": "Informs DecisionEventV2 action-table weighting for token-critical decisions", "implementation_status": "Adapted", "limitations": "The implemented clipped-margin FTPO is not TAB-PO's adaptive barrier."}
     },
     {
       "source_id": "arxiv-2603.15965",
@@ -299,87 +380,6 @@
       "published_at": "2026-07-07",
       "summary": "Provides token-aware repetition mining, balanced single-token event data, and localized preference training.",
       "metadata": {"revision": "bd6a126476e18554b0cacaea3fd9f258fdde1f97", "license": "Apache-2.0", "category": "implementation", "local_decision_takeaway": "Validate exact token surfaces and balance event families without silent truncation.", "repo_relevance": "DecisionEventV1 validation and balanced sampler", "implementation_status": "Adapted", "limitations": "OpenUI structural decisions use token IDs and verifiers rather than text-surface repetition alone."}
-    },
-    {
-      "source_id": "arxiv-2106.09685",
-      "kind": "web",
-      "title": "LoRA: Low-Rank Adaptation of Large Language Models",
-      "uri": "https://arxiv.org/abs/2106.09685",
-      "published_at": "2021-06-17",
-      "summary": "Freezes pretrained weights and learns per-layer low-rank update matrices, giving cheap, mergeable, and removable adaptation.",
-      "metadata": {"authors": ["Edward J. Hu", "Yelong Shen", "Phillip Wallis", "Zeyuan Allen-Zhu", "Yuanzhi Li", "Shean Wang", "Lu Wang", "Weizhu Chen"], "category": "adapter_actuator", "local_decision_takeaway": "A removable low-rank delta is a candidate actuator for local-decision corrections that can be reverted without editing frozen TwoTower weights.", "repo_relevance": "Actuator option for the causal-PEFT / removable-delta follow-ups; separate from the DecisionEventV2 evidence and objective layer.", "implementation_status": "Adjacent", "limitations": "Adapter form is orthogonal to the event schema and verifier-backed objective; used via the PEFT library, not reimplemented."}
-    },
-    {
-      "source_id": "arxiv-2303.10512",
-      "kind": "web",
-      "title": "AdaLoRA: Adaptive Budget Allocation for Parameter-Efficient Fine-Tuning",
-      "uri": "https://arxiv.org/abs/2303.10512",
-      "published_at": "2023-03-18",
-      "summary": "Allocates the low-rank adaptation budget adaptively across layers by pruning less important singular directions during fine-tuning.",
-      "metadata": {"authors": ["Qingru Zhang", "Minshuo Chen", "Alexander Bukharin", "Nikos Karampatziakis", "Pengcheng He", "Yu Cheng", "Weizhu Chen", "Tuo Zhao"], "category": "adapter_actuator", "local_decision_takeaway": "If a removable-delta actuator is adopted, rank budget should follow importance rather than a uniform per-layer rank.", "repo_relevance": "Refinement of the adapter-actuator option; a later causal-track knob, not an event or objective.", "implementation_status": "Adjacent", "limitations": "Budget allocation is an actuator detail unrelated to how local-decision events are mined or verified. Not reimplemented."}
-    },
-    {
-      "source_id": "arxiv-2001.06782",
-      "kind": "web",
-      "title": "Gradient Surgery for Multi-Task Learning",
-      "uri": "https://arxiv.org/abs/2001.06782",
-      "published_at": "2020-01-19",
-      "summary": "Reduces destructive interference in multi-task learning by projecting each conflicting task gradient onto the normal plane of the other (PCGrad).",
-      "metadata": {"authors": ["Tianhe Yu", "Saurabh Kumar", "Abhishek Gupta", "Sergey Levine", "Karol Hausman", "Chelsea Finn"], "category": "multi_objective_balance", "local_decision_takeaway": "The local-correction loss and the locality-preservation tether are two objectives; gradient-conflict handling is a principled alternative to a single fixed weighting.", "repo_relevance": "Informs how a correction objective and a frozen-reference tether can be combined without one silently degrading the other.", "implementation_status": "Adjacent", "limitations": "A general optimizer technique, not a decision-event method; adopting it would be a future objective-balancing experiment."}
-    },
-    {
-      "source_id": "arxiv-1810.04650",
-      "kind": "web",
-      "title": "Multi-Task Learning as Multi-Objective Optimization",
-      "uri": "https://arxiv.org/abs/1810.04650",
-      "published_at": "2018-10-10",
-      "summary": "Frames multi-task learning as multi-objective optimization and seeks a common (Pareto-stationary) descent direction across task gradients (MGDA).",
-      "metadata": {"authors": ["Ozan Sener", "Vladlen Koltun"], "category": "multi_objective_balance", "local_decision_takeaway": "Preserving global behavior while correcting a local decision is inherently multi-objective; a Pareto-descent view is a principled alternative to hand-tuned tether weights.", "repo_relevance": "Theory basis for trading off correction against preservation in later actuator experiments.", "implementation_status": "Adjacent", "limitations": "Optimization framing only; defines no events, verifiers, or actuators. Not reimplemented."}
-    },
-    {
-      "source_id": "arxiv-2109.05093",
-      "kind": "web",
-      "title": "PICARD: Parsing Incrementally for Constrained Auto-Regressive Decoding from Language Models",
-      "uri": "https://arxiv.org/abs/2109.05093",
-      "published_at": "2021-09-10",
-      "summary": "Constrains autoregressive decoding by incremental parsing, discarding partial hypotheses that cannot complete to a valid parse.",
-      "metadata": {"authors": ["Torsten Scholak", "Nathan Schucher", "Dzmitry Bahdanau"], "category": "constrained_decoding", "local_decision_takeaway": "Incremental-parse constraint is prior art for the repo's compiler-tree legal-action decoding; the constraint certifies legality, not semantic preference.", "repo_relevance": "Adjacent to the deployed grammar/compiler constraint layer and the constraint-shadow evidence path, which the repo already owns via its fastpath compiler.", "implementation_status": "Adjacent", "limitations": "Constrained decoding guarantees legality only; it produces no good/bad action labels. Not reimplemented."}
-    },
-    {
-      "source_id": "arxiv-2405.21047",
-      "kind": "web",
-      "title": "Grammar-Aligned Decoding",
-      "uri": "https://arxiv.org/abs/2405.21047",
-      "published_at": "2024-05-31",
-      "summary": "Shows that naive grammar-constrained decoding distorts the model distribution and corrects it with an adaptive sampling procedure (ASAp).",
-      "metadata": {"authors": ["Kanghee Park", "Jiayu Wang", "Taylor Berg-Kirkpatrick", "Nadia Polikarpova", "Loris D'Antoni"], "category": "constrained_decoding", "local_decision_takeaway": "Grammar masking alone distorts probabilities, so a constraint-shadow event is legality evidence, not a calibrated preference signal.", "repo_relevance": "Supports the invariant that constraint shadows certify legality only and must not become semantic labels without same-state counterfactual verification.", "implementation_status": "Adjacent", "limitations": "Addresses decode-time distribution alignment, not training-time event mining or actuators. Not reimplemented."}
-    },
-    {
-      "source_id": "arxiv-2407.01082",
-      "kind": "web",
-      "title": "Turning Up the Heat: Min-p Sampling for Creative and Coherent LLM Outputs",
-      "uri": "https://arxiv.org/abs/2407.01082",
-      "published_at": "2024-07-01",
-      "summary": "A decode-time sampling truncation whose acceptance threshold scales with the top token probability, keeping outputs coherent at high temperature.",
-      "metadata": {"authors": ["Minh Nhat Nguyen", "Andrew Baker", "Clement Neo", "Allen Roush", "Andreas Kirsch", "Ravid Shwartz-Ziv"], "category": "constrained_decoding", "local_decision_takeaway": "Per-decision candidate shaping is a decode-time heuristic; deterministic compiler legality, not a sampling threshold, remains the repo's authority.", "repo_relevance": "Adjacent prior art on local candidate control at a single decision; not a training objective or verifier.", "implementation_status": "Adjacent", "limitations": "Probability-based sampling truncation only; provides no good/bad labels and no locality guarantee. Not reimplemented."}
-    },
-    {
-      "source_id": "arxiv-2402.03300",
-      "kind": "web",
-      "title": "DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models",
-      "uri": "https://arxiv.org/abs/2402.03300",
-      "published_at": "2024-02-05",
-      "summary": "Introduces Group Relative Policy Optimization (GRPO), a critic-free RL objective using group-normalized verifiable rewards, demonstrated on math reasoning.",
-      "metadata": {"authors": ["Zhihong Shao", "Peiyi Wang", "Qihao Zhu", "Runxin Xu", "Junxiao Song", "Xiao Bi", "Haowei Zhang", "Mingchuan Zhang", "Y. K. Li", "Y. Wu", "Daya Guo"], "category": "verifiable_training", "local_decision_takeaway": "Verifiable-reward RL is the readiness bar that local supervised corrections do not bypass; GRPO stays gated behind matched direct-supervision controls.", "repo_relevance": "Reinforces that grammar/contract checks can label events but local CE/margin correction is not RL-ready; RLVR remains a follow-up, not this contract.", "implementation_status": "Adjacent", "limitations": "Full RL with rollouts and group-normalized rewards; out of scope for the evidence/objective contract. Not reimplemented."}
-    },
-    {
-      "source_id": "arxiv-2603.00025",
-      "kind": "web",
-      "title": "TAB-PO: Preference Optimization with a Token-Level Adaptive Barrier for Token-Critical Structured Generation",
-      "uri": "https://arxiv.org/abs/2603.00025",
-      "published_at": "2026-02-03",
-      "summary": "Adds a token-level adaptive barrier to preference optimization so token-critical positions in structured generation receive stronger, bounded updates.",
-      "metadata": {"authors": ["Samah Fodeh", "Linhai Ma", "Ganesh Puthiaraju", "Srivani Talakokkul", "Afshan Khan", "Sreeraj Ramachandran", "Elyas Irankhah", "Muhammad Arif", "Ashley Hagaman", "Sarah R. Lowe", "Aimee Kendall Roundtree"], "category": "local_preference", "local_decision_takeaway": "Token-critical structured generation is the OpenUI setting; TAB-PO is the closest external analogue to an exact-state token-level preference objective, but is not adopted here.", "repo_relevance": "Informs a future token-level preference objective; does not define DecisionEventV2 or its verifier-backed labels.", "implementation_status": "Adjacent", "limitations": "A sequence-level PO variant with a barrier term; the repo's objective is verifier-backed exact-state action sets, not reimplemented from this paper."}
     }
   ]
 }
