@@ -73,7 +73,7 @@ the model.
 pytest tests/test_harnesses/eval/test_ablate_decode_scaffolding.py
 ```
 
-- 24 passed.
+- 25 passed.
 
 ## Measured Stage A results
 
@@ -144,7 +144,7 @@ removing semantic constraints has mixed or no effect.
 
 ## Verification checklist
 
-- [x] `pytest tests/test_harnesses/eval/test_ablate_decode_scaffolding.py` — 24 passed.
+- [x] `pytest tests/test_harnesses/eval/test_ablate_decode_scaffolding.py` — 25 passed.
 - [x] `.githooks/check-changed` — passed.
 - [x] `python -m scripts.repo_policy` — ok.
 - [x] `git diff --check` — clean.

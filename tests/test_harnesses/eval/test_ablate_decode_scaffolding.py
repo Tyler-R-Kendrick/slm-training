@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
 from typing import Any
 
@@ -218,6 +219,15 @@ def test_cli_enforces_fixed_run_deadline(monkeypatch: pytest.MonkeyPatch) -> Non
         (cli.signal.ITIMER_REAL, 0),
     ]
     assert cli.MAX_RUN_SECONDS == 170
+
+
+def test_cli_timeout_exits_124(monkeypatch: pytest.MonkeyPatch) -> None:
+    from scripts import ablate_decode_scaffolding as cli
+
+    monkeypatch.setattr(cli, "MAX_RUN_SECONDS", 0.01)
+    monkeypatch.setattr(cli, "_main", lambda _argv: time.sleep(1))
+
+    assert cli.main([]) == 124
 
 
 def test_checkpoint_sha256_mismatch_marks_all_arms_incompatible(
