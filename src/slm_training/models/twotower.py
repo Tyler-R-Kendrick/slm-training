@@ -7,6 +7,7 @@ import json
 import math
 import random
 import re
+import warnings
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -2926,8 +2927,12 @@ class TwoTowerModel(nn.Module):
                             expected_type=None,
                             template_signature=None,
                         )
-                except Exception:  # noqa: BLE001
-                    pass
+                except (AttributeError, ImportError, KeyError, TypeError, ValueError) as exc:
+                    warnings.warn(
+                        f"grammar trace record skipped ({type(exc).__name__}: {exc}) "
+                        f"at decision {len(repair_commits)}",
+                        stacklevel=2,
+                    )
 
         t = 0
         while t < length:

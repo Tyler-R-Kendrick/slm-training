@@ -16,10 +16,10 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+from collections.abc import Sequence
 from dataclasses import asdict, is_dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from collections.abc import Sequence
 from typing import Any, Iterator
 
 TRACE_VERSION = 3

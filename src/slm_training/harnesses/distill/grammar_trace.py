@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import warnings
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
@@ -247,7 +248,10 @@ def normalize_legal_probs(
     if not values:
         return ()
     if convention == "energy":
-        shifted = [-float(v) for v in values]
+        # Lower energy is better; shift so the worst action maps to 0 and
+        # better actions map to positive values before exponentiation.
+        worst = max(values)
+        shifted = [worst - float(v) for v in values]
     else:
         shifted = [float(v) - max(values) for v in values]
     exps = [math.exp(v) for v in shifted]
@@ -351,7 +355,12 @@ def legal_action_ids_from_state(
             {tokenizer.id_to_token.get(tid, str(tid)) for tid in candidate_ids}
         )
         return legal, str(forest.coverage)
-    except Exception:  # noqa: BLE001
+    except (AttributeError, ImportError, KeyError, TypeError, ValueError) as exc:
+        warnings.warn(
+            f"legal_action_ids_from_state failed ({type(exc).__name__}: {exc}) "
+            f"for prefix length {len(prefix_ids)}",
+            stacklevel=2,
+        )
         return None
 
 
