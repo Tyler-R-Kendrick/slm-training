@@ -2110,6 +2110,15 @@ gate count but changes 16/19 predictions and cuts OOD meaningful/recall from
 missing relation. See [results](iter-e325-slot-pair-interaction-20260717.md)
 and [JSON](slot-pair-interaction-results-iter-e325-20260717.json).
 
+E326's training-derived lexeme prior clears the held-out gate, preserves OOD
+and limited-RICO, and improves AgentV 3/5→4/5. It is the strongest scratch
+checkpoint, but smoke recall 0.3333 still misses 0.35. E327 frozen weights
+1.25 and 2.0 do not change smoke; reject weight scaling. See
+[E326](iter-e326-lexeme-slot-prior-20260717.md),
+[E326 JSON](lexeme-slot-prior-results-iter-e326-20260717.json),
+[E327](iter-e327-lexeme-slot-weight-20260717.md), and
+[E327 JSON](lexeme-slot-weight-results-iter-e327-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

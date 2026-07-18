@@ -117,6 +117,7 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 | E323 balanced slot-owner arm | `e323-balanced-slot-owner-20k-r1` | CPU scratch corpus-frequency arm | `outputs/runs/e323-balanced-slot-owner-20k-r1/checkpoints/last.pt` (local) | Negative: explicit 22-class weights still leave held-out meaningful/recall at 0.20/0.10; 3 failures / AgentV 3/5 — **not promotable or ship** ([results](design/iter-e323-balanced-slot-owner-20260717.md)) |
 | E324 next-slot context arm | `e324-next-slot-context-20k-r1` | CPU scratch ordered-local-context arm | `outputs/runs/e324-next-slot-context-20k-r1/checkpoints/last.pt` (local) | Negative: ordered slot concatenation leaves held-out meaningful/recall at 0.20/0.10; 3 failures / AgentV 3/5 — **not promotable or ship** ([results](design/iter-e324-next-slot-context-20260717.md)) |
 | E325 slot-pair interaction arm | `e325-slot-pair-interaction-20k-r1` | CPU scratch explicit local-interaction arm | `outputs/runs/e325-slot-pair-interaction-20k-r1/checkpoints/last.pt` (local) | Negative: ties E316's two gate failures but cuts OOD meaningful/recall to 0.50/0.25; AgentV 3/5 — **not promotable or ship** ([results](design/iter-e325-slot-pair-interaction-20260717.md)) |
+| E326 lexeme slot-prior arm | `e326-lexeme-slot-prior-20k-r1` | CPU scratch training-derived lexical prior arm | `outputs/runs/e326-lexeme-slot-prior-20k-r1/checkpoints/last.pt` (local) | Best current scratch: held-out and adversarial improve, AgentV 4/5; smoke recall 0.3333<0.35 — **not promotable or ship** ([results](design/iter-e326-lexeme-slot-prior-20260717.md)) |
 | Production HF ship | — | — | `hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/` | **None registered yet** — fill this row after the first full HF sync |
 
 Update the table in place when a checkpoint is written or superseded. Keep
@@ -368,6 +369,11 @@ Leakage: structural fingerprints + train/test isolation
 | `adversarial` (E325 slot-pair interaction) | 4 | 1.0 | 1.0000 | 0.5970 | 0.4805 | Yes for suite thresholds; no global ship |
 | `ood` (E325 slot-pair interaction) | 4 | 1.0 | 1.0000 | 0.4304 | 0.4992 | Yes for suite thresholds; no global ship |
 | `rico_held` (E325 slot-pair interaction) | 3 | 1.0 | 1.0000 | 0.3850 | 1.0000 | Yes for limited suite thresholds; no global ship |
+| `smoke` (E326 lexeme slot prior) | 3 | 1.0 | 1.0000 | 0.5464 | 0.6407 | No — component recall 0.3333 < 0.35 |
+| `held_out` (E326 lexeme slot prior) | 5 | 1.0 | 1.0000 | 0.5458 | 0.5862 | Yes for suite thresholds; no global ship |
+| `adversarial` (E326 lexeme slot prior) | 4 | 1.0 | 1.0000 | 0.6304 | 0.7238 | Yes for suite thresholds; no global ship |
+| `ood` (E326 lexeme slot prior) | 4 | 1.0 | 1.0000 | 0.5229 | 0.9857 | Yes for suite thresholds; no global ship |
+| `rico_held` (E326 lexeme slot prior) | 3 | 1.0 | 1.0000 | 0.4826 | 1.0000 | Yes for limited suite thresholds; no global ship |
 | `smoke` (`e177-semantic-judge-32step`, E180 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1542 | 0.607 | No — syntax 1.0, but meaningful component recall 0.25; not a ship evaluation |
 | `smoke` (`e181-semantic-balanced-32step`, E181 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1542 | 0.607 | No — mixture-only control did not improve quality; not a ship evaluation |
 | `smoke` (`e184-compiler-aligned-32step`, E194 diagnostic subset) | 1 | 0.0 | 0.0 | 0.3600 | 0.0 | No — root/schema constraints improved, but output remained incomplete; not a ship evaluation |
@@ -704,6 +710,8 @@ suites because they contain no scope metadata. Evidence:
 | 2026-07-17 | `e323-balanced-slot-owner-20k-r1` (E323 balance arm) | `outputs/runs/e323-balanced-slot-owner-20k-r1/` (local) | 446 CPU scratch steps / 20,044 target tokens; class-balance power 0.5; NLL 5.4269; SHA `0df34163083d7959c1de94385d5a2ff984b9ad20ebcff08a11991793f6d5ffdc`; explicit no-sync | Explicit class weights do not recover held-out quality; 3 failures / AgentV 3/5, no promotion |
 | 2026-07-17 | `e324-next-slot-context-20k-r1` (E324 local context arm) | `outputs/runs/e324-next-slot-context-20k-r1/` (local) | 446 CPU scratch steps / 20,044 target tokens; ordered next-slot context; NLL 5.4238; SHA `53fcf5eec79d3a839d94f2474b4611439c94c638b2f95fdcf96a507db4991cb5`; explicit no-sync | Ordered concatenation gives no gate gain; 3 failures / AgentV 3/5, no promotion |
 | 2026-07-17 | `e325-slot-pair-interaction-20k-r1` (E325 explicit interaction arm) | `outputs/runs/e325-slot-pair-interaction-20k-r1/` (local) | 446 CPU scratch steps / 20,044 target tokens; separate current/next vectors with interaction; NLL 5.4328; SHA `e0f8e1266ba3199a4ee2dfda19e46a9e617541701ddeb96e27dc6d1ee7c8da6b`; explicit no-sync | Ties E316 gate count but materially regresses OOD quality; 2 failures / AgentV 3/5, no promotion |
+| 2026-07-17 | `e326-lexeme-slot-prior-20k-r1` (E326 lexical prior arm) | `outputs/runs/e326-lexeme-slot-prior-20k-r1/` (local) | 446 CPU scratch steps / 20,044 target tokens; corpus-derived lexeme log odds; NLL 5.4084; SHA `eb5683cf13231cae0f25b07fd66187c7e4534cb415e709093adeeb5109f363a8`; explicit no-sync | Best scratch: held/adversarial improve and AgentV reaches 4/5; smoke recall still fails, no promotion |
+| 2026-07-17 | `e327-lexeme-slot-weight2-honest-r1` (E327 eval-only) | `outputs/runs/e327-lexeme-slot-weight2-honest-r1/` (local) | Unchanged E326 SHA; frozen slot decode weights 1.25 and 2.0 | Weight 2 raises limited-RICO structure 0.4826→0.6153 but does not change smoke or AgentV 4/5; no checkpoint promotion |
 
 Append a row for every new or replaced checkpoint. Do not delete history.
 

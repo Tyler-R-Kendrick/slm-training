@@ -1,0 +1,17 @@
+{
+  "id": "E326",
+  "date": "2026-07-17",
+  "status": "strongest_scratch_not_promotable",
+  "run_id": "e326-lexeme-slot-prior-20k-r1",
+  "checkpoint_sha256": "eb5683cf13231cae0f25b07fd66187c7e4534cb415e709093adeeb5109f363a8",
+  "steps": 446,
+  "seen_target_tokens": 20044,
+  "elapsed_wall_seconds": 137.6706532419994,
+  "weighted_nll": 5.408435840845822,
+  "broad_nll": 5.496132238789812,
+  "slot_accuracy": 0.8026315793395042,
+  "slot_majority_baseline": 0.6184210620428386,
+  "agentv": {"passed": 4, "total": 5},
+  "failures": ["smoke component recall 0.3333 < 0.35"],
+  "verdict": "Retain as strongest scratch checkpoint, but do not promote: one smoke recall gate still fails."
+}

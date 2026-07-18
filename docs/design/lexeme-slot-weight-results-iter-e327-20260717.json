@@ -1,0 +1,12 @@
+{
+  "id": "E327",
+  "date": "2026-07-17",
+  "status": "negative_eval_only",
+  "checkpoint_sha256": "eb5683cf13231cae0f25b07fd66187c7e4534cb415e709093adeeb5109f363a8",
+  "arms": [
+    {"decode_weight": 1.0, "agentv": "4/5", "smoke_recall": 0.3333333333333333, "rico_structure": 0.4826},
+    {"decode_weight": 1.25, "agentv": "4/5", "smoke_recall": 0.3333333333333333, "rico_structure": 0.5523333333333333},
+    {"decode_weight": 2.0, "agentv": "4/5", "smoke_recall": 0.3333333333333333, "rico_structure": 0.6153}
+  ],
+  "verdict": "Reject weight scaling as a gate lever: no tested weight changes smoke or clears the final gate."
+}
