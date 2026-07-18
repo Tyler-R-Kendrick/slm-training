@@ -119,12 +119,13 @@
       ]
     },
     "harness.experiments": {
-      "version": "v1",
+      "version": "v2",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {"version": "v2", "date": "2026-07-18", "note": "correct equal-byte arm token budgets and fail closed on reference-only low-bit training"},
         {"version": "v1", "date": "2026-07-18", "note": "initial registration (ladder, promotion, scaling fits; verified-solver files are claimed by matrix.verified_solver)"}
       ]
     },
