@@ -2755,6 +2755,27 @@ RICO prompts explicitly requesting Switch/Slider still require refresh before
 a new full five-suite claim. See
 [`iter-e459-e396-semantic-slot-density-20260718.md`](iter-e459-e396-semantic-slot-density-20260718.md).
 
+E460 begins the fail-closed full-RICO refresh for E459. The impact audit finds
+49 explicit Switch/Slider rows across shards 0–14; only unaffected shard 15
+is reusable. Shard 0 completes rows 0–95 normally: meaningful/fidelity/recall
+1.0, structure 0.8852, reward 0.9955, and zero failures/fallback/timeouts. Its
+one affected row improves structure 0.9069→1.0 without regression. Coverage
+reaches 96/1500. Shard 1 `r2` completes rows 96–191 at
+meaningful/fidelity/recall 1.0, structure 0.8652, reward 0.9936, and zero
+failures/fallback/timeouts. Its prediction-identical `r1` is excluded because
+the old style scrubber removed a valid SwitchItem identifier before reward
+evaluation; the corrected evaluator restores that exact-quality row from
+reward 0 to 0.961. Coverage is 192/1500, so the campaign remains partial and
+non-ship. Shard 2 reaches row 287 at meaningful/fidelity/recall 1.0,
+structure 0.8541 (up from 0.8521), reward 0.9943 (down from 0.9948), and zero
+failures/fallback/timeouts. Shard 3 reaches row 383 at
+meaningful/fidelity/recall 1.0, structure 0.8770 (up from 0.8687), unchanged
+reward 0.9928, and zero failures/fallback/timeouts. Shard 4 reaches row 479 at
+meaningful/fidelity/recall 1.0, structure 0.8803 (up from 0.8641), reward
+0.9925 (from 0.9927), and zero failures/fallback/timeouts. Coverage is
+480/1500. See
+[`iter-e460-e396-semantic-slot-full-rico-sharded-20260718.md`](iter-e460-e396-semantic-slot-full-rico-sharded-20260718.md).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

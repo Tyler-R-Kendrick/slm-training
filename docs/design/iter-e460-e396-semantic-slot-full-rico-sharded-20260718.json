@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E460",
+  "date": "2026-07-18",
+  "status": "partial",
+  "checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0"
+  },
+  "data": {
+    "version": "e451_root_binder_v1",
+    "suite": "rico_held",
+    "suite_n": 1500,
+    "rico_records_sha256": "35ecf5596933cb06e04184c99733fa56954355e9534ad9a24d060412d8f46432",
+    "affected_rows": 49,
+    "affected_shards": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+    "reusable_unaffected_shards": [15]
+  },
+  "coverage": {"completed_n": 480, "suite_n": 1500},
+  "shards": [
+    {
+      "index": 0,
+      "run_id": "e460-e396-semantic-slot-full-rico-shard00-r1",
+      "offset": 0,
+      "end": 96,
+      "affected_rows": 1,
+      "n": 96,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8852197916666668,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9954999999999998,
+      "failure_breakdown": {},
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "agentv": {"passed": 0, "total": 5, "execution_errors": 0},
+      "completed_normally": true
+    },
+    {
+      "index": 1,
+      "run_id": "e460-e396-semantic-slot-full-rico-shard01-r2",
+      "offset": 96,
+      "end": 192,
+      "affected_rows": 4,
+      "n": 96,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8651895833333336,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9935624999999998,
+      "failure_breakdown": {},
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "agentv": {"passed": 0, "total": 5, "execution_errors": 0},
+      "completed_normally": true,
+      "excluded_predecessor": {
+        "run_id": "e460-e396-semantic-slot-full-rico-shard01-r1",
+        "reason": "reward evaluator removed valid SwitchItem identifier m as a style literal"
+      }
+    },
+    {
+      "index": 2,
+      "run_id": "e460-e396-semantic-slot-full-rico-shard02-r1",
+      "offset": 192,
+      "end": 288,
+      "affected_rows": 2,
+      "n": 96,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8540656249999997,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9942812499999998,
+      "failure_breakdown": {},
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "agentv": {"passed": 0, "total": 5, "execution_errors": 0},
+      "completed_normally": true
+    },
+    {
+      "index": 3,
+      "run_id": "e460-e396-semantic-slot-full-rico-shard03-r1",
+      "offset": 288,
+      "end": 384,
+      "affected_rows": 3,
+      "n": 96,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8770124999999999,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9928437499999997,
+      "failure_breakdown": {},
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "agentv": {"passed": 0, "total": 5, "execution_errors": 0},
+      "completed_normally": true
+    },
+    {
+      "index": 4,
+      "run_id": "e460-e396-semantic-slot-full-rico-shard04-r1",
+      "offset": 384,
+      "end": 480,
+      "affected_rows": 6,
+      "n": 96,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8803427083333335,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9924687499999999,
+      "failure_breakdown": {},
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "agentv": {"passed": 0, "total": 5, "execution_errors": 0},
+      "completed_normally": true
+    }
+  ],
+  "timing_policy": {
+    "external_timeout_seconds": 290,
+    "external_kill_after_seconds": 10,
+    "timed_out_runs_used_as_evidence": false
+  },
+  "verdict": "Partial diagnostic: 480 of 1500 repaired RICO rows refreshed; no full-suite or ship claim."
+}

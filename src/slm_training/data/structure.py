@@ -32,15 +32,16 @@ STYLE_STRING_TOKENS = frozenset(
     }
 )
 
-_STYLE_ARG_RE = re.compile(
-    r',\s*"(?:'
+_STYLE_TOKEN_RE = (
+    r'"(?:'
     + "|".join(re.escape(t) for t in sorted(STYLE_STRING_TOKENS, key=len, reverse=True))
     + r')"'
 )
-_STYLE_ONLY_ARG_RE = re.compile(
-    r'\(\s*"(?:'
-    + "|".join(re.escape(t) for t in sorted(STYLE_STRING_TOKENS, key=len, reverse=True))
-    + r')"\s*,'
+_STYLE_TEXT_ARG_RE = re.compile(
+    rf"(\b(?:TextContent|Button)\([^()\n]*),\s*{_STYLE_TOKEN_RE}(?=\s*\))"
+)
+_STYLE_STACK_ARG_RE = re.compile(
+    rf'(\bStack\(\[[^\]\n]*\]\s*,\s*"(?:column|row)")\s*,\s*{_STYLE_TOKEN_RE}'
 )
 
 
@@ -55,9 +56,8 @@ def strip_style_literals(openui: str) -> str:
     """
     if not openui:
         return openui
-    text = _STYLE_ARG_RE.sub("", openui)
-    # Rare leading-only style arg: Foo("primary", :x) — not used in fixtures.
-    text = _STYLE_ONLY_ARG_RE.sub("(", text)
+    text = _STYLE_TEXT_ARG_RE.sub(r"\1", openui)
+    text = _STYLE_STACK_ARG_RE.sub(r"\1", text)
     # Collapse leftover empty arg lists artifacts like ", )" → ")"
     text = re.sub(r",\s*\)", ")", text)
     text = re.sub(r",\s*,", ",", text)

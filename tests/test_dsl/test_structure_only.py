@@ -29,6 +29,22 @@ def test_structural_similarity_ignores_style_args() -> None:
     assert structural_similarity(pred, gold) == 1.0
 
 
+def test_style_scrub_preserves_switch_identifier_and_reward() -> None:
+    openui = (
+        'root = Stack([label, control])\n'
+        'label = TextContent(":title")\n'
+        'control = SwitchItem(":label", ":description", "m")'
+    )
+    gold = ExampleRecord(
+        id="switch",
+        prompt="switch",
+        openui=openui,
+        placeholders=[":title", ":label", ":description"],
+    )
+    assert strip_style_literals(openui) == openui
+    assert composite_reward(openui, gold=gold, design_md=None) > 0.9
+
+
 def test_structure_fingerprint_ignores_gap() -> None:
     a = 'root = Stack([x], "column", "m")\nx = Button(":x")'
     b = 'root = Stack([x], "column")\nx = Button(":x")'
