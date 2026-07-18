@@ -25,6 +25,8 @@ ten-second forced kill. Only normally completed shards count.
 | 11 | 1056–1152 | 96 | 1.0 | 0.9792 | 1.0 | 0.6415 | 0.8628 | 0.9771 | complete |
 | 12 | 1152–1248 | 96 | 1.0 | 0.9896 | 1.0 | 0.6482 | 0.8637 | 0.9877 | complete |
 | 13 | 1248–1344 | 96 | 1.0 | 0.9896 | 1.0 | 0.6541 | 0.9028 | 0.9873 | complete |
+| 14 | 1344–1440 | 96 | 1.0 | 0.9792 | 0.9896 | 0.6426 | 0.8681 | 0.9775 | complete |
+| 15 | 1440–1500 | 60 | 1.0 | 0.9833 | 1.0 | 0.6351 | 0.8361 | 0.9826 | complete |
 
 All new shards completed normally. Their diagnostic AgentV envelopes are 0/5
 because four required suites are absent and RICO is a subset; all have zero
@@ -36,10 +38,31 @@ process contributes evidence. Shard 10 decodes in 169.8 seconds and adds one
 low-component-recall failure. Shard 11 decodes in 166.2 seconds and adds two.
 Shard 12 decodes in 162.3 seconds and adds one.
 Shard 13 decodes in 170.2 seconds and adds one.
+Shard 14 decodes in 156.9 seconds, adds two low-recall failures, and is the
+first shard below perfect placeholder fidelity.
+Shard 15 decodes in 109.8 seconds and adds one low-recall failure.
 
 Rows 336–384 reuse E399 because its checkpoint SHA and complete evaluation
 policy are identical to E441. That prior run completed normally with zero
 execution errors and decoded in 104.5 seconds; it is not rerun.
 
-**Interim status:** 1344/1500 RICO rows complete. This is partial coverage, not
-a ship gate, promotion, or full-RICO claim.
+## Canonical full-suite aggregate
+
+The canonical shard merger verified identical checkpoint SHA and evaluation
+policy, exact contiguous `[0, 1500)` coverage, and unique record IDs. The
+merged artifact is
+`outputs/runs/e441-e396-full-rico-merged-r1/eval_rico_held.json`.
+
+| n | Parse | Meaningful | Fidelity | Structure | Type recall | Reward | Low-recall failures |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1500 | 1.0 | 0.9847 | 0.9993 | 0.6390 | 0.8652 | 0.9827 | 23 |
+
+The aggregate is not a diagnostic subset. Median/p95 latency is
+1584.6/3491.0 ms, aggregate decode time is 2560.4 seconds, fallback and decode
+timeout counts are zero, and the full-RICO AgentV result passes 1/1 with zero
+execution errors.
+
+**Verdict:** the full-RICO evaluation is complete. Placeholder fidelity is
+below 1.0 and 23 low-recall failures remain. E442 subsequently combines this
+artifact with the four complete bounded suites and passes the authoritative
+five-suite ship gates; production HF ship still requires durable bucket sync.

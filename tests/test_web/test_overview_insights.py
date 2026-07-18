@@ -115,6 +115,44 @@ def test_live_champion_becomes_comparison_baseline(tmp_path) -> None:
     assert performance["stats"]["comparable"] == 1
     assert performance["comparisons"][0]["vs_reference"].endswith(" pp")
 
+
+def test_model_card_champion_uses_checkpoint_evaluation(tmp_path) -> None:
+    _write_evidence(tmp_path, "checkpoint-1")
+    model_card = tmp_path / "docs" / "MODEL_CARD.md"
+    model_card.write_text(
+        model_card.read_text(encoding="utf-8").replace(
+            "| Current checkpoint |",
+            "| Local champion |",
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "docs" / "design" / "iter-e2.json").write_text(
+        json.dumps(
+            {
+                "run_id": "evaluation-2",
+                "checkpoint": {"run_id": "checkpoint-1"},
+                "suites": {
+                    "rico_held": {
+                        "n": 1500,
+                        "parse_rate": 1.0,
+                        "placeholder_fidelity": 0.99,
+                        "structural_similarity": 0.64,
+                        "reward_score": 0.98,
+                    }
+                },
+                "ship_gates": {"pass": True, "failures": []},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    reference = Readers(tmp_path).performance_insights()["references"][0]
+    assert reference["run_id"] == "checkpoint-1"
+    assert reference["evaluation_status"] == "evaluated"
+    assert reference["suite_sizes"] == {"rico_held": 1500}
+    assert reference["metrics"]["structural_similarity"] == 0.64
+
+
 def test_metric_surfaces_track_ship_gate_policy(tmp_path) -> None:
     """Overview metrics derive from the ship-gate policy: changing a lever
     (adding/dropping a gate metric) must re-shape the dashboard automatically."""

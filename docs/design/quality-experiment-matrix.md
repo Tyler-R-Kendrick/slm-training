@@ -2610,8 +2610,23 @@ Rows 960–1056 score 0.6238/0.8542 with one low-recall failure; rows 1056–115
 score 0.6415/0.8628 with two. Coverage is 1152/1500; this remains a partial
 diagnostic. Rows 1152–1248 score 0.6482/0.8637 with one low-recall failure.
 Rows 1248–1344 score 0.6541/0.9028 with one low-recall failure. Coverage is
-1344/1500; this remains partial, not a ship claim. See
+extended through row 1440 at structure/recall 0.6426/0.8681 with two
+low-recall failures and the campaign's first sub-perfect fidelity shard
+(0.9896). The final 60 rows score structure/recall 0.6351/0.8361 with one
+low-recall failure. All 1500 rows completed normally, and the canonical merger
+verifies exact full-suite coverage: parse 1.0, meaningful 0.9847, fidelity
+0.9993, structure 0.6390, recall 0.8652, reward 0.9827, and 23 low-recall
+failures. Full-RICO AgentV passes 1/1 with zero execution errors. Full
+multi-suite ship gates remain pending, so this is not a promotion claim. See
 [`iter-e441-e396-full-rico-sharded-20260718.md`](iter-e441-e396-full-rico-sharded-20260718.md).
+
+E442 combines E398's four complete bounded suites with E441's canonical full
+RICO artifact under an identical checkpoint SHA and evaluation policy. Honest
+ship gates pass with no failures and AgentV passes 5/5 with zero execution
+errors. E396 is therefore the local ship-gate champion. It remains a local,
+explicit-no-sync checkpoint, so production HF ship is pending durable bucket
+sync and registration. See
+[`iter-e442-e396-full-ship-gates-20260718.md`](iter-e442-e396-full-ship-gates-20260718.md).
 
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "campaign_id": "E441",
   "date": "2026-07-18",
-  "status": "in_progress",
+  "status": "complete",
   "checkpoint": {
     "run_id": "e396-balanced-type-head-continuation-r1",
     "path": "outputs/runs/e396-balanced-type-head-continuation-r1/checkpoints/last.pt",
@@ -11,8 +11,8 @@
   "suite": "rico_held",
   "suite_total_n": 1500,
   "shard_size": 96,
-  "completed_n": 1344,
-  "coverage_fraction": 0.896,
+  "completed_n": 1500,
+  "coverage_fraction": 1.0,
   "shards": [
     {
       "index": 0,
@@ -272,12 +272,65 @@
       "decode_total_seconds": 170.200043,
       "agentv": {"passed": 0, "total": 5, "execution_errors": 0},
       "completed_normally": true
+    },
+    {
+      "index": 14,
+      "run_id": "e441-e396-full-rico-shard14-r1",
+      "offset": 1344,
+      "end": 1440,
+      "n": 96,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.9791666666666666,
+      "placeholder_fidelity": 0.9895833333333334,
+      "structural_similarity": 0.6426229166666669,
+      "component_type_recall": 0.8680555555555557,
+      "reward_score": 0.9774791666666666,
+      "failure_breakdown": {"low_component_recall": 2},
+      "decode_total_seconds": 156.855987,
+      "agentv": {"passed": 0, "total": 5, "execution_errors": 0},
+      "completed_normally": true
+    },
+    {
+      "index": 15,
+      "run_id": "e441-e396-full-rico-shard15-r1",
+      "offset": 1440,
+      "end": 1500,
+      "n": 60,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.9833333333333333,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.6351266666666665,
+      "component_type_recall": 0.8361111111111111,
+      "reward_score": 0.9826333333333334,
+      "failure_breakdown": {"low_component_recall": 1},
+      "decode_total_seconds": 109.847905,
+      "agentv": {"passed": 0, "total": 5, "execution_errors": 0},
+      "completed_normally": true
     }
   ],
+  "merged": {
+    "run_id": "e441-e396-full-rico-merged-r1",
+    "output": "outputs/runs/e441-e396-full-rico-merged-r1/eval_rico_held.json",
+    "n": 1500,
+    "diagnostic_subset": false,
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 0.9846666666666667,
+    "placeholder_fidelity": 0.9993333333333333,
+    "structural_similarity": 0.6390148000000001,
+    "component_type_recall": 0.8651666666666666,
+    "reward_score": 0.9826686666666666,
+    "failure_breakdown": {"low_component_recall": 23},
+    "latency_ms_p50": 1584.58,
+    "latency_ms_p95": 3491.04,
+    "decode_total_seconds": 2560.408942,
+    "fallback_count": 0,
+    "decode_timeout_count": 0,
+    "agentv": {"passed": 1, "total": 1, "execution_errors": 0}
+  },
   "timing_policy": {
     "external_timeout_seconds": 290,
     "external_kill_after_seconds": 10,
     "timed_out_runs_used_as_evidence": 0
   },
-  "claim": "partial diagnostic coverage only; no full-RICO or ship claim"
+  "claim": "full RICO evaluation complete; E442 five-suite ship gates pass; production HF ship pending bucket sync"
 }

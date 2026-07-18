@@ -288,6 +288,8 @@ class Readers:
             train_result = train_result if isinstance(train_result, dict) else {}
             train = payload.get("train")
             train = train if isinstance(train, dict) else {}
+            checkpoint = payload.get("checkpoint")
+            checkpoint = checkpoint if isinstance(checkpoint, dict) else {}
             run_id = (
                 payload.get("run_id")
                 or train_result.get("run_id")
@@ -315,6 +317,7 @@ class Readers:
                 {
                     "id": run_id,
                     "run_id": run_id,
+                    "checkpoint_run_id": checkpoint.get("run_id"),
                     "description": payload.get("campaign")
                     or payload.get("conclusion")
                     or payload.get("status")
@@ -464,7 +467,11 @@ class Readers:
         """Find the matrix row (with suites) whose run_id or experiment id matches."""
         for kind in (RESEARCH_SCOREBOARD_KIND, "quality", "grammar", "perf"):
             for row in self.scoreboard(kind)["results"]:
-                if run_id in (row.get("run_id"), row.get("id")):
+                if run_id in (
+                    row.get("run_id"),
+                    row.get("id"),
+                    row.get("checkpoint_run_id"),
+                ):
                     return {"matrix": kind, **row}
         return None
 
@@ -1056,6 +1063,14 @@ class Readers:
             run_id = _plain_markdown(row.get("run id"))
             if "champion" not in role.casefold() or run_id in live_run_ids:
                 continue
+            scoreboard = self._scoreboard_row(run_id)
+            suites = (scoreboard or {}).get("suites")
+            metrics, _ = _suite_metrics(suites)
+            suite_sizes = {
+                name: int(suite.get("n") or 0)
+                for name, suite in (suites or {}).items()
+                if isinstance(suite, dict)
+            }
             references.append(
                 {
                     "role": role,
@@ -1064,9 +1079,11 @@ class Readers:
                     "kind": _plain_markdown(row.get("kind")),
                     "location": _plain_markdown(row.get("location")),
                     "status": _plain_markdown(row.get("status")),
-                    "evaluation_status": "evaluation not attached",
-                    "metrics": {},
-                    "suite_sizes": {},
+                    "evaluation_status": (
+                        "evaluated" if metrics else "evaluation not attached"
+                    ),
+                    "metrics": metrics,
+                    "suite_sizes": suite_sizes,
                     "created_at": None,
                     "provenance": "committed",
                 }

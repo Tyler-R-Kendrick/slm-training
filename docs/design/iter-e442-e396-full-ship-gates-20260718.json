@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E442",
+  "date": "2026-07-18",
+  "status": "complete",
+  "run_id": "e442-e396-full-ship-gates-r1",
+  "checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "path": "outputs/runs/e396-balanced-type-head-continuation-r1/checkpoints/last.pt",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0",
+    "storage": "local",
+    "sync_status": "pending"
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "grammar_ltr_max_tokens": 320,
+    "component_plan_decode_weight": 2.0,
+    "slot_component_decode_weight": 8.0,
+    "honest_slot_contract": true,
+    "gen_steps": 8,
+    "max_attempts": 3,
+    "training_steps_cumulative": 427,
+    "target_tokens_cumulative": 22044
+  },
+  "suites": {
+    "smoke": {"n": 3, "parse_rate": 1.0, "meaningful_program_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.56, "component_type_recall": 0.5, "reward_score": 0.977},
+    "held_out": {"n": 5, "parse_rate": 1.0, "meaningful_program_rate": 0.6, "placeholder_fidelity": 1.0, "structural_similarity": 0.59328, "component_type_recall": 0.4833333333333333, "reward_score": 0.5916},
+    "adversarial": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 0.75, "placeholder_fidelity": 1.0, "structural_similarity": 0.6762, "component_type_recall": 0.75, "reward_score": 0.72675},
+    "ood": {"n": 4, "parse_rate": 1.0, "meaningful_program_rate": 1.0, "placeholder_fidelity": 1.0, "structural_similarity": 0.551125, "component_type_recall": 0.7291666666666666, "reward_score": 0.98275},
+    "rico_held": {"n": 1500, "parse_rate": 1.0, "meaningful_program_rate": 0.9846666666666667, "placeholder_fidelity": 0.9993333333333333, "structural_similarity": 0.6390148000000001, "component_type_recall": 0.8651666666666666, "reward_score": 0.9826686666666666}
+  },
+  "ship_gates": {"pass": true, "failures": []},
+  "agentv": {"passed": 5, "total": 5, "execution_errors": 0},
+  "timing_policy": {
+    "external_timeout_seconds": 290,
+    "external_kill_after_seconds": 10,
+    "timed_out_runs_used_as_evidence": 0
+  },
+  "verdict": "local ship-gate champion; production HF ship pending durable bucket sync"
+}
