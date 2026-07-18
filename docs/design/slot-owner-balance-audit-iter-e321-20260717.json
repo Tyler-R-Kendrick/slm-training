@@ -1,0 +1,28 @@
+{
+  "id": "E321",
+  "date": "2026-07-17",
+  "status": "accepted_training_data_diagnostic",
+  "source": "outputs/data/train/e316_semantic_slots_v1/records.jsonl",
+  "eval_records_used": false,
+  "supervised_slots": 1545,
+  "component_classes": 22,
+  "top_classes": {
+    "TextContent": 799,
+    "Button": 121,
+    "ImageBlock": 72,
+    "Callout": 62,
+    "StepsItem": 56,
+    "Input": 36,
+    "CardHeader": 22
+  },
+  "majority_class_fraction": 0.5171521035598705,
+  "observed_final20_accuracy": 0.7008333392441273,
+  "role_evidence": {
+    "email": {"Input": 22, "FormControl": 6},
+    "placeholder": {"Input": 28},
+    "subtitle": {"CardHeader": 11},
+    "submit": {"Button": 19, "other": 5},
+    "continue": {"Button": 8}
+  },
+  "verdict": "Role signal exists but the owner objective is majority dominated. Test focal loss rather than adding evaluation-shaped aliases."
+}

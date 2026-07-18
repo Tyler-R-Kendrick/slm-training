@@ -2079,6 +2079,13 @@ record no quality gain; the role representation/data is limiting. See
 [results](iter-e320-all-consumed-slot-score-20260717.md) and
 [JSON](all-consumed-slot-score-results-iter-e320-20260717.json).
 
+E321's training-only balance audit finds 1,545 slot-owner labels across 22
+classes, with `TextContent` at 51.7% and the minority role signal needed by the
+failing suites already present. The next matched arm therefore targets
+objective imbalance with focal loss, not eval-shaped aliases. See
+[audit](iter-e321-slot-owner-balance-audit-20260717.md) and
+[JSON](slot-owner-balance-audit-iter-e321-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
