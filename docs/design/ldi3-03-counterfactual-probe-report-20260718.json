@@ -1,0 +1,63 @@
+{
+  "counts": {
+    "ambiguous": 1,
+    "qualified_bad": 1,
+    "qualified_good": 2,
+    "unobserved": 1
+  },
+  "note": "Mock backend; no model rollout, no verifier run, no training. Delayed failures are attributed only via forced-action rollout verdicts at the exact state \u2014 never from final-output position.",
+  "pareto_front": [
+    2,
+    3
+  ],
+  "semantic_partition": {
+    "ambiguous_action_ids": [
+      1
+    ],
+    "bad_action_ids": [
+      4
+    ],
+    "good_action_ids": [
+      2,
+      3
+    ],
+    "unobserved_action_ids": [
+      5
+    ]
+  },
+  "state_id": "799749377ce24adfe8adfb447d53bd4e325d07237aa26aa41af250bc8110353b",
+  "support_table": {
+    "1": {
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "verdict": "fail"
+    },
+    "2": {
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "verdict": "pass"
+    },
+    "3": {
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "verdict": "pass"
+    },
+    "4": {
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "verdict": "fail"
+    }
+  }
+}
