@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import importlib.util
+import logging
 import threading
+import time
 from collections import OrderedDict
 from dataclasses import dataclass
 from pathlib import Path
@@ -25,10 +28,20 @@ from slm_training.harnesses.annotations import (
 )
 from slm_training.harnesses.annotations.store import AnnotationStore, FileAnnotationStore
 from slm_training.dsl.parser import ParseError, stream_check, validate
+from slm_training.models.checkpoint_resolve import (
+    ResolvedCheckpoint,
+    resolve_serving_checkpoint,
+)
 from slm_training.models.paths import PLAYGROUND_DEMO_CHECKPOINT
 from slm_training.web.prompts import EXAMPLE_PROMPTS, PromptCursor, load_prompt_bank
 
 DEFAULT_CHECKPOINT = PLAYGROUND_DEMO_CHECKPOINT
+
+_LOGGER = logging.getLogger(__name__)
+
+# Re-checking "is there a newer checkpoint?" is stat/glob work; bound how often
+# it runs so request handling never pays it more than once per window.
+_RESOLVE_INTERVAL_SECONDS = 5.0
 
 
 @dataclass
@@ -71,8 +84,22 @@ class PlaygroundService:
         generation_attempts_path: Path | None = None,
         annotation_store: AnnotationStore | None = None,
         model_factory: Callable[[Path, str], Any] | None = None,
+        require_onnx: bool | None = None,
     ) -> None:
-        self.checkpoint = Path(checkpoint or DEFAULT_CHECKPOINT)
+        # No explicit checkpoint means "track the latest model we're building":
+        # deployment pointer → champion → newest outputs/ run → demo fixture.
+        self._explicit_checkpoint = Path(checkpoint) if checkpoint is not None else None
+        self._require_onnx = (
+            require_onnx
+            if require_onnx is not None
+            else importlib.util.find_spec("torch") is None
+        )
+        self._resolved = resolve_serving_checkpoint(
+            explicit=self._explicit_checkpoint, require_onnx=self._require_onnx
+        )
+        self.checkpoint = self._resolved.path
+        self._loaded_mtime: float | None = None
+        self._resolve_checked_at = 0.0
         self.device = device
         self.annotations_path = Path(annotations_path or DEFAULT_FEEDBACK_PATH)
         self.human_train_path = Path(human_train_path or DEFAULT_HUMAN_TRAIN_PATH)
@@ -107,6 +134,7 @@ class PlaygroundService:
             meta = json.loads(meta_path.read_text(encoding="utf-8"))
         return {
             "checkpoint": str(self.checkpoint),
+            "checkpoint_resolution": self._resolved.to_dict(),
             "exists": self.ready,
             "loaded": self._model is not None,
             "device": self.device,
@@ -122,10 +150,11 @@ class PlaygroundService:
     def _training_model_identity(self) -> dict[str, str]:
         meta = self.info().get("meta") or {}
         model = str(meta.get("kind") or "twotower")
+        label = self._resolved.run_id or self.checkpoint.name
         return {
             "kind": "model",
             "provider": "slm-training",
-            "id": f"{model}:{self.checkpoint.name}",
+            "id": f"{model}:{label} ({self._resolved.provenance})",
             "model": model,
             "runtime": self.device,
         }
@@ -157,64 +186,131 @@ class PlaygroundService:
             "id": (session_id or "anonymous").strip() or "anonymous",
         }
 
+    def _stat_mtime(self, path: Path) -> float | None:
+        try:
+            return path.stat().st_mtime
+        except OSError:
+            return None
+
+    def _next_serving_target(self) -> ResolvedCheckpoint | None:
+        """Return the resolution to (re)load, or None to keep the loaded model.
+
+        Keeps a live server on "the latest model we're building": a newly
+        deployed/promoted/trained checkpoint (auto mode) or an in-place
+        overwrite of the tracked file (training rewrites ``last.pt``) swaps in
+        without a restart. Hand-injected models (tests set ``_model`` directly,
+        so no load mtime was recorded) are never displaced.
+        """
+        if self._model is not None and self._loaded_mtime is None:
+            return None
+        now = time.monotonic()
+        if (
+            self._model is not None
+            and now - self._resolve_checked_at < _RESOLVE_INTERVAL_SECONDS
+        ):
+            return None
+        self._resolve_checked_at = now
+        if self._explicit_checkpoint is None:
+            resolved = resolve_serving_checkpoint(require_onnx=self._require_onnx)
+            if resolved.path != self.checkpoint:
+                return resolved
+        if self._model is None:
+            return None
+        current = self._stat_mtime(self.checkpoint)
+        if current is not None and current != self._loaded_mtime:
+            return self._resolved
+        return None
+
     def load(self) -> Any:
         with self._lock:
-            if self._model is not None:
+            target = self._next_serving_target()
+            if self._model is None:
+                if target is not None:
+                    self._resolved = target
+                    self.checkpoint = target.path
+                return self._load_locked()
+            if target is None:
                 return self._model
-            if not self.checkpoint.exists():
-                raise FileNotFoundError(
-                    f"checkpoint not found: {self.checkpoint}. "
-                    "Train one with scripts/train_model.py or the playground bootstrap."
+            previous = (self._model, self._resolved, self.checkpoint, self._loaded_mtime)
+            self._model = None
+            self._resolved = target
+            self.checkpoint = target.path
+            try:
+                return self._load_locked()
+            except Exception as exc:  # noqa: BLE001 — keep serving the old model
+                _LOGGER.warning(
+                    "reload of %s failed (%s); keeping previously loaded model",
+                    self.checkpoint,
+                    exc,
                 )
-            if self._model_factory is not None:
-                self._model = self._model_factory(self.checkpoint, self.device)
-            else:
-                try:
-                    from slm_training.models.twotower import TwoTowerModel
-                except ModuleNotFoundError as exc:
-                    if exc.name != "torch" or self.device != "cpu":
-                        raise
-                    from slm_training.models.onnx_inference import OnnxTwoTowerModel
+                (
+                    self._model,
+                    self._resolved,
+                    self.checkpoint,
+                    self._loaded_mtime,
+                ) = previous
+                return self._model
 
-                    self._model = OnnxTwoTowerModel.from_checkpoint(
-                        self.checkpoint, device=self.device
-                    )
-                else:
-                    self._model = TwoTowerModel.from_checkpoint(
-                        self.checkpoint, device=self.device
-                    )
-            self._model.eval()
-            # Enable the deterministic DFA / LTR speculative layer. Validation
-            # and fallback policy belong to this service. Q9 decode levers cut
-            # repair-path latency without hiding failed model attempts.
-            cfg = self._model.config
-            cfg.grammar_constrained = True
-            cfg.grammar_ltr_primary = True
-            cfg.grammar_ltr_repair = True
-            # The harness owns the retry/fallback policy. Do not let the model
-            # hide a failed decode behind its canned minimal-program fallback.
-            cfg.grammar_finalize_validate = False
-            cfg.grammar_fastpath = True
-            cfg.grammar_incremental_state = True
-            cfg.grammar_verify_chosen_only = True
-            cfg.grammar_skip_exact_stream_probe = True
-            cfg.grammar_copy_probes = True
-            cfg.grammar_early_exit_pick = True
-            cfg.grammar_multitoken_accept = True
-            if int(getattr(cfg, "grammar_multitoken_max", 0) or 0) < 4:
-                cfg.grammar_multitoken_max = 8
-            if int(getattr(cfg, "grammar_canvas_lookahead", 0) or 0) <= 0:
-                cfg.grammar_canvas_lookahead = 32
-            # P1 defaults on; P7 attempt budget is honored by generate().
-            if not hasattr(cfg, "generate_max_attempts") or not isinstance(
-                getattr(cfg, "generate_max_attempts", None), (int, float)
-            ):
-                cfg.generate_max_attempts = 3
-            elif int(cfg.generate_max_attempts or 0) < 1:
-                cfg.generate_max_attempts = 3
-            if int(cfg.grammar_ltr_max_tokens or 0) < 128:
-                cfg.grammar_ltr_max_tokens = 192
-            return self._model
+    def _load_locked(self) -> Any:
+        if not self.checkpoint.exists():
+            raise FileNotFoundError(
+                f"checkpoint not found: {self.checkpoint}. "
+                "Train one with scripts/train_model.py or the playground bootstrap."
+            )
+        loaded_mtime = self._stat_mtime(self.checkpoint)
+        if self._model_factory is not None:
+            self._model = self._model_factory(self.checkpoint, self.device)
+        else:
+            try:
+                from slm_training.models.twotower import TwoTowerModel
+            except ModuleNotFoundError as exc:
+                if exc.name != "torch" or self.device != "cpu":
+                    raise
+                from slm_training.models.onnx_inference import OnnxTwoTowerModel
+
+                self._model = OnnxTwoTowerModel.from_checkpoint(
+                    self.checkpoint, device=self.device
+                )
+            else:
+                self._model = TwoTowerModel.from_checkpoint(
+                    self.checkpoint, device=self.device
+                )
+        self._loaded_mtime = loaded_mtime
+        _LOGGER.info(
+            "serving checkpoint %s (%s)", self.checkpoint, self._resolved.provenance
+        )
+        self._model.eval()
+        # Enable the deterministic DFA / LTR speculative layer. Validation
+        # and fallback policy belong to this service. Q9 decode levers cut
+        # repair-path latency without hiding failed model attempts.
+        cfg = self._model.config
+        cfg.grammar_constrained = True
+        cfg.grammar_ltr_primary = True
+        cfg.grammar_ltr_repair = True
+        # The harness owns the retry/fallback policy. Do not let the model
+        # hide a failed decode behind its canned minimal-program fallback.
+        cfg.grammar_finalize_validate = False
+        cfg.grammar_fastpath = True
+        cfg.grammar_incremental_state = True
+        cfg.grammar_verify_chosen_only = True
+        cfg.grammar_skip_exact_stream_probe = True
+        cfg.grammar_copy_probes = True
+        cfg.grammar_early_exit_pick = True
+        cfg.grammar_multitoken_accept = True
+        if int(getattr(cfg, "grammar_multitoken_max", 0) or 0) < 4:
+            cfg.grammar_multitoken_max = 8
+        if int(getattr(cfg, "grammar_canvas_lookahead", 0) or 0) <= 0:
+            cfg.grammar_canvas_lookahead = 32
+        # P1 defaults on; P7 attempt budget is honored by generate().
+        if not hasattr(cfg, "generate_max_attempts") or not isinstance(
+            getattr(cfg, "generate_max_attempts", None), (int, float)
+        ):
+            cfg.generate_max_attempts = 3
+        elif int(cfg.generate_max_attempts or 0) < 1:
+            cfg.generate_max_attempts = 3
+        if int(cfg.grammar_ltr_max_tokens or 0) < 128:
+            cfg.grammar_ltr_max_tokens = 192
+        return self._model
 
     def next_prompt(self, session_id: str | None = None) -> dict[str, str]:
         sid = (session_id or "default").strip() or "default"
@@ -325,6 +421,25 @@ class PlaygroundService:
         }
 
     @staticmethod
+    def _dangling_refs(node: Any) -> list[str]:
+        """Collect identifiers referenced but never defined (unresolved refs)."""
+        found: list[str] = []
+
+        def walk(value: Any) -> None:
+            if isinstance(value, dict):
+                if value.get("type") == "ref":
+                    found.append(str(value.get("name") or "?"))
+                    return
+                for child in value.values():
+                    walk(child)
+            elif isinstance(value, (list, tuple)):
+                for child in value:
+                    walk(child)
+
+        walk(node)
+        return found
+
+    @staticmethod
     def _validate_candidate(openui: str) -> str:
         """Return canonical, useful OpenUI or raise a training-grade failure."""
         program = validate(openui)
@@ -334,6 +449,15 @@ class PlaygroundService:
             raise ParseError("generated OpenUI is missing a root assignment")
         if "Stack([]" in compact or "Card([]" in compact:
             raise ParseError("generated OpenUI contains an empty container")
+        # The official renderer refuses undefined identifiers; a candidate the
+        # annotation UI cannot render must fail here, as a repairable training
+        # signal, instead of deadlocking the preview.
+        dangling = PlaygroundService._dangling_refs(program.root)
+        if dangling:
+            names = ", ".join(sorted(set(dangling)))
+            raise ParseError(
+                f"generated OpenUI references undefined identifiers: {names}"
+            )
         return serialized
 
     def generate(
