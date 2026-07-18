@@ -282,6 +282,18 @@ class TwoTowerConfig:
     compiler_search_stagnation_patience: int = 2
     compiler_search_backtrack_limit: int = 8
     compiler_search_local_nogoods: bool = False
+    # VSS1-03 certified-solver decode: exact closure prunes the compiler forest to
+    # the certificate-checked live subset before soft ranking. Disabled by default;
+    # ``False`` is byte-identical to existing decode. Deterministic budgets are
+    # authoritative (wall timer is advisory only).
+    verified_solver_decode: bool = False
+    solver_max_nodes: int = 512
+    solver_max_depth: int = 64
+    solver_max_backtracks: int = 64
+    solver_max_verifier_calls: int = 64
+    solver_max_wall_ms: int = 0
+    solver_unknown_policy: str = "keep_and_rank"
+    solver_certificate_mode: str = "summary"  # none | summary | full
     # A4 minimum-content decode contract (compiler-tree decode only):
     #   0  -> off (empty layouts remain legal completions);
     #   >0 -> require at least this many components before EOS is admitted;
@@ -3714,6 +3726,58 @@ class TwoTowerModel(nn.Module):
         )
         return tuple(paths[chosen].token_ids)
 
+    def _solver_prune_forest(self, forest, prefix):
+        """VSS1-03: prune the compiler forest to the certified live subset.
+
+        Only reached when ``verified_solver_decode`` is on. Runs certificate-checked
+        exact closure (the VSS0-04 oracle) over the forest and drops only candidates
+        proven ``UNSUPPORTED`` with a replay-valid certificate; ``UNKNOWN`` candidates
+        are kept (``keep_and_rank``) so the ordinary soft ranker still sees them. An
+        unsupported tokenizer/pack fails with a clear capability error (never a
+        silent weaker path).
+        """
+        from slm_training.dsl.language_contract import contract_id
+        from slm_training.dsl.solver.closure import EnumerativeSupportProvider
+        from slm_training.dsl.solver.decode import solver_prune
+        from slm_training.dsl.solver.openui_support import (
+            OpenUIForestExpander,
+            OpenUIWellFormedVerifier,
+        )
+        from slm_training.dsl.solver.state import SolverBounds
+        from slm_training.models.dsl_tokenizer import is_dsl_native_tokenizer
+
+        if not is_dsl_native_tokenizer(self.tokenizer):
+            raise ValueError(
+                "verified_solver_decode requires a DSL-native tokenizer/pack; "
+                f"{type(self.tokenizer).__name__} is unsupported"
+            )
+        if forest.coverage != "complete" or not forest.paths:
+            return forest  # closure is authoritative only over an exhaustive set
+
+        max_nodes = int(getattr(self.config, "solver_max_nodes", 512) or 512)
+        bounds = SolverBounds(
+            max_tokens=max(1, max_nodes * 64),
+            max_nodes=max_nodes,
+            max_depth=int(getattr(self.config, "solver_max_depth", 64) or 64),
+            max_backtracks=int(getattr(self.config, "solver_max_backtracks", 64) or 64),
+            max_verifier_calls=int(
+                getattr(self.config, "solver_max_verifier_calls", 64) or 64
+            ),
+        )
+        cv = contract_id()
+        window = int(getattr(self.config, "grammar_draft_window", 8) or 8)
+        expander = OpenUIForestExpander(
+            self.tokenizer, prefix, pack_id="openui", constraint_version=cv,
+            bounds=bounds, max_path_tokens=window,
+        )
+        provider = EnumerativeSupportProvider(expander, OpenUIWellFormedVerifier())
+        policy = str(getattr(self.config, "solver_unknown_policy", "keep_and_rank"))
+        pruned, _result = solver_prune(
+            forest, prefix, provider, pack_id="openui", constraint_version=cv,
+            bounds=bounds, unknown_policy=policy, state=expander.root_state(), cache={},
+        )
+        return pruned
+
     def _compiler_ltr_decode_one(
         self,
         ctx: torch.Tensor,
@@ -3803,6 +3867,11 @@ class TwoTowerModel(nn.Module):
                     ),
                     min_content=self._effective_min_content(slot_contract),
                 )
+            if getattr(self.config, "verified_solver_decode", False):
+                # VSS1-03: certified exact closure prunes the forest to the live
+                # subset before any soft ranking. Disabled by default (guard above),
+                # so the default decode path is untouched.
+                forest = self._solver_prune_forest(forest, prefix)
             # Partial coverage still contains individually grammar-admitted
             # paths. Tree/restricted modes must consume those paths; falling
             # back merely because the vocabulary is not exhaustive discards
