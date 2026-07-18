@@ -93,7 +93,7 @@ unknown fields forbidden:
 
 - `CampaignSpec` and `CampaignBudget` fix objective, metric, track, evidence roots,
   allowed knobs, experiment count, wall time, and GPU-hour ceiling. The configurable
-  `max_wall_minutes` field defaults to 5, rejects values above 5, and is one
+  `max_wall_minutes` field defaults to 3, rejects values above 3, and is one
   cumulative deadline shared by data build, training, and evaluation stages;
 - `EvidenceSnapshot` records path, kind, content SHA, size, summary, and numeric
   metrics for lineage docs, run summaries, telemetry, AgentV, annotations, data
@@ -266,7 +266,7 @@ to normal citation validation.
 ```bash
 python -m scripts.autoresearch init --campaign-id <id> \
   --objective "<falsifiable objective>" --primary-metric <metric> \
-  --max-wall-minutes 5
+  --max-wall-minutes 3
 python -m scripts.autoresearch research --campaign-id <id>
 python -m scripts.autoresearch hypothesize --campaign-id <id>
 python -m scripts.autoresearch run --campaign-id <id>          # inspect recommendation

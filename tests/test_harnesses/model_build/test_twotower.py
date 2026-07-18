@@ -172,7 +172,15 @@ def test_checkpoint_rejects_missing_trainable_weights(tmp_path: Path) -> None:
 
 
 def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) -> None:
-    records = [ExampleRecord(id="a", prompt="Hero", openui=HERO, split="train")]
+    records = [
+        ExampleRecord(
+            id="a",
+            prompt="Hero",
+            openui=HERO,
+            placeholders=[":hero.title", ":hero.body"],
+            split="train",
+        )
+    ]
     model = TwoTowerModel.from_records(
         records,
         config=TwoTowerConfig(
@@ -185,6 +193,12 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
             component_inventory_decode_weight=0.75,
             component_plan_loss_weight=1.0,
             component_plan_decode_weight=0.5,
+            slot_component_loss_weight=0.6,
+            slot_component_focal_gamma=2.0,
+            slot_component_class_balance_power=0.5,
+            slot_component_decode_weight=0.25,
+            slot_component_prompt_context=False,
+            slot_component_lexeme_prior_weight=1.0,
             component_edge_loss_weight=1.0,
             component_edge_alignment_loss_weight=0.8,
             component_edge_decode_weight=0.4,
@@ -205,6 +219,7 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
 
     assert loaded.component_inventory_head is not None
     assert loaded.component_plan_head is not None
+    assert loaded.slot_component_head is not None
     assert loaded.component_edge_head is not None
     assert loaded.binder_component_plan_head is not None
     assert loaded.binder_topology_head is not None
@@ -213,6 +228,13 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     assert loaded.config.component_inventory_decode_weight == 0.75
     assert loaded.config.component_plan_loss_weight == 1.0
     assert loaded.config.component_plan_decode_weight == 0.5
+    assert loaded.config.slot_component_loss_weight == 0.6
+    assert loaded.config.slot_component_focal_gamma == 2.0
+    assert loaded.config.slot_component_class_balance_power == 0.5
+    assert loaded.config.slot_component_class_weights
+    assert loaded.config.slot_component_decode_weight == 0.25
+    assert loaded.config.slot_component_prompt_context is False
+    assert loaded.config.slot_component_lexeme_prior_weight == 1.0
     assert loaded.config.component_edge_loss_weight == 1.0
     assert loaded.config.component_edge_alignment_loss_weight == 0.8
     assert loaded.config.component_edge_decode_weight == 0.4

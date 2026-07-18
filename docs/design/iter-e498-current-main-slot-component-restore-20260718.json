@@ -1,0 +1,65 @@
+{
+  "experiment_id": "E498",
+  "classification": "diagnostic",
+  "date_utc": "2026-07-18",
+  "checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0",
+    "remote_uri": "hf://buckets/TKendrick/OpenUI/checkpoints/e396-balanced-type-head-continuation-r1/"
+  },
+  "recipe": {
+    "device": "cpu",
+    "backend": "hf",
+    "output_codec": "choice",
+    "suite": "smoke",
+    "suite_n": 3,
+    "training_steps": 0,
+    "frozen_checkpoint": true,
+    "hard_process_cap_seconds": 170,
+    "honesty_mode": "canonical ship gates; smoke-only diagnostic"
+  },
+  "runs": [
+    {
+      "label": "loaded_head_before_structural_state_fix",
+      "artifact": "outputs/runs/e498-slot-head-smoke-r3/sde0_01_0d064fd3402d0a60.json",
+      "agentv_jsonl": "outputs/runs/e498-slot-head-smoke-r3/scratch/eval/baseline/agentv/openui-model-ship-gates-2026-07-18t21-59-05-417009-00-00.eval.jsonl",
+      "baseline": {
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.17196666666666668,
+        "component_type_recall": 0.0,
+        "placeholder_fidelity": 0.1111111111111111,
+        "reward_score": 0.0,
+        "slot_component_applications": 0,
+        "slot_component_choice_changes": 0
+      }
+    },
+    {
+      "label": "restored_head_with_structural_state_fix",
+      "artifact": "outputs/runs/e498-slot-head-smoke-r4/sde0_01_0d064fd3402d0a60.json",
+      "agentv_jsonl": "outputs/runs/e498-slot-head-smoke-r4/scratch/eval/baseline/agentv/openui-model-ship-gates-2026-07-18t22-01-35-807204-00-00.eval.jsonl",
+      "baseline": {
+        "parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "structural_similarity": 0.2705666666666667,
+        "component_type_recall": 0.0,
+        "placeholder_fidelity": 0.0,
+        "reward_score": 0.0,
+        "slot_component_applications": 20,
+        "slot_component_choice_changes": 20
+      }
+    }
+  ],
+  "delta": {
+    "structural_similarity": 0.09860000000000002,
+    "slot_component_applications": 20,
+    "slot_component_choice_changes": 20,
+    "placeholder_fidelity": -0.1111111111111111
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Smoke-only diagnostic. Meaningful rate, component recall, and reward remain zero; placeholder fidelity regressed to zero."
+  },
+  "decision": "Keep the compatibility and training-path restoration, but do not promote E396 or advance to Stage B."
+}

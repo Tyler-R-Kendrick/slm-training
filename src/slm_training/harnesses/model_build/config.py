@@ -231,7 +231,16 @@ class ModelBuildConfig:
     component_inventory_decode_weight: float | None = None
     component_plan_loss_weight: float = 0.0
     component_plan_decode_weight: float | None = None
+    slot_component_loss_weight: float = 0.0
+    slot_component_focal_gamma: float = 0.0
+    slot_component_class_balance_power: float = 0.0
     slot_component_decode_weight: float | None = None
+    slot_component_prompt_context: bool = True
+    slot_component_next_context: bool = False
+    slot_component_pair_interaction: bool = False
+    slot_component_lexeme_prior_weight: float = 0.0
+    slot_component_span_prior_weight: float = 0.0
+    slot_component_content_arity: bool = False
     component_edge_loss_weight: float = 0.0
     component_edge_alignment_loss_weight: float = 0.0
     component_edge_decode_weight: float | None = None
