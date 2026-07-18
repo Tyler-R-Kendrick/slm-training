@@ -57,6 +57,7 @@ contracts, eight generation steps, three attempts, and no fallback.
 | 18d | `[912,928)` | 16 | 1.0 | 1.0 | 0.8939 | 1.0 | 0.9946 | 0 / 0 / 0 |
 | 18e | `[928,944)` | 16 | 1.0 | 1.0 | 0.8666 | 1.0 | 0.9934 | 0 / 0 / 0 |
 | 18f | `[944,960)` | 16 | 1.0 | 1.0 | 0.9208 | 1.0 | 0.9940 | 0 / 0 / 0 |
+| 19a | `[960,976)` | 16 | 1.0 | 1.0 | 0.9113 | 1.0 | 0.9908 | 0 / 0 / 0 |
 
 Shard 0 completed normally in about 177 seconds and is metric-identical to the
 corresponding E477 rows, with zero failures, fallback, or timeouts.
@@ -208,4 +209,12 @@ Shard 18f completed normally in about 76 seconds under the three-minute policy
 and is prediction-identical to the corresponding E477 rows, with structure
 0.9208, reward 0.9940, and zero failures, fallback, or timeouts.
 
-**Status:** 960/1500 rows complete. No merged or ship claim yet.
+Shard 19a completed normally in about 94 seconds under the three-minute policy
+with structure 0.9113, reward 0.9908, and zero failures, fallback, or timeouts.
+One of 16 predictions changed (`rico_hf_test_2249`): E487 replaced E477's
+string `"nnu"` in a numeric slider slot with `-1` and changed other numeric
+slider values/order. The current scorer reports no material metric delta
+(structure, fidelity, type recall, and reward are unchanged), so this is
+neutral type-constraint activation evidence rather than a quality win.
+
+**Status:** 976/1500 rows complete. No merged or ship claim yet.
