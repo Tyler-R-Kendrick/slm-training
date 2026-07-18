@@ -66,6 +66,38 @@ def main(argv: list[str] | None = None) -> int:
         help="Persist grammar allowed_id_set on each commit (E64 support match).",
     )
     parser.add_argument(
+        "--capture-grammar-decisions",
+        action="store_true",
+        help="Emit CAP1-02 grammar-state decision traces alongside decode traces.",
+    )
+    parser.add_argument(
+        "--capture-logits",
+        action="store_true",
+        help="Include per-legal-action logits/energies and derived margin/entropy.",
+    )
+    parser.add_argument(
+        "--arity-profile",
+        default="openui-cap-v1",
+        help="Arity profile label to attach to grammar-decision traces.",
+    )
+    parser.add_argument(
+        "--capture-sensitivity",
+        choices=("fisher_group", "gradient_squared", "jacobian_norm", "quantization_probe"),
+        default=None,
+        help="Disabled by default. Sensitivity adapter to run on grammar decisions.",
+    )
+    parser.add_argument(
+        "--max-sensitivity-records",
+        type=int,
+        default=None,
+        help="Cap the number of sensitivity records per rollout.",
+    )
+    parser.add_argument(
+        "--state-stratified",
+        action="store_true",
+        help="Record at most one decision per unique grammar state fingerprint.",
+    )
+    parser.add_argument(
         "--counterfactual-semantic",
         action="store_true",
         help="Replay and independently judge grammar-legal exact-state alternatives.",
@@ -110,11 +142,13 @@ def main(argv: list[str] | None = None) -> int:
 
     import torch
 
+    from slm_training.harnesses.distill.grammar_trace import GrammarTraceRecorder
     from slm_training.harnesses.distill.trace_store import (
         DecodeTraceRecorder,
         TraceStore,
         checkpoint_sha,
         decode_config_hash,
+        record_grammar_decisions,
     )
     from slm_training.dsl.schema import load_jsonl
     from slm_training.models.twotower import TwoTowerModel
@@ -205,7 +239,21 @@ def main(argv: list[str] | None = None) -> int:
                 record_canvases=not bool(args.no_canvases),
                 record_support=bool(args.record_support),
             )
+            grammar_recorder = None
+            if args.capture_grammar_decisions:
+                grammar_recorder = GrammarTraceRecorder(
+                    run_id=args.run_id,
+                    checkpoint_id=policy_sha or str(args.checkpoint),
+                    dataset_id=args.suite if args.test_dir else (str(args.records) if args.records else ""),
+                    example_id=record.id,
+                    seed=int(args.seed),
+                    capture_logits=bool(args.capture_logits),
+                    capture_sensitivity=args.capture_sensitivity,
+                    max_sensitivity_records=args.max_sensitivity_records,
+                    state_stratified=bool(args.state_stratified),
+                )
             model.trace_recorder = recorder
+            model.grammar_trace_recorder = grammar_recorder
             request = None
             if args.decode_policy == "strict_compiler_tree":
                 from slm_training.data.contract import GenerationRequest
@@ -241,6 +289,23 @@ def main(argv: list[str] | None = None) -> int:
                 )
             finally:
                 model.trace_recorder = None
+                model.grammar_trace_recorder = None
+
+            if grammar_recorder is not None:
+                grammar_records = grammar_recorder.finalize()
+                if grammar_records:
+                    record_grammar_decisions(
+                        store,
+                        grammar_records,
+                        arity_profile=args.arity_profile,
+                        record_id=record.id,
+                        sample_index=sample_index,
+                        source_suite=args.suite if args.test_dir else None,
+                        policy_checkpoint_sha=policy_sha,
+                        policy_checkpoint=str(args.checkpoint),
+                        decode_config_hash=decode_hash,
+                        seed=int(args.seed),
+                    )
 
             if args.counterfactual_semantic:
                 from slm_training.harnesses.preference.counterfactuals import (

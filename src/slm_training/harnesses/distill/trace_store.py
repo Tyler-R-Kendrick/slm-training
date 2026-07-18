@@ -19,6 +19,7 @@ import os
 from dataclasses import asdict, is_dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from collections.abc import Sequence
 from typing import Any, Iterator
 
 TRACE_VERSION = 3
@@ -368,6 +369,32 @@ def record_matrix_outcome(
             "recorded_at": datetime.now(timezone.utc).isoformat(),
         }
     )
+
+
+def record_grammar_decisions(
+    store: TraceStore,
+    records: Sequence[dict[str, Any]],
+    **meta: Any,
+) -> list[str]:
+    """Persist grammar-state decision traces as a batch.
+
+    Each record must already carry the CAP1-02 schema fields. The store appends
+    them with the shared identity envelope and version.
+    """
+    ids: list[str] = []
+    for record in records:
+        ids.append(
+            store.append(
+                {
+                    "version": TRACE_VERSION,
+                    "kind": "grammar_decision",
+                    **record,
+                    "meta": meta,
+                    "recorded_at": datetime.now(timezone.utc).isoformat(),
+                }
+            )
+        )
+    return ids
 
 
 def replay_violations(trace: dict[str, Any]) -> list[str]:

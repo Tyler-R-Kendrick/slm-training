@@ -716,6 +716,9 @@ class TwoTowerModel(nn.Module):
         # Optional decode trajectory recorder (distill.DecodeTraceRecorder).
         # Zero-cost when None; not part of checkpoints.
         self.trace_recorder = None
+        # Optional grammar-state decision trace recorder (distill.GrammarTraceRecorder).
+        # Zero-cost when None.
+        self.grammar_trace_recorder = None
         # Optional retrieval bank: list[(norm_prompt, openui, id)]
         self.skeleton_bank: list[tuple[str, str, str]] = []
         # Train-time caches (formatted context string keyed by record id).
@@ -2870,6 +2873,7 @@ class TwoTowerModel(nn.Module):
         tok = self.tokenizer
         stats = get_active_stats()
         rec = getattr(self, "trace_recorder", None)
+        grec = getattr(self, "grammar_trace_recorder", None)
         repair_commits: list[dict] = []
 
         def _record_commit(
@@ -2878,19 +2882,52 @@ class TwoTowerModel(nn.Module):
             logits_1d: torch.Tensor,
             *,
             forced: bool,
+            prefix: list[int] | None = None,
         ) -> None:
-            if rec is None:
+            if rec is None and grec is None:
                 return
-            log_probs = F.log_softmax(logits_1d.float(), dim=-1)
-            repair_commits.append(
-                {
-                    "t": pos,
-                    "id": int(token_id),
-                    "lp": float(log_probs[int(token_id)].item()),
-                    "forced": forced,
-                    "phase": "ltr_repair",
-                }
-            )
+            if rec is not None:
+                log_probs = F.log_softmax(logits_1d.float(), dim=-1)
+                repair_commits.append(
+                    {
+                        "t": pos,
+                        "id": int(token_id),
+                        "lp": float(log_probs[int(token_id)].item()),
+                        "forced": forced,
+                        "phase": "ltr_repair",
+                    }
+                )
+            if grec is not None and prefix is not None:
+                try:
+                    from slm_training.harnesses.distill.grammar_trace import (
+                        legal_action_ids_from_state,
+                        state_fingerprint,
+                    )
+
+                    legal_cov = legal_action_ids_from_state(tok, st, prefix)
+                    if legal_cov is not None:
+                        legal_ids, coverage = legal_cov
+                        token_str = tok.id_to_token.get(int(token_id), str(int(token_id)))
+                        grec.record(
+                            state_fingerprint=state_fingerprint(
+                                prefix_ids=prefix,
+                                legal_action_ids=legal_ids,
+                                coverage=coverage,
+                            ),
+                            state_signature_version="1",
+                            legal_action_ids=legal_ids,
+                            compiler_coverage=coverage,
+                            selected_action_id=token_str,
+                            logits_or_energies=logits_1d.detach().tolist()
+                            if grec.capture_logits
+                            else None,
+                            convention="logit",
+                            scope_signature="",
+                            expected_type=None,
+                            template_signature=None,
+                        )
+                except Exception:  # noqa: BLE001
+                    pass
 
         t = 0
         while t < length:
@@ -3038,7 +3075,7 @@ class TwoTowerModel(nn.Module):
             if stats is not None:
                 stats.tokens_emitted += 1
             _record_commit(
-                t, int(choice), logits[0, local_t], forced=forced is not None
+                t, int(choice), logits[0, local_t], forced=forced is not None, prefix=prefix
             )
             if choice == tok.eos_id:
                 if t + 1 < length:
@@ -3076,7 +3113,10 @@ class TwoTowerModel(nn.Module):
                     if stats is not None:
                         stats.tokens_emitted += 1
                         stats.accepted_run_tokens += 1
-                    _record_commit(pos, int(nxt), logits[0, pos], forced=False)
+                    _record_commit(
+                        pos, int(nxt), logits[0, pos], forced=False,
+                        prefix=ids[0, :pos].tolist(),
+                    )
                     advance = step + 1
                     if nxt == tok.eos_id:
                         if pos + 1 < length:
