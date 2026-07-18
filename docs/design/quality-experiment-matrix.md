@@ -2456,6 +2456,16 @@ bounded candidate. RICO was not run after the bounded failure. See
 [results](iter-e400-e402-component-plan-balance-20260718.md) and
 [JSON](iter-e400-e402-component-plan-balance-20260718.json).
 
+E403 tests a milder component-plan balance power 0.25, but recipe validation
+finds slot-wide prompt context was accidentally enabled; its checkpoint is
+recorded but excluded from comparison. E404 repeats the controlled recipe in
+108.7s. Despite reducing the observed weight ratio from 12.5× to 3.54×, E405
+held recall is only 0.4333 and E406 exactly reproduces E400's smoke
+meaningful/recall collapse at 0.3333/0.1667. AgentV remains 3/4. Reject both
+checkpoints, leave global balance default-off, and do not run RICO. See
+[results](iter-e403-e406-mild-component-plan-balance-20260718.md) and
+[JSON](iter-e403-e406-mild-component-plan-balance-20260718.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
