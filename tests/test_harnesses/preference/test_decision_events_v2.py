@@ -223,6 +223,16 @@ def test_materializer_rejects_foreign_state_outcome() -> None:
         materialize_pareto(_state(), [foreign])
 
 
+def test_semantic_materializer_rejects_illegal_or_out_of_domain_outcome() -> None:
+    state = _state()
+    # An illegal outcome must never become a semantic good/bad label.
+    with pytest.raises(ValueError, match="requires a legal action outcome"):
+        materialize_pareto(state, [_outcome(4, legal=False)])
+    # An action outside the state's legal set is rejected before materialization.
+    with pytest.raises(ValueError, match="outside the state's legal set"):
+        materialize_thresholded(state, [_outcome(99)])
+
+
 # --------------------------------------------------------------------------- #
 # V1 migration is honest about incompleteness.
 # --------------------------------------------------------------------------- #

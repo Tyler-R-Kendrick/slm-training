@@ -407,6 +407,21 @@ def _observed_reward(outcome: ActionOutcomeV2) -> dict[str, float] | None:
     return {name: totals[name] / count for name in _METRICS}
 
 
+def _require_semantic_outcome(state: DecisionStateV2, outcome: ActionOutcomeV2) -> None:
+    """Reject an outcome that must never become a semantic good/bad label.
+
+    A semantic materializer may only classify a *legal* action that belongs to this
+    state's legal set — matching ``state_id`` alone is not enough, or an arbitrary or
+    illegal ``action_id`` could be trained as a preference.
+    """
+    if outcome.state_id != state.state_id:
+        raise ValueError("action outcome does not belong to this state")
+    if not outcome.legal:
+        raise ValueError("semantic materialization requires a legal action outcome")
+    if outcome.action_id not in state.legal_action_ids:
+        raise ValueError("action outcome action_id is outside the state's legal set")
+
+
 def materialize_pareto(
     state: DecisionStateV2, outcomes: Sequence[ActionOutcomeV2]
 ) -> ObjectiveView:
@@ -420,8 +435,7 @@ def materialize_pareto(
     by_action: dict[int, dict[str, float]] = {}
     observed: set[int] = set()
     for outcome in outcomes:
-        if outcome.state_id != state.state_id:
-            raise ValueError("action outcome does not belong to this state")
+        _require_semantic_outcome(state, outcome)
         observed.add(outcome.action_id)
         reward = _observed_reward(outcome)
         if reward is not None:
@@ -497,8 +511,7 @@ def _action_summary(
     verified: dict[int, list[bool]] = {}
     confidence: dict[int, float] = {}
     for outcome in outcomes:
-        if outcome.state_id != state.state_id:
-            raise ValueError("action outcome does not belong to this state")
+        _require_semantic_outcome(state, outcome)
         reward = _observed_reward(outcome)
         if reward is not None:
             rewards.setdefault(outcome.action_id, []).append(reward)
