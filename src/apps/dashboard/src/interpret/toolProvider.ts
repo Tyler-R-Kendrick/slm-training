@@ -239,10 +239,13 @@ export const toolProvider: Record<string, QueryFn> = {
         const suite = r.suites?.smoke ?? {};
         const headline = suite[lever];
         const legacy = suite.meaningful_source === "parse_rate_legacy";
+        const ci = suite[`${lever}_ci95`];
+        const ciSuffix =
+          headline != null && Array.isArray(ci) ? ` [${f(ci[0], 2)}, ${f(ci[1], 2)}]` : "";
         return {
           id: r.id,
           run_id: r.run_id || r.id,
-          parse: `${f(headline, 2)}${headline != null && legacy ? "*" : ""}`,
+          parse: `${f(headline, 2)}${headline != null && legacy ? "*" : ""}${ciSuffix}`,
           fidelity: f(suite.placeholder_fidelity, 2),
           reward: f(suite.reward_score, 2),
           parse_status:

@@ -257,6 +257,27 @@ def test_certified_fallback_fails_on_measured_fallbacks() -> None:
     assert any("smoke:certified_fallback actual=2" in f for f in result["failures"])
 
 
+def test_ship_gates_fail_on_insufficient_suite_n() -> None:
+    # Fixture-scale evidence (n=3) quantizes every rate to thirds — it cannot
+    # support a ship claim regardless of the values.
+    suites = _full_suite_metrics()
+    suites["smoke"]["n"] = 3
+    result = evaluate_ship_gates(suites)
+    assert result["pass"] is False
+    assert any("smoke:insufficient_n actual=3 need>=20" in f for f in result["failures"])
+
+
+def test_ship_gates_min_n_overridable_per_suite_policy() -> None:
+    # A custom policy may set its own evidence floor; it is a policy knob,
+    # never treated as a metric bar.
+    suites = _full_suite_metrics()
+    suites["smoke"]["n"] = 3
+    thresholds = {"smoke": {"meaningful_program_rate": 0.5, "min_n": 3}}
+    result = evaluate_ship_gates(suites, thresholds=thresholds)
+    assert result["pass"] is True
+    assert "smoke:min_n" not in result["gates"]
+
+
 def test_custom_ship_thresholds_have_stable_distinct_provenance() -> None:
     thresholds = {"smoke": {"meaningful_program_rate": 0.5}}
     first = evaluate_ship_gates(_full_suite_metrics(), thresholds=thresholds)

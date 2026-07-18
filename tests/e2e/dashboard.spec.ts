@@ -43,7 +43,7 @@ test.describe("mission control dashboard", () => {
 
   test("editing a gate threshold re-evaluates live", async ({ page }) => {
     const passingSuite = {
-      n: 1,
+      n: 32,
       meaningful_program_rate: 1,
       structural_similarity: 0.5,
       component_type_recall: 0.5,

@@ -91,7 +91,11 @@ def test_solver_counters_land_in_decode_stats_envelope():
     # Counters surface (only) under metrics["decode_stats"] via aggregate_stats.
     agg = aggregate_stats([stats])
     assert "solver_enabled_sum" in agg
-    assert "solver_support_queries_sum" in agg
+    # Fired counters report values; unfired ones are named, not fabricated.
+    assert (
+        "solver_support_queries_sum" in agg
+        or "solver_support_queries" in agg["counters_omitted_zero"]
+    )
 
 
 def test_solver_counters_default_zero_when_disabled():
@@ -101,8 +105,14 @@ def test_solver_counters_default_zero_when_disabled():
     assert stats.solver_certified_removed == 0
     assert stats.solver_terminal_status == ""
     agg = aggregate_stats([stats])
-    assert agg["solver_enabled_sum"] == 0.0
-    assert agg["solver_certified_removed_mean"] == 0.0
+    # Disabled-feature counters are omitted but self-described: they were
+    # measured at zero, not silently dropped and not emitted as noise.
+    assert "solver_enabled_sum" not in agg
+    assert "solver_certified_removed_mean" not in agg
+    assert "solver_enabled" in agg["counters_omitted_zero"]
+    assert "solver_certified_removed" in agg["counters_omitted_zero"]
+    # Timings always report, even at zero.
+    assert agg["solver_ms_sum"] == 0.0
 
 
 def test_historical_decode_only_trace_still_replays():

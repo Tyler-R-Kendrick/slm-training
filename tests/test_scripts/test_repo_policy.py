@@ -1,13 +1,39 @@
+import subprocess
 from pathlib import Path
 
 from scripts.repo_policy import (
     MAX_PUBLISHED_DATA_BYTES,
     pre_tool_decision,
     raw_mv_paths,
+    validate_new_design_record_paths,
     validate_skill_mirrors,
     validate_top_level,
     validate_published_data_sizes,
 )
+
+
+def test_new_design_records_reject_machine_absolute_paths(tmp_path: Path) -> None:
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "-C", str(tmp_path), "config", "user.email", "t@t"], check=True)
+    subprocess.run(["git", "-C", str(tmp_path), "config", "user.name", "t"], check=True)
+    design = tmp_path / "docs" / "design"
+    design.mkdir(parents=True)
+    committed = design / "iter-old-record.json"
+    committed.write_text('{"checkpoint": "/home/codex/repos/x/outputs/last.pt"}\n')
+    subprocess.run(["git", "-C", str(tmp_path), "add", "-A"], check=True)
+    subprocess.run(
+        ["git", "-C", str(tmp_path), "commit", "-qm", "seed"], check=True
+    )
+    # Committed history is immutable evidence — exempt.
+    assert validate_new_design_record_paths(root=tmp_path) == []
+    # A NEW record with a machine-absolute artifact path is rejected.
+    fresh = design / "iter-new-record.json"
+    fresh.write_text('{"telemetry": "/home/user/slm-training/outputs/tel.json"}\n')
+    errors = validate_new_design_record_paths(root=tmp_path)
+    assert len(errors) == 1 and "iter-new-record.json" in errors[0]
+    # Repo-relative references pass.
+    fresh.write_text('{"telemetry": "outputs/runs/x/tel.json"}\n')
+    assert validate_new_design_record_paths(root=tmp_path) == []
 
 
 def test_published_data_size_cap(tmp_path) -> None:

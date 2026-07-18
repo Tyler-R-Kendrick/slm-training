@@ -821,6 +821,15 @@ def evaluate(
         fallback_count = None
 
     from slm_training.evals.record_schema import RUN_CLASSES, SCHEMA_VERSION
+    from slm_training.lineage.promotion import wilson_lower_bound
+
+    def _wilson_ci95(successes: int, total: int) -> list[float] | None:
+        """95% Wilson interval — makes tiny-n quantization visible (n=3 → ±0.5)."""
+        if total <= 0:
+            return None
+        lower = wilson_lower_bound(successes, total)
+        upper = 1.0 - wilson_lower_bound(total - successes, total)
+        return [round(lower, 4), round(upper, 4)]
 
     run_class = config.run_class if config.run_class in RUN_CLASSES else "scratch_matrix"
     metrics = {
@@ -845,6 +854,8 @@ def evaluate(
             (syntax_parse_ok / document_n) if document_n else None
         ),
         "raw_syntax_validity": (raw_syntax_ok / document_n) if document_n else None,
+        "parse_rate_ci95": _wilson_ci95(syntax_parse_ok, document_n),
+        "meaningful_program_rate_ci95": _wilson_ci95(parse_ok, document_n),
         "contract_precision": _mean_or_none(contract_precision_vals),
         "contract_recall": _mean_or_none(contract_recall_vals),
         # Not computed by any current decode path; None (not a fake 0.0) until
@@ -1106,6 +1117,41 @@ def evaluate_suites(
         "suites": board,
         "evaluated_at": datetime.now(timezone.utc).isoformat(),
     }
+    # Ceiling + length-budget diagnostics ride with every board so a zero
+    # scoreboard is attributable: harness/data breakage (ceiling < 1, budget
+    # overflow) vs genuine model failure. Diagnostic breakage is recorded, not
+    # allowed to sink the eval itself.
+    diagnostics: dict[str, Any] = {}
+    try:
+        from slm_training.harnesses.model_build.diagnostic import ceiling_report
+
+        diagnostics["ceiling"] = {
+            suite: {key: value for key, value in report.items() if key != "failures"}
+            for suite, report in ceiling_report(
+                config.test_dir, suites=tuple(suites)
+            ).items()
+        }
+    except Exception as exc:  # noqa: BLE001
+        diagnostics["ceiling_error"] = str(exc)
+    try:
+        from slm_training.harnesses.model_build.diagnostic import length_budget_report
+
+        ltr_cap = int(getattr(config, "grammar_ltr_max_tokens", 0) or 0)
+        budget = length_budget_report(
+            train_dir=config.train_dir,
+            test_dir=config.test_dir,
+            suites=tuple(suites),
+            **({"grammar_ltr_max_tokens": ltr_cap} if ltr_cap > 0 else {}),
+        )
+        diagnostics["length_budget"] = {
+            "ok": bool(budget.get("ok")),
+            "effective_budget": budget.get("effective_budget"),
+            "failures": budget.get("failures"),
+        }
+    except Exception as exc:  # noqa: BLE001
+        diagnostics["length_budget_error"] = str(exc)
+    scoreboard["diagnostics"] = diagnostics
+
     run_dir = config.run_dir
     run_dir.mkdir(parents=True, exist_ok=True)
     path = run_dir / "scoreboard.json"

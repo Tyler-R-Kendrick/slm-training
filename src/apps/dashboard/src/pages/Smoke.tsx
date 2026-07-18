@@ -48,6 +48,7 @@ export function Smoke({ navigate }: { navigate: (to: string) => void }) {
     run_id: r.run_id,
     parse: r.suites?.smoke?.[gate.lever],
     parseLegacy: r.suites?.smoke?.meaningful_source === "parse_rate_legacy",
+    parseCi: r.suites?.smoke?.[`${gate.lever}_ci95`],
     fidelity: r.suites?.smoke?.placeholder_fidelity,
     reward: r.suites?.smoke?.reward_score,
     n: r.suites?.smoke?.n,
@@ -111,7 +112,12 @@ export function Smoke({ navigate }: { navigate: (to: string) => void }) {
           searchPlaceholder="Search smoke experiments"
           render={{
             id: (r) => <a className="mono runlink" onClick={() => navigate(`/runs/${encodeURIComponent(r.run_id || r.id)}`)}>{r.id}</a>,
-            parse: (r) => `${fmt(r.parse, 2)}${r.parse != null && r.parseLegacy ? "*" : ""}`,
+            parse: (r) =>
+              `${fmt(r.parse, 2)}${r.parse != null && r.parseLegacy ? "*" : ""}${
+                r.parse != null && Array.isArray(r.parseCi)
+                  ? ` [${fmt(r.parseCi[0], 2)}, ${fmt(r.parseCi[1], 2)}]`
+                  : ""
+              }`,
             fidelity: (r) => fmt(r.fidelity, 2),
             reward: (r) => fmt(r.reward, 2),
             gate: (r) =>

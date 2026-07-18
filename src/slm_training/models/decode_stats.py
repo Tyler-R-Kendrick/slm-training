@@ -284,10 +284,20 @@ def aggregate_stats(rows: list[DecodeStats]) -> dict[str, Any]:
         "solver_certificate_replay_failures",
     ]
     out: dict[str, Any] = {"n": len(rows)}
+    # Timings always report (a 0ms phase is a measurement); feature counters
+    # report only when they fired — a disabled feature's counter is noise, so
+    # it is omitted and named in counters_omitted_zero (self-describing: the
+    # counter was measured at zero, not unmeasured).
+    omitted_zero: list[str] = []
     for key in keys:
         vals = [float(getattr(r, key)) for r in rows]
-        out[f"{key}_sum"] = round(sum(vals), 3)
-        out[f"{key}_mean"] = round(sum(vals) / len(vals), 3)
+        total = sum(vals)
+        if total == 0.0 and not key.endswith("_ms"):
+            omitted_zero.append(key)
+            continue
+        out[f"{key}_sum"] = round(total, 3)
+        out[f"{key}_mean"] = round(total / len(vals), 3)
+    out["counters_omitted_zero"] = sorted(omitted_zero)
     totals = sorted(float(r.total_ms) for r in rows)
 
     def _nearest_rank(fraction: float) -> float | None:

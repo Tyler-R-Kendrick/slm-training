@@ -20,6 +20,8 @@ from slm_training.web.observability import Readers
 
 SMOKE_SUITE = {
     "smoke": {
+        # Above the DEFAULT_MIN_SUITE_N evidence floor.
+        "n": 32,
         "parse_rate": 0.9,
         "structural_similarity": 0.5,
         "placeholder_fidelity": 0.4,

@@ -209,7 +209,7 @@ def passing_evaluation() -> dict:
         },
         "suites": {
             "smoke": {
-                "n": 10,
+                "n": 32,
                 "parse_rate": 1,
                 "structural_similarity": 1,
                 "component_type_recall": 1,
@@ -218,7 +218,7 @@ def passing_evaluation() -> dict:
                 "reward_score": 1,
             },
             "held_out": {
-                "n": 10,
+                "n": 32,
                 "parse_rate": 1,
                 "structural_similarity": 1,
                 "component_type_recall": 1,
@@ -226,14 +226,14 @@ def passing_evaluation() -> dict:
                 "placeholder_fidelity": 1,
             },
             "adversarial": {
-                "n": 10,
+                "n": 32,
                 "parse_rate": 1,
                 "structural_similarity": 1,
                 "component_type_recall": 1,
                 "fallback_count": 0,
             },
             "ood": {
-                "n": 10,
+                "n": 32,
                 "parse_rate": 1,
                 "structural_similarity": 1,
                 "component_type_recall": 1,
