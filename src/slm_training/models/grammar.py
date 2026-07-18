@@ -30,8 +30,8 @@ from slm_training.models.tokenizer import OpenUITokenizer
 
 _STREAM_CACHE: dict[str, StreamStatus] = {}
 _STREAM_CACHE_MAX = 2048
-_STRUCT_ID_CACHE: dict[int, set[int]] = {}
-_BIAS_CACHE: dict[tuple[int, float, str, str], object] = {}
+_STRUCT_ID_CACHE: dict[int, tuple[int, set[int]]] = {}
+_BIAS_CACHE: dict[tuple[int, int, float, str, str], object] = {}
 _ACTIVE_DSL: str | None = None
 
 
@@ -134,10 +134,15 @@ def preferred_components() -> frozenset[str]:
 
 
 def structural_token_ids(tokenizer: OpenUITokenizer) -> set[int]:
+    # Key on id() for speed, but validate the cached vocab size: id() is reused
+    # after a tokenizer is GC'd, so a stale entry from a larger-vocab tokenizer
+    # must not be returned for a smaller one (its ids would index past the
+    # logits width downstream and raise IndexError).
+    vocab_len = len(tokenizer.token_to_id)
     cache_key = id(tokenizer.token_to_id)
     cached = _STRUCT_ID_CACHE.get(cache_key)
-    if cached is not None and len(cached) > 0:
-        return cached
+    if cached is not None and cached[0] == vocab_len and len(cached[1]) > 0:
+        return cached[1]
 
     ids: set[int] = set()
     try:
@@ -156,7 +161,7 @@ def structural_token_ids(tokenizer: OpenUITokenizer) -> set[int]:
                     tokenizer.mask_id,
                 }
             )
-            _STRUCT_ID_CACHE[cache_key] = ids
+            _STRUCT_ID_CACHE[cache_key] = (vocab_len, ids)
             return ids
     except Exception:  # noqa: BLE001
         pass
@@ -176,7 +181,7 @@ def structural_token_ids(tokenizer: OpenUITokenizer) -> set[int]:
             tokenizer.mask_id,
         }
     )
-    _STRUCT_ID_CACHE[cache_key] = ids
+    _STRUCT_ID_CACHE[cache_key] = (vocab_len, ids)
     return ids
 
 
@@ -190,10 +195,16 @@ def apply_structural_bias(
     import torch
 
     allowed = structural_token_ids(tokenizer)
+    vocab = logits.size(-1)
+    # Defensive: never bias an index past the logits width, even if a stale
+    # structural-id set slips through (belt-and-suspenders with the vocab-size
+    # validation in structural_token_ids).
+    allowed = {i for i in allowed if 0 <= i < vocab}
     if not allowed:
         return logits
     cache_key = (
         id(tokenizer.token_to_id),
+        vocab,
         float(bias),
         str(logits.device),
         str(logits.dtype),
