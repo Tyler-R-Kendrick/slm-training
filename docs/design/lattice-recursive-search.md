@@ -51,6 +51,24 @@ This preserves the compiler as verifier. A learned conflict or quality score may
 prioritize exploration, but cannot create a legal branch, discard all legal
 branches, or bypass final OpenUI validation.
 
+## Constraint evidence (VSS0-02)
+
+The hard-lattice projection can now explain itself. `build_completion_forest(...,
+explain=True)` (and `ChoiceDecodeState.allowed_ids_with_evidence`) attach
+reason-coded `ConstraintEvidence` — `ConstraintStage` ∈ {grammar, schema,
+binding, slot_contract, dataflow, literal_frame, min_content, terminal,
+coverage} — for every *considered* action, plus a `ConstraintEvidenceSummary`.
+This is instrumentation only: it does not change candidate membership, ordering,
+or the default decode cost (nothing is allocated when `explain=False`).
+
+Honesty rule: evidence about considered candidates is **not** an exhaustive
+support proof. A `partial`/`none` forest `coverage` leaves exclusions
+un-certified (its `coverage` record is `admitted=False`); only a `complete`
+forest makes an exclusion exact, and minimum-content EOS withholding is recorded
+distinctly from a grammar rejection. See
+[verified-scope-solver.md](verified-scope-solver.md) for the support contract
+this evidence feeds.
+
 ## Campaign design (V9)
 
 The registered runnable rows are hypotheses, not results. The matched controls separate the

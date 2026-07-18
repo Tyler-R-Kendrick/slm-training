@@ -226,13 +226,49 @@ the closure.
 | Symbol (file:line) | Existing role | Disposition under this contract |
 | --- | --- | --- |
 | `CompletionForest` (`fastpath/compiler_draft.py:29`) | Frozen enumerated next-action set for a prefix, carrying a `coverage: Coverage` guarantee (`complete`/`partial`/`none`) and `candidate_ids`. | **Retained, authoritative.** The support layer sits above it; its `coverage` tag is the substrate mapping to `SUPPORTED`/`UNSUPPORTED`/`UNKNOWN`. Not duplicated. |
-| `build_completion_forest` (`fastpath/compiler_draft.py:619`) | Deterministic bounded enumerator over the Lark CFG path (prefix legality via `OpenUIIncrementalEngine`). | **Retained.** Serves as the default reference backend's enumeration primitive. Not duplicated. |
+| `build_completion_forest` (`fastpath/compiler_draft.py:619`) | Deterministic bounded enumerator over the Lark CFG path (prefix legality via `OpenUIIncrementalEngine`). | **Retained + extended (VSS0-02).** Serves as the default reference backend's enumeration primitive; gains an opt-in `explain=True` evidence seam (below) with byte-for-byte default parity. Not duplicated. |
 | `LatticeSearchState` + `Nogood` (`fastpath/lattice_search.py:182`, `:16`) | Bounded backtracking search trail with local nogood memory (`choose`/`rollback`). | **Extended (later issue).** Reversible decisions and local nogoods gain replayable certificates; certified deductions become non-reversible. |
 | `RankedForest` / `rank_forest` (`fastpath/lattice_search.py:24`/`:44`) | Independent soft ordering over the hard compiler candidate set. | **Retained.** Grounds the invariant that learned modules rank/propose but never create legality. Not duplicated. |
 | `ScopeContract` / `ScopeKind` (`data/progspec/scopes.py:33`/`:18`) | AST scopes (`COMPONENT_CALL`/`STATEMENT`/`CHILD_LIST`) plus a def/use binder overlay (`definitions`/`uses`/`visible_binders`). | **Extended.** Scope def/use edges feed capsule SCC construction; scopes are **not** assumed independent. |
 | `dependency_closed_failure_cone` (`data/progspec/scopes.py:113`) | Despite the name, computes the least-common-ancestor of failing AST paths — **not** a dependency closure or SCC. | **Not reused for capsules.** Capsule SCCs are a new, distinct construction; this contract does not duplicate or overload this helper. |
 | `ChoiceTokenizer` / `ChoiceDecodeState` (`models/choice_tokenizer.py:172`/`:608`) | Grammar-closed choice IR; length-aware legality (`allowed_ids`, `exhaustive_allowed_ids`, `minimal_completion_length`). | **Retained.** The choice IR is the late-realization and verification surface. Not duplicated. |
 | `HoleId`, finite `domain`, `verification capsule`, `proof certificate` | Absent today (confirmed greenfield). | **New.** The Torch-free state subset (`HoleId`, `SolverBounds`, `SupportVerdict`, `DomainValue`, `HoleDomain`, `FiniteDomainState`) plus the completion-forest adapter are implemented by VSS0-03 (SLM-59) under [`src/slm_training/dsl/solver/`](../../src/slm_training/dsl/solver/state.py); see [Implemented state schema](#implemented-state-schema-vss0-03--slm-59). Verification capsules and proof certificates remain later-issue work. |
+
+## Constraint evidence (VSS0-02)
+
+`build_completion_forest(..., explain=True)` attaches reason-coded evidence to
+the forest **without** changing candidate membership, ordering, coverage, or the
+default decode cost — nothing is collected or allocated when `explain=False`.
+Evidence is the input to later proof certificates, solver hard negatives, and
+per-domain diagnostics; on its own it is **not** a support proof.
+
+Schema (`fastpath/compiler_draft.py`):
+
+- `ConstraintStage` — `grammar`, `schema`, `binding`, `slot_contract`,
+  `dataflow`, `literal_frame`, `min_content`, `terminal`, `coverage`. The stage
+  names the *owner* of the decision, not a certificate.
+- `ConstraintEvidence(candidate_id, path_token_ids, stage, admitted,
+  reason_code, details)` — one immutable, JSON-serializable record per
+  considered action (`as_dict`/`from_dict`).
+- `ConstraintEvidenceSummary(coverage, considered, admitted, excluded,
+  stage_excluded)` — aggregate stage counts plus the forest coverage.
+
+Honesty rule (why evidence stays diagnostic):
+
+- Evidence is emitted **only** for actions the compiler actually enumerated; it
+  never asserts anything about un-enumerated vocabulary.
+- A `partial`/`none` coverage means the exclusions are **not** certified: the
+  `coverage` record is `admitted=False` and the set is not an exhaustive
+  `UNSUPPORTED` proof. Only a `complete` forest turns an exclusion into an exact
+  fact, matching the support semantics above.
+- `min_content` EOS withholding is recorded distinctly from a `grammar`
+  rejection, so a certificate builder never conflates a content floor with an
+  illegality.
+
+The choice codec exposes the same records through
+`ChoiceDecodeState.allowed_ids_with_evidence` (`models/choice_tokenizer.py`),
+which returns the identical allowed set plus per-candidate evidence and leaves
+the default `allowed_ids` caches untouched.
 
 ## End-to-end example (partial coverage → live `UNKNOWN`)
 
@@ -372,6 +408,15 @@ guarantee boundary only. `python -m scripts.repo_policy` passes; documentation
 changes select no test suites (`scripts/check_changed` skips `docs/`). Later VSS
 issues implement the dataclasses and state transitions specified here behind a
 feature flag before any decode-behavior change.
+
+2026-07-17 — VSS0-02 / SLM-58 adds the `explain=True` constraint-evidence seam
+described above (compiler forest plus the choice codec). Instrumentation only:
+default decode behavior, candidate membership, ordering, and coverage are
+byte-for-byte unchanged, and no model was trained, evaluated, promoted, or
+synced — no quality or ship claim. Verified by
+`tests/test_models/test_compiler_decode.py`,
+`tests/test_models/test_choice_tokenizer.py`, and
+`python -m scripts.repo_policy`.
 
 2026-07-17 — VSS0-03 / SLM-59 implements the Torch-free finite-domain state
 subset above (`src/slm_training/dsl/solver/`) with `tests/test_dsl/test_solver_state.py`
