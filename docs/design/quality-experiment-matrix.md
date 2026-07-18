@@ -2234,6 +2234,14 @@ the stronger bounded selection policy. See
 [results](iter-e345-hf-context-best-nll-honest-slot-20260717.md) and
 [JSON](hf-context-best-nll-honest-slot-results-iter-e345-20260717.json).
 
+E346 adds a one-component decode floor to E345. It activates slot-component
+bias on all 16 examples, raises meaningful rate to 0.6667/0.40/0.75/0.50
+across smoke/held/adversarial/OOD, and passes adversarial and OOD AgentV gates
+(2/4 overall). Retain as the strongest bounded HF-context decode policy, not a
+checkpoint or ship result; smoke and held-out component recall still fail.
+See [results](iter-e346-hf-context-best-nll-content-floor-20260717.md) and
+[JSON](hf-context-best-nll-content-floor-results-iter-e346-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

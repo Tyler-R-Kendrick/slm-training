@@ -1,0 +1,77 @@
+{
+  "id": "E346",
+  "date": "2026-07-17",
+  "status": "retained_bounded_decode_policy",
+  "run_id": "e346-hf-context-best-nll-content1-honest-slot-r1",
+  "checkpoint_sha256": "6f0ecf7cce2ebc7c61f133c13456ac91bcd4861bd3e2f4f70a3a72473c211985",
+  "checkpoint_source": "e337-hf-context-e333-recipe-30k-local-r1/checkpoints/best_weighted_nll.pt",
+  "slot_contract_in_context": true,
+  "slot_contract_constrained_decode": true,
+  "honest_slot_contract": true,
+  "decode_min_content": 1,
+  "component_plan_decode_weight": 0.0,
+  "elapsed_wall_seconds": 22.6383,
+  "hard_run_cap_seconds": 300,
+  "evaluation_agentv": {
+    "passed": 2,
+    "total": 4,
+    "execution_errors": 0,
+    "passed_suites": [
+      "adversarial",
+      "ood"
+    ],
+    "failed_suites": [
+      "smoke",
+      "held_out"
+    ]
+  },
+  "checkpoint_sync": "disabled; eval-only bounded local validation",
+  "evaluation_scope": "honest smoke, held_out, adversarial, ood only; no RICO or ship claim",
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse": 1.0,
+      "fidelity": 0.75,
+      "structure": 0.5614,
+      "meaningful": 0.6666666666666666,
+      "recall": 0.3333333333333333,
+      "reward": 0.6326666666666666,
+      "slot_component_applications": 3,
+      "slot_component_choice_changes": 2
+    },
+    "held_out": {
+      "n": 5,
+      "parse": 1.0,
+      "fidelity": 0.46333333333333326,
+      "structure": 0.40928000000000003,
+      "meaningful": 0.4,
+      "recall": 0.2,
+      "reward": 0.3496,
+      "slot_component_applications": 5,
+      "slot_component_choice_changes": 3
+    },
+    "adversarial": {
+      "n": 4,
+      "parse": 1.0,
+      "fidelity": 0.47916666666666663,
+      "structure": 0.47295000000000004,
+      "meaningful": 0.75,
+      "recall": 0.5,
+      "reward": 0.6055,
+      "slot_component_applications": 4,
+      "slot_component_choice_changes": 0
+    },
+    "ood": {
+      "n": 4,
+      "parse": 1.0,
+      "fidelity": 0.2583333333333333,
+      "structure": 0.39432500000000004,
+      "meaningful": 0.5,
+      "recall": 0.25,
+      "reward": 0.3645,
+      "slot_component_applications": 4,
+      "slot_component_choice_changes": 1
+    }
+  },
+  "verdict": "Retain as the strongest bounded HF-context decode policy. It passes two of four AgentV suite gates but is not a checkpoint promotion or ship result."
+}
