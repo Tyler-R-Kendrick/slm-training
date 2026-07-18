@@ -130,7 +130,7 @@ function waitForPreviewApi(timeoutMs = 15_000): Promise<any> {
   });
 }
 
-const browserModuleUrl = "/static/browser_inference.js?v=20260715-1";
+const browserModuleUrl = "/static/browser_inference.js?v=20260718-1";
 const editorModuleUrl = "/static/openui_editor.js?v=20260713-1";
 let browserModulePromise: Promise<any> | null = null;
 let editorModulePromise: Promise<any> | null = null;
@@ -287,6 +287,7 @@ export function Playground() {
           if (![...state.waiters].some((waiter: AbortSignal) => !waiter.aborted)) throw abortError();
           const acceleration = browser.browserAccelerationCapabilities();
           appendLog(`Browser acceleration: ${acceleration.promptApi ? "built-in Prompt API" : acceleration.webnn ? "WebNN/NPU preferred" : acceleration.webgpu ? "WebGPU preferred" : "WASM fallback"}.`);
+          appendLog(`Backend plan: ${acceleration.devices.map((device: string) => `${device} (${acceleration.dtypes?.[device] || "q4"})`).join(" → ")}.`);
           appendLog(`Local compute: ${acceleration.hardwareConcurrency} logical cores; ${acceleration.wasmThreads} WASM thread${acceleration.wasmThreads === 1 ? "" : "s"}; ${acceleration.crossOriginIsolated ? "cross-origin isolated" : "single-thread compatibility mode"}.`);
           appendLog("Initializing browser baseline model once for this page…");
           return browser.createBrowserModelSession({

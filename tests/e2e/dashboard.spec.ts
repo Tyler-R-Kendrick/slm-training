@@ -60,7 +60,9 @@ test.describe("mission control dashboard", () => {
       } }],
     } }));
     await page.goto("/checkpoints");
-    await expect(page.getByText("GATES PASS")).toBeVisible({ timeout: 10_000 });
+    // exact: the roster note "E479 five-suite gates pass" also matches a
+    // case-insensitive substring locator.
+    await expect(page.getByText("GATES PASS", { exact: true })).toBeVisible({ timeout: 10_000 });
 
     // Raise smoke structural_similarity threshold above the actual value.
     const smoke = page.locator(".thr-suite", { hasText: "smoke" });
@@ -92,16 +94,27 @@ test.describe("mission control dashboard", () => {
         sources: ["fixture", "generated"], records: filtered.slice(offset, offset + 2),
       } });
     });
-    await page.route("**/api/data/train", (route) => route.fulfill({ json: {
+    const trainSummary = {
       version: "v1", versions: ["v1"], record_count: 3, storage: "committed", stats: { record_count: 3 },
-    } }));
+    };
+    // The page re-polls /api/data/train?version=v1; without the ?** stub the
+    // real server's version replaces the fixture and the records stub is missed.
+    await page.route("**/api/data/train", (route) => route.fulfill({ json: trainSummary }));
+    await page.route("**/api/data/train?**", (route) => route.fulfill({ json: trainSummary }));
+    await page.route("**/api/data/train/*/quality", (route) => route.fulfill({ json: {} }));
+    await page.route("**/api/data/train/*/rejected?**", (route) => route.fulfill({ json: { count: 0, stages: [], rejected: [] } }));
     await page.route("**/api/data/test", (route) => route.fulfill({ json: { suites: {} } }));
 
     await page.goto("/data");
-    await expect(page.locator(".data-browser-count")).toHaveText("Showing all 3 of 3");
+    // Scope to the records browser: the rejected-candidates browser renders a
+    // second .data-browser-count.
+    const recordsCount = page
+      .locator(".data-browser-tools", { has: page.getByPlaceholder("id, prompt, source, or OpenUI") })
+      .locator(".data-browser-count");
+    await expect(recordsCount).toHaveText("Showing all 3 of 3");
     await expect(page.getByRole("button", { name: "View" })).toHaveCount(3);
     await page.getByPlaceholder("id, prompt, source, or OpenUI").fill("Third");
-    await expect(page.locator(".data-browser-count")).toHaveText("Showing all 1 of 1");
+    await expect(recordsCount).toHaveText("Showing all 1 of 1");
     await page.getByRole("button", { name: "View" }).click();
     await expect(page.locator(".record-detail")).toContainText('"quality": 3');
   });
