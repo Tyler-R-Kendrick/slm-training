@@ -15,6 +15,7 @@ Codex and GitHub Copilot also load project skills from **`.agents/skills/`**.
 | `running-experiment-matrices` | Quality / grammar / perf / phase matrices |
 | `openui-autoresearch` | Evidence-grounded research, hypothesis matrices, feedback, execution, and RL readiness |
 | `improve-openui-harnesses` | Harness-family owners, invariants, outputs, improvement checks, and anti-sprawl rules |
+| `phase-*` (12) | Running an individual training pipeline phase (train/test data, SFT, eval, distill, preference, RL, experiments, checkpoints, annotations, bench, autoresearch) |
 | `playwright-cli` | Browser / playground automation |
 | `frontier-describe` | Train-only frozen paraphrase / ladder / edit / vision artifacts |
 | `organize-repository` | Canonical file placement, deduplication, and `git mv` workflow |
