@@ -2683,7 +2683,15 @@ meaningful/fidelity/recall 1.0, structure 0.8521, and reward 0.9948. Coverage
 extends through row 383 with shard 3 at meaningful/fidelity 1.0, structure
 0.8687, recall 0.9948, and reward 0.9928. Shard 4 reaches row 479 at
 meaningful/fidelity 1.0, structure 0.8641, recall 0.9844, and reward 0.9927.
-Coverage is 480/1500, so the campaign remains partial and non-ship. See
+Shard 5 reaches row 575 at meaningful/fidelity/recall 1.0, structure 0.8747,
+and reward 0.9935. Shard 6 extends through row 671 at meaningful/fidelity 1.0,
+structure 0.8768, recall 0.9948, and reward 0.9926. Coverage is 672/1500, so
+the campaign remains partial and non-ship. Shard 7 passes halfway through row
+767 at meaningful/fidelity 1.0, structure 0.8637, recall 0.9896, and reward
+0.9934. Shard 8 reaches row 863 at meaningful/fidelity/recall 1.0, structure
+0.8631, and reward 0.9946. Shard 9 reaches row 959 at
+meaningful/fidelity/recall 1.0, structure 0.8922, and reward 0.9931; coverage
+is 960/1500. See
 [`iter-e454-e396-repaired-full-rico-sharded-20260718.md`](iter-e454-e396-repaired-full-rico-sharded-20260718.md).
 
 Verifier-guided repair status from
