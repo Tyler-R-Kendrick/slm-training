@@ -2773,7 +2773,14 @@ meaningful/fidelity/recall 1.0, structure 0.8770 (up from 0.8687), unchanged
 reward 0.9928, and zero failures/fallback/timeouts. Shard 4 reaches row 479 at
 meaningful/fidelity/recall 1.0, structure 0.8803 (up from 0.8641), reward
 0.9925 (from 0.9927), and zero failures/fallback/timeouts. Coverage is
-480/1500. See
+480/1500. Shard 5 reaches row 575 at meaningful/fidelity/recall 1.0,
+structure 0.8761 (up from 0.8747), unchanged reward 0.9935, and zero
+failures/fallback/timeouts. Shard 6 reaches row 671 at
+meaningful/fidelity/recall 1.0, structure 0.8836 (up from 0.8768), reward
+0.9922 (from 0.9926), and zero failures/fallback/timeouts. Coverage is
+672/1500. Shard 7 reaches row 767 at meaningful/fidelity/recall 1.0,
+structure 0.8766 (up from 0.8637), reward 0.9932 (from 0.9934), and zero
+failures/fallback/timeouts. Coverage is 768/1500. See
 [`iter-e460-e396-semantic-slot-full-rico-sharded-20260718.md`](iter-e460-e396-semantic-slot-full-rico-sharded-20260718.md).
 
 Verifier-guided repair status from

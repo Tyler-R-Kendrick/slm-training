@@ -16,7 +16,7 @@
     "affected_shards": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
     "reusable_unaffected_shards": [15]
   },
-  "coverage": {"completed_n": 480, "suite_n": 1500},
+  "coverage": {"completed_n": 768, "suite_n": 1500},
   "shards": [
     {
       "index": 0,
@@ -111,6 +111,60 @@
       "decode_timeout_count": 0,
       "agentv": {"passed": 0, "total": 5, "execution_errors": 0},
       "completed_normally": true
+    },
+    {
+      "index": 5,
+      "run_id": "e460-e396-semantic-slot-full-rico-shard05-r1",
+      "offset": 480,
+      "end": 576,
+      "affected_rows": 3,
+      "n": 96,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8760822916666666,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9934999999999997,
+      "failure_breakdown": {},
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "agentv": {"passed": 0, "total": 5, "execution_errors": 0},
+      "completed_normally": true
+    },
+    {
+      "index": 6,
+      "run_id": "e460-e396-semantic-slot-full-rico-shard06-r1",
+      "offset": 576,
+      "end": 672,
+      "affected_rows": 2,
+      "n": 96,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8835583333333337,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9921562499999999,
+      "failure_breakdown": {},
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "agentv": {"passed": 0, "total": 5, "execution_errors": 0},
+      "completed_normally": true
+    },
+    {
+      "index": 7,
+      "run_id": "e460-e396-semantic-slot-full-rico-shard07-r1",
+      "offset": 672,
+      "end": 768,
+      "affected_rows": 6,
+      "n": 96,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8766072916666668,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9931874999999998,
+      "failure_breakdown": {},
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "agentv": {"passed": 0, "total": 5, "execution_errors": 0},
+      "completed_normally": true
     }
   ],
   "timing_policy": {
@@ -118,5 +172,5 @@
     "external_kill_after_seconds": 10,
     "timed_out_runs_used_as_evidence": false
   },
-  "verdict": "Partial diagnostic: 480 of 1500 repaired RICO rows refreshed; no full-suite or ship claim."
+  "verdict": "Partial diagnostic: 768 of 1500 repaired RICO rows refreshed; no full-suite or ship claim."
 }

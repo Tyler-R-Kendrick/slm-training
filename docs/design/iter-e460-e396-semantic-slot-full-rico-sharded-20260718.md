@@ -18,6 +18,9 @@ contracts, eight generation steps, three attempts, and no fallback.
 | 2 | 192–288 | 2 | 96 | 1.0 | 1.0 | 0.8541 | 1.0 | 0.9943 | complete |
 | 3 | 288–384 | 3 | 96 | 1.0 | 1.0 | 0.8770 | 1.0 | 0.9928 | complete |
 | 4 | 384–480 | 6 | 96 | 1.0 | 1.0 | 0.8803 | 1.0 | 0.9925 | complete |
+| 5 | 480–576 | 3 | 96 | 1.0 | 1.0 | 0.8761 | 1.0 | 0.9935 | complete |
+| 6 | 576–672 | 2 | 96 | 1.0 | 1.0 | 0.8836 | 1.0 | 0.9922 | complete |
+| 7 | 672–768 | 6 | 96 | 1.0 | 1.0 | 0.8766 | 1.0 | 0.9932 | complete |
 
 Shard 0 completes normally in about 187 seconds with zero failures, fallback,
 or decode timeouts. Its affected row improves structure 0.9069→1.0 while
@@ -39,6 +42,15 @@ or decode timeouts. Structure improves 0.8687→0.8770 and recall
 Shard 4 completes normally in about 193 seconds with zero failures, fallback,
 or decode timeouts. Structure improves 0.8641→0.8803 and recall
 0.9844→1.0; reward changes 0.9927→0.9925.
+Shard 5 completes normally in about 217 seconds with zero failures, fallback,
+or decode timeouts. Structure improves 0.8747→0.8761 while recall remains
+1.0 and reward remains 0.9935.
+Shard 6 completes normally in about 203 seconds with zero failures, fallback,
+or decode timeouts. Structure improves 0.8768→0.8836 and recall
+0.9948→1.0; reward changes 0.9926→0.9922.
+Shard 7 completes normally in about 220 seconds with zero failures, fallback,
+or decode timeouts. Structure improves 0.8637→0.8766 and recall
+0.9896→1.0; reward changes 0.9934→0.9932.
 
-**Current verdict:** 480/1500 refreshed rows are complete. This is a partial
+**Current verdict:** 768/1500 refreshed rows are complete. This is a partial
 diagnostic, not a full-RICO, ship-gate, champion, or production HF claim.
