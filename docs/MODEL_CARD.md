@@ -119,6 +119,7 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 | E325 slot-pair interaction arm | `e325-slot-pair-interaction-20k-r1` | CPU scratch explicit local-interaction arm | `outputs/runs/e325-slot-pair-interaction-20k-r1/checkpoints/last.pt` (local) | Negative: ties E316's two gate failures but cuts OOD meaningful/recall to 0.50/0.25; AgentV 3/5 — **not promotable or ship** ([results](design/iter-e325-slot-pair-interaction-20260717.md)) |
 | E326 lexeme slot-prior arm | `e326-lexeme-slot-prior-20k-r1` | CPU scratch training-derived lexical prior arm | `outputs/runs/e326-lexeme-slot-prior-20k-r1/checkpoints/last.pt` (local) | Best current scratch: held-out and adversarial improve, AgentV 4/5; smoke recall 0.3333<0.35 — **not promotable or ship** ([results](design/iter-e326-lexeme-slot-prior-20260717.md)) |
 | E328 ordered span-prior arm | `e328-span-slot-prior-20k-r1` | CPU scratch schema-arity + lexical span arm | `outputs/runs/e328-span-slot-prior-20k-r1/checkpoints/last.pt` (local) | Negative: smoke unchanged and held recall regresses 0.40→0.30; AgentV 4/5 — **not promotable or ship** ([results](design/iter-e328-span-slot-prior-20260717.md)) |
+| E330 prompt-conditioned lexeme arm | `e330-prompt-lexeme-slot-prior-20k-r1` | CPU scratch prompt + lexical prior arm | `outputs/runs/e330-prompt-lexeme-slot-prior-20k-r1/checkpoints/last.pt` (local) | Negative: slot accuracy improves but smoke is unchanged and held recall regresses to 0.30; AgentV 4/5 — **not promotable or ship** ([results](design/iter-e330-prompt-lexeme-slot-20260717.md)) |
 | Production HF ship | — | — | `hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/` | **None registered yet** — fill this row after the first full HF sync |
 
 Update the table in place when a checkpoint is written or superseded. Keep
@@ -380,6 +381,11 @@ Leakage: structural fingerprints + train/test isolation
 | `adversarial` (E328 ordered span prior) | 4 | 1.0 | 1.0000 | 0.6304 | 0.7238 | Yes for suite thresholds; no global ship |
 | `ood` (E328 ordered span prior) | 4 | 1.0 | 1.0000 | 0.5229 | 0.9857 | Yes for suite thresholds; no global ship |
 | `rico_held` (E328 ordered span prior) | 3 | 1.0 | 1.0000 | 0.4826 | 1.0000 | Yes for limited suite thresholds; no global ship |
+| `smoke` (E330 prompt-conditioned lexeme) | 3 | 1.0 | 1.0000 | 0.5464 | 0.6407 | No — component recall 0.3333 < 0.35 |
+| `held_out` (E330 prompt-conditioned lexeme) | 5 | 1.0 | 1.0000 | 0.4708 | 0.5862 | Yes at recall floor; no global ship |
+| `adversarial` (E330 prompt-conditioned lexeme) | 4 | 1.0 | 1.0000 | 0.6304 | 0.7238 | Yes for suite thresholds; no global ship |
+| `ood` (E330 prompt-conditioned lexeme) | 4 | 1.0 | 1.0000 | 0.5229 | 0.9857 | Yes for suite thresholds; no global ship |
+| `rico_held` (E330 prompt-conditioned lexeme) | 3 | 1.0 | 1.0000 | 0.4826 | 1.0000 | Yes for limited suite thresholds; no global ship |
 | `smoke` (`e177-semantic-judge-32step`, E180 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1542 | 0.607 | No — syntax 1.0, but meaningful component recall 0.25; not a ship evaluation |
 | `smoke` (`e181-semantic-balanced-32step`, E181 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1542 | 0.607 | No — mixture-only control did not improve quality; not a ship evaluation |
 | `smoke` (`e184-compiler-aligned-32step`, E194 diagnostic subset) | 1 | 0.0 | 0.0 | 0.3600 | 0.0 | No — root/schema constraints improved, but output remained incomplete; not a ship evaluation |
@@ -720,6 +726,7 @@ suites because they contain no scope metadata. Evidence:
 | 2026-07-17 | `e327-lexeme-slot-weight2-honest-r1` (E327 eval-only) | `outputs/runs/e327-lexeme-slot-weight2-honest-r1/` (local) | Unchanged E326 SHA; frozen slot decode weights 1.25 and 2.0 | Weight 2 raises limited-RICO structure 0.4826→0.6153 but does not change smoke or AgentV 4/5; no checkpoint promotion |
 | 2026-07-17 | `e328-span-slot-prior-20k-r1` (E328 ordered span arm) | `outputs/runs/e328-span-slot-prior-20k-r1/` (local) | 446 CPU scratch steps / 20,044 target tokens; corrected schema content arity plus ordered span prior; NLL 5.4084; SHA `888cf8ac495f0349a8347132c3121c08561d0759567844984b40d19b9ccc4ebe`; explicit no-sync | Smoke unchanged and held recall regresses to 0.30; AgentV 4/5, no promotion |
 | 2026-07-17 | `e329-content-arity-fix-honest-r1` (E329 eval-only) | `outputs/runs/e329-content-arity-fix-honest-r1/` (local) | Unchanged E326 SHA; schema-derived multi-slot averaging without span prior | Exactly reproduces E328 regression, so averaging is opt-in and E326 remains strongest; AgentV 4/5, no promotion |
+| 2026-07-17 | `e330-prompt-lexeme-slot-prior-20k-r1` (E330 prompt-conditioned arm) | `outputs/runs/e330-prompt-lexeme-slot-prior-20k-r1/` (local) | 446 CPU scratch steps / 20,044 target tokens; lexeme prior plus pooled prompt context; NLL 5.4158; SHA `91648e999c09e79a468fbedcab9279da3f9d78fb11dc87fa1030b2c199823d54`; explicit no-sync | Auxiliary accuracy improves but smoke is unchanged and held recall regresses; AgentV 4/5, no promotion |
 
 Append a row for every new or replaced checkpoint. Do not delete history.
 

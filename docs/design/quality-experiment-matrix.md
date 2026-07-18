@@ -2131,6 +2131,12 @@ truthful tokenizer API but keep averaging opt-in to preserve E326 quality. See
 [results](iter-e329-content-arity-fix-20260717.md) and
 [JSON](content-arity-results-iter-e329-20260717.json).
 
+E330 adds pooled prompt context to E326. Slot accuracy rises
+0.8026→0.8947, but smoke is unchanged and held recall regresses 0.40→0.30.
+Reject the checkpoint: the auxiliary gain does not transfer. See
+[results](iter-e330-prompt-lexeme-slot-20260717.md) and
+[JSON](prompt-lexeme-slot-results-iter-e330-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

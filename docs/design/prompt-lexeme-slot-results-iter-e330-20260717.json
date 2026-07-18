@@ -1,0 +1,17 @@
+{
+  "id": "E330",
+  "date": "2026-07-17",
+  "status": "negative_not_promotable",
+  "run_id": "e330-prompt-lexeme-slot-prior-20k-r1",
+  "checkpoint_sha256": "91648e999c09e79a468fbedcab9279da3f9d78fb11dc87fa1030b2c199823d54",
+  "steps": 446,
+  "seen_target_tokens": 20044,
+  "elapsed_wall_seconds": 135.71008574900043,
+  "weighted_nll": 5.415750464764681,
+  "broad_nll": 5.512850952458072,
+  "slot_accuracy": 0.8947368421052632,
+  "slot_majority_baseline": 0.6184210620428386,
+  "agentv": {"passed": 4, "total": 5},
+  "failures": ["smoke component recall 0.3333 < 0.35"],
+  "verdict": "Reject: prompt context improves auxiliary slot accuracy but leaves smoke unchanged and regresses held-out recall from 0.40 to 0.30."
+}
