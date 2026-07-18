@@ -630,14 +630,14 @@
   },
   "suites": {
     "rico_held": {
-      "n": 768,
+      "n": 864,
       "suite_total_n": 1500,
       "diagnostic_subset": true,
       "meaningful_program_rate": 1.0,
       "placeholder_fidelity": 1.0,
-      "structural_similarity": 0.8744518229166666,
+      "structural_similarity": 0.873296412037037,
       "component_type_recall": 1.0,
-      "reward_score": 0.9934374999999999
+      "reward_score": 0.9935625
     }
   },
   "reliability": {
