@@ -1,0 +1,404 @@
+{
+  "_note": "Fixture/wiring evidence only (LDI3-01 / SLM-128). Deterministic fixed-logit corpus, no model update, no matrix run, no hidden eval gold. Objectives are Adapted, not reproduced/SOTA.",
+  "barrier_erosion_example": {
+    "considered": 2,
+    "eroded_fraction": 0.5,
+    "eroded_tokens": [
+      0
+    ],
+    "preference_improved": true
+  },
+  "kind": "structured_objective_fixture_report",
+  "objective_batch_loss_comparison": {
+    "legal_set_ftpo_mass_margin": 1.2551107746824748,
+    "legal_set_ftpo_pairwise": 2.7290111084869415,
+    "tab_po_inspired_barrier": 2.3607884228054785,
+    "tbpo_inspired_ratio": 1.2551108521576093
+  },
+  "objective_reports": {
+    "legal_set_ftpo_mass_margin": {
+      "adaptation": "Adapted (not reproduced/SOTA): Legal-Set FTPO, TAB-PO-inspired barrier, TBPO-inspired ratio control",
+      "aggregate": {
+        "batch_loss": 1.2551107746824748,
+        "config_fingerprint": "24e82c4f76baddcfc37554b6cef20434445f8a246606e1e172ead3ec26c366dd",
+        "mean_state_loss": 1.2551107746824748,
+        "state_normalized": true,
+        "states": 3
+      },
+      "baseline": null,
+      "config": {
+        "barrier_p": 0.1,
+        "barrier_strength": 1.0,
+        "baseline_type": "none",
+        "default_role_weight": 1.0,
+        "epsilon": 2.0,
+        "evidence_clip": 10.0,
+        "margin": 0.0,
+        "name": "legal_set_ftpo",
+        "non_target_tether": 0.0,
+        "numerical_eps": 1e-08,
+        "role_weights": [],
+        "schema_version": 1,
+        "state_normalized": true,
+        "structural_role_weight": 0.0,
+        "structural_roles": [
+          "punctuation",
+          "structural"
+        ],
+        "target_grace": 1.0,
+        "target_tether": 0.0,
+        "tau": 1.0,
+        "temperature": 1.0,
+        "variant": "mass_margin"
+      },
+      "config_fingerprint": "24e82c4f76baddcfc37554b6cef20434445f8a246606e1e172ead3ec26c366dd",
+      "full_vocab_good_mass": [
+        0.3864610917643743,
+        0.13129542927202012,
+        0.01907220709254934
+      ],
+      "kind": "structured_objective_report",
+      "per_state": [
+        {
+          "ambiguous_mass": 0.09813356405833272,
+          "bad_mass": 0.16179489443258677,
+          "barrier_loss": 0.0,
+          "good_mass": 0.593673466979298,
+          "legal_entropy": 1.113356912069445,
+          "loss": 0.2410084634623589,
+          "non_target_logit_mse": 0.0,
+          "objective": "legal_set_ftpo",
+          "objective_only_loss": 0.2410084634623589,
+          "preference_loss": 0.2410084634623589,
+          "target_excess_logit_mse": 0.0,
+          "unobserved_mass": 0.14639807452978246
+        },
+        {
+          "ambiguous_mass": 0.1776769308216022,
+          "bad_mass": 0.4370147318296309,
+          "barrier_loss": 0.0,
+          "good_mass": 0.23983876997261194,
+          "legal_entropy": 1.2916173970109188,
+          "loss": 1.0374879383397009,
+          "non_target_logit_mse": 0.0,
+          "objective": "legal_set_ftpo",
+          "objective_only_loss": 1.0374879383397009,
+          "preference_loss": 1.0374879383397009,
+          "target_excess_logit_mse": 0.0,
+          "unobserved_mass": 0.14546956737615485
+        },
+        {
+          "ambiguous_mass": 0.29610743205687234,
+          "bad_mass": 0.399703225150682,
+          "barrier_loss": 0.0,
+          "good_mass": 0.03626025850884711,
+          "legal_entropy": 1.2000614281207458,
+          "loss": 2.4868359222453646,
+          "non_target_logit_mse": 0.0,
+          "objective": "legal_set_ftpo",
+          "objective_only_loss": 2.4868359222453646,
+          "preference_loss": 2.4868359222453646,
+          "target_excess_logit_mse": 0.0,
+          "unobserved_mass": 0.26792908428359863
+        }
+      ]
+    },
+    "legal_set_ftpo_pairwise": {
+      "adaptation": "Adapted (not reproduced/SOTA): Legal-Set FTPO, TAB-PO-inspired barrier, TBPO-inspired ratio control",
+      "aggregate": {
+        "batch_loss": 2.7290111084869415,
+        "config_fingerprint": "f3c23b3962f549b345adfd0138a260c0f84e0c6d1ae0bd155fd427c0768be010",
+        "mean_state_loss": 2.7290111084869415,
+        "state_normalized": true,
+        "states": 3
+      },
+      "baseline": null,
+      "config": {
+        "barrier_p": 0.1,
+        "barrier_strength": 1.0,
+        "baseline_type": "none",
+        "default_role_weight": 1.0,
+        "epsilon": 2.0,
+        "evidence_clip": 10.0,
+        "margin": 0.0,
+        "name": "legal_set_ftpo",
+        "non_target_tether": 0.0,
+        "numerical_eps": 1e-08,
+        "role_weights": [],
+        "schema_version": 1,
+        "state_normalized": true,
+        "structural_role_weight": 0.0,
+        "structural_roles": [
+          "punctuation",
+          "structural"
+        ],
+        "target_grace": 1.0,
+        "target_tether": 0.0,
+        "tau": 1.0,
+        "temperature": 1.0,
+        "variant": "pairwise_margin"
+      },
+      "config_fingerprint": "f3c23b3962f549b345adfd0138a260c0f84e0c6d1ae0bd155fd427c0768be010",
+      "full_vocab_good_mass": [
+        0.3864610917643743,
+        0.13129542927202012,
+        0.01907220709254934
+      ],
+      "kind": "structured_objective_report",
+      "per_state": [
+        {
+          "active_pair_weight": 0.35,
+          "barrier_loss": 0.0,
+          "chosen_win": 1.0,
+          "loss": 1.103186048885458,
+          "mean_margin": 1.3,
+          "non_target_logit_mse": 0.0,
+          "objective": "legal_set_ftpo",
+          "objective_only_loss": 1.103186048885458,
+          "pair_count": 1.0,
+          "preference_loss": 1.103186048885458,
+          "target_excess_logit_mse": 0.0
+        },
+        {
+          "active_pair_weight": 1.0,
+          "barrier_loss": 0.0,
+          "chosen_win": 0.0,
+          "loss": 2.67164469196767,
+          "mean_margin": -0.6000000000000001,
+          "non_target_logit_mse": 0.0,
+          "objective": "legal_set_ftpo",
+          "objective_only_loss": 2.67164469196767,
+          "pair_count": 1.0,
+          "preference_loss": 2.67164469196767,
+          "target_excess_logit_mse": 0.0
+        },
+        {
+          "active_pair_weight": 1.0,
+          "barrier_loss": 0.0,
+          "chosen_win": 0.0,
+          "loss": 4.412202584607696,
+          "mean_margin": -2.4,
+          "non_target_logit_mse": 0.0,
+          "objective": "legal_set_ftpo",
+          "objective_only_loss": 4.412202584607696,
+          "pair_count": 1.0,
+          "preference_loss": 4.412202584607696,
+          "target_excess_logit_mse": 0.0
+        }
+      ]
+    },
+    "tab_po_inspired_barrier": {
+      "adaptation": "Adapted (not reproduced/SOTA): Legal-Set FTPO, TAB-PO-inspired barrier, TBPO-inspired ratio control",
+      "aggregate": {
+        "batch_loss": 2.3607884228054785,
+        "config_fingerprint": "795f03346048d357deae3033177a95562d0ca66e241080e2f5699edb4644c947",
+        "mean_state_loss": 2.3607884228054785,
+        "state_normalized": true,
+        "states": 3
+      },
+      "baseline": null,
+      "config": {
+        "barrier_p": 0.15,
+        "barrier_strength": 1.0,
+        "baseline_type": "none",
+        "default_role_weight": 1.0,
+        "epsilon": 2.0,
+        "evidence_clip": 10.0,
+        "margin": 0.0,
+        "name": "tab_po_inspired_barrier",
+        "non_target_tether": 0.0,
+        "numerical_eps": 1e-08,
+        "role_weights": [],
+        "schema_version": 1,
+        "state_normalized": true,
+        "structural_role_weight": 0.0,
+        "structural_roles": [
+          "punctuation",
+          "structural"
+        ],
+        "target_grace": 1.0,
+        "target_tether": 0.0,
+        "tau": 1.0,
+        "temperature": 1.0,
+        "variant": "mass_margin"
+      },
+      "config_fingerprint": "795f03346048d357deae3033177a95562d0ca66e241080e2f5699edb4644c947",
+      "full_vocab_good_mass": [
+        0.3864610917643743,
+        0.13129542927202012,
+        0.01907220709254934
+      ],
+      "kind": "structured_objective_report",
+      "per_state": [
+        {
+          "ambiguous_mass": 0.09813356405833272,
+          "anchored_probabilities": {},
+          "bad_mass": 0.16179489443258677,
+          "barrier_active_count": 0,
+          "barrier_active_fraction": 0.0,
+          "barrier_loss": 0.0,
+          "good_mass": 0.593673466979298,
+          "legal_entropy": 1.113356912069445,
+          "loss": 0.2410084634623589,
+          "loss_by_role": {},
+          "non_target_logit_mse": 0.0,
+          "objective": "tab_po_inspired_barrier",
+          "objective_only_loss": 0.2410084634623589,
+          "preference_loss": 0.2410084634623589,
+          "target_excess_logit_mse": 0.0,
+          "unobserved_mass": 0.14639807452978246
+        },
+        {
+          "ambiguous_mass": 0.1776769308216022,
+          "anchored_probabilities": {},
+          "bad_mass": 0.4370147318296309,
+          "barrier_active_count": 0,
+          "barrier_active_fraction": 0.0,
+          "barrier_loss": 0.0,
+          "good_mass": 0.23983876997261194,
+          "legal_entropy": 1.2916173970109188,
+          "loss": 1.0374879383397009,
+          "loss_by_role": {},
+          "non_target_logit_mse": 0.0,
+          "objective": "tab_po_inspired_barrier",
+          "objective_only_loss": 1.0374879383397009,
+          "preference_loss": 1.0374879383397009,
+          "target_excess_logit_mse": 0.0,
+          "unobserved_mass": 0.14546956737615485
+        },
+        {
+          "ambiguous_mass": 0.29610743205687234,
+          "anchored_probabilities": {
+            "0": 0.03626025850884711
+          },
+          "bad_mass": 0.399703225150682,
+          "barrier_active_count": 1,
+          "barrier_active_fraction": 1.0,
+          "barrier_loss": 3.317032944369011,
+          "good_mass": 0.03626025850884711,
+          "legal_entropy": 1.2000614281207458,
+          "loss": 5.803868866614376,
+          "loss_by_role": {
+            "None": 3.317032944369011
+          },
+          "non_target_logit_mse": 0.0,
+          "objective": "tab_po_inspired_barrier",
+          "objective_only_loss": 2.4868359222453646,
+          "preference_loss": 2.4868359222453646,
+          "target_excess_logit_mse": 0.0,
+          "unobserved_mass": 0.26792908428359863
+        }
+      ]
+    },
+    "tbpo_inspired_ratio": {
+      "adaptation": "Adapted (not reproduced/SOTA): Legal-Set FTPO, TAB-PO-inspired barrier, TBPO-inspired ratio control",
+      "aggregate": {
+        "batch_loss": 1.2551108521576093,
+        "config_fingerprint": "c1d27c8fbcac25db8a8a084d25601589ac3a78c53a98e6dcdd473d0f43d3caca",
+        "mean_state_loss": 1.2551108521576093,
+        "state_normalized": true,
+        "states": 3
+      },
+      "baseline": null,
+      "config": {
+        "barrier_p": 0.1,
+        "barrier_strength": 1.0,
+        "baseline_type": "advantage",
+        "default_role_weight": 1.0,
+        "epsilon": 2.0,
+        "evidence_clip": 10.0,
+        "margin": 0.0,
+        "name": "tbpo_inspired_ratio",
+        "non_target_tether": 0.0,
+        "numerical_eps": 1e-08,
+        "role_weights": [],
+        "schema_version": 1,
+        "state_normalized": true,
+        "structural_role_weight": 0.0,
+        "structural_roles": [
+          "punctuation",
+          "structural"
+        ],
+        "target_grace": 1.0,
+        "target_tether": 0.0,
+        "tau": 1.0,
+        "temperature": 1.0,
+        "variant": "mass_margin"
+      },
+      "config_fingerprint": "c1d27c8fbcac25db8a8a084d25601589ac3a78c53a98e6dcdd473d0f43d3caca",
+      "full_vocab_good_mass": [
+        0.3864610917643743,
+        0.13129542927202012,
+        0.01907220709254934
+      ],
+      "kind": "structured_objective_report",
+      "per_state": [
+        {
+          "bad_log_ratio": -0.175,
+          "barrier_loss": 0.0,
+          "baseline": 0.375,
+          "baseline_type": "advantage",
+          "control_active": true,
+          "good_log_ratio": 1.125,
+          "loss": 0.2410084538329922,
+          "non_target_logit_mse": 0.0,
+          "objective": "tbpo_inspired_ratio",
+          "objective_only_loss": 0.2410084538329922,
+          "ratio_loss": 0.2410084538329922,
+          "target_excess_logit_mse": 0.0
+        },
+        {
+          "bad_log_ratio": 0.65,
+          "barrier_loss": 0.0,
+          "baseline": 0.25,
+          "baseline_type": "advantage",
+          "control_active": true,
+          "good_log_ratio": 0.04999999999999999,
+          "loss": 1.0374879504858856,
+          "non_target_logit_mse": 0.0,
+          "objective": "tbpo_inspired_ratio",
+          "objective_only_loss": 1.0374879504858856,
+          "ratio_loss": 1.0374879504858856,
+          "target_excess_logit_mse": 0.0
+        },
+        {
+          "bad_log_ratio": 0.775,
+          "barrier_loss": 0.0,
+          "baseline": -0.375,
+          "baseline_type": "advantage",
+          "control_active": true,
+          "good_log_ratio": -1.625,
+          "loss": 2.4868361521539497,
+          "non_target_logit_mse": 0.0,
+          "objective": "tbpo_inspired_ratio",
+          "objective_only_loss": 2.4868361521539497,
+          "ratio_loss": 2.4868361521539497,
+          "target_excess_logit_mse": 0.0
+        }
+      ]
+    }
+  },
+  "raw_vs_legal_probability": [
+    {
+      "legal_bad": 0.16179489443258677,
+      "legal_good": 0.593673466979298,
+      "raw_bad": 0.10532293427642701,
+      "raw_good": 0.3864610917643743,
+      "state_id": "s-train-1"
+    },
+    {
+      "legal_bad": 0.4370147318296309,
+      "legal_good": 0.23983876997261194,
+      "raw_bad": 0.23923587008189023,
+      "raw_good": 0.13129542927202012,
+      "state_id": "s-train-2"
+    },
+    {
+      "legal_bad": 0.399703225150682,
+      "legal_good": 0.03626025850884711,
+      "raw_bad": 0.21023630274929514,
+      "raw_good": 0.01907220709254934,
+      "state_id": "s-train-3"
+    }
+  ]
+}
