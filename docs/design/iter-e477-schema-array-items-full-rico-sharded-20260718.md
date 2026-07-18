@@ -24,6 +24,9 @@ generation steps, three attempts, and no fallback.
 | 7 | `[672,768)` | 96 | 1.0 | 1.0 | 0.8747 | 1.0 | 0.9932 | 0 / 0 / 0 |
 | 8a | `[768,816)` | 48 | 1.0 | 1.0 | 0.8454 | 1.0 | 0.9951 | 0 / 0 / 0 |
 | 8b | `[816,864)` | 48 | 1.0 | 1.0 | 0.8813 | 1.0 | 0.9941 | 0 / 0 / 0 |
+| 9 | `[864,960)` | 96 | 1.0 | 1.0 | 0.8981 | 1.0 | 0.9932 | 0 / 0 / 0 |
+| 10 | `[960,1056)` | 96 | 1.0 | 1.0 | 0.8671 | 1.0 | 0.9932 | 0 / 0 / 0 |
+| 11 | `[1056,1152)` | 96 | 1.0 | 1.0 | 0.8669 | 1.0 | 0.9943 | 0 / 0 / 0 |
 
 Shard 0 completed normally in about 150 seconds and is metric-identical to
 E472's corresponding enum-constrained shard. Its diagnostic AgentV five-gate
@@ -67,4 +70,13 @@ meaningful/fidelity/recall 1.0 and zero reliability counts. The weighted
 8a+8b structure 0.8634 and reward 0.9946 are metric-identical to E472 shard 8
 despite the schema-corrected audited output.
 
-**Status:** 864/1500 rows complete. No merged or ship claim yet.
+Shard 9 completed normally in about 177 seconds and is metric-identical to
+E472's corresponding shard, with zero failures, fallback, or timeouts.
+
+Shard 10 completed normally in about 180 seconds and is metric-identical to
+E472's corresponding shard, with zero failures, fallback, or timeouts.
+
+Shard 11 completed normally in about 201 seconds and is metric-identical to
+E472's corresponding shard, with zero failures, fallback, or timeouts.
+
+**Status:** 1152/1500 rows complete. No merged or ship claim yet.
