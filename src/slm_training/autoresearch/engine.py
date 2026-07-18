@@ -444,6 +444,12 @@ def compile_commands(
                 if knobs.slot_component_next_context
                 else "--no-slot-component-next-context"
             )
+        if knobs.slot_component_pair_interaction is not None:
+            train.append(
+                "--slot-component-pair-interaction"
+                if knobs.slot_component_pair_interaction
+                else "--no-slot-component-pair-interaction"
+            )
         if knobs.component_plan_attention_pool:
             train.append("--component-plan-attention-pool")
         if knobs.component_plan_token_pool:

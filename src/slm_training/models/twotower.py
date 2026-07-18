@@ -219,6 +219,7 @@ class TwoTowerConfig:
     slot_component_decode_weight: float = 0.0
     slot_component_prompt_context: bool = True
     slot_component_next_context: bool = False
+    slot_component_pair_interaction: bool = False
     component_edge_loss_weight: float = 0.0
     component_edge_alignment_loss_weight: float = 0.0
     component_edge_decode_weight: float = 0.0
@@ -1278,10 +1279,25 @@ class TwoTowerModel(nn.Module):
         context: torch.Tensor,
         pad_mask: torch.Tensor | None,
         context_rows: torch.Tensor,
+        next_slots: list[str | None] | None = None,
     ) -> torch.Tensor:
         assert self.slot_component_head is not None
         slot_context, slot_pad = self._encode_context(slots)
         slot_pooled = self._pool_context(slot_context, slot_pad)
+        if (
+            bool(getattr(self.config, "slot_component_pair_interaction", False))
+            and next_slots is not None
+        ):
+            next_context, next_pad = self._encode_context(
+                [slot or "" for slot in next_slots]
+            )
+            next_pooled = self._pool_context(next_context, next_pad)
+            present = torch.as_tensor(
+                [slot is not None for slot in next_slots],
+                dtype=slot_pooled.dtype,
+                device=slot_pooled.device,
+            ).unsqueeze(1)
+            slot_pooled = slot_pooled + slot_pooled * next_pooled * present
         if not bool(getattr(self.config, "slot_component_prompt_context", True)):
             return self.slot_component_head(slot_pooled)
         prompt_pooled = self._pool_context(context, pad_mask).index_select(
@@ -2145,25 +2161,39 @@ class TwoTowerModel(nn.Module):
         if slot_component_w > 0.0 and self.slot_component_head is not None:
             component_index = self._component_name_index()
             slots: list[str] = []
+            next_slots: list[str | None] = []
             slot_rows: list[int] = []
             slot_targets: list[int] = []
             for row, record in enumerate(batch):
                 owners = self._slot_component_owners(record.openui)
                 slot_texts = self._slot_component_texts(list(record.placeholders))
-                for slot, slot_text in zip(
-                    record.placeholders, slot_texts, strict=True
+                for slot_index, (slot, slot_text) in enumerate(
+                    zip(record.placeholders, slot_texts, strict=True)
                 ):
                     target = component_index.get(owners.get(slot, ""))
                     if target is None:
                         continue
                     slots.append(slot_text)
+                    next_slots.append(
+                        record.placeholders[slot_index + 1]
+                        if slot_index + 1 < len(record.placeholders)
+                        else None
+                    )
                     slot_rows.append(row)
                     slot_targets.append(target)
             if slots:
                 rows_tensor = torch.as_tensor(slot_rows, device=ctx.device)
                 targets_tensor = torch.as_tensor(slot_targets, device=ctx.device)
                 slot_logits = self._slot_component_logits(
-                    slots, ctx, ctx_pad, rows_tensor
+                    slots,
+                    ctx,
+                    ctx_pad,
+                    rows_tensor,
+                    next_slots=(
+                        next_slots
+                        if self.config.slot_component_pair_interaction
+                        else None
+                    ),
                 )
                 slot_raw = F.cross_entropy(
                     slot_logits,
@@ -3288,14 +3318,27 @@ class TwoTowerModel(nn.Module):
                 remaining_slots.append(str(slot))
         if not remaining_slots:
             return None
-        logits = self._slot_component_logits(
-            self._slot_component_texts(remaining_slots),
-            ctx,
-            ctx_pad,
-            torch.zeros(
-                len(remaining_slots), dtype=torch.long, device=ctx.device
-            ),
+        slot_texts = self._slot_component_texts(remaining_slots)
+        slot_rows = torch.zeros(
+            len(remaining_slots), dtype=torch.long, device=ctx.device
         )
+        if bool(getattr(self.config, "slot_component_pair_interaction", False)):
+            logits = self._slot_component_logits(
+                slot_texts,
+                ctx,
+                ctx_pad,
+                slot_rows,
+                next_slots=[
+                    remaining_slots[index + 1]
+                    if index + 1 < len(remaining_slots)
+                    else None
+                    for index in range(len(remaining_slots))
+                ],
+            )
+        else:
+            logits = self._slot_component_logits(
+                slot_texts, ctx, ctx_pad, slot_rows
+            )
         component_index = {
             token_id: index
             for index, token_id in enumerate(self._component_inventory_token_ids())

@@ -962,6 +962,31 @@ def test_slot_component_next_context_preserves_order() -> None:
     ]
 
 
+def test_slot_component_pair_interaction_is_explicit() -> None:
+    model = _model(
+        slot_component_loss_weight=1.0,
+        slot_component_prompt_context=False,
+        slot_component_pair_interaction=True,
+    )
+    model.eval()
+    ctx, ctx_pad = model._encode_context(["form"])
+    rows = torch.tensor([0])
+
+    with torch.no_grad():
+        baseline = model._slot_component_logits(
+            [":hint.title"], ctx, ctx_pad, rows
+        )
+        missing = model._slot_component_logits(
+            [":hint.title"], ctx, ctx_pad, rows, next_slots=[None]
+        )
+        paired = model._slot_component_logits(
+            [":hint.title"], ctx, ctx_pad, rows, next_slots=[":hint.body"]
+        )
+
+    assert torch.equal(baseline, missing)
+    assert not torch.equal(baseline, paired)
+
+
 def test_slot_component_bias_uses_next_unfilled_slot() -> None:
     from types import MethodType
 

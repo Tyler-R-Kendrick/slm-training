@@ -790,6 +790,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "slot_component_next_context": bool(
                 getattr(config, "slot_component_next_context", False)
             ),
+            "slot_component_pair_interaction": bool(
+                getattr(config, "slot_component_pair_interaction", False)
+            ),
             "component_edge_loss_weight": getattr(
                 config, "component_edge_loss_weight", 0.0
             ),

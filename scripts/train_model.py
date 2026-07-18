@@ -430,6 +430,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Encode the next visible slot after each current slot owner query.",
     )
     parser.add_argument(
+        "--slot-component-pair-interaction",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Multiply separate current/next slot vectors before owner prediction.",
+    )
+    parser.add_argument(
         "--component-edge-loss-weight",
         type=float,
         default=0.0,
@@ -828,6 +834,7 @@ def main(argv: list[str] | None = None) -> int:
             slot_component_decode_weight=args.slot_component_decode_weight,
             slot_component_prompt_context=args.slot_component_prompt_context,
             slot_component_next_context=args.slot_component_next_context,
+            slot_component_pair_interaction=args.slot_component_pair_interaction,
             component_edge_loss_weight=args.component_edge_loss_weight,
             component_edge_alignment_loss_weight=(
                 args.component_edge_alignment_loss_weight

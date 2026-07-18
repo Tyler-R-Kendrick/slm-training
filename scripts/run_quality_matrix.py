@@ -165,6 +165,7 @@ class Experiment:
     slot_component_decode_weight: float = 0.0
     slot_component_prompt_context: bool = True
     slot_component_next_context: bool = False
+    slot_component_pair_interaction: bool = False
     component_edge_loss_weight: float = 0.0
     component_edge_alignment_loss_weight: float = 0.0
     component_edge_decode_weight: float = 0.0
@@ -1722,6 +1723,9 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         ),
         slot_component_next_context=bool(
             getattr(exp, "slot_component_next_context", False)
+        ),
+        slot_component_pair_interaction=bool(
+            getattr(exp, "slot_component_pair_interaction", False)
         ),
         component_edge_loss_weight=float(
             getattr(exp, "component_edge_loss_weight", 0.0) or 0.0
