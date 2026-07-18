@@ -1446,6 +1446,10 @@ def build_train_data(
 
     source_families["cluster_exposure"] = cluster_exposure_stats(deduped)
 
+    from slm_training.data.selection import attach_curation_scores
+
+    attach_curation_scores(deduped)
+
     # Fingerprint final records after every train-only transformation so the
     # leakage manifest describes the exact bytes written to records.jsonl.
     prompt_fps = {fingerprint_prompt(r.prompt) for r in deduped}

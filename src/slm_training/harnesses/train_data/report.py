@@ -199,6 +199,63 @@ def build_quality_report(
     }
     if decontamination_extra:
         decontamination.update(decontamination_extra)
+
+    top_clusters = _top_clusters(admitted)
+    warnings: list[dict[str, Any]] = []
+    admission_rate = (
+        len(admitted) / candidate_count if candidate_count else None
+    )
+    if admission_rate is not None and admission_rate < 0.5:
+        warnings.append(
+            {
+                "code": "high_rejection_rate",
+                "value": round(admission_rate, 4),
+                "message": "less than half of the candidates survived the gates; "
+                "inspect rejected.jsonl before trusting this corpus",
+            }
+        )
+    if len(admitted) >= 50 and top_clusters:
+        top_share = top_clusters[0]["count"] / len(admitted)
+        if top_share > 0.10:
+            warnings.append(
+                {
+                    "code": "cluster_concentration",
+                    "value": round(top_share, 4),
+                    "message": "one semantic cluster holds over 10% of the corpus; "
+                    "diversity is at risk (see redundancy.top_clusters)",
+                }
+            )
+    flagged = int(decontamination.get("ngram_flagged") or 0)
+    if flagged:
+        warnings.append(
+            {
+                "code": "eval_overlap_flagged",
+                "value": flagged,
+                "message": "candidates overlapped eval suites by n-gram and were "
+                "rejected; upstream producers may be leaking eval material",
+            }
+        )
+    if placeholder_violations:
+        warnings.append(
+            {
+                "code": "placeholder_contract_violations",
+                "value": placeholder_violations,
+                "message": "records breached the placeholder/template contract at "
+                "the quality gate",
+            }
+        )
+    judge_rate = (
+        round(sum(judge_flags) / len(judge_flags), 4) if judge_flags else None
+    )
+    if judge_rate is not None and judge_rate < 1.0:
+        warnings.append(
+            {
+                "code": "judge_failures_admitted",
+                "value": judge_rate,
+                "message": "admitted records include independent-judge failures "
+                "(possible under the permissive profile)",
+            }
+        )
     return {
         "schema_version": REPORT_SCHEMA_VERSION,
         "version": version,
@@ -219,9 +276,7 @@ def build_quality_report(
                 round(collected_count / candidate_count, 4) if candidate_count else None
             ),
             "tier_histogram": _tier_histogram(admitted),
-            "judge_pass_rate": (
-                round(sum(judge_flags) / len(judge_flags), 4) if judge_flags else None
-            ),
+            "judge_pass_rate": judge_rate,
             "quarantined": by_stage.get("verification", 0),
             "placeholder_contract_violations": placeholder_violations,
             "judge_contract_violations": judge_violations,
@@ -248,11 +303,12 @@ def build_quality_report(
                 "max_records_per_parent": by_stage.get("exposure", 0),
             },
             "cluster_exposure": cluster_exposure,
-            "top_clusters": _top_clusters(admitted),
+            "top_clusters": top_clusters,
         },
         "decontamination": decontamination,
         "per_family": per_family,
         "engines": engines,
+        "warnings": warnings,
     }
 
 

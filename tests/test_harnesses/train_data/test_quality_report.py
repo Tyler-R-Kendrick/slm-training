@@ -154,8 +154,16 @@ def test_build_emits_quality_report_and_rejected_ledger(tmp_path: Path) -> None:
     assert report["engines"]["semantic_dedup"] in {"lexical-tfidf", "embeddings"}
     assert report["engines"]["decontam"] == "ngram-8"
 
-    # Admitted corpus stayed healthy.
+    # Admitted corpus stayed healthy, and every record carries a curation score.
     assert report["counts"]["admitted"] == stats["record_count"] > 0
+    assert isinstance(report["warnings"], list)
+    from slm_training.dsl.schema import load_jsonl
+
+    admitted_records = load_jsonl(out_dir / "records.jsonl")
+    assert all(
+        0.0 <= float((r.meta or {}).get("curation_score", -1)) <= 1.0
+        for r in admitted_records
+    )
 
     # The manifest points at both artifacts.
     manifest = result["manifest"]
