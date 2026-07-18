@@ -1,10 +1,10 @@
 {
-  "iteration": "E292",
+  "iteration": "E297",
   "date": "2026-07-17",
   "hypothesis": "AST-derived semantic-contract prompts plus judge-enforced prompt/output agreement will improve a matched choice-codec run without relying on a larger training recipe.",
   "data": {
-    "version": "e292_semantic_contract_judge_v1",
-    "path": "src/slm_training/resources/data/train/e292_semantic_contract_judge_v1",
+    "version": "e297_semantic_contract_judge_v1",
+    "path": "src/slm_training/resources/data/train/e297_semantic_contract_judge_v1",
     "records": 480,
     "remediated_generation_prompts": 90,
     "independent_judge_passed": 480,
@@ -58,9 +58,9 @@
   "evaluation": {
     "checkpoint_sha256": "f74a3c46dc9b5c4cd6c62dcb32aef347f0721fb1e94839cef55e9e4ebf120b26",
     "run_ids": [
-      "e292-semantic-contract-data-r1",
-      "e292-semantic-contract-data-r2",
-      "e292-semantic-contract-data-r3"
+      "e297-semantic-contract-data-r1",
+      "e297-semantic-contract-data-r2",
+      "e297-semantic-contract-data-r3"
     ],
     "agentv_each": {
       "total": 5,

@@ -1,15 +1,15 @@
-# E292 — judged semantic-contract data (2026-07-17)
+# E297 — judged semantic-contract data (2026-07-17)
 
 ## Hypothesis and implementation
 
 The inherited corpus contained generation prompts that did not determine their
-paired outputs. E292 derives a canonical semantic contract from each output AST
+paired outputs. E297 derives a canonical semantic contract from each output AST
 (component counts, declarations, reference graph, and placeholders), renders
 that contract into the prompt, and makes the independent judge reconstruct and
 compare the same contract before admitting a pair.
 
 The immutable published corpus
-`e292_semantic_contract_judge_v1` contains 480 records. Ninety under-specified
+`e297_semantic_contract_judge_v1` contains 480 records. Ninety under-specified
 generation prompts were remediated without changing their outputs; every record
 has `independent_judge_passed=true`. Its content fingerprint is
 `1e1815e2b658c618b0b556853f7c7b009c384ab98749b3786eebd379a54290a9`.
@@ -22,7 +22,7 @@ dataset and rewrites all manifest paths to the source-controlled destination.
 
 Post-run corpus inspection found that the inherited snapshot still contained
 29 explicit generation rows and 15 default-generation fixtures that passed the
-older prose judge without an exact AST contract. E292 remains immutable as the
+older prose judge without an exact AST contract. E297 remains immutable as the
 historical training input, but future admission now fails closed when any
 effective generation row lacks `semantic_contract`; normalization remediates
 all such rows, not only edit-derived generation rows. The next corpus version
@@ -52,7 +52,7 @@ constrained dead ends. Token traces showed two deterministic-policy defects:
 2. JSON-schema `string` acceptance ignored the DSL pack's stronger
    `CONTENT_PROPS` placeholder policy.
 
-E292 removes names from the expression partition while retaining them for
+E297 removes names from the expression partition while retaining them for
 object keys. Positional component contracts are still generated from
 `prop_order` and the official JSON schema, but content fields are now annotated
 from `CONTENT_PROPS`. Only symbolic slot expressions satisfy those fields.
@@ -91,12 +91,12 @@ model forwards and emits 55 choice tokens per record.
 
 The deterministic layer now owns the placeholder-valued lexical branch and
 restores structural adherence without retraining. That is a harness correction,
-not evidence that E292 learned the task.
+not evidence that E297 learned the task.
 
 The judged semantic-contract corpus improves best weighted NLL from E291's
 7.09848 to 6.50945 at the matched token budget, but zero meaningful parse,
 placeholder fidelity, reward, and AgentV show that lower teacher-forced NLL did
-not transfer to semantic generation. E292 is not promotable or ship-ready.
+not transfer to semantic generation. E297 is not promotable or ship-ready.
 
 The next quality iteration must first publish the fully remediated 119-row
 generation subset under a new immutable corpus version. It should then measure
@@ -105,4 +105,4 @@ inventory, and slot selection before adjusting the mixture or objective. More
 syntax patches or a larger training budget would not address this failure.
 
 Machine-readable evidence:
-[`iter-e292-semantic-contract-data-20260717.json`](iter-e292-semantic-contract-data-20260717.json).
+[`iter-e297-semantic-contract-data-20260717.json`](iter-e297-semantic-contract-data-20260717.json).
