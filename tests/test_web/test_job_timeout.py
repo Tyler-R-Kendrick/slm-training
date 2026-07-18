@@ -22,3 +22,9 @@ def test_job_hard_cap_interrupts_and_fails(tmp_path, monkeypatch) -> None:
 
     assert job.status == "failed"
     assert any("three-minute hard cap" in line for line in registry.tail(job.id))
+
+
+def test_remote_dispatches_are_labeled_as_bounded_smokes() -> None:
+    summaries = {row["job"]: row["summary"] for row in jobs.catalog()}
+    assert "bounded checkpoint smoke" in summaries["hf_jobs_train"]
+    assert "bounded checkpoint smoke" in summaries["remote_train"]
