@@ -1,0 +1,24 @@
+{
+  "id": "E323",
+  "date": "2026-07-17",
+  "status": "negative_not_promotable",
+  "run_id": "e323-balanced-slot-owner-20k-r1",
+  "checkpoint_sha256": "0df34163083d7959c1de94385d5a2ff984b9ad20ebcff08a11991793f6d5ffdc",
+  "steps": 446,
+  "seen_target_tokens": 20044,
+  "elapsed_wall_seconds": 122.7973336449977,
+  "weighted_nll": 5.426936577300019,
+  "broad_nll": 5.499303136456322,
+  "class_balance_power": 0.5,
+  "observed_classes": 22,
+  "weight_range": [0.37253748216645194, 3.723045734333596],
+  "slot_accuracy": 0.6758333392441273,
+  "slot_majority_baseline": 0.6391666755080223,
+  "agentv": {"passed": 3, "total": 5},
+  "failures": [
+    "smoke component recall 0.3333 < 0.35",
+    "held_out meaningful 0.20 < 0.40",
+    "held_out component recall 0.10 < 0.30"
+  ],
+  "verdict": "Reject: explicit training-only class balance does not recover held-out roles. Test ordered local slot context."
+}

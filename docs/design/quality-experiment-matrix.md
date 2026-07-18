@@ -2092,6 +2092,12 @@ with three metric failures. Reject focal hardness; test corpus-derived class
 weights next. See [results](iter-e322-focal-slot-owner-20260717.md) and
 [JSON](focal-slot-owner-results-iter-e322-20260717.json).
 
+E323 square-root inverse corpus frequency assigns 0.373–3.723 owner weights
+but still yields held-out meaningful/recall 0.20/0.10 and AgentV 3/5. Reject
+the checkpoint: weighting alone is insufficient; ordered local slot context is
+the next lever. See [results](iter-e323-balanced-slot-owner-20260717.md) and
+[JSON](balanced-slot-owner-results-iter-e323-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
