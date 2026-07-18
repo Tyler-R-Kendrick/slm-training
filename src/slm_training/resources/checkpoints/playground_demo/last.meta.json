@@ -64,6 +64,8 @@
   "gen_len": 115,
   "tokenizer": "last.tokenizer.json",
   "vocab_size": 72,
+  "parameter_count": 740352,
+  "serialized_weight_bytes": 2961408,
   "context_backend": "scratch",
   "hf_model_name": null
 }

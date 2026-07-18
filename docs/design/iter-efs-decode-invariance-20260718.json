@@ -1,0 +1,78 @@
+{
+  "experiment": "EFS0-02",
+  "title": "Decode-invariance factorial audit \u2014 harness + deferred audit",
+  "kind": "infrastructure+wiring_evidence",
+  "source_commit": null,
+  "hypothesis": "At least one durable checkpoint changes parse/meaningful/placeholder/structural outcomes under a corrected/current decoder on byte-identical weights, invalidating a prior training/architecture attribution.",
+  "falsifier": "All compatible decode paths agree within preregistered equivalence bands on every checkpoint and suite.",
+  "equivalence_bands": {
+    "max_abs_metric_delta": 0.01,
+    "max_disagreement_rate": 0.01
+  },
+  "decode_paths": [
+    {
+      "path_id": "checkpoint_declared",
+      "generation_entry": "as_declared",
+      "completion_kind": "declared",
+      "supported_output_codecs": [],
+      "fingerprint": "5c6b452686cd4c0e35833e99727b82a8daaeb73207993595c78286c935e587df"
+    },
+    {
+      "path_id": "current_native",
+      "generation_entry": "model_native_greedy_ltr",
+      "completion_kind": "greedy",
+      "supported_output_codecs": [],
+      "fingerprint": "cb9e31a068aa57579bb870d31a5ad843162d421f462892894afbc9ddeecb7c20"
+    },
+    {
+      "path_id": "current_exact_or_compiler",
+      "generation_entry": "exact_or_compiler_tree",
+      "completion_kind": "exact",
+      "supported_output_codecs": [
+        "choice",
+        "lexer",
+        "compositional"
+      ],
+      "fingerprint": "11813dfe97a23ca3f6cceffccf6ba9b33eca1d370f0c41449dea92008d7c6170"
+    }
+  ],
+  "compatibility_manifest": {
+    "schema_version": "checkpoint_decode_manifest/v1",
+    "required_paths": [
+      "checkpoint_declared",
+      "current_native",
+      "current_exact_or_compiler"
+    ],
+    "min_complete_blocks": 6,
+    "checkpoint_count": 0,
+    "complete_blocks": 0,
+    "usable_for_audit": false,
+    "note": "No durable checkpoints supplied: the decode-invariance audit is deferred until frontier/diagnostic checkpoints are synced (see SLM-103).",
+    "cells": []
+  },
+  "min_complete_blocks": 6,
+  "e288_decoder_defect_regression": {
+    "scenario": "byte-identical weights, checkpoint_declared parse 0 (19/19 empty) vs current_exact_or_compiler parse 1.0 (valid-but-trivial)",
+    "decoder_sensitive": true,
+    "disagreement_counts": {
+      "empty_vs_populated": 19,
+      "semantic_binding": 0,
+      "syntax_placeholder": 0,
+      "timeout_fallback": 0,
+      "exact_choice_derivation": 0,
+      "surface_only": 0,
+      "agree": 0
+    },
+    "parse_rate_delta": 1.0
+  },
+  "audit_status": "DEFERRED",
+  "audit_blocker": "Zero durable checkpoints resolvable in this environment (SLM-103 backfill: 227/231 model-card rows are unresolved-local). The ten-checkpoint factorial run requires a GPU host with synced E224+ checkpoints.",
+  "verified": [
+    "decode-path registry (3 paths) + compatibility predicates + deterministic fingerprints",
+    "checkpoint x decode-path compatibility manifest + fail-closed validation",
+    "paired disagreement/attribution classifier + preregistered equivalence bands",
+    "E288 decoder-defect regression flagged decoder_sensitive",
+    "23 unit tests pass; ruff clean"
+  ],
+  "decision": "Harness delivered and validated (wiring evidence, not a ship or decoder-sensitivity claim). Actual ten-checkpoint audit + findings deferred to a credentialed GPU host with durable checkpoints; matrix-row execution generates per-checkpoint rows from the compatibility manifest at run time."
+}

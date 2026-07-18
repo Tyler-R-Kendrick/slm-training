@@ -6,6 +6,7 @@
         "CheckpointConsole",
         "DataTable",
         "Grid",
+        "Hint",
         "Page",
         "PageHead",
         "Panel",
@@ -17,7 +18,7 @@
         "checkpoints_roster_full",
         "checkpoints_tiles"
       ],
-      "sha256": "53e60510dba9aaa99022320cb5cdf1cc39b4b845d99ef2b418dbd2ec2346c63a",
+      "sha256": "041e9e3393a2f19b313c1af6c857d2e759a0da5a18d3255c9d3a7bc3820d5b1d",
       "status": "ok"
     },
     "data": {
@@ -94,7 +95,7 @@
         "overview_insights",
         "overview_jobs"
       ],
-      "sha256": "b04d4c0a795d7ea76eda855273b485b9be8bfb56b839d2200d4ed4af4e4b2755",
+      "sha256": "dd9763bfe73596ba22ded6841f3f22828f451eb647c6dc035d898a2155fd1b65",
       "status": "ok"
     },
     "playground": {

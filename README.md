@@ -172,6 +172,12 @@ scratch and stay local). Manual sync:
 `python -m scripts.sync_checkpoints --run-dir outputs/runs/<id> --ensure-bucket`.
 See [docs/design/checkpoint-bucket.md](docs/design/checkpoint-bucket.md).
 
+Checkpoint provenance is fail-closed: each sync emits a verified
+`CheckpointReferenceV1`, and `frontier`/`ship_candidate` citations must resolve
+from a fresh clone or CI fails (`python -m scripts.verify_checkpoint_references
+--check`). See
+[docs/design/checkpoint-provenance.md](docs/design/checkpoint-provenance.md).
+
 Honest ship path (V4 inventory-in-prompt / V6 stacked champion):
 
 ```bash
