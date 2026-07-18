@@ -2895,7 +2895,12 @@ continues through shard 6 at row 671: structure 0.8826 (from 0.8836), reward
 extended by shard 7 through row 767: structure 0.8747 (from 0.8766), unchanged
 reward 0.9932, and unchanged perfect gate metrics. Shard 8 reaches row 863 at
 structure 0.8634 (from 0.8639), unchanged reward 0.9946, and unchanged perfect
-gate metrics. Coverage is 864/1500; no merged or ship claim yet. See
+gate metrics. Shard 9 reaches row 959 metric-identical to E460 at structure
+0.8981 and reward 0.9932. Shard 10 reaches row 1055 at structure 0.8671 (from
+0.8662), unchanged reward 0.9932, and unchanged perfect gate metrics. Coverage
+continues through shard 11 at row 1151: structure 0.8669 (from 0.8679), reward
+0.9943 (from 0.9946), and unchanged perfect gate metrics. Coverage is
+1152/1500; no merged or ship claim yet. See
 [`iter-e472-schema-enum-full-rico-sharded-20260718.md`](iter-e472-schema-enum-full-rico-sharded-20260718.md).
 
 Verifier-guided repair status from
