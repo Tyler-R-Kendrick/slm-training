@@ -2434,6 +2434,18 @@ was 58, and must not be merged with corrected evidence. See
 [results](iter-e389-e395-choice-effective-canvas-20260718.md) and
 [JSON](iter-e389-e395-choice-effective-canvas-20260718.json).
 
+E396 resumes the same immutable E357 corpus and increases component-plan
+supervision from 1→4 while adding slot-owner inverse-frequency balance power
+0.5. It reaches 22,044 target tokens in 104.6s under the internal 4.5-minute
+limit. E398 clears all four bounded suites with AgentV 4/4; held-out
+meaningful/structure/recall improve from 0.4/0.5061/0.2333 to
+0.6/0.5933/0.4833. E399's matched RICO rows 336–384 retain parse, meaningful,
+and fidelity 1.0, but structure/recall regress from 0.6514/0.9931 to
+0.6401/0.8993. Retain as the strongest bounded HF-context candidate, but do
+not promote: full RICO, checkpoint sync, and fresh loss evidence are absent.
+See [results](iter-e396-e399-balanced-type-supervision-20260718.md) and
+[JSON](iter-e396-e399-balanced-type-supervision-20260718.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
