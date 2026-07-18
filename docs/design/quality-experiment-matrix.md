@@ -2476,6 +2476,15 @@ gate any further continuation before RICO. See
 [results](iter-e407-e408-continuation-control-20260718.md) and
 [JSON](iter-e407-e408-continuation-control-20260718.json).
 
+E409 narrows the power-zero continuation boundary to 25,036 target tokens.
+E410 already fails smoke meaningful/recall at 0.3333/0.1667, while OOD remains
+healthy at parse/fidelity 1.0 and reward 0.7335. The first observed semantic
+collapse therefore lies between E396's 22,044 tokens and E409's 25,036.
+Reject E409, retain E396, and require bounded evaluation before further
+continuation. See
+[results](iter-e409-e410-25k-continuation-boundary-20260718.md) and
+[JSON](iter-e409-e410-25k-continuation-boundary-20260718.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

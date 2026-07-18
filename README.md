@@ -137,6 +137,7 @@ summary and the full card whenever a checkpoint is created or promoted.
 | E403 mild balance protocol rejection | `e403-component-plan-mild-continuation-r1/last.pt` | `outputs/runs/e403-component-plan-mild-continuation-r1/…` (local) | 29,066 target tokens in 107.8s, but prompt-context policy differed accidentally; not evaluated — protocol-invalid, not ship |
 | E404 controlled mild balance rejection | `e404-component-plan-mild-controlled-r1/last.pt` | `outputs/runs/e404-component-plan-mild-controlled-r1/…` (local) | 29,066 target tokens in 108.7s; 3.54× weight range still repeats smoke collapse and AgentV 3/4 — rejected, not ship |
 | E407 unbalanced continuation rejection | `e407-component-plan-unbalanced-control-r1/last.pt` | `outputs/runs/e407-component-plan-unbalanced-control-r1/…` (local) | Power-zero control at matched 29,066 tokens exactly repeats smoke collapse and worsens OOD, proving continuation length is causal — rejected, not ship |
+| E409 25k continuation rejection | `e409-component-plan-25k-control-r1/last.pt` | `outputs/runs/e409-component-plan-25k-control-r1/…` (local) | Power-zero control at 25,036 tokens already collapses smoke while OOD stays healthy — rejected, not ship |
 | Production HF ship | *(none yet)* | [HF Bucket `TKendrick/OpenUI`](https://huggingface.co/buckets/TKendrick/OpenUI) `checkpoints/<run_id>/` | Register here after first full HF sync + `--ship-gates` |
 
 **Load demo:** `python -m scripts.serve_playground` · **Full train sync:** set
