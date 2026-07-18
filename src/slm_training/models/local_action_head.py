@@ -11,6 +11,7 @@ compiler action directly.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
@@ -35,6 +36,8 @@ class StateContext:
     state_signature: tuple[Any, ...] = ()
     branch_count: int = 0
     forced: bool = False
+    sensitivity: Mapping[str, float] | None = None
+    completion_support_size: int | None = None
 
 
 @dataclass
@@ -580,6 +583,9 @@ class ResidualTritPlaneHead(LocalActionHead):
         hidden: torch.Tensor,
         state_context: StateContext,
         legal_actions: list[str],
+        *,
+        max_planes: int | None = None,
+        return_diagnostics: bool = False,
     ) -> LocalActionOutput:
         indices = torch.tensor(
             [hash(a) % self.max_actions for a in legal_actions],
@@ -588,17 +594,29 @@ class ResidualTritPlaneHead(LocalActionHead):
         )
         base_emb = self.base_embeddings(indices)  # [b, hidden_dim]
         base_scores = hidden @ base_emb.T  # [batch, b]
-        all_scores = self.residual_stack(hidden)  # [batch, max_actions]
+        if return_diagnostics:
+            diag = self.residual_stack(
+                hidden,
+                max_planes=max_planes,
+                return_diagnostics=True,
+            )
+            all_scores = diag.final_output
+        else:
+            diag = None
+            all_scores = self.residual_stack(hidden, max_planes=max_planes)
         residual_scores = all_scores[:, indices]  # [batch, b]
+        metadata: dict[str, Any] = {
+            "action_count": len(legal_actions),
+            "R": self.R,
+            "scale_mode": self.residual_stack.scale_mode,
+            "residual_normalization": self.residual_stack.residual_normalization,
+        }
+        if diag is not None:
+            metadata["plane_diagnostics"] = diag
         return LocalActionOutput(
             logits=base_scores + residual_scores,
             head_family=self.head_family,
-            metadata={
-                "action_count": len(legal_actions),
-                "R": self.R,
-                "scale_mode": self.residual_stack.scale_mode,
-                "residual_normalization": self.residual_stack.residual_normalization,
-            },
+            metadata=metadata,
         )
 
     def decode(
