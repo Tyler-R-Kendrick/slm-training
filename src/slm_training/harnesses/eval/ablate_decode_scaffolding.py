@@ -199,6 +199,46 @@ def build_stage_a_arms() -> tuple[AblateArm, ...]:
     return (baseline,) + tuple(one_off) + (all_off,)
 
 
+def build_stage_b_arms(
+    exclude_stage_a: bool = True,
+) -> tuple[AblateArm, ...]:
+    """Return the remaining 2^4 factorial cells for Stage B.
+
+    By default excludes the six Stage A arms (baseline + four one-factor-off +
+    all-off) so a combined runner does not duplicate work.
+    """
+    stage_a_factors = {
+        tuple(a.factors.to_dict().values()) for a in build_stage_a_arms()
+    } if exclude_stage_a else set()
+    arms: list[AblateArm] = []
+    for content_floor in (False, True):
+        for prompt_inventory in (False, True):
+            for semantic_constraints in (False, True):
+                for attempts in (False, True):
+                    factors = ScaffoldFactors(
+                        content_floor=content_floor,
+                        prompt_inventory=prompt_inventory,
+                        semantic_constraints=semantic_constraints,
+                        attempts=attempts,
+                    )
+                    if tuple(factors.to_dict().values()) in stage_a_factors:
+                        continue
+                    arm_id = (
+                        f"cf_{int(content_floor)}_pi_{int(prompt_inventory)}_"
+                        f"sc_{int(semantic_constraints)}_at_{int(attempts)}"
+                    )
+                    arms.append(
+                        AblateArm(
+                            arm_id=arm_id,
+                            factors=factors,
+                            decode_path_id=PATH_BY_CONSTRAINTS[factors.semantic_constraints],
+                            best_of_n=4 if attempts else 1,
+                            description="Stage B full-factorial cell",
+                        )
+                    )
+    return tuple(arms)
+
+
 def _factor_overrides(arm: AblateArm) -> dict[str, Any]:
     """Map an arm's binary factors onto concrete ModelBuildConfig overrides."""
     factors = arm.factors

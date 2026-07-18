@@ -303,3 +303,21 @@ def test_replay_same_arm_produces_identical_config(base_config: ModelBuildConfig
     c2, _p2, ok2, _ = resolve_arm_config(base_config, arm, output_codec="choice")
     assert ok1 and ok2
     assert asdict(c1) == asdict(c2)
+
+
+def test_stage_b_excludes_stage_a_cells_by_default() -> None:
+    from slm_training.harnesses.eval.ablate_decode_scaffolding import build_stage_b_arms
+
+    stage_a = build_stage_a_arms()
+    stage_b = build_stage_b_arms(exclude_stage_a=True)
+    stage_a_factor_tuples = {tuple(a.factors.to_dict().values()) for a in stage_a}
+    stage_b_factor_tuples = {tuple(a.factors.to_dict().values()) for a in stage_b}
+    assert len(stage_b) == 10
+    assert not stage_a_factor_tuples & stage_b_factor_tuples
+
+
+def test_stage_b_can_include_all_16_cells() -> None:
+    from slm_training.harnesses.eval.ablate_decode_scaffolding import build_stage_b_arms
+
+    stage_b = build_stage_b_arms(exclude_stage_a=False)
+    assert len(stage_b) == 16
