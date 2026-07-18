@@ -229,6 +229,7 @@ class TwoTowerConfig:
     slot_component_span_priors: tuple[
         tuple[str, tuple[float, ...]], ...
     ] = ()
+    slot_component_content_arity: bool = False
     component_edge_loss_weight: float = 0.0
     component_edge_alignment_loss_weight: float = 0.0
     component_edge_decode_weight: float = 0.0
@@ -3385,6 +3386,9 @@ class TwoTowerModel(nn.Module):
         span_weight = float(
             getattr(self.config, "slot_component_span_prior_weight", 0.0) or 0.0
         )
+        use_content_arity = bool(
+            getattr(self.config, "slot_component_content_arity", False)
+        ) or span_weight > 0.0
         span_lookup = dict(
             getattr(self.config, "slot_component_span_priors", ()) or ()
         )
@@ -3400,7 +3404,7 @@ class TwoTowerModel(nn.Module):
                 )
                 required = (
                     int(slot_content_count(token_id))
-                    if callable(slot_content_count)
+                    if use_content_arity and callable(slot_content_count)
                     else 1
                 )
                 if required > 0:

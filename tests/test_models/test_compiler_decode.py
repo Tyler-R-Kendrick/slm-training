@@ -1021,7 +1021,10 @@ def test_slot_component_lexeme_prior_changes_matching_slot_only() -> None:
 def test_slot_component_bias_uses_next_unfilled_slot() -> None:
     from types import MethodType
 
-    model = _model(slot_component_decode_weight=2.0)
+    model = _model(
+        slot_component_decode_weight=2.0,
+        slot_component_content_arity=True,
+    )
     assert model.slot_component_head is not None
     tokenizer = model.tokenizer
     component_ids = model._component_inventory_token_ids()

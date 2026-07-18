@@ -464,6 +464,12 @@ def compile_commands(
                     str(knobs.slot_component_span_prior_weight),
                 ]
             )
+        if knobs.slot_component_content_arity is not None:
+            train.append(
+                "--slot-component-content-arity"
+                if knobs.slot_component_content_arity
+                else "--no-slot-component-content-arity"
+            )
         if knobs.component_plan_attention_pool:
             train.append("--component-plan-attention-pool")
         if knobs.component_plan_token_pool:

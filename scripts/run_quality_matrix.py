@@ -168,6 +168,7 @@ class Experiment:
     slot_component_pair_interaction: bool = False
     slot_component_lexeme_prior_weight: float = 0.0
     slot_component_span_prior_weight: float = 0.0
+    slot_component_content_arity: bool = False
     component_edge_loss_weight: float = 0.0
     component_edge_alignment_loss_weight: float = 0.0
     component_edge_decode_weight: float = 0.0
@@ -1734,6 +1735,9 @@ def _train_cfg(exp: Experiment, args: argparse.Namespace) -> ModelBuildConfig:
         ),
         slot_component_span_prior_weight=float(
             getattr(exp, "slot_component_span_prior_weight", 0.0) or 0.0
+        ),
+        slot_component_content_arity=bool(
+            getattr(exp, "slot_component_content_arity", False)
         ),
         component_edge_loss_weight=float(
             getattr(exp, "component_edge_loss_weight", 0.0) or 0.0

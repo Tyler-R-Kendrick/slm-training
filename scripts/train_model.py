@@ -448,6 +448,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Bias multi-slot owners from corpus-derived ordered role spans.",
     )
     parser.add_argument(
+        "--slot-component-content-arity",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Average owner evidence across schema-derived content slots.",
+    )
+    parser.add_argument(
         "--component-edge-loss-weight",
         type=float,
         default=0.0,
@@ -853,6 +859,7 @@ def main(argv: list[str] | None = None) -> int:
             slot_component_span_prior_weight=(
                 args.slot_component_span_prior_weight
             ),
+            slot_component_content_arity=args.slot_component_content_arity,
             component_edge_loss_weight=args.component_edge_loss_weight,
             component_edge_alignment_loss_weight=(
                 args.component_edge_alignment_loss_weight

@@ -383,6 +383,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         slot_component_span_prior_weight=float(
             getattr(config, "slot_component_span_prior_weight", 0.0) or 0.0
         ),
+        slot_component_content_arity=bool(
+            getattr(config, "slot_component_content_arity", False)
+        ),
         component_edge_loss_weight=float(
             getattr(config, "component_edge_loss_weight", 0.0) or 0.0
         ),
