@@ -727,6 +727,7 @@ suites because they contain no scope metadata. Evidence:
 | 2026-07-17 | `e328-span-slot-prior-20k-r1` (E328 ordered span arm) | `outputs/runs/e328-span-slot-prior-20k-r1/` (local) | 446 CPU scratch steps / 20,044 target tokens; corrected schema content arity plus ordered span prior; NLL 5.4084; SHA `888cf8ac495f0349a8347132c3121c08561d0759567844984b40d19b9ccc4ebe`; explicit no-sync | Smoke unchanged and held recall regresses to 0.30; AgentV 4/5, no promotion |
 | 2026-07-17 | `e329-content-arity-fix-honest-r1` (E329 eval-only) | `outputs/runs/e329-content-arity-fix-honest-r1/` (local) | Unchanged E326 SHA; schema-derived multi-slot averaging without span prior | Exactly reproduces E328 regression, so averaging is opt-in and E326 remains strongest; AgentV 4/5, no promotion |
 | 2026-07-17 | `e330-prompt-lexeme-slot-prior-20k-r1` (E330 prompt-conditioned arm) | `outputs/runs/e330-prompt-lexeme-slot-prior-20k-r1/` (local) | 446 CPU scratch steps / 20,044 target tokens; lexeme prior plus pooled prompt context; NLL 5.4158; SHA `91648e999c09e79a468fbedcab9279da3f9d78fb11dc87fa1030b2c199823d54`; explicit no-sync | Auxiliary accuracy improves but smoke is unchanged and held recall regresses; AgentV 4/5, no promotion |
+| 2026-07-17 | `e331-lexeme-component-plan2-honest-r1` (E331 eval-only) | `outputs/runs/e331-lexeme-component-plan2-honest-r1/` (local) | Unchanged E326 SHA; component-plan decode weight 2 | Smoke unchanged; held and limited-RICO regress; AgentV 4/5, no promotion |
 
 Append a row for every new or replaced checkpoint. Do not delete history.
 

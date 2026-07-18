@@ -2137,6 +2137,12 @@ Reject the checkpoint: the auxiliary gain does not transfer. See
 [results](iter-e330-prompt-lexeme-slot-20260717.md) and
 [JSON](prompt-lexeme-slot-results-iter-e330-20260717.json).
 
+E331 doubles E326's frozen component-plan decode weight. Smoke is unchanged,
+held recall falls to 0.30, and limited-RICO structure/reward regress to
+0.3347/0.835. Reject global plan scaling. See
+[results](iter-e331-component-plan2-20260717.md) and
+[JSON](component-plan2-results-iter-e331-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
