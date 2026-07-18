@@ -23,16 +23,18 @@ from decode-time scaffolding.
     `TwoTowerModel.from_checkpoint` + `evaluate_suites`.
   - `run_stage_a()` — runs provenance check, then Stage A, and produces an
     `AblateReport`.
-  - `stage_a_needs_stage_b()` — heuristic trigger for the remaining `2^4` cells.
+  - `build_stage_b_arms()` — generates the remaining `2^4` factorial cells,
+    optionally excluding Stage A cells.
+  - `stage_a_needs_stage_b()` — heuristic trigger for Stage B.
 - `scripts/ablate_decode_scaffolding.py`
   - CLI entry point with `--checkpoint`, `--checkpoint-id`, `--checkpoint-sha256`,
     `--checkpoint-remote-uri`, `--output-codec`, `--suites`, `--out-dir`, and
     `--dry-run`.
 - `tests/test_harnesses/eval/test_ablate_decode_scaffolding.py`
-  - 17 regression tests covering arm generation, factor isolation, config
+  - 19 regression tests covering arm generation, factor isolation, config
     resolution, fixture-mode compatibility, Stage B triggering, checkpoint
     SHA-256 provenance, no-inventory contract surfacing, single-attempt mode,
-    grammar-only enforcement, and replay determinism.
+    grammar-only enforcement, replay determinism, and Stage B cell enumeration.
 
 ## Design
 
@@ -51,7 +53,7 @@ that every arm resolves to a legal, compatible config override set.
 
 ## Regression tests
 
-`pytest tests/test_harnesses/eval/test_ablate_decode_scaffolding.py` — 17 passed.
+`pytest tests/test_harnesses/eval/test_ablate_decode_scaffolding.py` — 19 passed.
 
 - Stage A produces 6 arms with expected IDs.
 - Baseline has all factors enabled; all-off has none.
@@ -67,6 +69,7 @@ that every arm resolves to a legal, compatible config override set.
 - One-attempt arm sets `best_of_n=1` and `generate_max_attempts=1`.
 - All-off arm keeps `grammar_constrained=True`.
 - Repeated resolution of the same arm is byte-identical.
+- Stage B returns 10 cells when excluding Stage A, or all 16 cells otherwise.
 
 ## Fixture harness results
 
@@ -116,8 +119,8 @@ Hard gates:
 
 ## Verification checklist
 
-- [x] `pytest tests/test_harnesses/eval/test_ablate_decode_scaffolding.py` — 17 passed.
-- [x] `.githooks/check-changed` — 17 passed.
+- [x] `pytest tests/test_harnesses/eval/test_ablate_decode_scaffolding.py` — 19 passed.
+- [x] `.githooks/check-changed` — 19 passed.
 - [x] `python -m scripts.repo_policy` — ok.
 - [x] `git diff --check` — clean.
 - [x] `python -m scripts.ablate_decode_scaffolding --dry-run` — 6 arms described.
