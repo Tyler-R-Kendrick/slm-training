@@ -36,12 +36,6 @@ def _placeholders_of(source: str) -> frozenset[str]:
     return frozenset(extract_placeholders(source))
 
 
-@lru_cache(maxsize=1024)
-def _stripped(source: str) -> str:
-    """Style-stripped source; several per-record metrics share it."""
-    return strip_style_literals(source)
-
-
 def _nearest_rank(sorted_values: list[float], fraction: float) -> float | None:
     """Return a monotonic nearest-rank percentile for small samples."""
     if not sorted_values:
@@ -165,8 +159,8 @@ def _placeholder_validity(pred: str, gold: ExampleRecord) -> float:
 
 def _tree_match(pred: str, gold_openui: str) -> float:
     """Exact match on structure-normalized programs (style args ignored)."""
-    pred_s = _stripped(pred).strip()
-    gold_s = _stripped(gold_openui).strip()
+    pred_s = strip_style_literals(pred).strip()
+    gold_s = strip_style_literals(gold_openui).strip()
     if pred_s == gold_s:
         return 1.0
     try:
@@ -183,15 +177,15 @@ def _tree_match(pred: str, gold_openui: str) -> float:
 
 def _component_multiset(source: str) -> dict[str, int]:
     counts: dict[str, int] = {}
-    for name in _COMPONENT_RE.findall(_stripped(source)):
+    for name in _COMPONENT_RE.findall(strip_style_literals(source)):
         counts[name] = counts.get(name, 0) + 1
     return counts
 
 
 def structural_similarity(pred: str, gold_openui: str) -> float:
     """Jaccard-like similarity over component multisets + depth (style-agnostic)."""
-    pred_s = _stripped(pred)
-    gold_s = _stripped(gold_openui)
+    pred_s = strip_style_literals(pred)
+    gold_s = strip_style_literals(gold_openui)
     pred_c = _component_multiset(pred_s)
     gold_c = _component_multiset(gold_s)
     keys = set(pred_c) | set(gold_c)
@@ -285,7 +279,7 @@ def _reward_for_prediction(pred: str, record: ExampleRecord) -> float:
 
         return float(
             composite_reward(
-                _stripped(pred),
+                strip_style_literals(pred),
                 gold=record,
                 design_md=None,
             )

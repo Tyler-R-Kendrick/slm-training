@@ -585,28 +585,41 @@ def _verifier_check(source: str, record: ExampleRecord) -> SemanticCheckV2:
     )
 
 
-def _subtree_fingerprint(value: Any) -> str:
-    if isinstance(value, dict):
-        value = {
-            key: _subtree_normal_form(child)
-            for key, child in value.items()
-            if key not in {"statementId", "partial", "hasDynamicProps"}
-        }
-    return hashlib.sha256(
-        json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
+_FINGERPRINT_EXCLUDED_KEYS = frozenset({"statementId", "partial", "hasDynamicProps"})
 
 
-def _subtree_normal_form(value: Any) -> Any:
-    if isinstance(value, dict):
-        return {
-            key: _subtree_normal_form(child)
-            for key, child in value.items()
-            if key not in {"statementId", "partial", "hasDynamicProps"}
-        }
-    if isinstance(value, list):
-        return [_subtree_normal_form(child) for child in value]
-    return value
+def _subtree_hashes(root: Any) -> dict[int, str]:
+    """Structural hash per dict node, computed bottom-up in one pass.
+
+    Hashes agree exactly when the ``statementId``/``partial``/``hasDynamicProps``-
+    stripped normal forms agree, which is the only property ``_gaming_check``
+    relies on; composing child digests avoids re-serializing every subtree per
+    node (previously O(n^2) in AST size).
+    """
+    by_id: dict[int, str] = {}
+
+    def visit(value: Any) -> str:
+        if isinstance(value, dict):
+            items: list[tuple[str, str]] = []
+            for key, child in sorted(value.items()):
+                # Visit every child so nested dicts are registered even under
+                # excluded keys; only non-excluded keys feed the parent hash.
+                child_digest = visit(child)
+                if key not in _FINGERPRINT_EXCLUDED_KEYS:
+                    items.append((key, child_digest))
+            digest = hashlib.sha256(("D" + repr(items)).encode()).hexdigest()
+            by_id[id(value)] = digest
+            return digest
+        if isinstance(value, list):
+            return hashlib.sha256(
+                ("L" + "".join(visit(child) for child in value)).encode()
+            ).hexdigest()
+        return hashlib.sha256(
+            ("S" + json.dumps(value, sort_keys=True, separators=(",", ":"))).encode()
+        ).hexdigest()
+
+    visit(root)
+    return by_id
 
 
 def _gaming_check(
@@ -624,9 +637,10 @@ def _gaming_check(
     reasons: list[str] = []
     evidence: list[SemanticEvidenceV2] = []
     fingerprints: dict[str, list[str]] = {}
+    subtree_hashes = _subtree_hashes(program.root)
     for path, value, _component, _prop in _walk(program.root):
         if isinstance(value, dict) and value.get("type") == "element":
-            fingerprints.setdefault(_subtree_fingerprint(value), []).append(path)
+            fingerprints.setdefault(subtree_hashes[id(value)], []).append(path)
     repeated = [paths for paths in fingerprints.values() if len(paths) >= 3]
     if repeated:
         reasons.append("duplicate_subtree_spam")
