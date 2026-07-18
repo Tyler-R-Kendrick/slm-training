@@ -1258,19 +1258,22 @@ def build_train_data(
 
     from slm_training.harnesses.train_data.catalog import classify_source_family
 
+    def _lineage_detail(record: ExampleRecord) -> dict[str, str]:
+        meta = record.meta or {}
+        detail = {"source_family": classify_source_family(record)}
+        if meta.get("synth"):
+            detail["synth"] = str(meta["synth"])
+        return detail
+
     def _accept_record(record: ExampleRecord) -> bool:
         pair = fingerprint_pair(record.prompt, record.openui)
         if pair in seen_pairs:
-            meta = record.meta or {}
-            detail = {"source_family": classify_source_family(record)}
-            if meta.get("synth"):
-                detail["synth"] = str(meta.get("synth"))
             rejections.append(
                 rejection_entry(
                     "dedup",
                     "exact_pair_duplicate",
                     record_id=record.id,
-                    detail=detail,
+                    detail=_lineage_detail(record),
                 )
             )
             return False
@@ -1290,7 +1293,10 @@ def build_train_data(
             )
             rejections.append(
                 rejection_entry(
-                    "decontamination", "test_fixture_structure", record_id=record.id
+                    "decontamination",
+                    "test_fixture_structure",
+                    record_id=record.id,
+                    detail=_lineage_detail(record),
                 )
             )
             continue
@@ -1333,6 +1339,7 @@ def build_train_data(
                         "decontamination",
                         "test_fixture_structure",
                         record_id=normalized.id,
+                        detail=_lineage_detail(normalized),
                     )
                 )
                 continue
@@ -1562,6 +1569,9 @@ def build_train_data(
     rejected_path = write_rejected(out_dir, rejections)
     synthesis_rows = _synthesis_telemetry(deduped)
     built_at = datetime.now(timezone.utc).isoformat()
+    from slm_training.versioning import build_version_stamp
+
+    version_stamp = build_version_stamp("harness.train_data")
     quality_report = build_quality_report(
         version=config.version,
         profile=config.profile,
@@ -1591,6 +1601,7 @@ def build_train_data(
             else None
         ),
     )
+    quality_report["version_stamp"] = version_stamp
     quality_report_path = write_quality_report(out_dir, quality_report)
 
     from slm_training.harnesses.train_data.feedback import (
@@ -1606,6 +1617,7 @@ def build_train_data(
         rejections=rejections,
         quality_report=quality_report,
     )
+    synthesis_feedback["version_stamp"] = version_stamp
     synthesis_feedback_path = write_synthesis_feedback(out_dir, synthesis_feedback)
 
     quality_scores = [
@@ -1708,6 +1720,7 @@ def build_train_data(
         "with_design_md": sum(1 for r in deduped if r.design_md),
         "component_histogram": _component_histogram(deduped),
         "built_at": built_at,
+        "version_stamp": version_stamp,
     }
     stats_path = out_dir / "stats.json"
     stats_path.write_text(json.dumps(stats, indent=2) + "\n", encoding="utf-8")
@@ -1754,6 +1767,7 @@ def build_train_data(
             asdict(_diffusion_config()) if config.diffusion_online else None
         ),
         "built_at": stats["built_at"],
+        "version_stamp": version_stamp,
     }
     manifest_path = out_dir / "manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")

@@ -104,3 +104,34 @@ Promotion still requires frozen decoding, rank stability at the largest two
 ladder points, three-seed efficiency bounds, full HF context, full
 `rico_held`, durable bucket sync, and the unchanged multi-suite ship gates in
 [promotion-pipeline.md](promotion-pipeline.md).
+
+## Strict fixture synthesis-feedback repair (2026-07-18)
+
+Machine-readable evidence:
+[data-quality-strict-feedback-20260718.json](data-quality-strict-feedback-20260718.json).
+
+Recipe: CPU fixture build, strict profile, quality synthesizer, 20 seeds, and
+an outer `timeout --signal=INT --kill-after=10s 170s` cap. This was a bounded
+data-quality diagnostic, not an evaluation, checkpoint, or ship claim.
+
+The initial report exposed 12 reserved-structure drops, but attributed all of
+them to `family:unknown`. The harness now preserves source-family and
+synthesizer lineage on those rejection-ledger rows. The corrected report
+identified three leaking `human_curated` roots and nine derived
+`prompt_paraphrase` / `template` candidates. The three canonical train seeds
+were repaired to remain structurally disjoint from the frozen fixture suites;
+no curation threshold or decontamination gate changed.
+
+| Strict fixture build | Admitted | Rejected | Reserved-structure drops | Feedback recommendations |
+| --- | ---: | ---: | ---: | ---: |
+| Baseline `r1` | 97 | 23 | 12 | 2 unactionable (`unknown`) |
+| Attributed control `r2` | 97 | 23 | 12 | 3 actionable |
+| Repaired, stamped `r4` | 104 | 14 | 0 | 0 |
+
+The accepted `r4` snapshot is committed at
+`src/slm_training/resources/data/train/dq_strict_fixture_r4_20260718/` with
+fingerprint `59bc139e…`, `quality_report.json`,
+`synthesis_feedback.json`, and `version_stamp/v1` provenance for
+`harness.train_data` v1. It is intentionally a tiny fixture corpus for
+dashboard inspection and regression coverage; it is not a full HF-context
+training corpus.

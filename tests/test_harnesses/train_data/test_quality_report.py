@@ -107,6 +107,8 @@ def test_build_emits_quality_report_and_rejected_ledger(tmp_path: Path) -> None:
     assert report == result["quality_report"]
     assert report["schema_version"] == 1
     assert report["profile"] == "strict"
+    assert report["version_stamp"]["stamp_schema"] == "version_stamp/v1"
+    assert report["version_stamp"]["components"]["harness.train_data"] == "v1"
 
     # The ledger and the report agree, and nothing was dropped silently.
     rejected_rows = [
@@ -176,6 +178,7 @@ def test_build_emits_quality_report_and_rejected_ledger(tmp_path: Path) -> None:
     feedback = result["synthesis_feedback"]
     assert (out_dir / "synthesis_feedback.json").is_file()
     assert feedback["schema_version"] == 1
+    assert feedback["version_stamp"] == report["version_stamp"]
     assert feedback["families"]
     assert isinstance(feedback["recommendations"], list)
     assert isinstance(feedback["experiment_candidates"], list)
@@ -183,6 +186,13 @@ def test_build_emits_quality_report_and_rejected_ledger(tmp_path: Path) -> None:
     assert any(
         r["stage"] == "dedup" and (r.get("detail") or {}).get("source_family")
         for r in rejected_rows
+    )
+    # Reserved-structure drops need the same attribution; otherwise synthesis
+    # feedback can only recommend changes to an unactionable "unknown" family.
+    assert all(
+        (r.get("detail") or {}).get("source_family")
+        for r in rejected_rows
+        if r["reason"] == "test_fixture_structure"
     )
 
 

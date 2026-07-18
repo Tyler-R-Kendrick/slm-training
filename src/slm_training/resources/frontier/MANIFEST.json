@@ -25,9 +25,9 @@
       "status": "pending"
     },
     {
-      "gold_content_hash": "a7d6be45e40889a5",
+      "gold_content_hash": "644a4352ddcd71c3",
       "gold_id": "train_card_stack_01",
-      "path": "src/slm_training/resources/frontier/train_card_stack_01.a7d6be45e40889a5.json",
+      "path": "src/slm_training/resources/frontier/train_card_stack_01.644a4352ddcd71c3.json",
       "status": "pending"
     },
     {
@@ -37,9 +37,9 @@
       "status": "pending"
     },
     {
-      "gold_content_hash": "9b5fd56f23f9addf",
+      "gold_content_hash": "a0d376afc51a67b0",
       "gold_id": "train_form_01",
-      "path": "src/slm_training/resources/frontier/train_form_01.9b5fd56f23f9addf.json",
+      "path": "src/slm_training/resources/frontier/train_form_01.a0d376afc51a67b0.json",
       "status": "pending"
     },
     {
@@ -49,9 +49,9 @@
       "status": "pending"
     },
     {
-      "gold_content_hash": "4695d5f0635cbf7b",
+      "gold_content_hash": "1acaf3c864aac7de",
       "gold_id": "train_gallery_01",
-      "path": "src/slm_training/resources/frontier/train_gallery_01.4695d5f0635cbf7b.json",
+      "path": "src/slm_training/resources/frontier/train_gallery_01.1acaf3c864aac7de.json",
       "status": "pending"
     },
     {
@@ -73,9 +73,9 @@
       "status": "pending"
     },
     {
-      "gold_content_hash": "e06bdf6db426915a",
+      "gold_content_hash": "f9d452b259927a33",
       "gold_id": "train_metrics_01",
-      "path": "src/slm_training/resources/frontier/train_metrics_01.e06bdf6db426915a.json",
+      "path": "src/slm_training/resources/frontier/train_metrics_01.f9d452b259927a33.json",
       "status": "pending"
     },
     {
@@ -103,15 +103,15 @@
       "status": "pending"
     },
     {
-      "gold_content_hash": "7578c25b6671eceb",
+      "gold_content_hash": "76aaf35e280450c8",
       "gold_id": "train_settings_01",
-      "path": "src/slm_training/resources/frontier/train_settings_01.7578c25b6671eceb.json",
+      "path": "src/slm_training/resources/frontier/train_settings_01.76aaf35e280450c8.json",
       "status": "pending"
     },
     {
-      "gold_content_hash": "a3085d318cf3fc0e",
+      "gold_content_hash": "91ca1e83f7cbe7be",
       "gold_id": "train_tabs_01",
-      "path": "src/slm_training/resources/frontier/train_tabs_01.a3085d318cf3fc0e.json",
+      "path": "src/slm_training/resources/frontier/train_tabs_01.91ca1e83f7cbe7be.json",
       "status": "pending"
     },
     {

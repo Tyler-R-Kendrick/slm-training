@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "version": "dq_strict_fixture_r4_20260718",
+  "profile": "strict",
+  "built_at": "2026-07-18T23:32:22.459617+00:00",
+  "thresholds": {
+    "low_yield": 0.4,
+    "high_dup_share": 0.5,
+    "min_group_candidates": 8
+  },
+  "families": {
+    "abstraction_ladder": {
+      "admitted": 0,
+      "rejected": 5,
+      "by_stage": {
+        "exposure": 5
+      },
+      "by_reason": {
+        "max_records_per_parent": 5
+      },
+      "candidates": 5,
+      "yield": 0.0
+    },
+    "frontier_described": {
+      "admitted": 3,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 3,
+      "yield": 1.0
+    },
+    "human_curated": {
+      "admitted": 20,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 20,
+      "yield": 1.0
+    },
+    "layout_augment": {
+      "admitted": 30,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 30,
+      "yield": 1.0
+    },
+    "prompt_paraphrase": {
+      "admitted": 51,
+      "rejected": 9,
+      "by_stage": {
+        "dedup": 6,
+        "exposure": 3
+      },
+      "by_reason": {
+        "fuzzy_minhash": 6,
+        "max_records_per_parent": 3
+      },
+      "candidates": 60,
+      "yield": 0.85
+    }
+  },
+  "synthesizers": {
+    "abstraction_ladder": {
+      "admitted": 0,
+      "rejected": 5,
+      "by_stage": {
+        "exposure": 5
+      },
+      "by_reason": {
+        "max_records_per_parent": 5
+      },
+      "candidates": 5,
+      "yield": 0.0
+    },
+    "frontier_described": {
+      "admitted": 3,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 3,
+      "yield": 1.0
+    },
+    "layout_augment": {
+      "admitted": 30,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 30,
+      "yield": 1.0
+    },
+    "template": {
+      "admitted": 51,
+      "rejected": 9,
+      "by_stage": {
+        "dedup": 6,
+        "exposure": 3
+      },
+      "by_reason": {
+        "fuzzy_minhash": 6,
+        "max_records_per_parent": 3
+      },
+      "candidates": 60,
+      "yield": 0.85
+    }
+  },
+  "warnings": [],
+  "recommendations": [],
+  "experiment_candidates": [],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "b54906574d1d9f74c5b2599ae3ba7fe25771d95e",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v1"
+    },
+    "stamped_at": "2026-07-18T23:32:22.726896+00:00"
+  }
+}

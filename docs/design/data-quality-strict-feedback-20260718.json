@@ -1,0 +1,78 @@
+{
+  "run_id": "data-quality-strict-feedback-20260718",
+  "family": "training-data-synthesis",
+  "status": "bounded_fixture_verification_complete",
+  "claim_class": "data_quality_diagnostic",
+  "timestamp": "2026-07-18T23:32:22.459617+00:00",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "b54906574d1d9f74c5b2599ae3ba7fe25771d95e",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v1"
+    },
+    "stamped_at": "2026-07-18T23:32:22.726896+00:00"
+  },
+  "recipe": {
+    "device": "cpu",
+    "profile": "strict",
+    "source": "fixture",
+    "synthesizer": "quality",
+    "seed_count": 20,
+    "max_runtime_seconds": 170,
+    "outer_timeout": "timeout --signal=INT --kill-after=10s 170s",
+    "honesty_mode": "fixture data-quality diagnostic; no learned-model or ship claim",
+    "checkpoint_written": false,
+    "evaluation_run": false,
+    "agentv_required": false
+  },
+  "baseline": {
+    "version": "dq_strict_fixture_r1_20260718",
+    "content_fingerprint": "5cb5c754e8aa71a8c3b7bed8149887138f4df962f71909e9ecc0b099fb7c6f45",
+    "collected": 120,
+    "admitted": 97,
+    "rejected": 23,
+    "reserved_structure_rejected": 12,
+    "synthesis_recommendations": 2,
+    "feedback_limitation": "all reserved-structure drops were incorrectly attributed to family:unknown"
+  },
+  "attributed_control": {
+    "version": "dq_strict_fixture_r2_20260718",
+    "content_fingerprint": "5cb5c754e8aa71a8c3b7bed8149887138f4df962f71909e9ecc0b099fb7c6f45",
+    "collected": 120,
+    "admitted": 97,
+    "rejected": 23,
+    "reserved_structure_rejected": 12,
+    "synthesis_recommendations": 3,
+    "finding": {
+      "human_curated_reserved_drops": 3,
+      "prompt_paraphrase_reserved_drops": 9,
+      "template_synthesizer_reserved_drops": 9
+    }
+  },
+  "candidate": {
+    "version": "dq_strict_fixture_r4_20260718",
+    "published_snapshot": "src/slm_training/resources/data/train/dq_strict_fixture_r4_20260718",
+    "content_fingerprint": "59bc139ef678d9b69e2b19882554dc3e7ff91db38370551923f5fc2e9a5f4620",
+    "collected": 118,
+    "admitted": 104,
+    "rejected": 14,
+    "reserved_structure_rejected": 0,
+    "synthesis_recommendations": 0,
+    "mean_quality_score": 1.0,
+    "parse_rate": 1.0,
+    "judge_pass_rate": 1.0,
+    "feedback_version_stamp_present": true
+  },
+  "delta": {
+    "admitted": 7,
+    "rejected": -9,
+    "reserved_structure_rejected": -12,
+    "synthesis_recommendations_vs_attributed_control": -3
+  },
+  "decision": {
+    "result": "accept",
+    "reason": "repair the three canonical train seed structures and keep strict gates unchanged",
+    "promotion": "publish the immutable fixture snapshot for dashboard inspection; do not treat it as full-corpus or model-quality evidence"
+  }
+}
