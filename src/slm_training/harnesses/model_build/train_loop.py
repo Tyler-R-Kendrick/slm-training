@@ -71,13 +71,12 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     )
 
     max_wall_minutes = getattr(config, "max_wall_minutes", None)
-    if max_wall_minutes is not None and not 0 < float(max_wall_minutes) <= 5:
-        raise ValueError("max_wall_minutes must be positive and at most 5")
+    max_wall_minutes = 3.0 if max_wall_minutes is None else float(max_wall_minutes)
+    if not 0 < max_wall_minutes <= 3:
+        raise ValueError("max_wall_minutes must be positive and at most 3")
     wall_started = time.monotonic()
     wall_deadline = (
-        wall_started + float(max_wall_minutes) * 60
-        if max_wall_minutes is not None
-        else None
+        wall_started + max_wall_minutes * 60
     )
 
     accel = detect_device(config.device)

@@ -1,6 +1,6 @@
 """Bounded objective-geometry diagnostics for local decisions (LDI0-03).
 
-A single cumulative wall-time budget (default and hard cap five minutes) is shared
+A single cumulative wall-time budget (default and hard cap three minutes) is shared
 across every diagnostic stage, mirroring ``CampaignBudget`` /
 ``autoresearch.engine.execute_commands``. On expiry the run reports ``expired`` and
 produces **no result artifact** — the E285/E286 lesson that runtime expiry is a
@@ -25,8 +25,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
-DEFAULT_WALL_MINUTES = 5.0
-MAX_WALL_MINUTES = 5.0
+DEFAULT_WALL_MINUTES = 3.0
+MAX_WALL_MINUTES = 3.0
 DiagnosticStatus = Literal["completed", "expired", "not_authorized"]
 
 __all__ = [
@@ -44,13 +44,13 @@ __all__ = [
 
 @dataclass(frozen=True)
 class DiagnosticBudget:
-    """A cumulative wall-time budget, defaulted and hard-capped at five minutes."""
+    """A cumulative wall-time budget, defaulted and hard-capped at three minutes."""
 
     max_wall_minutes: float = DEFAULT_WALL_MINUTES
 
     def __post_init__(self) -> None:
         if not 0.0 < float(self.max_wall_minutes) <= MAX_WALL_MINUTES:
-            raise ValueError("max_wall_minutes must be in (0, 5]")
+            raise ValueError("max_wall_minutes must be in (0, 3]")
 
     @property
     def seconds(self) -> float:

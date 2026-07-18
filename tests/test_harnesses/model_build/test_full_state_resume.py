@@ -113,6 +113,13 @@ def test_wall_budget_stops_before_steps(train_dir: Path, tmp_path: Path) -> None
     assert summary["max_wall_minutes"] == 1e-9
 
 
+def test_wall_budget_is_hard_capped_at_three_minutes(
+    train_dir: Path, tmp_path: Path
+) -> None:
+    with pytest.raises(ValueError, match="at most 3"):
+        train(_cfg(train_dir, tmp_path, "over_wall", 1, max_wall_minutes=3.01))
+
+
 def test_full_state_resume_is_bit_exact(train_dir: Path, tmp_path: Path) -> None:
     full = train(_cfg(train_dir, tmp_path, "full", 6))
 

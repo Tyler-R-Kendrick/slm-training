@@ -1270,11 +1270,11 @@ def test_execute_records_process_launch_failure() -> None:
     assert outcome.stage_telemetry[0]["launch_error"]
 
 
-def test_experiment_wall_budget_defaults_to_five_minutes_and_is_capped() -> None:
-    assert CampaignBudget().max_wall_minutes == 5.0
+def test_experiment_wall_budget_defaults_to_three_minutes_and_is_capped() -> None:
+    assert CampaignBudget().max_wall_minutes == 3.0
     assert CampaignBudget(max_wall_minutes=0.25).max_wall_minutes == 0.25
-    with pytest.raises(ValidationError, match="less than or equal to 5"):
-        CampaignBudget(max_wall_minutes=5.01)
+    with pytest.raises(ValidationError, match="less than or equal to 3"):
+        CampaignBudget(max_wall_minutes=3.01)
 
 
 def test_execute_shares_one_wall_budget_across_stages(monkeypatch) -> None:

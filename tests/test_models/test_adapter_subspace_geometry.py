@@ -280,7 +280,7 @@ def test_matrix_profiles_complete_and_carry_telemetry() -> None:
         {"rank": 8, "target_modules": _BROADER},
     ]
     report = profile_adapter_subspace_geometry(
-        _model, _corpus(), _spec_factory, matrix, budget=DiagnosticBudget(max_wall_minutes=5.0)
+        _model, _corpus(), _spec_factory, matrix, budget=DiagnosticBudget(max_wall_minutes=3.0)
     )
     assert report["status"] == "completed"
     assert report["kind"] == "adapter_subspace_geometry"
