@@ -6,7 +6,12 @@ from pathlib import Path
 
 import pytest
 
-from slm_training.data.quality import assess_record, independent_judge
+from slm_training.data.quality import (
+    assess_record,
+    independent_judge,
+    render_semantic_contract_prompt,
+    semantic_contract_for_openui,
+)
 from slm_training.dsl import bridge_available, validate
 from slm_training.dsl.schema import ExampleRecord, load_jsonl
 from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
@@ -129,6 +134,7 @@ def test_independent_judge_reads_ordinary_component_mentions_from_schema(
         prompt="Show two buttons.",
         openui='root = Stack([a, b])\na = Button(":a")\nb = Button(":b")',
         placeholders=[":a", ":b"],
+        meta={"task": "edit"},
     )
     assert quality.independent_judge(plural_record)["ok"]
 
@@ -140,7 +146,7 @@ def test_independent_judge_reads_ordinary_component_mentions_from_schema(
         ),
         openui='root = TextContent(":title")',
         placeholders=[":title"],
-        meta={"edit": {"instruction": "Update the title copy."}},
+        meta={"task": "edit", "edit": {"instruction": "Update the title copy."}},
     )
     assert quality.independent_judge(edit_record)["ok"]
 
@@ -165,6 +171,44 @@ def test_independent_judge_rejects_under_specified_contract_prompt() -> None:
     report = assess_record(record, require_design_md=False)
     assert not report.ok
     assert "prompt_under_specified_for_layout" in report.reasons
+    assert "generation_semantic_contract_missing" in report.reasons
+
+
+def test_independent_judge_enforces_ast_semantic_contract() -> None:
+    openui = (
+        'root = Stack([button, caption], "column")\n'
+        'button = Button(":label")\n'
+        'caption = TextContent(":caption")'
+    )
+    contract = semantic_contract_for_openui(openui)
+    record = ExampleRecord(
+        id="semantic-contract",
+        prompt=render_semantic_contract_prompt(contract),
+        openui=openui,
+        placeholders=[":label", ":caption"],
+        meta={"semantic_contract": contract},
+    )
+    assert independent_judge(record)["ok"]
+
+    wrong_output = ExampleRecord(
+        **{
+            **record.__dict__,
+            "openui": 'root = Button(":label")',
+        }
+    )
+    assert "semantic_contract_output_mismatch" in independent_judge(wrong_output)[
+        "reasons"
+    ]
+
+    wrong_prompt = ExampleRecord(
+        **{
+            **record.__dict__,
+            "prompt": "Create a button.",
+        }
+    )
+    assert "semantic_contract_prompt_mismatch" in independent_judge(wrong_prompt)[
+        "reasons"
+    ]
 
 
 def test_independent_judge_checks_generated_schema_value_roles() -> None:
@@ -176,6 +220,7 @@ def test_independent_judge_checks_generated_schema_value_roles() -> None:
             'input = Input("email", ":placeholder")'
         ),
         placeholders=[":label", ":placeholder"],
+        meta={"task": "edit"},
     )
     assert independent_judge(valid)["ok"]
 
@@ -198,6 +243,7 @@ def test_independent_judge_checks_generated_schema_value_roles() -> None:
             'body = TextContent(":body")'
         ),
         placeholders=[":title", ":body"],
+        meta={"task": "edit"},
     )
     assert independent_judge(optional_omission)["ok"]
 
@@ -253,6 +299,36 @@ def test_pipeline_normalization_applies_generated_schema_shapes() -> None:
     )
     normalized = _normalize_record(record)
     assert 'Slider("volume", "continuous", 0, 100, 1, [40], ":label")' in (
+        normalized.openui
+    )
+    assert independent_judge(normalized)["ok"]
+
+
+def test_pipeline_remediates_edit_instruction_generation_prompt() -> None:
+    from slm_training.harnesses.train_data.pipeline import _normalize_record
+
+    record = ExampleRecord(
+        id="remediate-edit-generation",
+        prompt="Update caption content.",
+        openui=(
+            'root = Stack([button, caption], "column")\n'
+            'button = Button(":label")\n'
+            'caption = TextContent(":caption_edited")'
+        ),
+        placeholders=[":label", ":caption_edited"],
+        split="train",
+        design_md="# Design\n",
+        meta={
+            "task": "generation",
+            "edit": {"mode": "GENERATE", "instruction": "Update caption content."},
+        },
+    )
+    normalized = _normalize_record(record)
+    assert normalized.prompt != record.prompt
+    assert normalized.meta["prompt_remediation"]["kind"] == (
+        "ast_semantic_contract_v1"
+    )
+    assert normalized.meta["semantic_contract"] == semantic_contract_for_openui(
         normalized.openui
     )
     assert independent_judge(normalized)["ok"]

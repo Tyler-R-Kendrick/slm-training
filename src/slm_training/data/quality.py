@@ -12,6 +12,12 @@ from slm_training.dsl.schema import ExampleRecord
 
 _COMPONENT_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s*\(")
 _ROOT_RE = re.compile(r"(?m)^root\s*=")
+_ASSIGNMENT_RE = re.compile(
+    r"(?m)^\s*([a-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$"
+)
+_DECLARATION_COMPONENT_RE = re.compile(r"^\s*([A-Z][A-Za-z0-9]*)\s*\(")
+_IDENTIFIER_RE = re.compile(r"\b[a-z_][A-Za-z0-9_]*\b")
+_QUOTED_RE = re.compile(r'"(?:\\.|[^"\\])*"')
 _COMPONENT_PROMPT_RE = re.compile(r"\b(?:the|a|an)\s+([A-Z][A-Za-z0-9]*)\s+component\b", re.I)
 _CONSTRUCT_PROMPT_RE = re.compile(r"construct:\s+(?:a|an|the)?\s*([^.]*)", re.I)
 
@@ -67,7 +73,8 @@ def _official_component_names() -> frozenset[str]:
 
 def _prompt_component_mentions(prompt: str) -> frozenset[str]:
     """Find maximal schema component names mentioned in ordinary prompt prose."""
-    normalized = re.sub(r"[^a-z0-9]+", " ", prompt.lower()).strip()
+    prose = re.sub(r":[A-Za-z0-9_.-]+", " ", prompt)
+    normalized = re.sub(r"[^a-z0-9]+", " ", prose.lower()).strip()
     names = _official_component_names()
     occupied: list[tuple[int, int]] = []
     found: set[str] = set()
@@ -91,6 +98,8 @@ def _prompt_component_mentions(prompt: str) -> frozenset[str]:
 
 def _semantic_request(record: ExampleRecord) -> str:
     """Return the authored request, excluding embedded edit-program context."""
+    if isinstance(record.meta.get("semantic_contract"), dict):
+        return record.prompt
     edit = record.meta.get("edit")
     if isinstance(edit, dict) and isinstance(edit.get("instruction"), str):
         return edit["instruction"]
@@ -101,6 +110,88 @@ def _semantic_request(record: ExampleRecord) -> str:
     if isinstance(record.meta.get("scope_slice"), dict):
         return ""
     return record.prompt
+
+
+def semantic_contract_for_openui(openui: str) -> dict[str, Any]:
+    """Build a deterministic semantic scaffold from an OpenUI document."""
+    assignments = {
+        name: expression
+        for name, expression in _ASSIGNMENT_RE.findall(openui.strip())
+    }
+    if "root" not in assignments:
+        raise ValueError("semantic contract requires a root declaration")
+    names = set(assignments)
+    declarations: dict[str, str] = {}
+    references: dict[str, list[str]] = {}
+    for name, expression in assignments.items():
+        component = _DECLARATION_COMPONENT_RE.match(expression)
+        if component:
+            declarations[name] = component.group(1)
+        unquoted = _QUOTED_RE.sub("", expression)
+        refs = sorted(
+            {
+                identifier
+                for identifier in _IDENTIFIER_RE.findall(unquoted)
+                if identifier in names and identifier != name
+            }
+        )
+        if refs:
+            references[name] = refs
+    return {
+        "version": 1,
+        "component_counts": dict(sorted(component_counts(openui).items())),
+        "declarations": dict(sorted(declarations.items())),
+        "references": dict(sorted(references.items())),
+        "placeholders": sorted(extract_placeholders(openui)),
+    }
+
+
+def render_semantic_contract_prompt(contract: dict[str, Any]) -> str:
+    """Render the canonical prompt whose claims are independently judgeable."""
+    components = ", ".join(
+        f"{name} x{count}"
+        for name, count in sorted(
+            dict(contract.get("component_counts") or {}).items()
+        )
+    )
+    declarations = "; ".join(
+        f"{name} as {component}"
+        for name, component in sorted(
+            dict(contract.get("declarations") or {}).items()
+        )
+    )
+    references = "; ".join(
+        f"{name} references {', '.join(str(ref) for ref in refs)}"
+        for name, refs in sorted(dict(contract.get("references") or {}).items())
+    )
+    placeholders = ", ".join(
+        str(value) for value in contract.get("placeholders") or ()
+    )
+    return (
+        "Create an OpenUI program. "
+        f"Component inventory: {components or 'none'}. "
+        f"Declarations: {declarations or 'none'}. "
+        f"Reference graph: {references or 'none'}. "
+        f"Placeholders: {placeholders or 'none'}."
+    )
+
+
+def _semantic_contract_reasons(record: ExampleRecord) -> list[str]:
+    contract = record.meta.get("semantic_contract")
+    if not isinstance(contract, dict):
+        return []
+    if contract.get("version") != 1:
+        return ["semantic_contract_version_unsupported"]
+    try:
+        actual = semantic_contract_for_openui(record.openui)
+    except ValueError:
+        return ["semantic_contract_output_invalid"]
+    reasons: list[str] = []
+    if actual != contract:
+        reasons.append("semantic_contract_output_mismatch")
+    if record.prompt.strip() != render_semantic_contract_prompt(contract):
+        reasons.append("semantic_contract_prompt_mismatch")
+    return reasons
 
 
 def _ast_component_names(value: Any) -> frozenset[str]:
@@ -283,6 +374,17 @@ def independent_judge(record: ExampleRecord) -> dict[str, Any]:
             reasons.append("identity_echo_mismatch")
     if not prompt or not openui:
         reasons.append("judge_missing_prompt_or_output")
+    if (
+        "prompt_under_specified_for_layout" in reasons
+        and str(record.meta.get("task") or "generation") == "generation"
+        and not isinstance(record.meta.get("semantic_contract"), dict)
+    ):
+        # An under-specified generation prompt is only independently judgeable
+        # when a semantic contract makes its claims explicit; flag its absence.
+        # Well-specified prompts (which name their components) and non-generation
+        # records remain admissible without a contract.
+        reasons.append("generation_semantic_contract_missing")
+    reasons.extend(_semantic_contract_reasons(record))
     if record.target_kind == "document":
         reasons.extend(_schema_semantic_reasons(openui))
     return {"ok": not reasons, "score": round(max(0.0, 1.0 - 0.5 * len(reasons)), 4), "reasons": reasons}

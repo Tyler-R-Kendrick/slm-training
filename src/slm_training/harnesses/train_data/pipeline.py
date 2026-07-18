@@ -175,6 +175,25 @@ def _normalize_record(record: ExampleRecord) -> ExampleRecord:
     meta.setdefault("determinacy", "deterministic")
     meta.setdefault("parent_id", root_id)
     meta.setdefault("provenance", {})
+    prompt = record.prompt.strip()
+    # Remediate only edit-derived generation prompts: a raw edit instruction
+    # (e.g. "Update caption content.") repurposed as a full-generation prompt is
+    # under-specified, so replace it with the AST semantic contract. Authored,
+    # paraphrase, abstraction-ladder, frontier and language-contract prompts stay
+    # verbatim so prompt diversity (and its source families) survives dedup.
+    if str(meta["task"]) == "generation" and isinstance(meta.get("edit"), dict):
+        from slm_training.data.quality import (
+            render_semantic_contract_prompt,
+            semantic_contract_for_openui,
+        )
+
+        semantic_contract = semantic_contract_for_openui(openui)
+        meta["semantic_contract"] = semantic_contract
+        meta["prompt_remediation"] = {
+            "kind": "ast_semantic_contract_v1",
+            "original_prompt_fingerprint": fingerprint_prompt(prompt),
+        }
+        prompt = render_semantic_contract_prompt(semantic_contract)
     spec = ProgramSpec.from_openui(
         id=root_id,
         openui=openui,
@@ -187,7 +206,7 @@ def _normalize_record(record: ExampleRecord) -> ExampleRecord:
     )
     emitted = emit_record(
         spec,
-        prompt=record.prompt.strip(),
+        prompt=prompt,
         task=str(meta["task"]),
         openui=openui,
         record_id=record.id,

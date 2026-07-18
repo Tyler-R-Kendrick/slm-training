@@ -145,6 +145,8 @@ def test_transition_runs_f2_patch_gate_and_render_gate() -> None:
 
 
 def test_emit_all_three_task_modes_with_lineage_and_patch_evidence() -> None:
+    from slm_training.data.quality import independent_judge
+
     transition = build_transition(
         BEFORE,
         "make the title prominent",
@@ -166,6 +168,9 @@ def test_emit_all_three_task_modes_with_lineage_and_patch_evidence() -> None:
     assert {record.meta["verification_tier"] for record in records} == {"Silver"}
     assert {record.meta["failing_gate"] for record in records} == {None}
     assert records[-1].meta["edit"]["statement_patch"].startswith("title =")
+    assert records[0].meta["semantic_contract"]["version"] == 1
+    assert ":hero.title" in records[0].prompt
+    assert independent_judge(records[0])["ok"]
 
 
 def test_trajectory_undo_redo_reference_and_partial_rollback() -> None:

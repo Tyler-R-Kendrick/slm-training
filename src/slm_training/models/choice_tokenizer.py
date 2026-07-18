@@ -77,6 +77,7 @@ NAME_STR = "NAME_STR"
 MEMBER_STR = "MEMBER_STR"
 LIT_END = "LIT_END"
 _BYTE_PREFIX = "B:"
+_PLACEHOLDER_SCHEMA_KEY = "x-openui-placeholder"
 
 
 def _byte_token(ch: str) -> str:
@@ -155,6 +156,7 @@ def _grammar_names() -> tuple[str, ...]:
 def _component_contracts() -> dict[str, tuple[tuple[dict[str, Any], ...], int]]:
     """Positional component contracts from the pinned OpenUI JSON schema."""
     from slm_training.dsl.lang_core import library_schema
+    from slm_training.dsl.placeholders import CONTENT_PROPS
 
     schema = library_schema()
     definitions = dict(schema.get("$defs") or {})
@@ -162,13 +164,18 @@ def _component_contracts() -> dict[str, tuple[tuple[dict[str, Any], ...], int]]:
     for component, props in _prop_order().items():
         definition = dict(definitions.get(component) or {})
         properties = dict(definition.get("properties") or {})
-        positional = tuple(dict(properties.get(name) or {}) for name in props)
+        positional = []
+        for name in props:
+            prop_schema = dict(properties.get(name) or {})
+            if name in CONTENT_PROPS:
+                prop_schema[_PLACEHOLDER_SCHEMA_KEY] = True
+            positional.append(prop_schema)
         required = set(definition.get("required") or ())
         required_args = max(
             (index + 1 for index, name in enumerate(props) if name in required),
             default=0,
         )
-        contracts[component] = (positional, required_args)
+        contracts[component] = (tuple(positional), required_args)
     return contracts
 
 
@@ -261,7 +268,6 @@ class ChoiceTokenizer:
                         SLOT_PREFIX,
                         STATE_REF_PREFIX,
                         DIR_PREFIX,
-                        NAME_PREFIX,
                         LIT_PREFIX,
                     )
                 )
@@ -275,7 +281,6 @@ class ChoiceTokenizer:
                     INDEX_OP,
                     LIT_STR,
                     LIT_NUM,
-                    NAME_STR,
                     MEMBER_STR,
                 }
             )
@@ -651,6 +656,8 @@ class ChoiceDecodeState:
     def _schema_accepts(schema: dict[str, Any], expr_type: str) -> bool:
         if not schema:
             return True
+        if schema.get(_PLACEHOLDER_SCHEMA_KEY):
+            return expr_type == "placeholder"
         if "anyOf" in schema:
             return any(
                 ChoiceDecodeState._schema_accepts(dict(option), expr_type)
@@ -667,6 +674,8 @@ class ChoiceDecodeState:
             )
         if expected == "integer":
             expected = "number"
+        if expected == "string" and expr_type == "placeholder":
+            return True
         return expected is None or expr_type in {str(expected), "any"}
 
     def _complete_expr(self, expr_type: str) -> bool:
@@ -759,10 +768,10 @@ class ChoiceDecodeState:
                     return False
             except ValueError:
                 return False
-            return self._complete_expr("string")
+            return self._complete_expr("placeholder")
         if token.startswith(STATE_REF_PREFIX):
             return self._complete_expr("any")
-        if token.startswith((DIR_PREFIX, NAME_PREFIX)):
+        if token.startswith(DIR_PREFIX):
             return self._complete_expr("string")
         if token.startswith(LIT_PREFIX):
             payload = token[len(LIT_PREFIX) :]
@@ -775,7 +784,7 @@ class ChoiceDecodeState:
             else:
                 expr_type = "number"
             return self._complete_expr(expr_type)
-        if token in {LIT_STR, LIT_NUM, NAME_STR, MEMBER_STR}:
+        if token in {LIT_STR, LIT_NUM, MEMBER_STR}:
             self.literal_frame = token
             self.literal_size = 0
             self.literal_is_object_key = False
@@ -887,6 +896,8 @@ class ChoiceDecodeState:
 
     def _minimal_schema_id(self, schema: dict[str, Any]) -> int:
         tok = self.tokenizer
+        if schema.get(_PLACEHOLDER_SCHEMA_KEY):
+            return tok.token_to_id[f"{SLOT_PREFIX}0"]
         if "anyOf" in schema:
             return self._minimal_schema_id(dict(schema["anyOf"][0]))
         expected = schema.get("type")
