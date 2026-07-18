@@ -3,6 +3,14 @@
 from typing import Any
 
 from slm_training.data.progspec.schema import ProgramSpec, emit_record
+from slm_training.data.progspec.capsules import (
+    CapsuleGraph,
+    DependencyKind,
+    ScopeEdge,
+    ScopeNode,
+    VerificationCapsule,
+    derive_capsule_graph,
+)
 from slm_training.data.progspec.scopes import (
     SCOPE_DATA_FAMILIES,
     ScopeContract,
@@ -34,17 +42,23 @@ def __getattr__(name: str) -> Any:
 
 
 __all__ = [
+    "CapsuleGraph",
     "CoverageCell",
     "CoverageTracker",
+    "DependencyKind",
     "GenerationResult",
     "GeneratorConfig",
     "ProgramGenerator",
     "ProgramSpec",
     "SCOPE_DATA_FAMILIES",
     "ScopeContract",
+    "ScopeEdge",
     "ScopeKind",
+    "ScopeNode",
     "ScopeOracleResult",
+    "VerificationCapsule",
     "dependency_closed_failure_cone",
+    "derive_capsule_graph",
     "derive_scope_contracts",
     "derive_scope_records",
     "emit_record",
