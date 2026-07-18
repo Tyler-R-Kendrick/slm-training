@@ -123,6 +123,17 @@ from slm_training.dsl.analysis.arity.task_quotient import (
     color_graph,
     refine_quotient,
 )
+from slm_training.dsl.analysis.arity.template_sufficiency import (
+    RefinementCandidate,
+    TemplateContractInventory,
+    TemplateSufficiencyReport,
+    TemplateVariant,
+    ValueClass,
+    audit_template_sufficiency,
+    extract_value_classes,
+    generate_variants,
+    propose_refinements,
+)
 
 __all__ = [
     "AnalysisBounds",
@@ -194,6 +205,16 @@ __all__ = [
     "capacity_feasible",
     "color_graph",
     "refine_quotient",
+    # --- CAP1-05: template-abstraction sufficiency audit (SLM-85) ---
+    "RefinementCandidate",
+    "TemplateContractInventory",
+    "TemplateSufficiencyReport",
+    "TemplateVariant",
+    "ValueClass",
+    "audit_template_sufficiency",
+    "extract_value_classes",
+    "generate_variants",
+    "propose_refinements",
     # --- CAP1-04: conditional task rate / Fano / RD (SLM-84) ---
     "ConditionalRateReport",
     "FanoBound",
