@@ -34,11 +34,12 @@ from decode-time scaffolding.
     `--checkpoint-remote-uri`, `--output-codec`, `--suites`, `--out-dir`, and
     `--dry-run`.
 - `tests/test_harnesses/eval/test_ablate_decode_scaffolding.py`
-  - 22 regression tests covering arm generation, factor isolation, config
+  - 23 regression tests covering arm generation, factor isolation, config
     resolution, fixture-mode compatibility, Stage B triggering, checkpoint
     SHA-256 provenance, no-inventory contract surfacing, single-attempt mode,
     grammar-only enforcement, replay determinism, Stage B cell enumeration,
-    paired deltas, and additive-interaction estimation.
+    paired deltas, additive-interaction estimation, and mock-verified real eval
+    wiring.
 
 ## Design
 
@@ -57,7 +58,7 @@ that every arm resolves to a legal, compatible config override set.
 
 ## Regression tests
 
-`pytest tests/test_harnesses/eval/test_ablate_decode_scaffolding.py` — 22 passed.
+`pytest tests/test_harnesses/eval/test_ablate_decode_scaffolding.py` — 23 passed.
 
 - Stage A produces 6 arms with expected IDs.
 - Baseline has all factors enabled; all-off has none.
@@ -77,6 +78,8 @@ that every arm resolves to a legal, compatible config override set.
 - Paired deltas compute absolute and relative changes vs baseline.
 - Additive-interaction estimate detects non-additive residuals and ignores
   incompatible arms.
+- Mock-based test verifies `run_arm` calls `TwoTowerModel.from_checkpoint` and
+  `evaluate_suites` with the expected arm-specific run directory and gates.
 
 ## Fixture harness results
 
@@ -126,8 +129,8 @@ Hard gates:
 
 ## Verification checklist
 
-- [x] `pytest tests/test_harnesses/eval/test_ablate_decode_scaffolding.py` — 22 passed.
-- [x] `.githooks/check-changed` — 131 passed.
+- [x] `pytest tests/test_harnesses/eval/test_ablate_decode_scaffolding.py` — 23 passed.
+- [x] `.githooks/check-changed` — 23 passed.
 - [x] `python -m scripts.repo_policy` — ok.
 - [x] `git diff --check` — clean.
 - [x] `python -m scripts.ablate_decode_scaffolding --dry-run` — 6 arms described.
