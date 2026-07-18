@@ -2269,6 +2269,13 @@ do not promote or claim ship without full RICO evidence. See
 [results](iter-e350-hf-context-content2-slot8-20260717.md) and
 [JSON](hf-context-content2-slot8-results-iter-e350-20260717.json).
 
+E351 evaluates E350 on a 16-example diagnostic `rico_held` subset. Parse and
+meaningful rate are 1.0, recall is 0.5208, reward is 0.7326, and AgentV passes
+1/1; fidelity/structure remain 0.2388/0.2208. Retain as diagnostic evidence
+only—`eval_limit=16` is not full-RICO or ship evidence. See
+[results](iter-e351-hf-context-slot8-rico16-20260717.md) and
+[JSON](hf-context-slot8-rico16-results-iter-e351-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

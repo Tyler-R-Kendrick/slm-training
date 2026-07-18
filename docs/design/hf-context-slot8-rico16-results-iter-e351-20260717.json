@@ -1,0 +1,36 @@
+{
+  "id": "E351",
+  "date": "2026-07-17",
+  "status": "retained_diagnostic_subset_pass",
+  "run_id": "e351-hf-context-best-nll-content2-slot8-rico16-r1",
+  "checkpoint_sha256": "6f0ecf7cce2ebc7c61f133c13456ac91bcd4861bd3e2f4f70a3a72473c211985",
+  "decode_policy_source": "E350",
+  "decode_min_content": 2,
+  "component_plan_decode_weight": 0.0,
+  "slot_component_decode_weight": 8.0,
+  "slot_contract_in_context": true,
+  "slot_contract_constrained_decode": true,
+  "honest_slot_contract": true,
+  "elapsed_wall_seconds": 25.586,
+  "hard_run_cap_seconds": 300,
+  "evaluation_agentv": {
+    "passed": 1,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "checkpoint_sync": "disabled; eval-only bounded local validation",
+  "evaluation_scope": "rico_held diagnostic subset only; eval_limit=16; no full-RICO or ship claim",
+  "suite": {
+    "name": "rico_held",
+    "n": 16,
+    "eval_limit": 16,
+    "diagnostic_subset": true,
+    "parse": 1.0,
+    "fidelity": 0.23882575757575758,
+    "structure": 0.22080624999999998,
+    "meaningful": 1.0,
+    "recall": 0.5208333333333334,
+    "reward": 0.7326250000000002
+  },
+  "verdict": "Retain as encouraging diagnostic-only RICO evidence. The subset gate passes, but n=16 cannot support promotion or a production ship claim."
+}
