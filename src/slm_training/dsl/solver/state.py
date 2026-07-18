@@ -1,25 +1,7 @@
-"""Torch-free finite-domain support lattice for the verified scope solver.
+"""Torch-free finite-domain state for bounded verified synthesis.
 
-This module implements the model-independent state representation specified by
-``docs/design/verified-scope-solver.md`` (VSS0-01 / SLM-57) and required by
-VSS0-03 (SLM-59). The design document is the source of truth for the semantics
-below; the docstrings here reference it rather than duplicating it.
-
-What this is
-------------
-Immutable, JSON-safe dataclasses (:class:`HoleId`, :class:`SolverBounds`,
-:class:`HoleDomain`, :class:`FiniteDomainState`) plus the :class:`SupportVerdict`
-enum. Every mutation-like operation returns a *new* validated state; nothing here
-mutates in place. Finite bounds and uncertainty are explicit, and non-monotone
-(candidate-adding) updates are rejected.
-
-What this is not
-----------------
-No recursive support search, no proof checker, no decode/config integration, and
-no model or energy score (see the "Non-goals" of SLM-59). Soft candidate scores
-are deliberately *not* stored here; a separate ranker keys scores by
-``(state_fingerprint, hole_id, value)`` later. This module imports no ``torch``
-and performs no model inference.
+The semantics and fingerprint exclusions are owned by
+``docs/design/verified-scope-solver.md``.
 """
 
 from __future__ import annotations
@@ -27,132 +9,122 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
-from typing import Any, Protocol, runtime_checkable
+from functools import total_ordering
+from typing import Any, Iterable, TypeAlias
 
-# A deterministic JSON scalar. ``bool`` is intentionally included (valid JSON and
-# a subclass of ``int``); nested containers are not scalars.
-JsonScalar = str | int | float | bool | None
-
-__all__ = [
-    "DomainValue",
-    "FiniteDomainProjection",
-    "FiniteDomainState",
-    "HoleDomain",
-    "HoleId",
-    "JsonScalar",
-    "SolverBounds",
-    "SupportVerdict",
-]
+JsonScalar: TypeAlias = str | int | float | bool | None
 
 
-# --------------------------------------------------------------------------- #
-# Canonicalisation helpers (shared by every fingerprint and dedup path).
-# --------------------------------------------------------------------------- #
 def _canonical_json(value: Any) -> str:
-    """Order-insensitive canonical JSON text used by every fingerprint/dedup key."""
     return json.dumps(
-        value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
+        value,
+        allow_nan=False,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
     )
 
 
-def _sha256_hex(value: Any) -> str:
-    return hashlib.sha256(_canonical_json(value).encode("utf-8")).hexdigest()
-
-
-def _is_json_scalar(value: Any) -> bool:
-    # ``bool`` is a subclass of ``int`` and is a valid JSON scalar; non-finite floats
-    # (NaN/±Inf) are not standard JSON and must not enter a fingerprint or payload.
+def _validate_json(value: Any, *, context: str) -> None:
     if value is None or isinstance(value, (str, bool, int)):
-        return True
-    return isinstance(value, float) and math.isfinite(value)
+        return
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            raise ValueError(f"{context} contains a non-finite float")
+        return
+    if isinstance(value, (list, tuple)):
+        for item in value:
+            _validate_json(item, context=context)
+        return
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if not isinstance(key, str):
+                raise ValueError(f"{context} object keys must be strings")
+            _validate_json(item, context=context)
+        return
+    raise ValueError(f"{context} is not JSON-safe: {type(value).__name__}")
 
 
-def _first_duplicate(items: Sequence[str]) -> str | None:
-    seen: set[str] = set()
-    for item in items:
-        if item in seen:
-            return item
-        seen.add(item)
-    return None
+def _require_text(value: Any, *, field: str, context: str) -> str:
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"{context} requires a non-empty {field}")
+    return value
 
 
-def _validate_scalar_pairs(
-    pairs: tuple[tuple[str, JsonScalar], ...], *, owner: str
-) -> None:
-    if not isinstance(pairs, tuple):
-        raise ValueError(f"{owner} must be a tuple of (key, scalar) pairs")
-    seen: set[str] = set()
-    for entry in pairs:
-        if not (isinstance(entry, tuple) and len(entry) == 2):
-            raise ValueError(f"{owner} entries must be (key, value) pairs, got {entry!r}")
-        key, value = entry
-        if not isinstance(key, str):
-            raise ValueError(f"{owner} keys must be str, got {key!r}")
-        if key in seen:
-            raise ValueError(f"{owner} has a duplicate key {key!r}")
-        seen.add(key)
-        if not _is_json_scalar(value):
-            raise ValueError(f"{owner}[{key!r}] must be a JSON scalar, got {type(value).__name__}")
+def _strict_fields(data: dict[str, Any], expected: set[str], *, context: str) -> None:
+    unknown = set(data) - expected
+    missing = expected - set(data)
+    if unknown or missing:
+        raise ValueError(
+            f"{context} fields mismatch: missing={sorted(missing)}, "
+            f"unknown={sorted(unknown)}"
+        )
 
 
-# --------------------------------------------------------------------------- #
-# Core value types.
-# --------------------------------------------------------------------------- #
+class SupportVerdict(str, Enum):
+    """Bounded support result; ``UNKNOWN`` never licenses candidate removal."""
+
+    SUPPORTED = "supported"
+    UNSUPPORTED = "unsupported"
+    UNKNOWN = "unknown"
+
+
+@total_ordering
 @dataclass(frozen=True)
 class HoleId:
-    """Stable identifier for one unresolved decision site (see the design doc).
-
-    ``path`` elements are ``str`` or ``int`` (never ``bool``) so identities such
-    as ``("root", 0)`` survive a JSON round-trip with their element types intact.
-    """
+    """Stable identity for one unresolved semantic decision site."""
 
     namespace: str
     path: tuple[str | int, ...]
     kind: str
 
     def __post_init__(self) -> None:
-        if not isinstance(self.namespace, str):
-            raise ValueError(f"HoleId.namespace must be str, got {type(self.namespace).__name__}")
-        if not isinstance(self.kind, str):
-            raise ValueError(f"HoleId.kind must be str, got {type(self.kind).__name__}")
-        if not isinstance(self.path, tuple):
-            raise ValueError(f"HoleId.path must be a tuple, got {type(self.path).__name__}")
+        context = f"hole {self.namespace!r}/{self.kind!r}"
+        _require_text(self.namespace, field="namespace", context=context)
+        _require_text(self.kind, field="kind", context=context)
+        normalized: list[str | int] = []
         for part in self.path:
             if isinstance(part, bool) or not isinstance(part, (str, int)):
                 raise ValueError(
-                    f"HoleId.path elements must be str|int, got {part!r} "
-                    f"in namespace {self.namespace!r}"
+                    f"{context} path entries must be strings or integers"
                 )
+            normalized.append(part)
+        object.__setattr__(self, "path", tuple(normalized))
 
     @property
-    def canonical_key(self) -> str:
-        """Type-safe total-order key (JSON text) used for sorting/lookup.
-
-        Preferred over the generated ``order`` comparison, which raises on
-        heterogeneously typed ``path`` tuples.
-        """
+    def sort_key(self) -> str:
         return _canonical_json(self.to_dict())
 
+    def __lt__(self, other: object) -> bool:
+        if not isinstance(other, HoleId):
+            return NotImplemented
+        return self.sort_key < other.sort_key
+
     def to_dict(self) -> dict[str, Any]:
-        return {"namespace": self.namespace, "path": list(self.path), "kind": self.kind}
+        return {
+            "namespace": self.namespace,
+            "path": list(self.path),
+            "kind": self.kind,
+        }
 
     @classmethod
-    def from_dict(cls, data: Mapping[str, Any]) -> HoleId:
-        # JSON preserves int-vs-str for list elements, so ``tuple(...)`` keeps types.
+    def from_dict(cls, data: dict[str, Any]) -> HoleId:
+        _strict_fields(data, {"namespace", "path", "kind"}, context="HoleId")
+        path = data["path"]
+        if not isinstance(path, list):
+            raise ValueError("HoleId path must be a JSON array")
         return cls(
-            namespace=str(data["namespace"]),
-            path=tuple(data["path"]),
-            kind=str(data["kind"]),
+            namespace=data["namespace"],
+            path=tuple(path),
+            kind=data["kind"],
         )
 
 
 @dataclass(frozen=True)
 class SolverBounds:
-    """Declared finite budgets. Finiteness within these bounds is a precondition
-    for exact closure (see the design doc); negative bounds are rejected."""
+    """Finite resource bounds that participate in solver-state identity."""
 
     max_tokens: int
     max_nodes: int
@@ -160,98 +132,93 @@ class SolverBounds:
     max_backtracks: int
     max_verifier_calls: int
 
-    _FIELDS = ("max_tokens", "max_nodes", "max_depth", "max_backtracks", "max_verifier_calls")
-
     def __post_init__(self) -> None:
-        for name in self._FIELDS:
-            value = getattr(self, name)
-            if isinstance(value, bool) or not isinstance(value, int):
-                raise ValueError(f"SolverBounds.{name} must be a non-negative int, got {value!r}")
-            if value < 0:
-                raise ValueError(f"SolverBounds.{name} must be non-negative, got {value}")
+        for field, value in self.to_dict().items():
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                raise ValueError(f"solver bounds require non-negative {field}")
 
     def to_dict(self) -> dict[str, int]:
-        return {name: getattr(self, name) for name in self._FIELDS}
-
-    @classmethod
-    def from_dict(cls, data: Mapping[str, Any]) -> SolverBounds:
-        return cls(**{name: int(data[name]) for name in cls._FIELDS})
-
-
-class SupportVerdict(str, Enum):
-    """Reference support semantics from the design doc. ``UNKNOWN`` never permits
-    candidate removal and no API may translate it to ``UNSUPPORTED``."""
-
-    SUPPORTED = "supported"
-    UNSUPPORTED = "unsupported"
-    UNKNOWN = "unknown"
-
-
-@dataclass(frozen=True)
-class DomainValue:
-    """A deterministic, tagged, JSON-safe candidate filling for a hole.
-
-    Identity is by value, never by object identity. ``tag`` discriminates value
-    families (``"token_path"`` for the completion-forest adapter today; structured
-    action tags later). ``token_ids`` carries a *full* compiler path — not only its
-    first token — so grammar-forced suffixes stay distinguishable. ``kind`` is the
-    semantic decision kind. ``attributes`` is a canonical (sorted, unique-key)
-    tuple of extra JSON scalars reserved for future structured action values.
-    """
-
-    tag: str
-    token_ids: tuple[int, ...] = ()
-    kind: str | None = None
-    attributes: tuple[tuple[str, JsonScalar], ...] = ()
-
-    def __post_init__(self) -> None:
-        if not isinstance(self.tag, str) or not self.tag:
-            raise ValueError(f"DomainValue.tag must be a non-empty str, got {self.tag!r}")
-        if not isinstance(self.token_ids, tuple):
-            raise ValueError(f"DomainValue.token_ids must be a tuple of ints (tag={self.tag!r})")
-        for token in self.token_ids:
-            if isinstance(token, bool) or not isinstance(token, int):
-                raise ValueError(
-                    f"DomainValue.token_ids must be ints, got {token!r} (tag={self.tag!r})"
-                )
-        if self.kind is not None and not isinstance(self.kind, str):
-            raise ValueError(f"DomainValue.kind must be str|None, got {self.kind!r}")
-        _validate_scalar_pairs(self.attributes, owner=f"DomainValue(tag={self.tag!r}).attributes")
-        canonical = tuple(sorted(self.attributes, key=lambda kv: kv[0]))
-        if canonical != self.attributes:
-            object.__setattr__(self, "attributes", canonical)
-
-    @property
-    def canonical_key(self) -> str:
-        return _canonical_json(self.to_dict())
-
-    def to_dict(self) -> dict[str, Any]:
         return {
-            "tag": self.tag,
-            "token_ids": list(self.token_ids),
-            "kind": self.kind,
-            "attributes": [list(kv) for kv in self.attributes],
+            "max_tokens": self.max_tokens,
+            "max_nodes": self.max_nodes,
+            "max_depth": self.max_depth,
+            "max_backtracks": self.max_backtracks,
+            "max_verifier_calls": self.max_verifier_calls,
         }
 
     @classmethod
-    def from_dict(cls, data: Mapping[str, Any]) -> DomainValue:
-        return cls(
-            tag=str(data["tag"]),
-            token_ids=tuple(int(token) for token in data.get("token_ids") or ()),
-            kind=None if data.get("kind") is None else str(data["kind"]),
-            attributes=tuple((str(key), value) for key, value in data.get("attributes") or ()),
-        )
+    def from_dict(cls, data: dict[str, Any]) -> SolverBounds:
+        expected = {
+            "max_tokens",
+            "max_nodes",
+            "max_depth",
+            "max_backtracks",
+            "max_verifier_calls",
+        }
+        _strict_fields(data, expected, context="SolverBounds")
+        return cls(**{field: data[field] for field in expected})
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, order=True)
+class DomainValue:
+    """A tagged JSON value stored as immutable canonical JSON text."""
+
+    tag: str
+    payload_json: str
+
+    def __post_init__(self) -> None:
+        _require_text(self.tag, field="tag", context="domain value")
+        if not isinstance(self.payload_json, str):
+            raise ValueError(f"domain value {self.tag!r} payload_json must be text")
+        try:
+            payload = json.loads(self.payload_json)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"domain value {self.tag!r} has invalid JSON") from exc
+        _validate_json(payload, context=f"domain value {self.tag!r}")
+        object.__setattr__(self, "payload_json", _canonical_json(payload))
+
+    @classmethod
+    def create(cls, tag: str, payload: Any) -> DomainValue:
+        _validate_json(payload, context=f"domain value {tag!r}")
+        return cls(tag=tag, payload_json=_canonical_json(payload))
+
+    @property
+    def payload(self) -> Any:
+        return json.loads(self.payload_json)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"tag": self.tag, "value": self.payload}
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> DomainValue:
+        _strict_fields(data, {"tag", "value"}, context="DomainValue")
+        return cls.create(data["tag"], data["value"])
+
+
+def _normalize_metadata(
+    metadata: Iterable[tuple[str, JsonScalar]], *, context: str
+) -> tuple[tuple[str, JsonScalar], ...]:
+    rows = tuple(metadata)
+    keys: set[str] = set()
+    normalized: list[tuple[str, JsonScalar]] = []
+    for row in rows:
+        if not isinstance(row, tuple) or len(row) != 2:
+            raise ValueError(f"{context} metadata entries must be key/value tuples")
+        key, value = row
+        _require_text(key, field="metadata key", context=context)
+        if key in keys:
+            raise ValueError(f"{context} has duplicate metadata key {key!r}")
+        _validate_json(value, context=f"{context} metadata {key!r}")
+        if isinstance(value, (list, tuple, dict)):
+            raise ValueError(f"{context} metadata {key!r} must be a JSON scalar")
+        keys.add(key)
+        normalized.append((key, value))
+    return tuple(sorted(normalized, key=lambda row: row[0]))
+
+
+@dataclass(frozen=True, eq=False)
 class HoleDomain:
-    """The finite domain (candidate set) for one :class:`HoleId`.
-
-    Values are deduplicated (duplicates are rejected, not silently merged) and
-    canonically ordered on construction so the enclosing state's fingerprint is
-    order-insensitive. ``metadata`` carries JSON scalars such as the compiler
-    ``coverage`` guarantee; it never carries soft scores.
-    """
+    """Canonical finite values and epistemic metadata for one hole."""
 
     hole_id: HoleId
     values: tuple[DomainValue, ...]
@@ -259,62 +226,51 @@ class HoleDomain:
 
     def __post_init__(self) -> None:
         if not isinstance(self.hole_id, HoleId):
-            raise ValueError("HoleDomain.hole_id must be a HoleId")
-        if not isinstance(self.values, tuple):
-            raise ValueError(f"HoleDomain.values must be a tuple for hole {self.hole_id}")
-        for value in self.values:
-            if not isinstance(value, DomainValue):
-                raise ValueError(
-                    f"HoleDomain.values entries must be DomainValue for hole {self.hole_id}, "
-                    f"got {type(value).__name__}"
-                )
-        keys = [value.canonical_key for value in self.values]
-        duplicate = _first_duplicate(keys)
-        if duplicate is not None:
-            raise ValueError(f"duplicate domain value in hole {self.hole_id}: {duplicate}")
-        ordered = tuple(value for _, value in sorted(zip(keys, self.values), key=lambda pair: pair[0]))
-        if ordered != self.values:
-            object.__setattr__(self, "values", ordered)
-        _validate_scalar_pairs(self.metadata, owner=f"HoleDomain({self.hole_id}).metadata")
-        canonical_meta = tuple(sorted(self.metadata, key=lambda kv: kv[0]))
-        if canonical_meta != self.metadata:
-            object.__setattr__(self, "metadata", canonical_meta)
-
-    @property
-    def is_empty(self) -> bool:
-        """``⊥`` (bottom): a hole with no legal candidate — a local contradiction."""
-        return len(self.values) == 0
-
-    @property
-    def is_singleton(self) -> bool:
-        return len(self.values) == 1
+            raise ValueError("hole domain requires a HoleId")
+        values = tuple(self.values)
+        if any(not isinstance(value, DomainValue) for value in values):
+            raise ValueError(f"hole {self.hole_id!r} contains a non-DomainValue")
+        if len(set(values)) != len(values):
+            raise ValueError(f"hole {self.hole_id!r} contains duplicate values")
+        object.__setattr__(self, "values", tuple(sorted(values)))
+        object.__setattr__(
+            self,
+            "metadata",
+            _normalize_metadata(self.metadata, context=f"hole {self.hole_id!r}"),
+        )
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "hole_id": self.hole_id.to_dict(),
             "values": [value.to_dict() for value in self.values],
-            "metadata": [list(kv) for kv in self.metadata],
+            "metadata": [[key, value] for key, value in self.metadata],
         }
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, HoleDomain):
+            return NotImplemented
+        return _canonical_json(self.to_dict()) == _canonical_json(other.to_dict())
+
+    def __hash__(self) -> int:
+        return hash(_canonical_json(self.to_dict()))
+
     @classmethod
-    def from_dict(cls, data: Mapping[str, Any]) -> HoleDomain:
+    def from_dict(cls, data: dict[str, Any]) -> HoleDomain:
+        _strict_fields(data, {"hole_id", "values", "metadata"}, context="HoleDomain")
+        values = data["values"]
+        metadata = data["metadata"]
+        if not isinstance(values, list) or not isinstance(metadata, list):
+            raise ValueError("HoleDomain values and metadata must be JSON arrays")
         return cls(
             hole_id=HoleId.from_dict(data["hole_id"]),
-            values=tuple(DomainValue.from_dict(value) for value in data.get("values") or ()),
-            metadata=tuple((str(key), value) for key, value in data.get("metadata") or ()),
+            values=tuple(DomainValue.from_dict(value) for value in values),
+            metadata=tuple(tuple(row) for row in metadata),
         )
 
 
 @dataclass(frozen=True)
 class FiniteDomainState:
-    """A bounded, model-independent solver state over a set of finite domains.
-
-    See ``docs/design/verified-scope-solver.md``. Holes are deduplicated and
-    canonically ordered on construction. ``decision_level`` and
-    ``parent_fingerprint`` record reversible-search lineage and are deliberately
-    excluded from :attr:`fingerprint` (they are trail bookkeeping, not hard
-    state). Every mutation-like method returns a new validated state.
-    """
+    """Canonical hard state; soft scores and proof artifacts live elsewhere."""
 
     problem_id: str
     pack_id: str
@@ -325,53 +281,35 @@ class FiniteDomainState:
     parent_fingerprint: str | None = None
 
     def __post_init__(self) -> None:
-        for name in ("problem_id", "pack_id", "constraint_version"):
-            if not isinstance(getattr(self, name), str):
-                raise ValueError(f"FiniteDomainState.{name} must be str")
+        context = f"problem {self.problem_id!r}"
+        _require_text(self.problem_id, field="problem_id", context=context)
+        _require_text(self.pack_id, field="pack_id", context=context)
+        _require_text(
+            self.constraint_version, field="constraint_version", context=context
+        )
         if not isinstance(self.bounds, SolverBounds):
-            raise ValueError("FiniteDomainState.bounds must be a SolverBounds")
-        if not isinstance(self.holes, tuple):
-            raise ValueError("FiniteDomainState.holes must be a tuple")
-        for hole in self.holes:
-            if not isinstance(hole, HoleDomain):
-                raise ValueError(
-                    f"FiniteDomainState.holes entries must be HoleDomain, got {type(hole).__name__}"
-                )
-        if isinstance(self.decision_level, bool) or not isinstance(self.decision_level, int):
-            raise ValueError(f"FiniteDomainState.decision_level must be an int, got {self.decision_level!r}")
-        if self.decision_level < 0:
-            raise ValueError(f"FiniteDomainState.decision_level must be non-negative, got {self.decision_level}")
-        if self.parent_fingerprint is not None and not isinstance(self.parent_fingerprint, str):
-            raise ValueError("FiniteDomainState.parent_fingerprint must be str|None")
-        keys = [hole.hole_id.canonical_key for hole in self.holes]
-        duplicate = _first_duplicate(keys)
-        if duplicate is not None:
-            raise ValueError(f"duplicate hole id in problem {self.problem_id!r}: {duplicate}")
-        ordered = tuple(hole for _, hole in sorted(zip(keys, self.holes), key=lambda pair: pair[0]))
-        if ordered != self.holes:
-            object.__setattr__(self, "holes", ordered)
+            raise ValueError(f"{context} requires SolverBounds")
+        if (
+            isinstance(self.decision_level, bool)
+            or not isinstance(self.decision_level, int)
+            or self.decision_level < 0
+        ):
+            raise ValueError(f"{context} requires a non-negative decision_level")
+        if self.parent_fingerprint is not None and (
+            not isinstance(self.parent_fingerprint, str)
+            or len(self.parent_fingerprint) != 64
+            or any(char not in "0123456789abcdef" for char in self.parent_fingerprint)
+        ):
+            raise ValueError(f"{context} parent_fingerprint must be a SHA-256 hex digest")
+        holes = tuple(self.holes)
+        if any(not isinstance(hole, HoleDomain) for hole in holes):
+            raise ValueError(f"{context} contains a non-HoleDomain")
+        ids = [hole.hole_id for hole in holes]
+        if len(set(ids)) != len(ids):
+            raise ValueError(f"{context} contains duplicate hole IDs")
+        object.__setattr__(self, "holes", tuple(sorted(holes, key=lambda h: h.hole_id)))
 
-    # -- structural predicates -------------------------------------------- #
-    @property
-    def is_bottom(self) -> bool:
-        """True when any hole domain is empty (a certified local contradiction)."""
-        return any(hole.is_empty for hole in self.holes)
-
-    @property
-    def is_structurally_solved(self) -> bool:
-        """Every domain is a singleton and the state is not bottom.
-
-        Structural only: semantic verification has *not* been applied, so this is
-        never a ``SUPPORTED`` claim about the whole program.
-        """
-        return not self.is_bottom and all(hole.is_singleton for hole in self.holes)
-
-    # -- identity / fingerprint ------------------------------------------- #
-    def _fingerprint_payload(self) -> dict[str, Any]:
-        # Hard state and configuration only: problem/pack/constraint identity,
-        # declared bounds, and the (canonically ordered) holes. Excludes
-        # decision_level and parent_fingerprint (trail lineage), and by
-        # construction excludes logits, scores, timestamps, PIDs, and caches.
+    def _hard_dict(self) -> dict[str, Any]:
         return {
             "problem_id": self.problem_id,
             "pack_id": self.pack_id,
@@ -382,213 +320,148 @@ class FiniteDomainState:
 
     @property
     def fingerprint(self) -> str:
-        """Stable, order-insensitive SHA-256 over hard state/configuration only."""
-        return _sha256_hex(self._fingerprint_payload())
+        """Full SHA-256 over hard state/config, excluding search lineage."""
+        return hashlib.sha256(_canonical_json(self._hard_dict()).encode()).hexdigest()
 
-    def _identity_mismatch(self, other: FiniteDomainState) -> str | None:
-        for name in ("problem_id", "pack_id", "constraint_version"):
-            if getattr(self, name) != getattr(other, name):
-                return f"{name} ({getattr(self, name)!r} vs {getattr(other, name)!r})"
-        if self.bounds != other.bounds:
-            return "bounds"
-        return None
+    @property
+    def is_bottom(self) -> bool:
+        return any(not hole.values for hole in self.holes)
 
-    # -- lookup ----------------------------------------------------------- #
-    def has_hole(self, hole_id: HoleId) -> bool:
-        key = hole_id.canonical_key
-        return any(hole.hole_id.canonical_key == key for hole in self.holes)
+    @property
+    def is_structurally_solved(self) -> bool:
+        return not self.is_bottom and all(len(hole.values) == 1 for hole in self.holes)
 
     def domain(self, hole_id: HoleId) -> HoleDomain:
-        """Return the :class:`HoleDomain` for ``hole_id`` or raise ``KeyError``."""
-        key = hole_id.canonical_key
         for hole in self.holes:
-            if hole.hole_id.canonical_key == key:
+            if hole.hole_id == hole_id:
                 return hole
-        raise KeyError(f"unknown hole {hole_id} in problem {self.problem_id!r}")
+        raise LookupError(f"problem {self.problem_id!r} has no hole {hole_id!r}")
 
-    # -- monotone transitions --------------------------------------------- #
-    def _reduced_holes(
-        self, hole_id: HoleId, retained_values: Sequence[DomainValue]
-    ) -> tuple[HoleDomain, ...]:
-        key = hole_id.canonical_key
-        target = next((hole for hole in self.holes if hole.hole_id.canonical_key == key), None)
-        if target is None:
-            raise ValueError(f"cannot refine unknown hole {hole_id} in problem {self.problem_id!r}")
+    def refine(
+        self,
+        hole_id: HoleId,
+        retained_values: Iterable[DomainValue],
+        *,
+        certificate_ref: str | None = None,
+    ) -> FiniteDomainState:
+        """Return a monotone subset; certificate persistence starts in VSS0-04."""
+        if certificate_ref is not None and (
+            not isinstance(certificate_ref, str) or not certificate_ref
+        ):
+            raise ValueError(
+                f"problem {self.problem_id!r} certificate_ref must be non-empty"
+            )
+        current = self.domain(hole_id)
         retained = tuple(retained_values)
-        for value in retained:
-            if not isinstance(value, DomainValue):
-                raise ValueError(
-                    f"retained_values must be DomainValue for hole {hole_id}, got {type(value).__name__}"
-                )
-        current_keys = {value.canonical_key for value in target.values}
-        added = sorted({value.canonical_key for value in retained} - current_keys)
+        if any(not isinstance(value, DomainValue) for value in retained):
+            raise ValueError(
+                f"problem {self.problem_id!r} hole {hole_id!r} refinement "
+                "requires DomainValue candidates"
+            )
+        current_values = set(current.values)
+        added = [value for value in retained if value not in current_values]
         if added:
             raise ValueError(
-                f"refine on hole {hole_id} in problem {self.problem_id!r} would add values "
-                f"outside the current domain (monotonicity violated): {added}"
+                f"problem {self.problem_id!r} hole {hole_id!r} refinement "
+                "cannot add candidates"
             )
-        reduced = HoleDomain(target.hole_id, retained, target.metadata)
-        return tuple(reduced if hole.hole_id.canonical_key == key else hole for hole in self.holes)
+        replacement = HoleDomain(hole_id, retained, current.metadata)
+        holes = tuple(replacement if hole.hole_id == hole_id else hole for hole in self.holes)
+        return replace(self, holes=holes)
 
-    def _with_holes(
-        self,
-        holes: tuple[HoleDomain, ...],
-        *,
-        decision_level: int,
-        parent_fingerprint: str | None,
-    ) -> FiniteDomainState:
+    def meet(self, other: FiniteDomainState) -> FiniteDomainState:
+        """Intersect corresponding domains without inventing missing-hole semantics."""
+        if not isinstance(other, FiniteDomainState):
+            raise ValueError(f"problem {self.problem_id!r} can meet only another state")
+        identity = (self.problem_id, self.pack_id, self.constraint_version, self.bounds)
+        other_identity = (
+            other.problem_id,
+            other.pack_id,
+            other.constraint_version,
+            other.bounds,
+        )
+        if identity != other_identity:
+            raise ValueError(f"problem {self.problem_id!r} cannot meet mismatched identity")
+        if {hole.hole_id for hole in self.holes} != {
+            hole.hole_id for hole in other.holes
+        }:
+            raise ValueError(f"problem {self.problem_id!r} cannot meet mismatched holes")
+        domains: list[HoleDomain] = []
+        for left in self.holes:
+            right = other.domain(left.hole_id)
+            if _canonical_json(left.to_dict()["metadata"]) != _canonical_json(
+                right.to_dict()["metadata"]
+            ):
+                raise ValueError(
+                    f"problem {self.problem_id!r} hole {left.hole_id!r} "
+                    "cannot meet mismatched metadata"
+                )
+            live = set(right.values)
+            domains.append(
+                HoleDomain(
+                    left.hole_id,
+                    tuple(value for value in left.values if value in live),
+                    left.metadata,
+                )
+            )
         return FiniteDomainState(
             problem_id=self.problem_id,
             pack_id=self.pack_id,
             constraint_version=self.constraint_version,
             bounds=self.bounds,
-            holes=holes,
-            decision_level=decision_level,
-            parent_fingerprint=parent_fingerprint,
+            holes=tuple(domains),
         )
 
-    def refine(
-        self,
-        hole_id: HoleId,
-        retained_values: Sequence[DomainValue],
-        *,
-        certificate_ref: str | None = None,
-    ) -> FiniteDomainState:
-        """Monotonically reduce ``hole_id`` to ``retained_values`` (a subset).
-
-        Rejects added values and unknown holes. Leaves ``decision_level`` and
-        ``parent_fingerprint`` unchanged: a certified deduction is not a search
-        decision. ``certificate_ref`` is a forward-compatibility hook for the
-        proof-carrying loop; certificate persistence and replay are a later issue
-        (VSS1-04) and this method does not store it (keeping it out of the
-        fingerprint so two states reduced to the same domain remain
-        interchangeable for replay).
-        """
-        if certificate_ref is not None and not isinstance(certificate_ref, str):
-            raise ValueError("certificate_ref must be a str reference or None")
-        holes = self._reduced_holes(hole_id, retained_values)
-        return self._with_holes(
-            holes, decision_level=self.decision_level, parent_fingerprint=self.parent_fingerprint
+    def with_decision(self, hole_id: HoleId, value: DomainValue) -> FiniteDomainState:
+        """Choose one live value reversibly without claiming proof."""
+        refined = self.refine(hole_id, (value,))
+        return replace(
+            refined,
+            decision_level=self.decision_level + 1,
+            parent_fingerprint=self.fingerprint,
         )
 
-    def with_decision(
-        self, hole_id: HoleId, retained_values: Sequence[DomainValue]
-    ) -> FiniteDomainState:
-        """Record a reversible search decision that commits ``hole_id`` to a subset.
-
-        Increments ``decision_level`` and records this state's fingerprint as the
-        child's ``parent_fingerprint``. Claims no proof: no certificate is
-        required or stored. The reduction is still monotone (added values and
-        unknown holes are rejected).
-        """
-        holes = self._reduced_holes(hole_id, retained_values)
-        return self._with_holes(
-            holes, decision_level=self.decision_level + 1, parent_fingerprint=self.fingerprint
-        )
-
-    def meet(self, other: FiniteDomainState) -> FiniteDomainState:
-        """Greatest-lower-bound over the shared problem identity.
-
-        Intersects the domains of holes present in both states and keeps holes
-        present in only one (an absent hole is unconstrained/top). An empty
-        intersection yields an empty domain, i.e. a bottom state. Rejected across
-        different problem/pack/constraint/bounds identity. Commutative up to
-        lineage: ``decision_level`` is ``max`` of both, ``parent_fingerprint`` is
-        cleared (a meet is not a single-parent decision).
-        """
-        if not isinstance(other, FiniteDomainState):
-            raise ValueError("meet requires another FiniteDomainState")
-        mismatch = self._identity_mismatch(other)
-        if mismatch is not None:
-            raise ValueError(
-                f"cannot meet states across different {mismatch} "
-                f"(problem {self.problem_id!r})"
-            )
-        self_map = {hole.hole_id.canonical_key: hole for hole in self.holes}
-        other_map = {hole.hole_id.canonical_key: hole for hole in other.holes}
-        merged: list[HoleDomain] = []
-        for key in self_map.keys() | other_map.keys():
-            left = self_map.get(key)
-            right = other_map.get(key)
-            if left is not None and right is not None:
-                right_keys = {value.canonical_key for value in right.values}
-                intersection = tuple(value for value in left.values if value.canonical_key in right_keys)
-                merged.append(HoleDomain(left.hole_id, intersection, _merge_metadata(left, right)))
-            else:
-                merged.append(left if left is not None else right)  # type: ignore[arg-type]
-        return self._with_holes(
-            tuple(merged),
-            decision_level=max(self.decision_level, other.decision_level),
-            parent_fingerprint=None,
-        )
-
-    # -- metrics ---------------------------------------------------------- #
-    def summary(self) -> dict[str, Any]:
-        """Compact metrics: hole/candidate counts, domain sizes, and flags."""
+    def summary(self) -> dict[str, int | float | bool]:
         sizes = [len(hole.values) for hole in self.holes]
         total = sum(sizes)
         return {
-            "hole_count": len(self.holes),
-            "unresolved_count": sum(1 for size in sizes if size != 1),
-            "total_candidates": total,
-            "max_domain_size": max(sizes) if sizes else 0,
-            "mean_domain_size": (total / len(sizes)) if sizes else 0.0,
+            "hole_count": len(sizes),
+            "unresolved_count": sum(size != 1 for size in sizes),
+            "total_candidate_count": total,
+            "max_domain_size": max(sizes, default=0),
+            "mean_domain_size": total / len(sizes) if sizes else 0.0,
             "is_bottom": self.is_bottom,
             "is_structurally_solved": self.is_structurally_solved,
         }
 
-    # -- serialisation ---------------------------------------------------- #
     def to_dict(self) -> dict[str, Any]:
         return {
-            "problem_id": self.problem_id,
-            "pack_id": self.pack_id,
-            "constraint_version": self.constraint_version,
-            "bounds": self.bounds.to_dict(),
-            "holes": [hole.to_dict() for hole in self.holes],
+            **self._hard_dict(),
             "decision_level": self.decision_level,
             "parent_fingerprint": self.parent_fingerprint,
         }
 
     @classmethod
-    def from_dict(cls, data: Mapping[str, Any]) -> FiniteDomainState:
+    def from_dict(cls, data: dict[str, Any]) -> FiniteDomainState:
+        expected = {
+            "problem_id",
+            "pack_id",
+            "constraint_version",
+            "bounds",
+            "holes",
+            "decision_level",
+            "parent_fingerprint",
+        }
+        _strict_fields(data, expected, context="FiniteDomainState")
+        holes = data["holes"]
+        if not isinstance(holes, list):
+            raise ValueError("FiniteDomainState holes must be a JSON array")
         return cls(
-            problem_id=str(data["problem_id"]),
-            pack_id=str(data["pack_id"]),
-            constraint_version=str(data["constraint_version"]),
+            problem_id=data["problem_id"],
+            pack_id=data["pack_id"],
+            constraint_version=data["constraint_version"],
             bounds=SolverBounds.from_dict(data["bounds"]),
-            holes=tuple(HoleDomain.from_dict(hole) for hole in data.get("holes") or ()),
-            decision_level=int(data.get("decision_level", 0)),
-            parent_fingerprint=(
-                None if data.get("parent_fingerprint") is None else str(data["parent_fingerprint"])
-            ),
+            holes=tuple(HoleDomain.from_dict(hole) for hole in holes),
+            decision_level=data["decision_level"],
+            parent_fingerprint=data["parent_fingerprint"],
         )
-
-
-def _merge_metadata(left: HoleDomain, right: HoleDomain) -> tuple[tuple[str, JsonScalar], ...]:
-    merged = dict(left.metadata)
-    for key, value in right.metadata:
-        if key in merged:
-            # Compare by canonical JSON so 1 and 1.0 conflict, and keep a value
-            # independent of operand order so meet stays commutative.
-            if _canonical_json(merged[key]) != _canonical_json(value):
-                raise ValueError(
-                    f"meet metadata conflict on hole {left.hole_id} key {key!r}: "
-                    f"{merged[key]!r} vs {value!r}"
-                )
-            continue
-        merged[key] = value
-    return tuple(sorted(merged.items(), key=lambda kv: kv[0]))
-
-
-@runtime_checkable
-class FiniteDomainProjection(Protocol):
-    """Seam for projecting a model-independent source into a state.
-
-    The completion-forest adapter is the only implementation in this issue (see
-    ``slm_training.dsl.solver.adapters``). Future topology-node domains implement
-    the same ``finite_domain_state()`` method. Implementations MUST remain
-    Torch-free at import time; model inference belongs behind a later feature gate
-    (see ``docs/design/verified-scope-solver.md``).
-    """
-
-    def finite_domain_state(self) -> FiniteDomainState: ...

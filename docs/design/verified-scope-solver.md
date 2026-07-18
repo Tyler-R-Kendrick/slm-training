@@ -120,6 +120,44 @@ transitions without inventing semantics.
   permitted, subject to canonicalization plus the applicable pack oracle
   afterward.
 
+## Implemented finite-domain state (VSS0-03 / SLM-59)
+
+[`dsl/solver/`](../../src/slm_training/dsl/solver/) now implements the Torch-free,
+model-independent hard-state carrier. It is not invoked by decode by default.
+
+| Type / operation | Implemented contract |
+| --- | --- |
+| `HoleId` | Immutable namespace, mixed string/integer path, and kind; ordered by tagged canonical JSON rather than unsafe raw mixed-type tuple comparison. |
+| `SolverBounds` | Non-negative token, node, depth, backtrack, and verifier-call bounds; every field participates in hard-state identity. |
+| `DomainValue` | A tag plus immutable canonical JSON text. `to_dict` exposes ordinary tagged JSON while construction rejects objects, non-string object keys, and non-finite floats. |
+| `HoleDomain` | Unique values and scalar metadata, both canonically ordered. An empty domain is bottom. |
+| `FiniteDomainState` | Unique canonically ordered holes; monotone `refine`, domain-wise `meet`, reversible `with_decision`, stable JSON round-trip, and compact numeric summary. |
+| `completion_forest_state` | Projects exactly one current compiler decision. Values preserve each full `CompletionPath.token_ids` plus `kind`; metadata preserves `coverage` and global support remains `UNKNOWN`. |
+
+The full SHA-256 fingerprint includes `problem_id`, `pack_id`, constraint version,
+bounds, hole IDs, domain values, and hard scalar metadata. It excludes model
+logits/scores, timestamps, process IDs, mutable caches, certificate references, and
+reversible search lineage (`decision_level` / `parent_fingerprint`). Thus two
+search trails reaching the same hard domains share an identity. A decision records
+the prior fingerprint as its parent but never changes `UNKNOWN` into
+`UNSUPPORTED`.
+
+`refine` accepts a forward-compatible `certificate_ref` argument but does not
+persist it yet: certificate schema, checking, and replay belong to VSS0-04. Meet
+requires identical problem/pack/constraint/bounds identity, the same hole IDs, and
+type-preserving matching metadata rather than inventing a merge rule. Because meet
+can combine unrelated reversible trails, it explicitly resets decision lineage to
+level zero with no parent. All mutation-like operations return new validated
+states; none embeds soft scores.
+
+The compiler adapter deliberately ignores any optional explanation evidence added
+by VSS0-02. Considered-candidate evidence is provenance, not an exhaustive support
+proof. Empty forest paths produce bottom. A singleton forest is structurally solved
+**only for that next-decision projection**; it is not a globally solved program,
+verified terminal, `SUPPORTED` claim, correctness gain, or ship claim. The
+`TopologyDomainAdapter` protocol is only a future model-independent seam and imports
+no model or Torch code.
+
 ## Reference support semantics
 
 | Verdict | Requirement | Removal permitted? |

@@ -1,18 +1,10 @@
-"""Adapters projecting existing compiler artifacts into solver states.
-
-See ``docs/design/verified-scope-solver.md``. This module is model-independent:
-it imports only the compiler projection (:class:`CompletionForest`) and never
-``torch`` or any model-inference path. The projection here is the default
-reference substrate for the support layer; it does *not* itself compute
-``SUPPORTED`` / ``UNSUPPORTED`` / ``UNKNOWN`` verdicts.
-"""
+"""Narrow Torch-free projections into the finite-domain solver state."""
 
 from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Sequence
-from dataclasses import dataclass
+from typing import Protocol, TypeVar
 
 from slm_training.dsl.grammar.fastpath.compiler_draft import CompletionForest
 from slm_training.dsl.solver.state import (
@@ -21,92 +13,78 @@ from slm_training.dsl.solver.state import (
     HoleDomain,
     HoleId,
     SolverBounds,
+    SupportVerdict,
 )
 
-__all__ = ["CompletionForestProjection", "completion_forest_state"]
 
-# Namespace for the single "next semantic decision" hole a completion forest
-# projects to. A later VSS issue may introduce a "topology_node" namespace.
-_NAMESPACE = "completion_forest"
-_TOKEN_PATH_TAG = "token_path"
+TopologyNodeT = TypeVar("TopologyNodeT")
 
 
-def _prefix_fingerprint(prefix_ids: Sequence[int]) -> str:
-    """Stable SHA-256 digest of the decode prefix, keying the projected hole.
+class TopologyDomainAdapter(Protocol[TopologyNodeT]):
+    """Future model-independent seam for bounded topology-domain projections."""
 
-    The full digest is kept: truncating to 64 bits invites prefix collisions that
-    would make different decode states share a hole/problem identity.
-    """
-    ids = [int(token) for token in prefix_ids]
-    raw = json.dumps(ids, separators=(",", ":"))
-    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+    def domain_for(
+        self, node: TopologyNodeT, *, bounds: SolverBounds
+    ) -> HoleDomain:
+        """Project one bounded topology node without model scores."""
+        ...
 
 
 def completion_forest_state(
     *,
-    prefix_ids: Sequence[int],
+    prefix_ids: tuple[int, ...] | list[int],
     forest: CompletionForest,
     pack_id: str,
     constraint_version: str,
     bounds: SolverBounds,
 ) -> FiniteDomainState:
-    """Project a compiler :class:`CompletionForest` into a one-hole state.
-
-    The forest's next semantic decision becomes a single stable hole, keyed by the
-    prefix length and prefix fingerprint. Each candidate carries the *full*
-    ``CompletionPath.token_ids`` plus ``kind`` (not only the first token) so
-    grammar-forced suffixes stay distinguishable. The forest ``coverage`` guarantee
-    is carried verbatim in the hole metadata.
-
-    An empty forest projects to a bottom state (the hole domain is empty). A
-    singleton path projects to a structurally solved state **for that projection
-    only** — it is not a globally verified program and asserts no ``SUPPORTED``
-    verdict. This adapter is not invoked by the default decode path, so existing
-    compiler/model behaviour is unchanged.
-    """
-    if not isinstance(forest, CompletionForest):
-        raise ValueError(f"completion_forest_state requires a CompletionForest, got {type(forest).__name__}")
-    prefix = tuple(int(token) for token in prefix_ids)
-    fingerprint = _prefix_fingerprint(prefix)
-    hole_id = HoleId(namespace=_NAMESPACE, path=(len(prefix), fingerprint), kind="next_action")
+    """Project the current next compiler decision, not a globally solved program."""
+    if any(
+        isinstance(token_id, bool) or not isinstance(token_id, int) or token_id < 0
+        for token_id in prefix_ids
+    ):
+        raise ValueError("completion-forest prefix_ids must be non-negative integers")
+    if forest.coverage not in {"complete", "partial", "none"}:
+        raise ValueError("completion-forest coverage must be complete, partial, or none")
+    for path in forest.paths:
+        if not isinstance(path.kind, str) or not path.kind:
+            raise ValueError("completion-forest path kind must be non-empty text")
+        if any(
+            isinstance(token_id, bool)
+            or not isinstance(token_id, int)
+            or token_id < 0
+            for token_id in path.token_ids
+        ):
+            raise ValueError(
+                "completion-forest path token_ids must be non-negative integers"
+            )
+    prefix = tuple(prefix_ids)
+    payload = json.dumps(prefix, separators=(",", ":"))
+    prefix_sha = hashlib.sha256(payload.encode()).hexdigest()
+    hole_id = HoleId(
+        namespace="completion_forest",
+        path=(len(prefix), prefix_sha),
+        kind="next_semantic_decision",
+    )
     values = tuple(
-        DomainValue(
-            tag=_TOKEN_PATH_TAG,
-            token_ids=tuple(int(token) for token in path.token_ids),
-            kind=path.kind,
+        DomainValue.create(
+            "completion_path",
+            {"kind": path.kind, "token_ids": list(path.token_ids)},
         )
         for path in forest.paths
     )
-    hole = HoleDomain(hole_id=hole_id, values=values, metadata=(("coverage", str(forest.coverage)),))
-    return FiniteDomainState(
-        problem_id=f"{_NAMESPACE}:{fingerprint}",
-        pack_id=str(pack_id),
-        constraint_version=str(constraint_version),
-        bounds=bounds,
-        holes=(hole,),
+    domain = HoleDomain(
+        hole_id=hole_id,
+        values=values,
+        metadata=(
+            ("coverage", forest.coverage),
+            ("support_verdict", SupportVerdict.UNKNOWN.value),
+        ),
     )
-
-
-@dataclass(frozen=True)
-class CompletionForestProjection:
-    """Reference :class:`FiniteDomainProjection` over a compiler forest.
-
-    Holds the projection inputs and defers to :func:`completion_forest_state`.
-    Provided as the concrete implementation of the projection seam; topology-node
-    projections (a later VSS issue) implement the same ``finite_domain_state()``.
-    """
-
-    prefix_ids: tuple[int, ...]
-    forest: CompletionForest
-    pack_id: str
-    constraint_version: str
-    bounds: SolverBounds
-
-    def finite_domain_state(self) -> FiniteDomainState:
-        return completion_forest_state(
-            prefix_ids=self.prefix_ids,
-            forest=self.forest,
-            pack_id=self.pack_id,
-            constraint_version=self.constraint_version,
-            bounds=self.bounds,
-        )
+    return FiniteDomainState(
+        problem_id=f"completion-forest:{prefix_sha}",
+        pack_id=pack_id,
+        constraint_version=constraint_version,
+        bounds=bounds,
+        holes=(domain,),
+    )

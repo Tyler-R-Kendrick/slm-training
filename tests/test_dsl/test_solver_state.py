@@ -1,399 +1,362 @@
-"""Tests for the Torch-free finite-domain support lattice (VSS0-03 / SLM-59).
-
-Contract: ``docs/design/verified-scope-solver.md``. These tests exercise the
-state invariants (order-insensitive fingerprints, monotone refinement, meet,
-lineage, bottom/solved semantics, JSON round-trips), the completion-forest
-adapter fixtures, and the Torch-free import guarantee.
-"""
-
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
-import textwrap
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import pytest
 
-from slm_training.dsl.grammar.fastpath.compiler_draft import CompletionForest, CompletionPath
-from slm_training.dsl.solver import (
-    CompletionForestProjection,
-    completion_forest_state,
+from slm_training.dsl.grammar.fastpath.compiler_draft import (
+    CompletionForest,
+    CompletionPath,
 )
-from slm_training.dsl.solver.state import (
+from slm_training.dsl.solver import (
     DomainValue,
-    FiniteDomainProjection,
     FiniteDomainState,
     HoleDomain,
     HoleId,
     SolverBounds,
     SupportVerdict,
+    completion_forest_state,
 )
 
-BOUNDS = SolverBounds(
-    max_tokens=8, max_nodes=16, max_depth=4, max_backtracks=2, max_verifier_calls=3
+BOUNDS = SolverBounds(64, 32, 8, 16, 20)
+
+
+def value(number: int, *, tag: str = "token") -> DomainValue:
+    return DomainValue.create(tag, {"id": number})
+
+
+def hole(name: str, values: tuple[DomainValue, ...]) -> HoleDomain:
+    return HoleDomain(
+        HoleId("test", (name, 0), "choice"),
+        values,
+        (("support_verdict", SupportVerdict.UNKNOWN.value), ("coverage", "complete")),
+    )
+
+
+def state(*holes: HoleDomain) -> FiniteDomainState:
+    return FiniteDomainState("problem", "openui", "v1", BOUNDS, tuple(holes))
+
+
+def test_canonical_order_and_json_round_trip_stabilize_fingerprint() -> None:
+    a = hole("a", (value(2), value(1)))
+    b = HoleDomain(
+        HoleId("test", (1, "mixed"), "choice"),
+        (value(4), value(3)),
+        (("z", 1), ("a", True)),
+    )
+    first = state(a, b)
+    second = state(
+        HoleDomain(b.hole_id, tuple(reversed(b.values)), tuple(reversed(b.metadata))),
+        HoleDomain(a.hole_id, tuple(reversed(a.values)), tuple(reversed(a.metadata))),
+    )
+
+    assert first == second
+    assert first.fingerprint == second.fingerprint
+    payload = json.loads(json.dumps(first.to_dict()))
+    restored = FiniteDomainState.from_dict(payload)
+    assert restored == first
+    assert restored.fingerprint == first.fingerprint
+    assert len(first.fingerprint) == 64
+
+
+@pytest.mark.parametrize(
+    "changed",
+    [
+        lambda base: replace(base, problem_id="other"),
+        lambda base: replace(base, pack_id="other"),
+        lambda base: replace(base, constraint_version="v2"),
+        lambda base: replace(base, bounds=replace(BOUNDS, max_nodes=33)),
+        lambda base: replace(
+            base,
+            holes=(hole("other", (value(1), value(2))),),
+        ),
+        lambda base: replace(base, holes=(hole("a", (value(1),)),)),
+        lambda base: replace(
+            base,
+            holes=(
+                HoleDomain(
+                    base.holes[0].hole_id,
+                    base.holes[0].values,
+                    (("coverage", "partial"),),
+                ),
+            ),
+        ),
+    ],
 )
+def test_fingerprint_changes_for_each_hard_field(changed) -> None:
+    base = state(hole("a", (value(1), value(2))))
+    assert changed(base).fingerprint != base.fingerprint
 
 
-def _value(token_ids: tuple[int, ...], kind: str = "component") -> DomainValue:
-    return DomainValue(tag="token_path", token_ids=token_ids, kind=kind)
+@pytest.mark.parametrize(
+    "field",
+    [
+        "max_tokens",
+        "max_nodes",
+        "max_depth",
+        "max_backtracks",
+        "max_verifier_calls",
+    ],
+)
+def test_fingerprint_changes_for_each_bound(field: str) -> None:
+    base = state(hole("a", (value(1), value(2))))
+    changed_bounds = replace(BOUNDS, **{field: getattr(BOUNDS, field) + 1})
+    assert replace(base, bounds=changed_bounds).fingerprint != base.fingerprint
 
 
-def _hole(
-    path: tuple[str | int, ...],
-    values: tuple[DomainValue, ...],
-    metadata: tuple[tuple[str, object], ...] = (),
-) -> HoleDomain:
-    return HoleDomain(HoleId("prog", path, "next_action"), values, metadata)
+def test_fingerprint_excludes_reversible_search_lineage() -> None:
+    base = state(hole("a", (value(1),)))
+    lineage = replace(base, decision_level=3, parent_fingerprint="a" * 64)
+    assert lineage.fingerprint == base.fingerprint
 
 
-def _state(*holes: HoleDomain, **overrides: object) -> FiniteDomainState:
-    kwargs: dict[str, object] = {
-        "problem_id": "prob-1",
-        "pack_id": "openui",
-        "constraint_version": "v1",
-        "bounds": BOUNDS,
-        "holes": holes,
+def test_bottom_structurally_solved_and_summary_semantics() -> None:
+    bottom = state(hole("empty", ()))
+    solved = state(hole("one", (value(1),)))
+    open_state = state(hole("many", (value(1), value(2))))
+
+    assert bottom.is_bottom and not bottom.is_structurally_solved
+    assert solved.is_structurally_solved and not solved.is_bottom
+    assert not open_state.is_bottom and not open_state.is_structurally_solved
+    assert open_state.summary() == {
+        "hole_count": 1,
+        "unresolved_count": 1,
+        "total_candidate_count": 2,
+        "max_domain_size": 2,
+        "mean_domain_size": 2.0,
+        "is_bottom": False,
+        "is_structurally_solved": False,
     }
-    kwargs.update(overrides)
-    return FiniteDomainState(**kwargs)  # type: ignore[arg-type]
 
 
-# --------------------------------------------------------------------------- #
-# Fingerprints.
-# --------------------------------------------------------------------------- #
-def test_fingerprint_is_order_insensitive() -> None:
-    hole_a = _hole(("a",), (_value((1,)), _value((2,)), _value((3,))))
-    hole_b = _hole(("b",), (_value((4,)),))
-    forward = _state(hole_a, hole_b)
-    reversed_holes = _state(hole_b, hole_a)
-    assert forward.fingerprint == reversed_holes.fingerprint
+def test_refine_is_monotone_and_unknown_holes_fail_with_identity() -> None:
+    one, two, three = value(1), value(2), value(3)
+    base = state(hole("a", (one, two)))
+    hole_id = base.holes[0].hole_id
 
-    # Value order within a domain must not matter either.
-    shuffled = _hole(("a",), (_value((3,)), _value((1,)), _value((2,))))
-    assert _state(shuffled, hole_b).fingerprint == forward.fingerprint
-
-
-def test_fingerprint_changes_for_every_hard_state_or_version_change() -> None:
-    base = _state(_hole(("a",), (_value((1,)), _value((2,)))))
-    fingerprint = base.fingerprint
-    assert _state(_hole(("a",), (_value((1,)), _value((2,)))), problem_id="other").fingerprint != fingerprint
-    assert _state(_hole(("a",), (_value((1,)), _value((2,)))), pack_id="other").fingerprint != fingerprint
-    assert _state(_hole(("a",), (_value((1,)), _value((2,)))), constraint_version="v2").fingerprint != fingerprint
-    other_bounds = SolverBounds(
-        max_tokens=8, max_nodes=17, max_depth=4, max_backtracks=2, max_verifier_calls=3
-    )
-    assert _state(_hole(("a",), (_value((1,)), _value((2,)))), bounds=other_bounds).fingerprint != fingerprint
-    # Domain content changes (value edit, removal, extra hole).
-    assert _state(_hole(("a",), (_value((1,)), _value((9,))))).fingerprint != fingerprint
-    assert _state(_hole(("a",), (_value((1,)),))).fingerprint != fingerprint
-    assert _state(_hole(("a",), (_value((1,)), _value((2,)))), _hole(("b",), (_value((3,)),))).fingerprint != fingerprint
+    refined = base.refine(hole_id, (two,), certificate_ref="future-proof-ref")
+    assert refined.domain(hole_id).values == (two,)
+    assert base.domain(hole_id).values == (one, two)
+    assert base.refine(hole_id, ()).is_bottom
+    with pytest.raises(ValueError, match="problem.*cannot add candidates"):
+        base.refine(hole_id, (one, three))
+    with pytest.raises(LookupError, match="problem.*no hole"):
+        base.refine(HoleId("test", ("missing",), "choice"), ())
 
 
-def test_fingerprint_excludes_search_trail_lineage() -> None:
-    base = _state(_hole(("a",), (_value((1,)), _value((2,)))))
-    assert _state(_hole(("a",), (_value((1,)), _value((2,)))), decision_level=5).fingerprint == base.fingerprint
-    assert (
-        _state(_hole(("a",), (_value((1,)), _value((2,)))), parent_fingerprint="deadbeef").fingerprint
-        == base.fingerprint
-    )
-
-
-def test_fingerprint_stable_across_json_round_trip() -> None:
-    state = _state(
-        _hole(("a",), (_value((1, 2, 3)), _value((4,))), metadata=(("coverage", "partial"),)),
-        _hole(("b", 0), (_value((7,), kind="bind"),)),
-        decision_level=2,
-        parent_fingerprint="cafef00d",
-    )
-    restored = FiniteDomainState.from_dict(state.to_dict())
-    assert restored == state
-    assert restored.fingerprint == state.fingerprint
-
-
-# --------------------------------------------------------------------------- #
-# Bottom / structurally solved.
-# --------------------------------------------------------------------------- #
-def test_bottom_semantics() -> None:
-    bottom = _state(_hole(("a",), ()), _hole(("b",), (_value((1,)),)))
-    assert bottom.is_bottom
-    assert not bottom.is_structurally_solved
-
-
-def test_structurally_solved_requires_all_singletons_and_not_bottom() -> None:
-    solved = _state(_hole(("a",), (_value((1,)),)), _hole(("b",), (_value((2,)),)))
-    assert solved.is_structurally_solved
-    assert not solved.is_bottom
-    unresolved = _state(_hole(("a",), (_value((1,)), _value((2,)))))
-    assert not unresolved.is_structurally_solved
-    # No holes: no remaining decisions -> vacuously structurally solved, not bottom.
-    empty = _state()
-    assert empty.is_structurally_solved
-    assert not empty.is_bottom
-
-
-# --------------------------------------------------------------------------- #
-# Refinement (monotone) and decisions (lineage).
-# --------------------------------------------------------------------------- #
-def test_legal_monotone_refinement() -> None:
-    hole_id = HoleId("prog", ("a",), "next_action")
-    state = _state(HoleDomain(hole_id, (_value((1,)), _value((2,)), _value((3,)))))
-    refined = state.refine(hole_id, (_value((1,)), _value((2,))))
-    assert {v.canonical_key for v in refined.domain(hole_id).values} == {
-        _value((1,)).canonical_key,
-        _value((2,)).canonical_key,
-    }
-    # Refinement is not a decision: lineage is untouched.
-    assert refined.decision_level == state.decision_level
-    assert refined.parent_fingerprint == state.parent_fingerprint
-
-
-def test_refine_rejects_candidate_expansion() -> None:
-    hole_id = HoleId("prog", ("a",), "next_action")
-    state = _state(HoleDomain(hole_id, (_value((1,)),)))
-    with pytest.raises(ValueError, match="monotonicity violated"):
-        state.refine(hole_id, (_value((1,)), _value((99,))))
-
-
-def test_refine_rejects_unknown_hole() -> None:
-    state = _state(_hole(("a",), (_value((1,)),)))
-    with pytest.raises(ValueError, match="unknown hole"):
-        state.refine(HoleId("prog", ("missing",), "next_action"), ())
-
-
-def test_refine_certificate_ref_is_type_checked_and_fingerprint_neutral() -> None:
-    hole_id = HoleId("prog", ("a",), "next_action")
-    state = _state(HoleDomain(hole_id, (_value((1,)), _value((2,)))))
-    with_cert = state.refine(hole_id, (_value((1,)),), certificate_ref="cert://abc")
-    without_cert = state.refine(hole_id, (_value((1,)),))
-    # A certificate reference is provenance only; it never changes state identity.
-    assert with_cert.fingerprint == without_cert.fingerprint
-    with pytest.raises(ValueError, match="certificate_ref"):
-        state.refine(hole_id, (_value((1,)),), certificate_ref=123)  # type: ignore[arg-type]
-
-
-def test_with_decision_records_lineage_without_claiming_proof() -> None:
-    hole_id = HoleId("prog", ("a",), "next_action")
-    state = _state(HoleDomain(hole_id, (_value((1,)), _value((2,)))))
-    child = state.with_decision(hole_id, (_value((1,)),))
-    assert child.decision_level == state.decision_level + 1
-    assert child.parent_fingerprint == state.fingerprint
-    # The domain narrowed, so the child's own fingerprint differs from its parent.
-    assert child.fingerprint != state.fingerprint
-    assert child.domain(hole_id).is_singleton
-
-
-# --------------------------------------------------------------------------- #
-# Meet.
-# --------------------------------------------------------------------------- #
-def test_meet_intersects_shared_holes_and_unions_disjoint_holes() -> None:
-    left = _state(
-        _hole(("a",), (_value((1,)), _value((2,)), _value((3,)))),
-        _hole(("only_left",), (_value((5,)),)),
-    )
-    right = _state(
-        _hole(("a",), (_value((2,)), _value((3,)), _value((4,)))),
-        _hole(("only_right",), (_value((6,)),)),
-    )
+def test_meet_intersects_domains_and_rejects_mismatched_identity() -> None:
+    one, two, three = value(1), value(2), value(3)
+    left = state(hole("a", (one, two)))
+    right = state(hole("a", (two, three)))
     met = left.meet(right)
-    shared = met.domain(HoleId("prog", ("a",), "next_action"))
-    assert {v.token_ids for v in shared.values} == {(2,), (3,)}
-    assert met.has_hole(HoleId("prog", ("only_left",), "next_action"))
-    assert met.has_hole(HoleId("prog", ("only_right",), "next_action"))
-    # Commutative in identity terms.
-    assert left.meet(right).fingerprint == right.meet(left).fingerprint
+
+    assert met.holes[0].values == (two,)
+    assert met.is_structurally_solved
+    with pytest.raises(ValueError, match="mismatched identity"):
+        left.meet(replace(right, pack_id="other"))
+    with pytest.raises(ValueError, match="mismatched holes"):
+        left.meet(state(hole("b", (two,))))
 
 
-def test_meet_empty_intersection_yields_bottom() -> None:
-    left = _state(_hole(("a",), (_value((1,)),)))
-    right = _state(_hole(("a",), (_value((2,)),)))
-    assert left.meet(right).is_bottom
+@pytest.mark.parametrize(
+    "changed",
+    [
+        lambda base: replace(base, problem_id="other"),
+        lambda base: replace(base, pack_id="other"),
+        lambda base: replace(base, constraint_version="v2"),
+        lambda base: replace(base, bounds=replace(BOUNDS, max_tokens=65)),
+        lambda base: replace(base, bounds=replace(BOUNDS, max_nodes=33)),
+        lambda base: replace(base, bounds=replace(BOUNDS, max_depth=9)),
+        lambda base: replace(base, bounds=replace(BOUNDS, max_backtracks=17)),
+        lambda base: replace(base, bounds=replace(BOUNDS, max_verifier_calls=21)),
+    ],
+)
+def test_meet_rejects_every_identity_mismatch(changed) -> None:
+    base = state(hole("a", (value(1), value(2))))
+    with pytest.raises(ValueError, match="mismatched identity"):
+        base.meet(changed(base))
 
 
-def test_meet_rejects_mismatched_identity() -> None:
-    left = _state(_hole(("a",), (_value((1,)),)))
-    with pytest.raises(ValueError, match="problem_id"):
-        left.meet(_state(_hole(("a",), (_value((1,)),)), problem_id="other"))
-    with pytest.raises(ValueError, match="pack_id"):
-        left.meet(_state(_hole(("a",), (_value((1,)),)), pack_id="other"))
-    with pytest.raises(ValueError, match="constraint_version"):
-        left.meet(_state(_hole(("a",), (_value((1,)),)), constraint_version="v2"))
-    other_bounds = SolverBounds(
-        max_tokens=99, max_nodes=16, max_depth=4, max_backtracks=2, max_verifier_calls=3
+def test_meet_resets_unrelated_reversible_lineage() -> None:
+    base = state(hole("a", (value(1), value(2))))
+    left = replace(base, decision_level=2, parent_fingerprint="a" * 64)
+    right = replace(base, decision_level=3, parent_fingerprint="b" * 64)
+    met = left.meet(right)
+    assert met.decision_level == 0
+    assert met.parent_fingerprint is None
+
+
+def test_decision_records_parent_without_claiming_support() -> None:
+    one, two = value(1), value(2)
+    base = state(hole("a", (one, two)))
+    chosen = base.with_decision(base.holes[0].hole_id, two)
+
+    assert chosen.decision_level == 1
+    assert chosen.parent_fingerprint == base.fingerprint
+    assert chosen.holes[0].values == (two,)
+    assert dict(chosen.holes[0].metadata)["support_verdict"] == "unknown"
+
+
+def test_validation_rejects_duplicates_invalid_bounds_and_non_json() -> None:
+    one = value(1)
+    with pytest.raises(ValueError, match="duplicate values"):
+        hole("a", (one, one))
+    with pytest.raises(ValueError, match="non-negative max_tokens"):
+        replace(BOUNDS, max_tokens=-1)
+    with pytest.raises(ValueError, match="not JSON-safe"):
+        DomainValue.create("bad", object())
+    with pytest.raises(ValueError, match="duplicate hole IDs"):
+        state(hole("a", (one,)), hole("a", (value(2),)))
+    with pytest.raises(ValueError, match="requires DomainValue candidates"):
+        state(hole("a", (one,))).refine(hole("a", (one,)).hole_id, ({},))
+
+
+@pytest.mark.parametrize("left,right", [(True, 1), (1, 1.0), (-0.0, 0.0)])
+def test_metadata_json_types_remain_distinct(left, right) -> None:
+    hole_id = HoleId("test", ("typed",), "choice")
+    first = state(HoleDomain(hole_id, (value(1),), (("typed", left),)))
+    second = state(HoleDomain(hole_id, (value(1),), (("typed", right),)))
+    assert first != second
+    assert first.fingerprint != second.fingerprint
+    with pytest.raises(ValueError, match="mismatched metadata"):
+        first.meet(second)
+
+
+def test_completion_forest_adapter_preserves_full_paths_kind_and_coverage() -> None:
+    forest = CompletionForest(
+        (
+            CompletionPath((11, 21), "component"),
+            CompletionPath((11, 20), "component"),
+            CompletionPath((11, 20), "binder"),
+        ),
+        "partial",
     )
-    with pytest.raises(ValueError, match="bounds"):
-        left.meet(_state(_hole(("a",), (_value((1,)),)), bounds=other_bounds))
-
-
-# --------------------------------------------------------------------------- #
-# Validation / rejection.
-# --------------------------------------------------------------------------- #
-def test_rejects_duplicate_hole_ids() -> None:
-    with pytest.raises(ValueError, match="duplicate hole id"):
-        _state(_hole(("a",), (_value((1,)),)), _hole(("a",), (_value((2,)),)))
-
-
-def test_rejects_duplicate_domain_values() -> None:
-    with pytest.raises(ValueError, match="duplicate domain value"):
-        _hole(("a",), (_value((1,)), _value((1,))))
-
-
-def test_rejects_negative_bounds() -> None:
-    with pytest.raises(ValueError, match="non-negative"):
-        SolverBounds(max_tokens=-1, max_nodes=1, max_depth=1, max_backtracks=1, max_verifier_calls=1)
-
-
-def test_unknown_verdict_preserved_and_never_translated() -> None:
-    assert SupportVerdict.UNKNOWN.value == "unknown"
-    assert SupportVerdict.SUPPORTED.value == "supported"
-    assert SupportVerdict.UNSUPPORTED.value == "unsupported"
-    # Round-tripping through the str value never coerces UNKNOWN to UNSUPPORTED.
-    assert SupportVerdict("unknown") is SupportVerdict.UNKNOWN
-
-
-def test_summary_metrics() -> None:
-    state = _state(
-        _hole(("a",), (_value((1,)), _value((2,)))),
-        _hole(("b",), (_value((3,)),)),
-    )
-    summary = state.summary()
-    assert summary["hole_count"] == 2
-    assert summary["unresolved_count"] == 1
-    assert summary["total_candidates"] == 3
-    assert summary["max_domain_size"] == 2
-    assert summary["mean_domain_size"] == pytest.approx(1.5)
-    assert summary["is_bottom"] is False
-    assert summary["is_structurally_solved"] is False
-
-
-# --------------------------------------------------------------------------- #
-# Completion-forest adapter.
-# --------------------------------------------------------------------------- #
-def _project(forest: CompletionForest, prefix: tuple[int, ...] = (1, 2)) -> FiniteDomainState:
-    return completion_forest_state(
-        prefix_ids=prefix,
+    projected = completion_forest_state(
+        prefix_ids=[1, 2],
         forest=forest,
         pack_id="openui",
         constraint_version="v1",
         bounds=BOUNDS,
     )
+    payloads = [value.payload for value in projected.holes[0].values]
+
+    assert payloads == [
+        {"kind": "binder", "token_ids": [11, 20]},
+        {"kind": "component", "token_ids": [11, 20]},
+        {"kind": "component", "token_ids": [11, 21]},
+    ]
+    assert dict(projected.holes[0].metadata) == {
+        "coverage": "partial",
+        "support_verdict": "unknown",
+    }
+    assert projected.holes[0].hole_id.path[0] == 2
+    assert not projected.is_structurally_solved
 
 
-def test_adapter_empty_forest_is_bottom() -> None:
-    state = _project(CompletionForest((), "none"))
-    assert state.is_bottom
-    assert state.holes[0].metadata == (("coverage", "none"),)
-
-
-def test_adapter_singleton_path_is_structurally_solved_for_projection() -> None:
-    state = _project(CompletionForest((CompletionPath((5, 6, 7), "component"),), "complete"))
-    assert state.is_structurally_solved
-    assert state.holes[0].values[0].kind == "component"
-
-
-def test_adapter_multi_path_forest_stays_unresolved() -> None:
-    forest = CompletionForest(
-        (CompletionPath((5,), "component"), CompletionPath((8,), "eos")), "complete"
+def test_completion_forest_adapter_empty_singleton_and_ordering() -> None:
+    kwargs = {
+        "prefix_ids": (1,),
+        "pack_id": "openui",
+        "constraint_version": "v1",
+        "bounds": BOUNDS,
+    }
+    empty = completion_forest_state(forest=CompletionForest((), "none"), **kwargs)
+    path_a = CompletionPath((10, 12), "component")
+    path_b = CompletionPath((11,), "binder")
+    singleton = completion_forest_state(
+        forest=CompletionForest((path_a,), "complete"), **kwargs
     )
-    state = _project(forest)
-    assert not state.is_structurally_solved
-    assert len(state.holes[0].values) == 2
-
-
-def test_adapter_preserves_full_forced_suffix_not_just_first_token() -> None:
-    forest = CompletionForest((CompletionPath((5, 6, 7), "component"),), "complete")
-    state = _project(forest)
-    assert state.holes[0].values[0].token_ids == (5, 6, 7)
-
-
-def test_adapter_carries_partial_coverage_and_keeps_candidates_live() -> None:
-    forest = CompletionForest(
-        (CompletionPath((5,), "component"), CompletionPath((6,), "component_bound")), "partial"
+    ordered = completion_forest_state(
+        forest=CompletionForest((path_a, path_b), "complete"), **kwargs
     )
-    state = _project(forest)
-    assert state.holes[0].metadata == (("coverage", "partial"),)
-    # Partial coverage never removes candidates at the projection layer.
-    assert len(state.holes[0].values) == 2
-
-
-def test_adapter_hole_is_keyed_by_prefix() -> None:
-    forest = CompletionForest((CompletionPath((5,), "component"),), "complete")
-    same = _project(forest, prefix=(1, 2))
-    other = _project(forest, prefix=(1, 2, 3))
-    assert same.fingerprint == _project(forest, prefix=(1, 2)).fingerprint
-    assert same.holes[0].hole_id != other.holes[0].hole_id
-    assert same.problem_id != other.problem_id
-
-
-def test_adapter_state_round_trips() -> None:
-    forest = CompletionForest(
-        (CompletionPath((5, 6), "component"), CompletionPath((8,), "eos")), "partial"
+    reversed_state = completion_forest_state(
+        forest=CompletionForest((path_b, path_a), "complete"), **kwargs
     )
-    state = _project(forest)
-    assert FiniteDomainState.from_dict(state.to_dict()) == state
 
-
-def test_completion_forest_projection_satisfies_protocol() -> None:
-    forest = CompletionForest((CompletionPath((5,), "component"),), "complete")
-    projection = CompletionForestProjection(
-        prefix_ids=(1, 2), forest=forest, pack_id="openui", constraint_version="v1", bounds=BOUNDS
-    )
-    assert isinstance(projection, FiniteDomainProjection)
-    assert projection.finite_domain_state() == _project(forest)
-
-
-# --------------------------------------------------------------------------- #
-# Torch-free import guarantee.
-# --------------------------------------------------------------------------- #
-def test_solver_package_imports_without_torch() -> None:
-    import slm_training
-
-    src_dir = str(Path(slm_training.__file__).resolve().parents[1])
-    script = textwrap.dedent(
-        """
-        import sys
-        import importlib.abc
-
-
-        class _NoTorch(importlib.abc.MetaPathFinder):
-            def find_spec(self, name, path=None, target=None):
-                if name == "torch" or name.startswith("torch."):
-                    raise ModuleNotFoundError("No module named %r (blocked)" % name)
-                return None
-
-
-        sys.meta_path.insert(0, _NoTorch())
-        import slm_training.dsl.solver as solver
-        from slm_training.dsl.grammar.fastpath.compiler_draft import (
-            CompletionForest,
-            CompletionPath,
+    assert empty.is_bottom
+    assert singleton.is_structurally_solved
+    assert dict(singleton.holes[0].metadata)["support_verdict"] == "unknown"
+    assert ordered == reversed_state
+    assert ordered.fingerprint == reversed_state.fingerprint
+    with pytest.raises(ValueError, match="duplicate values"):
+        completion_forest_state(
+            forest=CompletionForest((path_a, path_a), "complete"), **kwargs
+        )
+    with pytest.raises(ValueError, match="prefix_ids must be non-negative integers"):
+        completion_forest_state(
+            forest=CompletionForest((path_a,), "complete"),
+            **{**kwargs, "prefix_ids": (True,)},
         )
 
-        forest = CompletionForest((CompletionPath((5, 6, 7), "component"),), "complete")
-        state = solver.completion_forest_state(
-            prefix_ids=[1, 2],
+
+@pytest.mark.parametrize(
+    ("forest", "message"),
+    [
+        (CompletionForest((), "bogus"), "coverage"),
+        (CompletionForest((CompletionPath((1,), ""),), "complete"), "kind"),
+        (
+            CompletionForest((CompletionPath((True,), "component"),), "complete"),
+            "token_ids",
+        ),
+        (
+            CompletionForest((CompletionPath((-1,), "component"),), "complete"),
+            "token_ids",
+        ),
+    ],
+)
+def test_completion_forest_adapter_rejects_malformed_input(
+    forest: CompletionForest, message: str
+) -> None:
+    with pytest.raises(ValueError, match=message):
+        completion_forest_state(
+            prefix_ids=(),
             forest=forest,
             pack_id="openui",
             constraint_version="v1",
-            bounds=solver.SolverBounds(8, 8, 8, 8, 8),
+            bounds=BOUNDS,
         )
-        assert "torch" not in sys.modules, "torch was imported"
-        assert state.is_structurally_solved
-        assert state.holes[0].values[0].token_ids == (5, 6, 7)
-        print("TORCH_FREE_OK")
-        """
+
+
+def test_completion_forest_adapter_ignores_explanation_only_fields() -> None:
+    @dataclass(frozen=True)
+    class ExtendedForest(CompletionForest):
+        evidence: tuple[str, ...] = ()
+
+    path = CompletionPath((10, 12), "component")
+    kwargs = {
+        "prefix_ids": (1,),
+        "pack_id": "openui",
+        "constraint_version": "v1",
+        "bounds": BOUNDS,
+    }
+    first = completion_forest_state(
+        forest=ExtendedForest((path,), "complete", evidence=("first",)), **kwargs
     )
-    env = {**os.environ, "PYTHONPATH": src_dir}
-    try:
-        result = subprocess.run(
-            [sys.executable, "-c", script],
-            capture_output=True,
-            text=True,
-            env=env,
-            timeout=60,
-        )
-    except subprocess.TimeoutExpired as exc:  # pragma: no cover - deadlock guard
-        raise AssertionError(f"torch-free import timed out: {exc}") from exc
-    assert result.returncode == 0, result.stderr
-    assert "TORCH_FREE_OK" in result.stdout
+    second = completion_forest_state(
+        forest=ExtendedForest((path,), "complete", evidence=("second",)), **kwargs
+    )
+    assert first == second
+    assert first.fingerprint == second.fingerprint
+
+
+def test_solver_package_import_does_not_require_torch() -> None:
+    root = Path(__file__).parents[2]
+    code = """
+import importlib.abc
+import sys
+class BlockTorch(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname == 'torch' or fullname.startswith('torch.'):
+            raise AssertionError(f'unexpected torch import: {fullname}')
+        return None
+sys.meta_path.insert(0, BlockTorch())
+import slm_training.dsl.solver
+assert 'torch' not in sys.modules
+"""
+    env = {**os.environ, "PYTHONPATH": str(root / "src")}
+    subprocess.run([sys.executable, "-c", code], check=True, cwd=root, env=env)
