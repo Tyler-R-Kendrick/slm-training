@@ -2466,6 +2466,16 @@ checkpoints, leave global balance default-off, and do not run RICO. See
 [results](iter-e403-e406-mild-component-plan-balance-20260718.md) and
 [JSON](iter-e403-e406-mild-component-plan-balance-20260718.json).
 
+E407 supplies the missing 29,066-token power-zero continuation control. E408
+exactly matches E404 on smoke, held, and adversarial aggregates, proving that
+the extra continuation—not component-plan class balance—causes the smoke
+collapse. The unbalanced control is worse on OOD (meaningful 0.25, structure
+0.2846, recall 0.25, reward 0.2432), so mild balance helps that suite but
+cannot rescue the checkpoint. Reject E407, retain E396 at 22,044 tokens, and
+gate any further continuation before RICO. See
+[results](iter-e407-e408-continuation-control-20260718.md) and
+[JSON](iter-e407-e408-continuation-control-20260718.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

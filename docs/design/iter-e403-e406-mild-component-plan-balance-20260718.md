@@ -45,7 +45,13 @@ limit and stopped normally on token budget. E405 and E406 completed normally;
 E406's exit 8 is the expected ship-gate rejection, not a timeout. No timed-out
 process contributes evidence.
 
-**Verdict:** reject E403 as protocol-invalid and reject E404 on smoke gates.
-Keep the generalized balance control default-off and do not test another
-positive global power without a different objective design. E396 remains the
-bounded candidate; skip RICO and make no promotion or ship claim.
+**Verdict at E406:** reject E403 as protocol-invalid and reject E404 on smoke
+gates. E396 remains the bounded candidate; skip RICO and make no promotion or
+ship claim.
+
+**Later control:** E407–E408 repeats the 29k continuation with balance power
+zero and reproduces the smoke collapse exactly. That
+[matched control](iter-e407-e408-continuation-control-20260718.md) supersedes
+the attribution to class weighting: continuation length is causal for the
+smoke regression, while mild weighting improves OOD relative to the matched
+control.

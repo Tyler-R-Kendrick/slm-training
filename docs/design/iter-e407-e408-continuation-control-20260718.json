@@ -1,24 +1,13 @@
 {
   "schema_version": 1,
-  "run_id": "e406-component-plan-mild-bounded-r1",
+  "run_id": "e408-component-plan-unbalanced-control-bounded-r1",
   "date": "2026-07-18",
-  "status": "Rejected: smoke meaningful 0.3333 and recall 0.1667; AgentV 3/4",
-  "invalid_train": {
-    "id": "E403",
-    "run_id": "e403-component-plan-mild-continuation-r1",
-    "checkpoint": "outputs/runs/e403-component-plan-mild-continuation-r1/checkpoints/last.pt",
-    "sha256": "bf0ca0f8fd14d6d6fad301d4fe82063c358f79eec749901276ae338204f5344e",
-    "elapsed_wall_seconds": 107.77526539000246,
-    "seen_target_tokens": 29066,
-    "invalid_reason": "slot_component_prompt_context=true did not match E396/E400",
-    "evaluated": false,
-    "promoted": false
-  },
+  "status": "Rejected: matched power-zero continuation reproduces smoke collapse",
   "checkpoint": {
-    "id": "E404",
-    "run_id": "e404-component-plan-mild-controlled-r1",
-    "path": "outputs/runs/e404-component-plan-mild-controlled-r1/checkpoints/last.pt",
-    "sha256": "fee1fdfe3f83c711161ee259951b4a7917ce3e968463235ce03f380577ea6219",
+    "id": "E407",
+    "run_id": "e407-component-plan-unbalanced-control-r1",
+    "path": "outputs/runs/e407-component-plan-unbalanced-control-r1/checkpoints/last.pt",
+    "sha256": "6373436bfe5504f48615c093ff7d9c3bd28056d7f134af94fe39ceaa75346f82",
     "device": "cpu",
     "context_backend": "hf",
     "output_tokenizer": "choice",
@@ -30,7 +19,7 @@
     "steps": 567,
     "seen_target_tokens": 29066,
     "target_token_budget": 29000,
-    "elapsed_wall_seconds": 108.6553310140007,
+    "elapsed_wall_seconds": 103.70731085300213,
     "max_wall_minutes": 4.5,
     "stopped_on": "token_budget",
     "record_count": 998,
@@ -39,13 +28,18 @@
     "best_weighted_nll": 5.809070931803047,
     "fresh_loss_eval": false
   },
-  "lever": {
-    "name": "component_plan_class_balance_power",
-    "value": 0.25,
-    "default": 0.0,
-    "minimum_observed_weight": 0.6299658683843138,
-    "maximum_observed_weight": 2.2272656872531016,
-    "observed_weight_ratio": 3.5355339059327373
+  "control": {
+    "component_plan_class_balance_power": 0.0,
+    "matched_candidate": "e404-component-plan-mild-controlled-r1",
+    "matched_fields": [
+      "resume checkpoint",
+      "data manifest",
+      "target token budget",
+      "optimizer recipe",
+      "model policy",
+      "decode policy"
+    ],
+    "conclusion": "continuation length causes smoke collapse; balance attribution rejected"
   },
   "suites": {
     "smoke": {
@@ -78,11 +72,11 @@
     "ood": {
       "n": 4,
       "parse_rate": 0.75,
-      "meaningful_program_rate": 0.5,
+      "meaningful_program_rate": 0.25,
       "placeholder_fidelity": 0.75,
-      "structural_similarity": 0.465225,
-      "component_type_recall": 0.41666666666666663,
-      "reward_score": 0.4835
+      "structural_similarity": 0.28459999999999996,
+      "component_type_recall": 0.25,
+      "reward_score": 0.24325
     }
   },
   "ship_gates": {
@@ -106,10 +100,5 @@
     "training_internal_max_wall_minutes": 4.5,
     "timed_out_runs_used_as_evidence": 0
   },
-  "verdict": "reject E403 protocol mismatch and E404 bounded failure; later E408 control attributes smoke collapse to continuation length",
-  "superseded_attribution": {
-    "by_run_id": "e408-component-plan-unbalanced-control-bounded-r1",
-    "evidence": "docs/design/iter-e407-e408-continuation-control-20260718.json",
-    "conclusion": "power-zero matched continuation reproduces smoke collapse"
-  }
+  "verdict": "reject E407; retain E396 at 22044 tokens and gate any further continuation"
 }
