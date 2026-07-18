@@ -48,6 +48,7 @@ contracts, eight generation steps, three attempts, and no fallback.
 | 16a | `[768,784)` | 16 | 1.0 | 1.0 | 0.8784 | 1.0 | 0.9934 | 0 / 0 / 0 |
 | 16b | `[784,800)` | 16 | 1.0 | 1.0 | 0.8178 | 1.0 | 0.9946 | 0 / 0 / 0 |
 | 16c | `[800,816)` | 16 | 1.0 | 1.0 | 0.8441 | 1.0 | 0.9972 | 0 / 0 / 0 |
+| 17a | `[816,832)` | 16 | 1.0 | 1.0 | 0.8747 | 1.0 | 0.9948 | 0 / 0 / 0 |
 
 Shard 0 completed normally in about 177 seconds and is metric-identical to the
 corresponding E477 rows, with zero failures, fallback, or timeouts.
@@ -163,4 +164,8 @@ from 0.5103 to 0.5750 and slice structure improved by 0.00404, while fidelity,
 type recall, and reward remained unchanged. This is positive activation
 evidence, not a full-suite claim.
 
-**Status:** 816/1500 rows complete. No merged or ship claim yet.
+Shard 17a completed normally in about 60 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.8747, reward 0.9948, and zero failures, fallback, or timeouts.
+
+**Status:** 832/1500 rows complete. No merged or ship claim yet.

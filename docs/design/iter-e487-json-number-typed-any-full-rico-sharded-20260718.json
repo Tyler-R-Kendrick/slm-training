@@ -569,10 +569,26 @@
       "prediction_identical_to_e477": false,
       "changed_prediction_count": 1,
       "structural_similarity_delta_vs_e477": 0.004043750000000013
+    },
+    {
+      "index": "17a",
+      "run_id": "e487-e396-json-number-typed-any-rico-shard17a-r1",
+      "eval_offset": 816,
+      "eval_end": 832,
+      "n": 16,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8746875,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9947500000000001,
+      "failure_count": 0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "completed_normally": true
     }
   ],
   "coverage": {
-    "completed_n": 816,
+    "completed_n": 832,
     "total_n": 1500,
     "exact_contiguous": false
   },
