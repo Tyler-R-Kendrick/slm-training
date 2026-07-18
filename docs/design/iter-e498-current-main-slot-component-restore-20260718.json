@@ -1,6 +1,9 @@
 {
+  "schema_version": 1,
   "experiment_id": "E498",
-  "classification": "diagnostic",
+  "run_id": "e498-current-main-slot-component-restore",
+  "status": "complete",
+  "conclusion": "Current main loads and applies the E396 slot-component head, but honest smoke gates remain red.",
   "date_utc": "2026-07-18",
   "checkpoint": {
     "run_id": "e396-balanced-type-head-continuation-r1",
@@ -56,10 +59,34 @@
     "slot_component_choice_changes": 20,
     "placeholder_fidelity": -0.1111111111111111
   },
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "structural_similarity": 0.2705666666666667,
+      "component_type_recall": 0.0,
+      "placeholder_fidelity": 0.0,
+      "reward_score": 0.0,
+      "slot_component_applications": 20,
+      "slot_component_choice_changes": 20
+    }
+  },
   "ship_gates": {
     "pass": false,
     "agentv_pass": false,
     "reason": "Smoke-only diagnostic. Meaningful rate, component recall, and reward remain zero; placeholder fidelity regressed to zero."
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "reproducibility": {
+    "classification": "diagnostic",
+    "current_main_reproduced": true
   },
   "decision": "Keep the compatibility and training-path restoration, but do not promote E396 or advance to Stage B."
 }

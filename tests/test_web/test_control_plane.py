@@ -21,10 +21,15 @@ from slm_training.web.observability import Readers
 
 SMOKE_SUITE = {
     "smoke": {
+        # Above the DEFAULT_MIN_SUITE_N evidence floor.
+        "n": 32,
         "parse_rate": 0.9,
         "structural_similarity": 0.5,
         "placeholder_fidelity": 0.4,
         "reward_score": 0.5,
+        # Measured (zero) fallback telemetry — certified_fallback fails closed
+        # when unmeasured.
+        "fallback_count": 0,
     }
 }
 
@@ -374,6 +379,21 @@ def test_committed_sde0_evidence_is_visible_on_research_scoreboard() -> None:
         "rico_held",
     }
     assert result["suites"]["rico_held"]["diagnostic_subset"] is True
+
+
+def test_committed_e498_evidence_is_visible_on_research_scoreboard() -> None:
+    root = Path(__file__).resolve().parents[2]
+
+    result = next(
+        row
+        for row in Readers(root).scoreboard("research")["results"]
+        if row["run_id"] == "e498-current-main-slot-component-restore"
+    )
+
+    assert result["pass"] is False
+    assert result["claim_class"] == "diagnostic"
+    assert result["agentv"]["passed"] == 0
+    assert result["suites"]["smoke"]["slot_component_applications"] == 20
 
 
 def test_rl_traces_are_paginated_and_malformed_rows_are_skipped(tmp_path) -> None:

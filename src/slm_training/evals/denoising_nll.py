@@ -38,13 +38,20 @@ from slm_training.harnesses.train_data.catalog import classify_source_family
 
 DEFAULT_MASK_RATES: tuple[float, ...] = (0.15, 0.30, 0.50, 0.70, 0.85)
 
+# Canonical loss-suite objective version. Defined here (the leaf of the
+# loss-suite import DAG: loss_suites and emptiness_probe both import this
+# module) and re-exported by ``loss_suites`` so every probe shares one value;
+# an objective change bumps it once, mirrored in
+# ``src/slm_training/resources/versions.json`` (``evals.loss_suite``).
+LOSS_SUITE_VERSION = "v1"
+
 # Positions eligible for masking given a record + its target token ids.
 PositionFilter = Callable[[ExampleRecord, list[int]], Sequence[int]]
 
 
 @dataclass(frozen=True)
 class DenoisingNLLConfig:
-    suite_version: str = "v1"
+    suite_version: str = LOSS_SUITE_VERSION
     mask_rates: tuple[float, ...] = DEFAULT_MASK_RATES
     mask_seed: int = 0
     batch_size: int = 8

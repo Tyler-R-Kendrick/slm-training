@@ -444,12 +444,21 @@ def build_report(
         first_train_dir, test_dir, grammar_ltr_max_tokens=ltr_max_tokens
     )
     ceiling = diagnostic.get("ceiling") or {}
+
+    def _below_ceiling(metrics: dict, name: str) -> bool:
+        # Absent key stays fail-closed; an explicit None means the metric is
+        # undefined on this suite's gold (e.g. no placeholders) — not a defect.
+        if name not in metrics:
+            return True
+        value = metrics[name]
+        return value is not None and float(value) < 0.999
+
     ceiling_failures = {
         suite: metrics
         for suite, metrics in ceiling.items()
         if metrics.get("n", 0) < 1
         or any(
-            float(metrics.get(name, 0.0)) < 0.999
+            _below_ceiling(metrics, name)
             for name in (
                 "parse_rate",
                 "placeholder_fidelity",

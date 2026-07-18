@@ -34,7 +34,11 @@ Before asserting pass:
 5. Confirmed **honest slot contract** — inventory from prompt/DESIGN.md, not
    hidden `gold.placeholders` when `honest_slot_contract=True`
 6. Recorded **suite sizes** (especially `rico_held` n)
-7. **Updated docs** via `documenting-experiment-results`
+7. Cited the run's **version stamp** — `code_commit` plus `gates.ship` /
+   `evals.meaningful_program` versions from `scoreboard.json` / `gates.json` —
+   so the claim stays comparable after the self-improving stack changes
+   (`docs/design/version-stamp-contract.md`)
+8. **Updated docs** via `documenting-experiment-results`
 
 ## Default honest bars (CLI `--ship-gates`)
 

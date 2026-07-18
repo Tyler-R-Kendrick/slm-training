@@ -17,7 +17,12 @@ summary.**
 
 1. Identify the doc home (map below).
 2. Persist JSON under `docs/design/` (scripts often mirror — verify it matches
-   **this** run).
+   **this** run) and confirm it carries a `version_stamp` (schema
+   `version_stamp/v1`; canonical writers emit it via
+   `slm_training.versioning.build_version_stamp`). If you changed any file
+   watched by `src/slm_training/resources/versions.json`, bump that component
+   (or append a `no-bump:` history note) in the same change — see
+   [`docs/design/version-stamp-contract.md`](../../../docs/design/version-stamp-contract.md).
 3. Update markdown measured-results: IDs run, pass/fail, recipe (device, steps,
    backend, matrix set, suite `n`, honesty mode).
 4. **If a checkpoint was written/promoted/synced:** update
@@ -31,6 +36,8 @@ digraph docs_after_run {
     "Run finished" [shape=doublecircle];
     "JSON in docs/design?" [shape=diamond];
     "Write/copy JSON" [shape=box];
+    "Stamp present?" [shape=diamond];
+    "Re-emit from canonical writer" [shape=box];
     "Markdown updated?" [shape=diamond];
     "Update measured-results" [shape=box];
     "Checkpoint created?" [shape=diamond];
@@ -41,8 +48,11 @@ digraph docs_after_run {
 
     "Run finished" -> "JSON in docs/design?";
     "JSON in docs/design?" -> "Write/copy JSON" [label="no"];
-    "JSON in docs/design?" -> "Markdown updated?" [label="yes"];
-    "Write/copy JSON" -> "Markdown updated?";
+    "JSON in docs/design?" -> "Stamp present?" [label="yes"];
+    "Write/copy JSON" -> "Stamp present?";
+    "Stamp present?" -> "Re-emit from canonical writer" [label="no"];
+    "Stamp present?" -> "Markdown updated?" [label="yes"];
+    "Re-emit from canonical writer" -> "Markdown updated?";
     "Markdown updated?" -> "Update measured-results" [label="no"];
     "Markdown updated?" -> "Checkpoint created?" [label="yes"];
     "Update measured-results" -> "Checkpoint created?";
@@ -82,6 +92,9 @@ In `docs/MODEL_CARD.md`:
 - Run id + path or `hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/`
 - Eval table with suite `n` and ship pass/fail
 - Recipe: device, steps, context backend, honesty mode
+- Version stamp: `code_commit` plus the eval-stack component versions from the
+  run's `scoreboard.json` (`harness.model_build.eval`, `evals.meaningful_program`,
+  `gates.ship`)
 - History row (append; do not erase predecessors)
 
 In `README.md` “Model card (summary)”: one-line table update + link to the
@@ -96,6 +109,8 @@ re-running the same IDs; keep invalidated historical rows labeled as such.
 ## Red flags
 
 - Results only in stdout / PR body
+- Result JSON without a `version_stamp` (hand-built instead of writer-emitted)
+- Versioned component changed without a registry bump / `no-bump:` note
 - JSON updated, measured-results table not
 - Checkpoint synced but MODEL_CARD / README summary untouched
 - "Document after the full matrix"

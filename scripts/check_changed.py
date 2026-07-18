@@ -105,7 +105,12 @@ SUITES_BY_PREFIX = (
         "src/slm_training/models/",
         ("tests/test_models", "tests/test_harnesses/model_build"),
     ),
+    (
+        "src/slm_training/resources/versions.json",
+        ("tests/test_versioning",),
+    ),
     ("src/slm_training/runtime/", ("tests/test_runtime",)),
+    ("src/slm_training/versioning.py", ("tests/test_versioning",)),
     ("src/slm_training/web/", ("tests/test_web",)),
     (
         "src/apps/openui_bridge/",
@@ -190,12 +195,17 @@ def hook_test_targets(paths: list[str]) -> list[str]:
     return select_changed_tests(paths)
 
 
-def check(paths: list[str], *, changed_tests_only: bool = False) -> int:
+def check(paths: list[str], *, changed_tests_only: bool = False, staged: bool = False) -> int:
     policy_errors = validate_repository()
     if policy_errors:
         print("repo-policy: failed")
         for error in policy_errors:
             print(f"- {error}")
+        return 1
+    stamp_command = [sys.executable, "-m", "scripts.verify_version_stamps", "--check"]
+    if staged:
+        stamp_command.append("--staged")
+    if _run(stamp_command):
         return 1
     tests = hook_test_targets(paths) if changed_tests_only else select_tests(paths)
     python_paths = [path for path in paths if path.endswith(".py") and (ROOT / path).is_file()]
@@ -277,7 +287,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(json.dumps({"decision": "allow"}))
         return 0
-    return check(paths, changed_tests_only=args.changed_tests_only)
+    return check(paths, changed_tests_only=args.changed_tests_only, staged=args.staged)
 
 
 if __name__ == "__main__":

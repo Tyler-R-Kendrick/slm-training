@@ -55,6 +55,15 @@ def test_hook_defers_pytest_for_large_diffs() -> None:
     assert hook_test_targets(paths) == []
 
 
+def test_version_registry_changes_run_versioning_suite() -> None:
+    assert select_tests(["src/slm_training/resources/versions.json"]) == [
+        "tests/test_versioning"
+    ]
+    assert select_tests(["src/slm_training/versioning.py"]) == [
+        "tests/test_versioning"
+    ]
+
+
 def test_changed_files_can_compare_a_ci_base(monkeypatch) -> None:
     commands = []
 

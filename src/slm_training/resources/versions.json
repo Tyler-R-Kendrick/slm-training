@@ -1,0 +1,174 @@
+{
+  "schema": "version_registry/v1",
+  "_readme": [
+    "Canonical component-version registry for the self-improving eval/smoke/checkpoint stack.",
+    "Contract: docs/design/version-stamp-contract.md. Enforced by scripts/verify_version_stamps.py.",
+    "Any change to a file under a component's `paths` must touch that component's entry in the",
+    "same change: bump `version` (new history entry, newest first) or append a same-version",
+    "history entry whose note starts with 'no-bump:' explaining why the change is behavior-neutral.",
+    "`paths` are repo-relative; a trailing '/' claims a directory prefix; longest prefix wins.",
+    "Staleness ordering is the position in `history` (newest first), never string comparison.",
+    "New ids and future bumps use monotonic v1, v2, ...; pre-existing native encodings are kept."
+  ],
+  "components": {
+    "harness.model_build.eval": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/model_build/eval_runner.py",
+        "src/slm_training/harnesses/model_build/eval_policy.py",
+        "src/slm_training/harnesses/quality/retrieval.py",
+        "scripts/evaluate_model.py"
+      ],
+      "history": [
+        {"version": "v1", "date": "2026-07-18", "note": "initial registration"}
+      ]
+    },
+    "harness.model_build.train": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/model_build/train_loop.py"
+      ],
+      "history": [
+        {"version": "v1", "date": "2026-07-18", "note": "initial registration"}
+      ]
+    },
+    "evals.meaningful_program": {
+      "version": "2.0.0",
+      "kind": "metric",
+      "paths": [
+        "src/slm_training/evals/meaningful_program.py"
+      ],
+      "history": [
+        {"version": "2.0.0", "date": "2026-07-18", "note": "initial registration; mirrors meaningful_program.METRIC_VERSION"}
+      ]
+    },
+    "evals.loss_suite": {
+      "version": "v1",
+      "kind": "metric",
+      "paths": [
+        "src/slm_training/evals/loss_suites.py",
+        "src/slm_training/evals/loss_suite_v1.json",
+        "src/slm_training/evals/denoising_nll.py",
+        "src/slm_training/evals/emptiness_probe.py"
+      ],
+      "history": [
+        {"version": "v1", "date": "2026-07-18", "note": "initial registration; mirrors loss_suites.LOSS_SUITE_VERSION"}
+      ]
+    },
+    "evals.scoring": {
+      "version": "v1",
+      "kind": "metric",
+      "paths": [
+        "src/slm_training/evals/"
+      ],
+      "history": [
+        {"version": "v1", "date": "2026-07-18", "note": "initial registration (catch-all for eval scoring helpers not claimed by a narrower component)"}
+      ]
+    },
+    "gates.ship": {
+      "version": "openui_ship_gates_v1",
+      "kind": "gate",
+      "paths": [
+        "src/slm_training/harnesses/model_build/ship_gates.py"
+      ],
+      "history": [
+        {"version": "openui_ship_gates_v1", "date": "2026-07-18", "note": "initial registration; mirrors MEANINGFUL_METRIC_POLICY threshold_version"}
+      ]
+    },
+    "matrix.quality": {
+      "version": "v1",
+      "kind": "matrix",
+      "paths": [
+        "scripts/run_quality_matrix.py"
+      ],
+      "history": [
+        {"version": "v1", "date": "2026-07-18", "note": "initial registration"}
+      ]
+    },
+    "matrix.grammar": {
+      "version": "v1",
+      "kind": "matrix",
+      "paths": [
+        "scripts/run_grammar_matrix.py"
+      ],
+      "history": [
+        {"version": "v1", "date": "2026-07-18", "note": "initial registration"}
+      ]
+    },
+    "matrix.perf": {
+      "version": "v1",
+      "kind": "matrix",
+      "paths": [
+        "scripts/run_perf_matrix.py"
+      ],
+      "history": [
+        {"version": "v1", "date": "2026-07-18", "note": "initial registration"}
+      ]
+    },
+    "matrix.verified_solver": {
+      "version": "vss4-02-v1",
+      "kind": "matrix",
+      "paths": [
+        "src/slm_training/harnesses/experiments/verified_solver_matrix.py",
+        "src/slm_training/harnesses/experiments/vss4_campaign.py"
+      ],
+      "history": [
+        {"version": "vss4-02-v1", "date": "2026-07-18", "note": "initial registration; mirrors verified_solver_matrix.MATRIX_VERSION"}
+      ]
+    },
+    "harness.experiments": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/"
+      ],
+      "history": [
+        {"version": "v1", "date": "2026-07-18", "note": "initial registration (ladder, promotion, scaling fits; verified-solver files are claimed by matrix.verified_solver)"}
+      ]
+    },
+    "harness.reasoning.bench": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/reasoning/"
+      ],
+      "history": [
+        {"version": "v1", "date": "2026-07-18", "note": "initial registration"}
+      ]
+    },
+    "harness.solver_bench": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/solver_bench.py"
+      ],
+      "history": [
+        {"version": "v1", "date": "2026-07-18", "note": "initial registration"}
+      ]
+    },
+    "harness.quality.slop_forensics": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/quality/slop_forensics.py",
+        "scripts/run_slop_forensics.py"
+      ],
+      "history": [
+        {"version": "v1", "date": "2026-07-18", "note": "initial registration"}
+      ]
+    },
+    "data.test_build": {
+      "version": "v1",
+      "kind": "data_builder",
+      "paths": [
+        "scripts/build_test_data.py",
+        "src/slm_training/harnesses/test_data/"
+      ],
+      "history": [
+        {"version": "v1", "date": "2026-07-18", "note": "initial registration (eval/smoke suite builder; snapshot data versions remain DataStore's contract)"}
+      ]
+    }
+  }
+}
