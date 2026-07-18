@@ -88,6 +88,10 @@ class TrainDataConfig:
     # Cross-corpus dedup: drop records whose exact prompt⊕openui pair already
     # exists in these committed dataset ids (or explicit dataset paths).
     dedup_against: tuple[str, ...] = ()
+    # Superfiltering difficulty evidence: a run's record_nll.jsonl (written by
+    # train_model --emit-record-nll) whose NLL percentiles discount the
+    # trivially-easy tail in curation_score. Data builds never load a model.
+    difficulty_from: Path | None = None
     # P12 producer inputs. ProgramSpecs fall back to deterministic generation
     # when the configured file has not been materialized yet.
     programspec_path: Path | None = Path("outputs/data/programspec/programs.jsonl")
@@ -1237,11 +1241,22 @@ def build_train_data(
     deduped: list[ExampleRecord] = []
     seen_pairs: set[str] = set()
 
+    from slm_training.harnesses.train_data.catalog import classify_source_family
+
     def _accept_record(record: ExampleRecord) -> bool:
         pair = fingerprint_pair(record.prompt, record.openui)
         if pair in seen_pairs:
+            meta = record.meta or {}
+            detail = {"source_family": classify_source_family(record)}
+            if meta.get("synth"):
+                detail["synth"] = str(meta.get("synth"))
             rejections.append(
-                rejection_entry("dedup", "exact_pair_duplicate", record_id=record.id)
+                rejection_entry(
+                    "dedup",
+                    "exact_pair_duplicate",
+                    record_id=record.id,
+                    detail=detail,
+                )
             )
             return False
         seen_pairs.add(pair)
@@ -1332,18 +1347,33 @@ def build_train_data(
 
     deduped = annotate_lineage(deduped, lineage_index)
 
+    # Attribution map so id-only drop entries still carry family/synth for
+    # the synthesis-feedback loop (built after annotate_lineage so
+    # source_family is authoritative).
+    candidates_by_id = {record.id: record for record in deduped}
+
     def _mirror_drops(stage: str, dropped: list[dict]) -> None:
         for drop in dropped:
+            detail = {
+                key: value
+                for key, value in drop.items()
+                if key not in {"id", "reason"}
+            }
+            candidate = candidates_by_id.get(str(drop.get("id")))
+            if candidate is not None:
+                meta = candidate.meta or {}
+                detail.setdefault(
+                    "source_family",
+                    str(meta.get("source_family") or candidate.source),
+                )
+                if meta.get("synth"):
+                    detail.setdefault("synth", str(meta.get("synth")))
             rejections.append(
                 rejection_entry(
                     stage,
                     str(drop.get("reason") or stage),
                     record_id=str(drop.get("id")),
-                    detail={
-                        key: value
-                        for key, value in drop.items()
-                        if key not in {"id", "reason"}
-                    },
+                    detail=detail,
                 )
             )
 
@@ -1446,9 +1476,12 @@ def build_train_data(
 
     source_families["cluster_exposure"] = cluster_exposure_stats(deduped)
 
-    from slm_training.data.selection import attach_curation_scores
+    from slm_training.data.selection import attach_curation_scores, load_record_nll
 
-    attach_curation_scores(deduped)
+    nll_by_id: dict[str, float] | None = None
+    if config.difficulty_from:
+        nll_by_id = load_record_nll(config.difficulty_from)
+    attach_curation_scores(deduped, nll_by_id=nll_by_id)
 
     # Fingerprint final records after every train-only transformation so the
     # leakage manifest describes the exact bytes written to records.jsonl.
@@ -1545,6 +1578,21 @@ def build_train_data(
     )
     quality_report_path = write_quality_report(out_dir, quality_report)
 
+    from slm_training.harnesses.train_data.feedback import (
+        build_synthesis_feedback,
+        write_synthesis_feedback,
+    )
+
+    synthesis_feedback = build_synthesis_feedback(
+        version=config.version,
+        profile=config.profile,
+        built_at=built_at,
+        admitted=deduped,
+        rejections=rejections,
+        quality_report=quality_report,
+    )
+    synthesis_feedback_path = write_synthesis_feedback(out_dir, synthesis_feedback)
+
     quality_scores = [
         float((r.meta or {}).get("quality", {}).get("score") or 0.0) for r in deduped
     ]
@@ -1570,6 +1618,8 @@ def build_train_data(
         "rejected_total": len(rejections),
         "rejected_path": str(rejected_path.as_posix()),
         "quality_report_path": str(quality_report_path.as_posix()),
+        "synthesis_feedback_path": str(synthesis_feedback_path.as_posix()),
+        "synthesis_recommendations": len(synthesis_feedback["recommendations"]),
         "synthesizer": config.synthesizer,
         "min_quality_score": config.min_quality_score,
         "min_verification_tier": config.min_verification_tier,
@@ -1598,6 +1648,14 @@ def build_train_data(
         "dedup_against": list(config.dedup_against),
         "cross_corpus_dropped": len(cross_corpus_dropped),
         "cross_corpus_dropped_samples": cross_corpus_dropped[:20],
+        "difficulty_from": (
+            str(config.difficulty_from) if config.difficulty_from else None
+        ),
+        "difficulty_scored": (
+            sum(1 for r in deduped if "record_nll" in (r.meta or {}))
+            if nll_by_id
+            else 0
+        ),
         "producer_inputs": {
             "programspec_path": (
                 str(config.programspec_path) if config.programspec_path else None
@@ -1654,6 +1712,7 @@ def build_train_data(
         "stats": str(stats_path.as_posix()),
         "quality_report": str(quality_report_path.as_posix()),
         "rejected": str(rejected_path.as_posix()),
+        "synthesis_feedback": str(synthesis_feedback_path.as_posix()),
         "record_count": len(deduped),
         "ids": [r.id for r in deduped],
         "split_group_ids": sorted(
@@ -1689,6 +1748,7 @@ def build_train_data(
         "manifest": manifest,
         "stats": stats,
         "quality_report": quality_report,
+        "synthesis_feedback": synthesis_feedback,
         "governance": {name: str(path) for name, path in governance_paths.items()},
     }
 

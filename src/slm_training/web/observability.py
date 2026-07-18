@@ -1098,6 +1098,7 @@ class Readers:
             "storage": ref.storage,
             "report": report,
             "summary": _quality_summary(report),
+            "feedback": _read_json(ref.path / "synthesis_feedback.json"),
         }
 
     def train_rejected(

@@ -174,6 +174,14 @@ JOB_SPECS: dict[str, JobSpec] = {
             "curriculum": Flag(),
         },
     ),
+    "mine_rejected_preferences": JobSpec(
+        "scripts.mine_rejected_preferences",
+        summary="Mine preference pairs from a dataset's rejected-record ledger",
+        params={
+            "dataset": Slug(),
+            "version": Slug(),
+        },
+    ),
     "build_test_data": JobSpec(
         "scripts.build_test_data",
         summary="Build disjoint eval suites (with leakage checks)",

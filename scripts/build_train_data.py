@@ -303,6 +303,16 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     parser.add_argument(
+        "--difficulty-from",
+        type=Path,
+        default=None,
+        help=(
+            "record_nll.jsonl from a trained run (train_model "
+            "--emit-record-nll); discounts the trivially-easy NLL tail in "
+            "curation scores."
+        ),
+    )
+    parser.add_argument(
         "--publish",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -369,6 +379,7 @@ def main(argv: list[str] | None = None) -> int:
             dedup_against=tuple(
                 item.strip() for item in args.dedup_against.split(",") if item.strip()
             ),
+            difficulty_from=args.difficulty_from,
             programspec_path=args.programspec_path,
             programspec_count=args.programspec_count,
             programspec_seed=args.programspec_seed,

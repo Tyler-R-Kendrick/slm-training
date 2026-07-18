@@ -165,11 +165,25 @@ def test_build_emits_quality_report_and_rejected_ledger(tmp_path: Path) -> None:
         for r in admitted_records
     )
 
-    # The manifest points at both artifacts.
+    # The manifest points at all three artifacts.
     manifest = result["manifest"]
     assert manifest["profile"] == "strict"
     assert manifest["quality_report"].endswith("quality_report.json")
     assert manifest["rejected"].endswith("rejected.jsonl")
+    assert manifest["synthesis_feedback"].endswith("synthesis_feedback.json")
+
+    # The synthesis-feedback loop artifact is present and structured.
+    feedback = result["synthesis_feedback"]
+    assert (out_dir / "synthesis_feedback.json").is_file()
+    assert feedback["schema_version"] == 1
+    assert feedback["families"]
+    assert isinstance(feedback["recommendations"], list)
+    assert isinstance(feedback["experiment_candidates"], list)
+    # Dedup drops carry family attribution for the loop.
+    assert any(
+        r["stage"] == "dedup" and (r.get("detail") or {}).get("source_family")
+        for r in rejected_rows
+    )
 
 
 def test_dedup_against_excludes_pairs_already_in_other_corpora(tmp_path: Path) -> None:
