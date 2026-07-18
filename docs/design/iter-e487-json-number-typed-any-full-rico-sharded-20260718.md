@@ -36,6 +36,7 @@ contracts, eight generation steps, three attempts, and no fallback.
 | 11b | `[552,576)` | 24 | 1.0 | 1.0 | 0.9088 | 1.0 | 0.9957 | 0 / 0 / 0 |
 | 12a | `[576,600)` | 24 | 1.0 | 1.0 | 0.8822 | 1.0 | 0.9920 | 0 / 0 / 0 |
 | 12b | `[600,624)` | 24 | 1.0 | 1.0 | 0.8907 | 1.0 | 0.9920 | 0 / 0 / 0 |
+| 13a | `[624,640)` | 16 | 1.0 | 1.0 | 0.8863 | 1.0 | 0.9878 | 0 / 0 / 0 |
 
 Shard 0 completed normally in about 177 seconds and is metric-identical to the
 corresponding E477 rows, with zero failures, fallback, or timeouts.
@@ -98,4 +99,8 @@ interrupt at 170 seconds and force-kill ten seconds later. Future E487 shards
 are limited to at most 16 rows; earlier normally completed evidence retains
 its historical 290-second policy.
 
-**Status:** 624/1500 rows complete. No merged or ship claim yet.
+Shard 13a completed normally in about one minute under the new three-minute
+policy and is prediction-identical to the corresponding E477 rows, with
+structure 0.8863, reward 0.9878, and zero failures, fallback, or timeouts.
+
+**Status:** 640/1500 rows complete. No merged or ship claim yet.
