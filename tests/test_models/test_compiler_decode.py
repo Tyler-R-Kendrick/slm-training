@@ -950,6 +950,18 @@ def test_slot_component_can_exclude_whole_prompt_context() -> None:
     assert torch.equal(first_logits, second_logits)
 
 
+def test_slot_component_next_context_preserves_order() -> None:
+    model = _model(slot_component_next_context=True)
+
+    assert model._slot_component_texts(
+        [":hint.title", ":hint.body", ":submit"]
+    ) == [
+        ":hint.title\n:hint.body",
+        ":hint.body\n:submit",
+        ":submit",
+    ]
+
+
 def test_slot_component_bias_uses_next_unfilled_slot() -> None:
     from types import MethodType
 

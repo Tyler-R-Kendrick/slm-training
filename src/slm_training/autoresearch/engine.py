@@ -438,6 +438,12 @@ def compile_commands(
                 if knobs.slot_component_prompt_context
                 else "--no-slot-component-prompt-context"
             )
+        if knobs.slot_component_next_context is not None:
+            train.append(
+                "--slot-component-next-context"
+                if knobs.slot_component_next_context
+                else "--no-slot-component-next-context"
+            )
         if knobs.component_plan_attention_pool:
             train.append("--component-plan-attention-pool")
         if knobs.component_plan_token_pool:

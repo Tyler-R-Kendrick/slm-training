@@ -424,6 +424,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Add pooled whole-prompt context to each slot-component prediction.",
     )
     parser.add_argument(
+        "--slot-component-next-context",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Encode the next visible slot after each current slot owner query.",
+    )
+    parser.add_argument(
         "--component-edge-loss-weight",
         type=float,
         default=0.0,
@@ -821,6 +827,7 @@ def main(argv: list[str] | None = None) -> int:
             ),
             slot_component_decode_weight=args.slot_component_decode_weight,
             slot_component_prompt_context=args.slot_component_prompt_context,
+            slot_component_next_context=args.slot_component_next_context,
             component_edge_loss_weight=args.component_edge_loss_weight,
             component_edge_alignment_loss_weight=(
                 args.component_edge_alignment_loss_weight

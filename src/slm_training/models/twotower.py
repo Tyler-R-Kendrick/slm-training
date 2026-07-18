@@ -218,6 +218,7 @@ class TwoTowerConfig:
     slot_component_class_weights: tuple[float, ...] = ()
     slot_component_decode_weight: float = 0.0
     slot_component_prompt_context: bool = True
+    slot_component_next_context: bool = False
     component_edge_loss_weight: float = 0.0
     component_edge_alignment_loss_weight: float = 0.0
     component_edge_decode_weight: float = 0.0
@@ -1288,6 +1289,14 @@ class TwoTowerModel(nn.Module):
         )
         return self.slot_component_head(slot_pooled + prompt_pooled)
 
+    def _slot_component_texts(self, slots: list[str]) -> list[str]:
+        if not bool(getattr(self.config, "slot_component_next_context", False)):
+            return list(slots)
+        return [
+            f"{slot}\n{slots[index + 1]}" if index + 1 < len(slots) else slot
+            for index, slot in enumerate(slots)
+        ]
+
     def _predict_target_lengths(
         self, context: torch.Tensor, pad_mask: torch.Tensor | None
     ) -> list[int] | None:
@@ -2140,11 +2149,14 @@ class TwoTowerModel(nn.Module):
             slot_targets: list[int] = []
             for row, record in enumerate(batch):
                 owners = self._slot_component_owners(record.openui)
-                for slot in record.placeholders:
+                slot_texts = self._slot_component_texts(list(record.placeholders))
+                for slot, slot_text in zip(
+                    record.placeholders, slot_texts, strict=True
+                ):
                     target = component_index.get(owners.get(slot, ""))
                     if target is None:
                         continue
-                    slots.append(slot)
+                    slots.append(slot_text)
                     slot_rows.append(row)
                     slot_targets.append(target)
             if slots:
@@ -3277,7 +3289,7 @@ class TwoTowerModel(nn.Module):
         if not remaining_slots:
             return None
         logits = self._slot_component_logits(
-            remaining_slots,
+            self._slot_component_texts(remaining_slots),
             ctx,
             ctx_pad,
             torch.zeros(

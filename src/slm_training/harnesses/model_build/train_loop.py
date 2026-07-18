@@ -787,6 +787,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "slot_component_prompt_context": bool(
                 getattr(config, "slot_component_prompt_context", True)
             ),
+            "slot_component_next_context": bool(
+                getattr(config, "slot_component_next_context", False)
+            ),
             "component_edge_loss_weight": getattr(
                 config, "component_edge_loss_weight", 0.0
             ),

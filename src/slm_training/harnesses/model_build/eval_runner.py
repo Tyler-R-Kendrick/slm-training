@@ -330,6 +330,7 @@ def _effective_evaluation_policy(
             value("slot_component_decode_weight") or 0.0
         ),
         "slot_component_prompt_context": bool(value("slot_component_prompt_context")),
+        "slot_component_next_context": bool(value("slot_component_next_context")),
         "schema_in_context": bool(value("schema_in_context")),
         "slot_contract_in_context": bool(value("slot_contract_in_context")),
         "slot_contract_constrained_decode": bool(

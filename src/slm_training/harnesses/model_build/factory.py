@@ -371,6 +371,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         slot_component_prompt_context=bool(
             getattr(config, "slot_component_prompt_context", True)
         ),
+        slot_component_next_context=bool(
+            getattr(config, "slot_component_next_context", False)
+        ),
         component_edge_loss_weight=float(
             getattr(config, "component_edge_loss_weight", 0.0) or 0.0
         ),
