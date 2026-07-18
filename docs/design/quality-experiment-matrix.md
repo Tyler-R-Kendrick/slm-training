@@ -2086,6 +2086,12 @@ objective imbalance with focal loss, not eval-shaped aliases. See
 [audit](iter-e321-slot-owner-balance-audit-20260717.md) and
 [JSON](slot-owner-balance-audit-iter-e321-20260717.json).
 
+E322 focal gamma 2 raises final-20 raw slot accuracy only 0.7008→0.7050 and
+regresses held-out meaningful/recall 0.40/0.20→0.20/0.10. AgentV remains 3/5
+with three metric failures. Reject focal hardness; test corpus-derived class
+weights next. See [results](iter-e322-focal-slot-owner-20260717.md) and
+[JSON](focal-slot-owner-results-iter-e322-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

@@ -1,0 +1,24 @@
+{
+  "id": "E322",
+  "date": "2026-07-17",
+  "status": "negative_not_promotable",
+  "run_id": "e322-focal-slot-owner-20k-r1",
+  "checkpoint_sha256": "2d69cbfd710e16d939b8bba53e09f3d426cf1deb67384ba77fd9a9618e7e8507",
+  "steps": 446,
+  "seen_target_tokens": 20044,
+  "elapsed_wall_seconds": 144.22350873300093,
+  "trainable_params": 405717,
+  "saved_params": 449301,
+  "weighted_nll": 5.424738767887375,
+  "broad_nll": 5.4987698594471075,
+  "slot_focal_gamma": 2.0,
+  "slot_accuracy": 0.7050000064074993,
+  "slot_majority_baseline": 0.6391666755080223,
+  "agentv": {"passed": 3, "total": 5},
+  "failures": [
+    "smoke component recall 0.3333 < 0.35",
+    "held_out meaningful 0.20 < 0.40",
+    "held_out component recall 0.10 < 0.30"
+  ],
+  "verdict": "Reject focal loss: no gate gain and held-out quality regresses. Use corpus-derived class balance next."
+}
