@@ -244,6 +244,48 @@ def exact_closure(state, provider):
   stores certificate **references** (digests) plus compact summaries; full
   certificates live in a caller-provided `certificate_store`.
 
+## Implemented search controller (VSS1-02 / SLM-62)
+
+[`dsl/solver/controller.py`](../../src/slm_training/dsl/solver/controller.py) adds
+`search(state, provider, terminal_checker, *, ranker, hole_selector, ...)`: a
+bounded controller that alternates exact closure with reversible branching. It is
+the new **generic** owner; the compiler-forest search `LatticeSearchState`
+(`fastpath/lattice_search.py`) is retained unchanged as the forest-specific adapter
+(its callers/tests are untouched — the documented compatibility seam).
+
+State machine (deterministic; a `CandidateRanker` orders live values only):
+
+```text
+loop:
+    closure = exact_closure(state)              # certified, irreversible deletions
+    if state is ⊥:                              # closure emptied a domain (all certified)
+        backtrack; at level 0 and no uncertified branch -> CERTIFIED_UNSAT
+    elif structurally solved:
+        out = terminal_checker(state)           # materialize + final pack verifier
+        if out.accepted: return SOLVED(out.report)   # never SOLVED without a report
+        else: record nogood; backtrack          # verifier reject is a conflict, not solved
+    else:
+        hole = smallest live domain             # then HoleId (deterministic)
+        order = ranker.rank(state, hole, live)  # REQUIRED: a permutation of live values
+        apply order[0] as a reversible decision; push the rest on the trail
+    budgets (nodes / backtracks / decisions) -> UNKNOWN | BUDGET_EXHAUSTED, never unsat
+```
+
+Five distinct outcomes the controller keeps separate:
+
+| Concept | Reversible? | Proof status |
+| --- | --- | --- |
+| **certified deduction** | No | `exact_closure` removal with a replay-valid `UNSUPPORTED` certificate. |
+| **reversible decision** | Yes | A ranker-ordered live value on the trail; undone on backtrack. Creates no legality. |
+| **local nogood** | Yes (request-local) | A conflict record (`certified_bottom` / `terminal_verifier_failure` / budget). **Never** a certified deduction unless a later support query certifies it. |
+| **certificate-backed global contradiction** | No | `CERTIFIED_UNSAT` — the whole finite tree closed by certified deductions with **no** UNKNOWN, verifier-rejection, or budget truncation anywhere. |
+| **timeout / unknown** | — | `UNKNOWN` / `BUDGET_EXHAUSTED`. A budget or capability limit is never relabeled `CERTIFIED_UNSAT`. |
+
+Soundness: a learned/adversarial ranker cannot alter live hard membership (the
+controller validates the returned sequence is a permutation and rejects any
+missing/extra/duplicate); `CERTIFIED_UNSAT` is impossible when any required branch
+was UNKNOWN or budget-truncated; every `SOLVED` carries a final verifier report.
+
 ## Reference support semantics
 
 | Verdict | Requirement | Removal permitted? |
@@ -468,4 +510,20 @@ cache-identity. It adds no branching/decision stack, no model ranker, and no dec
 integration; existing runtime paths are untouched and **no ship or speed claim** is
 made. Verified: `python -m pytest tests/test_dsl/test_solver_closure.py
 tests/test_dsl/test_solver_support.py -q` (31 passed) and
+`python -m scripts.repo_policy`.
+
+2026-07-18 — VSS1-02 / SLM-62 implements the bounded proof-carrying search
+controller (`dsl/solver/controller.py`): closure + reversible branching with a
+soft-only `CandidateRanker`, local nogoods, and sound `SOLVED` /
+`CERTIFIED_UNSAT` / `UNKNOWN` / `BUDGET_EXHAUSTED` termination. The generic
+controller is the new owner; `LatticeSearchState` is retained unchanged as the
+compiler-forest adapter (compatibility seam). Pinned by tiny closed fixtures
+(`tests/test_dsl/test_solver_controller.py`): certified deductions before the first
+decision, solve after one/many decisions, rollback to an alternate, root
+`CERTIFIED_UNSAT` only when every branch is proof-closed, UNKNOWN/verifier-rejection
+preventing certified unsat, ranker permutation validation (an adversarial ranker
+cannot alter hard membership), determinism, and budget stops. No TwoTower/diffusion
+integration, no learned energy, no persistent clause DB, and **no ship claim**.
+Verified: `python -m pytest tests/test_dsl/test_solver_controller.py
+tests/test_dsl/test_lattice_search.py -q` (94 in the full solver+compat suite) and
 `python -m scripts.repo_policy`.
