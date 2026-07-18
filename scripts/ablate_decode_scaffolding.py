@@ -164,6 +164,12 @@ def main(argv: list[str] | None = None) -> int:
         default="cpu",
         help="Torch device for evaluation.",
     )
+    parser.add_argument(
+        "--test-dir",
+        type=Path,
+        default=Path("outputs/test_data/remediated"),
+        help="Eval dataset directory (must contain a manifest.json with suites).",
+    )
     args = parser.parse_args(argv)
 
     suites = tuple(x.strip() for x in args.suites.split(",") if x.strip())
@@ -180,6 +186,7 @@ def main(argv: list[str] | None = None) -> int:
 
     base_config = ModelBuildConfig(
         train_dir=Path("outputs/data/train/v1"),
+        test_dir=args.test_dir,
         run_root=Path(args.run_dir),
         run_id="sde0-01-base",
         device=args.device,

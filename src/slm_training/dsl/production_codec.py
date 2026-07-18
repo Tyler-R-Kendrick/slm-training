@@ -1852,6 +1852,8 @@ def _literal_token(value: Any) -> str:
 
 
 def _decode_literal(payload: str) -> str:
+    if payload == "":
+        return json.dumps("")
     if payload == "null":
         return "null"
     if payload in {"true", "false"}:
@@ -1864,7 +1866,10 @@ def _decode_literal(payload: str) -> str:
         return payload
     except ValueError:
         pass
-    return json.dumps(json.loads(payload))
+    try:
+        return json.dumps(json.loads(payload))
+    except json.JSONDecodeError:
+        return json.dumps(payload)
 
 
 @dataclass

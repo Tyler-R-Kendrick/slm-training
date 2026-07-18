@@ -404,6 +404,14 @@ def run_arm(
     gates = evaluate_ship_gates(scoreboard, thresholds=DEFAULT_SHIP_GATES)
     notes.append("evaluated with frozen checkpoint")
 
+    # Store per-arm metrics at the suite level so paired-delta helpers can read
+    # meaningful_program_rate/parse_rate/etc. directly.  When multiple suites are
+    # requested, keep the full scoreboard and let downstream helpers aggregate.
+    if len(suites) == 1 and suites[0] in scoreboard.get("suites", {}):
+        arm_metrics: dict[str, Any] = dict(scoreboard["suites"][suites[0]])
+    else:
+        arm_metrics = scoreboard
+
     return ArmResult(
         arm_id=arm.arm_id,
         factors=arm.factors,
@@ -411,7 +419,7 @@ def run_arm(
         best_of_n=arm.best_of_n,
         compatible=True,
         incompatible_reason=None,
-        metrics=scoreboard,
+        metrics=arm_metrics,
         ship_gates=gates,
         elapsed_seconds=time.monotonic() - start,
         notes=tuple(notes),
@@ -448,7 +456,9 @@ def run_stage_a(
                         notes=("provenance failure",),
                     )
                 )
-            run_id = _hash_run_id(("sde0-01", checkpoint_id, output_codec, "provenance_failure"))
+            run_id = _hash_run_id(
+                ("sde0-01", checkpoint_id, output_codec, suites, "provenance_failure")
+            )
             return AblateReport(
                 run_id=run_id,
                 version="sde0-01-v1",
@@ -477,6 +487,7 @@ def run_stage_a(
             "sde0-01",
             checkpoint_id,
             output_codec,
+            suites,
             tuple(a.arm_id for a in arms),
         )
     )
