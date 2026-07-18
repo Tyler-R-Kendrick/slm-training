@@ -120,7 +120,7 @@ class RemineCampaignConfig:
     end_to_end_threshold: float = 0.0
     min_new_evidence: int = 1
     max_iterations: int = 2
-    max_wall_minutes: float = 5.0
+    max_wall_minutes: float = 3.0
     max_cost_units: float = 0.0
     max_tokens: int = 0
     notes: str = ""
@@ -131,6 +131,8 @@ class RemineCampaignConfig:
         if self.max_iterations < 0 or self.max_iterations > 3:
             # Default max is two trained iterations; a third needs explicit justification.
             raise RemineConfigError("max_iterations must be in [0, 3]")
+        if not 0.0 < self.max_wall_minutes <= 3.0:
+            raise RemineConfigError("max_wall_minutes must be in (0, 3]")
         if not self.prompt_group_ids:
             raise RemineConfigError("prompt_group_ids must be non-empty (frozen set)")
 
@@ -170,7 +172,7 @@ def campaign_spec_for(config: RemineCampaignConfig) -> CampaignSpec:
         track="twotower" if config.actuator_backend == "twotower" else "causal_lm",
         budget=CampaignBudget(
             max_experiments=max(1, config.max_iterations + 2),
-            max_wall_minutes=min(5.0, max(0.1, config.max_wall_minutes)),
+            max_wall_minutes=config.max_wall_minutes,
         ),
         created_at=config.created_at,
         notes=f"{CAMPAIGN_TAG}:{CAMPAIGN_VERSION}",

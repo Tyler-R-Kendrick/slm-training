@@ -41,10 +41,10 @@ class _FakeClock:
         return self._last
 
 
-def test_budget_capped_at_five_minutes() -> None:
-    assert DiagnosticBudget().max_wall_minutes == 5.0
-    with pytest.raises(ValueError, match=r"\(0, 5\]"):
-        DiagnosticBudget(max_wall_minutes=6.0)
+def test_budget_capped_at_three_minutes() -> None:
+    assert DiagnosticBudget().max_wall_minutes == 3.0
+    with pytest.raises(ValueError, match=r"\(0, 3\]"):
+        DiagnosticBudget(max_wall_minutes=3.1)
     with pytest.raises(ValueError):
         DiagnosticBudget(max_wall_minutes=0.0)
 

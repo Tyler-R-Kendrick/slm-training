@@ -794,8 +794,8 @@ def build_parser() -> argparse.ArgumentParser:
     init.add_argument(
         "--max-wall-minutes",
         type=float,
-        default=5.0,
-        help="Cumulative per-experiment wall budget (default and maximum: 5 minutes).",
+        default=3.0,
+        help="Cumulative per-experiment wall budget (default and maximum: 3 minutes).",
     )
     init.add_argument("--notes", default="")
     init.set_defaults(func=cmd_init)

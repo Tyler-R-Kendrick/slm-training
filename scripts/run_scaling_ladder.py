@@ -12,8 +12,8 @@ from pathlib import Path
 
 def _wall_minutes(value: str) -> float:
     minutes = float(value)
-    if not 0 < minutes <= 5:
-        raise argparse.ArgumentTypeError("must be positive and at most 5")
+    if not 0 < minutes <= 3:
+        raise argparse.ArgumentTypeError("must be positive and at most 3")
     return minutes
 
 
@@ -49,8 +49,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--max-wall-minutes",
         type=_wall_minutes,
-        default=5.0,
-        help="Cumulative ladder-arm wall budget (default and maximum: 5).",
+        default=3.0,
+        help="Cumulative ladder-arm wall budget (default and maximum: 3).",
     )
     parser.add_argument(
         "--capacity-arm",

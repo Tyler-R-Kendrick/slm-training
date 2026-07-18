@@ -85,6 +85,6 @@ def test_capacity_ladder_single_arm_is_scratch_track() -> None:
 
 def test_ladder_wall_budget_is_configurable_but_capped() -> None:
     assert _wall_minutes("0.25") == 0.25
-    assert _wall_minutes("5") == 5.0
-    with pytest.raises(argparse.ArgumentTypeError, match="at most 5"):
-        _wall_minutes("5.1")
+    assert _wall_minutes("3") == 3.0
+    with pytest.raises(argparse.ArgumentTypeError, match="at most 3"):
+        _wall_minutes("3.1")

@@ -27,6 +27,14 @@ Experiment-first OpenUI layout SLMs:
    executed/published with the pinned AgentV SDK; domain metrics and honest ship
    gates remain authoritative (`docs/design/agentv-evaluation.md`).
 
+## Hard run cap
+
+Every train, eval, benchmark, profile, telemetry, matrix, reproduction, and
+supporting shell command must finish within three minutes total. Agent commands
+interrupt at 170 seconds and force-kill ten seconds later. Training and campaign
+harnesses must use a cumulative `max_wall_minutes` no greater than 3. A timed
+out, interrupted, or killed run is never evidence.
+
 Start: `README.md`, `docs/MODEL_CARD.md`, `docs/design/openui-twotower.md`,
 `docs/design/quality-experiment-matrix.md`,
 `docs/design/perf-experiment-matrix.md`, `docs/design/research-lineage.md`,
