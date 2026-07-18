@@ -1,0 +1,58 @@
+{
+  "id": "E363-E364",
+  "date": "2026-07-17",
+  "status": "diagnosed_topology_bottleneck",
+  "run_id": "e364-card-adapt-plan2-slot0-rico16-r1",
+  "hard_run_cap_seconds": 300,
+  "ship_gates": {
+    "pass": false,
+    "failures": [
+      "rico_held diagnostic subset 16/1500",
+      "complete bounded suite set missing"
+    ]
+  },
+  "suites": {
+    "rico_held": {
+      "n": 16,
+      "suite_total_n": 1500,
+      "diagnostic_subset": true,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.9375,
+      "placeholder_fidelity": 0.23882575757575758,
+      "structural_similarity": 0.22080624999999998,
+      "component_type_recall": 0.4791666666666667,
+      "reward_score": 0.6875625000000002
+    }
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "runs": [
+    {
+      "id": "E363",
+      "run_id": "e363-card-adapt-plan2-rico16-r1",
+      "component_plan_decode_weight": 2.0,
+      "slot_component_decode_weight": 8.0,
+      "elapsed_wall_seconds": 26.3849,
+      "component_plan_applications": 32,
+      "component_plan_internal_choice_changes": 19,
+      "final_predictions_changed": 0,
+      "card_predictions": 0,
+      "agentv": "0/1"
+    },
+    {
+      "id": "E364",
+      "run_id": "e364-card-adapt-plan2-slot0-rico16-r1",
+      "component_plan_decode_weight": 2.0,
+      "slot_component_decode_weight": 0.0,
+      "elapsed_wall_seconds": 16.9721,
+      "final_predictions_changed": 2,
+      "card_predictions": 0,
+      "agentv": "0/1"
+    }
+  ],
+  "root_cause": "The constrained skeleton emits direct placeholder-bearing content children and cannot insert a learned intermediary container binder.",
+  "verdict": "Reject decode-weight sweeps; require a generalized train-conditioned topology-creation mechanism."
+}

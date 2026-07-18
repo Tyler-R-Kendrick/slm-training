@@ -2313,6 +2313,15 @@ or sync it. See
 [results](iter-e360-e362-card-hierarchy-adaptation-20260717.md) and
 [JSON](iter-e360-e362-card-hierarchy-adaptation-20260717.json).
 
+E363 enables E360's component-plan bias at weight 2 on 16 RICO rows. It changes
+19 internal choices but zero final programs and emits zero Cards. E364 removes
+the slot bias: two direct content choices change, recall regresses, and Cards
+remain 0/16. The bottleneck is topology expressivity—the constrained skeleton
+cannot insert intermediary container binders—not auxiliary bias ordering.
+Reject both variants and stop the weight sweep. See
+[results](iter-e363-e364-card-topology-diagnosis-20260717.md) and
+[JSON](iter-e363-e364-card-topology-diagnosis-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
