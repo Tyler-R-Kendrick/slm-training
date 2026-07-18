@@ -208,4 +208,32 @@ Shard 18f completed normally in about 76 seconds under the three-minute policy
 and is prediction-identical to the corresponding E477 rows, with structure
 0.9208, reward 0.9940, and zero failures, fallback, or timeouts.
 
-**Status:** 960/1500 rows complete. No merged or ship claim yet.
+Shard 19a completed normally in about 94 seconds under the three-minute policy
+with structure 0.9113, reward 0.9908, and zero failures, fallback, or timeouts.
+One of 16 predictions changed (`rico_hf_test_2249`): E487 replaced E477's
+string `"nnu"` in a numeric slider slot with `-1` and changed other numeric
+slider values/order. The current scorer reports no material metric delta
+(structure, fidelity, type recall, and reward are unchanged), so this is
+neutral type-constraint activation evidence rather than a quality win.
+
+Shard 19b completed normally in about 55 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.9081, reward 0.9927, and zero failures, fallback, or timeouts.
+
+Shard 19c completed normally in about 71 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.8576, reward 0.9916, and zero failures, fallback, or timeouts.
+
+Shard 19d completed normally in about 108 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.8525, reward 0.9942, and zero failures, fallback, or timeouts.
+
+Shard 19e completed normally in about 90 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.8258, reward 0.9957, and zero failures, fallback, or timeouts.
+
+Shard 19f completed normally in about 70 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.8471, reward 0.9944, and zero failures, fallback, or timeouts.
+
+**Status:** 1056/1500 rows complete. No merged or ship claim yet.
