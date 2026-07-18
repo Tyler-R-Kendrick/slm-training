@@ -83,3 +83,64 @@ execute. The store is append-only (existing rows are never rewritten), so
 Fixture-grade wiring only: schema, replay invariant, and bucket plan are
 tested; no meta-model exists, no trace corpus is claimed as sufficient
 training data, and nothing is pushed to the bucket by default.
+
+## Grammar-state decision traces (CAP1-02 / SLM-82)
+
+A fourth trace kind, `grammar_decision`, captures the legal-action distribution,
+selected/gold action, margin, posterior entropy, and optional sensitivity at
+individual grammar-constrained decode decisions. Owner:
+[`harnesses/distill/grammar_trace.py`](../../src/slm_training/harnesses/distill/grammar_trace.py);
+store helper: `record_grammar_decisions` in
+[`harnesses/distill/trace_store.py`](../../src/slm_training/harnesses/distill/trace_store.py).
+
+### Schema (`trace_schema_version: cap1-02.v1`)
+
+Each record carries: `run_id`, `checkpoint_id`, `dataset_id`, `example_id`,
+`seed`, `state_fingerprint`, `state_signature_version`, `decision_index`,
+`diffusion_timestep`, `legal_action_ids`, `legal_action_kinds`,
+`compiler_coverage` (`complete`/`partial`/`none`), `selected_action_id`,
+`target_action_ids`, `target_semantics`, `logits_or_energies`,
+`normalized_probs`, `top1_margin`, `posterior_entropy_bits`,
+`scope_signature`, `expected_type`, `template_signature`,
+`completion_support_size_exact`, `model_feature_ref`, `sensitivity`, and
+`verification_outcome`.
+
+Legal membership comes only from the compiler/DFA owner (`allowed_id_set`,
+`build_completion_forest`). The model supplies scores; the trace recorder
+computes softmax, margin, and entropy over the legal set. Sensitivity adapters
+are disabled by default and must run in eval mode without mutating parameters.
+
+### Collection
+
+`scripts/collect_trajectories.py` gains:
+
+* `--capture-grammar-decisions`
+* `--capture-logits`
+* `--arity-profile`
+* `--capture-sensitivity {fisher_group,gradient_squared,jacobian_norm,quantization_probe}`
+* `--max-sensitivity-records N`
+* `--state-stratified`
+
+When enabled, a `GrammarTraceRecorder` is attached to the model alongside the
+existing `DecodeTraceRecorder`; decisions are emitted and appended as
+`grammar_decision` rows sharing the same run/trace/span identity envelope.
+
+### Replay and coverage
+
+`grammar_trace_replay_violations` checks that the selected action is in the
+legal set, entropy lies in `[0, log2(|legal|)]`, normalized probabilities sum
+to 1, and coverage is one of the allowed values.
+`grammar_trace_coverage_report` produces an estimated-evidence summary: unique
+state fingerprints, state-action pairs, scope/template coverage, branching
+statistics, margin/entropy histograms, forced-decision fraction, and provenance.
+
+### Honesty caveats
+
+* The current TwoTower hook is wired into the LTR repair path. MaskGIT
+  non-repair commits and compiler-tree ranked-path decisions are not yet
+  instrumented; they should reuse the same `GrammarTraceRecorder` when added.
+* Real checkpoint diagnostics and a full join to the CAP1-01 exact state graph
+  require a scheduled GPU run and are documented as estimated evidence only
+  until that run completes.
+* Sensitivity adapters are stubbed at the API level; concrete Fisher/gradient/
+  Jacobian/quantization probes are added per later CAP issue.
