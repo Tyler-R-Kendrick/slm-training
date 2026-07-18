@@ -24,6 +24,9 @@ SMOKE_SUITE = {
         "structural_similarity": 0.5,
         "placeholder_fidelity": 0.4,
         "reward_score": 0.5,
+        # Measured (zero) fallback telemetry — certified_fallback fails closed
+        # when unmeasured.
+        "fallback_count": 0,
     }
 }
 
