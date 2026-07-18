@@ -8,6 +8,8 @@ ranker) orders the survivors.
 
 from __future__ import annotations
 
+import hashlib
+import json
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -28,9 +30,24 @@ from slm_training.dsl.solver.topology_adapter import (
     TopologyAdapterConfig,
     TopologyEdit,
     TopologyNodeLike,
+    _flatten,
     _node_type,
     derive_topology_state,
 )
+
+
+def _canonical_json(value: Any) -> str:
+    return json.dumps(
+        value,
+        allow_nan=False,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+
+
+def _sha256(value: str) -> str:
+    return hashlib.sha256(value.encode()).hexdigest()
 
 
 @dataclass
@@ -75,6 +92,25 @@ def _copy_tree(node: SolverTopologyNode) -> SolverTopologyNode:
     )
     for child in node.children:
         child_copy = _copy_tree(child)
+        child_copy.parent_id = copy.node_id
+        copy.children.append(child_copy)
+    return copy
+
+
+def _copy_topology_node(node: TopologyNodeLike) -> SolverTopologyNode:
+    """Deep-copy any TopologyNodeLike into a mutable SolverTopologyNode."""
+    copy = SolverTopologyNode(
+        node_id=node.node_id,
+        node_type=node.node_type,
+        production_id=node.production_id,
+        slot_id=node.slot_id,
+        parent_id=node.parent_id,
+        depth=node.depth,
+        sibling_index=node.sibling_index,
+        active=bool(getattr(node, "active", False)),
+    )
+    for child in node.children:
+        child_copy = _copy_topology_node(child)
         child_copy.parent_id = copy.node_id
         copy.children.append(child_copy)
     return copy
@@ -230,9 +266,12 @@ def _serialize_topology(
 class TopologyVerifier:
     """Validates a structurally-solved topology program with the DSL parser."""
 
-    def __init__(self, codec: Any, output_kind: str = "document") -> None:
+    def __init__(
+        self, codec: Any, output_kind: str = "document", slot_inventory: list[str] | None = None
+    ) -> None:
         self._codec = codec
         self._output_kind = output_kind
+        self._slot_inventory = slot_inventory or []
 
     @property
     def profile(self) -> str:
@@ -488,3 +527,314 @@ def topology_solver_prune(
                 (node_id, edit.action.name, edit.production_id, edit.arity, edit.slot_id)
             )
     return survivors, result
+
+
+# --------------------------------------------------------------------------- #
+# Synthetic capsule-aware solve (VSS3-03 wiring)
+#
+# This is a deliberately simple coordinator integration: each active topology
+# node becomes its own independent verification capsule, solved in dependency
+# order by ``solve_capsule_graph``.  It exercises the capsule coordinator and
+# SCC-joint plumbing without requiring a full ProgramSpec-to-topology mapping.
+# Future work will replace the synthetic graph with one derived from the
+# request's ProgramSpec and will implement real pack capsule slots.
+# --------------------------------------------------------------------------- #
+
+
+def _derive_synthetic_capsule_graph(
+    root: TopologyNodeLike,
+) -> Any:
+    """Build a single joint capsule over all active topology nodes.
+
+    This exercises the SCC-joint coordinator path: every active node is solved
+    together rather than independently, so the search sees cross-node effects.
+    """
+    from slm_training.data.progspec.capsules import (
+        CapsuleGraph,
+        ScopeNode,
+        VerificationCapsule,
+    )
+
+    active_ids = [
+        node.node_id for node in _flatten(root) if getattr(node, "active", False)
+    ]
+    if not active_ids:
+        active_ids = [root.node_id]
+    nodes = tuple(
+        ScopeNode(
+            node_id=f"node_{node_id}",
+            scope_id=None,
+            kind="topology",
+            ast_path=(node_id,),
+            member_paths=(),
+            definitions=(),
+            external_dependencies=(),
+        )
+        for node_id in active_ids
+    )
+    node_id_strs = tuple(f"node_{node_id}" for node_id in active_ids)
+    capsule = VerificationCapsule(
+        capsule_id="capsule_topology",
+        node_ids=node_id_strs,
+        entry_node_id=node_id_strs[0],
+        external_dependencies=(),
+    )
+    return CapsuleGraph(
+        root_id=node_id_strs[0],
+        nodes=nodes,
+        edges=(),
+        capsules=(capsule,),
+        spec_id="topology",
+        version=CapsuleGraph.VERSION,
+    )
+
+
+def _state_for_capsule(
+    root: TopologyNodeLike,
+    node_ids: tuple[int, ...],
+    codec: Any,
+    adapter_config: TopologyAdapterConfig,
+    slot_inventory: list[str],
+    bounds: SolverBounds,
+) -> FiniteDomainState:
+    """Derive a finite-domain state containing holes owned by ``node_ids``."""
+    full_state = derive_topology_state(
+        root,
+        codec,
+        adapter_config,
+        slot_inventory=slot_inventory,
+        problem_id="topology",
+        pack_id="openui",
+        constraint_version="v1",
+        bounds=bounds,
+        phase=0,
+    )
+    holes = tuple(
+        hole
+        for hole in full_state.holes
+        if hole.hole_id.path
+        and isinstance(hole.hole_id.path[0], int)
+        and hole.hole_id.path[0] in node_ids
+    )
+    return FiniteDomainState(
+        problem_id=full_state.problem_id,
+        pack_id=full_state.pack_id,
+        constraint_version=full_state.constraint_version,
+        bounds=full_state.bounds,
+        holes=holes,
+    )
+
+
+class TopologyCapsuleProblemBuilder:
+    """Pack-style builder that maps a synthetic capsule to one node's state."""
+
+    def __init__(
+        self,
+        root: TopologyNodeLike,
+        codec: Any,
+        adapter_config: TopologyAdapterConfig,
+        slot_inventory: list[str],
+        output_kind: str,
+    ) -> None:
+        self._root = root
+        self._codec = codec
+        self._adapter_config = adapter_config
+        self._slot_inventory = slot_inventory
+        self._output_kind = output_kind
+
+    def build_problem(
+        self,
+        capsule: Any,
+        predecessor_summaries: Any,
+        external_inputs: Any,
+        bounds: SolverBounds,
+    ) -> Any:
+        from slm_training.dsl.solver.capsule_solver import CapsuleProblem
+
+        node_ids = tuple(
+            int(nid.split("_", 1)[1]) for nid in capsule.node_ids
+        )
+        state = _state_for_capsule(
+            self._root,
+            node_ids,
+            self._codec,
+            self._adapter_config,
+            self._slot_inventory,
+            bounds,
+        )
+        return CapsuleProblem(
+            capsule=capsule,
+            state=state,
+            predecessor_summaries=predecessor_summaries,
+            external_inputs=external_inputs,
+        )
+
+
+class TopologyCapsuleSummaryExtractor:
+    """Exact empty-boundary summary for a solved synthetic capsule."""
+
+    def extract_summary(self, capsule: Any, state: FiniteDomainState) -> Any:
+        from slm_training.dsl.solver.capsule_solver import CapsuleInterfaceSummary
+
+        payload = _canonical_json(
+            {
+                "capsule_id": capsule.capsule_id,
+                "state_fingerprint": state.fingerprint,
+                "conservative": False,
+            }
+        )
+        return CapsuleInterfaceSummary(
+            capsule_id=capsule.capsule_id,
+            input_bindings=(),
+            output_bindings=(),
+            slots=(),
+            preconditions=(),
+            postconditions=(),
+            effects=(),
+            exceptions=(),
+            captures=(),
+            conservative=False,
+            fingerprint=_sha256(payload),
+        )
+
+
+class TopologyCapsuleMaterializer:
+    """Apply solved capsule decisions to a copy of the tree and serialize."""
+
+    def __init__(
+        self,
+        root: TopologyNodeLike,
+        codec: Any,
+        slot_inventory: list[str],
+        output_kind: str,
+    ) -> None:
+        self._root = root
+        self._codec = codec
+        self._slot_inventory = slot_inventory
+        self._output_kind = output_kind
+
+    def __call__(self, capsule_results: Any) -> str | None:
+        tree = _copy_topology_node(self._root)
+        for result in capsule_results:
+            if result.status != "solved" or result.search_result is None:
+                continue
+            for decision in result.search_result.decisions:
+                node_id = decision.hole_id.path[0]
+                if not isinstance(node_id, int):
+                    continue
+                try:
+                    edit = TopologyEdit.from_value(decision.chosen)
+                except (KeyError, ValueError, TypeError):
+                    continue
+                _apply_edit(tree, node_id, edit, self._codec, self._output_kind)
+        production_ids, slot_ids = _serialize_topology(self._codec, tree)
+        return self._codec.decode(
+            production_ids, slot_ids, self._slot_inventory
+        ).strip()
+
+
+class TopologyCapsuleTerminalChecker:
+    """Terminal checker used by the search controller inside each capsule."""
+
+    def __init__(
+        self, codec: Any, output_kind: str, slot_inventory: list[str] | None = None
+    ) -> None:
+        self._verifier = TopologyVerifier(codec, output_kind, slot_inventory)
+
+    def check(self, state: FiniteDomainState) -> Any:
+        from slm_training.dsl.solver.controller import TerminalOutcome
+
+        if not state.is_structurally_solved:
+            return TerminalOutcome(
+                accepted=False,
+                detail="capsule state is not structurally solved",
+            )
+        # Materialize the structurally solved state.
+        tree = _reconstruct_tree_from_holes(state)
+        if tree is None:
+            return TerminalOutcome(
+                accepted=False,
+                detail="cannot reconstruct tree from solved state",
+            )
+        production_ids, slot_ids = _serialize_topology(self._verifier._codec, tree)
+        source = self._verifier._codec.decode(
+            production_ids, slot_ids, self._verifier._slot_inventory
+        ).strip()
+        outcome = self._verifier.verify(source)
+        return TerminalOutcome(
+            accepted=outcome.status is VerifyStatus.ACCEPT,
+            source=source,
+            detail=outcome.detail,
+        )
+
+
+class TopologyCapsuleGlobalVerifier:
+    """Whole-program verifier used as the capsule coordinator global oracle."""
+
+    def __init__(self, codec: Any, output_kind: str) -> None:
+        self._verifier = TopologyVerifier(codec, output_kind)
+
+    def verify(self, source: str | None) -> Any:
+        from slm_training.dsl.solver.controller import TerminalOutcome
+
+        if source is None:
+            return TerminalOutcome(
+                accepted=False,
+                detail="capsule materializer produced no source",
+            )
+        outcome = self._verifier.verify(source)
+        return TerminalOutcome(
+            accepted=outcome.status is VerifyStatus.ACCEPT,
+            detail=outcome.detail,
+        )
+
+
+def topology_capsule_solver_solve(
+    root: TopologyNodeLike,
+    codec: Any,
+    adapter_config: TopologyAdapterConfig,
+    slot_inventory: list[str],
+    output_kind: str,
+    bounds: SolverBounds,
+    *,
+    ranker: Any | None = None,
+    cache: dict[str, Any] | None = None,
+    certificate_store: dict[str, Any] | None = None,
+) -> tuple[str | None, Any]:
+    """Run the synthetic capsule coordinator over active topology nodes.
+
+    Returns the assembled program text (or ``None``) and the raw
+    ``CapsuleSolveResult`` for tracing.
+    """
+    from slm_training.dsl.solver.capsule_solver import solve_capsule_graph
+
+    graph = _derive_synthetic_capsule_graph(root)
+    provider = build_topology_support_provider(
+        codec, adapter_config, slot_inventory, output_kind, bounds
+    )
+    builder = TopologyCapsuleProblemBuilder(
+        root, codec, adapter_config, slot_inventory, output_kind
+    )
+    extractor = TopologyCapsuleSummaryExtractor()
+    materializer = TopologyCapsuleMaterializer(
+        root, codec, slot_inventory, output_kind
+    )
+    terminal_checker = TopologyCapsuleTerminalChecker(
+        codec, output_kind, slot_inventory
+    )
+    global_verifier = TopologyCapsuleGlobalVerifier(codec, output_kind)
+
+    result = solve_capsule_graph(
+        graph,
+        builder=builder,
+        provider=provider,
+        terminal_checker=terminal_checker,
+        summary_extractor=extractor,
+        materializer=materializer,
+        global_verifier=global_verifier.verify,
+        ranker=ranker,
+        bounds=bounds,
+        cache=cache,
+        certificate_store=certificate_store,
+    )
+    return result.assembled_source, result
