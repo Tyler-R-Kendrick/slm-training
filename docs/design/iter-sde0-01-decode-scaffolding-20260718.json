@@ -1,8 +1,10 @@
 {
   "schema_version": 1,
   "experiment_id": "SDE0-01",
+  "run_id": "sde0-01-e396-baseline",
   "linear_issue": "SLM-161",
   "date": "2026-07-18",
+  "campaign": "SDE0-01 decode-scaffolding factorial baseline",
   "status": "complete",
   "branch": "agent/slm-161-decode-scaffolding",
   "checkpoint": {
@@ -25,6 +27,85 @@
     "gen_steps": 8,
     "grammar_ltr_max_tokens": 320
   },
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.1111111111111111,
+      "structural_similarity": 0.17196666666666668,
+      "component_type_recall": 0.0,
+      "reward_score": 0.0,
+      "decode_timeout_count": 0,
+      "fallback_count": 0,
+      "latency_ms_p50": 4577.82
+    },
+    "held_out": {
+      "n": 5,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.21333333333333332,
+      "structural_similarity": 0.2844,
+      "component_type_recall": 0.09,
+      "reward_score": 0.2952,
+      "decode_timeout_count": 0,
+      "fallback_count": 0,
+      "latency_ms_p50": 8931.86
+    },
+    "adversarial": {
+      "n": 4,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.3333333333333333,
+      "structural_similarity": 0.22225,
+      "component_type_recall": 0.0,
+      "reward_score": 0.0,
+      "decode_timeout_count": 0,
+      "fallback_count": 0,
+      "latency_ms_p50": 3845.56
+    },
+    "ood": {
+      "n": 4,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.0,
+      "structural_similarity": 0.3175,
+      "component_type_recall": 0.0,
+      "reward_score": 0.0,
+      "decode_timeout_count": 0,
+      "fallback_count": 0,
+      "latency_ms_p50": 6298.72
+    },
+    "rico_held": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.0,
+      "structural_similarity": 0.09006666666666667,
+      "component_type_recall": 0.0,
+      "reward_score": 0.0,
+      "decode_timeout_count": 0,
+      "fallback_count": 0,
+      "latency_ms_p50": 8758.53,
+      "diagnostic_subset": true
+    }
+  },
+  "ship_gates": {
+    "pass": false,
+    "failures": [
+      "smoke:meaningful_program_rate",
+      "held_out:meaningful_program_rate",
+      "adversarial:meaningful_program_rate",
+      "ood:meaningful_program_rate",
+      "rico_held:meaningful_program_rate"
+    ]
+  },
+  "agentv": {
+    "total": 5,
+    "passed": 0,
+    "execution_errors": 0
+  },
+  "scoreboard": "outputs/runs/sde0-01/scratch/eval/baseline/scoreboard.json",
   "stage_a": {
     "compatible_arms_per_suite": {
       "smoke": "6/6",

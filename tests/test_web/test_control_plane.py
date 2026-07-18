@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import time
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -352,6 +353,27 @@ def test_research_evidence_does_not_green_branch_only_result(tmp_path) -> None:
     assert result["raw_gate_pass"] is True
     assert result["pass"] is False
     assert result["claim_class"] == "branch_only_diagnostic"
+
+
+def test_committed_sde0_evidence_is_visible_on_research_scoreboard() -> None:
+    root = Path(__file__).resolve().parents[2]
+
+    result = next(
+        row
+        for row in Readers(root).scoreboard("research")["results"]
+        if row["run_id"] == "sde0-01-e396-baseline"
+    )
+
+    assert result["pass"] is False
+    assert result["agentv"] == {"total": 5, "passed": 0, "execution_errors": 0}
+    assert set(result["suites"]) == {
+        "smoke",
+        "held_out",
+        "adversarial",
+        "ood",
+        "rico_held",
+    }
+    assert result["suites"]["rico_held"]["diagnostic_subset"] is True
 
 
 def test_rl_traces_are_paginated_and_malformed_rows_are_skipped(tmp_path) -> None:

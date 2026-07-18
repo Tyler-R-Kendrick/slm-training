@@ -9,6 +9,9 @@
 
 Added the SDE0-01 eval-only ablation harness for decomposing learned weights
 from decode-time scaffolding, then ran Stage A over the frozen E396 checkpoint.
+The committed JSON now also carries the canonical top-level `run_id`, `suites`,
+`ship_gates`, and `agentv` fields consumed by the deployed research scoreboard;
+the factorial detail remains nested under `stage_a`.
 
 - `src/slm_training/harnesses/eval/ablate_decode_scaffolding.py`
   - `ScaffoldFactors` — four binary factors: `content_floor`, `prompt_inventory`,
