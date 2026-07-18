@@ -21,6 +21,12 @@ Serena MCP (semantic code tools) is configured for this repo — prefer Serena
 symbol tools over raw grep when navigating `src/` / `scripts/`. See `AGENTS.md`
 and `.serena/project.yml`.
 
+## Loop fallback
+
+When working the `slm-training` Linear team issues autonomously, if there are no
+eligible open issues left but some are **In Review**, switch to reviewing those
+PRs and helping get them merged to unblock the backlog rather than stopping.
+
 <!-- OPENWIKI:START -->
 
 ## OpenWiki
