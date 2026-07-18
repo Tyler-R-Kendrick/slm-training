@@ -109,23 +109,33 @@ def _sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _placeholder_fidelity_normalized(pred: str, gold: ExampleRecord) -> float:
-    """Namespace-stripped placeholder overlap (diagnostic / ablation metric)."""
+def _placeholder_fidelity_normalized(pred: str, gold: ExampleRecord) -> float | None:
+    """
+    Namespace-stripped placeholder overlap (diagnostic / ablation metric).
+
+    ``None`` when gold has no placeholders and the prediction adds none: 0/0 is
+    undefined evidence, never a vacuous 1.0.
+    """
     pred_set = _placeholders_of(pred)
     gold_set = set(gold.placeholders) or _placeholders_of(gold.openui)
     if not gold_set:
-        return 1.0 if not pred_set else 0.0
+        return None if not pred_set else 0.0
     pred_n = {_normalize_placeholder(p) for p in pred_set}
     gold_n = {_normalize_placeholder(p) for p in gold_set}
     return len(pred_n & gold_n) / len(gold_n)
 
 
-def _placeholder_fidelity(pred: str, gold: ExampleRecord) -> float:
-    """Exact placeholder overlap with gold (strict)."""
+def _placeholder_fidelity(pred: str, gold: ExampleRecord) -> float | None:
+    """
+    Exact placeholder overlap with gold (strict).
+
+    ``None`` when gold has no placeholders and the prediction adds none: 0/0 is
+    undefined evidence, never a vacuous 1.0.
+    """
     pred_set = _placeholders_of(pred)
     gold_set = set(gold.placeholders) or _placeholders_of(gold.openui)
     if not gold_set:
-        return 1.0 if not pred_set else 0.0
+        return None if not pred_set else 0.0
     return len(pred_set & gold_set) / len(gold_set)
 
 
@@ -138,15 +148,16 @@ def _normalize_placeholder(token: str) -> str:
     return body
 
 
-def _placeholder_validity(pred: str, gold: ExampleRecord) -> float:
+def _placeholder_validity(pred: str, gold: ExampleRecord) -> float | None:
     """
     Soft placeholder quality for diagnostics only (not a ship gate alone).
     Prefer placeholder_fidelity for readiness claims.
+    ``None`` when neither side has placeholders (undefined, not perfect).
     """
     pred_set = _placeholders_of(pred)
     gold_set = set(gold.placeholders) or _placeholders_of(gold.openui)
     if not gold_set:
-        return 1.0 if not pred_set else 0.5
+        return None if not pred_set else 0.5
     if not pred_set:
         return 0.0
     well_formed = sum(1 for p in pred_set if p.startswith(":") and "." in p) / len(
@@ -159,20 +170,26 @@ def _placeholder_validity(pred: str, gold: ExampleRecord) -> float:
 
 
 def _tree_match(pred: str, gold_openui: str) -> float:
-    """Exact match on structure-normalized programs (style args ignored)."""
+    """
+    Exact match on structure-normalized programs (style args ignored).
+
+    An unparseable *prediction* is a real mismatch (0.0). A gold-side parse
+    failure raises — that is harness/data breakage, not model quality, and the
+    caller records it as an error instead of a fabricated 0.0 score.
+    """
     pred_s = strip_style_literals(pred).strip()
     gold_s = strip_style_literals(gold_openui).strip()
     if pred_s == gold_s:
         return 1.0
     try:
         pred_p = validate(pred_s)
-        gold_p = validate(gold_s)
-        if pred_p.serialized and gold_p.serialized:
-            ps = strip_style_literals(pred_p.serialized).strip()
-            gs = strip_style_literals(gold_p.serialized).strip()
-            return 1.0 if ps == gs else 0.0
-    except Exception:  # noqa: BLE001
+    except ParseError:
         return 0.0
+    gold_p = validate(gold_s)
+    if pred_p.serialized and gold_p.serialized:
+        ps = strip_style_literals(pred_p.serialized).strip()
+        gs = strip_style_literals(gold_p.serialized).strip()
+        return 1.0 if ps == gs else 0.0
     return 0.0
 
 
@@ -210,21 +227,31 @@ def _raw_syntax_valid(pred: str) -> bool:
         return False
 
 
-def _contract_precision(pred: str, record: ExampleRecord) -> float:
-    """Fraction of predicted placeholders that appear in the record contract."""
+def _contract_precision(pred: str, record: ExampleRecord) -> float | None:
+    """
+    Fraction of predicted placeholders that appear in the record contract.
+
+    ``None`` when the prediction has no placeholders and the contract is empty:
+    0/0 is undefined evidence, never a vacuous 1.0.
+    """
     pred_set = _placeholders_of(pred)
     gold_set = set(record.placeholders or ())
     if not pred_set:
-        return 1.0 if not gold_set else 0.0
+        return None if not gold_set else 0.0
     return len(pred_set & gold_set) / len(pred_set)
 
 
-def _contract_recall(pred: str, record: ExampleRecord) -> float:
-    """Fraction of record contract placeholders present in the prediction."""
+def _contract_recall(pred: str, record: ExampleRecord) -> float | None:
+    """
+    Fraction of record contract placeholders present in the prediction.
+
+    ``None`` when the contract is empty and the prediction adds nothing: 0/0 is
+    undefined evidence, never a vacuous 1.0.
+    """
     pred_set = _placeholders_of(pred)
     gold_set = set(record.placeholders or ())
     if not gold_set:
-        return 1.0 if not pred_set else 0.0
+        return None if not pred_set else 0.0
     return len(pred_set & gold_set) / len(gold_set)
 
 
@@ -233,11 +260,16 @@ def tree_edit_similarity(pred: str, gold_openui: str) -> float:
     return structural_similarity(pred, gold_openui)
 
 
-def component_type_recall(pred: str, gold_openui: str) -> float:
-    """Recall of non-Stack gold component types present in the prediction."""
+def component_type_recall(pred: str, gold_openui: str) -> float | None:
+    """
+    Recall of non-Stack gold component types present in the prediction.
+
+    ``None`` when gold has no non-Stack components — recall over an empty type
+    set is undefined evidence, never a vacuous 1.0.
+    """
     gold_types = {k for k in _component_multiset(gold_openui) if k != "Stack"}
     if not gold_types:
-        return 1.0
+        return None
     pred_types = {k for k in _component_multiset(pred) if k != "Stack"}
     return len(pred_types & gold_types) / len(gold_types)
 
@@ -273,20 +305,19 @@ def _reward_for_prediction(pred: str, record: ExampleRecord) -> float:
     Structure-only composite reward on the generated layout.
 
     Never passes gold DESIGN.md — style/color lint must not affect eval or
-    ship ``reward_score`` gates.
+    ship ``reward_score`` gates. ``composite_reward`` scores unparseable input
+    as 0.0 itself, so an exception here is harness breakage: it propagates and
+    the caller records an error instead of laundering it into a 0.0 score.
     """
-    try:
-        from slm_training.harnesses.preference import composite_reward
+    from slm_training.harnesses.preference import composite_reward
 
-        return float(
-            composite_reward(
-                strip_style_literals(pred),
-                gold=record,
-                design_md=None,
-            )
+    return float(
+        composite_reward(
+            strip_style_literals(pred),
+            gold=record,
+            design_md=None,
         )
-    except Exception:  # noqa: BLE001
-        return 0.0
+    )
 
 
 def _decode_canvas_cap(plugin: object) -> int | None:
@@ -377,7 +408,8 @@ def _is_meaningful_program(
         return False, "no_placeholders", serialized
     if gold is not None and min_component_recall > 0:
         recall = component_type_recall(serialized, gold.openui)
-        if recall < min_component_recall:
+        # None = recall undefined (gold has only Stacks); nothing to reject on.
+        if recall is not None and recall < min_component_recall:
             return False, f"low_component_recall:{recall:.2f}", serialized
     return True, None, serialized
 
@@ -449,16 +481,21 @@ def evaluate(
     parse_ok = 0
     syntax_parse_ok = 0
     raw_syntax_ok = 0
-    fidelity_sum = 0.0
-    fidelity_norm_sum = 0.0
-    validity_sum = 0.0
-    exact_sum = 0.0
-    struct_sum = 0.0
-    tree_edit_sum = 0.0
-    reward_sum = 0.0
-    recall_sum = 0.0
-    contract_precision_sum = 0.0
-    contract_recall_sum = 0.0
+    # Per-metric defined values only: undefined (None) results are excluded so
+    # aggregates can never fabricate a vacuous 0.0/1.0 out of unmeasured data.
+    fidelity_vals: list[float] = []
+    fidelity_norm_vals: list[float] = []
+    validity_vals: list[float] = []
+    exact_vals: list[float] = []
+    struct_vals: list[float] = []
+    tree_edit_vals: list[float] = []
+    reward_vals: list[float] = []
+    recall_vals: list[float] = []
+    contract_precision_vals: list[float] = []
+    contract_recall_vals: list[float] = []
+    match_error_count = 0
+    reward_error_count = 0
+    empty_prediction_count = 0
     gold_design_scores: list[float] = []
     latencies: list[float] = []
     details: list[dict] = []
@@ -579,9 +616,10 @@ def evaluate(
         latency_ms: float,
         prediction_evidence: dict[str, Any] | None = None,
     ) -> None:
-        nonlocal parse_ok, syntax_parse_ok, raw_syntax_ok, fidelity_sum, fidelity_norm_sum, validity_sum
-        nonlocal exact_sum, struct_sum, tree_edit_sum, reward_sum, recall_sum
-        nonlocal contract_precision_sum, contract_recall_sum
+        nonlocal parse_ok, syntax_parse_ok, raw_syntax_ok
+        nonlocal match_error_count, reward_error_count, empty_prediction_count
+        if not pred.strip():
+            empty_prediction_count += 1
         evidence = dict(prediction_evidence or {})
         if len(topology_target_evidence) > len(topology_evidence):
             evidence.update(topology_target_evidence[len(topology_evidence)])
@@ -644,7 +682,12 @@ def evaluate(
         fid = _placeholder_fidelity(scored_pred, record)
         fid_norm = _placeholder_fidelity_normalized(scored_pred, record)
         ph_valid = _placeholder_validity(scored_pred, record)
-        exact = _tree_match(scored_pred, record.openui)
+        exact: float | None
+        try:
+            exact = _tree_match(scored_pred, record.openui)
+        except Exception:  # noqa: BLE001 — gold-side/harness failure, not model quality
+            match_error_count += 1
+            exact = None
         struct = structural_similarity(scored_pred, record.openui)
         # tree_edit_similarity is currently an alias of structural_similarity;
         # reuse the value instead of recomputing the full metric.
@@ -652,7 +695,12 @@ def evaluate(
         recall = component_type_recall(scored_pred, record.openui)
         contract_prec = _contract_precision(scored_pred, record)
         contract_rec = _contract_recall(scored_pred, record)
-        reward = _reward_for_prediction(scored_pred, record)
+        reward: float | None
+        try:
+            reward = _reward_for_prediction(scored_pred, record)
+        except Exception:  # noqa: BLE001 — reward harness failure, not model quality
+            reward_error_count += 1
+            reward = None
         codec = getattr(plugin, "codec", None)
         if codec is not None:
             from slm_training.models.grammar_diffusion import (
@@ -668,16 +716,20 @@ def evaluate(
             )
         topology_evidence.append(evidence)
         gold_dscore = _gold_design_lint_score(record)
-        fidelity_sum += fid
-        fidelity_norm_sum += fid_norm
-        validity_sum += ph_valid
-        exact_sum += exact
-        struct_sum += struct
-        tree_edit_sum += tree_edit
-        recall_sum += recall
-        contract_precision_sum += contract_prec
-        contract_recall_sum += contract_rec
-        reward_sum += reward
+        for defined_values, value in (
+            (fidelity_vals, fid),
+            (fidelity_norm_vals, fid_norm),
+            (validity_vals, ph_valid),
+            (exact_vals, exact),
+            (struct_vals, struct),
+            (tree_edit_vals, tree_edit),
+            (recall_vals, recall),
+            (contract_precision_vals, contract_prec),
+            (contract_recall_vals, contract_rec),
+            (reward_vals, reward),
+        ):
+            if value is not None:
+                defined_values.append(float(value))
         if gold_dscore is not None:
             gold_design_scores.append(gold_dscore)
         details.append(
@@ -768,7 +820,41 @@ def evaluate(
         else None
     )
 
+    def _mean_or_none(defined_values: list[float]) -> float | None:
+        """Mean over defined values; None (never a fabricated 0/1) when empty."""
+        return sum(defined_values) / len(defined_values) if defined_values else None
+
+    # Real fallback telemetry from the decode path; None (gate fails as
+    # unmeasured) when the plugin exposes no decode stats — never hardcoded 0.
+    if decode_stats_rows:
+        fallback_count = sum(
+            int(getattr(row, name, 0) or 0)
+            for row in decode_stats_rows
+            for name in (
+                "unconstrained_retries",
+                "compiler_fallbacks",
+                "seeded_fallbacks",
+                "template_fallback_count",
+            )
+        )
+    else:
+        fallback_count = None
+
+    from slm_training.evals.record_schema import RUN_CLASSES, SCHEMA_VERSION
+    from slm_training.lineage.promotion import wilson_lower_bound
+
+    def _wilson_ci95(successes: int, total: int) -> list[float] | None:
+        """95% Wilson interval — makes tiny-n quantization visible (n=3 → ±0.5)."""
+        if total <= 0:
+            return None
+        lower = wilson_lower_bound(successes, total)
+        upper = 1.0 - wilson_lower_bound(total - successes, total)
+        return [round(lower, 4), round(upper, 4)]
+
+    run_class = config.run_class if config.run_class in RUN_CLASSES else "scratch_matrix"
     metrics = {
+        "schema_version": SCHEMA_VERSION,
+        "run_class": run_class,
         "suite": config.suite,
         "n": n,
         "document_n": document_n,
@@ -780,27 +866,48 @@ def evaluate(
         # CLI diagnostic overrides can materially change quality and timeout
         # metrics even when the checkpoint hash is identical.
         "evaluation_policy": _effective_evaluation_policy(config, plugin),
-        "parse_rate": (syntax_parse_ok / document_n) if document_n else 0.0,
-        "meaningful_program_rate": (parse_ok / document_n) if document_n else 0.0,
+        # Rates are None (JSON null) when no document records were measured —
+        # "not measured" must never render as a fabricated 0.0.
+        "parse_rate": (syntax_parse_ok / document_n) if document_n else None,
+        "meaningful_program_rate": (parse_ok / document_n) if document_n else None,
         "syntax_parse_rate": (
-            (syntax_parse_ok / document_n) if document_n else 0.0
+            (syntax_parse_ok / document_n) if document_n else None
         ),
-        "raw_syntax_validity": (raw_syntax_ok / document_n) if document_n else 0.0,
-        "contract_precision": (contract_precision_sum / document_n) if document_n else 0.0,
-        "contract_recall": (contract_recall_sum / document_n) if document_n else 0.0,
-        "residual_mask_rate": 0.0,
-        "oov_rate": 0.0,
-        "fallback_count": 0,
-        "placeholder_fidelity": (fidelity_sum / document_n) if document_n else 0.0,
-        "placeholder_fidelity_normalized": (
-            fidelity_norm_sum / document_n if document_n else 0.0
-        ),
-        "placeholder_validity": (validity_sum / document_n) if document_n else 0.0,
-        "exact_match": (exact_sum / document_n) if document_n else 0.0,
-        "structural_similarity": (struct_sum / document_n) if document_n else 0.0,
-        "tree_edit_similarity": (tree_edit_sum / document_n) if document_n else 0.0,
-        "component_type_recall": (recall_sum / document_n) if document_n else 0.0,
-        "reward_score": (reward_sum / document_n) if document_n else 0.0,
+        "raw_syntax_validity": (raw_syntax_ok / document_n) if document_n else None,
+        "parse_rate_ci95": _wilson_ci95(syntax_parse_ok, document_n),
+        "meaningful_program_rate_ci95": _wilson_ci95(parse_ok, document_n),
+        "contract_precision": _mean_or_none(contract_precision_vals),
+        "contract_recall": _mean_or_none(contract_recall_vals),
+        # Not computed by any current decode path; None (not a fake 0.0) until
+        # a plugin actually measures them.
+        "residual_mask_rate": None,
+        "oov_rate": None,
+        "fallback_count": fallback_count,
+        "placeholder_fidelity": _mean_or_none(fidelity_vals),
+        "placeholder_fidelity_normalized": _mean_or_none(fidelity_norm_vals),
+        "placeholder_validity": _mean_or_none(validity_vals),
+        "exact_match": _mean_or_none(exact_vals),
+        "structural_similarity": _mean_or_none(struct_vals),
+        "tree_edit_similarity": _mean_or_none(tree_edit_vals),
+        "component_type_recall": _mean_or_none(recall_vals),
+        "reward_score": _mean_or_none(reward_vals),
+        # How many document records actually defined each mean above — the
+        # denominator disclosure that separates "measured 0" from "unmeasured".
+        "metric_defined_n": {
+            "contract_precision": len(contract_precision_vals),
+            "contract_recall": len(contract_recall_vals),
+            "placeholder_fidelity": len(fidelity_vals),
+            "placeholder_fidelity_normalized": len(fidelity_norm_vals),
+            "placeholder_validity": len(validity_vals),
+            "exact_match": len(exact_vals),
+            "structural_similarity": len(struct_vals),
+            "tree_edit_similarity": len(tree_edit_vals),
+            "component_type_recall": len(recall_vals),
+            "reward_score": len(reward_vals),
+        },
+        "match_error_count": match_error_count,
+        "reward_error_count": reward_error_count,
+        "empty_prediction_count": empty_prediction_count,
         "gold_design_lint_score": gold_design_mean,
         # Alias kept for older dashboards; do not gate ship on this.
         "design_lint_score": gold_design_mean,
@@ -881,15 +988,27 @@ def evaluate(
                 topology_evidence
             )
 
+        quality_inputs = (
+            metrics["meaningful_program_rate"],
+            metrics["placeholder_fidelity"],
+            metrics["structural_similarity"],
+            metrics["reward_score"],
+            metrics["tree_edit_similarity"],
+        )
         quality = (
-            2.0 * float(metrics["meaningful_program_rate"])
-            + 2.0 * float(metrics["placeholder_fidelity"])
-            + float(metrics["structural_similarity"])
-            + 0.5 * float(metrics["reward_score"])
-        ) / 5.5
+            None
+            if any(value is None for value in quality_inputs)
+            else (
+                2.0 * float(metrics["meaningful_program_rate"])
+                + 2.0 * float(metrics["placeholder_fidelity"])
+                + float(metrics["structural_similarity"])
+                + 0.5 * float(metrics["reward_score"])
+            )
+            / 5.5
+        )
         ast_node = metrics["ast_node_f1"]
         ast_edge = metrics["ast_edge_f1"]
-        if ast_node is not None and ast_edge is not None:
+        if quality is not None and ast_node is not None and ast_edge is not None:
             topology = (
                 float(ast_node)
                 + float(ast_edge)
@@ -938,14 +1057,47 @@ def evaluate(
         retries = sum(int(getattr(row, "unconstrained_retries", 0)) for row in decode_stats_rows)
         metrics["constrained_fallback_rate"] = retries / len(decode_stats_rows)
 
+    # Metrics the active decode policy enforces by construction: consumers must
+    # not read them as learned model skill (e.g. constrained decode guarantees
+    # syntax; slot-contract injection supplies the contract placeholders).
+    eval_policy = metrics["evaluation_policy"]
+    decoder_guaranteed: list[str] = []
+    if (
+        eval_policy.get("grammar_constrained")
+        or eval_policy.get("grammar_ltr_primary")
+        or eval_policy.get("compiler_decode_mode") not in (None, "off")
+    ):
+        decoder_guaranteed += ["parse_rate", "syntax_parse_rate", "raw_syntax_validity"]
+    if eval_policy.get("slot_contract_constrained_decode"):
+        decoder_guaranteed += [
+            "contract_precision",
+            "contract_recall",
+            "placeholder_fidelity",
+            "placeholder_fidelity_normalized",
+            "placeholder_validity",
+        ]
+    metrics["decoder_guaranteed"] = decoder_guaranteed
+
     run_dir = config.run_dir
     run_dir.mkdir(parents=True, exist_ok=True)
     suite_path = run_dir / f"eval_{config.suite}.json"
     metrics["output"] = str(suite_path)
     if publish_agentv:
-        from slm_training.evals.agentv import publish_model_evaluation
+        if config.suite in DEFAULT_SHIP_GATES:
+            from slm_training.evals.agentv import publish_model_evaluation
 
-        metrics["agentv"] = publish_model_evaluation(run_dir, {config.suite: metrics})
+            # Single-suite runs publish only the suite that actually ran —
+            # never four missing_suite auto-failures dressed up as 5/5 failed.
+            metrics["agentv"] = publish_model_evaluation(
+                run_dir,
+                {config.suite: metrics},
+                include_missing_suites=False,
+            )
+            metrics["agentv"]["suites_run"] = [config.suite]
+        else:
+            metrics["agentv"] = {
+                "skipped": f"suite {config.suite!r} is not in the ship-gate policy"
+            }
     payload = json.dumps(metrics, indent=2) + "\n"
     suite_path.write_text(payload, encoding="utf-8")
     if config.suite == "smoke":
@@ -976,7 +1128,13 @@ def evaluate_suites(
             publish_agentv=False,
         )
         board[suite] = {k: v for k, v in metrics.items() if k != "details"}
+    from slm_training.evals.record_schema import RUN_CLASSES, SCHEMA_VERSION
+
     scoreboard = {
+        "schema_version": SCHEMA_VERSION,
+        "run_class": (
+            config.run_class if config.run_class in RUN_CLASSES else "scratch_matrix"
+        ),
         "run_id": config.run_id,
         "checkpoint": (
             None
@@ -994,6 +1152,41 @@ def evaluate_suites(
         "suites": board,
         "evaluated_at": datetime.now(timezone.utc).isoformat(),
     }
+    # Ceiling + length-budget diagnostics ride with every board so a zero
+    # scoreboard is attributable: harness/data breakage (ceiling < 1, budget
+    # overflow) vs genuine model failure. Diagnostic breakage is recorded, not
+    # allowed to sink the eval itself.
+    diagnostics: dict[str, Any] = {}
+    try:
+        from slm_training.harnesses.model_build.diagnostic import ceiling_report
+
+        diagnostics["ceiling"] = {
+            suite: {key: value for key, value in report.items() if key != "failures"}
+            for suite, report in ceiling_report(
+                config.test_dir, suites=tuple(suites)
+            ).items()
+        }
+    except Exception as exc:  # noqa: BLE001
+        diagnostics["ceiling_error"] = str(exc)
+    try:
+        from slm_training.harnesses.model_build.diagnostic import length_budget_report
+
+        ltr_cap = int(getattr(config, "grammar_ltr_max_tokens", 0) or 0)
+        budget = length_budget_report(
+            train_dir=config.train_dir,
+            test_dir=config.test_dir,
+            suites=tuple(suites),
+            **({"grammar_ltr_max_tokens": ltr_cap} if ltr_cap > 0 else {}),
+        )
+        diagnostics["length_budget"] = {
+            "ok": bool(budget.get("ok")),
+            "effective_budget": budget.get("effective_budget"),
+            "failures": budget.get("failures"),
+        }
+    except Exception as exc:  # noqa: BLE001
+        diagnostics["length_budget_error"] = str(exc)
+    scoreboard["diagnostics"] = diagnostics
+
     run_dir = config.run_dir
     run_dir.mkdir(parents=True, exist_ok=True)
     path = run_dir / "scoreboard.json"
@@ -1001,12 +1194,17 @@ def evaluate_suites(
     if write_gates:
         gates = write_ship_gates(run_dir, board)
         scoreboard["gates"] = {k: gates[k] for k in ("pass", "failures", "output")}
-    from slm_training.evals.agentv import publish_model_evaluation
+    gate_suites = sorted(suite for suite in suites if suite in DEFAULT_SHIP_GATES)
+    if gate_suites:
+        from slm_training.evals.agentv import publish_model_evaluation
 
-    scoreboard["agentv"] = publish_model_evaluation(
-        run_dir,
-        board,
-        include_missing_suites=set(suites) == set(DEFAULT_SHIP_GATES),
-    )
+        scoreboard["agentv"] = publish_model_evaluation(
+            run_dir,
+            board,
+            include_missing_suites=set(suites) == set(DEFAULT_SHIP_GATES),
+        )
+        scoreboard["agentv"]["suites_run"] = gate_suites
+    else:
+        scoreboard["agentv"] = {"skipped": "no ship-gate policy suites evaluated"}
     path.write_text(json.dumps(scoreboard, indent=2) + "\n", encoding="utf-8")
     return scoreboard

@@ -27,9 +27,14 @@ export function Experiments({ navigate }: { navigate: (to: string) => void }) {
   const passed = results.filter((r: any) => r.pass === true).length;
 
   function suiteMetric(row: any, suite: string, metric: string) {
+    // The server normalizes dialects and applies the guarded legacy fallback
+    // (tagged meaningful_source) — substituting parse_rate here would present
+    // decoder-guaranteed syntax as meaningful quality.
     const values = row.suites?.[suite] ?? {};
-    const v = values[metric] ?? (metric === "meaningful_program_rate" ? values.parse_rate : undefined);
-    return v === undefined ? "—" : fmt(v, 2);
+    const v = values[metric];
+    if (v === undefined || v === null) return "—";
+    const legacy = metric === "meaningful_program_rate" && values.meaningful_source === "parse_rate_legacy";
+    return `${fmt(v, 2)}${legacy ? "*" : ""}`;
   }
 
   return (
@@ -38,7 +43,8 @@ export function Experiments({ navigate }: { navigate: (to: string) => void }) {
         <h1 className="page-title">Experiments</h1>
         <p className="page-sub">
           Ablation matrices — each row is one lever with a stable id. Cells are per-suite
-          metrics against ship gates. Rows are evidence, not deployable models.
+          metrics against ship gates. Rows are evidence, not deployable models. Values
+          marked * come from legacy pre-split boards where parse_rate stood in for meaningful.
         </p>
       </div>
 

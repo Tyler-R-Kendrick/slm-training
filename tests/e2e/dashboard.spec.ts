@@ -43,12 +43,14 @@ test.describe("mission control dashboard", () => {
 
   test("editing a gate threshold re-evaluates live", async ({ page }) => {
     const passingSuite = {
-      n: 1,
+      n: 32,
       meaningful_program_rate: 1,
       structural_similarity: 0.5,
       component_type_recall: 0.5,
       placeholder_fidelity: 0.5,
       reward_score: 0.5,
+      // certified_fallback fails closed when fallback telemetry is unmeasured.
+      fallback_count: 0,
     };
     await page.route("**/api/scoreboards/quality", (route) => route.fulfill({ json: {
       results: [{ id: "passing-fixture", run_id: "passing-fixture", suites: {
@@ -69,7 +71,7 @@ test.describe("mission control dashboard", () => {
     await smoke.locator("label", { hasText: "structural_similarity" }).locator("input").fill("0.99");
 
     // The pure-compute /api/gates/evaluate endpoint recolors the matrix.
-    await expect(page.getByText("GATES FAIL")).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText("GATES FAIL", { exact: true })).toBeVisible({ timeout: 5_000 });
   });
 
   test("react playground renders inside the SPA shell", async ({ page }) => {

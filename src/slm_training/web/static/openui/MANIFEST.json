@@ -68,7 +68,7 @@
       "queries": [
         "scoreboard"
       ],
-      "sha256": "3c9b984d254fc909c16a8006977db05f1ba9bdb61bbef9929adf012b303fa4d9",
+      "sha256": "d9701e11eefc73a4f286d1f42cdc959a03ad750cc0b5212befcaadb0fd1e99c7",
       "status": "ok"
     },
     "overview": {
@@ -129,7 +129,7 @@
         "smoke_perf",
         "smoke_quality"
       ],
-      "sha256": "ff3b3b763ad4f7d5ef85c3b5462ead3524a6796bd50b2d3a29ed93cdec06bd4c",
+      "sha256": "884c95b39a4b2a93f663a2fbf809782e3541f4600ad577515dab5a80151f1e7c",
       "status": "ok"
     }
   }

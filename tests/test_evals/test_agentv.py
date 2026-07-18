@@ -39,12 +39,13 @@ def test_model_ship_cases_fail_closed_on_missing_suites() -> None:
     cases = model_ship_gate_cases(
         {
             "smoke": {
-                "n": 1,
+                "n": 32,
                 "parse_rate": 1.0,
                 "structural_similarity": 1.0,
                 "component_type_recall": 1.0,
                 "placeholder_fidelity": 1.0,
                 "reward_score": 1.0,
+                "fallback_count": 0,
             }
         }
     )
@@ -88,12 +89,13 @@ def test_agentv_model_bundle_cannot_pass_a_smoke_only_run(tmp_path) -> None:
         tmp_path,
         {
             "smoke": {
-                "n": 1,
+                "n": 32,
                 "parse_rate": 1.0,
                 "structural_similarity": 1.0,
                 "component_type_recall": 1.0,
                 "placeholder_fidelity": 1.0,
                 "reward_score": 1.0,
+                "fallback_count": 0,
                 "evaluated_at": "2026-07-14T00:00:00+00:00",
             }
         },
