@@ -322,14 +322,19 @@ def _sample_capacity_aware(
     out: list[ExampleRecord] = []
     while len(out) < batch_size:
         remaining = list(weighted_records)
+        # Parallel weight list popped in lockstep with `remaining`: same
+        # per-draw weight sequence (bit-exact RNG draws) without rebuilding
+        # the O(n) list on every draw.
+        remaining_weights = [weight for _, weight in remaining]
         cycle_size = min(batch_size - len(out), len(remaining))
         for _ in range(cycle_size):
             index = rng.choices(
                 range(len(remaining)),
-                weights=[weight for _, weight in remaining],
+                weights=remaining_weights,
                 k=1,
             )[0]
             record, _ = remaining.pop(index)
+            remaining_weights.pop(index)
             out.append(record)
     return out
 

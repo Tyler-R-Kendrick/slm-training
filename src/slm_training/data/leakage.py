@@ -14,6 +14,7 @@ _PLACEHOLDER_RE = re.compile(r":[A-Za-z0-9_.]+")
 _BINDER_RE = re.compile(r"(?m)^([A-Za-z_][A-Za-z0-9_]*)(\s*=)")
 # Lowercase / snake idents (variable refs), not PascalCase components.
 _VAR_REF_RE = re.compile(r"\b([a-z_][A-Za-z0-9_]*)\b")
+_QUOTED_SPAN_RE = re.compile(r'"[^"]*"')
 
 
 def norm_text(value: str) -> str:
@@ -48,7 +49,7 @@ def normalize_openui_structure(openui: str) -> str:
 
     parts: list[str] = []
     last = 0
-    for quoted in re.finditer(r'"[^"]*"', text):
+    for quoted in _QUOTED_SPAN_RE.finditer(text):
         chunk = text[last : quoted.start()]
         parts.append(_VAR_REF_RE.sub(_var_sub, chunk))
         parts.append(quoted.group(0))

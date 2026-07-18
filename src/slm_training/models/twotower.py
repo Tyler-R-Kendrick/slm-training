@@ -3953,8 +3953,6 @@ class TwoTowerModel(nn.Module):
         _trajectory_id: int = 0,
         _disable_trajectory_fork: bool = False,
     ) -> torch.Tensor:
-        import copy
-
         from slm_training.dsl.grammar.fastpath.compiler_draft import (
             build_completion_forest,
         )
@@ -4243,7 +4241,7 @@ class TwoTowerModel(nn.Module):
                             for trajectory_id in range(width):
                                 branch_order = orders[trajectory_id % len(orders)]
                                 first = branch_order[0]
-                                branch_search = copy.deepcopy(search)
+                                branch_search = search.clone()
                                 branch_search.choose(
                                     prefix,
                                     type(ranked)(

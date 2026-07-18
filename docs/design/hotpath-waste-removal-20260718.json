@@ -36,5 +36,21 @@
     "no decode-latency speedup claim (no matched A/B perf-matrix run)",
     "no quality/ship-gate change",
     "no checkpoint created or promoted"
-  ]
+  ],
+  "wave2_changes": [
+    "lark_backend: bounded source-keyed Program cache on parse() mirroring the lang_core bridge cache; collapses repeated eval re-validations (and the encode_openui double validation) into cache hits on the in-process path",
+    "task_scoreboard: _Tree.size cached_property + lru_cache on the recursive tree-edit distance (exact values; verified on 61 differential cases)",
+    "lattice_search: LatticeSearchState.clone() container copy replaces per-trajectory deepcopy (SearchDecision/CompletionPath are frozen)",
+    "mixture: capacity-aware sampler keeps a parallel weight list popped in lockstep (bit-exact draws) instead of rebuilding O(n) weights per draw",
+    "slop_forensics: group universes hoisted out of the per-motif bootstrap (was O(motifs^2) per family; CI values verified identical)",
+    "rl/trajectory + preference/train: constant prompt context encoded once per trace/pair when the encoder is deterministic (train-mode dropout still re-encodes)",
+    "quality: component phrase list + compiled matchers cached once per process (was rebuilt and re-sorted 2x per record); duplicate component_counts hoisted",
+    "dedup: MinHash permutation coefficients cached by (seed, permutations) (128 redundant SHA-256 per record removed; signatures verified identical)",
+    "pipeline: programspec corpus loaded once and shared by the progspec and scope-corpus consumers (duplicate load-error reporting preserved)",
+    "scope_corpus: canonical alignment indexes hoisted out of the variant loop",
+    "trace_store: append() count cached under the documented append-only single-writer contract (was O(n^2) full-file recounts)",
+    "diagnostic: train records loaded once for tokenizer + counts/length checks",
+    "catalog/dedup: dropped dict copies on read-only meta paths; solver_supervision dead double sort; leakage quoted-span regex precompiled; train_loop float(loss) without extra .cpu(); store.resolve reuses computed fingerprints"
+  ],
+  "wave2_verification": "differential checks byte-identical for minhash signatures, component mentions/requirements, bootstrap CIs, tree-edit distances (61 cases), and cumulative eval-metric/mixture checks vs base; full pytest tree reproduces exactly the base commit's 9 pre-existing environment failures (1724 passed)"
 }

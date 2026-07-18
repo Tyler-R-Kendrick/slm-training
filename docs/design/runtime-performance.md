@@ -235,6 +235,21 @@ reproduces exactly the base commit's pre-existing environment failures and
 nothing else. No decode-latency claim is made (no matched perf-matrix A/B
 ran), and no quality gate, checkpoint, or ship claim changed.
 
+A second wave extended the sweep to the training harnesses (same evidence
+JSON): a bounded source-keyed Lark `Program` cache mirroring the lang_core
+bridge cache (collapses eval's repeated re-validations in-process), a memoized
+tree-edit distance and cached `_Tree.size`, a container-copy
+`LatticeSearchState.clone()` replacing per-trajectory `deepcopy`, lockstep
+weight lists in the capacity-aware sampler (bit-exact draws), an O(motifs²)→
+O(motifs) slop-forensics bootstrap, once-per-trace/pair prompt encoding in
+trajectory-RL and DPO (deterministic-encoder guard), process-cached component
+phrase matchers in the data judge, cached MinHash coefficients, a shared
+programspec load in the train-data pipeline, an O(n²)→O(n) trace-store append
+count, and assorted read-path cleanups. All verified by byte-identical
+differential checks (signatures, mentions, bootstrap CIs, tree distances) and
+an unchanged full-tree failure set; still no decode-latency, gate, or
+checkpoint claim.
+
 ### Local Qualcomm DirectML train (2026-07-14)
 
 [`local_directml_adreno_20260714`](local-directml-train-results.json) completed a real
