@@ -216,6 +216,8 @@ def test_whole_model_ledger_includes_unquantized_tensors() -> None:
     assert ledger.unquantized_bytes > 0
     # At least one binary tensor should appear.
     assert "binary" in ledger.formats
+    assert ledger.total() == sum(report.total_bytes for report in ledger.formats.values())
+    assert ledger.checkpoint_bytes == ledger.total() + ledger.alignment_overhead_bytes
     # Resident memory includes activations + KV + scratch.
     assert ledger.resident_bytes > ledger.total()
 

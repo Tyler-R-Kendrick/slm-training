@@ -149,7 +149,9 @@ class PhysicalCostLedger:
         self.formats[fmt_id].tensors.append(tensor_cost)
 
     def total(self) -> int:
-        return sum(f.total_bytes for f in self.formats.values()) + self.unquantized_bytes
+        # Every tensor, including policy-excluded FP16 tensors, is already
+        # present in ``formats``. ``unquantized_bytes`` is a diagnostic subset.
+        return sum(f.total_bytes for f in self.formats.values())
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -336,7 +338,8 @@ def build_model_ledger(
     ledger.scratch_bytes = ledger.total() // 8
     ledger.metadata_overhead_bytes = len(list(model.named_parameters())) * metadata_overhead_per_tensor
     ledger.alignment_overhead_bytes = alignment_bytes
-    ledger.checkpoint_bytes = ledger.total() + ledger.metadata_overhead_bytes + ledger.alignment_overhead_bytes
+    # Per-tensor metadata is already included in TensorCost.total_bytes.
+    ledger.checkpoint_bytes = ledger.total() + ledger.alignment_overhead_bytes
     ledger.resident_bytes = ledger.total() + ledger.activation_bytes + ledger.kv_bytes + ledger.scratch_bytes
     return ledger
 

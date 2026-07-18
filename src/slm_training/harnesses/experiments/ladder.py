@@ -8,6 +8,21 @@ from typing import Any, Literal, Mapping
 
 from slm_training.harnesses.model_build.config import ModelBuildConfig
 
+# CAP3-05: imports for synthetic-model byte estimation.
+import torch
+import torch.nn as nn
+
+from slm_training.models.quantization.cost import build_model_ledger
+from slm_training.models.quantization.formats import (
+    binary_format,
+    fp16_format,
+    int4_format,
+    int8_format,
+    learned_four_level_zero_format,
+    symmetric_four_level_format,
+    ternary_format,
+)
+
 # Output representations the trainer supports today. "choice" (the B1
 # choice-sequence codec, SLM-42) is a valid ladder axis for planning and
 # corpus-bit accounting, but training it requires twotower support for a
@@ -26,6 +41,15 @@ class LadderPoint:
     horizon_multiplier: float = 1.0
     # Output representation (B3 axis): compositional | lexer | choice.
     representation: str = "compositional"
+    # CAP3-05 equal-byte / precision metadata (all optional; default keeps legacy
+    # ladder points unchanged).
+    byte_budget: int | None = None
+    precision_format: str | None = None
+    actual_bytes: int | None = None
+    budget_delta: float | None = None
+    status: str = "feasible"
+    matching_regime: str | None = None
+    training_status: str | None = None
 
     @property
     def point_id(self) -> str:
@@ -33,9 +57,13 @@ class LadderPoint:
             f"d{self.d_model}_h{self.n_heads}_c{self.context_layers}_"
             f"dn{self.denoiser_layers}_t{self.target_token_budget}_x{self.horizon_multiplier:g}"
         )
-        # Default keeps legacy ids stable; the axis shows up only when used.
+        # Default keeps legacy ids stable; axes show up only when used.
         if self.representation != "compositional":
-            return f"{base}_r{self.representation}"
+            base = f"{base}_r{self.representation}"
+        if self.byte_budget is not None:
+            base = f"{base}_b{self.byte_budget}"
+        if self.precision_format:
+            base = f"{base}_p{self.precision_format}"
         return base
 
 
@@ -299,6 +327,234 @@ def model_build_config_for_point(
         "parallel_unmask": str(decode.get("parallel_unmask", "adaptive")),
         "loss_eval_every": max(1, steps // 10),
     }
+    if point.precision_format not in (None, "fp16", "bf16"):
+        if point.training_status != "native_or_qat":
+            raise ValueError(
+                f"{point.precision_format} is {point.training_status or 'unsupported'}; "
+                "equal-byte training requires a native/QAT implementation"
+            )
+        kwargs["quant_format"] = point.precision_format
+    if point.byte_budget is not None:
+        kwargs["byte_budget"] = point.byte_budget
     if extra:
         kwargs.update(dict(extra))
     return ModelBuildConfig(**kwargs)
+
+
+#: CLI-friendly aliases -> canonical format factories used by CAP3-05.
+_FORMAT_FACTORIES: dict[str, Any] = {
+    "fp16": fp16_format,
+    "int8": int8_format,
+    "int4": int4_format,
+    "binary": binary_format,
+    "ternary": ternary_format,
+    "learned4zero": learned_four_level_zero_format,
+    "learned_four_level_zero": learned_four_level_zero_format,
+    "symmetric4": symmetric_four_level_format,
+    "symmetric_four_level": symmetric_four_level_format,
+}
+
+
+def _format_factory(format_id: str, group_size: int = 128) -> Any:
+    """Return a ``QuantFormat`` for a CLI alias."""
+    factory = _FORMAT_FACTORIES.get(format_id)
+    if factory is None:
+        raise ValueError(
+            f"unknown precision format {format_id!r}; "
+            f"supported: {sorted(_FORMAT_FACTORIES)}"
+        )
+    return factory(group_size=group_size)
+
+
+class _SyntheticBlock(nn.Module):
+    """Minimal transformer-like block for byte estimation."""
+
+    def __init__(self, d_model: int, ffn_mult: int = 4) -> None:
+        super().__init__()
+        self.attn = nn.Linear(d_model, d_model, bias=True)
+        self.mlp = nn.Linear(d_model, d_model * ffn_mult, bias=True)
+        self.mlp_out = nn.Linear(d_model * ffn_mult, d_model, bias=True)
+        self.norm = nn.LayerNorm(d_model)
+
+
+class _SyntheticTwoTower(nn.Module):
+    """Deterministic synthetic model whose named parameters match CAP3-04 groups.
+
+    The names intentionally contain the substrings used by the default grouping
+    policy and the CAP3-01 ledger's auto-exclusion heuristics (``embed``,
+    ``norm``, ``bias``).  It is *not* a real TwoTower; it is a byte-estimation
+    surrogate used only for planning.
+    """
+
+    def __init__(
+        self,
+        d_model: int,
+        n_heads: int,
+        context_layers: int,
+        denoiser_layers: int,
+        ffn_mult: int = 4,
+    ) -> None:
+        super().__init__()
+        self.semantic_input = nn.Linear(d_model, d_model, bias=True)
+        self.input_projection = nn.Linear(d_model, d_model, bias=True)
+        self.context_encoder = nn.ModuleList(
+            [_SyntheticBlock(d_model, ffn_mult=ffn_mult) for _ in range(context_layers)]
+        )
+        self.denoiser = nn.ModuleList(
+            [_SyntheticBlock(d_model, ffn_mult=ffn_mult) for _ in range(denoiser_layers)]
+        )
+        self.latent_projection = nn.Linear(d_model, d_model, bias=True)
+        self.local_head = nn.ModuleDict({"scorer": nn.Linear(d_model, 8, bias=True)})
+        # Embeddings are auto-excluded from quantization by the ledger.
+        self.action_embeddings = nn.Parameter(torch.randn(8, d_model))
+
+
+def estimate_bytes(
+    d_model: int,
+    n_heads: int,
+    context_layers: int,
+    denoiser_layers: int,
+    format_id: str,
+    *,
+    group_size: int = 128,
+    ffn_mult: int = 4,
+) -> int:
+    """Return modeled whole-model bytes for a config/format using the CAP3-01 ledger."""
+    model = _SyntheticTwoTower(
+        d_model=d_model,
+        n_heads=n_heads,
+        context_layers=context_layers,
+        denoiser_layers=denoiser_layers,
+        ffn_mult=ffn_mult,
+    )
+    fmt = _format_factory(format_id, group_size=group_size)
+    ledger = build_model_ledger(
+        model,
+        format_map={},
+        default_format=fmt,
+        d_model=d_model,
+    )
+    return ledger.checkpoint_bytes
+
+
+def plan_equal_byte_ladder(
+    byte_budgets: tuple[int, ...],
+    formats: tuple[str, ...],
+    *,
+    widths: tuple[int, ...] = (32, 64, 96, 128, 192),
+    horizons: tuple[float, ...] = (1.0,),
+    depth_policy: str = "proportional",
+    head_policy: str = "proportional",
+    base_token_budget: int = 50_000,
+    group_size: int = 128,
+    tolerance: float = 0.03,
+    representation: str = "compositional",
+    ffn_mult: int = 4,
+) -> tuple[ScalingLadder, ...]:
+    """Plan a width × precision ladder where every point targets the same byte budget.
+
+    For each ``(byte_budget, format)`` pair the planner searches ``widths`` and
+    ``horizons`` and selects the candidate whose modeled whole-model bytes are
+    closest to ``byte_budget`` within ``tolerance``.  Formats that cannot fit the
+    budget are marked ``infeasible`` but still emitted so the manifest records
+    the failure explicitly.
+
+    Bytes are *modeled* via ``estimate_bytes`` (a synthetic TwoTower-like module
+    + ``build_model_ledger``), not measured on a deployed device.
+    """
+    if not byte_budgets or any(budget <= 0 for budget in byte_budgets):
+        raise ValueError("byte_budgets must contain positive values")
+    if not widths or any(width <= 0 for width in widths):
+        raise ValueError("widths must contain positive values")
+    if not horizons or any(horizon <= 0 for horizon in horizons):
+        raise ValueError("horizons must contain positive values")
+    if tolerance < 0:
+        raise ValueError("tolerance must be non-negative")
+
+    ladders: list[ScalingLadder] = []
+
+    for budget in byte_budgets:
+        for fmt_id in formats:
+            points: list[LadderPoint] = []
+            ref = 128
+            candidates: list[tuple[int, int, int, int, int, float, int, float]] = []
+            for d in widths:
+                if head_policy == "proportional":
+                    n_heads, ctx, den = proportional_depths(d)
+                else:
+                    n_heads, ctx, den = max(2, d // 32), 2, 4
+                if depth_policy == "fixed":
+                    ctx = max(1, widths[0] // 64) if widths else 1
+                    den = max(2, widths[0] // 32) if widths else 2
+                scale = (d / ref) ** 2
+                token_budget = max(1_000, int(base_token_budget * scale))
+                for h in horizons:
+                    actual = estimate_bytes(
+                        d,
+                        n_heads,
+                        ctx,
+                        den,
+                        fmt_id,
+                        group_size=group_size,
+                        ffn_mult=ffn_mult,
+                    )
+                    delta = (actual - budget) / budget if budget else 0.0
+                    candidates.append(
+                        (d, n_heads, ctx, den, token_budget, h, actual, delta)
+                    )
+
+            feasible = [c for c in candidates if abs(c[7]) <= tolerance]
+            if feasible:
+                chosen = min(feasible, key=lambda c: abs(c[7]))
+                status = "feasible"
+            else:
+                under = [c for c in candidates if c[6] <= budget]
+                if under:
+                    chosen = max(under, key=lambda c: c[6])
+                    status = "infeasible"
+                else:
+                    # No configuration fits; record the smallest width as infeasible
+                    # so the failure is visible in the manifest.
+                    chosen = candidates[0]
+                    status = "infeasible"
+
+            d, n_heads, ctx, den, token_budget, h, actual, delta = chosen
+            points.append(
+                LadderPoint(
+                    d_model=d,
+                    n_heads=n_heads,
+                    context_layers=ctx,
+                    denoiser_layers=den,
+                    target_token_budget=max(1_000, int(token_budget * h)),
+                    horizon_multiplier=h,
+                    representation=representation,
+                    byte_budget=budget,
+                    precision_format=fmt_id,
+                    actual_bytes=actual,
+                    budget_delta=delta,
+                    status=status,
+                    matching_regime="equal_static_bytes",
+                    training_status=(
+                        "native_or_qat"
+                        if fmt_id in ("fp16", "bf16")
+                        else "post_training_reference"
+                    ),
+                )
+            )
+
+            ladders.append(
+                ScalingLadder(
+                    ladder_id=f"equal_byte_{budget}_{fmt_id}_v1",
+                    track="scratch",
+                    points=tuple(points),
+                    token_horizons=horizons,
+                    decode_frozen={
+                        "gen_steps": 8,
+                        "best_of_n": 1,
+                        "grammar_constrained": True,
+                        "parallel_unmask": "adaptive",
+                    },
+                )
+            )
+
+    return tuple(ladders)

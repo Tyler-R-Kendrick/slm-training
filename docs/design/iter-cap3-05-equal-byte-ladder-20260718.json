@@ -1,0 +1,318 @@
+{
+  "run_id": "cap3-05-equal-byte",
+  "family": "equal-byte-precision",
+  "status": "plan_only",
+  "claim_class": "diagnostic",
+  "timestamp": "2026-07-18T23:09:04.008937+00:00",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "7037b3c21be2a49a99697b0857573fdecb0e68bc",
+    "code_dirty": false,
+    "components": {
+      "harness.experiments": "v2"
+    },
+    "stamped_at": "2026-07-18T23:09:04.019460+00:00"
+  },
+  "byte_budgets": [
+    65536,
+    262144,
+    1048576
+  ],
+  "precision_formats": [
+    "fp16",
+    "int8",
+    "int4",
+    "ternary"
+  ],
+  "widths": [
+    32,
+    64,
+    96,
+    128,
+    192
+  ],
+  "horizons": [
+    1.0
+  ],
+  "tolerance": 0.05,
+  "group_size": 128,
+  "n_ladders": 12,
+  "ladders": [
+    {
+      "ladder_id": "equal_byte_65536_fp16_v1",
+      "track": "scratch",
+      "points": [
+        {
+          "point_id": "d32_h2_c1_dn2_t1000_x1_b65536_pfp16",
+          "d_model": 32,
+          "n_heads": 2,
+          "context_layers": 1,
+          "denoiser_layers": 2,
+          "target_token_budget": 1000,
+          "horizon_multiplier": 1.0,
+          "representation": "compositional",
+          "byte_budget": 65536,
+          "precision_format": "fp16",
+          "actual_bytes": 68048,
+          "budget_delta": 0.038330078125,
+          "status": "feasible",
+          "matching_regime": "equal_static_bytes",
+          "training_status": "native_or_qat"
+        }
+      ]
+    },
+    {
+      "ladder_id": "equal_byte_65536_int8_v1",
+      "track": "scratch",
+      "points": [
+        {
+          "point_id": "d32_h2_c1_dn2_t1000_x1_b65536_pint8",
+          "d_model": 32,
+          "n_heads": 2,
+          "context_layers": 1,
+          "denoiser_layers": 2,
+          "target_token_budget": 1000,
+          "horizon_multiplier": 1.0,
+          "representation": "compositional",
+          "byte_budget": 65536,
+          "precision_format": "int8",
+          "actual_bytes": 37556,
+          "budget_delta": -0.42694091796875,
+          "status": "infeasible",
+          "matching_regime": "equal_static_bytes",
+          "training_status": "post_training_reference"
+        }
+      ]
+    },
+    {
+      "ladder_id": "equal_byte_65536_int4_v1",
+      "track": "scratch",
+      "points": [
+        {
+          "point_id": "d32_h2_c1_dn2_t1000_x1_b65536_pint4",
+          "d_model": 32,
+          "n_heads": 2,
+          "context_layers": 1,
+          "denoiser_layers": 2,
+          "target_token_budget": 1000,
+          "horizon_multiplier": 1.0,
+          "representation": "compositional",
+          "byte_budget": 65536,
+          "precision_format": "int4",
+          "actual_bytes": 22068,
+          "budget_delta": -0.66326904296875,
+          "status": "infeasible",
+          "matching_regime": "equal_static_bytes",
+          "training_status": "post_training_reference"
+        }
+      ]
+    },
+    {
+      "ladder_id": "equal_byte_65536_ternary_v1",
+      "track": "scratch",
+      "points": [
+        {
+          "point_id": "d64_h2_c1_dn2_t1000_x1_b65536_pternary",
+          "d_model": 64,
+          "n_heads": 2,
+          "context_layers": 1,
+          "denoiser_layers": 2,
+          "target_token_budget": 1000,
+          "horizon_multiplier": 1.0,
+          "representation": "compositional",
+          "byte_budget": 65536,
+          "precision_format": "ternary",
+          "actual_bytes": 43800,
+          "budget_delta": -0.3316650390625,
+          "status": "infeasible",
+          "matching_regime": "equal_static_bytes",
+          "training_status": "post_training_reference"
+        }
+      ]
+    },
+    {
+      "ladder_id": "equal_byte_262144_fp16_v1",
+      "track": "scratch",
+      "points": [
+        {
+          "point_id": "d64_h2_c1_dn2_t1000_x1_b262144_pfp16",
+          "d_model": 64,
+          "n_heads": 2,
+          "context_layers": 1,
+          "denoiser_layers": 2,
+          "target_token_budget": 1000,
+          "horizon_multiplier": 1.0,
+          "representation": "compositional",
+          "byte_budget": 262144,
+          "precision_format": "fp16",
+          "actual_bytes": 257808,
+          "budget_delta": -0.01654052734375,
+          "status": "feasible",
+          "matching_regime": "equal_static_bytes",
+          "training_status": "native_or_qat"
+        }
+      ]
+    },
+    {
+      "ladder_id": "equal_byte_262144_int8_v1",
+      "track": "scratch",
+      "points": [
+        {
+          "point_id": "d64_h2_c1_dn2_t1000_x1_b262144_pint8",
+          "d_model": 64,
+          "n_heads": 2,
+          "context_layers": 1,
+          "denoiser_layers": 2,
+          "target_token_budget": 1000,
+          "horizon_multiplier": 1.0,
+          "representation": "compositional",
+          "byte_budget": 262144,
+          "precision_format": "int8",
+          "actual_bytes": 136344,
+          "budget_delta": -0.479888916015625,
+          "status": "infeasible",
+          "matching_regime": "equal_static_bytes",
+          "training_status": "post_training_reference"
+        }
+      ]
+    },
+    {
+      "ladder_id": "equal_byte_262144_int4_v1",
+      "track": "scratch",
+      "points": [
+        {
+          "point_id": "d96_h3_c1_dn3_t1125_x1_b262144_pint4",
+          "d_model": 96,
+          "n_heads": 3,
+          "context_layers": 1,
+          "denoiser_layers": 3,
+          "target_token_budget": 1125,
+          "horizon_multiplier": 1.0,
+          "representation": "compositional",
+          "byte_budget": 262144,
+          "precision_format": "int4",
+          "actual_bytes": 205772,
+          "budget_delta": -0.2150421142578125,
+          "status": "infeasible",
+          "matching_regime": "equal_static_bytes",
+          "training_status": "post_training_reference"
+        }
+      ]
+    },
+    {
+      "ladder_id": "equal_byte_262144_ternary_v1",
+      "track": "scratch",
+      "points": [
+        {
+          "point_id": "d96_h3_c1_dn3_t1125_x1_b262144_pternary",
+          "d_model": 96,
+          "n_heads": 3,
+          "context_layers": 1,
+          "denoiser_layers": 3,
+          "target_token_budget": 1125,
+          "horizon_multiplier": 1.0,
+          "representation": "compositional",
+          "byte_budget": 262144,
+          "precision_format": "ternary",
+          "actual_bytes": 115724,
+          "budget_delta": -0.5585479736328125,
+          "status": "infeasible",
+          "matching_regime": "equal_static_bytes",
+          "training_status": "post_training_reference"
+        }
+      ]
+    },
+    {
+      "ladder_id": "equal_byte_1048576_fp16_v1",
+      "track": "scratch",
+      "points": [
+        {
+          "point_id": "d96_h3_c1_dn3_t1125_x1_b1048576_pfp16",
+          "d_model": 96,
+          "n_heads": 3,
+          "context_layers": 1,
+          "denoiser_layers": 3,
+          "target_token_budget": 1125,
+          "horizon_multiplier": 1.0,
+          "representation": "compositional",
+          "byte_budget": 1048576,
+          "precision_format": "fp16",
+          "actual_bytes": 740432,
+          "budget_delta": -0.2938690185546875,
+          "status": "infeasible",
+          "matching_regime": "equal_static_bytes",
+          "training_status": "native_or_qat"
+        }
+      ]
+    },
+    {
+      "ladder_id": "equal_byte_1048576_int8_v1",
+      "track": "scratch",
+      "points": [
+        {
+          "point_id": "d128_h4_c2_dn4_t2000_x1_b1048576_pint8",
+          "d_model": 128,
+          "n_heads": 4,
+          "context_layers": 2,
+          "denoiser_layers": 4,
+          "target_token_budget": 2000,
+          "horizon_multiplier": 1.0,
+          "representation": "compositional",
+          "byte_budget": 1048576,
+          "precision_format": "int8",
+          "actual_bytes": 986528,
+          "budget_delta": -0.059173583984375,
+          "status": "infeasible",
+          "matching_regime": "equal_static_bytes",
+          "training_status": "post_training_reference"
+        }
+      ]
+    },
+    {
+      "ladder_id": "equal_byte_1048576_int4_v1",
+      "track": "scratch",
+      "points": [
+        {
+          "point_id": "d128_h4_c2_dn4_t2000_x1_b1048576_pint4",
+          "d_model": 128,
+          "n_heads": 4,
+          "context_layers": 2,
+          "denoiser_layers": 4,
+          "target_token_budget": 2000,
+          "horizon_multiplier": 1.0,
+          "representation": "compositional",
+          "byte_budget": 1048576,
+          "precision_format": "int4",
+          "actual_bytes": 519072,
+          "budget_delta": -0.504974365234375,
+          "status": "infeasible",
+          "matching_regime": "equal_static_bytes",
+          "training_status": "post_training_reference"
+        }
+      ]
+    },
+    {
+      "ladder_id": "equal_byte_1048576_ternary_v1",
+      "track": "scratch",
+      "points": [
+        {
+          "point_id": "d192_h6_c3_dn6_t4500_x1_b1048576_pternary",
+          "d_model": 192,
+          "n_heads": 6,
+          "context_layers": 3,
+          "denoiser_layers": 6,
+          "target_token_budget": 4500,
+          "horizon_multiplier": 1.0,
+          "representation": "compositional",
+          "byte_budget": 1048576,
+          "precision_format": "ternary",
+          "actual_bytes": 901288,
+          "budget_delta": -0.14046478271484375,
+          "status": "infeasible",
+          "matching_regime": "equal_static_bytes",
+          "training_status": "post_training_reference"
+        }
+      ]
+    }
+  ]
+}

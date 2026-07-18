@@ -275,6 +275,8 @@ class ModelBuildConfig:
     grammar_canvas_lookahead: int = 0
     use_dynamic_quant: bool = False
     quant_format: str | None = None  # CAP3-01: disabled-by-default reference quantizer
+    # CAP3-05: optional target byte budget for equal-byte ladder points.
+    byte_budget: int | None = None
     generate_max_attempts: int = 3
     # Diagnostic per-record generation timeout; None/0 preserves unlimited eval.
     decode_timeout_seconds: float | None = None

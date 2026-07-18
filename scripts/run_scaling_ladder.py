@@ -7,6 +7,7 @@ import argparse
 import json
 import signal
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -17,17 +18,44 @@ def _wall_minutes(value: str) -> float:
     return minutes
 
 
+def _parse_byte_budgets(value: str) -> tuple[int, ...]:
+    """Parse '2MB,512KB,1024' into byte counts."""
+    result: list[int] = []
+    for token in value.split(","):
+        token = token.strip().upper()
+        if not token:
+            continue
+        if token.endswith("GB"):
+            result.append(int(float(token[:-2]) * 1024**3))
+        elif token.endswith("MB"):
+            result.append(int(float(token[:-2]) * 1024**2))
+        elif token.endswith("KB"):
+            result.append(int(float(token[:-2]) * 1024))
+        else:
+            result.append(int(token))
+    return tuple(result)
+
+
+def _parse_formats(value: str) -> tuple[str, ...]:
+    return tuple(x.strip() for x in value.split(",") if x.strip())
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--family",
-        choices=("scaling", "discrete-bottleneck"),
+        choices=("scaling", "discrete-bottleneck", "equal-byte-precision"),
         default="scaling",
         help="Experiment family to run (default: scaling).",
     )
     parser.add_argument("--train-dir", type=Path, help="Required for scaling family.")
     parser.add_argument("--test-dir", type=Path, help="Required for scaling family.")
     parser.add_argument("--out", type=Path, default=Path("outputs/ladders"))
+    parser.add_argument(
+        "--docs-out",
+        type=Path,
+        help="Optional version-stamped docs/design JSON mirror.",
+    )
     parser.add_argument("--track", choices=("scratch", "hf"), default="scratch")
     parser.add_argument("--seeds", default="0", help="Comma-separated seeds.")
     parser.add_argument("--device", default="cpu")
@@ -80,6 +108,36 @@ def main(argv: list[str] | None = None) -> int:
         default="",
         help="Comma-separated CAP2 arm ids (default: full fixture matrix).",
     )
+    # CAP3-05 equal-byte-precision family options.
+    parser.add_argument(
+        "--byte-budgets",
+        default="",
+        help="Comma-separated byte budgets for equal-byte-precision (e.g. 2MB,512KB).",
+    )
+    parser.add_argument(
+        "--precision-formats",
+        "--formats",
+        dest="precision_formats",
+        default="fp16,int8,int4,ternary,binary,learned4zero",
+        help="Comma-separated precision format aliases for equal-byte-precision.",
+    )
+    parser.add_argument(
+        "--plan-only",
+        action="store_true",
+        help="CAP3-05: generate the equal-byte manifest without training.",
+    )
+    parser.add_argument(
+        "--tolerance",
+        type=float,
+        default=0.03,
+        help="CAP3-05: budget-matching tolerance (default: 0.03).",
+    )
+    parser.add_argument(
+        "--group-size",
+        type=int,
+        default=128,
+        help="CAP3-05: quantization group size for byte modeling (default: 128).",
+    )
     args = parser.parse_args(argv)
 
     if args.family == "discrete-bottleneck":
@@ -98,6 +156,95 @@ def main(argv: list[str] | None = None) -> int:
         if args.arms.strip():
             cap2_argv.extend(["--arms", args.arms])
         return cap2_main(cap2_argv)
+
+    if args.family == "equal-byte-precision":
+        from slm_training.harnesses.experiments.ladder import plan_equal_byte_ladder
+        from slm_training.versioning import build_version_stamp
+
+        if not args.byte_budgets.strip():
+            parser.error("--byte-budgets is required for the equal-byte-precision family")
+        if not args.plan_only:
+            parser.error(
+                "equal-byte low-bit training is not implemented; use --plan-only"
+            )
+
+        byte_budgets = _parse_byte_budgets(args.byte_budgets)
+        formats = _parse_formats(args.precision_formats)
+        widths = tuple(int(x) for x in args.widths.split(",") if x.strip())
+        horizons = tuple(float(x) for x in args.horizons.split(",") if x.strip())
+        ladders = plan_equal_byte_ladder(
+            byte_budgets=byte_budgets,
+            formats=formats,
+            widths=widths,
+            horizons=horizons,
+            base_token_budget=args.base_token_budget,
+            group_size=args.group_size,
+            tolerance=args.tolerance,
+            representation=args.representation,
+        )
+
+        out = Path(args.out)
+        out.mkdir(parents=True, exist_ok=True)
+        manifest = {
+            "run_id": out.name,
+            "family": "equal-byte-precision",
+            "status": "plan_only",
+            "claim_class": "diagnostic",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "version_stamp": build_version_stamp("harness.experiments"),
+            "byte_budgets": byte_budgets,
+            "precision_formats": formats,
+            "widths": widths,
+            "horizons": horizons,
+            "tolerance": args.tolerance,
+            "group_size": args.group_size,
+            "n_ladders": len(ladders),
+            "ladders": [
+                {
+                    "ladder_id": lad.ladder_id,
+                    "track": lad.track,
+                    "points": [
+                        {
+                            "point_id": p.point_id,
+                            "d_model": p.d_model,
+                            "n_heads": p.n_heads,
+                            "context_layers": p.context_layers,
+                            "denoiser_layers": p.denoiser_layers,
+                            "target_token_budget": p.target_token_budget,
+                            "horizon_multiplier": p.horizon_multiplier,
+                            "representation": p.representation,
+                            "byte_budget": p.byte_budget,
+                            "precision_format": p.precision_format,
+                            "actual_bytes": p.actual_bytes,
+                            "budget_delta": p.budget_delta,
+                            "status": p.status,
+                            "matching_regime": p.matching_regime,
+                            "training_status": p.training_status,
+                        }
+                        for p in lad.points
+                    ],
+                }
+                for lad in ladders
+            ],
+        }
+        manifest_path = out / f"equal_byte_plan_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}.json"
+        payload = json.dumps(manifest, indent=2) + "\n"
+        manifest_path.write_text(payload, encoding="utf-8")
+        if args.docs_out is not None:
+            args.docs_out.parent.mkdir(parents=True, exist_ok=True)
+            args.docs_out.write_text(payload, encoding="utf-8")
+        print(
+            json.dumps(
+                {
+                    "out": str(out),
+                    "manifest": str(manifest_path),
+                    "docs_out": str(args.docs_out) if args.docs_out else None,
+                    "n_ladders": len(ladders),
+                },
+                indent=2,
+            )
+        )
+        return 0
 
     if args.train_dir is None or args.test_dir is None:
         parser.error("--train-dir and --test-dir are required for the scaling family")
