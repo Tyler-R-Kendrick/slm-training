@@ -8,6 +8,7 @@ as not_authorized.
 from __future__ import annotations
 
 import json
+from types import SimpleNamespace
 
 import pytest
 
@@ -16,8 +17,15 @@ from slm_training.harnesses.preference.decision_diagnostics import (
     DiagnosticBudget,
     not_authorized_report,
     run_bounded_stages,
+    tier1_objective_geometry,
+    tier2_subspace_gradients,
     write_diagnostic_report,
 )
+
+
+def _view(good: tuple[int, ...], bad: tuple[int, ...]) -> SimpleNamespace:
+    """A getattr-compatible stand-in for ObjectiveView (good/bad action ids)."""
+    return SimpleNamespace(good_action_ids=tuple(good), bad_action_ids=tuple(bad))
 
 
 class _FakeClock:
@@ -72,3 +80,50 @@ def test_report_write_is_atomic(tmp_path) -> None:
     path = tmp_path / "diag.json"
     write_diagnostic_report(path, {"status": "expired", "result": None})
     assert json.loads(path.read_text())["result"] is None
+
+
+def test_tier1_objective_geometry_flags_contradiction(monkeypatch) -> None:
+    monkeypatch.setattr(dd.time, "monotonic", _FakeClock([0.0]))
+    # One state, two views: action 4 is good in the first view but bad in the second.
+    per_state = [[_view((4,), (9,)), _view((5,), (4,))]]
+    report = tier1_objective_geometry(per_state)
+    assert report["status"] == "completed"
+    geometry = report["result"]["objective_geometry"]
+    assert geometry["states"] == 1
+    assert geometry["objective_contradictions"] == 1
+    assert geometry["mean_good_set_overlap"] == 0.0
+
+
+def test_tier1_objective_geometry_agrees_when_views_match(monkeypatch) -> None:
+    monkeypatch.setattr(dd.time, "monotonic", _FakeClock([0.0]))
+    per_state = [[_view((4,), (9,)), _view((4,), (9,))]]
+    geometry = tier1_objective_geometry(per_state)["result"]["objective_geometry"]
+    assert geometry["objective_contradictions"] == 0
+    assert geometry["mean_good_set_overlap"] == 1.0
+
+
+def test_tier1_objective_geometry_respects_deadline(monkeypatch) -> None:
+    # start=0 -> deadline=300s; the next read is 500 -> expired before the stage runs.
+    monkeypatch.setattr(dd.time, "monotonic", _FakeClock([0.0, 500.0]))
+    report = tier1_objective_geometry([[_view((4,), (9,))]])
+    assert report["status"] == "expired"
+    assert report["result"] is None
+
+
+def test_tier2_refuses_full_parameter_request() -> None:
+    for subset in (None, []):
+        report = tier2_subspace_gradients(trainable_parameter_subset=subset)
+        assert report["status"] == "not_authorized"
+        assert report["result"] is None
+        assert "adapter subset" in report["reason"]
+
+
+def test_tier2_plans_over_explicit_subset(monkeypatch) -> None:
+    monkeypatch.setattr(dd.time, "monotonic", _FakeClock([0.0]))
+    report = tier2_subspace_gradients(
+        trainable_parameter_subset=["adapter.0.weight", "adapter.0.bias"]
+    )
+    assert report["status"] == "completed"
+    plan = report["result"]["subspace_plan"]
+    assert plan["parameter_subset_size"] == 2
+    assert plan["gradients"] == "deferred_to_model_stage"

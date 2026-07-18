@@ -36,6 +36,8 @@ __all__ = [
     "DiagnosticBudget",
     "not_authorized_report",
     "run_bounded_stages",
+    "tier1_objective_geometry",
+    "tier2_subspace_gradients",
     "write_diagnostic_report",
 ]
 
@@ -149,3 +151,85 @@ def write_diagnostic_report(path: Path | str, report: dict[str, Any]) -> None:
         os.replace(tmp, path)
     finally:
         tmp.unlink(missing_ok=True)
+
+
+def tier1_objective_geometry(
+    per_state_views: Sequence[Sequence[Any]],
+    *,
+    budget: DiagnosticBudget | None = None,
+) -> dict[str, Any]:
+    """Read-only objective geometry over already-materialized objective views.
+
+    ``per_state_views[i]`` is the sequence of ``ObjectiveView`` objects for one state
+    (one view per materializer / objective). The pass runs inside the bounded runner,
+    so it obeys the same cumulative deadline as every other diagnostic stage. It reads
+    ``good_action_ids`` / ``bad_action_ids`` off each view (via ``getattr`` so it stays
+    decoupled from ``decision_events_v2``) and reports, per corpus:
+
+    - ``objective_contradictions`` — states where some action is scored *good* by one
+      view and *bad* by another. A contradiction means the objective is not well-posed
+      on that state; it is the logit-space shadow of the E284 objective conflict.
+    - ``mean_good_set_overlap`` — mean pairwise Jaccard of the per-state good-action
+      sets, a coarse measure of how much the views agree on what is preferred
+      (``None`` when no state carries two or more views).
+
+    This computes no gradient, trains nothing, writes no model, and makes no
+    model-quality claim — it is geometry over inputs the caller already materialized.
+    """
+
+    def _analyze() -> dict[str, Any]:
+        contradictions = 0
+        overlaps: list[float] = []
+        for views in per_state_views:
+            good_sets = [set(getattr(view, "good_action_ids", ())) for view in views]
+            bad_sets = [set(getattr(view, "bad_action_ids", ())) for view in views]
+            good_union: set[int] = set().union(*good_sets) if good_sets else set()
+            bad_union: set[int] = set().union(*bad_sets) if bad_sets else set()
+            if good_union & bad_union:
+                contradictions += 1
+            for i in range(len(good_sets)):
+                for j in range(i + 1, len(good_sets)):
+                    left, right = good_sets[i], good_sets[j]
+                    union = left | right
+                    overlaps.append(len(left & right) / len(union) if union else 1.0)
+        return {
+            "states": len(per_state_views),
+            "objective_contradictions": contradictions,
+            "mean_good_set_overlap": (
+                sum(overlaps) / len(overlaps) if overlaps else None
+            ),
+        }
+
+    return run_bounded_stages([("objective_geometry", _analyze)], budget=budget)
+
+
+def tier2_subspace_gradients(
+    *,
+    trainable_parameter_subset: Sequence[str] | None,
+    budget: DiagnosticBudget | None = None,
+) -> dict[str, Any]:
+    """Tier-2 adapter-subspace gradient interface (refuses full-parameter).
+
+    A Tier-2 gradient pass is authorized only over an explicit trainable-parameter
+    subset (named adapter tensors). An empty or ``None`` subset is a full-parameter
+    request, refused as ``not_authorized`` rather than replaying the invalid E285
+    full-parameter profile that blew the runtime envelope. When a subset is supplied
+    the runner records a bounded *plan* only — the gradient computation is deferred to
+    a model stage this module never runs, so no gradient is computed and no model is
+    written here.
+    """
+    subset = tuple(trainable_parameter_subset or ())
+    if not subset:
+        return not_authorized_report(
+            "full-parameter Tier-2 is not authorized; provide an explicit adapter subset",
+            budget=budget,
+        )
+
+    def _plan() -> dict[str, Any]:
+        return {
+            "parameter_subset_size": len(subset),
+            "parameter_subset": list(subset),
+            "gradients": "deferred_to_model_stage",
+        }
+
+    return run_bounded_stages([("subspace_plan", _plan)], budget=budget)
