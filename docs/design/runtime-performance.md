@@ -208,6 +208,33 @@ are the only path that skips neural inference entirely. See the C-series in
 opt-in because the current committed checkpoint cannot provide a valid quality
 anchor.
 
+### Hot-path waste removal (2026-07-18)
+
+A repo-wide audit removed redundant per-call work without changing any
+output ([evidence JSON](hotpath-waste-removal-20260718.json)): eval metrics
+re-derived placeholder sets/style-stripped text up to 7× per record (and
+computed `tree_edit_similarity` twice — it is an alias of
+`structural_similarity`); the hybrid grammar backend re-ran
+`shutil.which("node")` and the Lark backend re-read the grammar file per
+constrained pick; lattice trajectory decode used O(n²) `paths.index()` score
+lookups; the task-weighted mixture sampler re-sorted family pools on every
+draw; the anti-gaming duplicate-subtree check re-serialized every subtree
+(O(n²) → one bottom-up hash pass); grammar-diffusion eval deep-copied the
+codec vocab per record and topology decode issued ~6 per-node `.item()`
+device syncs per phase; and the dashboard re-parsed all committed
+`docs/design/iter-*.json` (260 files, ~1.7 MB) three to four times per
+15-second `/api/overview` poll.
+
+Measured: `/api/overview` mean 113 ms → 32 ms (**3.6×**) with a
+byte-identical payload; scoreboard/model-card caches invalidate by
+`(mtime_ns, size)` stat fingerprints, verified fresh under file add,
+in-place modify, and delete. Eval metrics, mixture draw sequences,
+fingerprint partitions, and codec accuracy metrics were verified
+byte-identical against the previous implementations; the full pytest tree
+reproduces exactly the base commit's pre-existing environment failures and
+nothing else. No decode-latency claim is made (no matched perf-matrix A/B
+ran), and no quality gate, checkpoint, or ship claim changed.
+
 ### Local Qualcomm DirectML train (2026-07-14)
 
 [`local_directml_adreno_20260714`](local-directml-train-results.json) completed a real
