@@ -1,0 +1,127 @@
+{
+  "fixture": {
+    "legal": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "view": {
+      "ambiguous_action_ids": [
+        4
+      ],
+      "bad_action_ids": [
+        2,
+        3
+      ],
+      "good_action_ids": [
+        0,
+        1
+      ],
+      "materializer_config_hash": "frozen",
+      "materializer_id": "fixture",
+      "trainable": true,
+      "unobserved_action_ids": [],
+      "version": 2,
+      "weights": [
+        [
+          0,
+          1.0
+        ],
+        [
+          1,
+          0.5
+        ],
+        [
+          2,
+          1.0
+        ],
+        [
+          3,
+          1.0
+        ]
+      ]
+    }
+  },
+  "note": "Adapted objectives (not reproduced / not SOTA). No model update; no quality claim.",
+  "objectives": {
+    "legal_set_ftpo_mass": {
+      "config_fingerprint": "0290bb1589f31af1",
+      "loss": 0.554355263710022,
+      "metrics": {
+        "bad_legal_mass": 0.32380059361457825,
+        "config_fingerprint_present": 1.0,
+        "good_legal_mass": 0.4370850920677185,
+        "legal_entropy": 1.5525063276290894,
+        "num_bad": 2.0,
+        "num_good": 2.0,
+        "objective_loss": 0.554355263710022
+      }
+    },
+    "legal_set_ftpo_pairwise": {
+      "config_fingerprint": "6138ecb9b5bbd747",
+      "loss": 1.070369005203247,
+      "metrics": {
+        "active_pair_fraction": 1.0,
+        "bad_legal_mass": 0.32380059361457825,
+        "config_fingerprint_present": 1.0,
+        "good_legal_mass": 0.4370850920677185,
+        "legal_entropy": 1.5525063276290894,
+        "mean_margin": 0.30000001192092896,
+        "num_bad": 2.0,
+        "num_good": 2.0,
+        "objective_loss": 1.070369005203247
+      }
+    },
+    "tab_barrier": {
+      "config_fingerprint": "1de332fa39cd93e5",
+      "loss": 2.301182270050049,
+      "metrics": {
+        "active_pair_fraction": 1.0,
+        "bad_legal_mass": 0.32380059361457825,
+        "barrier_active_fraction": 1.0,
+        "barrier_loss": 1.2308133840560913,
+        "config_fingerprint_present": 1.0,
+        "erosion_rate": 1.0,
+        "good_legal_mass": 0.4370850920677185,
+        "legal_entropy": 1.5525063276290894,
+        "mean_margin": 0.30000001192092896,
+        "num_bad": 2.0,
+        "num_good": 2.0,
+        "objective_loss": 2.301182270050049
+      }
+    },
+    "tbpo_inspired": {
+      "config_fingerprint": "ca296dc375537b94",
+      "loss": 0.943248987197876,
+      "metrics": {
+        "bad_legal_mass": 0.32380059361457825,
+        "bad_ratio": 0.1804460883140564,
+        "config_fingerprint_present": 1.0,
+        "good_legal_mass": 0.4370850920677185,
+        "good_ratio": -0.2695539593696594,
+        "legal_entropy": 1.5525063276290894,
+        "num_bad": 2.0,
+        "num_good": 2.0,
+        "objective_loss": 0.943248987197876
+      }
+    }
+  },
+  "raw_vs_legal_probability": {
+    "full_vocab_probs": [
+      0.292055,
+      0.14503,
+      0.21636,
+      0.107441,
+      0.239114
+    ],
+    "legal_space_probs": [
+      0.292055,
+      0.14503,
+      0.21636,
+      0.107441,
+      0.239114
+    ]
+  }
+}
