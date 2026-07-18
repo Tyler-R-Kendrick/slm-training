@@ -422,6 +422,20 @@ class Readers:
             published = _results_of(snapshot.get("quality_results"))
             known = {r.get("run_id") or r.get("id") for r in results}
             results.extend(r for r in published if (r.get("run_id") or r.get("id")) not in known)
+        # One metric vocabulary for every board: dialect re-keying plus the
+        # guarded (tagged) legacy parse_rate fallback happen server-side so no
+        # client needs its own — unguarded — substitution.
+        for row in results:
+            suites = row.get("suites") if isinstance(row, dict) else None
+            if isinstance(suites, dict):
+                row["suites"] = {
+                    str(name): (
+                        normalize_suite_metrics(member)
+                        if isinstance(member, dict)
+                        else member
+                    )
+                    for name, member in suites.items()
+                }
         meta = {k: v for k, v in (payload or {}).items() if k != "results"} if isinstance(
             payload, dict
         ) else {}

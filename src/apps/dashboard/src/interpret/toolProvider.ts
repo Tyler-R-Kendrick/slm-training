@@ -172,10 +172,15 @@ export const toolProvider: Record<string, QueryFn> = {
         date: r.date || "—",
         description: (r.description || "").slice(0, 70),
         pass_status: r.pass === undefined ? "" : r.pass ? "pass" : "fail",
-        ...Object.fromEntries(metricColumns.map((c: any) => [
-          c.key,
-          f(r.suites?.[c.suite]?.[c.metric] ?? (c.metric === "meaningful_program_rate" ? r.suites?.[c.suite]?.parse_rate : undefined), 2),
-        ])),
+        // Server-normalized suites; the guarded legacy fallback arrives tagged
+        // (meaningful_source) and renders with the same * marker as compiled.
+        ...Object.fromEntries(metricColumns.map((c: any) => {
+          const values = r.suites?.[c.suite] ?? {};
+          const v = values[c.metric];
+          if (v === undefined || v === null) return [c.key, "—"];
+          const legacy = c.metric === "meaningful_program_rate" && values.meaningful_source === "parse_rate_legacy";
+          return [c.key, `${f(v, 2)}${legacy ? "*" : ""}`];
+        })),
         agentv: r.agentv?.total === undefined ? "—" : `${r.agentv.passed ?? 0}/${r.agentv.total}`,
         trace: r.trace_id ? String(r.trace_id).slice(0, 12) : "—",
       })),
@@ -229,12 +234,15 @@ export const toolProvider: Record<string, QueryFn> = {
       gate_label: label,
       headline_label: metricLabel(lever),
       rows: (d.results ?? []).map((r: any) => {
+        // Server-normalized suites; no client parse_rate substitution — the
+        // guarded legacy fallback arrives tagged and renders with a * marker.
         const suite = r.suites?.smoke ?? {};
-        const headline = suite[lever] ?? suite.parse_rate;
+        const headline = suite[lever];
+        const legacy = suite.meaningful_source === "parse_rate_legacy";
         return {
           id: r.id,
           run_id: r.run_id || r.id,
-          parse: f(headline, 2),
+          parse: `${f(headline, 2)}${headline != null && legacy ? "*" : ""}`,
           fidelity: f(suite.placeholder_fidelity, 2),
           reward: f(suite.reward_score, 2),
           parse_status:

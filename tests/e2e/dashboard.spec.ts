@@ -49,6 +49,8 @@ test.describe("mission control dashboard", () => {
       component_type_recall: 0.5,
       placeholder_fidelity: 0.5,
       reward_score: 0.5,
+      // certified_fallback fails closed when fallback telemetry is unmeasured.
+      fallback_count: 0,
     };
     await page.route("**/api/scoreboards/quality", (route) => route.fulfill({ json: {
       results: [{ id: "passing-fixture", run_id: "passing-fixture", suites: {
