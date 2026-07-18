@@ -23,6 +23,7 @@ export function Experiments({ navigate }: { navigate: (to: string) => void }) {
   const board = usePoll<any>(`/api/scoreboards/${kind}`, 0);
 
   const results = board.data?.results ?? [];
+  const metricColumns = board.data?.metric_columns ?? [];
   const passed = results.filter((r: any) => r.pass === true).length;
 
   function suiteMetric(row: any, suite: string, metric: string) {
@@ -66,9 +67,7 @@ export function Experiments({ navigate }: { navigate: (to: string) => void }) {
             { key: "date", label: "date" },
             { key: "description", label: "experiment" },
             { key: "pass", label: "gate" },
-            { key: "smoke", label: "smoke meaningful", align: "right" },
-            { key: "held", label: "held meaningful", align: "right" },
-            { key: "struct", label: "smoke struct", align: "right" },
+            ...metricColumns.map((c: any) => ({ key: c.key, label: c.label, align: "right" as const })),
             { key: "agentv", label: "AgentV", align: "right" },
             { key: "trace", label: "trace", align: "right" },
           ]}
@@ -81,9 +80,9 @@ export function Experiments({ navigate }: { navigate: (to: string) => void }) {
             ),
             description: (r) => <span style={{ color: "var(--text-dim)" }}>{(r.description || "").slice(0, 70)}</span>,
             pass: (r) => (r.pass === undefined ? <span className="hint">—</span> : <StatusPill value={r.pass} label={r.pass ? "pass" : "fail"} />),
-            smoke: (r) => suiteMetric(r, "smoke", "meaningful_program_rate"),
-            held: (r) => suiteMetric(r, "held_out", "meaningful_program_rate"),
-            struct: (r) => suiteMetric(r, "smoke", "structural_similarity"),
+            ...Object.fromEntries(
+              metricColumns.map((c: any) => [c.key, (r: any) => suiteMetric(r, c.suite, c.metric)]),
+            ),
             agentv: (r) => r.agentv?.total === undefined ? "—" : `${r.agentv.passed ?? 0}/${r.agentv.total}`,
             trace: (r) => <span className="mono">{r.trace_id?.slice(0, 12) ?? "—"}</span>,
           }}

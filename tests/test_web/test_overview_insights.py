@@ -137,6 +137,13 @@ def test_metric_surfaces_track_ship_gate_policy(tmp_path) -> None:
     # Legacy parse_rate-only rows surface under the policy's meaningful lever.
     assert row["metrics"]["meaningful_program_rate"] == 1.0
 
+    scoreboard_columns = Readers(tmp_path).scoreboard("quality")["metric_columns"]
+    assert [(column["suite"], column["metric"]) for column in scoreboard_columns] == [
+        (suite, metric)
+        for suite, minimums in DEFAULT_SHIP_GATES.items()
+        for metric in minimums
+    ]
+
 
 def test_model_card_surfaces_comparable_resource_metrics(tmp_path) -> None:
     _write_evidence(tmp_path, "checkpoint-1")
