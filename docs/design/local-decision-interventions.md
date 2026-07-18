@@ -1,8 +1,11 @@
 # Local decision interventions for TwoTower
 
-**Status:** research intake plus measured E248/E249 campaign. E249 is rejected:
-constraint-shadow ranking generalized locally but regressed semantic quality on
-every suite. This document contains no model-quality or ship claim.
+**Status:** LDI0-01 architecture/research contract plus the measured E248-E286
+local-decision campaign. The chain is negative: E249 is rejected (constraint-shadow
+ranking generalized locally but regressed semantic quality on every suite), and no
+local-preference intervention has cleared the unchanged ship gates. This document is
+the canonical repository owner of the local-decision-intervention synthesis and
+architectural boundaries; it contains no model-quality or ship claim.
 
 ## Source and audit
 
@@ -12,9 +15,12 @@ The normal page reader returned only the application shell, so the server-render
 conversation payload was decoded and its citation records were normalized against
 primary arXiv and OpenReview pages. The reviewed inventory is committed as
 [`local-decision-sources.json`](../../src/slm_training/resources/autoresearch/local-decision-sources.json):
-25 distinct academic works and eight implementation/documentation sources. The
+**34 distinct academic works and eight implementation/documentation sources** — the
+original 25 works plus nine added for this LDI0-01 contract (multi-objective /
+gradient-conflict optimization, PEFT actuators, constrained decoding, and
+token-critical preference lineage), each verified against arXiv on 2026-07-17. The
 DeepSeek-R1 Nature DOI and the two OpenReview URLs are retained as alternate URLs
-rather than double-counted papers.
+rather than double-counted papers, and no paper is duplicated under an alternate URL.
 
 | Cluster | Sources | Relevance here |
 | --- | --- | --- |
@@ -31,6 +37,48 @@ LoRA/trainable-token documentation, TransformerLens, SAELens, NNsight, and pyref
 Auto-Antislop was reviewed at `8fb98fdf019e6fcc20164f9bdec41f9008fcd632`;
 no license file was present, so its source is not copied. Antidoom was reviewed at
 `bd6a126476e18554b0cacaea3fd9f258fdde1f97` under Apache-2.0.
+
+## Architecture contract (LDI0-01)
+
+This section is the canonical architectural boundary for the local-decision program.
+It exists so future agents do not recreate a parallel harness, repeat the falsified
+E249-E284 chain, or treat a local-metric gain as promotion evidence. The Linear
+project document is planning context; this file plus the sources manifest are the
+source of truth.
+
+**Separation of concerns (do not collapse).** Evidence, objective, actuator,
+experiment, and promotion are distinct concerns with distinct owners — extend the
+owner, never fork a second stack:
+
+| Concern | Owner (do not fork) | Rule |
+| --- | --- | --- |
+| Exact-state decision evidence | [`harnesses/preference/local_decisions.py`](../../src/slm_training/harnesses/preference/local_decisions.py) | Events carry exact masked-token state identity. A constraint shadow certifies decoder legality only. |
+| Observation / replay | [`harnesses/distill/trace_store.py`](../../src/slm_training/harnesses/distill/trace_store.py) | The append-only decode trace is the observation/replay owner; it is not a trainer. |
+| Objective | [`harnesses/preference/local_train.py`](../../src/slm_training/harnesses/preference/local_train.py) | Clipped-margin FTPO and preference losses. The objective is separate from the event schema. |
+| Actuator | existing trainable parameters today; later LoRA / DoRA / PiSSA / TwoTower delta / ReFT / SAE | Adapter and representation form are actuator choices, never event schemas. |
+| Experiment | [`scripts/run_quality_matrix.py`](../../scripts/run_quality_matrix.py) + [`quality-experiment-matrix.md`](quality-experiment-matrix.md) | The quality matrix / autoresearch is the bounded experiment owner. |
+| Promotion | ship gates + [`docs/MODEL_CARD.md`](MODEL_CARD.md) | Only the unchanged five-suite scoreboard and ship gates promote. A local metric never does. |
+
+**Invariants:**
+
+1. Constraint shadows certify decoder legality only. They never become semantic
+   preference labels without same-state counterfactual verification.
+2. Hard grammar/compiler constraints remain deployed. Interventions reduce error
+   mass and improve semantics *on top of* the deterministic guarantee; they do not
+   replace it.
+3. The first new evidence contract is `DecisionEventV2` — an action-table extension
+   of `DecisionEventV1` with stable state identity and per-action verdicts (LDI0-02).
+   The first actuator experiments are causal PEFT and a removable TwoTower delta; SAE
+   work stays behind matched direct-supervision baselines.
+4. New experiments use the `LDI` campaign name in prose and config but obtain
+   globally unique E IDs from the existing allocation process. Do not reserve or
+   assume the next E number (see the E-ID rule in
+   [`quality-experiment-matrix.md`](quality-experiment-matrix.md)).
+5. Do not create a second orchestration or training stack. Extend the owners above.
+6. No paper result is represented as a repository result. Every source is labeled
+   Faithful / Adapted / Surrogate / Adjacent in
+   [`research-lineage.md`](research-lineage.md) and carries an
+   `implementation_status` in the sources manifest.
 
 ## Existing seam and missing evidence
 
@@ -67,6 +115,12 @@ Two evidence paths are allowed:
 
 Final-output failure alone never creates a token label. Splits group by prompt and
 record family so related counterfactuals cannot cross train/held-out boundaries.
+
+**Next contract (LDI0-02):** `DecisionEventV2` adds stable state identity and a
+per-action verdict table so multiple good/bad actions at one state each carry an
+explicit counterfactual verdict, targeting the objective/action-partition blocker
+below. It extends `DecisionEventV1`; it does not replace the trace store or the
+objective, and it is specified — not implemented — by this contract.
 
 ## Objectives and locality
 
@@ -115,8 +169,9 @@ full-vocabulary drift. End-to-end authority remains the unchanged five-suite
 scoreboard and ship gates.
 
 Falsify a row if it does not improve held-out event metrics, exceeds the matched
-reference-drift budget, or regresses any protected ship gate. No V10 intervention
-row has run; there is no intervention checkpoint, model-card update, or promotion.
+reference-drift budget, or regresses any protected ship gate. No V10/LDI
+intervention row has cleared the unchanged ship gates, and there is no intervention
+checkpoint, model-card update, or promotion.
 
 ## Measured event-mining prerequisite
 
@@ -134,3 +189,28 @@ suite. Do not run E250/E251 on this corpus as quality labels. E252-E254 remain
 fail-closed because the corpus contains no counterfactual or set-valued evidence.
 Measured result:
 [`iter-e249-local-ce-margin-20260716.md`](iter-e249-local-ce-margin-20260716.md).
+
+## Measured chain and current blocker (E248-E286)
+
+E248-E286 is authoritative and lives in
+[`quality-experiment-matrix.md`](quality-experiment-matrix.md) (the V10 rows
+E248-E254 and the local-preference ledger through E286) and the per-run
+`iter-e2*.md` iteration docs. The chain is negative:
+
+- **E248** — matched parent control, eval-only.
+- **E249** — exact-event CE plus margin. The lexical decision objective generalized
+  (held-out chosen-win 0.7649) but semantic structure and reward regressed on every
+  suite; **rejected**.
+- **E250-E284** — the registered bad-token, single-pair FTPO, verifier-backed set
+  FTPO, frozen-reference tether, and balanced-sampling levers (and the E265-E286
+  local-preference ledger) were measured; none cleared the unchanged five-suite ship
+  gates or was promoted.
+
+**Current blocker: stable state support does not imply objective/action-partition
+support.** Exact-state event identity — a stable, replayable decision state — is
+necessary but not sufficient. It does not establish that the good/bad *action
+partition* at that state is itself verifier-supported, so a locally-improved event
+metric has repeatedly failed to transfer to semantic quality under the unchanged
+gates. `DecisionEventV2` counterfactual action-verdict tables (LDI0-02) target
+exactly this gap. No LDI intervention row is promoted; there is no intervention
+checkpoint and no model-card quality update.

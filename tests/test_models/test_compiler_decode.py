@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 import torch
 
 from slm_training.dsl.grammar.fastpath.compiler_draft import (
     CompletionPath,
+    ConstraintEvidence,
+    ConstraintStage,
     active_declaration_binder_id,
     active_declaration_reference_count,
     active_parent_component_ids,
@@ -62,6 +66,64 @@ def test_gathered_projection_matches_full_lm_head() -> None:
     gathered = denoiser.project(hidden, candidates)
     full = denoiser.project(hidden)
     assert torch.allclose(gathered, full.index_select(-1, candidates))
+
+
+def test_choice_gold_decisions_classify_component_roles() -> None:
+    from slm_training.models.choice_tokenizer import ChoiceTokenizer
+
+    tokenizer = ChoiceTokenizer.build()
+    source = (
+        'root = Card([title])\n'
+        'title = TextContent(":hero.title")'
+    )
+    decisions = gold_compiler_decisions(
+        tokenizer,
+        tokenizer.encode(source, placeholders=[":hero.title"]),
+        slot_contract=[":hero.title"],
+    )
+    component_roles = [
+        decision.kind
+        for decision in decisions
+        if decision.token_kind == "component"
+    ]
+    # Structural choice streams emit dependencies first and the root last.
+    assert component_roles == ["component_bound", "component_root"]
+    assert all(len(decision.candidate_ids) > 1 for decision in decisions)
+
+
+def test_choice_component_plan_trains_without_surface_compiler() -> None:
+    record = ExampleRecord(
+        id="choice-plan",
+        prompt="card with title",
+        openui='root = Card([title])\ntitle = TextContent(":hero.title")',
+        placeholders=[":hero.title"],
+        split="train",
+        source="fixture",
+    )
+    model = TwoTowerModel.from_records(
+        [record],
+        config=TwoTowerConfig(
+            context_backend="scratch",
+            output_tokenizer="choice",
+            d_model=32,
+            n_heads=2,
+            context_layers=1,
+            denoiser_layers=1,
+            max_prompt_len=32,
+            max_target_len=64,
+            component_plan_loss_weight=1.0,
+            component_plan_decode_weight=1.0,
+            seed=0,
+        ),
+        device="cpu",
+    )
+    loss = model.training_loss([record])
+    loss.backward()
+    assert torch.isfinite(loss)
+    assert model.component_plan_head is not None
+    assert model.component_plan_head.weight.grad is not None
+    assert model.component_plan_head.weight.grad.abs().sum() > 0
+    assert model.last_training_metrics["component_plan_root_accuracy"] >= 0.0
 
 
 def test_projection_with_features_accepts_sliced_hidden() -> None:
@@ -1156,3 +1218,146 @@ def test_ptrm_trajectory_policy_is_seed_reproducible() -> None:
     assert left_stats.compiler_lattice_trajectories == (
         right_stats.compiler_lattice_trajectories
     )
+
+
+# --- VSS0-02: reason-coded constraint evidence -------------------------------
+
+
+def _evidence_parity_prefixes(tokenizer) -> list[list[int]]:
+    return [
+        [],
+        [tokenizer.bos_id],
+        [tokenizer.bos_id, tokenizer.token_to_id["NL"]],
+        [tokenizer.bos_id, *tokenizer.encode("root=Stack([", add_special=False)],
+        [tokenizer.bos_id, *tokenizer.encode("root=Stack([b1,", add_special=False)],
+    ]
+
+
+def test_constraint_evidence_off_by_default_and_observational_when_on() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    for prefix in _evidence_parity_prefixes(tokenizer):
+        off = build_completion_forest(tokenizer, list(prefix))
+        on = build_completion_forest(tokenizer, list(prefix), explain=True)
+        # Default path stays silent and byte-for-byte unchanged.
+        assert off.evidence == ()
+        assert off.evidence_summary is None
+        assert on.candidate_ids == off.candidate_ids
+        assert on.coverage == off.coverage
+        assert on.terminals == off.terminals
+        assert on.paths == off.paths
+        # Explanation is populated, self-consistent, and honest about coverage.
+        assert on.evidence
+        assert on.evidence_summary is not None
+        assert on.evidence_summary.coverage == on.coverage
+        assert all(record.reason_code for record in on.evidence)
+        cover = [e for e in on.evidence if e.stage is ConstraintStage.COVERAGE]
+        assert len(cover) == 1
+        assert cover[0].admitted is (on.coverage == "complete")
+        assert cover[0].reason_code == f"coverage_{on.coverage}"
+        # Admitted evidence reproduces exactly the emitted candidate set.
+        admitted = {
+            e.candidate_id
+            for e in on.evidence
+            if e.admitted and e.candidate_id is not None
+        }
+        assert admitted == set(on.candidate_ids)
+
+
+def test_constraint_evidence_localizes_binder_and_min_content() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    # A forward binder that is out of scope is excluded at the BINDING stage.
+    prefix = [tokenizer.bos_id, *tokenizer.encode("root=Stack([", add_special=False)]
+    forest = build_completion_forest(tokenizer, prefix, explain=True)
+    assert tokenizer.bind_id(2) not in forest.candidate_ids
+    binder_excluded = [
+        e
+        for e in forest.evidence
+        if e.candidate_id == tokenizer.bind_id(2) and not e.admitted
+    ]
+    assert binder_excluded
+    assert any(e.stage is ConstraintStage.BINDING for e in binder_excluded)
+
+    # Minimum-content EOS withholding is distinguishable from grammar rejection.
+    contract = [":hero.title"]
+    complete = [
+        tokenizer.bos_id,
+        *tokenizer.encode('root=TextContent(":hero.title")', add_special=False),
+    ]
+    unmet = build_completion_forest(
+        tokenizer, complete, slot_contract=contract, min_content=2, explain=True
+    )
+    assert tokenizer.eos_id not in unmet.candidate_ids
+    eos_evidence = [e for e in unmet.evidence if e.candidate_id == tokenizer.eos_id]
+    assert eos_evidence
+    assert any(
+        e.stage is ConstraintStage.MIN_CONTENT
+        and e.reason_code == "eos_withheld_min_content"
+        for e in eos_evidence
+    )
+    # It is not misattributed to a grammar rejection.
+    assert not any(e.stage is ConstraintStage.GRAMMAR for e in eos_evidence)
+
+    met = build_completion_forest(
+        tokenizer, complete, slot_contract=contract, min_content=1, explain=True
+    )
+    assert tokenizer.eos_id in met.candidate_ids
+    assert any(
+        e.candidate_id == tokenizer.eos_id
+        and e.admitted
+        and e.stage is ConstraintStage.TERMINAL
+        for e in met.evidence
+    )
+
+
+def test_constraint_evidence_schema_stage_and_partial_coverage(monkeypatch) -> None:
+    from slm_training.dsl.grammar.fastpath import compiler_draft
+
+    tokenizer = DSLNativeTokenizer.build()
+    schema = {
+        "properties": {"Stack": {}},
+        "$defs": {
+            "Stack": {
+                "properties": {
+                    "children": {"type": "array"},
+                    "direction": {"enum": ["row", "column"]},
+                }
+            }
+        },
+    }
+    monkeypatch.setattr(compiler_draft, "_official_schema", lambda: schema)
+    prefix = tokenizer.encode("root=Stack([],", add_special=False)
+    forest = build_completion_forest(tokenizer, prefix, explain=True)
+    assert set(forest.candidate_ids) == {
+        tokenizer.token_to_id["STR:row"],
+        tokenizer.token_to_id["STR:column"],
+    }
+    assert any(
+        e.stage is ConstraintStage.SCHEMA and not e.admitted for e in forest.evidence
+    )
+    assert forest.evidence_summary.coverage == forest.coverage
+
+    # Schema needed but unavailable → coverage is not certified complete, and the
+    # COVERAGE record refuses to serialize a partial forest as an exact proof.
+    monkeypatch.setattr(compiler_draft, "_official_schema", lambda: None)
+    partial = build_completion_forest(
+        tokenizer, tokenizer.encode("root=TextContent(", add_special=False), explain=True
+    )
+    assert partial.coverage != "complete"
+    cover = [e for e in partial.evidence if e.stage is ConstraintStage.COVERAGE]
+    assert len(cover) == 1
+    assert cover[0].admitted is False
+    assert cover[0].reason_code == f"coverage_{partial.coverage}"
+
+
+def test_constraint_evidence_is_deterministic_and_json_roundtrips() -> None:
+    tokenizer = DSLNativeTokenizer.build()
+    prefix = [tokenizer.bos_id, *tokenizer.encode("root=Stack([b1,", add_special=False)]
+    first = build_completion_forest(tokenizer, list(prefix), explain=True)
+    second = build_completion_forest(tokenizer, list(prefix), explain=True)
+    assert first.evidence == second.evidence
+    assert first.evidence_summary == second.evidence_summary
+    for record in first.evidence:
+        restored = ConstraintEvidence.from_dict(json.loads(json.dumps(record.as_dict())))
+        assert restored == record
+    # The whole-forest view is JSON-serializable.
+    json.dumps(first.evidence_as_json())
