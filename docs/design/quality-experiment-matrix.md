@@ -2421,6 +2421,19 @@ Continue 48-row shards under the hard 290-second command cap. See
 [results](iter-e387-e388-structural-capacity-rico336-20260718.md) and
 [JSON](iter-e387-e388-structural-capacity-rico336-20260718.json).
 
+E389 exposes a canvas-accounting defect: choice decoding reports 320 tokens
+but silently uses checkpoint `gen_len=58`, truncating a 12-slot row to fidelity
+0.1667. The shared fix uses the requested LTR budget bounded by the model's
+real 256-token capacity and reports 256. E391 restores that row to fidelity,
+recall, and reward 1.0. E392 restores all RICO rows 336–384 to fidelity 1.0,
+structure 0.6514, recall 0.9931, reward 0.9994, and zero failures. E393's
+corrected bounded suites are AgentV 3/4: held-out recall 0.2333 misses the 0.30
+gate. E394 inventory weight 1 and E395 slot weight 16 are identical negatives.
+E376–E390 are invalid for current-policy selection because their actual canvas
+was 58, and must not be merged with corrected evidence. See
+[results](iter-e389-e395-choice-effective-canvas-20260718.md) and
+[JSON](iter-e389-e395-choice-effective-canvas-20260718.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

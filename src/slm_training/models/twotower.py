@@ -5665,13 +5665,23 @@ class TwoTowerModel(nn.Module):
         except Exception:  # noqa: BLE001
             feature_tables = []
         if choice_constrained:
+            choice_length = (
+                length
+                if max_len is not None
+                else min(
+                    self.config.max_target_len,
+                    max(8, int(self.config.grammar_ltr_max_tokens)),
+                )
+            )
             contracts = [
                 self._slot_contracts[i]
                 if self._slot_contracts and i < len(self._slot_contracts)
                 else None
                 for i in range(len(prompts))
             ]
-            ids = self._choice_ltr_decode_batch(ctx, ctx_pad, length, contracts)
+            ids = self._choice_ltr_decode_batch(
+                ctx, ctx_pad, choice_length, contracts
+            )
             return [
                 self._decode_openui(ids[i], placeholders=contracts[i])
                 for i in range(len(prompts))

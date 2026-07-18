@@ -287,6 +287,8 @@ def _decode_canvas_cap(plugin: object) -> int | None:
     if cfg is None:
         return None
     cap = int(getattr(cfg, "grammar_ltr_max_tokens", 0) or 0)
+    if str(getattr(cfg, "output_tokenizer", "") or "").lower() == "choice":
+        cap = min(cap, int(getattr(cfg, "max_target_len", cap) or cap))
     return cap if cap > 0 else None
 
 

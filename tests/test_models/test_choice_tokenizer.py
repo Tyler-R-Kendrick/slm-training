@@ -301,7 +301,9 @@ def test_minimum_completion_cache_collapses_equivalent_literal_states(
 
 
 @needs_bridge
-def test_twotower_choice_wiring(tmp_path: Path) -> None:
+def test_twotower_choice_wiring(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """from_records builds the choice tokenizer; train/save/load round trip."""
     import torch  # noqa: F401 - environment guard
 
@@ -342,6 +344,18 @@ def test_twotower_choice_wiring(tmp_path: Path) -> None:
     text = model.generate("Hero card", gold=records[0])
     assert text
     assert validate(text).serialized == text
+    decoded_lengths: list[int] = []
+    decode = model._choice_ltr_decode_batch
+
+    def capture_length(*args, **kwargs):
+        decoded_lengths.append(args[2])
+        return decode(*args, **kwargs)
+
+    monkeypatch.setattr(model, "_choice_ltr_decode_batch", capture_length)
+    model.gen_len = 8
+    model.config.grammar_ltr_max_tokens = 48
+    model.generate("Hero card", gold=records[0])
+    assert decoded_lengths == [48]
     model.config.decode_min_content = -1
     model.config.component_plan_decode_weight = 2.0
     state = ChoiceDecodeState(model.tokenizer, slot_count=2)

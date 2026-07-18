@@ -16,6 +16,7 @@ from slm_training.data.leakage import (
 from slm_training.dsl.schema import ExampleRecord, write_jsonl
 from slm_training.harnesses.model_build import ModelBuildConfig
 from slm_training.harnesses.model_build.eval_runner import (
+    _decode_canvas_cap,
     _effective_evaluation_policy,
     _is_meaningful_program,
     component_type_recall,
@@ -79,6 +80,17 @@ def test_evaluation_policy_reports_loaded_checkpoint_settings() -> None:
     assert policy["component_plan_decode_weight"] == 2.0
     assert policy["component_plan_token_pool"] is True
     assert policy["slot_component_decode_weight"] == 1.5
+
+
+def test_choice_decode_canvas_reports_effective_model_limit() -> None:
+    plugin = SimpleNamespace(
+        config=SimpleNamespace(
+            output_tokenizer="choice",
+            grammar_ltr_max_tokens=320,
+            max_target_len=256,
+        )
+    )
+    assert _decode_canvas_cap(plugin) == 256
 
 
 def test_structural_similarity_identical() -> None:

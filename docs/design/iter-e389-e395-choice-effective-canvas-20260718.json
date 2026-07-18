@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "run_id": "e393-choice-effective-canvas-bounded-r1",
+  "date": "2026-07-18",
+  "status": "Effective choice canvas 256: fidelity fixed; bounded AgentV 3/4, held recall 0.2333",
+  "checkpoint": {
+    "path": "outputs/runs/e368-card-hierarchy-adapt-18k-local-r1/checkpoints/last.pt",
+    "sha256": "a7dd2d79df0c3c36f80e1bb81349f7dad663d9796d201ffff492535a11982573",
+    "promoted": false
+  },
+  "diagnosis": {
+    "reported_canvas": 320,
+    "previous_actual_canvas": 58,
+    "effective_canvas": 256,
+    "model_max_target_len": 256,
+    "invalidated_runs": "E376-E390"
+  },
+  "rico_comparison": {
+    "old": {
+      "run_id": "e389-structural-capacity-rico48-offset336-r1",
+      "n": 48,
+      "offset": 336,
+      "placeholder_fidelity": 0.96875,
+      "structural_similarity": 0.639452083333333,
+      "component_type_recall": 0.9826388888888888,
+      "reward_score": 0.9891875000000002,
+      "decode_canvas_cap_reported": 320
+    },
+    "fixed": {
+      "run_id": "e392-choice-effective-canvas-rico48-offset336-r1",
+      "n": 48,
+      "offset": 336,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.651414583333333,
+      "component_type_recall": 0.9930555555555555,
+      "reward_score": 0.999375,
+      "decode_canvas_cap": 256,
+      "latency_ms_p50": 2027.43,
+      "latency_ms_p95": 4663.78,
+      "failure_breakdown": {}
+    }
+  },
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.535,
+      "component_type_recall": 0.5,
+      "reward_score": 0.977,
+      "decode_canvas_cap": 256
+    },
+    "held_out": {
+      "n": 5,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.4,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.50612,
+      "component_type_recall": 0.2333333333333333,
+      "reward_score": 0.3922,
+      "decode_canvas_cap": 256
+    },
+    "adversarial": {
+      "n": 4,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.727725,
+      "component_type_recall": 1.0,
+      "reward_score": 0.979,
+      "decode_canvas_cap": 256
+    },
+    "ood": {
+      "n": 4,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.537675,
+      "component_type_recall": 0.6875,
+      "reward_score": 0.9865,
+      "decode_canvas_cap": 256
+    }
+  },
+  "rejected_levers": [
+    {
+      "run_id": "e394-choice-effective-canvas-inventory1-bounded-r1",
+      "lever": "component_inventory_decode_weight=1.0",
+      "result": "exactly identical to E393"
+    },
+    {
+      "run_id": "e395-choice-effective-canvas-slot16-bounded-r1",
+      "lever": "slot_component_decode_weight=16.0",
+      "result": "exactly identical to E393"
+    }
+  ],
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "decode_min_content": -1,
+    "component_plan_decode_weight": 2.0,
+    "slot_component_decode_weight": 8.0,
+    "requested_grammar_ltr_max_tokens": 320,
+    "effective_canvas": 256,
+    "max_command_seconds": 290
+  },
+  "ship_gates": {
+    "pass": false,
+    "failures": [
+      "held_out:component_type_recall actual=0.2333333333333333 need>=0.3",
+      "rico_held missing full suite"
+    ]
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "passed": 3,
+    "total": 4,
+    "execution_errors": 0
+  },
+  "verdict": "retain canvas correctness fix; no promotion until held-out type recall recovers"
+}
