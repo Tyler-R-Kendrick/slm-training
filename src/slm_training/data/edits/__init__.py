@@ -479,6 +479,11 @@ def emit_transition_records(
     spec: ProgramSpec, transition: EditTransition
 ) -> tuple[ExampleRecord, ExampleRecord, ExampleRecord]:
     """Emit GENERATE, APPLY_PATCH, and PATCH derivatives for one transition."""
+    from slm_training.data.quality import (
+        render_semantic_contract_prompt,
+        semantic_contract_for_openui,
+    )
+
     if (
         ProgramDocument.from_openui(spec.canonical_openui).to_openui()
         != transition.before
@@ -494,29 +499,37 @@ def emit_transition_records(
         "ast_operation_count": transition.ast_operation_count,
         "render_verified": transition.render_verified,
     }
+    semantic_contract = semantic_contract_for_openui(transition.after)
     records: list[ExampleRecord] = []
     modes = (
-        ("GENERATE", "generation", transition.instruction),
+        (
+            "GENERATE",
+            "generation",
+            render_semantic_contract_prompt(semantic_contract),
+            {"semantic_contract": semantic_contract},
+        ),
         (
             "APPLY_PATCH",
             "edit",
             "Apply this structural patch to the current program:\n"
             + json.dumps(transition.patch.to_dict(), sort_keys=True),
+            {},
         ),
         (
             "PATCH",
             "patch",
             f"Current program:\n{transition.before}\n\nChange: {transition.instruction}",
+            {},
         ),
     )
-    for mode, task, prompt in modes:
+    for mode, task, prompt, task_meta in modes:
         record = emit_record(
             spec,
             prompt=prompt,
             task=task,
             openui=transition.after,
             source="edit_patch",
-            meta={"edit": {**edit_meta, "mode": mode}},
+            meta={"edit": {**edit_meta, "mode": mode}, **task_meta},
         )
         context = VerificationContext(
             source_kind="program",

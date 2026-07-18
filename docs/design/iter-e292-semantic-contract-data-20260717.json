@@ -1,0 +1,139 @@
+{
+  "iteration": "E292",
+  "date": "2026-07-17",
+  "hypothesis": "AST-derived semantic-contract prompts plus judge-enforced prompt/output agreement will improve a matched choice-codec run without relying on a larger training recipe.",
+  "data": {
+    "version": "e292_semantic_contract_judge_v1",
+    "path": "src/slm_training/resources/data/train/e292_semantic_contract_judge_v1",
+    "records": 480,
+    "remediated_generation_prompts": 90,
+    "independent_judge_passed": 480,
+    "content_fingerprint": "1e1815e2b658c618b0b556853f7c7b009c384ab98749b3786eebd379a54290a9",
+    "future_run_published": true,
+    "synthesis_telemetry_committed": true,
+    "manifest_paths_relocated": true,
+    "historical_generation_contracts": 90,
+    "effective_generation_rows": 119,
+    "future_generation_contract_required": true,
+    "dry_normalization_validation": {
+      "records": 480,
+      "generation_contracts": 119,
+      "independent_judge_passed": 480
+    }
+  },
+  "training": {
+    "run_id": "capacity_choice_v1__d64_h2_c1_dn2_t5000_x1__s0",
+    "device": "cpu",
+    "width": 64,
+    "depth": 2,
+    "seed": 0,
+    "batch_size": 2,
+    "steps_requested": 200,
+    "steps": 107,
+    "target_token_budget": 5000,
+    "seen_target_tokens": 5022,
+    "stopped_on": "token_budget",
+    "max_wall_minutes": 5.0,
+    "elapsed_wall_seconds": 20.4429,
+    "best_weighted_nll": 6.509448119,
+    "loss_suite_complete": false,
+    "missing_loss_categories": [
+      "binding"
+    ],
+    "checkpoint_sha256": "f74a3c46dc9b5c4cd6c62dcb32aef347f0721fb1e94839cef55e9e4ebf120b26",
+    "promotable": false
+  },
+  "decoder_repair": {
+    "model_retrained_after_repair": false,
+    "component_contract_source": [
+      "official JSON schema",
+      "grammar-derived prop_order",
+      "DSL placeholder policy CONTENT_PROPS"
+    ],
+    "exact_completion_oracle_preserved": true,
+    "component_or_property_special_cases": false,
+    "unbound_names_restricted_to_object_keys": true,
+    "content_fields_require_symbolic_slots": true
+  },
+  "evaluation": {
+    "checkpoint_sha256": "f74a3c46dc9b5c4cd6c62dcb32aef347f0721fb1e94839cef55e9e4ebf120b26",
+    "run_ids": [
+      "e292-semantic-contract-data-r1",
+      "e292-semantic-contract-data-r2",
+      "e292-semantic-contract-data-r3"
+    ],
+    "agentv_each": {
+      "total": 5,
+      "passed": 0,
+      "execution_errors": 0
+    },
+    "parse_progression": {
+      "r1": {
+        "smoke": 0.0,
+        "held_out": 0.0,
+        "adversarial": 0.0,
+        "ood": 0.0,
+        "rico_held": 0.0
+      },
+      "r2": {
+        "smoke": 0.0,
+        "held_out": 0.0,
+        "adversarial": 0.25,
+        "ood": 0.0,
+        "rico_held": 0.0
+      },
+      "r3": {
+        "smoke": 1.0,
+        "held_out": 1.0,
+        "adversarial": 1.0,
+        "ood": 1.0,
+        "rico_held": 1.0
+      }
+    },
+    "r3": {
+      "dead_ends": 0,
+      "meaningful_all_suites": 0.0,
+      "fidelity_all_suites": 0.0,
+      "reward_all_suites": 0.0,
+      "suites": {
+        "smoke": {
+          "n": 3,
+          "structural": 0.2519333,
+          "p50_ms": 689.78,
+          "p95_ms": 5029.33
+        },
+        "held_out": {
+          "n": 5,
+          "structural": 0.2021,
+          "p50_ms": 209.5,
+          "p95_ms": 2703.12
+        },
+        "adversarial": {
+          "n": 4,
+          "structural": 0.2364,
+          "p50_ms": 193.5,
+          "p95_ms": 2754.17
+        },
+        "ood": {
+          "n": 4,
+          "structural": 0.190625,
+          "p50_ms": 283.9,
+          "p95_ms": 2613.29
+        },
+        "rico_held": {
+          "n": 3,
+          "structural": 0.0727,
+          "p50_ms": 312.98,
+          "p95_ms": 2686.51
+        }
+      }
+    }
+  },
+  "verdict": {
+    "deterministic_structure_restored": true,
+    "data_nll_improved_vs_e291": true,
+    "semantic_transfer_improved": false,
+    "ship": false,
+    "next": "Publish a new immutable corpus with all 119 generation rows remediated, then profile decision-kind coverage and held-out loss before changing the judged mixture or objective."
+  }
+}
