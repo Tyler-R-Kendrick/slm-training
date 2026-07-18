@@ -1,0 +1,93 @@
+{
+  "by_detector_class": {
+    "constraint_distillation_candidate": 1,
+    "counterfactual_probe_candidate": 1,
+    "diagnostic_only": 2
+  },
+  "candidate_manifest": [
+    {
+      "baseline_count": 0,
+      "baseline_total": 6,
+      "ci_high": 3.044522,
+      "ci_low": 3.044522,
+      "detector_class": "counterfactual_probe_candidate",
+      "family": "grammar_motif",
+      "held_stable": true,
+      "log_odds": 5.129899,
+      "low_support": false,
+      "motif": "open_Stack\u2192close_early",
+      "parent_count": 6,
+      "parent_total": 6,
+      "source_concentration": 0.333333,
+      "support": 6
+    }
+  ],
+  "finding_count": 4,
+  "note": "Over-representation vs Gold/Silver is diagnostic only, not causal preference evidence. No ban list; no semantic labels; no model update.",
+  "top_findings": [
+    {
+      "baseline_count": 0,
+      "baseline_total": 6,
+      "ci_high": 3.89182,
+      "ci_low": 3.89182,
+      "detector_class": "constraint_distillation_candidate",
+      "family": "skeleton",
+      "held_stable": true,
+      "log_odds": 5.129899,
+      "low_support": false,
+      "motif": "default-skeleton",
+      "parent_count": 6,
+      "parent_total": 6,
+      "source_concentration": 0.333333,
+      "support": 6
+    },
+    {
+      "baseline_count": 0,
+      "baseline_total": 6,
+      "ci_high": 3.044522,
+      "ci_low": 3.044522,
+      "detector_class": "counterfactual_probe_candidate",
+      "family": "grammar_motif",
+      "held_stable": true,
+      "log_odds": 5.129899,
+      "low_support": false,
+      "motif": "open_Stack\u2192close_early",
+      "parent_count": 6,
+      "parent_total": 6,
+      "source_concentration": 0.333333,
+      "support": 6
+    },
+    {
+      "baseline_count": 0,
+      "baseline_total": 6,
+      "ci_high": 3.89182,
+      "ci_low": 3.89182,
+      "detector_class": "diagnostic_only",
+      "family": "surface_ngram",
+      "held_stable": true,
+      "log_odds": 5.129899,
+      "low_support": false,
+      "motif": "spacing\u2581md",
+      "parent_count": 6,
+      "parent_total": 6,
+      "source_concentration": 0.333333,
+      "support": 6
+    },
+    {
+      "baseline_count": 1,
+      "baseline_total": 6,
+      "ci_high": 3.89182,
+      "ci_low": 0.0,
+      "detector_class": "diagnostic_only",
+      "family": "surface_ngram",
+      "held_stable": true,
+      "log_odds": 3.864232,
+      "low_support": false,
+      "motif": "Stack\u2581spacing",
+      "parent_count": 6,
+      "parent_total": 6,
+      "source_concentration": 0.333333,
+      "support": 6
+    }
+  ]
+}
