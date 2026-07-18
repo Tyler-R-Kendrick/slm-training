@@ -1,0 +1,33 @@
+{
+  "artifact_count": 4,
+  "best_deployable": null,
+  "best_deployable_statement": "no intervention currently qualifies as eligible or promoted",
+  "by_kind": {
+    "causal_peft": [
+      "causal-lora-1"
+    ],
+    "reft": [
+      "reft-r1-1"
+    ],
+    "sae_diagnostic": [
+      "sae-1"
+    ],
+    "twotower_delta": [
+      "tt-delta-1"
+    ]
+  },
+  "by_status": {
+    "diagnostic": [
+      "causal-lora-1",
+      "tt-delta-1",
+      "reft-r1-1",
+      "sae-1"
+    ],
+    "eligible": [],
+    "promoted": [],
+    "rejected": [],
+    "wiring": []
+  },
+  "lineage_cycle": null,
+  "version": "ldi4-03-v1"
+}
