@@ -2601,10 +2601,10 @@ complete normally. Structure/recall are 0.6568/0.9158, 0.6262/0.8594, and
 0.6186/0.8576 respectively; shards 1–2 record four total low-recall failures.
 Rows 288–336 add structure/recall 0.6343/0.8090, and protocol-identical E399 is
 reused for rows 336–384 at 0.6401/0.8993. Rows 384–480 add
-structure/recall 0.6440/0.8490 with three low-recall failures. Coverage is
-extended through row 576 by another normally completed shard at
-structure/recall 0.6429/0.8455 with three low-recall failures. Coverage is
-576/1500; this remains a partial diagnostic, not a ship claim. See
+structure/recall 0.6440/0.8490 with three low-recall failures. Rows 480–576
+score 0.6429/0.8455 with three low-recall failures; rows 576–672 score
+0.6371/0.8698 with one. Rows 672–768 score 0.6432/0.8707 with no failures.
+Coverage is 768/1500; this remains a partial diagnostic, not a ship claim. See
 [`iter-e441-e396-full-rico-sharded-20260718.md`](iter-e441-e396-full-rico-sharded-20260718.md).
 
 Verifier-guided repair status from
