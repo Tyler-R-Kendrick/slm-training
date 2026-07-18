@@ -1,0 +1,11 @@
+{
+  "id": "E332",
+  "date": "2026-07-17",
+  "status": "accepted_eval_policy_scratch_gate_pass",
+  "checkpoint_sha256": "eb5683cf13231cae0f25b07fd66187c7e4534cb415e709093adeeb5109f363a8",
+  "slot_component_decode_weight": 4.0,
+  "agentv": {"passed": 5, "total": 5},
+  "gates_pass": true,
+  "scope": "local CPU scratch; 19 examples including limited rico_held n=3; not production ship",
+  "verdict": "Accept weight 4 as the scratch serving policy and persist it in a new checkpoint recipe."
+}

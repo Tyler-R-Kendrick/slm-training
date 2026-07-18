@@ -1,0 +1,18 @@
+{
+  "id": "E333",
+  "date": "2026-07-17",
+  "status": "scratch_champion_gate_pass_not_production",
+  "run_id": "e333-lexeme-slot-weight4-20k-r1",
+  "checkpoint_sha256": "ca6c290d2617f31c4c5eae6061690974e62d5232252d83d583d03310b4eca9a1",
+  "steps": 446,
+  "seen_target_tokens": 20044,
+  "elapsed_wall_seconds": 123.80937159099994,
+  "weighted_nll": 5.408435738003733,
+  "broad_nll": 5.496132328525766,
+  "slot_accuracy": 0.8026315793395042,
+  "slot_majority_baseline": 0.6184210620428386,
+  "agentv": {"passed": 5, "total": 5},
+  "gates_pass": true,
+  "checkpoint_sync": "disabled; local scratch",
+  "verdict": "Promote as local scratch champion only. Broader/full RICO and HF-context evidence are required for production ship."
+}

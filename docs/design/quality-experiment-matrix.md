@@ -2143,6 +2143,16 @@ held recall falls to 0.30, and limited-RICO structure/reward regress to
 [results](iter-e331-component-plan2-20260717.md) and
 [JSON](component-plan2-results-iter-e331-20260717.json).
 
+E332 raises E326's lexical slot decode weight to 4 and clears the final smoke
+gate: AgentV 5/5, smoke recall 0.50, and all five scratch suites pass. E333
+persists that policy in checkpoint metadata and reproduces the result without
+an eval override. Promote E333 as local scratch champion only; limited RICO
+n=3 and scratch context do not support production ship. See
+[E332](iter-e332-lexeme-slot-weight4-20260717.md),
+[E332 JSON](lexeme-slot-weight4-results-iter-e332-20260717.json),
+[E333](iter-e333-lexeme-slot-weight4-train-20260717.md), and
+[E333 JSON](lexeme-slot-weight4-results-iter-e333-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

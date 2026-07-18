@@ -122,9 +122,10 @@ summary and the full card whenever a checkpoint is created or promoted.
 | E323 balanced slot-owner arm | `e323-balanced-slot-owner-20k-r1/last.pt` | `outputs/runs/e323-balanced-slot-owner-20k-r1/…` (local) | Negative: corpus-derived class weights still leave held-out meaningful/recall at 0.20/0.10 — not promoted or ship |
 | E324 next-slot context arm | `e324-next-slot-context-20k-r1/last.pt` | `outputs/runs/e324-next-slot-context-20k-r1/…` (local) | Negative: ordered slot concatenation leaves held-out meaningful/recall at 0.20/0.10 — not promoted or ship |
 | E325 slot-pair interaction arm | `e325-slot-pair-interaction-20k-r1/last.pt` | `outputs/runs/e325-slot-pair-interaction-20k-r1/…` (local) | Negative: ties E316's gate count but cuts OOD meaningful/recall to 0.50/0.25 — not promoted or ship |
-| E326 lexeme slot-prior arm | `e326-lexeme-slot-prior-20k-r1/last.pt` | `outputs/runs/e326-lexeme-slot-prior-20k-r1/…` (local) | Best current scratch: AgentV 4/5; held/adversarial improve, but smoke recall 0.3333<0.35 — not promoted or ship |
+| E326 lexeme slot-prior arm | `e326-lexeme-slot-prior-20k-r1/last.pt` | `outputs/runs/e326-lexeme-slot-prior-20k-r1/…` (local) | Superseded by E333; default weight 1 reaches AgentV 4/5 — not ship |
 | E328 ordered span-prior arm | `e328-span-slot-prior-20k-r1/last.pt` | `outputs/runs/e328-span-slot-prior-20k-r1/…` (local) | Negative: corrected schema arity is retained, but span prior leaves smoke unchanged and regresses held recall to 0.30 — not promoted or ship |
 | E330 prompt-conditioned lexeme arm | `e330-prompt-lexeme-slot-prior-20k-r1/last.pt` | `outputs/runs/e330-prompt-lexeme-slot-prior-20k-r1/…` (local) | Negative: auxiliary accuracy improves, but smoke is unchanged and held recall regresses to 0.30 — not promoted or ship |
+| E333 lexical weight-4 scratch champion | `e333-lexeme-slot-weight4-20k-r1/last.pt` | `outputs/runs/e333-lexeme-slot-weight4-20k-r1/…` (local) | Scratch gates pass / AgentV 5/5; limited RICO n=3 + scratch/no-sync mean not production ship |
 | Production HF ship | *(none yet)* | [HF Bucket `TKendrick/OpenUI`](https://huggingface.co/buckets/TKendrick/OpenUI) `checkpoints/<run_id>/` | Register here after first full HF sync + `--ship-gates` |
 
 **Load demo:** `python -m scripts.serve_playground` · **Full train sync:** set
