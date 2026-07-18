@@ -20,7 +20,8 @@ quality claim is produced here.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+import time
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
 import torch
@@ -43,6 +44,7 @@ __all__ = [
     "legal_space_quantities",
     "profile_adapter_objective_geometry",
     "profile_adapter_solvers",
+    "profile_rank_matrix",
 ]
 
 PROTECTED_QUANTITIES: tuple[str, ...] = ("loss", "good_mass", "bad_mass", "margin")
@@ -277,3 +279,60 @@ def profile_adapter_solvers(
         pairwise_cosine=pairwise,
         common_descent_certified=bool(mgda_stats["common_descent"]),
     )
+
+
+def profile_rank_matrix(
+    model_factory: Callable[[], TwoTowerModel],
+    spec_factory: Callable[[TwoTowerModel, int], object],
+    event: DecisionEventV1,
+    *,
+    ranks: Sequence[int] = (2, 4, 8, 16),
+    objective: str = "ftpo_single",
+    epsilon: float = 2.0,
+    tau: float = 1.0,
+    max_wall_seconds: float = 300.0,
+) -> dict[str, object]:
+    """Profile the adapter subspace across ranks under one cumulative wall deadline.
+
+    ``model_factory`` returns a fresh frozen parent per rank (an adapter can only be
+    attached once); ``spec_factory(model, rank)`` builds the rank's adapter spec. A
+    single monotonic deadline spans the whole matrix: if it expires before every
+    requested rank completes, an operational record marked ``expired`` is returned
+    with **no** geometry result — an incomplete diagnostic is never reported as
+    valid. This mirrors the diagnostic's all-or-nothing wall policy.
+    """
+    start = time.monotonic()
+    results: dict[int, dict[str, object]] = {}
+    expired = False
+    for rank in ranks:
+        if time.monotonic() - start >= max_wall_seconds:
+            expired = True
+            break
+        model = model_factory()
+        model.attach_adapter(spec_factory(model, rank))
+        geometry = profile_adapter_objective_geometry(
+            model, event, objective=objective, epsilon=epsilon, tau=tau
+        )
+        solvers = profile_adapter_solvers(
+            model, event, objective=objective, epsilon=epsilon, tau=tau
+        )
+        results[rank] = {
+            "parameter_dim": geometry.parameter_dim,
+            "gradient_norms": geometry.gradient_norms,
+            "geometry_common_descent": geometry.common_descent,
+            "mgda_common_descent": solvers.common_descent_certified,
+            "mgda_norm_sq": solvers.mgda["norm_sq"],
+        }
+    if time.monotonic() - start >= max_wall_seconds:
+        expired = True
+
+    wall_seconds = time.monotonic() - start
+    return {
+        "status": "expired" if expired else "complete",
+        "ranks_requested": list(ranks),
+        "ranks_profiled": [] if expired else list(results),
+        "wall_seconds": wall_seconds,
+        "max_wall_seconds": max_wall_seconds,
+        # No valid geometry survives an expired run — operational telemetry only.
+        "results": {} if expired else {str(rank): row for rank, row in results.items()},
+    }

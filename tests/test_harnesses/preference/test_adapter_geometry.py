@@ -12,6 +12,7 @@ from slm_training.harnesses.preference.adapter_geometry import (  # noqa: E402
     legal_space_quantities,
     profile_adapter_objective_geometry,
     profile_adapter_solvers,
+    profile_rank_matrix,
 )
 from slm_training.harnesses.preference.local_decisions import (  # noqa: E402
     DecisionEventV1,
@@ -177,3 +178,37 @@ def test_mgda_weights_form_a_convex_combination() -> None:
     # A non-degenerate problem yields a convex combination summing to one.
     assert abs(total - 1.0) < 1e-6 or total == 0.0
     assert all(w >= -1e-9 for w in weights)
+
+
+def _spec_at_rank(model: TwoTowerModel, rank: int) -> TwoTowerAdapterSpec:
+    return TwoTowerAdapterSpec(
+        method="low_rank",
+        rank=rank,
+        alpha=2.0 * rank,
+        dropout=0.0,
+        target_modules=("attn_q", "attn_v"),
+        base_compatibility_fingerprint=model.compatibility_fingerprint(),
+        base_checkpoint_sha="ckpt",
+        tokenizer_sha=model.artifact_identity()["tokenizer_sha"],
+    )
+
+
+def test_rank_matrix_completes_small_ranks() -> None:
+    record = profile_rank_matrix(
+        _model, _spec_at_rank, _event(), ranks=(2, 4), max_wall_seconds=120.0
+    )
+    assert record["status"] == "complete"
+    assert record["ranks_profiled"] == [2, 4]
+    assert set(record["results"]) == {"2", "4"}
+    # A larger rank spans a strictly larger adapter subspace.
+    assert record["results"]["4"]["parameter_dim"] > record["results"]["2"]["parameter_dim"]
+
+
+def test_rank_matrix_emits_expired_record_over_budget() -> None:
+    record = profile_rank_matrix(
+        _model, _spec_at_rank, _event(), ranks=(2, 4), max_wall_seconds=0.0
+    )
+    assert record["status"] == "expired"
+    assert record["results"] == {}  # no valid geometry survives expiry
+    assert record["ranks_profiled"] == []
+    assert record["wall_seconds"] >= 0.0
