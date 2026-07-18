@@ -4298,6 +4298,7 @@ class TwoTowerModel(nn.Module):
         state: Any,
         legal: set[int],
         slot_contract: list[str] | None,
+        prefix: list[int] | None = None,
     ) -> set[int]:
         """Apply A4 semantic-density constraints to choice-codec decisions."""
         floor = self._effective_min_content(slot_contract)
@@ -4344,8 +4345,13 @@ class TwoTowerModel(nn.Module):
                 )
             schema = frame.schemas[frame.arg_index]
             if state._schema_accepts(schema, "string") and slot_contract:
-                slot_index = min(
-                    state.bound_component_count,
+                emitted = set(prefix or ())
+                slot_index = next(
+                    (
+                        index
+                        for index in range(len(slot_contract))
+                        if tok.token_to_id[f"@{index}"] not in emitted
+                    ),
                     len(slot_contract) - 1,
                 )
                 slot_id = tok.token_to_id[f"@{slot_index}"]
@@ -4445,7 +4451,10 @@ class TwoTowerModel(nn.Module):
             }
             for row in rows:
                 allowed[row] = self._choice_min_content_legal_ids(
-                    states[row], allowed[row], contracts[row]
+                    states[row],
+                    allowed[row],
+                    contracts[row],
+                    ids[row, :position].tolist(),
                 )
             if stats is not None:
                 stats.choice_state_cache_hits += tok.allowed_cache_hits - cache_hits

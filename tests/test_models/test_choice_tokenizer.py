@@ -364,42 +364,89 @@ def test_twotower_choice_wiring(tmp_path: Path) -> None:
         state.allowed_ids(59),
         [":hero.title", ":hero.body"],
     )
+    assert root_marker == {model.tokenizer.token_to_id["="]}
+    for token in ("=", "+TextContent"):
+        assert state.advance_id(model.tokenizer.token_to_id[token])
+    second_bound_slot = model._choice_min_content_legal_ids(
+        state,
+        state.allowed_ids(57),
+        [":hero.title", ":hero.body"],
+        [model.tokenizer.token_to_id["@0"]],
+    )
+    assert second_bound_slot == {model.tokenizer.token_to_id["@1"]}
+    for token in ("@1", "-"):
+        assert state.advance_id(model.tokenizer.token_to_id[token])
+    root_marker = model._choice_min_content_legal_ids(
+        state,
+        state.allowed_ids(55),
+        [":hero.title", ":hero.body"],
+    )
     assert root_marker == {model.tokenizer.token_to_id["r="]}
     assert state.advance_id(model.tokenizer.token_to_id["r="])
     root = model._choice_min_content_legal_ids(
         state,
-        state.allowed_ids(58),
+        state.allowed_ids(54),
         [":hero.title", ":hero.body"],
     )
     assert root == {model.tokenizer.token_to_id["+Stack"]}
     assert state.advance_id(model.tokenizer.token_to_id["+Stack"])
     stack_arg = model._choice_min_content_legal_ids(
         state,
-        state.allowed_ids(57),
+        state.allowed_ids(53),
         [":hero.title", ":hero.body"],
     )
     assert stack_arg == {model.tokenizer.token_to_id["["]}
     assert state.advance_id(model.tokenizer.token_to_id["["])
     child = model._choice_min_content_legal_ids(
         state,
-        state.allowed_ids(56),
+        state.allowed_ids(52),
         [":hero.title", ":hero.body"],
     )
     assert child == {model.tokenizer.token_to_id["&0"]}
     assert state.advance_id(model.tokenizer.token_to_id["&0"])
     list_close = model._choice_min_content_legal_ids(
         state,
-        state.allowed_ids(55),
+        state.allowed_ids(51),
+        [":hero.title", ":hero.body"],
+    )
+    assert list_close == {model.tokenizer.token_to_id["&1"]}
+    assert state.advance_id(model.tokenizer.token_to_id["&1"])
+    list_close = model._choice_min_content_legal_ids(
+        state,
+        state.allowed_ids(50),
         [":hero.title", ":hero.body"],
     )
     assert list_close == {model.tokenizer.token_to_id["]"]}
     assert state.advance_id(model.tokenizer.token_to_id["]"])
     component_close = model._choice_min_content_legal_ids(
         state,
-        state.allowed_ids(54),
+        state.allowed_ids(49),
         [":hero.title", ":hero.body"],
     )
     assert component_close == {model.tokenizer.token_to_id["-"]}
+
+    multi = ChoiceDecodeState(model.tokenizer, slot_count=3)
+    prefix = [model.tokenizer.bos_id]
+    for token in ("=", "+AccordionItem"):
+        token_id = model.tokenizer.token_to_id[token]
+        assert multi.advance_id(token_id)
+        prefix.append(token_id)
+    first_slot = model._choice_min_content_legal_ids(
+        multi,
+        multi.allowed_ids(52),
+        [":faq.title", ":faq.body", ":faq.extra"],
+        prefix,
+    )
+    assert first_slot == {model.tokenizer.token_to_id["@0"]}
+    assert multi.advance_id(model.tokenizer.token_to_id["@0"])
+    prefix.append(model.tokenizer.token_to_id["@0"])
+    second_slot = model._choice_min_content_legal_ids(
+        multi,
+        multi.allowed_ids(51),
+        [":faq.title", ":faq.body", ":faq.extra"],
+        prefix,
+    )
+    assert second_slot == {model.tokenizer.token_to_id["@1"]}
 
     ckpt = tmp_path / "choice.pt"
     model.save(ckpt)
