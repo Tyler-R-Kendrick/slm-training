@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 torch = pytest.importorskip("torch")
@@ -40,7 +42,7 @@ def _spec(model: TwoTowerModel, **overrides) -> TwoTowerAdapterSpec:
         target_modules=("attn_q", "attn_v"),
         base_compatibility_fingerprint=model.compatibility_fingerprint(),
         base_checkpoint_sha="ckpt",
-        tokenizer_sha="tok",
+        tokenizer_sha=model.artifact_identity()["tokenizer_sha"],
     )
     base.update(overrides)
     return TwoTowerAdapterSpec(**base)
@@ -141,6 +143,45 @@ def test_merge_adapter_copy_matches_enabled_and_leaves_original() -> None:
 def test_merge_requires_an_attached_adapter() -> None:
     with pytest.raises(ValueError, match="no adapter is attached"):
         _model().merge_adapter_copy()
+
+
+def test_save_and_load_adapter_round_trip(tmp_path) -> None:
+    model = _model()
+    model.attach_adapter(_spec(model))
+    with torch.no_grad():
+        for wrapper in model._adapter_modules.values():
+            wrapper.lora_B.add_(0.02)
+    model.enable_adapter()
+    x = torch.randn(3, 32)
+    trained = model.denoiser.layers[0].self_attn.q_proj(x).clone()
+
+    model.save_adapter(tmp_path / "adapter")
+    assert (tmp_path / "adapter" / "adapter_config.json").exists()
+    manifest = json.loads((tmp_path / "adapter" / "adapter_manifest.json").read_text())
+    assert manifest["trainable_parameter_count"] > 0
+    assert manifest["module_map"]
+
+    # A fresh model with the same seed reproduces the adapted logits after loading.
+    fresh = _model()
+    fresh.load_adapter(tmp_path / "adapter")
+    fresh.enable_adapter()
+    assert torch.allclose(
+        fresh.denoiser.layers[0].self_attn.q_proj(x), trained, atol=1e-6
+    )
+
+
+def test_load_adapter_fails_closed_on_base_mismatch(tmp_path) -> None:
+    model = _model()
+    model.attach_adapter(_spec(model))
+    model.save_adapter(tmp_path / "adapter")
+    # A different width yields a different compatibility fingerprint.
+    other = TwoTowerModel.from_records(
+        _records(),
+        config=TwoTowerConfig(d_model=64, n_heads=4, context_layers=1, denoiser_layers=1),
+        device="cpu",
+    )
+    with pytest.raises(ValueError, match="fingerprint"):
+        other.load_adapter(tmp_path / "adapter")
 
 
 def test_active_adapter_identity_tracks_adapter_weights() -> None:

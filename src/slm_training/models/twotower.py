@@ -943,6 +943,79 @@ class TwoTowerModel(nn.Module):
             parameter.requires_grad_(True)
         return merged
 
+    def save_adapter(self, path: Path | str, *, provenance: dict[str, Any] | None = None) -> None:
+        """Write the removable adapter (config + tensors + manifest) to its own directory.
+
+        The base checkpoint is not duplicated — only the adapter tensors and the identity
+        needed to fail closed on load. Requires an attached adapter.
+        """
+        import json
+
+        if not self.has_adapter():
+            raise ValueError("no adapter is attached to save")
+        path = Path(path)
+        path.mkdir(parents=True, exist_ok=True)
+        spec = self._adapter_spec
+        (path / "adapter_config.json").write_text(
+            json.dumps(spec.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        tensors = {
+            name: parameter.detach().cpu()
+            for name, parameter in self.named_parameters()
+            if "lora_" in name.lower()
+        }
+        torch.save(tensors, path / "adapter_model.pt")
+        manifest = {
+            "kind": "twotower_low_rank_adapter",
+            "schema_version": spec.schema_version,
+            "module_map": sorted(self._adapter_modules),
+            "parameter_names": sorted(tensors),
+            "parameter_shapes": {name: list(t.shape) for name, t in tensors.items()},
+            "trainable_parameter_count": int(sum(t.numel() for t in tensors.values())),
+            "adapter_bytes": int((path / "adapter_model.pt").stat().st_size),
+            "base_compatibility_fingerprint": spec.base_compatibility_fingerprint,
+            "base_checkpoint_sha": spec.base_checkpoint_sha,
+            "tokenizer_sha": spec.tokenizer_sha,
+            "provenance": provenance or {},
+        }
+        (path / "adapter_manifest.json").write_text(
+            json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+
+    def load_adapter(self, path: Path | str, *, trainable: bool = False) -> Any:
+        """Attach and load a removable adapter, failing closed on an identity mismatch.
+
+        The adapter's base fingerprint, tokenizer identity, and resolved module map must
+        match this model, or loading raises before any tensor is copied.
+        """
+        import json
+
+        from slm_training.models.adapters.spec import TwoTowerAdapterSpec
+
+        path = Path(path)
+        spec = TwoTowerAdapterSpec.from_dict(
+            json.loads((path / "adapter_config.json").read_text(encoding="utf-8"))
+        )
+        expected_tokenizer = self.artifact_identity()["tokenizer_sha"]
+        if spec.tokenizer_sha and spec.tokenizer_sha != expected_tokenizer:
+            raise ValueError("adapter tokenizer identity does not match this model")
+        # attach_adapter fails closed on a base-fingerprint mismatch before wrapping.
+        self.attach_adapter(spec)
+        tensors = torch.load(path / "adapter_model.pt", map_location="cpu", weights_only=True)
+        parameters = dict(self.named_parameters())
+        missing = [name for name in tensors if name not in parameters]
+        if missing:
+            raise ValueError(
+                f"adapter tensors do not match the model module map: {sorted(missing)}"
+            )
+        with torch.no_grad():
+            for name, tensor in tensors.items():
+                target = parameters[name]
+                target.copy_(tensor.to(target.device, target.dtype))
+        for name, parameter in self.named_parameters():
+            parameter.requires_grad_(bool(trainable) and "lora_" in name.lower())
+        return spec
+
     def _count_context_tokens(self, text: str) -> int:
         """Context token count under the active backend (capped at max_prompt_len)."""
         if is_hf_context(self.context):
