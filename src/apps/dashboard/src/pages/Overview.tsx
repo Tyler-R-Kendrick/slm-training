@@ -81,10 +81,11 @@ export function Overview({ navigate }: { navigate: (to: string) => void }) {
         <DataTable
           columns={[
             { key: "role", label: "Reference role" },
-            { key: "track", label: "Track" },
             { key: "run_id", label: "Run" },
-            { key: "kind", label: "Kind" },
-            { key: "location", label: "Artifact" },
+            { key: "architecture", label: "Architecture" },
+            { key: "parameters", label: "Parameters", align: "right" },
+            { key: "model_size", label: "Model size", align: "right" },
+            { key: "throughput", label: "Throughput", align: "right" },
             { key: "evaluation_status", label: "Evaluation" },
             { key: "status", label: "Model-card status" },
           ]}
@@ -100,6 +101,10 @@ export function Overview({ navigate }: { navigate: (to: string) => void }) {
           }}
         />
         <p className="hint" style={{ marginTop: "0.6rem" }}>{performance.comparison_basis}</p>
+        <p className="hint">
+          Resource figures marked ≈ are architecture-comparable estimates; exact figures come from local checkpoint,
+          train-summary, or performance evidence. Throughput varies by hardware and decode settings.
+        </p>
       </Card>
 
       <Grid min="210px">

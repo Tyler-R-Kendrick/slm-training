@@ -10,7 +10,15 @@ Storage: durable full-run weights live in
 (`checkpoints/<run_id>/`). Local/git fixture demo:
 `src/slm_training/resources/checkpoints/playground_demo/`.
 
+Provenance is **fail-closed**: a row citing a `frontier` / `ship_candidate`
+checkpoint must carry a verified `CheckpointReferenceV1` that resolves from a
+fresh clone (`python -m scripts.verify_checkpoint_references --check`).
+Gitignored `outputs/` rows below are honest **local / diagnostic** evidence, not
+frontier claims; see the migration record
+[checkpoint-reference-backfill-20260717.md](design/checkpoint-reference-backfill-20260717.md).
+
 Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
+[checkpoint-provenance.md](design/checkpoint-provenance.md),
 [adversarial-review.md](design/adversarial-review.md),
 [quality-experiment-matrix.md](design/quality-experiment-matrix.md).
 
