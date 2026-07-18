@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E474",
+  "date": "2026-07-18",
+  "status": "complete",
+  "run_id": "e474-e396-schema-enum-full-ship-gates-r1",
+  "checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0",
+    "production_hf_status": "pending_bucket_sync"
+  },
+  "data": {
+    "version": "e451_root_binder_v1"
+  },
+  "source_runs": {
+    "smoke_ood": "e470-e396-schema-enum-bounded-r2",
+    "held_out_adversarial": "e471-e396-schema-enum-impacted-bounded-r1",
+    "rico_held": "e473-e396-schema-enum-full-rico-merged-r1"
+  },
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.6822333333333334,
+      "component_type_recall": 0.6666666666666666,
+      "reward_score": 0.973
+    },
+    "held_out": {
+      "n": 5,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.78384,
+      "component_type_recall": 0.9047619047619048,
+      "reward_score": 0.9868
+    },
+    "adversarial": {
+      "n": 4,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.80605,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9767499999999999
+    },
+    "ood": {
+      "n": 4,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.6278999999999999,
+      "component_type_recall": 0.875,
+      "reward_score": 0.9864999999999999
+    },
+    "rico_held": {
+      "n": 1500,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8736300666666666,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9939199999999998
+    }
+  },
+  "ship_gates": {
+    "pass": true,
+    "failures": []
+  },
+  "agentv": {
+    "passed": 5,
+    "total": 5,
+    "execution_errors": 0
+  },
+  "reliability": {
+    "failure_count": 0,
+    "fallback_count": 0,
+    "decode_timeout_count": 0
+  },
+  "timing": {
+    "external_timeout_seconds": 290,
+    "external_kill_after_seconds": 10,
+    "assembly_elapsed_seconds": 1.8,
+    "completed_normally": true
+  },
+  "verdict": "Current-policy local ship-gate evidence passes; production HF ship remains pending bucket sync."
+}

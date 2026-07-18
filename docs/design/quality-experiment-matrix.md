@@ -2900,8 +2900,33 @@ gate metrics. Shard 9 reaches row 959 metric-identical to E460 at structure
 0.8662), unchanged reward 0.9932, and unchanged perfect gate metrics. Coverage
 continues through shard 11 at row 1151: structure 0.8669 (from 0.8679), reward
 0.9943 (from 0.9946), and unchanged perfect gate metrics. Coverage is
-1152/1500; no merged or ship claim yet. See
+extended by shard 12 through row 1247: structure 0.8669 (from 0.8712), reward
+0.9947 (from 0.9948), and unchanged perfect gate metrics. Coverage is
+extended by shard 13 through row 1343: structure 0.8893 (from 0.8889),
+unchanged reward 0.9945, and unchanged perfect gate metrics. Coverage is
+extended by shard 14 through row 1439: structure 0.8650 (from 0.8644),
+unchanged reward 0.9956, and unchanged perfect gate metrics. Coverage is
+completed by shard 15 through row 1499, metric-identical to E460 at structure
+0.8612 and reward 0.9957. All 1500 shard rows completed normally; canonical
+exact-coverage merge remains required, so there is no merged or ship claim
+yet. See
 [`iter-e472-schema-enum-full-rico-sharded-20260718.md`](iter-e472-schema-enum-full-rico-sharded-20260718.md).
+
+E473 canonically verifies E472's 16 shards as unique, policy-consistent, and
+exactly contiguous over `[0,1500)`. Fresh full RICO reaches
+meaningful/fidelity/recall 1.0, structure 0.8736, reward 0.9939, zero
+failures/fallback/timeouts, and AgentV 1/1. Relative to E460, structure changes
+0.8740→0.8736 while reward is effectively unchanged. Five-suite assembly
+remains required. See
+[`iter-e473-e396-schema-enum-full-rico-merged-20260718.md`](iter-e473-e396-schema-enum-full-rico-merged-20260718.md).
+
+E474 assembles E470–E471 with E473 under one unchanged E396 checkpoint and
+policy. All five local gates pass with zero failures/fallback/timeouts and
+AgentV 5/5. Bounded metrics are unchanged from E468; full-RICO structure
+changes 0.8740→0.8736 at effectively unchanged reward 0.9939. The decoder now
+emits schema-valid Callout severity and Slider mode. E474 is the current-policy
+local evidence; production HF ship remains pending bucket sync. See
+[`iter-e474-e396-schema-enum-full-ship-gates-20260718.md`](iter-e474-e396-schema-enum-full-ship-gates-20260718.md).
 
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;

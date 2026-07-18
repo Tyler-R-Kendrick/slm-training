@@ -2,7 +2,7 @@
   "schema_version": 1,
   "experiment_id": "E472",
   "date": "2026-07-18",
-  "status": "partial",
+  "status": "complete",
   "checkpoint": {
     "run_id": "e396-balanced-type-head-continuation-r1",
     "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0"
@@ -211,16 +211,82 @@
       "fallback_count": 0,
       "decode_timeout_count": 0,
       "completed_normally": true
+    },
+    {
+      "index": 12,
+      "run_id": "e472-e396-schema-enum-rico-shard12-r1",
+      "eval_offset": 1152,
+      "eval_end": 1248,
+      "n": 96,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8669135416666669,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9947499999999998,
+      "failure_count": 0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "completed_normally": true
+    },
+    {
+      "index": 13,
+      "run_id": "e472-e396-schema-enum-rico-shard13-r1",
+      "eval_offset": 1248,
+      "eval_end": 1344,
+      "n": 96,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8892958333333332,
+      "component_type_recall": 1.0,
+      "reward_score": 0.99453125,
+      "failure_count": 0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "completed_normally": true
+    },
+    {
+      "index": 14,
+      "run_id": "e472-e396-schema-enum-rico-shard14-r1",
+      "eval_offset": 1344,
+      "eval_end": 1440,
+      "n": 96,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8649833333333334,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9956249999999999,
+      "failure_count": 0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "completed_normally": true
+    },
+    {
+      "index": 15,
+      "run_id": "e472-e396-schema-enum-rico-shard15-r1",
+      "eval_offset": 1440,
+      "eval_end": 1500,
+      "n": 60,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.8611699999999995,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9957499999999998,
+      "failure_count": 0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "completed_normally": true
     }
   ],
   "coverage": {
-    "completed_n": 1152,
+    "completed_n": 1500,
     "total_n": 1500,
-    "exact_contiguous": false
+    "exact_contiguous": true,
+    "merge_verified": true,
+    "merge_run_id": "e473-e396-schema-enum-full-rico-merged-r1"
   },
   "timing": {
     "external_timeout_seconds": 290,
     "external_kill_after_seconds": 10
   },
-  "verdict": "Partial; exact-coverage merge and five-suite evidence remain required."
+  "verdict": "All shards completed normally and E473 verified the canonical merge; five-suite evidence remains required."
 }
