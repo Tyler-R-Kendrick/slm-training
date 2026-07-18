@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import builtins
+
 import pytest
 
 from slm_training.harnesses.preference.causal_adapter import (
     AdapterSpec,
     build_peft_config,
-    dependency_versions,
 )
 
 
@@ -58,9 +59,18 @@ def test_invalid_hyperparameters_are_rejected(overrides: dict[str, object]) -> N
         _spec(**overrides)
 
 
-def test_build_peft_config_fails_visibly_without_the_hf_extra() -> None:
-    # peft is not installed in this environment; the factory must not silently
-    # degrade — it raises an actionable install error instead.
-    assert dependency_versions()["peft"] == "absent"
+def test_build_peft_config_fails_visibly_without_the_hf_extra(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Force peft to be missing so the visible-fail branch runs deterministically
+    # regardless of whether the [hf] extra happens to be installed.
+    real_import = builtins.__import__
+
+    def blocked_import(name: str, *args: object, **kwargs: object) -> object:
+        if name == "peft":
+            raise ImportError("simulated missing dependency")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", blocked_import)
     with pytest.raises(RuntimeError, match=r"slm-training\[hf\]"):
         build_peft_config(_spec(method="dora"))

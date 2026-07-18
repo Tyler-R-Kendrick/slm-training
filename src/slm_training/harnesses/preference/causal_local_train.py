@@ -28,6 +28,7 @@ change causal training behavior.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 from typing import Literal
 
@@ -41,6 +42,12 @@ __all__ = ["CausalLocalObjective", "causal_decision_loss"]
 CausalLocalObjective = Literal[
     "unlikelihood", "ftpo_single", "ftpo_set", "legal_set_mass"
 ]
+_SUPPORTED_OBJECTIVES: tuple[str, ...] = (
+    "unlikelihood",
+    "ftpo_single",
+    "ftpo_set",
+    "legal_set_mass",
+)
 
 
 def _index_tensor(values: Sequence[int], like: torch.Tensor) -> torch.Tensor:
@@ -81,10 +88,22 @@ def causal_decision_loss(
     """
     if logits.ndim != 1:
         raise ValueError("decision logits must be one-dimensional")
+    if not all(
+        math.isfinite(value)
+        for value in (
+            epsilon,
+            tau,
+            target_grace,
+            evidence_confidence,
+            non_target_tether,
+            target_tether,
+        )
+    ):
+        raise ValueError("loss hyperparameters must be finite (NaN bypasses comparisons)")
     if tau <= 0 or epsilon <= 0 or target_grace < 0:
         raise ValueError("epsilon/tau must be positive and target_grace non-negative")
-    if non_target_tether < 0 or target_tether < 0:
-        raise ValueError("tether weights must be non-negative")
+    if evidence_confidence < 0 or non_target_tether < 0 or target_tether < 0:
+        raise ValueError("confidence and tether weights must be non-negative")
     if not view.trainable:
         raise ValueError(
             "semantic causal training refuses a non-trainable objective view "
@@ -101,9 +120,11 @@ def causal_decision_loss(
     bad = tuple(int(a) for a in view.bad_action_ids)
     if not legal_set.issuperset(good) or not legal_set.issuperset(bad):
         raise ValueError("good/bad action ids must be inside the legal set")
+    if objective not in _SUPPORTED_OBJECTIVES:
+        raise ValueError(f"unknown causal objective {objective!r}")
     if not good:
         raise ValueError("a trainable objective requires at least one good action")
-    if objective in ("ftpo_single", "ftpo_set") and not bad:
+    if objective in ("unlikelihood", "ftpo_single", "ftpo_set") and not bad:
         raise ValueError(f"{objective} requires at least one bad action")
     if objective == "ftpo_single" and (len(good) != 1 or len(bad) != 1):
         raise ValueError("ftpo_single requires exactly one good and one bad action")

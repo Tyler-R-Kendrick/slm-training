@@ -161,3 +161,45 @@ def test_non_one_dimensional_logits_are_rejected() -> None:
             legal_action_ids=(0, 1, 2),
             objective="legal_set_mass",
         )
+
+
+def test_non_finite_hyperparameters_are_rejected() -> None:
+    with pytest.raises(ValueError, match="finite"):
+        causal_decision_loss(
+            torch.zeros(4),
+            _view((1,), (2,)),
+            legal_action_ids=(0, 1, 2, 3),
+            objective="ftpo_single",
+            tau=float("nan"),
+        )
+
+
+def test_negative_evidence_confidence_is_rejected() -> None:
+    with pytest.raises(ValueError, match="non-negative"):
+        causal_decision_loss(
+            torch.zeros(4),
+            _view((1,), (2,)),
+            legal_action_ids=(0, 1, 2, 3),
+            objective="ftpo_single",
+            evidence_confidence=-1.0,
+        )
+
+
+def test_unknown_objective_is_rejected() -> None:
+    with pytest.raises(ValueError, match="unknown causal objective"):
+        causal_decision_loss(
+            torch.zeros(4),
+            _view((1,), (2,)),
+            legal_action_ids=(0, 1, 2, 3),
+            objective="bogus",  # type: ignore[arg-type]
+        )
+
+
+def test_unlikelihood_requires_a_bad_action() -> None:
+    with pytest.raises(ValueError, match="requires at least one bad action"):
+        causal_decision_loss(
+            torch.zeros(4),
+            _view((1,)),
+            legal_action_ids=(0, 1, 2, 3),
+            objective="unlikelihood",
+        )

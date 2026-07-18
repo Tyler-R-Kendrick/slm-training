@@ -98,3 +98,15 @@ def test_unknown_stratum_is_rejected() -> None:
 def test_empty_strata_is_rejected() -> None:
     with pytest.raises(ValueError, match="at least one stratum"):
         balance_items([_item("a")], strata=[], seed=0)
+
+
+def test_unknown_stratum_rejected_even_when_no_items() -> None:
+    # Validation happens at the trust boundary, before inspecting items.
+    with pytest.raises(ValueError, match="unknown balance stratum"):
+        balance_items([], strata=["not_a_stratum"], seed=0)
+
+
+def test_duplicate_training_state_is_rejected() -> None:
+    # Two items with identical state fields hash to the same state_id.
+    with pytest.raises(ValueError, match="duplicate training state"):
+        balance_items([_item("dup"), _item("dup")], strata=["decision_kind"], seed=0)

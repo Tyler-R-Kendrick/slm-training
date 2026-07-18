@@ -29,6 +29,14 @@ BalanceStratum = Literal[
     "objective_signature",
     "split",
 ]
+_VALID_STRATA: tuple[str, ...] = (
+    "source_suite",
+    "decision_kind",
+    "abstract_state_role",
+    "prompt_group",
+    "objective_signature",
+    "split",
+)
 
 
 @dataclass(frozen=True)
@@ -77,13 +85,24 @@ def balance_items(
     """
     if not strata:
         raise ValueError("at least one stratum is required")
+    # Validate strata at the trust boundary, before inspecting items, so an
+    # unknown stratum is rejected even when the input is empty or fully excluded.
+    for stratum in strata:
+        if stratum not in _VALID_STRATA:
+            raise ValueError(f"unknown balance stratum {stratum!r}")
 
     kept: list[CausalTrainingItem] = []
+    seen_state_ids: set[str] = set()
     excluded_nontrainable = 0
     for item in items:
         if drop_nontrainable and not item.view.trainable:
             excluded_nontrainable += 1
             continue
+        # The no-duplication contract must reject pre-existing duplicate evidence,
+        # not only avoid duplicating during sampling.
+        if item.state.state_id in seen_state_ids:
+            raise ValueError(f"duplicate training state {item.state.state_id!r}")
+        seen_state_ids.add(item.state.state_id)
         kept.append(item)
 
     grouped: dict[tuple[str, ...], list[CausalTrainingItem]] = {}
