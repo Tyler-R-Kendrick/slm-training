@@ -2952,7 +2952,11 @@ meaningful/fidelity/recall 1.0, structure 0.8852, reward 0.9955, and zero
 failures/fallback/timeouts, metric-identical to E472. Shard 1 extends
 metric-identical coverage through row 191 at structure 0.8658 and reward
 0.9936. Shard 2 is also metric-identical through row 287 at structure 0.8561
-and reward 0.9940. Coverage is 288/1500; no merged or ship claim yet. See
+and reward 0.9940. Shard 3 remains metric-identical through row 383 at
+structure 0.8781 and reward 0.9925. Coverage is 384/1500; no merged or ship
+claim yet. Shard 4 is metric-identical through row 479 at structure 0.8785
+and reward 0.9925. Shard 5 is metric-identical through row 575 at structure
+0.8747 and reward 0.9935, bringing coverage to 576/1500. See
 [`iter-e477-schema-array-items-full-rico-sharded-20260718.md`](iter-e477-schema-array-items-full-rico-sharded-20260718.md).
 
 Verifier-guided repair status from

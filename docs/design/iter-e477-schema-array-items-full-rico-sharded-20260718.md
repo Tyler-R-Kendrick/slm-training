@@ -17,6 +17,9 @@ generation steps, three attempts, and no fallback.
 | 0 | `[0,96)` | 96 | 1.0 | 1.0 | 0.8852 | 1.0 | 0.9955 | 0 / 0 / 0 |
 | 1 | `[96,192)` | 96 | 1.0 | 1.0 | 0.8658 | 1.0 | 0.9936 | 0 / 0 / 0 |
 | 2 | `[192,288)` | 96 | 1.0 | 1.0 | 0.8561 | 1.0 | 0.9940 | 0 / 0 / 0 |
+| 3 | `[288,384)` | 96 | 1.0 | 1.0 | 0.8781 | 1.0 | 0.9925 | 0 / 0 / 0 |
+| 4 | `[384,480)` | 96 | 1.0 | 1.0 | 0.8785 | 1.0 | 0.9925 | 0 / 0 / 0 |
+| 5 | `[480,576)` | 96 | 1.0 | 1.0 | 0.8747 | 1.0 | 0.9935 | 0 / 0 / 0 |
 
 Shard 0 completed normally in about 150 seconds and is metric-identical to
 E472's corresponding enum-constrained shard. Its diagnostic AgentV five-gate
@@ -29,4 +32,13 @@ E472's corresponding shard, with zero failures, fallback, or timeouts.
 Shard 2 completed normally in about 174 seconds and is metric-identical to
 E472's corresponding shard, with zero failures, fallback, or timeouts.
 
-**Status:** 288/1500 rows complete. No merged or ship claim yet.
+Shard 3 completed normally in about 180 seconds and is metric-identical to
+E472's corresponding shard, with zero failures, fallback, or timeouts.
+
+Shard 4 completed normally in about 180 seconds and is metric-identical to
+E472's corresponding shard, with zero failures, fallback, or timeouts.
+
+Shard 5 completed normally in about 202 seconds and is metric-identical to
+E472's corresponding shard, with zero failures, fallback, or timeouts.
+
+**Status:** 576/1500 rows complete. No merged or ship claim yet.
