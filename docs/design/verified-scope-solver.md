@@ -484,6 +484,30 @@ the closure.
   certificate.
 - Semantic fields never take the autoregressive path.
 
+## Implemented constrained autoregressive surface realizer (VSS3-05 / SLM-73)
+
+[`models/surface_autoregressor.py`](../../src/slm_training/models/surface_autoregressor.py)
+adds a small standalone causal byte-decoder with printable-ASCII byte tokens,
+grammar-aware `IdentifierConstraint`, permissive `DecorativeConstraint`, prompt
+context encoding, and constrained greedy/top-k generation. It is kept separate
+from the main TwoTower/diffusion paths so it cannot become a second program
+generator.
+
+[`dsl/neural_surface_realizer.py`](../../src/slm_training/dsl/neural_surface_realizer.py)
+wraps the model as a `SurfaceRealizer`. It accepts only `SURFACE_ONLY` slots,
+only `INTERNAL_IDENTIFIER` and `DECORATIVE_TEXT` kinds, generates each slot
+under its own constraint mask, and falls back to the deterministic baseline
+per slot on dead end, invalid proposal, model error, or missing model.
+`realize_surface_and_verify` still canonicalizes and re-verifies the final
+program with the pack oracle. The neural realizer is a caller-supplied
+`SurfaceRealizer`, not a new pack slot; the default pipeline keeps
+`DeterministicSurfaceRealizer`.
+
+This is fixture wiring only (`tests/test_models/test_surface_autoregressor.py`,
+`tests/test_dsl/test_neural_surface_realizer.py`, and
+`tests/test_data/test_surface_rows.py`). The deterministic baseline remains the
+default; no full train/eval run, checkpoint, or ship gate is claimed.
+
 ## Relationship to existing implementation
 
 | Symbol (file:line) | Existing role | Disposition under this contract |

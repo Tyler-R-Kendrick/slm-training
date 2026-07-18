@@ -274,6 +274,18 @@ class ModelBuildConfig:
     sync_checkpoints: bool | None = False
     # Plan-only sync (no upload) — for wiring tests / agents without write auth.
     checkpoint_bucket_dry_run: bool = False
+    # VSS3-05: optional constrained autoregressive surface realizer.
+    # All fields are default-off; deterministic realization remains the baseline.
+    surface_realizer: str = "deterministic"  # deterministic | autoregressive
+    surface_ar_enabled: bool = False
+    surface_ar_d_model: int = 64
+    surface_ar_n_layers: int = 2
+    surface_ar_n_heads: int = 2
+    surface_ar_max_bytes: int = 64
+    surface_ar_temperature: float = 0.0
+    surface_ar_top_k: int = 1
+    surface_ar_fallback: str = "deterministic"
+    surface_ar_verify_retry: bool = True
 
     @property
     def run_dir(self) -> Path:
