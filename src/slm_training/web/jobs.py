@@ -34,6 +34,8 @@ from pathlib import Path
 from typing import Any, AsyncIterator
 
 TERMINAL = {"succeeded", "failed", "cancelled"}
+INTERRUPT_AFTER_SECONDS = 170.0
+KILL_GRACE_SECONDS = 10.0
 
 
 # --------------------------------------------------------------------------- #
@@ -265,13 +267,13 @@ JOB_SPECS: dict[str, JobSpec] = {
     "hf_jobs_train": JobSpec(
         "scripts.hf_jobs_train",
         kind="dispatch",
-        summary="Dispatch a full train to HF managed Jobs",
+        summary="Dispatch a bounded checkpoint smoke to HF managed Jobs",
         params={"run_id": Slug(), "steps": IntRange(1, 100000), "dry_run": Flag()},
     ),
     "remote_train": JobSpec(
         "scripts.remote_train",
         kind="dispatch",
-        summary="Dispatch a full train to a remote GPU pod over SSH",
+        summary="Dispatch a bounded checkpoint smoke to a remote GPU pod",
         params={
             "host": Slug(r"^[A-Za-z0-9._-]{1,255}$"),
             "run_id": Slug(),
@@ -422,7 +424,20 @@ class JobRegistry:
                 self._procs[job.id] = proc
                 job.pid = proc.pid
                 self._write_meta(job)
-                rc = await asyncio.get_running_loop().run_in_executor(None, proc.wait)
+                try:
+                    rc = await self._wait(proc, INTERRUPT_AFTER_SECONDS)
+                except TimeoutError:
+                    self._append_log(
+                        log_path,
+                        "[job runner error] three-minute hard cap reached; interrupting\n",
+                    )
+                    self._interrupt(proc)
+                    try:
+                        rc = await self._wait(proc, KILL_GRACE_SECONDS)
+                    except TimeoutError:
+                        self._kill(proc)
+                        rc = await self._wait(proc, None)
+                    job.status = "failed"
         except OSError as exc:
             self._append_log(log_path, f"[job runner error] {exc}\n")
             job.status = "failed"
@@ -433,7 +448,7 @@ class JobRegistry:
         job.returncode = rc
         if job.status == "cancelling":
             job.status = "cancelled"
-        else:
+        elif job.status != "failed":
             job.status = "succeeded" if rc == 0 else "failed"
         job.ended_at = _now()
         self._procs.pop(job.id, None)
@@ -496,6 +511,17 @@ class JobRegistry:
             pass
 
     @staticmethod
+    async def _wait(
+        proc: subprocess.Popen[bytes], timeout: float | None
+    ) -> int:
+        deadline = None if timeout is None else time.monotonic() + timeout
+        while proc.poll() is None:
+            if deadline is not None and time.monotonic() >= deadline:
+                raise TimeoutError
+            await asyncio.sleep(0.05)
+        return int(proc.returncode or 0)
+
+    @staticmethod
     def _append_log(path: Path, text: str) -> None:
         try:
             with open(path, "a", encoding="utf-8") as handle:
@@ -510,6 +536,26 @@ class JobRegistry:
         except (ProcessLookupError, PermissionError, OSError):
             try:
                 proc.terminate()
+            except OSError:
+                pass
+
+    @staticmethod
+    def _interrupt(proc: subprocess.Popen[bytes]) -> None:
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGINT)
+        except (ProcessLookupError, PermissionError, OSError):
+            try:
+                proc.send_signal(signal.SIGINT)
+            except OSError:
+                pass
+
+    @staticmethod
+    def _kill(proc: subprocess.Popen[bytes]) -> None:
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        except (ProcessLookupError, PermissionError, OSError):
+            try:
+                proc.kill()
             except OSError:
                 pass
 

@@ -1,5 +1,9 @@
 # E487 JSON-number and typed-any full RICO sharded evaluation — 2026-07-18
 
+> Provenance correction: this is branch-only diagnostic evidence. E496 proved
+> that current `main` cannot load E396 because the experimental slot-component
+> head is absent.
+
 E487 refreshes the complete 1,500-row E451 RICO suite after E482 constrained
 byte-spelled JSON numbers and E485 rejected `any` expressions in typed schemas.
 Every shard is limited to at most 48 rows and externally capped at 290 seconds;

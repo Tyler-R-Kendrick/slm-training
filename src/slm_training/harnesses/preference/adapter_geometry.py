@@ -312,7 +312,7 @@ def profile_rank_matrix(
     objective: str = "ftpo_single",
     epsilon: float = 2.0,
     tau: float = 1.0,
-    max_wall_seconds: float = 300.0,
+    max_wall_seconds: float = 180.0,
 ) -> dict[str, object]:
     """Profile the adapter subspace across ranks under one cumulative wall deadline.
 
@@ -323,6 +323,8 @@ def profile_rank_matrix(
     with **no** geometry result — an incomplete diagnostic is never reported as
     valid. This mirrors the diagnostic's all-or-nothing wall policy.
     """
+    if max_wall_seconds > 180.0:
+        raise ValueError("max_wall_seconds must be at most 180")
     start = time.monotonic()
     results: dict[int, dict[str, object]] = {}
     expired = False

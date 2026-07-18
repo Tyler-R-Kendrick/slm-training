@@ -8,6 +8,12 @@
     "run_id": "e396-balanced-type-head-continuation-r1",
     "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0"
   },
+  "reproducibility": {
+    "classification": "branch_only_diagnostic",
+    "current_main_reproduced": false,
+    "code_revision_recorded": false,
+    "reason": "E496 proved that current main cannot load E396 because the experimental slot-component head is absent."
+  },
   "data": {
     "version": "e451_root_binder_v1"
   },

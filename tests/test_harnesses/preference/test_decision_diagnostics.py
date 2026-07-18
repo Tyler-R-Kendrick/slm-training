@@ -58,7 +58,7 @@ def test_completed_run_reports_all_stages(monkeypatch) -> None:
 
 
 def test_deadline_expiry_produces_no_result(monkeypatch) -> None:
-    # start=0 -> deadline=300s; the next monotonic read is 500 -> expired before any stage.
+    # start=0 -> deadline=180s; the next monotonic read is 500 -> expired before any stage.
     monkeypatch.setattr(dd.time, "monotonic", _FakeClock([0.0, 500.0]))
     ran: list[str] = []
     report = run_bounded_stages(
@@ -103,7 +103,7 @@ def test_tier1_objective_geometry_agrees_when_views_match(monkeypatch) -> None:
 
 
 def test_tier1_objective_geometry_respects_deadline(monkeypatch) -> None:
-    # start=0 -> deadline=300s; the next read is 500 -> expired before the stage runs.
+    # start=0 -> deadline=180s; the next read is 500 -> expired before the stage runs.
     monkeypatch.setattr(dd.time, "monotonic", _FakeClock([0.0, 500.0]))
     report = tier1_objective_geometry([[_view((4,), (9,))]])
     assert report["status"] == "expired"

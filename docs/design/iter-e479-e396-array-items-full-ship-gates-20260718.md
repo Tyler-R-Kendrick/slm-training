@@ -1,5 +1,9 @@
 # E479 E396 schema-array item full ship gates — 2026-07-18
 
+> Provenance correction: this is branch-only diagnostic evidence. E496 proved
+> that current `main` cannot load E396 because the experimental slot-component
+> head is absent. Its raw gate result must not count as a deployable pass.
+
 E479 assembles E476's fresh bounded suites with E478's exact 1,500-row RICO
 merge under one unchanged E396 checkpoint and evaluation policy. The
 schema-general decoder now enforces pinned item schemas inside arrays,

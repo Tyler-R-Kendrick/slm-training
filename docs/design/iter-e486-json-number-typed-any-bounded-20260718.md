@@ -1,5 +1,9 @@
 # E486 JSON-number and typed-any bounded evaluation — 2026-07-18
 
+> Provenance correction: this is branch-only diagnostic evidence. E496 proved
+> that current `main` cannot load E396 because the experimental slot-component
+> head is absent.
+
 E486 evaluates all four bounded suites after E482's JSON-number frame fix and
 E485's typed-any schema constraint.
 

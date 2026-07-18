@@ -226,6 +226,13 @@ def test_rank_matrix_emits_expired_record_over_budget() -> None:
     assert record["wall_seconds"] >= 0.0
 
 
+def test_rank_matrix_rejects_more_than_three_minutes() -> None:
+    with pytest.raises(ValueError, match="at most 180"):
+        profile_rank_matrix(
+            _model, _spec_at_rank, _event(), ranks=(2,), max_wall_seconds=180.01
+        )
+
+
 def test_geometry_evidence_writes_deterministic_json(tmp_path) -> None:
     model = _model()
     _attach(model)
