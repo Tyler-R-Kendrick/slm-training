@@ -2608,7 +2608,9 @@ Rows 768–864 score 0.6310/0.9010 with one low-recall failure. Coverage is
 extended through row 960 at 0.6402/0.8212 with three low-recall failures.
 Rows 960–1056 score 0.6238/0.8542 with one low-recall failure; rows 1056–1152
 score 0.6415/0.8628 with two. Coverage is 1152/1500; this remains a partial
-diagnostic, not a ship claim. See
+diagnostic. Rows 1152–1248 score 0.6482/0.8637 with one low-recall failure.
+Rows 1248–1344 score 0.6541/0.9028 with one low-recall failure. Coverage is
+1344/1500; this remains partial, not a ship claim. See
 [`iter-e441-e396-full-rico-sharded-20260718.md`](iter-e441-e396-full-rico-sharded-20260718.md).
 
 Verifier-guided repair status from

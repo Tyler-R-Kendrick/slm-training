@@ -11,8 +11,8 @@
   "suite": "rico_held",
   "suite_total_n": 1500,
   "shard_size": 96,
-  "completed_n": 1152,
-  "coverage_fraction": 0.768,
+  "completed_n": 1344,
+  "coverage_fraction": 0.896,
   "shards": [
     {
       "index": 0,
@@ -236,6 +236,40 @@
       "reward_score": 0.9770729166666666,
       "failure_breakdown": {"low_component_recall": 2},
       "decode_total_seconds": 166.165595,
+      "agentv": {"passed": 0, "total": 5, "execution_errors": 0},
+      "completed_normally": true
+    },
+    {
+      "index": 12,
+      "run_id": "e441-e396-full-rico-shard12-r1",
+      "offset": 1152,
+      "end": 1248,
+      "n": 96,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.9895833333333334,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.6481770833333335,
+      "component_type_recall": 0.8637152777777778,
+      "reward_score": 0.9876770833333333,
+      "failure_breakdown": {"low_component_recall": 1},
+      "decode_total_seconds": 162.314934,
+      "agentv": {"passed": 0, "total": 5, "execution_errors": 0},
+      "completed_normally": true
+    },
+    {
+      "index": 13,
+      "run_id": "e441-e396-full-rico-shard13-r1",
+      "offset": 1248,
+      "end": 1344,
+      "n": 96,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.9895833333333334,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.654141666666667,
+      "component_type_recall": 0.9027777777777778,
+      "reward_score": 0.9873333333333333,
+      "failure_breakdown": {"low_component_recall": 1},
+      "decode_total_seconds": 170.200043,
       "agentv": {"passed": 0, "total": 5, "execution_errors": 0},
       "completed_normally": true
     }
