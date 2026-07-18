@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E475",
+  "date": "2026-07-18",
+  "status": "complete_diagnostic",
+  "checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0"
+  },
+  "lever": {
+    "name": "schema_array_item_constrained_decode",
+    "vocabulary_changed": false,
+    "checkpoint_compatible": true
+  },
+  "diagnostics": [
+    {
+      "run_id": "e475-e396-array-items-rico-row368-r1",
+      "eval_offset": 368,
+      "eval_end": 369,
+      "id": "rico_hf_test_811",
+      "n": 1,
+      "before": "AreaChart string labels plus Button series reference",
+      "after": "AreaChart with empty schema-valid arrays",
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.6913,
+      "component_type_recall": 1.0,
+      "reward_score": 0.97,
+      "failure_count": 0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "completed_normally": true
+    },
+    {
+      "run_id": "e475-e396-array-items-rico-row781-r1",
+      "eval_offset": 781,
+      "eval_end": 782,
+      "id": "rico_hf_test_1773",
+      "n": 1,
+      "before": "AreaChart string labels plus Button series reference",
+      "after": "AreaChart with empty schema-valid arrays",
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.6913,
+      "component_type_recall": 1.0,
+      "reward_score": 0.97,
+      "failure_count": 0,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "completed_normally": true
+    }
+  ],
+  "timing": {
+    "external_timeout_seconds": 290,
+    "external_kill_after_seconds": 10
+  },
+  "e474_prediction_replay_audit": {
+    "smoke": {
+      "n": 3,
+      "newly_rejected": 0,
+      "encode_errors": 0
+    },
+    "held_out": {
+      "n": 5,
+      "newly_rejected": 2,
+      "encode_errors": 0
+    },
+    "adversarial": {
+      "n": 4,
+      "newly_rejected": 0,
+      "encode_errors": 0
+    },
+    "ood": {
+      "n": 4,
+      "newly_rejected": 1,
+      "encode_errors": 0
+    },
+    "rico_held": {
+      "n": 1500,
+      "newly_rejected": 195,
+      "encode_errors": 328
+    },
+    "refresh_required": true
+  },
+  "verdict": "Accept diagnostic correction; fresh bounded and full-RICO evidence are required before promotion."
+}

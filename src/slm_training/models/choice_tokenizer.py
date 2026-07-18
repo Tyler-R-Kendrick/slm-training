@@ -757,6 +757,16 @@ class ChoiceDecodeState:
             return None
         return self._schema_string_enum(frame.schemas[frame.arg_index])
 
+    def _current_expected_schema(self) -> dict[str, Any]:
+        if not self.frames:
+            return {}
+        frame = self.frames[-1]
+        if frame.kind == "component" and frame.arg_index < len(frame.schemas):
+            return frame.schemas[frame.arg_index]
+        if frame.kind == "variadic" and frame.schemas:
+            return frame.schemas[0]
+        return {}
+
     def _complete_expr(
         self, expr_type: str, *, string_value: str | None = None
     ) -> bool:
@@ -795,6 +805,8 @@ class ChoiceDecodeState:
             frame.arg_index += 1
             return True
         elif frame.kind == "variadic":
+            if frame.schemas and not self._schema_accepts(frame.schemas[0], expr_type):
+                return False
             frame.arg_index += 1
             return True
         return True
@@ -829,7 +841,12 @@ class ChoiceDecodeState:
             self.frames.append(_ChoiceFrame("variadic", "any", close=CLOSE))
             return True
         if token == LIST_OPEN:
-            self.frames.append(_ChoiceFrame("variadic", "array", close=LIST_CLOSE))
+            expected = self._current_expected_schema()
+            items = expected.get("items") if expected.get("type") == "array" else None
+            schemas = (dict(items),) if isinstance(items, dict) and items else ()
+            self.frames.append(
+                _ChoiceFrame("variadic", "array", close=LIST_CLOSE, schemas=schemas)
+            )
             return True
         if token == OBJ_OPEN:
             self.frames.append(

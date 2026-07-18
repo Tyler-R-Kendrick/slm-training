@@ -219,6 +219,28 @@ def test_choice_state_enforces_schema_string_enums(tok: ChoiceTokenizer) -> None
     assert spelled.frames[-1].arg_index == 1
 
 
+def test_choice_state_enforces_schema_array_item_types(
+    tok: ChoiceTokenizer,
+) -> None:
+    chart = ChoiceDecodeState(
+        tok,
+        slot_count=1,
+        section_types=["element:Button", "element:Series"],
+    )
+    for token in ("+AreaChart", "[", "@0", "]", "["):
+        assert chart.advance_id(tok.token_to_id[token])
+
+    allowed = chart.allowed_ids(16)
+    assert tok.token_to_id["&0"] not in allowed
+    assert tok.token_to_id["&1"] in allowed
+    assert tok.token_to_id["+Button"] not in allowed
+    assert tok.token_to_id["+Series"] in allowed
+
+    invalid = chart.clone()
+    assert not invalid.advance_id(tok.token_to_id["&0"])
+    assert chart.advance_id(tok.token_to_id["&1"])
+
+
 def test_choice_state_initial_bind_path_can_satisfy_content_floor(
     tok: ChoiceTokenizer,
 ) -> None:

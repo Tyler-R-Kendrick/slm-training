@@ -2928,6 +2928,24 @@ emits schema-valid Callout severity and Slider mode. E474 is the current-policy
 local evidence; production HF ship remains pending bucket sync. See
 [`iter-e474-e396-schema-enum-full-ship-gates-20260718.md`](iter-e474-e396-schema-enum-full-ship-gates-20260718.md).
 
+E475 carries pinned array-item schemas through nested choice-state list frames.
+E474 contained two RICO `AreaChart` series arrays with invalid `Button`
+elements. At offset 368 the fresh decoder emits schema-valid empty arrays while
+preserving structure 0.6913, recall 1.0, reward 0.9700, and zero
+failures/fallback/timeouts. Offset 781 reproduces the same correction and
+metric preservation. E474 replay finds two affected held-out rows, one OOD
+row, and 195 of 1,172 re-encodable RICO rows; another 328 RICO strings do not
+round-trip. Fresh bounded and full-RICO evidence are required, with E474 still
+authoritative. See
+[`iter-e475-schema-array-items-rico-diagnostics-20260718.md`](iter-e475-schema-array-items-rico-diagnostics-20260718.md).
+
+E476 completes all four bounded suites under schema-array item constraints.
+Smoke, held-out, and adversarial are metric-identical to E474; OOD structure
+improves 0.6279→0.6343 at unchanged gate metrics and reward. AgentV passes 4/4
+with zero failures/fallback/timeouts. Accept bounded, but fresh full RICO
+remains required and E474 stays authoritative. See
+[`iter-e476-schema-array-items-bounded-20260718.md`](iter-e476-schema-array-items-bounded-20260718.md).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
