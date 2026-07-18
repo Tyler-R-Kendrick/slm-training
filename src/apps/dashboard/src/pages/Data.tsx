@@ -189,6 +189,17 @@ export function DataQualityCard({
             {engines.semantic_dedup ? ` · semantic ${engines.semantic_dedup}` : ""}
             {engines.decontam ? ` · decontam ${engines.decontam}` : ""}
           </p>
+          {(payload?.feedback?.recommendations ?? []).length > 0 && (
+            <div className="generated-insights">
+              <strong>Synthesis feedback</strong>
+              {(payload.feedback.recommendations as any[]).map((rec, index) => (
+                <div className="insight-cause" key={index}>
+                  <strong>{rec.code}</strong> <span className="hint">{rec.target_kind}: {rec.target}</span>
+                  <p className="hint">{rec.suggestion}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </>
       )}
       {usedByRuns.length > 0 && (

@@ -58,6 +58,11 @@ class ModelBuildConfig:
     design_md_in_context: bool | None = None
     # Deterministic record-level train-time omission; evaluation is unaffected.
     design_md_dropout: float = 0.0
+    # Superfiltering-style difficulty evidence: after training, score every
+    # train record's NLL under the final model and write record_nll.jsonl so
+    # derived-data builds can weight curation by difficulty (opt-in; one
+    # no-grad forward per record).
+    emit_record_nll: bool = False
     design_md_budget: int = 1800
     schema_in_context: bool = False
     slot_contract_in_context: bool = False

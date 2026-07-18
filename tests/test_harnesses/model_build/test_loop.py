@@ -118,6 +118,34 @@ def test_train_and_eval_stub(tmp_path: Path) -> None:
     assert (config.run_dir / "metrics.jsonl").exists()
 
 
+def test_emit_record_nll_writes_difficulty_evidence(tmp_path: Path) -> None:
+    import json
+
+    train_dir, test_dir = _prepare_artifacts(tmp_path)
+    config = ModelBuildConfig(
+        train_dir=train_dir,
+        test_dir=test_dir,
+        suite="smoke",
+        run_root=tmp_path / "runs",
+        run_id="nll_run",
+        steps=1,
+        batch_size=2,
+        model_name="stub",
+        eval_every=1,
+        emit_record_nll=True,
+    )
+    summary = train(config)
+    path = config.run_dir / "record_nll.jsonl"
+    assert summary["record_nll"] == str(path.as_posix())
+    rows = [
+        json.loads(line)
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    assert len(rows) == summary["record_count"]
+    assert all("id" in row and "nll" in row for row in rows)
+
+
 def test_stub_save_load(tmp_path: Path) -> None:
     model = StubModel(seed=1)
     model.memory["p"] = CTA
