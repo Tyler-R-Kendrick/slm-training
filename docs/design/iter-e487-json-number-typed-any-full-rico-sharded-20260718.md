@@ -45,6 +45,12 @@ contracts, eight generation steps, three attempts, and no fallback.
 | 15a | `[720,736)` | 16 | 1.0 | 1.0 | 0.9102 | 1.0 | 0.9957 | 0 / 0 / 0 |
 | 15b | `[736,752)` | 16 | 1.0 | 1.0 | 0.8433 | 1.0 | 0.9888 | 0 / 0 / 0 |
 | 15c | `[752,768)` | 16 | 1.0 | 1.0 | 0.8740 | 1.0 | 0.9933 | 0 / 0 / 0 |
+| 16a | `[768,784)` | 16 | 1.0 | 1.0 | 0.8784 | 1.0 | 0.9934 | 0 / 0 / 0 |
+| 16b | `[784,800)` | 16 | 1.0 | 1.0 | 0.8178 | 1.0 | 0.9946 | 0 / 0 / 0 |
+| 16c | `[800,816)` | 16 | 1.0 | 1.0 | 0.8441 | 1.0 | 0.9972 | 0 / 0 / 0 |
+| 17a | `[816,832)` | 16 | 1.0 | 1.0 | 0.8747 | 1.0 | 0.9948 | 0 / 0 / 0 |
+| 17b | `[832,848)` | 16 | 1.0 | 1.0 | 0.9148 | 1.0 | 0.9957 | 0 / 0 / 0 |
+| 17c | `[848,864)` | 16 | 1.0 | 1.0 | 0.8544 | 1.0 | 0.9918 | 0 / 0 / 0 |
 
 Shard 0 completed normally in about 177 seconds and is metric-identical to the
 corresponding E477 rows, with zero failures, fallback, or timeouts.
@@ -143,4 +149,33 @@ Shard 15c completed normally in about 69 seconds under the three-minute policy
 and is prediction-identical to the corresponding E477 rows, with structure
 0.8740, reward 0.9933, and zero failures, fallback, or timeouts.
 
-**Status:** 768/1500 rows complete. No merged or ship claim yet.
+Shard 16a completed normally in about 90 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.8784, reward 0.9934, and zero failures, fallback, or timeouts.
+
+Shard 16b completed normally in about 67 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.8178, reward 0.9946, and zero failures, fallback, or timeouts.
+
+Shard 16c completed normally in about 61 seconds under the three-minute policy
+with structure 0.8441, reward 0.9972, and zero failures, fallback, or timeouts.
+This is the first non-identical E487 slice: one of 16 predictions changed
+(`rico_hf_test_1810`). The JSON-number constraint replaced E477's typed
+`@Filter()` value in a numeric slider slot with `40`; row structure improved
+from 0.5103 to 0.5750 and slice structure improved by 0.00404, while fidelity,
+type recall, and reward remained unchanged. This is positive activation
+evidence, not a full-suite claim.
+
+Shard 17a completed normally in about 60 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.8747, reward 0.9948, and zero failures, fallback, or timeouts.
+
+Shard 17b completed normally in about 70 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.9148, reward 0.9957, and zero failures, fallback, or timeouts.
+
+Shard 17c completed normally in about 77 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.8544, reward 0.9918, and zero failures, fallback, or timeouts.
+
+**Status:** 864/1500 rows complete. No merged or ship claim yet.
