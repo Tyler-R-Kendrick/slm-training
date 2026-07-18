@@ -11,8 +11,10 @@ loads and checks it.
   is recorded.
 - `causal_trace_manifest.json` — model/tokenizer/adapter/decode identities and state
   counts (bytes/state and duplicate-set reuse). No timestamps, so it is reproducible.
-- `forced_counterfactual_outcome.json` — one forced legal action replayed to a canonical
-  valid OpenUI program, handed to the counterfactual owner (no judge, no label).
+- `forced_counterfactual_outcome.json` — one forced legal action replay outcome handed to
+  the counterfactual owner (no judge, no label). `canonical_program` is `null`:
+  canonicalization is the strict validator's job and the component catalog is
+  environment/pack-dependent, so the fixture does not assert the raw program is valid.
 
 This artifact carries **no semantic label and makes no model-quality claim**; the
 constraint-shadow evidence is legality-only and non-trainable by construction.

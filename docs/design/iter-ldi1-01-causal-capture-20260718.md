@@ -85,7 +85,9 @@ the grammar seam and keeps the torch loop testable.
 - `tests/test_models/test_causal_trace_fixture.py` + `tests/test_models/fixtures/ldi1/`:
   a committed, deterministic, torch-free trace showing exact prefix replay, raw/legal
   telemetry, one non-admittable constraint shadow, and one forced legal counterfactual
-  outcome (canonical valid OpenUI program) — no semantic label, no model-quality claim.
+  replay outcome (canonicalization deferred to the strict validator — the fixture does
+  not assert catalog-validity, which is environment/pack-dependent) — no semantic label,
+  no model-quality claim.
 
 Regenerate the fixture with `capture_raw_steps` over the logit/legal map in the fixture
 `README.md`, a fixed `CausalTraceIdentity`, and a `TraceStore` opened with explicit

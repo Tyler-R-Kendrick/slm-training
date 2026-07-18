@@ -12,7 +12,6 @@ from pathlib import Path
 
 import pytest
 
-from slm_training.dsl.parser import validate
 from slm_training.harnesses.distill.trace_store import TraceStore
 from slm_training.harnesses.preference.decision_events_v2 import (
     admit_semantic_corpus,
@@ -71,7 +70,10 @@ def test_fixture_manifest_and_forced_outcome_are_honest() -> None:
     assert manifest["bytes_per_state"] > 0
 
     outcome = json.loads((_FIXTURE / "forced_counterfactual_outcome.json").read_text())
-    # A forced legal action replayed to a canonical valid OpenUI program; no judge label.
+    # A forced legal action replay outcome handed to the counterfactual owner: no judge
+    # label, and canonicalization is deferred to the strict validator (the raw program is
+    # not asserted valid here, since the component catalog is environment/pack-dependent).
     assert outcome["action_id"] == 3
-    assert validate(outcome["canonical_program"]).serialized == outcome["canonical_program"]
+    assert outcome["finish_reason"] == "eos"
+    assert outcome["canonical_program"] is None
     assert "verified" not in outcome and "metrics" not in outcome
