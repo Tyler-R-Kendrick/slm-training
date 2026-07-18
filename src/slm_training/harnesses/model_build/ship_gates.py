@@ -186,7 +186,13 @@ def write_ship_gates(
     thresholds: dict[str, dict[str, float]] | None = None,
 ) -> dict[str, Any]:
     """Write gates.json under the run directory; return the payload."""
+    from slm_training.versioning import build_version_stamp
+
     payload = evaluate_ship_gates(suites, thresholds=thresholds)
+    payload["version_stamp"] = build_version_stamp(
+        "gates.ship",
+        "evals.meaningful_program",
+    )
     run_dir = Path(run_dir)
     run_dir.mkdir(parents=True, exist_ok=True)
     path = run_dir / "gates.json"

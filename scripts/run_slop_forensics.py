@@ -26,6 +26,7 @@ from slm_training.harnesses.quality.slop_forensics import (
     profile_corpora,
     rank_motifs,
 )
+from slm_training.versioning import build_version_stamp
 
 
 def _fixture_features() -> list[ProgramFeatures]:
@@ -112,6 +113,7 @@ def main(argv: list[str] | None = None) -> int:
         verifier_associated=None,
     )
     report = forensics_report(findings)
+    report["version_stamp"] = build_version_stamp("harness.quality.slop_forensics")
     text = json.dumps(report, indent=2, sort_keys=True)
     if args.out is not None:
         args.out.parent.mkdir(parents=True, exist_ok=True)

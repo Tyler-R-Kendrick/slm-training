@@ -202,6 +202,9 @@ def run_reasoning_bench(config: ReasoningBenchConfig) -> dict[str, Any]:
             "MaskGIT in both arms (grammar-engine integration is follow-up)"
         ),
     }
+    from slm_training.versioning import build_version_stamp
+
+    summary["version_stamp"] = build_version_stamp("harness.reasoning.bench")
     root = Path(config.output_root) / config.campaign_id
     root.mkdir(parents=True, exist_ok=True)
     (root / "bench_summary.json").write_text(

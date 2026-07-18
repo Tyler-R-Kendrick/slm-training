@@ -12,6 +12,7 @@ training CLI is marked blocked with an explicit reason.
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 from slm_training.harnesses.experiments.vss4_campaign import (
@@ -19,6 +20,7 @@ from slm_training.harnesses.experiments.vss4_campaign import (
     render_markdown,
     run_vss4_campaign,
 )
+from slm_training.versioning import build_version_stamp
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -44,7 +46,15 @@ def main(argv: list[str] | None = None) -> int:
         out_dir.mkdir(parents=True, exist_ok=True)
         json_path = out_dir / "campaign.json"
         md_path = out_dir / "campaign.md"
-        json_path.write_text(report.to_json(indent=args.indent), encoding="utf-8")
+        payload = report.to_dict()
+        payload["version_stamp"] = build_version_stamp(
+            "matrix.verified_solver",
+            "harness.solver_bench",
+        )
+        json_path.write_text(
+            json.dumps(payload, indent=args.indent, sort_keys=True),
+            encoding="utf-8",
+        )
         md_path.write_text(render_markdown(report), encoding="utf-8")
         print(f"Wrote {json_path} and {md_path}")
     else:

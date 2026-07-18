@@ -30,13 +30,12 @@ import torch.nn.functional as F
 
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.evals.denoising_nll import (
+    LOSS_SUITE_VERSION,
     DenoisingNLLConfig,
     _context_text,
     _target_ids,
     evaluate_denoising_nll,
 )
-
-LOSS_SUITE_VERSION = "v1"
 
 # Frozen, versioned objective — load from the committed JSON artifact so
 # cross-run comparisons cannot silently drift when Python constants change.

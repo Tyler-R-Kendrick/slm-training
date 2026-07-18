@@ -43,7 +43,11 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     report = run_suite(fx.oracle, fx.expander, fx.verifier, fx.state, fx.hole_id, fx.cases)
-    print(json.dumps(report.to_dict(), indent=args.indent, sort_keys=True))
+    from slm_training.versioning import build_version_stamp
+
+    payload = report.to_dict()
+    payload["version_stamp"] = build_version_stamp("harness.solver_bench")
+    print(json.dumps(payload, indent=args.indent, sort_keys=True))
     return 0 if report.passed else 1
 
 

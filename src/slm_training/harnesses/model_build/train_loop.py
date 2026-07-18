@@ -531,6 +531,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "".join(json.dumps(r) + "\n" for r in nll_history),
             encoding="utf-8",
         )
+        from slm_training.versioning import build_version_stamp
+
+        report["version_stamp"] = build_version_stamp("evals.loss_suite")
         (run_dir / "loss_suites.json").write_text(
             json.dumps(report, indent=2) + "\n", encoding="utf-8"
         )
@@ -846,6 +849,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         "telemetry_path": str(tel_path.as_posix()),
         "finished_at": datetime.now(timezone.utc).isoformat(),
     }
+    from slm_training.versioning import build_version_stamp
+
+    summary["version_stamp"] = build_version_stamp("harness.model_build.train")
     (run_dir / "train_summary.json").write_text(
         json.dumps(summary, indent=2) + "\n", encoding="utf-8"
     )

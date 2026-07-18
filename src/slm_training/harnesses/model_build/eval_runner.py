@@ -912,6 +912,13 @@ def evaluate(
     run_dir = config.run_dir
     run_dir.mkdir(parents=True, exist_ok=True)
     suite_path = run_dir / f"eval_{config.suite}.json"
+    from slm_training.versioning import build_version_stamp
+
+    metrics["version_stamp"] = build_version_stamp(
+        "harness.model_build.eval",
+        "evals.meaningful_program",
+        "evals.scoring",
+    )
     metrics["output"] = str(suite_path)
     if publish_agentv:
         from slm_training.evals.agentv import publish_model_evaluation
@@ -947,6 +954,8 @@ def evaluate_suites(
             publish_agentv=False,
         )
         board[suite] = {k: v for k, v in metrics.items() if k != "details"}
+    from slm_training.versioning import build_version_stamp
+
     scoreboard = {
         "run_id": config.run_id,
         "checkpoint": (
@@ -958,6 +967,11 @@ def evaluate_suites(
         "checkpoint_sha256": next(iter(board.values()), {}).get("checkpoint_sha256"),
         "suites": board,
         "evaluated_at": datetime.now(timezone.utc).isoformat(),
+        "version_stamp": build_version_stamp(
+            "harness.model_build.eval",
+            "evals.meaningful_program",
+            "evals.scoring",
+        ),
     }
     run_dir = config.run_dir
     run_dir.mkdir(parents=True, exist_ok=True)

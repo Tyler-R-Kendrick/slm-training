@@ -27,6 +27,7 @@ from slm_training.harnesses.model_build.plugin import GenerationRequest, StubMod
 from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
     evaluate_ship_gates,
+    write_ship_gates,
 )
 from slm_training.harnesses.preference import composite_reward
 from slm_training.dsl.production_codec import ProductionCodec
@@ -239,6 +240,18 @@ def test_custom_ship_thresholds_have_stable_distinct_provenance() -> None:
     assert policy["binding_aware_meaningful_v2"]["thresholds"] is None
 
 
+def test_write_ship_gates_stamps_payload(tmp_path: Path) -> None:
+    import json
+
+    payload = write_ship_gates(tmp_path, {})
+    assert set(payload["version_stamp"]["components"]) == {
+        "gates.ship",
+        "evals.meaningful_program",
+    }
+    on_disk = json.loads((tmp_path / "gates.json").read_text(encoding="utf-8"))
+    assert on_disk["version_stamp"]["stamp_schema"] == "version_stamp/v1"
+
+
 def test_evaluate_suites_scoreboard(tmp_path: Path) -> None:
     train_dir = tmp_path / "train"
     test_dir = tmp_path / "test"
@@ -280,6 +293,13 @@ def test_evaluate_suites_scoreboard(tmp_path: Path) -> None:
     model.forward(records)
     metrics = evaluate(config, model=model)
     assert "reward_score" in metrics
+    stamp = metrics["version_stamp"]
+    assert stamp["stamp_schema"] == "version_stamp/v1"
+    assert set(stamp["components"]) == {
+        "harness.model_build.eval",
+        "evals.meaningful_program",
+        "evals.scoring",
+    }
     assert metrics["n"] == 1
     assert metrics["parse_rate"] == 1.0
     assert metrics["meaningful_program_v1_rate"] == metrics["meaningful_program_rate"]
@@ -290,6 +310,8 @@ def test_evaluate_suites_scoreboard(tmp_path: Path) -> None:
 
     board = evaluate_suites(config, ["smoke"], model=model)
     assert "suites" in board
+    assert board["version_stamp"]["stamp_schema"] == "version_stamp/v1"
+    assert "harness.model_build.eval" in board["version_stamp"]["components"]
     assert board["checkpoint"] is None
     assert board["checkpoint_sha256"] is None
     assert board["checkpoint_source"] == "preloaded_model"

@@ -45,6 +45,7 @@ import torch.nn.functional as F
 
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.evals.denoising_nll import (
+    LOSS_SUITE_VERSION,
     _context_text,
     _target_ids,
     default_eligible_positions,
@@ -64,7 +65,7 @@ MINIMAL_CANDIDATES: tuple[str, ...] = (
 
 @dataclass(frozen=True)
 class EmptinessProbeConfig:
-    suite_version: str = "v1"
+    suite_version: str = LOSS_SUITE_VERSION
     batch_size: int = 8
     # Per-token margin below this (nats) counts as "populated preferred locally".
     tie_epsilon: float = 0.02

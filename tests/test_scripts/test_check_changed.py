@@ -46,3 +46,12 @@ def test_hook_defers_pytest_for_large_diffs() -> None:
     paths = [f"docs/design/run-{i}.json" for i in range(101)]
     paths.append("tests/test_dsl/test_parser.py")
     assert hook_test_targets(paths) == []
+
+
+def test_version_registry_changes_run_versioning_suite() -> None:
+    assert select_tests(["src/slm_training/resources/versions.json"]) == [
+        "tests/test_versioning"
+    ]
+    assert select_tests(["src/slm_training/versioning.py"]) == [
+        "tests/test_versioning"
+    ]

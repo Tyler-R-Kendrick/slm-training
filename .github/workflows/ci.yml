@@ -16,6 +16,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          # Full history: the version-stamp bump check diffs against the PR
+          # base commit, and post-checkout fetches are unreliable without
+          # persisted credentials.
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -47,6 +51,13 @@ jobs:
         run: python scripts/validate_page_dsl.py --check
       - name: Verify checkpoint references are resolvable and provenanced
         run: python -m scripts.verify_checkpoint_references --check
+      - name: Verify version stamps and component bumps
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            python -m scripts.verify_version_stamps --check --base "${{ github.event.pull_request.base.sha }}"
+          else
+            python -m scripts.verify_version_stamps --check
+          fi
       - name: Verify documented disjoint data build
         run: |
           python -m scripts.build_train_data --source all --version ci --synthesizer none

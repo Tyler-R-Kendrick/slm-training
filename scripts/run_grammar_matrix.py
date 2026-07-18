@@ -18,6 +18,7 @@ from typing import Any
 
 from slm_training.harnesses.model_build import ModelBuildConfig, train
 from slm_training.harnesses.model_build.eval_runner import evaluate_suites
+from slm_training.versioning import build_version_stamp
 from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
     evaluate_ship_gates,
@@ -966,6 +967,12 @@ def main(argv: list[str] | None = None) -> int:
         "training_source_commit": args.training_source_commit
         or evaluation_source_commit,
         "evaluation_source_commit": evaluation_source_commit,
+        "version_stamp": build_version_stamp(
+            "matrix.grammar",
+            "harness.model_build.eval",
+            "evals.meaningful_program",
+            "gates.ship",
+        ),
     }
     out_path = args.run_root / "grammar_matrix_summary.json"
     out_path.write_text(json.dumps(out, indent=2) + "\n", encoding="utf-8")
