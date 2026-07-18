@@ -255,3 +255,51 @@ def test_verify_checkpoint_missing_file(tmp_path: Path) -> None:
     ok, reason = _verify_checkpoint(missing, "0" * 64)
     assert not ok
     assert "not found" in (reason or "")
+
+
+def test_no_inventory_arm_does_not_surface_contract(base_config: ModelBuildConfig) -> None:
+    """A prompt-inventory-disabled arm must turn off all slot-contract surfacing."""
+    arms = build_stage_a_arms()
+    no_inventory = next(a for a in arms if a.arm_id == "one_off_prompt_inventory")
+    config, _path, ok, _reason = resolve_arm_config(
+        base_config, no_inventory, output_codec="choice"
+    )
+    assert ok
+    assert config.honest_slot_contract is False
+    assert config.slot_contract_in_context is False
+    assert config.slot_contract_constrained_decode is False
+
+
+def test_one_attempt_arm_has_single_attempt(base_config: ModelBuildConfig) -> None:
+    """Disabling attempts must set best_of_n=1 and generate_max_attempts=1."""
+    arms = build_stage_a_arms()
+    one_attempt = next(a for a in arms if a.arm_id == "one_off_attempts")
+    config, _path, ok, _reason = resolve_arm_config(
+        base_config, one_attempt, output_codec="choice"
+    )
+    assert ok
+    assert config.best_of_n == 1
+    assert config.generate_max_attempts == 1
+
+
+def test_grammar_only_arm_keeps_grammar_constrained(base_config: ModelBuildConfig) -> None:
+    """With semantic constraints disabled, grammar/syntax enforcement remains on."""
+    arms = build_stage_a_arms()
+    grammar_only = next(a for a in arms if a.arm_id == "all_off")
+    config, _path, ok, _reason = resolve_arm_config(
+        base_config, grammar_only, output_codec="choice"
+    )
+    assert ok
+    assert config.grammar_constrained is True
+
+
+def test_replay_same_arm_produces_identical_config(base_config: ModelBuildConfig) -> None:
+    """Config resolution is deterministic for the same arm and base config."""
+    from dataclasses import asdict
+
+    arms = build_stage_a_arms()
+    arm = arms[0]
+    c1, _p1, ok1, _ = resolve_arm_config(base_config, arm, output_codec="choice")
+    c2, _p2, ok2, _ = resolve_arm_config(base_config, arm, output_codec="choice")
+    assert ok1 and ok2
+    assert asdict(c1) == asdict(c2)
