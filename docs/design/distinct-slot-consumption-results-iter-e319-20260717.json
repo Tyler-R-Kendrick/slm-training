@@ -1,0 +1,38 @@
+{
+  "id": "E319",
+  "date": "2026-07-17",
+  "status": "accepted_decoder_fix_checkpoint_not_promotable",
+  "intervention": "Select required string slots from symbols actually absent in the emitted choice prefix rather than from bound component count.",
+  "checkpoint": {
+    "run_id": "e318-slot-only-component-20k-r2",
+    "sha256": "b4e5a87b158e9c2b184f3d850d45948c76ac613f6d2034c92e5787f126f534d9",
+    "changed": false
+  },
+  "evaluation": {
+    "run_id": "e319-distinct-slot-consumption-honest-r1",
+    "ship_gates": true,
+    "agentv": {
+      "total": 5,
+      "passed": 3,
+      "failed": 2
+    },
+    "failures": [
+      "smoke:component_type_recall actual=0.3333333333333333 need>=0.35",
+      "held_out:component_type_recall actual=0.2 need>=0.3"
+    ],
+    "suites": {
+      "smoke": {"n": 3, "parse": 1.0, "fidelity": 1.0, "structure": 0.5464, "meaningful": 0.666667, "component_recall": 0.333333, "reward": 0.640667, "pass": false},
+      "held_out": {"n": 5, "parse": 1.0, "fidelity": 1.0, "structure": 0.44314, "meaningful": 0.4, "component_recall": 0.2, "reward": 0.3916, "pass": false},
+      "adversarial": {"n": 4, "parse": 1.0, "fidelity": 1.0, "structure": 0.597025, "meaningful": 0.5, "component_recall": 0.375, "reward": 0.4805, "pass": true},
+      "ood": {"n": 4, "parse": 1.0, "fidelity": 1.0, "structure": 0.4304, "meaningful": 0.5, "component_recall": 0.25, "reward": 0.49925, "pass": true},
+      "rico_held": {"n": 3, "parse": 1.0, "fidelity": 1.0, "structure": 0.421533, "meaningful": 1.0, "component_recall": 0.555556, "reward": 1.0, "pass": true}
+    }
+  },
+  "causal_change": {
+    "rico_held_fidelity": [0.416667, 1.0],
+    "rico_held_structure": [0.2468, 0.421533],
+    "rico_held_reward": [0.791, 1.0],
+    "other_suite_metrics_changed": false
+  },
+  "verdict": "Accept the generalized decoder fix, but do not promote the unchanged checkpoint. Two component-recall gates still fail and OOD remains below E316."
+}

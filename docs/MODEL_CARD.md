@@ -339,6 +339,11 @@ Leakage: structural fingerprints + train/test isolation
 | `adversarial` (E318 slot-only component) | 4 | 1.0 | 1.0000 | 0.5970 | 0.4805 | Yes for suite thresholds; no global ship |
 | `ood` (E318 slot-only component) | 4 | 1.0 | 1.0000 | 0.4304 | 0.4992 | Yes for suite thresholds; no global ship |
 | `rico_held` (E318 slot-only component) | 3 | 1.0 | 0.4167 | 0.2468 | 0.7910 | Suite thresholds pass, but fidelity regresses sharply; no global ship |
+| `smoke` (E319 distinct consumption) | 3 | 1.0 | 1.0000 | 0.5464 | 0.6407 | No — component recall 0.3333 < 0.35 |
+| `held_out` (E319 distinct consumption) | 5 | 1.0 | 1.0000 | 0.4431 | 0.3916 | No — component recall 0.20 < 0.30 |
+| `adversarial` (E319 distinct consumption) | 4 | 1.0 | 1.0000 | 0.5970 | 0.4805 | Yes for suite thresholds; no global ship |
+| `ood` (E319 distinct consumption) | 4 | 1.0 | 1.0000 | 0.4304 | 0.4992 | Yes for suite thresholds; no global ship |
+| `rico_held` (E319 distinct consumption) | 3 | 1.0 | 1.0000 | 0.4215 | 1.0000 | Yes for limited suite thresholds; no global ship |
 | `smoke` (`e177-semantic-judge-32step`, E180 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1542 | 0.607 | No — syntax 1.0, but meaningful component recall 0.25; not a ship evaluation |
 | `smoke` (`e181-semantic-balanced-32step`, E181 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1542 | 0.607 | No — mixture-only control did not improve quality; not a ship evaluation |
 | `smoke` (`e184-compiler-aligned-32step`, E194 diagnostic subset) | 1 | 0.0 | 0.0 | 0.3600 | 0.0 | No — root/schema constraints improved, but output remained incomplete; not a ship evaluation |
@@ -670,6 +675,7 @@ suites because they contain no scope metadata. Evidence:
 | 2026-07-17 | `e317-slot-component-plan-20k-r1` (E317 decision-local component arm) | `outputs/runs/e317-slot-component-plan-20k-r1/` (local) | 446 CPU scratch steps / 20,044 target tokens; slot head accuracy 0.7008; NLL 5.4483; SHA `42476f4ccf97adf1249981eee9481ec81c3816af320c71747299144c2734e130`; explicit no-sync | Weight 0 exactly reproduces E316; nonzero weights add no gate pass and regress OOD or held-out; intended weight 1 has 3 failures / AgentV 3/5, no promotion |
 | 2026-07-17 | `e318-slot-only-component-20k-r1` (invalid E318 setup) | `outputs/runs/e318-slot-only-component-20k-r1/` (local) | 446 CPU scratch steps / 20,044 target tokens; accidentally used random masking and omitted length head; SHA `a16a00f27649b31dc1a2125ea9f15bbf4fb83ad372c685237f52ab1832a9e205`; explicit no-sync | Invalid matched comparison; loss AgentV 1/1, no quality evaluation, no promotion |
 | 2026-07-17 | `e318-slot-only-component-20k-r2` (corrected E318 arm) | `outputs/runs/e318-slot-only-component-20k-r2/` (local) | 446 CPU scratch steps / 20,044 target tokens; diffusion objective, slot-only head; NLL 5.4271; SHA `b4e5a87b158e9c2b184f3d850d45948c76ac613f6d2034c92e5787f126f534d9`; explicit no-sync | Restores E316 held quality but clears no gate; OOD and limited-RICO regress; 2 failures / AgentV 3/5, no promotion |
+| 2026-07-17 | `e319-distinct-slot-consumption-honest-r1` (E319 eval-only) | `outputs/runs/e319-distinct-slot-consumption-honest-r1/` (local) | Unchanged E318 r2 SHA; required strings consume distinct emitted-prefix slots | Restores limited-RICO fidelity/reward to 1.0; smoke/held recall still fail, AgentV 3/5; no checkpoint promotion |
 
 Append a row for every new or replaced checkpoint. Do not delete history.
 

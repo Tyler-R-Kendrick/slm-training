@@ -2058,6 +2058,19 @@ all-consumed-slot candidate scorer. See
 [results](iter-e318-slot-only-component-plan-20260717.md) and
 [JSON](slot-only-component-results-iter-e318-20260717.json).
 
+## E319 distinct slot consumption (eval-only, 2026-07-17)
+
+The choice decoder now selects required string slots from symbols actually
+absent in the emitted prefix instead of reusing `bound_component_count`.
+On the unchanged E318 checkpoint this restores limited-RICO fidelity
+0.4167→1.0, structure 0.2468→0.4215, and reward 0.791→1.0. Other suite metrics
+are unchanged; smoke and held recall still fail and AgentV remains 3/5.
+
+**Verdict:** accept the generalized decoder fix, but do not promote the
+checkpoint or claim ship. See
+[results](iter-e319-distinct-slot-consumption-20260717.md) and
+[JSON](distinct-slot-consumption-results-iter-e319-20260717.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
