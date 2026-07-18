@@ -127,6 +127,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "diffusion_length_loss_weight",
         "component_inventory_decode_weight",
         "component_plan_decode_weight",
+        "slot_component_decode_weight",
         "component_edge_decode_weight",
         "binder_component_plan_decode_weight",
         "binder_topology_decode_weight",

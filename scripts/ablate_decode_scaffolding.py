@@ -170,6 +170,12 @@ def main(argv: list[str] | None = None) -> int:
         default=Path("outputs/test_data/remediated"),
         help="Eval dataset directory (must contain a manifest.json with suites).",
     )
+    parser.add_argument(
+        "--rico-limit",
+        type=int,
+        default=None,
+        help="Diagnostic cap for the rico_held suite (records, not arms).",
+    )
     args = parser.parse_args(argv)
 
     suites = tuple(x.strip() for x in args.suites.split(",") if x.strip())
@@ -191,6 +197,11 @@ def main(argv: list[str] | None = None) -> int:
         run_id="sde0-01-base",
         device=args.device,
         output_tokenizer=args.output_codec,
+        # E479-equivalent decode recipe (not ablated; held constant across arms).
+        component_plan_decode_weight=2.0,
+        component_inventory_decode_weight=8.0,
+        schema_in_context=True,
+        rico_eval_limit=args.rico_limit,
     )
 
     report = run_stage_a(

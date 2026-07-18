@@ -252,6 +252,10 @@ def _factor_overrides(arm: AblateArm) -> dict[str, Any]:
     overrides["slot_contract_in_context"] = factors.prompt_inventory
     overrides["slot_contract_constrained_decode"] = factors.prompt_inventory
 
+    # semantic_constraints: schema/role/array-item/typed-any context vs
+    # grammar/compiler legality only, plus fail-closed fallback policy.
+    overrides["schema_in_context"] = factors.semantic_constraints
+
     # attempts: best_of_n and retry allowance.
     overrides["best_of_n"] = arm.best_of_n
     overrides["generate_max_attempts"] = 3 if factors.attempts else 1

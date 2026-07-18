@@ -231,6 +231,7 @@ class ModelBuildConfig:
     component_inventory_decode_weight: float | None = None
     component_plan_loss_weight: float = 0.0
     component_plan_decode_weight: float | None = None
+    slot_component_decode_weight: float | None = None
     component_edge_loss_weight: float = 0.0
     component_edge_alignment_loss_weight: float = 0.0
     component_edge_decode_weight: float | None = None
