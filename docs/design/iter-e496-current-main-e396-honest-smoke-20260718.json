@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E496",
+  "date": "2026-07-18",
+  "status": "complete",
+  "run_id": "e496-current-main-e396-honest-smoke",
+  "checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0",
+    "bucket_uri": "hf://buckets/TKendrick/OpenUI/checkpoints/e396-balanced-type-head-continuation-r1"
+  },
+  "provenance": {
+    "code_git_sha": "2351c1f10bbda16fee0a00707434a1e057f8abde",
+    "code_dirty": false,
+    "branch": "main",
+    "checkpoint_sync_verified": true
+  },
+  "data": {
+    "version": "remediated",
+    "suite": "smoke",
+    "n": 3,
+    "diagnostic_subset": true,
+    "manifest_sha256": "2c53a3f6d03f319dceb173f82d8a651dbf52d304fbe1bc3a242eed66b9d8c500"
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "grammar_ltr_max_tokens": 320,
+    "gen_steps": 8,
+    "max_attempts": 3,
+    "slot_contract_constrained_decode": true,
+    "honest_slot_contract": true,
+    "allow_unconstrained_fallback": false,
+    "decode_timeout_seconds": 45,
+    "maximum_total_seconds": 180
+  },
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.5555555555555555,
+      "structural_similarity": 0.11306666666666669,
+      "component_type_recall": 0.0,
+      "reward_score": 0.30233333333333334,
+      "fallback_count": 0,
+      "decode_timeout_count": 0,
+      "latency_ms_p50": 4800.18,
+      "latency_ms_p95": 6639.7
+    }
+  },
+  "ship_gates": {
+    "pass": false,
+    "failures": [
+      "smoke.meaningful_program_rate",
+      "smoke.structural_similarity",
+      "smoke.component_type_recall"
+    ]
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 5,
+    "execution_errors": 0
+  },
+  "reliability": {
+    "completed_normally": true,
+    "elapsed_seconds": 18.4,
+    "excluded_setup_attempts": 1,
+    "excluded_setup_reason": "Network lookup retried before the explicit offline environment was set; no model or evaluation row was produced."
+  },
+  "verdict": "The durable checkpoint loads on current main, but current main lacks the experimental semantic decoder stack used by E490. Treat E490 as branch-only diagnostic evidence until that stack is selectively reconciled and re-evaluated."
+}

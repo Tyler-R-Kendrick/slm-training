@@ -38,6 +38,20 @@ def _git_sha() -> str | None:
         return None
 
 
+def _git_dirty() -> bool | None:
+    try:
+        out = subprocess.run(
+            ["git", "status", "--porcelain", "--untracked-files=no"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+        return bool(out.stdout.strip()) if out.returncode == 0 else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def data_manifest_sha(train_dir: Path) -> str | None:
     """Identity of the training corpus: manifest content fingerprint or file hash."""
     train_dir = Path(train_dir)

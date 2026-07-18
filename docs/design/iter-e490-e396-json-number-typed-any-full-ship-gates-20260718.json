@@ -85,5 +85,11 @@
     "assembly_elapsed_seconds": 1.8,
     "completed_normally": true
   },
-  "verdict": "Current-policy five-suite gates pass and the checkpoint is durable in the HF bucket; serving promotion is unchanged."
+  "reproducibility": {
+    "code_revision_recorded": false,
+    "current_main_reproduced": false,
+    "superseded_by_diagnostic": "E496",
+    "classification": "branch_only_diagnostic"
+  },
+  "verdict": "Five-suite gates passed on the experimental decoder branch and the checkpoint is durable in the HF bucket. E496 shows that current main does not reproduce the decoder result, so this remains branch-only diagnostic evidence."
 }

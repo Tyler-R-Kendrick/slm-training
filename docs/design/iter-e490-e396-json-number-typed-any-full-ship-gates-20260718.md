@@ -28,5 +28,12 @@ The exact checkpoint is durable at
 This satisfies checkpoint persistence; it does not change the serving
 deployment or constitute a new checkpoint promotion.
 
-**Verdict:** accept E490 as current-policy five-suite evidence for the durable
-E396 champion. Serving promotion remains unchanged.
+E496 later loaded the same checkpoint SHA on clean current `main`. Its honest
+smoke result retained syntax parse 1.0 but fell to meaningful 0.0, fidelity
+0.5556, structure 0.1131, type recall 0.0, and AgentV 0/5. The experimental
+decoder branch used here was never reconciled into `main`, and this result did
+not record an exact code revision.
+
+**Verdict:** retain E490 as branch-only diagnostic evidence for the durable E396
+checkpoint. It is not current-main or deployable-code evidence; E496 is the
+authoritative current-main audit. Serving promotion remains unchanged.

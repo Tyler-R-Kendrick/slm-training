@@ -1803,6 +1803,21 @@ adversarial success is not broad transfer and the checkpoint is not promotable.
 See [the narrative](iter-e295-design-context-dropout-20260717.md) and
 [machine-readable results](choice-design-dropout-results-iter-e295-20260717.json).
 
+## E496 current-main checkpoint reproducibility audit
+
+E496 loads the durable E396 checkpoint SHA on clean current `main`
+(`2351c1f10bbda16fee0a00707434a1e057f8abde`) and runs the complete three-record
+smoke suite under the hard three-minute policy. With local HF context, honest
+constrained slots, no fallback, and the 320-token LTR canvas, syntax parse is
+1.0 but meaningful rate and component type recall are 0.0; fidelity is 0.5556,
+structure 0.1131, reward 0.3023, and AgentV 0/5.
+
+This falsifies current-main reproducibility of E490. E490's 5/5 result remains
+branch-only diagnostic evidence from an unreconciled decoder stack; it is not a
+deployable-code champion claim. The checkpoint remains durable and unchanged.
+Full evidence: [narrative](iter-e496-current-main-e396-honest-smoke-20260718.md)
+and [JSON](iter-e496-current-main-e396-honest-smoke-20260718.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
