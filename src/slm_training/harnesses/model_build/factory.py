@@ -70,6 +70,14 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "compiler_search_stagnation_patience",
         "compiler_search_backtrack_limit",
         "compiler_search_local_nogoods",
+        "verified_solver_decode",
+        "solver_max_nodes",
+        "solver_max_depth",
+        "solver_max_backtracks",
+        "solver_max_verifier_calls",
+        "solver_max_wall_ms",
+        "solver_unknown_policy",
+        "solver_certificate_mode",
         "decode_min_content",
         "asap_decode",
         "fastpath_aux_weight",
@@ -293,6 +301,20 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         ),
         decode_min_content=max(-1, int(getattr(config, "decode_min_content", 0) or 0)),
         asap_decode=bool(getattr(config, "asap_decode", False)),
+        verified_solver_decode=bool(getattr(config, "verified_solver_decode", False)),
+        solver_max_nodes=int(getattr(config, "solver_max_nodes", 512) or 512),
+        solver_max_depth=int(getattr(config, "solver_max_depth", 64) or 64),
+        solver_max_backtracks=int(getattr(config, "solver_max_backtracks", 64) or 64),
+        solver_max_verifier_calls=int(
+            getattr(config, "solver_max_verifier_calls", 64) or 64
+        ),
+        solver_max_wall_ms=int(getattr(config, "solver_max_wall_ms", 0) or 0),
+        solver_unknown_policy=str(
+            getattr(config, "solver_unknown_policy", "keep_and_rank")
+        ),
+        solver_certificate_mode=str(
+            getattr(config, "solver_certificate_mode", "summary")
+        ),
         fastpath_aux_weight=getattr(config, "fastpath_aux_weight", 0.0),
         fastpath_gate_threshold=float(
             getattr(config, "fastpath_gate_threshold", 0.5) or 0.5

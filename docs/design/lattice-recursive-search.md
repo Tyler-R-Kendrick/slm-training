@@ -81,6 +81,25 @@ certified-deduction / reversible-decision / local-nogood / certified-contradicti
 timeout table live in
 [verified-scope-solver.md](verified-scope-solver.md). Not wired into decode.
 
+### Decode integration behind a flag (VSS1-03)
+
+[`dsl/solver/decode.py`](../../src/slm_training/dsl/solver/decode.py)
+`solver_prune` and [`models/twotower.py`](../../src/slm_training/models/twotower.py)
+`_solver_prune_forest` finally wire this hard/soft split into the compiler-tree
+lattice decode: inside `_compiler_ltr_decode_one`, right after
+`build_completion_forest`, the authoritative forest is projected to a
+`FiniteDomainState`, exact closure runs, and the forest is pruned to the
+certificate-checked live subset **before** `rank_forest` scores anything. So a
+learned ranker only ever reorders candidates that survived certified deduction; it
+can neither reintroduce a certified-removed path (survivors are a subset that keeps
+`CompletionPath` identity and forest order) nor rescue an `UNKNOWN` into removal
+(`keep_and_rank` keeps it live). A certified bottom empties the forest and reuses
+the existing `LatticeSearchState` rollback rather than emitting an unverified
+fallback. The whole seam is gated by `verified_solver_decode` (**default off**);
+off, the lattice decode and its stats/trace output are byte-identical, so the V9
+campaign rows and all measured results below are unaffected. The enabled path is
+**unmeasured** — no new campaign row, checkpoint, or ship claim.
+
 ## Campaign design (V9)
 
 The registered runnable rows are hypotheses, not results. The matched controls separate the

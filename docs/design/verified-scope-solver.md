@@ -286,6 +286,65 @@ controller validates the returned sequence is a permutation and rejects any
 missing/extra/duplicate); `CERTIFIED_UNSAT` is impossible when any required branch
 was UNKNOWN or budget-truncated; every `SOLVED` carries a final verifier report.
 
+## Implemented decode integration (VSS1-03 / SLM-63)
+
+[`dsl/solver/decode.py`](../../src/slm_training/dsl/solver/decode.py) adds
+`solver_prune(forest, prefix_ids, provider, ...)`, and
+[`models/twotower.py`](../../src/slm_training/models/twotower.py)
+`_solver_prune_forest` wires it into the compiler-tree / choice decode loop
+(`_compiler_ltr_decode_one`, right after `build_completion_forest`). It is gated
+by eight backward-compatible, **disabled-by-default** config fields
+(`verified_solver_decode=False`, `solver_max_nodes`, `solver_max_depth`,
+`solver_max_backtracks`, `solver_max_verifier_calls`, `solver_max_wall_ms`,
+`solver_unknown_policy="keep_and_rank"`, `solver_certificate_mode`) on
+`TwoTowerConfig` / `ModelBuildConfig`; missing fields on existing checkpoints take
+the defaults, so the flag round-trips through config/CLI/checkpoint metadata
+without adding a model parameter.
+
+Per decode decision, when the flag is on and the forest is authoritative:
+
+```text
+forest = build_completion_forest(prefix)      # unchanged; the authoritative set
+if forest.coverage != "complete" or not forest.paths:
+    return forest                             # closure is authoritative only over exhaustive coverage
+state  = completion_forest_state(prefix, forest, pack, cv, bounds)   # one-hole projection
+result = exact_closure(state, provider)       # VSS1-01 certified fixed point
+removed = {v for v in state.domain} - {v for v in result.survivors} # certified-removed only
+forest' = forest keep-order minus paths whose (kind, token_ids) in removed
+```
+
+Honesty invariants this seam preserves (owned here):
+
+- **Subset, identity-preserving.** A surviving path is an original
+  `CompletionPath` object (full path identity and forced suffixes intact); the
+  order is the original forest order. Closure may only *remove*; it never invents
+  a candidate the forest lacked, so a later soft ranker (logits) can never
+  reintroduce a certified-removed candidate — it is simply absent.
+- **Removal needs a replay-valid certificate.** A candidate is dropped only when
+  it was in the closure input domain and got certified `UNSUPPORTED`
+  (`removed = input_domain − survivors`); the closure re-checks each certificate
+  before applying it. `UNKNOWN` (partial coverage / unavailable capability /
+  budget) is always kept — `keep_and_rank` is the only supported policy.
+- **Certified bottom ≠ fallback.** When every candidate is certified
+  `UNSUPPORTED`, the pruned forest is **empty**, and the existing decode
+  dead-end/rollback path handles it — never an unverified fallback emission.
+- **Capability error, not a silent weaker path.** With the flag on, an
+  unsupported tokenizer/pack (`is_dsl_native_tokenizer` false) raises a clear
+  `ValueError` instead of quietly decoding without the solver while reporting
+  solver mode.
+- **Model-independent enumeration.** `decode.py` is Torch-free; support
+  enumeration runs no denoiser forward. The reference oracle order is
+  model-independent; the model scores only the surviving live set afterward.
+
+With `verified_solver_decode=False` the seam is skipped entirely (a single
+`getattr` guard), so default decode is byte-identical — pinned by
+`tests/test_models/test_solver_decode_integration.py` (fixed seed/fixture parity)
+and the unchanged `tests/test_models/test_compiler_decode.py`. Core
+removal/keep/bottom/coverage semantics are pinned Torch-free by
+`tests/test_dsl/test_solver_decode.py`. **No train, eval, benchmark, checkpoint,
+or experiment ran; the enabled path is unmeasured and this makes no correctness,
+readiness, speed, or ship claim.**
+
 ## Reference support semantics
 
 | Verdict | Requirement | Removal permitted? |
@@ -400,6 +459,7 @@ the closure.
 | `ChoiceTokenizer` / `ChoiceDecodeState` (`models/choice_tokenizer.py:172`/`:608`) | Grammar-closed choice IR; length-aware legality (`allowed_ids`, `exhaustive_allowed_ids`, `minimal_completion_length`). | **Retained.** The choice IR is the late-realization and verification surface. Not duplicated. |
 | `HoleId`, `SolverBounds`, `DomainValue`, `HoleDomain`, `FiniteDomainState` (`dsl/solver/state.py`) | Immutable JSON-safe finite-domain carrier with canonical hard-state identity and monotone operations. | **Implemented by VSS0-03.** Torch-free and not invoked by default; soft scores and proof artifacts remain outside the state. |
 | `completion_forest_state` (`dsl/solver/adapters.py`) | One-hole projection of full compiler completion paths plus coverage and `UNKNOWN` provenance. | **Implemented by VSS0-03.** Retains the compiler as owner; a singleton solves only the projection. |
+| `solver_prune` (`dsl/solver/decode.py`), `_solver_prune_forest` (`models/twotower.py`) | Decode-time forest pruning to the certificate-checked live subset, before soft ranking. | **Implemented by VSS1-03 behind `verified_solver_decode` (default off).** Removes only replay-valid `UNSUPPORTED`; keeps `UNKNOWN`; disabled-mode decode is byte-identical. |
 | `verification capsule`, `proof certificate` | Not implemented yet. | **Future VSS issues.** Capsule solving and replayable proof ownership are not duplicated here. |
 
 ## End-to-end example (partial coverage → live `UNKNOWN`)
@@ -527,3 +587,28 @@ integration, no learned energy, no persistent clause DB, and **no ship claim**.
 Verified: `python -m pytest tests/test_dsl/test_solver_controller.py
 tests/test_dsl/test_lattice_search.py -q` (94 in the full solver+compat suite) and
 `python -m scripts.repo_policy`.
+
+2026-07-18 — VSS1-03 / SLM-63 integrates certificate-checked exact closure into
+the compiler-tree / choice decode path behind a disabled-by-default flag
+(`dsl/solver/decode.py` `solver_prune`; `models/twotower.py`
+`_solver_prune_forest`, called in `_compiler_ltr_decode_one` after
+`build_completion_forest`). Eight backward-compatible config fields
+(`verified_solver_decode` + `solver_*`) round-trip on `TwoTowerConfig` /
+`ModelBuildConfig`, plumb through `factory.apply_runtime_overrides` and
+`scripts/evaluate_model.py`, and default on old checkpoints; no new model
+parameter. When enabled, closure runs before soft ranking and removes **only**
+replay-valid `UNSUPPORTED` candidates (`removed = input_domain − survivors`);
+`UNKNOWN` stays live (`keep_and_rank`); survivors keep full `CompletionPath`
+identity/forced suffixes and forest order (a ranker cannot reintroduce a removed
+candidate); a certified bottom yields an empty forest so the existing
+dead-end/rollback path runs (never an unverified fallback); an unsupported
+tokenizer/pack raises a capability error rather than silently taking a weaker
+path. With the flag off the seam is skipped and decode is byte-identical. Pinned
+by `tests/test_models/test_solver_decode_integration.py` (disabled parity, config
+round-trip, real-closure subset, capability error, seam-gated invocation) and the
+Torch-free `tests/test_dsl/test_solver_decode.py` (removal/keep/bottom/coverage).
+No train/eval/benchmark/checkpoint ran; the enabled path is **unmeasured** and
+makes **no correctness, speed, or ship claim**. Verified: `python -m pytest
+tests/test_models/test_solver_decode_integration.py
+tests/test_models/test_compiler_decode.py tests/test_dsl/test_solver_decode.py
+tests/test_dsl/test_solver_controller.py -q` and `python -m scripts.repo_policy`.
