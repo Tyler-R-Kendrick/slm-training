@@ -1,0 +1,56 @@
+{
+  "issue": "SLM-93",
+  "branch": "agent/slm-93-cap3-04-quant-sensitivity",
+  "date": "2026-07-18",
+  "status": "wiring evidence / fixture dry-run",
+  "harness": "src/slm_training/harnesses/quantization/sensitivity.py",
+  "allocator": "src/slm_training/harnesses/quantization/allocation.py",
+  "runners": [
+    "scripts/profile_quant_sensitivity.py",
+    "scripts/allocate_mixed_precision.py"
+  ],
+  "tests": [
+    "tests/test_harnesses/quantization/test_sensitivity.py",
+    "tests/test_harnesses/quantization/test_allocation.py"
+  ],
+  "recipe": {
+    "device": "CPU",
+    "checkpoint": "toy LocalFlatHead",
+    "trace_source": "256 synthetic grammar_decision records",
+    "formats": ["ternary", "learned4zero", "int4", "int8"],
+    "group_size": 128,
+    "sampling_strategy": "hybrid_coverage_margin",
+    "samples": 64,
+    "seeds": [0]
+  },
+  "sensitivity_run_id": "cap3-04-20260718223655",
+  "sensitivity_artifact": "outputs/runs/cap3-04-sensitivity/sensitivity_report_cap3-04-20260718223655.json",
+  "allocation_run_id": "cap3-04-alloc-20260718223356",
+  "allocation_artifact": "outputs/runs/cap3-04-allocation/allocation.json",
+  "allocation": {
+    "budget_bytes": 2048,
+    "objective": "mean_regret",
+    "total_bytes": 656,
+    "total_cost": 0.0,
+    "solver_status": "optimal",
+    "choices": [
+      {"group_id": "local_head/embeddings", "format_id": "int4", "bytes": 588, "mean_regret": 0.0},
+      {"group_id": "local_head/scorer", "format_id": "ternary", "bytes": 68, "mean_regret": 0.0}
+    ],
+    "baselines": {
+      "uniform": {"total_bytes": 688, "total_cost": 0.0},
+      "random": {"total_bytes": 1136, "total_cost": 0.0},
+      "hand_hybrid": {"total_bytes": 560, "total_cost": 0.21875}
+    }
+  },
+  "caveat": "CPU/toy fixture wiring evidence; ship-grade profiling requires GPU + local E224+ checkpoints + full --ship-gates. Fisher/Jacobian proxies are diagnostic stubs; latency is modeled, not measured.",
+  "verification": {
+    "unit_tests": "12 passed",
+    "dry_run": "ok",
+    "fixture_profile": "8/8 OK points for matched groups",
+    "fixture_allocation": "optimal under 2048-byte budget",
+    "repo_policy": "ok",
+    "check_changed": "passed",
+    "diff_check": "passed"
+  }
+}
