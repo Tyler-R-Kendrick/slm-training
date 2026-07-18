@@ -176,6 +176,17 @@ class ModelBuildConfig:
     scope_independent_noise: bool = False
     scope_local_oracle: bool = False
     scope_contract_negatives: bool = False
+    # VSS3-03: topology finite-domain solver integration (disabled by default).
+    topology_verified_solver: bool = False
+    topology_capsule_solver: bool = False
+    topology_solver_ranker: str = "model"  # deterministic | model | energy
+    topology_solver_unknown_policy: str = "keep_and_rank"
+    topology_solver_max_nodes: int = 256
+    topology_solver_max_backtracks: int = 64
+    topology_solver_max_verifier_calls: int = 64
+    topology_solver_certificate_mode: str = "summary"
+    topology_solver_local_oracle: bool = True
+    topology_solver_global_verify: bool = True
     # Cycle telemetry (train/infer span JSON)
     telemetry: bool = True
     # V5: lexer-native output tokenizer + Stage-2 levers

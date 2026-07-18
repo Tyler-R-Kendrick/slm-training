@@ -74,7 +74,9 @@ from slm_training.dsl.solver.topology_adapter import (
     TopologyAdapterConfig,
     TopologyEdit,
     TopologyHole,
+    TopologyNodeLike,
     derive_topology_holes,
+    derive_topology_state,
     legal_topology_productions,
 )
 
@@ -128,6 +130,7 @@ __all__ = [
     "TopologyDomainAdapter",
     "TopologyEdit",
     "TopologyHole",
+    "TopologyNodeLike",
     "Verifier",
     "VerifyOutcome",
     "VerifyStatus",
@@ -137,6 +140,7 @@ __all__ = [
     "default_hole_selector",
     "default_query_order",
     "derive_topology_holes",
+    "derive_topology_state",
     "exact_closure",
     "legal_topology_productions",
     "replay_support_certificate",
