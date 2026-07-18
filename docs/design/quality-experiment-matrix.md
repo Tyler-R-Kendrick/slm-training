@@ -2207,6 +2207,12 @@ still 0/4 and held/adversarial semantics remain zero. Retain the policy lever,
 not the checkpoint. See [results](iter-e341-hf-context-honest-slot-20260717.md)
 and [JSON](hf-context-honest-slot-results-iter-e341-20260717.json).
 
+E342 restores component-plan decode bias on top of E341. Fidelity regresses,
+adversarial/OOD parse fall to 0.75, and OOD's semantic signal disappears.
+Reject the composition; train the visible-slot path instead. See
+[results](iter-e342-hf-context-honest-slot-plan-20260717.md) and
+[JSON](hf-context-honest-slot-plan-results-iter-e342-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
