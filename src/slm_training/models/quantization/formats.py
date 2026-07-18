@@ -165,6 +165,24 @@ KERNEL_REGISTRY: dict[str, KernelCapability] = {
         packed_inference=False,
         notes="Descriptor-only residual plane; execution in CAP4.",
     ),
+    "block_sparse_ternary": KernelCapability(
+        reference_pytorch=True,
+        cpu_optimized=False,
+        cuda=False,
+        zero_skipping=False,
+        packed_inference=True,
+        supported_group_sizes=(128,),
+        notes="Block-masked ternary reference path; mask zeros whole blocks, not individual weights.",
+    ),
+    "state_family_expert": KernelCapability(
+        reference_pytorch=True,
+        cpu_optimized=False,
+        cuda=False,
+        zero_skipping=False,
+        packed_inference=False,
+        supported_group_sizes=(128,),
+        notes="Low-rank residual expert bank routed by exact compiler state; no optimized gather kernel claimed.",
+    ),
 }
 
 
@@ -389,4 +407,44 @@ def residual_ternary_plane_format(group_size: int = 128) -> QuantFormat:
         supports_exact_zero=True,
         entropy_coding=None,
         kernel_id=None,
+    )
+
+
+def block_sparse_ternary_format(group_size: int = 128) -> QuantFormat:
+    """Ternary format for block-masked weights; mask overhead is accounted separately."""
+    return QuantFormat(
+        format_id="block_sparse_ternary",
+        weight_levels=(-1.0, 0.0, 1.0),
+        nominal_symbol_bits=math.log2(3),
+        physical_slot_bits=2,
+        group_size=group_size,
+        scale_dtype="fp16",
+        zero_point_dtype=None,
+        bias_dtype="fp16",
+        activation_dtype="fp16",
+        accumulation_dtype="fp32",
+        packing_layout="block_sparse_ternary_packed",
+        supports_exact_zero=True,
+        entropy_coding=None,
+        kernel_id="block_sparse_ternary",
+    )
+
+
+def state_family_expert_format(group_size: int = 128) -> QuantFormat:
+    """FP16 format for low-rank expert U/V matrices."""
+    return QuantFormat(
+        format_id="state_family_expert",
+        weight_levels=(),
+        nominal_symbol_bits=16.0,
+        physical_slot_bits=16,
+        group_size=group_size,
+        scale_dtype="fp16",
+        zero_point_dtype=None,
+        bias_dtype="fp16",
+        activation_dtype="fp16",
+        accumulation_dtype="fp32",
+        packing_layout="fp16_dense_expert_bank",
+        supports_exact_zero=True,
+        entropy_coding=None,
+        kernel_id="state_family_expert",
     )

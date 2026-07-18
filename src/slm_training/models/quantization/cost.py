@@ -42,6 +42,9 @@ class TensorCost:
     total_bytes: int
     activation_bytes: int = 0
     scratch_bytes: int = 0
+    active_numel: int | None = None
+    active_physical_weight_bytes: int | None = None
+    active_total_bytes: int | None = None
     exclusion_reason: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
@@ -64,6 +67,9 @@ class TensorCost:
             "total_bytes": self.total_bytes,
             "activation_bytes": self.activation_bytes,
             "scratch_bytes": self.scratch_bytes,
+            "active_numel": self.active_numel,
+            "active_physical_weight_bytes": self.active_physical_weight_bytes,
+            "active_total_bytes": self.active_total_bytes,
             "exclusion_reason": self.exclusion_reason,
         }
 
@@ -218,8 +224,14 @@ def compute_tensor_cost(
     activation_shape: tuple[int, ...] | None = None,
     exclusion_reason: str | None = None,
     metadata_overhead_bytes: int = 32,
+    active_mask: torch.Tensor | None = None,
 ) -> TensorCost:
-    """Compute a physical-cost breakdown for a single tensor."""
+    """Compute a physical-cost breakdown for a single tensor.
+
+    If ``active_mask`` is provided, the returned ``TensorCost`` also reports
+    active-numel and active-byte estimates for the selected subset.  The mask
+    must be broadcastable to ``tensor.shape``.
+    """
     gsize = group_size if group_size is not None else fmt.group_size
     numel = tensor.numel()
     level_count = fmt.level_count
@@ -259,6 +271,28 @@ def compute_tensor_cost(
         + metadata_overhead_bytes
     )
 
+    active_numel: int | None = None
+    active_weight_bytes: int | None = None
+    active_total: int | None = None
+    if active_mask is not None:
+        active_numel = int(active_mask.sum().item())
+        if fmt.format_id in ("fp16", "bf16") or exclusion_reason:
+            active_weight_bytes = active_numel * fmt.physical_slot_bits // 8
+        else:
+            active_weight_bytes = _packing_bytes(
+                active_numel, fmt.physical_slot_bits, gsize
+            )
+        # Prorate scale/zero-point/bias/metadata overhead by active fraction.
+        ratio = active_numel / max(1, numel)
+        active_total = int(
+            active_weight_bytes
+            + scale_bytes * ratio
+            + zp_bytes * ratio
+            + bias_bytes * ratio
+            + other_bytes
+            + metadata_overhead_bytes
+        )
+
     return TensorCost(
         name=name,
         shape=tuple(tensor.shape),
@@ -277,6 +311,9 @@ def compute_tensor_cost(
         metadata_overhead_bytes=metadata_overhead_bytes,
         total_bytes=total,
         activation_bytes=activation_bytes,
+        active_numel=active_numel,
+        active_physical_weight_bytes=active_weight_bytes,
+        active_total_bytes=active_total,
         exclusion_reason=exclusion_reason,
     )
 
