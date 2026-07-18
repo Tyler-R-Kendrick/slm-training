@@ -81,3 +81,51 @@ def test_topology_solver_prune_runs_and_is_monotone() -> None:
             )
     assert survivors <= original
     assert result.counters.support_queries >= 0
+
+
+def test_topology_capsule_solver_runs_without_error() -> None:
+    """The synthetic joint-capsule coordinator runs and returns a result."""
+    codec = ProductionCodec.build([HERO])
+    root = _FakeNode(
+        node_id=0,
+        node_type="document",
+        production_id=codec.bos_id,
+        active=True,
+        children=[
+            _FakeNode(
+                node_id=1,
+                node_type="statement",
+                production_id=codec.production_to_id["="],
+                active=True,
+                parent_id=0,
+                depth=1,
+            )
+        ],
+    )
+    adapter_config = TopologyAdapterConfig(
+        topology_max_nodes=8,
+        topology_max_active=8,
+        topology_max_depth=4,
+    )
+    bounds = SolverBounds(
+        max_tokens=256,
+        max_nodes=8,
+        max_depth=4,
+        max_backtracks=2,
+        max_verifier_calls=4,
+    )
+    from slm_training.dsl.solver.topology_solver import (
+        topology_capsule_solver_solve,
+    )
+
+    text, result = topology_capsule_solver_solve(
+        root,
+        codec,
+        adapter_config,
+        slot_inventory=[":hero.title"],
+        output_kind="document",
+        bounds=bounds,
+    )
+    assert result.status in {"solved", "unknown"}
+    assert len(result.capsule_results) == 1
+    assert result.capsule_results[0].capsule_id == "capsule_topology"

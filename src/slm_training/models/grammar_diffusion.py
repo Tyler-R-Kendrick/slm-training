@@ -30,6 +30,8 @@ from slm_training.models.twotower import format_context_text
 from slm_training.dsl.solver.state import SolverBounds
 from slm_training.dsl.solver.topology_solver import (
     TopologyAdapterConfig,
+    TopologyEdit,
+    topology_capsule_solver_solve,
     topology_solver_prune,
 )
 from slm_training.dsl.pack import PackSlotUnavailable, get_pack
@@ -1635,15 +1637,97 @@ class GrammarDiffusionModel(nn.Module):
                     pass
 
             if use_capsules and capsule_available:
-                # VSS3-03 future work: drive solve_capsule_graph with topology
-                # capsule hooks.  Until those pack slots are implemented, fall
+                # VSS3-03: drive the synthetic joint-capsule coordinator.  If it
+                # does not produce a solved result with non-empty survivors, fall
                 # back to whole-tree exact closure and record the honest gap.
-                trace = {
+                try:
+                    source, capsule_result = topology_capsule_solver_solve(
+                        root,
+                        self.codec,
+                        adapter_config,
+                        slot_inventory,
+                        output_kind,
+                        bounds,
+                        cache=getattr(self, "_topology_solver_cache", None),
+                        certificate_store=getattr(
+                            self, "_topology_solver_cert_store", None
+                        ),
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    source, capsule_result = None, None
+                    capsule_error = str(exc)[:200]
+                else:
+                    capsule_error = None
+
+                capsule_survivors: set[
+                    tuple[int, str, int, int, int]
+                ] = set()
+                if capsule_result is not None:
+                    for per_capsule in capsule_result.capsule_results:
+                        if (
+                            per_capsule.status != "solved"
+                            or per_capsule.search_result is None
+                        ):
+                            continue
+                        for decision in per_capsule.search_result.decisions:
+                            node_id = decision.hole_id.path[0]
+                            if not isinstance(node_id, int):
+                                continue
+                            try:
+                                edit = TopologyEdit.from_value(decision.chosen)
+                            except (KeyError, ValueError, TypeError):
+                                continue
+                            capsule_survivors.add(
+                                (
+                                    node_id,
+                                    edit.action.name,
+                                    edit.production_id,
+                                    edit.arity,
+                                    edit.slot_id,
+                                )
+                            )
+
+                if (
+                    capsule_result is not None
+                    and capsule_result.status == "solved"
+                    and capsule_survivors
+                ):
+                    return capsule_survivors, {
+                        "enabled": True,
+                        "capsule_mode": True,
+                        "capsule_available": True,
+                        "capsule_solver_status": capsule_result.status,
+                        "assembled_source": source,
+                        "survivor_count": len(capsule_survivors),
+                        "capsule_count": capsule_result.counters.capsule_count,
+                        "joint_count": capsule_result.counters.joint_count,
+                        "solver_verifier_calls": capsule_result.counters.solver_verifier_calls,
+                    }
+
+                trace: dict[str, Any] = {
                     "enabled": True,
                     "capsule_mode": True,
-                    "capsule_fallback": "pack_capsule_slots_unimplemented",
+                    "capsule_available": True,
+                    "capsule_fallback": (
+                        f"capsule_solver_{capsule_result.status}"
+                        if capsule_result is not None
+                        else "capsule_solver_error"
+                    ),
                 }
-                # Fall through to the whole-tree prune below.
+                if capsule_error is not None:
+                    trace["capsule_error"] = capsule_error
+                elif capsule_result is not None:
+                    trace["capsule_solver_status"] = capsule_result.status
+                    trace["capsule_solver_stop_reason"] = capsule_result.stop_reason
+                # Fall through to whole-tree exact closure below.
+            else:
+                trace = {
+                    "enabled": True,
+                    "capsule_mode": use_capsules,
+                    "capsule_available": capsule_available,
+                }
+                if use_capsules and not capsule_available:
+                    trace["capsule_fallback"] = "pack_capsule_slots_unimplemented"
 
             survivors, result = topology_solver_prune(
                 root,
@@ -1660,19 +1744,16 @@ class GrammarDiffusionModel(nn.Module):
                     ),
                 ),
             )
-            trace = {
-                "enabled": True,
-                "capsule_mode": use_capsules,
-                "capsule_available": capsule_available,
-                "reached_fixed_point": result.reached_fixed_point,
-                "stop_reason": result.stop_reason,
-                "candidates_removed": result.counters.candidates_removed,
-                "support_queries": result.counters.support_queries,
-                "verifier_calls": result.counters.verifier_calls,
-                "survivor_count": len(survivors),
-            }
-            if use_capsules and not capsule_available:
-                trace["capsule_fallback"] = "pack_capsule_slots_unimplemented"
+            trace.update(
+                {
+                    "reached_fixed_point": result.reached_fixed_point,
+                    "stop_reason": result.stop_reason,
+                    "candidates_removed": result.counters.candidates_removed,
+                    "support_queries": result.counters.support_queries,
+                    "verifier_calls": result.counters.verifier_calls,
+                    "survivor_count": len(survivors),
+                }
+            )
             return survivors, trace
         except Exception as exc:  # noqa: BLE001
             return None, {"enabled": True, "error": str(exc)[:200]}
