@@ -2674,6 +2674,18 @@ Accept the lever for capped full-RICO expansion, but do not make a full-suite
 or champion claim yet. See
 [`iter-e453-e396-repaired-rico-prompt-role-20260718.md`](iter-e453-e396-repaired-rico-prompt-role-20260718.md).
 
+E454 begins capped full-RICO expansion on E451. Shard 0 (rows 0–95) completes
+normally with meaningful/fidelity/recall 1.0, structure 0.8843, reward 0.9955,
+and no failures, fallbacks, or timeouts. Shard 1 extends coverage through row
+191 at meaningful/fidelity 1.0, structure 0.8603, recall 0.9948, and reward
+0.9936, again with no recorded failures. Shard 2 reaches row 287 at
+meaningful/fidelity/recall 1.0, structure 0.8521, and reward 0.9948. Coverage
+extends through row 383 with shard 3 at meaningful/fidelity 1.0, structure
+0.8687, recall 0.9948, and reward 0.9928. Shard 4 reaches row 479 at
+meaningful/fidelity 1.0, structure 0.8641, recall 0.9844, and reward 0.9927.
+Coverage is 480/1500, so the campaign remains partial and non-ship. See
+[`iter-e454-e396-repaired-full-rico-sharded-20260718.md`](iter-e454-e396-repaired-full-rico-sharded-20260718.md).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
