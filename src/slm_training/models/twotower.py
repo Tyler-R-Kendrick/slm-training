@@ -176,6 +176,7 @@ _PROMPT_COMPONENT_PLACEHOLDER_ARITY = {
 }
 _COMPONENT_SLOT_ARGUMENTS = {
     "Callout": frozenset({1, 2}),
+    "ImageBlock": frozenset({0, 1}),
     "Slider": frozenset({6}),
     "SwitchItem": frozenset({0, 1}),
     "TabItem": frozenset({1}),
@@ -4717,7 +4718,18 @@ class TwoTowerModel(nn.Module):
                 and state.frames[0].kind == "component"
             ):
                 frame = state.frames[0]
-                if frame.arg_index >= frame.required_args:
+                component = frame.expr_type.removeprefix("element:")
+                semantic_args = _COMPONENT_SLOT_ARGUMENTS.get(component)
+                emitted = set(prefix or ())
+                slots_remain = any(
+                    tok.token_to_id[f"@{index}"] not in emitted
+                    for index in range(len(slot_contract or ()))
+                )
+                if frame.arg_index >= frame.required_args and not (
+                    semantic_args
+                    and frame.arg_index in semantic_args
+                    and slots_remain
+                ):
                     component_close_id = tok.token_to_id["-"]
                     return (
                         {component_close_id}
@@ -4726,13 +4738,10 @@ class TwoTowerModel(nn.Module):
                     )
                 schema = frame.schemas[frame.arg_index]
                 if state._schema_accepts(schema, "string") and slot_contract:
-                    emitted = set(prefix or ())
                     slot_ids = {
                         tok.token_to_id[f"@{index}"]
                         for index in range(len(slot_contract))
                     }
-                    component = frame.expr_type.removeprefix("element:")
-                    semantic_args = _COMPONENT_SLOT_ARGUMENTS.get(component)
                     if (
                         semantic_args is not None
                         and frame.arg_index not in semantic_args
@@ -4985,10 +4994,8 @@ class TwoTowerModel(nn.Module):
         candidates = legal & pending
         if candidates:
             return candidates
-        if not slot_contract:
-            stack_id = self.tokenizer.token_to_id["+Stack"]
-            return {stack_id} if stack_id in legal else legal
-        return legal
+        stack_id = self.tokenizer.token_to_id["+Stack"]
+        return {stack_id} if stack_id in legal else legal
 
     def _choice_ltr_decode_batch(
         self,

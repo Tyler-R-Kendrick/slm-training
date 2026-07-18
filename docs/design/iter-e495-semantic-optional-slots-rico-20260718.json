@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E495",
+  "date": "2026-07-18",
+  "status": "complete",
+  "run_id": "e495-e396-semantic-optional-slots-rico-24-r1",
+  "checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0"
+  },
+  "data": {
+    "version": "e451_root_binder_v1",
+    "suite": "rico_held",
+    "suite_total_n": 1500,
+    "eval_offset": 144,
+    "eval_end": 168,
+    "n": 24,
+    "diagnostic_subset": true
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "grammar_ltr_max_tokens": 320,
+    "gen_steps": 8,
+    "max_attempts": 3,
+    "component_plan_decode_weight": 2.0,
+    "slot_component_decode_weight": 8.0,
+    "prompt_role_constrained_decode": true,
+    "slot_contract_constrained_decode": true,
+    "honest_slot_contract": true,
+    "allow_unconstrained_fallback": false,
+    "external_interrupt_seconds": 170,
+    "external_kill_after_seconds": 10,
+    "maximum_total_seconds": 180
+  },
+  "metrics": {
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 1.0,
+    "placeholder_fidelity": 1.0,
+    "structural_similarity": 0.8910833333333333,
+    "component_type_recall": 1.0,
+    "reward_score": 0.991375,
+    "fallback_count": 0,
+    "decode_timeout_count": 0,
+    "latency_ms_p50": 3625.87,
+    "latency_ms_p95": 7372.69
+  },
+  "matched_e487_slice": {
+    "structural_similarity": 0.8403666666666667,
+    "structural_similarity_delta": 0.05071666666666663,
+    "prediction_changes": 3,
+    "improved_records": 3,
+    "regressed_records": 0,
+    "changes": [
+      {
+        "id": "rico_hf_test_293",
+        "before": 0.35,
+        "after": 1.0,
+        "delta": 0.65
+      },
+      {
+        "id": "rico_hf_test_296",
+        "before": 0.6833,
+        "after": 0.7455,
+        "delta": 0.06220000000000003
+      },
+      {
+        "id": "rico_hf_test_319",
+        "before": 0.495,
+        "after": 1.0,
+        "delta": 0.505
+      }
+    ]
+  },
+  "agentv": {
+    "published": true,
+    "total": 5,
+    "passed": 0,
+    "execution_errors": 0,
+    "interpretation": "Diagnostic single-suite envelope; four policy suites are intentionally absent."
+  },
+  "timing": {
+    "elapsed_seconds": 123.6,
+    "completed_normally": true
+  },
+  "verdict": "Accept diagnostic slice. Full RICO evidence is still required before changing the five-suite ship claim."
+}

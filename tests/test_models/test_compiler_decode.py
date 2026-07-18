@@ -180,6 +180,30 @@ def test_prompt_role_contract_forces_missing_zero_slot_controls() -> None:
     assert complete == {stack}
 
 
+def test_prompt_role_contract_stops_after_filling_visible_slots() -> None:
+    from slm_training.models.choice_tokenizer import ChoiceTokenizer
+
+    model = _model()
+    model.tokenizer = ChoiceTokenizer.build()
+    tokenizer = model.tokenizer
+    image = tokenizer.token_to_id["+ImageBlock"]
+    text = tokenizer.token_to_id["+TextContent"]
+    stack = tokenizer.token_to_id["+Stack"]
+    required = Counter({"ImageBlock": 2})
+    state = SimpleNamespace(
+        mode="structural",
+        frames=[],
+        section_types=["element:ImageBlock", "element:ImageBlock"],
+    )
+
+    assert model._choice_prompt_role_legal_ids(
+        state,
+        {image, text, stack},
+        required,
+        [":assets.image0", ":image0.alt", ":assets.image1", ":image1.alt"],
+    ) == {stack}
+
+
 def test_slot_contract_reserves_switch_identifier_for_literal() -> None:
     from slm_training.models.choice_tokenizer import ChoiceDecodeState, ChoiceTokenizer
 
@@ -242,6 +266,32 @@ def test_slot_contract_reserves_switch_identifier_for_literal() -> None:
     assert model._choice_prompt_role_legal_ids(
         completed, density_legal, required, [":label", ":description", ":volume"]
     ) == {slider}
+
+
+def test_slot_contract_fills_optional_image_alt_before_close() -> None:
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState, ChoiceTokenizer
+
+    model = _model(component_plan_decode_weight=2.0)
+    tokenizer = ChoiceTokenizer.build()
+    model.tokenizer = tokenizer
+    state = ChoiceDecodeState(tokenizer, slot_count=2)
+    image = tokenizer.token_to_id["+ImageBlock"]
+    source = tokenizer.sym_id(0)
+    alt = tokenizer.sym_id(1)
+    close = tokenizer.token_to_id["-"]
+    assert state.advance_id(image)
+    assert state.advance_id(source)
+
+    constrained = model._choice_min_content_legal_ids(
+        state,
+        state.allowed_ids(62),
+        [":assets.hero", ":hero.alt"],
+        [tokenizer.bos_id, image, source],
+        prompt_role_contract=Counter({"ImageBlock": 1}),
+    )
+
+    assert constrained == {alt}
+    assert close not in constrained
 
 
 def test_choice_component_plan_trains_without_surface_compiler() -> None:
