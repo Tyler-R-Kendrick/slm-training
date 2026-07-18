@@ -286,6 +286,44 @@ def _atomic_json(path: Path, payload: dict[str, Any]) -> None:
         tmp.unlink(missing_ok=True)
 
 
+def _quality_summary(report: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Compact quality_report.json digest for tiles (None when absent)."""
+    if not isinstance(report, dict):
+        return None
+    counts = report.get("counts") or {}
+    fitness = report.get("constraint_fitness") or {}
+    garbage = report.get("garbage") or {}
+    redundancy = report.get("redundancy") or {}
+    dropped = redundancy.get("dropped") or {}
+    decontamination = report.get("decontamination") or {}
+    admitted = counts.get("admitted")
+    rejected_total = counts.get("rejected_total")
+    candidates = counts.get("candidates")
+    return {
+        "schema_version": report.get("schema_version"),
+        "profile": report.get("profile"),
+        "admitted": admitted,
+        "rejected_total": rejected_total,
+        "rejected_by_stage": counts.get("by_stage") or {},
+        "admission_rate": (
+            round(admitted / candidates, 4)
+            if isinstance(admitted, int) and isinstance(candidates, int) and candidates
+            else None
+        ),
+        "parse_rate": fitness.get("parse_rate"),
+        "judge_pass_rate": fitness.get("judge_pass_rate"),
+        "placeholder_contract_violations": fitness.get(
+            "placeholder_contract_violations"
+        ),
+        "mean_quality_score": garbage.get("mean_quality_score"),
+        "redundancy_dropped": sum(
+            value for value in dropped.values() if isinstance(value, int)
+        ),
+        "decontam_flagged": decontamination.get("ngram_flagged", 0),
+        "engines": report.get("engines") or {},
+    }
+
+
 class Readers:
     """Facade over the repo's evidence tree. ``root`` is the repo root."""
 
@@ -574,6 +612,7 @@ class Readers:
             "manifest": lineage_manifest,
             "scoreboard": scoreboard,
             "insights": insights,
+            "training_data": self.run_training_data(run_id),
             **artifacts,
         }
 
@@ -994,6 +1033,9 @@ class Readers:
             or manifest.get("source_families")
             or {},
             "record_count": stats.get("record_count"),
+            "profile": manifest.get("profile") or stats.get("profile"),
+            "quality": _quality_summary(_read_json(vdir / "quality_report.json")),
+            "used_by_runs": self._runs_using_fingerprint(ref.fingerprint),
         }
 
     def train_records(
@@ -1039,6 +1081,150 @@ class Readers:
             "limit": limit,
             "sources": sources,
             "records": rows[start : start + limit],
+        }
+
+    def train_quality(self, version: str) -> dict[str, Any]:
+        """Serve a dataset version's full quality_report.json."""
+        if not re.fullmatch(r"[A-Za-z0-9._,-]{1,64}", version):
+            return {"version": version, "provenance": "missing", "report": None}
+        try:
+            ref = self.data_store.resolve("train", version)
+        except (FileNotFoundError, ValueError):
+            return {"version": version, "provenance": "missing", "report": None}
+        report = _read_json(ref.path / "quality_report.json")
+        return {
+            "version": version,
+            "provenance": "live" if ref.storage in {"local", "legacy"} else "committed",
+            "storage": ref.storage,
+            "report": report,
+            "summary": _quality_summary(report),
+        }
+
+    def train_rejected(
+        self,
+        version: str,
+        *,
+        stage: str | None = None,
+        offset: int = 0,
+        limit: int = 50,
+    ) -> dict[str, Any]:
+        """Page the rejected-record ledger written beside records.jsonl."""
+        if not re.fullmatch(r"[A-Za-z0-9._,-]{1,64}", version):
+            return {"version": version, "count": 0, "offset": 0, "rejected": []}
+        try:
+            path = self.data_store.resolve("train", version).path / "rejected.jsonl"
+        except (FileNotFoundError, ValueError):
+            path = Path("/__missing__")
+        rows = _read_jsonl(path, limit=None)
+        stages = sorted({str(r.get("stage") or "unknown") for r in rows})
+        if stage:
+            rows = [r for r in rows if str(r.get("stage") or "unknown") == stage]
+        start = max(0, offset)
+        return {
+            "version": version,
+            "count": len(rows),
+            "offset": start,
+            "limit": limit,
+            "stages": stages,
+            "rejected": rows[start : start + limit],
+        }
+
+    def _find_data_snapshot(self, fingerprint: str) -> dict[str, Any] | None:
+        """Locate the lineage DataSnapshot registered for a content fingerprint."""
+        snapshot_root = self.lineage.root / "data_snapshots"
+        if not snapshot_root.is_dir():
+            return None
+        for path in sorted(snapshot_root.glob("*.json")):
+            payload = _read_json(path)
+            if not isinstance(payload, dict):
+                continue
+            if payload.get("records_sha") == fingerprint:
+                return {
+                    "snapshot_id": payload.get("snapshot_id"),
+                    "records_sha": payload.get("records_sha"),
+                    "record_count": payload.get("record_count"),
+                    "created_at": payload.get("created_at"),
+                    "path": path.relative_to(self.root).as_posix()
+                    if path.is_relative_to(self.root)
+                    else path.as_posix(),
+                }
+        return None
+
+    def _runs_using_fingerprint(self, fingerprint: str | None) -> list[str]:
+        """Reverse join: run ids whose train_summary pinned this dataset."""
+        if not fingerprint:
+            return []
+        run_ids: set[str] = set()
+        for summary_path in (
+            *self.outputs.glob("runs/*/train_summary.json"),
+            *self.outputs.glob("autoresearch/*/runs/*/train_summary.json"),
+        ):
+            summary = _read_json(summary_path)
+            if not isinstance(summary, dict):
+                continue
+            if summary.get("data_manifest_sha") == fingerprint:
+                run_ids.add(str(summary.get("run_id") or summary_path.parent.name))
+        return sorted(run_ids)
+
+    def run_training_data(self, run_id: str) -> dict[str, Any]:
+        """Join a run to the exact training dataset bytes it consumed."""
+        if not _RUN_ID_RE.fullmatch(run_id):
+            return {
+                "run_id": run_id,
+                "provenance": "missing",
+                "train_dir": None,
+                "data_manifest_sha": None,
+                "dataset": None,
+                "lineage_snapshot": None,
+            }
+        summary = (
+            _read_json(
+                self._run_dir(run_id, self._scoreboard_row(run_id))
+                / "train_summary.json"
+            )
+            or {}
+        )
+        train_dir_value = str(summary.get("train_dir") or "")
+        fingerprint = summary.get("data_manifest_sha")
+        version = Path(train_dir_value).name if train_dir_value else None
+        dataset: dict[str, Any] | None = None
+        if version:
+            try:
+                ref = self.data_store.resolve("train", version)
+            except (FileNotFoundError, ValueError):
+                ref = None
+            if ref is not None:
+                manifest = _read_json(ref.path / "manifest.json") or {}
+                stats = _read_json(ref.path / "stats.json") or {}
+                report = _read_json(ref.path / "quality_report.json")
+                dataset = {
+                    "version": ref.dataset_id,
+                    "storage": ref.storage,
+                    "path": ref.path.relative_to(self.root).as_posix()
+                    if ref.path.is_relative_to(self.root)
+                    else ref.path.as_posix(),
+                    "fingerprint": ref.fingerprint,
+                    "fingerprint_matches_run": bool(
+                        fingerprint and ref.fingerprint == fingerprint
+                    ),
+                    "record_count": stats.get("record_count")
+                    or manifest.get("record_count"),
+                    "profile": manifest.get("profile") or stats.get("profile"),
+                    "quality": _quality_summary(report),
+                }
+        return {
+            "run_id": run_id,
+            "provenance": (
+                "live"
+                if summary
+                else ("committed" if dataset is not None else "missing")
+            ),
+            "train_dir": train_dir_value or None,
+            "data_manifest_sha": fingerprint,
+            "dataset": dataset,
+            "lineage_snapshot": (
+                self._find_data_snapshot(str(fingerprint)) if fingerprint else None
+            ),
         }
 
     def preference_data(self) -> dict[str, Any]:

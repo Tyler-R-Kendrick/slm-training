@@ -166,6 +166,7 @@ JOB_SPECS: dict[str, JobSpec] = {
                 "--derive-from", "outputs/data/train/{value}/records.jsonl"
             ),
             "synthesizer": Choice("quality", "template", "layout", "frontier", "none"),
+            "profile": Choice("strict", "permissive"),
             "namespace_augment": Flag(),
             "edit_derivatives": BooleanOptionalFlag(),
             "repairs_per_program": IntRange(0, 8),

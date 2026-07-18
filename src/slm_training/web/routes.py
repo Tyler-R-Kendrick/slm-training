@@ -87,6 +87,11 @@ def run(request: Request, run_id: str) -> dict[str, Any]:
     return _readers(request).run(run_id)
 
 
+@observability_router.get("/runs/{run_id}/data")
+def run_training_data(request: Request, run_id: str) -> dict[str, Any]:
+    return _readers(request).run_training_data(run_id)
+
+
 @observability_router.get("/runs/{run_id}/rl-traces")
 def rl_traces(
     request: Request,
@@ -134,6 +139,24 @@ def data_train_records(
 ) -> dict[str, Any]:
     return _readers(request).train_records(
         version, split=split, source=source, query=q, offset=offset, limit=limit
+    )
+
+
+@observability_router.get("/data/train/{version}/quality")
+def data_train_quality(request: Request, version: str) -> dict[str, Any]:
+    return _readers(request).train_quality(version)
+
+
+@observability_router.get("/data/train/{version}/rejected")
+def data_train_rejected(
+    request: Request,
+    version: str,
+    stage: str | None = Query(default=None),
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=500),
+) -> dict[str, Any]:
+    return _readers(request).train_rejected(
+        version, stage=stage, offset=offset, limit=limit
     )
 
 
