@@ -987,6 +987,37 @@ def test_slot_component_pair_interaction_is_explicit() -> None:
     assert not torch.equal(baseline, paired)
 
 
+def test_slot_component_lexeme_prior_changes_matching_slot_only() -> None:
+    model = _model(
+        slot_component_loss_weight=1.0,
+        slot_component_prompt_context=False,
+    )
+    model.eval()
+    ctx, ctx_pad = model._encode_context(["form"])
+    rows = torch.tensor([0])
+    classes = len(model._component_name_index())
+    scores = [0.0] * classes
+    scores[model._component_name_index()["Input"]] = 2.0
+
+    with torch.no_grad():
+        baseline = model._slot_component_logits(
+            [":form.email"], ctx, ctx_pad, rows
+        )
+        model.config.slot_component_lexeme_prior_weight = 1.0
+        model.config.slot_component_lexeme_priors = (("email", tuple(scores)),)
+        matching = model._slot_component_logits(
+            [":form.email"], ctx, ctx_pad, rows
+        )
+        unrelated = model._slot_component_logits(
+            [":form.title"], ctx, ctx_pad, rows
+        )
+
+    assert matching[0, model._component_name_index()["Input"]] == (
+        baseline[0, model._component_name_index()["Input"]] + 2.0
+    )
+    assert not torch.equal(matching, unrelated)
+
+
 def test_slot_component_bias_uses_next_unfilled_slot() -> None:
     from types import MethodType
 

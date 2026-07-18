@@ -450,6 +450,13 @@ def compile_commands(
                 if knobs.slot_component_pair_interaction
                 else "--no-slot-component-pair-interaction"
             )
+        if knobs.slot_component_lexeme_prior_weight is not None:
+            train.extend(
+                [
+                    "--slot-component-lexeme-prior-weight",
+                    str(knobs.slot_component_lexeme_prior_weight),
+                ]
+            )
         if knobs.component_plan_attention_pool:
             train.append("--component-plan-attention-pool")
         if knobs.component_plan_token_pool:

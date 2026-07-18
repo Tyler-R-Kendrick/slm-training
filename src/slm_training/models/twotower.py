@@ -7,6 +7,7 @@ import json
 import math
 import random
 import re
+from collections import Counter, defaultdict
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -69,7 +70,7 @@ from slm_training.models.template_fill import (
     template_mask_positions,
 )
 from slm_training.dsl.grammar.fastpath.gate import FastPathGate
-from slm_training.models.tokenizer import OpenUITokenizer
+from slm_training.models.tokenizer import OpenUITokenizer, tokenize_text
 
 
 def _is_lexer_output(config: "TwoTowerConfig | None") -> bool:
@@ -220,6 +221,10 @@ class TwoTowerConfig:
     slot_component_prompt_context: bool = True
     slot_component_next_context: bool = False
     slot_component_pair_interaction: bool = False
+    slot_component_lexeme_prior_weight: float = 0.0
+    slot_component_lexeme_priors: tuple[
+        tuple[str, tuple[float, ...]], ...
+    ] = ()
     component_edge_loss_weight: float = 0.0
     component_edge_alignment_loss_weight: float = 0.0
     component_edge_decode_weight: float = 0.0
@@ -1298,12 +1303,31 @@ class TwoTowerModel(nn.Module):
                 device=slot_pooled.device,
             ).unsqueeze(1)
             slot_pooled = slot_pooled + slot_pooled * next_pooled * present
-        if not bool(getattr(self.config, "slot_component_prompt_context", True)):
-            return self.slot_component_head(slot_pooled)
-        prompt_pooled = self._pool_context(context, pad_mask).index_select(
-            0, context_rows
+        if bool(getattr(self.config, "slot_component_prompt_context", True)):
+            prompt_pooled = self._pool_context(context, pad_mask).index_select(
+                0, context_rows
+            )
+            slot_pooled = slot_pooled + prompt_pooled
+        logits = self.slot_component_head(slot_pooled)
+        weight = float(
+            getattr(self.config, "slot_component_lexeme_prior_weight", 0.0) or 0.0
         )
-        return self.slot_component_head(slot_pooled + prompt_pooled)
+        priors = getattr(self.config, "slot_component_lexeme_priors", ()) or ()
+        if weight > 0.0 and priors:
+            lookup = {
+                str(token): torch.as_tensor(
+                    scores, dtype=logits.dtype, device=logits.device
+                )
+                for token, scores in priors
+            }
+            bias = torch.zeros_like(logits)
+            for row, slot in enumerate(slots):
+                for token in set(tokenize_text(slot)):
+                    scores = lookup.get(token)
+                    if scores is not None:
+                        bias[row] = bias[row] + scores
+            logits = logits + weight * bias
+        return logits
 
     def _slot_component_texts(self, slots: list[str]) -> list[str]:
         if not bool(getattr(self.config, "slot_component_next_context", False)):
@@ -6837,6 +6861,48 @@ class TwoTowerModel(nn.Module):
                 cfg.slot_component_class_weights = tuple(
                     weight / observed_mean if weight > 0.0 else 0.0
                     for weight in weights
+                )
+        prior_weight = float(
+            getattr(cfg, "slot_component_lexeme_prior_weight", 0.0) or 0.0
+        )
+        if prior_weight > 0.0 and model.slot_component_head is not None:
+            component_index = model._component_name_index()
+            class_counts: Counter[int] = Counter()
+            token_counts: dict[str, Counter[int]] = defaultdict(Counter)
+            token_totals: Counter[str] = Counter()
+            for record in records:
+                owners = model._slot_component_owners(record.openui)
+                for slot in record.placeholders:
+                    target = component_index.get(owners.get(slot, ""))
+                    if target is None:
+                        continue
+                    class_counts[target] += 1
+                    for token in set(tokenize_text(slot)):
+                        if not any(char.isalnum() for char in token):
+                            continue
+                        token_counts[token][target] += 1
+                        token_totals[token] += 1
+            total = sum(class_counts.values())
+            classes = len(component_index)
+            if total and classes:
+                base = [
+                    (class_counts[index] + 1.0) / (total + classes)
+                    for index in range(classes)
+                ]
+                cfg.slot_component_lexeme_priors = tuple(
+                    (
+                        token,
+                        tuple(
+                            math.log(
+                                (counts[index] + 0.5)
+                                / (token_totals[token] + 0.5 * classes)
+                            )
+                            - math.log(base[index])
+                            for index in range(classes)
+                        ),
+                    )
+                    for token, counts in sorted(token_counts.items())
+                    if token_totals[token] >= 2
                 )
         model.gen_len = max(max_target + 2, 16)
         if bool(getattr(cfg, "teacher_init_embeddings", False)):

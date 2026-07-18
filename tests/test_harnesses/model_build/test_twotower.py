@@ -201,6 +201,7 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
             slot_component_prompt_context=False,
             slot_component_next_context=True,
             slot_component_pair_interaction=True,
+            slot_component_lexeme_prior_weight=1.0,
             component_edge_loss_weight=1.0,
             component_edge_alignment_loss_weight=0.8,
             component_edge_decode_weight=0.4,
@@ -239,6 +240,8 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     assert loaded.config.slot_component_prompt_context is False
     assert loaded.config.slot_component_next_context is True
     assert loaded.config.slot_component_pair_interaction is True
+    assert loaded.config.slot_component_lexeme_prior_weight == 1.0
+    assert loaded.config.slot_component_lexeme_priors
     assert loaded.config.component_edge_loss_weight == 1.0
     assert loaded.config.component_edge_alignment_loss_weight == 0.8
     assert loaded.config.component_edge_decode_weight == 0.4

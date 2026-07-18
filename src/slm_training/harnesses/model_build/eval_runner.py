@@ -334,6 +334,9 @@ def _effective_evaluation_policy(
         "slot_component_pair_interaction": bool(
             value("slot_component_pair_interaction")
         ),
+        "slot_component_lexeme_prior_weight": float(
+            value("slot_component_lexeme_prior_weight") or 0.0
+        ),
         "schema_in_context": bool(value("schema_in_context")),
         "slot_contract_in_context": bool(value("slot_contract_in_context")),
         "slot_contract_constrained_decode": bool(
