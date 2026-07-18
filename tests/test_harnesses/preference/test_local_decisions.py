@@ -358,6 +358,7 @@ from slm_training.harnesses.preference.local_decisions import (
     ActionOutcomeV2,
     DecisionEventV2,
     DecisionStateV2,
+    admit_semantic_corpus,
     guard_semantic_view,
     materialize_constraint_shadow,
     materialize_objective_pareto,
@@ -367,6 +368,7 @@ from slm_training.harnesses.preference.local_decisions import (
     materialize_v1_from_v2,
     merge_action_evidence,
     migrate_v1_to_v2,
+    objective_view_support,
     write_decision_events_v2,
     load_decision_events_v2,
     load_decision_events_v1_or_v2,
@@ -719,3 +721,82 @@ def test_v2_set_partition_materializer() -> None:
     view = materialize_objective_set_partition(event)
     assert view.good_action_ids == (3,)
     assert 5 in view.bad_action_ids
+
+
+def _v2_split_group(split: str) -> str:
+    group = "v2obj"
+    while split_for_group(group) != split:
+        group += "x"
+    return group
+
+
+def test_v2_objective_support_catches_e284_pattern() -> None:
+    train_state = _v2_state(group_id=_v2_split_group("train"))
+    held_state = _v2_state(group_id=_v2_split_group("held_out"))
+    train_event = _v2_event(train_state)
+    held_event = _v2_event(
+        held_state,
+        outcomes=(
+            _v2_outcome(held_state.state_id, 4, reward_vectors=({"reward": 1.0},)),
+            _v2_outcome(held_state.state_id, 3, reward_vectors=({"reward": 0.0},)),
+        ),
+    )
+    train_view = materialize_objective_pareto(train_event, metric_thresholds={"reward": 0.0})
+    held_view = materialize_objective_pareto(held_event, metric_thresholds={"reward": 0.0})
+    report = objective_view_support([(train_event, train_view), (held_event, held_view)])
+    assert report["held_out_coverage"]["passed"] is False
+    assert len(report["held_out_coverage"]["uncovered"]) == 1
+
+
+def test_v2_admission_refuses_mismatched_materializer_id() -> None:
+    state = _v2_state(group_id=_v2_split_group("train"))
+    event = _v2_event(state)
+    view = materialize_objective_pareto(event, metric_thresholds={"reward": 0.0})
+    with pytest.raises(ValueError, match="materializer"):
+        admit_semantic_corpus([(event, view)], materializer_id="threshold_v1")
+
+
+def test_v2_admission_refuses_mismatched_config_hash() -> None:
+    state = _v2_state(group_id=_v2_split_group("train"))
+    event = _v2_event(state)
+    view = materialize_objective_pareto(event, metric_thresholds={"reward": 0.0})
+    with pytest.raises(ValueError, match="config hash"):
+        admit_semantic_corpus(
+            [(event, view)],
+            materializer_id="pareto_v1",
+            materializer_config_hash="wrong-hash",
+        )
+
+
+def test_v2_admission_refuses_non_trainable_constraint_shadow() -> None:
+    state = _v2_state(group_id=_v2_split_group("train"), legal_action_ids=(3, 4, 5))
+    outcomes = (
+        ActionOutcomeV2(
+            state_id=state.state_id,
+            action_id=4,
+            legal=True,
+            rollout_policy_sha="checkpoint-sha",
+            continuation_seeds=(),
+            outcome_hashes=(),
+            verifier_vectors=(),
+            reward_vectors=(),
+            mean_value=None,
+            confidence_interval=None,
+            evidence_ids=(),
+            evidence_confidence=1.0,
+        ),
+    )
+    event = DecisionEventV2(
+        state=state, outcomes=outcomes, evidence_kind="constraint_shadow"
+    )
+    view = materialize_constraint_shadow(event)
+    with pytest.raises(ValueError, match="non-trainable"):
+        admit_semantic_corpus([(event, view)], materializer_id="pareto_v1")
+
+
+def test_v2_admission_passes_for_admitted_corpus() -> None:
+    state = _v2_state(group_id=_v2_split_group("train"))
+    event = _v2_event(state)
+    view = materialize_objective_pareto(event, metric_thresholds={"reward": 0.0})
+    report = admit_semantic_corpus([(event, view)], materializer_id="pareto_v1")
+    assert report["held_out_coverage"]["passed"] is True

@@ -572,6 +572,9 @@ __all__ = [
     "load_decision_events_v1_or_v2",
     "decision_event_manifest_v2",
     "write_decision_event_manifest_v2",
+    "objective_view_signature",
+    "objective_view_support",
+    "admit_semantic_corpus",
 ]
 
 
@@ -767,6 +770,7 @@ class ObjectiveView:
     weights: dict[str, float]
     materializer_id: str
     materializer_config_hash: str
+    trainable: bool = True
 
     def __post_init__(self) -> None:
         for field in ("good_action_ids", "bad_action_ids", "ambiguous_action_ids", "unobserved_action_ids"):
@@ -1117,6 +1121,7 @@ def materialize_constraint_shadow(
         weights={"uniform": 1.0},
         materializer_id=materializer_id,
         materializer_config_hash=config_hash,
+        trainable=False,
     )
 
 
@@ -1127,6 +1132,126 @@ def guard_semantic_view(view: ObjectiveView) -> None:
             "constraint-shadow objective view is diagnostic-only and cannot be "
             "consumed by semantic trainers"
         )
+
+
+def objective_view_signature(
+    event: DecisionEventV2, view: ObjectiveView
+) -> str:
+    """Objective-support signature for a V2 state + materialized view.
+
+    Includes the materializer identity and the good/bad partition. A corpus can
+    therefore pass state support while failing objective support when the sampled
+    negatives differ — the E284 blocker.
+    """
+    return _sha(
+        {
+            "materializer_id": view.materializer_id,
+            "materializer_config_hash": view.materializer_config_hash,
+            "decision_kind": event.state.decision_kind,
+            "legal_action_ids": list(event.state.legal_action_ids),
+            "good_action_ids": list(view.good_action_ids),
+            "bad_action_ids": list(view.bad_action_ids),
+        }
+    )[:16]
+
+
+def objective_view_support(
+    items: Iterable[tuple[DecisionEventV2, ObjectiveView]], *, min_train_support: int = 1
+) -> dict[str, Any]:
+    """Held-out V2 objective-view coverage.
+
+    ``items`` pairs each V2 state with the objective view materialized for it. A
+    held-out objective signature is covered when at least ``min_train_support``
+    train examples share it.
+    """
+    if min_train_support < 1:
+        raise ValueError("minimum train signature support must be positive")
+    rows = list(items)
+    counts: dict[str, dict[str, int]] = {"train": {}, "held_out": {}}
+    metadata: dict[str, dict[str, Any]] = {}
+    for event, view in rows:
+        signature = objective_view_signature(event, view)
+        bucket = counts[event.state.split]
+        bucket[signature] = bucket.get(signature, 0) + 1
+        metadata[signature] = {
+            "materializer_id": view.materializer_id,
+            "materializer_config_hash": view.materializer_config_hash,
+            "decision_kind": event.state.decision_kind,
+            "legal_action_ids": list(event.state.legal_action_ids),
+            "good_action_ids": list(view.good_action_ids),
+            "bad_action_ids": list(view.bad_action_ids),
+        }
+    held = set(counts["held_out"])
+    covered = sorted(
+        signature for signature in held if counts["train"].get(signature, 0) >= min_train_support
+    )
+    uncovered = sorted(held - set(covered))
+    return {
+        "minimum_train_support": min_train_support,
+        "counts": {
+            split: dict(sorted(split_counts.items())) for split, split_counts in counts.items()
+        },
+        "metadata": dict(sorted(metadata.items())),
+        "held_out_coverage": {
+            "covered": covered,
+            "uncovered": uncovered,
+            "passed": not uncovered,
+        },
+    }
+
+
+def admit_semantic_corpus(
+    items: Iterable[tuple[DecisionEventV2, ObjectiveView]],
+    *,
+    materializer_id: str,
+    materializer_config_hash: str | None = None,
+    min_train_support: int = 1,
+) -> dict[str, Any]:
+    """Fail closed before semantic training; return the objective-support report.
+
+    Refuses when any view is non-trainable (e.g. a constraint-shadow diagnostic),
+    when a view's materializer does not match the requested ID or config hash, or
+    when any held-out objective signature lacks train support.
+    """
+    rows = list(items)
+    report = objective_view_support(rows, min_train_support=min_train_support)
+    non_trainable = [event.state.state_id for event, view in rows if not view.trainable]
+    if non_trainable:
+        raise ValueError(
+            "semantic admission refused: "
+            f"{len(non_trainable)} non-trainable view(s) (e.g. constraint_shadow) "
+            "cannot supervise a semantic objective"
+        )
+    mismatched = sorted(
+        {view.materializer_id for event, view in rows if view.materializer_id != materializer_id}
+    )
+    if mismatched:
+        raise ValueError(
+            "semantic admission refused: corpus materializer(s) "
+            f"{mismatched} do not match the requested objective {materializer_id!r}"
+        )
+    if materializer_config_hash is not None:
+        config_mismatched = sorted(
+            {
+                view.materializer_config_hash
+                for event, view in rows
+                if view.materializer_config_hash != materializer_config_hash
+            }
+        )
+        if config_mismatched:
+            raise ValueError(
+                "semantic admission refused: corpus materializer config hash(es) "
+                f"{config_mismatched} do not match the requested config hash "
+                f"{materializer_config_hash!r}"
+            )
+    if not report["held_out_coverage"]["passed"]:
+        missing = report["held_out_coverage"]["uncovered"]
+        raise ValueError(
+            "semantic admission refused: corpus lacks train support for "
+            f"{len(missing)} held-out objective signature(s); repair objective "
+            "support before training (E284 blocker)"
+        )
+    return report
 
 
 def materialize_v1_from_v2(

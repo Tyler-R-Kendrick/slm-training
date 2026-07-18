@@ -17,11 +17,17 @@ from slm_training.harnesses.distill.trace_store import checkpoint_sha
 from slm_training.harnesses.preference.local_decisions import (
     DecisionEventV1,
     DecisionEventV2,
+    ObjectiveView,
+    admit_semantic_corpus,
     decision_signature,
     decision_signature_metadata,
     load_decision_events,
     load_decision_events_v1_or_v2,
+    materialize_constraint_shadow,
     materialize_objective_pareto,
+    materialize_objective_set_partition,
+    materialize_objective_single_best_worst,
+    materialize_objective_threshold,
     materialize_v1_from_v2,
     objective_signature_support,
 )
@@ -1227,6 +1233,27 @@ def _validate_identity(
                 )
 
 
+def _materialize_v2_event(
+    event: DecisionEventV2, materializer_id: str
+) -> ObjectiveView:
+    """Materialize a V2 event with the requested objective materializer.
+
+    Constraint-shadow evidence is always materialized with its diagnostic-only
+    materializer so semantic admission sees a non-trainable view and refuses it.
+    """
+    if event.evidence_kind == "constraint_shadow":
+        return materialize_constraint_shadow(event)
+    if materializer_id == "pareto_v1":
+        return materialize_objective_pareto(event, metric_thresholds={"reward": 0.0})
+    if materializer_id == "threshold_v1":
+        return materialize_objective_threshold(event, threshold=0.5)
+    if materializer_id == "single_best_worst_v1":
+        return materialize_objective_single_best_worst(event)
+    if materializer_id == "set_partition_v1":
+        return materialize_objective_set_partition(event)
+    raise ValueError(f"unsupported V2 objective materializer: {materializer_id!r}")
+
+
 def train_local_from_paths(
     checkpoint: Path,
     events_path: Path,
@@ -1253,22 +1280,28 @@ def train_local_from_paths(
     gradient_combination: GradientCombination = "proposal",
     optimizer_name: LocalOptimizer = "adamw",
     require_objective_support: bool = False,
+    require_admission: bool = False,
+    materializer_id: str | None = None,
+    materializer_config_hash: str | None = None,
 ) -> dict:
     raw_events = load_decision_events_v1_or_v2(events_path)
     events: list[DecisionEventV1]
     if raw_events and isinstance(raw_events[0], DecisionEventV2):
-        materialized: list[DecisionEventV1] = []
+        resolved_materializer = materializer_id or "pareto_v1"
+        views: list[ObjectiveView] = []
         for event in raw_events:
             assert isinstance(event, DecisionEventV2)
-            view = materialize_objective_pareto(
-                event, metric_thresholds={"reward": 0.0}
+            views.append(_materialize_v2_event(event, resolved_materializer))
+        if require_admission:
+            admit_semantic_corpus(
+                list(zip(raw_events, views, strict=True)),
+                materializer_id=resolved_materializer,
+                materializer_config_hash=materializer_config_hash,
             )
-            materialized.append(
-                materialize_v1_from_v2(
-                    event, view, trajectory_id="v2-materialized", seed=seed
-                )
-            )
-        events = materialized
+        events = [
+            materialize_v1_from_v2(event, view, trajectory_id="v2-materialized", seed=seed)
+            for event, view in zip(raw_events, views, strict=True)
+        ]
     else:
         events = [event for event in raw_events if isinstance(event, DecisionEventV1)]
     if require_objective_support:
