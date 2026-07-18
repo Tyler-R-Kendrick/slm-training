@@ -2521,6 +2521,14 @@ failed three-step points. See
 [results](iter-e419-e420-three-step-boundary-20260718.md) and
 [JSON](iter-e419-e420-three-step-boundary-20260718.json).
 
+E421 tests exactly two resumed steps / 22,127 target tokens. E422 passes all
+bounded suites with AgentV 4/4; only full RICO is missing. Together with E420,
+this proves the exact transition: step 429 passes and step 430 fails smoke
+recall. The step-430 batch has component-plan root accuracy 0.5 and bound
+top-k recall 0.125; diagnose it before any further continuation. See
+[results](iter-e421-e422-exact-step-boundary-20260718.md) and
+[JSON](iter-e421-e422-exact-step-boundary-20260718.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
