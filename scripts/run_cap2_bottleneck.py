@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Run the CAP2-01 strict K-ary bottleneck phase-boundary fixture matrix.
+"""Run the CAP2-01/02 bottleneck and latent-codec fixture matrix.
 
 Example:
 
     python -m scripts.run_cap2_bottleneck \
       --state-report outputs/runs/arity/bounded_expr_report.json \
-      --arms b2d5,b2d6,t3d3,t3d4,k4d3,k8d2 \
+      --arms b2d5,b2d6,t3d3,t3d4,k4d3,k8d2,fsq_2_3_3_4_5,lfq_d6,vq_64_d8,continuous_d6 \
       --seeds 0,1,2 \
       --out-dir outputs/runs/cap2_bottleneck
 
@@ -29,7 +29,7 @@ from slm_training.harnesses.experiments.cap2_bottleneck import (
 
 def _markdown_report(report: BottleneckMatrixReport) -> str:
     lines = [
-        "# CAP2-01 K-ary bottleneck phase-boundary fixture matrix",
+        "# CAP2-01/02 bottleneck and latent-codec fixture matrix",
         "",
         f"*Run id:* `{report.run_id}`  ",
         f"*Timestamp:* {report.timestamp}  ",
@@ -40,7 +40,9 @@ def _markdown_report(report: BottleneckMatrixReport) -> str:
         "",
         "This is a fixture CPU run.  It verifies the mathematical capacity bound",
         "``K**d >= M`` and the no-bypass wiring invariant; it does not train a",
-        "production model or make a ship-quality claim.",
+        "production model or make a ship-quality claim.  CAP2-02 codec families",
+        "(uniform scalar, mixed-radix FSQ, binary LFQ, learned VQ, continuous)",
+        "are wiring-only comparisons; no claim about universal superiority is made.",
         "",
         "## Results",
         "",
@@ -58,13 +60,13 @@ def _markdown_report(report: BottleneckMatrixReport) -> str:
     lines.append("## Hard gates")
     lines.append("")
     below = [a for a in report.arms if a.capacity < a.state_count]
-    leaked = [a for a in below if a.exact_reconstruction_rate >= 1.0]
+    leaked = [a for a in report.arms if a.leakage]
     lines.append(f"- Below-capacity arms: {len(below)}")
-    lines.append(f"- Leakage violations (below-capacity exact reconstruction): {len(leaked)}")
+    lines.append(f"- Leakage violations: {len(leaked)}")
     if leaked:
         lines.append("- **FAIL** leakage detected in: " + ", ".join(a.arm_id for a in leaked))
     else:
-        lines.append("- **PASS** no below-capacity arm achieved perfect reconstruction.")
+        lines.append("- **PASS** no discrete below-capacity arm achieved perfect reconstruction.")
     lines.append("")
     return "\n".join(lines)
 

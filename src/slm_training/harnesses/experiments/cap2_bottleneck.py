@@ -1,10 +1,11 @@
-"""CAP2-01 strict K-ary bottleneck phase-boundary experiment harness.
+"""CAP2-01/02 strict bottleneck phase-boundary and latent-codec matrix harness.
 
 This module implements the controlled experiment that tests whether a
 deterministic model can represent ``M`` distinct states through a fixed-length
-``K``-ary bottleneck of dimension ``d``.  When ``K**d < M`` exact reconstruction
-is impossible; when ``K**d >= M`` it is representationally possible but not
-guaranteed.  Fixture runs are wiring/mathematical evidence only.
+``K``-ary bottleneck of dimension ``d`` (CAP2-01) and compares multiple latent
+codec families under a common interface (CAP2-02).  When ``K**d < M`` exact
+reconstruction is impossible; when ``K**d >= M`` it is representationally
+possible but not guaranteed.  Fixture runs are wiring/mathematical evidence only.
 """
 
 from __future__ import annotations
@@ -23,11 +24,24 @@ from slm_training.dsl.analysis.arity.coding import (
     build_mds_7_4_2_3,
     build_shortened_ternary_hamming_7_4_3,
 )
+from slm_training.models.binary_lfq import BinaryLFQCodec, BinaryLFQConfig
+from slm_training.models.continuous_latent import ContinuousLatentCodec, ContinuousLatentConfig
 from slm_training.models.kary_bottleneck import (
     KaryBottleneck,
     KaryBottleneckConfig,
     evaluate_kary_bottleneck,
     train_kary_bottleneck,
+)
+from slm_training.models.latent_codec_trainer import (
+    LatentCodecModel,
+    evaluate_latent_codec,
+    train_latent_codec,
+)
+from slm_training.models.learned_vq import LearnedVQCodec, LearnedVQConfig
+from slm_training.models.mixed_radix_fsq import MixedRadixFSQCodec, MixedRadixFSQConfig
+from slm_training.models.uniform_scalar_codec import (
+    UniformScalarCodec,
+    UniformScalarCodecConfig,
 )
 
 
@@ -45,9 +59,30 @@ class BottleneckArm:
     hidden_dim: int = 64
     train_steps: int = 1000
     seed: int = 0
+    # CAP2-02 latent-codec family selection.
+    codec: str = "kary"  # kary | uniform_scalar | fsq | lfq | vq | continuous
+    radixes: tuple[int, ...] | None = None
+    latent_dim: int | None = None
+    noise_std: float = 0.0
+    rate_penalty: float = 0.0
+    commitment_cost: float = 0.25
 
     @property
     def capacity(self) -> int:
+        if self.codec == "fsq":
+            if self.radixes is None:
+                raise ValueError(f"fsq arm {self.arm_id} requires radixes")
+            cap = 1
+            for level in self.radixes:
+                cap *= level
+            return cap
+        if self.codec in ("lfq", "binary_lfq"):
+            return 2 ** self.d
+        if self.codec in ("vq", "learned_vq"):
+            return self.K
+        if self.codec == "continuous":
+            # Continuous latents are not discrete; report the latent dimension.
+            return self.latent_dim if self.latent_dim is not None else self.d
         return self.K ** self.d
 
 
@@ -105,7 +140,7 @@ class BottleneckMatrixReport:
     state_count: int
     state_report_path: str | None
     arms: tuple[BottleneckResult, ...]
-    version: str = "cap2-01-v1"
+    version: str = "cap2-02-v1"
     timestamp: str = field(default_factory=lambda: _utc_now())
 
     def to_dict(self) -> dict[str, Any]:
@@ -406,13 +441,124 @@ def evaluate_direct_control(
     )
 
 
+def _build_latent_codec_model(arm: BottleneckArm) -> LatentCodecModel:
+    """Construct a LatentCodecModel matching the arm's codec family."""
+    if arm.codec in ("kary", "uniform_scalar"):
+        cfg = UniformScalarCodecConfig(
+            num_states=arm.state_count,
+            K=arm.K,
+            d=arm.d,
+            hidden_dim=arm.hidden_dim,
+            mode="oracle_state",
+        )
+        codec = UniformScalarCodec(cfg)
+    elif arm.codec == "fsq":
+        if arm.radixes is None:
+            raise ValueError(f"fsq arm {arm.arm_id} requires radixes")
+        cfg = MixedRadixFSQConfig(
+            num_states=arm.state_count,
+            levels=arm.radixes,
+            hidden_dim=arm.hidden_dim,
+            mode="oracle_state",
+        )
+        codec = MixedRadixFSQCodec(cfg)
+    elif arm.codec in ("lfq", "binary_lfq"):
+        cfg = BinaryLFQConfig(
+            num_states=arm.state_count,
+            d=arm.d,
+            hidden_dim=arm.hidden_dim,
+            mode="oracle_state",
+        )
+        codec = BinaryLFQCodec(cfg)
+    elif arm.codec in ("vq", "learned_vq"):
+        cfg = LearnedVQConfig(
+            num_states=arm.state_count,
+            codebook_size=arm.K,
+            latent_dim=arm.latent_dim or arm.d,
+            hidden_dim=arm.hidden_dim,
+            mode="oracle_state",
+            commitment_cost=arm.commitment_cost,
+        )
+        codec = LearnedVQCodec(cfg)
+    elif arm.codec == "continuous":
+        cfg = ContinuousLatentConfig(
+            num_states=arm.state_count,
+            latent_dim=arm.latent_dim or arm.d,
+            hidden_dim=arm.hidden_dim,
+            mode="oracle_state",
+            noise_std=arm.noise_std,
+            rate_penalty=arm.rate_penalty,
+        )
+        codec = ContinuousLatentCodec(cfg)
+    else:
+        raise ValueError(f"unknown codec {arm.codec!r}")
+    return LatentCodecModel(codec, arm.state_count)
+
+
+def evaluate_latent_codec_arm(
+    arm: BottleneckArm,
+    states: tuple[int, ...],
+) -> BottleneckResult:
+    """Train and evaluate a tiny learned latent-codec arm."""
+    start = time.monotonic()
+    model = _build_latent_codec_model(arm)
+    state_tensor = torch.tensor(states, dtype=torch.long)
+    target_tensor = torch.tensor(states, dtype=torch.long)
+    train_latent_codec(model, state_tensor, target_tensor, steps=arm.train_steps)
+    eval_metrics = evaluate_latent_codec(model, state_tensor, target_tensor)
+    exact_rate = eval_metrics["exact_reconstruction_rate"]
+    occupied = eval_metrics["occupied_codewords"]
+    capacity = arm.capacity
+    # Continuous arms cannot leak in the discrete sense; only discrete below-capacity
+    # arms reaching 100% reconstruction are leakage violations.
+    leakage = (
+        exact_rate >= 1.0
+        and capacity < arm.state_count
+        and arm.codec != "continuous"
+    )
+    notes = [
+        f"learned {arm.codec} codec hidden_dim={arm.hidden_dim} steps={arm.train_steps}; "
+        f"utilization={eval_metrics['utilization']:.4f} entropy_bits={eval_metrics['empirical_entropy_bits']:.4f}"
+    ]
+    if arm.codec == "continuous":
+        notes.append(
+            f"continuous latent_dim={arm.latent_dim or arm.d} "
+            f"noise_std={arm.noise_std} rate_penalty={arm.rate_penalty}"
+        )
+    return BottleneckResult(
+        arm_id=arm.arm_id,
+        K=arm.K,
+        d=arm.d,
+        state_count=arm.state_count,
+        capacity=capacity,
+        mode=arm.mode,
+        corruption=arm.corruption,
+        seed=arm.seed,
+        exact_reconstruction_rate=exact_rate,
+        collision_count=arm.state_count - occupied,
+        occupied_codewords=occupied,
+        code_utilization=occupied / max(1, capacity),
+        empirical_entropy_bits=eval_metrics["empirical_entropy_bits"],
+        min_code_distance=None,
+        mean_code_distance=None,
+        leakage=leakage,
+        elapsed_seconds=time.monotonic() - start,
+        notes=tuple(notes),
+    )
+
+
 def evaluate_arm(arm: BottleneckArm, states: tuple[int, ...]) -> BottleneckResult:
     if arm.mode == "injective":
         return evaluate_injective_arm(arm, states)
     if arm.mode == "robust":
         return evaluate_robust_arm(arm, states)
     if arm.mode == "learned":
-        return evaluate_learned_arm(arm, states)
+        # Legacy kary learned arm; new codec families use mode="learned_codec".
+        if arm.codec == "kary":
+            return evaluate_learned_arm(arm, states)
+        return evaluate_latent_codec_arm(arm, states)
+    if arm.mode == "learned_codec":
+        return evaluate_latent_codec_arm(arm, states)
     if arm.mode == "direct":
         return evaluate_direct_control(arm, states)
     raise ValueError(f"unknown arm mode {arm.mode!r}")
@@ -488,6 +634,80 @@ def build_control_arms(state_count: int, seeds: tuple[int, ...]) -> list[Bottlen
     return arms
 
 
+def build_latent_codec_arms(state_count: int, seeds: tuple[int, ...]) -> list[BottleneckArm]:
+    """CAP2-02 latent-codec arms at roughly matched nominal capacity.
+
+    The arms share the same target state_count and are trained with the same
+    small fixture recipe.  They demonstrate that each codec family can be
+    evaluated through the common harness.
+    """
+    arms: list[BottleneckArm] = []
+    for seed in seeds:
+        arms.extend(
+            [
+                # Mixed-radix FSQ with capacity 2*3*3*4*5 = 360 >= 41.
+                BottleneckArm(
+                    "fsq_2_3_3_4_5",
+                    0,
+                    0,
+                    state_count,
+                    mode="learned_codec",
+                    codec="fsq",
+                    radixes=(2, 3, 3, 4, 5),
+                    train_steps=1200,
+                    seed=seed,
+                ),
+                # Binary LFQ with capacity 2^6 = 64 >= 41.
+                BottleneckArm(
+                    "lfq_d6",
+                    0,
+                    6,
+                    state_count,
+                    mode="learned_codec",
+                    codec="lfq",
+                    train_steps=1200,
+                    seed=seed,
+                ),
+                # Learned VQ with codebook size 64 >= 41.
+                BottleneckArm(
+                    "vq_64_d8",
+                    64,
+                    0,
+                    state_count,
+                    mode="learned_codec",
+                    codec="vq",
+                    latent_dim=8,
+                    train_steps=1200,
+                    seed=seed,
+                ),
+                # Continuous latent control (6 dims, no discrete capacity claim).
+                BottleneckArm(
+                    "continuous_d6",
+                    0,
+                    0,
+                    state_count,
+                    mode="learned_codec",
+                    codec="continuous",
+                    latent_dim=6,
+                    train_steps=1200,
+                    seed=seed,
+                ),
+                # Uniform scalar baseline at matched capacity.
+                BottleneckArm(
+                    "uniform_b2d6",
+                    2,
+                    6,
+                    state_count,
+                    mode="learned_codec",
+                    codec="uniform_scalar",
+                    train_steps=800,
+                    seed=seed,
+                ),
+            ]
+        )
+    return arms
+
+
 def build_matrix(
     state_count: int,
     *,
@@ -499,6 +719,7 @@ def build_matrix(
     arms.extend(build_equal_capacity_arms(state_count, seeds))
     arms.extend(build_robust_arms(state_count, seeds))
     arms.extend(build_control_arms(state_count, seeds))
+    arms.extend(build_latent_codec_arms(state_count, seeds))
     if arms_filter:
         wanted = set(arms_filter)
         arms = [a for a in arms if a.arm_id in wanted]
@@ -519,7 +740,7 @@ def run_matrix(
     for arm in arms:
         results.append(evaluate_arm(arm, states))
     run_id = _hash_run_id(
-        ("cap2-01", state_count, tuple(a.arm_id for a in arms), seeds)
+        ("cap2-02", state_count, tuple(a.arm_id for a in arms), seeds)
     )
     return BottleneckMatrixReport(
         run_id=run_id,

@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 import pytest
+import torch
 
 pytest.importorskip("torch")
 
@@ -106,7 +107,7 @@ def test_learned_below_capacity_arm_does_not_reconstruct() -> None:
 def test_run_matrix_produces_versioned_report(tmp_path: Path) -> None:
     report = run_matrix(M, seeds=(0,), arms_filter=("b2d5", "t3d4", "direct_one_hot"))
     assert report.state_count == M
-    assert report.version == "cap2-01-v1"
+    assert report.version == "cap2-02-v1"
     assert len(report.arms) == 3
     assert not any(a.leakage for a in report.arms)
 
@@ -124,3 +125,77 @@ def test_state_report_loading_uses_minimized_states(tmp_path: Path) -> None:
     path.write_text(json.dumps(report), encoding="utf-8")
     data = load_state_report(path)
     assert data["minimized_states"] == 12
+
+
+def test_matrix_includes_latent_codec_arms() -> None:
+    arms = build_matrix(M)
+    ids = {a.arm_id for a in arms}
+    assert "fsq_2_3_3_4_5" in ids
+    assert "lfq_d6" in ids
+    assert "vq_64_d8" in ids
+    assert "continuous_d6" in ids
+    assert "uniform_b2d6" in ids
+
+
+def test_fsq_arm_capacity_matches_radix_product() -> None:
+    states, _ = fixture_states(M)
+    arm = BottleneckArm(
+        "fsq_2_3_3_4_5",
+        0,
+        0,
+        M,
+        mode="learned_codec",
+        codec="fsq",
+        radixes=(2, 3, 3, 4, 5),
+        train_steps=1600,
+        seed=0,
+    )
+    assert arm.capacity == 2 * 3 * 3 * 4 * 5
+    result = evaluate_arm(arm, states)
+    assert result.exact_reconstruction_rate == 1.0
+    assert result.occupied_codewords == M
+
+
+def test_lfq_arm_capacity_is_two_to_the_d() -> None:
+    states, _ = fixture_states(M)
+    arm = BottleneckArm("lfq_d6", 0, 6, M, mode="learned_codec", codec="lfq", train_steps=1600, seed=0)
+    assert arm.capacity == 64
+    result = evaluate_arm(arm, states)
+    assert result.exact_reconstruction_rate == 1.0
+
+
+def test_vq_arm_capacity_is_codebook_size() -> None:
+    torch.manual_seed(0)
+    states, _ = fixture_states(M)
+    arm = BottleneckArm(
+        "vq_64_d8",
+        64,
+        0,
+        M,
+        mode="learned_codec",
+        codec="vq",
+        latent_dim=8,
+        train_steps=2400,
+        seed=0,
+    )
+    assert arm.capacity == 64
+    result = evaluate_arm(arm, states)
+    assert result.exact_reconstruction_rate == 1.0
+
+
+def test_continuous_arm_is_not_marked_as_leakage() -> None:
+    states, _ = fixture_states(M)
+    arm = BottleneckArm(
+        "continuous_d6",
+        0,
+        0,
+        M,
+        mode="learned_codec",
+        codec="continuous",
+        latent_dim=6,
+        train_steps=1200,
+        seed=0,
+    )
+    result = evaluate_arm(arm, states)
+    assert result.leakage is False
+    assert "continuous" in result.notes[0]
