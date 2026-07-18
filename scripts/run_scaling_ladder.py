@@ -19,8 +19,14 @@ def _wall_minutes(value: str) -> float:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--train-dir", type=Path, required=True)
-    parser.add_argument("--test-dir", type=Path, required=True)
+    parser.add_argument(
+        "--family",
+        choices=("scaling", "discrete-bottleneck"),
+        default="scaling",
+        help="Experiment family to run (default: scaling).",
+    )
+    parser.add_argument("--train-dir", type=Path, help="Required for scaling family.")
+    parser.add_argument("--test-dir", type=Path, help="Required for scaling family.")
     parser.add_argument("--out", type=Path, default=Path("outputs/ladders"))
     parser.add_argument("--track", choices=("scratch", "hf"), default="scratch")
     parser.add_argument("--seeds", default="0", help="Comma-separated seeds.")
@@ -61,7 +67,40 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Skip training; only exercise fit/EG helpers on synthetic points.",
     )
+    # CAP2-01 discrete-bottleneck family options.
+    parser.add_argument("--state-report", type=Path, help="CAP1-01/CAP0-03 state report")
+    parser.add_argument(
+        "--state-count",
+        type=int,
+        default=41,
+        help="Fixture state count for discrete-bottleneck when no report is given.",
+    )
+    parser.add_argument(
+        "--arms",
+        default="",
+        help="Comma-separated CAP2 arm ids (default: full fixture matrix).",
+    )
     args = parser.parse_args(argv)
+
+    if args.family == "discrete-bottleneck":
+        from scripts.run_cap2_bottleneck import main as cap2_main
+
+        cap2_argv = [
+            "--out-dir",
+            str(args.out),
+            "--seeds",
+            args.seeds,
+            "--state-count",
+            str(args.state_count),
+        ]
+        if args.state_report:
+            cap2_argv.extend(["--state-report", str(args.state_report)])
+        if args.arms.strip():
+            cap2_argv.extend(["--arms", args.arms])
+        return cap2_main(cap2_argv)
+
+    if args.train_dir is None or args.test_dir is None:
+        parser.error("--train-dir and --test-dir are required for the scaling family")
 
     from slm_training.harnesses.experiments.efficiency_gain import efficiency_gain, efficiency_gain_lcb
     from slm_training.harnesses.experiments.ladder import (
