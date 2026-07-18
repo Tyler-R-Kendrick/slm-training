@@ -29,9 +29,10 @@ from decode-time scaffolding.
     `--checkpoint-remote-uri`, `--output-codec`, `--suites`, `--out-dir`, and
     `--dry-run`.
 - `tests/test_harnesses/eval/test_ablate_decode_scaffolding.py`
-  - 13 regression tests covering arm generation, factor isolation, config
-    resolution, fixture-mode compatibility, Stage B triggering, and checkpoint
-    SHA-256 provenance.
+  - 17 regression tests covering arm generation, factor isolation, config
+    resolution, fixture-mode compatibility, Stage B triggering, checkpoint
+    SHA-256 provenance, no-inventory contract surfacing, single-attempt mode,
+    grammar-only enforcement, and replay determinism.
 
 ## Design
 
@@ -50,7 +51,7 @@ that every arm resolves to a legal, compatible config override set.
 
 ## Regression tests
 
-`pytest tests/test_harnesses/eval/test_ablate_decode_scaffolding.py` — 13 passed.
+`pytest tests/test_harnesses/eval/test_ablate_decode_scaffolding.py` — 17 passed.
 
 - Stage A produces 6 arms with expected IDs.
 - Baseline has all factors enabled; all-off has none.
@@ -62,6 +63,10 @@ that every arm resolves to a legal, compatible config override set.
   holds.
 - Missing or hash-mismatched checkpoint marks every arm incompatible.
 - Matching SHA-256 passes the fail-closed provenance check.
+- No-inventory arm disables all three slot-contract surfacing fields.
+- One-attempt arm sets `best_of_n=1` and `generate_max_attempts=1`.
+- All-off arm keeps `grammar_constrained=True`.
+- Repeated resolution of the same arm is byte-identical.
 
 ## Fixture harness results
 
@@ -111,8 +116,8 @@ Hard gates:
 
 ## Verification checklist
 
-- [x] `pytest tests/test_harnesses/eval/test_ablate_decode_scaffolding.py` — 13 passed.
-- [x] `.githooks/check-changed` — 13 passed.
+- [x] `pytest tests/test_harnesses/eval/test_ablate_decode_scaffolding.py` — 17 passed.
+- [x] `.githooks/check-changed` — 17 passed.
 - [x] `python -m scripts.repo_policy` — ok.
 - [x] `git diff --check` — clean.
 - [x] `python -m scripts.ablate_decode_scaffolding --dry-run` — 6 arms described.
