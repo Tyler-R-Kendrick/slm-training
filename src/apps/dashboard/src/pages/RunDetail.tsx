@@ -1,6 +1,6 @@
 import React from "react";
 import { postJSON, usePoll } from "../api";
-import { useCaps } from "../caps";
+import { useCaps, jobDef } from "../caps";
 import {
   Card,
   Grid,
@@ -10,6 +10,7 @@ import {
   Timeline,
   Bars,
   DataTable,
+  LogStream,
   ProvenanceBadge,
   Empty,
   ErrorNote,
@@ -51,6 +52,75 @@ function LossChart({ points, events }: { points: LossPoint[]; events: LossEvent[
         <text x={width / 2} y={height - 8} textAnchor="middle">step</text>
         <text x="14" y={height / 2} textAnchor="middle" transform={`rotate(-90 14 ${height / 2})`}>loss</text>
       </svg>
+    </div>
+  );
+}
+
+function DeriveDatasetLauncher({ baseVersion }: { baseVersion: string }) {
+  const caps = useCaps();
+  const trainJob = jobDef(caps, "build_train_data");
+  const [name, setName] = React.useState("");
+  const [synth, setSynth] = React.useState("none");
+  const [jobId, setJobId] = React.useState<string | null>(null);
+  const [busy, setBusy] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const outputVersion = name.trim() || `${baseVersion}-derived`;
+
+  async function launch() {
+    if (!trainJob) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const job = await postJSON<any>("/api/jobs", {
+        job: "build_train_data",
+        params: {
+          version: outputVersion,
+          source: "existing",
+          base_version: baseVersion,
+          profile: "strict",
+          synthesizer: synth,
+        },
+      });
+      setJobId(job.id);
+    } catch (e: any) {
+      setError(String(e?.message ?? e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="data-generator">
+      <p className="launcher-summary">
+        Build a new dataset from this run's training data. The strict profile
+        re-applies every gate (dedup, decontamination, quality) to the derived
+        corpus; a synthesizer adds deterministic variants on top.
+      </p>
+      <div className="data-browser-tools">
+        <label className="launcher-field data-generator-name">
+          <span>New dataset name</span>
+          <input type="text" value={name} placeholder={outputVersion} onChange={(e) => setName(e.target.value)} />
+        </label>
+        <label className="launcher-field">
+          <span>Derivation</span>
+          <select value={synth} onChange={(e) => setSynth(e.target.value)}>
+            <option value="none">Curate (re-gate only)</option>
+            <option value="quality">Augment (quality synth)</option>
+            <option value="template">Augment (templates)</option>
+            <option value="layout">Augment (layout variants)</option>
+          </select>
+        </label>
+      </div>
+      <ErrorNote error={error} />
+      <button
+        className="btn btn-primary"
+        disabled={!caps.execution || !trainJob || busy}
+        onClick={launch}
+        title={caps.execution ? "" : "Serve locally to enable derivation"}
+      >
+        {busy ? "Starting…" : caps.execution ? "Derive dataset" : "Read-only"}
+      </button>
+      <LogStream jobId={jobId} />
     </div>
   );
 }
@@ -214,6 +284,57 @@ export function RunDetail({ runId, navigate }: { runId: string; navigate: (to: s
       </Card>
 
       <InsightEnrichment report={report} completed={Boolean(ts.finished_at || data.manifest?.lifecycle_state === "screened" || sb.id)} reload={reload} />
+
+      {(() => {
+        const td = data.training_data ?? {};
+        const dataset = td.dataset;
+        const quality = dataset?.quality;
+        return (
+          <Card
+            title="Training data"
+            right={
+              dataset ? (
+                <StatusPill
+                  value={!!dataset.fingerprint_matches_run}
+                  label={dataset.fingerprint_matches_run ? "fingerprint verified" : "dataset drifted"}
+                />
+              ) : (
+                <ProvenanceBadge provenance={td.provenance ?? "missing"} />
+              )
+            }
+          >
+            {dataset ? (
+              <>
+                <Grid min="160px">
+                  <StatTile label="Dataset" value={dataset.version} accent="moss" sub={dataset.storage} />
+                  <StatTile label="Records" value={fmt(dataset.record_count)} />
+                  <StatTile label="Profile" value={dataset.profile ?? "—"} />
+                  <StatTile label="Fingerprint" value={dataset.fingerprint?.slice(0, 12) ?? "—"} sub={td.data_manifest_sha ? `run pinned ${String(td.data_manifest_sha).slice(0, 12)}` : "run did not pin a hash"} />
+                  <StatTile label="Mean quality" value={quality?.mean_quality_score ?? "—"} />
+                  <StatTile label="Rejected at build" value={quality?.rejected_total ?? "—"} sub={quality ? "see Data page ledger" : "no quality report"} />
+                </Grid>
+                {td.lineage_snapshot && (
+                  <p className="hint">
+                    Lineage snapshot <span className="mono">{td.lineage_snapshot.snapshot_id}</span> · registered {td.lineage_snapshot.created_at}
+                  </p>
+                )}
+                <div className="chip-row" style={{ marginTop: "0.6rem" }}>
+                  <span className="chip active" onClick={() => navigate(`/data?version=${encodeURIComponent(dataset.version)}`)}>
+                    browse this dataset →
+                  </span>
+                </div>
+                <DeriveDatasetLauncher baseVersion={dataset.version} />
+              </>
+            ) : (
+              <Empty>
+                {td.train_dir
+                  ? `The run trained on ${td.train_dir}, but that dataset version is not resolvable in this checkout (outputs/ is cold and no committed snapshot exists).`
+                  : "No training-data linkage was recorded for this run."}
+              </Empty>
+            )}
+          </Card>
+        );
+      })()}
 
       <div className="two-col">
         <Card title="Lifecycle">

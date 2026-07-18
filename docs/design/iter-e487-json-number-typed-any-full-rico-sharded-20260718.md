@@ -312,4 +312,45 @@ Shard 22f completed normally in about 81 seconds under the three-minute policy
 and is prediction-identical to the corresponding E477 rows, with structure
 0.8894, reward 0.9981, and zero failures, fallback, or timeouts.
 
-**Status:** 1344/1500 rows complete. No merged or ship claim yet.
+Shard 23a completed normally in about 54 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.8207, reward 0.9972, and zero failures, fallback, or timeouts.
+
+Shard 23b completed normally in about 75 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.9177, reward 0.9977, and zero failures, fallback, or timeouts.
+
+Shard 23c completed normally in about 112 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.8924, reward 0.9925, and zero failures, fallback, or timeouts.
+
+Shard 23d completed normally in about 76 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.8513, reward 0.9981, and zero failures, fallback, or timeouts.
+
+Shard 23e completed normally in about 123 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.9169, reward 0.9919, and zero failures, fallback, or timeouts.
+
+Shard 23f completed normally in about 80 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.7909, reward 0.9962, and zero failures, fallback, or timeouts.
+
+Shard 24a completed normally in about 72 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.8364, reward 0.9964, and zero failures, fallback, or timeouts.
+
+Shard 24b completed normally in about 122 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.8743, reward 0.9957, and zero failures, fallback, or timeouts.
+
+Shard 24c completed normally in about 155 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.8969, reward 0.9960, and zero failures, fallback, or timeouts.
+
+Shard 24d completed normally in about 150 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.8397, reward 0.9948, and zero failures, fallback, or timeouts.
+
+**Status:** 1500/1500 rows complete with exact contiguous coverage. The
+canonical merge and five-suite evidence remain required; no ship claim yet.

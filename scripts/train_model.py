@@ -447,6 +447,15 @@ def main(argv: list[str] | None = None) -> int:
         help="Deterministically omit DESIGN.md for this fraction of training records.",
     )
     parser.add_argument(
+        "--emit-record-nll",
+        action="store_true",
+        help=(
+            "After training, score every train record's NLL under the final "
+            "model and write record_nll.jsonl (difficulty evidence for "
+            "build_train_data --difficulty-from)."
+        ),
+    )
+    parser.add_argument(
         "--grammar-ltr-primary",
         action="store_true",
         help="Prefer greedy LTR decode at generate time.",
@@ -758,6 +767,7 @@ def main(argv: list[str] | None = None) -> int:
             structural_bias=args.structural_bias,
             design_md_in_context=not args.no_design_md_context,
             design_md_dropout=args.design_md_dropout,
+            emit_record_nll=bool(args.emit_record_nll),
             ltr_loss_weight=args.ltr_loss_weight,
             ltr_prefix_loss_weight=args.ltr_prefix_loss_weight,
             compiler_alignment_loss_weight=args.compiler_alignment_loss_weight,

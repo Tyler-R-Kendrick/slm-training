@@ -147,6 +147,7 @@ class DataStore:
         self._validate(kind, dataset_id)
         local = self.path(kind, dataset_id)
         published = self.published_path(kind, dataset_id)
+        fingerprints: dict[Path, str] = {}
         if local.exists() and published.exists():
             local_fp = dataset_fingerprint(local)
             published_fp = dataset_fingerprint(published)
@@ -154,15 +155,16 @@ class DataStore:
                 raise ValueError(
                     f"dataset {kind}:{dataset_id} differs between local and Git stores"
                 )
+            fingerprints[local] = local_fp
+            fingerprints[published] = published_fp
         for storage, path in (
             ("local", local),
             ("git", published),
             ("legacy", self.legacy_path(kind, dataset_id)),
         ):
             if path.exists():
-                return DatasetRef(
-                    kind, dataset_id, path, storage, dataset_fingerprint(path)  # type: ignore[arg-type]
-                )
+                fp = fingerprints.get(path) or dataset_fingerprint(path)
+                return DatasetRef(kind, dataset_id, path, storage, fp)  # type: ignore[arg-type]
         raise FileNotFoundError(f"dataset not found: {kind}:{dataset_id}")
 
     def resolve_path(self, kind: DataKind, value: Path | str) -> Path:

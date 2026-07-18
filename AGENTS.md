@@ -64,6 +64,7 @@ copy; Codex and GitHub Copilot discover `.agents/skills/` directly.
 | `hf-cli` | Hub models/datasets/spaces, auth, cache, HF jobs, buckets, downloads |
 | `huggingface-*` / `hf-*` / `trl-training` / … | Other [huggingface/skills](https://github.com/huggingface/skills) workflows (papers, datasets viewer, trainers, Spaces, memory estimate, …) |
 | `playwright-cli` | Browser automation or playground e2e |
+| `synthesis-feedback` | After any training-data build/synthesis: read `quality_report.json` + `rejected.jsonl` + `synthesis_feedback.json`, fix the synthesis harness (never the gates), file the emitted experiment candidates |
 | `frontier-describe` | Fill train-only frozen frontier artifacts and validate leakage/coverage |
 | `dashboard-openui-parity` | Editing a dashboard page (`src/apps/dashboard/src/pages/*.tsx`) — keep its interpreted-mode `static/openui/*.openui` program at parity |
 
@@ -270,6 +271,29 @@ or any ad-hoc run whose scoreboard / gates / latency inform a decision.
 review on policy changes); perf → `perf-experiment-matrix.md` /
 `runtime-performance.md`; checkpoints → `MODEL_CARD.md` + README summary +
 `checkpoint-bucket.md`; lever-specific → that design doc.
+
+## Data-quality law: every synthesis closes its own loop
+
+```text
+NO DATA BUILD WITHOUT READING ITS QUALITY REPORT —
+FIX THE SYNTHESIS HARNESS, NEVER THE GATES
+```
+
+`build_train_data` runs strict-by-default (fuzzy + semantic dedup, tier floor,
+n-gram decontamination vs eval suites, exposure caps) and every build emits
+`quality_report.json`, `rejected.jsonl` (nothing dropped silently), and
+`synthesis_feedback.json` (per-family/synthesizer yields, recommendations,
+autoresearch-shaped experiment candidates). After any build: read the
+feedback, act on the named producer/synthesizer, file the experiment
+candidates — **REQUIRED SKILL:** `synthesis-feedback`. `--profile permissive`
+is a diagnostic escape hatch, never a fix; gate/threshold changes go through
+`honest-ship-eval`. Cross-snapshot overlap is audited with
+`scripts/audit_data_corpora.py` (durable results in
+`docs/design/data-corpus-audit.*`); exclude covered pairs with
+`--dedup-against`. Runs bind to their exact dataset (`data_manifest_sha` ↔
+lineage `DataSnapshot`); derived curation uses `--derive-from`,
+`--difficulty-from` (record NLL evidence), and
+`scripts/mine_rejected_preferences.py`.
 
 | Excuse | Reality |
 | --- | --- |

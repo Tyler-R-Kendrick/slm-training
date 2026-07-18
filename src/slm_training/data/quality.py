@@ -71,23 +71,37 @@ def _official_component_names() -> frozenset[str]:
     return frozenset(str(name) for name in names) or PREFERRED_COMPONENTS
 
 
-def _prompt_component_mentions(prompt: str) -> frozenset[str]:
-    """Find maximal schema component names mentioned in ordinary prompt prose."""
-    prose = re.sub(r":[A-Za-z0-9_.-]+", " ", prompt)
-    normalized = re.sub(r"[^a-z0-9]+", " ", prose.lower()).strip()
+@lru_cache(maxsize=1)
+def _component_phrases() -> tuple[tuple[str, str, "re.Pattern[str]"], ...]:
+    """Longest-first (name, phrase, matcher) rows.
+
+    Derived only from the cached component inventory, so it is invariant for
+    the process; the per-record judges previously rebuilt (and re-sorted) it
+    on every call.
+    """
     names = _official_component_names()
-    occupied: list[tuple[int, int]] = []
-    found: set[str] = set()
-    phrases = []
+    rows: list[tuple[str, str]] = []
     for name in names:
         # In ordinary prose, "buttons" means plural Button. Explicit requests such
         # as "the Buttons component" are resolved separately by the exact matcher.
         if name.endswith("s") and name[:-1] in names:
             continue
-        phrase = re.sub(r"(?<!^)(?=[A-Z])", " ", name).lower()
-        phrases.append((name, phrase))
-    for name, phrase in sorted(phrases, key=lambda item: len(item[1]), reverse=True):
-        for match in re.finditer(rf"\b{re.escape(phrase)}s?\b", normalized):
+        rows.append((name, re.sub(r"(?<!^)(?=[A-Z])", " ", name).lower()))
+    rows.sort(key=lambda item: len(item[1]), reverse=True)
+    return tuple(
+        (name, phrase, re.compile(rf"\b{re.escape(phrase)}s?\b"))
+        for name, phrase in rows
+    )
+
+
+def _prompt_component_mentions(prompt: str) -> frozenset[str]:
+    """Find maximal schema component names mentioned in ordinary prompt prose."""
+    prose = re.sub(r":[A-Za-z0-9_.-]+", " ", prompt)
+    normalized = re.sub(r"[^a-z0-9]+", " ", prose.lower()).strip()
+    occupied: list[tuple[int, int]] = []
+    found: set[str] = set()
+    for name, _phrase, matcher in _component_phrases():
+        for match in matcher.finditer(normalized):
             span = match.span()
             if any(span[0] < end and start < span[1] for start, end in occupied):
                 continue
@@ -104,19 +118,10 @@ def _prompt_component_requirements(prompt: str) -> tuple[str, ...]:
     explicit counts. It is consumed by the binding-aware meaningful-program eval.
     """
     normalized = re.sub(r"[^a-z0-9]+", " ", prompt.lower()).strip()
-    names = _official_component_names()
     occupied: list[tuple[int, int]] = []
     required: dict[str, int] = {}
-    phrases = []
-    for name in names:
-        # In ordinary prose, "buttons" means plural Button. Explicit requests such
-        # as "the Buttons component" are resolved separately by the exact matcher.
-        if name.endswith("s") and name[:-1] in names:
-            continue
-        phrase = re.sub(r"(?<!^)(?=[A-Z])", " ", name).lower()
-        phrases.append((name, phrase))
-    for name, phrase in sorted(phrases, key=lambda item: len(item[1]), reverse=True):
-        for match in re.finditer(rf"\b{re.escape(phrase)}s?\b", normalized):
+    for name, _phrase, matcher in _component_phrases():
+        for match in matcher.finditer(normalized):
             span = match.span()
             if any(span[0] < end and start < span[1] for start, end in occupied):
                 continue
@@ -552,16 +557,17 @@ def assess_record(
             reasons.append("prompt_too_short")
             score -= 0.25
         score = max(0.0, min(1.0, round(score, 4)))
+        counts = component_counts(openui)
         return QualityReport(
             ok=score >= 0.55 and judge["ok"],
             score=score,
             reasons=tuple(reasons),
             meta={
-                "n_components": sum(component_counts(openui).values()),
+                "n_components": sum(counts.values()),
                 "n_placeholders": len(
                     list(record.placeholders) or extract_placeholders(openui)
                 ),
-                "component_diversity": len(component_counts(openui)),
+                "component_diversity": len(counts),
                 "openui_chars": len(openui),
                 "output_symbols": len(lexical_tokens(openui)),
                 "target_kind": record.target_kind,

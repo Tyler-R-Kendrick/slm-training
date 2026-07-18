@@ -1,0 +1,56 @@
+{
+  "run_family": "hotpath-waste-removal",
+  "date_utc": "2026-07-18",
+  "kind": "runtime-only refactor verification; no train, no checkpoint, no ship claim",
+  "host": "linux CPU container, Python 3.12, bridge npm ci installed",
+  "changes": [
+    "eval_runner: tree_edit reuses structural_similarity value; placeholder extraction and style stripping cached per source string",
+    "lang_core/graphql_js: process-lifetime cache for shutil.which('node'); bridge file stats stay live",
+    "lark_backend: structural_tokens() memoized (was a grammar-file disk read per constrained pick)",
+    "production_codec: per-piece regexes use precompiled module constants",
+    "twotower: precompiled repair regexes; lattice trajectory score lookup via path_key dict instead of O(n^2) paths.index()",
+    "compiler_draft: schema-type terminal map hoisted to module constant",
+    "mixture: task-weighted sampler hoists per-group family order/weights out of the per-draw loop",
+    "web observability: scoreboard()/model-card reads memoized behind (mtime_ns, size) stat fingerprints; deployment state read once per overview; _run_dir stats canonical path before globbing",
+    "web jobs: tail() reads a bounded end window instead of the whole log",
+    "meaningful_program: anti-gaming duplicate-subtree grouping via one bottom-up hash pass (was O(n^2) re-serialization)",
+    "structure: strip_style_literals lru-cached (pure str->str)",
+    "grammar_diffusion: throwaway codec via shallow dict copies instead of deepcopy per eval record; topology decode reads per-phase bulk tolist() instead of ~6 per-node .item() syncs"
+  ],
+  "measured": {
+    "api_overview_ms_before": 113.0,
+    "api_overview_ms_after": 31.8,
+    "api_overview_speedup": 3.6,
+    "api_overview_payload": "byte-identical before/after (82,237-char JSON compare)"
+  },
+  "equivalence_evidence": {
+    "eval_metrics": "30 prediction/record pairs (incl. malformed quote/comma inputs where strip_style_literals is not idempotent): all metric values byte-identical vs HEAD implementation",
+    "mixture": "3 sampling policies x 12 seeds x with/without task weights: draw sequences identical vs HEAD implementation",
+    "anti_gaming_fingerprints": "duplicate-subtree partitions identical vs HEAD on nested/excluded-key/scalar-typed ASTs (str-vs-bool and 1-vs-1.0 non-collision preserved)",
+    "throwaway_codec": "production_sequence_accuracy identical to deepcopy reference; source codec vocabulary verified unmutated",
+    "web_payloads": "overview/runs/scoreboards/checkpoints/system and every scoreboard kind byte-identical; cache freshness verified under file add, in-place modify, and delete"
+  },
+  "test_evidence": "full pytest tree run with NODE_OPTIONS cleared and bridge installed: failure set identical to base commit c6a7d14 (5 pre-existing environment failures in agentv/eval_gates/loop stubs, 4 in gpu_multi_farm/lineage/scripts); zero new failures",
+  "functional_check": "scripts/profile_generate --rounds 2 on committed playground_demo checkpoint completed with valid OpenUI sample outputs",
+  "not_claimed": [
+    "no decode-latency speedup claim (no matched A/B perf-matrix run)",
+    "no quality/ship-gate change",
+    "no checkpoint created or promoted"
+  ],
+  "wave2_changes": [
+    "lark_backend: bounded source-keyed Program cache on parse() mirroring the lang_core bridge cache; collapses repeated eval re-validations (and the encode_openui double validation) into cache hits on the in-process path",
+    "task_scoreboard: _Tree.size cached_property + lru_cache on the recursive tree-edit distance (exact values; verified on 61 differential cases)",
+    "lattice_search: LatticeSearchState.clone() container copy replaces per-trajectory deepcopy (SearchDecision/CompletionPath are frozen)",
+    "mixture: capacity-aware sampler keeps a parallel weight list popped in lockstep (bit-exact draws) instead of rebuilding O(n) weights per draw",
+    "slop_forensics: group universes hoisted out of the per-motif bootstrap (was O(motifs^2) per family; CI values verified identical)",
+    "rl/trajectory + preference/train: constant prompt context encoded once per trace/pair when the encoder is deterministic (train-mode dropout still re-encodes)",
+    "quality: component phrase list + compiled matchers cached once per process (was rebuilt and re-sorted 2x per record); duplicate component_counts hoisted",
+    "dedup: MinHash permutation coefficients cached by (seed, permutations) (128 redundant SHA-256 per record removed; signatures verified identical)",
+    "pipeline: programspec corpus loaded once and shared by the progspec and scope-corpus consumers (duplicate load-error reporting preserved)",
+    "scope_corpus: canonical alignment indexes hoisted out of the variant loop",
+    "trace_store: append() count cached under the documented append-only single-writer contract (was O(n^2) full-file recounts)",
+    "diagnostic: train records loaded once for tokenizer + counts/length checks",
+    "catalog/dedup: dropped dict copies on read-only meta paths; solver_supervision dead double sort; leakage quoted-span regex precompiled; train_loop float(loss) without extra .cpu(); store.resolve reuses computed fingerprints"
+  ],
+  "wave2_verification": "differential checks byte-identical for minhash signatures, component mentions/requirements, bootstrap CIs, tree-edit distances (61 cases), and cumulative eval-metric/mixture checks vs base; full pytest tree reproduces exactly the base commit's 9 pre-existing environment failures (1724 passed)"
+}

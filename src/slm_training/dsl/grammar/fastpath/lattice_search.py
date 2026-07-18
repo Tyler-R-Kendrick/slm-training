@@ -188,6 +188,20 @@ class LatticeSearchState:
     nogoods: set[Nogood] = field(default_factory=set)
     backtracks: int = 0
 
+    def clone(self) -> "LatticeSearchState":
+        """Independent branch state without deepcopy.
+
+        choose/rollback only append/pop decisions, add nogoods, and bump
+        counters; SearchDecision and CompletionPath are frozen, so copying
+        the two containers fully isolates a trajectory branch.
+        """
+        return LatticeSearchState(
+            backtrack_limit=self.backtrack_limit,
+            decisions=list(self.decisions),
+            nogoods=set(self.nogoods),
+            backtracks=self.backtracks,
+        )
+
     def choose(self, prefix: list[int], ranked: RankedForest) -> CompletionPath | None:
         if ranked.is_bottom:
             return None

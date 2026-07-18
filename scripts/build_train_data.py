@@ -14,6 +14,17 @@ from slm_training.harnesses.train_data import TrainDataConfig, build_train_data
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
+        "--profile",
+        default="strict",
+        choices=["strict", "permissive"],
+        help=(
+            "Curation profile. 'strict' (default) enables fuzzy dedup, the "
+            "semantic cluster cap, the Bronze verification-tier floor, and the "
+            "per-parent exposure cap; explicit flags below override individual "
+            "knobs. 'permissive' keeps every gate at its legacy opt-in default."
+        ),
+    )
+    parser.add_argument(
         "--source",
         default="all",
         choices=[
@@ -246,6 +257,62 @@ def main(argv: list[str] | None = None) -> int:
         help="P1a: max representatives per semantic cluster (default: uncapped).",
     )
     parser.add_argument(
+        "--semantic-dedup",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help=(
+            "Cross-structure semantic dedup (SemDeDup-style; embeddings when "
+            "the [embeddings] extra is installed, hashed TF-IDF fallback "
+            "otherwise). Default: the profile decides (strict=on)."
+        ),
+    )
+    parser.add_argument(
+        "--semantic-dedup-threshold",
+        type=float,
+        default=None,
+        help="Cosine cutoff; default is per-engine (embeddings 0.92, lexical 0.95).",
+    )
+    parser.add_argument(
+        "--ngram-decontam",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help=(
+            "Reject train rows whose token n-grams overlap committed eval "
+            "suites (Tülu-3-style). Default: the profile decides (strict=on)."
+        ),
+    )
+    parser.add_argument("--ngram-size", type=int, default=8)
+    parser.add_argument(
+        "--ngram-overlap-threshold",
+        type=float,
+        default=0.5,
+        help="Reject when this fraction of a record's n-grams appears in eval data.",
+    )
+    parser.add_argument(
+        "--decontam-eval-root",
+        type=Path,
+        default=Path("src/slm_training/resources/data/eval"),
+        help="Committed eval-suite root walked for the decontamination index.",
+    )
+    parser.add_argument(
+        "--dedup-against",
+        default="",
+        help=(
+            "Comma-separated committed dataset ids (or dataset paths) whose "
+            "exact prompt+openui pairs are excluded from this build."
+        ),
+    )
+    parser.add_argument(
+        "--difficulty-from",
+        type=Path,
+        default=None,
+        help=(
+            "record_nll.jsonl from a trained run (train_model "
+            "--emit-record-nll); discounts the trivially-easy NLL tail in "
+            "curation scores."
+        ),
+    )
+    parser.add_argument(
         "--publish",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -261,9 +328,21 @@ def main(argv: list[str] | None = None) -> int:
         default=Path("src/slm_training/resources/data/train"),
         help="Destination root for the published snapshot.",
     )
+    parser.add_argument(
+        "--register-lineage",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Register the built dataset as a lineage DataSnapshot (idempotent).",
+    )
+    parser.add_argument(
+        "--lineage-root",
+        type=Path,
+        default=Path("outputs/lineage"),
+    )
     args = parser.parse_args(argv)
 
     config = TrainDataConfig(
+            profile=args.profile,
             seed_path=args.seed_path
             if args.source in {"fixture", "both", "all"}
             else None,
@@ -291,6 +370,16 @@ def main(argv: list[str] | None = None) -> int:
             fuzzy_dedup=bool(args.fuzzy_dedup),
             fuzzy_jaccard=float(args.fuzzy_jaccard),
             semantic_cluster_cap=args.semantic_cluster_cap,
+            semantic_dedup=args.semantic_dedup,
+            semantic_dedup_threshold=args.semantic_dedup_threshold,
+            ngram_decontam=args.ngram_decontam,
+            ngram_size=args.ngram_size,
+            ngram_overlap_threshold=args.ngram_overlap_threshold,
+            decontam_eval_root=args.decontam_eval_root,
+            dedup_against=tuple(
+                item.strip() for item in args.dedup_against.split(",") if item.strip()
+            ),
+            difficulty_from=args.difficulty_from,
             programspec_path=args.programspec_path,
             programspec_count=args.programspec_count,
             programspec_seed=args.programspec_seed,
@@ -339,10 +428,26 @@ def main(argv: list[str] | None = None) -> int:
     print(json.dumps(result["stats"], indent=2))
     print(f"wrote {result['output_dir']}")
     print(f"content_fingerprint={result['manifest'].get('content_fingerprint')}")
+    if args.register_lineage:
+        snapshot, snapshot_path, created = _register_lineage(
+            args.lineage_root, output_dir, kind="train"
+        )
+        state = "registered" if created else "already-registered"
+        print(f"lineage_snapshot={snapshot.sha} ({state}: {snapshot_path})")
     if args.publish:
         published = _publish(args.version, args.output_root, args.publish_root)
         print(f"published {published}")
     return 0
+
+
+def _register_lineage(lineage_root: Path, dataset_dir: Path, *, kind: str):
+    """Bind the built dataset into the lineage store (content-fingerprint keyed)."""
+    from slm_training.lineage.data_cycle import register_dataset_snapshot
+    from slm_training.lineage.store import LineageStore
+
+    return register_dataset_snapshot(
+        LineageStore(lineage_root), dataset_dir=dataset_dir, kind=kind
+    )
 
 
 def _publish(version: str, output_root: Path, publish_root: Path) -> Path:

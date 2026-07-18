@@ -35,6 +35,8 @@
         "PageHead",
         "Panel",
         "ProvenanceBadge",
+        "QualityCard",
+        "RejectedBrowser",
         "Row",
         "StatTile"
       ],
@@ -44,7 +46,7 @@
         "data_test",
         "data_train"
       ],
-      "sha256": "236b3f56c4732b7554e4cd47f0ca9432d2a62dc8ea91d95ddd09ec30cabe3e50",
+      "sha256": "5fbf77f67ca2faebf3de2184304ed200b5eedfc255f79351a46640ef568e1bd2",
       "status": "ok"
     },
     "experiments": {

@@ -6,6 +6,7 @@ import re
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from functools import cached_property, lru_cache
 from typing import Any
 
 from slm_training.data.leakage import norm_text
@@ -21,8 +22,9 @@ class _Tree:
     label: str
     children: tuple[_Tree, ...] = ()
 
-    @property
+    @cached_property
     def size(self) -> int:
+        # Cached: the edit-distance DP reads child sizes O(|a|*|b|) times.
         return 1 + sum(child.size for child in self.children)
 
 
@@ -52,7 +54,10 @@ def _semantic_tree(value: Any) -> _Tree | None:
     return None
 
 
+@lru_cache(maxsize=16384)
 def _tree_distance(left: _Tree, right: _Tree) -> int:
+    # Pure function of two frozen (hashable) trees. Without the memo, equal
+    # subtree pairs recur exponentially on repetitive layouts.
     substitution = int(left.label != right.label)
     a, b = left.children, right.children
     dp = [[0] * (len(b) + 1) for _ in range(len(a) + 1)]
