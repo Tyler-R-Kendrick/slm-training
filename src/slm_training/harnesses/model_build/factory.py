@@ -79,6 +79,16 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "solver_max_wall_ms",
         "solver_unknown_policy",
         "solver_certificate_mode",
+        "topology_verified_solver",
+        "topology_capsule_solver",
+        "topology_solver_ranker",
+        "topology_solver_unknown_policy",
+        "topology_solver_max_nodes",
+        "topology_solver_max_backtracks",
+        "topology_solver_max_verifier_calls",
+        "topology_solver_certificate_mode",
+        "topology_solver_local_oracle",
+        "topology_solver_global_verify",
         "decode_min_content",
         "asap_decode",
         "fastpath_aux_weight",
@@ -586,6 +596,36 @@ def build_model(
             scope_contract_negatives=bool(
                 getattr(config, "scope_contract_negatives", False)
             ),
+            topology_verified_solver=bool(
+                getattr(config, "topology_verified_solver", False)
+            ),
+            topology_capsule_solver=bool(
+                getattr(config, "topology_capsule_solver", False)
+            ),
+            topology_solver_ranker=str(
+                getattr(config, "topology_solver_ranker", "model")
+            ),
+            topology_solver_unknown_policy=str(
+                getattr(config, "topology_solver_unknown_policy", "keep_and_rank")
+            ),
+            topology_solver_max_nodes=int(
+                getattr(config, "topology_solver_max_nodes", 256)
+            ),
+            topology_solver_max_backtracks=int(
+                getattr(config, "topology_solver_max_backtracks", 64)
+            ),
+            topology_solver_max_verifier_calls=int(
+                getattr(config, "topology_solver_max_verifier_calls", 64)
+            ),
+            topology_solver_certificate_mode=str(
+                getattr(config, "topology_solver_certificate_mode", "summary")
+            ),
+            topology_solver_local_oracle=bool(
+                getattr(config, "topology_solver_local_oracle", True)
+            ),
+            topology_solver_global_verify=bool(
+                getattr(config, "topology_solver_global_verify", True)
+            ),
             design_md_in_context=(
                 False
                 if config.design_md_in_context is None
@@ -600,6 +640,10 @@ def build_model(
             honest_slot_contract=bool(getattr(config, "honest_slot_contract", True)),
             seed=config.seed,
         )
+        if gd_cfg.topology_capsule_solver and not gd_cfg.topology_verified_solver:
+            raise ValueError(
+                "topology_capsule_solver=True requires topology_verified_solver=True"
+            )
         return GrammarDiffusionModel.from_records(
             records, config=gd_cfg, device=config.device
         )
