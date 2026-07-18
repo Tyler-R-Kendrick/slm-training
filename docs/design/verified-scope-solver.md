@@ -662,6 +662,42 @@ compiler/model behaviour is unchanged. `CompletionForestProjection` is the
 reference `FiniteDomainProjection` seam that future topology-node domains
 implement.
 
+## Implemented cost-to-go energy scorer (VSS3-02 / SLM-70)
+
+[`models/solver_energy.py`](../../src/slm_training/models/solver_energy.py) adds
+the first learned model for the verified solver. Its **only** runtime authority is
+to order the exact live candidates the `CandidateRanker` seam receives — it never
+defines membership, certifies support, suppresses `UNKNOWN`, or bypasses the
+verifier. Exact closure and the hard live set are computed first; energy ranking
+changes candidate order (and thus expanded nodes / backtracks / latency) and
+nothing else.
+
+The learned target is **search cost-to-go**, not likelihood:
+`E_theta(state, hole, candidate) ≈ expected remaining exact search work`, lower
+energy first. `CandidateEnergyRanker` (a `CandidateRanker`) validates that the
+scorer returns exactly one finite energy per supplied value and returns a
+**permutation** of those values; any defect (count mismatch, duplicate, NaN,
+infinity) triggers the deterministic identity fallback and is counted, never
+altering the hard domain. The work target is versioned
+(`work = expanded_nodes + wᵥ·verifier_calls + w_b·backtracks + w_d·decisions`,
+`cost_target = log1p(work)`, coefficients in `DEFAULT_WORK_WEIGHTS`/`v1`), computed
+from the replay-verified VSS3-01 `candidate_cost` rows. Losses: Huber regression
+applied **only** where `cost_observed=true`, plus a pairwise ranking loss over
+same-state/hole pairs with *distinct* observed costs — so `UNKNOWN`/censored rows
+are masked and several comparably-cheap supported alternatives are never forced
+into a one-hot order. Features are decision-time only (no final source, future
+decision, verifier report, or witness text); the scorer input contract carries
+tensors + fingerprint + `DomainValue` ids exclusively.
+
+Config is disabled-by-default on `TwoTowerConfig` (`solver_energy_head=False`,
+`solver_ranker="deterministic"`, `solver_energy_hidden_dim`,
+`solver_energy_{loss,pairwise}_weight`, `solver_energy_cost_version="v1"`,
+`solver_energy_fallback`); old configs/checkpoints missing the fields load with
+defaults, and the scorer is a separate adapter module (not baked into the base
+state dict), so existing checkpoints load unchanged. Pinned by
+`tests/test_models/test_solver_energy.py`. **No real checkpoint trained; low energy
+is never a correctness claim, and fixture overfit is not a ship claim.**
+
 ## Measured status
 
 2026-07-17 — specification-only change (VSS0-01 / SLM-57). No solver code, no

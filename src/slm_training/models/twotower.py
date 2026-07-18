@@ -294,6 +294,17 @@ class TwoTowerConfig:
     solver_max_wall_ms: int = 0
     solver_unknown_policy: str = "keep_and_rank"
     solver_certificate_mode: str = "summary"  # none | summary | full
+    # VSS3-02 learned cost-to-go energy scorer. Ranking-only: it orders the exact
+    # live candidates and never alters hard membership, certificates, or UNKNOWN.
+    # Disabled by default; ``solver_ranker="deterministic"`` is byte-identical to
+    # existing decode. Old configs/checkpoints missing these load with defaults.
+    solver_energy_head: bool = False
+    solver_ranker: str = "deterministic"  # deterministic | model | energy
+    solver_energy_hidden_dim: int = 64
+    solver_energy_loss_weight: float = 0.0
+    solver_energy_pairwise_weight: float = 0.0
+    solver_energy_cost_version: str = "v1"
+    solver_energy_fallback: str = "deterministic"
     # A4 minimum-content decode contract (compiler-tree decode only):
     #   0  -> off (empty layouts remain legal completions);
     #   >0 -> require at least this many components before EOS is admitted;
