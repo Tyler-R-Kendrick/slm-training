@@ -727,6 +727,22 @@ smallest constrained intervention whose verifier and frozen suites can falsify i
 | Evidence-grounded autoresearch | `--researcher`, typed `ResearcherRun` / `ExperimentKnobs` | `scripts/autoresearch.py`, `src/slm_training/autoresearch/` |
 | Five-candidate hypothesis matrix | `hypothesize`, `min_hypotheses>=5`, categorical candidate audit | `scripts/autoresearch.py`, `autoresearch/schemas.py`, `autoresearch/engine.py` |
 
+## VSS3-02 cost-to-go energy scorer (adapted EDLM/EBM)
+
+**Fidelity label: adapted.** The VSS3-02 scorer
+([`models/solver_energy.py`](../../src/slm_training/models/solver_energy.py))
+borrows the *energy-as-ranking* idea from energy-based models (EBM) and
+energy-guided discrete/latent decoding (EDLM-style residual guidance), but
+deliberately **narrows** their scope: the classical EBM defines an unnormalized
+density over sequences and can shape the sample space, whereas this energy has no
+authority over legality or membership at all. It only orders the exact, already-
+certified live candidate set (`CandidateRanker` seam), and its learned quantity is
+**search cost-to-go** (expected remaining exact solver work), not a likelihood or
+correctness score. Certified deductions, `UNKNOWN`, and the final verifier remain
+the sole authorities; a scorer defect falls back to deterministic order. So the
+lineage is "EBM/EDLM ranking signal, subordinated to an exact solver" — an
+adaptation, not a faithful reproduction of a generative EBM.
+
 ---
 
 ## Honesty rules (for docs & claims)

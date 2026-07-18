@@ -170,6 +170,13 @@ unsupported tokenizer/pack raises a capability error.
 | `solver_max_wall_ms` | — (config/checkpoint) | `0` | `0` = no wall timer; deterministic budgets stay authoritative. |
 | `solver_unknown_policy` | `--solver-unknown-policy` | `keep_and_rank` | Only supported value: `UNKNOWN` candidates stay live for the soft ranker. |
 | `solver_certificate_mode` | `--solver-certificate-mode` | `summary` | `none \| summary \| full` certificate detail. |
+| `solver_energy_head` (VSS3-02) | — (config/checkpoint) | `False` | Enable the learned cost-to-go energy scorer. Off ⇒ decode unchanged. |
+| `solver_ranker` (VSS3-02) | — (config/checkpoint) | `deterministic` | `deterministic \| model \| energy`. Ranking-only; never alters hard membership. |
+| `solver_energy_hidden_dim` | — (config/checkpoint) | `64` | Energy MLP hidden width. |
+| `solver_energy_loss_weight` | — (config/checkpoint) | `0.0` | Huber cost-to-go regression weight (observed rows only). |
+| `solver_energy_pairwise_weight` | — (config/checkpoint) | `0.0` | Pairwise ranking-loss weight over same-state/hole pairs. |
+| `solver_energy_cost_version` | — (config/checkpoint) | `v1` | Versioned work-target coefficients (stored in dataset/checkpoint metadata). |
+| `solver_energy_fallback` | — (config/checkpoint) | `deterministic` | Order used when a scorer output is missing/duplicate/NaN/infinite. |
 
 ```bash
 # Opt-in solver-pruned decode on the honest compiler-tree path (experimental).
