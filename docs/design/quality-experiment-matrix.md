@@ -2261,6 +2261,14 @@ Reject the composition. See
 [results](iter-e349-hf-context-content2-plan01-20260717.md) and
 [JSON](hf-context-content2-plan01-results-iter-e349-20260717.json).
 
+E350 doubles E347's slot-component decode weight to 8. One additional
+held-out choice becomes the correct `Button`, raising held-out recall to its
+0.30 gate and structure to 0.5075; AgentV passes all four bounded suites with
+zero execution errors. Retain as the strongest bounded HF-context policy, but
+do not promote or claim ship without full RICO evidence. See
+[results](iter-e350-hf-context-content2-slot8-20260717.md) and
+[JSON](hf-context-content2-slot8-results-iter-e350-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
