@@ -11,9 +11,15 @@ import pytest
 
 from slm_training.data.leakage import find_leakage, load_train_fingerprints
 from slm_training.data.progspec import (
+    CapsuleGraph,
+    DependencyKind,
     ProgramSpec,
     ScopeContract,
+    ScopeEdge,
+    ScopeNode,
+    VerificationCapsule,
     dependency_closed_failure_cone,
+    derive_capsule_graph,
     derive_scope_contracts,
     derive_scope_records,
     emit_record,
@@ -207,3 +213,126 @@ def test_meta_subschemas_are_dicts() -> None:
             openui=OPENUI,
             meta={"repair": "not-a-record"},
         )
+
+
+@pytest.mark.skipif(not bridge_available(), reason="OpenUI bridge deps missing")
+def test_capsule_graph_has_statement_nodes_and_root_interface() -> None:
+    spec = ProgramSpec.from_openui(
+        id="capsule_root",
+        openui=OPENUI,
+        facts={},
+        program_family_id="capsule_family",
+        lineage_id="capsule_lineage",
+        split_group_id="capsule_group",
+    )
+    graph = derive_capsule_graph(spec)
+    assert graph.spec_id == spec.id
+    assert graph.root_id in {node.node_id for node in graph.nodes}
+    statement_nodes = [node for node in graph.nodes if node.kind == "statement"]
+    assert len(statement_nodes) == 2  # root and cta
+    assert all(node.scope_id for node in statement_nodes)
+
+
+@pytest.mark.skipif(not bridge_available(), reason="OpenUI bridge deps missing")
+def test_capsule_graph_round_trips() -> None:
+    spec = ProgramSpec.from_openui(
+        id="capsule_rt",
+        openui=OPENUI,
+        facts={},
+        program_family_id="capsule_family",
+        lineage_id="capsule_lineage",
+        split_group_id="capsule_group",
+    )
+    graph = derive_capsule_graph(spec)
+    recovered = CapsuleGraph.from_dict(graph.to_dict())
+    assert recovered == graph
+    assert ScopeNode.from_dict(graph.nodes[0].to_dict()) == graph.nodes[0]
+    assert ScopeEdge.from_dict(graph.edges[0].to_dict()) == graph.edges[0]
+    assert VerificationCapsule.from_dict(graph.capsules[0].to_dict()) == graph.capsules[0]
+
+
+@pytest.mark.skipif(not bridge_available(), reason="OpenUI bridge deps missing")
+def test_nested_contracts_become_member_paths_not_nodes() -> None:
+    spec = ProgramSpec.from_openui(
+        id="capsule_members",
+        openui=OPENUI,
+        facts={},
+        program_family_id="capsule_family",
+        lineage_id="capsule_lineage",
+        split_group_id="capsule_group",
+    )
+    graph = derive_capsule_graph(spec)
+    statement_nodes = {node.node_id: node for node in graph.nodes if node.kind == "statement"}
+    assert any(node.member_paths for node in statement_nodes.values())
+    non_root_non_statement = [
+        node for node in graph.nodes if node.kind not in {"statement", "root"}
+    ]
+    assert not non_root_non_statement
+
+
+@pytest.mark.skipif(not bridge_available(), reason="OpenUI bridge deps missing")
+def test_external_slots_become_typed_dependencies() -> None:
+    spec = ProgramSpec.from_openui(
+        id="capsule_external",
+        openui=OPENUI,
+        facts={},
+        program_family_id="capsule_family",
+        lineage_id="capsule_lineage",
+        split_group_id="capsule_group",
+    )
+    graph = derive_capsule_graph(spec)
+    external_edges = [edge for edge in graph.edges if edge.kind == DependencyKind.EXTERNAL]
+    assert external_edges
+    assert all(edge.target == graph.root_id for edge in external_edges)
+    assert any(":cta.label" in edge.role for edge in external_edges)
+
+
+@pytest.mark.skipif(not bridge_available(), reason="OpenUI bridge deps missing")
+def test_capsule_graph_is_deterministic() -> None:
+    spec = ProgramSpec.from_openui(
+        id="capsule_det",
+        openui=OPENUI,
+        facts={},
+        program_family_id="capsule_family",
+        lineage_id="capsule_lineage",
+        split_group_id="capsule_group",
+    )
+    first = derive_capsule_graph(spec)
+    second = derive_capsule_graph(spec)
+    assert first.to_dict() == second.to_dict()
+
+
+def test_forward_reference_raises() -> None:
+    spec = ProgramSpec(
+        id="forward_ref",
+        ast={
+            "type": "element",
+            "typeName": "Stack",
+            "statementId": "root",
+            "props": {"children": [{"type": "ref", "name": "undefined_binder"}]},
+        },
+        canonical_openui='root = Stack([undefined_binder])',
+        facts={},
+        contract_id=contract_id(),
+        program_family_id="forward_family",
+        lineage_id="forward_lineage",
+        split_group_id="forward_group",
+    )
+    with pytest.raises(ValueError, match="forward reference"):
+        derive_capsule_graph(spec)
+
+
+@pytest.mark.skipif(not bridge_available(), reason="OpenUI bridge deps missing")
+def test_reference_edges_capture_statement_dependencies() -> None:
+    spec = ProgramSpec.from_openui(
+        id="capsule_deps",
+        openui=OPENUI,
+        facts={},
+        program_family_id="capsule_family",
+        lineage_id="capsule_lineage",
+        split_group_id="capsule_group",
+    )
+    graph = derive_capsule_graph(spec)
+    reference_edges = [edge for edge in graph.edges if edge.kind == DependencyKind.REFERENCE]
+    assert reference_edges
+    assert any(edge.role == "cta" for edge in reference_edges)
