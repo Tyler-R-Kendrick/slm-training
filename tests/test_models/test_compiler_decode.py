@@ -1072,7 +1072,7 @@ def test_slot_component_bias_uses_next_unfilled_slot() -> None:
     assert submit_bias is not None and submit_bias[1] > submit_bias[0]
 
 
-def test_slot_component_bias_averages_every_consumed_slot() -> None:
+def test_slot_component_bias_combines_consumed_slots_and_span_prior() -> None:
     from types import MethodType
 
     model = _model(slot_component_decode_weight=2.0)
@@ -1092,10 +1092,16 @@ def test_slot_component_bias_averages_every_consumed_slot() -> None:
     ctx, ctx_pad = model._encode_context(["faq title and body"])
     accordion, text = component_ids[:2]
 
-    def required_slot_count(self, token_id):
+    def slot_content_count(self, token_id):
         return 2 if token_id == accordion else 1
 
-    tokenizer.required_slot_count = MethodType(required_slot_count, tokenizer)
+    tokenizer.slot_content_count = MethodType(slot_content_count, tokenizer)
+    scores = [0.0] * len(component_ids)
+    scores[0] = 2.0
+    model.config.slot_component_span_prior_weight = 1.0
+    model.config.slot_component_span_priors = (
+        ("title\x1fbody", tuple(scores)),
+    )
     bias = model._slot_component_bias(
         ctx,
         ctx_pad,
@@ -1105,10 +1111,10 @@ def test_slot_component_bias_averages_every_consumed_slot() -> None:
         [":faq.title", ":faq.body"],
     )
 
-    assert tokenizer.required_slot_count(accordion) == 2
-    assert tokenizer.required_slot_count(text) == 1
+    assert tokenizer.slot_content_count(accordion) == 2
+    assert tokenizer.slot_content_count(text) == 1
     assert bias is not None
-    assert bias.tolist() == [6.0, 0.0]
+    assert bias.tolist() == [8.0, 0.0]
 
 
 def test_component_edges_come_from_ast_and_partial_reference_graph() -> None:

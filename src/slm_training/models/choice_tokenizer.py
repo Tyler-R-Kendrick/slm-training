@@ -240,6 +240,37 @@ class ChoiceTokenizer:
     def sym_id(self, slot: int) -> int:
         return self.token_to_id[f"{SLOT_PREFIX}{slot}"]
 
+    def required_slot_count(self, token_id: int) -> int:
+        """Required positional strings consumed by a component choice."""
+        token = self.id_to_token.get(int(token_id), "")
+        if not token.startswith(OPEN_PREFIX):
+            return 0
+        contract = _component_contracts().get(token[len(OPEN_PREFIX) :])
+        if contract is None:
+            return 0
+        schemas, required_args = contract
+        return sum(
+            ChoiceDecodeState._schema_accepts(schema, "string")
+            for schema in schemas[:required_args]
+        )
+
+    def slot_content_count(self, token_id: int) -> int:
+        """Leading placeholder-bearing strings, excluding enum discriminators."""
+        token = self.id_to_token.get(int(token_id), "")
+        if not token.startswith(OPEN_PREFIX):
+            return 0
+        contract = _component_contracts().get(token[len(OPEN_PREFIX) :])
+        if contract is None:
+            return 0
+        schemas, _required_args = contract
+        count = 0
+        for schema in schemas:
+            if schema.get("type") == "string" and "enum" not in schema:
+                count += 1
+            elif count:
+                break
+        return count
+
     def candidate_partition(self, name: str) -> frozenset[int]:
         """Return a lazily built production-category token partition."""
         cached = self.candidate_partitions.get(name)

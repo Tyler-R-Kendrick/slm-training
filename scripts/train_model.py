@@ -442,6 +442,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Add corpus-derived slot-lexeme owner log odds (0 disables).",
     )
     parser.add_argument(
+        "--slot-component-span-prior-weight",
+        type=float,
+        default=0.0,
+        help="Bias multi-slot owners from corpus-derived ordered role spans.",
+    )
+    parser.add_argument(
         "--component-edge-loss-weight",
         type=float,
         default=0.0,
@@ -843,6 +849,9 @@ def main(argv: list[str] | None = None) -> int:
             slot_component_pair_interaction=args.slot_component_pair_interaction,
             slot_component_lexeme_prior_weight=(
                 args.slot_component_lexeme_prior_weight
+            ),
+            slot_component_span_prior_weight=(
+                args.slot_component_span_prior_weight
             ),
             component_edge_loss_weight=args.component_edge_loss_weight,
             component_edge_alignment_loss_weight=(

@@ -49,6 +49,7 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "slot_component_next_context",
         "slot_component_pair_interaction",
         "slot_component_lexeme_prior_weight",
+        "slot_component_span_prior_weight",
         "component_edge_loss_weight",
         "component_edge_alignment_loss_weight",
         "component_edge_decode_weight",
@@ -280,6 +281,9 @@ class ExperimentKnobs(StrictModel):
     slot_component_next_context: bool | None = None
     slot_component_pair_interaction: bool | None = None
     slot_component_lexeme_prior_weight: float | None = Field(
+        default=None, ge=0, le=20
+    )
+    slot_component_span_prior_weight: float | None = Field(
         default=None, ge=0, le=20
     )
     component_plan_attention_pool: bool | None = None

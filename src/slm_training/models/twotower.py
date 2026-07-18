@@ -225,6 +225,10 @@ class TwoTowerConfig:
     slot_component_lexeme_priors: tuple[
         tuple[str, tuple[float, ...]], ...
     ] = ()
+    slot_component_span_prior_weight: float = 0.0
+    slot_component_span_priors: tuple[
+        tuple[str, tuple[float, ...]], ...
+    ] = ()
     component_edge_loss_weight: float = 0.0
     component_edge_alignment_loss_weight: float = 0.0
     component_edge_decode_weight: float = 0.0
@@ -1336,6 +1340,17 @@ class TwoTowerModel(nn.Module):
             f"{slot}\n{slots[index + 1]}" if index + 1 < len(slots) else slot
             for index, slot in enumerate(slots)
         ]
+
+    @staticmethod
+    def _slot_role_token(slot: str) -> str:
+        return next(
+            (
+                token
+                for token in reversed(tokenize_text(slot))
+                if any(char.isalnum() for char in token)
+            ),
+            "",
+        )
 
     def _predict_target_lengths(
         self, context: torch.Tensor, pad_mask: torch.Tensor | None
@@ -3367,6 +3382,12 @@ class TwoTowerModel(nn.Module):
             token_id: index
             for index, token_id in enumerate(self._component_inventory_token_ids())
         }
+        span_weight = float(
+            getattr(self.config, "slot_component_span_prior_weight", 0.0) or 0.0
+        )
+        span_lookup = dict(
+            getattr(self.config, "slot_component_span_priors", ()) or ()
+        )
         bias = logits.new_zeros(len(candidate_ids))
         applied = False
         for position, (token_id, kind) in enumerate(
@@ -3374,17 +3395,25 @@ class TwoTowerModel(nn.Module):
         ):
             index = component_index.get(token_id)
             if index is not None and kind == "component_bound":
-                required_slot_count = getattr(
-                    self.tokenizer, "required_slot_count", None
+                slot_content_count = getattr(
+                    self.tokenizer, "slot_content_count", None
                 )
                 required = (
-                    int(required_slot_count(token_id))
-                    if callable(required_slot_count)
+                    int(slot_content_count(token_id))
+                    if callable(slot_content_count)
                     else 1
                 )
                 if required > 0:
                     consumed = min(required, len(remaining_slots))
                     bias[position] = weight * logits[:consumed, index].mean()
+                    if span_weight > 0.0 and consumed == required and required > 1:
+                        key = "\x1f".join(
+                            self._slot_role_token(slot)
+                            for slot in remaining_slots[:consumed]
+                        )
+                        scores = span_lookup.get(key)
+                        if scores is not None:
+                            bias[position] += span_weight * float(scores[index])
                     applied = True
         return bias if applied else None
 
@@ -6903,6 +6932,68 @@ class TwoTowerModel(nn.Module):
                     )
                     for token, counts in sorted(token_counts.items())
                     if token_totals[token] >= 2
+                )
+        span_weight = float(
+            getattr(cfg, "slot_component_span_prior_weight", 0.0) or 0.0
+        )
+        if span_weight > 0.0 and model.slot_component_head is not None:
+            component_index = model._component_name_index()
+            component_ids = model._component_inventory_token_ids()
+            slot_content_count = getattr(
+                model.tokenizer, "slot_content_count", None
+            )
+            class_counts: Counter[int] = Counter()
+            span_counts: dict[str, Counter[int]] = defaultdict(Counter)
+            span_totals: Counter[str] = Counter()
+            for record in records:
+                owners = model._slot_component_owners(record.openui)
+                slots = list(record.placeholders)
+                for slot in slots:
+                    target = component_index.get(owners.get(slot, ""))
+                    if target is not None:
+                        class_counts[target] += 1
+                for index in range(len(slots) - 1):
+                    owner = owners.get(slots[index], "")
+                    if not owner or owner != owners.get(slots[index + 1], ""):
+                        continue
+                    target = component_index.get(owner)
+                    if (
+                        target is None
+                        or not callable(slot_content_count)
+                        or int(slot_content_count(component_ids[target])) != 2
+                    ):
+                        continue
+                    key = "\x1f".join(
+                        model._slot_role_token(slot)
+                        for slot in slots[index : index + 2]
+                    )
+                    span_counts[key][target] += 1
+                    span_totals[key] += 1
+            total = sum(class_counts.values())
+            classes = len(component_index)
+            if total and classes:
+                base = [
+                    (class_counts[index] + 1.0) / (total + classes)
+                    for index in range(classes)
+                ]
+                cfg.slot_component_span_priors = tuple(
+                    (
+                        key,
+                        tuple(
+                            (
+                                math.log(
+                                    (counts[index] + 0.5)
+                                    / (span_totals[key] + 0.5 * classes)
+                                )
+                                - math.log(base[index])
+                            )
+                            if counts[index] > 0
+                            else 0.0
+                            for index in range(classes)
+                        ),
+                    )
+                    for key, counts in sorted(span_counts.items())
+                    if span_totals[key] >= 2
                 )
         model.gen_len = max(max_target + 2, 16)
         if bool(getattr(cfg, "teacher_init_embeddings", False)):

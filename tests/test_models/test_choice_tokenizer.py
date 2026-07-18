@@ -175,9 +175,15 @@ def test_choice_state_identifies_slot_content_components(
 ) -> None:
     state = ChoiceDecodeState(tok)
     assert state.is_slot_content_component_id(tok.token_to_id["+TextContent"])
+    assert tok.required_slot_count(tok.token_to_id["+TextContent"]) == 1
+    assert tok.slot_content_count(tok.token_to_id["+TextContent"]) == 1
     assert state.is_slot_content_component_type("element:TextContent")
     assert not state.is_slot_content_component_id(tok.token_to_id["+Stack"])
     assert not state.is_slot_content_component_id(tok.token_to_id["+Separator"])
+    assert tok.required_slot_count(tok.token_to_id["+CardHeader"]) == 0
+    assert tok.slot_content_count(tok.token_to_id["+CardHeader"]) == 2
+    assert tok.slot_content_count(tok.token_to_id["+Callout"]) == 2
+    assert tok.slot_content_count(tok.token_to_id["+Input"]) == 2
 
 
 def test_choice_state_initial_bind_path_can_satisfy_content_floor(

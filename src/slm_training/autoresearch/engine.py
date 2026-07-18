@@ -457,6 +457,13 @@ def compile_commands(
                     str(knobs.slot_component_lexeme_prior_weight),
                 ]
             )
+        if knobs.slot_component_span_prior_weight is not None:
+            train.extend(
+                [
+                    "--slot-component-span-prior-weight",
+                    str(knobs.slot_component_span_prior_weight),
+                ]
+            )
         if knobs.component_plan_attention_pool:
             train.append("--component-plan-attention-pool")
         if knobs.component_plan_token_pool:
