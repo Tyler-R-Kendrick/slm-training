@@ -1,7 +1,7 @@
 {
   "version": "e218_schema_normalized_judge_v5",
   "source": "existing",
-  "derive_from": "src/slm_training/resources/train_data/e177_semantic_judge_v2/records.jsonl",
+  "derive_from": "src/slm_training/resources/data/train/e177_semantic_judge_v2/records.jsonl",
   "seed_path": null,
   "rico_path": null,
   "rico_hf_split": null,

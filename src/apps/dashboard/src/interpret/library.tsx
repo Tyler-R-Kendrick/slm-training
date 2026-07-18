@@ -39,7 +39,12 @@ import { EMPTY_HERO } from "../hero";
 import { getJSON, postJSON } from "../api";
 import { useCaps, jobDef } from "../caps";
 import { Playground } from "../pages/Playground";
-import { TrainingDataBrowser, TrainingDataWorkspace } from "../pages/Data";
+import {
+  DataQualityCard,
+  RejectedRecordsBrowser,
+  TrainingDataBrowser,
+  TrainingDataWorkspace,
+} from "../pages/Data";
 import { navRef } from "./nav";
 
 const any = z.any();
@@ -419,6 +424,31 @@ const DataGenerator = defineComponent({
   ),
 });
 
+const QualityCard = defineComponent({
+  name: "QualityCard",
+  description:
+    "Per-version data quality report summary (profile, admission, dedup/decontam drops) + used-by-run chips.",
+  props: z.object({
+    version: z.string().optional(),
+    used_by: z.array(z.string()).optional(),
+  }),
+  component: ({ props }: any) => (
+    <DataQualityCard
+      version={props.version}
+      usedByRuns={props.used_by || []}
+      navigate={(to) => navRef.current?.(to)}
+    />
+  ),
+});
+
+const RejectedBrowser = defineComponent({
+  name: "RejectedBrowser",
+  description:
+    "Paged rejected.jsonl audit ledger with stage filter and full-entry inspection.",
+  props: z.object({ version: z.string().optional() }),
+  component: ({ props }: any) => <RejectedRecordsBrowser version={props.version} />,
+});
+
 // The full Checkpoints interactive region: run selector + live threshold editor +
 // gate matrix + lifecycle + blinded-A/B + promote/deploy. Owns the shared selected-run
 // state the compiled page threads through several cards; the gate math runs server-side.
@@ -604,6 +634,8 @@ const CUSTOM = [
   JobConsole,
   DataBrowser,
   DataGenerator,
+  QualityCard,
+  RejectedBrowser,
   CheckpointConsole,
   AnnotatePlayground,
 ];

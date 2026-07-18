@@ -13,11 +13,15 @@ compPanel = Panel("Corpus composition", [Bars(train.composition)], ProvenanceBad
 suitesPanel = Panel("Eval suites", [Bars(test.rows), Hint("Ship claims require full rico_held (n≥1500).", true)], ProvenanceBadge(test.provenance))
 row1 = Row([compPanel, suitesPanel])
 
+qualityPanel = Panel("Data quality report", [QualityCard(train.version, train.used_by)], ProvenanceBadge(train.provenance))
+
 recordsPanel = Panel("Training examples", [DataBrowser(train.version)], Note("search · scroll all · inspect details", "hint"))
+
+rejectedPanel = Panel("Rejected records (audit ledger)", [RejectedBrowser(train.version)], Note("nothing is dropped silently", "hint"))
 
 preferenceCols = [{ key: "dataset_id", label: "dataset" }, { key: "kind", label: "kind" }, { key: "records", label: "events", align: "right" }, { key: "train", label: "train", align: "right" }, { key: "held_out", label: "held-out", align: "right" }, { key: "evidence", label: "evidence" }, { key: "usage", label: "used by" }, { key: "fingerprint", label: "fingerprint" }]
 preferencePanel = Panel("Preference and decision data", [DataTable(preferenceCols, preference.rows)], ProvenanceBadge(preference.provenance))
 
 genPanel = Panel("Create a training dataset", [DataGenerator(train.versions)], Note("recommended settings included", "hint"))
 
-root = Page([head, versionTabs, tileRow, recordsPanel, preferencePanel, genPanel, row1])
+root = Page([head, versionTabs, tileRow, qualityPanel, recordsPanel, rejectedPanel, preferencePanel, genPanel, row1])

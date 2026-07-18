@@ -1,6 +1,6 @@
 {
   "version": "e218_schema_normalized_judge_v5",
-  "kind": "train_data",
+  "kind": "train",
   "source": "existing",
   "records": "src/slm_training/resources/data/train/e218_schema_normalized_judge_v5/records.jsonl",
   "stats": "src/slm_training/resources/data/train/e218_schema_normalized_judge_v5/stats.json",
@@ -2366,5 +2366,56 @@
     ],
     "max_length": null
   },
-  "built_at": "2026-07-16T13:07:37.644207+00:00"
+  "built_at": "2026-07-16T13:07:37.644207+00:00",
+  "schema_version": 2,
+  "dataset_id": "e218_schema_normalized_judge_v5",
+  "immutable": true,
+  "trace_id": null,
+  "artifacts": [
+    {
+      "path": "governance/croissant.json",
+      "sha256": "228cda602ad4f7c773fb28a44cd9db81b47b6f6a437ef5958ed5ea48927a1901",
+      "size": 2527
+    },
+    {
+      "path": "governance/data_card.json",
+      "sha256": "57563ab6aeecfa0cbf81b095761a3655cab67b5cfe2e02619e3e92a3671bbc13",
+      "size": 483
+    },
+    {
+      "path": "governance/dataset.spdx.json",
+      "sha256": "953f55d100e684f4ee5c068cad9ace5844dad98fb78d8d65a7c6c156c4d8b364",
+      "size": 1029
+    },
+    {
+      "path": "governance/records.jsonl",
+      "sha256": "68ef3698f4a62f4d9a4288fcfd1328cbc83637a6f4967e8fcf9f2854b1c5b047",
+      "size": 3917160
+    },
+    {
+      "path": "mixture.json",
+      "sha256": "3a3864201998323e1c257e668fb9e32c501552fa404fcb6bd19047d9cfa19a9b",
+      "size": 3682
+    },
+    {
+      "path": "mixture_semantic_balanced.json",
+      "sha256": "80e9f06342766c69cbcdb579437adbe4106b489f1a7b037015ea822ad4c14891",
+      "size": 423
+    },
+    {
+      "path": "records.jsonl",
+      "sha256": "a52b8ac995ff1c32f2908469b4e07f6139380d3875b5852757fb4aea0e0ea5e7",
+      "size": 4086481
+    },
+    {
+      "path": "stats.json",
+      "sha256": "90c77a676182b2d2ae0761366fbfe2e11e8dc87c41588e3b6c8bc75e3623916f",
+      "size": 8936
+    },
+    {
+      "path": "synthesis_telemetry.jsonl",
+      "sha256": "4dbb4471245755a58945e28b5119bfc48d35072535b8e80718ae0bcd6e880b51",
+      "size": 1208
+    }
+  ]
 }

@@ -74,6 +74,17 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Do not load local rico fixture JSONL (HF-only when --rico-hf-split set).",
     )
+    parser.add_argument(
+        "--register-lineage",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Register the built eval dataset as a lineage DataSnapshot (idempotent).",
+    )
+    parser.add_argument(
+        "--lineage-root",
+        type=Path,
+        default=Path("outputs/lineage"),
+    )
     args = parser.parse_args(argv)
 
     suites = tuple(s.strip() for s in args.suites.split(",") if s.strip())
@@ -100,6 +111,17 @@ def main(argv: list[str] | None = None) -> int:
     )
     print(json.dumps(result["stats"], indent=2))
     print(f"wrote {result['output_dir']}")
+    if args.register_lineage:
+        from slm_training.lineage.data_cycle import register_dataset_snapshot
+        from slm_training.lineage.store import LineageStore
+
+        snapshot, snapshot_path, created = register_dataset_snapshot(
+            LineageStore(args.lineage_root),
+            dataset_dir=Path(result["output_dir"]),
+            kind="eval",
+        )
+        state = "registered" if created else "already-registered"
+        print(f"lineage_snapshot={snapshot.sha} ({state}: {snapshot_path})")
     return 0
 
 

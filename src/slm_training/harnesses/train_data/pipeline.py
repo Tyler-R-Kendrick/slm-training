@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass, replace
+from dataclasses import asdict, dataclass, fields, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -20,11 +20,21 @@ from slm_training.data.rico import load_rico_screens, screen_to_record
 from slm_training.dsl.placeholders import extract_placeholders
 from slm_training.dsl.parser import ParseError, validate, validate_output
 from slm_training.dsl.schema import ExampleRecord, load_jsonl, write_jsonl
+from slm_training.harnesses.train_data.report import (
+    build_quality_report,
+    rejection_entry,
+    write_quality_report,
+    write_rejected,
+)
 from slm_training.harnesses.train_data.synth import PromptSynthesizer, get_synthesizer
 
 
 @dataclass
 class TrainDataConfig:
+    # Curation profile: "strict" (default) turns the full dedup/verification
+    # stack on; "permissive" keeps every gate at its legacy opt-in default.
+    # Explicitly set fields always win over the profile (see resolve_profile).
+    profile: str = "strict"
     seed_path: Path | None = None
     # Human thumbs-up promotions from the annotate playground.
     human_annotations_path: Path | None = Path(
@@ -65,6 +75,19 @@ class TrainDataConfig:
     fuzzy_dedup: bool = False
     fuzzy_jaccard: float = 0.92
     semantic_cluster_cap: int | None = None
+    # Cross-structure semantic dedup (SemDeDup-style) + n-gram decontamination
+    # against committed eval suites. None = the profile decides; an explicit
+    # True/False always wins over the profile.
+    semantic_dedup: bool | None = None
+    # None = engine default (embeddings 0.92, lexical-tfidf fallback 0.95).
+    semantic_dedup_threshold: float | None = None
+    ngram_decontam: bool | None = None
+    ngram_size: int = 8
+    ngram_overlap_threshold: float = 0.5
+    decontam_eval_root: Path | None = Path("src/slm_training/resources/data/eval")
+    # Cross-corpus dedup: drop records whose exact prompt⊕openui pair already
+    # exists in these committed dataset ids (or explicit dataset paths).
+    dedup_against: tuple[str, ...] = ()
     # P12 producer inputs. ProgramSpecs fall back to deterministic generation
     # when the configured file has not been materialized yet.
     programspec_path: Path | None = Path("outputs/data/programspec/programs.jsonl")
@@ -102,6 +125,38 @@ class TrainDataConfig:
     @property
     def output_dir(self) -> Path:
         return self.output_root / self.version
+
+
+# Profile-controlled knobs. A knob is only applied when the config still holds
+# the dataclass default for that field, so explicit caller/CLI choices survive.
+PROFILES: dict[str, dict[str, Any]] = {
+    "strict": {
+        "fuzzy_dedup": True,
+        "semantic_cluster_cap": 8,
+        "min_verification_tier": "Bronze",
+        "max_records_per_parent": 6,
+        "semantic_dedup": True,
+        "ngram_decontam": True,
+    },
+    "permissive": {},
+}
+
+
+def resolve_profile(config: TrainDataConfig) -> TrainDataConfig:
+    """Fill profile-controlled knobs that were left at their field defaults."""
+    overrides = PROFILES.get(config.profile)
+    if overrides is None:
+        raise ValueError(
+            f"unknown train-data profile {config.profile!r}; "
+            f"expected one of {sorted(PROFILES)}"
+        )
+    defaults = {field.name: field.default for field in fields(TrainDataConfig)}
+    updates = {
+        name: value
+        for name, value in overrides.items()
+        if getattr(config, name) == defaults[name]
+    }
+    return replace(config, **updates) if updates else config
 
 
 def _normalize_record(record: ExampleRecord) -> ExampleRecord:
@@ -958,6 +1013,7 @@ def build_train_data(
     synthesizer: PromptSynthesizer | None = None,
 ) -> dict:
     """Load every enabled producer, synthesize, verify, dedupe, and write artifacts."""
+    config = resolve_profile(config)
     if config.immutable and (config.output_dir / "manifest.json").exists():
         raise FileExistsError(
             f"immutable training-data snapshot already exists: {config.output_dir}"
@@ -965,6 +1021,9 @@ def build_train_data(
     source = (config.source or "rico").lower()
     seeds: list[ExampleRecord] = []
     errors: list[dict] = []
+    # Verifier-in-the-loop ledger: every dropped candidate lands in
+    # rejected.jsonl with its stage + reason (never silently discarded).
+    rejections: list[dict] = []
 
     if source in {"fixture", "both", "fixtures", "all"}:
         fixture_records, fixture_errors = _records_from_fixtures(config)
@@ -1021,6 +1080,7 @@ def build_train_data(
     }
     if source not in allowed:
         raise ValueError(f"unknown train source {config.source!r}")
+    producer_error_count = len(errors)
 
     from slm_training.harnesses.train_data.catalog import (
         LineageIndex,
@@ -1056,6 +1116,14 @@ def build_train_data(
                     candidates.extend(_existing_program_derivatives(seed, config))
                 except (ParseError, RuntimeError, ValueError) as exc:
                     errors.append({"id": seed.id, "error": str(exc)})
+                    rejections.append(
+                        rejection_entry(
+                            "synthesis",
+                            "derivative_error",
+                            record_id=seed.id,
+                            detail={"error": str(exc)},
+                        )
+                    )
         if config.namespace_augment and seed.target_kind == "document":
             from slm_training.harnesses.train_data.synth import (
                 NamespaceAugmentSynthesizer,
@@ -1073,6 +1141,14 @@ def build_train_data(
                 collected.append(_normalize_record(candidate))
             except (ParseError, ValueError) as exc:
                 errors.append({"id": candidate.id, "error": str(exc)})
+                rejections.append(
+                    rejection_entry(
+                        "normalize",
+                        "parse_or_contract_error",
+                        record=candidate,
+                        detail={"error": str(exc)},
+                    )
+                )
 
     verifier_rejected: list[dict] = []
     verified: list[ExampleRecord] = []
@@ -1092,6 +1168,17 @@ def build_train_data(
                     "governance_status": governance_status,
                 }
             )
+            rejections.append(
+                rejection_entry(
+                    "verification",
+                    "quarantine",
+                    record=record,
+                    detail={
+                        "failing_gate": record.meta.get("failing_gate"),
+                        "governance_status": governance_status,
+                    },
+                )
+            )
             continue
         verified.append(record)
 
@@ -1104,6 +1191,17 @@ def build_train_data(
             tier = str(record.meta.get("verification_tier") or "Bronze")
             if tier_rank.get(tier, -1) < minimum:
                 tier_rejected.append({"id": record.id, "verification_tier": tier})
+                rejections.append(
+                    rejection_entry(
+                        "verification_tier",
+                        "below_min_tier",
+                        record=record,
+                        detail={
+                            "verification_tier": tier,
+                            "min_verification_tier": config.min_verification_tier,
+                        },
+                    )
+                )
             else:
                 tiered.append(record)
         verified = tiered
@@ -1117,6 +1215,17 @@ def build_train_data(
         max_openui_chars=config.max_openui_chars,
         max_components=config.max_components,
     )
+    verified_by_id = {record.id: record for record in verified}
+    for entry in quality_rejected:
+        rejections.append(
+            rejection_entry(
+                "quality",
+                "quality_gate_failed",
+                record=verified_by_id.get(str(entry.get("id"))),
+                record_id=str(entry.get("id")),
+                detail={key: value for key, value in entry.items() if key != "id"},
+            )
+        )
 
     from slm_training.data.leakage import load_reserved_test_structure_fingerprints
 
@@ -1131,6 +1240,9 @@ def build_train_data(
     def _accept_record(record: ExampleRecord) -> bool:
         pair = fingerprint_pair(record.prompt, record.openui)
         if pair in seen_pairs:
+            rejections.append(
+                rejection_entry("dedup", "exact_pair_duplicate", record_id=record.id)
+            )
             return False
         seen_pairs.add(pair)
         deduped.append(record)
@@ -1145,6 +1257,11 @@ def build_train_data(
                     "source": record.source,
                     "reason": "test_fixture_structure",
                 }
+            )
+            rejections.append(
+                rejection_entry(
+                    "decontamination", "test_fixture_structure", record_id=record.id
+                )
             )
             continue
         _accept_record(record)
@@ -1163,6 +1280,14 @@ def build_train_data(
                 normalized = _normalize_record(stress)
             except (ParseError, ValueError) as exc:
                 errors.append({"id": stress.id, "error": str(exc)})
+                rejections.append(
+                    rejection_entry(
+                        "normalize",
+                        "parse_or_contract_error",
+                        record=stress,
+                        detail={"error": str(exc)},
+                    )
+                )
                 continue
             structure_fp = fingerprint_openui_structure(normalized.openui)
             if structure_fp in reserved_test_structures:
@@ -1172,6 +1297,13 @@ def build_train_data(
                         "source": normalized.source,
                         "reason": "test_fixture_structure",
                     }
+                )
+                rejections.append(
+                    rejection_entry(
+                        "decontamination",
+                        "test_fixture_structure",
+                        record_id=normalized.id,
+                    )
                 )
                 continue
             _accept_record(normalized)
@@ -1200,6 +1332,72 @@ def build_train_data(
 
     deduped = annotate_lineage(deduped, lineage_index)
 
+    def _mirror_drops(stage: str, dropped: list[dict]) -> None:
+        for drop in dropped:
+            rejections.append(
+                rejection_entry(
+                    stage,
+                    str(drop.get("reason") or stage),
+                    record_id=str(drop.get("id")),
+                    detail={
+                        key: value
+                        for key, value in drop.items()
+                        if key not in {"id", "reason"}
+                    },
+                )
+            )
+
+    cross_corpus_dropped: list[dict] = []
+    if config.dedup_against:
+        from slm_training.data.store import DataStore
+
+        store = DataStore()
+        index: set[str] = set()
+        for value in config.dedup_against:
+            base = Path(store.resolve_path("train", value))
+            pairs: set[str] = set()
+            manifest_path = base / "manifest.json"
+            if manifest_path.is_file():
+                payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+                pairs = {str(item) for item in payload.get("pair_fingerprints") or []}
+            if not pairs and (base / "records.jsonl").is_file():
+                pairs = {
+                    fingerprint_pair(record.prompt, record.openui)
+                    for record in load_jsonl(base / "records.jsonl")
+                }
+            if not pairs:
+                raise ValueError(
+                    f"--dedup-against target has no resolvable fingerprints: {value}"
+                )
+            index |= pairs
+        remaining: list[ExampleRecord] = []
+        for record in deduped:
+            if fingerprint_pair(record.prompt, record.openui) in index:
+                cross_corpus_dropped.append(
+                    {"id": record.id, "reason": "cross_corpus_duplicate"}
+                )
+            else:
+                remaining.append(record)
+        deduped = remaining
+        _mirror_drops("dedup", cross_corpus_dropped)
+
+    decontam_flagged: list[dict] = []
+    decontam_suites: list[str] = []
+    if config.ngram_decontam:
+        from slm_training.data.decontam import apply_ngram_decontam, load_eval_suites
+
+        eval_suites = load_eval_suites(
+            config.decontam_eval_root, test_seed_path=config.test_seed_path
+        )
+        decontam_suites = sorted(eval_suites)
+        deduped, decontam_flagged = apply_ngram_decontam(
+            deduped,
+            eval_suites,
+            n=int(config.ngram_size),
+            overlap_threshold=float(config.ngram_overlap_threshold),
+        )
+        _mirror_drops("decontamination", decontam_flagged)
+
     fuzzy_dropped: list[dict] = []
     semantic_dropped: list[dict] = []
     if config.fuzzy_dedup:
@@ -1208,12 +1406,28 @@ def build_train_data(
         deduped, fuzzy_dropped = apply_fuzzy_dedup(
             deduped, threshold=float(config.fuzzy_jaccard)
         )
+        _mirror_drops("dedup", fuzzy_dropped)
     if config.semantic_cluster_cap:
         from slm_training.data.dedup import apply_semantic_cluster_cap
 
         deduped, semantic_dropped = apply_semantic_cluster_cap(
             deduped, max_per_cluster=int(config.semantic_cluster_cap)
         )
+        _mirror_drops("dedup", semantic_dropped)
+
+    semantic_cosine_dropped: list[dict] = []
+    semantic_engine: str | None = None
+    if config.semantic_dedup:
+        from slm_training.data.semantic_dedup import (
+            apply_semantic_dedup,
+            similarity_engine,
+        )
+
+        semantic_engine = similarity_engine()
+        deduped, semantic_cosine_dropped = apply_semantic_dedup(
+            deduped, threshold=config.semantic_dedup_threshold
+        )
+        _mirror_drops("dedup", semantic_cosine_dropped)
 
     deduped, parent_cap_dropped = apply_parent_cap(
         deduped,
@@ -1225,11 +1439,16 @@ def build_train_data(
         per_family=config.include_scope_corpus
         and source in {"programspec", "integrated", "all"},
     )
+    _mirror_drops("exposure", parent_cap_dropped)
     deduped.sort(key=lambda r: r.id)
     source_families = family_stats(deduped)
     from slm_training.data.dedup import cluster_exposure_stats
 
     source_families["cluster_exposure"] = cluster_exposure_stats(deduped)
+
+    from slm_training.data.selection import attach_curation_scores
+
+    attach_curation_scores(deduped)
 
     # Fingerprint final records after every train-only transformation so the
     # leakage manifest describes the exact bytes written to records.jsonl.
@@ -1292,11 +1511,46 @@ def build_train_data(
             json.dumps(mixture_payload, indent=2) + "\n", encoding="utf-8"
         )
 
+    rejected_path = write_rejected(out_dir, rejections)
+    synthesis_rows = _synthesis_telemetry(deduped)
+    built_at = datetime.now(timezone.utc).isoformat()
+    quality_report = build_quality_report(
+        version=config.version,
+        profile=config.profile,
+        built_at=built_at,
+        seed_count=len(seeds),
+        collected_count=len(collected),
+        admitted=deduped,
+        rejections=rejections,
+        source_error_count=producer_error_count,
+        cluster_exposure=source_families.get("cluster_exposure") or {},
+        per_family=synthesis_rows,
+        engines={
+            "similarity": "minhash-char4gram",
+            "semantic_dedup": semantic_engine,
+            "decontam": (
+                f"ngram-{config.ngram_size}" if config.ngram_decontam else None
+            ),
+        },
+        decontamination_extra=(
+            {
+                "ngram_flagged": len(decontam_flagged),
+                "ngram_size": int(config.ngram_size),
+                "ngram_overlap_threshold": float(config.ngram_overlap_threshold),
+                "suites_indexed": decontam_suites,
+            }
+            if config.ngram_decontam
+            else None
+        ),
+    )
+    quality_report_path = write_quality_report(out_dir, quality_report)
+
     quality_scores = [
         float((r.meta or {}).get("quality", {}).get("score") or 0.0) for r in deduped
     ]
     stats = {
         "version": config.version,
+        "profile": config.profile,
         "source": source,
         "derive_from": str(config.derive_from) if config.derive_from else None,
         "seed_path": str(config.seed_path) if config.seed_path else None,
@@ -1313,6 +1567,9 @@ def build_train_data(
         "record_count": len(deduped),
         "error_count": len(errors),
         "errors": errors[:50],
+        "rejected_total": len(rejections),
+        "rejected_path": str(rejected_path.as_posix()),
+        "quality_report_path": str(quality_report_path.as_posix()),
         "synthesizer": config.synthesizer,
         "min_quality_score": config.min_quality_score,
         "min_verification_tier": config.min_verification_tier,
@@ -1331,6 +1588,16 @@ def build_train_data(
         "semantic_cluster_cap": config.semantic_cluster_cap,
         "semantic_dropped": len(semantic_dropped),
         "semantic_dropped_samples": semantic_dropped[:20],
+        "semantic_dedup": bool(config.semantic_dedup),
+        "semantic_dedup_engine": semantic_engine,
+        "semantic_cosine_dropped": len(semantic_cosine_dropped),
+        "semantic_cosine_dropped_samples": semantic_cosine_dropped[:20],
+        "ngram_decontam": bool(config.ngram_decontam),
+        "decontam_flagged": len(decontam_flagged),
+        "decontam_flagged_samples": decontam_flagged[:20],
+        "dedup_against": list(config.dedup_against),
+        "cross_corpus_dropped": len(cross_corpus_dropped),
+        "cross_corpus_dropped_samples": cross_corpus_dropped[:20],
         "producer_inputs": {
             "programspec_path": (
                 str(config.programspec_path) if config.programspec_path else None
@@ -1367,13 +1634,12 @@ def build_train_data(
         "placeholder_vocab_size": len({p for r in deduped for p in r.placeholders}),
         "with_design_md": sum(1 for r in deduped if r.design_md),
         "component_histogram": _component_histogram(deduped),
-        "built_at": datetime.now(timezone.utc).isoformat(),
+        "built_at": built_at,
     }
     stats_path = out_dir / "stats.json"
     stats_path.write_text(json.dumps(stats, indent=2) + "\n", encoding="utf-8")
 
     synthesis_telemetry_path = out_dir / "synthesis_telemetry.jsonl"
-    synthesis_rows = _synthesis_telemetry(deduped)
     synthesis_telemetry_path.write_text(
         "".join(json.dumps(row, sort_keys=True) + "\n" for row in synthesis_rows),
         encoding="utf-8",
@@ -1382,9 +1648,12 @@ def build_train_data(
     manifest = {
         "version": config.version,
         "kind": "train_data",
+        "profile": config.profile,
         "source": source,
         "records": str(records_path.as_posix()),
         "stats": str(stats_path.as_posix()),
+        "quality_report": str(quality_report_path.as_posix()),
+        "rejected": str(rejected_path.as_posix()),
         "record_count": len(deduped),
         "ids": [r.id for r in deduped],
         "split_group_ids": sorted(
@@ -1419,6 +1688,7 @@ def build_train_data(
         "output_dir": str(out_dir),
         "manifest": manifest,
         "stats": stats,
+        "quality_report": quality_report,
         "governance": {name: str(path) for name, path in governance_paths.items()},
     }
 

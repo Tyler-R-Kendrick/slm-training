@@ -378,6 +378,16 @@ def _is_meaningful_program(
 meaningful_program_v1 = _is_meaningful_program
 
 
+def _eval_data_sha(directory: Path) -> str | None:
+    """Content fingerprint of an eval dataset dir (manifest or records hash)."""
+    from slm_training.harnesses.model_build.full_state import data_manifest_sha
+
+    try:
+        return data_manifest_sha(directory)
+    except Exception:  # noqa: BLE001 - identity stamping must never break evals
+        return None
+
+
 def evaluate(
     config: ModelBuildConfig,
     model=None,
@@ -789,6 +799,13 @@ def evaluate(
         "checkpoint": str(loaded_checkpoint) if loaded_checkpoint else None,
         "checkpoint_sha256": checkpoint_sha256,
         "checkpoint_source": ("checkpoint" if loaded_checkpoint else "preloaded_model"),
+        # Pin the exact eval data alongside the model identity so every
+        # reported number is reproducible (run + checkpoint + dataset).
+        "test_dir": str(config.test_dir),
+        "eval_data_manifest_sha": _eval_data_sha(Path(config.test_dir)),
+        "eval_suite_manifest_sha": _eval_data_sha(
+            Path(config.test_dir) / "suites" / config.suite
+        ),
         "model": config.model_name,
         "evaluated_at": datetime.now(timezone.utc).isoformat(),
         "failure_breakdown": failure_breakdown,
@@ -956,6 +973,10 @@ def evaluate_suites(
         ),
         "checkpoint_source": "preloaded_model" if model is not None else "checkpoint",
         "checkpoint_sha256": next(iter(board.values()), {}).get("checkpoint_sha256"),
+        "test_dir": str(config.test_dir),
+        "eval_data_manifest_sha": next(iter(board.values()), {}).get(
+            "eval_data_manifest_sha"
+        ),
         "suites": board,
         "evaluated_at": datetime.now(timezone.utc).isoformat(),
     }
