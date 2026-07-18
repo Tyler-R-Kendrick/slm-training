@@ -311,4 +311,8 @@ Shard 22e completed normally in about 95 seconds under the three-minute policy
 and is prediction-identical to the corresponding E477 rows, with structure
 0.9128, reward 0.9981, and zero failures, fallback, or timeouts.
 
-**Status:** 1328/1500 rows complete. No merged or ship claim yet.
+Shard 22f completed normally in about 81 seconds under the three-minute policy
+and is prediction-identical to the corresponding E477 rows, with structure
+0.8894, reward 0.9981, and zero failures, fallback, or timeouts.
+
+**Status:** 1344/1500 rows complete. No merged or ship claim yet.
