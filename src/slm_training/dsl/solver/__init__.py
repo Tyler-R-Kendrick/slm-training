@@ -13,6 +13,18 @@ from slm_training.dsl.solver.state import (
     SolverBounds,
     SupportVerdict,
 )
+from slm_training.dsl.solver.controller import (
+    BaselineRanker,
+    CandidateRanker,
+    Nogood,
+    SearchDecision,
+    SearchResult,
+    SearchStatus,
+    TerminalChecker,
+    TerminalOutcome,
+    default_hole_selector,
+    search,
+)
 from slm_training.dsl.solver.closure import (
     CertifiedDeduction,
     ClosureCounters,
@@ -41,10 +53,20 @@ from slm_training.dsl.solver.support import (
 )
 
 __all__ = [
+    "BaselineRanker",
+    "CandidateRanker",
     "CertifiedDeduction",
     "ClosureCounters",
     "ClosureResult",
     "DomainValue",
+    "Nogood",
+    "SearchDecision",
+    "SearchResult",
+    "SearchStatus",
+    "TerminalChecker",
+    "TerminalOutcome",
+    "default_hole_selector",
+    "search",
     "EnumerativeSupportOracle",
     "EnumerativeSupportProvider",
     "ExpandStatus",

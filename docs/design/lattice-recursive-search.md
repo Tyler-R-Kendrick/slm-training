@@ -65,6 +65,21 @@ stop stays `UNKNOWN`, never `UNSUPPORTED`. A forest that admits a candidate as
 extendable therefore never authorizes removal; only a replayed support certificate
 does. The oracle is not wired into decode, so this section changes no runtime
 behavior.
+
+### Proof-carrying search controller (VSS1-02)
+
+[`dsl/solver/controller.py`](../../src/slm_training/dsl/solver/controller.py)
+generalizes this hard/soft split into a bounded controller: exact closure owns
+irreversible certificate-backed deletion, a `CandidateRanker` orders only the live
+values (never adds/drops one), and reversible decisions plus local nogoods drive
+bounded backtracking. It terminates as `SOLVED` (with a final verifier report),
+`CERTIFIED_UNSAT` (only when the whole finite tree closes by certified deductions
+with no UNKNOWN/verifier-rejection/budget truncation), or `UNKNOWN` /
+`BUDGET_EXHAUSTED`. This is the new generic owner; `LatticeSearchState` here is the
+retained compiler-forest adapter and is unchanged. The full state machine and the
+certified-deduction / reversible-decision / local-nogood / certified-contradiction /
+timeout table live in
+[verified-scope-solver.md](verified-scope-solver.md). Not wired into decode.
 ## Constraint evidence (VSS0-02)
 
 The hard-lattice projection can now explain itself. `build_completion_forest(...,

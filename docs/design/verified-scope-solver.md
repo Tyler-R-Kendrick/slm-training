@@ -248,6 +248,48 @@ def exact_closure(state, provider):
   stores certificate **references** (digests) plus compact summaries; full
   certificates live in a caller-provided `certificate_store`.
 
+## Implemented search controller (VSS1-02 / SLM-62)
+
+[`dsl/solver/controller.py`](../../src/slm_training/dsl/solver/controller.py) adds
+`search(state, provider, terminal_checker, *, ranker, hole_selector, ...)`: a
+bounded controller that alternates exact closure with reversible branching. It is
+the new **generic** owner; the compiler-forest search `LatticeSearchState`
+(`fastpath/lattice_search.py`) is retained unchanged as the forest-specific adapter
+(its callers/tests are untouched — the documented compatibility seam).
+
+State machine (deterministic; a `CandidateRanker` orders live values only):
+
+```text
+loop:
+    closure = exact_closure(state)              # certified, irreversible deletions
+    if state is ⊥:                              # closure emptied a domain (all certified)
+        backtrack; at level 0 and no uncertified branch -> CERTIFIED_UNSAT
+    elif structurally solved:
+        out = terminal_checker(state)           # materialize + final pack verifier
+        if out.accepted: return SOLVED(out.report)   # never SOLVED without a report
+        else: record nogood; backtrack          # verifier reject is a conflict, not solved
+    else:
+        hole = smallest live domain             # then HoleId (deterministic)
+        order = ranker.rank(state, hole, live)  # REQUIRED: a permutation of live values
+        apply order[0] as a reversible decision; push the rest on the trail
+    budgets (nodes / backtracks / decisions) -> UNKNOWN | BUDGET_EXHAUSTED, never unsat
+```
+
+Five distinct outcomes the controller keeps separate:
+
+| Concept | Reversible? | Proof status |
+| --- | --- | --- |
+| **certified deduction** | No | `exact_closure` removal with a replay-valid `UNSUPPORTED` certificate. |
+| **reversible decision** | Yes | A ranker-ordered live value on the trail; undone on backtrack. Creates no legality. |
+| **local nogood** | Yes (request-local) | A conflict record (`certified_bottom` / `terminal_verifier_failure` / budget). **Never** a certified deduction unless a later support query certifies it. |
+| **certificate-backed global contradiction** | No | `CERTIFIED_UNSAT` — the whole finite tree closed by certified deductions with **no** UNKNOWN, verifier-rejection, or budget truncation anywhere. |
+| **timeout / unknown** | — | `UNKNOWN` / `BUDGET_EXHAUSTED`. A budget or capability limit is never relabeled `CERTIFIED_UNSAT`. |
+
+Soundness: a learned/adversarial ranker cannot alter live hard membership (the
+controller validates the returned sequence is a permutation and rejects any
+missing/extra/duplicate); `CERTIFIED_UNSAT` is impossible when any required branch
+was UNKNOWN or budget-truncated; every `SOLVED` carries a final verifier report.
+
 ## Reference support semantics
 
 | Verdict | Requirement | Removal permitted? |
