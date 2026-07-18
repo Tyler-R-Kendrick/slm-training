@@ -1,4 +1,4 @@
-# E423–E425 low-learning-rate continuation — 2026-07-18
+# E423–E427 low-learning-rate continuation — 2026-07-18
 
 Full-state resume previously restored the checkpoint optimizer parameter-group
 learning rates after constructing AdamW with the requested CLI rate. The train
@@ -43,4 +43,34 @@ process contributes evidence.
 
 **Verdict:** retain E423 as the stronger bounded continuation candidate and
 use `3e-5` for further controlled continuation. Do not promote or claim ship:
-fresh loss evidence, full RICO, and checkpoint sync are absent.
+full RICO and checkpoint sync are absent.
+
+## E426 fresh loss suites
+
+E426 evaluates the frozen loss-suite v1 objective at mask rates
+0.15/0.30/0.50/0.70/0.85, seed 0, over all five held-out and four OOD records.
+The report is complete with no missing categories: weighted NLL is 5.2778,
+improving on the inherited 5.8091. Category NLLs are binding 6.1367,
+structural 3.1708, repair 7.8092, broad 4.6817, and schema OOD 4.0936. Its
+finite diagnostic AgentV case passes 1/1. This is fresh selection evidence,
+not a ship evaluation; E423 still lacks full RICO and remote checkpoint sync.
+
+## E427 matched RICO slice
+
+E427 evaluates the exact RICO rows 336–384 used by E396/E399. It completes all
+48 rows with parse and fidelity 1.0, but meaningful rate is 0.9583, structure
+0.6170, type recall 0.7326, and reward 0.9571. One row is trivial and one has
+low component recall. E396 on the identical slice achieved meaningful 1.0,
+structure 0.6401, recall 0.8993, and reward 0.9991. The diagnostic AgentV
+envelope is 0/5 because four required suites are absent and RICO is a 48/1500
+subset; there are no execution errors.
+
+E427 completed normally under the external 290-second cap. A preceding command
+pointed at the three-row fixture RICO directory and failed immediately on the
+offset check; it ran no examples and contributes no evidence.
+
+**Final verdict:** reject E423 as a replacement for E396. Lower LR repairs the
+small-suite decode boundary and improves NLL, but materially regresses matched
+RICO structure and type recall. Do not spend full-RICO coverage, sync, or
+promotion resources on this checkpoint. Retain E396 while seeking a lever that
+preserves both bounded and RICO quality.

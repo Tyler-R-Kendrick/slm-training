@@ -2540,6 +2540,18 @@ candidate, but do not promote or run full RICO before fresh loss evidence.
 See [results](iter-e423-e425-low-lr-continuation-20260718.md) and
 [JSON](iter-e423-e425-low-lr-continuation-20260718.json).
 
+E426 supplies the fresh frozen loss-suite v1 evidence: all five categories are
+complete, weighted NLL improves from E423's inherited 5.8091 to 5.2778, and
+the finite diagnostic AgentV case passes 1/1. The candidate now clears the
+cheap bounded quality and loss screens; evaluate a matched RICO shard before
+committing to full-RICO coverage.
+
+E427 rejects E423 on that matched RICO screen. On rows 336–384, meaningful
+rate falls from E396's 1.0 to 0.9583, structure from 0.6401 to 0.6170, recall
+from 0.8993 to 0.7326, and reward from 0.9991 to 0.9571. Lower LR therefore
+fixes the bounded decode boundary and improves NLL while harming RICO
+generalization. Stop full-RICO expansion, reject E423, and retain E396.
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

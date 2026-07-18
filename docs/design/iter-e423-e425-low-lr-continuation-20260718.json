@@ -2,7 +2,7 @@
   "schema_version": 1,
   "run_id": "e425-component-plan-23k-low-lr-bounded-320-r1",
   "date": "2026-07-18",
-  "status": "Bounded pass: low learning rate prevents the matched 23k continuation collapse",
+  "status": "Rejected: bounded and NLL pass, but matched RICO structure and recall regress",
   "harness_fix": {
     "problem": "full-state optimizer restore silently replaced the configured learning rate",
     "resolution": "reapply config.lr after optimizer.load_state_dict",
@@ -18,7 +18,7 @@
     "sha256": "2a6b84ba7259937bbaf1e3edb712f2adde4ce8cdef0be6cbcc55e7ffa260e3ad",
     "sync": "explicit_no_sync",
     "promoted": false,
-    "rejected": false
+    "rejected": true
   },
   "train": {
     "steps": 446,
@@ -34,7 +34,7 @@
     "learning_rate": 0.00003,
     "saved_optimizer_learning_rates": [0.00003, 0.00003, 0.00003, 0.00003, 0.00003],
     "best_weighted_nll": 5.809070931803047,
-    "fresh_loss_eval": false
+    "fresh_loss_eval": true
   },
   "protocol_variant": {
     "id": "E424",
@@ -52,6 +52,25 @@
   },
   "ship_gates": {"pass": false, "failures": ["rico_held:missing_suite"], "bounded_suites_pass": true},
   "agentv": {"format": "AgentEvals JSONL", "sdk": "@agentv/core", "passed": 4, "total": 4, "execution_errors": 0},
+  "loss_suites": {
+    "id": "E426",
+    "run_id": "e426-component-plan-23k-low-lr-loss-r1",
+    "suite_version": "v1",
+    "mask_rates": [0.15, 0.3, 0.5, 0.7, 0.85],
+    "mask_seed": 0,
+    "weighted_nll": 5.277777643953534,
+    "weight_used": 1.0,
+    "missing_categories": [],
+    "complete": true,
+    "categories": {
+      "binding": {"n_records": 5, "mean_nll": 6.136747220148599},
+      "structural": {"n_records": 5, "mean_nll": 3.17079662609668},
+      "repair": {"n_records": 5, "mean_nll": 7.8092395504315695},
+      "broad": {"n_records": 5, "mean_nll": 4.68173897446363, "bits_per_char": 0.7794082801820124},
+      "schema_ood": {"n_records": 4, "mean_nll": 4.093550092347388}
+    },
+    "agentv": {"passed": 1, "total": 1, "execution_errors": 0}
+  },
   "matched_high_rate_control": {
     "run_id": "e411-component-plan-23k-control-r1",
     "learning_rate": 0.0003,
@@ -62,6 +81,29 @@
     "agentv_passed": 3,
     "agentv_total": 4
   },
+  "matched_rico_slice": {
+    "id": "E427",
+    "run_id": "e427-component-plan-23k-low-lr-rico48-offset336-r1",
+    "suite": "rico_held",
+    "offset": 336,
+    "n": 48,
+    "suite_total_n": 1500,
+    "diagnostic_subset": true,
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 0.9583333333333334,
+    "placeholder_fidelity": 1.0,
+    "structural_similarity": 0.61703125,
+    "component_type_recall": 0.732638888888889,
+    "reward_score": 0.9571458333333333,
+    "failure_breakdown": {"trivial_layout": 1, "low_component_recall": 1},
+    "agentv": {"passed": 0, "total": 5, "execution_errors": 0, "reason": "diagnostic subset and four required suites absent"},
+    "e396_control": {
+      "meaningful_program_rate": 1.0,
+      "structural_similarity": 0.6400541666666664,
+      "component_type_recall": 0.8993055555555555,
+      "reward_score": 0.9991249999999999
+    }
+  },
   "timing_policy": {"external_timeout_seconds": 290, "external_kill_after_seconds": 10, "training_internal_max_wall_minutes": 4.5, "timed_out_runs_used_as_evidence": 0},
-  "verdict": "retain low-rate bounded candidate; no full RICO, promotion, sync, or ship claim"
+  "verdict": "reject as E396 replacement because matched RICO regresses; no full RICO, promotion, sync, or ship claim"
 }
