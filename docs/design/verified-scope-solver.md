@@ -1,12 +1,16 @@
 # VSS0-01 (SLM-57): the bounded verified-scope-solver contract
 
-**Status:** specification only. This document defines the guarantee boundary for
-the *Verified Scope Solving & Hybrid Realization* project. It adds no solver
-code, no runtime dependency, no experiment, and no checkpoint, and makes no model
-or ship claim. Existing checkpoints and decode behavior are unchanged until a
-later VSS issue enables new flags behind a feature gate.
+**Status:** contract defined (VSS0-01), with the torch-free finite-domain state
+subset now implemented. This document defines the guarantee boundary for the
+*Verified Scope Solving & Hybrid Realization* project; the immutable finite-domain
+state schema and the completion-forest adapter are implemented in
+`src/slm_training/dsl/solver/` (see "Implemented state schema" below). No decode-path
+integration, runtime dependency in the generation path, experiment, or checkpoint is
+added, and no model or ship claim is made. Existing checkpoints and decode behavior
+are unchanged until a later VSS issue enables new flags behind a feature gate.
 
-**Code:** none (contract/spec only).
+**Code:** the finite-domain state schema (`state.py`) and completion-forest adapter
+(`adapters.py`) in `src/slm_training/dsl/solver/`, torch-free; no decode integration yet.
 
 **Reader contract:** `docs/design/` is the source of truth for coding agents and
 experiment reviewers; the Linear project document is planning context only. The
@@ -266,7 +270,7 @@ the closure.
 | `ScopeContract` / `ScopeKind` (`data/progspec/scopes.py:33`/`:18`) | AST scopes (`COMPONENT_CALL`/`STATEMENT`/`CHILD_LIST`) plus a def/use binder overlay (`definitions`/`uses`/`visible_binders`). | **Extended.** Scope def/use edges feed capsule SCC construction; scopes are **not** assumed independent. |
 | `dependency_closed_failure_cone` (`data/progspec/scopes.py:113`) | Despite the name, computes the least-common-ancestor of failing AST paths — **not** a dependency closure or SCC. | **Not reused for capsules.** Capsule SCCs are a new, distinct construction; this contract does not duplicate or overload this helper. |
 | `ChoiceTokenizer` / `ChoiceDecodeState` (`models/choice_tokenizer.py:172`/`:608`) | Grammar-closed choice IR; length-aware legality (`allowed_ids`, `exhaustive_allowed_ids`, `minimal_completion_length`). | **Retained.** The choice IR is the late-realization and verification surface. Not duplicated. |
-| `HoleId`, finite `domain`, `verification capsule`, `proof certificate` | Absent today (confirmed greenfield). | **New** dataclasses/semantics introduced by later VSS issues under this contract. |
+| `HoleId`, finite `domain`, `verification capsule`, `proof certificate` | Absent today (confirmed greenfield). | **New.** The Torch-free state subset (`HoleId`, `SolverBounds`, `SupportVerdict`, `DomainValue`, `HoleDomain`, `FiniteDomainState`) plus the completion-forest adapter are implemented by VSS0-03 (SLM-59) under [`src/slm_training/dsl/solver/`](../../src/slm_training/dsl/solver/state.py); see [Implemented state schema](#implemented-state-schema-vss0-03--slm-59). Verification capsules and proof certificates remain later-issue work. |
 
 ## Constraint evidence (VSS0-02)
 
@@ -366,6 +370,73 @@ the X16-X21 convention ("lineage labels, not reproduced results").
   rollback are the closure/deduction model; LDT architecture, alpha supervision,
   and training remain future work.
 
+## Implemented state schema (VSS0-03 / SLM-59)
+
+The Torch-free state subset of this contract is implemented under
+[`src/slm_training/dsl/solver/`](../../src/slm_training/dsl/solver/state.py)
+(`state.py`, `adapters.py`, `__init__.py`). The package imports no `torch` and
+performs no model inference; the compiler-forest adapter is loaded lazily via
+`__getattr__` so `import slm_training.dsl.solver` stays light. Every
+mutation-like operation returns a new validated state.
+
+**Dataclasses** (all `frozen=True`, JSON-safe):
+
+- `HoleId(namespace: str, path: tuple[str | int, ...], kind: str)` — element types
+  survive the JSON round-trip; a `canonical_key` (canonical JSON) provides a
+  type-safe total order for sorting/lookup instead of native comparison.
+- `SolverBounds(max_tokens, max_nodes, max_depth, max_backtracks,
+  max_verifier_calls)` — non-negative ints; negatives are rejected.
+- `SupportVerdict(str, Enum)` — `supported` / `unsupported` / `unknown`. No API
+  translates `UNKNOWN` to `UNSUPPORTED`.
+- `DomainValue(tag, token_ids=(), kind=None, attributes=())` — a deterministic,
+  tagged JSON value; identity is by value. `token_ids` carries a *full* compiler
+  path (not only its first token) so grammar-forced suffixes stay
+  distinguishable. `attributes` is reserved (canonical, unique-key scalars) for
+  future structured action values.
+- `HoleDomain(hole_id, values, metadata=())` — values are deduplicated
+  (duplicates rejected) and canonically ordered on construction; `is_empty` is
+  bottom, `is_singleton` marks a resolved hole. `metadata` carries JSON scalars
+  such as the compiler `coverage` guarantee — never soft scores.
+- `FiniteDomainState(problem_id, pack_id, constraint_version, bounds, holes,
+  decision_level=0, parent_fingerprint=None)` — holes deduplicated and
+  canonically ordered; `is_bottom`, `is_structurally_solved`, `domain()`,
+  `refine()`, `with_decision()`, `meet()`, `summary()`, and `to_dict`/`from_dict`.
+
+**State fingerprint and its exclusions.** `fingerprint` is a SHA-256 over the
+canonical JSON (`sort_keys=True`, compact separators) of the *hard state and
+configuration only*: `problem_id`, `pack_id`, `constraint_version`, `bounds`, and
+the canonically ordered `holes` (each hole's id, values, and metadata). It is
+order-insensitive because holes and their values are sorted on construction. It
+**excludes** `decision_level` and `parent_fingerprint` (reversible-search trail
+lineage), so a state and a same-domain decision child remain interchangeable for
+replay; and by construction it excludes logits, soft scores, timestamps, process
+IDs, and mutable caches. Soft candidate scores are never stored on the state — a
+separate ranker keys scores by `(state_fingerprint, hole_id, value)`.
+
+**Monotone transitions.** `refine(hole_id, retained_values, *,
+certificate_ref=None)` reduces one hole to a subset (added values and unknown
+holes are rejected) and leaves the trail lineage untouched; `certificate_ref` is
+a forward-compatibility hook and is **not** persisted here (certificate
+persistence/replay is VSS1-04), keeping it out of the fingerprint.
+`with_decision(hole_id, retained_values)` applies the same monotone reduction but
+increments `decision_level` and records the parent fingerprint, claiming no proof
+(no certificate). `meet(other)` is the greatest lower bound over a shared
+problem/pack/constraint/bounds identity: it intersects the domains of shared
+holes (an empty intersection yields bottom) and keeps holes present in only one
+state; mismatched identity is rejected.
+
+**Completion-forest adapter.** `completion_forest_state(*, prefix_ids, forest,
+pack_id, constraint_version, bounds)` projects a `CompletionForest` into a single
+"next semantic decision" hole keyed by prefix length and prefix fingerprint. Each
+candidate carries the full `CompletionPath.token_ids` plus `kind`, and the
+forest's `coverage` guarantee is carried verbatim in the hole metadata. An empty
+forest projects to bottom; a singleton path projects to a structurally solved
+state **for that projection only** — not a globally verified program and no
+`SUPPORTED` verdict. The adapter is not on the default decode path, so existing
+compiler/model behaviour is unchanged. `CompletionForestProjection` is the
+reference `FiniteDomainProjection` seam that future topology-node domains
+implement.
+
 ## Measured status
 
 2026-07-17 — specification-only change (VSS0-01 / SLM-57). No solver code, no
@@ -384,3 +455,18 @@ synced — no quality or ship claim. Verified by
 `tests/test_models/test_compiler_decode.py`,
 `tests/test_models/test_choice_tokenizer.py`, and
 `python -m scripts.repo_policy`.
+
+2026-07-17 — VSS0-03 / SLM-59 implements the Torch-free finite-domain state
+subset above (`src/slm_training/dsl/solver/`) with `tests/test_dsl/test_solver_state.py`
+(28 tests: order-insensitive fingerprints, hard-state/version fingerprint
+sensitivity, JSON round-trip stability, bottom/solved semantics, monotone
+refinement and candidate-expansion rejection, meet intersection and
+mismatched-identity rejection, decision lineage, the empty/singleton/multi-path/
+forced-suffix/partial-coverage adapter fixtures, and a subprocess-verified
+Torch-free import). `python -m pytest tests/test_dsl/test_solver_state.py
+tests/test_models/test_compiler_decode.py -q` passes (63) and `python -m
+scripts.repo_policy` passes. **No model or ship claim**: this is a
+model-independent data structure and a projection adapter that the default
+decode path does not invoke; no checkpoint, experiment, or eval run is involved.
+Exact closure, proof certificates, capsule solving, and learned guidance remain
+later VSS issues.

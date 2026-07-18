@@ -19,6 +19,7 @@ from slm_training.harnesses.preference.local_decisions import (
     decision_signature,
     decision_signature_metadata,
     load_decision_events,
+    objective_signature_support,
 )
 from slm_training.models.twotower import TwoTowerModel
 
@@ -1234,8 +1235,18 @@ def train_local_from_paths(
     block_by_decision_kind: bool = False,
     gradient_combination: GradientCombination = "proposal",
     optimizer_name: LocalOptimizer = "adamw",
+    require_objective_support: bool = False,
 ) -> dict:
     events = load_decision_events(events_path)
+    if require_objective_support:
+        support = objective_signature_support(events)
+        if not support["held_out_coverage"]["passed"]:
+            missing = support["held_out_coverage"]["uncovered"]
+            raise ValueError(
+                "decision event corpus lacks train support for "
+                f"{len(missing)} held-out objective signature(s); repair objective "
+                "support before training (E284 blocker)"
+            )
     model = TwoTowerModel.from_checkpoint(checkpoint, device=device)
     _validate_identity(events, checkpoint, model)
     held_out_before = evaluate_local_decisions(

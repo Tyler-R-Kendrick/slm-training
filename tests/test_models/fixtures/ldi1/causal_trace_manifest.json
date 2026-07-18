@@ -1,0 +1,15 @@
+{
+  "adapter_identity": "adapter-A",
+  "base_model_revision": "rev-fixture",
+  "bytes_per_state": 1788.75,
+  "constraint_shadow_count": 1,
+  "decode_config_hash": "decode-config-hash-fixture",
+  "duplicate_set_reuse": 0,
+  "group_id": "ldi1-fixture-group",
+  "kind": "causal_trace_manifest",
+  "policy_checkpoint_sha": "f112adcec23d6510f03c0499326c3a58e2ac963d4f3401f033422651310e95c2",
+  "state_count": 4,
+  "tokenizer_sha": "tokenizer-sha-fixture",
+  "total_bytes": 7155,
+  "unique_legal_sets": 4
+}

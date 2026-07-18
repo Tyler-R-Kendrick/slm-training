@@ -1,0 +1,9 @@
+{
+  "action_id": 3,
+  "canonical_program": null,
+  "completion_source": "policy",
+  "continuation_seed": 7,
+  "finish_reason": "eos",
+  "raw_program": "root=Stack([Text()])",
+  "selected": true
+}
