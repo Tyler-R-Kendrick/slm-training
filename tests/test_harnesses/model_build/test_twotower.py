@@ -187,6 +187,7 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
             component_plan_decode_weight=0.5,
             component_plan_token_pool=True,
             slot_component_loss_weight=0.6,
+            slot_component_focal_gamma=2.0,
             slot_component_decode_weight=0.25,
             slot_component_prompt_context=False,
             component_edge_loss_weight=1.0,
@@ -220,6 +221,7 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     assert loaded.config.component_plan_decode_weight == 0.5
     assert loaded.config.component_plan_token_pool is True
     assert loaded.config.slot_component_loss_weight == 0.6
+    assert loaded.config.slot_component_focal_gamma == 2.0
     assert loaded.config.slot_component_decode_weight == 0.25
     assert loaded.config.slot_component_prompt_context is False
     assert loaded.config.component_edge_loss_weight == 1.0

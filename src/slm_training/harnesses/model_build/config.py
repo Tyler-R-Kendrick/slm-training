@@ -210,6 +210,7 @@ class ModelBuildConfig:
     component_plan_attention_pool: bool = False
     component_plan_token_pool: bool = False
     slot_component_loss_weight: float = 0.0
+    slot_component_focal_gamma: float = 0.0
     slot_component_decode_weight: float | None = None
     slot_component_prompt_context: bool = True
     component_edge_loss_weight: float = 0.0

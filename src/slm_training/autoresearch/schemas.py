@@ -42,6 +42,7 @@ DEFAULT_ALLOWED_KNOBS = frozenset(
         "component_plan_loss_weight",
         "component_plan_decode_weight",
         "slot_component_loss_weight",
+        "slot_component_focal_gamma",
         "slot_component_decode_weight",
         "slot_component_prompt_context",
         "component_edge_loss_weight",
@@ -266,6 +267,7 @@ class ExperimentKnobs(StrictModel):
     component_plan_loss_weight: float | None = Field(default=None, ge=0, le=20)
     component_plan_decode_weight: float | None = Field(default=None, ge=0, le=20)
     slot_component_loss_weight: float | None = Field(default=None, ge=0, le=20)
+    slot_component_focal_gamma: float | None = Field(default=None, ge=0, le=10)
     slot_component_decode_weight: float | None = Field(default=None, ge=0, le=20)
     slot_component_prompt_context: bool | None = None
     component_plan_attention_pool: bool | None = None

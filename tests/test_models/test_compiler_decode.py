@@ -856,7 +856,10 @@ def test_component_plan_bias_is_role_conditioned_and_count_aware() -> None:
 
 
 def test_slot_component_supervises_each_visible_slot_owner() -> None:
-    model = _model(slot_component_loss_weight=1.0)
+    model = _model(
+        slot_component_loss_weight=1.0,
+        slot_component_focal_gamma=2.0,
+    )
     model.train()
     record = ExampleRecord(
         id="slot-components",
@@ -881,6 +884,7 @@ def test_slot_component_supervises_each_visible_slot_owner() -> None:
     assert model.last_training_metrics["slot_component_rows"] == 2
     assert model.last_training_metrics["slot_component_loss"] > 0
     assert 0 <= model.last_training_metrics["slot_component_accuracy"] <= 1
+    assert 0 < model.last_training_metrics["slot_component_majority_baseline"] <= 1
 
 
 def test_slot_component_can_exclude_whole_prompt_context() -> None:

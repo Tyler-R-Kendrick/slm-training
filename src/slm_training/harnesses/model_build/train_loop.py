@@ -775,6 +775,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "slot_component_loss_weight": getattr(
                 config, "slot_component_loss_weight", 0.0
             ),
+            "slot_component_focal_gamma": getattr(
+                config, "slot_component_focal_gamma", 0.0
+            ),
             "slot_component_decode_weight": getattr(
                 config, "slot_component_decode_weight", 0.0
             ),

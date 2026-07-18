@@ -414,6 +414,10 @@ def compile_commands(
             train.extend(
                 ["--slot-component-loss-weight", str(knobs.slot_component_loss_weight)]
             )
+        if knobs.slot_component_focal_gamma is not None:
+            train.extend(
+                ["--slot-component-focal-gamma", str(knobs.slot_component_focal_gamma)]
+            )
         if knobs.slot_component_decode_weight is not None:
             train.extend(
                 [

@@ -213,6 +213,7 @@ class TwoTowerConfig:
     component_plan_attention_pool: bool = False
     component_plan_token_pool: bool = False
     slot_component_loss_weight: float = 0.0
+    slot_component_focal_gamma: float = 0.0
     slot_component_decode_weight: float = 0.0
     slot_component_prompt_context: bool = True
     component_edge_loss_weight: float = 0.0
@@ -2150,8 +2151,19 @@ class TwoTowerModel(nn.Module):
                 slot_logits = self._slot_component_logits(
                     slots, ctx, ctx_pad, rows_tensor
                 )
-                slot_loss = F.cross_entropy(slot_logits, targets_tensor)
+                slot_raw = F.cross_entropy(
+                    slot_logits, targets_tensor, reduction="none"
+                )
+                focal_gamma = float(
+                    getattr(self.config, "slot_component_focal_gamma", 0.0) or 0.0
+                )
+                slot_loss = (
+                    ((1.0 - (-slot_raw).exp()).pow(focal_gamma) * slot_raw).mean()
+                    if focal_gamma > 0.0
+                    else slot_raw.mean()
+                )
                 mask_loss = mask_loss + slot_component_w * slot_loss
+                target_counts = torch.bincount(targets_tensor)
                 self.last_training_metrics.update(
                     {
                         "slot_component_loss": float(slot_loss.detach().cpu()),
@@ -2162,6 +2174,9 @@ class TwoTowerModel(nn.Module):
                             .mean()
                             .detach()
                             .cpu()
+                        ),
+                        "slot_component_majority_baseline": float(
+                            target_counts.max().float().div(len(slots)).cpu()
                         ),
                         "slot_component_rows": len(slots),
                     }
