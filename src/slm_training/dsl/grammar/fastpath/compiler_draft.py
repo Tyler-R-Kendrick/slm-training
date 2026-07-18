@@ -677,17 +677,22 @@ def _schema_call_arity(
     return minimum, len(names), arg_count, arg_count > index
 
 
+_SCHEMA_TYPE_TERMINALS: dict[str, frozenset[str]] = {
+    "string": frozenset({"STRING"}),
+    "number": frozenset({"NUMBER"}),
+    "integer": frozenset({"NUMBER"}),
+    "boolean": frozenset({"BOOL"}),
+    "null": frozenset({"NULL"}),
+    "array": frozenset({"LSQB"}),
+    "object": frozenset({"LBRACE"}),
+}
+
+
 def _schema_type_terminals(schema_type: str | None) -> frozenset[str] | None:
     """Map generated JSON-schema value types to grammar start terminals."""
-    return {
-        "string": frozenset({"STRING"}),
-        "number": frozenset({"NUMBER"}),
-        "integer": frozenset({"NUMBER"}),
-        "boolean": frozenset({"BOOL"}),
-        "null": frozenset({"NULL"}),
-        "array": frozenset({"LSQB"}),
-        "object": frozenset({"LBRACE"}),
-    }.get(schema_type)
+    if schema_type is None:
+        return None
+    return _SCHEMA_TYPE_TERMINALS.get(schema_type)
 
 
 def _decision_kind(

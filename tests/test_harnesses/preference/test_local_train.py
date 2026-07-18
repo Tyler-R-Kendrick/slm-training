@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 from dataclasses import replace
+from pathlib import Path
 
 import pytest
 
@@ -9,11 +10,15 @@ torch = pytest.importorskip("torch")
 
 from slm_training.dsl.schema import ExampleRecord
 from slm_training.harnesses.preference.local_decisions import (
+    ActionOutcomeV2,
     DecisionEventV1,
+    DecisionEventV2,
+    DecisionStateV2,
     decision_signature,
     decision_signature_metadata,
     split_for_group,
     write_decision_events,
+    write_decision_events_v2,
 )
 from slm_training.harnesses.preference.local_train import (
     _event_logits,
@@ -809,3 +814,160 @@ def test_train_local_from_paths_checks_identity_and_writes_checkpoint(tmp_path) 
     assert summary["source_checkpoint_sha"] == checkpoint_sha(checkpoint)
     assert summary["held_out_before"]["event_count"] == 0
     assert summary["held_out_after"]["event_count"] == 0
+
+
+# ── V2 admission wiring (SLM-117) ──────────────────────────────────────────
+
+
+def _v2_split_group(split: str) -> str:
+    group = "v2train"
+    while split_for_group(group) != split:
+        group += "x"
+    return group
+
+
+def _v2_state(group_id: str, **overrides) -> DecisionStateV2:
+    kwargs = {
+        "state_id": "",
+        "group_id": group_id,
+        "architecture": "twotower",
+        "context_text": "Generate a card",
+        "context_ids": None,
+        "canvas_ids": (1, 0, 0, 0),
+        "decision_position": 1,
+        "generation_step": None,
+        "legal_action_ids": (2, 3, 4),
+        "decision_kind": "component",
+        "abstract_state_role": "root_child",
+        "grammar_state_hash": "grammar-sha",
+        "policy_checkpoint_sha": "policy",
+        "tokenizer_sha": "tokenizer",
+        "decode_config_hash": "decode",
+        "verifier_bundle_hash": "verifier",
+        "split": split_for_group(group_id),
+    }
+    kwargs.update(overrides)
+    return DecisionStateV2(**kwargs)  # type: ignore[arg-type]
+
+
+def _v2_outcome(state_id: str, action_id: int, **overrides) -> ActionOutcomeV2:
+    kwargs = {
+        "state_id": state_id,
+        "action_id": action_id,
+        "legal": True,
+        "rollout_policy_sha": "policy",
+        "continuation_seeds": (0,),
+        "outcome_hashes": ("hash",),
+        "verifier_vectors": (),
+        "reward_vectors": ({"reward": 1.0},),
+        "mean_value": 1.0,
+        "confidence_interval": None,
+        "evidence_ids": ("ev",),
+        "evidence_confidence": 1.0,
+    }
+    kwargs.update(overrides)
+    return ActionOutcomeV2(**kwargs)  # type: ignore[arg-type]
+
+
+def _v2_event(group_id: str, bad_action: int = 3, **overrides) -> DecisionEventV2:
+    state = _v2_state(group_id=group_id, **overrides)
+    return DecisionEventV2(
+        state=state,
+        outcomes=(
+            _v2_outcome(state.state_id, 2, reward_vectors=({"reward": 1.0},)),
+            _v2_outcome(state.state_id, bad_action, reward_vectors=({"reward": 0.0},)),
+        ),
+        evidence_kind="counterfactual",
+    )
+
+
+def test_train_local_from_paths_refuses_v2_config_hash_mismatch(tmp_path) -> None:
+    group_id = _v2_split_group("train")
+    state = _v2_state(group_id=group_id)
+    train_event = DecisionEventV2(
+        state=state,
+        outcomes=(
+            _v2_outcome(state.state_id, 2, reward_vectors=({"reward": 1.0},)),
+            _v2_outcome(state.state_id, 3, reward_vectors=({"reward": -1.0},)),
+        ),
+        evidence_kind="counterfactual",
+    )
+    events_path = tmp_path / "events.jsonl"
+    write_decision_events_v2(events_path, [train_event])
+    with pytest.raises(ValueError, match="config hash"):
+        train_local_from_paths(
+            Path("nonexistent.pt"),
+            events_path,
+            out_dir=tmp_path / "out",
+            objective="ftpo_single",
+            require_admission=True,
+            materializer_id="pareto_v1",
+            materializer_config_hash="wrong-hash",
+        )
+
+
+def test_train_local_from_paths_refuses_v2_constraint_shadow(tmp_path) -> None:
+    state = _v2_state(_v2_split_group("train"))
+    outcomes = (
+        ActionOutcomeV2(
+            state_id=state.state_id,
+            action_id=2,
+            legal=True,
+            rollout_policy_sha="policy",
+            continuation_seeds=(),
+            outcome_hashes=(),
+            verifier_vectors=(),
+            reward_vectors=(),
+            mean_value=None,
+            confidence_interval=None,
+            evidence_ids=(),
+            evidence_confidence=1.0,
+        ),
+    )
+    event = DecisionEventV2(
+        state=state, outcomes=outcomes, evidence_kind="constraint_shadow"
+    )
+    events_path = tmp_path / "events.jsonl"
+    write_decision_events_v2(events_path, [event])
+    with pytest.raises(ValueError, match="non-trainable"):
+        train_local_from_paths(
+            Path("nonexistent.pt"),
+            events_path,
+            out_dir=tmp_path / "out",
+            objective="ftpo_single",
+            require_admission=True,
+            materializer_id="pareto_v1",
+        )
+
+
+def test_train_local_from_paths_admits_v2_corpus(tmp_path) -> None:
+    model = _model()
+    checkpoint = tmp_path / "parent.pt"
+    model.save(checkpoint)
+    group_id = _v2_split_group("train")
+    state = _v2_state(
+        group_id=group_id,
+        policy_checkpoint_sha=checkpoint_sha(checkpoint),
+        tokenizer_sha=model.artifact_identity()["tokenizer_sha"],
+    )
+    event = DecisionEventV2(
+        state=state,
+        outcomes=(
+            _v2_outcome(state.state_id, 2, reward_vectors=({"reward": 1.0},)),
+            _v2_outcome(state.state_id, 3, reward_vectors=({"reward": -1.0},)),
+        ),
+        evidence_kind="counterfactual",
+    )
+    events_path = tmp_path / "events.jsonl"
+    write_decision_events_v2(events_path, [event])
+    summary = train_local_from_paths(
+        checkpoint,
+        events_path,
+        out_dir=tmp_path / "run",
+        objective="ftpo_single",
+        require_admission=True,
+        materializer_id="pareto_v1",
+        steps=1,
+    )
+    assert (tmp_path / "run/model.pt").is_file()
+    assert summary["steps"] == 1

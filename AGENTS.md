@@ -27,6 +27,14 @@ Experiment-first OpenUI layout SLMs:
    executed/published with the pinned AgentV SDK; domain metrics and honest ship
    gates remain authoritative (`docs/design/agentv-evaluation.md`).
 
+## Hard run cap
+
+Every train, eval, benchmark, profile, telemetry, matrix, reproduction, and
+supporting shell command must finish within three minutes total. Agent commands
+interrupt at 170 seconds and force-kill ten seconds later. Training and campaign
+harnesses must use a cumulative `max_wall_minutes` no greater than 3. A timed
+out, interrupted, or killed run is never evidence.
+
 Start: `README.md`, `docs/MODEL_CARD.md`, `docs/design/openui-twotower.md`,
 `docs/design/quality-experiment-matrix.md`,
 `docs/design/perf-experiment-matrix.md`, `docs/design/research-lineage.md`,
@@ -47,6 +55,7 @@ copy; Codex and GitHub Copilot discover `.agents/skills/` directly.
 | `running-experiment-matrices` | Running or extending E* / X* / PQR / phase matrices |
 | `openui-autoresearch` | Evidence-grounded campaigns, data/researcher repair, telemetry persistence, and RL readiness |
 | `improve-openui-harnesses` | Enhancing canonical research, data, model, eval, preference, distill, promotion, annotation, quality, or RL harnesses without parallel paths or artifact sprawl |
+| `train` | Running any training pipeline phase (train/test data, SFT, eval, distill, preference, RL, experiments, checkpoints, annotations, bench, autoresearch self-improvement) — per-phase references load on demand |
 | `ponytail` (+ `-review` / `-audit` / …) | Any coding task — write the minimum that works (YAGNI ladder) |
 | `organize-repository` | Creating, moving, renaming, deleting, or duplicating tracked paths; adding modules/docs/src/apps/skills; repository-sprawl review |
 | `caveman` (+ `-commit` / `-review` / …) | Opt-in terse chat / short commits / one-line review comments |
@@ -236,7 +245,8 @@ WITHOUT UPDATING DOCS
 
 Numbers only in `outputs/`, chat, or a PR comment = incomplete work.
 
-**Triggers (complete):** `train_model`, `train_rl`, `train_preference`,
+**Triggers (complete, whether invoked directly or via the `slm` wrapper):**
+`train_model`, `train_rl`, `train_preference`,
 `remote_train`, `hf_jobs_train`, `evaluate_model`, `evaluate_loss_suites`, `diagnose_eval`,
 `run_quality_matrix`, `run_grammar_matrix`, `run_perf_matrix`,
 `run_phase_pipeline`, `reproduce_baseline`, `run_scaling_ladder`,

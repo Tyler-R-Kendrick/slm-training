@@ -270,6 +270,11 @@ def _canonical_records(
     records: list[ExampleRecord] = []
     pairs: list[ScopePreferencePair] = []
     emitted_per_scope: dict[str, int] = {}
+    # Alignment indexes depend only on the canonical slices, not the variant.
+    canonical_indexes = {
+        scope: {_align_key(item): item for item in canonical_by_scope.get(scope, [])}
+        for scope in config.scopes
+    }
     for variant_name, variant in decanonicalize_variants(canonical):
         # A variant is always usable as *input*; as an identity *target* it
         # must also clear the layered verifier (fail-closed: some surface
@@ -282,9 +287,7 @@ def _canonical_records(
         ).ok
         variant_by_scope = _slices_by_scope(variant, config)
         for scope in config.scopes:
-            canonical_index = {
-                _align_key(item): item for item in canonical_by_scope.get(scope, [])
-            }
+            canonical_index = canonical_indexes[scope]
             for slice_ in variant_by_scope.get(scope, []):
                 if emitted_per_scope.get(scope, 0) >= config.canonical_pairs_per_scope:
                     break

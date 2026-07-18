@@ -20,7 +20,7 @@ class StrictModel(BaseModel):
 class CampaignBudget(StrictModel):
     max_experiments: int = Field(default=12, ge=1, le=1000)
     max_gpu_hours: float = Field(default=0.0, ge=0)
-    max_wall_minutes: float = Field(default=5.0, gt=0, le=5.0)
+    max_wall_minutes: float = Field(default=3.0, gt=0, le=3.0)
 
 
 DEFAULT_ALLOWED_KNOBS = frozenset(

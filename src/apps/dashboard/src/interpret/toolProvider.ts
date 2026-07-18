@@ -276,7 +276,11 @@ export const toolProvider: Record<string, QueryFn> = {
         { label: "Quality rejected", value: String(stats?.quality_rejected ?? "—"), sub: null, accent: stats?.quality_rejected ? "failed" : "" },
         { label: "Synthesizer", value: String(stats?.synthesizer ?? "—"), sub: null, accent: "" },
         { label: "Errors", value: String(stats?.error_count ?? "—"), sub: null, accent: stats?.error_count ? "failed" : "" },
+        { label: "Profile", value: String(d.profile ?? "—"), sub: d.quality ? "curation profile" : null, accent: "" },
+        { label: "Redundancy dropped", value: String(d.quality?.redundancy_dropped ?? "—"), sub: null, accent: d.quality?.redundancy_dropped ? "ember" : "" },
+        { label: "Decontam flagged", value: String(d.quality?.decontam_flagged ?? "—"), sub: null, accent: d.quality?.decontam_flagged ? "failed" : "" },
       ],
+      used_by: d.used_by_runs ?? [],
       composition: stats
         ? [
             { label: "records", value: stats.record_count ?? 0 },

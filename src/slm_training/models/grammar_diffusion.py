@@ -5,9 +5,8 @@ from __future__ import annotations
 import hashlib
 import json
 import random
-from copy import deepcopy
 from difflib import SequenceMatcher
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from enum import IntEnum
 from pathlib import Path
 from typing import Any
@@ -30,8 +29,11 @@ from slm_training.models.twotower import format_context_text
 from slm_training.dsl.solver.state import SolverBounds
 from slm_training.dsl.solver.topology_solver import (
     TopologyAdapterConfig,
+    TopologyEdit,
+    topology_capsule_solver_solve,
     topology_solver_prune,
 )
+from slm_training.dsl.pack import PackSlotUnavailable, get_pack
 
 
 def _load_production_codec(
@@ -40,6 +42,20 @@ def _load_production_codec(
     from slm_training.dsl.production_codec import ProductionCodec
 
     return ProductionCodec.build(texts, output_kinds)
+
+
+def _throwaway_codec(codec: "InlineProductionCodec") -> "InlineProductionCodec":
+    """Isolated codec for evaluation encodes that may learn unseen productions.
+
+    Vocab entries are immutable str/int and only ever appended, so shallow
+    dict copies isolate the mutation without deepcopy's per-object overhead
+    (the vocab holds thousands of entries and this runs per eval record).
+    """
+    return replace(
+        codec,
+        production_to_id=dict(codec.production_to_id),
+        id_to_production=dict(codec.id_to_production),
+    )
 
 
 def _codec_kind_from_vocab(id_to_production: dict[int, str]) -> str:
@@ -589,7 +605,7 @@ def _serialize_topology(
 def topology_arity_accuracy(
     codec: InlineProductionCodec, prediction: str, gold: str
 ) -> float:
-    eval_codec = deepcopy(codec)
+    eval_codec = _throwaway_codec(codec)
     try:
         predicted = _flatten(topology_from_openui(eval_codec, prediction))
         expected = _flatten(topology_from_openui(eval_codec, gold))
@@ -608,7 +624,7 @@ def topology_arity_accuracy(
 def production_sequence_accuracy(
     codec: InlineProductionCodec, prediction: str, gold: str
 ) -> float:
-    eval_codec = deepcopy(codec)
+    eval_codec = _throwaway_codec(codec)
     try:
         left, _ = eval_codec.encode(prediction, max_len=0)
         right, _ = eval_codec.encode(gold, max_len=0)
@@ -1322,7 +1338,7 @@ class GrammarDiffusionModel(nn.Module):
             # ProductionCodec.encode learns unseen productions. Evaluation must not
             # resize the checkpoint vocabulary, so retain their syntax in a throwaway
             # codec and map only model-facing IDs to the checkpoint's <unk> row.
-            eval_codec = deepcopy(self.codec)
+            eval_codec = _throwaway_codec(self.codec)
             gold = topology_from_openui(
                 eval_codec,
                 record.openui,
@@ -1618,6 +1634,114 @@ class GrammarDiffusionModel(nn.Module):
                     )
                 ),
             )
+            use_capsules = bool(
+                getattr(self.config, "topology_capsule_solver", False)
+            )
+            capsule_available = False
+            if use_capsules:
+                try:
+                    pack = get_pack(getattr(self.config, "grammar_dsl", None))
+                    pack.require("capsule_problem_builder")
+                    pack.require("capsule_summary_extractor")
+                    pack.require("capsule_materializer")
+                    pack.require("capsule_global_oracle")
+                    capsule_available = True
+                except (PackSlotUnavailable, KeyError):
+                    pass
+
+            if use_capsules and capsule_available:
+                # VSS3-03: drive the synthetic joint-capsule coordinator.  If it
+                # does not produce a solved result with non-empty survivors, fall
+                # back to whole-tree exact closure and record the honest gap.
+                try:
+                    source, capsule_result = topology_capsule_solver_solve(
+                        root,
+                        self.codec,
+                        adapter_config,
+                        slot_inventory,
+                        output_kind,
+                        bounds,
+                        cache=getattr(self, "_topology_solver_cache", None),
+                        certificate_store=getattr(
+                            self, "_topology_solver_cert_store", None
+                        ),
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    source, capsule_result = None, None
+                    capsule_error = str(exc)[:200]
+                else:
+                    capsule_error = None
+
+                capsule_survivors: set[
+                    tuple[int, str, int, int, int]
+                ] = set()
+                if capsule_result is not None:
+                    for per_capsule in capsule_result.capsule_results:
+                        if (
+                            per_capsule.status != "solved"
+                            or per_capsule.search_result is None
+                        ):
+                            continue
+                        for decision in per_capsule.search_result.decisions:
+                            node_id = decision.hole_id.path[0]
+                            if not isinstance(node_id, int):
+                                continue
+                            try:
+                                edit = TopologyEdit.from_value(decision.chosen)
+                            except (KeyError, ValueError, TypeError):
+                                continue
+                            capsule_survivors.add(
+                                (
+                                    node_id,
+                                    edit.action.name,
+                                    edit.production_id,
+                                    edit.arity,
+                                    edit.slot_id,
+                                )
+                            )
+
+                if (
+                    capsule_result is not None
+                    and capsule_result.status == "solved"
+                    and capsule_survivors
+                ):
+                    return capsule_survivors, {
+                        "enabled": True,
+                        "capsule_mode": True,
+                        "capsule_available": True,
+                        "capsule_solver_status": capsule_result.status,
+                        "assembled_source": source,
+                        "survivor_count": len(capsule_survivors),
+                        "capsule_count": capsule_result.counters.capsule_count,
+                        "joint_count": capsule_result.counters.joint_count,
+                        "solver_verifier_calls": capsule_result.counters.solver_verifier_calls,
+                    }
+
+                trace: dict[str, Any] = {
+                    "enabled": True,
+                    "capsule_mode": True,
+                    "capsule_available": True,
+                    "capsule_fallback": (
+                        f"capsule_solver_{capsule_result.status}"
+                        if capsule_result is not None
+                        else "capsule_solver_error"
+                    ),
+                }
+                if capsule_error is not None:
+                    trace["capsule_error"] = capsule_error
+                elif capsule_result is not None:
+                    trace["capsule_solver_status"] = capsule_result.status
+                    trace["capsule_solver_stop_reason"] = capsule_result.stop_reason
+                # Fall through to whole-tree exact closure below.
+            else:
+                trace = {
+                    "enabled": True,
+                    "capsule_mode": use_capsules,
+                    "capsule_available": capsule_available,
+                }
+                if use_capsules and not capsule_available:
+                    trace["capsule_fallback"] = "pack_capsule_slots_unimplemented"
+
             survivors, result = topology_solver_prune(
                 root,
                 self.codec,
@@ -1633,15 +1757,16 @@ class GrammarDiffusionModel(nn.Module):
                     ),
                 ),
             )
-            trace = {
-                "enabled": True,
-                "reached_fixed_point": result.reached_fixed_point,
-                "stop_reason": result.stop_reason,
-                "candidates_removed": result.counters.candidates_removed,
-                "support_queries": result.counters.support_queries,
-                "verifier_calls": result.counters.verifier_calls,
-                "survivor_count": len(survivors),
-            }
+            trace.update(
+                {
+                    "reached_fixed_point": result.reached_fixed_point,
+                    "stop_reason": result.stop_reason,
+                    "candidates_removed": result.counters.candidates_removed,
+                    "support_queries": result.counters.support_queries,
+                    "verifier_calls": result.counters.verifier_calls,
+                    "survivor_count": len(survivors),
+                }
+            )
             return survivors, trace
         except Exception as exc:  # noqa: BLE001
             return None, {"enabled": True, "error": str(exc)[:200]}
@@ -1724,6 +1849,13 @@ class GrammarDiffusionModel(nn.Module):
                 _failure_cone,
             ) = outputs
             index_by_id = {node.node_id: index for index, node in enumerate(selected)}
+            # One bulk device->host transfer per head per phase; the per-node
+            # .item() reads below otherwise force ~6 device syncs per proposal.
+            action_choices = action_logits[0].argmax(-1).tolist()
+            arity_choices = arity_logits[0].argmax(-1).tolist()
+            slot_choices = slot_logits[0].argmax(-1).tolist()
+            critic_values = critic[0].tolist()
+            confidence_values = confidence[0].tolist()
             proposals: list[
                 tuple[TopologyNode, int, int, int, int, float, float]
             ] = []
@@ -1737,11 +1869,11 @@ class GrammarDiffusionModel(nn.Module):
                 )
             for node in proposal_nodes:
                 index = index_by_id[node.node_id]
-                action = int(action_logits[0, index].argmax().item())
+                action = int(action_choices[index])
                 if not node.active:
                     if (
                         action == int(TopologyAction.CONTRACT)
-                        and float(critic[0, index].item())
+                        and float(critic_values[index])
                         < self.config.topology_contract_threshold
                         and not any(child.active for child in _flatten(node)[1:])
                     ):
@@ -1774,7 +1906,7 @@ class GrammarDiffusionModel(nn.Module):
                 legal_logits = prod_logits[0, index, legal]
                 production_id = legal[int(legal_logits.argmax().item())]
                 token = self.codec.id_to_production.get(production_id, "")
-                arity = int(arity_logits[0, index].argmax().item())
+                arity = int(arity_choices[index])
                 if node.node_type == "document":
                     arity = max(1, arity)
                 elif node.node_type == "statement" and token == "=":
@@ -1782,9 +1914,9 @@ class GrammarDiffusionModel(nn.Module):
                 elif _node_type(token) == "leaf":
                     arity = 0
                 arity = min(arity, self.config.topology_max_arity)
-                slot_id = int(slot_logits[0, index].argmax().item())
-                validity = float(critic[0, index].item())
-                conf = float(confidence[0, index].item())
+                slot_id = int(slot_choices[index])
+                validity = float(critic_values[index])
+                conf = float(confidence_values[index])
                 stats["critic_confidences"].append(validity)
                 phase_fraction = phase / max(1, self.config.topology_max_phases - 1)
                 accept_threshold = self.config.topology_accept_threshold * (

@@ -16,6 +16,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+from collections.abc import Sequence
 from dataclasses import asdict, is_dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -241,12 +242,19 @@ class TraceStore:
         self.run_id = run_id or (active.run_id if active else None)
         self.trace_id = trace_id or (active.trace_id if active else None)
         self.span_id = span_id or (active.span_id if active else None)
+        # Under the documented append-only single-writer contract, the line
+        # count only changes through this instance's append(); re-scanning the
+        # whole file per append made a collection run O(n^2).
+        self._count: int | None = None
 
     def __len__(self) -> int:
-        if not self.traces_path.exists():
-            return 0
-        with self.traces_path.open("r", encoding="utf-8") as handle:
-            return sum(1 for line in handle if line.strip())
+        if self._count is None:
+            if not self.traces_path.exists():
+                self._count = 0
+            else:
+                with self.traces_path.open("r", encoding="utf-8") as handle:
+                    self._count = sum(1 for line in handle if line.strip())
+        return self._count
 
     def append(self, trace: dict[str, Any]) -> str:
         index = len(self)
@@ -265,6 +273,7 @@ class TraceStore:
             handle.write(json.dumps(row, default=str) + "\n")
             handle.flush()
             os.fsync(handle.fileno())
+        self._count = index + 1
         self._update_manifest(count=index + 1)
         return trajectory_id
 
@@ -368,6 +377,32 @@ def record_matrix_outcome(
             "recorded_at": datetime.now(timezone.utc).isoformat(),
         }
     )
+
+
+def record_grammar_decisions(
+    store: TraceStore,
+    records: Sequence[dict[str, Any]],
+    **meta: Any,
+) -> list[str]:
+    """Persist grammar-state decision traces as a batch.
+
+    Each record must already carry the CAP1-02 schema fields. The store appends
+    them with the shared identity envelope and version.
+    """
+    ids: list[str] = []
+    for record in records:
+        ids.append(
+            store.append(
+                {
+                    "version": TRACE_VERSION,
+                    "kind": "grammar_decision",
+                    **record,
+                    "meta": meta,
+                    "recorded_at": datetime.now(timezone.utc).isoformat(),
+                }
+            )
+        )
+    return ids
 
 
 def replay_violations(trace: dict[str, Any]) -> list[str]:

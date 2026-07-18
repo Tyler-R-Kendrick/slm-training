@@ -838,15 +838,16 @@ def admit_semantic_corpus(
     items: Sequence[tuple[DecisionStateV2, ObjectiveView]],
     *,
     materializer_id: str,
+    materializer_config_hash: str | None = None,
     min_train_support: int = 1,
 ) -> dict[str, Any]:
     """Fail closed before semantic training; return the objective-support report.
 
     Refuses when any view is non-trainable (e.g. a constraint-shadow diagnostic),
-    when a view's materializer does not match the requested objective, or when any
-    held-out objective signature lacks train support. Every refusal names what is
-    missing so objective support can be repaired (never by copying held-out
-    programs).
+    when a view's materializer does not match the requested objective or config
+    hash, or when any held-out objective signature lacks train support. Every
+    refusal names what is missing so objective support can be repaired (never by
+    copying held-out programs).
     """
     report = objective_view_support(items, min_train_support=min_train_support)
     non_trainable = [state.state_id for state, view in items if not view.trainable]
@@ -864,6 +865,20 @@ def admit_semantic_corpus(
             "semantic admission refused: corpus materializer(s) "
             f"{mismatched} do not match the requested objective {materializer_id!r}"
         )
+    if materializer_config_hash is not None:
+        config_mismatched = sorted(
+            {
+                view.materializer_config_hash
+                for _, view in items
+                if view.materializer_config_hash != materializer_config_hash
+            }
+        )
+        if config_mismatched:
+            raise ValueError(
+                "semantic admission refused: corpus materializer config hash(es) "
+                f"{config_mismatched} do not match the requested config hash "
+                f"{materializer_config_hash!r}"
+            )
     if not report["held_out_coverage"]["passed"]:
         missing = report["held_out_coverage"]["uncovered"]
         raise ValueError(

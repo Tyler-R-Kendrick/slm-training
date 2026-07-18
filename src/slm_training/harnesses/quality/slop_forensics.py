@@ -194,6 +194,11 @@ def _smoothed_log_odds(ca: int, na: int, cb: int, nb: int, prior: float) -> floa
     return math.log(pa / (1 - pa)) - math.log(pb / (1 - pb))
 
 
+def _family_groups(counts: _FamilyCounts) -> list[str]:
+    """Sorted group universe for one corpus; invariant across a family's motifs."""
+    return sorted({g for gs in counts.motif_groups.values() for g in gs}) or [""]
+
+
 def _group_bootstrap_ci(
     parent: _FamilyCounts,
     baseline: _FamilyCounts,
@@ -202,13 +207,13 @@ def _group_bootstrap_ci(
     seed: int,
     iters: int,
     prior: float,
+    p_groups: list[str],
+    b_groups: list[str],
 ) -> tuple[float, float]:
     """Bootstrap the log-odds by resampling prompt groups (not tokens), so a motif
     concentrated in one prompt family gets a wide, honest interval. Deterministic
     under ``seed``."""
     rng = random.Random(seed)
-    p_groups = sorted({g for gs in parent.motif_groups.values() for g in gs}) or [""]
-    b_groups = sorted({g for gs in baseline.motif_groups.values() for g in gs}) or [""]
     motif_p_groups = parent.motif_groups.get(motif, set())
     motif_b_groups = baseline.motif_groups.get(motif, set())
     # Approximate per-group rate as presence-in-group; resample groups with replacement.
@@ -248,13 +253,24 @@ def rank_motifs(
         if parent is None or baseline is None:
             continue
         held = corpora.get("held_out")
+        # Group universes depend only on the corpora, not the motif; computing
+        # them per motif made the bootstrap O(motifs^2) per family.
+        p_groups = _family_groups(parent)
+        b_groups = _family_groups(baseline)
         for motif, pc in parent.motif_program_count.items():
             bc = baseline.motif_program_count.get(motif, 0)
             lo_odds = _smoothed_log_odds(pc, parent.total_programs, bc, baseline.total_programs, prior)
             if lo_odds < min_log_odds:
                 continue
             ci_low, ci_high = _group_bootstrap_ci(
-                parent, baseline, motif, seed=seed, iters=bootstrap_iters, prior=prior
+                parent,
+                baseline,
+                motif,
+                seed=seed,
+                iters=bootstrap_iters,
+                prior=prior,
+                p_groups=p_groups,
+                b_groups=b_groups,
             )
             groups = parent.motif_groups.get(motif, set())
             concentration = 1.0 / max(1, len(groups))  # 1.0 == a single prompt family

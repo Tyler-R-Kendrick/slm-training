@@ -12,16 +12,37 @@ from slm_training.models.twotower import TwoTowerModel, format_context_text
 from slm_training.harnesses.preference import PreferencePair, load_pairs
 
 
-def _logprob_of_target(
-    model: TwoTowerModel, prompt: str, target: str, design_md: str | None
-) -> torch.Tensor:
-    """Teacher-forced mean log-prob of target tokens under one-step denoiser."""
+def _encoder_deterministic(model: TwoTowerModel) -> bool:
+    """True when re-encoding an identical prompt is provably a no-op."""
+    return (
+        not model.training
+        or float(getattr(model.config, "dropout", 0.0) or 0.0) == 0.0
+    )
+
+
+def _context_of(
+    model: TwoTowerModel, prompt: str, design_md: str | None
+) -> tuple[torch.Tensor, torch.Tensor | None]:
     ctx_text = format_context_text(
         prompt,
         design_md if model.config.design_md_in_context else None,
         budget=model.config.design_md_budget,
     )
-    ctx, ctx_pad = model._encode_context([ctx_text])
+    return model._encode_context([ctx_text])
+
+
+def _logprob_of_target(
+    model: TwoTowerModel,
+    prompt: str,
+    target: str,
+    design_md: str | None,
+    *,
+    context: tuple[torch.Tensor, torch.Tensor | None] | None = None,
+) -> torch.Tensor:
+    """Teacher-forced mean log-prob of target tokens under one-step denoiser."""
+    ctx, ctx_pad = (
+        context if context is not None else _context_of(model, prompt, design_md)
+    )
     target_ids = model.tokenizer.encode(target)[: model.config.max_target_len]
     ids = torch.tensor([target_ids], dtype=torch.long, device=model.device_name)
     # Mild noise: mask ~30% for a preference-compatible diffusion surrogate.
@@ -47,8 +68,20 @@ def dpo_loss(
     beta: float = 0.1,
 ) -> torch.Tensor:
     """Simple DPO-style loss on masked-token log-probs (no reference model)."""
-    chosen_lp = _logprob_of_target(model, pair.prompt, pair.chosen, pair.design_md)
-    rejected_lp = _logprob_of_target(model, pair.prompt, pair.rejected, pair.design_md)
+    # Both targets share the pair's prompt context; encode it once unless the
+    # encoder is stochastic (train mode with dropout), where sharing would
+    # change the sampled masks.
+    context = (
+        _context_of(model, pair.prompt, pair.design_md)
+        if _encoder_deterministic(model)
+        else None
+    )
+    chosen_lp = _logprob_of_target(
+        model, pair.prompt, pair.chosen, pair.design_md, context=context
+    )
+    rejected_lp = _logprob_of_target(
+        model, pair.prompt, pair.rejected, pair.design_md, context=context
+    )
     return -F.logsigmoid(beta * (chosen_lp - rejected_lp))
 
 

@@ -1,0 +1,171 @@
+{
+  "campaign_id": "ldi-remine-smoke",
+  "config_fingerprint": "6dd6a07b942d7f6dd7d7aae4aecaa120f2b2cc1f981c569a67dd7bb1f5932421",
+  "iterations": [
+    {
+      "adapter": null,
+      "authorization": "train_authorized",
+      "iteration": 0,
+      "migration": null,
+      "stages": [
+        "evaluate_parent",
+        "generate",
+        "profile",
+        "localize",
+        "counterfactual",
+        "decision_tables",
+        "admission",
+        "diagnostic"
+      ],
+      "stop": {
+        "reason": "continue",
+        "stop": false
+      }
+    },
+    {
+      "adapter": {
+        "adapter_id": "adapter:ace09de51510",
+        "base_checkpoint_sha": "fixture-parent",
+        "parent_adapter_id": null,
+        "spec_fingerprint": "ace09de515107ce985b53b3a0d170d7f661cdabb0e681b8f150d291bae3d585d"
+      },
+      "authorization": "train_authorized",
+      "iteration": 1,
+      "migration": {
+        "counts": {
+          "newly_exposed": 2,
+          "persisted": 2,
+          "regressed": 0,
+          "repaired": 4,
+          "unresolved": 0
+        },
+        "newly_exposed": [
+          [
+            "group_a",
+            "gate",
+            "g2"
+          ],
+          [
+            "group_b",
+            "gate",
+            "g2"
+          ]
+        ],
+        "persisted": [
+          [
+            "group_a",
+            "motif",
+            "motif_b"
+          ],
+          [
+            "group_b",
+            "motif",
+            "motif_b"
+          ]
+        ],
+        "regressed": [],
+        "repaired": [
+          [
+            "group_a",
+            "gate",
+            "g1"
+          ],
+          [
+            "group_a",
+            "motif",
+            "motif_a"
+          ],
+          [
+            "group_b",
+            "gate",
+            "g1"
+          ],
+          [
+            "group_b",
+            "motif",
+            "motif_a"
+          ]
+        ],
+        "substitution_exceeds_improvement": false,
+        "unresolved": []
+      },
+      "stages": [
+        "train",
+        "select",
+        "regenerate",
+        "profile",
+        "verify",
+        "migrate",
+        "mine",
+        "decide"
+      ],
+      "stop": {
+        "reason": "continue",
+        "stop": false
+      }
+    },
+    {
+      "adapter": {
+        "adapter_id": "adapter:50537da87b90",
+        "base_checkpoint_sha": "fixture-parent",
+        "parent_adapter_id": "adapter:ace09de51510",
+        "spec_fingerprint": "50537da87b9082c7fa169f0ff3de34f255e4f6f8dea92f59db3e929027eca1de"
+      },
+      "authorization": "train_authorized",
+      "iteration": 2,
+      "migration": {
+        "counts": {
+          "newly_exposed": 0,
+          "persisted": 4,
+          "regressed": 0,
+          "repaired": 0,
+          "unresolved": 0
+        },
+        "newly_exposed": [],
+        "persisted": [
+          [
+            "group_a",
+            "gate",
+            "g2"
+          ],
+          [
+            "group_a",
+            "motif",
+            "motif_b"
+          ],
+          [
+            "group_b",
+            "gate",
+            "g2"
+          ],
+          [
+            "group_b",
+            "motif",
+            "motif_b"
+          ]
+        ],
+        "regressed": [],
+        "repaired": [],
+        "substitution_exceeds_improvement": false,
+        "unresolved": []
+      },
+      "stages": [
+        "train",
+        "select",
+        "regenerate",
+        "profile",
+        "verify",
+        "migrate",
+        "mine",
+        "decide"
+      ],
+      "stop": {
+        "reason": "no_meaningful_end_to_end_improvement",
+        "stop": true
+      }
+    }
+  ],
+  "status": "wiring_only",
+  "tag": "LDI-remine",
+  "version": "ldi3-04-v1"
+}

@@ -80,17 +80,36 @@ diagnostic result — and a full-parameter Tier-2 request is refused as
   objective-support refusal (`tests/test_harnesses/preference/test_local_decisions.py`).
   `ruff` and `python -m scripts.repo_policy` clean.
 
+## Landed in this follow-on (V2 admission wiring)
+
+- `src/slm_training/harnesses/preference/local_decisions.py`: added V2
+  `objective_view_signature`, `objective_view_support`, and `admit_semantic_corpus`
+  (mirroring the `decision_events_v2.py` gate but operating on the
+  `local_decisions.py` V2 types used by the trainer). `ObjectiveView` now carries an
+  explicit `trainable` flag; `materialize_constraint_shadow` sets it to `False`.
+  `admit_semantic_corpus` verifies materializer ID **and** optional config hash.
+- `src/slm_training/harnesses/preference/local_train.py`: `train_local_from_paths`
+  gained `require_admission`, `materializer_id`, and `materializer_config_hash`. When
+  loading V2 events, it materializes each event with the requested materializer and
+  runs `admit_semantic_corpus` before loading the checkpoint, so a mismatched
+  materializer, config hash, or non-trainable view is refused before any optimizer
+  step.
+- `scripts/train_preference.py`: the `train-local` subcommand exposes
+  `--require-admission` / `--no-require-admission`, `--materializer`, and
+  `--materializer-config-hash`, passing them through to `train_local_from_paths`.
+- Tests:
+  - `tests/test_harnesses/preference/test_local_decisions.py`: V2 objective-support
+    E284 pattern, materializer-ID mismatch, config-hash mismatch, constraint-shadow
+    non-trainable refusal, and passing admission.
+  - `tests/test_harnesses/preference/test_local_train.py`: trainer refuses V2
+    materializer/config-hash mismatch and constraint shadows, and admits a V2 corpus
+    end-to-end.
+
 ## Honest remaining scope
 
-- Wiring the **V2** `admit_semantic_corpus` gate into `train_local_from_paths` (and a
-  `--require-admission` / `--materializer` CLI flag) so the semantic trainer refuses a
-  non-admitted corpus — a materializer mismatch or a non-trainable view — before the
-  first optimizer step, mirroring the existing `constraint_shadow` refusal. The V1
-  objective-signature refusal already landed here covers the sampled-negative (E284)
-  case; the V2 gate additionally covers materializer identity.
 - The Tier-2 gradient computation itself (the deferred model stage) and the richer
   Tier-1 logit-space content (parent legal-space good/bad mass and margins, dominance
   under raw vs unit-normalized scaling, held-out signature distances) that build on the
   bounded runner landed here.
-- These are the next commits. This iteration adds no token/component special cases,
-  runs no training, and makes no model-quality claim.
+- This iteration adds no token/component special cases, runs no full training campaign,
+  and makes no model-quality claim.

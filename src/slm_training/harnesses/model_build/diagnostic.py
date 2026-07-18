@@ -38,10 +38,13 @@ class VocabCoverageReport:
         }
 
 
-def build_train_tokenizer(train_dir: Path) -> OpenUITokenizer:
-    records = load_jsonl(train_dir / "records.jsonl")
+def _train_tokenizer_from_records(records: list[ExampleRecord]) -> OpenUITokenizer:
     texts = [r.prompt for r in records] + [r.openui for r in records]
     return OpenUITokenizer.build(texts)
+
+
+def build_train_tokenizer(train_dir: Path) -> OpenUITokenizer:
+    return _train_tokenizer_from_records(load_jsonl(train_dir / "records.jsonl"))
 
 
 def _token_coverage(tokens: list[str], vocab: set[str]) -> dict[str, Any]:
@@ -62,9 +65,9 @@ def vocab_coverage_report(
     *,
     suites: tuple[str, ...] = ("smoke", "held_out", "adversarial", "ood", "rico_held"),
 ) -> VocabCoverageReport:
-    tokenizer = build_train_tokenizer(train_dir)
-    vocab = set(tokenizer.token_to_id)
     train_records = load_jsonl(train_dir / "records.jsonl")
+    tokenizer = _train_tokenizer_from_records(train_records)
+    vocab = set(tokenizer.token_to_id)
     suite_reports: dict[str, dict[str, Any]] = {}
 
     for suite in suites:
@@ -213,8 +216,11 @@ def length_budget_report(
     Fails loudly (``ok=False``) when any suite/train p95 exceeds
     ``grammar_ltr_max_tokens`` or the max progressive stage.
     """
-    if tokenizer is None and train_dir is not None and (train_dir / "records.jsonl").is_file():
-        tokenizer = build_train_tokenizer(train_dir)
+    train_records: list[ExampleRecord] | None = None
+    if train_dir is not None and (train_dir / "records.jsonl").is_file():
+        train_records = load_jsonl(train_dir / "records.jsonl")
+    if tokenizer is None and train_records is not None:
+        tokenizer = _train_tokenizer_from_records(train_records)
 
     max_stage = max(int(s) for s in grammar_ltr_stages) if grammar_ltr_stages else 0
     effective_budget = min(int(grammar_ltr_max_tokens), max_stage or int(grammar_ltr_max_tokens))
@@ -243,8 +249,8 @@ def length_budget_report(
 
     if records is not None:
         _check("records", list(records))
-    if train_dir is not None and (train_dir / "records.jsonl").is_file():
-        _check("train", load_jsonl(train_dir / "records.jsonl"))
+    if train_records is not None:
+        _check("train", train_records)
     if test_dir is not None:
         for suite in suites:
             try:

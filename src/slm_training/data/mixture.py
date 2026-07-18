@@ -244,16 +244,23 @@ def sample_mixture_batch(
                 return _sample_capacity_aware(
                     weighted_records, batch_size=batch_size, rng=rng
                 )
-            out: list[ExampleRecord] = []
-            for _ in range(batch_size):
-                group = rng.choices(groups, weights=group_weights, k=1)[0]
-                family_pools = usable_tasks[group]
-                families = sorted(family_pools)
+            # Family order/weights per group are draw-invariant; hoist them out
+            # of the per-draw loop (mirrors the non-task path below). Consumes
+            # no RNG, so the draw sequence is unchanged.
+            group_families: dict[str, tuple[list[str], list[float]]] = {}
+            for group in groups:
+                families = sorted(usable_tasks[group])
                 family_weights = [
                     manifest.weights.get(family, 0.0) for family in families
                 ]
                 if not any(family_weights):
                     family_weights = [1.0] * len(families)
+                group_families[group] = (families, family_weights)
+            out: list[ExampleRecord] = []
+            for _ in range(batch_size):
+                group = rng.choices(groups, weights=group_weights, k=1)[0]
+                family_pools = usable_tasks[group]
+                families, family_weights = group_families[group]
                 family = rng.choices(families, weights=family_weights, k=1)[0]
                 members = family_pools[family]
                 out.append(members[rng.randrange(len(members))])
@@ -315,14 +322,19 @@ def _sample_capacity_aware(
     out: list[ExampleRecord] = []
     while len(out) < batch_size:
         remaining = list(weighted_records)
+        # Parallel weight list popped in lockstep with `remaining`: same
+        # per-draw weight sequence (bit-exact RNG draws) without rebuilding
+        # the O(n) list on every draw.
+        remaining_weights = [weight for _, weight in remaining]
         cycle_size = min(batch_size - len(out), len(remaining))
         for _ in range(cycle_size):
             index = rng.choices(
                 range(len(remaining)),
-                weights=[weight for _, weight in remaining],
+                weights=remaining_weights,
                 k=1,
             )[0]
             record, _ = remaining.pop(index)
+            remaining_weights.pop(index)
             out.append(record)
     return out
 

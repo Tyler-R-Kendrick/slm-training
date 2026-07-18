@@ -3,6 +3,17 @@
 from typing import Any
 
 from slm_training.data.progspec.schema import ProgramSpec, emit_record
+from slm_training.data.progspec.semantic_plan import (
+    PlanArchetype,
+    PlanBinding,
+    PlanConfidenceCalibration,
+    PlanCoverage,
+    PlanIdentity,
+    PlanSymbol,
+    PlanTopology,
+    RoleSlot,
+    SemanticPlanV1,
+)
 from slm_training.data.progspec.capsules import (
     CapsuleGraph,
     DependencyKind,
@@ -48,14 +59,23 @@ __all__ = [
     "DependencyKind",
     "GenerationResult",
     "GeneratorConfig",
+    "PlanArchetype",
+    "PlanBinding",
+    "PlanConfidenceCalibration",
+    "PlanCoverage",
+    "PlanIdentity",
+    "PlanSymbol",
+    "PlanTopology",
     "ProgramGenerator",
     "ProgramSpec",
+    "RoleSlot",
     "SCOPE_DATA_FAMILIES",
     "ScopeContract",
     "ScopeEdge",
     "ScopeKind",
     "ScopeNode",
     "ScopeOracleResult",
+    "SemanticPlanV1",
     "VerificationCapsule",
     "dependency_closed_failure_cone",
     "derive_capsule_graph",

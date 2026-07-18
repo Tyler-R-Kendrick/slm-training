@@ -54,13 +54,14 @@ class BlindedComparisonStore:
         return {"id": pair_id, "prompt": prompt, "left_openui": left, "right_openui": right}
 
     def vote(self, pair_id: str, winner: Side, *, reviewer_id: str) -> dict[str, Any]:
+        rows = self._rows()
         pair = next(
-            (row for row in reversed(self._rows()) if row.get("kind") == "pair" and row.get("id") == pair_id),
+            (row for row in reversed(rows) if row.get("kind") == "pair" and row.get("id") == pair_id),
             None,
         )
         if pair is None:
             raise KeyError(pair_id)
-        if any(row.get("kind") == "vote" and row.get("pair_id") == pair_id for row in self._rows()):
+        if any(row.get("kind") == "vote" and row.get("pair_id") == pair_id for row in rows):
             raise ValueError("comparison already voted")
         outcome = "tie" if winner == "tie" else (
             "candidate" if winner == pair["candidate_side"] else "champion"

@@ -18,10 +18,7 @@ from slm_training.harnesses.model_build.checkpoint_bucket import (
 
 
 def test_normalize_bucket_uri_variants() -> None:
-    assert (
-        normalize_bucket_uri("TKendrick/OpenUI")
-        == "hf://buckets/TKendrick/OpenUI"
-    )
+    assert normalize_bucket_uri("TKendrick/OpenUI") == "hf://buckets/TKendrick/OpenUI"
     assert (
         normalize_bucket_uri("https://huggingface.co/buckets/TKendrick/OpenUI")
         == "hf://buckets/TKendrick/OpenUI"
@@ -72,7 +69,9 @@ def test_resolve_sync_auto() -> None:
     )
 
 
-def test_staging_and_dry_run_sync(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_staging_and_dry_run_sync(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     pytest.importorskip("huggingface_hub")
 
     class FakePlan:
@@ -80,9 +79,7 @@ def test_staging_and_dry_run_sync(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
             self.source = "stage"
             self.dest = "remote"
             self.timestamp = "t"
-            self.operations = [
-                SimpleNamespace(action="upload", path="last.pt", size=1)
-            ]
+            self.operations = [SimpleNamespace(action="upload", path="last.pt", size=1)]
 
     calls: dict[str, object] = {}
 
@@ -126,6 +123,32 @@ def test_staging_and_dry_run_sync(tmp_path: Path, monkeypatch: pytest.MonkeyPatc
     assert "last.pt" in report["files"]
     assert "train_summary.json" in report["files"]
     assert calls["sync"]["dry_run"] is True
+
+
+def test_cli_sync_ignores_progress_lines(monkeypatch: pytest.MonkeyPatch) -> None:
+    import slm_training.harnesses.model_build.checkpoint_bucket as cb
+
+    output = "\n".join(
+        [
+            "Syncing...",
+            '{"type":"header","summary":{"uploads":1,"skips":0}}',
+            '{"type":"operation","action":"upload","path":"last.pt","size":7}',
+            "Sync completed.",
+        ]
+    )
+    monkeypatch.setattr(
+        cb.subprocess,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(stdout=output),
+    )
+    plan = cb._cli_sync_bucket(
+        source="checkpoints",
+        dest="hf://buckets/TKendrick/OpenUI/checkpoints/demo",
+        dry_run=False,
+        token=None,
+    )
+    assert plan["uploads"] == 1
+    assert plan["operations"][0]["path"] == "last.pt"
 
 
 def test_maybe_sync_respects_disabled(tmp_path: Path) -> None:
@@ -183,7 +206,9 @@ def _make_checkpoint(tmp_path: Path) -> Path:
 def _patch_api(monkeypatch: pytest.MonkeyPatch, api: _FakeApi) -> None:
     import slm_training.harnesses.model_build.checkpoint_bucket as cb
 
-    monkeypatch.setattr(cb, "_require_hub", lambda: (lambda token=None: api, lambda: "tok"))
+    monkeypatch.setattr(
+        cb, "_require_hub", lambda: (lambda token=None: api, lambda: "tok")
+    )
 
 
 def test_dry_run_hashes_but_leaves_references_unverified(

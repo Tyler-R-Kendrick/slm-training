@@ -19,9 +19,8 @@ class ModelBuildConfig:
     # None preserves legacy behavior; an explicit set limits checkpoint mutation.
     runtime_override_fields: frozenset[str] | None = None
     steps: int = 200
-    # Optional cumulative training-harness deadline. Experiment runners cap this
-    # at five minutes; long production jobs may leave it unset.
-    max_wall_minutes: float | None = None
+    # Cumulative training-harness deadline; all runs are hard-capped at 3 minutes.
+    max_wall_minutes: float | None = 3.0
     batch_size: int = 4
     lr: float = 3e-4
     seed: int = 0

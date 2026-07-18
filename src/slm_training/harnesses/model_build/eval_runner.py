@@ -9,6 +9,7 @@ import re
 import signal
 import time
 from datetime import datetime, timezone
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -27,6 +28,12 @@ from slm_training.harnesses.model_build.ship_gates import DEFAULT_SHIP_GATES
 from slm_training.models.decode_stats import collect_decode_stats
 
 _COMPONENT_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s*\(")
+
+
+@lru_cache(maxsize=1024)
+def _placeholders_of(source: str) -> frozenset[str]:
+    """Placeholder set for a source; several per-record metrics share it."""
+    return frozenset(extract_placeholders(source))
 
 
 def _nearest_rank(sorted_values: list[float], fraction: float) -> float | None:
@@ -108,8 +115,8 @@ def _placeholder_fidelity_normalized(pred: str, gold: ExampleRecord) -> float | 
     ``None`` when gold has no placeholders and the prediction adds none: 0/0 is
     undefined evidence, never a vacuous 1.0.
     """
-    pred_set = set(extract_placeholders(pred))
-    gold_set = set(gold.placeholders) or set(extract_placeholders(gold.openui))
+    pred_set = _placeholders_of(pred)
+    gold_set = set(gold.placeholders) or _placeholders_of(gold.openui)
     if not gold_set:
         return None if not pred_set else 0.0
     pred_n = {_normalize_placeholder(p) for p in pred_set}
@@ -124,8 +131,8 @@ def _placeholder_fidelity(pred: str, gold: ExampleRecord) -> float | None:
     ``None`` when gold has no placeholders and the prediction adds none: 0/0 is
     undefined evidence, never a vacuous 1.0.
     """
-    pred_set = set(extract_placeholders(pred))
-    gold_set = set(gold.placeholders) or set(extract_placeholders(gold.openui))
+    pred_set = _placeholders_of(pred)
+    gold_set = set(gold.placeholders) or _placeholders_of(gold.openui)
     if not gold_set:
         return None if not pred_set else 0.0
     return len(pred_set & gold_set) / len(gold_set)
@@ -146,8 +153,8 @@ def _placeholder_validity(pred: str, gold: ExampleRecord) -> float | None:
     Prefer placeholder_fidelity for readiness claims.
     ``None`` when neither side has placeholders (undefined, not perfect).
     """
-    pred_set = set(extract_placeholders(pred))
-    gold_set = set(gold.placeholders) or set(extract_placeholders(gold.openui))
+    pred_set = _placeholders_of(pred)
+    gold_set = set(gold.placeholders) or _placeholders_of(gold.openui)
     if not gold_set:
         return None if not pred_set else 0.5
     if not pred_set:
@@ -226,7 +233,7 @@ def _contract_precision(pred: str, record: ExampleRecord) -> float | None:
     ``None`` when the prediction has no placeholders and the contract is empty:
     0/0 is undefined evidence, never a vacuous 1.0.
     """
-    pred_set = set(extract_placeholders(pred))
+    pred_set = _placeholders_of(pred)
     gold_set = set(record.placeholders or ())
     if not pred_set:
         return None if not gold_set else 0.0
@@ -240,7 +247,7 @@ def _contract_recall(pred: str, record: ExampleRecord) -> float | None:
     ``None`` when the contract is empty and the prediction adds nothing: 0/0 is
     undefined evidence, never a vacuous 1.0.
     """
-    pred_set = set(extract_placeholders(pred))
+    pred_set = _placeholders_of(pred)
     gold_set = set(record.placeholders or ())
     if not gold_set:
         return None if not pred_set else 0.0
@@ -408,6 +415,16 @@ def _is_meaningful_program(
 
 # Public version lock: historical scoreboards and ship thresholds remain v1.
 meaningful_program_v1 = _is_meaningful_program
+
+
+def _eval_data_sha(directory: Path) -> str | None:
+    """Content fingerprint of an eval dataset dir (manifest or records hash)."""
+    from slm_training.harnesses.model_build.full_state import data_manifest_sha
+
+    try:
+        return data_manifest_sha(directory)
+    except Exception:  # noqa: BLE001 - identity stamping must never break evals
+        return None
 
 
 def evaluate(
@@ -671,7 +688,9 @@ def evaluate(
             match_error_count += 1
             exact = None
         struct = structural_similarity(scored_pred, record.openui)
-        tree_edit = tree_edit_similarity(scored_pred, record.openui)
+        # tree_edit_similarity is currently an alias of structural_similarity;
+        # reuse the value instead of recomputing the full metric.
+        tree_edit = struct
         recall = component_type_recall(scored_pred, record.openui)
         contract_prec = _contract_precision(scored_pred, record)
         contract_rec = _contract_recall(scored_pred, record)
@@ -896,6 +915,13 @@ def evaluate(
         "checkpoint": str(loaded_checkpoint) if loaded_checkpoint else None,
         "checkpoint_sha256": checkpoint_sha256,
         "checkpoint_source": ("checkpoint" if loaded_checkpoint else "preloaded_model"),
+        # Pin the exact eval data alongside the model identity so every
+        # reported number is reproducible (run + checkpoint + dataset).
+        "test_dir": str(config.test_dir),
+        "eval_data_manifest_sha": _eval_data_sha(Path(config.test_dir)),
+        "eval_suite_manifest_sha": _eval_data_sha(
+            Path(config.test_dir) / "suites" / config.suite
+        ),
         "model": config.model_name,
         "evaluated_at": datetime.now(timezone.utc).isoformat(),
         "failure_breakdown": failure_breakdown,
@@ -1114,6 +1140,10 @@ def evaluate_suites(
         ),
         "checkpoint_source": "preloaded_model" if model is not None else "checkpoint",
         "checkpoint_sha256": next(iter(board.values()), {}).get("checkpoint_sha256"),
+        "test_dir": str(config.test_dir),
+        "eval_data_manifest_sha": next(iter(board.values()), {}).get(
+            "eval_data_manifest_sha"
+        ),
         "suites": board,
         "evaluated_at": datetime.now(timezone.utc).isoformat(),
     }

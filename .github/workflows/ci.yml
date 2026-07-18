@@ -51,3 +51,16 @@ jobs:
         run: |
           python -m scripts.build_train_data --source all --version ci --synthesizer none
           python -m scripts.build_test_data --source both --version ci --train-manifest outputs/data/train/ci/manifest.json
+          test -s outputs/data/train/ci/quality_report.json
+          test -f outputs/data/train/ci/rejected.jsonl
+      - name: Persist CI dataset metadata (manifest + stats + quality report)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-dataset-metadata
+          path: |
+            outputs/data/train/ci/manifest.json
+            outputs/data/train/ci/stats.json
+            outputs/data/train/ci/quality_report.json
+            outputs/data/eval/ci/manifest.json
+            outputs/data/eval/ci/stats.json
+          if-no-files-found: error

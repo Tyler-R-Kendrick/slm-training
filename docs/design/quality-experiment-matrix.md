@@ -1651,7 +1651,7 @@ experiment deadline and remained incomplete beyond 25 minutes, so it was
 operator-stopped without an output artifact. It is **invalid evidence** and no
 training or checkpoint mutation occurred. The autoresearch harness now enforces
 one configurable cumulative `max_wall_minutes` budget, defaulting to and capped
-at five minutes across all compiled stages. Future comparisons must also keep
+at three minutes across all compiled stages. Future comparisons must also keep
 the same declared training budget; runtime expiry is a stopped run, never a
 quality result. Full record:
 [iter-e285-exact-signature-profile-aborted-20260717.md](iter-e285-exact-signature-profile-aborted-20260717.md).
