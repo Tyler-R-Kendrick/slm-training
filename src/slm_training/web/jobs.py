@@ -273,7 +273,7 @@ JOB_SPECS: dict[str, JobSpec] = {
     "remote_train": JobSpec(
         "scripts.remote_train",
         kind="dispatch",
-        summary="Dispatch a full train to a remote GPU pod over SSH",
+        summary="Dispatch a bounded checkpoint smoke to a remote GPU pod",
         params={
             "host": Slug(r"^[A-Za-z0-9._-]{1,255}$"),
             "run_id": Slug(),
