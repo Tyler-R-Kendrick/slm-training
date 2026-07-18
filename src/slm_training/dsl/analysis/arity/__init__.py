@@ -97,6 +97,19 @@ from slm_training.dsl.analysis.arity.render import (
     to_csv,
     to_markdown,
 )
+from slm_training.dsl.analysis.arity.conditional_rate import (
+    ConditionalRateReport,
+    FanoBound,
+    PosteriorEffectiveSupport,
+    RateDistortionPoint,
+    analyze_conditional_rate,
+    blahut_arimoto_rate_distortion,
+    conditional_entropy,
+    entropy,
+    fano_lower_bound,
+    mutual_information,
+    posterior_effective_support,
+)
 from slm_training.dsl.analysis.arity.task_quotient import (
     AlignedActionRecord,
     ConfusabilityGraph,
@@ -181,4 +194,16 @@ __all__ = [
     "capacity_feasible",
     "color_graph",
     "refine_quotient",
+    # --- CAP1-04: conditional task rate / Fano / RD (SLM-84) ---
+    "ConditionalRateReport",
+    "FanoBound",
+    "PosteriorEffectiveSupport",
+    "RateDistortionPoint",
+    "analyze_conditional_rate",
+    "blahut_arimoto_rate_distortion",
+    "conditional_entropy",
+    "entropy",
+    "fano_lower_bound",
+    "mutual_information",
+    "posterior_effective_support",
 ]
