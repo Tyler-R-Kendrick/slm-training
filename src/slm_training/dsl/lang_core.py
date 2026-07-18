@@ -70,7 +70,10 @@ class Program:
         return []
 
 
+@lru_cache(maxsize=1)
 def _node_bin() -> str:
+    # PATH is stable for the process lifetime; the hybrid backend consults
+    # bridge_available() on every parse/stream probe, so keep this O(1).
     return shutil.which("node") or ""
 
 

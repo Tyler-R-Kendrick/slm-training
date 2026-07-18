@@ -72,6 +72,11 @@ from slm_training.models.template_fill import (
 from slm_training.dsl.grammar.fastpath.gate import FastPathGate
 from slm_training.models.tokenizer import OpenUITokenizer
 
+# _repair_surface_syntax runs per generated candidate; precompile its patterns.
+_QUOTED_SPAN_RE = re.compile(r'("(?:\\.|[^"\\])*")')
+_REPEATED_EQUALS_RE = re.compile(r"\s*=\s*=+\s*")
+_DANGLING_EQUALS_RE = re.compile(r",\s*=\s*(?=[)\]])")
+
 
 def _is_lexer_output(config: "TwoTowerConfig | None") -> bool:
     if config is None:
@@ -2713,10 +2718,10 @@ class TwoTowerModel(nn.Module):
     @staticmethod
     def _repair_surface_syntax(text: str) -> str:
         """Repair local token-boundary artifacts without inventing layout content."""
-        parts = re.split(r'("(?:\\.|[^"\\])*")', text)
+        parts = _QUOTED_SPAN_RE.split(text)
         for index in range(0, len(parts), 2):
-            parts[index] = re.sub(r"\s*=\s*=+\s*", " = ", parts[index])
-            parts[index] = re.sub(r",\s*=\s*(?=[)\]])", "", parts[index])
+            parts[index] = _REPEATED_EQUALS_RE.sub(" = ", parts[index])
+            parts[index] = _DANGLING_EQUALS_RE.sub("", parts[index])
         return "".join(parts)
 
     @staticmethod
@@ -3957,6 +3962,7 @@ class TwoTowerModel(nn.Module):
             LatticeSearchState,
             StagnationTracker,
             TrajectoryCandidate,
+            path_key,
             rank_forest,
             select_trajectory_candidate,
             trajectory_orders,
@@ -4216,6 +4222,14 @@ class TwoTowerModel(nn.Module):
                     )
                     if orders:
                         order = orders[0]
+                        # RankedForest scores are a function of path_key, so a
+                        # keyed lookup replaces the O(n^2) paths.index() scans.
+                        score_by_key = {
+                            path_key(ranked_path): ranked_score
+                            for ranked_path, ranked_score in zip(
+                                ranked.paths, ranked.scores, strict=True
+                            )
+                        }
                         if not _disable_trajectory_fork:
                             from slm_training.dsl.grammar.backends.ast_utils import (
                                 ast_fingerprint,
@@ -4235,7 +4249,7 @@ class TwoTowerModel(nn.Module):
                                     type(ranked)(
                                         branch_order,
                                         tuple(
-                                            ranked.scores[ranked.paths.index(path)]
+                                            score_by_key[path_key(path)]
                                             for path in branch_order
                                         ),
                                         ranked.coverage,
@@ -4287,7 +4301,7 @@ class TwoTowerModel(nn.Module):
                                         valid=canonical is not None,
                                         contract_satisfied=contract_ok,
                                         model_score=float(
-                                            ranked.scores[ranked.paths.index(first)]
+                                            score_by_key[path_key(first)]
                                         ),
                                         simplicity=sum(
                                             int(token_id)
@@ -4332,10 +4346,7 @@ class TwoTowerModel(nn.Module):
                                 return selected_candidate.value
                         ranked = type(ranked)(
                             order,
-                            tuple(
-                                ranked.scores[ranked.paths.index(path)]
-                                for path in order
-                            ),
+                            tuple(score_by_key[path_key(path)] for path in order),
                             ranked.coverage,
                         )
                         if stats is not None:

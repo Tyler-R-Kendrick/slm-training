@@ -9,6 +9,7 @@ import re
 import signal
 import time
 from datetime import datetime, timezone
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -27,6 +28,18 @@ from slm_training.harnesses.model_build.ship_gates import DEFAULT_SHIP_GATES
 from slm_training.models.decode_stats import collect_decode_stats
 
 _COMPONENT_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s*\(")
+
+
+@lru_cache(maxsize=1024)
+def _placeholders_of(source: str) -> frozenset[str]:
+    """Placeholder set for a source; several per-record metrics share it."""
+    return frozenset(extract_placeholders(source))
+
+
+@lru_cache(maxsize=1024)
+def _stripped(source: str) -> str:
+    """Style-stripped source; several per-record metrics share it."""
+    return strip_style_literals(source)
 
 
 def _nearest_rank(sorted_values: list[float], fraction: float) -> float | None:
@@ -103,8 +116,8 @@ def _sha256_file(path: Path) -> str:
 
 def _placeholder_fidelity_normalized(pred: str, gold: ExampleRecord) -> float:
     """Namespace-stripped placeholder overlap (diagnostic / ablation metric)."""
-    pred_set = set(extract_placeholders(pred))
-    gold_set = set(gold.placeholders) or set(extract_placeholders(gold.openui))
+    pred_set = _placeholders_of(pred)
+    gold_set = set(gold.placeholders) or _placeholders_of(gold.openui)
     if not gold_set:
         return 1.0 if not pred_set else 0.0
     pred_n = {_normalize_placeholder(p) for p in pred_set}
@@ -114,8 +127,8 @@ def _placeholder_fidelity_normalized(pred: str, gold: ExampleRecord) -> float:
 
 def _placeholder_fidelity(pred: str, gold: ExampleRecord) -> float:
     """Exact placeholder overlap with gold (strict)."""
-    pred_set = set(extract_placeholders(pred))
-    gold_set = set(gold.placeholders) or set(extract_placeholders(gold.openui))
+    pred_set = _placeholders_of(pred)
+    gold_set = set(gold.placeholders) or _placeholders_of(gold.openui)
     if not gold_set:
         return 1.0 if not pred_set else 0.0
     return len(pred_set & gold_set) / len(gold_set)
@@ -135,8 +148,8 @@ def _placeholder_validity(pred: str, gold: ExampleRecord) -> float:
     Soft placeholder quality for diagnostics only (not a ship gate alone).
     Prefer placeholder_fidelity for readiness claims.
     """
-    pred_set = set(extract_placeholders(pred))
-    gold_set = set(gold.placeholders) or set(extract_placeholders(gold.openui))
+    pred_set = _placeholders_of(pred)
+    gold_set = set(gold.placeholders) or _placeholders_of(gold.openui)
     if not gold_set:
         return 1.0 if not pred_set else 0.5
     if not pred_set:
@@ -152,8 +165,8 @@ def _placeholder_validity(pred: str, gold: ExampleRecord) -> float:
 
 def _tree_match(pred: str, gold_openui: str) -> float:
     """Exact match on structure-normalized programs (style args ignored)."""
-    pred_s = strip_style_literals(pred).strip()
-    gold_s = strip_style_literals(gold_openui).strip()
+    pred_s = _stripped(pred).strip()
+    gold_s = _stripped(gold_openui).strip()
     if pred_s == gold_s:
         return 1.0
     try:
@@ -170,15 +183,15 @@ def _tree_match(pred: str, gold_openui: str) -> float:
 
 def _component_multiset(source: str) -> dict[str, int]:
     counts: dict[str, int] = {}
-    for name in _COMPONENT_RE.findall(strip_style_literals(source)):
+    for name in _COMPONENT_RE.findall(_stripped(source)):
         counts[name] = counts.get(name, 0) + 1
     return counts
 
 
 def structural_similarity(pred: str, gold_openui: str) -> float:
     """Jaccard-like similarity over component multisets + depth (style-agnostic)."""
-    pred_s = strip_style_literals(pred)
-    gold_s = strip_style_literals(gold_openui)
+    pred_s = _stripped(pred)
+    gold_s = _stripped(gold_openui)
     pred_c = _component_multiset(pred_s)
     gold_c = _component_multiset(gold_s)
     keys = set(pred_c) | set(gold_c)
@@ -204,7 +217,7 @@ def _raw_syntax_valid(pred: str) -> bool:
 
 def _contract_precision(pred: str, record: ExampleRecord) -> float:
     """Fraction of predicted placeholders that appear in the record contract."""
-    pred_set = set(extract_placeholders(pred))
+    pred_set = _placeholders_of(pred)
     gold_set = set(record.placeholders or ())
     if not pred_set:
         return 1.0 if not gold_set else 0.0
@@ -213,7 +226,7 @@ def _contract_precision(pred: str, record: ExampleRecord) -> float:
 
 def _contract_recall(pred: str, record: ExampleRecord) -> float:
     """Fraction of record contract placeholders present in the prediction."""
-    pred_set = set(extract_placeholders(pred))
+    pred_set = _placeholders_of(pred)
     gold_set = set(record.placeholders or ())
     if not gold_set:
         return 1.0 if not pred_set else 0.0
@@ -272,7 +285,7 @@ def _reward_for_prediction(pred: str, record: ExampleRecord) -> float:
 
         return float(
             composite_reward(
-                strip_style_literals(pred),
+                _stripped(pred),
                 gold=record,
                 design_md=None,
             )
@@ -628,7 +641,9 @@ def evaluate(
         ph_valid = _placeholder_validity(scored_pred, record)
         exact = _tree_match(scored_pred, record.openui)
         struct = structural_similarity(scored_pred, record.openui)
-        tree_edit = tree_edit_similarity(scored_pred, record.openui)
+        # tree_edit_similarity is currently an alias of structural_similarity;
+        # reuse the value instead of recomputing the full metric.
+        tree_edit = struct
         recall = component_type_recall(scored_pred, record.openui)
         contract_prec = _contract_precision(scored_pred, record)
         contract_rec = _contract_recall(scored_pred, record)
