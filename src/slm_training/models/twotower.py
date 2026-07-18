@@ -856,6 +856,63 @@ class TwoTowerModel(nn.Module):
             if grouped.get(owner)
         ]
 
+    def attach_adapter(self, spec: Any) -> None:
+        """Attach a removable low-rank adapter to the denoiser (adapter-only training).
+
+        Fails closed if an adapter is already attached or the spec's base compatibility
+        fingerprint does not match this model. Every non-adapter parameter is frozen, so
+        ``trainable_parameters()`` yields only the adapter tensors while the parent
+        weights stay untouched — ``disable_adapter()`` therefore restores the exact
+        parent map. The context tower is never adapted.
+        """
+        from slm_training.models.adapters.twotower_adapter import attach_low_rank_adapters
+
+        if getattr(self, "_adapter_spec", None) is not None:
+            raise ValueError("an adapter is already attached to this model")
+        expected = getattr(spec, "base_compatibility_fingerprint", "")
+        if expected and expected != self.compatibility_fingerprint():
+            raise ValueError(
+                "adapter base compatibility fingerprint does not match this model"
+            )
+        self._adapter_modules = attach_low_rank_adapters(
+            self.denoiser, spec, seed=int(self.config.seed)
+        )
+        for name, parameter in self.named_parameters():
+            parameter.requires_grad_("lora_" in name.lower())
+        self._adapter_spec = spec
+
+    def has_adapter(self) -> bool:
+        return getattr(self, "_adapter_spec", None) is not None
+
+    def enable_adapter(self) -> None:
+        for wrapper in getattr(self, "_adapter_modules", {}).values():
+            wrapper.enable_adapter()
+
+    def disable_adapter(self) -> None:
+        for wrapper in getattr(self, "_adapter_modules", {}).values():
+            wrapper.disable_adapter()
+
+    def adapter_parameters(self):
+        for wrapper in getattr(self, "_adapter_modules", {}).values():
+            yield from wrapper.adapter_parameters()
+
+    def active_adapter_identity(self) -> str:
+        """Content digest of the active adapter tensors, or "" when none are attached."""
+        from slm_training.lineage.records import content_sha
+
+        modules = getattr(self, "_adapter_modules", {})
+        if not modules:
+            return ""
+        return content_sha(
+            {
+                key: [
+                    parameter.detach().to(torch.float64).cpu().flatten().tolist()
+                    for parameter in wrapper.adapter_parameters()
+                ]
+                for key, wrapper in sorted(modules.items())
+            }
+        )
+
     def _count_context_tokens(self, text: str) -> int:
         """Context token count under the active backend (capped at max_prompt_len)."""
         if is_hf_context(self.context):
