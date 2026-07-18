@@ -23,6 +23,8 @@ Not scaffold gold (stripped from fixtures / ignored in eval):
 | Metric | Style? |
 |--------|--------|
 | `structural_similarity` | No — style args stripped first |
+| `meaningful_program_v1` | Historical populated-program heuristic; active gate |
+| `binding_aware_meaningful_v2` | Raw bindings, prompt contract, schema roles, anti-gaming; uncalibrated diagnostic |
 | `placeholder_fidelity` | Binding only |
 | `placeholder_fidelity_normalized` | Binding with namespace segment stripped (ablation) |
 | `reward_score` | Structure-only composite (`design_md=None`) |
@@ -31,6 +33,13 @@ Not scaffold gold (stripped from fixtures / ignored in eval):
 `--fail-under-design-lint` is ignored when `--ship-gates` is set so unused-color
 warnings cannot fail readiness. Quality filters only soft-penalize DESIGN.md
 **errors**, not warnings.
+
+Meaningful metrics are versioned and additive. Suite JSON exposes v1 and v2
+strict/coverage-conditioned rates plus coverage, while
+`meaningful_metric_primary=meaningful_program_v1` remains explicit. V2 never
+uses hidden `record.placeholders` to turn an unknown prompt contract into a
+positive and has no ship threshold pending labeled calibration. See
+[binding-aware-meaningful-v2.md](binding-aware-meaningful-v2.md).
 
 ## Slot contract conditioning (F2)
 

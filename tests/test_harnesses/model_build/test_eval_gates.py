@@ -226,6 +226,19 @@ def test_ship_gates_pass_when_density_met() -> None:
     assert not result["failures"]
 
 
+def test_custom_ship_thresholds_have_stable_distinct_provenance() -> None:
+    thresholds = {"smoke": {"meaningful_program_rate": 0.5}}
+    first = evaluate_ship_gates(_full_suite_metrics(), thresholds=thresholds)
+    second = evaluate_ship_gates(_full_suite_metrics(), thresholds=thresholds)
+    policy = first["meaningful_metric_policy"]
+    assert policy["threshold_version"] == second["meaningful_metric_policy"][
+        "threshold_version"
+    ]
+    assert policy["threshold_version"].startswith("custom:")
+    assert policy["meaningful_program_v1"]["thresholds"] == "request_thresholds"
+    assert policy["binding_aware_meaningful_v2"]["thresholds"] is None
+
+
 def test_evaluate_suites_scoreboard(tmp_path: Path) -> None:
     train_dir = tmp_path / "train"
     test_dir = tmp_path / "test"
@@ -269,6 +282,11 @@ def test_evaluate_suites_scoreboard(tmp_path: Path) -> None:
     assert "reward_score" in metrics
     assert metrics["n"] == 1
     assert metrics["parse_rate"] == 1.0
+    assert metrics["meaningful_program_v1_rate"] == metrics["meaningful_program_rate"]
+    assert metrics["meaningful_metric_primary"] == "meaningful_program_v1"
+    assert metrics["binding_aware_meaningful_v2_rate_strict"] == 0.0
+    assert metrics["binding_aware_meaningful_v2_coverage"] == 0.0
+    assert metrics["details"][0]["semantic_meaning_report_v2"]["coverage_known"] is False
 
     board = evaluate_suites(config, ["smoke"], model=model)
     assert "suites" in board

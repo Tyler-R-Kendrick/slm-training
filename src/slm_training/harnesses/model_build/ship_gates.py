@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -45,6 +46,45 @@ DEFAULT_SHIP_GATES: dict[str, dict[str, float]] = {
     },
 }
 
+# Provenance-only descriptor: which meaningful-program metric is the *gated*
+# primary (v1) and which is a reported, not-yet-gated candidate (v2). This never
+# adds, removes, or relaxes a ship threshold — DEFAULT_SHIP_GATES above is the
+# sole gate policy. binding_aware_meaningful_v2 stays ``thresholds: None``
+# (candidate_pending_calibration) so recording it can never green a gate.
+MEANINGFUL_METRIC_POLICY = {
+    "active_primary": "meaningful_program_v1",
+    "threshold_version": "openui_ship_gates_v1",
+    "meaningful_program_v1": {
+        "version": "1.0.0",
+        "wire_field": "meaningful_program_rate",
+        "thresholds": "DEFAULT_SHIP_GATES",
+    },
+    "binding_aware_meaningful_v2": {
+        "version": "2.0.0",
+        "thresholds": None,
+        "status": "candidate_pending_calibration",
+    },
+}
+
+
+def _meaningful_metric_policy(
+    policy: dict[str, dict[str, float]], *, custom: bool
+) -> dict[str, Any]:
+    policy_id = "openui_ship_gates_v1"
+    source = "DEFAULT_SHIP_GATES"
+    if custom:
+        encoded = json.dumps(policy, sort_keys=True, separators=(",", ":")).encode()
+        policy_id = f"custom:{hashlib.sha256(encoded).hexdigest()}"
+        source = "request_thresholds"
+    return {
+        **MEANINGFUL_METRIC_POLICY,
+        "threshold_version": policy_id,
+        "meaningful_program_v1": {
+            **MEANINGFUL_METRIC_POLICY["meaningful_program_v1"],
+            "thresholds": source,
+        },
+    }
+
 
 def evaluate_ship_gates(
     suites: dict[str, dict[str, Any]],
@@ -73,6 +113,19 @@ def evaluate_ship_gates(
             "n": metrics.get("n"),
             "parse_rate": metrics.get("parse_rate"),
             "meaningful_program_rate": metrics.get("meaningful_program_rate"),
+            "meaningful_program_v1_rate": metrics.get(
+                "meaningful_program_v1_rate",
+                metrics.get("meaningful_program_rate"),
+            ),
+            "binding_aware_meaningful_v2_rate_strict": metrics.get(
+                "binding_aware_meaningful_v2_rate_strict"
+            ),
+            "binding_aware_meaningful_v2_rate_coverage_conditioned": metrics.get(
+                "binding_aware_meaningful_v2_rate_coverage_conditioned"
+            ),
+            "binding_aware_meaningful_v2_coverage": metrics.get(
+                "binding_aware_meaningful_v2_coverage"
+            ),
             "syntax_parse_rate": metrics.get("syntax_parse_rate"),
             "placeholder_fidelity": metrics.get("placeholder_fidelity"),
             "placeholder_validity": metrics.get("placeholder_validity"),
@@ -107,6 +160,9 @@ def evaluate_ship_gates(
 
     return {
         "policy": policy,
+        "meaningful_metric_policy": _meaningful_metric_policy(
+            policy, custom=bool(thresholds)
+        ),
         "actual": actual,
         "gates": checks,
         "failures": failures,

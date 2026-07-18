@@ -96,6 +96,70 @@ def _prompt_component_mentions(prompt: str) -> frozenset[str]:
     return frozenset(found)
 
 
+def _prompt_component_requirements(prompt: str) -> tuple[str, ...]:
+    """Find positive component requirements, retaining explicit multiplicity.
+
+    Unlike :func:`_prompt_component_mentions` (which returns a de-duplicated set
+    for the data-quality judge), this drops negated/replaced mentions and keeps
+    explicit counts. It is consumed by the binding-aware meaningful-program eval.
+    """
+    normalized = re.sub(r"[^a-z0-9]+", " ", prompt.lower()).strip()
+    names = _official_component_names()
+    occupied: list[tuple[int, int]] = []
+    required: dict[str, int] = {}
+    phrases = []
+    for name in names:
+        # In ordinary prose, "buttons" means plural Button. Explicit requests such
+        # as "the Buttons component" are resolved separately by the exact matcher.
+        if name.endswith("s") and name[:-1] in names:
+            continue
+        phrase = re.sub(r"(?<!^)(?=[A-Z])", " ", name).lower()
+        phrases.append((name, phrase))
+    for name, phrase in sorted(phrases, key=lambda item: len(item[1]), reverse=True):
+        for match in re.finditer(rf"\b{re.escape(phrase)}s?\b", normalized):
+            span = match.span()
+            if any(span[0] < end and start < span[1] for start, end in occupied):
+                continue
+            occupied.append(span)
+            before = normalized[max(0, span[0] - 48) : span[0]]
+            after = normalized[span[1] : span[1] + 24]
+            if re.search(
+                r"(?:\bnot|\bno|\bwithout|\bexclude|\bomit|\bavoid|"
+                r"\bdo not (?:use|include|add)|\binstead of)\s+(?:a |an |the |any )?$",
+                before,
+            ) or re.match(r"\s+free\b", after):
+                continue
+            if re.search(
+                r"(?:\breplace|\bswap|\bchange)\s+(?:a |an |the )?$", before
+            ) and re.match(r"\s+(?:with|for|to)\b", after):
+                continue
+            count_match = re.search(
+                r"\b(one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s+$",
+                before,
+            )
+            count = 1
+            if count_match:
+                count = {
+                    "one": 1,
+                    "two": 2,
+                    "three": 3,
+                    "four": 4,
+                    "five": 5,
+                    "six": 6,
+                    "seven": 7,
+                    "eight": 8,
+                    "nine": 9,
+                    "ten": 10,
+                }.get(
+                    count_match.group(1),
+                    int(count_match.group(1))
+                    if count_match.group(1).isdigit()
+                    else 1,
+                )
+            required[name] = max(required.get(name, 0), count)
+    return tuple(name for name in sorted(required) for _ in range(required[name]))
+
+
 def _semantic_request(record: ExampleRecord) -> str:
     """Return the authored request, excluding embedded edit-program context."""
     if isinstance(record.meta.get("semantic_contract"), dict):
@@ -212,6 +276,54 @@ def _ast_component_names(value: Any) -> frozenset[str]:
 def _matches_schema_value(
     value: Any, spec: dict[str, Any], definitions: dict[str, Any]
 ) -> bool:
+    if not spec:
+        return True
+    if isinstance(value, dict) and isinstance(value.get("k"), str):
+        kind = value["k"]
+        if kind in {"Str", "Num", "Bool"}:
+            return _matches_schema_value(value.get("v"), spec, definitions)
+        if kind == "Arr":
+            elements = value.get("els")
+            return isinstance(elements, list) and _matches_schema_value(
+                elements, spec, definitions
+            )
+        if kind == "Obj":
+            entries = value.get("entries")
+            if not isinstance(entries, list) or not all(
+                isinstance(entry, list) and len(entry) == 2 for entry in entries
+            ):
+                return False
+            return _matches_schema_value(
+                {str(entry[0]): entry[1] for entry in entries}, spec, definitions
+            )
+        inferred: str | None = None
+        if kind == "Comp":
+            inferred = (
+                "number"
+                if value.get("name")
+                in {"Count", "Sum", "Avg", "Min", "Max", "Round", "Abs", "Ceil", "Floor"}
+                else None
+            )
+        elif kind == "BinOp" and value.get("op") == "+":
+            left = value.get("left")
+            inferred = "string" if isinstance(left, dict) and left.get("k") == "Str" else None
+        if "anyOf" in spec:
+            return any(
+                _matches_schema_value(value, branch, definitions)
+                for branch in spec["anyOf"]
+                if isinstance(branch, dict)
+            )
+        reference = spec.get("$ref")
+        if isinstance(reference, str):
+            return inferred == "object"
+        expected_type = spec.get("type")
+        if expected_type == "integer":
+            return inferred == "integer"
+        if expected_type == "number":
+            return inferred in {"integer", "number"}
+        # An unknown runtime result is not evidence that a static schema role
+        # was satisfied. Fail closed until lang-core exposes a result type.
+        return inferred is not None and inferred == expected_type
     enum = spec.get("enum")
     if isinstance(enum, list):
         return value in enum
@@ -270,6 +382,18 @@ def _schema_semantic_reasons(openui: str) -> list[str]:
     if root is None:
         return sorted(reasons) or ["judge_schema_parse_failed"]
 
+    state = program.state_declarations
+
+    def resolve(value: Any, seen: frozenset[str] = frozenset()) -> Any:
+        if (
+            isinstance(value, dict)
+            and value.get("k") == "StateRef"
+            and isinstance(value.get("n"), str)
+            and value["n"] not in seen
+        ):
+            return resolve(state.get(value["n"]), seen | {value["n"]})
+        return value
+
     def visit(value: Any) -> None:
         if isinstance(value, dict):
             component = value.get("typeName")
@@ -288,7 +412,7 @@ def _schema_semantic_reasons(openui: str) -> list[str]:
                         continue
                     spec = property_specs.get(name)
                     if isinstance(spec, dict) and not _matches_schema_value(
-                        prop_value, spec, definitions
+                        resolve(prop_value), spec, definitions
                     ):
                         reasons.add(f"schema_value_role_mismatch:{component}.{name}")
             for child in value.values():

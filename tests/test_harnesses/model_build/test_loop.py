@@ -98,6 +98,12 @@ def test_train_and_eval_stub(tmp_path: Path) -> None:
     summary = train(config)
     assert summary["steps"] == 2
     assert summary["eval_history"]
+    final_suite = summary["final_eval"]
+    assert final_suite["meaningful_program_v1_rate"] == final_suite[
+        "meaningful_program_rate"
+    ]
+    assert "binding_aware_meaningful_v2_rate_strict" in final_suite
+    assert "binding_aware_meaningful_v2_coverage" in final_suite
     assert summary["best_ship_score"] is not None
     assert (config.run_dir / "eval_history.jsonl").exists()
     assert (config.checkpoint_dir / "best_ship_score.pt").exists()
