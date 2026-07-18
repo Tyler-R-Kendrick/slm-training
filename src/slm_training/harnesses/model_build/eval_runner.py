@@ -820,7 +820,12 @@ def evaluate(
     else:
         fallback_count = None
 
+    from slm_training.evals.record_schema import RUN_CLASSES, SCHEMA_VERSION
+
+    run_class = config.run_class if config.run_class in RUN_CLASSES else "scratch_matrix"
     metrics = {
+        "schema_version": SCHEMA_VERSION,
+        "run_class": run_class,
         "suite": config.suite,
         "n": n,
         "document_n": document_n,
@@ -1083,7 +1088,13 @@ def evaluate_suites(
             publish_agentv=False,
         )
         board[suite] = {k: v for k, v in metrics.items() if k != "details"}
+    from slm_training.evals.record_schema import RUN_CLASSES, SCHEMA_VERSION
+
     scoreboard = {
+        "schema_version": SCHEMA_VERSION,
+        "run_class": (
+            config.run_class if config.run_class in RUN_CLASSES else "scratch_matrix"
+        ),
         "run_id": config.run_id,
         "checkpoint": (
             None

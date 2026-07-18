@@ -11,6 +11,9 @@ class ModelBuildConfig:
     train_dir: Path
     test_dir: Path | None = None
     suite: str = "smoke"
+    # Honesty label stamped into every eval payload (see evals.record_schema
+    # RUN_CLASSES): fixture_demo | scratch_matrix | ship_eval.
+    run_class: str = "scratch_matrix"
     run_root: Path = Path("outputs/runs")
     run_id: str = "latest"
     # None preserves legacy behavior; an explicit set limits checkpoint mutation.

@@ -10,10 +10,12 @@ from __future__ import annotations
 from pathlib import Path
 
 from slm_training.dsl.schema import ExampleRecord, write_jsonl
+from slm_training.evals.record_schema import RUN_CLASSES, SCHEMA_VERSION
 from slm_training.harnesses.model_build import ModelBuildConfig
 from slm_training.harnesses.model_build.eval_runner import evaluate
 from slm_training.harnesses.model_build.ship_gates import DEFAULT_SHIP_GATES
 from slm_training.lineage.promotion import HARD_METRICS
+from slm_training.web.observability import gate_metric_keys
 
 _GOLD = 'root = Stack([cta])\ncta = Button(":cta")'
 
@@ -27,6 +29,7 @@ def _consumed_keys() -> set[str]:
     keys = set(HARD_METRICS)
     for thresholds in DEFAULT_SHIP_GATES.values():
         keys.update(thresholds)
+    keys.update(gate_metric_keys())  # dashboard metric surfaces
     keys.add("fallback_count")  # certified_fallback gate input
     return keys
 
@@ -59,3 +62,6 @@ def test_every_consumed_metric_key_is_emitted(tmp_path: Path) -> None:
     metrics = evaluate(config, model=_EchoGoldModel(), publish_agentv=False)
     missing = sorted(key for key in _consumed_keys() if key not in metrics)
     assert not missing, f"consumers require metrics the evaluator never emits: {missing}"
+    # Every new payload is self-describing: canonical schema + honesty label.
+    assert metrics["schema_version"] == SCHEMA_VERSION
+    assert metrics["run_class"] in RUN_CLASSES
