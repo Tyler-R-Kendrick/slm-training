@@ -1842,3 +1842,37 @@ registered as ordinary E rows when they run.
 | Namespace | Scope | Status |
 | --- | --- | --- |
 | LDI0 | Evidence contract and bounded diagnostics — source inventory, separation-of-concerns invariants, E249–E284 falsification chain | inventory registered; no matrix rows claimed |
+
+## Verified-solver matrix (VSS4-02, R0–R6)
+
+The `verified-solver` matrix set adds matched rows and fail-closed hard gates for
+verified scope solving, driven by the same runner
+(`scripts/run_quality_matrix.py --matrix-set verified-solver`). It measures
+correctness authority separately from search efficiency and output quality: a row
+can be faster or more accurate on semantic metrics and still fail if it produces
+one false certified prune, removes one unknown candidate, or returns an
+unverified solved output. Full design, metric groups, and the row table live in
+[verified-scope-solver-benchmark.md](verified-scope-solver-benchmark.md); results
+are mirrored to
+[verified-scope-solver-matrix-results.json](verified-scope-solver-matrix-results.json).
+
+| Row | Method | Control | Single variable | Fixture |
+| --- | --- | --- | --- | --- |
+| R0 | Current matched control (solver off) | — | baseline | ran |
+| R1 | Exact deterministic solver | R0 | exact_closure=on | ran (closed benchmark) |
+| R2 | Exact solver + model ranking | R1 | ranker=model | blocked (checkpoint) |
+| R3 | Capsule-aware topology solver | R2 | capsule_topology=on | blocked (family C) |
+| R4 | Capsule solver + cost-to-go energy | R3 | ranker=energy | blocked (checkpoint) |
+| R5 | Deterministic late realization | R3 | late_realization=deterministic | blocked (family E) |
+| R6 | AR late realization | R5 | realizer=ar | blocked (checkpoint) |
+
+Hard gates (evaluated before quality gains, fail-closed):
+`false_unsupported_count`, `unknown_preservation_violations`,
+`certificate_replay_failures`, `solved_without_final_verifier`,
+`certified_unsat_with_incomplete_proof`, `candidate_set_parity_failures`,
+`surface.semantic_ir_mutation_violations`,
+`structured_or_observable_slots_routed_to_ar` — each must equal 0. Every existing
+ship gate in this document is retained unchanged; the verified-solver rows never
+weaken grammar/schema/dataflow/behavior/adversarial/OOD requirements. Fixture
+wiring landed 2026-07-18 (R0/R1 ran on CPU, hard gates PASS); every frontier row
+is fully specified but **not run until VSS4-03**. No model or ship claim.
