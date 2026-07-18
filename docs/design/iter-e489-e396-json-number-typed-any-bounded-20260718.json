@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E489",
+  "date": "2026-07-18",
+  "status": "complete",
+  "run_id": "e489-e396-json-number-typed-any-bounded-r1",
+  "checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0"
+  },
+  "data": {
+    "version": "e451_root_binder_v1"
+  },
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.6822333333333334,
+      "component_type_recall": 0.6666666666666666,
+      "reward_score": 0.973
+    },
+    "held_out": {
+      "n": 5,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.78384,
+      "component_type_recall": 0.9047619047619048,
+      "reward_score": 0.9868
+    },
+    "adversarial": {
+      "n": 4,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.80605,
+      "component_type_recall": 1.0,
+      "reward_score": 0.9767499999999999
+    },
+    "ood": {
+      "n": 4,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 1.0,
+      "placeholder_fidelity": 1.0,
+      "structural_similarity": 0.6342749999999999,
+      "component_type_recall": 0.875,
+      "reward_score": 0.9864999999999999
+    }
+  },
+  "comparison_to_e476": {
+    "prediction_differences": 0
+  },
+  "agentv": {
+    "passed": 4,
+    "total": 4,
+    "execution_errors": 0
+  },
+  "reliability": {
+    "failure_count": 0,
+    "fallback_count": 0,
+    "decode_timeout_count": 0
+  },
+  "timing": {
+    "external_interrupt_seconds": 170,
+    "external_kill_after_seconds": 10,
+    "maximum_total_seconds": 180,
+    "elapsed_seconds": 39.5,
+    "completed_normally": true
+  },
+  "verdict": "Accept bounded evidence; exact-policy five-suite assembly required."
+}
