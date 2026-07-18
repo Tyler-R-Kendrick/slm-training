@@ -2073,6 +2073,12 @@ checkpoint or claim ship. See
 
 ## Verifier-guided repair (mixed status)
 
+E320 schema-derived all-consumed-slot averaging exactly reproduces E319 on all
+five suites and choice counts (AgentV 3/5). Retain the semantic correction but
+record no quality gain; the role representation/data is limiting. See
+[results](iter-e320-all-consumed-slot-score-20260717.md) and
+[JSON](all-consumed-slot-score-results-iter-e320-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.
