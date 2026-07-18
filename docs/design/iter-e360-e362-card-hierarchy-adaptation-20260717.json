@@ -1,0 +1,144 @@
+{
+  "id": "E360-E362",
+  "date": "2026-07-17",
+  "status": "rejected",
+  "run_id": "e361-card-hierarchy-adapt-small-suites-r1",
+  "hard_run_cap_seconds": 300,
+  "ship_gates": {
+    "pass": false,
+    "failures": [
+      "rico_held complete evaluation missing"
+    ]
+  },
+  "agentv": {
+    "passed": 4,
+    "total": 4,
+    "execution_errors": 0,
+    "scope": "complete bounded suites only"
+  },
+  "train": {
+    "run_id": "e360-card-hierarchy-adapt-5k-local-r1",
+    "initialized_from": "outputs/runs/e337-hf-context-e333-recipe-30k-local-r1/checkpoints/best_weighted_nll.pt",
+    "train_version": "e357_card_hierarchy_v1",
+    "device": "cpu",
+    "context_backend": "hf",
+    "hf_model_revision": "93efa2f097d58c2a74874c7e644dbc9b0cee75a2",
+    "steps": 97,
+    "seen_target_tokens": 5039,
+    "elapsed_wall_seconds": 96.7273,
+    "max_wall_minutes": 4.5,
+    "stopped_on": "token_budget",
+    "weighted_nll": 5.809070931803047,
+    "checkpoint": "outputs/runs/e360-card-hierarchy-adapt-5k-local-r1/checkpoints/best_weighted_nll.pt",
+    "checkpoint_sha256": "f2ec84b0c7d7105b2c4e281ba660591e85e6f9ffe0b1e337758e02297b95e378",
+    "checkpoint_sync": "explicit_no_sync"
+  },
+  "bounded_eval": {
+    "run_id": "e361-card-hierarchy-adapt-small-suites-r1",
+    "elapsed_wall_seconds": 28.6569,
+    "agentv": {
+      "passed": 4,
+      "total": 4,
+      "execution_errors": 0
+    },
+    "suites": {
+      "smoke": {
+        "n": 3,
+        "meaningful_program_rate": 0.6666666666666666,
+        "placeholder_fidelity": 0.8333333333333334,
+        "structural_similarity": 0.6966666666666667,
+        "component_type_recall": 0.5,
+        "reward_score": 0.6406666666666666
+      },
+      "held_out": {
+        "n": 5,
+        "meaningful_program_rate": 0.4,
+        "placeholder_fidelity": 0.6866666666666668,
+        "structural_similarity": 0.50752,
+        "component_type_recall": 0.3,
+        "reward_score": 0.38439999999999996
+      },
+      "adversarial": {
+        "n": 4,
+        "meaningful_program_rate": 0.75,
+        "placeholder_fidelity": 0.7083333333333333,
+        "structural_similarity": 0.463125,
+        "component_type_recall": 0.5,
+        "reward_score": 0.65825
+      },
+      "ood": {
+        "n": 4,
+        "meaningful_program_rate": 0.75,
+        "placeholder_fidelity": 0.35,
+        "structural_similarity": 0.48140000000000005,
+        "component_type_recall": 0.5,
+        "reward_score": 0.60075
+      }
+    }
+  },
+  "suites": {
+    "smoke": {
+      "n": 3,
+      "meaningful_program_rate": 0.6666666666666666,
+      "placeholder_fidelity": 0.8333333333333334,
+      "structural_similarity": 0.6966666666666667,
+      "component_type_recall": 0.5,
+      "reward_score": 0.6406666666666666
+    },
+    "held_out": {
+      "n": 5,
+      "meaningful_program_rate": 0.4,
+      "placeholder_fidelity": 0.6866666666666668,
+      "structural_similarity": 0.50752,
+      "component_type_recall": 0.3,
+      "reward_score": 0.38439999999999996
+    },
+    "adversarial": {
+      "n": 4,
+      "meaningful_program_rate": 0.75,
+      "placeholder_fidelity": 0.7083333333333333,
+      "structural_similarity": 0.463125,
+      "component_type_recall": 0.5,
+      "reward_score": 0.65825
+    },
+    "ood": {
+      "n": 4,
+      "meaningful_program_rate": 0.75,
+      "placeholder_fidelity": 0.35,
+      "structural_similarity": 0.48140000000000005,
+      "component_type_recall": 0.5,
+      "reward_score": 0.60075
+    },
+    "rico_held": {
+      "n": 64,
+      "suite_total_n": 1500,
+      "diagnostic_subset": true,
+      "meaningful_program_rate": 0.984375,
+      "placeholder_fidelity": 0.2553019029581529,
+      "structural_similarity": 0.24350781250000011,
+      "component_type_recall": 0.5104166666666667,
+      "reward_score": 0.7248999999999993
+    }
+  },
+  "rico_diagnostic": {
+    "run_id": "e362-card-hierarchy-adapt-rico-shard0-r1",
+    "elapsed_wall_seconds": 63.116,
+    "n": 64,
+    "suite_total_n": 1500,
+    "diagnostic_subset": true,
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 0.984375,
+    "placeholder_fidelity": 0.2553019029581529,
+    "structural_similarity": 0.24350781250000011,
+    "component_type_recall": 0.5104166666666667,
+    "reward_score": 0.7248999999999993,
+    "predictions_changed_vs_e353": 0,
+    "card_recoveries_added": 0,
+    "agentv": {
+      "passed": 0,
+      "total": 1,
+      "execution_errors": 0
+    }
+  },
+  "verdict": "Reject E360: no RICO prediction changes and OOD fidelity/structure regress. No checkpoint promotion or sync."
+}

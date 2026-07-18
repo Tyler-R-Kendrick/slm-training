@@ -71,14 +71,11 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     )
 
     max_wall_minutes = getattr(config, "max_wall_minutes", None)
-    if max_wall_minutes is not None and not 0 < float(max_wall_minutes) <= 5:
+    max_wall_minutes = 5.0 if max_wall_minutes is None else float(max_wall_minutes)
+    if not 0 < max_wall_minutes <= 5:
         raise ValueError("max_wall_minutes must be positive and at most 5")
     wall_started = time.monotonic()
-    wall_deadline = (
-        wall_started + float(max_wall_minutes) * 60
-        if max_wall_minutes is not None
-        else None
-    )
+    wall_deadline = wall_started + max_wall_minutes * 60
 
     accel = detect_device(config.device)
     # Honor explicit device but adopt accel threading / amp defaults.
@@ -99,6 +96,13 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     records_by_id = {r.id: r for r in records}
 
     plugin = model or build_model(config, records)
+    init_path = getattr(config, "init_from", None)
+    if init_path:
+        if getattr(config, "resume_from", None):
+            raise ValueError("use only one of init_from and resume_from")
+        if not hasattr(plugin, "load"):
+            raise ValueError(f"{config.model_name} does not support init_from")
+        plugin.load(Path(init_path))
     if int(getattr(config, "retrieval_k", 0) or 0) > 0 and hasattr(
         plugin, "skeleton_bank"
     ):
@@ -705,6 +709,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         "max_wall_minutes": max_wall_minutes,
         "elapsed_wall_seconds": time.monotonic() - wall_started,
         "resumed_from": resumed_from,
+        "initialized_from": str(init_path) if init_path else None,
         "data_manifest_sha": manifest_sha,
         # Scratch-context and frozen-HF runs are different scientific tracks —
         # never pool their results on one scaling curve.

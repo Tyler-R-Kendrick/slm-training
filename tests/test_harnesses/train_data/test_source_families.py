@@ -17,6 +17,7 @@ from slm_training.harnesses.train_data.catalog import (
     resolve_lineage,
 )
 from slm_training.harnesses.train_data.synth import (
+    CardHierarchySynthesizer,
     ComponentPromptSynthesizer,
     SemanticSlotSynthesizer,
 )
@@ -147,6 +148,32 @@ def test_semantic_slot_synthesizer_skips_non_generation_tasks() -> None:
     )
 
     assert SemanticSlotSynthesizer().expand(record) == []
+
+
+def test_card_hierarchy_synthesizer_wraps_root_sections() -> None:
+    record = ExampleRecord(
+        id="settings",
+        prompt="Build account settings.",
+        openui=(
+            'root = Stack([profile, security], "column")\n'
+            'profile = TextContent(":settings.profile")\n'
+            'security = Button(":settings.security")'
+        ),
+        placeholders=[":settings.profile", ":settings.security"],
+        split="train",
+        source="fixture",
+        meta={"task": "generation"},
+    )
+
+    [variant] = CardHierarchySynthesizer().expand(record)
+
+    assert "2 primary sections in its own Card" in variant.prompt
+    assert 'root = Stack([card_aug_0, card_aug_1], "column")' in variant.openui
+    assert "card_aug_0 = Card([profile])" in variant.openui
+    assert "card_aug_1 = Card([security])" in variant.openui
+    assert variant.placeholders == record.placeholders
+    assert variant.meta["card_count"] == 2
+    assert classify_source_family(variant) == "layout_augment"
 
 
 def test_resolve_lineage_walks_to_root() -> None:

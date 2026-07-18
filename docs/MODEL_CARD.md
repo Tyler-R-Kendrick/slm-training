@@ -125,6 +125,7 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 | E337 frozen HF-context 30k rejection | `e337-hf-context-e333-recipe-30k-local-r1` | CPU frozen SmolLM2 continuation | `outputs/runs/e337-hf-context-e333-recipe-30k-local-r1/checkpoints/last.pt` (local) | Best NLL 5.7512; bounded four-suite AgentV 0/4 with zero fidelity/meaningful/recall/reward — **rejected, not ship** ([results](design/iter-e337-hf-context-30k-20260717.md)) |
 | E343 visible-slot HF adaptation rejection | `e343-hf-context-visible-slot-35k-local-r1` | CPU frozen SmolLM2 continuation | `outputs/runs/e343-hf-context-visible-slot-35k-local-r1/checkpoints/last.pt` (local) | NLL 6.0674; honest bounded AgentV 0/4 and E341 semantic signal erased — **rejected, not ship** ([results](design/iter-e343-hf-context-visible-slot-train-20260717.md)) |
 | E344 low-LR visible-slot rejection | `e344-hf-context-visible-slot-lr3e5-35k-r1` | CPU frozen SmolLM2 continuation | `outputs/runs/e344-hf-context-visible-slot-lr3e5-35k-r1/checkpoints/last.pt` (local) | Distinct weights but all 16 predictions equal E343; honest bounded AgentV 0/4 — **rejected, not ship** ([results](design/iter-e344-hf-context-visible-slot-low-lr-20260717.md)) |
+| E360 Card-hierarchy adaptation rejection | `e360-card-hierarchy-adapt-5k-local-r1` | CPU frozen SmolLM2 weight-only adaptation | `outputs/runs/e360-card-hierarchy-adapt-5k-local-r1/checkpoints/best_weighted_nll.pt` (local) | NLL 5.8091; bounded AgentV 4/4, but OOD fidelity/structure regress and 64 RICO predictions exactly match E353 — **rejected, not ship** ([results](design/iter-e360-e362-card-hierarchy-adaptation-20260717.md)) |
 | Production HF ship | — | — | `hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/` | **None registered yet** — fill this row after the first full HF sync |
 
 Update the table in place when a checkpoint is written or superseded. Keep
@@ -418,6 +419,11 @@ Leakage: structural fingerprints + train/test isolation
 | `held_out` (E344 low-LR visible-slot) | 5 | 1.0 | 0.1400 | 0.2884 | 0.0 | No — exactly E343 quality |
 | `adversarial` (E344 low-LR visible-slot) | 4 | 1.0 | 0.1458 | 0.1986 | 0.0 | No — exactly E343 quality |
 | `ood` (E344 low-LR visible-slot) | 4 | 1.0 | 0.2167 | 0.2366 | 0.0 | No — exactly E343 quality |
+| `smoke` (E360 Card adaptation) | 3 | 1.0 | 0.8333 | 0.6967 | 0.6407 | Yes for bounded suite; no global ship |
+| `held_out` (E360 Card adaptation) | 5 | 1.0 | 0.6867 | 0.5075 | 0.3844 | Yes for bounded suite; no global ship |
+| `adversarial` (E360 Card adaptation) | 4 | 1.0 | 0.7083 | 0.4631 | 0.6583 | Yes for bounded suite; no global ship |
+| `ood` (E360 Card adaptation) | 4 | 1.0 | 0.3500 | 0.4814 | 0.6008 | Yes for threshold; fidelity/structure regress vs E350 |
+| `rico_held` (E360 Card adaptation diagnostic) | 64 | 1.0 | 0.2553 | 0.2435 | 0.7249 | No — diagnostic subset 64/1500; identical to E353 |
 | `smoke` (`e177-semantic-judge-32step`, E180 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1542 | 0.607 | No — syntax 1.0, but meaningful component recall 0.25; not a ship evaluation |
 | `smoke` (`e181-semantic-balanced-32step`, E181 diagnostic subset) | 1 | 0.0 | 0.0 | 0.1542 | 0.607 | No — mixture-only control did not improve quality; not a ship evaluation |
 | `smoke` (`e184-compiler-aligned-32step`, E194 diagnostic subset) | 1 | 0.0 | 0.0 | 0.3600 | 0.0 | No — root/schema constraints improved, but output remained incomplete; not a ship evaluation |
@@ -767,6 +773,7 @@ suites because they contain no scope metadata. Evidence:
 | 2026-07-17 | `e337-hf-context-e333-recipe-30k-local-r1` (E337 bounded continuation) | `outputs/runs/e337-hf-context-e333-recipe-30k-local-r1/` (local) | 629 total CPU steps / 30,016 target tokens; 256.3s continuation; best NLL 5.7512; SHA `6f3c1fda0048dfe85ed254edf6adb0801b872d1ad8acfed16443309af959c9f6`; explicit no-sync | Bounded four-suite AgentV 0/4 and all semantic signals zero; rejected, no RICO/ship claim |
 | 2026-07-17 | `e343-hf-context-visible-slot-35k-local-r1` (E343 visible-slot adaptation) | `outputs/runs/e343-hf-context-visible-slot-35k-local-r1/` (local) | 737 total CPU steps / 35,044 target tokens; 120.1s adaptation; NLL 6.0674; SHA `8be4ce4ceeb0e84d3891c789f3ac687eb4d38ccb94c29acac68f5b59e4f8610d`; explicit no-sync | Honest bounded AgentV 0/4; smoke fidelity regresses and OOD semantic signal disappears; rejected |
 | 2026-07-17 | `e344-hf-context-visible-slot-lr3e5-35k-r1` (E344 low-LR adaptation) | `outputs/runs/e344-hf-context-visible-slot-lr3e5-35k-r1/` (local) | 737 total CPU steps / 35,044 target tokens; LR 3e-5; 115.7s adaptation; SHA `b2fe39324cb649f07b8d55208c9c7374116ed99aacff0c31f5f06a87e545b074`; explicit no-sync | All 16 predictions exactly reproduce E343; bounded AgentV 0/4; rejected |
+| 2026-07-17 | `e360-card-hierarchy-adapt-5k-local-r1` (E360 Card adaptation) | `outputs/runs/e360-card-hierarchy-adapt-5k-local-r1/` (local) | Weight-only initialization from E337 best NLL; 97 CPU steps / 5,039 target tokens; 96.7s; NLL 5.8091; best-checkpoint SHA `f2ec84b0c7d7105b2c4e281ba660591e85e6f9ffe0b1e337758e02297b95e378`; explicit no-sync | Bounded AgentV 4/4, but OOD fidelity/structure regress and RICO 64-row predictions exactly match E353; rejected |
 
 Append a row for every new or replaced checkpoint. Do not delete history.
 

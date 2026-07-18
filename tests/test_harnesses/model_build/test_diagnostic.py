@@ -192,3 +192,35 @@ def test_fixture_seeds_fit_e18_budget() -> None:
     assert report["sections"]["records"]["max"] <= 192 or report[
         "sections"
     ]["records"]["max"] <= 256
+
+
+def test_full_diagnostic_extends_default_stages_to_explicit_max(
+    tmp_path: Path,
+) -> None:
+    from slm_training.harnesses.model_build.diagnostic import run_full_diagnostic
+
+    train_dir = tmp_path / "train"
+    test_dir = tmp_path / "test"
+    train_dir.mkdir()
+    (test_dir / "suites" / "smoke").mkdir(parents=True)
+    record = ExampleRecord(
+        id="one",
+        prompt="copy",
+        openui='root = TextContent(":copy.text")',
+        placeholders=[":copy.text"],
+        split="train",
+    )
+    write_jsonl(train_dir / "records.jsonl", [record])
+    write_jsonl(
+        test_dir / "suites" / "smoke" / "records.jsonl",
+        [ExampleRecord.from_dict({**record.to_dict(), "split": "smoke"})],
+    )
+
+    report = run_full_diagnostic(
+        train_dir,
+        test_dir,
+        grammar_ltr_max_tokens=320,
+    )
+
+    assert report["length_budget"]["effective_budget"] == 320
+    assert report["length_budget"]["grammar_ltr_stages"][-1] == 320

@@ -2293,6 +2293,26 @@ first two shards: 128/1500 rows, meaningful 0.9453, structure 0.2719, recall
 [results](iter-e354-e355-rico-shard-and-merge-20260717.md) and
 [JSON](iter-e354-e355-rico-shard-and-merge-20260717.json).
 
+E356 covers RICO rows 128–192: meaningful/structure/recall are
+0.8594/0.2879/0.4688, with nine low-recall failures. Across the first 192 rows,
+the model recovers Card 0/179 times while E316 contains Card in only 80/795
+train records. E357's generalized Card-hierarchy synthesis yields 998 accepted
+rows and raises Card occurrences to 435 with zero reserved-test structures.
+E357/E358 expose a diagnostic bug that capped explicit 320-token checks at 256;
+E359 fixes it and passes AgentV 1/1 with all 1500 RICO targets within the
+effective 320-token budget. See
+[results](iter-e356-e359-card-hierarchy-data-20260717.md) and
+[JSON](iter-e356-e359-card-hierarchy-data-20260717.json).
+
+E360 performs an explicit weight-only initialization from E337's best-NLL
+checkpoint and adapts for 5,039 tokens on E357 in 96.7s. E361 retains AgentV
+4/4 on the bounded suites but regresses OOD fidelity/structure. E362's 64 RICO
+predictions are byte-for-byte identical to E353, adding zero Card recoveries;
+the diagnostic AgentV result is correctly 0/1. Reject E360 and do not promote
+or sync it. See
+[results](iter-e360-e362-card-hierarchy-adaptation-20260717.md) and
+[JSON](iter-e360-e362-card-hierarchy-adaptation-20260717.json).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

@@ -16,9 +16,8 @@ class ModelBuildConfig:
     # None preserves legacy behavior; an explicit set limits checkpoint mutation.
     runtime_override_fields: frozenset[str] | None = None
     steps: int = 200
-    # Optional cumulative training-harness deadline. Experiment runners cap this
-    # at five minutes; long production jobs may leave it unset.
-    max_wall_minutes: float | None = None
+    # Every training invocation is bounded; callers may request a shorter cap.
+    max_wall_minutes: float = 5.0
     batch_size: int = 4
     lr: float = 3e-4
     seed: int = 0
@@ -90,6 +89,9 @@ class ModelBuildConfig:
     target_token_budget: int | None = None
     # Resume bit-exact from a full-state checkpoint (last_full_state.pt).
     resume_from: Path | None = None
+    # Initialize model weights from a serving checkpoint, without optimizer,
+    # sampler, counters, or corpus identity.
+    init_from: Path | None = None
     # Write full training state (optimizer/RNG/sampler) alongside last.pt.
     full_state_checkpoint: bool = True
     # Comma-separated suites for mid-train scoreboard (overrides single eval_suite when set).

@@ -313,8 +313,11 @@ def run_full_diagnostic(
     test_dir: Path,
     *,
     grammar_ltr_max_tokens: int = DEFAULT_LTR_MAX_TOKENS,
-    grammar_ltr_stages: Sequence[int] = DEFAULT_LTR_STAGES,
+    grammar_ltr_stages: Sequence[int] | None = None,
 ) -> dict[str, Any]:
+    stages = tuple(grammar_ltr_stages or DEFAULT_LTR_STAGES)
+    if grammar_ltr_max_tokens > max(stages, default=0):
+        stages = (*stages, grammar_ltr_max_tokens)
     return {
         "vocab_coverage": vocab_coverage_report(train_dir, test_dir).to_dict(),
         "component_coverage": component_coverage_report(train_dir, test_dir),
@@ -323,6 +326,6 @@ def run_full_diagnostic(
             train_dir=train_dir,
             test_dir=test_dir,
             grammar_ltr_max_tokens=grammar_ltr_max_tokens,
-            grammar_ltr_stages=grammar_ltr_stages,
+            grammar_ltr_stages=stages,
         ),
     }

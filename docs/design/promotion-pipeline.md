@@ -46,6 +46,12 @@ only when:
 Scratch-context and frozen-HF-context runs are separate tracks with separate
 baselines and curves (`summary["track"]`); never pool them on one fit.
 
+Training is fail-closed at a five-minute wall-time maximum. Use
+`--resume-from` only for bit-exact continuation on the same corpus manifest;
+use `--init-from` for explicit weight-only initialization on a changed corpus.
+The latter starts fresh optimizer, sampler, RNG, step, and token state and is
+recorded separately as `initialized_from` in `train_summary.json`.
+
 **P13 verification (2026-07-14): NO-GO.** Deterministic corpus checks pass, but
 equal-recipe E53 fixture and integrated checkpoints tie on placeholder fidelity
 for both held-out (0.2, n=5) and RICO (0.5278, n=4); parse and structure are 0.0

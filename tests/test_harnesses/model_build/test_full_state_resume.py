@@ -82,6 +82,7 @@ def test_token_accounting_and_track_block(train_dir: Path, tmp_path: Path) -> No
     assert summary["seen_target_tokens"] > 0
     assert summary["seen_prompt_tokens"] > 0
     assert summary["stopped_on"] == "steps"
+    assert summary["max_wall_minutes"] == 5.0
     track = summary["track"]
     assert track["context_backend"] == "scratch"
     assert track["trainable_params"] > 0
@@ -170,6 +171,53 @@ def test_resume_rejects_different_corpus(train_dir: Path, tmp_path: Path) -> Non
     )
     with pytest.raises(ValueError, match="resume_from data mismatch"):
         train(_cfg(other_dir, tmp_path, "bad_resume", 4, resume_from=full_state))
+
+
+def test_init_from_starts_new_run_on_different_corpus(
+    train_dir: Path, tmp_path: Path
+) -> None:
+    source = train(_cfg(train_dir, tmp_path, "source", 2))
+    source_checkpoint = Path(source["checkpoint"])
+    other_dir = tmp_path / "other_train"
+    other_dir.mkdir()
+    write_jsonl(
+        other_dir / "records.jsonl",
+        [
+            ExampleRecord(
+                id="different-a",
+                prompt="Hero",
+                openui=HERO,
+                split="train",
+                placeholders=[":hero.title", ":hero.body"],
+            ),
+            ExampleRecord(
+                id="different-b",
+                prompt="CTA",
+                openui=CTA,
+                split="train",
+                placeholders=[":cta.label"],
+            ),
+            ExampleRecord(
+                id="different-c",
+                prompt="Hero two",
+                openui=HERO,
+                split="train",
+                placeholders=[":hero.title", ":hero.body"],
+            ),
+        ],
+    )
+
+    initialized = train(
+        _cfg(other_dir, tmp_path, "initialized", 0, init_from=source_checkpoint)
+    )
+
+    assert initialized["initialized_from"] == str(source_checkpoint)
+    assert initialized["resumed_from"] is None
+    assert initialized["steps"] == 0
+    source_model = TwoTowerModel.from_checkpoint(source_checkpoint)
+    initialized_model = TwoTowerModel.from_checkpoint(initialized["checkpoint"])
+    for key, value in source_model.state_dict().items():
+        assert torch.equal(value, initialized_model.state_dict()[key]), key
 
 
 def test_loss_eval_wiring(train_dir: Path, tmp_path: Path) -> None:

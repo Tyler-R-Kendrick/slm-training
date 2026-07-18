@@ -84,10 +84,22 @@ def main(argv: list[str] | None = None) -> int:
         help="Stop training once seen target tokens reach this budget.",
     )
     parser.add_argument(
+        "--max-wall-minutes",
+        type=float,
+        default=5.0,
+        help="Stop cleanly at this wall-time budget (default 5; must be <=5).",
+    )
+    parser.add_argument(
         "--resume-from",
         type=Path,
         default=None,
         help="Resume from a last_full_state.pt checkpoint (bit-exact).",
+    )
+    parser.add_argument(
+        "--init-from",
+        type=Path,
+        default=None,
+        help="Initialize model weights from a serving checkpoint for a new run.",
     )
     parser.add_argument(
         "--no-full-state-checkpoint",
@@ -716,6 +728,8 @@ def main(argv: list[str] | None = None) -> int:
         )
     if args.sync_checkpoints and args.no_sync_checkpoints:
         parser.error("use only one of --sync-checkpoints / --no-sync-checkpoints")
+    if args.resume_from and args.init_from:
+        parser.error("use only one of --resume-from / --init-from")
     if args.fast_train and args.no_fast_train:
         parser.error("use only one of --fast-train / --no-fast-train")
 
@@ -911,7 +925,9 @@ def main(argv: list[str] | None = None) -> int:
             loss_suite_version=args.loss_suite_version,
             loss_mask_seed=args.loss_mask_seed,
             target_token_budget=args.target_token_budget,
+            max_wall_minutes=args.max_wall_minutes,
             resume_from=args.resume_from,
+            init_from=args.init_from,
             full_state_checkpoint=not bool(args.no_full_state_checkpoint),
             mixture_manifest=args.mixture_manifest,
             mixture_min_quality_score=args.mixture_min_quality_score,

@@ -1,0 +1,95 @@
+{
+  "id": "E356-E359",
+  "date": "2026-07-17",
+  "status": "data_accepted_for_matched_training",
+  "run_id": "e359-card-hierarchy-data-canvas320-fixed-r1",
+  "hard_run_cap_seconds": 300,
+  "root_cause": {
+    "rico_rows_audited": 192,
+    "gold_card_records": 179,
+    "card_records_recovered": 0,
+    "e316_train_records": 795,
+    "e316_train_card_records": 80
+  },
+  "build": {
+    "version": "e357_card_hierarchy_v1",
+    "source_version": "e316_semantic_slots_v1",
+    "seed_records": 795,
+    "collected_records": 1181,
+    "kept_records": 998,
+    "card_hierarchy_variants": 203,
+    "verifier_rejected": 183,
+    "errors": 0,
+    "reserved_test_structures": 0,
+    "card_occurrences": 435,
+    "content_fingerprint": "a4f212a3444d0f219fe1b3604f70929fe1a1b91d4fdc11a73167cb74c55b6a51"
+  },
+  "agentv": {
+    "passed": 1,
+    "total": 1,
+    "execution_errors": 0,
+    "claim": "data diagnostic, not model ship"
+  },
+  "suites": {
+    "rico_held": {
+      "n": 64,
+      "suite_total_n": 1500,
+      "eval_offset": 128,
+      "eval_end": 192,
+      "diagnostic_subset": true,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.859375,
+      "placeholder_fidelity": 0.2931649080086579,
+      "structural_similarity": 0.2878937500000002,
+      "component_type_recall": 0.46875000000000006,
+      "reward_score": 0.6415499999999994
+    }
+  },
+  "length_diagnostic": {
+    "requested_max_tokens": 320,
+    "effective_max_tokens": 320,
+    "stages": [
+      64,
+      128,
+      192,
+      256,
+      320
+    ],
+    "train_p95": 96,
+    "train_max": 112,
+    "rico_p95": 280,
+    "rico_max": 280,
+    "rico_over_budget": 0,
+    "component_occurrence_coverage": 1.0,
+    "component_type_coverage": 1.0
+  },
+  "runs": [
+    {
+      "id": "E356",
+      "kind": "model_eval_shard",
+      "elapsed_wall_seconds": 68.4,
+      "agentv": "0/1"
+    },
+    {
+      "id": "E357",
+      "kind": "data_build_and_diagnostic",
+      "elapsed_wall_seconds": 7.994,
+      "agentv": "0/1",
+      "failure": "rico_held p95 280 exceeds effective budget 256"
+    },
+    {
+      "id": "E358",
+      "kind": "diagnostic_reproduction",
+      "elapsed_wall_seconds": 5.1175,
+      "agentv": "0/1",
+      "failure": "explicit max 320 was capped by default stages at 256"
+    },
+    {
+      "id": "E359",
+      "kind": "fixed_data_diagnostic",
+      "elapsed_wall_seconds": 5.088,
+      "agentv": "1/1"
+    }
+  ],
+  "verdict": "Accept E357 for matched bounded training. Data diagnostics pass at the truthful 320-token full-RICO canvas; this is not model ship evidence."
+}

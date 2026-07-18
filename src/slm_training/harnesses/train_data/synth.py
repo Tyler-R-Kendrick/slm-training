@@ -320,6 +320,50 @@ class LayoutAugmentSynthesizer:
         )
 
 
+class CardHierarchySynthesizer:
+    """Wrap each root Stack section in a Card, with matching prompt evidence."""
+
+    def expand(self, record: ExampleRecord) -> list[ExampleRecord]:
+        match = _ROOT_STACK_RE.search(record.openui)
+        if not match or "Card(" in record.openui:
+            return []
+        children = [child.strip() for child in match.group("children").split(",")]
+        if (
+            not 1 <= len(children) <= 6
+            or not all(re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", child) for child in children)
+            or any(f"card_aug_{index}" in record.openui for index in range(len(children)))
+        ):
+            return []
+        cards = [f"card_aug_{index}" for index in range(len(children))]
+        rest = match.group("rest") or ', "column", "m"'
+        root = f"root = Stack([{', '.join(cards)}]{rest})"
+        openui = _ROOT_STACK_RE.sub(root, record.openui, count=1).rstrip()
+        openui += "\n" + "\n".join(
+            f"{card} = Card([{child}])" for card, child in zip(cards, children)
+        )
+        return [
+            ExampleRecord(
+                id=f"{record.id}_card_sections",
+                prompt=(
+                    f"{record.prompt} Present each of the {len(cards)} primary "
+                    f"section{'s' if len(cards) != 1 else ''} in its own Card."
+                ),
+                openui=openui,
+                placeholders=list(record.placeholders),
+                split=record.split,
+                source=f"{record.source}+card_hierarchy",
+                meta={
+                    **record.meta,
+                    "synth": "layout_augment",
+                    "aug": "card_hierarchy",
+                    "parent_id": record.id,
+                    "card_count": len(cards),
+                },
+                design_md=record.design_md,
+            )
+        ]
+
+
 class NamespaceAugmentSynthesizer:
     """Re-prefix placeholders with a deterministic namespace (:acme.hero.title)."""
 
@@ -489,6 +533,8 @@ def get_synthesizer(name: str) -> PromptSynthesizer:
         return SemanticSlotSynthesizer()
     if name in {"layout", "layout_augment", "aug"}:
         return LayoutAugmentSynthesizer()
+    if name in {"card", "card_hierarchy", "card_sections"}:
+        return CardHierarchySynthesizer()
     if name in {"namespace", "namespace_augment", "ns"}:
         return NamespaceAugmentSynthesizer()
     if name in {"quality", "full", "default"}:

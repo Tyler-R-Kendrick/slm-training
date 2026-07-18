@@ -82,6 +82,7 @@ def main(argv: list[str] | None = None) -> int:
             "component",
             "semantic_slots",
             "layout",
+            "card_hierarchy",
             "frontier",
             "none",
             "noop",
@@ -90,7 +91,8 @@ def main(argv: list[str] | None = None) -> int:
         help=(
             "Deterministic synthesizer (default: quality = layout aug + templates; "
             "component = target inventory + content-concept prompt; "
-            "semantic_slots = schema-role slot-name variants)."
+            "semantic_slots = schema-role slot-name variants; "
+            "card_hierarchy = root sections wrapped in prompt-declared Cards)."
         ),
     )
     parser.add_argument(
