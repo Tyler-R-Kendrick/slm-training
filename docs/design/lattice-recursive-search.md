@@ -51,6 +51,16 @@ This preserves the compiler as verifier. A learned conflict or quality score may
 prioritize exploration, but cannot create a legal branch, discard all legal
 branches, or bypass final OpenUI validation.
 
+> **Legality is not support (VSS0).** `CompletionForest` legality is
+> *prefix-global extendability* — a candidate is a compiler-admissible next action
+> with at least one grammar/schema/binder-legal continuation. That is strictly
+> weaker than **verifier-backed SUPPORT**, which is participation in at least one
+> bounded, verifier-accepted completion. The hard state, ranking, and rollback
+> here operate on the legal forest and never assert support or emit `UNSUPPORTED`;
+> the tri-state support verdict and its replayable certificate are owned by
+> [verified-scope-solver.md](verified-scope-solver.md) (VSS0-04,
+> `dsl/solver/support.py`), the only component permitted to prove absence.
+
 ## Campaign design (V9)
 
 The registered runnable rows are hypotheses, not results. The matched controls separate the

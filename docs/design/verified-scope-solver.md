@@ -195,6 +195,65 @@ replayable certificate, and (3) never assert `UNSUPPORTED` without a
 complete-coverage attestation. Backends are pluggable behind this protocol only;
 none beyond bounded enumeration is required or assumed installed.
 
+## Implemented tri-state support oracle (VSS0-04 / SLM-60)
+
+[`dsl/solver/support.py`](../../src/slm_training/dsl/solver/support.py) now
+implements the Torch-free reference oracle that answers the support question and
+its replayable certificate. It is the **first** component permitted to emit
+`UNSUPPORTED`. It is reference-correct bounded enumeration behind injectable seams
+and is **not** invoked by decode/generation.
+
+| Type / operation | Implemented contract |
+| --- | --- |
+| `EnumerativeSupportOracle` | Deterministic bounded enumeration behind three injected seams (an `expander`, a `decoder`, and a `verifier`). Iterative queue/stack — no Python recursion; states deduplicated by `FiniteDomainState.fingerprint`. |
+| `Expansion` / `ExpansionEdge` | One node's bounded projection: ordered child edges plus an optional terminal leaf, carrying a `coverage` in `complete`/`partial`/`none`. |
+| `SupportQuery` | `state_fingerprint` plus `HoleId` plus candidate `DomainValue`; frozen, JSON round-trip. |
+| `SearchCounters` | `nodes_expanded`, `tokens`, `depth`, `backtracks`, `verifier_calls`, and an injected deterministic `steps` counter. **No wall-clock time is recorded** — the "time" budget is the injected `steps` counter, never `time.time()`. |
+| `SupportCertificate` | Replay-safe evidence only (see below); frozen, deterministic `to_dict`/`from_dict`, JSON round-trip. |
+| `SupportResult` | Verdict, certificate, counters, and an optional in-memory `witness`; the witness text is returned for downstream use but **never** persisted in the certificate. |
+| `replay_support_certificate` | Pure checker returning a structured `ReplayResult(ok, violations)` — never a bare bool. |
+| backend registry | `register_support_backend` / `get_support_backend` / `support_backends`; ships **only** `enumerative`. No SMT, no new dependency. |
+
+**Reference search order.** Children are explored in a logit-independent,
+explicitly versioned simplicity order named **`token-id-ascending.v1`**
+(`REFERENCE_SEARCH_ORDER`): ascending choice `token_ids`, then value tag, then
+canonical payload. The queried candidate is applied first (`with_decision`); the
+first verifier-accepted witness in this order short-circuits to `SUPPORTED`, valid
+even when unexplored branches would be partial.
+
+**Certificate schema.** `SUPPORT_CERTIFICATE_SCHEMA_VERSION = 1`. A certificate
+records the query, verdict, problem/pack/constraint/bounds identity, the search
+order, the ordered deduplicated `explored_state_fingerprints`, the distinct
+`coverage_observations`, the `verifier_profile`, structured `failure_counts`, the
+`exhausted` flag, and any `stop_reason`. For `SUPPORTED` it stores a witness
+**digest** (SHA-256) plus a `witness_source` label. It embeds **no** model logits,
+**no** timestamps, **no** secrets, and **no** raw user-region contents.
+
+**Fixture verifier profile.** The focused regression suite drives the oracle with a
+tiny injected verifier whose profile label is **`fixture-oracle`** (required
+capability `oracle`). A real deployment records the pack's honest `reward_label`
+(for OpenUI, `well_formed_not_behavioral`). A path whose required capability is
+unavailable yields `UNKNOWN`, never `UNSUPPORTED`.
+
+Verdicts, as implemented, follow the reference table above exactly: `SUPPORTED`
+short-circuits on the first verifier-accepted terminal; `UNSUPPORTED` is emitted
+only after the reachable space is fully exhausted inside declared bounds with
+**every** observed coverage `complete` and no undecodable or capability-blocked
+terminal (`exhausted=True`, `stop_reason=None`); every remaining case — partial or
+absent coverage, a missing capability, an undecodable terminal, or any budget
+reached (`max_nodes` / `max_tokens` / `max_depth` / `max_backtracks` /
+`max_verifier_calls` / injected `steps`) — is `UNKNOWN` with a `stop_reason` and is
+**never** promoted to `UNSUPPORTED`.
+
+**Replay.** `replay_support_certificate(certificate, state, *, expander, decoder,
+verifier)` verifies state/query/fingerprint/pack/version/bounds identity, reruns
+the deterministic search, then re-validates a `SUPPORTED` witness through the same
+verifier (rejecting a tampered digest); **rejects** an `UNSUPPORTED` claim when
+`exhausted` is false, any coverage observation is not `complete`, or any budget
+stop occurred; and accepts `UNKNOWN` as honest but never as pruning authority. The
+`state` argument is required because the certificate stores only the state's
+fingerprint, never its contents.
+
 ## Certificate replay and the deduction-vs-decision transition
 
 Reference closure pseudocode. **Every destructive transition (the only lines that
@@ -268,7 +327,8 @@ the closure.
 | `ChoiceTokenizer` / `ChoiceDecodeState` (`models/choice_tokenizer.py:172`/`:608`) | Grammar-closed choice IR; length-aware legality (`allowed_ids`, `exhaustive_allowed_ids`, `minimal_completion_length`). | **Retained.** The choice IR is the late-realization and verification surface. Not duplicated. |
 | `HoleId`, `SolverBounds`, `DomainValue`, `HoleDomain`, `FiniteDomainState` (`dsl/solver/state.py`) | Immutable JSON-safe finite-domain carrier with canonical hard-state identity and monotone operations. | **Implemented by VSS0-03.** Torch-free and not invoked by default; soft scores and proof artifacts remain outside the state. |
 | `completion_forest_state` (`dsl/solver/adapters.py`) | One-hole projection of full compiler completion paths plus coverage and `UNKNOWN` provenance. | **Implemented by VSS0-03.** Retains the compiler as owner; a singleton solves only the projection. |
-| `verification capsule`, `proof certificate` | Not implemented yet. | **Future VSS issues.** Capsule solving and replayable proof ownership are not duplicated here. |
+| `proof certificate` (`dsl/solver/support.py`) | Support verdict plus replay-safe evidence (digest, coverage, exhaustion, bounds/version identity). | **Implemented by VSS0-04.** `SupportCertificate` + `replay_support_certificate`; the enumerative oracle is the sole issuer and is not wired into decode. |
+| `verification capsule` | Not implemented yet. | **Future VSS issues.** Capsule (SCC) solving is not duplicated here. |
 
 ## End-to-end example (partial coverage → live `UNKNOWN`)
 
@@ -349,3 +409,22 @@ does not implement recursive support search, a proof checker, capsule solving,
 decode integration, or model scoring. No train, eval, benchmark, checkpoint, or
 experiment ran; this is infrastructure only and makes **no correctness, readiness,
 or ship claim**.
+
+2026-07-17 — VSS0-04 / SLM-60 implements the Torch-free tri-state support oracle
+(`EnumerativeSupportOracle`), the replayable `SupportCertificate` (schema version
+1), the `token-id-ascending.v1` reference search order, the deterministic
+`replay_support_certificate` checker, the optional backend registry (enumerative
+only), and focused regression coverage of all three verdicts, every finite budget
+class (nodes/tokens/depth/backtracks/verifier-calls/step), duplicate-state
+suppression, deterministic explored-state/certificate ordering, verifier-failure
+accounting, and the replay rejections (stale constraint version, tampered witness
+digest, non-exhausted `UNSUPPORTED`). This is a **reference-correctness
+implementation only**: it makes **no ship-speed claim**, the oracle is **not wired
+into decode/generation**, and no train, eval, benchmark, checkpoint, or experiment
+ran. The honesty invariants hold — `UNKNOWN` is never promoted to `UNSUPPORTED`,
+`UNSUPPORTED` requires exhaustion with complete coverage, and certificates embed no
+logits, timestamps, or raw user text. `python -m scripts.repo_policy` passes; the
+solver package stays Torch-free (`import slm_training.dsl.solver.support` imports
+no torch); `ruff` and the focused solver/compiler suites are green. Later VSS
+issues add capsule (SCC) solving and decode integration behind a feature flag
+before any decode-behavior change.
