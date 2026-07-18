@@ -6,6 +6,9 @@ future DSLs can drive the same training + decode stack.
 
 from __future__ import annotations
 
+import logging
+from typing import Callable
+
 from slm_training.dsl.stream_types import StreamStatus
 from slm_training.dsl.grammar.backends.types import (
     GRAMMARS_DIR,
@@ -14,8 +17,12 @@ from slm_training.dsl.grammar.backends.types import (
     REPO_ROOT,
 )
 
+_LOGGER = logging.getLogger(__name__)
+
 _REGISTRY: dict[str, GrammarBackend] = {}
 _DEFAULT_ID = "openui"
+# True only once the default id resolves; a partial load retries on next call.
+_BUILTINS_LOADED = False
 
 
 def register_backend(backend: GrammarBackend) -> GrammarBackend:
@@ -38,6 +45,12 @@ def get_backend(dsl: str | None = None) -> GrammarBackend:
     if key in {"default", "auto"}:
         key = _DEFAULT_ID
     if key not in _REGISTRY:
+        # The default OpenUI id must keep resolving even if a stale or
+        # partially-populated registry only carries a concrete implementation.
+        if key == "openui":
+            for fallback in ("openui-langcore", "openui-lark"):
+                if fallback in _REGISTRY:
+                    return _REGISTRY[fallback]
         raise KeyError(
             f"unknown grammar backend {dsl!r}; known={sorted(_REGISTRY)}"
         )
@@ -51,34 +64,100 @@ def set_default_backend(dsl: str) -> GrammarBackend:
     return backend
 
 
-def _ensure_builtins() -> None:
-    if _REGISTRY:
+def _try_register(name: str, loader: Callable[[], GrammarBackend]) -> None:
+    if name in _REGISTRY:
         return
-    from slm_training.dsl.grammar.backends.arith_sketch import ArithSketchBackend
-    from slm_training.dsl.grammar.backends.graphql_js import GraphQLJsBackend
-    from slm_training.dsl.grammar.backends.lark_backend import LarkFileBackend
-    from slm_training.dsl.grammar.backends.openui_hybrid import OpenUIHybridBackend
+    try:
+        register_backend(loader())
+    except Exception:  # noqa: BLE001 — one broken backend must not poison the rest
+        _LOGGER.warning("grammar backend %r failed to register", name, exc_info=True)
+
+
+def _load_langcore() -> GrammarBackend:
     from slm_training.dsl.grammar.backends.openui_langcore import OpenUILangCoreBackend
+
+    return OpenUILangCoreBackend()
+
+
+def _load_lark() -> GrammarBackend:
     from slm_training.dsl.grammar.backends.openui_lark import OpenUILarkBackend
+
+    return OpenUILarkBackend()
+
+
+def _load_hybrid() -> GrammarBackend:
+    from slm_training.dsl.grammar.backends.openui_hybrid import OpenUIHybridBackend
+
+    return OpenUIHybridBackend()
+
+
+def _load_toy_layout() -> GrammarBackend:
     from slm_training.dsl.grammar.backends.toy_layout import ToyLayoutBackend
 
-    register_backend(OpenUILangCoreBackend())
-    register_backend(OpenUILarkBackend())
-    register_backend(OpenUIHybridBackend())
-    register_backend(ToyLayoutBackend())
-    register_backend(ArithSketchBackend())
-    register_backend(GraphQLJsBackend())
+    return ToyLayoutBackend()
+
+
+def _load_arith_sketch() -> GrammarBackend:
+    from slm_training.dsl.grammar.backends.arith_sketch import ArithSketchBackend
+
+    return ArithSketchBackend()
+
+
+def _load_graphql() -> GrammarBackend:
+    from slm_training.dsl.grammar.backends.graphql_js import GraphQLJsBackend
+
+    return GraphQLJsBackend()
+
+
+def _load_lark_alias() -> GrammarBackend:
+    from slm_training.dsl.grammar.backends.lark_backend import LarkFileBackend
+
     # Alias: generic Lark loader stays available for ad-hoc grammars.
-    register_backend(
-        LarkFileBackend(
-            dsl_id="lark-openui",
-            grammar_path=GRAMMARS_DIR / "openui.lark",
-            description="Alias of openui-lark via generic LarkFileBackend",
-            prop_order_path=GRAMMARS_DIR / "openui_prop_order.json",
-        )
+    return LarkFileBackend(
+        dsl_id="lark-openui",
+        grammar_path=GRAMMARS_DIR / "openui.lark",
+        description="Alias of openui-lark via generic LarkFileBackend",
+        prop_order_path=GRAMMARS_DIR / "openui_prop_order.json",
     )
-    global _DEFAULT_ID
-    _DEFAULT_ID = "openui"
+
+
+_BUILTIN_LOADERS: tuple[tuple[str, Callable[[], GrammarBackend]], ...] = (
+    ("openui-langcore", _load_langcore),
+    ("openui-lark", _load_lark),
+    ("openui", _load_hybrid),
+    ("toy-layout", _load_toy_layout),
+    ("arith-sketch", _load_arith_sketch),
+    ("graphql", _load_graphql),
+    ("lark-openui", _load_lark_alias),
+)
+
+
+def _ensure_builtins() -> None:
+    """Idempotently register builtins; never leave a poisoned partial registry.
+
+    Every builtin registers independently, so one failing constructor cannot
+    abort the rest (a mid-loop exception once stranded the registry with only
+    ``openui-langcore`` + ``openui-lark`` and the default ``openui`` id
+    permanently unresolvable). The loaded flag is only set once the default id
+    resolves, so a transient failure is retried on the next call instead of
+    being cached forever.
+    """
+    global _BUILTINS_LOADED, _DEFAULT_ID
+    if _BUILTINS_LOADED:
+        return
+    for name, loader in _BUILTIN_LOADERS:
+        _try_register(name, loader)
+    if "openui" not in _REGISTRY:
+        for fallback in ("openui-langcore", "openui-lark"):
+            if fallback in _REGISTRY:
+                _REGISTRY["openui"] = _REGISTRY[fallback]
+                _LOGGER.warning(
+                    "grammar backend 'openui' unavailable; aliased to %r", fallback
+                )
+                break
+    if "openui" in _REGISTRY:
+        _BUILTINS_LOADED = True
+        _DEFAULT_ID = "openui"
 
 
 __all__ = [

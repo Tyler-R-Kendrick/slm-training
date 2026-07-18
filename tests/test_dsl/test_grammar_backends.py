@@ -137,3 +137,66 @@ def test_grammar_module_uses_backend(monkeypatch: pytest.MonkeyPatch) -> None:
     status2 = grammar_mod.stream_check(TOY_SRC)
     assert status2.ok and status2.has_root
     grammar_mod.set_active_dsl("openui")
+
+
+@pytest.fixture()
+def isolated_registry(monkeypatch: pytest.MonkeyPatch):
+    """Give a test its own registry state and restore the real one afterwards."""
+    import slm_training.dsl.grammar.backends as backends_mod
+
+    monkeypatch.setattr(backends_mod, "_REGISTRY", {})
+    monkeypatch.setattr(backends_mod, "_BUILTINS_LOADED", False)
+    monkeypatch.setattr(backends_mod, "_DEFAULT_ID", "openui")
+    return backends_mod
+
+
+def test_partial_registry_self_heals(isolated_registry) -> None:
+    """A registry stranded with only concrete OpenUI ids must still resolve 'openui'.
+
+    Regression: a mid-registration failure once left exactly
+    ['openui-langcore', 'openui-lark'] registered, and every later
+    get_backend('openui') died with "unknown grammar backend 'openui'".
+    """
+    backends_mod = isolated_registry
+    backends_mod._REGISTRY["openui-langcore"] = backends_mod._load_langcore()
+    backends_mod._REGISTRY["openui-lark"] = backends_mod._load_lark()
+    backend = backends_mod.get_backend("openui")
+    assert backend.info.id in {"openui", "openui-langcore", "openui-lark"}
+    assert "openui" in backends_mod.available_backends()
+
+
+def test_hybrid_failure_does_not_poison_registry(isolated_registry, monkeypatch) -> None:
+    """If the hybrid backend cannot construct, 'openui' aliases a concrete one."""
+    backends_mod = isolated_registry
+
+    def _boom():
+        raise RuntimeError("hybrid backend exploded")
+
+    loaders = tuple(
+        (name, _boom if name == "openui" else loader)
+        for name, loader in backends_mod._BUILTIN_LOADERS
+    )
+    monkeypatch.setattr(backends_mod, "_BUILTIN_LOADERS", loaders)
+    backend = backends_mod.get_backend("openui")
+    assert backend.info.id in {"openui-langcore", "openui-lark"}
+    # Other builtins registered despite the failure.
+    names = set(backends_mod.available_backends())
+    assert {"openui-lark", "toy-layout"} <= names
+
+
+def test_transient_total_failure_retries(isolated_registry, monkeypatch) -> None:
+    """A fully failed load attempt is retried, not cached forever."""
+    backends_mod = isolated_registry
+
+    def _boom():
+        raise RuntimeError("transient failure")
+
+    real_loaders = backends_mod._BUILTIN_LOADERS
+    broken = tuple((name, _boom) for name, _ in real_loaders)
+    monkeypatch.setattr(backends_mod, "_BUILTIN_LOADERS", broken)
+    with pytest.raises(KeyError):
+        backends_mod.get_backend("openui")
+    assert backends_mod._BUILTINS_LOADED is False
+    # The environment recovers; the next call must succeed.
+    monkeypatch.setattr(backends_mod, "_BUILTIN_LOADERS", real_loaders)
+    assert backends_mod.get_backend("openui").info.id == "openui"

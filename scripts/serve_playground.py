@@ -9,14 +9,17 @@ from pathlib import Path
 
 
 def main(argv: list[str] | None = None) -> int:
-    from slm_training.models.paths import PLAYGROUND_DEMO_CHECKPOINT
-
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--checkpoint",
         type=Path,
-        default=PLAYGROUND_DEMO_CHECKPOINT,
-        help="Checkpoint path (default: src/slm_training/resources/checkpoints/playground_demo/last.pt).",
+        default=None,
+        help=(
+            "Checkpoint path. Default: auto-resolve the latest model we're "
+            "building (SLM_PLAYGROUND_CHECKPOINT env pin, then the deployed "
+            "lineage pointer, then the promoted champion, then the newest "
+            "outputs/ run checkpoint, then the committed playground demo)."
+        ),
     )
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument(
@@ -107,9 +110,16 @@ def main(argv: list[str] | None = None) -> int:
         execution=args.enable_jobs,
     )
     # Eager-load so the first request is fast
+    service = app.state.service
+    resolution = service.info()["checkpoint_resolution"]
+    print(
+        "Serving checkpoint "
+        f"{resolution['path']} (provenance: {resolution['provenance']}, "
+        f"run: {resolution['run_id'] or 'unknown'})"
+    )
     try:
-        app.state.service.load()
-        print(f"Loaded checkpoint {args.checkpoint}")
+        service.load()
+        print(f"Loaded checkpoint {service.checkpoint}")
     except FileNotFoundError as exc:
         print(f"WARNING: {exc}")
 
