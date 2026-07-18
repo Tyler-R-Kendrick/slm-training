@@ -870,6 +870,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "slot_contract_constrained_decode": bool(
                 getattr(config, "slot_contract_constrained_decode", False)
             ),
+            "prompt_role_constrained_decode": bool(
+                getattr(config, "prompt_role_constrained_decode", False)
+            ),
             "retrieval_k": getattr(config, "retrieval_k", 0),
             "grammar_constrained": bool(getattr(config, "grammar_constrained", False)),
             "design_md_dropout": float(

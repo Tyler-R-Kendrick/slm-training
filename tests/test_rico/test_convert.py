@@ -34,6 +34,28 @@ def test_screen_to_openui_builds_stack() -> None:
     assert all(p.startswith(":") for p in placeholders)
 
 
+def test_screen_to_openui_reserves_root_binder() -> None:
+    elements = [
+        RicoElement(
+            "List Item",
+            resource_id="app:id/root",
+            bounds=[0, 0, 100, 40],
+        ),
+        RicoElement(
+            "List Item",
+            resource_id="app:id/root",
+            bounds=[0, 50, 100, 90],
+        ),
+    ]
+
+    openui, _, meta = screen_to_openui(elements, namespace="test")
+
+    assert openui.startswith("root = Stack([root_1, root_2]")
+    assert openui.count("\nroot = ") == 0
+    assert meta["n_children"] == 2
+    validate(openui)
+
+
 def test_screen_prompt_keeps_provenance_in_metadata_only() -> None:
     record = screen_to_record(
         {

@@ -145,6 +145,79 @@ def format_context_text(
     return "\n\n".join(parts) if parts else prompt
 
 
+_PROMPT_ROLE_COMPONENTS = {
+    "button": ("button", "Button"),
+    "nav": ("button", "Button"),
+    "card": ("card", "Card"),
+    "text": ("text", "TextContent"),
+    "input": ("form", "Input"),
+    "checkbox": ("form", "CheckBoxItem"),
+    "radio": ("form", "RadioItem"),
+    "switch": ("form", "SwitchItem"),
+    "slider": ("form", "Slider"),
+    "datepicker": ("form", "DatePicker"),
+    "image": ("image", "ImageBlock"),
+}
+_PROMPT_COMPONENT_PLACEHOLDER_ARITY = {
+    "Button": 1,
+    "Card": 2,
+    "TextContent": 1,
+    "Input": 1,
+    "CheckBoxItem": 2,
+    "RadioItem": 2,
+    "SwitchItem": 2,
+    "Slider": 1,
+    "DatePicker": 0,
+    "ImageBlock": 2,
+}
+_PROMPT_CATEGORY_PATTERNS = {
+    "button": re.compile(r"\b(\d+)\s+buttons?\b", re.IGNORECASE),
+    "card": re.compile(r"\b(\d+)\s+cards?\b", re.IGNORECASE),
+    "text": re.compile(r"\b(\d+)\s+text blocks?\b", re.IGNORECASE),
+    "form": re.compile(r"\b(\d+)\s+form controls?\b", re.IGNORECASE),
+    "image": re.compile(r"\b(\d+)\s+images?\b", re.IGNORECASE),
+}
+_PROMPT_ROLES_RE = re.compile(r"\(roles:\s*([^)]+)\)", re.IGNORECASE)
+
+
+def prompt_role_component_counts(prompt: str) -> Counter[str]:
+    """Resolve only explicit prompt role/count contracts into component counts."""
+    match = _PROMPT_ROLES_RE.search(prompt or "")
+    if match is None:
+        return Counter()
+    category_counts = {
+        category: int(count.group(1))
+        for category, pattern in _PROMPT_CATEGORY_PATTERNS.items()
+        if (count := pattern.search(prompt))
+    }
+    by_category: dict[str, list[str]] = defaultdict(list)
+    for role in (part.strip().casefold() for part in match.group(1).split(",")):
+        resolved = _PROMPT_ROLE_COMPONENTS.get(role)
+        if resolved is not None and resolved[1] not in by_category[resolved[0]]:
+            by_category[resolved[0]].append(resolved[1])
+    required: Counter[str] = Counter()
+    for category, components in by_category.items():
+        count = category_counts.get(category, 0)
+        if count <= 0:
+            continue
+        if len(components) == 1:
+            required[components[0]] = count
+        else:
+            required.update(components[:count])
+    return required
+
+
+def prompt_role_placeholder_count(prompt: str) -> int | None:
+    """Return the visible role contract's semantic placeholder arity."""
+    required = prompt_role_component_counts(prompt)
+    if not required:
+        return None
+    return sum(
+        count * _PROMPT_COMPONENT_PLACEHOLDER_ARITY[component]
+        for component, count in required.items()
+    )
+
+
 @dataclass
 class TwoTowerConfig:
     d_model: int = 128
@@ -251,6 +324,7 @@ class TwoTowerConfig:
     schema_in_context: bool = False
     slot_contract_in_context: bool = False
     slot_contract_constrained_decode: bool = False
+    prompt_role_constrained_decode: bool = False
     # E20: seed decode from a slot-contract skeleton (inventory-bound template).
     template_fill_decode: bool = False
     contract_template_fastpath: bool = False
@@ -4507,9 +4581,13 @@ class TwoTowerModel(nn.Module):
         legal: set[int],
         slot_contract: list[str] | None,
         prefix: list[int] | None = None,
+        prompt_role_contract: Counter[str] | None = None,
     ) -> set[int]:
         """Apply A4 semantic-density constraints to choice-codec decisions."""
-        floor = self._effective_min_content(slot_contract)
+        floor = max(
+            self._effective_min_content(slot_contract),
+            sum((prompt_role_contract or {}).values()),
+        )
         if floor <= 0:
             return legal
         tok = self.tokenizer
@@ -4788,12 +4866,46 @@ class TwoTowerModel(nn.Module):
         stack_id = tok.token_to_id["+Stack"]
         return {stack_id} if stack_id in legal else legal
 
+    def _choice_prompt_role_legal_ids(
+        self,
+        state: Any,
+        legal: set[int],
+        required: Counter[str] | None,
+        slot_contract: list[str] | None,
+    ) -> set[int]:
+        """Honor component roles and counts stated in the visible prompt."""
+        if (
+            not required
+            or state.mode not in {None, "structural"}
+            or state.frames
+            or (
+                state.section_types
+                and state.section_types[-1] == "element:Stack"
+            )
+        ):
+            return legal
+        emitted = Counter(state.section_types)
+        pending = {
+            self.tokenizer.token_to_id[f"+{component}"]
+            for component, count in required.items()
+            if emitted[f"element:{component}"] < count
+            and f"+{component}" in self.tokenizer.token_to_id
+        }
+        candidates = legal & pending
+        if candidates:
+            return candidates
+        if not slot_contract:
+            stack_id = self.tokenizer.token_to_id["+Stack"]
+            return {stack_id} if stack_id in legal else legal
+        return legal
+
     def _choice_ltr_decode_batch(
         self,
         ctx: torch.Tensor,
         ctx_pad: torch.Tensor,
         length: int,
         contracts: list[list[str] | None],
+        prompt_role_contracts: list[Counter[str] | None],
     ) -> torch.Tensor:
         """Decode choice streams through their production-codec pushdown state."""
         from slm_training.models.choice_tokenizer import ChoiceDecodeState
@@ -4833,6 +4945,13 @@ class TwoTowerModel(nn.Module):
                     allowed[row],
                     contracts[row],
                     ids[row, :position].tolist(),
+                    prompt_role_contract=prompt_role_contracts[row],
+                )
+                allowed[row] = self._choice_prompt_role_legal_ids(
+                    states[row],
+                    allowed[row],
+                    prompt_role_contracts[row],
+                    contracts[row],
                 )
                 allowed[row] = self._choice_structural_plan_legal_ids(
                     states[row],
@@ -5333,6 +5452,11 @@ class TwoTowerModel(nn.Module):
             dm = gold.design_md
         honest = bool(getattr(self.config, "honest_slot_contract", False))
         if honest:
+            visible = inventory_from_prompt(prompt, None, heuristic=False)
+            if visible:
+                return visible
+            if prompt_role_placeholder_count(prompt) == 0:
+                return []
             inv = inventory_from_prompt(prompt, dm, heuristic=True)
             return inv or None
         # Prefer visible inventory when present, else gold (legacy path).
@@ -5736,8 +5860,20 @@ class TwoTowerModel(nn.Module):
                 else None
                 for i in range(len(prompts))
             ]
+            prompt_role_contracts = [
+                prompt_role_component_counts(prompt)
+                if bool(
+                    getattr(self.config, "prompt_role_constrained_decode", False)
+                )
+                else None
+                for prompt in prompts
+            ]
             ids = self._choice_ltr_decode_batch(
-                ctx, ctx_pad, choice_length, contracts
+                ctx,
+                ctx_pad,
+                choice_length,
+                contracts,
+                prompt_role_contracts,
             )
             return [
                 self._decode_openui(ids[i], placeholders=contracts[i])

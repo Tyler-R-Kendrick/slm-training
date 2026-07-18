@@ -2628,6 +2628,52 @@ explicit-no-sync checkpoint, so production HF ship is pending durable bucket
 sync and registration. See
 [`iter-e442-e396-full-ship-gates-20260718.md`](iter-e442-e396-full-ship-gates-20260718.md).
 
+E443 localizes E396's only placeholder-fidelity miss on RICO row 1408, whose
+gold has two `DatePicker` controls and no placeholders. Setting component-plan
+decode weight from 2 to 0 exactly reproduces E441's invented
+`TextContent(":hero.title")`: meaningful/fidelity/type recall remain zero and
+structure remains 0.4000. Reject further plan-weight tuning. The missing
+signal is explicit prompt-role coverage for zero-slot controls, not plan-head
+authority. See
+[`iter-e443-e396-zero-placeholder-plan-diagnostic-20260718.md`](iter-e443-e396-zero-placeholder-plan-diagnostic-20260718.md).
+
+E444–E449 add an opt-in, inference-visible prompt-role contract and localize
+each required correction on that same row. Initial-state enforcement recovers
+the requested type; preserving the explicit empty slot contract and counting
+role instances in the density floor recovers both controls. Two narrow
+gold-aware evaluator fixes then accept placeholder-free output only when the
+gold contract is also empty. E449 reaches meaningful/fidelity/structure/type
+recall 1.0 and reward 0.961 with no fallback or timeout. This repairs the known
+row but remains a one-row diagnostic; require a matched contiguous RICO shard
+before broader evaluation. See
+[`iter-e444-e449-e396-prompt-role-contract-20260718.md`](iter-e444-e449-e396-prompt-role-contract-20260718.md).
+
+E450 applies the prompt-role contract to E441's matched 96-row shard.
+Meaningful/fidelity/structure/recall improve from
+0.9792/0.9896/0.6426/0.8681 to 1.0/1.0/0.8537/1.0, with no failures. Its sole
+structure regression reveals invalid E334 gold caused by a RICO resource slug
+`root` colliding with the reserved program binder. E451 reserves that binder,
+rebuilds all 1,500 rows with zero conversion errors, and removes every prompt
+count overclaim. Re-evaluate baseline and candidate on E451 before expansion.
+See
+[`iter-e450-e451-prompt-role-shard-and-root-binder-20260718.md`](iter-e450-e451-prompt-role-shard-and-root-binder-20260718.md).
+
+E452 establishes the authoritative baseline on E451's repaired rows 1344–1439:
+meaningful 0.9792, fidelity 1.0, structure 0.6421, recall 0.8681, and reward
+0.9778, with one trivial-layout and one low-recall failure. It completes
+normally with no fallback or timeout. This is a control; compare it only to
+the identical repaired-corpus policy with prompt-role constraints enabled.
+See
+[`iter-e452-e396-repaired-rico-shard-baseline-20260718.md`](iter-e452-e396-repaired-rico-shard-baseline-20260718.md).
+
+E453 changes only the prompt-role flag on the same repaired 96 rows. It raises
+meaningful/structure/recall/reward to 1.0/0.8609/1.0/0.9956 and removes both
+failures. Prediction-level comparison finds 88 structure improvements, eight
+ties, zero regressions, 26 recall improvements, and zero recall regressions.
+Accept the lever for capped full-RICO expansion, but do not make a full-suite
+or champion claim yet. See
+[`iter-e453-e396-repaired-rico-prompt-role-20260718.md`](iter-e453-e396-repaired-rico-prompt-role-20260718.md).
+
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;
 E60–E61 and E63–E65 remain proposed.

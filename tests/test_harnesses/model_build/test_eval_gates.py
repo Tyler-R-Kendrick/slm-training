@@ -151,6 +151,25 @@ def test_reward_score_on_valid_pred() -> None:
     assert score > 0.5
 
 
+def test_reward_score_allows_explicitly_zero_slot_gold() -> None:
+    gold = ExampleRecord(
+        id="datepicker",
+        prompt="two datepickers",
+        openui=(
+            "root = Stack([a, b])\n"
+            'a = DatePicker("a")\n'
+            'b = DatePicker("b")'
+        ),
+        placeholders=[],
+    )
+    pred = (
+        "root = Stack([v0, v1])\n"
+        'v0 = DatePicker("item")\n'
+        'v1 = DatePicker("ntnn")'
+    )
+    assert composite_reward(pred, gold=gold, design_md=None) > 0.5
+
+
 def test_reward_does_not_credit_gold_design_md_when_none() -> None:
     openui = 'root = Stack([cta])\ncta = Button(":cta")'
     gold = ExampleRecord(
@@ -182,6 +201,29 @@ def test_meaningful_parse_requires_component_recall() -> None:
     assert ok is False
     assert err and err.startswith("low_component_recall")
     assert component_type_recall(weak, gold.openui) < 0.5
+
+
+def test_meaningful_parse_allows_explicitly_zero_slot_gold() -> None:
+    gold = ExampleRecord(
+        id="datepickers",
+        prompt="two date pickers",
+        openui=(
+            'root = Stack([first, second], "column")\n'
+            'first = DatePicker("first")\n'
+            'second = DatePicker("second")'
+        ),
+        placeholders=[],
+    )
+    pred = (
+        "root = Stack([v0, v1])\n"
+        'v0 = DatePicker("item")\n'
+        'v1 = DatePicker("other")'
+    )
+
+    ok, err, _ = _is_meaningful_program(pred, gold=gold)
+
+    assert ok is True
+    assert err is None
 
 
 def test_meaningful_parse_rejects_pathological_overgeneration() -> None:

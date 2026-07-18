@@ -591,6 +591,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Restrict placeholder decode to the slot contract inventory.",
     )
     parser.add_argument(
+        "--prompt-role-constrained-decode",
+        action="store_true",
+        help="Constrain component counts only from explicit prompt roles.",
+    )
+    parser.add_argument(
         "--retrieval-k",
         type=int,
         default=0,
@@ -917,6 +922,7 @@ def main(argv: list[str] | None = None) -> int:
             schema_in_context=args.schema_in_context,
             slot_contract_in_context=args.slot_contract_in_context,
             slot_contract_constrained_decode=args.slot_contract_constrained_decode,
+            prompt_role_constrained_decode=args.prompt_role_constrained_decode,
             retrieval_k=args.retrieval_k,
             best_of_n=args.best_of_n,
             use_curriculum=args.curriculum,

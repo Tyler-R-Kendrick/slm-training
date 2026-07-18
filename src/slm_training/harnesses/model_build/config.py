@@ -62,6 +62,7 @@ class ModelBuildConfig:
     schema_in_context: bool = False
     slot_contract_in_context: bool = False
     slot_contract_constrained_decode: bool = False
+    prompt_role_constrained_decode: bool = False
     template_fill_decode: bool = False
     contract_template_fastpath: bool = False
     retrieval_k: int = 0

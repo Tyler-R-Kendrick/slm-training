@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from collections import Counter
+from types import SimpleNamespace
+
 import pytest
 import torch
 
@@ -24,6 +27,10 @@ from slm_training.models.decode_stats import collect_decode_stats
 from slm_training.models.dsl_tokenizer import DSLNativeTokenizer
 from slm_training.models.grammar import make_grammar_state
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
+from slm_training.models.twotower import (
+    prompt_role_component_counts,
+    prompt_role_placeholder_count,
+)
 from slm_training.harnesses.distill.trace_store import DecodeTraceRecorder
 from slm_training.harnesses.preference.local_decisions import events_from_trace
 
@@ -86,6 +93,73 @@ def test_choice_gold_decisions_classify_component_roles() -> None:
     # Structural choice streams emit dependencies first and the root last.
     assert component_roles == ["component_bound", "component_root"]
     assert all(len(decision.candidate_ids) > 1 for decision in decisions)
+
+
+def test_prompt_role_contract_uses_only_visible_counts() -> None:
+    assert prompt_role_component_counts(
+        "Build a column mobile OpenUI layout with 2 form controls "
+        "(roles: datepicker) using placeholders only."
+    ) == Counter({"DatePicker": 2})
+    assert prompt_role_placeholder_count(
+        "Build a column mobile OpenUI layout with 2 form controls "
+        "(roles: datepicker) using placeholders only."
+    ) == 0
+    assert prompt_role_component_counts(
+        "Build a row mobile OpenUI layout with 2 cards, 1 text block, "
+        "2 form controls (roles: card, input, switch, text) using placeholders only."
+    ) == Counter(
+        {"Card": 2, "TextContent": 1, "Input": 1, "SwitchItem": 1}
+    )
+    assert not prompt_role_component_counts("Settings with a switch and slider.")
+
+
+def test_honest_zero_slot_role_contract_stays_empty() -> None:
+    from slm_training.models.choice_tokenizer import ChoiceTokenizer
+    from slm_training.models.dsl_tokenizer import SymbolTable
+
+    model = _model(honest_slot_contract=True)
+    prompt = (
+        "Build a column mobile OpenUI layout with 2 form controls "
+        "(roles: datepicker) using placeholders only."
+    )
+
+    assert model._resolve_slot_contract(prompt) == []
+    assert (
+        ChoiceTokenizer.build()._contract_from(
+            SymbolTable.from_placeholders([]), None
+        )
+        == []
+    )
+
+
+def test_prompt_role_contract_forces_missing_zero_slot_controls() -> None:
+    from slm_training.models.choice_tokenizer import ChoiceTokenizer
+
+    model = _model()
+    model.tokenizer = ChoiceTokenizer.build()
+    tokenizer = model.tokenizer
+    datepicker = tokenizer.token_to_id["+DatePicker"]
+    text = tokenizer.token_to_id["+TextContent"]
+    stack = tokenizer.token_to_id["+Stack"]
+    required = Counter({"DatePicker": 2})
+    state = SimpleNamespace(mode=None, frames=[], section_types=[])
+
+    first = model._choice_prompt_role_legal_ids(
+        state, {datepicker, text, stack}, required, None
+    )
+    state.mode = "structural"
+    state.section_types = ["element:DatePicker"]
+    second = model._choice_prompt_role_legal_ids(
+        state, {datepicker, text, stack}, required, None
+    )
+    state.section_types.append("element:DatePicker")
+    complete = model._choice_prompt_role_legal_ids(
+        state, {datepicker, text, stack}, required, None
+    )
+
+    assert first == {datepicker}
+    assert second == {datepicker}
+    assert complete == {stack}
 
 
 def test_choice_component_plan_trains_without_surface_compiler() -> None:

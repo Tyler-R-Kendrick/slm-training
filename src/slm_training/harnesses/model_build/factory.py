@@ -46,6 +46,7 @@ def apply_runtime_overrides(model: Any, config: ModelBuildConfig) -> Any:
         "schema_in_context",
         "slot_contract_in_context",
         "slot_contract_constrained_decode",
+        "prompt_role_constrained_decode",
         "template_fill_decode",
         "contract_template_fastpath",
         "honest_slot_contract",
@@ -255,6 +256,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         slot_contract_in_context=getattr(config, "slot_contract_in_context", False),
         slot_contract_constrained_decode=getattr(
             config, "slot_contract_constrained_decode", False
+        ),
+        prompt_role_constrained_decode=getattr(
+            config, "prompt_role_constrained_decode", False
         ),
         template_fill_decode=getattr(config, "template_fill_decode", False),
         honest_slot_contract=getattr(config, "honest_slot_contract", False),

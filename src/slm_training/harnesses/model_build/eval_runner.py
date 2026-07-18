@@ -350,6 +350,9 @@ def _effective_evaluation_policy(
         "slot_contract_constrained_decode": bool(
             value("slot_contract_constrained_decode")
         ),
+        "prompt_role_constrained_decode": bool(
+            value("prompt_role_constrained_decode")
+        ),
         "honest_slot_contract": bool(value("honest_slot_contract")),
         "grammar_skip_exact_stream_probe": optional_bool(
             "grammar_skip_exact_stream_probe"
@@ -397,7 +400,12 @@ def _is_meaningful_program(
     non_stack = {k: v for k, v in comps.items() if k != "Stack"}
     if not non_stack:
         return False, "no_content_components", serialized
-    if not extract_placeholders(serialized):
+    gold_placeholders = (
+        set(gold.placeholders) or set(extract_placeholders(gold.openui))
+        if gold is not None
+        else None
+    )
+    if not extract_placeholders(serialized) and gold_placeholders != set():
         return False, "no_placeholders", serialized
     if gold is not None and max_output_token_ratio > 0:
         pred_tokens = len(lexical_tokens(serialized))

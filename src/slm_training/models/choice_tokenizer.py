@@ -448,7 +448,7 @@ class ChoiceTokenizer:
         if placeholders is not None:
             return list(placeholders)
         table_placeholders = getattr(table, "placeholders", None)
-        if table_placeholders:
+        if table_placeholders is not None:
             return list(table_placeholders)
         return None
 

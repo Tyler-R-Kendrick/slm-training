@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "experiment_ids": ["E450", "E451"],
+  "date": "2026-07-18",
+  "status": "complete",
+  "checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0"
+  },
+  "e450": {
+    "run_id": "e450-e396-prompt-role-rico96-offset1344-r1",
+    "suite": "rico_held",
+    "eval_offset": 1344,
+    "eval_limit": 96,
+    "diagnostic_subset": true,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "prompt_role_constrained_decode": true,
+    "n": 96,
+    "meaningful_program_rate": 1.0,
+    "placeholder_fidelity": 1.0,
+    "structural_similarity": 0.8536739583333333,
+    "component_type_recall": 1.0,
+    "reward_score": 0.9959374999999998,
+    "fallback_count": 0,
+    "decode_timeout_count": 0,
+    "failure_breakdown": {},
+    "latency_ms_p50": 1705.56,
+    "latency_ms_p95": 5414.94,
+    "prediction_changes_vs_e441": 94,
+    "structure_improved_rows": 87,
+    "structure_regressed_rows": 1,
+    "recall_improved_rows": 26,
+    "recall_regressed_rows": 0,
+    "agentv": {"passed": 0, "total": 5, "execution_errors": 0},
+    "completed_normally": true
+  },
+  "e441_baseline": {
+    "run_id": "e441-e396-full-rico-shard14-r1",
+    "n": 96,
+    "meaningful_program_rate": 0.9791666666666666,
+    "placeholder_fidelity": 0.9895833333333334,
+    "structural_similarity": 0.6426229166666669,
+    "component_type_recall": 0.8680555555555557,
+    "reward_score": 0.9774791666666666,
+    "failure_breakdown": {"low_component_recall": 2}
+  },
+  "e451": {
+    "kind": "test_data_build",
+    "version": "e451_root_binder_v1",
+    "path": "outputs/data/eval/e451_root_binder_v1",
+    "rico_n": 1500,
+    "leakage_rejected": 158,
+    "conversion_errors": 0,
+    "manifest_sha256": "edd78b481b923666b232b9ef8defa111b08f0c5c209fd628a3904ddb96f178f8",
+    "rico_records_sha256": "35ecf5596933cb06e04184c99733fa56954355e9534ad9a24d060412d8f46432",
+    "prompt_count_audit": {
+      "Button": {"exact": 177, "gold_less": 0},
+      "Card": {"exact": 1365, "gold_less": 0},
+      "CheckBoxItem": {"exact": 1, "gold_less": 0},
+      "DatePicker": {"exact": 15, "gold_less": 0},
+      "ImageBlock": {"exact": 212, "gold_less": 0},
+      "Input": {"exact": 21, "gold_less": 0},
+      "Slider": {"exact": 3, "gold_less": 0},
+      "SwitchItem": {"exact": 46, "gold_less": 0},
+      "TextContent": {"exact": 119, "gold_more": 902, "gold_less": 0}
+    },
+    "completed_normally": true
+  },
+  "timing_policy": {
+    "external_timeout_seconds": 290,
+    "external_kill_after_seconds": 10,
+    "timed_out_runs_used_as_evidence": false
+  },
+  "verdict": "Prompt-role constraints improve the matched shard and reveal a reserved root binder collision. E451 repairs the canonical converter and removes all prompt-overclaims; rerun a matched baseline and candidate on E451."
+}

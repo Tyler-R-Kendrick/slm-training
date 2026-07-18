@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E443",
+  "date": "2026-07-18",
+  "status": "complete",
+  "run_id": "e443-e396-plan0-rico1-offset1408-r1",
+  "checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "path": "outputs/runs/e396-balanced-type-head-continuation-r1/checkpoints/last.pt",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0"
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "suite": "rico_held",
+    "eval_offset": 1408,
+    "eval_limit": 1,
+    "diagnostic_subset": true,
+    "grammar_ltr_max_tokens": 320,
+    "decode_min_content": -1,
+    "component_plan_decode_weight": 0.0,
+    "slot_component_decode_weight": 8.0,
+    "honest_slot_contract": true,
+    "gen_steps": 8,
+    "max_attempts": 3
+  },
+  "result": {
+    "record_id": "rico_hf_test_3355",
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 0.0,
+    "placeholder_fidelity": 0.0,
+    "structural_similarity": 0.4,
+    "component_type_recall": 0.0,
+    "reward_score": 0.0,
+    "prediction": "root = Stack([v0])\nv0 = TextContent(\":hero.title\")",
+    "decode_seconds": 3.250508,
+    "fallback_count": 0,
+    "decode_timeout_count": 0
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 5,
+    "execution_errors": 0,
+    "diagnostic_note": "Only one RICO row is present; the four required bounded suites and full RICO suite are absent."
+  },
+  "timing_policy": {
+    "external_timeout_seconds": 290,
+    "external_kill_after_seconds": 10,
+    "timed_out_runs_used_as_evidence": false
+  },
+  "verdict": "Plan weight zero exactly reproduces the E441 failure. The component-plan head is not causal for this zero-placeholder control omission; reject scalar retuning and inspect prompt-role coverage."
+}

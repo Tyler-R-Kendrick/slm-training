@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E452",
+  "date": "2026-07-18",
+  "status": "complete",
+  "run_id": "e452-e396-repaired-rico96-baseline-offset1344-r1",
+  "checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0"
+  },
+  "data": {
+    "version": "e451_root_binder_v1",
+    "rico_records_sha256": "35ecf5596933cb06e04184c99733fa56954355e9534ad9a24d060412d8f46432"
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "suite": "rico_held",
+    "eval_offset": 1344,
+    "eval_limit": 96,
+    "diagnostic_subset": true,
+    "grammar_ltr_max_tokens": 320,
+    "decode_min_content": -1,
+    "component_plan_decode_weight": 2.0,
+    "slot_component_decode_weight": 8.0,
+    "prompt_role_constrained_decode": false,
+    "honest_slot_contract": true,
+    "allow_unconstrained_fallback": false,
+    "gen_steps": 8,
+    "max_attempts": 3
+  },
+  "result": {
+    "n": 96,
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 0.9791666666666666,
+    "placeholder_fidelity": 1.0,
+    "structural_similarity": 0.6420802083333336,
+    "component_type_recall": 0.8680555555555557,
+    "reward_score": 0.9777604166666666,
+    "failure_breakdown": {
+      "trivial_layout": 1,
+      "low_component_recall": 1
+    },
+    "fallback_count": 0,
+    "decode_timeout_count": 0,
+    "latency_ms_p50": 1505.51,
+    "latency_ms_p95": 3480.01
+  },
+  "agentv": {"passed": 0, "total": 5, "execution_errors": 0},
+  "timing_policy": {
+    "external_timeout_seconds": 290,
+    "external_kill_after_seconds": 10,
+    "completed_normally": true,
+    "timed_out_runs_used_as_evidence": false
+  },
+  "verdict": "Repaired-corpus matched-shard control. Compare against the identical policy with only prompt-role constrained decode enabled."
+}

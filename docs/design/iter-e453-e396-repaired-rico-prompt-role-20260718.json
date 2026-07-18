@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E453",
+  "date": "2026-07-18",
+  "status": "complete",
+  "run_id": "e453-e396-repaired-rico96-prompt-role-offset1344-r1",
+  "baseline_run_id": "e452-e396-repaired-rico96-baseline-offset1344-r1",
+  "checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0"
+  },
+  "data": {
+    "version": "e451_root_binder_v1",
+    "rico_records_sha256": "35ecf5596933cb06e04184c99733fa56954355e9534ad9a24d060412d8f46432"
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "suite": "rico_held",
+    "eval_offset": 1344,
+    "eval_limit": 96,
+    "diagnostic_subset": true,
+    "grammar_ltr_max_tokens": 320,
+    "decode_min_content": -1,
+    "component_plan_decode_weight": 2.0,
+    "slot_component_decode_weight": 8.0,
+    "prompt_role_constrained_decode": true,
+    "honest_slot_contract": true,
+    "allow_unconstrained_fallback": false,
+    "gen_steps": 8,
+    "max_attempts": 3
+  },
+  "result": {
+    "n": 96,
+    "parse_rate": 1.0,
+    "meaningful_program_rate": 1.0,
+    "placeholder_fidelity": 1.0,
+    "structural_similarity": 0.8609312500000001,
+    "component_type_recall": 1.0,
+    "reward_score": 0.9956249999999999,
+    "failure_breakdown": {},
+    "fallback_count": 0,
+    "decode_timeout_count": 0,
+    "latency_ms_p50": 1712.78,
+    "latency_ms_p95": 5347.43
+  },
+  "matched_comparison": {
+    "prediction_changes": 94,
+    "structure_improved_rows": 88,
+    "structure_equal_rows": 8,
+    "structure_regressed_rows": 0,
+    "recall_improved_rows": 26,
+    "recall_regressed_rows": 0,
+    "aggregate_delta": {
+      "meaningful_program_rate": 0.02083333333333337,
+      "placeholder_fidelity": 0.0,
+      "structural_similarity": 0.2188510416666665,
+      "component_type_recall": 0.1319444444444443,
+      "reward_score": 0.0178645833333333
+    }
+  },
+  "agentv": {"passed": 0, "total": 5, "execution_errors": 0},
+  "timing_policy": {
+    "external_timeout_seconds": 290,
+    "external_kill_after_seconds": 10,
+    "completed_normally": true,
+    "timed_out_runs_used_as_evidence": false
+  },
+  "verdict": "Accept for capped full-RICO expansion. The matched repaired shard improves 88 structures and 26 type-recall cases with zero per-row regressions, but is not a full-suite ship claim."
+}

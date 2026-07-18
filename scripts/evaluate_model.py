@@ -252,6 +252,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Override: constrain placeholder decode to slot contract.",
     )
     parser.add_argument(
+        "--prompt-role-constrained-decode",
+        action="store_true",
+        help="Constrain component counts only from explicit prompt roles.",
+    )
+    parser.add_argument(
         "--honest-slot-contract",
         action="store_true",
         help="Forbid hidden gold placeholder inventory during evaluation.",
@@ -499,6 +504,7 @@ def main(argv: list[str] | None = None) -> int:
         slot_contract_constrained_decode=(
             args.slot_contract_constrained_decode or args.ship_gates
         ),
+        prompt_role_constrained_decode=args.prompt_role_constrained_decode,
         honest_slot_contract=(args.honest_slot_contract or args.ship_gates),
         contract_template_fastpath=args.contract_template_fastpath,
         retrieval_k=args.retrieval_k,

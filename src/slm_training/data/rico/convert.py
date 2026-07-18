@@ -133,7 +133,7 @@ def screen_to_openui(
             base = f"el_{base}"
         name = base
         n = 1
-        while name in child_ids:
+        while name == "root" or name in child_ids:
             name = f"{base}_{n}"
             n += 1
         child_ids.append(name)
