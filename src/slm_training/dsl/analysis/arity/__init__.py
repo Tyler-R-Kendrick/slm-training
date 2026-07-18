@@ -72,6 +72,32 @@ from slm_training.dsl.analysis.arity.suggest import (
     suggest_robust_arms,
 )
 
+# CAP0-04 (SLM-80): exact-vs-estimated arity certificates + provenance. A
+# versioned certificate schema layered on the canonical CAP0-02 report (via the
+# ``ReportView`` bridge) and the standalone CAP0-03 coding API; it never
+# re-introduces the retired ``analyzer``/``explorer``/``types`` stub or a
+# report-attached ``CodingMetadata``. Builds on the CAP0-02/03 design docs
+# (``cap0-02-arity-analyzer-20260718.md`` / ``cap0-03-coding-precision-20260718.md``).
+from slm_training.dsl.analysis.arity.certificate import (
+    ArityCertificate,
+    ArityCertificateBundle,
+    ArityProvenance,
+    ArityResult,
+    ConstraintFrame,
+    EstimatedEvidence,
+    EvidenceKind,
+    ExactEvidence,
+    ReportView,
+    certificate_digest,
+    exact_certificate_from_report,
+    report_view,
+)
+from slm_training.dsl.analysis.arity.render import (
+    one_line_summary,
+    to_csv,
+    to_markdown,
+)
+
 __all__ = [
     "AnalysisBounds",
     "CanonicalProgram",
@@ -114,4 +140,20 @@ __all__ = [
     "suggest_robust_arms",
     "ternary_ecoc_width",
     "verify_code",
+    # --- CAP0-04: exact-vs-estimated arity certificates (SLM-80) ---
+    "ArityCertificate",
+    "ArityCertificateBundle",
+    "ArityProvenance",
+    "ArityResult",
+    "ConstraintFrame",
+    "EstimatedEvidence",
+    "EvidenceKind",
+    "ExactEvidence",
+    "ReportView",
+    "certificate_digest",
+    "exact_certificate_from_report",
+    "one_line_summary",
+    "report_view",
+    "to_csv",
+    "to_markdown",
 ]

@@ -76,6 +76,48 @@ def _build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_DURABLE,
         help="durable certificate JSON path under docs/design/",
     )
+    # CAP0-04 (optional): emit an exact-vs-estimated certificate bundle. These
+    # are dormant unless requested and never alter the CAP0-02 report outputs.
+    parser.add_argument(
+        "--certificate",
+        action="store_true",
+        help="also emit a CAP0-04 exact-vs-estimated certificate bundle JSON",
+    )
+    parser.add_argument(
+        "--certificate-out",
+        default=None,
+        help="certificate bundle JSON path (implies --certificate)",
+    )
+    parser.add_argument(
+        "--out-md",
+        default=None,
+        help="render the certificate to Markdown at this path (implies --certificate)",
+    )
+    parser.add_argument(
+        "--out-csv",
+        default=None,
+        help="render the certificate results to CSV at this path (implies --certificate)",
+    )
+    parser.add_argument(
+        "--one-line",
+        action="store_true",
+        help="print the certificate one-line summary (implies --certificate)",
+    )
+    parser.add_argument(
+        "--source-commit",
+        default=None,
+        help="provenance: source commit recorded in the certificate",
+    )
+    parser.add_argument(
+        "--run-id",
+        default=None,
+        help="provenance: run id recorded in the certificate",
+    )
+    parser.add_argument(
+        "--trace-id",
+        default=None,
+        help="provenance: trace id recorded in the certificate",
+    )
     return parser
 
 
@@ -165,7 +207,86 @@ def main(argv: list[str] | None = None) -> int:
     _write_json(durable_path, text)
 
     _print_summary(report, out_path, durable_path)
+
+    if args.certificate or args.certificate_out or args.out_md or args.out_csv or args.one_line:
+        _emit_certificate(report, args)
     return 0
+
+
+def _emit_certificate(report: object, args: argparse.Namespace) -> None:
+    """Emit an optional CAP0-04 certificate for a *complete* report.
+
+    Builds an explicit CAP0-03 coding witness (the first committed construction
+    that robustly codes the certified minimized-state target at distance 3) and
+    hands it to :func:`exact_certificate_from_report`. Fail-soft: if no committed
+    construction covers the target the report already stands; only the optional
+    certificate is skipped, with a clear note.
+    """
+    from datetime import datetime, timezone
+
+    from slm_training.dsl.analysis.arity.certificate import (
+        exact_certificate_from_report,
+    )
+    from slm_training.dsl.analysis.arity.coding import (
+        build_mds_7_4_2_3,
+        build_shortened_ternary_hamming_7_4_3,
+        verify_code,
+    )
+    from slm_training.dsl.analysis.arity.render import (
+        one_line_summary,
+        to_csv,
+        to_markdown,
+    )
+
+    states = report.minimized_state_count  # type: ignore[attr-defined]
+    candidates = (
+        ("mds_7_4_2_3", build_mds_7_4_2_3(), 7, 4),
+        ("shortened_ternary_hamming_7_4_3", build_shortened_ternary_hamming_7_4_3(), 3, 7),
+    )
+    witness: tuple[str, object] | None = None
+    for construction, code, q, n in candidates:
+        verification = verify_code(
+            code, q=q, n=n, required_size=states, required_distance=3
+        )
+        if verification.ok:
+            witness = (construction, verification)
+            break
+    if witness is None:
+        print(
+            "note: no committed CAP0-03 construction robustly codes "
+            f"{states} states at distance 3; certificate not emitted."
+        )
+        return
+
+    construction, verification = witness
+    generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    bundle = exact_certificate_from_report(
+        report,  # type: ignore[arg-type]
+        verification=verification,  # type: ignore[arg-type]
+        construction=construction,
+        generated_at=generated_at,
+        source_commit=args.source_commit,
+        run_id=args.run_id,
+        trace_id=args.trace_id,
+    )
+
+    if args.certificate or args.certificate_out:
+        cert_path = _resolve(
+            args.certificate_out
+            or f"outputs/runs/arity/{args.fixture}_certificate.json"
+        )
+        _write_json(cert_path, bundle.to_json() + "\n")
+        print(f"wrote: {cert_path}")
+    if args.out_md:
+        md_path = _resolve(args.out_md)
+        _write_json(md_path, to_markdown(bundle))
+        print(f"wrote: {md_path}")
+    if args.out_csv:
+        csv_path = _resolve(args.out_csv)
+        _write_json(csv_path, to_csv(bundle))
+        print(f"wrote: {csv_path}")
+    if args.one_line:
+        print(one_line_summary(bundle))
 
 
 def _print_summary(report: object, out_path: Path, durable_path: Path) -> None:
