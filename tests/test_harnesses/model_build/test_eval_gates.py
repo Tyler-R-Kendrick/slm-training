@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -20,6 +21,7 @@ from slm_training.harnesses.model_build.eval_runner import (
     component_type_recall,
     evaluate,
     evaluate_suites,
+    merge_evaluation_shards,
     structural_similarity,
 )
 from slm_training.harnesses.model_build.data import load_suite_records
@@ -31,6 +33,7 @@ from slm_training.harnesses.model_build.ship_gates import (
 from slm_training.harnesses.preference import composite_reward
 from slm_training.dsl.production_codec import ProductionCodec
 from slm_training.models.decode_stats import DecodeStats
+from scripts.evaluate_model import main as evaluate_main
 
 
 def test_evaluation_policy_reports_loaded_checkpoint_settings() -> None:
@@ -262,6 +265,7 @@ def _full_suite_metrics(**overrides: float) -> dict[str, dict[str, float]]:
     }
     for suite in base:
         base[suite].update(overrides)
+    base["rico_held"]["n"] = 1500
     return base
 
 
@@ -288,6 +292,20 @@ def test_ship_gates_pass_when_density_met() -> None:
     result = evaluate_ship_gates(_full_suite_metrics())
     assert result["pass"] is True
     assert not result["failures"]
+
+
+def test_ship_gates_fail_closed_for_diagnostic_or_small_rico() -> None:
+    suites = _full_suite_metrics()
+    suites["smoke"]["diagnostic_subset"] = True
+    suites["rico_held"]["n"] = 16
+
+    result = evaluate_ship_gates(suites)
+
+    assert result["pass"] is False
+    assert result["gates"]["smoke:complete_evaluation"] is False
+    assert result["gates"]["rico_held:sample_count"] is False
+    assert any("diagnostic_subset" in failure for failure in result["failures"])
+    assert any("need>=1500" in failure for failure in result["failures"])
 
 
 def test_evaluate_suites_scoreboard(tmp_path: Path) -> None:
@@ -349,6 +367,83 @@ def test_evaluate_suites_scoreboard(tmp_path: Path) -> None:
     assert loaded["checkpoint_source"] == "checkpoint"
     assert loaded["suites"]["smoke"]["checkpoint_sha256"] == loaded["checkpoint_sha256"]
     assert (tmp_path / "runs" / "gates" / "scoreboard.json").exists()
+
+
+def test_evaluate_shards_merge_to_full_suite(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    test_dir = tmp_path / "test"
+    (test_dir / "suites" / "smoke").mkdir(parents=True)
+    gold = 'root = TextContent(":copy.value")'
+    records = [
+        ExampleRecord(
+            id=f"s{index}",
+            prompt=f"Copy {index}",
+            openui=gold,
+            split="smoke",
+        )
+        for index in range(3)
+    ]
+    write_jsonl(test_dir / "suites" / "smoke" / "records.jsonl", records)
+    model = SimpleNamespace(generate=lambda _prompt: gold)
+    base = ModelBuildConfig(
+        train_dir=tmp_path,
+        test_dir=test_dir,
+        suite="smoke",
+        run_root=tmp_path / "runs",
+        run_id="shards",
+    )
+
+    first = evaluate(
+        ModelBuildConfig(**{**base.__dict__, "eval_limit": 2}),
+        model=model,
+        publish_agentv=False,
+    )
+    second = evaluate(
+        ModelBuildConfig(**{**base.__dict__, "eval_offset": 2, "eval_limit": 2}),
+        model=model,
+        publish_agentv=False,
+    )
+    merged = merge_evaluation_shards([second, first])
+
+    assert [detail["id"] for detail in first["details"]] == ["s0", "s1"]
+    assert [detail["id"] for detail in second["details"]] == ["s2"]
+    assert merged["n"] == merged["suite_total_n"] == 3
+    assert merged["eval_offset"] == 0
+    assert merged["eval_end"] == 3
+    assert merged["diagnostic_subset"] is False
+    assert merged["meaningful_program_rate"] == 1.0
+    assert len(merged["evaluation_shards"]) == 2
+
+    with pytest.raises(ValueError, match="overlapping"):
+        merge_evaluation_shards([first, first])
+
+    first_path = tmp_path / "first.json"
+    second_path = tmp_path / "second.json"
+    first_path.write_text(json.dumps(first), encoding="utf-8")
+    second_path.write_text(json.dumps(second), encoding="utf-8")
+    monkeypatch.setattr(
+        "slm_training.evals.agentv.publish_model_evaluation",
+        lambda *_args, **_kwargs: {"summary": {"passed": 1, "total": 1}},
+    )
+    assert (
+        evaluate_main(
+            [
+                "--merge-evals",
+                str(first_path),
+                str(second_path),
+                "--run-root",
+                str(tmp_path / "merged"),
+                "--run-id",
+                "full",
+            ]
+        )
+        == 0
+    )
+    scoreboard = json.loads(
+        (tmp_path / "merged" / "full" / "scoreboard.json").read_text()
+    )
+    assert scoreboard["suites"]["smoke"]["diagnostic_subset"] is False
 
 
 def test_evaluate_supports_single_record_generation_with_stats(tmp_path: Path) -> None:

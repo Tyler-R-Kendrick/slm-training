@@ -2271,10 +2271,20 @@ do not promote or claim ship without full RICO evidence. See
 
 E351 evaluates E350 on a 16-example diagnostic `rico_held` subset. Parse and
 meaningful rate are 1.0, recall is 0.5208, reward is 0.7326, and AgentV passes
-1/1; fidelity/structure remain 0.2388/0.2208. Retain as diagnostic evidence
-only—`eval_limit=16` is not full-RICO or ship evidence. See
+1/1 under the historical fail-open policy; E352 invalidates that pass to 0/1.
+Fidelity/structure remain 0.2388/0.2208. Retain numeric metrics as diagnostic
+evidence only—`eval_limit=16` is not full-RICO or ship evidence. See
 [results](iter-e351-hf-context-slot8-rico16-20260717.md) and
 [JSON](hf-context-slot8-rico16-results-iter-e351-20260717.json).
+
+E352 corrects the gate contradiction exposed by E351: diagnostic subsets and
+`rico_held n<1500` now fail closed even when numeric thresholds pass. Its
+offset 16–32 shard scores meaningful/structure/recall
+1.0/0.2458/0.5104 but AgentV correctly reports 0/1. E353 starts the resumable
+full-RICO campaign with rows 0–64 in 66.2s; meaningful/structure/recall are
+0.9844/0.2435/0.5104 and the partial-evidence gate remains 0/1. See
+[results](iter-e352-e353-bounded-rico-sharding-20260717.md) and
+[JSON](iter-e352-e353-bounded-rico-sharding-20260717.json).
 
 Verifier-guided repair status from
 [verifier-guided-repair.md](verifier-guided-repair.md). **E62 is wired**;

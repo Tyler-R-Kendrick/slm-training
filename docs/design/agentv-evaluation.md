@@ -12,6 +12,12 @@ truth for OpenUI readiness. `agentv.py` lowers that policy to one AgentV case
 per required suite, and missing suites fail closed. Consequently, a successful
 smoke case can never turn a partial run into a production ship claim.
 
+Diagnostic suite subsets also fail closed, regardless of their numeric
+metrics. Production `rico_held` requires `n>=1500`. Large suites may be
+evaluated with deterministic `--eval-offset` / `--eval-limit` shards and
+combined with `--merge-evals`; only gap-free, non-overlapping full coverage
+loses the diagnostic label.
+
 ## Flow
 
 1. Python evaluators compute domain metrics using the existing harnesses.

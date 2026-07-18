@@ -425,11 +425,19 @@ def evaluate(
         raise ValueError("test_dir is required for evaluation")
 
     records = load_suite_records(config.test_dir, config.suite)
+    suite_total_n = len(records)
+    eval_offset = int(getattr(config, "eval_offset", 0) or 0)
+    if eval_offset < 0 or eval_offset > suite_total_n:
+        raise ValueError(
+            f"eval_offset must be between 0 and {suite_total_n}, got {eval_offset}"
+        )
+    records = records[eval_offset:]
     suite_limit = getattr(config, "eval_limit", None)
     if suite_limit is None and config.suite == "rico_held":
         suite_limit = getattr(config, "rico_eval_limit", None)
     if suite_limit is not None:
         records = records[: max(0, int(suite_limit))]
+    eval_end = eval_offset + len(records)
     ckpt = checkpoint or (config.checkpoint_dir / "last.pt")
 
     if model is not None:
@@ -760,7 +768,10 @@ def evaluate(
         "document_n": document_n,
         "fragment_n": n - document_n,
         "eval_limit": suite_limit,
-        "diagnostic_subset": suite_limit is not None,
+        "eval_offset": eval_offset,
+        "eval_end": eval_end,
+        "suite_total_n": suite_total_n,
+        "diagnostic_subset": eval_offset != 0 or eval_end != suite_total_n,
         # Persist the effective decode policy beside every scoreboard.  This
         # is essential for comparing historical runs: checkpoint defaults and
         # CLI diagnostic overrides can materially change quality and timeout
@@ -910,6 +921,246 @@ def evaluate(
     if config.suite == "smoke":
         (run_dir / "eval.json").write_text(payload, encoding="utf-8")
     return metrics
+
+
+_SHARD_MEAN_FIELDS = (
+    "parse_rate",
+    "meaningful_program_rate",
+    "syntax_parse_rate",
+    "raw_syntax_validity",
+    "contract_precision",
+    "contract_recall",
+    "residual_mask_rate",
+    "oov_rate",
+    "placeholder_fidelity",
+    "placeholder_fidelity_normalized",
+    "placeholder_validity",
+    "exact_match",
+    "structural_similarity",
+    "tree_edit_similarity",
+    "component_type_recall",
+    "reward_score",
+    "gold_design_lint_score",
+    "design_lint_score",
+    "ast_node_f1",
+    "ast_edge_f1",
+)
+
+
+def _merge_task_scoreboards(shards: list[dict[str, Any]]) -> dict[str, Any]:
+    boards = [
+        board
+        for shard in shards
+        if isinstance((board := shard.get("task_scoreboard")), dict)
+    ]
+    details = [
+        row
+        for board in boards
+        for row in board.get("details") or []
+        if isinstance(row, dict)
+    ]
+    grouped: dict[str, dict[str, list[tuple[float, int]]]] = {}
+    for row in details:
+        task = str(row.get("task") or "unknown")
+        for name, metric in (row.get("metrics") or {}).items():
+            if not isinstance(metric, dict) or not isinstance(
+                metric.get("value"), (int, float)
+            ):
+                continue
+            grouped.setdefault(task, {}).setdefault(str(name), []).append(
+                (float(metric["value"]), max(1, int(metric.get("n") or 1)))
+            )
+    tasks: dict[str, Any] = {}
+    for task, metrics in grouped.items():
+        tasks[task] = {
+            "n": sum(1 for row in details if str(row.get("task") or "unknown") == task),
+            "metrics": {
+                name: {
+                    "value": sum(value * n for value, n in values)
+                    / sum(n for _, n in values),
+                    "n": sum(n for _, n in values),
+                    "status": "available",
+                    "reason": None,
+                }
+                for name, values in metrics.items()
+            },
+        }
+    equivalence_values = [
+        (float(equivalence["value"]), int(equivalence.get("n") or 0))
+        for board in boards
+        if isinstance((equivalence := board.get("equivalence")), dict)
+        and isinstance(equivalence.get("value"), (int, float))
+        and int(equivalence.get("n") or 0) > 0
+    ]
+    equivalence: dict[str, Any]
+    if equivalence_values:
+        equivalence = {
+            "value": sum(value * n for value, n in equivalence_values)
+            / sum(n for _, n in equivalence_values),
+            "n": sum(n for _, n in equivalence_values),
+            "status": "available",
+            "reason": None,
+        }
+    else:
+        equivalence = {
+            "value": None,
+            "n": 0,
+            "status": "unavailable",
+            "reason": "no complete L3-L5 prediction evidence",
+        }
+    return {
+        "n": sum(int(board.get("n") or 0) for board in boards),
+        "complete": bool(boards) and all(board.get("complete") is True for board in boards),
+        "unavailable_metric_instances": sum(
+            int(board.get("unavailable_metric_instances") or 0) for board in boards
+        ),
+        "tasks": tasks,
+        "equivalence": equivalence,
+        "details": details,
+    }
+
+
+def _merge_decode_stats(
+    shards: list[dict[str, Any]], latencies: list[float]
+) -> dict[str, Any] | None:
+    rows = [
+        row
+        for shard in shards
+        if isinstance((row := shard.get("decode_stats")), dict)
+    ]
+    if not rows:
+        return None
+    merged: dict[str, Any] = {"n": sum(int(row.get("n") or 0) for row in rows)}
+    for key in {key for row in rows for key in row}:
+        if key.endswith("_sum") and all(
+            isinstance(row.get(key, 0), (int, float)) for row in rows
+        ):
+            merged[key] = sum(float(row.get(key) or 0) for row in rows)
+        elif all(isinstance(row.get(key), list) for row in rows):
+            merged[key] = [item for row in rows for item in row[key]]
+    for key, value in list(merged.items()):
+        if key.endswith("_sum") and merged["n"]:
+            merged[f"{key[:-4]}_mean"] = value / merged["n"]
+    ordered = sorted(latencies)
+    merged["total_ms_p50"] = _nearest_rank(ordered, 0.50)
+    merged["total_ms_p95"] = _nearest_rank(ordered, 0.95)
+    return merged
+
+
+def merge_evaluation_shards(shards: list[dict[str, Any]]) -> dict[str, Any]:
+    """Merge non-overlapping deterministic shards for one evaluation suite."""
+    if not shards:
+        raise ValueError("at least one evaluation shard is required")
+    suites = {str(shard.get("suite") or "") for shard in shards}
+    if len(suites) != 1 or "" in suites:
+        raise ValueError(f"evaluation shards must have one suite, got {sorted(suites)}")
+    for field in ("checkpoint_sha256", "model", "evaluation_policy"):
+        values = {
+            json.dumps(shard.get(field), sort_keys=True, default=str)
+            for shard in shards
+        }
+        if len(values) != 1:
+            raise ValueError(f"evaluation shard {field} mismatch")
+
+    totals = {shard.get("suite_total_n") for shard in shards}
+    if None in totals or len(totals) != 1:
+        raise ValueError("evaluation shards require one shared suite_total_n")
+    suite_total_n = int(next(iter(totals)))
+    ordered = sorted(shards, key=lambda shard: int(shard.get("eval_offset") or 0))
+    ranges: list[tuple[int, int]] = []
+    cursor = 0
+    has_gap = False
+    for shard in ordered:
+        start = int(shard.get("eval_offset") or 0)
+        end = int(shard.get("eval_end") or 0)
+        if end < start or int(shard.get("n") or 0) != end - start:
+            raise ValueError(f"invalid evaluation shard range [{start}, {end})")
+        if start < cursor:
+            raise ValueError(f"overlapping evaluation shard range at offset {start}")
+        has_gap = has_gap or start > cursor
+        ranges.append((start, end))
+        cursor = end
+
+    details = [
+        detail
+        for shard in ordered
+        for detail in shard.get("details") or []
+        if isinstance(detail, dict)
+    ]
+    detail_ids = [str(detail.get("id")) for detail in details if detail.get("id")]
+    if len(detail_ids) != len(set(detail_ids)):
+        raise ValueError("evaluation shards contain duplicate record ids")
+
+    document_n = sum(int(shard.get("document_n") or 0) for shard in ordered)
+    n = sum(int(shard.get("n") or 0) for shard in ordered)
+    merged: dict[str, Any] = {
+        "suite": next(iter(suites)),
+        "n": n,
+        "document_n": document_n,
+        "fragment_n": n - document_n,
+        "eval_limit": None if not has_gap and ranges[0][0] == 0 and cursor == suite_total_n else n,
+        "eval_offset": ranges[0][0],
+        "eval_end": cursor,
+        "suite_total_n": suite_total_n,
+        "diagnostic_subset": has_gap or ranges[0][0] != 0 or cursor != suite_total_n,
+        "evaluation_shards": [
+            {
+                "offset": start,
+                "end": end,
+                "n": int(shard.get("n") or 0),
+                "output": shard.get("output"),
+            }
+            for shard, (start, end) in zip(ordered, ranges)
+        ],
+        "evaluation_policy": ordered[0].get("evaluation_policy"),
+        "checkpoint": ordered[0].get("checkpoint"),
+        "checkpoint_sha256": ordered[0].get("checkpoint_sha256"),
+        "checkpoint_source": ordered[0].get("checkpoint_source"),
+        "model": ordered[0].get("model"),
+        "evaluated_at": max(str(shard.get("evaluated_at") or "") for shard in ordered),
+        "fallback_count": sum(int(shard.get("fallback_count") or 0) for shard in ordered),
+        "decode_timeout_count": sum(
+            int(shard.get("decode_timeout_count") or 0) for shard in ordered
+        ),
+        "decode_canvas_cap": ordered[0].get("decode_canvas_cap"),
+        "details": details,
+    }
+    for field in _SHARD_MEAN_FIELDS:
+        values = [
+            (
+                float(shard[field]),
+                int(shard.get("document_n") or shard.get("n") or 0),
+            )
+            for shard in ordered
+            if isinstance(shard.get(field), (int, float))
+        ]
+        merged[field] = (
+            sum(value * weight for value, weight in values)
+            / sum(weight for _, weight in values)
+            if values and sum(weight for _, weight in values)
+            else None
+        )
+    failures: dict[str, int] = {}
+    for shard in ordered:
+        for name, count in (shard.get("failure_breakdown") or {}).items():
+            failures[str(name)] = failures.get(str(name), 0) + int(count)
+    merged["failure_breakdown"] = failures
+    latencies = [
+        float(detail["latency_ms"])
+        for detail in details
+        if isinstance(detail.get("latency_ms"), (int, float))
+    ]
+    latencies.sort()
+    merged["latency_ms_p50"] = _nearest_rank(latencies, 0.50)
+    merged["latency_ms_p95"] = _nearest_rank(latencies, 0.95)
+    merged["task_scoreboard"] = _merge_task_scoreboards(ordered)
+    decode_stats = _merge_decode_stats(ordered, latencies)
+    if decode_stats is not None:
+        merged["decode_stats"] = decode_stats
+        merged["constrained_fallback_rate"] = (
+            float(decode_stats.get("unconstrained_retries_sum") or 0) / n if n else 0.0
+        )
+    return merged
 
 
 def evaluate_suites(

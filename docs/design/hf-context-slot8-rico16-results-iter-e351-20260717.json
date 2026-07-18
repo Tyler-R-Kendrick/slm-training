@@ -1,7 +1,7 @@
 {
   "id": "E351",
   "date": "2026-07-17",
-  "status": "retained_diagnostic_subset_pass",
+  "status": "invalidated_diagnostic_gate_pass",
   "run_id": "e351-hf-context-best-nll-content2-slot8-rico16-r1",
   "checkpoint_sha256": "6f0ecf7cce2ebc7c61f133c13456ac91bcd4861bd3e2f4f70a3a72473c211985",
   "decode_policy_source": "E350",
@@ -16,7 +16,16 @@
   "evaluation_agentv": {
     "passed": 1,
     "total": 1,
-    "execution_errors": 0
+    "execution_errors": 0,
+    "historical_policy": true
+  },
+  "corrected_gate_recheck": {
+    "passed": 0,
+    "total": 1,
+    "failures": [
+      "rico_held:complete_evaluation actual=diagnostic_subset need=full_suite",
+      "rico_held:sample_count actual=16 need>=1500"
+    ]
   },
   "checkpoint_sync": "disabled; eval-only bounded local validation",
   "evaluation_scope": "rico_held diagnostic subset only; eval_limit=16; no full-RICO or ship claim",
@@ -32,5 +41,5 @@
     "recall": 0.5208333333333334,
     "reward": 0.7326250000000002
   },
-  "verdict": "Retain as encouraging diagnostic-only RICO evidence. The subset gate passes, but n=16 cannot support promotion or a production ship claim."
+  "verdict": "Retain numeric metrics as diagnostic evidence only. E352 invalidates the historical subset gate pass; corrected policy is 0/1."
 }

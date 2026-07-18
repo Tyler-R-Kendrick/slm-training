@@ -14,3 +14,8 @@ gate passes.
 diagnostic-only (`eval_limit=16`) and cannot support checkpoint promotion or a
 production ship claim. Full `rico_held` remains unrun because every command is
 hard-capped at five minutes.
+
+**2026-07-17 correction (E352):** the reported AgentV 1/1 exposed a fail-open
+evidence check. The shared gate now rejects diagnostic subsets and requires
+`rico_held n>=1500`; under the corrected policy E351 is 0/1. Its numeric
+metrics remain valid diagnostic measurements, but its gate pass is invalidated.

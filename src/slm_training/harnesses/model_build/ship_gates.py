@@ -45,6 +45,10 @@ DEFAULT_SHIP_GATES: dict[str, dict[str, float]] = {
     },
 }
 
+# Production readiness requires the complete held-out RICO corpus, not a
+# diagnostic prefix that happens to clear the metric thresholds.
+MIN_SHIP_SUITE_N: dict[str, int] = {"rico_held": 1500}
+
 
 def evaluate_ship_gates(
     suites: dict[str, dict[str, Any]],
@@ -88,6 +92,23 @@ def evaluate_ship_gates(
             # quality. New scoreboards persist both metrics explicitly.
             slim["meaningful_program_rate"] = metrics.get("parse_rate")
         actual[suite_name] = slim
+        complete_key = f"{suite_name}:complete_evaluation"
+        diagnostic_subset = bool(metrics.get("diagnostic_subset"))
+        checks[complete_key] = not diagnostic_subset
+        if diagnostic_subset:
+            failures.append(f"{complete_key} actual=diagnostic_subset need=full_suite")
+        minimum_n = MIN_SHIP_SUITE_N.get(suite_name)
+        if minimum_n is not None:
+            sample_key = f"{suite_name}:sample_count"
+            sample_n = metrics.get("n")
+            sample_ok = (
+                isinstance(sample_n, (int, float)) and int(sample_n) >= minimum_n
+            )
+            checks[sample_key] = sample_ok
+            if not sample_ok:
+                failures.append(
+                    f"{sample_key} actual={sample_n!r} need>={minimum_n}"
+                )
         fallback_count = int(metrics.get("fallback_count") or 0)
         fallback_key = f"{suite_name}:certified_fallback"
         checks[fallback_key] = fallback_count == 0
@@ -116,7 +137,8 @@ def evaluate_ship_gates(
             "(meaningful_program_rate / structural_similarity / component_type_recall "
             "/ placeholder_fidelity / reward_score). component_type_recall is the "
             "semantic-density floor: shorter-but-emptier output cannot pass on "
-            "syntax alone. Syntax parse is reported separately and is not a "
+            "syntax alone. Diagnostic subsets cannot pass, and production RICO "
+            "requires n>=1500. Syntax parse is reported separately and is not a "
             "learned-quality substitute. DESIGN.md style lint is never a ship gate. "
             "See docs/design/adversarial-review.md and docs/design/structure-only-eval.md."
         ),

@@ -8,7 +8,10 @@ import json
 from pathlib import Path
 
 from slm_training.harnesses.model_build import ModelBuildConfig, evaluate
-from slm_training.harnesses.model_build.eval_runner import evaluate_suites
+from slm_training.harnesses.model_build.eval_runner import (
+    evaluate_suites,
+    merge_evaluation_shards,
+)
 from slm_training.harnesses.model_build.ship_gates import (
     DEFAULT_SHIP_GATES,
     evaluate_ship_gates,
@@ -69,6 +72,13 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--run-root", type=Path, default=Path("outputs/runs"))
     parser.add_argument("--run-id", default="latest")
+    parser.add_argument(
+        "--merge-evals",
+        nargs="+",
+        type=Path,
+        default=None,
+        help="Merge completed eval_<suite>.json shards into one scoreboard.",
+    )
     parser.add_argument(
         "--checkpoint",
         type=Path,
@@ -276,6 +286,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Diagnostic-only cap for every selected suite; omit for full eval.",
     )
     parser.add_argument(
+        "--eval-offset",
+        type=int,
+        default=0,
+        help="Start row for a deterministic bounded suite shard.",
+    )
+    parser.add_argument(
         "--gen-steps",
         type=int,
         default=8,
@@ -369,6 +385,81 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     args = parser.parse_args(argv)
+    if args.merge_evals:
+        payloads = [
+            json.loads(path.read_text(encoding="utf-8")) for path in args.merge_evals
+        ]
+        grouped: dict[str, list[dict]] = {}
+        for payload in payloads:
+            suite = str(payload.get("suite") or "")
+            if not suite:
+                raise SystemExit("every --merge-evals input must declare suite")
+            grouped.setdefault(suite, []).append(payload)
+        checkpoint_hashes = {
+            payload.get("checkpoint_sha256") for payload in payloads
+        }
+        if len(checkpoint_hashes) != 1:
+            raise SystemExit("--merge-evals checkpoint_sha256 mismatch")
+        policies = {
+            json.dumps(payload.get("evaluation_policy"), sort_keys=True)
+            for payload in payloads
+        }
+        if len(policies) != 1:
+            raise SystemExit("--merge-evals evaluation_policy mismatch")
+
+        run_dir = args.run_root / args.run_id
+        run_dir.mkdir(parents=True, exist_ok=True)
+        suites: dict[str, dict] = {}
+        for suite, suite_payloads in grouped.items():
+            metrics = (
+                merge_evaluation_shards(suite_payloads)
+                if len(suite_payloads) > 1
+                else dict(suite_payloads[0])
+            )
+            metrics.pop("agentv", None)
+            output = run_dir / f"eval_{suite}.json"
+            metrics["output"] = str(output)
+            output.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
+            if suite == "smoke":
+                (run_dir / "eval.json").write_text(
+                    json.dumps(metrics, indent=2) + "\n", encoding="utf-8"
+                )
+            suites[suite] = {k: v for k, v in metrics.items() if k != "details"}
+
+        scoreboard = {
+            "run_id": args.run_id,
+            "checkpoint": payloads[0].get("checkpoint"),
+            "checkpoint_source": payloads[0].get("checkpoint_source"),
+            "checkpoint_sha256": payloads[0].get("checkpoint_sha256"),
+            "suites": suites,
+            "evaluated_at": max(
+                str(payload.get("evaluated_at") or "") for payload in payloads
+            ),
+        }
+        scoreboard_path = run_dir / "scoreboard.json"
+        scoreboard["output"] = str(scoreboard_path)
+        if args.ship_gates:
+            gates = write_ship_gates(run_dir, suites)
+            scoreboard["gates"] = {
+                key: gates[key] for key in ("pass", "failures", "output")
+            }
+        from slm_training.evals.agentv import publish_model_evaluation
+
+        scoreboard["agentv"] = publish_model_evaluation(
+            run_dir,
+            suites,
+            include_missing_suites=(
+                args.ship_gates or set(suites) == set(DEFAULT_SHIP_GATES)
+            ),
+        )
+        scoreboard_path.write_text(
+            json.dumps(scoreboard, indent=2) + "\n", encoding="utf-8"
+        )
+        print(json.dumps(scoreboard, indent=2))
+        if args.ship_gates:
+            return 0 if scoreboard["gates"]["pass"] else 8
+        return 0
+
     from slm_training.data.store import DataStore
 
     data_store = DataStore()
@@ -415,6 +506,7 @@ def main(argv: list[str] | None = None) -> int:
         design_md_in_context=design_md_override,
         rico_eval_limit=args.rico_limit,
         eval_limit=args.eval_limit,
+        eval_offset=args.eval_offset,
         gen_steps=args.gen_steps,
         generate_max_attempts=max(1, args.max_attempts),
         allow_unconstrained_fallback=not args.no_unconstrained_fallback,

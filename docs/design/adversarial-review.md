@@ -76,6 +76,10 @@ scoreboards that predate the split used `parse_rate` for that heuristic.
 
 - **Fixture demo:** tiny upsample (`v1_fixture_up`), scratch context, smoke-only soft thresholds — useful for CI wiring, **not** a product claim.
 - **Ship candidate:** train `v1` (all sources + quality synth), HF context + DESIGN.md in context when claimed, full scoreboard + `--ship-gates`, rico_held at full test size.
+- **Bounded evaluation:** use deterministic `--eval-offset` / `--eval-limit`
+  shards when one process cannot finish within its wall-time cap. Individual
+  shards fail closed; `--merge-evals` validates checkpoint/policy identity,
+  rejects overlaps, and only marks a gap-free 1500-row RICO merge complete.
 
 ## Honest re-eval (`twotower_v1_ship`, post-remediation metrics)
 

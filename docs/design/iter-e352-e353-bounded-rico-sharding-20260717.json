@@ -1,0 +1,50 @@
+{
+  "id": "E352-E353",
+  "date": "2026-07-17",
+  "status": "retained_bounded_sharding_fail_closed",
+  "run_id": "e353-hf-context-slot8-rico-shard-0000-0064-r1",
+  "checkpoint_sha256": "6f0ecf7cce2ebc7c61f133c13456ac91bcd4861bd3e2f4f70a3a72473c211985",
+  "hard_run_cap_seconds": 300,
+  "honesty_mode": "honest slot contract; diagnostic shards fail closed",
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "suites": {
+    "rico_held": {
+      "n": 64,
+      "suite_total_n": 1500,
+      "eval_offset": 0,
+      "eval_end": 64,
+      "diagnostic_subset": true,
+      "parse_rate": 1.0,
+      "meaningful_program_rate": 0.984375,
+      "placeholder_fidelity": 0.2553019029581529,
+      "structural_similarity": 0.24350781250000011,
+      "component_type_recall": 0.5104166666666667,
+      "reward_score": 0.7248999999999993
+    }
+  },
+  "runs": [
+    {
+      "id": "E352",
+      "run_id": "e352-hf-context-slot8-rico-shard-0016-0032-r1",
+      "elapsed_wall_seconds": 24.6952,
+      "offset": 16,
+      "end": 32,
+      "n": 16,
+      "agentv": "0/1"
+    },
+    {
+      "id": "E353",
+      "run_id": "e353-hf-context-slot8-rico-shard-0000-0064-r1",
+      "elapsed_wall_seconds": 66.2,
+      "offset": 0,
+      "end": 64,
+      "n": 64,
+      "agentv": "0/1"
+    }
+  ],
+  "verdict": "Retain. Deterministic bounded shards preserve quality evidence while partial RICO artifacts fail closed; full coverage is still required."
+}
