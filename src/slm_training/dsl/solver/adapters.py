@@ -32,10 +32,14 @@ _TOKEN_PATH_TAG = "token_path"
 
 
 def _prefix_fingerprint(prefix_ids: Sequence[int]) -> str:
-    """Stable 16-hex digest of the decode prefix, keying the projected hole."""
+    """Stable SHA-256 digest of the decode prefix, keying the projected hole.
+
+    The full digest is kept: truncating to 64 bits invites prefix collisions that
+    would make different decode states share a hole/problem identity.
+    """
     ids = [int(token) for token in prefix_ids]
     raw = json.dumps(ids, separators=(",", ":"))
-    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
 def completion_forest_state(

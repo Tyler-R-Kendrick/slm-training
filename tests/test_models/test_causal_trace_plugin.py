@@ -68,7 +68,7 @@ def _plugin() -> CausalLMOpenUIPlugin:
 
 
 def _allowed(prefix: tuple[int, ...]) -> tuple[int, ...]:
-    return _LEGAL_BY_SUFFIX[len(prefix) - 1]  # prompt_len == 1
+    return _LEGAL_BY_SUFFIX.get(len(prefix) - 1, (0,))  # prompt_len == 1; default EOS
 
 
 def test_traced_decode_records_states_and_stops_on_eos(tmp_path) -> None:
@@ -149,6 +149,61 @@ def test_forced_action_replay_is_reproducible(tmp_path) -> None:
     assert first == second  # deterministic continuation for the same seed
     assert first.action_id == 3  # forced action applied to the exact prefix
     assert first.continuation_seed == 7
+
+
+def test_replay_keeps_tokens_generated_before_the_decision(tmp_path) -> None:
+    plugin = _plugin()
+    identity = plugin.capture_identity(group_id="grp", context_text="root=Stack([")
+    store = TraceStore(tmp_path / "traces", run_id="ldi1-plugin")
+    writer = CausalTraceWriter(store, identity)
+    plugin.generate_constrained_traced(
+        "Make a card", group_id="grp", trace_writer=writer, allowed_ids_fn=_allowed
+    )
+    states = load_causal_decision_states(
+        store,
+        expected_checkpoint_sha=identity.policy_checkpoint_sha,
+        expected_tokenizer_sha=identity.tokenizer_sha,
+    )
+    # A decision after ordinal zero: its stored prefix already holds an earlier token.
+    state = next(s for s in states if s.decision_position >= 1)
+    prompt_len = len(state.context_ids) - state.decision_position
+    earlier = state.context_ids[prompt_len:]
+    assert earlier  # non-empty: tokens were generated before this decision
+    forced = state.legal_action_ids[0]
+    outcome = plugin.replay_causal_action(state, forced, 0, allowed_ids_fn=_allowed)
+    # The earlier generated tokens survive into the materialized program.
+    assert outcome.raw_program.startswith(plugin.tokenizer.decode(earlier))
+
+
+def test_replay_rejects_illegal_forced_action(tmp_path) -> None:
+    plugin = _plugin()
+    identity = plugin.capture_identity(group_id="grp", context_text="root=Stack([")
+    store = TraceStore(tmp_path / "traces", run_id="ldi1-plugin")
+    writer = CausalTraceWriter(store, identity)
+    plugin.generate_constrained_traced(
+        "Make a card", group_id="grp", trace_writer=writer, allowed_ids_fn=_allowed
+    )
+    state = load_causal_decision_states(
+        store,
+        expected_checkpoint_sha=identity.policy_checkpoint_sha,
+        expected_tokenizer_sha=identity.tokenizer_sha,
+    )[0]
+    illegal = max(state.legal_action_ids) + 100
+    with pytest.raises(ValueError, match="not legal"):
+        plugin.replay_causal_action(state, illegal, 0, allowed_ids_fn=_allowed)
+
+
+def test_adapter_identity_changes_when_a_lora_weight_mutates() -> None:
+    plugin = _plugin()
+    lora = torch.zeros(2, 2)
+    plugin.model.named_parameters = lambda: [  # type: ignore[assignment]
+        ("base_model.layers.0.lora_A.weight", lora)
+    ]
+    before = plugin.active_adapter_identity()
+    assert before != ""
+    with torch.no_grad():
+        lora.add_(1.0)  # mutate the tensor value without renaming it
+    assert plugin.active_adapter_identity() != before
 
 
 def test_active_adapter_identity_reflects_lora_params() -> None:

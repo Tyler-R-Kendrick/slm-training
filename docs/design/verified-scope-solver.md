@@ -1,12 +1,16 @@
 # VSS0-01 (SLM-57): the bounded verified-scope-solver contract
 
-**Status:** specification only. This document defines the guarantee boundary for
-the *Verified Scope Solving & Hybrid Realization* project. It adds no solver
-code, no runtime dependency, no experiment, and no checkpoint, and makes no model
-or ship claim. Existing checkpoints and decode behavior are unchanged until a
-later VSS issue enables new flags behind a feature gate.
+**Status:** contract defined (VSS0-01), with the torch-free finite-domain state
+subset now implemented. This document defines the guarantee boundary for the
+*Verified Scope Solving & Hybrid Realization* project; the immutable finite-domain
+state schema and the completion-forest adapter are implemented in
+`src/slm_training/dsl/solver/` (see "Implemented state schema" below). No decode-path
+integration, runtime dependency in the generation path, experiment, or checkpoint is
+added, and no model or ship claim is made. Existing checkpoints and decode behavior
+are unchanged until a later VSS issue enables new flags behind a feature gate.
 
-**Code:** none (contract/spec only).
+**Code:** the finite-domain state schema (`state.py`) and completion-forest adapter
+(`adapters.py`) in `src/slm_training/dsl/solver/`, torch-free; no decode integration yet.
 
 **Reader contract:** `docs/design/` is the source of truth for coding agents and
 experiment reviewers; the Linear project document is planning context only. The

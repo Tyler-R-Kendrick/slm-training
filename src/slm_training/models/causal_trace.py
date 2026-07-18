@@ -276,6 +276,8 @@ def capture_raw_steps(
         logits = [float(value) for value in forward_logits(prefix)]
         if not logits:
             raise CausalTraceError("forward_logits returned an empty logit vector")
+        if not all(math.isfinite(value) for value in logits):
+            raise CausalTraceError("forward_logits returned non-finite logits")
         legal = tuple(int(token) for token in allowed_ids(prefix))
         if not legal:
             stop_reason = "no_legal_continuation"
@@ -535,7 +537,14 @@ def load_causal_decision_states(
             raise ValueError("causal decision states do not match the policy checkpoint")
         if row.get("tokenizer_sha") != expected_tokenizer_sha:
             raise ValueError("causal decision states do not match the checkpoint tokenizer")
-        states.append(DecisionStateV2.from_dict(row["state"]))
+        state = DecisionStateV2.from_dict(row["state"])
+        # The nested state must agree with the row envelope and the requested identity,
+        # not merely be internally consistent.
+        if state.policy_checkpoint_sha != expected_checkpoint_sha:
+            raise ValueError("causal decision state does not match the policy checkpoint")
+        if state.tokenizer_sha != expected_tokenizer_sha:
+            raise ValueError("causal decision state does not match the checkpoint tokenizer")
+        states.append(state)
     return states
 
 

@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
@@ -52,7 +53,9 @@ __all__ = [
 # --------------------------------------------------------------------------- #
 def _canonical_json(value: Any) -> str:
     """Order-insensitive canonical JSON text used by every fingerprint/dedup key."""
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return json.dumps(
+        value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
+    )
 
 
 def _sha256_hex(value: Any) -> str:
@@ -60,8 +63,11 @@ def _sha256_hex(value: Any) -> str:
 
 
 def _is_json_scalar(value: Any) -> bool:
-    # ``bool`` is a subclass of ``int`` and is a valid JSON scalar.
-    return value is None or isinstance(value, (str, int, float))
+    # ``bool`` is a subclass of ``int`` and is a valid JSON scalar; non-finite floats
+    # (NaN/±Inf) are not standard JSON and must not enter a fingerprint or payload.
+    if value is None or isinstance(value, (str, bool, int)):
+        return True
+    return isinstance(value, float) and math.isfinite(value)
 
 
 def _first_duplicate(items: Sequence[str]) -> str | None:
@@ -95,7 +101,7 @@ def _validate_scalar_pairs(
 # --------------------------------------------------------------------------- #
 # Core value types.
 # --------------------------------------------------------------------------- #
-@dataclass(frozen=True, order=True)
+@dataclass(frozen=True)
 class HoleId:
     """Stable identifier for one unresolved decision site (see the design doc).
 
@@ -561,11 +567,15 @@ class FiniteDomainState:
 def _merge_metadata(left: HoleDomain, right: HoleDomain) -> tuple[tuple[str, JsonScalar], ...]:
     merged = dict(left.metadata)
     for key, value in right.metadata:
-        if key in merged and merged[key] != value:
-            raise ValueError(
-                f"meet metadata conflict on hole {left.hole_id} key {key!r}: "
-                f"{merged[key]!r} vs {value!r}"
-            )
+        if key in merged:
+            # Compare by canonical JSON so 1 and 1.0 conflict, and keep a value
+            # independent of operand order so meet stays commutative.
+            if _canonical_json(merged[key]) != _canonical_json(value):
+                raise ValueError(
+                    f"meet metadata conflict on hole {left.hole_id} key {key!r}: "
+                    f"{merged[key]!r} vs {value!r}"
+                )
+            continue
         merged[key] = value
     return tuple(sorted(merged.items(), key=lambda kv: kv[0]))
 

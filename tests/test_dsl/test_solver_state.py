@@ -385,8 +385,15 @@ def test_solver_package_imports_without_torch() -> None:
         """
     )
     env = {**os.environ, "PYTHONPATH": src_dir}
-    result = subprocess.run(
-        [sys.executable, "-c", script], capture_output=True, text=True, env=env
-    )
+    try:
+        result = subprocess.run(
+            [sys.executable, "-c", script],
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=60,
+        )
+    except subprocess.TimeoutExpired as exc:  # pragma: no cover - deadlock guard
+        raise AssertionError(f"torch-free import timed out: {exc}") from exc
     assert result.returncode == 0, result.stderr
     assert "TORCH_FREE_OK" in result.stdout

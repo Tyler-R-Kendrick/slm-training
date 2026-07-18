@@ -276,11 +276,27 @@ class CausalLMOpenUIPlugin:
         ].to(self.model.device)
 
     def active_adapter_identity(self) -> str:
-        """Content address of the active adapter params, or "" when none are active."""
-        names = sorted(
-            name for name, _ in self.model.named_parameters() if "lora" in name.lower()
+        """Content digest of the active adapter tensors, or "" when none are active.
+
+        Hashing the tensor *values* (not just their names) means any mutation of an
+        adapter weight changes the folded ``policy_checkpoint_sha`` — so a trace
+        captured under one adapter cannot silently load as another.
+        """
+        import torch
+
+        adapters = [
+            (name, param)
+            for name, param in self.model.named_parameters()
+            if "lora" in name.lower()
+        ]
+        if not adapters:
+            return ""
+        return content_sha(
+            {
+                name: param.detach().to(torch.float64).cpu().flatten().tolist()
+                for name, param in sorted(adapters, key=lambda item: item[0])
+            }
         )
-        return content_sha(names) if names else ""
 
     def capture_identity(self, *, group_id: str, context_text: str) -> CausalTraceIdentity:
         """Build the trajectory identity stamped onto every captured causal state.
@@ -382,6 +398,8 @@ class CausalLMOpenUIPlugin:
 
         if state.context_ids is None:
             raise ValueError("causal replay requires a stored integer prefix (context_ids)")
+        if int(forced_action_id) not in state.legal_action_ids:
+            raise ValueError("forced causal action is not legal for the stored state")
         prompt_len = len(state.context_ids) - int(state.decision_position)
         if prompt_len < 0:
             raise ValueError("stored decision position exceeds the recorded prefix length")
@@ -407,7 +425,10 @@ class CausalLMOpenUIPlugin:
             max_new_tokens=int(config.get("max_new_tokens", self.config.max_length)),
             initial_prefix=base_prefix,
         )
-        generated = (int(forced_action_id), *result.generated_token_ids)
+        # The stored prefix already holds the tokens generated before this decision;
+        # keep them so a decision_position > 0 replay materializes the full program.
+        generated_suffix = tuple(int(token) for token in state.context_ids[prompt_len:])
+        generated = (*generated_suffix, int(forced_action_id), *result.generated_token_ids)
         raw_text = self.tokenizer.decode(generated, skip_special_tokens=True).strip()
         try:
             program = validate(raw_text)

@@ -287,11 +287,17 @@ class ActionOutcomeV2:
         unknown = set(value) - fields
         if unknown:
             raise ValueError(f"unknown action outcome fields: {sorted(unknown)}")
+        version = int(value.get("version", SCHEMA_VERSION))
+        if version != SCHEMA_VERSION:
+            raise ValueError(f"unsupported action outcome version: {version}")
+        legal = value["legal"]
+        if not isinstance(legal, bool):
+            raise ValueError("action outcome legal must be a boolean")
         ci = value.get("confidence_interval")
         return cls(
             state_id=str(value["state_id"]),
             action_id=int(value["action_id"]),
-            legal=bool(value["legal"]),
+            legal=legal,
             rollout_policy_sha=str(value["rollout_policy_sha"]),
             continuation_seeds=tuple(value.get("continuation_seeds") or ()),
             outcome_hashes=tuple(value.get("outcome_hashes") or ()),
@@ -305,6 +311,7 @@ class ActionOutcomeV2:
             confidence_interval=tuple(ci) if ci else None,
             evidence_ids=tuple(value.get("evidence_ids") or ()),
             evidence_confidence=float(value.get("evidence_confidence", 0.0)),
+            version=version,
         )
 
 
@@ -779,6 +786,8 @@ def objective_view_support(
     held-out objective signature is *covered* when at least ``min_train_support``
     train examples share it.
     """
+    if isinstance(min_train_support, bool) or int(min_train_support) < 1:
+        raise ValueError("min_train_support must be a positive integer")
     counts: dict[str, dict[str, int]] = {"train": {}, "held_out": {}}
     materializers: set[tuple[str, str]] = set()
     non_trainable = 0
