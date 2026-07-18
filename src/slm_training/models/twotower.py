@@ -476,6 +476,13 @@ def _load_checkpoint_state(
         if key == "denoiser.kind_lookup"
         and getattr(getattr(model, "denoiser", None), "kind", None) is None
     }
+    # E396/E479 and earlier type-head runs saved a slot_component_head that
+    # the current architecture no longer instantiates. Dropping it is safe:
+    # generation uses component_plan_head / denoiser.lm_head instead.
+    if not hasattr(model, "slot_component_head"):
+        allowed_unexpected |= {
+            key for key in unexpected if key.startswith("slot_component_head.")
+        }
     bad_unexpected = sorted(set(unexpected) - allowed_unexpected)
     if bad_missing or bad_unexpected:
         raise ValueError(
