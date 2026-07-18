@@ -136,11 +136,13 @@ def build_hf_jobs_command(
     entrypoint: str,
     image: str = NEMO_RL_IMAGE,
     flavor: str = DEFAULT_FLAVOR,
-    timeout: str = "2h",
+    timeout: str = "3m",
     checkpoint_bucket: str = DEFAULT_BUCKET,
 ) -> list[str]:
     if image != NEMO_RL_IMAGE:
         raise ValueError(f"NeMo RL image must remain pinned to {NEMO_RL_IMAGE}")
+    if timeout != "3m":
+        raise ValueError("NeMo RL timeout must be 3m")
     return [
         "hf",
         "jobs",

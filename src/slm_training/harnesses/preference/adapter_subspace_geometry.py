@@ -10,7 +10,7 @@ Honesty boundary (E285/E286 lessons):
 
 * No training, no checkpoint, no quality claim — a solver result is diagnostic evidence,
   not authorization to run a training campaign.
-* One cumulative monotonic :class:`DiagnosticBudget` (hard 5-minute cap) spans support,
+* One cumulative monotonic :class:`DiagnosticBudget` (hard 3-minute cap) spans support,
   forward, gradient, and solve; on expiry the run emits a stopped record with
   ``result=None`` and never a partial artifact.
 * Gradients are taken **only** over the adapter tensors; the parent stays frozen

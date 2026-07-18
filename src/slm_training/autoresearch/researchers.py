@@ -73,7 +73,7 @@ class IsolatedResearcher:
         python: Path | str,
         worker: Path | str,
         config: dict[str, Any] | None = None,
-        timeout_seconds: float = 3600,
+        timeout_seconds: float = 180,
     ) -> None:
         self.spec = spec
         self.checkout = Path(checkout).resolve()
@@ -82,8 +82,8 @@ class IsolatedResearcher:
         self.config = spec.config_model.model_validate(config or {}).model_dump(
             mode="json"
         )
-        if timeout_seconds <= 0:
-            raise ValueError("researcher timeout must be positive")
+        if not 0 < timeout_seconds <= 180:
+            raise ValueError("researcher timeout must be in (0, 180]")
         self.timeout_seconds = timeout_seconds
 
     def run(
@@ -286,7 +286,7 @@ def get_researcher(
     python: Path | str,
     worker: Path | str,
     config: dict[str, Any] | None = None,
-    timeout_seconds: float = 3600,
+    timeout_seconds: float = 180,
 ) -> IsolatedResearcher:
     try:
         spec = RESEARCHERS[researcher_id]

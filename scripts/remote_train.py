@@ -9,7 +9,12 @@ import os
 import re
 import shlex
 import subprocess
+import time
 from pathlib import Path
+
+INTERRUPT_AFTER_SECONDS = 170
+KILL_AFTER_SECONDS = 10
+MAX_RUN_SECONDS = INTERRUPT_AFTER_SECONDS + KILL_AFTER_SECONDS
 
 
 def _ssh_base(
@@ -88,7 +93,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     # Forward HF write auth into the remote train (required for bucket sync).
     # --fast-train + reduce-overhead match HF Jobs CUDA defaults (TF32 / AMP / compile).
-    remote_script = f"""
+    run_script = f"""
 set -euo pipefail
 {token_export}
 export SLM_FAST_TRAIN=1
@@ -110,6 +115,10 @@ python -m scripts.evaluate_model --train-dir outputs/data/train/v1 --test-dir ou
 python -m scripts.export_cactus --checkpoint {ckpt_q} --out-dir outputs/cactus/bundle
 python -m scripts.bench_cactus --checkpoint {ckpt_q} --with-design-md
 """.strip()
+    remote_script = (
+        f"timeout --signal=INT --kill-after={KILL_AFTER_SECONDS}s "
+        f"{INTERRUPT_AFTER_SECONDS}s bash -lc {shlex.quote(run_script)}"
+    )
 
     ssh = _ssh_base(args.host, args.user, args.identity, args.port)
     plan = {
@@ -122,17 +131,33 @@ python -m scripts.bench_cactus --checkpoint {ckpt_q} --with-design-md
         print(json.dumps(plan, indent=2))
         return 0
 
-    proc = subprocess.run(ssh + ["bash", "-lc", remote_script], check=False)
+    deadline = time.monotonic() + MAX_RUN_SECONDS
+
+    def remaining() -> float:
+        return max(0.001, deadline - time.monotonic())
+
+    try:
+        proc = subprocess.run(
+            ssh + ["bash", "-lc", remote_script],
+            check=False,
+            timeout=remaining(),
+        )
+    except subprocess.TimeoutExpired:
+        return 124
     if proc.returncode != 0:
         return int(proc.returncode)
 
     args.pull_dir.mkdir(parents=True, exist_ok=True)
-    resolve_proc = subprocess.run(
-        ssh + ["bash", "-lc", f"cd {remote_dir} && pwd -P"],
-        check=False,
-        capture_output=True,
-        text=True,
-    )
+    try:
+        resolve_proc = subprocess.run(
+            ssh + ["bash", "-lc", f"cd {remote_dir} && pwd -P"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=remaining(),
+        )
+    except subprocess.TimeoutExpired:
+        return 124
     resolved_dir = (resolve_proc.stdout or "").strip()
     if resolve_proc.returncode != 0 or not resolved_dir:
         print(
@@ -153,7 +178,10 @@ python -m scripts.bench_cactus --checkpoint {ckpt_q} --with-design-md
         scp.extend(["-i", str(args.identity)])
     target = f"{args.user}@{args.host}" if args.user else args.host
     scp.extend([f"{target}:{shlex.quote(remote_ckpt)}", str(args.pull_dir)])
-    copy_proc = subprocess.run(scp, check=False)
+    try:
+        copy_proc = subprocess.run(scp, check=False, timeout=remaining())
+    except subprocess.TimeoutExpired:
+        return 124
     if copy_proc.returncode != 0:
         print(
             json.dumps(
