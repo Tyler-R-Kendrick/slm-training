@@ -2438,6 +2438,19 @@ evidence:
 [narrative](iter-e540-reference-phase-telemetry-20260719.md) and
 [JSON](iter-e540-reference-phase-telemetry-20260719.json).
 
+## E541 root-only reference completeness
+
+E541 removes the single nested-list intervention identified by E540. Nine
+root-list applications still change six choices, but every quality metric
+exactly matches the E539 weight-zero control. E539's single nested Modal choice
+caused both its placeholder gain and structural regression.
+
+**Verdict:** keep the safer root-only guard default-off, reject weight 4 for
+training or promotion, and stop hand-written completeness-bias iteration.
+Learn topology/aggregation targets instead. Full evidence:
+[narrative](iter-e541-root-reference-only-20260719.md) and
+[JSON](iter-e541-root-reference-only-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

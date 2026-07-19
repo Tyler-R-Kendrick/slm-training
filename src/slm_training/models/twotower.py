@@ -3746,20 +3746,20 @@ class TwoTowerModel(nn.Module):
         prefix: list[int],
         candidate_ids: tuple[int, ...],
     ) -> torch.Tensor | None:
-        """Prefer unused generated element references in root/list aggregation."""
+        """Prefer unused generated element references in terminal root aggregation."""
         weight = float(
             getattr(self.config, "visible_reference_decode_weight", 0.0) or 0.0
         )
-        structural_list = bool(
+        structural_root_list = bool(
             getattr(state, "mode", None) == "structural"
-            and state.frames
+            and len(state.frames) == 1
             and state.frames[-1].kind == "variadic"
             and state.frames[-1].expr_type == "array"
         )
         if (
             weight <= 0.0
             or not state.frames
-            or (state.current_marker != "r=" and not structural_list)
+            or (state.current_marker != "r=" and not structural_root_list)
         ):
             return None
         eligible = {
