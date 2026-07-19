@@ -2,6 +2,14 @@
 # snapshots instead.
 src/slm_training/resources/rico/**
 
+# Offline governance mirrors duplicate committed records and are not read by
+# the deployed control-plane APIs.
+src/slm_training/resources/data/**/governance/**
+
+# E530 r1 is retained only as invalid recipe-drift evidence. Production must
+# expose the corrected immutable r2 snapshot, not this rejected candidate.
+src/slm_training/resources/data/train/e530_visible_semantic_roles_r1_20260719/**
+
 # Human narratives are served from the repository, not opened by the FastAPI
 # function. Machine-readable experiment JSON remains deployable.
 docs/design/**/*.md
