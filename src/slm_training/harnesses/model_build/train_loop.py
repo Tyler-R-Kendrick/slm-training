@@ -139,6 +139,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
 
     plugin = model or build_model(config, records)
     initialized_from: str | None = None
+    initialized_prior_fields: list[str] = []
     if initialize_path:
         initialize_path = Path(initialize_path)
         if not initialize_path.is_file():
@@ -152,6 +153,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             )
         loader(initialize_path)
         initialized_from = str(initialize_path)
+        initialized_prior_fields = list(
+            getattr(plugin, "initialized_prior_fields", ())
+        )
     if int(getattr(config, "retrieval_k", 0) or 0) > 0 and hasattr(
         plugin, "skeleton_bank"
     ):
@@ -789,6 +793,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         "elapsed_wall_seconds": time.monotonic() - wall_started,
         "resumed_from": resumed_from,
         "initialized_from": initialized_from,
+        "initialized_prior_fields": initialized_prior_fields,
         "data_manifest_sha": manifest_sha,
         "record_nll": str(record_nll_path.as_posix()) if record_nll_path else None,
         # Scratch-context and frozen-HF runs are different scientific tracks —
@@ -850,6 +855,24 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             ),
             "component_plan_decode_weight": getattr(
                 config, "component_plan_decode_weight", 0.0
+            ),
+            "slot_component_loss_weight": getattr(
+                config, "slot_component_loss_weight", 0.0
+            ),
+            "slot_component_class_balance_power": getattr(
+                config, "slot_component_class_balance_power", 0.0
+            ),
+            "slot_component_decode_weight": getattr(
+                config, "slot_component_decode_weight", 0.0
+            ),
+            "slot_component_prompt_context": bool(
+                getattr(config, "slot_component_prompt_context", False)
+            ),
+            "slot_component_lexeme_prior_weight": getattr(
+                config, "slot_component_lexeme_prior_weight", 0.0
+            ),
+            "slot_component_span_prior_weight": getattr(
+                config, "slot_component_span_prior_weight", 0.0
             ),
             "component_edge_loss_weight": getattr(
                 config, "component_edge_loss_weight", 0.0

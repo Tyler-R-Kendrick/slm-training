@@ -182,7 +182,12 @@ def test_resume_rejects_different_corpus(train_dir: Path, tmp_path: Path) -> Non
 def test_initialize_from_resets_state_for_new_corpus(
     train_dir: Path, tmp_path: Path
 ) -> None:
-    source = train(_cfg(train_dir, tmp_path, "source", 2))
+    prior_recipe = {
+        "output_tokenizer": "choice",
+        "slot_component_loss_weight": 1.0,
+        "slot_component_lexeme_prior_weight": 1.0,
+    }
+    source = train(_cfg(train_dir, tmp_path, "source", 2, **prior_recipe))
     source_checkpoint = Path(source["checkpoint"])
 
     other_dir = tmp_path / "other_train"
@@ -197,9 +202,21 @@ def test_initialize_from_resets_state_for_new_corpus(
         )
         for index, (prompt, openui, placeholders) in enumerate(
             [
-                ("Hero", HERO, [":hero.title", ":hero.body"]),
-                ("CTA", CTA, [":cta.label"]),
-                ("Hero two", HERO, [":hero.title", ":hero.body"]),
+                (
+                    "Hero",
+                    HERO.replace(":hero.", ":fresh."),
+                    [":fresh.title", ":fresh.body"],
+                ),
+                (
+                    "CTA",
+                    CTA.replace(":cta.label", ":fresh.action"),
+                    [":fresh.action"],
+                ),
+                (
+                    "Hero two",
+                    HERO.replace(":hero.", ":fresh."),
+                    [":fresh.title", ":fresh.body"],
+                ),
             ]
         )
     ]
@@ -212,12 +229,19 @@ def test_initialize_from_resets_state_for_new_corpus(
             "initialized",
             0,
             initialize_from=source_checkpoint,
+            **prior_recipe,
         )
     )
     assert initialized["initialized_from"] == str(source_checkpoint)
     assert initialized["resumed_from"] is None
     assert initialized["steps"] == 0
     assert initialized["seen_target_tokens"] == 0
+    assert initialized["recipe"]["slot_component_loss_weight"] == 1.0
+    assert initialized["recipe"]["slot_component_lexeme_prior_weight"] == 1.0
+    assert initialized["initialized_prior_fields"] == [
+        "slot_component_lexeme_priors",
+        "slot_component_span_priors",
+    ]
 
     source_model = TwoTowerModel.from_checkpoint(source_checkpoint)
     initialized_model = TwoTowerModel.from_checkpoint(
@@ -225,6 +249,15 @@ def test_initialize_from_resets_state_for_new_corpus(
     )
     for key, value in source_model.state_dict().items():
         assert torch.equal(value, initialized_model.state_dict()[key]), key
+    assert source_model.config.slot_component_lexeme_priors
+    assert all(
+        key != "fresh"
+        for key, _scores in initialized_model.config.slot_component_lexeme_priors
+    )
+    assert (
+        source_model.config.slot_component_lexeme_priors
+        == initialized_model.config.slot_component_lexeme_priors
+    )
 
 
 def test_initialize_from_cannot_mix_with_resume(

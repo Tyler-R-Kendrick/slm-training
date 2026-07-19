@@ -89,8 +89,11 @@ Leakage checks use exact + **structural** OpenUI fingerprints (placeholder/binde
 - `scripts/build_train_data.py` — `--source rico|fixture|awwwards|rico+awwwards|all`
 - `scripts/train_model.py` — `--context-backend hf` (default)
 - `scripts/train_model.py --initialize-from <last.pt>` — warm-start compatible
-  weights/tokenizers for a new corpus or recipe while resetting optimizer,
-  RNG, step, and token counters; unlike `--resume-from`, this is not bit-exact
+  weights/tokenizers and learned serving priors for a new corpus or recipe
+  while resetting optimizer, RNG, step, and token counters; unlike
+  `--resume-from`, this is not bit-exact. `train_summary.json` records the
+  restored prior fields so corpus-derived decode behavior cannot change
+  silently.
 - `scripts/train_preference.py` — build-pairs / train (reference-free)
 - `scripts/export_cactus.py` / `scripts/bench_cactus.py`
 - `scripts/remote_train.py` — SSH pod train + pull (trains the `v1` corpus it builds)

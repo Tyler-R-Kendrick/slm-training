@@ -124,6 +124,24 @@ def test_e501_matched_runs_and_checkpoints_are_persisted() -> None:
     assert all(readers.run(run_id)["scoreboard"] for run_id in expected_runs)
 
 
+def test_e502_matched_runs_and_checkpoints_are_persisted() -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    expected = {
+        "e502-e396-e500-uniform-lr1e4-r1",
+        "e502-e396-e500-uniform-lr3e5-r2",
+        "e502-e396-e500-prior-retained-lr3e4-r3",
+        "e502-e396-e500-prior-retained-lr3e4-r4-5k",
+    }
+    run_ids = {row.get("run_id") for row in readers.runs()["runs"]}
+    checkpoint_ids = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert expected <= run_ids
+    assert expected <= checkpoint_ids
+    assert all(readers.run(run_id)["scoreboard"] for run_id in expected)
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")

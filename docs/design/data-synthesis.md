@@ -171,3 +171,14 @@ The mixture is therefore not relabeled as defective—it serves multi-task
 balance—but generation-only evaluations must report effective task exposure.
 The 1k uniform arm avoids the 5k structural collapse but still moves no
 semantic gate. See [E501](iter-e501-e396-e500-warm-start-20260719.md).
+
+### E502 initialization-attribution follow-up
+
+E502 shows that a new-corpus warm start can change behavior before meaningful
+optimization if corpus-derived serving priors are rebuilt. Future matched data
+experiments must report `initialized_prior_fields` alongside effective task
+exposure and the complete slot-head recipe. The canonical initializer now
+restores checkpoint lexeme/span priors; this raises E396→E500 1k structure
+from `0.2317` to `0.3169`, but the retained-prior 5k arm still collapses to
+`0.0927`. The corpus conclusion remains unchanged and no gate was relaxed.
+See [E502](iter-e502-initialization-prior-retention-20260719.md).

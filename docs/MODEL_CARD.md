@@ -120,6 +120,10 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 | E501 task-balanced 5k warm-start | `e501-e396-e500-init-r1` | CPU frozen SmolLM2 E396→E500 diagnostic | `outputs/runs/e501-e396-e500-init-r1/checkpoints/last.pt` (local) | 96 steps / 5,060 target tokens; structure regresses 0.2117→0.1458 and semantic metrics remain zero, AgentV 0/1. SHA `f86b83d3…cc9cf15`; rejected, **not promotable or ship** ([results](design/iter-e501-e396-e500-warm-start-20260719.md)) |
 | E501 uniform 5k warm-start | `e501-e396-e500-uniform-init-r2` | CPU frozen SmolLM2 generation-heavy E396→E500 diagnostic | `outputs/runs/e501-e396-e500-uniform-init-r2/checkpoints/last.pt` (local) | 99 steps / 5,019 target tokens; recall reaches 0.1667 but structure collapses to 0.0889 and meaningful/fidelity/reward remain zero, AgentV 0/1. SHA `14605459…736e4e7`; rejected, **not promotable or ship** ([results](design/iter-e501-e396-e500-warm-start-20260719.md)) |
 | E501 uniform 1k warm-start | `e501-e396-e500-uniform-init-r3-1k` | CPU frozen SmolLM2 short E396→E500 diagnostic | `outputs/runs/e501-e396-e500-uniform-init-r3-1k/checkpoints/last.pt` (local) | 22 steps / 1,039 target tokens; structure improves slightly 0.2117→0.2317 but all semantic metrics remain zero, AgentV 0/1. SHA `d84d34c0…b5be2ffd`; diagnostic only, **not promotable or ship** ([results](design/iter-e501-e396-e500-warm-start-20260719.md)) |
+| E502 1e-4 warm-start | `e502-e396-e500-uniform-lr1e4-r1` | CPU frozen SmolLM2 lower-LR diagnostic | `outputs/runs/e502-e396-e500-uniform-lr1e4-r1/checkpoints/last.pt` (local) | 22 steps / 1,039 tokens; structure 0.1133, recall 0.1667, semantic metrics zero, AgentV 0/1. SHA `fcd51266…f047255e`; rejected, **not promotable or ship** ([results](design/iter-e502-initialization-prior-retention-20260719.md)) |
+| E502 3e-5 warm-start | `e502-e396-e500-uniform-lr3e5-r2` | CPU frozen SmolLM2 lower-LR diagnostic | `outputs/runs/e502-e396-e500-uniform-lr3e5-r2/checkpoints/last.pt` (local) | 22 steps / 1,039 tokens; structure 0.1167, recall 0.0833, semantic metrics zero, AgentV 0/1. SHA `528c86a6…a62677c`; rejected, **not promotable or ship** ([results](design/iter-e502-initialization-prior-retention-20260719.md)) |
+| E502 retained-prior 1k | `e502-e396-e500-prior-retained-lr3e4-r3` | CPU frozen SmolLM2 prior-retention diagnostic | `outputs/runs/e502-e396-e500-prior-retained-lr3e4-r3/checkpoints/last.pt` (local) | 22 steps / 1,039 tokens; structure 0.3169 and recall 0.0833, but semantic metrics zero and AgentV 0/1. SHA `e1e833cb…0746cb6a`; diagnostic only, **not promotable or ship** ([results](design/iter-e502-initialization-prior-retention-20260719.md)) |
+| E502 retained-prior 5k | `e502-e396-e500-prior-retained-lr3e4-r4-5k` | CPU frozen SmolLM2 prior-retention stress diagnostic | `outputs/runs/e502-e396-e500-prior-retained-lr3e4-r4-5k/checkpoints/last.pt` (local) | 99 steps / 5,019 tokens; structure collapses to 0.0927 with recall 0.1667 and semantic metrics zero, AgentV 0/1. SHA `6f937374…4a46a726`; rejected, **not promotable or ship** ([results](design/iter-e502-initialization-prior-retention-20260719.md)) |
 | Production HF ship | — | — | `hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/` | **None registered yet** — fill this row after the first full HF sync |
 
 Update the table in place when a checkpoint is written or superseded. Keep
@@ -507,6 +511,21 @@ choice output, and honest constrained smoke `n=3`. Every process is capped at
 | `e501-e396-e500-uniform-init-r2` | uniform records | 5,019 | 1.0 | 0.0 | 0.0 | 0.0889 | 0.1667 | 0.0 | 0/1 | No |
 | `e501-e396-e500-uniform-init-r3-1k` | uniform records | 1,039 | 1.0 | 0.0 | 0.0 | 0.2317 | 0.0 | 0.0 | 0/1 | No |
 
+### E502 checkpoint-prior retention diagnostic
+
+All rows use CPU, frozen local SmolLM2-135M, the committed E500 corpus,
+honest prompt-derived slots, constrained decode without fallback, smoke `n=3`,
+and `max_wall_minutes=3.0`. Version stamp: code `3e4f906`, train v2 for the
+lower-LR controls and v3 for retained-prior arms; eval v1, meaningful v2,
+scoring v1, ship gates v1.
+
+| Run | LR | Tokens | Priors restored | Syntax | Meaningful | Fidelity | Structure | Recall | Reward | AgentV | Promote |
+| --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| `e502-e396-e500-uniform-lr1e4-r1` | 1e-4 | 1,039 | No | 1.0 | 0.0 | 0.0 | 0.1133 | 0.1667 | 0.0 | 0/1 | No |
+| `e502-e396-e500-uniform-lr3e5-r2` | 3e-5 | 1,039 | No | 1.0 | 0.0 | 0.0 | 0.1167 | 0.0833 | 0.0 | 0/1 | No |
+| `e502-e396-e500-prior-retained-lr3e4-r3` | 3e-4 | 1,039 | Lexeme + span | 1.0 | 0.0 | 0.0 | 0.3169 | 0.0833 | 0.0 | 0/1 | No |
+| `e502-e396-e500-prior-retained-lr3e4-r4-5k` | 3e-4 | 5,019 | Lexeme + span | 1.0 | 0.0 | 0.0 | 0.0927 | 0.1667 | 0.0 | 0/1 | No |
+
 All three new checkpoints are rejected local diagnostics with explicit
 `--no-sync-checkpoints`; the frozen parent remains the only bucket artifact.
 
@@ -636,6 +655,10 @@ All three new checkpoints are rejected local diagnostics with explicit
 | 2026-07-19 | `e501-e396-e500-init-r1` (task-balanced 5k warm-start) | `outputs/runs/e501-e396-e500-init-r1/` (local) | 96 CPU steps / 5,060 target tokens in 44.99s; loss 10.3340; SHA `f86b83d3c2629d311b6c56f618b1f30ab237624fbc9c47c41929882fdcc9cf15` | Structure regresses to 0.1458 with semantic metrics zero and AgentV 0/1; rejected, no sync or promotion |
 | 2026-07-19 | `e501-e396-e500-uniform-init-r2` (uniform 5k warm-start) | `outputs/runs/e501-e396-e500-uniform-init-r2/` (local) | 99 CPU steps / 5,019 target tokens in 79.65s; loss 12.8653; SHA `14605459038c8e56d4f797cc359a2ff9e89d261a375b799476855f262736e4e7` | Recall 0.1667 but structure 0.0889 and meaningful/fidelity/reward zero, AgentV 0/1; rejected, no sync or promotion |
 | 2026-07-19 | `e501-e396-e500-uniform-init-r3-1k` (uniform 1k warm-start) | `outputs/runs/e501-e396-e500-uniform-init-r3-1k/` (local) | 22 CPU steps / 1,039 target tokens in 21.39s; loss 26.0208; SHA `d84d34c031c6f2a9e017d2566c04e4abb66314ea3814ba3868a8cc7cb5be2ffd` | Structure 0.2317 is +0.0200 vs parent but semantic metrics remain zero, AgentV 0/1; diagnostic only, no sync or promotion |
+| 2026-07-19 | `e502-e396-e500-uniform-lr1e4-r1` | `outputs/runs/e502-e396-e500-uniform-lr1e4-r1/` (local) | 22 CPU steps / 1,039 tokens in 22.79s; loss 28.8950; SHA `fcd5126637cb1d0aa206f5b66f37c198d124813038dba2c76eed7101f047255e` | Structure 0.1133 and recall 0.1667; semantic gates zero, AgentV 0/1; rejected, no sync or promotion |
+| 2026-07-19 | `e502-e396-e500-uniform-lr3e5-r2` | `outputs/runs/e502-e396-e500-uniform-lr3e5-r2/` (local) | 22 CPU steps / 1,039 tokens in 21.32s; loss 29.5542; SHA `528c86a6677b711ee5a5484fd513faaa3baca11ad3525c007ef6fd383a62677c` | Structure 0.1167 and recall 0.0833; semantic gates zero, AgentV 0/1; rejected, no sync or promotion |
+| 2026-07-19 | `e502-e396-e500-prior-retained-lr3e4-r3` | `outputs/runs/e502-e396-e500-prior-retained-lr3e4-r3/` (local) | 22 CPU steps / 1,039 tokens in 21.17s; loss 25.6905; SHA `e1e833cb35f7de656ead215a0d2924f646008e82d3f7b78b94e4569f0746cb6a` | Structure 0.3169 and recall 0.0833, but semantic gates zero and AgentV 0/1; diagnostic only, no sync or promotion |
+| 2026-07-19 | `e502-e396-e500-prior-retained-lr3e4-r4-5k` | `outputs/runs/e502-e396-e500-prior-retained-lr3e4-r4-5k/` (local) | 99 CPU steps / 5,019 tokens in 79.48s; loss 12.8937; SHA `6f937374222b7fd0e82f02e603d4315422bd86d8c2728ac65401f3c24a46a726` | Structure collapses to 0.0927; semantic gates zero, AgentV 0/1; rejected, no sync or promotion |
 
 Append a row for every new or replaced checkpoint. Do not delete history.
 

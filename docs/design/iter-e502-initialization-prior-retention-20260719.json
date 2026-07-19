@@ -1,0 +1,221 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E502",
+  "run_id": "e502-e396-e500-prior-retained-lr3e4-r3",
+  "run_class": "scratch_matrix",
+  "date_utc": "2026-07-19",
+  "status": "complete",
+  "conclusion": "Lower learning rates do not prevent initialization drift because corpus-derived serving priors were silently rebuilt. Restoring checkpoint priors improves the 1k continuation, but a 5k continuation still collapses and no semantic gate clears.",
+  "hypothesis": "Reducing warm-start update magnitude or preserving the E396 checkpoint's learned serving priors can retain parent structure while adapting to the E500 corpus.",
+  "harness_change": {
+    "feature": "initialization_prior_retention",
+    "behavior": "TwoTower checkpoint initialization now restores corpus-derived slot-component lexeme and span priors with weights and tokenizers.",
+    "summary_fields": [
+      "initialized_prior_fields",
+      "recipe.slot_component_loss_weight",
+      "recipe.slot_component_class_balance_power",
+      "recipe.slot_component_decode_weight",
+      "recipe.slot_component_prompt_context",
+      "recipe.slot_component_lexeme_prior_weight",
+      "recipe.slot_component_span_prior_weight"
+    ],
+    "resume_guard_preserved": true,
+    "component_version": "harness.model_build.train@v3"
+  },
+  "parent_checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0",
+    "remote_uri": "hf://buckets/TKendrick/OpenUI/checkpoints/e396-balanced-type-head-continuation-r1/"
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "context_model": "HuggingFaceTB/SmolLM2-135M",
+    "context_frozen": true,
+    "local_files_only": true,
+    "output_codec": "choice",
+    "d_model": 128,
+    "heads": 4,
+    "context_layers": 2,
+    "denoiser_layers": 4,
+    "batch_size": 2,
+    "seed": 0,
+    "ltr_loss_weight": 0.5,
+    "component_plan_loss_weight": 4.0,
+    "slot_component_loss_weight": 1.0,
+    "slot_component_class_balance_power": 0.5,
+    "slot_component_decode_weight": 4.0,
+    "slot_component_prompt_context": true,
+    "slot_component_lexeme_prior_weight": 1.0,
+    "fidelity_loss_weight": 0.5,
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170,
+    "suite": "smoke",
+    "suite_n": 3,
+    "honesty_mode": "no DESIGN context; honest prompt-derived slot contract; constrained decode; no fallback; scratch diagnostic; no checkpoint sync"
+  },
+  "data": {
+    "version": "e500_documentized_expression_candidate_r2_20260718",
+    "records": 260,
+    "content_fingerprint": "bc256915c79c6a07ff9ef253d5b6eb70fade30c5422ae8015c23f739c463bc62",
+    "sampling": "uniform records"
+  },
+  "matched_runs": [
+    {
+      "label": "lower_lr_1e4_without_prior_retention",
+      "run_id": "e502-e396-e500-uniform-lr1e4-r1",
+      "checkpoint_sha256": "fcd5126637cb1d0aa206f5b66f37c198d124813038dba2c76eed7101f047255e",
+      "steps": 22,
+      "seen_target_tokens": 1039,
+      "learning_rate": 0.0001,
+      "last_loss": 28.89499282836914,
+      "elapsed_wall_seconds": 22.794728131004376,
+      "initialized_prior_fields": [],
+      "smoke": {
+        "n": 3,
+        "syntax_parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "structural_similarity": 0.11326666666666667,
+        "component_type_recall": 0.16666666666666666,
+        "reward_score": 0.0,
+        "ast_node_f1": 0.14652014652014653,
+        "ast_edge_f1": 0.0,
+        "latency_ms_p50": 6033.82
+      }
+    },
+    {
+      "label": "lower_lr_3e5_without_prior_retention",
+      "run_id": "e502-e396-e500-uniform-lr3e5-r2",
+      "checkpoint_sha256": "528c86a6677b711ee5a5484fd513faaa3baca11ad3525c007ef6fd383a62677c",
+      "steps": 22,
+      "seen_target_tokens": 1039,
+      "learning_rate": 0.00003,
+      "last_loss": 29.554162979125977,
+      "elapsed_wall_seconds": 21.322434759000316,
+      "initialized_prior_fields": [],
+      "smoke": {
+        "n": 3,
+        "syntax_parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "structural_similarity": 0.11666666666666665,
+        "component_type_recall": 0.08333333333333333,
+        "reward_score": 0.0,
+        "ast_node_f1": 0.07407407407407407,
+        "ast_edge_f1": 0.0,
+        "latency_ms_p50": 4883.59
+      }
+    },
+    {
+      "label": "prior_retained_1k",
+      "run_id": "e502-e396-e500-prior-retained-lr3e4-r3",
+      "checkpoint_sha256": "e1e833cb35f7de656ead215a0d2924f646008e82d3f7b78b94e4569f0746cb6a",
+      "steps": 22,
+      "seen_target_tokens": 1039,
+      "learning_rate": 0.0003,
+      "last_loss": 25.690502166748047,
+      "elapsed_wall_seconds": 21.165165008002077,
+      "initialized_prior_fields": [
+        "slot_component_lexeme_priors",
+        "slot_component_span_priors"
+      ],
+      "smoke": {
+        "n": 3,
+        "syntax_parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "structural_similarity": 0.31693333333333334,
+        "component_type_recall": 0.08333333333333333,
+        "reward_score": 0.0,
+        "ast_node_f1": 0.42857142857142855,
+        "ast_edge_f1": 0.0,
+        "latency_ms_p50": 2717.8
+      }
+    },
+    {
+      "label": "prior_retained_5k",
+      "run_id": "e502-e396-e500-prior-retained-lr3e4-r4-5k",
+      "checkpoint_sha256": "6f937374222b7fd0e82f02e603d4315422bd86d8c2728ac65401f3c24a46a726",
+      "steps": 99,
+      "seen_target_tokens": 5019,
+      "learning_rate": 0.0003,
+      "last_loss": 12.893696784973145,
+      "elapsed_wall_seconds": 79.47623666698928,
+      "initialized_prior_fields": [
+        "slot_component_lexeme_priors",
+        "slot_component_span_priors"
+      ],
+      "smoke": {
+        "n": 3,
+        "syntax_parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "structural_similarity": 0.09273333333333333,
+        "component_type_recall": 0.16666666666666666,
+        "reward_score": 0.0,
+        "ast_node_f1": 0.19722222222222222,
+        "ast_edge_f1": 0.04166666666666668,
+        "latency_ms_p50": 6640.56
+      }
+    }
+  ],
+  "comparison": {
+    "lower_lr_1e4_minus_e501_1k": {
+      "structural_similarity": -0.1184,
+      "component_type_recall": 0.16666666666666666
+    },
+    "lower_lr_3e5_minus_e501_1k": {
+      "structural_similarity": -0.115,
+      "component_type_recall": 0.08333333333333333
+    },
+    "prior_retained_1k_minus_e501_1k": {
+      "structural_similarity": 0.08526666666666668,
+      "component_type_recall": 0.08333333333333333
+    },
+    "prior_retained_1k_minus_frozen_parent": {
+      "structural_similarity": 0.10526666666666667,
+      "component_type_recall": 0.08333333333333333
+    },
+    "prior_retained_5k_minus_e501_uniform_5k": {
+      "structural_similarity": 0.0038333333333333275,
+      "component_type_recall": 0.0
+    }
+  },
+  "failed_preflight": {
+    "run_id": "e502-e396-e500-uniform-lr1e4-r1",
+    "stage": "checkpoint_initialize",
+    "reason": "The first reconstructed command omitted the E396 slot-component head flags and failed closed on unexpected checkpoint tensors before an optimizer or checkpoint was created. The successful rerun used the exact slot-head recipe.",
+    "usable_checkpoint_created": false
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "passed": 0,
+    "total": 4,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Smoke-only n=3 diagnostics; meaningful rate, placeholder fidelity, and reward remain zero in every arm."
+  },
+  "checkpoint_bucket": {
+    "synced": false,
+    "reason": "Explicit --no-sync-checkpoints: bounded rejected continuation diagnostics are not full ship runs."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "3e4f9061015c74440efe3679720a3854c1007fc5",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.train": "v3",
+      "harness.model_build.eval": "v1",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v1",
+      "gates.ship": "openui_ship_gates_v1"
+    },
+    "stamped_at": "2026-07-19T01:48:22.678955+00:00"
+  },
+  "decision": "Keep prior-preserving initialization and recipe telemetry. Reject all E502 checkpoints for promotion or HF sync. The 1k retained-prior signal warrants an explicit weight-retention objective, but the 5k collapse rules out prior preservation alone."
+}

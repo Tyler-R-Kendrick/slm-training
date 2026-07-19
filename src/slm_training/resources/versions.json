@@ -25,12 +25,13 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py"
       ],
       "history": [
+        {"version": "v3", "date": "2026-07-18", "note": "preserve corpus-derived serving priors during checkpoint initialization and expose restored fields plus slot-head recipe settings in train summaries"},
         {"version": "v2", "date": "2026-07-18", "note": "add explicit weight-only checkpoint initialization for matched new-corpus training without weakening bit-exact resume guards"},
         {"version": "v1", "date": "2026-07-18", "note": "initial registration"}
       ]
