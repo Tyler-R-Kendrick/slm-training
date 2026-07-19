@@ -1,0 +1,588 @@
+{
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "46d646f3ce282338e0ced3d110a35e6287298690",
+    "code_dirty": true,
+    "components": {
+      "analysis.arity.diffusion_graph": "v1"
+    },
+    "stamped_at": "2026-07-18T23:58:30.406034+00:00"
+  },
+  "run_id": "cap4-05-quotient-diffusion-graph",
+  "claim_class": "diagnostic",
+  "status": "wiring_fixture",
+  "timestamp": "2026-07-18T23:58:30.406034+00:00",
+  "artifact": "outputs/runs/cap4-05-quotient-diffusion/fixture-20260718/quotient_diffusion_fixture.json",
+  "schema": "cap4-05/quotient_diffusion_fixture/v1",
+  "graphs": {
+    "directed_ring_n6": {
+      "average_path_length": {
+        "exact": true,
+        "value": 2.5
+      },
+      "conductance": {
+        "exact": true,
+        "value": 0.3333333333333332
+      },
+      "diameter": {
+        "exact": true,
+        "kind": "directed",
+        "value": 5
+      },
+      "edge_count": 6,
+      "mixing_time_bound": {
+        "eps": 0.25,
+        "exact": true,
+        "value": null
+      },
+      "reversibility": {
+        "checked_edges": 6,
+        "exact": true,
+        "reversible": false,
+        "violations": 6
+      },
+      "spectral_gap": {
+        "exact": true,
+        "value": -4.440892098500626e-16
+      },
+      "stationary_distribution": {
+        "distribution": {
+          "q0": 0.16666666666666674,
+          "q1": 0.16666666666666674,
+          "q2": 0.16666666666666663,
+          "q3": 0.16666666666666657,
+          "q4": 0.1666666666666666,
+          "q5": 0.16666666666666663
+        },
+        "exact": true
+      },
+      "strong_components": [
+        [
+          "q0",
+          "q1",
+          "q2",
+          "q3",
+          "q4",
+          "q5"
+        ]
+      ],
+      "strongly_connected": true,
+      "vertex_count": 6,
+      "weak_components": [
+        [
+          "q0",
+          "q1",
+          "q2",
+          "q3",
+          "q4",
+          "q5"
+        ]
+      ]
+    },
+    "undirected_barbell_4_4": {
+      "average_path_length": {
+        "exact": true,
+        "value": 1.625
+      },
+      "conductance": {
+        "exact": true,
+        "value": 0.07692307692307733
+      },
+      "diameter": {
+        "exact": true,
+        "kind": "directed",
+        "value": 3
+      },
+      "edge_count": 26,
+      "mixing_time_bound": {
+        "eps": 0.25,
+        "exact": true,
+        "value": 31.27272186809346
+      },
+      "reversibility": {
+        "checked_edges": 26,
+        "exact": true,
+        "reversible": true,
+        "violations": 0
+      },
+      "spectral_gap": {
+        "exact": true,
+        "value": 0.11338247516251243
+      },
+      "stationary_distribution": {
+        "distribution": {
+          "l0": 0.15384615384615422,
+          "l1": 0.11538461538461571,
+          "l2": 0.11538461538461575,
+          "l3": 0.11538461538461572,
+          "r0": 0.1538461538461535,
+          "r1": 0.11538461538461504,
+          "r2": 0.11538461538461504,
+          "r3": 0.11538461538461504
+        },
+        "exact": true
+      },
+      "strong_components": [
+        [
+          "l0",
+          "l1",
+          "l2",
+          "l3",
+          "r0",
+          "r1",
+          "r2",
+          "r3"
+        ]
+      ],
+      "strongly_connected": true,
+      "vertex_count": 8,
+      "weak_components": [
+        [
+          "l0",
+          "l1",
+          "l2",
+          "l3",
+          "r0",
+          "r1",
+          "r2",
+          "r3"
+        ]
+      ]
+    },
+    "path_with_self_loops_n5": {
+      "average_path_length": {
+        "exact": true,
+        "value": 1.6
+      },
+      "conductance": {
+        "exact": true,
+        "value": 0.0
+      },
+      "diameter": {
+        "exact": true,
+        "kind": "directed",
+        "value": 4
+      },
+      "edge_count": 9,
+      "mixing_time_bound": {
+        "eps": 0.25,
+        "exact": true,
+        "value": 2.772588722239781
+      },
+      "reversibility": {
+        "checked_edges": 9,
+        "exact": true,
+        "reversible": false,
+        "violations": 0
+      },
+      "spectral_gap": {
+        "exact": true,
+        "value": 0.5
+      },
+      "stationary_distribution": {
+        "distribution": {
+          "p0": 0.0,
+          "p1": 0.0,
+          "p2": 0.0,
+          "p3": 0.0,
+          "p4": 1.0
+        },
+        "exact": true,
+        "per_component": [
+          {
+            "p0": 0.0,
+            "p1": 0.0,
+            "p2": 0.0,
+            "p3": 0.0,
+            "p4": 1.0
+          },
+          {
+            "p0": 0.0,
+            "p1": 0.0,
+            "p2": 0.0,
+            "p3": 1.0,
+            "p4": 0.0
+          },
+          {
+            "p0": 0.0,
+            "p1": 0.0,
+            "p2": 1.0,
+            "p3": 0.0,
+            "p4": 0.0
+          },
+          {
+            "p0": 0.0,
+            "p1": 1.0,
+            "p2": 0.0,
+            "p3": 0.0,
+            "p4": 0.0
+          },
+          {
+            "p0": 1.0,
+            "p1": 0.0,
+            "p2": 0.0,
+            "p3": 0.0,
+            "p4": 0.0
+          }
+        ],
+        "reducible": true
+      },
+      "strong_components": [
+        [
+          "p4"
+        ],
+        [
+          "p3"
+        ],
+        [
+          "p2"
+        ],
+        [
+          "p1"
+        ],
+        [
+          "p0"
+        ]
+      ],
+      "strongly_connected": false,
+      "vertex_count": 5,
+      "weak_components": [
+        [
+          "p0",
+          "p1",
+          "p2",
+          "p3",
+          "p4"
+        ]
+      ]
+    },
+    "trace_graph": {
+      "average_path_length": {
+        "exact": true,
+        "value": 2.0
+      },
+      "conductance": {
+        "exact": true,
+        "value": 0.49999999999999994
+      },
+      "diameter": {
+        "exact": true,
+        "kind": "directed",
+        "value": 4
+      },
+      "edge_count": 19,
+      "mixing_time_bound": {
+        "eps": 0.25,
+        "exact": true,
+        "value": null
+      },
+      "reversibility": {
+        "checked_edges": 5,
+        "exact": true,
+        "reversible": false,
+        "violations": 5
+      },
+      "spectral_gap": {
+        "exact": true,
+        "value": -4.440892098500626e-16
+      },
+      "stationary_distribution": {
+        "distribution": {
+          "s0": 0.19999999999999998,
+          "s1": 0.19999999999999998,
+          "s2": 0.19999999999999998,
+          "s3": 0.20000000000000004,
+          "s4": 0.19999999999999998
+        },
+        "exact": true
+      },
+      "strong_components": [
+        [
+          "s0",
+          "s1",
+          "s2",
+          "s3",
+          "s4"
+        ]
+      ],
+      "strongly_connected": true,
+      "vertex_count": 5,
+      "weak_components": [
+        [
+          "s0",
+          "s1",
+          "s2",
+          "s3",
+          "s4"
+        ]
+      ]
+    }
+  },
+  "kernels": {
+    "ring_random_walk": {
+      "compute_cost": "O(out_degree) per step",
+      "exact_posterior": true,
+      "invalid_allowed": false,
+      "metadata": {
+        "edge_count": 6,
+        "vertex_count": 6
+      },
+      "name": "quotient_random_walk",
+      "reversible": false,
+      "schedule": "uniform",
+      "terminal_distribution": "stationary"
+    },
+    "barbell_random_walk": {
+      "compute_cost": "O(out_degree) per step",
+      "exact_posterior": true,
+      "invalid_allowed": false,
+      "metadata": {
+        "edge_count": 26,
+        "vertex_count": 8
+      },
+      "name": "quotient_random_walk",
+      "reversible": true,
+      "schedule": "uniform",
+      "terminal_distribution": "stationary"
+    },
+    "posterior_weighted": {
+      "compute_cost": "O(|targets|) per step",
+      "exact_posterior": false,
+      "invalid_allowed": false,
+      "metadata": {
+        "target_count": 2,
+        "temperature": 0.5
+      },
+      "name": "posterior_weighted_walk",
+      "reversible": false,
+      "schedule": "posterior",
+      "terminal_distribution": "target_set"
+    },
+    "matched_comparison": {
+      "kernels": [
+        {
+          "compute_cost": "O(surface tokens) per step",
+          "exact_posterior": true,
+          "invalid_allowed": false,
+          "metadata": {
+            "mask_kind": "surface_token"
+          },
+          "name": "surface_token_mask",
+          "reversible": false,
+          "schedule": "linear",
+          "terminal_distribution": "uniform_over_states"
+        },
+        {
+          "compute_cost": "O(legal productions) per step",
+          "exact_posterior": true,
+          "invalid_allowed": false,
+          "metadata": {
+            "mask_kind": "production"
+          },
+          "name": "independent_production_mask",
+          "reversible": false,
+          "schedule": "linear",
+          "terminal_distribution": "uniform_over_states"
+        },
+        {
+          "compute_cost": "O(subtree size) per step",
+          "exact_posterior": true,
+          "invalid_allowed": false,
+          "metadata": {
+            "mask_kind": "ast_subtree"
+          },
+          "name": "ast_subtree_mask",
+          "reversible": false,
+          "schedule": "cosine",
+          "terminal_distribution": "uniform_over_states"
+        },
+        {
+          "compute_cost": "O(typed holes) per step",
+          "exact_posterior": true,
+          "invalid_allowed": false,
+          "metadata": {
+            "mask_kind": "typed_hole"
+          },
+          "name": "typed_hole_mask",
+          "reversible": false,
+          "schedule": "information_balanced",
+          "terminal_distribution": "uniform_over_states"
+        }
+      ],
+      "matched_steps": {
+        "ast_subtree_mask": 1.468801732926744,
+        "independent_production_mask": 1.468801732926744,
+        "surface_token_mask": 1.468801732926744,
+        "typed_hole_mask": 1.468801732926744
+      },
+      "notes": [
+        "surface_token_mask: 1.3617 bits/step -> 1.47 steps",
+        "independent_production_mask: 1.3617 bits/step -> 1.47 steps",
+        "ast_subtree_mask: 1.3617 bits/step -> 1.47 steps",
+        "typed_hole_mask: 1.3617 bits/step -> 1.47 steps"
+      ],
+      "target_loss_bits": 2.0
+    }
+  },
+  "information_schedule": {
+    "points": [
+      {
+        "timestep": 0,
+        "mean_entropy_bits": 3.985590967042207,
+        "mean_support_size": 16.0,
+        "record_count": 1,
+        "information_remaining": 1.0
+      },
+      {
+        "timestep": 1,
+        "mean_entropy_bits": 3.782709639966848,
+        "mean_support_size": 15.0,
+        "record_count": 1,
+        "information_remaining": 0.9490962999582665
+      },
+      {
+        "timestep": 2,
+        "mean_entropy_bits": 3.5888684138432336,
+        "mean_support_size": 14.0,
+        "record_count": 1,
+        "information_remaining": 0.9004607957817132
+      },
+      {
+        "timestep": 3,
+        "mean_entropy_bits": 3.4701983725098864,
+        "mean_support_size": 13.0,
+        "record_count": 1,
+        "information_remaining": 0.8706860290495879
+      },
+      {
+        "timestep": 4,
+        "mean_entropy_bits": 3.1872411716217113,
+        "mean_support_size": 12.0,
+        "record_count": 1,
+        "information_remaining": 0.7996909863500197
+      },
+      {
+        "timestep": 5,
+        "mean_entropy_bits": 2.850264658565904,
+        "mean_support_size": 12.0,
+        "record_count": 1,
+        "information_remaining": 0.7151422918546875
+      },
+      {
+        "timestep": 6,
+        "mean_entropy_bits": 2.8332318344067713,
+        "mean_support_size": 11.0,
+        "record_count": 1,
+        "information_remaining": 0.7108686912017401
+      },
+      {
+        "timestep": 7,
+        "mean_entropy_bits": 2.573266252150283,
+        "mean_support_size": 10.0,
+        "record_count": 1,
+        "information_remaining": 0.6456423334529884
+      },
+      {
+        "timestep": 8,
+        "mean_entropy_bits": 2.3783041315854803,
+        "mean_support_size": 9.0,
+        "record_count": 1,
+        "information_remaining": 0.5967255925789271
+      },
+      {
+        "timestep": 9,
+        "mean_entropy_bits": 2.2115884786700857,
+        "mean_support_size": 8.0,
+        "record_count": 1,
+        "information_remaining": 0.5548959983496132
+      },
+      {
+        "timestep": 10,
+        "mean_entropy_bits": 2.023229773690672,
+        "mean_support_size": 8.0,
+        "record_count": 1,
+        "information_remaining": 0.5076360796733125
+      },
+      {
+        "timestep": 11,
+        "mean_entropy_bits": 1.916355868659914,
+        "mean_support_size": 7.0,
+        "record_count": 1,
+        "information_remaining": 0.48082100860492544
+      },
+      {
+        "timestep": 12,
+        "mean_entropy_bits": 1.665663650679867,
+        "mean_support_size": 6.0,
+        "record_count": 1,
+        "information_remaining": 0.4179213733806688
+      },
+      {
+        "timestep": 13,
+        "mean_entropy_bits": 1.4110507177443832,
+        "mean_support_size": 5.0,
+        "record_count": 1,
+        "information_remaining": 0.3540380157955733
+      },
+      {
+        "timestep": 14,
+        "mean_entropy_bits": 1.1261678397655182,
+        "mean_support_size": 4.0,
+        "record_count": 1,
+        "information_remaining": 0.2825598133571824
+      },
+      {
+        "timestep": 15,
+        "mean_entropy_bits": 0.8985337632512282,
+        "mean_support_size": 4.0,
+        "record_count": 1,
+        "information_remaining": 0.22544555391695137
+      },
+      {
+        "timestep": 16,
+        "mean_entropy_bits": 0.82463421952112,
+        "mean_support_size": 3.0,
+        "record_count": 1,
+        "information_remaining": 0.20690387607263644
+      },
+      {
+        "timestep": 17,
+        "mean_entropy_bits": 0.731108082720405,
+        "mean_support_size": 2.0,
+        "record_count": 1,
+        "information_remaining": 0.1834378110463694
+      },
+      {
+        "timestep": 18,
+        "mean_entropy_bits": 0.4041656863903383,
+        "mean_support_size": 1.0,
+        "record_count": 1,
+        "information_remaining": 0.10140671477140524
+      },
+      {
+        "timestep": 19,
+        "mean_entropy_bits": 0.18936767062292176,
+        "mean_support_size": 1.0,
+        "record_count": 1,
+        "information_remaining": 0.04751307201086307
+      }
+    ],
+    "recommended_balanced_schedule": [
+      1.0,
+      0.8639304388586947,
+      0.7278608777173894,
+      0.5917913165760842,
+      0.4557217554347789,
+      0.3196521942934736,
+      0.18358263315216838,
+      0.04751307201086308
+    ],
+    "record_count": 20
+  },
+  "honest_caveats": [
+    "Exact metrics are feasible only for the small fixtures above; real quotient graphs are sampled/estimated.",
+    "No diffusion model train was run; kernels are defined on abstract state spaces.",
+    "Denoising comparisons require a future train/eval run with matched conditional information loss.",
+    "Spectral gap for the directed ring is zero because the chain is periodic."
+  ]
+}
