@@ -2015,6 +2015,21 @@ policy, stop tuning these controls, and focus next on semantic component
 correctness. AgentV remains 0/1. The process was capped at 170 seconds. Full
 evidence: [narrative](iter-e508-default-generation-ood-contract-decode-20260719.md)
 and [JSON](iter-e508-default-generation-ood-contract-decode-20260719.json).
+
+## E509 honest slot contract in context
+
+E509 adds the honest request slot contract to model context while retaining
+E508's constrained decode, length-safe 160-token canvas, and default generation
+settings. Structure rises `0.2281→0.2406` and binding-aware coverage
+`0.75→1.0`, but meaningful `0.25`, fidelity `0.2583`, recall `0.3333`, reward
+`0.692`, AST node F1 `0.3389`, and AgentV `0/1` are unchanged.
+
+**Verdict:** inventory visibility is not the semantic blocker. Do not promote;
+target component selection and placeholder semantic-role mapping next. The
+process was capped at 170 seconds. Full evidence:
+[narrative](iter-e509-slot-contract-context-20260719.md) and
+[JSON](iter-e509-slot-contract-context-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

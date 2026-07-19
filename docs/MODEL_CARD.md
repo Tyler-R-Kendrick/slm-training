@@ -631,6 +631,15 @@ quality: syntax 1.0, meaningful 0.25, fidelity 0.2583, structure 0.2281, recall
 0.3333, reward 0.692, AST node F1 0.3389, and AgentV 0/1. No checkpoint was
 created or promoted.
 
+### E509 honest slot-contract-context diagnostic
+
+The same E505 checkpoint and E508 policy additionally expose the honest request
+slot contract in model context. Structure improves 0.2281→0.2406 and
+binding-aware coverage 0.75→1.0, but meaningfulness, fidelity, recall, reward,
+AST F1, and AgentV 0/1 are unchanged. Inventory visibility does not resolve the
+component/placeholder semantic-role failures. No checkpoint was created or
+promoted.
+
 ---
 
 ## Limitations & honesty
