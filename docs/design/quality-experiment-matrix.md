@@ -2451,6 +2451,26 @@ Learn topology/aggregation targets instead. Full evidence:
 [narrative](iter-e541-root-reference-only-20260719.md) and
 [JSON](iter-e541-root-reference-only-20260719.json).
 
+## E542 learned root-reference arity
+
+E542 trains an isolated dependency-order-aware terminal-root reference-count
+head on a 24-step E531 continuation. The local scratch train completes in
+52.93 seconds under the three-minute cap; the target covers 188/244 E530
+records and auxiliary loss moves from 3.9565 to 3.3124.
+
+The four-record OOD control reaches meaningful-v1 0.50, fidelity 0.5917,
+structure 0.3019, recall 0.4167, and reward 0.7950, while strict meaning and
+AgentV remain zero. An initial weight-1 replay exposes and fixes impossible
+tokenizer-tail mass. After bounding arity by available generated sections, the
+head still changes 7/11 applied choices but every metric exactly matches the
+weight-zero control.
+
+**Verdict:** retain the learned target, isolated head, semantic bound, and
+telemetry; keep decoding default-off, reject weight 1, and do not promote the
+scratch checkpoint. Full evidence:
+[narrative](iter-e542-learned-root-reference-arity-20260719.md) and
+[JSON](iter-e542-learned-root-reference-arity-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
