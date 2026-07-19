@@ -1,0 +1,344 @@
+{
+  "schema_version": "ldi1-01-fixture-summary/v1",
+  "group_id": "ldi1-01-fixture",
+  "observations": [
+    {
+      "decision_index": 0,
+      "generated_ordinal": 0,
+      "prefix_token_ids": [
+        1
+      ],
+      "raw_argmax_id": 4,
+      "selected_token_id": 2,
+      "legal_token_ids": [
+        2,
+        3
+      ],
+      "legal_set_reference": "18b058689d010062a25cd7fb949b2abfea1757d2de45ca3abdda17db956e506b",
+      "raw_topk": [
+        [
+          4,
+          5.0,
+          -0.10009686749423741
+        ],
+        [
+          2,
+          2.0,
+          -3.1000968674942375
+        ],
+        [
+          3,
+          1.5,
+          -3.6000968674942375
+        ]
+      ],
+      "legal_topk": [
+        [
+          2,
+          0.6224593312018546
+        ],
+        [
+          3,
+          0.37754066879814546
+        ]
+      ],
+      "constraint_shadow": true,
+      "forced": false,
+      "grammar_role": "first_decision"
+    },
+    {
+      "decision_index": 1,
+      "generated_ordinal": 1,
+      "prefix_token_ids": [
+        1,
+        2
+      ],
+      "raw_argmax_id": 0,
+      "selected_token_id": 5,
+      "legal_token_ids": [
+        5
+      ],
+      "legal_set_reference": "1ae3592f8248c3f879b56afe3f2ce6aad45ba898434796d35c565684397fb3e6",
+      "raw_topk": [
+        [
+          0,
+          10.0,
+          -0.0005169287162786593
+        ],
+        [
+          5,
+          2.0,
+          -8.000516928716278
+        ],
+        [
+          1,
+          0.0,
+          -10.000516928716278
+        ]
+      ],
+      "legal_topk": [
+        [
+          5,
+          1.0
+        ]
+      ],
+      "constraint_shadow": true,
+      "forced": true,
+      "grammar_role": "branch_A"
+    },
+    {
+      "decision_index": 1,
+      "generated_ordinal": 2,
+      "prefix_token_ids": [
+        1,
+        2,
+        5
+      ],
+      "raw_argmax_id": 0,
+      "selected_token_id": 0,
+      "legal_token_ids": [
+        0,
+        5
+      ],
+      "legal_set_reference": "f5750294f8a1785ce1f95f294d731e272e53b5c440fcfceb08f2dfa54be9a816",
+      "raw_topk": [
+        [
+          0,
+          0.0,
+          -1.791759469228055
+        ],
+        [
+          1,
+          0.0,
+          -1.791759469228055
+        ],
+        [
+          2,
+          0.0,
+          -1.791759469228055
+        ]
+      ],
+      "legal_topk": [
+        [
+          0,
+          0.5
+        ],
+        [
+          5,
+          0.5
+        ]
+      ],
+      "constraint_shadow": false,
+      "forced": false,
+      "grammar_role": "continuation"
+    }
+  ],
+  "generated_token_ids": [
+    2,
+    5,
+    0
+  ],
+  "stop_reason": "eos",
+  "constraint_shadow_count": 2,
+  "decision_event_v2_rows": [
+    {
+      "state": {
+        "group_id": "ldi1-01-fixture",
+        "architecture": "causal",
+        "context_text": "root=Stack([",
+        "decision_position": 0,
+        "legal_action_ids": [
+          2,
+          3
+        ],
+        "decision_kind": "constraint_shadow",
+        "abstract_state_role": "first_decision",
+        "grammar_state_hash": "18b058689d010062a25cd7fb949b2abfea1757d2de45ca3abdda17db956e506b",
+        "policy_checkpoint_sha": "policy_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "tokenizer_sha": "tokenizer_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "decode_config_hash": "decode_ccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "verifier_bundle_hash": "51669ede9e42f7ebb995ef7ab1cd410ef453e2838d3d84cd006381e05141238f",
+        "split": "train",
+        "context_ids": [
+          1
+        ],
+        "canvas_ids": null,
+        "generation_step": 0,
+        "version": 2,
+        "state_id": "c39672a90f6313cb3d9d08a0c6ed4ef4975982d3e2ff5c4aee773771cde7f294"
+      },
+      "outcomes": [
+        {
+          "state_id": "c39672a90f6313cb3d9d08a0c6ed4ef4975982d3e2ff5c4aee773771cde7f294",
+          "action_id": 2,
+          "legal": true,
+          "rollout_policy_sha": "policy_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "continuation_seeds": [],
+          "outcome_hashes": [],
+          "verifier_vectors": [],
+          "reward_vectors": [],
+          "mean_value": null,
+          "confidence_interval": null,
+          "evidence_ids": [],
+          "evidence_confidence": 0.0,
+          "version": 2
+        }
+      ],
+      "view": {
+        "good_action_ids": [],
+        "bad_action_ids": [],
+        "ambiguous_action_ids": [
+          2
+        ],
+        "unobserved_action_ids": [
+          3
+        ],
+        "weights": [],
+        "materializer_id": "constraint_shadow_diagnostic_v2",
+        "materializer_config_hash": "78c3ea314708cc42088da944306e7eb2b1d968a9631386b45c2d63bdec91d44b",
+        "trainable": false,
+        "version": 2
+      }
+    },
+    {
+      "state": {
+        "group_id": "ldi1-01-fixture",
+        "architecture": "causal",
+        "context_text": "root=Stack([",
+        "decision_position": 1,
+        "legal_action_ids": [
+          5
+        ],
+        "decision_kind": "constraint_shadow",
+        "abstract_state_role": "branch_A",
+        "grammar_state_hash": "1ae3592f8248c3f879b56afe3f2ce6aad45ba898434796d35c565684397fb3e6",
+        "policy_checkpoint_sha": "policy_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "tokenizer_sha": "tokenizer_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "decode_config_hash": "decode_ccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "verifier_bundle_hash": "51669ede9e42f7ebb995ef7ab1cd410ef453e2838d3d84cd006381e05141238f",
+        "split": "train",
+        "context_ids": [
+          1,
+          2
+        ],
+        "canvas_ids": null,
+        "generation_step": 1,
+        "version": 2,
+        "state_id": "cf2ac5c410617dee7d153f1ab267c7fc10f078c4467b8146b1c052e265e4bc77"
+      },
+      "outcomes": [
+        {
+          "state_id": "cf2ac5c410617dee7d153f1ab267c7fc10f078c4467b8146b1c052e265e4bc77",
+          "action_id": 5,
+          "legal": true,
+          "rollout_policy_sha": "policy_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "continuation_seeds": [],
+          "outcome_hashes": [],
+          "verifier_vectors": [],
+          "reward_vectors": [],
+          "mean_value": null,
+          "confidence_interval": null,
+          "evidence_ids": [],
+          "evidence_confidence": 0.0,
+          "version": 2
+        }
+      ],
+      "view": {
+        "good_action_ids": [],
+        "bad_action_ids": [],
+        "ambiguous_action_ids": [
+          5
+        ],
+        "unobserved_action_ids": [],
+        "weights": [],
+        "materializer_id": "constraint_shadow_diagnostic_v2",
+        "materializer_config_hash": "78c3ea314708cc42088da944306e7eb2b1d968a9631386b45c2d63bdec91d44b",
+        "trainable": false,
+        "version": 2
+      }
+    },
+    {
+      "state": {
+        "group_id": "ldi1-01-fixture",
+        "architecture": "causal",
+        "context_text": "root=Stack([",
+        "decision_position": 2,
+        "legal_action_ids": [
+          0,
+          5
+        ],
+        "decision_kind": "causal_decision",
+        "abstract_state_role": "continuation",
+        "grammar_state_hash": "f5750294f8a1785ce1f95f294d731e272e53b5c440fcfceb08f2dfa54be9a816",
+        "policy_checkpoint_sha": "policy_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "tokenizer_sha": "tokenizer_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "decode_config_hash": "decode_ccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "verifier_bundle_hash": "62adf959ad468c3976f29b5b0655e4871ef918d3cb0fa191f76059314c72eafa",
+        "split": "train",
+        "context_ids": [
+          1,
+          2,
+          5
+        ],
+        "canvas_ids": null,
+        "generation_step": 2,
+        "version": 2,
+        "state_id": "eb85ac0948f59eb58ef17a5cf5a017a11231915098e476574d6ef06265a821dd"
+      },
+      "outcomes": [],
+      "view": null
+    }
+  ],
+  "forced_action_replays": [
+    {
+      "state_id": "c39672a90f6313cb3d9d08a0c6ed4ef4975982d3e2ff5c4aee773771cde7f294",
+      "forced_action_id": 3,
+      "replay": {
+        "action_id": 3,
+        "continuation_seed": 7,
+        "finish_reason": "eos",
+        "raw_program": "3 5 0",
+        "canonical_program": "3 5 0",
+        "selected": true,
+        "completion_source": "policy"
+      }
+    },
+    {
+      "state_id": "eb85ac0948f59eb58ef17a5cf5a017a11231915098e476574d6ef06265a821dd",
+      "forced_action_id": 5,
+      "replay": {
+        "action_id": 5,
+        "continuation_seed": 7,
+        "finish_reason": "eos",
+        "raw_program": "2 5 5 0",
+        "canonical_program": "2 5 5 0",
+        "selected": true,
+        "completion_source": "policy"
+      }
+    }
+  ],
+  "replay_errors": [],
+  "loaded_state_count": 3,
+  "manifest": {
+    "kind": "causal_trace_manifest",
+    "group_id": "ldi1-01-fixture",
+    "policy_checkpoint_sha": "policy_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "tokenizer_sha": "tokenizer_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "decode_config_hash": "decode_ccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "base_model_revision": "rev-fixture",
+    "adapter_identity": "adapter_none",
+    "state_count": 3,
+    "constraint_shadow_count": 2,
+    "unique_legal_sets": 3,
+    "duplicate_set_reuse": 0,
+    "total_bytes": 6107,
+    "bytes_per_state": 2035.6666666666667
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "529221c282d4f0eb59b415298636fa30b8cee92d",
+    "code_dirty": true,
+    "components": {},
+    "stamped_at": "2026-07-19T14:38:36.754563+00:00"
+  }
+}
