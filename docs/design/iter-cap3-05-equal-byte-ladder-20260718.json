@@ -3,15 +3,15 @@
   "family": "equal-byte-precision",
   "status": "plan_only",
   "claim_class": "diagnostic",
-  "timestamp": "2026-07-18T23:02:51.269426+00:00",
+  "timestamp": "2026-07-18T23:09:04.008937+00:00",
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "da52eb44c901ee75426acb065a6d291112d826ad",
-    "code_dirty": true,
+    "code_commit": "7037b3c21be2a49a99697b0857573fdecb0e68bc",
+    "code_dirty": false,
     "components": {
       "harness.experiments": "v2"
     },
-    "stamped_at": "2026-07-18T23:02:51.280191+00:00"
+    "stamped_at": "2026-07-18T23:09:04.019460+00:00"
   },
   "byte_budgets": [
     65536,
