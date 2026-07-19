@@ -7,6 +7,7 @@ import argparse
 import json
 from pathlib import Path
 
+from slm_training.evals.eval_cache import EvalCache, EvalCacheConfig, EvalCacheMode
 from slm_training.evals.record_schema import RUN_CLASSES
 from slm_training.harnesses.model_build import ModelBuildConfig, evaluate
 from slm_training.harnesses.model_build.eval_runner import evaluate_suites
@@ -386,6 +387,24 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Disable unconstrained retries so constrained-decode adherence is measured directly.",
     )
+    parser.add_argument(
+        "--eval-cache-mode",
+        choices=("off", "read", "read_write", "refresh"),
+        default="off",
+        help="SDE3-01: content-addressed suite-result cache mode (default: off).",
+    )
+    parser.add_argument(
+        "--eval-cache-root",
+        type=Path,
+        default=Path("outputs/eval_cache"),
+        help="SDE3-01: root directory for the evaluation cache.",
+    )
+    parser.add_argument(
+        "--eval-shards",
+        type=int,
+        default=1,
+        help="SDE3-01: deterministic suite sharding (currently wiring-only flag).",
+    )
 
     args = parser.parse_args(argv)
     from slm_training.data.store import DataStore
@@ -473,6 +492,9 @@ def main(argv: list[str] | None = None) -> int:
         grammar_trust_model=args.grammar_trust_model,
         grammar_sample_decode=args.grammar_sample_decode,
         grammar_ltr_max_tokens=args.grammar_ltr_max_tokens or 256,
+        eval_cache_mode=args.eval_cache_mode,
+        eval_cache_root=args.eval_cache_root,
+        eval_shards=args.eval_shards,
     )
 
     if args.check_decode_feasibility and config.test_dir is not None:
@@ -492,6 +514,13 @@ def main(argv: list[str] | None = None) -> int:
     if args.ship_gates and not args.suites:
         args.suites = ",".join(DEFAULT_SHIP_GATES.keys())
 
+    cache = EvalCache(
+        EvalCacheConfig(
+            mode=EvalCacheMode(args.eval_cache_mode),
+            root=args.eval_cache_root,
+        )
+    )
+
     if args.suites:
         from slm_training.runtime.telemetry import run_trace
 
@@ -502,6 +531,7 @@ def main(argv: list[str] | None = None) -> int:
                 suites,
                 checkpoint=args.checkpoint,
                 write_gates=args.ship_gates,
+                cache=cache,
             )
         print(json.dumps({k: v for k, v in scoreboard.items()}, indent=2))
         if args.ship_gates:
@@ -524,7 +554,7 @@ def main(argv: list[str] | None = None) -> int:
     from slm_training.runtime.telemetry import run_trace
 
     with run_trace(args.run_id, "eval", run_dir=config.run_dir):
-        metrics = evaluate(config, checkpoint=args.checkpoint)
+        metrics = evaluate(config, checkpoint=args.checkpoint, cache=cache)
     summary = {k: v for k, v in metrics.items() if k != "details"}
     print(json.dumps(summary, indent=2))
     return _check_fail_unders(metrics, args)

@@ -25,8 +25,14 @@ from slm_training.harnesses.model_build.data import (
 from slm_training.harnesses.model_build.factory import build_model
 from slm_training.harnesses.model_build.full_state import _git_dirty, _git_sha
 from slm_training.harnesses.model_build.plugin import GenerationRequest
+from slm_training.evals.eval_cache import (
+    EvalCache,
+    EvalCacheMode,
+    suite_result_key,
+)
 from slm_training.harnesses.model_build.ship_gates import DEFAULT_SHIP_GATES
 from slm_training.models.decode_stats import collect_decode_stats
+from slm_training.versioning import component_version
 
 _COMPONENT_RE = re.compile(r"\b([A-Z][A-Za-z0-9]*)\s*\(")
 
@@ -434,6 +440,7 @@ def evaluate(
     checkpoint: Path | None = None,
     *,
     publish_agentv: bool = True,
+    cache: EvalCache | None = None,
 ) -> dict:
     if config.test_dir is None:
         raise ValueError("test_dir is required for evaluation")
@@ -509,6 +516,64 @@ def evaluate(
     score_topology_targets = getattr(plugin, "score_topology_targets", None)
     if callable(score_topology_targets):
         topology_target_evidence = list(score_topology_targets(records))
+
+    # SDE3-01: optional suite-level content-addressed cache.  Key is built from
+    # every dependency that can change the suite result.
+    eval_data_manifest_sha = _eval_data_sha(Path(config.test_dir))
+    eval_suite_manifest_sha = _eval_data_sha(
+        Path(config.test_dir) / "suites" / config.suite
+    )
+    evaluation_policy = _effective_evaluation_policy(config, plugin)
+    cache_key = None
+    cache_dependencies: dict[str, Any] = {}
+    if cache is not None and cache.config.mode is not EvalCacheMode.OFF:
+        try:
+            component_versions = {
+                cid: component_version(cid)
+                for cid in (
+                    "harness.model_build.eval",
+                    "evals.meaningful_program",
+                    "evals.scoring",
+                )
+            }
+        except Exception:  # noqa: BLE001 - degrade gracefully if registry unavailable
+            component_versions = {}
+        cache_dependencies = {
+            "checkpoint_sha256": checkpoint_sha256,
+            "eval_data_manifest_sha": eval_data_manifest_sha,
+            "eval_suite_manifest_sha": eval_suite_manifest_sha,
+            "suite_limit": suite_limit,
+            "evaluation_policy": evaluation_policy,
+            "component_versions": component_versions,
+        }
+        cache_key = suite_result_key(
+            suite=config.suite,
+            checkpoint_sha256=checkpoint_sha256,
+            eval_data_manifest_sha=eval_data_manifest_sha,
+            eval_suite_manifest_sha=eval_suite_manifest_sha,
+            eval_limit=suite_limit,
+            evaluation_policy=evaluation_policy,
+            component_versions=component_versions,
+        )
+        if cache.config.mode in (EvalCacheMode.READ, EvalCacheMode.READ_WRITE):
+            cached_metrics = cache.get(cache_key)
+            if cached_metrics is not None:
+                # Replay: keep predictions/metrics byte-identical, but update
+                # the output path to the current run directory.
+                run_dir = config.run_dir
+                run_dir.mkdir(parents=True, exist_ok=True)
+                suite_path = run_dir / f"eval_{config.suite}.json"
+                cached_metrics = dict(cached_metrics)
+                cached_metrics["output"] = str(suite_path)
+                cached_metrics["cache_replay"] = True
+                suite_path.write_text(
+                    json.dumps(cached_metrics, indent=2) + "\n", encoding="utf-8"
+                )
+                if config.suite == "smoke":
+                    (run_dir / "eval.json").write_text(
+                        json.dumps(cached_metrics, indent=2) + "\n", encoding="utf-8"
+                    )
+                return cached_metrics
 
     batch_size = 1
     generate_batch_requests = getattr(plugin, "generate_batch_requests", None)
@@ -1105,6 +1170,16 @@ def evaluate(
             metrics["agentv"] = {
                 "skipped": f"suite {config.suite!r} is not in the ship-gate policy"
             }
+    # SDE3-01: persist the full suite result for exact replay when enabled.
+    if cache is not None and cache_key is not None and cache.config.mode in (
+        EvalCacheMode.READ_WRITE,
+        EvalCacheMode.REFRESH,
+    ):
+        try:
+            cache.put(cache_key, metrics, dependencies=cache_dependencies)
+        except Exception:  # noqa: BLE001 - cache write must never break eval
+            pass
+
     payload = json.dumps(metrics, indent=2) + "\n"
     suite_path.write_text(payload, encoding="utf-8")
     if config.suite == "smoke":
@@ -1119,6 +1194,7 @@ def evaluate_suites(
     checkpoint: Path | None = None,
     model=None,
     write_gates: bool = False,
+    cache: EvalCache | None = None,
 ) -> dict[str, dict]:
     """Run eval across multiple suites; write scoreboard.json (and optional gates)."""
     from dataclasses import replace
@@ -1133,6 +1209,7 @@ def evaluate_suites(
             model=model,
             checkpoint=checkpoint,
             publish_agentv=False,
+            cache=cache,
         )
         board[suite] = {k: v for k, v in metrics.items() if k != "details"}
     from slm_training.evals.record_schema import RUN_CLASSES, SCHEMA_VERSION

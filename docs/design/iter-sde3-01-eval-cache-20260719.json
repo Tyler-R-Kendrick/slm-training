@@ -1,0 +1,23 @@
+{
+  "byte_identical_cold_changed": false,
+  "byte_identical_cold_warm": true,
+  "changed_exact_match_rate": 1.0,
+  "changed_policy_generation_calls": 5,
+  "cold_exact_match_rate": 1.0,
+  "cold_generation_calls": 5,
+  "fixture": "sde3-01-eval-cache",
+  "run_id": "iter-sde3-01-20260719",
+  "sharded_detail_count": 5,
+  "sharded_example_count": 5,
+  "version_stamp": {
+    "code_commit": "4e2749dac7e67042d474b819f92f52676b5ea361",
+    "code_dirty": true,
+    "components": {
+      "evals.scoring": "v3"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-19T04:39:32.339206+00:00"
+  },
+  "warm_exact_match_rate": 1.0,
+  "warm_generation_calls": 0
+}
