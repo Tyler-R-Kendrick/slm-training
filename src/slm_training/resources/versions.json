@@ -85,12 +85,14 @@
       ]
     },
     "evals.scoring": {
-      "version": "v2",
+      "version": "v3",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/"
       ],
       "history": [
+        {"version": "v3", "date": "2026-07-19", "note": "merge EFS2-02 trigger telemetry harness on top of SDE0-02 metric-gaming stress suite"},
+        {"version": "v2", "date": "2026-07-19", "note": "add EFS2-02 observe-only trigger telemetry harness (SearchTriggerObservationV1, TriggerObserver, compare_trigger_regimes) and wiring fixture"},
         {"version": "v2", "date": "2026-07-19", "note": "add SDE0-02 metric-gaming stress suite (metric_gaming.py) with deterministic adversarial cases scored by binding_aware_meaningful_v2"},
         {"version": "v1", "date": "2026-07-18", "note": "initial registration (catch-all for eval scoring helpers not claimed by a narrower component)"}
       ]
