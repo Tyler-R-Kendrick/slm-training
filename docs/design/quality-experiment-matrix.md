@@ -2679,6 +2679,23 @@ coverage-conditioned calibration, not stronger decode bias. Full evidence:
 [narrative](iter-e544-root-reference-identity-20260719.md) and
 [JSON](iter-e544-root-reference-identity-20260719.json).
 
+## E545 root-reference negative weighting
+
+E545 compares matched 24-step E544 continuations with root-reference identity
+negative-class weights 1 and 4. The treatment improves only sparse late-window
+negative accuracy (0.3333→0.3958); exact-set accuracy and positive recall are
+unchanged. The two checkpoints produce byte-identical programs on the OOD
+`n=4` replay and every metric is identical: syntax 1.0, meaningful-v1 0.0,
+fidelity 0.4250, structure 0.1494, recall 0.2083, reward 0.5078, AST node F1
+0.2574, strict-v2 0.0, AST edge F1 0.0, and AgentV 0/1. Both additional
+continuations regress from E544.
+
+**Decision:** reject weight 4 and both scratch checkpoints for promotion.
+Retain the generalized weighted loss, but next increase sampling exposure to
+the 42 strict-subset identity records rather than increasing class weight.
+Full evidence: [narrative](iter-e545-root-reference-negative-weight-20260719.md)
+and [JSON](iter-e545-root-reference-negative-weight-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

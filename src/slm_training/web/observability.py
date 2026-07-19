@@ -600,6 +600,7 @@ class Readers:
                         "date": payload.get("date_utc") or payload.get("date"),
                         "pass": gate_pass,
                         "suites": normalized_suites,
+                        "agentv": matched.get("agentv") or payload.get("agentv"),
                         "source_schema": "matched_runs@experiment",
                         "checkpoint": matched.get("checkpoint_sha256"),
                         "source": f"docs/design/{path.name}",
@@ -611,16 +612,23 @@ class Readers:
         """Recover a cold-start train summary from committed experiment evidence."""
         for path in sorted(self.docs_design.glob("iter-*.json")):
             payload = _read_json(path)
-            if not isinstance(payload, dict) or payload.get("run_id") != run_id:
+            if not isinstance(payload, dict):
                 continue
-            training = payload.get("training")
-            if isinstance(training, dict):
-                return {
-                    "run_id": run_id,
-                    **training,
-                    "provenance": "committed",
-                    "source": f"docs/design/{path.name}",
-                }
+            candidates = [payload] if payload.get("run_id") == run_id else []
+            candidates.extend(
+                matched
+                for matched in payload.get("matched_runs", [])
+                if isinstance(matched, dict) and matched.get("run_id") == run_id
+            )
+            for candidate in candidates:
+                training = candidate.get("training")
+                if isinstance(training, dict):
+                    return {
+                        "run_id": run_id,
+                        **training,
+                        "provenance": "committed",
+                        "source": f"docs/design/{path.name}",
+                    }
         return None
 
     def runs(self) -> dict[str, Any]:
