@@ -825,6 +825,32 @@ SLM, any fine-tuning of external weights, or any bypass of the compiler in the
 constrained arms. Frontier execution requires durable checkpoint provenance
 (SLM-103) and a GPU host.
 
+## Exposure scaling as a falsifier (EFS1-02 / SLM-109)
+
+**Fidelity label: adapted / adjacent.** SLM-109 applies the classic machine-
+learning diagnostic of scaling compute/data exposure to falsify a specific claim
+(“the tiny SLM is simply underexposed”). The ladder design is borrowed from
+scaling-law and capacity-ladder practice, but narrowed to a **frozen recipe**:
+no architecture, objective, decoder, corpus admission, or evaluation change is
+allowed inside the main ladder. Continuation uses bit-exact resume from
+`last_full_state.pt` so cumulative target-token exposure is the only experimental
+axis.
+
+| | |
+| --- | --- |
+| **Lineage** | Scaling-law / exposure-threshold experiments; capacity ladders; continuation learning |
+| **Fidelity** | **Adapted** — frozen-recipe exposure ladder with bit-exact resume and recipe-hash enforcement |
+| **Code** | `src/slm_training/harnesses/experiments/e228_exposure_ladder.py`, `scripts/run_e228_exposure_ladder.py`; continuation via `scripts/train_model.py --resume-from .../last_full_state.pt --target-token-budget` |
+| **Config** | `--mode fixture|plan-only|frontier`, `--parent-checkpoint-uri`, `--checkpoint-bucket` |
+
+**What we took:** a preregistered ladder over `target_token_budget` (1×, 4×,
+16×, 64×, 128× the original E228 exposure) with recipe-hash freeze and durable
+checkpoint provenance.
+
+**What we did not take:** any claim that the current recipe is sufficient until
+a 128× run completes with paired confidence intervals. Fixture/planning evidence
+is not treated as a result.
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.

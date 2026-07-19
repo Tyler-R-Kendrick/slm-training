@@ -183,6 +183,37 @@ Primary metric: `binding_aware_meaningful_v2_rate_strict`. Fixture runs are
 wiring-only and cannot claim ship gates. Frontier execution requires durable
 checkpoint provenance from SLM-103 and the EFS0 comparison stack.
 
+## Exposure ladder (SLM-109 / EFS1-02)
+
+Frozen E228 legal-candidate-margin recipe scaled from ~6.4k target tokens to
+≥100×. The ladder tests whether the tiny SLM is underexposed or whether the
+recipe is mis-specified.
+
+| Multiplier | Target tokens | Purpose |
+| --- | --- | --- |
+| 1× | 6,401 | Reproduction / resume baseline |
+| 4× | 25,604 | First ladder checkpoint |
+| 16× | 102,416 | Mid-ladder |
+| 64× | 409,664 | Late-ladder |
+| 128× | 819,328 | ≥100× threshold |
+
+```bash
+# Plan / fixture wiring (CPU, no training)
+python -m scripts.run_e228_exposure_ladder --mode fixture \
+  --parent-checkpoint-uri hf://buckets/TKendrick/OpenUI/checkpoints/e228-candidate-margin-matched/ref.json \
+  --output-dir outputs/runs/slm109_e228_fixture
+
+# Frontier dispatch (GPU + durable checkpoint required)
+python -m scripts.hf_jobs_train \
+  --run-id e228-ladder-m4-s0 --steps 3200 \
+  --extra-train-args "--resume-from outputs/runs/e228-candidate-margin-matched/checkpoints/last_full_state.pt --target-token-budget 25604"
+```
+
+Primary metric: `binding_aware_meaningful_v2_rate_strict` plus AgentV and
+independent labels. The recipe is frozen; any hash mismatch is a failed
+experiment. Frontier execution requires the E228 checkpoint and SLM-103 bucket
+sync.
+
 ## Configuration glossary — verified-solver decode (VSS1-03)
 
 Experimental, **disabled by default**, and **unmeasured**. These flags gate the
