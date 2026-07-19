@@ -98,6 +98,12 @@ Leakage checks use exact + **structural** OpenUI fingerprints (placeholder/binde
   step, contract trainable weights toward the initialized checkpoint. The
   summary records the coefficient, anchored parameter count, and final RMS
   drift; nonzero retention fails closed without `--initialize-from`.
+- `--replay-train-dir <path> --replay-fraction <0..1>` — deterministically mix
+  an immutable parent corpus into fixed-size continuation sampling windows.
+  Replay IDs are namespaced for resumability; the full-state fingerprint and
+  train summary bind both corpus hashes, the requested fraction, and effective
+  primary/replay exposure. Replay currently fails closed with curriculum or
+  mixture samplers instead of silently composing policies.
 - `scripts/train_preference.py` — build-pairs / train (reference-free)
 - `scripts/export_cactus.py` / `scripts/bench_cactus.py`
 - `scripts/remote_train.py` — SSH pod train + pull (trains the `v1` corpus it builds)

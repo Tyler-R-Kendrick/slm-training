@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import random
 import time
 import warnings
+from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -110,30 +112,53 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     if not 0 < max_wall_minutes <= 3:
         raise ValueError("max_wall_minutes must be positive and at most 3")
     wall_started = time.monotonic()
-    wall_deadline = (
-        wall_started + max_wall_minutes * 60
-    )
+    wall_deadline = wall_started + max_wall_minutes * 60
 
     accel = detect_device(config.device)
     # Honor explicit device but adopt accel threading / amp defaults.
     if config.device in {"auto", "best"}:
         config.device = accel.device
 
-    records = load_train_records(config.train_dir)
-    if not records:
+    primary_records = load_train_records(config.train_dir)
+    if not primary_records:
         raise ValueError("train records empty")
 
     rng = random.Random(config.seed)
-    records = list(records)
+    records = list(primary_records)
     if getattr(config, "use_curriculum", False):
         from slm_training.harnesses.quality import apply_curriculum_tags
 
         records = apply_curriculum_tags(records, sanitize=True)
     rng.shuffle(records)
-    records_by_id = {r.id: r for r in records}
 
     resume_path = getattr(config, "resume_from", None)
     initialize_path = getattr(config, "initialize_from", None)
+    replay_fraction = float(getattr(config, "replay_fraction", 0.0) or 0.0)
+    replay_dir = getattr(config, "replay_train_dir", None)
+    if not 0.0 <= replay_fraction <= 1.0:
+        raise ValueError("replay_fraction must be between 0 and 1")
+    if replay_fraction and replay_dir is None:
+        raise ValueError("replay_fraction requires replay_train_dir")
+    if replay_fraction and (
+        getattr(config, "use_curriculum", False)
+        or getattr(config, "mixture_manifest", None)
+    ):
+        raise ValueError(
+            "replay sampling cannot be combined with curriculum or mixture sampling"
+        )
+    replay_records = []
+    replay_manifest_sha: str | None = None
+    if replay_fraction:
+        replay_dir = Path(replay_dir)
+        loaded_replay = load_train_records(replay_dir)
+        if not loaded_replay:
+            raise ValueError("replay train records empty")
+        replay_records = [
+            replace(record, id=f"replay::{record.id}") for record in loaded_replay
+        ]
+        replay_manifest_sha = data_manifest_sha(replay_dir)
+    records_by_id = {r.id: r for r in [*records, *replay_records]}
+
     initialization_weight_retention = float(
         getattr(config, "initialization_weight_retention", 0.0) or 0.0
     )
@@ -142,9 +167,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     if not 0.0 <= initialization_weight_retention <= 1.0:
         raise ValueError("initialization_weight_retention must be between 0 and 1")
     if initialization_weight_retention and not initialize_path:
-        raise ValueError(
-            "initialization_weight_retention requires initialize_from"
-        )
+        raise ValueError("initialization_weight_retention requires initialize_from")
 
     plugin = model or build_model(config, records)
     initialized_from: str | None = None
@@ -157,14 +180,10 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             )
         loader = getattr(plugin, "load", None)
         if not callable(loader):
-            raise TypeError(
-                f"{type(plugin).__name__} does not support initialize_from"
-            )
+            raise TypeError(f"{type(plugin).__name__} does not support initialize_from")
         loader(initialize_path)
         initialized_from = str(initialize_path)
-        initialized_prior_fields = list(
-            getattr(plugin, "initialized_prior_fields", ())
-        )
+        initialized_prior_fields = list(getattr(plugin, "initialized_prior_fields", ()))
     if int(getattr(config, "retrieval_k", 0) or 0) > 0 and hasattr(
         plugin, "skeleton_bank"
     ):
@@ -198,6 +217,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             "effective_batch_size": int(config.batch_size)
             * int(getattr(config, "grad_accum_steps", 1) or 1),
             "max_wall_minutes": max_wall_minutes,
+            "replay_fraction": replay_fraction,
         },
     )
     mix_curriculum = bool(getattr(config, "mix_curriculum", True))
@@ -243,8 +263,6 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         manifest_hash = mixture_hash(manifest)
         effective_hash = manifest_hash
         if mixture_sampling_policy != "with_replacement":
-            import hashlib
-
             effective_hash = hashlib.sha256(
                 f"{manifest_hash}:{mixture_sampling_policy}".encode()
             ).hexdigest()
@@ -264,6 +282,14 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             task_family_pools = index_task_family_pools(records)
 
     def _batches_for_step(step: int) -> list[list]:
+        if replay_records:
+            target = config.batch_size * 8
+            replay_count = round(target * replay_fraction)
+            primary_count = target - replay_count
+            drawn = [rng.choice(records) for _ in range(primary_count)]
+            drawn.extend(rng.choice(replay_records) for _ in range(replay_count))
+            rng.shuffle(drawn)
+            return batched(drawn, config.batch_size)
         if mixture_weights is not None:
             from slm_training.data.mixture import sample_mixture_batch
 
@@ -353,10 +379,25 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     accum_example_losses: list[float] = []
     seen_prompt_tokens = 0
     seen_target_tokens = 0
+    seen_primary_examples = 0
+    seen_replay_examples = 0
     best_weighted_nll = math.inf
     best_ship_score = -math.inf
     pending: list[list] = []
-    manifest_sha = data_manifest_sha(config.train_dir)
+    primary_manifest_sha = data_manifest_sha(config.train_dir)
+    manifest_sha = primary_manifest_sha
+    if replay_records:
+        manifest_sha = hashlib.sha256(
+            json.dumps(
+                {
+                    "primary": primary_manifest_sha,
+                    "replay": replay_manifest_sha,
+                    "replay_fraction": replay_fraction,
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
     resumed_from: str | None = None
 
     if resume_path:
@@ -413,7 +454,11 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         resumed_from = str(resume_path)
 
     def _count_tokens(batch: list) -> None:
-        nonlocal seen_prompt_tokens, seen_target_tokens
+        nonlocal seen_primary_examples, seen_prompt_tokens
+        nonlocal seen_replay_examples, seen_target_tokens
+        replay_examples = sum(record.id.startswith("replay::") for record in batch)
+        seen_replay_examples += replay_examples
+        seen_primary_examples += len(batch) - replay_examples
         if hasattr(plugin, "count_batch_tokens"):
             pt, tt = plugin.count_batch_tokens(batch)
             seen_prompt_tokens += int(pt)
@@ -424,7 +469,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             {
                 "id": str(record.id),
                 "source": str(record.source),
-                "source_family": str((record.meta or {}).get("source_family") or record.source),
+                "source_family": str(
+                    (record.meta or {}).get("source_family") or record.source
+                ),
                 "prompt_chars": len(record.prompt),
                 "target_chars": len(record.openui),
             }
@@ -493,9 +540,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                     "step": step,
                     "suite": suites[0],
                     "parse_rate": metrics.get("parse_rate"),
-                    "meaningful_program_rate": metrics.get(
-                        "meaningful_program_rate"
-                    ),
+                    "meaningful_program_rate": metrics.get("meaningful_program_rate"),
                     "meaningful_program_v1_rate": metrics.get(
                         "meaningful_program_v1_rate"
                     ),
@@ -679,7 +724,9 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 accum_batch_meta.extend(_batch_meta(batch))
                 accum_example_losses.extend(
                     float(value)
-                    for value in (getattr(plugin, "_last_example_token_losses", None) or [])
+                    for value in (
+                        getattr(plugin, "_last_example_token_losses", None) or []
+                    )
                 )
                 micro += 1
                 if micro >= grad_accum:
@@ -820,6 +867,23 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         "checkpoint": str(ckpt_path.as_posix()),
         "train_dir": str(config.train_dir),
         "record_count": len(records),
+        "replay": {
+            "enabled": bool(replay_records),
+            "train_dir": str(replay_dir) if replay_records else None,
+            "requested_fraction": replay_fraction,
+            "effective_fraction": (
+                seen_replay_examples / (seen_primary_examples + seen_replay_examples)
+                if seen_primary_examples + seen_replay_examples
+                else 0.0
+            ),
+            "primary_record_count": len(records),
+            "replay_record_count": len(replay_records),
+            "seen_primary_examples": seen_primary_examples,
+            "seen_replay_examples": seen_replay_examples,
+            "primary_data_manifest_sha": primary_manifest_sha,
+            "replay_data_manifest_sha": replay_manifest_sha,
+            "combined_data_manifest_sha": manifest_sha,
+        },
         "model": config.model_name,
         "device": config.device,
         "seen_prompt_tokens": seen_prompt_tokens,
@@ -868,6 +932,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         },
         "recipe": {
             "learning_rate": config.lr,
+            "replay_fraction": replay_fraction,
             "initialization_weight_retention": initialization_weight_retention,
             "seed": config.seed,
             "steps_requested": config.steps,
@@ -953,9 +1018,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             ),
             "honesty_mode": (
                 "no-design-md-context"
-                if not getattr(
-                    effective_plugin_config, "design_md_in_context", True
-                )
+                if not getattr(effective_plugin_config, "design_md_in_context", True)
                 else "design-md-context"
             ),
         },

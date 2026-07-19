@@ -1,0 +1,291 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E504",
+  "run_id": "e504-e396-e500-replay050-r4-5k",
+  "run_class": "scratch_matrix",
+  "date_utc": "2026-07-19",
+  "status": "complete",
+  "hypothesis": "Interleaving the exact E357 parent corpus during E396-to-E500 continuation can preserve parent structure better than initialized-weight retention while retaining E500 adaptation.",
+  "conclusion": "Fifty-percent parent replay reduced RMS drift by 10.46% and raised structure from 0.0927 to 0.2469, but semantic metrics remained zero and component recall fell by half. Combining replay with 1% retention reduced drift further while collapsing structure to 0.0634.",
+  "harness_change": {
+    "feature": "provenance_preserving_parent_replay",
+    "behavior": "The canonical training loop can deterministically interleave an immutable replay corpus, namespace replay record IDs, bind both corpus fingerprints and the requested fraction into full-state resume provenance, and report requested versus effective exposure.",
+    "summary_fields": [
+      "replay.requested_fraction",
+      "replay.effective_fraction",
+      "replay.primary_seen_examples",
+      "replay.replay_seen_examples",
+      "replay.primary_content_fingerprint",
+      "replay.replay_content_fingerprint",
+      "replay.combined_content_fingerprint"
+    ],
+    "validation": "Replay fraction must be in [0,1], requires an existing replay corpus, and fails closed when combined with curriculum or mixture sampling. Exact 50/50 accounting and resume fingerprints are regression-tested.",
+    "component_version": "harness.model_build.train@v5"
+  },
+  "parent_checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0",
+    "remote_uri": "hf://buckets/TKendrick/OpenUI/checkpoints/e396-balanced-type-head-continuation-r1/"
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "context_model": "HuggingFaceTB/SmolLM2-135M",
+    "context_frozen": true,
+    "local_files_only": true,
+    "output_codec": "choice",
+    "d_model": 128,
+    "heads": 4,
+    "context_layers": 2,
+    "denoiser_layers": 4,
+    "batch_size": 2,
+    "learning_rate": 0.0003,
+    "seed": 0,
+    "target_tokens": 5000,
+    "ltr_loss_weight": 0.5,
+    "component_plan_loss_weight": 4.0,
+    "slot_component_loss_weight": 1.0,
+    "slot_component_class_balance_power": 0.5,
+    "slot_component_decode_weight": 4.0,
+    "slot_component_prompt_context": true,
+    "slot_component_lexeme_prior_weight": 1.0,
+    "slot_component_span_prior_weight": 0.0,
+    "fidelity_loss_weight": 0.5,
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170,
+    "suite": "smoke",
+    "suite_n": 3,
+    "honesty_mode": "no DESIGN context; honest prompt-derived slot contract; constrained decode; no fallback; scratch diagnostic; no checkpoint sync"
+  },
+  "data": {
+    "primary": {
+      "version": "e500_documentized_expression_candidate_r2_20260718",
+      "records": 260,
+      "content_fingerprint": "bc256915c79c6a07ff9ef253d5b6eb70fade30c5422ae8015c23f739c463bc62"
+    },
+    "replay": {
+      "version": "e357_card_hierarchy_v1",
+      "records": 998,
+      "historical_source_commit": "27721a801c1b17d2e808f0e1b9b8ac2ad5699349",
+      "semantic_data_manifest_sha256": "a4f212a3444d0f219fe1b3604f70929fe1a1b91d4fdc11a73167cb74c55b6a51",
+      "records_sha256": "b1b2c3d0c1965bd9829edfc6ae34b5dce916a68c33bb17497a6392c80d7ea6ef",
+      "manifest_file_sha256": "1c0d20aceb070a7dfc0850e90003c92d45a828d8b472b98ab95086828e834329",
+      "remote_uri": "hf://buckets/TKendrick/OpenUI/data/train/e357_card_hierarchy_v1/",
+      "persistence_verification": {
+        "uploaded_files": 8,
+        "uploaded_bytes": 16886542,
+        "post_upload_sync_skips": 8,
+        "independent_download_verified": true
+      }
+    },
+    "sampling": "deterministic primary/replay exposure windows",
+    "synthesis_feedback": {
+      "warnings": 0,
+      "recommendations": 0,
+      "experiment_candidates": 0,
+      "decision": "No producer or acceptance-gate change: both corpora are clean and immutable; the failure localizes to continuation objective and output-codec interaction."
+    }
+  },
+  "matched_runs": [
+    {
+      "label": "zero_replay_control",
+      "run_id": "e504-e396-e500-replay000-r1-5k",
+      "checkpoint_sha256": "35cd38e024c4f458eb67c64c1e0877195a5b40122b8cfb3e95697d0b56334c87",
+      "steps": 99,
+      "seen_target_tokens": 5019,
+      "requested_replay_fraction": 0.0,
+      "effective_replay_fraction": 0.0,
+      "primary_seen_examples": 198,
+      "replay_seen_examples": 0,
+      "initialized_weight_rms_drift": 0.0031229690047792167,
+      "last_loss": 12.893701553344727,
+      "elapsed_wall_seconds": 88.53982776099292,
+      "combined_content_fingerprint": "bc256915c79c6a07ff9ef253d5b6eb70fade30c5422ae8015c23f739c463bc62",
+      "smoke": {
+        "n": 3,
+        "syntax_parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "structural_similarity": 0.09273333333333333,
+        "component_type_recall": 0.16666666666666666,
+        "reward_score": 0.0,
+        "ast_node_f1": 0.19722222222222222,
+        "ast_edge_f1": 0.04166666666666668,
+        "latency_ms_p50": 6188.53,
+        "failure_counts": {
+          "trivial_layout": 3
+        }
+      }
+    },
+    {
+      "label": "twelve_and_half_percent_replay",
+      "run_id": "e504-e396-e500-replay0125-r2-5k",
+      "checkpoint_sha256": "da63b403aae72267751eaf53d83fdf45e8f4596446fd47c657ba9a7581b725d3",
+      "steps": 100,
+      "seen_target_tokens": 5064,
+      "requested_replay_fraction": 0.125,
+      "effective_replay_fraction": 0.125,
+      "primary_seen_examples": 175,
+      "replay_seen_examples": 25,
+      "initialized_weight_rms_drift": 0.003218535088924038,
+      "last_loss": 23.75257110595703,
+      "elapsed_wall_seconds": 70.84747478499776,
+      "combined_content_fingerprint": "7cffd807408b258209078fe4449cfbc67ece4e4e7bb542a0b58c40956931d9b0",
+      "smoke": {
+        "n": 3,
+        "syntax_parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "structural_similarity": 0.15583333333333332,
+        "component_type_recall": 0.0,
+        "reward_score": 0.0,
+        "ast_node_f1": 0.13333333333333333,
+        "ast_edge_f1": 0.0,
+        "latency_ms_p50": 2434.3,
+        "failure_counts": {
+          "no_placeholders": 3
+        }
+      }
+    },
+    {
+      "label": "twenty_five_percent_replay",
+      "run_id": "e504-e396-e500-replay025-r3-5k",
+      "checkpoint_sha256": "91ab3f73b6a3f74d7b8a19679d5827068be0806cd327a1c3aeaef76c8c3d85b4",
+      "steps": 100,
+      "seen_target_tokens": 5039,
+      "requested_replay_fraction": 0.25,
+      "effective_replay_fraction": 0.25,
+      "primary_seen_examples": 150,
+      "replay_seen_examples": 50,
+      "initialized_weight_rms_drift": 0.003097657056894526,
+      "last_loss": 8.874863624572754,
+      "elapsed_wall_seconds": 73.11615105099918,
+      "combined_content_fingerprint": "86b5cf9bec62ab33bb683a0e9e60523d8f82c776f293fa45ef1a1b6365b94175",
+      "smoke": {
+        "n": 3,
+        "syntax_parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "structural_similarity": 0.0964,
+        "component_type_recall": 0.08333333333333333,
+        "reward_score": 0.0,
+        "ast_node_f1": 0.09523809523809523,
+        "ast_edge_f1": 0.0,
+        "latency_ms_p50": 4214.96,
+        "failure_counts": {
+          "no_placeholders": 3
+        }
+      }
+    },
+    {
+      "label": "fifty_percent_replay",
+      "run_id": "e504-e396-e500-replay050-r4-5k",
+      "checkpoint_sha256": "7d7e056e9c61ed4ffba53cf2c20e4d6d624d242488ac7f999e1baa05c90294f9",
+      "steps": 101,
+      "seen_target_tokens": 5000,
+      "requested_replay_fraction": 0.5,
+      "effective_replay_fraction": 0.504950495049505,
+      "primary_seen_examples": 100,
+      "replay_seen_examples": 102,
+      "initialized_weight_rms_drift": 0.002796372223651419,
+      "last_loss": 9.848666191101074,
+      "elapsed_wall_seconds": 74.69817651400808,
+      "combined_content_fingerprint": "6a2fe7ad2c18577debf7509bca49261bc684d14fc933e4b39d5af274923297c9",
+      "smoke": {
+        "n": 3,
+        "syntax_parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "structural_similarity": 0.24693333333333334,
+        "component_type_recall": 0.08333333333333333,
+        "reward_score": 0.0,
+        "ast_node_f1": 0.3148148148148148,
+        "ast_edge_f1": 0.0,
+        "latency_ms_p50": 2977.66,
+        "failure_counts": {
+          "no_placeholders": 2,
+          "trivial_layout": 1
+        }
+      }
+    },
+    {
+      "label": "adaptive_fifty_percent_replay_with_one_percent_retention",
+      "run_id": "e504-e396-e500-replay050-retention001-r5-5k",
+      "checkpoint_sha256": "1fc2fc23b7598bffaab0e0beb07c79593ebc9d25221d6441bc924a38ea36036c",
+      "steps": 101,
+      "seen_target_tokens": 5000,
+      "requested_replay_fraction": 0.5,
+      "effective_replay_fraction": 0.504950495049505,
+      "primary_seen_examples": 100,
+      "replay_seen_examples": 102,
+      "initialization_weight_retention": 0.01,
+      "initialized_weight_rms_drift": 0.0017753480448092632,
+      "last_loss": 9.547842979431152,
+      "elapsed_wall_seconds": 74.50484755900106,
+      "combined_content_fingerprint": "6a2fe7ad2c18577debf7509bca49261bc684d14fc933e4b39d5af274923297c9",
+      "smoke": {
+        "n": 3,
+        "syntax_parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "structural_similarity": 0.06343333333333333,
+        "component_type_recall": 0.0,
+        "reward_score": 0.0,
+        "ast_node_f1": 0.06666666666666667,
+        "ast_edge_f1": 0.0,
+        "latency_ms_p50": 3741.91,
+        "failure_counts": {
+          "no_placeholders": 2,
+          "trivial_layout": 1
+        }
+      }
+    }
+  ],
+  "comparison": {
+    "fifty_percent_replay_vs_control": {
+      "rms_drift_reduction_fraction": 0.10457893774417615,
+      "structural_similarity": 0.1542,
+      "component_type_recall": -0.08333333333333333
+    },
+    "one_percent_retention_interaction_vs_fifty_percent_replay": {
+      "rms_drift_reduction_fraction": 0.3651245603880777,
+      "structural_similarity": -0.1835,
+      "component_type_recall": -0.08333333333333333
+    }
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "passed": 0,
+    "total": 5,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Smoke-only n=3 diagnostics; meaningful rate, placeholder fidelity, and reward remain zero in every arm."
+  },
+  "checkpoint_bucket": {
+    "synced": false,
+    "reason": "Explicit --no-sync-checkpoints: all five bounded continuation diagnostics were rejected.",
+    "dataset_snapshot": {
+      "synced": true,
+      "remote_uri": "hf://buckets/TKendrick/OpenUI/data/train/e357_card_hierarchy_v1/",
+      "verification": "Eight-file exact tree independently downloaded and hash-verified after upload."
+    }
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "5895d46d4aca58c3d9afdadd03a67c67a454ac82",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.train": "v5",
+      "harness.model_build.eval": "v1",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v1",
+      "gates.ship": "openui_ship_gates_v1"
+    },
+    "stamped_at": "2026-07-19T03:15:00+00:00"
+  },
+  "decision": "Keep governed replay provenance and exposure telemetry. Reject all five E504 checkpoints. Parent replay restores hierarchy only at high exposure and does not restore semantic fidelity; initialized-weight retention compounds the failure. Next measure primary-versus-replay objective conflict before changing synthesis or adding another regularizer."
+}

@@ -105,9 +105,7 @@ def test_token_budget_stops_before_steps(train_dir: Path, tmp_path: Path) -> Non
 
 
 def test_wall_budget_stops_before_steps(train_dir: Path, tmp_path: Path) -> None:
-    summary = train(
-        _cfg(train_dir, tmp_path, "wall", 1000, max_wall_minutes=1e-9)
-    )
+    summary = train(_cfg(train_dir, tmp_path, "wall", 1000, max_wall_minutes=1e-9))
     assert summary["stopped_on"] == "wall_time_budget"
     assert summary["steps"] == 0
     assert summary["max_wall_minutes"] == 1e-9
@@ -125,9 +123,7 @@ def test_full_state_resume_is_bit_exact(train_dir: Path, tmp_path: Path) -> None
 
     part_a = train(_cfg(train_dir, tmp_path, "part_a", 3))
     assert part_a["steps"] == 3
-    full_state = (
-        tmp_path / "runs" / "part_a" / "checkpoints" / "last_full_state.pt"
-    )
+    full_state = tmp_path / "runs" / "part_a" / "checkpoints" / "last_full_state.pt"
     assert full_state.exists()
 
     part_b = train(_cfg(train_dir, tmp_path, "part_b", 6, resume_from=full_state))
@@ -246,9 +242,7 @@ def test_initialize_from_resets_state_for_new_corpus(
     assert initialized["initialized_weight_rms_drift"] == 0.0
 
     source_model = TwoTowerModel.from_checkpoint(source_checkpoint)
-    initialized_model = TwoTowerModel.from_checkpoint(
-        Path(initialized["checkpoint"])
-    )
+    initialized_model = TwoTowerModel.from_checkpoint(Path(initialized["checkpoint"]))
     for key, value in source_model.state_dict().items():
         assert torch.equal(value, initialized_model.state_dict()[key]), key
     assert source_model.config.slot_component_lexeme_priors
@@ -313,6 +307,57 @@ def test_initialize_from_cannot_mix_with_resume(
                 initialization_weight_retention=0.1,
             )
         )
+
+
+def test_parent_replay_is_deterministic_and_provenanced(
+    train_dir: Path, tmp_path: Path
+) -> None:
+    replay_dir = tmp_path / "replay_data"
+    replay_dir.mkdir()
+    write_jsonl(
+        replay_dir / "records.jsonl",
+        [
+            ExampleRecord(
+                id="a",
+                prompt="Parent hero",
+                openui=HERO,
+                split="train",
+                placeholders=[":hero.title", ":hero.body"],
+            ),
+            ExampleRecord(
+                id="parent-cta",
+                prompt="Parent CTA",
+                openui=CTA,
+                split="train",
+                placeholders=[":cta.label"],
+            ),
+        ],
+    )
+    summary = train(
+        _cfg(
+            train_dir,
+            tmp_path,
+            "replay",
+            8,
+            replay_train_dir=replay_dir,
+            replay_fraction=0.5,
+        )
+    )
+    replay = summary["replay"]
+    assert replay["enabled"] is True
+    assert replay["requested_fraction"] == 0.5
+    assert replay["effective_fraction"] == 0.5
+    assert replay["seen_primary_examples"] == 8
+    assert replay["seen_replay_examples"] == 8
+    assert replay["primary_data_manifest_sha"]
+    assert replay["replay_data_manifest_sha"]
+    assert summary["data_manifest_sha"] == replay["combined_data_manifest_sha"]
+    assert summary["recipe"]["replay_fraction"] == 0.5
+
+
+def test_parent_replay_requires_a_corpus(train_dir: Path, tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="requires replay_train_dir"):
+        train(_cfg(train_dir, tmp_path, "missing_replay", 1, replay_fraction=0.25))
 
 
 def test_loss_eval_wiring(train_dir: Path, tmp_path: Path) -> None:
