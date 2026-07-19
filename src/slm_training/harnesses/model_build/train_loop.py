@@ -63,6 +63,30 @@ def _clip_optimizer_parameter_groups(optimizer, max_norm: float) -> None:
         torch.nn.utils.clip_grad_norm_(group["params"], max_norm)
 
 
+def _strict_root_reference_identity_records(records, tokenizer) -> list:
+    """Find records whose terminal root uses a nonempty strict section subset."""
+    from slm_training.models.choice_tokenizer import (
+        structural_root_reference_identity_target,
+    )
+
+    strict = []
+    for record in records:
+        token_ids = tokenizer.encode(
+            record.openui, placeholders=list(record.placeholders or ())
+        )
+        target = structural_root_reference_identity_target(
+            tokenizer,
+            token_ids,
+            slot_count=len(record.placeholders or ()),
+        )
+        if target is None:
+            continue
+        references, section_count = target
+        if references and len(references) < section_count:
+            strict.append(record)
+    return strict
+
+
 def _write_record_nll(run_dir: Path, plugin, records) -> Path:
     """Per-record NLL under the final model — Superfiltering difficulty evidence.
 
@@ -176,6 +200,28 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         raise ValueError("initialization_weight_retention requires initialize_from")
 
     plugin = model or build_model(config, records)
+    strict_subset_multiplier = int(
+        getattr(config, "root_reference_identity_strict_subset_multiplier", 1) or 1
+    )
+    if strict_subset_multiplier < 1:
+        raise ValueError(
+            "root_reference_identity_strict_subset_multiplier must be at least 1"
+        )
+    strict_subset_records = []
+    audit_strict_subsets = strict_subset_multiplier > 1 or float(
+        getattr(config, "root_reference_identity_loss_weight", 0.0) or 0.0
+    ) > 0.0
+    if audit_strict_subsets:
+        tokenizer = getattr(plugin, "tokenizer", None)
+        if tokenizer is None:
+            raise ValueError(
+                "root-reference strict-subset sampling requires a tokenizer"
+            )
+        strict_subset_records = _strict_root_reference_identity_records(
+            records, tokenizer
+        )
+        if strict_subset_multiplier > 1 and not strict_subset_records:
+            raise ValueError("no strict-subset root-reference records found")
     initialized_from: str | None = None
     initialized_prior_fields: list[str] = []
     if initialize_path:
@@ -360,6 +406,10 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             )
             return batched(drawn, config.batch_size)
         shuffled = list(records)
+        if strict_subset_multiplier > 1:
+            shuffled.extend(
+                strict_subset_records * (strict_subset_multiplier - 1)
+            )
         rng.shuffle(shuffled)
         return batched(shuffled, config.batch_size)
 
@@ -1101,6 +1151,16 @@ def train(config: ModelBuildConfig, model=None) -> dict:
             ),
             "root_reference_identity_negative_weight": getattr(
                 config, "root_reference_identity_negative_weight", 1.0
+            ),
+            "root_reference_identity_strict_subset_multiplier": (
+                strict_subset_multiplier
+            ),
+            "root_reference_identity_strict_subset_records": len(
+                strict_subset_records
+            ),
+            "root_reference_identity_sampling_records": (
+                len(records)
+                + len(strict_subset_records) * (strict_subset_multiplier - 1)
             ),
             "root_reference_identity_decode_weight": getattr(
                 config, "root_reference_identity_decode_weight", 0.0

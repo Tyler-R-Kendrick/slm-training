@@ -397,6 +397,44 @@ def test_structural_root_reference_arity_ignores_nested_lists() -> None:
     assert bound == 3
 
 
+def test_strict_root_reference_identity_sampler_selects_only_strict_subsets() -> None:
+    from slm_training.harnesses.model_build.train_loop import (
+        _strict_root_reference_identity_records,
+    )
+
+    model = _model(output_tokenizer="choice")
+    records = [
+        ExampleRecord(
+            id="strict",
+            prompt="one root child",
+            openui=(
+                "root = Stack([card])\n"
+                "card = Card([title])\n"
+                'title = TextContent(":title")'
+            ),
+            placeholders=[":title"],
+            split="train",
+            source="fixture",
+        ),
+        ExampleRecord(
+            id="all",
+            prompt="all root children",
+            openui=(
+                "root = Stack([title, body])\n"
+                'title = TextContent(":title")\n'
+                'body = TextContent(":body")'
+            ),
+            placeholders=[":title", ":body"],
+            split="train",
+            source="fixture",
+        ),
+    ]
+
+    selected = _strict_root_reference_identity_records(records, model.tokenizer)
+
+    assert [record.id for record in selected] == ["strict"]
+
+
 def test_root_reference_arity_head_trains_and_biases_root_stop() -> None:
     from slm_training.models.choice_tokenizer import ChoiceDecodeState
 

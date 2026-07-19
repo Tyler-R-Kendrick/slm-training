@@ -18,6 +18,13 @@ def _probability(value: str) -> float:
     return parsed
 
 
+def _positive_int(value: str) -> int:
+    parsed = int(value)
+    if parsed < 1:
+        raise argparse.ArgumentTypeError("must be at least 1")
+    return parsed
+
+
 def resolve_published_train_version(
     version: str,
     *,
@@ -550,6 +557,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Relative BCE weight for generated sections excluded from the root.",
     )
     parser.add_argument(
+        "--root-reference-identity-strict-subset-multiplier",
+        type=_positive_int,
+        default=1,
+        help="Sampler copies for records whose root references a strict section subset.",
+    )
+    parser.add_argument(
         "--root-reference-identity-decode-weight",
         type=float,
         default=0.0,
@@ -955,6 +968,9 @@ def main(argv: list[str] | None = None) -> int:
         ),
         root_reference_identity_negative_weight=(
             args.root_reference_identity_negative_weight
+        ),
+        root_reference_identity_strict_subset_multiplier=(
+            args.root_reference_identity_strict_subset_multiplier
         ),
         root_reference_identity_decode_weight=(
             args.root_reference_identity_decode_weight
