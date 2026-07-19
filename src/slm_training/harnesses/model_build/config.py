@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 
@@ -326,6 +326,10 @@ class ModelBuildConfig:
     surface_ar_top_k: int = 1
     surface_ar_fallback: str = "deterministic"
     surface_ar_verify_retry: bool = True
+    # SDE3-01: content-addressed eval caching and deterministic sharding.
+    eval_cache_mode: str = "off"  # off | read | read_write | refresh
+    eval_cache_root: Path = field(default_factory=lambda: Path("outputs/eval_cache"))
+    eval_shards: int = 1
 
     @property
     def run_dir(self) -> Path:

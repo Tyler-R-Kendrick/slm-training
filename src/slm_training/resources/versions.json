@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/eval_runner.py",
@@ -21,6 +21,8 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {"version": "v3", "date": "2026-07-19", "note": "merge SDE3-01 suite-level eval cache integration on top of decode-weight override CLI"},
+        {"version": "v2", "date": "2026-07-19", "note": "add SDE3-01 suite-level content-addressed eval cache integration (EvalCache, --eval-cache-mode, --eval-cache-root)"},
         {"version": "v2", "date": "2026-07-19", "note": "expose the existing slot-to-component decode-weight override in the canonical evaluation CLI"},
         {"version": "v1", "date": "2026-07-18", "note": "initial registration"}
       ]
@@ -85,12 +87,14 @@
       ]
     },
     "evals.scoring": {
-      "version": "v3",
+      "version": "v4",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/"
       ],
       "history": [
+        {"version": "v4", "date": "2026-07-19", "note": "merge SDE3-01 eval cache and sharding on top of EFS2-02 trigger telemetry and SDE0-02 metric-gaming suite"},
+        {"version": "v3", "date": "2026-07-19", "note": "add SDE3-01 content-addressed eval cache (EvalCache, EvalCacheKey, layer keys) and deterministic suite sharding (assign_example_ids, aggregate_shard_payloads)"},
         {"version": "v3", "date": "2026-07-19", "note": "merge EFS2-02 trigger telemetry harness on top of SDE0-02 metric-gaming stress suite"},
         {"version": "v2", "date": "2026-07-19", "note": "add EFS2-02 observe-only trigger telemetry harness (SearchTriggerObservationV1, TriggerObserver, compare_trigger_regimes) and wiring fixture"},
         {"version": "v2", "date": "2026-07-19", "note": "add SDE0-02 metric-gaming stress suite (metric_gaming.py) with deterministic adversarial cases scored by binding_aware_meaningful_v2"},
