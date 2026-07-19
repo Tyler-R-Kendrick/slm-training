@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E513",
+  "run_id": "e513-e396-e500-replay050-slotrole4-focal2-r3-5k",
+  "evaluation_run_id": "e514-e513-ood160-component-plan4-r2",
+  "run_class": "scratch_matrix",
+  "date_utc": "2026-07-19",
+  "status": "complete",
+  "hypothesis": "Increasing slot-component supervision from 1 to 4 with focal gamma 2 and honest slot-contract prompt context improves semantic role selection without increasing decode bias.",
+  "conclusion": "The durable continuation completes and syncs correctly, but matched OOD quality regresses. Stronger slot-role supervision alone does not preserve the E510 component-plan gain.",
+  "training": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "parent_run_id": "e396-balanced-type-head-continuation-r1",
+    "primary_data_version": "e500_documentized_expression_candidate_r2_20260718",
+    "replay_data_version": "e357_card_hierarchy_v1",
+    "replay_fraction_requested": 0.5,
+    "replay_fraction_effective": 0.504950495049505,
+    "seen_primary_examples": 100,
+    "seen_replay_examples": 102,
+    "steps": 101,
+    "seen_target_tokens": 5000,
+    "target_token_budget": 5000,
+    "elapsed_wall_seconds": 79.59025754799995,
+    "max_wall_minutes": 3.0,
+    "stopped_on": "token_budget",
+    "last_loss": 11.156208038330078,
+    "learning_rate": 0.0003,
+    "component_plan_loss_weight": 4.0,
+    "slot_component_loss_weight": 4.0,
+    "slot_component_focal_gamma": 2.0,
+    "slot_component_class_balance_power": 0.5,
+    "slot_component_decode_weight": 4.0,
+    "slot_component_prompt_context": true,
+    "honesty_mode": "no-design-md-context",
+    "hard_process_cap_seconds": 170
+  },
+  "checkpoint": {
+    "sha256": "59253c679477060694370c5e2d8cd9fce5d7accc7d71df3b6d56edf0a88a9548",
+    "full_state_sha256": "98b6d71321add3962faa2d717a5963f17d53719f166af17ee0c6120ed7fe5133",
+    "remote_uri": "hf://buckets/TKendrick/OpenUI/checkpoints/e513-e396-e500-replay050-slotrole4-focal2-r3-5k",
+    "synced": true,
+    "verified": true,
+    "verification_method": "resync_dry_run",
+    "verified_at": "2026-07-19T14:13:58Z"
+  },
+  "evaluation": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "suite": "ood",
+    "suite_n": 4,
+    "grammar_ltr_primary": true,
+    "component_plan_decode_weight": 4.0,
+    "slot_component_decode_weight": 4.0,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160,
+    "honest_slot_contract": true,
+    "slot_contract_in_context": true,
+    "slot_contract_constrained_decode": true,
+    "no_design_context": true,
+    "allow_unconstrained_fallback": false,
+    "hard_process_cap_seconds": 170
+  },
+  "matched_runs": [
+    {
+      "label": "slot_role_supervision4_focal2",
+      "run_id": "e513-e396-e500-replay050-slotrole4-focal2-r3-5k",
+      "evaluation_run_id": "e514-e513-ood160-component-plan4-r2",
+      "checkpoint_sha256": "59253c679477060694370c5e2d8cd9fce5d7accc7d71df3b6d56edf0a88a9548",
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.0,
+          "placeholder_fidelity": 0.49166666666666664,
+          "structural_similarity": 0.275,
+          "component_type_recall": 0.20833333333333331,
+          "reward_score": 0.7695,
+          "ast_node_f1": 0.35,
+          "ast_edge_f1": 0.0625,
+          "binding_aware_meaningful_v2_rate_strict": 0.0,
+          "binding_aware_meaningful_v2_coverage": 1.0,
+          "latency_ms_p50": 5712.72,
+          "latency_ms_p95": 9149.73
+        }
+      }
+    }
+  ],
+  "comparison_to_e510": {
+    "meaningful_program_rate_delta": -0.5,
+    "placeholder_fidelity_delta": -0.16666666666666669,
+    "structural_similarity_delta": -0.069575,
+    "component_type_recall_delta": -0.1875,
+    "reward_score_delta": -0.07100000000000006,
+    "ast_node_f1_delta": -0.11785714285714288,
+    "ast_edge_f1_delta": -0.1,
+    "placeholder_spam_prevalence_delta": -1,
+    "placeholder_semantic_role_mismatch_delta": -1,
+    "required_component_missing_delta": 0
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Meaningful rate falls to zero, all component-quality metrics regress, strict binding-aware meaning is zero, and AgentV remains red."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "76241239fc488d4c431a29ebf9286fb9f9077a77",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.train": "v6",
+      "harness.model_build.eval": "v2",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v1"
+    },
+    "stamped_at": "2026-07-19T14:16:13.723416+00:00"
+  },
+  "decision": "Keep the checkpoint as durable diagnostic evidence but reject it for promotion. Return to targeted role-labeled data or a matched loss decomposition rather than increasing the slot-role loss further."
+}

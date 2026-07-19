@@ -134,6 +134,7 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 | E504 50% parent replay | `e504-e396-e500-replay050-r4-5k` | CPU frozen SmolLM2 E357 replay diagnostic | `outputs/runs/e504-e396-e500-replay050-r4-5k/checkpoints/last.pt` (local) | RMS drift 0.002796 and structure 0.2469, but recall 0.0833 and semantic metrics zero, AgentV 0/1. SHA `7d7e056e…c90294f9`; rejected, **not promotable or ship** ([results](design/iter-e504-parent-corpus-replay-20260719.md)) |
 | E504 50% replay + 1% retention | `e504-e396-e500-replay050-retention001-r5-5k` | CPU frozen SmolLM2 interaction diagnostic | `outputs/runs/e504-e396-e500-replay050-retention001-r5-5k/checkpoints/last.pt` (local) | RMS drift 0.001775, but structure collapses to 0.0634 and semantic metrics remain zero, AgentV 0/1. SHA `1fc2fc23…a36036c`; rejected, **not promotable or ship** ([results](design/iter-e504-parent-corpus-replay-20260719.md)) |
 | E505 50% replay loss attribution | `e505-e396-e500-replay050-loss-attribution-r1-5k` | CPU frozen SmolLM2 source-loss diagnostic | `outputs/runs/e505-e396-e500-replay050-loss-attribution-r1-5k/checkpoints/last.pt` (local) | Primary/replay loss proxies both decline; matched structure 0.2469 and recall 0.0833, but meaningful/fidelity/reward zero, AgentV 0/1. SHA `8fd11acd…525967e8`; rejected, **not promotable or ship** ([results](design/iter-e505-replay-loss-attribution-20260719.md)) |
+| E513 durable slot-role continuation | `e513-e396-e500-replay050-slotrole4-focal2-r3-5k` | CPU frozen SmolLM2 slot-role diagnostic | `hf://buckets/TKendrick/OpenUI/checkpoints/e513-e396-e500-replay050-slotrole4-focal2-r3-5k/` | 101 steps / 5,000 target tokens in 79.6s under the three-minute cap; bucket verified, SHA `59253c67…a88a9548`. E514 OOD meaningful 0.0, fidelity 0.4917, structure 0.2750, AgentV 0/1; rejected, **durable diagnostic only, not promotable or ship** ([results](design/iter-e513-slot-role-supervision-20260719.md)) |
 | Production HF ship | — | — | `hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/` | **None registered yet** — fill this row after the first full HF sync |
 
 Update the table in place when a checkpoint is written or superseded. Keep
@@ -665,6 +666,22 @@ reduces OOD placeholder-spam prevalence 3→1 but leaves semantic-role mismatch 
 0.3446→0.2869, reward 0.8405→0.7245, and AgentV stays 0/1. Weight 8 is rejected;
 the checkpoint and weight 4 policy remain non-promotable.
 
+### E513 durable slot-role supervision continuation
+
+E513 warm-starts E396 on E500 with 50% exact E357 replay, raises
+slot-component loss from 1 to 4, adds focal gamma 2, and supplies the honest
+slot contract in context. The HF-context CPU run completes 101 steps / 5,000
+target tokens in 79.6 seconds under `max_wall_minutes=3`. Its checkpoint SHA
+`59253c679477060694370c5e2d8cd9fce5d7accc7d71df3b6d56edf0a88a9548`
+and full state are uploaded and verified in the OpenUI bucket.
+
+Matched E514 OOD evaluation under E510's component-plan weight-4 policy
+regresses meaningful 0.50→0.00, fidelity 0.6583→0.4917, structure
+0.3446→0.2750, recall 0.3958→0.2083, AST node F1 0.4679→0.3500, and AST edge
+F1 0.1625→0.0625. Strict binding-aware meaning stays zero and AgentV stays
+0/1. The checkpoint is retained as durable diagnostic evidence but rejected
+for promotion.
+
 ---
 
 ## Limitations & honesty
@@ -805,6 +822,7 @@ the checkpoint and weight 4 policy remain non-promotable.
 | 2026-07-19 | `e504-e396-e500-replay050-r4-5k` | `outputs/runs/e504-e396-e500-replay050-r4-5k/` (local) | 101 CPU steps / 5,000 tokens in 74.70s; loss 9.8487; SHA `7d7e056e9c61ed4ffba53cf2c20e4d6d624d242488ac7f999e1baa05c90294f9` | 50% replay; RMS drift 0.002796, structure 0.2469, recall 0.0833; semantic gates zero, AgentV 0/1; rejected |
 | 2026-07-19 | `e504-e396-e500-replay050-retention001-r5-5k` | `outputs/runs/e504-e396-e500-replay050-retention001-r5-5k/` (local) | 101 CPU steps / 5,000 tokens in 74.50s; loss 9.5478; SHA `1fc2fc23b7598bffaab0e0beb07c79593ebc9d25221d6441bc924a38ea36036c` | 50% replay + 1% retention; drift 0.001775 but structure 0.0634 and recall zero; semantic gates zero, AgentV 0/1; rejected |
 | 2026-07-19 | `e505-e396-e500-replay050-loss-attribution-r1-5k` | `outputs/runs/e505-e396-e500-replay050-loss-attribution-r1-5k/` (local) | 101 CPU steps / 5,000 tokens in 93.82s; loss 9.8487; SHA `8fd11acdcc1e3eaf0585e847c68815190fdc90c9071e30833db40d24525967e8` | Primary/replay proxies both decline; matched structure 0.2469 and recall 0.0833, semantic gates zero, AgentV 0/1; constrained slot-contract ablation still rejected |
+| 2026-07-19 | `e513-e396-e500-replay050-slotrole4-focal2-r3-5k` | `hf://buckets/TKendrick/OpenUI/checkpoints/e513-e396-e500-replay050-slotrole4-focal2-r3-5k/` | 101 CPU HF-context steps / 5,000 target tokens in 79.6s; loss 11.1562; SHA `59253c679477060694370c5e2d8cd9fce5d7accc7d71df3b6d56edf0a88a9548` | Bucket upload and resync verification pass; matched E514 OOD meaningful 0.0, fidelity 0.4917, structure 0.2750, AgentV 0/1; durable diagnostic, rejected for promotion |
 
 Append a row for every new or replaced checkpoint. Do not delete history.
 

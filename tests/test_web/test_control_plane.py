@@ -266,6 +266,21 @@ def test_e512_slot_component_weight_run_is_persisted() -> None:
     assert set(readers.run(run_id)["scoreboard"]["suites"]) == {"ood"}
 
 
+def test_e513_durable_checkpoint_and_run_are_persisted() -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    run_id = "e513-e396-e500-replay050-slotrole4-focal2-r3-5k"
+    listed = next(
+        row for row in readers.runs()["runs"] if row.get("run_id") == run_id
+    )
+    assert set(listed["suites"]) == {"ood"}
+    assert set(readers.run(run_id)["scoreboard"]["suites"]) == {"ood"}
+    checkpoint_ids = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_id in checkpoint_ids
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")
