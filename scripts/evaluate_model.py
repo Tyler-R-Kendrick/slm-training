@@ -204,7 +204,7 @@ def main(argv: list[str] | None = None) -> int:
         "--visible-reference-decode-weight",
         type=float,
         default=None,
-        help="Prefer each unused legal generated bound reference once in the root.",
+        help="Prefer unused legal generated element references in root/list aggregation.",
     )
     parser.add_argument(
         "--component-edge-decode-weight",

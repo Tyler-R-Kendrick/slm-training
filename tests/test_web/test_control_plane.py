@@ -556,6 +556,24 @@ def test_e538_role_plan_composition_run_is_persisted() -> None:
     assert detail["scoreboard"]["agentv"]["passed"] == 0
 
 
+def test_e539_structural_reference_runs_are_persisted() -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    runs = {row.get("run_id"): row for row in readers.runs()["runs"]}
+    control_id = "e539-control-e531-ood160-role4-reference0-r1"
+    intervention_id = "e539-e531-ood160-role4-structural-reference4-r1"
+    assert runs[control_id]["pass"] is False
+    assert runs[intervention_id]["pass"] is False
+
+    control = readers.run(control_id)["scoreboard"]["suites"]["ood"]
+    intervention = readers.run(intervention_id)
+    ood = intervention["scoreboard"]["suites"]["ood"]
+    assert control["n"] == ood["n"] == 4
+    assert control["placeholder_fidelity"] == 0.3833333333333333
+    assert ood["placeholder_fidelity"] == 0.4666666666666667
+    assert intervention["scoreboard"]["agentv"]["passed"] == 0
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")

@@ -2375,6 +2375,21 @@ declaration/reference structure rather than another component-type bias. Full
 evidence: [narrative](iter-e538-role-plan-composition-20260719.md) and
 [JSON](iter-e538-role-plan-composition-20260719.json).
 
+## E539 structural reference aggregation
+
+E539 makes the default-off generated-reference hook reachable inside structural
+lists and compares weight 4 with a same-commit v10 weight-zero control. Ten
+applications change seven choices. Fidelity improves `0.3833→0.4667` and
+validity `0.53→0.58`, while meaningful, recall, reward, strict meaning, and
+AgentV remain unchanged; structure slips `0.1159→0.1119`.
+
+**Verdict:** retain the fail-closed hook for diagnosis, but reject weight 4 for
+training or promotion. Reference aggregation must be learned or explicitly
+phased rather than applied to every list. Full evidence:
+[narrative](iter-e539-structural-reference-aggregation-20260719.md),
+[control JSON](iter-e539-structural-reference-control-20260719.json), and
+[intervention JSON](iter-e539-structural-reference-aggregation-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
