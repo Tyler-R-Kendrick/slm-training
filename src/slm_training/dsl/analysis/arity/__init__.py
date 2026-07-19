@@ -110,6 +110,12 @@ from slm_training.dsl.analysis.arity.conditional_rate import (
     mutual_information,
     posterior_effective_support,
 )
+from slm_training.dsl.analysis.arity.decision_difficulty import (
+    DecisionDifficulty,
+    ProgramDifficulty,
+    aggregate_program_difficulties,
+    decision_difficulty_from_trace,
+)
 from slm_training.dsl.analysis.arity.task_quotient import (
     AlignedActionRecord,
     ConfusabilityGraph,
@@ -215,6 +221,11 @@ __all__ = [
     "extract_value_classes",
     "generate_variants",
     "propose_refinements",
+    # --- SDE2-06: decision difficulty / arity curriculum (SLM-173) ---
+    "DecisionDifficulty",
+    "ProgramDifficulty",
+    "aggregate_program_difficulties",
+    "decision_difficulty_from_trace",
     # --- CAP1-04: conditional task rate / Fano / RD (SLM-84) ---
     "ConditionalRateReport",
     "FanoBound",
