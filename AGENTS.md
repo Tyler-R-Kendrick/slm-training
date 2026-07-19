@@ -347,12 +347,18 @@ which revision of the constraints produced it. Contract:
 - Match existing style; no unrelated drive-by refactors.
 - Before adding or relocating tracked paths, use `organize-repository`, follow
   `docs/repository-organization.md`, and use `git mv` rather than `mv` for moves.
+- Frozen DSL-agnostic harness machinery (version stamping, lineage records,
+  checkpoint references, the gate/promotion engines, scaling math, eval
+  bookkeeping) lives in `src/slm_training/harness_core/` and never imports the
+  DSL/model/eval/harness layers; DSL specifics enter via callbacks. Old import
+  paths are stable shims. Changes there bump the `harness.core` component
+  (see `docs/design/harness-core.md`).
 
 ```
 docs/MODEL_CARD.md # checkpoint roster + eval (keep README summary in sync)
 docs/design/       # matrices + measured results (source of truth)
 scripts/           # train / eval / matrix / bench CLIs
-src/slm_training/
+src/slm_training/  # implementation (harness_core/ = frozen DSL-agnostic core)
 .agents/skills/    # canonical skills for all tools
 ```
 

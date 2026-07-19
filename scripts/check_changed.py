@@ -78,6 +78,17 @@ SUITES_BY_PREFIX = (
     ("src/slm_training/autoresearch/", ("tests/test_autoresearch",)),
     ("src/slm_training/dsl/", ("tests/test_dsl", "tests/test_harnesses/model_build")),
     ("src/slm_training/evals/", ("tests/test_evals", "tests/test_harnesses/model_build")),
+    (
+        "src/slm_training/harness_core/",
+        (
+            "tests/test_harness_core",
+            "tests/test_evals",
+            "tests/test_harnesses/experiments",
+            "tests/test_harnesses/model_build",
+            "tests/test_lineage",
+            "tests/test_versioning",
+        ),
+    ),
     ("src/slm_training/harnesses/distill/", ("tests/test_harnesses/distill",)),
     (
         "src/slm_training/harnesses/experiments/",

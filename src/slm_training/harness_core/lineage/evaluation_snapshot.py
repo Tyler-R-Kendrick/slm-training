@@ -6,8 +6,8 @@ import json
 from pathlib import Path
 from typing import Mapping
 
-from slm_training.lineage.data_cycle import snapshot_directory
-from slm_training.lineage.records import DataSnapshot
+from slm_training.harness_core.lineage.data_cycle import snapshot_directory
+from slm_training.harness_core.lineage.records import DataSnapshot
 
 REQUIRED_SUITES = ("smoke", "held_out", "adversarial", "ood", "rico_held")
 
