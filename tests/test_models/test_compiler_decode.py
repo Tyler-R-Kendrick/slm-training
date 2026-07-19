@@ -291,6 +291,38 @@ def test_visible_reference_bias_prefers_each_unused_bound_element_once() -> None
     assert exhausted is None
 
 
+def test_visible_reference_bias_reaches_structural_lists_only() -> None:
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    model = _model(
+        output_tokenizer="choice",
+        visible_reference_decode_weight=4.0,
+    )
+    tokenizer = model.tokenizer
+    ref0 = tokenizer.token_to_id["&0"]
+    close = tokenizer.token_to_id["]"]
+    state = ChoiceDecodeState(tokenizer, slot_count=1)
+    for token in ("+TextContent", "@0", "-", "+Stack", "["):
+        assert state.advance_id(tokenizer.token_to_id[token])
+
+    bias = model._visible_reference_completeness_bias(
+        state,
+        [tokenizer.bos_id],
+        (ref0, close),
+    )
+    state.frames.pop()
+    outside_list = model._visible_reference_completeness_bias(
+        state,
+        [tokenizer.bos_id],
+        (ref0, close),
+    )
+
+    assert state.mode == "structural"
+    assert bias is not None
+    assert bias.tolist() == [4.0, 0.0]
+    assert outside_list is None
+
+
 def test_choice_generation_evidence_preserves_reference_decisions() -> None:
     model = _model(output_tokenizer="choice")
     tokenizer = model.tokenizer
