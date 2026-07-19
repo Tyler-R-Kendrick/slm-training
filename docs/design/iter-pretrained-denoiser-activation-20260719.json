@@ -1,0 +1,160 @@
+{
+  "manifest": {
+    "activation_gates": [
+      {
+        "available": false,
+        "depends_on_issue_id": "SLM-161",
+        "evidence": "",
+        "gate_id": "slm161_data_contract_closed",
+        "required_status": "closed"
+      },
+      {
+        "available": false,
+        "depends_on_issue_id": "SLM-24",
+        "evidence": "",
+        "gate_id": "slm24_evaluation_ready",
+        "required_status": "closed"
+      },
+      {
+        "available": false,
+        "depends_on_issue_id": "SLM-175",
+        "evidence": "",
+        "gate_id": "slm175_connector_spec_closed",
+        "required_status": "closed"
+      },
+      {
+        "available": false,
+        "depends_on_issue_id": "SDE4-04",
+        "evidence": "",
+        "gate_id": "small_baseline_stable",
+        "required_status": "passed"
+      },
+      {
+        "available": false,
+        "depends_on_issue_id": "SDE4-04",
+        "evidence": "",
+        "gate_id": "budget_approved",
+        "required_status": "approved"
+      },
+      {
+        "available": false,
+        "depends_on_issue_id": "SDE4-04",
+        "evidence": "",
+        "gate_id": "license_compatible",
+        "required_status": "approved"
+      }
+    ],
+    "activation_status": "blocked",
+    "activation_verdict": "activation_blocked",
+    "arms": [
+      {
+        "arm_id": "current_small_controller_baseline",
+        "arm_kind": "current_small_controller_baseline",
+        "eligible": true,
+        "omission_reason": null
+      },
+      {
+        "arm_id": "b4_pilot_reference",
+        "arm_kind": "b4_pilot_reference",
+        "eligible": true,
+        "omission_reason": null
+      },
+      {
+        "arm_id": "pretrained_denoiser_plus_adapters",
+        "arm_kind": "pretrained_denoiser_plus_adapters",
+        "eligible": true,
+        "omission_reason": null
+      },
+      {
+        "arm_id": "frozen_backbone_connector_only",
+        "arm_kind": "frozen_backbone_connector_only",
+        "eligible": true,
+        "omission_reason": null
+      },
+      {
+        "arm_id": "adapters_disabled_diagnostic",
+        "arm_kind": "adapters_disabled_diagnostic",
+        "eligible": false,
+        "omission_reason": "zero-training diagnostic only"
+      },
+      {
+        "arm_id": "equal_compute_small_controller_control",
+        "arm_kind": "equal_compute_small_controller_control",
+        "eligible": true,
+        "omission_reason": null
+      },
+      {
+        "arm_id": "random_init_short_budget_diagnostic",
+        "arm_kind": "random_init_short_budget_diagnostic",
+        "eligible": false,
+        "omission_reason": "optional short-budget diagnostic only when financially justified"
+      }
+    ],
+    "budget": {
+      "conversion_dollars": null,
+      "eval_dollars": null,
+      "gpu_hours": null,
+      "model_acquisition_dollars": null,
+      "storage_dollars": null,
+      "total_dollars": 0.0
+    },
+    "campaign_verdict": "unrun",
+    "candidate": {
+      "architecture": "unset",
+      "candidate_id": "unset",
+      "context_length": 0,
+      "conversion_method": "unset",
+      "estimated_flops_per_forward": 0,
+      "estimated_inference_memory_bytes": 0,
+      "estimated_train_memory_bytes": 0,
+      "expected_deployed_bytes": 0,
+      "expected_serialized_bytes": 0,
+      "file_hashes": {},
+      "hardware_requirements": [],
+      "hidden_width": 0,
+      "license": {
+        "attribution_required": false,
+        "commercial_use_allowed": false,
+        "modification_allowed": false,
+        "notes": "",
+        "redistribution_allowed": false,
+        "spdx_id": "unset"
+      },
+      "local_offline_available": false,
+      "model": "unset",
+      "num_layers": 0,
+      "parameter_count": 0,
+      "pretraining_objective": "denoising_lm",
+      "provider": "unset",
+      "repository": "",
+      "revision": "main",
+      "selection_evidence": "candidate not yet selected",
+      "supported_formats": [
+        "safetensors"
+      ],
+      "tokenizer_id": "unset",
+      "unsupported_operations": []
+    },
+    "hypothesis_id": "H18",
+    "manifest_hash": "b615fe24a949ddfa",
+    "manifest_id": "pretrained_denoiser_activation/v1",
+    "max_deployed_bytes": 1000000000,
+    "note": "SDE4-04 pretrained-denoiser activation manifest (wiring slice).",
+    "primary_metric": "binding_aware_meaningful_program_rate",
+    "schema_version": "pretrained_denoiser_activation/v1",
+    "seeds": [
+      0,
+      1,
+      2
+    ]
+  },
+  "version_stamp": {
+    "code_commit": "fea3c175cdf9b6b5046b06e14ad233fc4f063cc5",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v9"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-19T17:58:21.692113+00:00"
+  }
+}
