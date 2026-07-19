@@ -389,12 +389,17 @@
       ]
     },
     "harness.experiments": {
-      "version": "v23",
+      "version": "v24",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {
+          "version": "v24",
+          "date": "2026-07-19",
+          "note": "add SLM-133 EFS3-06 AST-sketch dedup × choice-native retrieval factorial wiring/fixture harness"
+        },
         {
           "version": "v23",
           "date": "2026-07-19",
@@ -716,6 +721,23 @@
           "version": "v1",
           "date": "2026-07-19",
           "note": "initial registration; SLM-127 EFS3-04 contract-grounded candidate selector wiring/fixture harness"
+        }
+      ]
+    },
+    "harness.experiments.ast_sketch_retrieval": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harnesses/experiments/ast_sketch_retrieval_factorial.py",
+        "scripts/run_ast_sketch_retrieval_factorial.py",
+        "tests/test_harnesses/experiments/test_ast_sketch_retrieval_factorial.py",
+        "tests/test_scripts/test_run_ast_sketch_retrieval_factorial.py"
+      ],
+      "history": [
+        {
+          "version": "v1",
+          "date": "2026-07-19",
+          "note": "initial registration; SLM-133 EFS3-06 AST-sketch dedup × choice-native retrieval factorial wiring/fixture harness"
         }
       ]
     },
