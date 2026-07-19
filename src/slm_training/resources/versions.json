@@ -197,12 +197,13 @@
       ]
     },
     "harness.experiments": {
-      "version": "v19",
+      "version": "v20",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {"version": "v20", "date": "2026-07-19", "note": "add SLM-124 EFS3-03 B3 surface-vs-choice capacity-ladder v2 manifest, fixture runner, and CLI wiring"},
         {"version": "v19", "date": "2026-07-19", "note": "add SLM-121 LDI1-02 causal PEFT FTPO manifest, fixture runner, and CLI wiring"},
         {"version": "v18", "date": "2026-07-19", "note": "add SLM-120 near-solved semantic corruption-curriculum manifest, fixture runner, and CLI wiring"},
         {"version": "v17", "date": "2026-07-19", "note": "add SLM-109 E228 exposure-ladder manifest, recipe-freeze hash, and plan/fixture CLI"},
@@ -233,6 +234,16 @@
       ],
       "history": [
         {"version": "v1", "date": "2026-07-19", "note": "initial registration; SLM-121 causal PEFT FTPO plan/fixture CLI"}
+      ]
+    },
+    "matrix.b3_capacity_v2": {
+      "version": "v1",
+      "kind": "matrix",
+      "paths": [
+        "scripts/run_b3_capacity_v2.py"
+      ],
+      "history": [
+        {"version": "v1", "date": "2026-07-19", "note": "initial registration; SLM-124 EFS3-03 B3 surface-vs-choice capacity-ladder v2 plan/fixture CLI"}
       ]
     },
     "model.twotower": {
