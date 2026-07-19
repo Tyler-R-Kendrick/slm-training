@@ -101,6 +101,7 @@
         "src/slm_training/evals/"
       ],
       "history": [
+        {"version": "v10", "date": "2026-07-19", "note": "no-bump: relocate record_schema/eval_cache/score_policy to harness_core (old modules are sys.modules alias shims); suite_sharding and all scoring behavior unchanged"},
         {"version": "v10", "date": "2026-07-19", "note": "add EFS0-04 judge-independence audit scaffolding (JudgeIndependenceEvaluator, judge_audit annotation harness, export_annotations CLI) and rubric"},
         {"version": "v9", "date": "2026-07-19", "note": "add EFS2-01 X22 tree-edit beam-width × edit-depth scaling harness (TreeEditScalingConfig, run_scaling_grid, valid-state beam search) on top of quantized-energy/solver-state/verifier-cascade stack"},
         {"version": "v8", "date": "2026-07-19", "note": "add CAP4-03 quantized local-energy inference comparison harness (EnergyProblem, EnergyQuantizer, greedy vs exact Viterbi, QuantFormat wiring) on top of solver-state/verifier-cascade stack"},
@@ -119,9 +120,11 @@
       "version": "openui_ship_gates_v1",
       "kind": "gate",
       "paths": [
-        "src/slm_training/harnesses/model_build/ship_gates.py"
+        "src/slm_training/harnesses/model_build/ship_gates.py",
+        "src/slm_training/harness_core/gate_engine.py"
       ],
       "history": [
+        {"version": "openui_ship_gates_v1", "date": "2026-07-19", "note": "no-bump: relocate the generic gate-check loop to harness_core.gate_engine behind a normalize_suite/default_min_n seam; policy, thresholds, and the gates.json payload stay byte-identical (pinned by tests/test_harness_core/test_gate_engine_golden.py)"},
         {"version": "openui_ship_gates_v1", "date": "2026-07-18", "note": "initial registration; mirrors MEANINGFUL_METRIC_POLICY threshold_version"}
       ]
     },
@@ -173,6 +176,7 @@
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {"version": "v15", "date": "2026-07-19", "note": "no-bump: relocate efficiency_gain/scaling_fit to harness_core (old modules are sys.modules alias shims) and delegate promotion checks to harness_core.promotion_engine; HARD_CATEGORIES, the OpenUI ship-gate binding, and all public signatures unchanged"},
         {"version": "v15", "date": "2026-07-19", "note": "lazy-load torch-backed ladder re-exports so the read-only Vercel web entrypoint remains torch-free"},
         {"version": "v14", "date": "2026-07-19", "note": "fix(cap3-05): make equal-byte planning honest and reconcile cost ledger"},
         {"version": "v13", "date": "2026-07-19", "note": "add CAP3-05 (SLM-94) equal-byte width × precision ladder planner and dry-run manifest support"},
@@ -255,6 +259,16 @@
       ],
       "history": [
         {"version": "v1", "date": "2026-07-18", "note": "initial registration; wiring-first quotient-state diffusion graph diagnostics"}
+      ]
+    },
+    "harness.core": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/harness_core/"
+      ],
+      "history": [
+        {"version": "v1", "date": "2026-07-19", "note": "initial registration; frozen DSL-agnostic core extracted structurally (versioning, lineage, checkpoint_reference, gate/promotion engines, scaling math, record_schema/eval_cache/score_policy) with behavior pinned by tests/test_harness_core"}
       ]
     }
   }

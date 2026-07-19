@@ -10,14 +10,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, TypeVar
 
-from slm_training.lineage.records import (
+from slm_training.harness_core.lineage.records import (
     ChampionPointer,
     DataSnapshot,
     EvaluationReport,
     MergeManifest,
     RunManifest,
 )
-from slm_training.lineage.records import content_sha
+from slm_training.harness_core.lineage.records import content_sha
 
 Record = TypeVar(
     "Record",
