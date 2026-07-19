@@ -147,12 +147,13 @@
       ]
     },
     "harness.experiments": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {"version": "v4", "date": "2026-07-19", "note": "add GrammarProfile dataclass, manifest builder/validator, and CLI for CAP5-01 grammar/profile family summaries"},
         {"version": "v3", "date": "2026-07-18", "note": "lazy-load Torch-only equal-byte planning dependencies so the web runtime remains import-safe"},
         {"version": "v2", "date": "2026-07-18", "note": "correct equal-byte arm token budgets and fail closed on reference-only low-bit training"},
         {"version": "v1", "date": "2026-07-18", "note": "initial registration (ladder, promotion, scaling fits; verified-solver files are claimed by matrix.verified_solver)"}
