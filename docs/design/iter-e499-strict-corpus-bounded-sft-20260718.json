@@ -1,0 +1,192 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E499",
+  "run_id": "e499-choice-compatible-strict-hf-choice-candidate-r6",
+  "run_class": "scratch_matrix",
+  "date_utc": "2026-07-18",
+  "status": "complete",
+  "conclusion": "Strict-r4 and its choice-compatible integrated follow-up both regress smoke structure versus the matched diverse-root control; neither corpus nor checkpoint is promoted.",
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "context_model": "HuggingFaceTB/SmolLM2-135M",
+    "context_frozen": true,
+    "output_codec": "choice",
+    "d_model": 64,
+    "heads": 2,
+    "context_layers": 1,
+    "denoiser_layers": 2,
+    "batch_size": 4,
+    "learning_rate": 0.0003,
+    "seed": 0,
+    "target_token_budget": 1000,
+    "steps_requested": 100,
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170,
+    "suite": "smoke",
+    "suite_n": 1,
+    "honesty_mode": "no DESIGN context; honest slot contract; scratch diagnostic; no checkpoint sync"
+  },
+  "data_builds": [
+    {
+      "version": "dq_strict_fixture_r4_20260718",
+      "records": 104,
+      "unique_root_parents": 20,
+      "records_per_root_parent_p95": 6,
+      "content_fingerprint": "59bc139ef678d9b69e2b19882554dc3e7ff91db38370551923f5fc2e9a5f4620",
+      "decision": "Rejected as a replacement training corpus at this budget."
+    },
+    {
+      "version": "e499_integrated_strict_r5_20260718",
+      "records": 235,
+      "unique_program_families": 65,
+      "unique_structural_families": 132,
+      "incompatible_choice_targets": 76,
+      "warnings": [],
+      "decision": "Training preflight failed because strict data legitimately includes fragment targets that the document-only choice codec cannot encode."
+    },
+    {
+      "version": "e499_choice_compatible_strict_r6_20260718",
+      "records": 67,
+      "unique_root_parents": 23,
+      "incompatible_choice_targets": 0,
+      "content_fingerprint": "50c6aa0f56f95ccb4b6d811cd8d655838ed20acbc3cd5d9d17db3a1a84d1e9fe",
+      "warnings": [
+        "high_rejection_rate",
+        "redundant prompt_paraphrase expansion"
+      ],
+      "decision": "Valid diagnostic input, but not published or promoted because feedback remains red and smoke quality did not improve."
+    }
+  ],
+  "matched_runs": [
+    {
+      "label": "diverse_root_control",
+      "run_id": "e499-remediated-roots-hf-choice-control-r4",
+      "train_dir": "src/slm_training/resources/data/train/remediated_roots",
+      "records": 108,
+      "steps": 10,
+      "seen_target_tokens": 1023,
+      "last_loss": 30.86884307861328,
+      "elapsed_wall_seconds": 7.346038089002832,
+      "trainable_parameters": 230210,
+      "frozen_parameters": 134515008,
+      "checkpoint": "outputs/runs/e499-remediated-roots-hf-choice-control-r4/checkpoints/last.pt",
+      "checkpoint_sha256": "bb4bec5f7565f733cc9b1417916cc13f10d831bdabac025ad45fa9477f359fb6",
+      "trace_id": "1fb1eb0510ad8dc43a5ab6a991616ff5"
+    },
+    {
+      "label": "strict_r4_candidate",
+      "run_id": "e499-strict-r4-hf-choice-candidate-r4",
+      "train_dir": "src/slm_training/resources/data/train/dq_strict_fixture_r4_20260718",
+      "records": 104,
+      "steps": 9,
+      "seen_target_tokens": 1034,
+      "last_loss": 32.204776763916016,
+      "elapsed_wall_seconds": 5.7639321769966045,
+      "trainable_parameters": 230210,
+      "frozen_parameters": 134515008,
+      "checkpoint": "outputs/runs/e499-strict-r4-hf-choice-candidate-r4/checkpoints/last.pt",
+      "checkpoint_sha256": "81b2cb669bbd6b5faa3e6fe60caa0fd3a5d9d310463dc11198dfee227bcfbaf1",
+      "trace_id": "86a6fb45e77f42f187113f52ec70748c"
+    },
+    {
+      "label": "choice_compatible_strict_r6",
+      "run_id": "e499-choice-compatible-strict-hf-choice-candidate-r6",
+      "train_dir": "outputs/data/train/e499_choice_compatible_strict_r6_20260718",
+      "records": 67,
+      "steps": 9,
+      "seen_target_tokens": 1091,
+      "last_loss": 32.878074645996094,
+      "elapsed_wall_seconds": 6.564647317005438,
+      "trainable_parameters": 230210,
+      "frozen_parameters": 134515008,
+      "checkpoint": "outputs/runs/e499-choice-compatible-strict-hf-choice-candidate-r6/checkpoints/last.pt",
+      "checkpoint_sha256": "7230ace958aa61dcc2c11997f12b8cb6ece590205f69676e4123ac8a4b2e2fab",
+      "trace_id": "8c62f44bb72c736ab33559922edcaa78"
+    }
+  ],
+  "exploratory_checkpoints": [
+    {
+      "run_id": "e499-remediated-control-r1",
+      "sha256": "0ba703523ed35e262383f745b3f4784c6fb9c739ac210539b70ea61c52a9a040",
+      "reason_invalid": "Data-derived lexer vocabulary changed trainable parameter count."
+    },
+    {
+      "run_id": "e499-strict-r4-candidate-r1",
+      "sha256": "c089e5e8b3a93b484827b3af32dc186fdc43bac1390a20233caeee421d15d86e",
+      "reason_invalid": "Data-derived lexer vocabulary changed trainable parameter count."
+    },
+    {
+      "run_id": "e499-strict-r4-choice-candidate-r2",
+      "sha256": "4ae78b53a0b0d548e530a924e4eedd8dfa98a6eb9375fe5fb53a9eaef0fc7569",
+      "reason_invalid": "The intended control corpus contained 61 non-document targets and failed before checkpoint."
+    },
+    {
+      "run_id": "e499-remediated-roots-choice-control-r3",
+      "sha256": "400251045164c9f677fac00c9f14ab526f848fecb9339584da80f4367d1e408c",
+      "reason_invalid": "Scratch context vocabulary still changed trainable parameter count."
+    }
+  ],
+  "suites": {
+    "smoke": {
+      "n": 1,
+      "parse_rate": 1.0,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.0,
+      "placeholder_validity": 0.0,
+      "structural_similarity": 0.0375,
+      "component_type_recall": 0.0,
+      "reward_score": 0.0,
+      "latency_ms_p50": 5880.77,
+      "fallback_count": 0
+    }
+  },
+  "comparison": {
+    "control": {
+      "structural_similarity": 0.1542,
+      "component_type_recall": 0.25,
+      "latency_ms_p50": 6853.42
+    },
+    "strict_r4_delta": {
+      "structural_similarity": -0.1167,
+      "component_type_recall": -0.25,
+      "latency_ms_p50": 166.28
+    },
+    "choice_compatible_r6_delta": {
+      "structural_similarity": -0.1167,
+      "component_type_recall": -0.25,
+      "latency_ms_p50": -972.65
+    }
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "passed": 0,
+    "total": 3,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "One-record scratch diagnostic only; meaningful rate, placeholder fidelity, component recall, and reward are zero."
+  },
+  "checkpoint_bucket": {
+    "synced": false,
+    "reason": "Explicit --no-sync-checkpoints: bounded scratch diagnostics are not full HF-context ship runs."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "46d646f3ce282338e0ced3d110a35e6287298690",
+    "code_dirty": false,
+    "components": {
+      "harness.train_data": "v1",
+      "harness.model_build.train": "v1",
+      "harness.model_build.eval": "v1",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v1"
+    },
+    "stamped_at": "2026-07-18T23:56:57.874161+00:00"
+  },
+  "decision": "Keep strict fixture repairs and the fragment-compatibility diagnosis. Do not replace remediated_roots, publish r6, sync any E499 checkpoint, or claim ship readiness."
+}

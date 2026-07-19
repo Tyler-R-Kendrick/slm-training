@@ -57,6 +57,26 @@ def test_checkpoints_roster_includes_fixture(ro_client: TestClient) -> None:
     assert any("playground_demo" in (c.get("run_id") or "") for c in roster)
 
 
+def test_e499_cold_start_evidence_is_persisted() -> None:
+    root = Path(__file__).parents[2]
+    snapshot = (
+        root / "src" / "slm_training" / "web" / "static" / "dashboard_snapshot.json"
+    )
+    assert json.loads(snapshot.read_text())["schema_version"] == 1
+
+    readers = Readers(root)
+    run_id = "e499-choice-compatible-strict-hf-choice-candidate-r6"
+    assert any(row.get("run_id") == run_id for row in readers.runs()["runs"])
+    checkpoint_ids = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert {
+        "e499-remediated-roots-hf-choice-control-r4",
+        "e499-strict-r4-hf-choice-candidate-r4",
+        run_id,
+    } <= checkpoint_ids
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")

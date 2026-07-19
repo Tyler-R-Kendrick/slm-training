@@ -110,6 +110,9 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 | E294 no-DESIGN choice control | `e294-choice-no-design-control-r1` | CPU scratch matched-capacity no-plan control | `outputs/runs/e294-choice-no-design-control-r1/checkpoints/last.pt` (local) | Complete weighted NLL 7.4977; honest board exactly matches E293 decode-off (meaningful 0.0, AgentV 0/5, 17 failures), isolating E293's gain to its decode head — **not promotable or ship** ([results](design/iter-e294-no-design-plan-control-20260717.md)) |
 | E295 DESIGN-dropout choice arm | `e295-choice-design-dropout-r1` | CPU scratch matched-capacity 50% DESIGN dropout | `outputs/runs/e295-choice-design-dropout-r1/checkpoints/last.pt` (local) | Complete weighted NLL 7.3785; prompt-only adversarial meaningful 0.25, AgentV 1/5, but four suites remain at 0.0 and 14 gates fail — **not promotable or ship** ([results](design/iter-e295-design-context-dropout-20260717.md)) |
 | E396 durable diagnostic checkpoint | `e396-balanced-type-head-continuation-r1` | CPU frozen SmolLM2 full-state continuation | `hf://buckets/TKendrick/OpenUI/checkpoints/e396-balanced-type-head-continuation-r1/` | Exact SHA `feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0`; bucket artifacts verified. E498 restores current-main loading and records 20 learned head applications, improving smoke structure 0.17197→0.27057, but meaningful/recall/reward remain zero and AgentV fails. **Durable and load-compatible diagnostic; not champion, promotable, or ship** ([train](design/iter-e396-e399-balanced-type-supervision-20260718.md), [branch-only gates](design/iter-e490-e396-json-number-typed-any-full-ship-gates-20260718.md), [current-main diagnostic](design/iter-e498-current-main-slot-component-restore-20260718.md)) |
+| E499 diverse-root control | `e499-remediated-roots-hf-choice-control-r4` | CPU frozen SmolLM2 bounded corpus control | `outputs/runs/e499-remediated-roots-hf-choice-control-r4/checkpoints/last.pt` (local) | 10 steps / 1,023 target tokens; smoke n=1 syntax 1.0, structure 0.1542, component recall 0.25, meaningful/fidelity/reward 0.0, AgentV 0/1. SHA `bb4bec5f…f359fb6`; **diagnostic, not promotable or ship** ([results](design/iter-e499-strict-corpus-bounded-sft-20260718.md)) |
+| E499 strict-r4 candidate | `e499-strict-r4-hf-choice-candidate-r4` | CPU frozen SmolLM2 bounded strict-corpus candidate | `outputs/runs/e499-strict-r4-hf-choice-candidate-r4/checkpoints/last.pt` (local) | Matched 9 steps / 1,034 target tokens; smoke structure regresses to 0.0375 and recall to 0.0, AgentV 0/1. SHA `81b2cb66…bcfbaf1`; rejected, **not promotable or ship** ([results](design/iter-e499-strict-corpus-bounded-sft-20260718.md)) |
+| E499 choice-compatible strict candidate | `e499-choice-compatible-strict-hf-choice-candidate-r6` | CPU frozen SmolLM2 bounded document-only strict candidate | `outputs/runs/e499-choice-compatible-strict-hf-choice-candidate-r6/checkpoints/last.pt` (local) | 9 steps / 1,091 target tokens; 67/67 codec-compatible rows and 5.88s smoke p50, but structure 0.0375, recall/meaningful/fidelity/reward 0.0, AgentV 0/1. SHA `7230ace9…2e2fab`; rejected, **not promotable or ship** ([results](design/iter-e499-strict-corpus-bounded-sft-20260718.md)) |
 | Production HF ship | — | — | `hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/` | **None registered yet** — fill this row after the first full HF sync |
 
 Update the table in place when a checkpoint is written or superseded. Keep
@@ -452,6 +455,20 @@ passes each. The scope-specific heads cannot be scored on these generalization
 suites because they contain no scope metadata. Evidence:
 [grammar-scope-matrix-results.json](design/grammar-scope-matrix-results.json).
 
+### E499 bounded strict-corpus diagnostic
+
+All rows use frozen local SmolLM2 context, the choice codec, no DESIGN context,
+the same 1,000-target-token budget, and honest constrained smoke `n=1`.
+
+| Checkpoint | n | Syntax | Meaningful | Fidelity | Structure | Component recall | Reward | AgentV | Pass |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| `e499-remediated-roots-hf-choice-control-r4` | 1 | 1.0 | 0.0 | 0.0 | 0.1542 | 0.25 | 0.0 | 0/1 | No |
+| `e499-strict-r4-hf-choice-candidate-r4` | 1 | 1.0 | 0.0 | 0.0 | 0.0375 | 0.0 | 0.0 | 0/1 | No |
+| `e499-choice-compatible-strict-hf-choice-candidate-r6` | 1 | 1.0 | 0.0 | 0.0 | 0.0375 | 0.0 | 0.0 | 0/1 | No |
+
+This is a one-record scratch diagnostic, not a ship evaluation. All checkpoints
+were explicitly kept local with `--no-sync-checkpoints`.
+
 ---
 
 ## Limitations & honesty
@@ -564,6 +581,13 @@ suites because they contain no scope metadata. Evidence:
 | 2026-07-17 | `e294-choice-no-design-control-r1` (E294 no-plan control) | `outputs/runs/e294-choice-no-design-control-r1/` (local) | 107 CPU scratch steps / 5,022 target tokens, no DESIGN context; complete NLL 7.4977; SHA `df30ca03f8f2bc3313b1b8afff9c40b7ab18c4fd2b0e8ae1b3888ba780d9add0` | Honest metrics exactly match E293 bias-off; meaningful 0.0, AgentV 0/5, 17 failures; scratch/no sync/no promotion |
 | 2026-07-17 | `e295-choice-design-dropout-r1` (E295 context interpolation) | `outputs/runs/e295-choice-design-dropout-r1/` (local) | 107 CPU scratch steps / 5,022 target tokens; 240/480 DESIGN contexts omitted; complete NLL 7.3785; SHA `5b4c50467454f7a9dddbc28da2e115c31a8eba8071587e95eda096729a16fb50` | Prompt-only adversarial meaningful 0.25 and AgentV 1/5, but four suites remain 0.0 and 14 failures remain; scratch/no sync/no promotion |
 | 2026-07-18 | `e396-balanced-type-head-continuation-r1` (E396 durable diagnostic) | `hf://buckets/TKendrick/OpenUI/checkpoints/e396-balanced-type-head-continuation-r1/` | 427 cumulative CPU steps / 22,044 target tokens in 104.6s; SHA `feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0`; E498 current-main smoke structure 0.27057 | Remote artifacts and SHA verified; current `main` now loads and applies the learned head, but smoke semantic gates and AgentV remain red; no promotion or production ship |
+| 2026-07-18 | `e499-remediated-control-r1` (invalid lexer control) | `outputs/runs/e499-remediated-control-r1/` (local) | 5 CPU steps / 1,084 target tokens; SHA `0ba703523ed35e262383f745b3f4784c6fb9c739ac210539b70ea61c52a9a040` | Invalid comparison: data-derived lexer vocabulary changed trainable parameter count; no eval, sync, or promotion |
+| 2026-07-18 | `e499-strict-r4-candidate-r1` (invalid lexer candidate) | `outputs/runs/e499-strict-r4-candidate-r1/` (local) | 5 CPU steps / 1,082 target tokens; SHA `c089e5e8b3a93b484827b3af32dc186fdc43bac1390a20233caeee421d15d86e` | Invalid comparison: data-derived lexer vocabulary changed trainable parameter count; no eval, sync, or promotion |
+| 2026-07-18 | `e499-strict-r4-choice-candidate-r2` (unmatched choice candidate) | `outputs/runs/e499-strict-r4-choice-candidate-r2/` (local) | 9 CPU steps / 1,034 target tokens; SHA `4ae78b53a0b0d548e530a924e4eedd8dfa98a6eb9375fe5fb53a9eaef0fc7569` | Intended control failed before checkpoint on 61 fragment targets; unmatched evidence only, no eval, sync, or promotion |
+| 2026-07-18 | `e499-remediated-roots-choice-control-r3` (invalid scratch choice control) | `outputs/runs/e499-remediated-roots-choice-control-r3/` (local) | 10 CPU steps / 1,023 target tokens; SHA `400251045164c9f677fac00c9f14ab526f848fecb9339584da80f4367d1e408c` | Invalid comparison: scratch context vocabulary still changed trainable parameter count; no eval, sync, or promotion |
+| 2026-07-18 | `e499-remediated-roots-hf-choice-control-r4` (matched control) | `outputs/runs/e499-remediated-roots-hf-choice-control-r4/` (local) | 10 CPU steps / 1,023 target tokens in 7.35s; SHA `bb4bec5f7565f733cc9b1417916cc13f10d831bdabac025ad45fa9477f359fb6`; smoke structure 0.1542 | Meaningful/fidelity/reward 0.0 and AgentV 0/1; scratch diagnostic, no sync or promotion |
+| 2026-07-18 | `e499-strict-r4-hf-choice-candidate-r4` (matched strict-r4 candidate) | `outputs/runs/e499-strict-r4-hf-choice-candidate-r4/` (local) | 9 CPU steps / 1,034 target tokens in 5.76s; SHA `81b2cb669bbd6b5faa3e6fe60caa0fd3a5d9d310463dc11198dfee227bcfbaf1`; smoke structure 0.0375 | Regresses matched control and AgentV 0/1; rejected, no sync or promotion |
+| 2026-07-18 | `e499-choice-compatible-strict-hf-choice-candidate-r6` (document-only strict candidate) | `outputs/runs/e499-choice-compatible-strict-hf-choice-candidate-r6/` (local) | 9 CPU steps / 1,091 target tokens in 6.56s; SHA `7230ace958aa61dcc2c11997f12b8cb6ece590205f69676e4123ac8a4b2e2fab`; smoke p50 5.88s | Structure remains 0.0375 with semantic metrics zero and AgentV 0/1; rejected, no sync or promotion |
 
 Append a row for every new or replaced checkpoint. Do not delete history.
 
