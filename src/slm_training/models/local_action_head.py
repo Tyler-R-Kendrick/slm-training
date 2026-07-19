@@ -12,13 +12,14 @@ compiler action directly.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal
 
 import torch
 import torch.nn.functional as F
 from torch import nn
 
 from slm_training.models.action_code_registry import ActionCodeEntry, ActionSchema
+from slm_training.models.quantization.residual_planes import ResidualTritStack
 from slm_training.models.semantic_cost import (
     CostMatrix,
     build_ternary_ecoc_entry,
@@ -534,4 +535,86 @@ class GrammarFactorizedHead(LocalActionHead):
                 "factors": factors,
                 "fallback": "nearest_factor_match",
             },
+        )
+
+
+class ResidualTritPlaneHead(LocalActionHead):
+    """Local scorer with a base embedding table + ternary residual plane refinement.
+
+    The base score is ``hidden @ E[a]^T`` for each legal action ``a``.  A
+    :class:`ResidualTritStack` refines the score vector in one shot.  This is a
+    wiring fixture: action hashing can collide, so production use needs a real
+    action index registry.
+    """
+
+    head_family = "residual_trit_plane"
+
+    def __init__(
+        self,
+        hidden_dim: int,
+        max_actions: int = 512,
+        R: int = 2,
+        scale_mode: Literal[
+            "geometric_balanced",
+            "learned_independent",
+            "learned_monotone",
+        ] = "geometric_balanced",
+        residual_normalization: Literal["none", "rms", "variance_preserving"] = "none",
+    ) -> None:
+        super().__init__()
+        self.hidden_dim = hidden_dim
+        self.max_actions = max_actions
+        self.R = R
+        self.base_embeddings = nn.Embedding(max_actions, hidden_dim)
+        self.residual_stack = ResidualTritStack(
+            in_features=hidden_dim,
+            out_features=max_actions,
+            R=R,
+            scale_mode=scale_mode,
+            residual_normalization=residual_normalization,
+            bias=True,
+        )
+
+    def score(
+        self,
+        hidden: torch.Tensor,
+        state_context: StateContext,
+        legal_actions: list[str],
+    ) -> LocalActionOutput:
+        indices = torch.tensor(
+            [hash(a) % self.max_actions for a in legal_actions],
+            dtype=torch.long,
+            device=hidden.device,
+        )
+        base_emb = self.base_embeddings(indices)  # [b, hidden_dim]
+        base_scores = hidden @ base_emb.T  # [batch, b]
+        all_scores = self.residual_stack(hidden)  # [batch, max_actions]
+        residual_scores = all_scores[:, indices]  # [batch, b]
+        return LocalActionOutput(
+            logits=base_scores + residual_scores,
+            head_family=self.head_family,
+            metadata={
+                "action_count": len(legal_actions),
+                "R": self.R,
+                "scale_mode": self.residual_stack.scale_mode,
+                "residual_normalization": self.residual_stack.residual_normalization,
+            },
+        )
+
+    def decode(
+        self,
+        output: LocalActionOutput,
+        legal_actions: list[str],
+    ) -> ActionDecision:
+        forced = _check_forced(legal_actions)
+        if forced is not None:
+            return forced
+        assert output.logits is not None
+        probs = F.softmax(output.logits, dim=-1)
+        best = int(probs.argmax(dim=-1).item())
+        return ActionDecision(
+            action_identity=legal_actions[best],
+            decision_kind="scored",
+            confidence=float(probs[0, best].item()),
+            telemetry={"head_family": self.head_family},
         )

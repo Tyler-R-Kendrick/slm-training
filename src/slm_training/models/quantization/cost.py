@@ -289,6 +289,7 @@ def build_model_ledger(
     d_model: int = 128,
     alignment_bytes: int = 64,
     metadata_overhead_per_tensor: int = 32,
+    residual_plane_format: QuantFormat | None = None,
 ) -> PhysicalCostLedger:
     """Walk ``model.parameters()`` and build a whole-model physical-cost ledger."""
     ledger = PhysicalCostLedger()
@@ -303,6 +304,15 @@ def build_model_ledger(
         seen[storage_id] = name
 
         fmt = format_map.get(name, default_format)
+        # CAP4-01: plane weights inside a ResidualTritStack are costed with the
+        # residual plane format when one is supplied.  Match both top-level and
+        # nested module names (e.g. ``planes.0.weight`` or ``stack.planes.0.weight``).
+        if (
+            residual_plane_format is not None
+            and "planes." in name
+            and name.endswith(".weight")
+        ):
+            fmt = residual_plane_format
         exclusion = None
         if any(excluded in name.lower() for excluded in ("embed", "lm_head", "norm", "bias")):
             fmt = fp16_format(group_size=default_format.group_size)

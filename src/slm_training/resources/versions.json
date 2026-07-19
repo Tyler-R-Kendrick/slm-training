@@ -201,6 +201,17 @@
       "history": [
         {"version": "v1", "date": "2026-07-18", "note": "initial registration (eval/smoke suite builder; snapshot data versions remain DataStore's contract)"}
       ]
+    },
+    "model.quantization": {
+      "version": "v1",
+      "kind": "harness",
+      "paths": [
+        "src/slm_training/models/quantization/",
+        "src/slm_training/models/local_action_head.py"
+      ],
+      "history": [
+        {"version": "v1", "date": "2026-07-18", "note": "initial registration (CAP4-01 residual ternary planes and local scorer head)"}
+      ]
     }
   }
 }
