@@ -607,6 +607,22 @@ class Readers:
                 )
         return rows
 
+    def _committed_training(self, run_id: str) -> dict[str, Any] | None:
+        """Recover a cold-start train summary from committed experiment evidence."""
+        for path in sorted(self.docs_design.glob("iter-*.json")):
+            payload = _read_json(path)
+            if not isinstance(payload, dict) or payload.get("run_id") != run_id:
+                continue
+            training = payload.get("training")
+            if isinstance(training, dict):
+                return {
+                    "run_id": run_id,
+                    **training,
+                    "provenance": "committed",
+                    "source": f"docs/design/{path.name}",
+                }
+        return None
+
     def runs(self) -> dict[str, Any]:
         runs_dir = self.lineage.root / "runs"
         live: list[dict[str, Any]] = []
@@ -774,6 +790,8 @@ class Readers:
         except (FileNotFoundError, OSError, ValueError):
             lineage_manifest = None
         has_live = any(v is not None for v in live.values()) or bool(lineage_manifest)
+        if live["train_summary"] is None:
+            live["train_summary"] = self._committed_training(run_id)
         # Attach the matching committed scoreboard row so the detail view is useful
         # even on a cold outputs/; derive a gate matrix from its suites when no live
         # gates.json exists.
@@ -1349,6 +1367,15 @@ class Readers:
                 continue
             if summary.get("data_manifest_sha") == fingerprint:
                 run_ids.add(str(summary.get("run_id") or summary_path.parent.name))
+        for path in sorted(self.docs_design.glob("iter-*.json")):
+            payload = _read_json(path)
+            training = payload.get("training") if isinstance(payload, dict) else None
+            if not isinstance(training, dict):
+                continue
+            if training.get("primary_data_manifest_sha") == fingerprint:
+                run_id = payload.get("run_id")
+                if isinstance(run_id, str):
+                    run_ids.add(run_id)
         return sorted(run_ids)
 
     def run_training_data(self, run_id: str) -> dict[str, Any]:
@@ -1367,11 +1394,16 @@ class Readers:
                 self._run_dir(run_id, self._scoreboard_row(run_id))
                 / "train_summary.json"
             )
+            or self._committed_training(run_id)
             or {}
         )
         train_dir_value = str(summary.get("train_dir") or "")
-        fingerprint = summary.get("data_manifest_sha")
-        version = Path(train_dir_value).name if train_dir_value else None
+        fingerprint = summary.get("data_manifest_sha") or summary.get(
+            "primary_data_manifest_sha"
+        )
+        version = summary.get("primary_data_version") or (
+            Path(train_dir_value).name if train_dir_value else None
+        )
         dataset: dict[str, Any] | None = None
         if version:
             try:
@@ -1400,7 +1432,9 @@ class Readers:
         return {
             "run_id": run_id,
             "provenance": (
-                "live"
+                "committed"
+                if summary.get("provenance") == "committed"
+                else "live"
                 if summary
                 else ("committed" if dataset is not None else "missing")
             ),

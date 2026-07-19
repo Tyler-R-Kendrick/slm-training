@@ -412,7 +412,9 @@ def test_e525_visible_component_checkpoint_and_run_are_persisted() -> None:
     assert run_id in checkpoint_ids
 
 
-def test_e528_visible_component_types_checkpoint_and_run_are_persisted() -> None:
+def test_e528_visible_component_types_checkpoint_and_run_are_persisted(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     root = Path(__file__).parents[2]
     readers = Readers(root)
     run_id = "e528-e396-e527-replay050-slotrole1-honest-context-r1-5k"
@@ -421,11 +423,23 @@ def test_e528_visible_component_types_checkpoint_and_run_are_persisted() -> None
     )
     assert set(listed["suites"]) == {"ood"}
     assert listed["pass"] is False
-    assert set(readers.run(run_id)["scoreboard"]["suites"]) == {"ood"}
+    monkeypatch.setattr(readers, "_run_dir", lambda *_: tmp_path / "missing")
+    detail = readers.run(run_id)
+    assert set(detail["scoreboard"]["suites"]) == {"ood"}
+    assert detail["train_summary"]["provenance"] == "committed"
+    assert detail["train_summary"]["steps"] == 99
+    assert detail["training_data"]["provenance"] == "committed"
+    assert detail["training_data"]["dataset"]["version"] == (
+        "e527_visible_component_types_slot_contract_r1_20260719"
+    )
+    assert detail["training_data"]["dataset"]["fingerprint_matches_run"] is True
     checkpoint_ids = {
         row.get("run_id") for row in readers.checkpoints()["checkpoints"]
     }
     assert run_id in checkpoint_ids
+    assert run_id in readers.train_data(
+        version="e527_visible_component_types_slot_contract_r1_20260719"
+    )["used_by_runs"]
 
 
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
