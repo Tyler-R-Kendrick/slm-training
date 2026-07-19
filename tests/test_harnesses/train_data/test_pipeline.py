@@ -117,6 +117,29 @@ def test_prompt_contracts_expose_component_counts_and_slots(tmp_path: Path) -> N
     not bridge_available(),
     reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
 )
+def test_component_contract_can_expose_types_without_counts(tmp_path: Path) -> None:
+    result = build_train_data(
+        TrainDataConfig(
+            seed_path=_seed_file(tmp_path),
+            rico_path=None,
+            source="fixture",
+            output_root=tmp_path / "train_data",
+            version="types",
+            synthesizer="none",
+            prompt_component_contract=True,
+            prompt_component_contract_mode="types",
+        )
+    )
+    rows = {row.id: row for row in load_jsonl(Path(result["output_dir"]) / "records.jsonl")}
+    assert "Components: Card, Stack, TextContent" in rows["t1"].prompt
+    assert " x" not in rows["t1"].prompt
+    assert result["stats"]["prompt_component_contract_mode"] == "types"
+
+
+@pytest.mark.skipif(
+    not bridge_available(),
+    reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
+)
 def test_build_train_data_derives_from_existing_records(tmp_path: Path) -> None:
     roots = _seed_file(tmp_path)
     result = build_train_data(

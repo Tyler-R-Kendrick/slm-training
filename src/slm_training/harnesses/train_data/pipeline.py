@@ -74,6 +74,7 @@ class TrainDataConfig:
     # Make the output component type/count inventory visible. Keep this
     # opt-in because it is a stronger contract than ordinary user prompts.
     prompt_component_contract: bool = False
+    prompt_component_contract_mode: str = "counts"
     # Exclude train records whose layout tree matches hand-authored test fixtures.
     test_seed_path: Path | None = Path("src/slm_training/resources/test_seeds.jsonl")
     # Exposure control: cap records per root parent (None = uncapped). One
@@ -1578,15 +1579,21 @@ def build_train_data(
         from slm_training.data.quality import component_counts
         from slm_training.models.template_fill import ensure_prompt_inventory
 
+        component_mode = config.prompt_component_contract_mode
+        if component_mode not in {"counts", "types"}:
+            raise ValueError(
+                "prompt_component_contract_mode must be 'counts' or 'types'"
+            )
         contracted = []
         for record in deduped:
             prompt = record.prompt.rstrip()
             if config.prompt_component_contract and not any(
                 line.startswith("Components:") for line in prompt.splitlines()
             ):
+                counts = sorted(component_counts(record.openui).items())
                 inventory = ", ".join(
-                    f"{name} x{count}"
-                    for name, count in sorted(component_counts(record.openui).items())
+                    f"{name} x{count}" if component_mode == "counts" else name
+                    for name, count in counts
                 )
                 if inventory:
                     prompt = f"{prompt}\nComponents: {inventory}"
@@ -1751,6 +1758,7 @@ def build_train_data(
         "curriculum": bool(config.curriculum),
         "prompt_slot_contract": bool(config.prompt_slot_contract),
         "prompt_component_contract": bool(config.prompt_component_contract),
+        "prompt_component_contract_mode": config.prompt_component_contract_mode,
         "structure_reserved_rejected": len(structure_reserved_rejected),
         "structure_reserved_rejected_samples": structure_reserved_rejected[:20],
         "max_records_per_parent": config.max_records_per_parent,
