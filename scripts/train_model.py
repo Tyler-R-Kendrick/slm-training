@@ -544,6 +544,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Choice-codec terminal-root reference-inclusion BCE weight.",
     )
     parser.add_argument(
+        "--root-reference-identity-negative-weight",
+        type=float,
+        default=1.0,
+        help="Relative BCE weight for generated sections excluded from the root.",
+    )
+    parser.add_argument(
         "--root-reference-identity-decode-weight",
         type=float,
         default=0.0,
@@ -946,6 +952,9 @@ def main(argv: list[str] | None = None) -> int:
         root_reference_arity_decode_weight=args.root_reference_arity_decode_weight,
         root_reference_identity_loss_weight=(
             args.root_reference_identity_loss_weight
+        ),
+        root_reference_identity_negative_weight=(
+            args.root_reference_identity_negative_weight
         ),
         root_reference_identity_decode_weight=(
             args.root_reference_identity_decode_weight

@@ -462,6 +462,7 @@ def test_root_reference_identity_head_trains_and_prefers_uncovered_identity() ->
     model = _model(
         output_tokenizer="choice",
         root_reference_identity_loss_weight=1.0,
+        root_reference_identity_negative_weight=4.0,
         root_reference_identity_decode_weight=2.0,
     )
     model.train()
@@ -469,13 +470,13 @@ def test_root_reference_identity_head_trains_and_prefers_uncovered_identity() ->
     with torch.no_grad():
         model.root_reference_identity_head.weight.zero_()
         model.root_reference_identity_head.bias.fill_(-4.0)
-        model.root_reference_identity_head.bias[:2] = 4.0
         model.root_reference_identity_head.bias[-1] = 20.0
     record = ExampleRecord(
         id="root-reference-identity",
         prompt="stack with title and body",
         openui=(
-            "root = Stack([title, body])\n"
+            "root = Stack([card])\n"
+            "card = Card([title, body])\n"
             'title = TextContent(":title")\n'
             'body = TextContent(":body")'
         ),
@@ -491,8 +492,10 @@ def test_root_reference_identity_head_trains_and_prefers_uncovered_identity() ->
     assert model.root_reference_identity_head.weight.grad is not None
     assert model.root_reference_identity_head.weight.grad.abs().sum() > 0
     assert model.last_training_metrics["root_reference_identity_rows"] == 1
-    assert model.last_training_metrics["root_reference_identity_exact_accuracy"] == 1
-    assert model.last_training_metrics["root_reference_identity_classes_mean"] == 2
+    assert model.last_training_metrics["root_reference_identity_exact_accuracy"] == 0
+    assert model.last_training_metrics["root_reference_identity_negative_accuracy"] == 1
+    assert model.last_training_metrics["root_reference_identity_negative_rows"] == 1
+    assert model.last_training_metrics["root_reference_identity_classes_mean"] == 3
 
     tokenizer = model.tokenizer
     with torch.no_grad():

@@ -469,6 +469,9 @@ def _twotower_config_from_build(config: ModelBuildConfig) -> "TwoTowerConfig":
         root_reference_identity_loss_weight=float(
             getattr(config, "root_reference_identity_loss_weight", 0.0) or 0.0
         ),
+        root_reference_identity_negative_weight=float(
+            getattr(config, "root_reference_identity_negative_weight", 1.0)
+        ),
         root_reference_identity_decode_weight=float(
             getattr(config, "root_reference_identity_decode_weight", 0.0) or 0.0
         ),
