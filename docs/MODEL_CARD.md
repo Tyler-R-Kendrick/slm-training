@@ -592,6 +592,23 @@ fidelity/structure tradeoff without clearing meaningful or AgentV gates. The
 checkpoint is a rejected local diagnostic with explicit
 `--no-sync-checkpoints`.
 
+### E506 constrained slot-contract multi-suite diagnostic
+
+Both rows evaluate the same rejected E505 checkpoint on all 13 held-out, OOD,
+and adversarial records. CPU/frozen local SmolLM2 context, honest contracts,
+grammar-constrained LTR decode, four generation steps, one attempt, no fallback,
+and a 96-token canvas are matched. No new checkpoint was written.
+
+| Decode | n | Syntax | Meaningful | Fidelity | Structure | Recall | Reward | AST node F1 | AST edge F1 | AgentV | Promote |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| Contract off | 13 | 1.0 | 0.0 | 0.0 | 0.1271 | 0.1410 | 0.0 | 0.1524 | 0.0192 | 0/3 | No |
+| Contract on | 13 | 1.0 | 0.1538 | 0.2538 | 0.1669 | 0.2654 | 0.5454 | 0.2385 | 0.0 | 0/3 | No |
+
+The constraint improves six semantic/structural metrics, but AgentV remains
+red and the 96-token canvas is below every suite's gold p95. This updates the
+leading diagnostic inference policy only; it is not checkpoint promotion or a
+ship claim.
+
 ---
 
 ## Limitations & honesty

@@ -1,0 +1,192 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E506",
+  "run_id": "e506-e505-contract-on-r2",
+  "run_class": "scratch_matrix",
+  "date_utc": "2026-07-19",
+  "status": "complete",
+  "hypothesis": "The E505 constrained-slot-contract decode signal persists beyond smoke and improves semantic metrics across held-out, OOD, and adversarial suites.",
+  "conclusion": "Across 13 records, constrained slot-contract decode raises meaningful rate from 0 to 0.1538, fidelity from 0 to 0.2538, structure from 0.1271 to 0.1669, recall from 0.1410 to 0.2654, and reward from 0 to 0.5454. AgentV remains 0/3 and the 96-token diagnostic canvas is below every suite's gold p95.",
+  "checkpoint": {
+    "run_id": "e505-e396-e500-replay050-loss-attribution-r1-5k",
+    "sha256": "8fd11acdcc1e3eaf0585e847c68815190fdc90c9071e30833db40d24525967e8",
+    "path": "outputs/runs/e505-e396-e500-replay050-loss-attribution-r1-5k/checkpoints/last.pt",
+    "new_checkpoint_written": false
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "suites": [
+      "held_out",
+      "ood",
+      "adversarial"
+    ],
+    "suite_n": {
+      "held_out": 5,
+      "ood": 4,
+      "adversarial": 4,
+      "total": 13
+    },
+    "grammar_ltr_primary": true,
+    "gen_steps": 4,
+    "max_attempts": 1,
+    "grammar_ltr_max_tokens": 96,
+    "honest_slot_contract": true,
+    "no_design_context": true,
+    "allow_unconstrained_fallback": false,
+    "hard_process_cap_seconds": 170,
+    "length_budget_diagnostic": {
+      "pass": false,
+      "reason": "Gold p95 lengths are held_out=160, ood=143, adversarial=110, all above the 96-token diagnostic canvas."
+    }
+  },
+  "matched_runs": [
+    {
+      "label": "slot_contract_decode_off",
+      "run_id": "e506-e505-contract-off-r1",
+      "checkpoint_sha256": "8fd11acdcc1e3eaf0585e847c68815190fdc90c9071e30833db40d24525967e8",
+      "suites": {
+        "held_out": {
+          "n": 5,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.14144,
+          "component_type_recall": 0.26666666666666666,
+          "reward_score": 0.0,
+          "ast_node_f1": 0.21111111111111108,
+          "ast_edge_f1": 0.0,
+          "latency_ms_p50": 5595.68
+        },
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.072925,
+          "component_type_recall": 0.0,
+          "reward_score": 0.0,
+          "ast_node_f1": 0.03125000000000001,
+          "ast_edge_f1": 0.0,
+          "latency_ms_p50": 3922.44
+        },
+        "adversarial": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.163275,
+          "component_type_recall": 0.125,
+          "reward_score": 0.0,
+          "ast_node_f1": 0.2,
+          "ast_edge_f1": 0.0625,
+          "latency_ms_p50": 3471.53
+        }
+      },
+      "aggregate": {
+        "n": 13,
+        "syntax_parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "structural_similarity": 0.1270769230769231,
+        "component_type_recall": 0.14102564102564102,
+        "reward_score": 0.0,
+        "ast_node_f1": 0.15235042735042734,
+        "ast_edge_f1": 0.019230769230769232
+      }
+    },
+    {
+      "label": "slot_contract_decode_on",
+      "run_id": "e506-e505-contract-on-r2",
+      "checkpoint_sha256": "8fd11acdcc1e3eaf0585e847c68815190fdc90c9071e30833db40d24525967e8",
+      "suites": {
+        "held_out": {
+          "n": 5,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.0,
+          "placeholder_fidelity": 0.22000000000000003,
+          "structural_similarity": 0.15544,
+          "component_type_recall": 0.25666666666666665,
+          "reward_score": 0.5516,
+          "ast_node_f1": 0.2474747474747475,
+          "ast_edge_f1": 0.0,
+          "latency_ms_p50": 3860.44
+        },
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.25,
+          "placeholder_fidelity": 0.2583333333333333,
+          "structural_similarity": 0.228125,
+          "component_type_recall": 0.3333333333333333,
+          "reward_score": 0.692,
+          "ast_node_f1": 0.3388888888888889,
+          "ast_edge_f1": 0.0,
+          "latency_ms_p50": 5347.72
+        },
+        "adversarial": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.25,
+          "placeholder_fidelity": 0.29166666666666663,
+          "structural_similarity": 0.12015,
+          "component_type_recall": 0.20833333333333331,
+          "reward_score": 0.391,
+          "ast_node_f1": 0.12698412698412698,
+          "ast_edge_f1": 0.0,
+          "latency_ms_p50": 3588.67
+        }
+      },
+      "aggregate": {
+        "n": 13,
+        "syntax_parse_rate": 1.0,
+        "meaningful_program_rate": 0.15384615384615385,
+        "placeholder_fidelity": 0.25384615384615383,
+        "structural_similarity": 0.16694615384615386,
+        "component_type_recall": 0.26538461538461533,
+        "reward_score": 0.5453846153846154,
+        "ast_node_f1": 0.23852813852813853,
+        "ast_edge_f1": 0.0
+      }
+    }
+  ],
+  "comparison": {
+    "meaningful_program_rate": 0.15384615384615385,
+    "placeholder_fidelity": 0.25384615384615383,
+    "structural_similarity": 0.03986923076923076,
+    "component_type_recall": 0.12435897435897431,
+    "reward_score": 0.5453846153846154,
+    "ast_node_f1": 0.08617771117771119,
+    "ast_edge_f1": -0.019230769230769232
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "passed": 0,
+    "total": 6,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Diagnostic decode budget is below suite p95 and AgentV remains 0/3 in both arms."
+  },
+  "checkpoint_bucket": {
+    "synced": false,
+    "reason": "Evaluation-only experiment; no checkpoint was created."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "5895d46d4aca58c3d9afdadd03a67c67a454ac82",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.eval": "v1",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v1",
+      "gates.ship": "openui_ship_gates_v1"
+    },
+    "stamped_at": "2026-07-19T03:48:06+00:00"
+  },
+  "decision": "Keep constrained slot-contract decode as the leading E505 inference policy. Do not promote or claim ship readiness. Next rerun the most discriminating suite with a length-safe canvas under the same process cap."
+}

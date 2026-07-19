@@ -576,7 +576,21 @@ class Readers:
                     continue
                 run_id = matched.get("run_id")
                 smoke = matched.get("smoke")
-                if not isinstance(run_id, str) or not isinstance(smoke, dict):
+                suites = matched.get("suites")
+                if not isinstance(run_id, str) or not (
+                    isinstance(smoke, dict) or isinstance(suites, dict)
+                ):
+                    continue
+                normalized_suites = (
+                    {"smoke": normalize_suite_metrics(smoke)}
+                    if isinstance(smoke, dict)
+                    else {
+                        str(name): normalize_suite_metrics(metrics)
+                        for name, metrics in suites.items()
+                        if isinstance(metrics, dict)
+                    }
+                )
+                if not normalized_suites:
                     continue
                 rows.append(
                     {
@@ -585,7 +599,7 @@ class Readers:
                         "description": f"{description} ({matched.get('label') or run_id})",
                         "date": payload.get("date_utc") or payload.get("date"),
                         "pass": gate_pass,
-                        "suites": {"smoke": normalize_suite_metrics(smoke)},
+                        "suites": normalized_suites,
                         "source_schema": "matched_runs@experiment",
                         "checkpoint": matched.get("checkpoint_sha256"),
                         "source": f"docs/design/{path.name}",
@@ -682,12 +696,15 @@ class Readers:
         normalizes essentially every committed record, so it would otherwise
         shadow the richer matrix rows.
         """
-        for kind in ("quality", "grammar", "perf", RESEARCH_SCOREBOARD_KIND):
+        for kind in ("quality", "grammar", "perf"):
             for row in self.scoreboard(kind)["results"]:
                 if run_id in (row.get("run_id"), row.get("id")):
                     return {"matrix": kind, **row}
         for row in self._matched_research_runs():
             if run_id == row.get("run_id"):
+                return {"matrix": RESEARCH_SCOREBOARD_KIND, **row}
+        for row in self.scoreboard(RESEARCH_SCOREBOARD_KIND)["results"]:
+            if run_id in (row.get("run_id"), row.get("id")):
                 return {"matrix": RESEARCH_SCOREBOARD_KIND, **row}
         return None
 

@@ -1970,6 +1970,22 @@ seconds and the train records `max_wall_minutes=3.0`. Full evidence:
 [narrative](iter-e505-replay-loss-attribution-20260719.md) and
 [JSON](iter-e505-replay-loss-attribution-20260719.json).
 
+## E506 larger constrained slot-contract decode
+
+E506 evaluates the rejected E505 checkpoint on all 13 held-out, OOD, and
+adversarial records with constrained slot-contract decode off versus on.
+Enabling the constraint raises aggregate meaningful rate `0→0.1538`, fidelity
+`0→0.2538`, structure `0.1271→0.1669`, recall `0.1410→0.2654`, reward
+`0→0.5454`, and AST node F1 `0.1524→0.2385`. AST edge F1 falls
+`0.0192→0`.
+
+**Verdict:** retain constrained slot-contract decode as the leading inference
+policy, but do not promote the checkpoint. AgentV remains 0/3 in both arms and
+the 96-token diagnostic canvas is below every suite's gold p95. Both processes
+were capped at 170 seconds. Full evidence:
+[narrative](iter-e506-slot-contract-decode-20260719.md) and
+[JSON](iter-e506-slot-contract-decode-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
