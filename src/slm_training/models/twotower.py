@@ -781,6 +781,7 @@ class TwoTowerModel(nn.Module):
         self._semantic_role_candidates: (
             list[dict[str, tuple[str, ...]]] | None
         ) = None
+        self._last_generation_evidence: list[dict[str, object]] = []
         # Per-example symbol tables for lexer-native encode/decode.
         self._symbol_tables: dict[str, object] = {}
         self._current_runtime_table: object | None = None
@@ -5653,6 +5654,7 @@ class TwoTowerModel(nn.Module):
         """
         if not requests:
             return []
+        self._last_generation_evidence = []
         if any(request.output_kind != "document" for request in requests) and (
             self.output_contract_version < 1
         ):
@@ -5709,6 +5711,8 @@ class TwoTowerModel(nn.Module):
             out: list[str] = []
             for cands in pools:
                 out.append(self._pick_best_of_n(cands, None))
+            # The retained candidate may not be the final sampled candidate.
+            self._last_generation_evidence = []
             return out
         return self._generate_batch_once(
             prompts,
@@ -5722,6 +5726,70 @@ class TwoTowerModel(nn.Module):
             output_kinds=output_kinds,
             output_categories=output_categories,
         )
+
+    def consume_generation_evidence(self) -> list[dict[str, object]]:
+        """Return and clear evidence aligned with the last generated batch."""
+        evidence = self._last_generation_evidence
+        self._last_generation_evidence = []
+        return evidence
+
+    def _choice_generation_evidence(
+        self,
+        ids: torch.Tensor,
+        contracts: list[list[str] | None],
+    ) -> list[dict[str, object]]:
+        """Persist the actual choice stream and legal reference decisions."""
+        from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+        rows: list[dict[str, object]] = []
+        tok = self.tokenizer
+        for row, contract in zip(ids.tolist(), contracts, strict=True):
+            stream: list[int] = []
+            for token_id in row:
+                stream.append(int(token_id))
+                if token_id == tok.eos_id:
+                    break
+            state = ChoiceDecodeState(tok, slot_count=len(contract or ()))
+            reference_decisions: list[dict[str, object]] = []
+            for position, token_id in enumerate(stream):
+                if token_id == tok.bos_id:
+                    continue
+                token = str(tok.id_to_token.get(token_id, ""))
+                remaining = max(1, len(stream) - position)
+                legal = state.allowed_ids(remaining)
+                legal_references = sorted(
+                    str(tok.id_to_token[candidate])
+                    for candidate in legal
+                    if str(tok.id_to_token[candidate]).startswith("&")
+                )
+                if token.startswith("&") or legal_references:
+                    reference_decisions.append(
+                        {
+                            "position": position,
+                            "chosen": token,
+                            "mode": state.mode,
+                            "current_marker": state.current_marker,
+                            "section_count": len(state.section_types),
+                            "legal_candidate_count": len(legal),
+                            "legal_references": legal_references,
+                        }
+                    )
+                if token_id == tok.eos_id:
+                    break
+                if not state.advance_id(token_id):
+                    break
+            rows.append(
+                {
+                    "schema": "choice_decision_trace/v1",
+                    "choice_token_count": len(stream),
+                    "choice_tokens": [
+                        str(tok.id_to_token.get(token_id, ""))
+                        for token_id in stream
+                    ],
+                    "reference_decisions": reference_decisions,
+                }
+            )
+        return rows
 
     def _generate_batch_once(
         self,
@@ -5883,6 +5951,9 @@ class TwoTowerModel(nn.Module):
                 for i in range(len(prompts))
             ]
             ids = self._choice_ltr_decode_batch(ctx, ctx_pad, length, contracts)
+            self._last_generation_evidence = self._choice_generation_evidence(
+                ids, contracts
+            )
             return [
                 self._decode_openui(ids[i], placeholders=contracts[i])
                 for i in range(len(prompts))
