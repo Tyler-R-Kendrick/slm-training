@@ -193,12 +193,13 @@
       ]
     },
     "harness.experiments": {
-      "version": "v18",
+      "version": "v19",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {"version": "v19", "date": "2026-07-19", "note": "add SLM-121 LDI1-02 causal PEFT FTPO manifest, fixture runner, and CLI wiring"},
         {"version": "v18", "date": "2026-07-19", "note": "add SLM-120 near-solved semantic corruption-curriculum manifest, fixture runner, and CLI wiring"},
         {"version": "v17", "date": "2026-07-19", "note": "add SLM-109 E228 exposure-ladder manifest, recipe-freeze hash, and plan/fixture CLI"},
         {"version": "v16", "date": "2026-07-19", "note": "add SLM-108 external-ceiling matrix manifest, fixture runner, and report rendering"},
@@ -218,6 +219,16 @@
         {"version": "v3", "date": "2026-07-18", "note": "lazy-load Torch-only equal-byte planning dependencies so the web runtime remains import-safe"},
         {"version": "v2", "date": "2026-07-18", "note": "correct equal-byte arm token budgets and fail closed on reference-only low-bit training"},
         {"version": "v1", "date": "2026-07-18", "note": "initial registration (ladder, promotion, scaling fits; verified-solver files are claimed by matrix.verified_solver)"}
+      ]
+    },
+    "matrix.causal_peft_ftpo": {
+      "version": "v1",
+      "kind": "matrix",
+      "paths": [
+        "scripts/run_causal_peft_ftpo.py"
+      ],
+      "history": [
+        {"version": "v1", "date": "2026-07-19", "note": "initial registration; SLM-121 causal PEFT FTPO plan/fixture CLI"}
       ]
     },
     "harness.reasoning.bench": {

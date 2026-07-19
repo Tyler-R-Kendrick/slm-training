@@ -878,6 +878,31 @@ until matched A–D arm trains complete with S0 stability, S1/S2 recovery, and
 end-to-end binding-aware meaningful v2 metrics. Fixture/planning evidence is
 not treated as a result.
 
+## Causal PEFT FTPO adapters (LDI1-02 / SLM-121)
+
+**Fidelity label: adapted.** SLM-121 tests whether small removable PEFT
+adapters trained on exact-state causal decision events with FTPO objectives can
+improve binding-aware meaningful-program rate while preserving base-model
+legality. The FTPO idea is borrowed from preference optimization and targeted
+repair literature, but narrowed to **adapter-only updates** on a frozen causal
+base recipe so the intervention is isolated from base-weight changes.
+
+| | |
+| --- | --- |
+| **Lineage** | Parameter-efficient fine-tuning (LoRA/DoRA/PiSSA/AdaLoRA); preference optimization; targeted adapter repair |
+| **Fidelity** | **Adapted** — frozen-recipe factorial over FTPO objectives (`unlikelihood`, `ftpo_single`, `ftpo_set`, `legal_set_mass`) and adapter methods, with recipe-hash freeze and removable adapter constraint |
+| **Code** | `src/slm_training/harnesses/experiments/causal_peft_ftpo.py`, `scripts/run_causal_peft_ftpo.py` |
+| **Config** | `--mode fixture|plan-only|frontier`, `--parent-checkpoint-uri`, `--checkpoint-bucket`, `--objectives`, `--adapter-methods` |
+
+**What we took:** a preregistered factorial over FTPO objectives and adapter
+methods, a frozen base recipe extended with adapter/FTPO hyperparameters, and a
+torch-free fixture runner that validates the manifest and emits a plan.
+
+**What we did not take:** any claim that a particular FTPO objective or adapter
+method improves quality until matched arm trains complete with binding-aware
+meaningful v2 metrics and reference-locality drift. Fixture/planning evidence is
+not treated as a result.
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.

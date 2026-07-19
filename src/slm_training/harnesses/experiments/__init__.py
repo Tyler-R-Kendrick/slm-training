@@ -32,6 +32,18 @@ from slm_training.harnesses.experiments.external_ceiling_matrix import (
     run_fixture_matrix as run_external_ceiling_fixture_matrix,
     validate_external_ceiling_manifest,
 )
+from slm_training.harnesses.experiments.causal_peft_ftpo import (
+    CAUSAL_PEFT_FTPO_ID,
+    MATRIX_SET as CAUSAL_PEFT_FTPO_MATRIX_SET,
+    MATRIX_VERSION as CAUSAL_PEFT_FTPO_MATRIX_VERSION,
+    CausalPeftFtpoManifest,
+    CausalPeftFtpoReport,
+    FtpoArmResult,
+    build_causal_peft_ftpo_manifest,
+    render_markdown as render_causal_peft_ftpo_markdown,
+    run_fixture_ftpo,
+    validate_manifest as validate_causal_peft_ftpo_manifest,
+)
 from slm_training.harnesses.experiments.corruption_curriculum import (
     CORRUPTION_CURRICULUM_ID,
     MATRIX_SET as CORRUPTION_CURRICULUM_MATRIX_SET,
@@ -200,6 +212,12 @@ def __getattr__(name: str):
 
 
 __all__ = [
+    "CAUSAL_PEFT_FTPO_ID",
+    "CAUSAL_PEFT_FTPO_MATRIX_SET",
+    "CAUSAL_PEFT_FTPO_MATRIX_VERSION",
+    "CausalPeftFtpoManifest",
+    "CausalPeftFtpoReport",
+    "FtpoArmResult",
     "CORRUPTION_CURRICULUM_ID",
     "CORRUPTION_CURRICULUM_MATRIX_SET",
     "CORRUPTION_CURRICULUM_MATRIX_VERSION",
@@ -255,6 +273,7 @@ __all__ = [
     "TeacherTraceContract",
     "build_cap5_campaign_manifest",
     "build_constraint_backend_benchmark_manifest",
+    "build_causal_peft_ftpo_manifest",
     "build_corruption_curriculum_manifest",
     "build_e228_exposure_ladder",
     "build_e228_recipe_config",
@@ -263,12 +282,15 @@ __all__ = [
     "build_proxy_metric_calibration_manifest",
     "build_scaffold_distillation_activation_manifest",
     "build_teacher_paraphrase_activation_manifest",
+    "render_causal_peft_ftpo_markdown",
     "render_corruption_curriculum_markdown",
     "render_e228_exposure_markdown",
     "render_external_ceiling_markdown",
     "run_e228_fixture_ladder",
     "run_fixture_curriculum",
+    "run_fixture_ftpo",
     "run_external_ceiling_fixture_matrix",
+    "validate_causal_peft_ftpo_manifest",
     "validate_corruption_curriculum_manifest",
     "validate_e228_exposure_manifest",
     "validate_external_ceiling_manifest",

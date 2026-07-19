@@ -248,6 +248,37 @@ S0 stability, S1 recovery, and S2 recovery rates. Fixture runs are wiring-only
 and cannot claim ship gates. Frontier execution requires the EFS1-decided base
 recipe/checkpoint and SLM-103 bucket sync.
 
+## Causal PEFT FTPO (SLM-121 / LDI1-02)
+
+Frozen E228 legal-candidate-margin recipe with small removable PEFT adapters
+trained on exact-state causal decision events with FTPO objectives. Tests
+whether adapter-only updates can shift good legal actions above bad legal
+actions without changing base weights.
+
+| Objective | Purpose |
+| --- | --- |
+| `unlikelihood` | Negative control over bad legal actions |
+| `ftpo_single` | Exactly one good vs one bad action |
+| `ftpo_set` | Weighted good × bad margins |
+| `legal_set_mass` | Shift legal-space mass from bad set to good set |
+
+```bash
+# Plan / fixture wiring (CPU, no training)
+python -m scripts.run_causal_peft_ftpo --mode fixture \
+  --parent-checkpoint-uri hf://buckets/TKendrick/OpenUI/checkpoints/e228-candidate-margin-matched/ref.json \
+  --output-dir outputs/runs/slm121_causal_peft_fixture
+
+# Frontier dispatch (GPU + durable checkpoint required)
+python -m scripts.hf_jobs_train \
+  --run-id slm121-causal-peft-ftpo-single-s0 --steps 3200 \
+  --extra-train-args "--resume-from outputs/runs/e228-candidate-margin-matched/checkpoints/last_full_state.pt --adapter-method lora --ftpo-objective ftpo_single"
+```
+
+Primary metric: `binding_aware_meaningful_v2_rate_strict` plus
+`reference_locality_drift`. Fixture runs are wiring-only and cannot claim ship
+gates. Frontier execution requires a causal base checkpoint, an admitted
+DecisionEventV2 corpus, and SLM-103 bucket sync.
+
 ## Configuration glossary — verified-solver decode (VSS1-03)
 
 Experimental, **disabled by default**, and **unmeasured**. These flags gate the
