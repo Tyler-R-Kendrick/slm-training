@@ -2424,6 +2424,20 @@ phased rather than applied to every list. Full evidence:
 [control JSON](iter-e539-structural-reference-control-20260719.json), and
 [intervention JSON](iter-e539-structural-reference-aggregation-20260719.json).
 
+## E540 reference phase telemetry
+
+E540 adds bounded root-vs-nested generated-frame evidence and reference-bias
+counterfactual choices, then replays the E539 intervention unchanged. All
+quality metrics reproduce exactly. Nine of ten applications and six of seven
+changed choices occur in the structural root list; one changed choice occurs in
+a nested `Modal` list.
+
+**Verdict:** accept the observability improvement with no quality or readiness
+claim. Test root-list-only bias next; do not train or promote weight 4. Full
+evidence:
+[narrative](iter-e540-reference-phase-telemetry-20260719.md) and
+[JSON](iter-e540-reference-phase-telemetry-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
