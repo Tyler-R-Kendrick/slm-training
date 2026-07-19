@@ -649,6 +649,14 @@ weight 4. Against E509 on the same four OOD records, meaningful improves
 binding-aware meaning and AgentV 0/1 remain red. This is the leading diagnostic
 policy, not a checkpoint promotion.
 
+### E511 length-safe three-suite component-plan diagnostic
+
+The E510 policy expands to all 13 held-out/OOD/adversarial records with a
+192-token length-safe canvas. Aggregate meaningful is 0.3846, fidelity 0.6718,
+structure 0.3440, recall 0.4615, reward 0.6272, AST node F1 0.4654, and AST edge
+F1 0.1748. Strict binding-aware meaning remains zero and AgentV remains 0/3.
+The policy generalizes diagnostically; the checkpoint is still rejected.
+
 ---
 
 ## Limitations & honesty
