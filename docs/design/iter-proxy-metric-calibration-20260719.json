@@ -1,0 +1,143 @@
+{
+  "manifest": {
+    "activation_gates": [
+      {
+        "available": true,
+        "depends_on_issue_id": "SLM-105",
+        "evidence": "Binding-aware deterministic metrics stable and versioned.",
+        "gate_id": "slm105_binding_aware_metrics",
+        "required_status": "Done"
+      },
+      {
+        "available": true,
+        "depends_on_issue_id": "SLM-169",
+        "evidence": "Canonical AST, codec round-trip, binding integrity gates.",
+        "gate_id": "slm169_canonical_ast_binding",
+        "required_status": "Done"
+      },
+      {
+        "available": true,
+        "depends_on_issue_id": "SLM-175",
+        "evidence": "Content-addressed evaluation cache artifacts available.",
+        "gate_id": "slm175_eval_cache",
+        "required_status": "Done"
+      },
+      {
+        "available": true,
+        "depends_on_issue_id": "SLM-177",
+        "evidence": "Feature contract reviewed: no forbidden features included.",
+        "gate_id": "proxy_feature_contract_reviewed",
+        "required_status": "Done"
+      },
+      {
+        "available": true,
+        "depends_on_issue_id": "SLM-177",
+        "evidence": "Calibration budget approved.",
+        "gate_id": "budget_approved",
+        "required_status": "approved"
+      }
+    ],
+    "activation_status": "ready",
+    "activation_verdict": "ready_to_spend",
+    "arms": [
+      {
+        "arm_id": "rule_baseline",
+        "arm_kind": "rule_baseline",
+        "eligible": true
+      },
+      {
+        "arm_id": "regularized_linear",
+        "arm_kind": "regularized_linear",
+        "eligible": true
+      },
+      {
+        "arm_id": "bounded_tree",
+        "arm_kind": "bounded_tree",
+        "eligible": false,
+        "omission_reason": "reserved for ablation if linear models are insufficient"
+      },
+      {
+        "arm_id": "shadow_only",
+        "arm_kind": "shadow_only",
+        "eligible": true
+      }
+    ],
+    "audit_rate": 0.1,
+    "budget": {
+      "eval_dollars": 0.0,
+      "gpu_hours": 0.0,
+      "max_dollars": 0.0,
+      "max_historical_rows": 10000,
+      "total_dollars": 500.0
+    },
+    "campaign_verdict": "unrun",
+    "conservative_floor": 0.7,
+    "feature_set": {
+      "allowed_sources": [
+        "parser",
+        "binding_aware_metric",
+        "semantic_contract",
+        "first_attempt_stats",
+        "legal_action_stats",
+        "canonical_ast",
+        "timing",
+        "suite_metadata"
+      ],
+      "feature_names": [
+        "parser_valid",
+        "schema_valid",
+        "binding_aware_meaningful_rate",
+        "component_recall",
+        "role_recall",
+        "minimality_flag",
+        "empty_output_flag",
+        "first_attempt_action_count",
+        "legal_action_margin",
+        "entropy",
+        "termination_confidence",
+        "ast_node_count",
+        "binding_graph_edges",
+        "latency_ms",
+        "output_length",
+        "tree_depth",
+        "component_count"
+      ],
+      "feature_schema_version": "proxy_features/v1",
+      "forbidden_features": [
+        "agentv_score",
+        "external_judge_score",
+        "full_gate_result",
+        "gold_action_trace",
+        "checkpoint_id",
+        "experiment_name",
+        "source_commit"
+      ],
+      "requires_lineage_disjoint_split": true,
+      "target_gate": "full_gate_pass",
+      "target_primary": "binding_aware_meaningful_program_rate"
+    },
+    "force_full_every_n": 20,
+    "hypothesis_id": "H23",
+    "manifest_hash": "c6c96a00b741972f",
+    "manifest_id": "sde3-03-v1",
+    "note": "SDE3-03 proxy-metric calibration activation/budget manifest (wiring slice).",
+    "primary_metric": "binding_aware_meaningful_program_rate",
+    "proxy_eval_mode": "shadow",
+    "risk_budget": 0.05,
+    "schema_version": "proxy_metric_calibration/v1",
+    "seeds": [
+      0,
+      1,
+      2
+    ]
+  },
+  "version_stamp": {
+    "code_commit": "1600d7c7ce4aa59d05af6675f6b8b2b8ad044fb3",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v12"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-19T18:38:32.252033+00:00"
+  }
+}
