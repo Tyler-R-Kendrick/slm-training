@@ -313,6 +313,40 @@ wiring-only and cannot claim ship gates. A real adapter-quality claim requires
 parent/adapter merge-parity tests, trained-adapter metrics, and SLM-103 bucket
 provenance.
 
+## B3 surface-vs-choice capacity ladder v2 (SLM-124 / EFS3-03)
+
+Rerun the B3 direct capacity experiment after the E288 choice-native decoder
+fix. Compare surface-token (`lexer`) and choice-sequence (`choice`) models at
+`d_model ∈ {64, 128, 192}` over three seeds each, with matched recipe and
+semantic-example exposure.
+
+| Arm | Representation | Widths | Seeds | Decode fingerprint |
+| --- | --- | --- | --- | --- |
+| surface | `lexer` | 64, 128, 192 | 0, 1, 2 | surface lexer, grammar-constrained, non-LTR |
+| choice | `choice` | 64, 128, 192 | 0, 1, 2 | E288 choice-native, forced singleton decisions |
+
+```bash
+# Plan / fixture wiring (CPU, no training)
+python -m scripts.run_b3_capacity_v2 --mode fixture \
+  --parent-checkpoint-uri hf://buckets/TKendrick/OpenUI/checkpoints/e228-candidate-margin-matched/ref.json \
+  --output-dir outputs/runs/slm124_b3_capacity_fixture
+
+# Frontier dispatch (GPU + durable checkpoints required)
+python -m scripts.run_scaling_ladder --capacity-arm lexer \
+  --train-dir outputs/data/train/v1 --test-dir outputs/data/eval/v1 \
+  --widths 64,128,192 --seeds 0,1,2 --steps 3200 --representation lexer
+
+python -m scripts.run_scaling_ladder --capacity-arm choice \
+  --train-dir outputs/data/train/v1 --test-dir outputs/data/eval/v1 \
+  --widths 64,128,192 --seeds 0,1,2 --steps 3200 --representation choice
+```
+
+Primary metric: `binding_aware_meaningful_v2_rate_strict` versus trainable
+parameters / checkpoint bytes / `d_model`. Fixture runs are wiring-only and
+cannot claim ship gates. Frontier execution requires 18 matched trains, a GPU
+host, durable HF bucket sync per SLM-103, and the EFS1 exposure decision from
+SLM-109.
+
 ## Configuration glossary — verified-solver decode (VSS1-03)
 
 Experimental, **disabled by default**, and **unmeasured**. These flags gate the
