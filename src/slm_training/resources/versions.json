@@ -37,12 +37,13 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v8",
+      "version": "v9",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py"
       ],
       "history": [
+        {"version": "v9", "date": "2026-07-19", "note": "mask impossible root-reference arity classes by each target stream's available generated sections during auxiliary training"},
         {"version": "v8", "date": "2026-07-19", "note": "train an isolated choice-codec terminal-root reference arity head and record its recipe settings"},
         {"version": "v7", "date": "2026-07-19", "note": "no-bump: isolate the train.progress heartbeat behind a warn-only guard so telemetry write failures can never abort training"},
         {"version": "v7", "date": "2026-07-19", "note": "no-bump: throttled OTLP train.progress heartbeat logs for live peer streaming; training math, metrics.jsonl rows, and summaries unchanged"},
