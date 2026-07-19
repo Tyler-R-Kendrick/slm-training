@@ -117,6 +117,9 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 | E500 1k projected candidate | `e500-documentized-expression-hf-choice-r2` | CPU frozen SmolLM2 bounded projected corpus | `outputs/runs/e500-documentized-expression-hf-choice-r2/checkpoints/last.pt` (local) | 11 steps / 1,039 target tokens; loss 27.6250 but smoke exactly matches the control's red semantic metrics, AgentV 0/1. SHA `f54cea08…773d3f0`; rejected, **not promotable or ship** ([results](design/iter-e500-documentized-expression-corpus-20260718.md)) |
 | E500 5k document control | `e500-document-control-hf-choice-r3-5k` | CPU frozen SmolLM2 bounded document control | `outputs/runs/e500-document-control-hf-choice-r3-5k/checkpoints/last.pt` (local) | 43 steps / 5,040 target tokens; loss 10.5529, smoke syntax 1.0 and structure 0.0375 with semantic metrics zero, AgentV 0/1. SHA `9f752ae0…0b2b53`; **diagnostic, not promotable or ship** ([results](design/iter-e500-documentized-expression-corpus-20260718.md)) |
 | E500 5k projected candidate | `e500-documentized-expression-hf-choice-r4-5k` | CPU frozen SmolLM2 bounded projected corpus | `outputs/runs/e500-documentized-expression-hf-choice-r4-5k/checkpoints/last.pt` (local) | 50 steps / 5,062 target tokens; loss regresses to 12.6778 and smoke matches the control's red semantic metrics, AgentV 0/1. SHA `a0ed6a58…dda5623`; rejected, **not promotable or ship** ([results](design/iter-e500-documentized-expression-corpus-20260718.md)) |
+| E501 task-balanced 5k warm-start | `e501-e396-e500-init-r1` | CPU frozen SmolLM2 E396→E500 diagnostic | `outputs/runs/e501-e396-e500-init-r1/checkpoints/last.pt` (local) | 96 steps / 5,060 target tokens; structure regresses 0.2117→0.1458 and semantic metrics remain zero, AgentV 0/1. SHA `f86b83d3…cc9cf15`; rejected, **not promotable or ship** ([results](design/iter-e501-e396-e500-warm-start-20260719.md)) |
+| E501 uniform 5k warm-start | `e501-e396-e500-uniform-init-r2` | CPU frozen SmolLM2 generation-heavy E396→E500 diagnostic | `outputs/runs/e501-e396-e500-uniform-init-r2/checkpoints/last.pt` (local) | 99 steps / 5,019 target tokens; recall reaches 0.1667 but structure collapses to 0.0889 and meaningful/fidelity/reward remain zero, AgentV 0/1. SHA `14605459…736e4e7`; rejected, **not promotable or ship** ([results](design/iter-e501-e396-e500-warm-start-20260719.md)) |
+| E501 uniform 1k warm-start | `e501-e396-e500-uniform-init-r3-1k` | CPU frozen SmolLM2 short E396→E500 diagnostic | `outputs/runs/e501-e396-e500-uniform-init-r3-1k/checkpoints/last.pt` (local) | 22 steps / 1,039 target tokens; structure improves slightly 0.2117→0.2317 but all semantic metrics remain zero, AgentV 0/1. SHA `d84d34c0…b5be2ffd`; diagnostic only, **not promotable or ship** ([results](design/iter-e501-e396-e500-warm-start-20260719.md)) |
 | Production HF ship | — | — | `hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/` | **None registered yet** — fill this row after the first full HF sync |
 
 Update the table in place when a checkpoint is written or superseded. Keep
@@ -491,6 +494,22 @@ All four runs emitted AgentEvals JSONL and pinned AgentV result bundles without
 execution errors. They are bounded diagnostics, not ship evaluations, and were
 explicitly kept local with `--no-sync-checkpoints`.
 
+### E501 E396-to-E500 warm-start diagnostic
+
+All rows use the same frozen E396 parent, CPU/frozen local SmolLM2 context,
+choice output, and honest constrained smoke `n=3`. Every process is capped at
+170 seconds and every train summary records `max_wall_minutes=3.0`.
+
+| Checkpoint | Sampling | Tokens | Syntax | Meaningful | Fidelity | Structure | Component recall | Reward | AgentV | Pass |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| Frozen E396 parent | — | 0 | 1.0 | 0.0 | 0.0 | 0.2117 | 0.0 | 0.0 | 0/1 | No |
+| `e501-e396-e500-init-r1` | equal task groups | 5,060 | 1.0 | 0.0 | 0.0 | 0.1458 | 0.0 | 0.0 | 0/1 | No |
+| `e501-e396-e500-uniform-init-r2` | uniform records | 5,019 | 1.0 | 0.0 | 0.0 | 0.0889 | 0.1667 | 0.0 | 0/1 | No |
+| `e501-e396-e500-uniform-init-r3-1k` | uniform records | 1,039 | 1.0 | 0.0 | 0.0 | 0.2317 | 0.0 | 0.0 | 0/1 | No |
+
+All three new checkpoints are rejected local diagnostics with explicit
+`--no-sync-checkpoints`; the frozen parent remains the only bucket artifact.
+
 ---
 
 ## Limitations & honesty
@@ -614,6 +633,9 @@ explicitly kept local with `--no-sync-checkpoints`.
 | 2026-07-18 | `e500-documentized-expression-hf-choice-r2` (1k candidate) | `outputs/runs/e500-documentized-expression-hf-choice-r2/` (local) | 11 CPU steps / 1,039 target tokens in 8.95s; loss 27.6250; SHA `f54cea082c57686b7736a5de4058d762de51f97a611d670115f246bd1773d3f0` | Matches control's red smoke metrics and AgentV 0/1; rejected, no sync or promotion |
 | 2026-07-18 | `e500-document-control-hf-choice-r3-5k` (5k control) | `outputs/runs/e500-document-control-hf-choice-r3-5k/` (local) | 43 CPU steps / 5,040 target tokens in 10.14s; loss 10.5529; SHA `9f752ae05d0e1bf50fe77cc3133794cf215e518946c04505f9ce25df6e0b2b53` | Smoke structure 0.0375 with semantic metrics zero and AgentV 0/1; scratch/no sync/no promotion |
 | 2026-07-18 | `e500-documentized-expression-hf-choice-r4-5k` (5k candidate) | `outputs/runs/e500-documentized-expression-hf-choice-r4-5k/` (local) | 50 CPU steps / 5,062 target tokens in 13.95s; loss 12.6778; SHA `a0ed6a5840304e5b00d815bb895cafdeb10004e08649e09e4a3611553dda5623` | Loss reverses against control; smoke remains red and AgentV 0/1; rejected, no sync or promotion |
+| 2026-07-19 | `e501-e396-e500-init-r1` (task-balanced 5k warm-start) | `outputs/runs/e501-e396-e500-init-r1/` (local) | 96 CPU steps / 5,060 target tokens in 44.99s; loss 10.3340; SHA `f86b83d3c2629d311b6c56f618b1f30ab237624fbc9c47c41929882fdcc9cf15` | Structure regresses to 0.1458 with semantic metrics zero and AgentV 0/1; rejected, no sync or promotion |
+| 2026-07-19 | `e501-e396-e500-uniform-init-r2` (uniform 5k warm-start) | `outputs/runs/e501-e396-e500-uniform-init-r2/` (local) | 99 CPU steps / 5,019 target tokens in 79.65s; loss 12.8653; SHA `14605459038c8e56d4f797cc359a2ff9e89d261a375b799476855f262736e4e7` | Recall 0.1667 but structure 0.0889 and meaningful/fidelity/reward zero, AgentV 0/1; rejected, no sync or promotion |
+| 2026-07-19 | `e501-e396-e500-uniform-init-r3-1k` (uniform 1k warm-start) | `outputs/runs/e501-e396-e500-uniform-init-r3-1k/` (local) | 22 CPU steps / 1,039 target tokens in 21.39s; loss 26.0208; SHA `d84d34c031c6f2a9e017d2566c04e4abb66314ea3814ba3868a8cc7cb5be2ffd` | Structure 0.2317 is +0.0200 vs parent but semantic metrics remain zero, AgentV 0/1; diagnostic only, no sync or promotion |
 
 Append a row for every new or replaced checkpoint. Do not delete history.
 

@@ -179,6 +179,77 @@ def test_resume_rejects_different_corpus(train_dir: Path, tmp_path: Path) -> Non
         train(_cfg(other_dir, tmp_path, "bad_resume", 4, resume_from=full_state))
 
 
+def test_initialize_from_resets_state_for_new_corpus(
+    train_dir: Path, tmp_path: Path
+) -> None:
+    source = train(_cfg(train_dir, tmp_path, "source", 2))
+    source_checkpoint = Path(source["checkpoint"])
+
+    other_dir = tmp_path / "other_train"
+    other_dir.mkdir()
+    rows = [
+        ExampleRecord(
+            id=f"new-{index}",
+            prompt=prompt,
+            openui=openui,
+            split="train",
+            placeholders=placeholders,
+        )
+        for index, (prompt, openui, placeholders) in enumerate(
+            [
+                ("Hero", HERO, [":hero.title", ":hero.body"]),
+                ("CTA", CTA, [":cta.label"]),
+                ("Hero two", HERO, [":hero.title", ":hero.body"]),
+            ]
+        )
+    ]
+    write_jsonl(other_dir / "records.jsonl", rows)
+
+    initialized = train(
+        _cfg(
+            other_dir,
+            tmp_path,
+            "initialized",
+            0,
+            initialize_from=source_checkpoint,
+        )
+    )
+    assert initialized["initialized_from"] == str(source_checkpoint)
+    assert initialized["resumed_from"] is None
+    assert initialized["steps"] == 0
+    assert initialized["seen_target_tokens"] == 0
+
+    source_model = TwoTowerModel.from_checkpoint(source_checkpoint)
+    initialized_model = TwoTowerModel.from_checkpoint(
+        Path(initialized["checkpoint"])
+    )
+    for key, value in source_model.state_dict().items():
+        assert torch.equal(value, initialized_model.state_dict()[key]), key
+
+
+def test_initialize_from_cannot_mix_with_resume(
+    train_dir: Path, tmp_path: Path
+) -> None:
+    source = train(_cfg(train_dir, tmp_path, "source_for_conflict", 1))
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        train(
+            _cfg(
+                train_dir,
+                tmp_path,
+                "conflict",
+                2,
+                resume_from=(
+                    tmp_path
+                    / "runs"
+                    / "source_for_conflict"
+                    / "checkpoints"
+                    / "last_full_state.pt"
+                ),
+                initialize_from=Path(source["checkpoint"]),
+            )
+        )
+
+
 def test_loss_eval_wiring(train_dir: Path, tmp_path: Path) -> None:
     test_dir = tmp_path / "test_data"
     held = test_dir / "suites" / "held_out"

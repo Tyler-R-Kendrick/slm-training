@@ -132,7 +132,26 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     rng.shuffle(records)
     records_by_id = {r.id: r for r in records}
 
+    resume_path = getattr(config, "resume_from", None)
+    initialize_path = getattr(config, "initialize_from", None)
+    if resume_path and initialize_path:
+        raise ValueError("resume_from and initialize_from are mutually exclusive")
+
     plugin = model or build_model(config, records)
+    initialized_from: str | None = None
+    if initialize_path:
+        initialize_path = Path(initialize_path)
+        if not initialize_path.is_file():
+            raise FileNotFoundError(
+                f"initialize_from checkpoint not found: {initialize_path}"
+            )
+        loader = getattr(plugin, "load", None)
+        if not callable(loader):
+            raise TypeError(
+                f"{type(plugin).__name__} does not support initialize_from"
+            )
+        loader(initialize_path)
+        initialized_from = str(initialize_path)
     if int(getattr(config, "retrieval_k", 0) or 0) > 0 and hasattr(
         plugin, "skeleton_bank"
     ):
@@ -302,7 +321,6 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     manifest_sha = data_manifest_sha(config.train_dir)
     resumed_from: str | None = None
 
-    resume_path = getattr(config, "resume_from", None)
     if resume_path:
         resume_path = Path(resume_path)
         payload = load_full_state(resume_path)
@@ -770,6 +788,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         "max_wall_minutes": max_wall_minutes,
         "elapsed_wall_seconds": time.monotonic() - wall_started,
         "resumed_from": resumed_from,
+        "initialized_from": initialized_from,
         "data_manifest_sha": manifest_sha,
         "record_nll": str(record_nll_path.as_posix()) if record_nll_path else None,
         # Scratch-context and frozen-HF runs are different scientific tracks —

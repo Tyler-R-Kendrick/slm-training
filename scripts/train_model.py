@@ -90,6 +90,15 @@ def main(argv: list[str] | None = None) -> int:
         help="Resume from a last_full_state.pt checkpoint (bit-exact).",
     )
     parser.add_argument(
+        "--initialize-from",
+        type=Path,
+        default=None,
+        help=(
+            "Warm-start weights/tokenizers from a serving checkpoint while "
+            "resetting optimizer, RNG, step, and token counters."
+        ),
+    )
+    parser.add_argument(
         "--no-full-state-checkpoint",
         action="store_true",
         help="Skip writing last_full_state.pt (serving last.pt still written).",
@@ -908,6 +917,7 @@ def main(argv: list[str] | None = None) -> int:
             loss_mask_seed=args.loss_mask_seed,
             target_token_budget=args.target_token_budget,
             resume_from=args.resume_from,
+            initialize_from=args.initialize_from,
             full_state_checkpoint=not bool(args.no_full_state_checkpoint),
             mixture_manifest=args.mixture_manifest,
             mixture_min_quality_score=args.mixture_min_quality_score,

@@ -1,0 +1,196 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E501",
+  "run_id": "e501-e396-e500-uniform-init-r3-1k",
+  "run_class": "scratch_matrix",
+  "date_utc": "2026-07-19",
+  "status": "complete",
+  "conclusion": "Explicit weight-only initialization safely enables new-corpus training, but E500 continuation does not improve semantic quality over the frozen E396 parent.",
+  "hypothesis": "Warm-starting the structurally stronger E396 model on the clean E500 document corpus can improve semantic generation without the collapse observed in new-from-scratch E500 runs.",
+  "harness_change": {
+    "feature": "initialize_from",
+    "behavior": "Load compatible serving weights and tokenizer while resetting optimizer, RNG, steps, and token counters.",
+    "resume_guard_preserved": true,
+    "component_version": "harness.model_build.train@v2"
+  },
+  "parent_checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0",
+    "remote_uri": "hf://buckets/TKendrick/OpenUI/checkpoints/e396-balanced-type-head-continuation-r1/"
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "context_model": "HuggingFaceTB/SmolLM2-135M",
+    "context_frozen": true,
+    "local_files_only": true,
+    "output_codec": "choice",
+    "d_model": 128,
+    "heads": 4,
+    "context_layers": 2,
+    "denoiser_layers": 4,
+    "batch_size": 2,
+    "learning_rate": 0.0003,
+    "seed": 0,
+    "target_token_budgets": [
+      1000,
+      5000
+    ],
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170,
+    "suite": "smoke",
+    "suite_n": 3,
+    "honesty_mode": "no DESIGN context; honest prompt-derived slot contract; constrained decode; no fallback; scratch diagnostic; no checkpoint sync"
+  },
+  "data": {
+    "version": "e500_documentized_expression_candidate_r2_20260718",
+    "records": 260,
+    "content_fingerprint": "bc256915c79c6a07ff9ef253d5b6eb70fade30c5422ae8015c23f739c463bc62",
+    "task_group_counts": {
+      "generation": 246,
+      "patch_edit": 1,
+      "repair_completion_inpaint": 13
+    }
+  },
+  "matched_runs": [
+    {
+      "label": "frozen_parent_control",
+      "run_id": "e501-e396-control-r1",
+      "checkpoint_sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0",
+      "steps": 0,
+      "seen_target_tokens": 0,
+      "sampling": "none",
+      "smoke": {
+        "n": 3,
+        "syntax_parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "structural_similarity": 0.21166666666666667,
+        "component_type_recall": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 4019.97
+      }
+    },
+    {
+      "label": "manifest_mixture_5k",
+      "run_id": "e501-e396-e500-init-r1",
+      "checkpoint_sha256": "f86b83d3c2629d311b6c56f618b1f30ab237624fbc9c47c41929882fdcc9cf15",
+      "steps": 96,
+      "seen_target_tokens": 5060,
+      "last_loss": 10.334027290344238,
+      "elapsed_wall_seconds": 44.98735675300122,
+      "sampling": "published equal-task-group mixture",
+      "sampled_task_groups": {
+        "generation": 65,
+        "patch_edit": 58,
+        "repair_completion_inpaint": 69
+      },
+      "smoke": {
+        "n": 3,
+        "syntax_parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "structural_similarity": 0.14583333333333334,
+        "component_type_recall": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 3714.52
+      }
+    },
+    {
+      "label": "uniform_5k",
+      "run_id": "e501-e396-e500-uniform-init-r2",
+      "checkpoint_sha256": "14605459038c8e56d4f797cc359a2ff9e89d261a375b799476855f262736e4e7",
+      "steps": 99,
+      "seen_target_tokens": 5019,
+      "last_loss": 12.865320205688477,
+      "elapsed_wall_seconds": 79.64570133099915,
+      "sampling": "uniform records",
+      "sampled_task_groups": {
+        "generation": 185,
+        "patch_edit": 1,
+        "repair_completion_inpaint": 12
+      },
+      "smoke": {
+        "n": 3,
+        "syntax_parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "structural_similarity": 0.0889,
+        "component_type_recall": 0.16666666666666666,
+        "reward_score": 0.0,
+        "latency_ms_p50": 6560.34
+      }
+    },
+    {
+      "label": "uniform_1k",
+      "run_id": "e501-e396-e500-uniform-init-r3-1k",
+      "checkpoint_sha256": "d84d34c031c6f2a9e017d2566c04e4abb66314ea3814ba3868a8cc7cb5be2ffd",
+      "steps": 22,
+      "seen_target_tokens": 1039,
+      "last_loss": 26.020767211914062,
+      "elapsed_wall_seconds": 21.386004337007762,
+      "sampling": "uniform records",
+      "sampled_task_groups": {
+        "generation": 41,
+        "repair_completion_inpaint": 3
+      },
+      "smoke": {
+        "n": 3,
+        "syntax_parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "structural_similarity": 0.23166666666666666,
+        "component_type_recall": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 3546.58
+      }
+    }
+  ],
+  "comparison": {
+    "manifest_5k_minus_parent": {
+      "structural_similarity": -0.06583333333333333,
+      "component_type_recall": 0.0,
+      "meaningful_program_rate": 0.0
+    },
+    "uniform_5k_minus_parent": {
+      "structural_similarity": -0.12276666666666668,
+      "component_type_recall": 0.16666666666666666,
+      "meaningful_program_rate": 0.0
+    },
+    "uniform_1k_minus_parent": {
+      "structural_similarity": 0.01999999999999999,
+      "component_type_recall": 0.0,
+      "meaningful_program_rate": 0.0
+    }
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "passed": 0,
+    "total": 4,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Smoke-only n=3 diagnostics; meaningful rate, placeholder fidelity, and reward remain zero in every arm."
+  },
+  "checkpoint_bucket": {
+    "synced": false,
+    "reason": "Explicit --no-sync-checkpoints: bounded rejected continuation diagnostics are not full ship runs."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "125a7d128e5cc8cf4a64ca257d4764022d3cd0ed",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.train": "v2",
+      "harness.model_build.eval": "v1",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v1",
+      "gates.ship": "openui_ship_gates_v1"
+    },
+    "stamped_at": "2026-07-19T01:17:38.607261+00:00"
+  },
+  "decision": "Keep the explicit initialization harness. Reject all three E501 checkpoints for promotion or HF sync. Future continuation should add retention or lower-update safeguards before spending beyond 1k target tokens."
+}
