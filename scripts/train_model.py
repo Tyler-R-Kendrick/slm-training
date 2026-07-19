@@ -538,6 +538,18 @@ def main(argv: list[str] | None = None) -> int:
         help="Bias terminal root-list continue/stop choices by learned arity.",
     )
     parser.add_argument(
+        "--root-reference-identity-loss-weight",
+        type=float,
+        default=0.0,
+        help="Choice-codec terminal-root reference-inclusion BCE weight.",
+    )
+    parser.add_argument(
+        "--root-reference-identity-decode-weight",
+        type=float,
+        default=0.0,
+        help="Bias terminal root-list references by learned inclusion.",
+    )
+    parser.add_argument(
         "--no-design-md-context",
         action="store_true",
         help="Do not concatenate DESIGN.md into the context tower prompt.",
@@ -932,6 +944,12 @@ def main(argv: list[str] | None = None) -> int:
         binder_arity_decode_weight=args.binder_arity_decode_weight,
         root_reference_arity_loss_weight=args.root_reference_arity_loss_weight,
         root_reference_arity_decode_weight=args.root_reference_arity_decode_weight,
+        root_reference_identity_loss_weight=(
+            args.root_reference_identity_loss_weight
+        ),
+        root_reference_identity_decode_weight=(
+            args.root_reference_identity_decode_weight
+        ),
         fidelity_loss_weight=args.fidelity_loss_weight,
         grammar_ltr_primary=args.grammar_ltr_primary,
         grammar_ltr_repair=args.grammar_ltr_repair,

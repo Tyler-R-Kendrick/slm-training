@@ -1,0 +1,190 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E544",
+  "run_id": "e544-e543-root-identity1-r2-24s",
+  "date_utc": "2026-07-19",
+  "run_class": "scratch_matrix",
+  "status": "completed_diagnostic_gain_not_ship",
+  "hypothesis": "A bounded multi-label head can learn which generated sections belong in the terminal root and improve topology when it only re-ranks legal references.",
+  "parent_checkpoint": {
+    "run_id": "e543-e531-root-reference-bounded-r1-24s",
+    "sha256": "c6be3791544def59ad26b8d2b3b605a7efefd93ec83c996371e593a3251d7f90",
+    "location": "outputs/runs/e543-e531-root-reference-bounded-r1-24s/checkpoints/last.pt"
+  },
+  "checkpoint": {
+    "location": "outputs/runs/e544-e543-root-identity1-r2-24s/checkpoints/last.pt",
+    "sha256": "3b6e3c00666b8832187a489d6684ce909fff5b3ccaef57965f9cc1975474f20c",
+    "sync": false,
+    "sync_reason": "Explicit local-only 24-step scratch diagnostic; not a full train, reusable champion, or promotion."
+  },
+  "training": {
+    "checkpoint": "outputs/runs/e544-e543-root-identity1-r2-24s/checkpoints/last.pt",
+    "control_run_id": "e544-e543-root-identity-control0-r1-24s",
+    "train_dir": "src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719",
+    "record_count": 244,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "freeze_context": true,
+    "steps": 24,
+    "batch_size": 2,
+    "seen_target_tokens": 1270,
+    "elapsed_wall_seconds": 40.9555193060005,
+    "max_wall_minutes": 3.0,
+    "root_reference_arity_loss_weight": 1.0,
+    "root_reference_identity_loss_weight": 1.0,
+    "last_loss": 15.613460540771484,
+    "code_commit": "81c97b374317c0b02b59e6d1475c2edab0d14a48",
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "components": {
+        "harness.model_build.train": "v10"
+      }
+    }
+  },
+  "target_audit": {
+    "records": 244,
+    "covered": 188,
+    "coverage": 0.7704918032786885,
+    "nontrivial_strict_subset": 42,
+    "nontrivial_fraction_of_covered": 0.22340425531914893,
+    "section_bound_distribution": {
+      "1": 8,
+      "2": 90,
+      "3": 51,
+      "4": 20,
+      "5": 15,
+      "6": 4
+    }
+  },
+  "training_calibration": {
+    "steps_1_12": {
+      "mean_identity_loss": 0.8193118870258331,
+      "mean_exact_set_accuracy": 0.0,
+      "mean_positive_recall": 0.3055555621782939,
+      "mean_active_classes": 2.7083333333333335
+    },
+    "steps_13_24": {
+      "mean_identity_loss": 0.7302585740884145,
+      "mean_exact_set_accuracy": 0.041666666666666664,
+      "mean_positive_recall": 0.5729166766007742,
+      "mean_active_classes": 3.0
+    }
+  },
+  "eval_recipe": {
+    "control_run_id": "e544-e543-root-identity-rankonly-control0-r9",
+    "treatment_run_id": "e544-e543-root-identity-rankonly-weight1-r8",
+    "same_checkpoint_and_code_commit": true,
+    "code_commit": "bb9781f798ccc300fa9fa8c1a00e4836154b0c11",
+    "device": "cpu",
+    "suite": "ood",
+    "n": 4,
+    "diagnostic_subset": true,
+    "context_backend": "hf",
+    "local_files_only": true,
+    "grammar_constrained": true,
+    "grammar_ltr_primary": true,
+    "slot_contract_in_context": true,
+    "semantic_role_contract_in_context": true,
+    "slot_component_decode_weight": 4.0,
+    "semantic_role_decode_weight": 4.0,
+    "root_reference_arity_decode_weight": 1.0,
+    "root_reference_identity_control_weight": 0.0,
+    "root_reference_identity_treatment_weight": 1.0,
+    "honest_slot_contract": true,
+    "gold_reference_graph_used": false,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160,
+    "hard_process_cap_seconds": 170
+  },
+  "control": {
+    "syntax_parse_rate": 1.0,
+    "meaningful_program_rate": 0.0,
+    "placeholder_fidelity": 0.43333333333333335,
+    "placeholder_validity": 0.66,
+    "structural_similarity": 0.125,
+    "component_type_recall": 0.14583333333333331,
+    "reward_score": 0.737,
+    "ast_node_f1": 0.18333333333333335,
+    "ast_edge_f1": 0.0,
+    "binding_aware_meaningful_v2_rate_strict": 0.0,
+    "agentv_passed": 0,
+    "agentv_total": 1,
+    "agentv_execution_errors": 0
+  },
+  "treatment": {
+    "syntax_parse_rate": 1.0,
+    "meaningful_program_rate": 0.25,
+    "placeholder_fidelity": 0.43333333333333335,
+    "placeholder_validity": 0.66,
+    "structural_similarity": 0.16875,
+    "component_type_recall": 0.2708333333333333,
+    "reward_score": 0.737,
+    "ast_node_f1": 0.2833333333333333,
+    "ast_edge_f1": 0.0,
+    "binding_aware_meaningful_v2_rate_strict": 0.0,
+    "root_reference_arity_applications": 20,
+    "root_reference_arity_choice_changes": 10,
+    "root_reference_identity_applications": 15,
+    "root_reference_identity_choice_changes": 11,
+    "identity_changes_reference_to_reference_only": true,
+    "agentv_passed": 0,
+    "agentv_total": 1,
+    "agentv_execution_errors": 0
+  },
+  "delta_treatment_minus_control": {
+    "meaningful_program_rate": 0.25,
+    "structural_similarity": 0.04375,
+    "component_type_recall": 0.125,
+    "ast_node_f1": 0.09999999999999995,
+    "placeholder_fidelity": 0.0,
+    "placeholder_validity": 0.0,
+    "reward_score": 0.0
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.25,
+      "placeholder_fidelity": 0.43333333333333335,
+      "placeholder_validity": 0.66,
+      "structural_similarity": 0.16875,
+      "component_type_recall": 0.2708333333333333,
+      "reward_score": 0.737,
+      "ast_node_f1": 0.2833333333333333,
+      "ast_edge_f1": 0.0,
+      "binding_aware_meaningful_v2_rate_strict": 0.0
+    }
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "excluded_intermediate_runs": {
+    "run_ids": [
+      "e544-e543-root-identity-weight050-r5",
+      "e544-e543-root-identity-weight1-r4",
+      "e544-e543-root-identity-centered-weight1-r7"
+    ],
+    "reason": "Decoder telemetry showed identity bias could alter the reference-versus-non-reference partition. These runs motivated the rank-only correction and are not accepted evidence."
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "The bounded diagnostic improves several topology metrics, but strict binding-aware meaning and AST edge F1 remain zero and AgentV fails."
+  },
+  "decision": "Retain bounded identity supervision and rank-only legal-reference decoding default-off. Reject the scratch checkpoint for promotion; next test whether coverage-conditioned identity training improves exact-set calibration and strict graph quality.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "bb9781f798ccc300fa9fa8c1a00e4836154b0c11",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v13",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v10"
+    },
+    "stamped_at": "2026-07-19T22:18:52.791642+00:00"
+  }
+}

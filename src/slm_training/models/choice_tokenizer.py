@@ -1148,6 +1148,47 @@ def structural_root_reference_arity_target(
     return completed, completed_bound
 
 
+def structural_root_reference_identity_target(
+    tokenizer: ChoiceTokenizer, token_ids: Iterable[int], *, slot_count: int = 0
+) -> tuple[frozenset[int], int] | None:
+    """Return referenced section indices plus the generated-section bound."""
+    state = ChoiceDecodeState(tokenizer, slot_count=slot_count)
+    completed: frozenset[int] | None = None
+    completed_bound: int | None = None
+    list_references: dict[int, set[int]] = {}
+    for raw_token_id in token_ids:
+        token_id = int(raw_token_id)
+        if token_id in {tokenizer.pad_id, tokenizer.bos_id}:
+            continue
+        token = str(tokenizer.id_to_token.get(token_id, ""))
+        active_list = bool(
+            state.mode == "structural"
+            and state.frames
+            and state.frames[-1].kind == "variadic"
+            and state.frames[-1].expr_type == "array"
+        )
+        depth = len(state.frames)
+        if active_list and token.startswith(REF_PREFIX):
+            try:
+                list_references.setdefault(depth, set()).add(
+                    int(token[len(REF_PREFIX) :])
+                )
+            except ValueError:
+                return None
+        elif active_list and token == LIST_CLOSE:
+            completed = frozenset(list_references.pop(depth, set()))
+            completed_bound = len(state.section_types)
+        if token_id == tokenizer.eos_id:
+            break
+        if not state.advance_id(token_id):
+            return None
+        if token == LIST_OPEN:
+            list_references[len(state.frames)] = set()
+    if completed is None or completed_bound is None:
+        return None
+    return completed, completed_bound
+
+
 __all__ = [
     "CHOICE_TOKENIZER_KIND",
     "CHOICE_TOKENIZER_VERSION",
@@ -1156,4 +1197,5 @@ __all__ = [
     "is_choice_tokenizer",
     "structural_root_reference_arity",
     "structural_root_reference_arity_target",
+    "structural_root_reference_identity_target",
 ]
