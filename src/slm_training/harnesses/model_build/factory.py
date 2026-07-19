@@ -715,7 +715,9 @@ def build_model(
                 device=config.device,
                 local_files_only=config.local_files_only,
             )
-            return apply_runtime_overrides(loaded, config)
+            loaded = apply_runtime_overrides(loaded, config)
+            _maybe_load_adapter(loaded, config)
+            return loaded
 
         tt_cfg = _twotower_config_from_build(config)
         model = TwoTowerModel.from_records(records, config=tt_cfg, device=config.device)
@@ -723,6 +725,24 @@ def build_model(
             from slm_training.harnesses.quality import build_skeleton_bank
 
             model.skeleton_bank = build_skeleton_bank(records)
+        _maybe_load_adapter(model, config)
         return model
 
     raise ValueError(f"unknown model_name {config.model_name!r}")
+
+
+def _maybe_load_adapter(model: Any, config: ModelBuildConfig) -> None:
+    """Load a removable TwoTower adapter when ``config.adapter_spec`` is set.
+
+    Skips silently if the checkpoint already carries an adapter, and fails closed
+    on a mismatched or missing spec. The adapter is loaded trainable or frozen
+    according to ``config.adapter_trainable``.
+    """
+    spec_path = getattr(config, "adapter_spec", None)
+    if spec_path is None:
+        return
+    if not hasattr(model, "load_adapter"):
+        raise ValueError("adapter_spec is set but the model does not support adapters")
+    if getattr(model, "has_adapter", lambda: False)():
+        return
+    model.load_adapter(spec_path, trainable=bool(config.adapter_trainable))

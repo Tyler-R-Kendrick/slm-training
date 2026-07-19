@@ -335,6 +335,9 @@ class ModelBuildConfig:
     eval_cache_mode: str = "off"  # off | read | read_write | refresh
     eval_cache_root: Path = field(default_factory=lambda: Path("outputs/eval_cache"))
     eval_shards: int = 1
+    # LDI2-01: optional removable TwoTower low-rank adapter directory.
+    adapter_spec: Path | None = None
+    adapter_trainable: bool = True
 
     @property
     def run_dir(self) -> Path:

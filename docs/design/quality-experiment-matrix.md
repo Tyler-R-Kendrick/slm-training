@@ -279,6 +279,40 @@ Primary metric: `binding_aware_meaningful_v2_rate_strict` plus
 gates. Frontier execution requires a causal base checkpoint, an admitted
 DecisionEventV2 corpus, and SLM-103 bucket sync.
 
+## TwoTower removable adapter (SLM-123 / LDI2-01)
+
+Repository-owned LoRA-style low-rank delta over selected TwoTower denoiser
+projections. Parent weights stay frozen; only `A`/`B` factors are trainable.
+The adapter can be disabled (restoring the exact parent map), saved/loaded as a
+separate artifact, and merged one-way into a wrapper-free copy.
+
+| Target | Purpose |
+| --- | --- |
+| `attn_q`, `attn_v` | Attention query/value adaptation |
+| `attn_k`, `attn_out` | Attention key/output adaptation |
+| `cross_attn_*` | Cross-attention adaptation (when present) |
+| `mlp_in`, `mlp_out` | FFN adaptation |
+
+```bash
+# Load a saved adapter and train only adapter parameters
+python -m scripts.train_model \
+  --train-dir outputs/data/train/v1 \
+  --adapter-spec outputs/runs/slm123_adapter_evidence/adapter \
+  --steps 32
+
+# Load adapter frozen (inference / no adapter gradients)
+python -m scripts.train_model \
+  --train-dir outputs/data/train/v1 \
+  --adapter-spec outputs/runs/slm123_adapter_evidence/adapter \
+  --adapter-frozen \
+  --steps 32
+```
+
+Primary metric: `binding_aware_meaningful_v2_rate_strict`. Fixture runs are
+wiring-only and cannot claim ship gates. A real adapter-quality claim requires
+parent/adapter merge-parity tests, trained-adapter metrics, and SLM-103 bucket
+provenance.
+
 ## Configuration glossary — verified-solver decode (VSS1-03)
 
 Experimental, **disabled by default**, and **unmeasured**. These flags gate the

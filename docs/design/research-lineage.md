@@ -903,6 +903,31 @@ method improves quality until matched arm trains complete with binding-aware
 meaningful v2 metrics and reference-locality drift. Fixture/planning evidence is
 not treated as a result.
 
+## TwoTower removable low-rank delta adapter (LDI2-01 / SLM-123)
+
+**Fidelity label: adapted.** SLM-123 adds a small repository-owned LoRA-style
+low-rank delta actuator for selected TwoTower denoiser projections. The approach
+is borrowed from parameter-efficient fine-tuning literature, but narrowed to a
+**removable adapter** that leaves parent weights untouched, can be disabled to
+restore the exact parent map, and can be merged one-way into a wrapper-free copy.
+
+| | |
+| --- | --- |
+| **Lineage** | LoRA / parameter-efficient fine-tuning; removable adapter actuators |
+| **Fidelity** | **Adapted** — repository-owned low-rank delta with frozen parent, zero-init identity, deterministic target resolution, save/load/merge, and compatibility fingerprint checks |
+| **Code** | `src/slm_training/models/adapters/`, `src/slm_training/models/twotower.py`, `src/slm_training/harnesses/model_build/config.py`, `src/slm_training/harnesses/model_build/factory.py`, `scripts/train_model.py` |
+| **Config** | `--adapter-spec`, `--adapter-frozen`, `TwoTowerAdapterSpec` |
+
+**What we took:** a deterministic target resolver, a `LowRankAdapter` wrapper
+with frozen parent and zero-initialized `B`, explicit enable/disable/merge
+semantics, adapter-only `trainable_parameters()`, and compatibility-fingerprint
+guards on load.
+
+**What we did not take:** any claim that a low-rank adapter improves OpenUI
+quality until matched adapter-only vs full-update trains complete with
+binding-aware meaningful v2 metrics and merge-parity tests on the target device.
+Fixture/planning evidence is not treated as a result.
+
 ## Honesty rules (for docs & claims)
 
 1. Do **not** claim “we implement paper X” unless this page tags it **Faithful**.
