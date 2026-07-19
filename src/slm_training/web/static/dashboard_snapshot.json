@@ -1,4 +1,8 @@
-Warning: truncated output (original token count: 30989)
-Total output lines: 1
-
-{"schema_version":1,"generated_at":"2026-07-15","source":"outputs/runs and outputs/test_data/remediated","provenance":"committed snapshot; regenerate after each published experiment","test_data":{"ver…30889 tokens truncated…,"parse_rate":0.0,"placeholder_fidelity":0.0,"placeholder_validity":0.0,"structural_similarity":0.0,"component_type_recall":0.0,"reward_score":0.0,"latency_ms_p50":2800.0,"latency_ms_p95":2800.0}}}]}
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-18",
+  "source": "committed docs/design experiment records, model card, and published data resources",
+  "provenance": "committed cold-start snapshot; live outputs override when present",
+  "runs": [],
+  "quality_results": []
+}

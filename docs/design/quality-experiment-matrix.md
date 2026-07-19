@@ -1823,6 +1823,27 @@ Full evidence: [E496 compatibility audit](iter-e496-current-main-e396-honest-smo
 [E497 provenance smoke](iter-e497-current-main-playground-provenance-smoke-20260718.md),
 and [E497 JSON](iter-e497-current-main-playground-provenance-smoke-20260718.json).
 
+## E499 bounded strict-corpus SFT
+
+E499 compares `dq_strict_fixture_r4_20260718` with the diverse-root
+`remediated_roots` control under an identical frozen SmolLM2 choice-codec
+recipe: CPU, seed 0, 230,210 trainable parameters, 1,000 target tokens, and a
+three-minute internal wall limit under a 170-second process cap.
+
+The matched strict-r4 arm regresses smoke structure `0.1542→0.0375` and
+component recall `0.25→0.0`; meaningful rate, fidelity, and reward remain zero.
+An integrated strict build restores broad structural coverage but exposes 76
+fragment targets that the document-only choice codec cannot encode. Its
+choice-compatible r6 follow-up passes a 67/67 codec preflight and is faster,
+but reproduces the same quality regression and carries red synthesis-feedback
+warnings. All three final evaluations emit AgentEvals plus AgentV and fail.
+
+**Verdict:** keep the strict fixture repairs and compatibility diagnosis, but
+reject both candidate corpora as replacements at this budget. No checkpoint
+was synced or promoted. Full evidence:
+[narrative](iter-e499-strict-corpus-bounded-sft-20260718.md) and
+[JSON](iter-e499-strict-corpus-bounded-sft-20260718.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
