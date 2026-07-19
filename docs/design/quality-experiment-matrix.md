@@ -2076,6 +2076,24 @@ was capped at 170 seconds. Full evidence:
 [narrative](iter-e512-slot-component-weight-20260719.md) and
 [JSON](iter-e512-slot-component-weight-20260719.json).
 
+## E513 durable slot-role supervision continuation
+
+E513 warm-starts the bucket-backed E396 checkpoint on E500 with 50% exact E357
+replay, raises slot-component loss `1→4`, adds focal gamma 2, and supplies the
+honest slot contract in context. The CPU HF-context run completes 101 steps /
+5,000 target tokens in 79.6 seconds under `max_wall_minutes=3`, then uploads and
+verifies checkpoint SHA `59253c67…a88a9548` in the OpenUI bucket.
+
+Matched E514 OOD evaluation under E510's weight-4 policy regresses meaningful
+`0.50→0.00`, fidelity `0.6583→0.4917`, structure `0.3446→0.2750`, recall
+`0.3958→0.2083`, AST node F1 `0.4679→0.3500`, and AST edge F1
+`0.1625→0.0625`; strict v2 remains zero and AgentV remains 0/1.
+
+**Verdict:** retain the uploaded checkpoint as diagnostic evidence but reject
+promotion and broader evaluation. Full evidence:
+[narrative](iter-e513-slot-role-supervision-20260719.md) and
+[JSON](iter-e513-slot-role-supervision-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
