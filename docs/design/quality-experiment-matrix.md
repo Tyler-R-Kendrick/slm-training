@@ -1986,6 +1986,21 @@ were capped at 170 seconds. Full evidence:
 [narrative](iter-e506-slot-contract-decode-20260719.md) and
 [JSON](iter-e506-slot-contract-decode-20260719.json).
 
+## E507 length-safe OOD contract decode
+
+E507 repeats E506's OOD comparison with a 160-token canvas, above the suite's
+gold p95 of 143. Both arms exactly reproduce their 96-token quality metrics.
+Contract-on retains meaningful `0.25`, fidelity `0.2583`, structure `0.2281`,
+recall `0.3333`, reward `0.692`, and AST node F1 `0.3389`; contract-off remains
+zero on semantic metrics.
+
+**Verdict:** the constrained decode gain is not a canvas-truncation artifact.
+Keep it as the leading inference policy, but do not promote: AgentV remains
+0/1 and generation is still diagnostic. Both processes were capped at 170
+seconds. Full evidence:
+[narrative](iter-e507-length-safe-ood-contract-decode-20260719.md) and
+[JSON](iter-e507-length-safe-ood-contract-decode-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E507",
+  "run_id": "e507-e505-ood160-contract-on-r2",
+  "run_class": "scratch_matrix",
+  "date_utc": "2026-07-19",
+  "status": "complete",
+  "hypothesis": "E506's OOD constrained-slot-contract gains persist when the decode canvas exceeds the suite's gold p95 length.",
+  "conclusion": "At a 160-token canvas, above OOD gold p95 143, both arms exactly reproduce their 96-token metrics. The constrained decode gain is not a canvas-truncation artifact.",
+  "checkpoint": {
+    "run_id": "e505-e396-e500-replay050-loss-attribution-r1-5k",
+    "sha256": "8fd11acdcc1e3eaf0585e847c68815190fdc90c9071e30833db40d24525967e8",
+    "new_checkpoint_written": false
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "suite": "ood",
+    "suite_n": 4,
+    "grammar_ltr_primary": true,
+    "gen_steps": 4,
+    "max_attempts": 1,
+    "grammar_ltr_max_tokens": 160,
+    "gold_p95_tokens": 143,
+    "length_budget_pass": true,
+    "honest_slot_contract": true,
+    "no_design_context": true,
+    "allow_unconstrained_fallback": false,
+    "hard_process_cap_seconds": 170
+  },
+  "matched_runs": [
+    {
+      "label": "length_safe_slot_contract_decode_off",
+      "run_id": "e507-e505-ood160-contract-off-r1",
+      "checkpoint_sha256": "8fd11acdcc1e3eaf0585e847c68815190fdc90c9071e30833db40d24525967e8",
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.0,
+          "placeholder_fidelity": 0.0,
+          "structural_similarity": 0.072925,
+          "component_type_recall": 0.0,
+          "reward_score": 0.0,
+          "ast_node_f1": 0.03125000000000001,
+          "ast_edge_f1": 0.0,
+          "latency_ms_p50": 4571.04,
+          "latency_ms_p95": 7244.82
+        }
+      }
+    },
+    {
+      "label": "length_safe_slot_contract_decode_on",
+      "run_id": "e507-e505-ood160-contract-on-r2",
+      "checkpoint_sha256": "8fd11acdcc1e3eaf0585e847c68815190fdc90c9071e30833db40d24525967e8",
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.25,
+          "placeholder_fidelity": 0.2583333333333333,
+          "structural_similarity": 0.228125,
+          "component_type_recall": 0.3333333333333333,
+          "reward_score": 0.692,
+          "ast_node_f1": 0.3388888888888889,
+          "ast_edge_f1": 0.0,
+          "latency_ms_p50": 6966.49,
+          "latency_ms_p95": 11702.2
+        }
+      }
+    }
+  ],
+  "comparison": {
+    "meaningful_program_rate": 0.25,
+    "placeholder_fidelity": 0.2583333333333333,
+    "structural_similarity": 0.1552,
+    "component_type_recall": 0.3333333333333333,
+    "reward_score": 0.692,
+    "ast_node_f1": 0.3076388888888889,
+    "latency_ms_p50": 2395.45
+  },
+  "comparison_to_e506_96_token_ood": {
+    "contract_off_metric_delta": 0.0,
+    "contract_on_metric_delta": 0.0,
+    "note": "Syntax, meaningful, fidelity, structure, recall, reward, and AST F1 are identical in each policy arm."
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "passed": 0,
+    "total": 2,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Length-safe OOD diagnostic still uses four generation steps and one attempt; AgentV remains 0/1 in both arms."
+  },
+  "checkpoint_bucket": {
+    "synced": false,
+    "reason": "Evaluation-only experiment; no checkpoint was created."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "5895d46d4aca58c3d9afdadd03a67c67a454ac82",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.eval": "v1",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v1",
+      "gates.ship": "openui_ship_gates_v1"
+    },
+    "stamped_at": "2026-07-19T04:00:06+00:00"
+  },
+  "decision": "Retain constrained slot-contract decode as the leading inference policy. Length safety is verified on OOD, but promotion remains blocked by AgentV and reduced diagnostic generation settings."
+}
