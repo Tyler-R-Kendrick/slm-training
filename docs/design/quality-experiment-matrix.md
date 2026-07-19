@@ -214,6 +214,40 @@ independent labels. The recipe is frozen; any hash mismatch is a failed
 experiment. Frontier execution requires the E228 checkpoint and SLM-103 bucket
 sync.
 
+## Corruption curriculum (SLM-120 / EFS3-02)
+
+Frozen E228 legal-candidate-margin recipe with staged near-solved semantic
+corruption shares. Tests whether injecting 5–15% one- and two-error states
+improves recovery and fixed-point stability without degrading from-scratch
+generation.
+
+| Arm | Near-solved share (S1+S2) | Purpose |
+| --- | --- | --- |
+| A_control | 0% | Clean reproduction / resume baseline |
+| B05 | 5% | Low intervention |
+| B10 | 10% | Medium intervention |
+| B15 | 15% | High intervention |
+| B30 | 30% | Stress / copying-failure control |
+
+Within the near-solved share, S1 and S2 are split 50/50.
+
+```bash
+# Plan / fixture wiring (CPU, no training)
+python -m scripts.run_corruption_curriculum --mode fixture \
+  --parent-checkpoint-uri hf://buckets/TKendrick/OpenUI/checkpoints/e228-candidate-margin-matched/ref.json \
+  --output-dir outputs/runs/slm120_corruption_fixture
+
+# Frontier dispatch (GPU + durable checkpoint required)
+python -m scripts.hf_jobs_train \
+  --run-id slm120-curriculum-b10-s0 --steps 3200 \
+  --extra-train-args "--resume-from outputs/runs/e228-candidate-margin-matched/checkpoints/last_full_state.pt --near-solved-share 0.10"
+```
+
+Primary metric: `binding_aware_meaningful_v2_rate_strict`, with separate
+S0 stability, S1 recovery, and S2 recovery rates. Fixture runs are wiring-only
+and cannot claim ship gates. Frontier execution requires the EFS1-decided base
+recipe/checkpoint and SLM-103 bucket sync.
+
 ## Configuration glossary — verified-solver decode (VSS1-03)
 
 Experimental, **disabled by default**, and **unmeasured**. These flags gate the

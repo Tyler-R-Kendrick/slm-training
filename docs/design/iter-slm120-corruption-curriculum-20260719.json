@@ -1,0 +1,342 @@
+{
+  "arms": [
+    {
+      "arm_label": "A_control",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "near_solved_share": 0.0,
+      "notes": [
+        "planned near-solved share 0% seed 0",
+        "fixture-only: no model trained",
+        "S1/S2 split: 50%/50%"
+      ],
+      "run_id": "slm120_fixture_A_control_s0",
+      "s0_stability_rate": null,
+      "s1_recovery_rate": null,
+      "s2_recovery_rate": null,
+      "seed": 0,
+      "status": "fixture_planned",
+      "train_loss": null
+    },
+    {
+      "arm_label": "A_control",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "near_solved_share": 0.0,
+      "notes": [
+        "planned near-solved share 0% seed 1",
+        "fixture-only: no model trained",
+        "S1/S2 split: 50%/50%"
+      ],
+      "run_id": "slm120_fixture_A_control_s1",
+      "s0_stability_rate": null,
+      "s1_recovery_rate": null,
+      "s2_recovery_rate": null,
+      "seed": 1,
+      "status": "fixture_planned",
+      "train_loss": null
+    },
+    {
+      "arm_label": "A_control",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "near_solved_share": 0.0,
+      "notes": [
+        "planned near-solved share 0% seed 2",
+        "fixture-only: no model trained",
+        "S1/S2 split: 50%/50%"
+      ],
+      "run_id": "slm120_fixture_A_control_s2",
+      "s0_stability_rate": null,
+      "s1_recovery_rate": null,
+      "s2_recovery_rate": null,
+      "seed": 2,
+      "status": "fixture_planned",
+      "train_loss": null
+    },
+    {
+      "arm_label": "B05",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "near_solved_share": 0.05,
+      "notes": [
+        "planned near-solved share 5% seed 0",
+        "fixture-only: no model trained",
+        "S1/S2 split: 50%/50%"
+      ],
+      "run_id": "slm120_fixture_B05_s0",
+      "s0_stability_rate": null,
+      "s1_recovery_rate": null,
+      "s2_recovery_rate": null,
+      "seed": 0,
+      "status": "fixture_planned",
+      "train_loss": null
+    },
+    {
+      "arm_label": "B05",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "near_solved_share": 0.05,
+      "notes": [
+        "planned near-solved share 5% seed 1",
+        "fixture-only: no model trained",
+        "S1/S2 split: 50%/50%"
+      ],
+      "run_id": "slm120_fixture_B05_s1",
+      "s0_stability_rate": null,
+      "s1_recovery_rate": null,
+      "s2_recovery_rate": null,
+      "seed": 1,
+      "status": "fixture_planned",
+      "train_loss": null
+    },
+    {
+      "arm_label": "B05",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "near_solved_share": 0.05,
+      "notes": [
+        "planned near-solved share 5% seed 2",
+        "fixture-only: no model trained",
+        "S1/S2 split: 50%/50%"
+      ],
+      "run_id": "slm120_fixture_B05_s2",
+      "s0_stability_rate": null,
+      "s1_recovery_rate": null,
+      "s2_recovery_rate": null,
+      "seed": 2,
+      "status": "fixture_planned",
+      "train_loss": null
+    },
+    {
+      "arm_label": "B10",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "near_solved_share": 0.1,
+      "notes": [
+        "planned near-solved share 10% seed 0",
+        "fixture-only: no model trained",
+        "S1/S2 split: 50%/50%"
+      ],
+      "run_id": "slm120_fixture_B10_s0",
+      "s0_stability_rate": null,
+      "s1_recovery_rate": null,
+      "s2_recovery_rate": null,
+      "seed": 0,
+      "status": "fixture_planned",
+      "train_loss": null
+    },
+    {
+      "arm_label": "B10",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "near_solved_share": 0.1,
+      "notes": [
+        "planned near-solved share 10% seed 1",
+        "fixture-only: no model trained",
+        "S1/S2 split: 50%/50%"
+      ],
+      "run_id": "slm120_fixture_B10_s1",
+      "s0_stability_rate": null,
+      "s1_recovery_rate": null,
+      "s2_recovery_rate": null,
+      "seed": 1,
+      "status": "fixture_planned",
+      "train_loss": null
+    },
+    {
+      "arm_label": "B10",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "near_solved_share": 0.1,
+      "notes": [
+        "planned near-solved share 10% seed 2",
+        "fixture-only: no model trained",
+        "S1/S2 split: 50%/50%"
+      ],
+      "run_id": "slm120_fixture_B10_s2",
+      "s0_stability_rate": null,
+      "s1_recovery_rate": null,
+      "s2_recovery_rate": null,
+      "seed": 2,
+      "status": "fixture_planned",
+      "train_loss": null
+    },
+    {
+      "arm_label": "B15",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "near_solved_share": 0.15,
+      "notes": [
+        "planned near-solved share 15% seed 0",
+        "fixture-only: no model trained",
+        "S1/S2 split: 50%/50%"
+      ],
+      "run_id": "slm120_fixture_B15_s0",
+      "s0_stability_rate": null,
+      "s1_recovery_rate": null,
+      "s2_recovery_rate": null,
+      "seed": 0,
+      "status": "fixture_planned",
+      "train_loss": null
+    },
+    {
+      "arm_label": "B15",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "near_solved_share": 0.15,
+      "notes": [
+        "planned near-solved share 15% seed 1",
+        "fixture-only: no model trained",
+        "S1/S2 split: 50%/50%"
+      ],
+      "run_id": "slm120_fixture_B15_s1",
+      "s0_stability_rate": null,
+      "s1_recovery_rate": null,
+      "s2_recovery_rate": null,
+      "seed": 1,
+      "status": "fixture_planned",
+      "train_loss": null
+    },
+    {
+      "arm_label": "B15",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "near_solved_share": 0.15,
+      "notes": [
+        "planned near-solved share 15% seed 2",
+        "fixture-only: no model trained",
+        "S1/S2 split: 50%/50%"
+      ],
+      "run_id": "slm120_fixture_B15_s2",
+      "s0_stability_rate": null,
+      "s1_recovery_rate": null,
+      "s2_recovery_rate": null,
+      "seed": 2,
+      "status": "fixture_planned",
+      "train_loss": null
+    },
+    {
+      "arm_label": "B30",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "near_solved_share": 0.3,
+      "notes": [
+        "planned near-solved share 30% seed 0",
+        "fixture-only: no model trained",
+        "S1/S2 split: 50%/50%"
+      ],
+      "run_id": "slm120_fixture_B30_s0",
+      "s0_stability_rate": null,
+      "s1_recovery_rate": null,
+      "s2_recovery_rate": null,
+      "seed": 0,
+      "status": "fixture_planned",
+      "train_loss": null
+    },
+    {
+      "arm_label": "B30",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "near_solved_share": 0.3,
+      "notes": [
+        "planned near-solved share 30% seed 1",
+        "fixture-only: no model trained",
+        "S1/S2 split: 50%/50%"
+      ],
+      "run_id": "slm120_fixture_B30_s1",
+      "s0_stability_rate": null,
+      "s1_recovery_rate": null,
+      "s2_recovery_rate": null,
+      "seed": 1,
+      "status": "fixture_planned",
+      "train_loss": null
+    },
+    {
+      "arm_label": "B30",
+      "binding_aware_meaningful_v2_rate_strict": null,
+      "checkpoint_uri": null,
+      "near_solved_share": 0.3,
+      "notes": [
+        "planned near-solved share 30% seed 2",
+        "fixture-only: no model trained",
+        "S1/S2 split: 50%/50%"
+      ],
+      "run_id": "slm120_fixture_B30_s2",
+      "s0_stability_rate": null,
+      "s1_recovery_rate": null,
+      "s2_recovery_rate": null,
+      "seed": 2,
+      "status": "fixture_planned",
+      "train_loss": null
+    }
+  ],
+  "curriculum_id": "near-solved-semantic",
+  "manifest": {
+    "base_recipe": {
+      "alignment_candidate_scope": "lark_compiler_forest",
+      "allow_unconstrained_fallback": false,
+      "batch_size": 4,
+      "checkpoint_sync": false,
+      "compiler_alignment_loss_weight": 1.0,
+      "compiler_alignment_margin": 1.0,
+      "compiler_alignment_semantic_exhaustive": true,
+      "compiler_alignment_stratified": true,
+      "compiler_decode_mode": "tree",
+      "context_backend": "hf_local_files_only",
+      "design_md_in_context": false,
+      "device": "cpu",
+      "eval_version": "remediated",
+      "honest_slot_contract": true,
+      "learning_rate": 0.0003,
+      "max_wall_minutes": 3.0,
+      "mixture_sampling_policy": "quota_capacity_aware",
+      "output_tokenizer": "lexer",
+      "schema_in_context": true,
+      "seed": 0,
+      "slot_contract_constrained_decode": true,
+      "slot_contract_in_context": true,
+      "steps": 32,
+      "train_version": "e218_schema_normalized_judge_v5"
+    },
+    "base_recipe_hash": "fd7df1c836db107d1a1c779ca6de67c881495ff3116fedd827aff5ae123875fa",
+    "checkpoint_bucket": "hf://buckets/TKendrick/OpenUI",
+    "claim_class": "frontier",
+    "curriculum_id": "near-solved-semantic",
+    "falsifier": "Near-solved mass produces no recovery/stability gain, causes copying/early-stop behavior, or degrades from-scratch semantic generation at matched exposure.",
+    "hypothesis": "Including a small fraction of one- and two-error states improves correction of local semantic failures and preserves already-correct states, yielding higher binding-aware meaningful quality without reducing performance on heavily corrupted/full-generation cases.",
+    "matrix_set": "corruption-curriculum",
+    "matrix_version": "efs3-02-v1",
+    "near_solved_shares": [
+      0.0,
+      0.05,
+      0.1,
+      0.15,
+      0.3
+    ],
+    "parent_checkpoint_uri": "hf://buckets/TKendrick/OpenUI/checkpoints/e228-candidate-margin-matched/ref.json",
+    "s1_s2_split": [
+      0.5,
+      0.5
+    ],
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "status": "frontier_pending_gpu"
+  },
+  "matrix_set": "corruption-curriculum",
+  "matrix_version": "efs3-02-v1",
+  "run_id": "slm120_fixture",
+  "status": "fixture",
+  "version_stamp": {
+    "code_commit": "bb8be78523c7e32225940dc98c1af879c3072dd1",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v18"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-19T21:21:55.023296+00:00"
+  }
+}
