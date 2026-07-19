@@ -46,6 +46,19 @@ from slm_training.harnesses.experiments.scaling_fit import (
     observation_from_summary,
     predict_loss,
 )
+from slm_training.harnesses.experiments.teacher_paraphrase_activation import (
+    ACTIVATION_VERDICTS,
+    CAMPAIGN_VERDICTS,
+    ActivationGate,
+    BudgetCap,
+    CanonicalRequest,
+    TeacherParaphraseActivationManifest,
+    TeacherParaphraseArm,
+    TeacherProviderConfig,
+    build_teacher_paraphrase_activation_manifest,
+    render_canonical_request,
+    validate_teacher_paraphrase_activation_manifest,
+)
 from slm_training.harnesses.experiments.verified_solver_matrix import (
     MATRIX_SET,
     MATRIX_VERSION,
@@ -97,11 +110,22 @@ except Exception:  # pragma: no cover - optional if torch unavailable
     run_matrix = None  # type: ignore[misc,assignment]
 
 __all__ = [
+    "ACTIVATION_VERDICTS",
+    "CAMPAIGN_VERDICTS",
+    "ActivationGate",
+    "BudgetCap",
+    "CanonicalRequest",
+    "TeacherParaphraseActivationManifest",
+    "TeacherParaphraseArm",
+    "TeacherProviderConfig",
     "CAP5_CAMPAIGN_ID",
     "CampaignArm",
     "Cap5CampaignManifest",
     "build_cap5_campaign_manifest",
     "validate_cap5_campaign_manifest",
+    "build_teacher_paraphrase_activation_manifest",
+    "render_canonical_request",
+    "validate_teacher_paraphrase_activation_manifest",
     "ArmConfig",
     "ArmResult",
     "BottleneckArm",
