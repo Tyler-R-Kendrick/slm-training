@@ -398,6 +398,12 @@ def test_root_reference_arity_head_trains_and_biases_root_stop() -> None:
         root_reference_arity_decode_weight=2.0,
     )
     model.train()
+    assert model.root_reference_arity_head is not None
+    with torch.no_grad():
+        model.root_reference_arity_head.weight.zero_()
+        model.root_reference_arity_head.bias.zero_()
+        model.root_reference_arity_head.bias[2] = 4.0
+        model.root_reference_arity_head.bias[-1] = 20.0
     record = ExampleRecord(
         id="root-reference-arity",
         prompt="stack with title and body",
@@ -415,10 +421,11 @@ def test_root_reference_arity_head_trains_and_biases_root_stop() -> None:
     auxiliary_loss = model.take_detached_auxiliary_loss()
     assert auxiliary_loss is not None
     auxiliary_loss.backward()
-    assert model.root_reference_arity_head is not None
     assert model.root_reference_arity_head.weight.grad is not None
     assert model.root_reference_arity_head.weight.grad.abs().sum() > 0
     assert model.last_training_metrics["root_reference_arity_rows"] == 1
+    assert model.last_training_metrics["root_reference_arity_accuracy"] == 1.0
+    assert model.last_training_metrics["root_reference_arity_classes_mean"] == 3.0
 
     tokenizer = model.tokenizer
     with torch.no_grad():

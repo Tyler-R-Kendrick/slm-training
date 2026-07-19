@@ -2526,7 +2526,7 @@ class TwoTowerModel(nn.Module):
         )
         if root_arity_w > 0.0 and self.root_reference_arity_head is not None:
             from slm_training.models.choice_tokenizer import (
-                structural_root_reference_arity,
+                structural_root_reference_arity_target,
             )
 
             root_logits = self.root_reference_arity_head(
@@ -2534,22 +2534,29 @@ class TwoTowerModel(nn.Module):
             )
             root_losses: list[torch.Tensor] = []
             root_hits: list[torch.Tensor] = []
+            root_class_counts: list[int] = []
             for row, record in enumerate(batch):
-                target = structural_root_reference_arity(
+                target_and_bound = structural_root_reference_arity_target(
                     self.tokenizer,
                     target_ids[row].tolist(),
                     slot_count=len(record.placeholders or ()),
                 )
-                if target is None:
+                if target_and_bound is None:
                     continue
+                target, section_count = target_and_bound
                 target = min(int(target), root_logits.size(1) - 1)
+                valid_max = min(
+                    max(target, int(section_count)), root_logits.size(1) - 1
+                )
+                bounded_logits = root_logits[row : row + 1, : valid_max + 1]
                 target_tensor = torch.as_tensor([target], device=ctx.device)
                 root_losses.append(
-                    F.cross_entropy(root_logits[row : row + 1], target_tensor)
+                    F.cross_entropy(bounded_logits, target_tensor)
                 )
                 root_hits.append(
-                    root_logits[row].argmax().eq(target_tensor[0]).float()
+                    bounded_logits[0].argmax().eq(target_tensor[0]).float()
                 )
+                root_class_counts.append(valid_max + 1)
             root_loss = (
                 torch.stack(root_losses).mean()
                 if root_losses
@@ -2568,6 +2575,11 @@ class TwoTowerModel(nn.Module):
                         else 0.0
                     ),
                     "root_reference_arity_rows": len(root_losses),
+                    "root_reference_arity_classes_mean": (
+                        sum(root_class_counts) / len(root_class_counts)
+                        if root_class_counts
+                        else 0.0
+                    ),
                 }
             )
 

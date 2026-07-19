@@ -2601,6 +2601,27 @@ scratch checkpoint. Full evidence:
 [narrative](iter-e542-learned-root-reference-arity-20260719.md) and
 [JSON](iter-e542-learned-root-reference-arity-20260719.json).
 
+## E543 bounded root-reference arity training
+
+E543 applies E542's semantic section bound to the auxiliary training loss. Its
+24-step matched continuation completes in 37.17 seconds under the three-minute
+cap. All 106 non-root-head tensors are bit-identical to E542. First-half mean
+auxiliary loss improves from 3.7329 to 0.8845 and accuracy from 0.0417 to
+0.7500; second-half loss improves from 3.5496 to 0.9414 and accuracy from
+0.3333 to 0.5833.
+
+The four-record OOD weight-1 replay remains exactly quality-neutral. It makes
+the same 7 changes across 11 applications as E542's bounded replay, and every
+metric equals E542 control: meaningful-v1 0.50, fidelity 0.5917, structure
+0.3019, recall 0.4167, and reward 0.7950. Strict meaning and AgentV remain
+zero.
+
+**Verdict:** retain the bounded loss as a calibration fix, keep decoding
+default-off, reject the scratch checkpoint, and move to reference-identity
+supervision. Full evidence:
+[narrative](iter-e543-bounded-root-reference-arity-20260719.md) and
+[JSON](iter-e543-bounded-root-reference-arity-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

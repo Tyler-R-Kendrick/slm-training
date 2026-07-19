@@ -1106,8 +1106,19 @@ def structural_root_reference_arity(
     tokenizer: ChoiceTokenizer, token_ids: Iterable[int], *, slot_count: int = 0
 ) -> int | None:
     """Return direct reference count in the final generated structural root list."""
+    target = structural_root_reference_arity_target(
+        tokenizer, token_ids, slot_count=slot_count
+    )
+    return target[0] if target is not None else None
+
+
+def structural_root_reference_arity_target(
+    tokenizer: ChoiceTokenizer, token_ids: Iterable[int], *, slot_count: int = 0
+) -> tuple[int, int] | None:
+    """Return root-reference count plus the available generated-section bound."""
     state = ChoiceDecodeState(tokenizer, slot_count=slot_count)
     completed: int | None = None
+    completed_bound: int | None = None
     list_counts: dict[int, int] = {}
     for raw_token_id in token_ids:
         token_id = int(raw_token_id)
@@ -1125,13 +1136,16 @@ def structural_root_reference_arity(
             list_counts[depth] = list_counts.get(depth, 0) + 1
         elif active_list and token == LIST_CLOSE:
             completed = list_counts.pop(depth, 0)
+            completed_bound = len(state.section_types)
         if token_id == tokenizer.eos_id:
             break
         if not state.advance_id(token_id):
             return None
         if token == LIST_OPEN:
             list_counts[len(state.frames)] = 0
-    return completed
+    if completed is None or completed_bound is None:
+        return None
+    return completed, completed_bound
 
 
 __all__ = [
@@ -1141,4 +1155,5 @@ __all__ = [
     "ChoiceDecodeState",
     "is_choice_tokenizer",
     "structural_root_reference_arity",
+    "structural_root_reference_arity_target",
 ]
