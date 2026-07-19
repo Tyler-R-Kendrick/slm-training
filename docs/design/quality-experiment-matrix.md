@@ -2361,6 +2361,20 @@ require non-zero reach before training. Full evidence:
 [narrative](iter-e536-choice-decision-evidence-20260719.md) and
 [JSON](iter-e536-choice-decision-evidence-20260719.json).
 
+## E538 semantic-role plus component-plan composition
+
+E538 adds component-plan decode weight 4 to E536's exact visible semantic-role
+policy on the E531 checkpoint. The lever is causally active (95 applications,
+four changed component choices), but all four predictions collapse to a single
+inline `Stack` root. Meaningful falls `0.25→0`, fidelity `1.0→0.85`, structure
+`0.1959→0.1079`, recall `0.5417→0.2708`, and reward `0.7403→0`.
+
+**Verdict:** reject E538 and do not train it. The older plan-head gain does not
+transfer to E531 under direct visible-role decoding. Target explicit
+declaration/reference structure rather than another component-type bias. Full
+evidence: [narrative](iter-e538-role-plan-composition-20260719.md) and
+[JSON](iter-e538-role-plan-composition-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

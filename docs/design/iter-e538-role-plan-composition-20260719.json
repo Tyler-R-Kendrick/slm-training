@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E538",
+  "run_id": "e538-e531-ood160-role4-plan4-r1",
+  "date_utc": "2026-07-19",
+  "run_class": "scratch_matrix",
+  "status": "completed_rejected_regression",
+  "hypothesis": "The trained component-plan head at decode weight 4 composes with the E536 visible semantic-role policy on E531.",
+  "checkpoint": {
+    "run_id": "e531-e396-e530-replay050-slotrole1-honest-context-r1-5k",
+    "sha256": "6b8c1abc56a36e8aa15acc373b61d5df033a753907330649e379d9ba374a6154",
+    "remote_uri": "hf://buckets/TKendrick/OpenUI/checkpoints/e531-e396-e530-replay050-slotrole1-honest-context-r1-5k"
+  },
+  "recipe": {
+    "device": "cpu",
+    "suite": "ood",
+    "n": 4,
+    "diagnostic_subset": true,
+    "context_backend": "hf",
+    "local_files_only": true,
+    "grammar_constrained": true,
+    "grammar_ltr_primary": true,
+    "slot_contract_in_context": true,
+    "semantic_role_contract_in_context": true,
+    "semantic_role_decode_weight": 4.0,
+    "visible_reference_decode_weight": 4.0,
+    "component_plan_decode_weight": 4.0,
+    "slot_contract_constrained_decode": true,
+    "honest_slot_contract": true,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160,
+    "hard_process_cap_seconds": 170
+  },
+  "matched_control": {
+    "experiment_id": "E536",
+    "run_id": "e536-e531-ood160-choice-evidence-r1"
+  },
+  "result": {
+    "suite": "ood",
+    "n": 4,
+    "syntax_parse_rate": 1.0,
+    "meaningful_program_rate": 0.0,
+    "placeholder_fidelity": 0.85,
+    "placeholder_validity": 0.91,
+    "structural_similarity": 0.107875,
+    "component_type_recall": 0.2708333333333333,
+    "reward_score": 0.0,
+    "ast_node_f1": 0.2664072039072039,
+    "ast_edge_f1": 0.11241883116883117,
+    "binding_aware_meaningful_v2_rate_strict": 0.0,
+    "binding_aware_meaningful_v2_coverage": 1.0,
+    "contract_precision": 1.0,
+    "contract_recall": 0.85,
+    "latency_ms_p50": 5418.04,
+    "latency_ms_p95": 8042.51,
+    "generation_evidence_schemas": ["choice_decision_trace/v1"]
+  },
+  "comparison_to_e536": {
+    "meaningful_program_rate_delta": -0.25,
+    "placeholder_fidelity_delta": -0.15,
+    "structural_similarity_delta": -0.08805,
+    "component_type_recall_delta": -0.2708333333333333,
+    "reward_score_delta": -0.74025,
+    "ast_node_f1_delta": 0.10370879120879122,
+    "ast_edge_f1_delta": 0.07075216450216451,
+    "binding_aware_meaningful_v2_rate_strict_delta": 0.0
+  },
+  "causal_telemetry": {
+    "component_plan_applications": 95,
+    "component_plan_choice_changes": 4,
+    "output_shape": "all four predictions collapsed to one inline Stack root",
+    "placeholder_spam_records": 4,
+    "semantic_role_mismatch_records": 4
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "The reachable plan-head composition regressed every headline quality aggregate and strict meaning remained zero."
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0,
+    "mean_score": 0.5
+  },
+  "decision": "Reject E538 and do not train it. Plan declaration and reference structure explicitly instead of stacking another component-type bias.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "50a1823a0b1b541cd7bf2c18e1ea797d1d691162",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v7",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v10"
+    },
+    "stamped_at": "2026-07-19T19:15:44.306795+00:00"
+  }
+}
