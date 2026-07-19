@@ -245,6 +245,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Append each record's declared placeholder inventory to its prompt.",
     )
     parser.add_argument(
+        "--prompt-component-contract",
+        action="store_true",
+        help="Append each record's output component type/count inventory to its prompt.",
+    )
+    parser.add_argument(
         "--max-records-per-parent",
         type=int,
         default=None,
@@ -378,6 +383,7 @@ def main(argv: list[str] | None = None) -> int:
         curriculum=args.curriculum,
         namespace_augment=args.namespace_augment,
         prompt_slot_contract=args.prompt_slot_contract,
+        prompt_component_contract=args.prompt_component_contract,
         max_records_per_parent=args.max_records_per_parent,
         fuzzy_dedup=bool(args.fuzzy_dedup),
         fuzzy_jaccard=float(args.fuzzy_jaccard),
