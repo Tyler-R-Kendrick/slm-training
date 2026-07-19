@@ -211,6 +211,7 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
                 root_reference_arity_loss_weight=0.6,
                 root_reference_arity_decode_weight=0.05,
                 root_reference_identity_loss_weight=0.55,
+                root_reference_identity_negative_weight=3.0,
                 root_reference_identity_decode_weight=0.04,
         ),
     )
@@ -251,6 +252,7 @@ def test_checkpoint_preserves_component_inventory_decode_weight(tmp_path: Path) 
     assert loaded.config.root_reference_arity_loss_weight == 0.6
     assert loaded.config.root_reference_arity_decode_weight == 0.05
     assert loaded.config.root_reference_identity_loss_weight == 0.55
+    assert loaded.config.root_reference_identity_negative_weight == 3.0
     assert loaded.config.root_reference_identity_decode_weight == 0.04
 
     apply_runtime_overrides(

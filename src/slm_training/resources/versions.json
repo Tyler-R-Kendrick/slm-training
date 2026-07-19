@@ -94,72 +94,25 @@
       ]
     },
     "harness.model_build.train": {
-      "version": "v10",
+      "version": "v11",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/train_loop.py"
       ],
       "history": [
-        {
-          "version": "v10",
-          "date": "2026-07-19",
-          "note": "record learned terminal-root reference identity loss and decode settings in training recipes"
-        },
-        {
-          "version": "v9",
-          "date": "2026-07-19",
-          "note": "mask impossible root-reference arity classes by each target stream's available generated sections during auxiliary training"
-        },
-        {
-          "version": "v8",
-          "date": "2026-07-19",
-          "note": "train an isolated choice-codec terminal-root reference arity head and record its recipe settings"
-        },
-        {
-          "version": "v7",
-          "date": "2026-07-19",
-          "note": "no-bump: isolate the train.progress heartbeat behind a warn-only guard so telemetry write failures can never abort training"
-        },
-        {
-          "version": "v7",
-          "date": "2026-07-19",
-          "note": "no-bump: throttled OTLP train.progress heartbeat logs for live peer streaming; training math, metrics.jsonl rows, and summaries unchanged"
-        },
-        {
-          "version": "v7",
-          "date": "2026-07-19",
-          "note": "expose honest prompt-derived slot-contract training and record contract provenance in train summaries"
-        },
-        {
-          "version": "v6",
-          "date": "2026-07-19",
-          "note": "add bounded source-stratified masked-token loss proxy summaries for parent-replay attribution"
-        },
-        {
-          "version": "v5",
-          "date": "2026-07-19",
-          "note": "add deterministic hash-pinned parent-corpus replay with fail-closed sampler composition and effective-exposure telemetry"
-        },
-        {
-          "version": "v4",
-          "date": "2026-07-19",
-          "note": "add explicit initialized-weight retention with strict initialization guards and RMS drift telemetry"
-        },
-        {
-          "version": "v3",
-          "date": "2026-07-18",
-          "note": "preserve corpus-derived serving priors during checkpoint initialization and expose restored fields plus slot-head recipe settings in train summaries"
-        },
-        {
-          "version": "v2",
-          "date": "2026-07-18",
-          "note": "add explicit weight-only checkpoint initialization for matched new-corpus training without weakening bit-exact resume guards"
-        },
-        {
-          "version": "v1",
-          "date": "2026-07-18",
-          "note": "initial registration"
-        }
+        {"version": "v11", "date": "2026-07-19", "note": "record configurable excluded-reference loss weighting and negative-class calibration telemetry for terminal-root identity training"},
+        {"version": "v10", "date": "2026-07-19", "note": "record learned terminal-root reference identity loss and decode settings in training recipes"},
+        {"version": "v9", "date": "2026-07-19", "note": "mask impossible root-reference arity classes by each target stream's available generated sections during auxiliary training"},
+        {"version": "v8", "date": "2026-07-19", "note": "train an isolated choice-codec terminal-root reference arity head and record its recipe settings"},
+        {"version": "v7", "date": "2026-07-19", "note": "no-bump: isolate the train.progress heartbeat behind a warn-only guard so telemetry write failures can never abort training"},
+        {"version": "v7", "date": "2026-07-19", "note": "no-bump: throttled OTLP train.progress heartbeat logs for live peer streaming; training math, metrics.jsonl rows, and summaries unchanged"},
+        {"version": "v7", "date": "2026-07-19", "note": "expose honest prompt-derived slot-contract training and record contract provenance in train summaries"},
+        {"version": "v6", "date": "2026-07-19", "note": "add bounded source-stratified masked-token loss proxy summaries for parent-replay attribution"},
+        {"version": "v5", "date": "2026-07-19", "note": "add deterministic hash-pinned parent-corpus replay with fail-closed sampler composition and effective-exposure telemetry"},
+        {"version": "v4", "date": "2026-07-19", "note": "add explicit initialized-weight retention with strict initialization guards and RMS drift telemetry"},
+        {"version": "v3", "date": "2026-07-18", "note": "preserve corpus-derived serving priors during checkpoint initialization and expose restored fields plus slot-head recipe settings in train summaries"},
+        {"version": "v2", "date": "2026-07-18", "note": "add explicit weight-only checkpoint initialization for matched new-corpus training without weakening bit-exact resume guards"},
+        {"version": "v1", "date": "2026-07-18", "note": "initial registration"}
       ]
     },
     "harness.train_data": {
@@ -587,7 +540,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v5",
+      "version": "v6",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -597,31 +550,12 @@
         "scripts/train_model.py"
       ],
       "history": [
-        {
-          "version": "v5",
-          "date": "2026-07-19",
-          "note": "permute existing terminal-root reference scores by learned identity rank while preserving the reference-group maximum and leaving non-reference candidates unchanged"
-        },
-        {
-          "version": "v4",
-          "date": "2026-07-19",
-          "note": "center terminal-root identity bias over unused legal references so identity ranks references without changing the arity head's continue-versus-stop partition"
-        },
-        {
-          "version": "v3",
-          "date": "2026-07-19",
-          "note": "add bounded terminal-root reference identity supervision and learned legal-reference inclusion bias"
-        },
-        {
-          "version": "v2",
-          "date": "2026-07-19",
-          "note": "bound terminal-root reference-arity targets and auxiliary loss classes by each generated stream's available sections"
-        },
-        {
-          "version": "v1",
-          "date": "2026-07-19",
-          "note": "initial registration; SLM-123 removable low-rank delta adapter backend, factory/config integration, and CLI wiring"
-        }
+        {"version": "v6", "date": "2026-07-19", "note": "add bounded excluded-reference weighting and negative-class accuracy telemetry to terminal-root identity supervision"},
+        {"version": "v5", "date": "2026-07-19", "note": "permute existing terminal-root reference scores by learned identity rank while preserving the reference-group maximum and leaving non-reference candidates unchanged"},
+        {"version": "v4", "date": "2026-07-19", "note": "center terminal-root identity bias over unused legal references so identity ranks references without changing the arity head's continue-versus-stop partition"},
+        {"version": "v3", "date": "2026-07-19", "note": "add bounded terminal-root reference identity supervision and learned legal-reference inclusion bias"},
+        {"version": "v2", "date": "2026-07-19", "note": "bound terminal-root reference-arity targets and auxiliary loss classes by each generated stream's available sections"},
+        {"version": "v1", "date": "2026-07-19", "note": "initial registration; SLM-123 removable low-rank delta adapter backend, factory/config integration, and CLI wiring"}
       ]
     },
     "harness.reasoning.bench": {
