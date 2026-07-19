@@ -137,6 +137,23 @@ def test_e524_visible_component_contract_data_is_persisted() -> None:
     )
 
 
+def test_e527_visible_component_types_data_is_persisted() -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    version = "e527_visible_component_types_slot_contract_r1_20260719"
+    records = readers.train_records(version, limit=300)
+    assert records["count"] == 244
+    assert all("Components: " in row["prompt"] for row in records["records"])
+    assert all(
+        " x" not in next(
+            line
+            for line in row["prompt"].splitlines()
+            if line.startswith("Components: ")
+        )
+        for row in records["records"]
+    )
+
+
 def test_e501_matched_runs_and_checkpoints_are_persisted() -> None:
     root = Path(__file__).parents[2]
     readers = Readers(root)
@@ -383,6 +400,22 @@ def test_e525_visible_component_checkpoint_and_run_are_persisted() -> None:
     root = Path(__file__).parents[2]
     readers = Readers(root)
     run_id = "e525-e396-e524-replay050-slotrole1-honest-context-r2-5k"
+    listed = next(
+        row for row in readers.runs()["runs"] if row.get("run_id") == run_id
+    )
+    assert set(listed["suites"]) == {"ood"}
+    assert listed["pass"] is False
+    assert set(readers.run(run_id)["scoreboard"]["suites"]) == {"ood"}
+    checkpoint_ids = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_id in checkpoint_ids
+
+
+def test_e528_visible_component_types_checkpoint_and_run_are_persisted() -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    run_id = "e528-e396-e527-replay050-slotrole1-honest-context-r1-5k"
     listed = next(
         row for row in readers.runs()["runs"] if row.get("run_id") == run_id
     )

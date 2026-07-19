@@ -44,7 +44,7 @@
       ]
     },
     "harness.train_data": {
-      "version": "v5",
+      "version": "v6",
       "kind": "harness",
       "paths": [
         "scripts/build_train_data.py",
@@ -53,6 +53,7 @@
         "src/slm_training/resources/frontier/"
       ],
       "history": [
+        {"version": "v6", "date": "2026-07-19", "note": "support a type-only visible component prompt contract for matched count-ablation data"},
         {"version": "v5", "date": "2026-07-19", "note": "add diversity fingerprinting module (diversity.py), corpus audit script, and regression tests for canonical-root, topology, type/action, prompt-intent, and lineage diversity metrics"},
         {"version": "v4", "date": "2026-07-19", "note": "add an opt-in post-admission visible component type/count contract to training prompts"},
         {"version": "v3", "date": "2026-07-19", "note": "add synthetic-data integrity gate module (integrity.py), audit script, and regression tests for canonical AST, codec round-trip, binding graph, slot contract, and leakage checks"},

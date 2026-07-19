@@ -1,0 +1,7 @@
+# Offline rebuild inputs; the deployed control plane reads committed data/eval
+# snapshots instead.
+src/slm_training/resources/rico/**
+
+# Human narratives are served from the repository, not opened by the FastAPI
+# function. Machine-readable experiment JSON remains deployable.
+docs/design/**/*.md

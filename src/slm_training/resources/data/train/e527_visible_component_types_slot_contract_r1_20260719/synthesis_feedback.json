@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "version": "e527_visible_component_types_slot_contract_r1_20260719",
+  "profile": "strict",
+  "built_at": "2026-07-19T16:07:21.030103+00:00",
+  "thresholds": {
+    "low_yield": 0.4,
+    "high_dup_share": 0.5,
+    "min_group_candidates": 8
+  },
+  "families": {
+    "corruption_repair": {
+      "admitted": 13,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 13,
+      "yield": 1.0
+    },
+    "human_curated": {
+      "admitted": 15,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 15,
+      "yield": 1.0
+    },
+    "language_contract": {
+      "admitted": 53,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 53,
+      "yield": 1.0
+    },
+    "layout_augment": {
+      "admitted": 156,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 156,
+      "yield": 1.0
+    },
+    "programspec_generated": {
+      "admitted": 6,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 6,
+      "yield": 1.0
+    },
+    "renderer_visual": {
+      "admitted": 1,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 1,
+      "yield": 1.0
+    }
+  },
+  "synthesizers": {
+    "corruption_repair": {
+      "admitted": 13,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 13,
+      "yield": 1.0
+    },
+    "layout_augment": {
+      "admitted": 156,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 156,
+      "yield": 1.0
+    }
+  },
+  "warnings": [],
+  "recommendations": [],
+  "experiment_candidates": [],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "4e7f594e2d4fe8e51c73f9b487fc3e1d8f5162c8",
+    "code_dirty": false,
+    "components": {
+      "harness.train_data": "v5"
+    },
+    "stamped_at": "2026-07-19T16:07:21.040960+00:00"
+  }
+}
