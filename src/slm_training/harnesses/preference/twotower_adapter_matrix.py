@@ -59,10 +59,11 @@ PROTECTED_SIGNATURE_METRICS: tuple[str, ...] = (
 def read_authorization(geometry_report: Mapping[str, Any]) -> tuple[AuthorizationDecision, str]:
     """Map a LDI2-02 diagnostic report to an authorization decision.
 
-    Fail-closed: only an explicit ``result.decision == "authorized"`` authorizes
-    training. A refused (``not_authorized``) or resultless completed report is
-    treated as ``no_safe_direction`` — the safe default that stops the campaign
-    rather than training on an unauthorized direction.
+    Fail-closed: only an explicit ``authorization.decision == "authorized"`` (or
+    legacy ``result.decision``) authorizes training. A refused
+    (``not_authorized``) or resultless completed report is treated as
+    ``no_safe_direction`` — the safe default that stops the campaign rather than
+    training on an unauthorized direction.
     """
     status = geometry_report.get("status")
     if status == "expired":
@@ -72,6 +73,19 @@ def read_authorization(geometry_report: Mapping[str, Any]) -> tuple[Authorizatio
             "no_safe_direction",
             str(geometry_report.get("reason", "diagnostic refused the request")),
         )
+
+    # Prefer the explicit authorization envelope added by SLM-125.
+    auth = geometry_report.get("authorization")
+    if isinstance(auth, Mapping):
+        decision = auth.get("decision")
+        reason = str(auth.get("reason", str(decision)))
+        if decision == "authorized":
+            return "authorized", reason
+        if decision in ("repair_evidence", "no_safe_direction", "expired"):
+            return decision, reason
+        return "no_safe_direction", f"unrecognized diagnostic decision {decision!r}; failing closed"
+
+    # Legacy reports that carried the decision under ``result``.
     result = geometry_report.get("result")
     if not isinstance(result, Mapping):
         return "no_safe_direction", "completed diagnostic carried no result to authorize"

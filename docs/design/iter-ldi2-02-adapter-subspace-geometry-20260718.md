@@ -93,8 +93,25 @@ stopped `result: null` record rather than a partial artifact if a real corpus ev
 exceeds the wall. Tests cover the adapter-only gradient invariant, legal-space
 finite-difference agreement, sign conventions, zero-gradient exclusion, unit
 normalization, MGDA/PCGrad determinism, the first-step transforms, exact-signature
-strata, deadline expiry → stopped record, no-partial-result, and telemetry
-(`tests/test_models/test_adapter_subspace_geometry.py`, 13 tests).
+strata, deadline expiry → stopped record, no-partial-result, telemetry, and the new
+fail-closed authorization decision
+(`tests/test_models/test_adapter_subspace_geometry.py`, 16 tests;
+`tests/test_scripts/test_run_twotower_adapter_subspace_geometry.py`).
+
+## CLI entrypoint
+
+`scripts/run_twotower_adapter_subspace_geometry.py` runs the profiler in two modes:
+
+* `--fixture` — the committed 3-state synthetic corpus and tiny model (wiring evidence only);
+* `--checkpoint PATH --events PATH` — a canonical run against a frozen parent checkpoint
+  and a V2 decision-events JSONL corpus, materialized with `--materializer`
+  (`pareto`, `set_valued`, `single_best_worst`, or `thresholded`).
+
+Both modes accept `--ranks`, `--target-modules`, `--module-restricted`, `--objective`,
+`--budget`, `--admit`, and `--out`. The emitted JSON now carries an explicit
+`authorization` envelope (`authorized` | `repair_evidence` | `no_safe_direction` |
+`expired`) consumed by the downstream LDI2-03 campaign matrix
+(`scripts/run_twotower_adapter_matrix.py`).
 
 ## Decision
 
@@ -113,5 +130,3 @@ claimed. No checkpoint, model-card update, or promotion is produced here.
   intrinsic-vs-cost adjudication).
 - Optional reference/locality objective and grouped action-role stratum (the profiler
   leaves clean extension points; only the four core protected quantities are wired).
-- A CLI entrypoint mirroring `diagnose_decision_gradient_alignment_from_paths` for the
-  path-based canonical run.
