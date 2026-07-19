@@ -1,0 +1,254 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E546",
+  "run_id": "e546-e544-strict-subset5-r2-24s",
+  "date_utc": "2026-07-19",
+  "run_class": "scratch_matrix",
+  "status": "completed_mixed_result_not_ship",
+  "hypothesis": "Increasing exposure to records whose terminal root references a strict subset of generated sections will improve identity calibration and downstream topology without raising class weights.",
+  "parent_checkpoint": {
+    "run_id": "e544-e543-root-identity1-r2-24s",
+    "sha256": "3b6e3c00666b8832187a489d6684ce909fff5b3ccaef57965f9cc1975474f20c"
+  },
+  "checkpoint": {
+    "location": "outputs/runs/e546-e544-strict-subset5-r2-24s/checkpoints/last.pt",
+    "sha256": "a1a6bfc94108a8bba9aac18e5570d70e317cdec5bb706f126bf47e67e2b4efe2",
+    "sync": false,
+    "sync_reason": "Explicit local-only matched 24-step scratch diagnostic; multiplier 5 trades away component recall and does not pass semantic or AgentV gates."
+  },
+  "training": {
+    "checkpoint": "outputs/runs/e546-e544-strict-subset5-r2-24s/checkpoints/last.pt",
+    "train_dir": "src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719",
+    "record_count": 244,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "freeze_context": true,
+    "steps": 24,
+    "batch_size": 2,
+    "seen_target_tokens": 1318,
+    "elapsed_wall_seconds": 30.503264716997364,
+    "max_wall_minutes": 3.0,
+    "root_reference_identity_strict_subset_multiplier": 5,
+    "root_reference_identity_strict_subset_records": 42,
+    "root_reference_identity_sampling_records": 412,
+    "last_loss": 26.473478317260742,
+    "code_commit": "4e66e46c79e2813818b9cfe6df86de9090f2ce6b",
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "components": {
+        "harness.model_build.train": "v12"
+      }
+    }
+  },
+  "matched_recipe": {
+    "same_parent_checkpoint": true,
+    "same_code_commit": true,
+    "same_seed": 0,
+    "same_loss_weights": true,
+    "single_variable": "root_reference_identity_strict_subset_multiplier",
+    "control_multiplier": 1,
+    "treatment_multiplier": 5,
+    "steps": 24,
+    "batch_size": 2,
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170
+  },
+  "matched_runs": [
+    {
+      "run_id": "e546-e544-strict-subset1-control-r1-24s",
+      "label": "strict-subset multiplier 1 control",
+      "checkpoint_sha256": "46aba9048624f766e6052d202a94b689440baca9f1ab94d8d6c8d48adc40fc55",
+      "training": {
+        "checkpoint": "outputs/runs/e546-e544-strict-subset1-control-r1-24s/checkpoints/last.pt",
+        "train_dir": "src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719",
+        "record_count": 244,
+        "device": "cpu",
+        "context_backend": "hf",
+        "local_files_only": true,
+        "freeze_context": true,
+        "steps": 24,
+        "batch_size": 2,
+        "seen_target_tokens": 1270,
+        "elapsed_wall_seconds": 29.100944215999334,
+        "max_wall_minutes": 3.0,
+        "root_reference_identity_strict_subset_multiplier": 1,
+        "root_reference_identity_strict_subset_records": 42,
+        "root_reference_identity_sampling_records": 244,
+        "last_loss": 15.969867706298828,
+        "code_commit": "4e66e46c79e2813818b9cfe6df86de9090f2ce6b"
+      },
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.0,
+          "placeholder_fidelity": 0.425,
+          "placeholder_validity": 0.655,
+          "structural_similarity": 0.149375,
+          "component_type_recall": 0.20833333333333331,
+          "reward_score": 0.50775,
+          "ast_node_f1": 0.2574074074074074,
+          "ast_edge_f1": 0.0,
+          "binding_aware_meaningful_v2_rate_strict": 0.0
+        }
+      }
+    },
+    {
+      "run_id": "e546-e544-strict-subset5-r2-24s",
+      "label": "strict-subset multiplier 5 treatment",
+      "checkpoint_sha256": "a1a6bfc94108a8bba9aac18e5570d70e317cdec5bb706f126bf47e67e2b4efe2",
+      "training": {
+        "checkpoint": "outputs/runs/e546-e544-strict-subset5-r2-24s/checkpoints/last.pt",
+        "train_dir": "src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719",
+        "record_count": 244,
+        "device": "cpu",
+        "context_backend": "hf",
+        "local_files_only": true,
+        "freeze_context": true,
+        "steps": 24,
+        "batch_size": 2,
+        "seen_target_tokens": 1318,
+        "elapsed_wall_seconds": 30.503264716997364,
+        "max_wall_minutes": 3.0,
+        "root_reference_identity_strict_subset_multiplier": 5,
+        "root_reference_identity_strict_subset_records": 42,
+        "root_reference_identity_sampling_records": 412,
+        "last_loss": 26.473478317260742,
+        "code_commit": "4e66e46c79e2813818b9cfe6df86de9090f2ce6b"
+      },
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.0,
+          "placeholder_fidelity": 0.6083333333333333,
+          "placeholder_validity": 0.765,
+          "structural_similarity": 0.20377499999999998,
+          "component_type_recall": 0.0625,
+          "reward_score": 0.812,
+          "ast_node_f1": 0.29761904761904767,
+          "ast_edge_f1": 0.041666666666666664,
+          "binding_aware_meaningful_v2_rate_strict": 0.0
+        }
+      }
+    }
+  ],
+  "training_calibration": {
+    "control": {
+      "negative_rows": 7,
+      "steps_1_12_exact_set_accuracy": 0.125,
+      "steps_1_12_negative_accuracy": 0.6666666666666666,
+      "steps_13_24_exact_set_accuracy": 0.2916666666666667,
+      "steps_13_24_positive_recall": 0.7013888930281004,
+      "steps_13_24_negative_accuracy": 0.3333333358168602
+    },
+    "treatment": {
+      "negative_rows": 22,
+      "steps_1_12_exact_set_accuracy": 0.20833333333333334,
+      "steps_1_12_negative_accuracy": 0.775,
+      "steps_13_24_exact_set_accuracy": 0.25,
+      "steps_13_24_positive_recall": 0.6111111144224802,
+      "steps_13_24_negative_accuracy": 0.47023809807641165
+    }
+  },
+  "eval_recipe": {
+    "control_eval_run_id": "e546-strict-subset1-control-eval-r3",
+    "treatment_eval_run_id": "e546-strict-subset5-eval-r4",
+    "suite": "ood",
+    "n": 4,
+    "diagnostic_subset": true,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "grammar_ltr_primary": true,
+    "slot_contract_in_context": true,
+    "semantic_role_contract_in_context": true,
+    "slot_contract_constrained_decode": true,
+    "slot_component_decode_weight": 4.0,
+    "semantic_role_decode_weight": 4.0,
+    "root_reference_arity_decode_weight": 1.0,
+    "root_reference_identity_decode_weight": 1.0,
+    "honest_slot_contract": true,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160,
+    "hard_process_cap_seconds": 170
+  },
+  "control": {
+    "syntax_parse_rate": 1.0,
+    "meaningful_program_rate": 0.0,
+    "placeholder_fidelity": 0.425,
+    "placeholder_validity": 0.655,
+    "structural_similarity": 0.149375,
+    "component_type_recall": 0.20833333333333331,
+    "reward_score": 0.50775,
+    "ast_node_f1": 0.2574074074074074,
+    "ast_edge_f1": 0.0,
+    "binding_aware_meaningful_v2_rate_strict": 0.0
+  },
+  "treatment": {
+    "syntax_parse_rate": 1.0,
+    "meaningful_program_rate": 0.0,
+    "placeholder_fidelity": 0.6083333333333333,
+    "placeholder_validity": 0.765,
+    "structural_similarity": 0.20377499999999998,
+    "component_type_recall": 0.0625,
+    "reward_score": 0.812,
+    "ast_node_f1": 0.29761904761904767,
+    "ast_edge_f1": 0.041666666666666664,
+    "binding_aware_meaningful_v2_rate_strict": 0.0
+  },
+  "delta_treatment_minus_control": {
+    "meaningful_program_rate": 0.0,
+    "placeholder_fidelity": 0.1833333333333333,
+    "placeholder_validity": 0.10999999999999999,
+    "structural_similarity": 0.05439999999999998,
+    "component_type_recall": -0.14583333333333331,
+    "reward_score": 0.30425,
+    "ast_node_f1": 0.04021164021164025,
+    "ast_edge_f1": 0.041666666666666664
+  },
+  "decode_attribution": {
+    "control_root_reference_identity_applications": 0,
+    "treatment_root_reference_identity_applications": 0,
+    "interpretation": "The quality change is caused by the training distribution; the identity decoder did not intervene on this replay."
+  },
+  "suites": {
+    "ood": {
+      "n": 4,
+      "syntax_parse_rate": 1.0,
+      "meaningful_program_rate": 0.0,
+      "placeholder_fidelity": 0.6083333333333333,
+      "placeholder_validity": 0.765,
+      "structural_similarity": 0.20377499999999998,
+      "component_type_recall": 0.0625,
+      "reward_score": 0.812,
+      "ast_node_f1": 0.29761904761904767,
+      "ast_edge_f1": 0.041666666666666664,
+      "binding_aware_meaningful_v2_rate_strict": 0.0
+    }
+  },
+  "agentv": {
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Multiplier 5 improves several fidelity and topology diagnostics but sharply regresses component recall; meaningful-v1 and strict-v2 remain zero and AgentV fails."
+  },
+  "decision": "Retain deterministic strict-subset sampling as a generalized capability, reject multiplier 5 and both scratch checkpoints for promotion, and test a moderate multiplier before any larger train.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "4e66e46c79e2813818b9cfe6df86de9090f2ce6b",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v13",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v10"
+    },
+    "stamped_at": "2026-07-19T23:02:38.612687+00:00"
+  }
+}
