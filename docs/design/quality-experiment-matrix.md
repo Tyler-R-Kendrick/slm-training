@@ -1866,6 +1866,27 @@ summary records `max_wall_minutes=3.0`. Full evidence:
 [narrative](iter-e500-documentized-expression-corpus-20260718.md) and
 [JSON](iter-e500-documentized-expression-corpus-20260718.json).
 
+## E501 E396 warm-start on E500
+
+E501 adds explicit weight-only initialization for training on a new corpus
+without weakening the bit-exact resume data guard. The frozen E396 parent is
+compared with three CPU/frozen-HF continuation arms on the committed E500
+corpus under an identical honest smoke `n=3` recipe.
+
+The published task-balanced mixture samples generation at 33.9% and regresses
+structure `0.2117→0.1458`. Uniform sampling restores 93.4% generation exposure
+at 5k tokens and produces component recall `0.1667`, but structure collapses
+to `0.0889`; meaningful rate, fidelity, and reward stay zero. The uniform 1k
+arm preserves the parent and reaches structure `0.2317`, but moves no semantic
+gate. AgentV is 0/1 for every arm.
+
+**Verdict:** keep `--initialize-from`, reject all E501 checkpoints, and treat
+the 1k boundary as evidence that longer continuation needs explicit retention
+or lower-update safeguards. Every train records the three-minute wall cap and
+all checkpoints remain local. Full evidence:
+[narrative](iter-e501-e396-e500-warm-start-20260719.md) and
+[JSON](iter-e501-e396-e500-warm-start-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

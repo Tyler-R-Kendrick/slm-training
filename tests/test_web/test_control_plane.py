@@ -103,6 +103,27 @@ def test_e500_cold_start_evidence_is_persisted() -> None:
     assert len(records["records"]) == 260
 
 
+def test_e501_matched_runs_and_checkpoints_are_persisted() -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    run_ids = {
+        row.get("run_id") for row in readers.runs()["runs"]
+    }
+    checkpoint_ids = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    expected_runs = {
+        "e501-e396-control-r1",
+        "e501-e396-e500-init-r1",
+        "e501-e396-e500-uniform-init-r2",
+        "e501-e396-e500-uniform-init-r3-1k",
+    }
+    expected_checkpoints = expected_runs - {"e501-e396-control-r1"}
+    assert expected_runs <= run_ids
+    assert expected_checkpoints <= checkpoint_ids
+    assert all(readers.run(run_id)["scoreboard"] for run_id in expected_runs)
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")

@@ -97,6 +97,9 @@ class ModelBuildConfig:
     target_token_budget: int | None = None
     # Resume bit-exact from a full-state checkpoint (last_full_state.pt).
     resume_from: Path | None = None
+    # Warm-start weights/tokenizers from a serving checkpoint while resetting
+    # optimizer, RNG, step, and token counters for a new corpus or recipe.
+    initialize_from: Path | None = None
     # Write full training state (optimizer/RNG/sampler) alongside last.pt.
     full_state_checkpoint: bool = True
     # Comma-separated suites for mid-train scoreboard (overrides single eval_suite when set).

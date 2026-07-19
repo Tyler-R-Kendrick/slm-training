@@ -156,3 +156,18 @@ all four arms have meaningful rate, fidelity, recall, and reward 0.0, with
 AgentV 0/1. The generalized projection and clean corpus remain useful data
 infrastructure, but no E500 checkpoint is promoted or synced. See
 [the E500 record](iter-e500-documentized-expression-corpus-20260718.md).
+
+### E501 sampling follow-up
+
+The E500 snapshot contains 246 generation, 13 repair, and one edit record.
+Its published equal-task-group mixture deliberately changes that natural
+94.6% generation composition: E501 measured only 65/192 generation examples
+(33.9%) in a 5k-token continuation. Uniform record sampling measured 185/198
+(93.4%) and recovered component recall from 0.0 to 0.1667, but regressed
+structure from the frozen parent's 0.2117 to 0.0889 and left meaningful rate,
+fidelity, and reward at zero.
+
+The mixture is therefore not relabeled as defective—it serves multi-task
+balance—but generation-only evaluations must report effective task exposure.
+The 1k uniform arm avoids the 5k structural collapse but still moves no
+semantic gate. See [E501](iter-e501-e396-e500-warm-start-20260719.md).
