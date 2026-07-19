@@ -2789,6 +2789,17 @@ Full evidence:
 [narrative](iter-e549-slot-component-ordering0-20260719.md) and
 [JSON](iter-e549-slot-component-ordering0-20260719.json).
 
+## E550 learned slot-component midpoint
+
+Learned weight 2 exactly matches weight 4 on predictions, metrics, and all 28
+interventions. Weight 0 collapses semantic density; tested positive weights 2
+and 4 yield the same ordering.
+
+**Decision:** close scalar tuning and address supervision, calibration, or
+candidate ordering directly. Full evidence:
+[narrative](iter-e550-slot-component-ordering2-20260719.md) and
+[JSON](iter-e550-slot-component-ordering2-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
