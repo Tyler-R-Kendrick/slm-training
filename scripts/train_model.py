@@ -99,6 +99,15 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     parser.add_argument(
+        "--initialization-weight-retention",
+        type=_probability,
+        default=0.0,
+        help=(
+            "Contract trainable weights toward --initialize-from after each "
+            "optimizer step (0=off, 1=exact retention)."
+        ),
+    )
+    parser.add_argument(
         "--no-full-state-checkpoint",
         action="store_true",
         help="Skip writing last_full_state.pt (serving last.pt still written).",
@@ -918,6 +927,7 @@ def main(argv: list[str] | None = None) -> int:
             target_token_budget=args.target_token_budget,
             resume_from=args.resume_from,
             initialize_from=args.initialize_from,
+            initialization_weight_retention=args.initialization_weight_retention,
             full_state_checkpoint=not bool(args.no_full_state_checkpoint),
             mixture_manifest=args.mixture_manifest,
             mixture_min_quality_score=args.mixture_min_quality_score,

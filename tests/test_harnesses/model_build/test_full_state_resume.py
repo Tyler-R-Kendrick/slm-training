@@ -242,6 +242,8 @@ def test_initialize_from_resets_state_for_new_corpus(
         "slot_component_lexeme_priors",
         "slot_component_span_priors",
     ]
+    assert initialized["initialized_weight_count"] > 0
+    assert initialized["initialized_weight_rms_drift"] == 0.0
 
     source_model = TwoTowerModel.from_checkpoint(source_checkpoint)
     initialized_model = TwoTowerModel.from_checkpoint(
@@ -258,6 +260,24 @@ def test_initialize_from_resets_state_for_new_corpus(
         source_model.config.slot_component_lexeme_priors
         == initialized_model.config.slot_component_lexeme_priors
     )
+
+    retained = train(
+        _cfg(
+            other_dir,
+            tmp_path,
+            "retained",
+            2,
+            initialize_from=source_checkpoint,
+            initialization_weight_retention=1.0,
+            **prior_recipe,
+        )
+    )
+    retained_model = TwoTowerModel.from_checkpoint(Path(retained["checkpoint"]))
+    for key, value in source_model.state_dict().items():
+        assert torch.equal(value, retained_model.state_dict()[key]), key
+    assert retained["initialized_weight_count"] > 0
+    assert retained["initialized_weight_rms_drift"] == 0.0
+    assert retained["recipe"]["initialization_weight_retention"] == 1.0
 
 
 def test_initialize_from_cannot_mix_with_resume(
@@ -279,6 +299,18 @@ def test_initialize_from_cannot_mix_with_resume(
                     / "last_full_state.pt"
                 ),
                 initialize_from=Path(source["checkpoint"]),
+            )
+        )
+    with pytest.raises(
+        ValueError, match="initialization_weight_retention requires initialize_from"
+    ):
+        train(
+            _cfg(
+                train_dir,
+                tmp_path,
+                "retention_without_initialization",
+                1,
+                initialization_weight_retention=0.1,
             )
         )
 

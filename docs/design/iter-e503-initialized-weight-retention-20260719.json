@@ -1,0 +1,212 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E503",
+  "run_id": "e503-e396-e500-retention003-r4-5k",
+  "run_class": "scratch_matrix",
+  "date_utc": "2026-07-19",
+  "status": "complete",
+  "hypothesis": "Contracting trainable weights toward the initialized E396 checkpoint can prevent the E500 5k structural collapse without eliminating adaptation.",
+  "conclusion": "Initialized-weight retention monotonically reduces RMS drift and recovers structure at stronger settings, but trades away component recall and leaves every semantic gate red.",
+  "harness_change": {
+    "feature": "initialization_weight_retention",
+    "behavior": "After each warm-start optimizer step, trainable weights are linearly contracted toward their initialize_from values.",
+    "summary_fields": [
+      "initialized_weight_count",
+      "initialized_weight_rms_drift",
+      "recipe.initialization_weight_retention"
+    ],
+    "validation": "Nonzero retention requires initialize_from and must be between zero and one; exact retention is regression-tested.",
+    "component_version": "harness.model_build.train@v4"
+  },
+  "parent_checkpoint": {
+    "run_id": "e396-balanced-type-head-continuation-r1",
+    "sha256": "feefa0564490bd1db42f79ff710143ad8ed07ab9e4e324f2744a30f8c2f2eee0",
+    "remote_uri": "hf://buckets/TKendrick/OpenUI/checkpoints/e396-balanced-type-head-continuation-r1/"
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "context_model": "HuggingFaceTB/SmolLM2-135M",
+    "context_frozen": true,
+    "local_files_only": true,
+    "output_codec": "choice",
+    "d_model": 128,
+    "heads": 4,
+    "context_layers": 2,
+    "denoiser_layers": 4,
+    "batch_size": 2,
+    "learning_rate": 0.0003,
+    "seed": 0,
+    "target_tokens": 5000,
+    "ltr_loss_weight": 0.5,
+    "component_plan_loss_weight": 4.0,
+    "slot_component_loss_weight": 1.0,
+    "slot_component_class_balance_power": 0.5,
+    "slot_component_decode_weight": 4.0,
+    "slot_component_prompt_context": true,
+    "slot_component_lexeme_prior_weight": 1.0,
+    "slot_component_span_prior_weight": 0.0,
+    "fidelity_loss_weight": 0.5,
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170,
+    "suite": "smoke",
+    "suite_n": 3,
+    "honesty_mode": "no DESIGN context; honest prompt-derived slot contract; constrained decode; no fallback; scratch diagnostic; no checkpoint sync"
+  },
+  "data": {
+    "version": "e500_documentized_expression_candidate_r2_20260718",
+    "records": 260,
+    "content_fingerprint": "bc256915c79c6a07ff9ef253d5b6eb70fade30c5422ae8015c23f739c463bc62",
+    "sampling": "uniform records",
+    "synthesis_feedback": {
+      "warnings": 0,
+      "recommendations": 0,
+      "experiment_candidates": 0
+    }
+  },
+  "matched_runs": [
+    {
+      "label": "zero_retention_control",
+      "run_id": "e503-e396-e500-retention0-r1-5k",
+      "checkpoint_sha256": "af6e9b1c207f0a6c2b2bfa264e3e0fcaf9f2afceb850cd74314cad278a0af431",
+      "steps": 99,
+      "seen_target_tokens": 5019,
+      "initialization_weight_retention": 0.0,
+      "initialized_weight_count": 1433997,
+      "initialized_weight_rms_drift": 0.003122969057781763,
+      "last_loss": 12.893699645996094,
+      "elapsed_wall_seconds": 75.65362050499243,
+      "smoke": {
+        "n": 3,
+        "syntax_parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "structural_similarity": 0.09273333333333333,
+        "component_type_recall": 0.16666666666666666,
+        "reward_score": 0.0,
+        "ast_node_f1": 0.19722222222222222,
+        "ast_edge_f1": 0.04166666666666668,
+        "latency_ms_p50": 6546.51
+      }
+    },
+    {
+      "label": "one_percent_retention",
+      "run_id": "e503-e396-e500-retention001-r2-5k",
+      "checkpoint_sha256": "7c5f016f1baf0dd9eb56df51aae46d3ed2da10d2d956bbd4cc093d021be75711",
+      "steps": 99,
+      "seen_target_tokens": 5019,
+      "initialization_weight_retention": 0.01,
+      "initialized_weight_count": 1433997,
+      "initialized_weight_rms_drift": 0.0020714787598438617,
+      "last_loss": 13.490665435791016,
+      "elapsed_wall_seconds": 74.40729312700569,
+      "smoke": {
+        "n": 3,
+        "syntax_parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "structural_similarity": 0.09000000000000001,
+        "component_type_recall": 0.16666666666666666,
+        "reward_score": 0.0,
+        "ast_node_f1": 0.19415204678362574,
+        "ast_edge_f1": 0.0392156862745098,
+        "latency_ms_p50": 7187.69
+      }
+    },
+    {
+      "label": "five_percent_retention",
+      "run_id": "e503-e396-e500-retention005-r3-5k",
+      "checkpoint_sha256": "4093f1aa5a1924f729ddb3c1596333215d744a849b44045b6e302bddaf8d2031",
+      "steps": 99,
+      "seen_target_tokens": 5019,
+      "initialization_weight_retention": 0.05,
+      "initialized_weight_count": 1433997,
+      "initialized_weight_rms_drift": 0.0008106567935888109,
+      "last_loss": 14.720488548278809,
+      "elapsed_wall_seconds": 73.96177345099568,
+      "smoke": {
+        "n": 3,
+        "syntax_parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "structural_similarity": 0.20286666666666667,
+        "component_type_recall": 0.0,
+        "reward_score": 0.0,
+        "ast_node_f1": 0.31746031746031744,
+        "ast_edge_f1": 0.0,
+        "latency_ms_p50": 6490.76
+      }
+    },
+    {
+      "label": "three_percent_retention",
+      "run_id": "e503-e396-e500-retention003-r4-5k",
+      "checkpoint_sha256": "2dbb52db813530e0ed06af2e7ba144d5988565570bec1f3fed91ae785751455b",
+      "steps": 99,
+      "seen_target_tokens": 5019,
+      "initialization_weight_retention": 0.03,
+      "initialized_weight_count": 1433997,
+      "initialized_weight_rms_drift": 0.0011632024838852367,
+      "last_loss": 14.450092315673828,
+      "elapsed_wall_seconds": 74.03965306701139,
+      "smoke": {
+        "n": 3,
+        "syntax_parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "structural_similarity": 0.16666666666666666,
+        "component_type_recall": 0.08333333333333333,
+        "reward_score": 0.0,
+        "ast_node_f1": 0.2916666666666667,
+        "ast_edge_f1": 0.047619047619047616,
+        "latency_ms_p50": 6158.45
+      }
+    }
+  ],
+  "comparison": {
+    "one_percent_vs_control": {
+      "rms_drift_reduction_fraction": 0.33669571439326784,
+      "structural_similarity": -0.002733333333333316,
+      "component_type_recall": 0.0
+    },
+    "three_percent_vs_control": {
+      "rms_drift_reduction_fraction": 0.6275331383809943,
+      "structural_similarity": 0.07393333333333333,
+      "component_type_recall": -0.08333333333333333
+    },
+    "five_percent_vs_control": {
+      "rms_drift_reduction_fraction": 0.7404211253490234,
+      "structural_similarity": 0.11013333333333334,
+      "component_type_recall": -0.16666666666666666
+    }
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "passed": 0,
+    "total": 4,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Smoke-only n=3 diagnostics; meaningful rate, placeholder fidelity, and reward remain zero in every arm."
+  },
+  "checkpoint_bucket": {
+    "synced": false,
+    "reason": "Explicit --no-sync-checkpoints: bounded rejected continuation diagnostics are not full ship runs."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "f2ab01f8ae6af6be49db3f294cd166fe034b67a5",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.train": "v4",
+      "harness.model_build.eval": "v1",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v1",
+      "gates.ship": "openui_ship_gates_v1"
+    },
+    "stamped_at": "2026-07-19T02:10:01.474814+00:00"
+  },
+  "decision": "Keep explicit retention and drift telemetry for attribution. Reject all E503 checkpoints. The structure-recall frontier falsifies stronger anchoring as a semantic solution; next test provenance-preserving parent replay."
+}

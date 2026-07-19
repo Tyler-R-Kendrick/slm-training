@@ -100,6 +100,9 @@ class ModelBuildConfig:
     # Warm-start weights/tokenizers from a serving checkpoint while resetting
     # optimizer, RNG, step, and token counters for a new corpus or recipe.
     initialize_from: Path | None = None
+    # After each optimizer step, contract trainable weights toward their
+    # initialize_from values (0 = off, 1 = exact retention).
+    initialization_weight_retention: float = 0.0
     # Write full training state (optimizer/RNG/sampler) alongside last.pt.
     full_state_checkpoint: bool = True
     # Comma-separated suites for mid-train scoreboard (overrides single eval_suite when set).

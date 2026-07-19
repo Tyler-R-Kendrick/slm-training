@@ -134,8 +134,17 @@ def train(config: ModelBuildConfig, model=None) -> dict:
 
     resume_path = getattr(config, "resume_from", None)
     initialize_path = getattr(config, "initialize_from", None)
+    initialization_weight_retention = float(
+        getattr(config, "initialization_weight_retention", 0.0) or 0.0
+    )
     if resume_path and initialize_path:
         raise ValueError("resume_from and initialize_from are mutually exclusive")
+    if not 0.0 <= initialization_weight_retention <= 1.0:
+        raise ValueError("initialization_weight_retention must be between 0 and 1")
+    if initialization_weight_retention and not initialize_path:
+        raise ValueError(
+            "initialization_weight_retention requires initialize_from"
+        )
 
     plugin = model or build_model(config, records)
     initialized_from: str | None = None
@@ -298,6 +307,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
     scaler = None
     use_amp = bool(getattr(config, "use_amp", False)) and accel.amp
     grad_accum = max(1, int(getattr(config, "grad_accum_steps", 1) or 1))
+    initialized_weight_anchor: list[tuple] = []
     if is_twotower:
         import torch
 
@@ -308,6 +318,30 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         )
         optimizer = torch.optim.AdamW(parameters, lr=config.lr)
         scaler = grad_scaler(config.device, enabled=use_amp)
+        if initialize_path:
+            initialized_weight_anchor = [
+                (parameter, parameter.detach().clone())
+                for parameter in plugin.parameters()
+                if parameter.requires_grad
+            ]
+
+    def _retain_initialized_weights() -> None:
+        if not initialized_weight_anchor or not initialization_weight_retention:
+            return
+        with torch.no_grad():
+            for parameter, anchor in initialized_weight_anchor:
+                parameter.lerp_(anchor, initialization_weight_retention)
+
+    def _initialized_weight_rms_drift() -> float | None:
+        if not initialized_weight_anchor:
+            return None
+        squared = 0.0
+        count = 0
+        with torch.no_grad():
+            for parameter, anchor in initialized_weight_anchor:
+                squared += float((parameter - anchor).square().sum())
+                count += parameter.numel()
+        return math.sqrt(squared / count) if count else None
 
     # ── Token accounting / full-state resume ────────────────────────────────
     step = 0
@@ -654,6 +688,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                         _clip_optimizer_parameter_groups(optimizer, 1.0)
                         scaler.step(optimizer)
                         scaler.update()
+                        _retain_initialized_weights()
                     micro = 0
                     last_loss = accum_loss_sum / max(1, accum_loss_count)
                     accum_loss_sum = 0.0
@@ -710,6 +745,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
                 _clip_optimizer_parameter_groups(optimizer, 1.0)
                 scaler.step(optimizer)
                 scaler.update()
+                _retain_initialized_weights()
             micro = 0
 
         with timed("device_sync"):
@@ -794,6 +830,10 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         "resumed_from": resumed_from,
         "initialized_from": initialized_from,
         "initialized_prior_fields": initialized_prior_fields,
+        "initialized_weight_count": sum(
+            parameter.numel() for parameter, _anchor in initialized_weight_anchor
+        ),
+        "initialized_weight_rms_drift": _initialized_weight_rms_drift(),
         "data_manifest_sha": manifest_sha,
         "record_nll": str(record_nll_path.as_posix()) if record_nll_path else None,
         # Scratch-context and frozen-HF runs are different scientific tracks —
@@ -828,6 +868,7 @@ def train(config: ModelBuildConfig, model=None) -> dict:
         },
         "recipe": {
             "learning_rate": config.lr,
+            "initialization_weight_retention": initialization_weight_retention,
             "seed": config.seed,
             "steps_requested": config.steps,
             "batch_size": config.batch_size,
