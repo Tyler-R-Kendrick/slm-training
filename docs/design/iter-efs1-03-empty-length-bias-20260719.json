@@ -1,0 +1,55 @@
+{
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "46d646f3ce282338e0ced3d110a35e6287298690",
+    "code_dirty": true,
+    "components": {
+      "evals.loss_suite": "v1",
+      "evals.scoring": "v2"
+    },
+    "stamped_at": "2026-07-19T00:14:23.007276+00:00"
+  },
+  "run_id": "efs1-03-empty-length-bias",
+  "claim_class": "diagnostic",
+  "status": "wiring_fixture",
+  "timestamp": "2026-07-19T00:12:04.122928+00:00",
+  "artifact": "outputs/runs/efs1-03-empty-length-bias/fixture-20260719/empty_bias_fixture.json",
+  "schema": "efs1-03/empty_bias_fixture/v1",
+  "candidates": [
+    {
+      "candidate_id": "empty",
+      "log_probs": [-1.0, -1.0],
+      "metadata": {},
+      "removed_mass": [0.1, 0.1],
+      "semantic_mask": [0.0, 0.0],
+      "token_ids": [0, 1]
+    },
+    {
+      "candidate_id": "populated",
+      "log_probs": [-1.0, -1.0, -1.0, -1.0, -1.0],
+      "metadata": {},
+      "removed_mass": [0.05, 0.05, 0.05, 0.05, 0.05],
+      "semantic_mask": [1.0, 1.0, 1.0, 1.0, 1.0],
+      "token_ids": [0, 1, 2, 3, 4]
+    }
+  ],
+  "policies": [
+    {"name": "raw_cumulative"},
+    {"alpha": 1.0, "name": "semantic_length_norm"},
+    {"beta": 1.0, "name": "grammar_aligned_mass"},
+    {"gamma": 0.5, "name": "minimum_mass_remask"},
+    {"min_semantic_decisions": 1, "name": "content_floor"}
+  ],
+  "rankings": {
+    "content_floor": ["populated", "empty"],
+    "grammar_aligned_mass": ["populated", "empty"],
+    "minimum_mass_remask": ["empty", "populated"],
+    "raw_cumulative": ["empty", "populated"],
+    "semantic_length_norm": ["populated", "empty"]
+  },
+  "honest_caveats": [
+    "Synthetic candidates only; no checkpoint or real compiler decode was run.",
+    "Removed mass and semantic masks are hand-set for illustration.",
+    "A production EFS1-03 run must load durable frontier checkpoints and use live legal action sets."
+  ]
+}

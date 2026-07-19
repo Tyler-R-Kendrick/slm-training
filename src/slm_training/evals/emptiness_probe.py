@@ -50,6 +50,11 @@ from slm_training.evals.denoising_nll import (
     _target_ids,
     default_eligible_positions,
 )
+from slm_training.evals.score_policy import (
+    CandidatePath,
+    ScorePolicy,
+    compare_policies,
+)
 
 # Deterministic minimal-document candidates, tried in order; the first that
 # validates for the active DSL is the empty baseline. Kept tiny and structural
@@ -69,6 +74,8 @@ class EmptinessProbeConfig:
     batch_size: int = 8
     # Per-token margin below this (nats) counts as "populated preferred locally".
     tie_epsilon: float = 0.02
+    # Optional eval-only score policies to compare on the same two candidates.
+    score_policies: tuple[ScorePolicy, ...] = ()
 
 
 def minimal_valid_program(dsl: str | None = None) -> str | None:
@@ -100,6 +107,27 @@ def _encode_text(model: Any, text: str, cache_key: str) -> list[int]:
 
 
 @torch.no_grad()
+def _sequence_log_probs(
+    model: Any, context_text: str, ids: list[int]
+) -> tuple[list[float], list[int]]:
+    """Return per-position gold-token log-probabilities and their positions."""
+    tokenizer = model.tokenizer
+    positions = default_eligible_positions(model, ids)
+    if not positions:
+        return [], []
+    ctx, ctx_pad = model._encode_context([context_text], cache_keys=None)
+    row = torch.tensor([ids], dtype=torch.long, device=model.device_name)
+    noisy = row.clone()
+    for pos in positions:
+        noisy[0, pos] = tokenizer.mask_id
+    logits = model.denoiser(noisy, ctx, pad_id=tokenizer.pad_id, ctx_pad_mask=ctx_pad)
+    log_probs = F.log_softmax(logits.float(), dim=-1)
+    token_lp = log_probs.gather(-1, row.unsqueeze(-1)).squeeze(-1)
+    lps = [float(token_lp[0, pos].item()) for pos in positions]
+    return lps, positions
+
+
+@torch.no_grad()
 def _sequence_nll(
     model: Any, context_text: str, ids: list[int]
 ) -> tuple[float, int]:
@@ -110,20 +138,10 @@ def _sequence_nll(
     full-program score, and the quantity a score-ranking constrained decoder
     compares across candidate completions.
     """
-    tokenizer = model.tokenizer
-    positions = default_eligible_positions(model, ids)
+    lps, positions = _sequence_log_probs(model, context_text, ids)
     if not positions:
         return 0.0, 0
-    ctx, ctx_pad = model._encode_context([context_text], cache_keys=None)
-    row = torch.tensor([ids], dtype=torch.long, device=model.device_name)
-    noisy = row.clone()
-    for pos in positions:
-        noisy[0, pos] = tokenizer.mask_id
-    logits = model.denoiser(noisy, ctx, pad_id=tokenizer.pad_id, ctx_pad_mask=ctx_pad)
-    log_probs = F.log_softmax(logits.float(), dim=-1)
-    token_lp = log_probs.gather(-1, row.unsqueeze(-1)).squeeze(-1)
-    total = float(-token_lp[0, positions].sum().item())
-    return total, len(positions)
+    return float(-sum(lps)), len(positions)
 
 
 @torch.no_grad()
@@ -164,6 +182,7 @@ def evaluate_emptiness(
     margin_per_token_sum = 0.0
     scored = 0
     skipped = 0
+    policy_empty_preferred: dict[str, int] = {p.name: 0 for p in cfg.score_policies}
 
     for record in records:
         pop_ids = _target_ids(model, record)
@@ -171,6 +190,8 @@ def evaluate_emptiness(
         context = _context_text(model, record)
         pop_total, pop_n = _sequence_nll(model, context, pop_ids)
         empty_total, empty_n = _sequence_nll(model, context, empty_ids)
+        pop_lps, pop_positions = _sequence_log_probs(model, context, pop_ids)
+        empty_lps, empty_positions = _sequence_log_probs(model, context, empty_ids)
         if pop_n == 0 or empty_n == 0:
             skipped += 1
             continue
@@ -186,22 +207,43 @@ def evaluate_emptiness(
         empty_pref_per_token += int(empty_wins_per_token)
         margin_total_sum += margin_total
         margin_per_token_sum += margin_per_token
-        per_record.append(
-            {
-                "id": record.id,
-                "split": record.split,
-                "pop_tokens": pop_n,
-                "empty_tokens": empty_n,
-                "pop_nll_total": pop_total,
-                "empty_nll_total": empty_total,
-                "pop_nll_per_token": pop_per_token,
-                "empty_nll_per_token": empty_per_token,
-                "margin_total": margin_total,
-                "margin_per_token": margin_per_token,
-                "empty_preferred_total": empty_wins_total,
-                "empty_preferred_per_token": empty_wins_per_token,
-            }
-        )
+
+        rec: dict[str, Any] = {
+            "id": record.id,
+            "split": record.split,
+            "pop_tokens": pop_n,
+            "empty_tokens": empty_n,
+            "pop_nll_total": pop_total,
+            "empty_nll_total": empty_total,
+            "pop_nll_per_token": pop_per_token,
+            "empty_nll_per_token": empty_per_token,
+            "margin_total": margin_total,
+            "margin_per_token": margin_per_token,
+            "empty_preferred_total": empty_wins_total,
+            "empty_preferred_per_token": empty_wins_per_token,
+        }
+
+        if cfg.score_policies:
+            pop_path = CandidatePath(
+                candidate_id="populated",
+                token_ids=tuple(pop_ids[pos] for pos in pop_positions),
+                log_probs=tuple(pop_lps),
+            )
+            empty_path = CandidatePath(
+                candidate_id="empty",
+                token_ids=tuple(empty_ids[pos] for pos in empty_positions),
+                log_probs=tuple(empty_lps),
+            )
+            policy_comparison = compare_policies(
+                [pop_path, empty_path], cfg.score_policies
+            )
+            rec["policy_scores"] = policy_comparison["scores"]
+            rec["policy_rankings"] = policy_comparison["rankings"]
+            for policy_name, ranking in policy_comparison["rankings"].items():
+                if ranking and ranking[0] == "empty":
+                    policy_empty_preferred[policy_name] += 1
+
+        per_record.append(rec)
 
     if was_training:
         model.train()
@@ -209,7 +251,7 @@ def evaluate_emptiness(
     frac_total = empty_pref_total / scored if scored else None
     frac_per_token = empty_pref_per_token / scored if scored else None
     verdict = _verdict(frac_total, frac_per_token)
-    return {
+    result: dict[str, Any] = {
         "suite_version": cfg.suite_version,
         "n_records": scored,
         "n_skipped": skipped,
@@ -221,6 +263,13 @@ def evaluate_emptiness(
         "verdict": verdict,
         "per_record": per_record,
     }
+    if cfg.score_policies:
+        result["score_policies"] = [p.to_dict() for p in cfg.score_policies]
+        result["policy_empty_preferred_fraction"] = {
+            name: (count / scored if scored else None)
+            for name, count in policy_empty_preferred.items()
+        }
+    return result
 
 
 def _verdict(frac_total: float | None, frac_per_token: float | None) -> str:

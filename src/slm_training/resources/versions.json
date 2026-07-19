@@ -83,16 +83,18 @@
         "src/slm_training/evals/emptiness_probe.py"
       ],
       "history": [
+        {"version": "v1", "date": "2026-07-19", "note": "no-bump: extend emptiness probe with optional eval-only score-policy comparison; LOSS_SUITE_VERSION unchanged"},
         {"version": "v1", "date": "2026-07-18", "note": "initial registration; mirrors loss_suites.LOSS_SUITE_VERSION"}
       ]
     },
     "evals.scoring": {
-      "version": "v4",
+      "version": "v5",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/"
       ],
       "history": [
+        {"version": "v5", "date": "2026-07-19", "note": "add EFS1-03 eval-only score-policy interface for constrained-decode candidate ranking on top of eval cache/trigger telemetry/metric-gaming stack"},
         {"version": "v4", "date": "2026-07-19", "note": "merge SDE3-01 eval cache and sharding on top of EFS2-02 trigger telemetry and SDE0-02 metric-gaming suite"},
         {"version": "v3", "date": "2026-07-19", "note": "add SDE3-01 content-addressed eval cache (EvalCache, EvalCacheKey, layer keys) and deterministic suite sharding (assign_example_ids, aggregate_shard_payloads)"},
         {"version": "v3", "date": "2026-07-19", "note": "merge EFS2-02 trigger telemetry harness on top of SDE0-02 metric-gaming stress suite"},
