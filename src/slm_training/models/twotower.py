@@ -6930,6 +6930,25 @@ class TwoTowerModel(nn.Module):
         if payload.get("kind") != "twotower":
             raise ValueError(f"checkpoint kind {payload.get('kind')!r} is not twotower")
         _load_checkpoint_state(self, payload["state_dict"])
+        source_config = payload.get("config") or {}
+        restored_prior_fields: list[str] = []
+        for field_name in (
+            "slot_component_lexeme_priors",
+            "slot_component_span_priors",
+        ):
+            values = source_config.get(field_name)
+            if values is None:
+                continue
+            setattr(
+                self.config,
+                field_name,
+                tuple(
+                    (str(key), tuple(float(score) for score in scores))
+                    for key, scores in values
+                ),
+            )
+            restored_prior_fields.append(field_name)
+        self.initialized_prior_fields = tuple(restored_prior_fields)
         if "gen_len" in payload:
             self.gen_len = int(payload["gen_len"])
         self.output_contract_version = int(payload.get("output_contract_version", 0))

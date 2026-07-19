@@ -1887,6 +1887,27 @@ all checkpoints remain local. Full evidence:
 [narrative](iter-e501-e396-e500-warm-start-20260719.md) and
 [JSON](iter-e501-e396-e500-warm-start-20260719.json).
 
+## E502 checkpoint-prior retention
+
+E502 first sweeps the E501 1k continuation learning rate from `3e-4` to
+`1e-4` and `3e-5`. Both lower-LR arms collapse to structure `0.1133–0.1167`,
+showing that optimizer magnitude does not explain the behavioral drift. The
+checkpoint loader was retaining tensors/tokenizers while silently using
+slot-component lexeme/span priors rebuilt from E500.
+
+Restoring those learned serving priors raises matched 1k structure to `0.3169`
+and recall to `0.0833`, versus E501's `0.2317`/`0.0`. A 5k stress arm still
+collapses to structure `0.0927` with recall `0.1667`. Meaningful rate,
+fidelity, reward, and AgentV remain zero for every E502 arm.
+
+**Verdict:** keep prior-preserving initialization and complete slot-head recipe
+telemetry; reject all E502 checkpoints. Prior transfer fixes experiment
+attribution and the short continuation, but longer training needs an explicit
+weight-retention or replay objective. Every process was capped at 170 seconds
+and every train records `max_wall_minutes=3.0`. Full evidence:
+[narrative](iter-e502-initialization-prior-retention-20260719.md) and
+[JSON](iter-e502-initialization-prior-retention-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
