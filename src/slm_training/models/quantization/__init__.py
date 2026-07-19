@@ -37,6 +37,16 @@ from slm_training.models.quantization.observers import (
     observe_asymmetric_scale,
     observe_symmetric_scale,
 )
+from slm_training.models.quantization.adaptive_planes import (
+    AdaptivePlaneRouteResult,
+    AdaptivePlaneRoutingContext,
+    PlaneRouter,
+    PlaneScheduleSpec,
+    PlaneScheduler,
+    RuntimeDiagnostics,
+    make_schedule_spec,
+    oracle_min_planes,
+)
 from slm_training.models.quantization.residual_planes import PlaneOutput, ResidualTritStack
 
 __all__ = [
@@ -54,6 +64,14 @@ __all__ = [
     "residual_ternary_plane_format",
     "PlaneOutput",
     "ResidualTritStack",
+    "PlaneScheduleSpec",
+    "PlaneScheduler",
+    "PlaneRouter",
+    "AdaptivePlaneRoutingContext",
+    "AdaptivePlaneRouteResult",
+    "RuntimeDiagnostics",
+    "make_schedule_spec",
+    "oracle_min_planes",
     "KERNEL_REGISTRY",
     "observe_symmetric_scale",
     "observe_asymmetric_scale",

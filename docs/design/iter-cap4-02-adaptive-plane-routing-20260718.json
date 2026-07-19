@@ -1,0 +1,55 @@
+{
+  "experiment": "CAP4-02 adaptive residual-plane routing fixture",
+  "fixture": "adaptive-plane-routing",
+  "artifact": "outputs/runs/cap4-02-adaptive-plane/adaptive_plane_fixture_20260718_232957.json",
+  "recipe": {
+    "hidden_dim": 16,
+    "max_actions": 32,
+    "n": 128,
+    "R": 4,
+    "scale_mode": "geometric_balanced",
+    "grouping_policies": ["whole_batch", "compact"],
+    "schedules": [
+      "uniform_1",
+      "uniform_max",
+      "structural_floor",
+      "floor_plus_entropy",
+      "floor_plus_margin",
+      "floor_plus_sensitivity",
+      "floor_plus_learned_router",
+      "oracle_min_planes"
+    ]
+  },
+  "fixture_outputs": {
+    "avg_planes_by_schedule": {
+      "uniform_1": 0.9296875,
+      "uniform_max": 3.71875,
+      "structural_floor": 1.7421875,
+      "floor_plus_entropy": 3.140625,
+      "floor_plus_margin": 1.7421875,
+      "floor_plus_sensitivity": 2.7109375,
+      "floor_plus_learned_router": 1.7421875,
+      "oracle_min_planes": 3.71875
+    },
+    "baseline": "uniform_max"
+  },
+  "caveats": [
+    "wiring fixture only; no ship gate, checkpoint, or latency claim",
+    "head is randomly initialized, not trained, so semantic quality is not meaningful",
+    "plane counts are algorithmic savings; no incremental packed-plane kernel is used",
+    "energy and wall-clock numbers are not measured on-device",
+    "learned router is untrained; threshold schedules use preset constants",
+    "oracle_min_planes is an offline diagnostic, not a deployable schedule"
+  ],
+  "claim": "Wiring evidence only: all eight CAP4-02 schedules execute through a shared ResidualTritPlaneHead, respect structural floors, and produce measurable plane-count differences. No ship gate or checkpoint promotion.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "9a8ed80d8732aa7df708908fdfc7e6d074f50351",
+    "code_dirty": true,
+    "components": {
+      "model.quantization": "v2",
+      "matrix.perf": "v1"
+    },
+    "stamped_at": "2026-07-18T23:29:57+00:00"
+  }
+}
