@@ -2811,6 +2811,17 @@ zero.
 evidence: [narrative](iter-e551-slot-lexeme-prior0-20260719.md) and
 [JSON](iter-e551-slot-lexeme-prior0-20260719.json).
 
+## E552 half-strength slot lexeme prior
+
+Prior weight 0.5 yields OOD `n=4` fidelity 0.1333, validity 0.2800, structure
+0.2181, recall 0.1250, reward 0.3435, and AST node F1 0.3389. It regresses
+weight 1 on fidelity, recall, reward, and structure; meaning and AgentV stay
+zero.
+
+**Decision:** reject the midpoint and close scalar prior tuning. Full evidence:
+[narrative](iter-e552-slot-lexeme-prior05-20260719.md) and
+[JSON](iter-e552-slot-lexeme-prior05-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
