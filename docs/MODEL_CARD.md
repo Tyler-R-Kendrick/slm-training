@@ -113,6 +113,10 @@ Related: [checkpoint-bucket.md](design/checkpoint-bucket.md),
 | E499 diverse-root control | `e499-remediated-roots-hf-choice-control-r4` | CPU frozen SmolLM2 bounded corpus control | `outputs/runs/e499-remediated-roots-hf-choice-control-r4/checkpoints/last.pt` (local) | 10 steps / 1,023 target tokens; smoke n=1 syntax 1.0, structure 0.1542, component recall 0.25, meaningful/fidelity/reward 0.0, AgentV 0/1. SHA `bb4bec5f…f359fb6`; **diagnostic, not promotable or ship** ([results](design/iter-e499-strict-corpus-bounded-sft-20260718.md)) |
 | E499 strict-r4 candidate | `e499-strict-r4-hf-choice-candidate-r4` | CPU frozen SmolLM2 bounded strict-corpus candidate | `outputs/runs/e499-strict-r4-hf-choice-candidate-r4/checkpoints/last.pt` (local) | Matched 9 steps / 1,034 target tokens; smoke structure regresses to 0.0375 and recall to 0.0, AgentV 0/1. SHA `81b2cb66…bcfbaf1`; rejected, **not promotable or ship** ([results](design/iter-e499-strict-corpus-bounded-sft-20260718.md)) |
 | E499 choice-compatible strict candidate | `e499-choice-compatible-strict-hf-choice-candidate-r6` | CPU frozen SmolLM2 bounded document-only strict candidate | `outputs/runs/e499-choice-compatible-strict-hf-choice-candidate-r6/checkpoints/last.pt` (local) | 9 steps / 1,091 target tokens; 67/67 codec-compatible rows and 5.88s smoke p50, but structure 0.0375, recall/meaningful/fidelity/reward 0.0, AgentV 0/1. SHA `7230ace9…2e2fab`; rejected, **not promotable or ship** ([results](design/iter-e499-strict-corpus-bounded-sft-20260718.md)) |
+| E500 1k document control | `e500-document-control-hf-choice-r1` | CPU frozen SmolLM2 bounded document control | `outputs/runs/e500-document-control-hf-choice-r1/checkpoints/last.pt` (local) | 9 steps / 1,028 target tokens; loss 30.3844, smoke syntax 1.0 and structure 0.0375 with semantic metrics zero, AgentV 0/1. SHA `a40f39a5…772d6834`; **diagnostic, not promotable or ship** ([results](design/iter-e500-documentized-expression-corpus-20260718.md)) |
+| E500 1k projected candidate | `e500-documentized-expression-hf-choice-r2` | CPU frozen SmolLM2 bounded projected corpus | `outputs/runs/e500-documentized-expression-hf-choice-r2/checkpoints/last.pt` (local) | 11 steps / 1,039 target tokens; loss 27.6250 but smoke exactly matches the control's red semantic metrics, AgentV 0/1. SHA `f54cea08…773d3f0`; rejected, **not promotable or ship** ([results](design/iter-e500-documentized-expression-corpus-20260718.md)) |
+| E500 5k document control | `e500-document-control-hf-choice-r3-5k` | CPU frozen SmolLM2 bounded document control | `outputs/runs/e500-document-control-hf-choice-r3-5k/checkpoints/last.pt` (local) | 43 steps / 5,040 target tokens; loss 10.5529, smoke syntax 1.0 and structure 0.0375 with semantic metrics zero, AgentV 0/1. SHA `9f752ae0…0b2b53`; **diagnostic, not promotable or ship** ([results](design/iter-e500-documentized-expression-corpus-20260718.md)) |
+| E500 5k projected candidate | `e500-documentized-expression-hf-choice-r4-5k` | CPU frozen SmolLM2 bounded projected corpus | `outputs/runs/e500-documentized-expression-hf-choice-r4-5k/checkpoints/last.pt` (local) | 50 steps / 5,062 target tokens; loss regresses to 12.6778 and smoke matches the control's red semantic metrics, AgentV 0/1. SHA `a0ed6a58…dda5623`; rejected, **not promotable or ship** ([results](design/iter-e500-documentized-expression-corpus-20260718.md)) |
 | Production HF ship | — | — | `hf://buckets/TKendrick/OpenUI/checkpoints/<run_id>/` | **None registered yet** — fill this row after the first full HF sync |
 
 Update the table in place when a checkpoint is written or superseded. Keep
@@ -469,6 +473,24 @@ the same 1,000-target-token budget, and honest constrained smoke `n=1`.
 This is a one-record scratch diagnostic, not a ship evaluation. All checkpoints
 were explicitly kept local with `--no-sync-checkpoints`.
 
+### E500 documentized-expression diagnostic
+
+All rows use CPU, frozen local SmolLM2 context, the choice codec, seed 0,
+batch 4, learning rate `3e-4`, no DESIGN context, an honest prompt-derived slot
+contract, and a three-minute wall limit. The only matched variable is the
+96-row document control versus the 260-row documentized-expression corpus.
+
+| Checkpoint | Tokens | n | Syntax | Meaningful | Fidelity | Structure | Component recall | Reward | AgentV | Pass |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| `e500-document-control-hf-choice-r1` | 1,028 | 1 | 1.0 | 0.0 | 0.0 | 0.0375 | 0.0 | 0.0 | 0/1 | No |
+| `e500-documentized-expression-hf-choice-r2` | 1,039 | 1 | 1.0 | 0.0 | 0.0 | 0.0375 | 0.0 | 0.0 | 0/1 | No |
+| `e500-document-control-hf-choice-r3-5k` | 5,040 | 1 | 1.0 | 0.0 | 0.0 | 0.0375 | 0.0 | 0.0 | 0/1 | No |
+| `e500-documentized-expression-hf-choice-r4-5k` | 5,062 | 1 | 1.0 | 0.0 | 0.0 | 0.0375 | 0.0 | 0.0 | 0/1 | No |
+
+All four runs emitted AgentEvals JSONL and pinned AgentV result bundles without
+execution errors. They are bounded diagnostics, not ship evaluations, and were
+explicitly kept local with `--no-sync-checkpoints`.
+
 ---
 
 ## Limitations & honesty
@@ -588,6 +610,10 @@ were explicitly kept local with `--no-sync-checkpoints`.
 | 2026-07-18 | `e499-remediated-roots-hf-choice-control-r4` (matched control) | `outputs/runs/e499-remediated-roots-hf-choice-control-r4/` (local) | 10 CPU steps / 1,023 target tokens in 7.35s; SHA `bb4bec5f7565f733cc9b1417916cc13f10d831bdabac025ad45fa9477f359fb6`; smoke structure 0.1542 | Meaningful/fidelity/reward 0.0 and AgentV 0/1; scratch diagnostic, no sync or promotion |
 | 2026-07-18 | `e499-strict-r4-hf-choice-candidate-r4` (matched strict-r4 candidate) | `outputs/runs/e499-strict-r4-hf-choice-candidate-r4/` (local) | 9 CPU steps / 1,034 target tokens in 5.76s; SHA `81b2cb669bbd6b5faa3e6fe60caa0fd3a5d9d310463dc11198dfee227bcfbaf1`; smoke structure 0.0375 | Regresses matched control and AgentV 0/1; rejected, no sync or promotion |
 | 2026-07-18 | `e499-choice-compatible-strict-hf-choice-candidate-r6` (document-only strict candidate) | `outputs/runs/e499-choice-compatible-strict-hf-choice-candidate-r6/` (local) | 9 CPU steps / 1,091 target tokens in 6.56s; SHA `7230ace958aa61dcc2c11997f12b8cb6ece590205f69676e4123ac8a4b2e2fab`; smoke p50 5.88s | Structure remains 0.0375 with semantic metrics zero and AgentV 0/1; rejected, no sync or promotion |
+| 2026-07-18 | `e500-document-control-hf-choice-r1` (1k control) | `outputs/runs/e500-document-control-hf-choice-r1/` (local) | 9 CPU steps / 1,028 target tokens in 7.00s; loss 30.3844; SHA `a40f39a53fe92b298a69fc0727fa55c4ccf32f26b3c48a034378eefb772d6834` | Smoke structure 0.0375 with semantic metrics zero and AgentV 0/1; scratch/no sync/no promotion |
+| 2026-07-18 | `e500-documentized-expression-hf-choice-r2` (1k candidate) | `outputs/runs/e500-documentized-expression-hf-choice-r2/` (local) | 11 CPU steps / 1,039 target tokens in 8.95s; loss 27.6250; SHA `f54cea082c57686b7736a5de4058d762de51f97a611d670115f246bd1773d3f0` | Matches control's red smoke metrics and AgentV 0/1; rejected, no sync or promotion |
+| 2026-07-18 | `e500-document-control-hf-choice-r3-5k` (5k control) | `outputs/runs/e500-document-control-hf-choice-r3-5k/` (local) | 43 CPU steps / 5,040 target tokens in 10.14s; loss 10.5529; SHA `9f752ae05d0e1bf50fe77cc3133794cf215e518946c04505f9ce25df6e0b2b53` | Smoke structure 0.0375 with semantic metrics zero and AgentV 0/1; scratch/no sync/no promotion |
+| 2026-07-18 | `e500-documentized-expression-hf-choice-r4-5k` (5k candidate) | `outputs/runs/e500-documentized-expression-hf-choice-r4-5k/` (local) | 50 CPU steps / 5,062 target tokens in 13.95s; loss 12.6778; SHA `a0ed6a5840304e5b00d815bb895cafdeb10004e08649e09e4a3611553dda5623` | Loss reverses against control; smoke remains red and AgentV 0/1; rejected, no sync or promotion |
 
 Append a row for every new or replaced checkpoint. Do not delete history.
 

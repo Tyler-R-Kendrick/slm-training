@@ -113,6 +113,20 @@ def main(argv: list[str] | None = None) -> int:
         default=True,
     )
     parser.add_argument(
+        "--documentize-expressions",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Project expression targets to complete root documents with provenance.",
+    )
+    parser.add_argument(
+        "--target-kinds",
+        default="",
+        help=(
+            "Comma-separated output kinds to retain (default: all). "
+            "Excluded rows remain in rejected.jsonl as intentional selection."
+        ),
+    )
+    parser.add_argument(
         "--deconstruct-path",
         type=Path,
         default=Path("src/slm_training/resources/deconstruct/pipeline.jsonl"),
@@ -342,68 +356,71 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     config = TrainDataConfig(
-            profile=args.profile,
-            seed_path=args.seed_path
-            if args.source in {"fixture", "both", "all"}
-            else None,
-            rico_path=args.rico_path
-            if args.source in {"rico", "both", "rico+awwwards", "all"}
-            else None,
-            source=args.source,
-            derive_from=args.derive_from,
-            output_root=args.output_root,
-            version=args.version,
-            immutable=args.immutable,
-            synthesizer=args.synthesizer,
-            rico_hf_split=args.rico_hf_split,
-            rico_limit=args.rico_limit,
-            max_children=args.max_children,
-            min_quality_score=args.min_quality_score,
-            min_verification_tier=args.min_verification_tier,
-            require_design_md=not args.allow_missing_design_md,
-            max_openui_chars=args.max_openui_chars,
-            max_components=args.max_components,
-            curriculum=args.curriculum,
-            namespace_augment=args.namespace_augment,
-            prompt_slot_contract=args.prompt_slot_contract,
-            max_records_per_parent=args.max_records_per_parent,
-            fuzzy_dedup=bool(args.fuzzy_dedup),
-            fuzzy_jaccard=float(args.fuzzy_jaccard),
-            semantic_cluster_cap=args.semantic_cluster_cap,
-            semantic_dedup=args.semantic_dedup,
-            semantic_dedup_threshold=args.semantic_dedup_threshold,
-            ngram_decontam=args.ngram_decontam,
-            ngram_size=args.ngram_size,
-            ngram_overlap_threshold=args.ngram_overlap_threshold,
-            decontam_eval_root=args.decontam_eval_root,
-            dedup_against=tuple(
-                item.strip() for item in args.dedup_against.split(",") if item.strip()
-            ),
-            difficulty_from=args.difficulty_from,
-            programspec_path=args.programspec_path,
-            programspec_count=args.programspec_count,
-            programspec_seed=args.programspec_seed,
-            include_language_contract=args.language_contract,
-            deconstruct_path=args.deconstruct_path,
-            render_path=args.render_path,
-            frontier_artifact_root=args.frontier_artifact_root,
-            include_frontier_artifacts=args.frontier_artifacts,
-            repairs_per_program=args.repairs_per_program,
-            include_edit_derivatives=args.edit_derivatives,
-            include_scope_derivatives=args.scope_derivatives,
-            include_design_md_contrastive=args.design_md_contrastive,
-            include_scope_corpus=args.scope_corpus,
-            scope_kinds=tuple(
-                kind.strip() for kind in args.scope_kinds.split(",") if kind.strip()
-            ),
-            scope_identity_per_scope=args.scope_identity_per_scope,
-            scope_canonical_pairs_per_scope=args.scope_canonical_pairs_per_scope,
-            scoped_repairs_per_scope=args.scoped_repairs_per_scope,
-            typed_lexical_per_program=args.typed_lexical_per_program,
-            emit_preference_pairs=args.preference_pairs,
-            diffusion_online=args.diffusion_online,
-            governance_artifacts=args.governance_artifacts,
-            mixture_manifest=args.mixture_manifest,
+        profile=args.profile,
+        seed_path=args.seed_path if args.source in {"fixture", "both", "all"} else None,
+        rico_path=args.rico_path
+        if args.source in {"rico", "both", "rico+awwwards", "all"}
+        else None,
+        source=args.source,
+        derive_from=args.derive_from,
+        output_root=args.output_root,
+        version=args.version,
+        immutable=args.immutable,
+        synthesizer=args.synthesizer,
+        rico_hf_split=args.rico_hf_split,
+        rico_limit=args.rico_limit,
+        max_children=args.max_children,
+        min_quality_score=args.min_quality_score,
+        min_verification_tier=args.min_verification_tier,
+        require_design_md=not args.allow_missing_design_md,
+        max_openui_chars=args.max_openui_chars,
+        max_components=args.max_components,
+        curriculum=args.curriculum,
+        namespace_augment=args.namespace_augment,
+        prompt_slot_contract=args.prompt_slot_contract,
+        max_records_per_parent=args.max_records_per_parent,
+        fuzzy_dedup=bool(args.fuzzy_dedup),
+        fuzzy_jaccard=float(args.fuzzy_jaccard),
+        semantic_cluster_cap=args.semantic_cluster_cap,
+        semantic_dedup=args.semantic_dedup,
+        semantic_dedup_threshold=args.semantic_dedup_threshold,
+        ngram_decontam=args.ngram_decontam,
+        ngram_size=args.ngram_size,
+        ngram_overlap_threshold=args.ngram_overlap_threshold,
+        decontam_eval_root=args.decontam_eval_root,
+        dedup_against=tuple(
+            item.strip() for item in args.dedup_against.split(",") if item.strip()
+        ),
+        difficulty_from=args.difficulty_from,
+        programspec_path=args.programspec_path,
+        programspec_count=args.programspec_count,
+        programspec_seed=args.programspec_seed,
+        include_language_contract=args.language_contract,
+        documentize_expressions=args.documentize_expressions,
+        target_kinds=(
+            tuple(kind.strip() for kind in args.target_kinds.split(",") if kind.strip())
+            or None
+        ),
+        deconstruct_path=args.deconstruct_path,
+        render_path=args.render_path,
+        frontier_artifact_root=args.frontier_artifact_root,
+        include_frontier_artifacts=args.frontier_artifacts,
+        repairs_per_program=args.repairs_per_program,
+        include_edit_derivatives=args.edit_derivatives,
+        include_scope_derivatives=args.scope_derivatives,
+        include_design_md_contrastive=args.design_md_contrastive,
+        include_scope_corpus=args.scope_corpus,
+        scope_kinds=tuple(
+            kind.strip() for kind in args.scope_kinds.split(",") if kind.strip()
+        ),
+        scope_identity_per_scope=args.scope_identity_per_scope,
+        scope_canonical_pairs_per_scope=args.scope_canonical_pairs_per_scope,
+        scoped_repairs_per_scope=args.scoped_repairs_per_scope,
+        typed_lexical_per_program=args.typed_lexical_per_program,
+        emit_preference_pairs=args.preference_pairs,
+        diffusion_online=args.diffusion_online,
+        governance_artifacts=args.governance_artifacts,
+        mixture_manifest=args.mixture_manifest,
     )
     from slm_training.data.store import write_common_manifest
     from slm_training.runtime.telemetry import run_trace

@@ -108,7 +108,7 @@ def test_build_emits_quality_report_and_rejected_ledger(tmp_path: Path) -> None:
     assert report["schema_version"] == 1
     assert report["profile"] == "strict"
     assert report["version_stamp"]["stamp_schema"] == "version_stamp/v1"
-    assert report["version_stamp"]["components"]["harness.train_data"] == "v1"
+    assert report["version_stamp"]["components"]["harness.train_data"] == "v2"
 
     # The ledger and the report agree, and nothing was dropped silently.
     rejected_rows = [

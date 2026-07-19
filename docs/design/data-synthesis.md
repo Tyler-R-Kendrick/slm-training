@@ -135,3 +135,24 @@ fingerprint `59bc139e…`, `quality_report.json`,
 `harness.train_data` v1. It is intentionally a tiny fixture corpus for
 dashboard inspection and regression coverage; it is not a full HF-context
 training corpus.
+
+## Documentized-expression projection (E500, 2026-07-18)
+
+E500 converts language-contract expression tasks into complete `Stack`
+documents while preserving source and parent lineage. A separate target-kind
+selector retains codec-compatible documents and records intentional exclusions
+at the `selection` stage without turning them into false producer-yield
+warnings.
+
+The corrected candidate contains 260/260 choice-compatible rows, 87 root
+parents, 72 program families, and 241 structural families, with zero quality
+warnings or synthesis-feedback recommendations. It is committed at
+`src/slm_training/resources/data/train/e500_documentized_expression_candidate_r2_20260718/`
+with fingerprint `bc256915…463bc62`. The first singleton projection was
+invalidated after 15 placeholder-contract failures.
+
+Matched 1k and 5k frozen-context smoke trains did not improve model quality:
+all four arms have meaningful rate, fidelity, recall, and reward 0.0, with
+AgentV 0/1. The generalized projection and clean corpus remain useful data
+infrastructure, but no E500 checkpoint is promoted or synced. See
+[the E500 record](iter-e500-documentized-expression-corpus-20260718.md).

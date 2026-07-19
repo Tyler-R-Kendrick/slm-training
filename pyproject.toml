@@ -111,6 +111,9 @@ include = ["slm_training*", "gpu_multi_farm*", "scripts*"]
 slm_training = ["evals/*.json", "dsl/grammars/*", "resources/**/*"]
 "slm_training.web" = ["static/**/*"]
 
+[tool.setuptools.exclude-package-data]
+slm_training = ["resources/data/**/governance/records.jsonl"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src", "."]

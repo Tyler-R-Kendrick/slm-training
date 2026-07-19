@@ -1,0 +1,216 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E500",
+  "run_id": "e500-documentized-expression-hf-choice-r4-5k",
+  "run_class": "scratch_matrix",
+  "date_utc": "2026-07-18",
+  "status": "complete",
+  "conclusion": "Expression-to-document projection produces a clean, diverse, choice-compatible corpus but does not improve the bounded honest smoke result at 1,000 or 5,000 target tokens.",
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "context_model": "HuggingFaceTB/SmolLM2-135M",
+    "context_frozen": true,
+    "output_codec": "choice",
+    "d_model": 64,
+    "heads": 2,
+    "context_layers": 1,
+    "denoiser_layers": 2,
+    "batch_size": 4,
+    "learning_rate": 0.0003,
+    "seed": 0,
+    "target_token_budgets": [
+      1000,
+      5000
+    ],
+    "steps_requested": 100,
+    "max_wall_minutes": 3.0,
+    "hard_process_cap_seconds": 170,
+    "suite": "smoke",
+    "suite_n": 1,
+    "honesty_mode": "no DESIGN context; honest slot contract; constrained decode; scratch diagnostic; no checkpoint sync"
+  },
+  "data_builds": [
+    {
+      "version": "e500_document_control_r1_20260718",
+      "role": "matched document-only control",
+      "records": 96,
+      "unique_root_parents": 31,
+      "unique_program_families": 16,
+      "unique_structural_families": 78,
+      "choice_compatible": 96,
+      "warnings": [],
+      "recommendations": [],
+      "content_fingerprint": "eb8120d404589cdcae845561d0198909cb661f275b2dcac8b825c353b8966d16",
+      "published": false
+    },
+    {
+      "version": "e500_documentized_expression_candidate_r1_20260718",
+      "role": "invalid singleton projection",
+      "records": 123,
+      "warnings": [
+        "placeholder_contract_violations"
+      ],
+      "placeholder_contract_violations": 15,
+      "decision": "Invalidated before training; the producer emitted singleton/no-content documents that the unchanged quality gate correctly rejected."
+    },
+    {
+      "version": "e500_documentized_expression_candidate_r2_20260718",
+      "role": "complete-layout projection candidate",
+      "records": 260,
+      "unique_root_parents": 87,
+      "unique_program_families": 72,
+      "unique_structural_families": 241,
+      "choice_compatible": 260,
+      "warnings": [],
+      "recommendations": [],
+      "content_fingerprint": "bc256915c79c6a07ff9ef253d5b6eb70fade30c5422ae8015c23f739c463bc62",
+      "published": true,
+      "published_path": "src/slm_training/resources/data/train/e500_documentized_expression_candidate_r2_20260718"
+    }
+  ],
+  "matched_runs": [
+    {
+      "label": "control_1k",
+      "run_id": "e500-document-control-hf-choice-r1",
+      "records": 96,
+      "steps": 9,
+      "seen_target_tokens": 1028,
+      "last_loss": 30.384429931640625,
+      "elapsed_wall_seconds": 6.9980172740033595,
+      "checkpoint_sha256": "a40f39a53fe92b298a69fc0727fa55c4ccf32f26b3c48a034378eefb772d6834",
+      "prediction": "root = ImageGallery($s1)",
+      "smoke": {
+        "n": 1,
+        "syntax_parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "structural_similarity": 0.0375,
+        "component_type_recall": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 5763.11
+      }
+    },
+    {
+      "label": "candidate_1k",
+      "run_id": "e500-documentized-expression-hf-choice-r2",
+      "records": 260,
+      "steps": 11,
+      "seen_target_tokens": 1039,
+      "last_loss": 27.625001907348633,
+      "elapsed_wall_seconds": 8.949189088991261,
+      "checkpoint_sha256": "f54cea082c57686b7736a5de4058d762de51f97a611d670115f246bd1773d3f0",
+      "prediction": "root = ImageGallery($s1)",
+      "smoke": {
+        "n": 1,
+        "syntax_parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "structural_similarity": 0.0375,
+        "component_type_recall": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 6145.21
+      }
+    },
+    {
+      "label": "control_5k",
+      "run_id": "e500-document-control-hf-choice-r3-5k",
+      "records": 96,
+      "steps": 43,
+      "seen_target_tokens": 5040,
+      "last_loss": 10.552934646606445,
+      "elapsed_wall_seconds": 10.140000123996288,
+      "checkpoint_sha256": "9f752ae05d0e1bf50fe77cc3133794cf215e518946c04505f9ce25df6e0b2b53",
+      "prediction": "root = Input(\"xs\")",
+      "smoke": {
+        "n": 1,
+        "syntax_parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "structural_similarity": 0.0375,
+        "component_type_recall": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 6382.63
+      }
+    },
+    {
+      "label": "candidate_5k",
+      "run_id": "e500-documentized-expression-hf-choice-r4-5k",
+      "records": 260,
+      "steps": 50,
+      "seen_target_tokens": 5062,
+      "last_loss": 12.677823066711426,
+      "elapsed_wall_seconds": 13.94901537199621,
+      "checkpoint_sha256": "a0ed6a5840304e5b00d815bb895cafdeb10004e08649e09e4a3611553dda5623",
+      "prediction": "root = Input(\"xs\")",
+      "smoke": {
+        "n": 1,
+        "syntax_parse_rate": 1.0,
+        "meaningful_program_rate": 0.0,
+        "placeholder_fidelity": 0.0,
+        "structural_similarity": 0.0375,
+        "component_type_recall": 0.0,
+        "reward_score": 0.0,
+        "latency_ms_p50": 6347.61
+      }
+    }
+  ],
+  "invalid_evidence": [
+    {
+      "kind": "data_build",
+      "id": "e500_documentized_expression_candidate_r1_20260718",
+      "reason": "The first projection produced 15 placeholder-contract violations and was repaired before training."
+    },
+    {
+      "kind": "evaluation",
+      "id": "e500-document-control-hf-choice-r1:first-eval",
+      "reason": "honest_slot_contract was false; overwritten by the explicit honest evaluation and excluded from comparisons."
+    }
+  ],
+  "comparison": {
+    "candidate_minus_control_1k": {
+      "last_loss": -2.759428024291992,
+      "structural_similarity": 0.0,
+      "component_type_recall": 0.0,
+      "meaningful_program_rate": 0.0,
+      "latency_ms_p50": 382.1
+    },
+    "candidate_minus_control_5k": {
+      "last_loss": 2.1248884201049805,
+      "structural_similarity": 0.0,
+      "component_type_recall": 0.0,
+      "meaningful_program_rate": 0.0,
+      "latency_ms_p50": -35.02
+    }
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "passed": 0,
+    "total": 4,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "One-record scratch diagnostics only; meaningful rate, placeholder fidelity, component recall, and reward remain zero in every arm."
+  },
+  "checkpoint_bucket": {
+    "synced": false,
+    "reason": "Explicit --no-sync-checkpoints: bounded rejected scratch diagnostics are not full HF-context ship runs."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "962d2b63ff167d08579c1d7ea4581db515c4a720",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v2",
+      "harness.model_build.train": "v1",
+      "harness.model_build.eval": "v1",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v1"
+    },
+    "stamped_at": "2026-07-19T00:39:24.940582+00:00"
+  },
+  "decision": "Keep and publish the clean expression-to-document data projection. Reject all E500 checkpoints for promotion or HF sync; bounded model behavior is unchanged."
+}
