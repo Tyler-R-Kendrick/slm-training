@@ -695,6 +695,21 @@ def test_e547_run_and_checkpoint_are_persisted(tmp_path: Path) -> None:
     assert run_id in checkpoint_ids
 
 
+def test_e548_eval_run_is_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+
+    detail = readers.run("e548-e547-semantic-role8-eval-r2")
+    assert detail["provenance"] == "committed"
+    assert detail["scoreboard"]["suites"]["ood"]["structural_similarity"] == 0.2248
+    assert detail["scoreboard"]["suites"]["ood"]["placeholder_fidelity"] == (
+        0.2583333333333333
+    )
+    assert detail["scoreboard"]["agentv"]["passed"] == 0
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")

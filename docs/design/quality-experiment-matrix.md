@@ -2760,6 +2760,21 @@ exposure. Full evidence:
 [narrative](iter-e547-root-reference-coverage2-20260719.md) and
 [JSON](iter-e547-root-reference-coverage2-20260719.json).
 
+## E548 semantic-role decode weight 8
+
+E548 holds the E547 checkpoint and OOD `n=4` recipe fixed, changing only
+visible semantic-role decode weight from 4 to 8. Predictions and every
+headline metric are identical: fidelity 0.2583, structure 0.2248, component
+recall 0.2083, AST node F1 0.3270, meaningful-v1 0.0, strict-v2 0.0, and
+AgentV 0/1. Both weights apply and change all 28 eligible semantic-role
+choices.
+
+**Decision:** reject scalar weight escalation. Weight 4 already determines the
+eligible choices; next address learned semantic-role candidate ordering or
+supervision. Full evidence:
+[narrative](iter-e548-semantic-role-weight8-20260719.md) and
+[JSON](iter-e548-semantic-role-weight8-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
