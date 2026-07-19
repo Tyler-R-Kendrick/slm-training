@@ -276,3 +276,14 @@ only. It preserves all 244 E521 IDs and targets, exposes exact type inventories
 and all declared slots in 244/244 prompts, retains mean quality 0.9643, and
 emits zero rejects, warnings, recommendations, or experiment candidates. See
 [E527](iter-e527-visible-component-types-data-20260719.md).
+
+### E528 visible component-types train follow-up
+
+The matched E528 continuation recovers OOD meaningful rate from 0.0 to 0.25,
+fidelity from 0.4667 to 0.55, and reward from 0.1668 to 0.5778 versus E525.
+The weaker contract still does not compose into hierarchy: structure falls to
+0.1136, strict meaning remains zero, and AgentV remains 0/1. Keep E527 as
+conditional-contract evidence, reject the E528 checkpoint, and move the next
+lever to semantic-role/reference-graph supervision rather than synthesis gates
+or stronger inventory prompting. See
+[E528](iter-e528-visible-component-types-continuation-20260719.md).

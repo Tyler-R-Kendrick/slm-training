@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E528",
+  "run_id": "e528-e396-e527-replay050-slotrole1-honest-context-r1-5k",
+  "evaluation_run_id": "e529-e528-ood160-component-types-r1",
+  "run_class": "scratch_matrix",
+  "date_utc": "2026-07-19",
+  "status": "complete",
+  "hypothesis": "Replacing exact component counts with the membership-identical E527 type-only contract preserves E525 component recall without its fidelity and hierarchy regressions.",
+  "conclusion": "The type-only contract recovers meaningful-program rate to 0.25 and reward to 0.5778, but component recall falls to 0.3542, structure falls to 0.1136, strict meaning remains zero, and AgentV remains 0/1. The checkpoint is rejected; the conditional positive signal points toward semantic-role and reference-graph supervision rather than stronger inventory prompting.",
+  "training": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "code_commit": "5cbbb5ee80fcbe82a605ea9e176f19960c96bc4f",
+    "code_dirty": false,
+    "parent_run_id": "e396-balanced-type-head-continuation-r1",
+    "primary_data_version": "e527_visible_component_types_slot_contract_r1_20260719",
+    "primary_data_manifest_sha": "84c4ee8e5b1f18f1a09b1ebf14eb4dcdda33533cb0071807e76fa0e7fe90fc5a",
+    "replay_data_version": "e357_card_hierarchy_v1",
+    "replay_fraction_effective": 0.5050505050505051,
+    "steps": 99,
+    "seen_target_tokens": 5059,
+    "target_token_budget": 5000,
+    "elapsed_wall_seconds": 146.752915303,
+    "max_wall_minutes": 3.0,
+    "stopped_on": "token_budget",
+    "last_loss": 17.679201126098633,
+    "learning_rate": 0.0003,
+    "component_plan_loss_weight": 4.0,
+    "slot_component_loss_weight": 1.0,
+    "slot_component_focal_gamma": 0.0,
+    "slot_component_decode_weight": 4.0,
+    "slot_component_prompt_context": true,
+    "slot_contract_in_context": true,
+    "honest_slot_contract": true,
+    "honesty_mode": "no-design-md-context",
+    "hard_process_cap_seconds": 170
+  },
+  "checkpoint": {
+    "sha256": "6a2180d76c366a282a74d1d27ae2b2fcf4c1b5f2b4d298cf4cef35bc306976d5",
+    "full_state_sha256": "4a70677f0630a1319003ba839b9b010cbb56e4e220bde2539ada038a13385aa7",
+    "remote_uri": "hf://buckets/TKendrick/OpenUI/checkpoints/e528-e396-e527-replay050-slotrole1-honest-context-r1-5k",
+    "synced": true,
+    "verified": true,
+    "verification_method": "resync_dry_run",
+    "verified_at": "2026-07-19T16:12:00Z",
+    "independent_bucket_listing": true,
+    "file_count": 9
+  },
+  "matched_runs": [
+    {
+      "label": "visible_component_types_and_slot_contract",
+      "run_id": "e528-e396-e527-replay050-slotrole1-honest-context-r1-5k",
+      "evaluation_run_id": "e529-e528-ood160-component-types-r1",
+      "checkpoint_sha256": "6a2180d76c366a282a74d1d27ae2b2fcf4c1b5f2b4d298cf4cef35bc306976d5",
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.25,
+          "placeholder_fidelity": 0.55,
+          "placeholder_validity": 0.73,
+          "structural_similarity": 0.11355,
+          "component_type_recall": 0.35416666666666663,
+          "reward_score": 0.57775,
+          "ast_node_f1": 0.22698412698412698,
+          "ast_edge_f1": 0.08012820512820512,
+          "binding_aware_meaningful_v2_rate_strict": 0.0,
+          "binding_aware_meaningful_v2_coverage": 1.0,
+          "contract_precision": 1.0,
+          "contract_recall": 0.55,
+          "latency_ms_p50": 23135.99,
+          "latency_ms_p95": 40601.08
+        }
+      }
+    }
+  ],
+  "comparison_to_e526_e525_count_control": {
+    "meaningful_program_rate_delta": 0.25,
+    "placeholder_fidelity_delta": 0.08333333333333331,
+    "structural_similarity_delta": -0.031625,
+    "component_type_recall_delta": -0.0625,
+    "reward_score_delta": 0.411,
+    "ast_node_f1_delta": -0.07708333333333336,
+    "ast_edge_f1_delta": 0.002747252747252742,
+    "latency_interpretation": "Large unreplicated runtime variance; not a performance claim."
+  },
+  "comparison_to_e523_e522_slot_control": {
+    "meaningful_program_rate_delta": 0.25,
+    "placeholder_fidelity_delta": -0.31666666666666665,
+    "structural_similarity_delta": -0.08195,
+    "component_type_recall_delta": 0.08333333333333331,
+    "reward_score_delta": 0.3685,
+    "ast_node_f1_delta": -0.1166666666666667,
+    "ast_edge_f1_delta": -0.020566239316239326
+  },
+  "failure_breakdown": {
+    "low_component_recall": 2,
+    "trivial_layout": 1
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Strict binding-aware meaning remains zero, structure and AST node overlap regress, three outputs miss required prompt components, and AgentV remains red."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "5cbbb5ee80fcbe82a605ea9e176f19960c96bc4f",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v7",
+      "harness.model_build.eval": "v2",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v2"
+    },
+    "stamped_at": "2026-07-19T16:14:28.220735+00:00"
+  },
+  "decision": "Reject E528 for promotion. Retain type-only contracts as diagnostic evidence that weaker inventory conditioning can recover v1 meaning and reward, but target semantic roles and reference-graph construction next; do not expose exact gold counts or weaken gates."
+}

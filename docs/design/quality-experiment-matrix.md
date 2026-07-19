@@ -2229,6 +2229,26 @@ regression. Data evidence only. Full evidence:
 [narrative](iter-e527-visible-component-types-data-20260719.md) and
 [JSON](iter-e527-visible-component-types-data-20260719.json).
 
+## E528 visible component-types continuation
+
+E528 holds the E525 parent, replay, token budget, objective weights, authority,
+and evaluator fixed while replacing exact component counts with E527's
+membership-identical type-only contracts. The clean CPU HF-context run finishes
+99 steps / 5,059 target tokens in 146.8 seconds under the three-minute cap and
+syncs a verified nine-file checkpoint bundle.
+
+Matched E529 OOD n=4 recovers meaningful rate 0.0→0.25, fidelity
+0.4667→0.55, and reward 0.1668→0.5778 versus E525, while component recall falls
+0.4167→0.3542, structure 0.1452→0.1136, and AST node F1 0.3041→0.2270.
+Strict binding-aware meaning remains 0.0 and AgentV remains 0/1.
+
+**Verdict:** reject E528. The type-only contract is a conditional positive
+signal for v1 meaning and reward, but it does not restore hierarchy or pass
+strict gates. Target semantic roles and reference-graph construction next;
+do not expose gold counts or weaken gates. Full evidence:
+[narrative](iter-e528-visible-component-types-continuation-20260719.md) and
+[JSON](iter-e528-visible-component-types-continuation-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
