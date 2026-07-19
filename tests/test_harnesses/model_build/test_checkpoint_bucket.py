@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
+from scripts.sync_checkpoints import persist_sync_report
 from slm_training.harnesses.model_build.checkpoint_bucket import (
     DEFAULT_CHECKPOINT_BUCKET_URI,
     maybe_sync_train_checkpoints,
@@ -15,6 +17,31 @@ from slm_training.harnesses.model_build.checkpoint_bucket import (
     resolve_sync_checkpoints,
     sync_run_checkpoints,
 )
+
+
+def test_persist_rescue_sync_report(tmp_path: Path) -> None:
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    (run_dir / "train_summary.json").write_text(
+        json.dumps({"run_id": "run", "checkpoint_bucket": None}),
+        encoding="utf-8",
+    )
+    report = {
+        "ok": True,
+        "remote_uri": "hf://buckets/TKendrick/OpenUI/checkpoints/run",
+        "verification": {"verified": True},
+    }
+
+    persist_sync_report(run_dir, report)
+
+    summary = json.loads(
+        (run_dir / "train_summary.json").read_text(encoding="utf-8")
+    )
+    persisted = json.loads(
+        (run_dir / "checkpoint_bucket.json").read_text(encoding="utf-8")
+    )
+    assert summary["checkpoint_bucket"] == report
+    assert persisted == report
 
 
 def test_normalize_bucket_uri_variants() -> None:

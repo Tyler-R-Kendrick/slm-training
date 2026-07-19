@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E524",
+  "run_id": "e524_visible_component_slot_contract_r4_20260719",
+  "date": "2026-07-19",
+  "hypothesis": "Appending an exact visible component type/count inventory to the immutable E521 prompts can align component-plan supervision with observable input without changing corpus admission.",
+  "recipe": {
+    "device": "CPU",
+    "source": "src/slm_training/resources/data/train/e521_visible_slot_contract_r2_20260719/records.jsonl",
+    "profile": "strict",
+    "synthesizer": "none",
+    "prompt_slot_contract": true,
+    "prompt_component_contract": true,
+    "semantic_dedup": false,
+    "ngram_decontam": false,
+    "projection_only_reason": "E521 is already strictly admitted, semantically deduplicated, and decontaminated; rerunning those content-sensitive gates would change the matched snapshot.",
+    "hard_process_cap_seconds": 170,
+    "elapsed_seconds": 4.63
+  },
+  "invalid_attempts": [
+    {
+      "version": "e524_visible_component_slot_contract_r1_20260719",
+      "status": "confounded_diagnostic",
+      "reason": "Applying component text before semantic dedup changed admitted membership to 230 rows. Local only, unpublished, and not evidence."
+    },
+    {
+      "version": "e524_visible_component_slot_contract_r2_20260719",
+      "status": "confounded_diagnostic",
+      "reason": "Moving all prompt projections after admission rebuilt from pre-E521 roots and restored 260 rows. Local only, unpublished, and not evidence."
+    },
+    {
+      "version": "e524_visible_component_slot_contract_r3_20260719",
+      "status": "confounded_diagnostic",
+      "reason": "Reapplying semantic dedup to immutable E521 removed one additional row. Local only, unpublished, and not evidence."
+    }
+  ],
+  "result": {
+    "version": "e524_visible_component_slot_contract_r4_20260719",
+    "published_path": "src/slm_training/resources/data/train/e524_visible_component_slot_contract_r4_20260719",
+    "content_fingerprint": "56c035c1a6386ef4f49fb7e9d68dcd89445f6c75dfff5686bb9bff5b1825d37a",
+    "records": 244,
+    "same_ids_as_e521": true,
+    "same_openui_as_e521": true,
+    "records_with_exact_component_contract": 244,
+    "records_with_all_declared_placeholders_visible": 244,
+    "mean_quality_score": 0.9643,
+    "placeholder_vocab_size": 77,
+    "with_design_md": 244,
+    "quality_rejected": 0,
+    "warnings": [],
+    "synthesis_recommendations": 0
+  },
+  "feedback_action": {
+    "recommendation": null,
+    "decision": "No producer or gate change is warranted; the projection-only build emitted no warnings, recommendations, or experiment candidates."
+  },
+  "decision": "Publish E524 for one matched bounded continuation against E522. This is data-quality evidence only; component counts are a stronger prompt contract than ordinary OOD requests, so learned gains must be interpreted as conditional-contract evidence rather than unconditional ship readiness.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "560b4a86149724a683539328ac10f1ae579b897a",
+    "code_dirty": false,
+    "components": {
+      "harness.train_data": "v3"
+    },
+    "stamped_at": "2026-07-19T15:42:10.897577+00:00"
+  }
+}

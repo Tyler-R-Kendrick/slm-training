@@ -244,3 +244,27 @@ hierarchy—structure falls from 0.2250 to 0.1955, reward falls to 0.2093, and
 meaningful rate and AgentV remain zero. Keep visible inventories, but pair them
 with component-hierarchy supervision or data rather than stronger slot loss.
 See [E522](iter-e522-visible-slot-continuation-20260719.md).
+
+### E524 visible component-contract follow-up
+
+E524 projects an exact component type/count inventory onto immutable E521
+without changing its 244 IDs or OpenUI targets. All 244 component contracts are
+exact, all declared placeholders remain visible, mean quality remains 0.9643,
+and the projection emits zero rejects, warnings, recommendations, or experiment
+candidates.
+
+Semantic deduplication and n-gram decontamination are not rerun because E521
+already passed them and reapplying content-sensitive dedup changed membership
+in a diagnostic candidate. The gates are not weakened for new synthesis; this
+is a projection-only matched snapshot. See
+[E524](iter-e524-visible-component-contract-data-20260719.md).
+
+### E525 visible component-contract train follow-up
+
+The matched E525 continuation confirms that exact component counts are learned:
+OOD component recall rises from 0.2708 to 0.4167. The signal does not compose
+with E522’s slot grounding—fidelity falls from 0.8667 to 0.4667, structure to
+0.1452, meaningful and strict meaning remain zero, and AgentV remains 0/1.
+Keep E524 as conditional-contract data evidence, but reject stronger count
+prompting and the E525 checkpoint. See
+[E525](iter-e525-visible-component-continuation-20260719.md).
