@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E517",
+  "run_id": "e517-e396-e500-replay050-slotrole1-context-r1-5k",
+  "evaluation_run_id": "e518-e517-ood160-component-plan4-r1",
+  "run_class": "scratch_matrix",
+  "date_utc": "2026-07-19",
+  "status": "complete",
+  "hypothesis": "Restoring slot-component loss from 4 to 1 while retaining focal zero and honest slot-contract training context recovers the remaining gap between E515 and E510.",
+  "conclusion": "Loss 1 regresses every headline semantic and structural metric relative to E515 when contract context is enabled. The loss and context interact, but neither context-conditioned arm approaches E510's no-context training checkpoint.",
+  "training": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "parent_run_id": "e396-balanced-type-head-continuation-r1",
+    "primary_data_version": "e500_documentized_expression_candidate_r2_20260718",
+    "replay_data_version": "e357_card_hierarchy_v1",
+    "replay_fraction_requested": 0.5,
+    "replay_fraction_effective": 0.504950495049505,
+    "seen_primary_examples": 100,
+    "seen_replay_examples": 102,
+    "steps": 101,
+    "seen_target_tokens": 5000,
+    "target_token_budget": 5000,
+    "elapsed_wall_seconds": 130.6874155280002,
+    "max_wall_minutes": 3.0,
+    "stopped_on": "token_budget",
+    "last_loss": 9.959418296813965,
+    "learning_rate": 0.0003,
+    "component_plan_loss_weight": 4.0,
+    "slot_component_loss_weight": 1.0,
+    "slot_component_focal_gamma": 0.0,
+    "slot_component_class_balance_power": 0.5,
+    "slot_component_decode_weight": 4.0,
+    "slot_component_prompt_context": true,
+    "honesty_mode": "no-design-md-context",
+    "hard_process_cap_seconds": 170
+  },
+  "checkpoint": {
+    "sha256": "2b572a04256db14095e813e146079af9e6f6c948963d60f2bd669855e24b60e3",
+    "full_state_sha256": "37eab2a1641f17860f6bad4271f7f8777d5b13776f39944808c24b5c977d24dd",
+    "remote_uri": "hf://buckets/TKendrick/OpenUI/checkpoints/e517-e396-e500-replay050-slotrole1-context-r1-5k",
+    "synced": true,
+    "verified": true,
+    "verification_method": "resync_dry_run",
+    "verified_at": "2026-07-19T14:49:05Z"
+  },
+  "evaluation": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "suite": "ood",
+    "suite_n": 4,
+    "grammar_ltr_primary": true,
+    "component_plan_decode_weight": 4.0,
+    "slot_component_decode_weight": 4.0,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160,
+    "honest_slot_contract": true,
+    "slot_contract_in_context": true,
+    "slot_contract_constrained_decode": true,
+    "no_design_context": true,
+    "allow_unconstrained_fallback": false,
+    "hard_process_cap_seconds": 170
+  },
+  "matched_runs": [
+    {
+      "label": "slot_role_supervision1_context",
+      "run_id": "e517-e396-e500-replay050-slotrole1-context-r1-5k",
+      "evaluation_run_id": "e518-e517-ood160-component-plan4-r1",
+      "checkpoint_sha256": "2b572a04256db14095e813e146079af9e6f6c948963d60f2bd669855e24b60e3",
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.0,
+          "placeholder_fidelity": 0.4083333333333333,
+          "structural_similarity": 0.225,
+          "component_type_recall": 0.20833333333333331,
+          "reward_score": 0.7444999999999999,
+          "ast_node_f1": 0.2833333333333333,
+          "ast_edge_f1": 0.0625,
+          "binding_aware_meaningful_v2_rate_strict": 0.0,
+          "binding_aware_meaningful_v2_coverage": 1.0,
+          "latency_ms_p50": 5827.2,
+          "latency_ms_p95": 12547.6
+        }
+      }
+    }
+  ],
+  "comparison_to_e515_slot_loss4": {
+    "meaningful_program_rate_delta": -0.25,
+    "placeholder_fidelity_delta": -0.25,
+    "structural_similarity_delta": -0.09625000000000003,
+    "component_type_recall_delta": -0.0625,
+    "reward_score_delta": -0.08250000000000013,
+    "ast_node_f1_delta": -0.14583333333333337,
+    "ast_edge_f1_delta": 0.0
+  },
+  "comparison_to_e510_no_training_context": {
+    "meaningful_program_rate_delta": -0.5,
+    "placeholder_fidelity_delta": -0.25,
+    "structural_similarity_delta": -0.11957500000000001,
+    "component_type_recall_delta": -0.1875,
+    "reward_score_delta": -0.09600000000000009,
+    "ast_node_f1_delta": -0.1845238095238096,
+    "ast_edge_f1_delta": -0.1
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Every headline metric regresses versus E515; meaningfulness, strict binding-aware meaning, and AgentV are zero."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "75fb3f22a5ac3b3bb047ffcf5cc864a3fa17574c",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.train": "v6",
+      "harness.model_build.eval": "v2",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v1"
+    },
+    "stamped_at": "2026-07-19T14:49:51.556306+00:00"
+  },
+  "decision": "Reject E517 and retain E510 as the leading checkpoint/policy pair. Do not tune slot loss further until training-time contract context is removed or redesigned; next change should target role-label representation in data."
+}
