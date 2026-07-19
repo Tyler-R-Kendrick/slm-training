@@ -82,6 +82,41 @@ def test_build_train_data_writes_artifacts(tmp_path: Path) -> None:
     not bridge_available(),
     reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
 )
+def test_prompt_contracts_expose_component_counts_and_slots(tmp_path: Path) -> None:
+    baseline = build_train_data(
+        TrainDataConfig(
+            seed_path=_seed_file(tmp_path),
+            rico_path=None,
+            source="fixture",
+            output_root=tmp_path / "train_data",
+            version="baseline",
+            synthesizer="none",
+        )
+    )
+    result = build_train_data(
+        TrainDataConfig(
+            seed_path=_seed_file(tmp_path),
+            rico_path=None,
+            source="fixture",
+            output_root=tmp_path / "train_data",
+            version="contracts",
+            synthesizer="none",
+            prompt_component_contract=True,
+            prompt_slot_contract=True,
+        )
+    )
+    rows = {row.id: row for row in load_jsonl(Path(result["output_dir"]) / "records.jsonl")}
+    assert "Components: Card x1, Stack x1, TextContent x2" in rows["t1"].prompt
+    assert "Placeholders: :hero.title, :hero.body" in rows["t1"].prompt
+    assert result["stats"]["prompt_component_contract"] is True
+    assert result["stats"]["prompt_slot_contract"] is True
+    assert result["manifest"]["ids"] == baseline["manifest"]["ids"]
+
+
+@pytest.mark.skipif(
+    not bridge_available(),
+    reason="OpenUI bridge deps missing; run: cd src/apps/openui_bridge && npm ci",
+)
 def test_build_train_data_derives_from_existing_records(tmp_path: Path) -> None:
     roots = _seed_file(tmp_path)
     result = build_train_data(
