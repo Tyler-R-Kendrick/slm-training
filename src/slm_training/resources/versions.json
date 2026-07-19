@@ -88,12 +88,13 @@
       ]
     },
     "evals.scoring": {
-      "version": "v8",
+      "version": "v9",
       "kind": "metric",
       "paths": [
         "src/slm_training/evals/"
       ],
       "history": [
+        {"version": "v9", "date": "2026-07-19", "note": "add EFS2-01 X22 tree-edit beam-width × edit-depth scaling harness (TreeEditScalingConfig, run_scaling_grid, valid-state beam search) on top of quantized-energy/solver-state/verifier-cascade stack"},
         {"version": "v8", "date": "2026-07-19", "note": "add CAP4-03 quantized local-energy inference comparison harness (EnergyProblem, EnergyQuantizer, greedy vs exact Viterbi, QuantFormat wiring) on top of solver-state/verifier-cascade stack"},
         {"version": "v7", "date": "2026-07-19", "note": "add EFS3-01 solver-state supervision source comparison schema and mixer on top of verifier-cascade/score-policy/eval-cache stack"},
         {"version": "v6", "date": "2026-07-19", "note": "add cached cheap-to-expensive verifier cascade scaffolding (VerifierStageSpec, VerifierResultV1, VerifierCascade) on top of score-policy/eval-cache/trigger-telemetry stack"},
