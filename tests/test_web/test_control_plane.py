@@ -590,6 +590,22 @@ def test_e540_reference_phase_telemetry_run_is_persisted() -> None:
     assert detail["scoreboard"]["agentv"]["passed"] == 0
 
 
+def test_e541_root_reference_run_is_persisted() -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    run_id = "e541-e531-ood160-role4-root-reference4-r1"
+    listed = next(
+        row for row in readers.runs()["runs"] if row.get("run_id") == run_id
+    )
+    assert listed["pass"] is False
+    detail = readers.run(run_id)
+    ood = detail["scoreboard"]["suites"]["ood"]
+    assert ood["n"] == 4
+    assert ood["placeholder_fidelity"] == 0.3833333333333333
+    assert ood["generation_evidence_schemas"] == ["choice_decision_trace/v2"]
+    assert detail["scoreboard"]["agentv"]["passed"] == 0
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")
