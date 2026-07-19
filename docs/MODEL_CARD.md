@@ -657,6 +657,14 @@ structure 0.3440, recall 0.4615, reward 0.6272, AST node F1 0.4654, and AST edge
 F1 0.1748. Strict binding-aware meaning remains zero and AgentV remains 0/3.
 The policy generalizes diagnostically; the checkpoint is still rejected.
 
+### E512 slot-to-component decode-weight diagnostic
+
+Doubling the E505 checkpoint's slot-to-component decode weight from 4 to 8
+reduces OOD placeholder-spam prevalence 3→1 but leaves semantic-role mismatch at
+4/4. Meaningful regresses 0.50→0.25, fidelity 0.6583→0.3417, structure
+0.3446→0.2869, reward 0.8405→0.7245, and AgentV stays 0/1. Weight 8 is rejected;
+the checkpoint and weight 4 policy remain non-promotable.
+
 ---
 
 ## Limitations & honesty
