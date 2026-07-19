@@ -23,6 +23,8 @@ The repository root is an allowlist for required manifests and cross-agent
 instructions. Application code and owned resources belong below `src/`; generated
 documentation belongs below `docs/`. Do not add a new root path without
 updating this guide and `scripts/repo_policy.py` in the same reviewed change.
+Deployment manifests (`vercel.json` and `.vercelignore`) stay at the root
+because Vercel discovers them there.
 
 Ignored model inputs use `outputs/data/<kind>/<id>/`; raw correlated traces and
 logs use `outputs/traces/<trace-id>/`. Do not create new sibling data or trace
