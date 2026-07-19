@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E543",
+  "run_id": "e543-e531-root-reference-bounded-r1-24s",
+  "date_utc": "2026-07-19",
+  "run_class": "scratch_matrix",
+  "status": "completed_calibration_gain_quality_neutral",
+  "hypothesis": "Masking impossible root-reference arity classes during training will improve auxiliary-head calibration and may improve terminal aggregation.",
+  "parent_checkpoint": {
+    "run_id": "e531-e396-e530-replay050-slotrole1-honest-context-r1-5k",
+    "sha256": "6b8c1abc56a36e8aa15acc373b61d5df033a753907330649e379d9ba374a6154",
+    "remote_uri": "hf://buckets/TKendrick/OpenUI/checkpoints/e531-e396-e530-replay050-slotrole1-honest-context-r1-5k"
+  },
+  "checkpoint": {
+    "location": "outputs/runs/e543-e531-root-reference-bounded-r1-24s/checkpoints/last.pt",
+    "sha256": "c6be3791544def59ad26b8d2b3b605a7efefd93ec83c996371e593a3251d7f90",
+    "sync": false,
+    "sync_reason": "Explicit local-only scratch diagnostic; not a full train, reusable champion, or promotion."
+  },
+  "training": {
+    "checkpoint": "outputs/runs/e543-e531-root-reference-bounded-r1-24s/checkpoints/last.pt",
+    "train_dir": "src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719",
+    "record_count": 244,
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "freeze_context": true,
+    "steps": 24,
+    "batch_size": 2,
+    "seen_target_tokens": 1270,
+    "elapsed_wall_seconds": 37.16981551199933,
+    "max_wall_minutes": 3.0,
+    "root_reference_arity_loss_weight": 1.0,
+    "root_reference_arity_decode_weight": 0.0,
+    "last_loss": 15.453156471252441,
+    "code_commit": "0592d81b6f9b7e4b49b77b016fd32e86607edd65",
+    "version_stamp": {
+      "stamp_schema": "version_stamp/v1",
+      "components": {
+        "harness.model_build.train": "v9"
+      }
+    }
+  },
+  "matched_training_comparison": {
+    "baseline_run_id": "e542-e531-root-reference-arity1-r1-24s",
+    "identical_recipe_seed_parent_and_corpus": true,
+    "shared_non_root_head_tensors_identical": 106,
+    "shared_non_root_head_tensors_total": 106,
+    "differing_tensors": [
+      "root_reference_arity_head.weight",
+      "root_reference_arity_head.bias"
+    ],
+    "baseline_first_12_mean_auxiliary_loss": 3.73289,
+    "bounded_first_12_mean_auxiliary_loss": 0.884528,
+    "baseline_first_12_mean_auxiliary_accuracy": 0.0416667,
+    "bounded_first_12_mean_auxiliary_accuracy": 0.75,
+    "baseline_last_12_mean_auxiliary_loss": 3.54958,
+    "bounded_last_12_mean_auxiliary_loss": 0.941381,
+    "baseline_last_12_mean_auxiliary_accuracy": 0.333333,
+    "bounded_last_12_mean_auxiliary_accuracy": 0.583333,
+    "bounded_first_12_mean_active_classes": 3.708333,
+    "bounded_last_12_mean_active_classes": 4.0
+  },
+  "eval_recipe": {
+    "run_id": "e543-e531-root-arity-weight1-r1",
+    "device": "cpu",
+    "suite": "ood",
+    "n": 4,
+    "diagnostic_subset": true,
+    "context_backend": "hf",
+    "local_files_only": true,
+    "grammar_constrained": true,
+    "grammar_ltr_primary": true,
+    "slot_contract_in_context": true,
+    "semantic_role_contract_in_context": true,
+    "semantic_role_decode_weight": 4.0,
+    "visible_reference_decode_weight": 0.0,
+    "slot_contract_constrained_decode": true,
+    "honest_slot_contract": true,
+    "gold_reference_graph_used": false,
+    "root_reference_arity_decode_weight": 1.0,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160,
+    "hard_process_cap_seconds": 170
+  },
+  "result": {
+    "syntax_parse_rate": 1.0,
+    "meaningful_program_rate": 0.5,
+    "placeholder_fidelity": 0.5916666666666667,
+    "placeholder_validity": 0.755,
+    "structural_similarity": 0.301875,
+    "component_type_recall": 0.41666666666666663,
+    "reward_score": 0.795,
+    "ast_node_f1": 0.32712418300653595,
+    "ast_edge_f1": 0.03333333333333333,
+    "binding_aware_meaningful_v2_rate_strict": 0.0,
+    "root_reference_arity_applications": 11,
+    "root_reference_arity_choice_changes": 7,
+    "agentv_passed": 0,
+    "agentv_total": 1,
+    "agentv_execution_errors": 0,
+    "all_quality_metrics_equal_e542_control": true,
+    "all_quality_metrics_equal_e542_bounded_weight_1": true,
+    "decode_intervention_equal_e542_bounded_weight_1": true
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Training calibration improves sharply but decoded decisions and every quality metric remain unchanged; strict binding-aware meaning is zero and AgentV fails."
+  },
+  "decision": "Keep the bounded training loss and telemetry as a correctness improvement; leave root-reference arity decoding default-off, reject this scratch checkpoint for promotion, and test reference-identity supervision next.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "0592d81b6f9b7e4b49b77b016fd32e86607edd65",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.eval": "v12",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v10"
+    },
+    "stamped_at": "2026-07-19T21:48:19.445119+00:00"
+  }
+}
