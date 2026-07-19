@@ -2775,6 +2775,20 @@ supervision. Full evidence:
 [narrative](iter-e548-semantic-role-weight8-20260719.md) and
 [JSON](iter-e548-semantic-role-weight8-20260719.json).
 
+## E549 learned slot-component ordering off
+
+E549 holds the E547 checkpoint and OOD `n=4` recipe fixed, changing only
+learned slot-component decode weight from 4 to 0. Structure improves
+0.2248→0.2713, AST node F1 0.3270→0.3833, and AST edge F1 0→0.0625.
+Fidelity falls 0.2583→0.2083, component recall collapses 0.2083→0, and reward
+collapses 0.5403→0. Meaningful-v1, strict-v2, and AgentV remain zero.
+
+**Decision:** reject disabling learned ordering. It preserves semantic density
+but suppresses topology at full weight; test a midpoint learned weight next.
+Full evidence:
+[narrative](iter-e549-slot-component-ordering0-20260719.md) and
+[JSON](iter-e549-slot-component-ordering0-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

@@ -710,6 +710,19 @@ def test_e548_eval_run_is_persisted(tmp_path: Path) -> None:
     assert detail["scoreboard"]["agentv"]["passed"] == 0
 
 
+def test_e549_eval_run_is_persisted(tmp_path: Path) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+
+    detail = readers.run("e549-e547-slot-component0-eval-r1")
+    assert detail["provenance"] == "committed"
+    assert detail["scoreboard"]["suites"]["ood"]["structural_similarity"] == 0.27125
+    assert detail["scoreboard"]["suites"]["ood"]["component_type_recall"] == 0.0
+    assert detail["scoreboard"]["agentv"]["passed"] == 0
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")
