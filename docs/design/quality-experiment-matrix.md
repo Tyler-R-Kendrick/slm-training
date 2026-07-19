@@ -2800,6 +2800,17 @@ candidate ordering directly. Full evidence:
 [narrative](iter-e550-slot-component-ordering2-20260719.md) and
 [JSON](iter-e550-slot-component-ordering2-20260719.json).
 
+## E551 slot lexeme prior off
+
+Removing the corpus-derived prior improves OOD `n=4` fidelity
+0.2583→0.3000 and reward 0.5403→0.5453, but structure falls 0.2248→0.1594,
+recall 0.2083→0.1250, and AST node F1 0.3270→0.2389. Meaning and AgentV stay
+zero.
+
+**Decision:** reject removal; calibrate or regularize the prior next. Full
+evidence: [narrative](iter-e551-slot-lexeme-prior0-20260719.md) and
+[JSON](iter-e551-slot-lexeme-prior0-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
