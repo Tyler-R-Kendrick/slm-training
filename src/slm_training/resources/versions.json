@@ -203,13 +203,14 @@
       ]
     },
     "model.quantization": {
-      "version": "v2",
+      "version": "v3",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/quantization/",
         "src/slm_training/models/local_action_head.py"
       ],
       "history": [
+        {"version": "v3", "date": "2026-07-19", "note": "CAP4-04 compiler-routed block sparsity and state-family experts merged on top of CAP4-02"},
         {"version": "v2", "date": "2026-07-18", "note": "CAP4-02 adaptive residual-plane scheduling (structural floor + entropy/margin/sensitivity/learned-router/oracle)"},
         {"version": "v1", "date": "2026-07-18", "note": "initial registration (CAP4-01 residual ternary planes and local scorer head)"}
       ]

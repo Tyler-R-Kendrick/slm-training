@@ -1,0 +1,66 @@
+{
+  "experiment": "CAP4-04 compiler-routed block sparsity and state-family experts fixture",
+  "fixture": "block-sparsity-routing",
+  "artifact": "outputs/runs/cap4-04-block-sparsity/block_sparsity_fixture_20260718_234619.json",
+  "recipe": {
+    "n": 64,
+    "seq": 8,
+    "ctx_len": 4,
+    "families": ["card_root", "bind_arg0", "bind_arg1", "literal_text"],
+    "d_model": 64,
+    "n_layers": 2,
+    "n_heads": 4,
+    "n_routes": 5,
+    "block_size": 16
+  },
+  "fixture_outputs": {
+    "routing": {
+      "n_distinct_routes": 5,
+      "route_counts": {
+        "1": 19,
+        "2": 19,
+        "3": 13,
+        "4": 13
+      }
+    },
+    "variants": [
+      {
+        "variant": "block_mask_50pct",
+        "mean_l2_vs_dense": 2.882200002670288,
+        "max_abs_diff_vs_dense": 0.8094348907470703,
+        "mlp_costs": {
+          "total_mlp_bytes": 17868,
+          "active_mlp_bytes": 16916,
+          "active_ratio": 0.9467203940004477
+        }
+      },
+      {
+        "variant": "state_family_expert_r8",
+        "mean_l2_vs_dense": 36.316162109375,
+        "max_abs_diff_vs_dense": 11.348047256469727,
+        "mlp_costs": {
+          "total_mlp_bytes": 238380,
+          "active_mlp_bytes": 217740,
+          "active_ratio": 0.9134155549962245
+        }
+      }
+    ]
+  },
+  "caveats": [
+    "wiring fixture only; no ship gate, checkpoint, or wall-clock claim",
+    "block-mask path is dense math with zeroed blocks; no optimized sparse kernel is used",
+    "expert path loops over routes; no optimized gather kernel is used",
+    "costs are analytical packing estimates, not measured on-device",
+    "models are randomly initialized, so semantic quality is not meaningful"
+  ],
+  "claim": "Wiring evidence only: block-mask and state-family-expert layers route by exact compiler state, respect unknown-family fallback, and produce honest active/total cost splits. No ship gate or checkpoint promotion.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "b54906574d1d9f74c5b2599ae3ba7fe25771d95e",
+    "code_dirty": true,
+    "components": {
+      "model.quantization": "v1"
+    },
+    "stamped_at": "2026-07-18T23:46:19+00:00"
+  }
+}
