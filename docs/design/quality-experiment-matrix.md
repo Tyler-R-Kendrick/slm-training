@@ -347,6 +347,39 @@ cannot claim ship gates. Frontier execution requires 18 matched trains, a GPU
 host, durable HF bucket sync per SLM-103, and the EFS1 exposure decision from
 SLM-109.
 
+## Contract-grounded candidate selector (SLM-127 / EFS3-04)
+
+Given a prompt/contract and a bounded set of generated OpenUI candidates, learn a
+small per-candidate utility + contract-success head and calibrate an abstention
+threshold on a validation split. The hypothesis is that exposing generator score,
+value score, energy score, set size, and a feature count to a tiny MLP yields a
+selector with lower regret than single-score baselines, and that a calibrated
+abstention can keep the "invalid selected over valid" count at zero.
+
+| Arm | Selection signal | Abstention |
+| --- | --- | --- |
+| `model_score` | Highest `generator_score` | never |
+| `value_score` | Highest `value_score` | never |
+| `energy_score` | Highest `energy_score` | never |
+| `hard_then_simple` | `semantic_success=True` first, then `generator_score` | never |
+| `learned_no_abstain` | `sigmoid(contract_success_logit)` argmax | never |
+| `learned_abstain` | `sigmoid(contract_success_logit)` argmax if > calibrated threshold | risk-bounded |
+
+```bash
+# Fixture wiring (CPU, no checkpoint training)
+python -m scripts.run_candidate_selector --fixture \
+  --out outputs/runs/slm127_candidate_selector/report.json
+
+# Evaluate an existing JSONL corpus
+python -m scripts.run_candidate_selector --groups groups.jsonl \
+  --selector learned_abstain --out report.json
+```
+
+Primary metric: selector regret, `invalid_over_valid_count`, and calibration
+error on the test split. Fixture runs are wiring-only and cannot claim ship
+gates. Frontier execution requires a trained OpenUI checkpoint, a labeled
+candidate corpus, and validation labels independent of the training set.
+
 ## Configuration glossary — verified-solver decode (VSS1-03)
 
 Experimental, **disabled by default**, and **unmeasured**. These flags gate the
