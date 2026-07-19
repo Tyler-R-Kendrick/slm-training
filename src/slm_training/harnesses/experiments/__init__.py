@@ -21,15 +21,6 @@ from slm_training.harnesses.experiments.efficiency_gain import (
     efficiency_gain,
     efficiency_gain_lcb,
 )
-from slm_training.harnesses.experiments.ladder import (
-    LadderPoint,
-    ScalingLadder,
-    hf_ladder_default,
-    ladder_run_id,
-    model_build_config_for_point,
-    proportional_depths,
-    scratch_ladder_default,
-)
 from slm_training.harnesses.experiments.pretrained_denoiser_activation import (
     DEFAULT_ACTIVATION_GATES,
     DEFAULT_ARMS,
@@ -150,6 +141,28 @@ except Exception:  # pragma: no cover - optional if torch unavailable
     fixture_decisions = None  # type: ignore[misc,assignment]
     match_active_parameters = None  # type: ignore[misc,assignment]
     run_matrix = None  # type: ignore[misc,assignment]
+
+
+_LAZY_LADDER_EXPORTS = {
+    "LadderPoint",
+    "ScalingLadder",
+    "hf_ladder_default",
+    "ladder_run_id",
+    "model_build_config_for_point",
+    "proportional_depths",
+    "scratch_ladder_default",
+}
+
+
+def __getattr__(name: str):
+    if name in _LAZY_LADDER_EXPORTS:
+        from slm_training.harnesses.experiments import ladder
+
+        value = getattr(ladder, name)
+        globals()[name] = value
+        return value
+    raise AttributeError(name)
+
 
 __all__ = [
     "ACTIVATION_VERDICTS",

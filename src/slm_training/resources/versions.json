@@ -166,12 +166,13 @@
       ]
     },
     "harness.experiments": {
-      "version": "v14",
+      "version": "v15",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/experiments/"
       ],
       "history": [
+        {"version": "v15", "date": "2026-07-19", "note": "lazy-load torch-backed ladder re-exports so the read-only Vercel web entrypoint remains torch-free"},
         {"version": "v14", "date": "2026-07-19", "note": "fix(cap3-05): make equal-byte planning honest and reconcile cost ledger"},
         {"version": "v13", "date": "2026-07-19", "note": "add CAP3-05 (SLM-94) equal-byte width × precision ladder planner and dry-run manifest support"},
         {"version": "v12", "date": "2026-07-19", "note": "add SDE3-03 (SLM-177) proxy-metric calibration activation/budget/feature manifest dataclass, builder/validator, and CLI"},
