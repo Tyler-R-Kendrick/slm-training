@@ -2656,6 +2656,29 @@ supervision. Full evidence:
 [narrative](iter-e543-bounded-root-reference-arity-20260719.md) and
 [JSON](iter-e543-bounded-root-reference-arity-20260719.json).
 
+## E544 bounded root-reference identity
+
+E544 supervises the exact generated-section identities referenced by the
+terminal root. The bounded target covers 188/244 records, including 42
+nontrivial strict subsets. Its 24-step continuation completes in 40.96 seconds
+under the three-minute cap. Mean positive recall rises from 0.3056 in steps
+1–12 to 0.5729 in steps 13–24, though second-half exact-set accuracy is only
+0.0417.
+
+Telemetry rejected additive identity bias because it could alter arity. The
+accepted rank-only operator preserves the best existing reference score and
+only permutes legal reference identities. In a same-checkpoint, same-commit
+OOD `n=4` comparison, weight 1 raises meaningful-v1 0.00→0.25, structure
+0.1250→0.1688, recall 0.1458→0.2708, and AST node F1 0.1833→0.2833. All 11
+changed identity decisions are reference-to-reference. Strict meaning, AST edge
+F1, and AgentV remain zero.
+
+**Verdict:** retain bounded identity training and rank-only decoding
+default-off; reject the scratch checkpoint for promotion. Next test
+coverage-conditioned calibration, not stronger decode bias. Full evidence:
+[narrative](iter-e544-root-reference-identity-20260719.md) and
+[JSON](iter-e544-root-reference-identity-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

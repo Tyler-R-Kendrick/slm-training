@@ -15,6 +15,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from slm_training.harnesses.model_build.ship_gates import evaluate_ship_gates
+from slm_training.lineage.store import LineageStore
 from slm_training.web import jobs as jobs_mod
 from slm_training.web.app import create_app
 from slm_training.web.observability import Readers
@@ -604,6 +605,26 @@ def test_e541_root_reference_run_is_persisted() -> None:
     assert ood["placeholder_fidelity"] == 0.3833333333333333
     assert ood["generation_evidence_schemas"] == ["choice_decision_trace/v2"]
     assert detail["scoreboard"]["agentv"]["passed"] == 0
+
+
+def test_e544_root_identity_run_and_checkpoint_are_persisted(
+    tmp_path: Path,
+) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    readers.outputs = tmp_path / "missing-outputs"
+    readers.lineage = LineageStore(readers.outputs / "lineage")
+    run_id = "e544-e543-root-identity1-r2-24s"
+
+    detail = readers.run(run_id)
+    assert detail["provenance"] == "committed"
+    assert detail["train_summary"]["steps"] == 24
+    assert detail["scoreboard"]["suites"]["ood"]["meaningful_program_rate"] == 0.25
+    assert detail["scoreboard"]["agentv"]["passed"] == 0
+    checkpoint_ids = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_id in checkpoint_ids
 
 
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
