@@ -12,6 +12,11 @@ from slm_training.evals.emptiness_probe import (
     evaluate_emptiness,
     minimal_valid_program,
 )
+from slm_training.evals.score_policy import (
+    GrammarAlignedMassPolicy,
+    RawCumulativePolicy,
+    SemanticLengthNormPolicy,
+)
 from slm_training.models.twotower import TwoTowerConfig, TwoTowerModel
 
 HERO = (
@@ -93,3 +98,22 @@ def test_emptiness_probe_handles_no_minimal_program(monkeypatch) -> None:
     assert report["n_records"] == 0
     assert report["empty_program"] is None
     assert report["per_record"] == []
+
+
+def test_emptiness_probe_with_score_policies() -> None:
+    policies = [
+        RawCumulativePolicy(),
+        SemanticLengthNormPolicy(alpha=1.0),
+        GrammarAlignedMassPolicy(beta=0.5),
+    ]
+    report = evaluate_emptiness(
+        _model(), _records(), config=EmptinessProbeConfig(score_policies=tuple(policies))
+    )
+    assert report["n_records"] == 2
+    assert "score_policies" in report
+    assert "policy_empty_preferred_fraction" in report
+    for row in report["per_record"]:
+        assert "policy_scores" in row
+        for policy in policies:
+            assert policy.name in row["policy_scores"]
+            assert len(row["policy_scores"][policy.name]) == 2
