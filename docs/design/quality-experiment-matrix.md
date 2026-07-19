@@ -2001,6 +2001,20 @@ seconds. Full evidence:
 [narrative](iter-e507-length-safe-ood-contract-decode-20260719.md) and
 [JSON](iter-e507-length-safe-ood-contract-decode-20260719.json).
 
+## E508 default-generation OOD replication
+
+E508 raises the length-safe constrained OOD policy from four generation steps
+and one attempt to the checkpoint defaults of eight steps and four attempts.
+Every quality metric exactly reproduces E507: meaningful `0.25`, fidelity
+`0.2583`, structure `0.2281`, recall `0.3333`, reward `0.692`, and AST node F1
+`0.3389`.
+
+**Verdict:** grammar-LTR primary decode succeeds on its first path, so these
+denoising/retry controls are not the remaining blocker. Keep the constrained
+policy, stop tuning these controls, and focus next on semantic component
+correctness. AgentV remains 0/1. The process was capped at 170 seconds. Full
+evidence: [narrative](iter-e508-default-generation-ood-contract-decode-20260719.md)
+and [JSON](iter-e508-default-generation-ood-contract-decode-20260719.json).
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

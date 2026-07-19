@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E508",
+  "run_id": "e508-e505-ood160-contract-on-fullgen-r1",
+  "run_class": "scratch_matrix",
+  "date_utc": "2026-07-19",
+  "status": "complete",
+  "hypothesis": "E507's length-safe constrained OOD result persists at the checkpoint's default eight generation steps and four decode attempts.",
+  "conclusion": "All quality metrics exactly reproduce E507. Under grammar-LTR primary decode, the denoising-step and retry controls do not change this successful first-pass path.",
+  "checkpoint": {
+    "run_id": "e505-e396-e500-replay050-loss-attribution-r1-5k",
+    "sha256": "8fd11acdcc1e3eaf0585e847c68815190fdc90c9071e30833db40d24525967e8",
+    "new_checkpoint_written": false
+  },
+  "recipe": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "suite": "ood",
+    "suite_n": 4,
+    "grammar_ltr_primary": true,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160,
+    "gold_p95_tokens": 143,
+    "honest_slot_contract": true,
+    "slot_contract_constrained_decode": true,
+    "no_design_context": true,
+    "allow_unconstrained_fallback": false,
+    "hard_process_cap_seconds": 170
+  },
+  "matched_runs": [
+    {
+      "label": "length_safe_default_generation_contract_decode",
+      "run_id": "e508-e505-ood160-contract-on-fullgen-r1",
+      "checkpoint_sha256": "8fd11acdcc1e3eaf0585e847c68815190fdc90c9071e30833db40d24525967e8",
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.25,
+          "placeholder_fidelity": 0.2583333333333333,
+          "structural_similarity": 0.228125,
+          "component_type_recall": 0.3333333333333333,
+          "reward_score": 0.692,
+          "ast_node_f1": 0.3388888888888889,
+          "ast_edge_f1": 0.0,
+          "latency_ms_p50": 6802.8,
+          "latency_ms_p95": 9032.83
+        }
+      }
+    }
+  ],
+  "comparison_to_e507": {
+    "quality_metric_delta": 0.0,
+    "p50_latency_ms": -163.69,
+    "note": "Syntax, meaningful, fidelity, structure, recall, reward, and AST F1 are identical."
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "AgentV remains 0/1; default generation controls do not fix semantic failures."
+  },
+  "checkpoint_bucket": {
+    "synced": false,
+    "reason": "Evaluation-only experiment; no checkpoint was created."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "5895d46d4aca58c3d9afdadd03a67c67a454ac82",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.eval": "v1",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v1",
+      "gates.ship": "openui_ship_gates_v1"
+    },
+    "stamped_at": "2026-07-19T04:11:44+00:00"
+  },
+  "decision": "Keep constrained slot-contract grammar-LTR decode as the leading diagnostic policy. Stop spending experiments on denoising-step or retry settings for this path; semantic component correctness is the remaining blocker."
+}

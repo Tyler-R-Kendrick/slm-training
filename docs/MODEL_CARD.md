@@ -623,6 +623,14 @@ Quality metrics exactly match E506's 96-token OOD rows, ruling out canvas
 truncation as the source of the gain. AgentV remains red; no checkpoint was
 created or promoted.
 
+### E508 default-generation OOD contract-decode diagnostic
+
+The same E505 checkpoint and length-safe constrained OOD policy use eight
+generation steps and four attempts. All four records exactly reproduce E507
+quality: syntax 1.0, meaningful 0.25, fidelity 0.2583, structure 0.2281, recall
+0.3333, reward 0.692, AST node F1 0.3389, and AgentV 0/1. No checkpoint was
+created or promoted.
+
 ---
 
 ## Limitations & honesty
