@@ -1005,6 +1005,13 @@ def evaluate(
         "decode_timeout_count": decode_timeout_count,
         "decode_canvas_cap": canvas_cap,
         "details": details,
+        "generation_evidence_schemas": sorted(
+            {
+                str(row["schema"])
+                for row in topology_evidence
+                if isinstance(row, dict) and row.get("schema")
+            }
+        ),
     }
     from slm_training.evals.meaningful_program import aggregate_meaning_reports_v2
 

@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "experiment_id": "E535",
-  "run_id": "e535-e531-ood160-visible-role4-reference4-r1",
+  "experiment_id": "E536",
+  "run_id": "e536-e531-ood160-choice-evidence-r1",
   "date_utc": "2026-07-19",
   "run_class": "scratch_matrix",
-  "status": "completed_rejected_guard_unreachable",
-  "hypothesis": "Preferring each unused legal generated bound reference once while constructing the root improves E534 reference topology without gold graph access.",
+  "status": "completed_harness_positive_model_unchanged",
+  "hypothesis": "Persisting the actual bounded choice stream and legal-reference decisions preserves model metrics while resolving whether E535 lacked legal alternatives or had an unreachable guard.",
   "checkpoint": {
     "run_id": "e531-e396-e530-replay050-slotrole1-honest-context-r1-5k",
     "sha256": "6b8c1abc56a36e8aa15acc373b61d5df033a753907330649e379d9ba374a6154",
@@ -34,24 +34,8 @@
     "hard_process_cap_seconds": 170
   },
   "matched_control": {
-    "experiment_id": "E534",
-    "run_id": "e534-e531-ood160-visible-role-bias4-r2",
-    "result": {
-      "suite": "ood",
-      "n": 4,
-      "syntax_parse_rate": 1.0,
-      "meaningful_program_rate": 0.25,
-      "placeholder_fidelity": 1.0,
-      "placeholder_validity": 1.0,
-      "structural_similarity": 0.19592500000000002,
-      "component_type_recall": 0.5416666666666666,
-      "reward_score": 0.74025,
-      "ast_node_f1": 0.16269841269841268,
-      "ast_edge_f1": 0.041666666666666664,
-      "binding_aware_meaningful_v2_rate_strict": 0.0,
-      "contract_precision": 1.0,
-      "contract_recall": 1.0
-    }
+    "experiment_id": "E535",
+    "run_id": "e535-e531-ood160-visible-role4-reference4-r1"
   },
   "result": {
     "suite": "ood",
@@ -65,17 +49,15 @@
     "reward_score": 0.74025,
     "ast_node_f1": 0.16269841269841268,
     "ast_edge_f1": 0.041666666666666664,
-    "ref_graph_exact": 0.0,
     "binding_aware_meaningful_v2_rate_strict": 0.0,
     "binding_aware_meaningful_v2_coverage": 1.0,
     "contract_precision": 1.0,
     "contract_recall": 1.0,
-    "latency_ms_p50": 6605.94,
-    "latency_ms_p95": 7149.92,
-    "visible_reference_applications": 0,
-    "visible_reference_choice_changes": 0
+    "latency_ms_p50": 6215.97,
+    "latency_ms_p95": 6525.42,
+    "generation_evidence_schemas": ["choice_decision_trace/v1"]
   },
-  "comparison_to_e534": {
+  "comparison_to_e535": {
     "syntax_parse_rate_delta": 0.0,
     "meaningful_program_rate_delta": 0.0,
     "placeholder_fidelity_delta": 0.0,
@@ -87,14 +69,48 @@
     "ast_edge_f1_delta": 0.0,
     "binding_aware_meaningful_v2_rate_strict_delta": 0.0
   },
-  "failure_breakdown": {
-    "low_component_recall": 1,
-    "trivial_layout": 2
+  "choice_evidence": {
+    "schema": "choice_decision_trace/v1",
+    "contains_gold_program": false,
+    "records": [
+      {
+        "id": "ood_dashboard_01",
+        "mode": "structural",
+        "choice_token_count": 38,
+        "legal_reference_decision_rows": 9,
+        "references_chosen": 0
+      },
+      {
+        "id": "ood_gallery_01",
+        "mode": "structural",
+        "choice_token_count": 58,
+        "legal_reference_decision_rows": 26,
+        "references_chosen": 1
+      },
+      {
+        "id": "ood_modal_01",
+        "mode": "structural",
+        "choice_token_count": 58,
+        "legal_reference_decision_rows": 21,
+        "references_chosen": 0
+      },
+      {
+        "id": "ood_auth_01",
+        "mode": "structural",
+        "choice_token_count": 58,
+        "legal_reference_decision_rows": 28,
+        "references_chosen": 9
+      }
+    ],
+    "choice_token_count_total": 212,
+    "legal_reference_decision_rows_total": 84,
+    "references_chosen_total": 10
   },
+  "e535_correction": "E535's zero applications came from a v0.5 r= marker guard that cannot match structural-mode streams. Legal reference alternatives were present on all four records.",
   "ship_gates": {
     "pass": false,
     "agentv_pass": false,
-    "reason": "The intervention is unreachable on the matched trajectories; reference-graph exactness and strict meaning remain zero and AgentV fails."
+    "reason": "E536 is instrumentation-only and reproduces E535's failed model gates exactly."
   },
   "agentv": {
     "format": "AgentEvals JSONL",
@@ -104,17 +120,16 @@
     "execution_errors": 0,
     "mean_score": 0.5
   },
-  "post_run_correction": "E536 showed all four choice streams used structural mode and exposed legal reference alternatives. E535's v0.5 r= marker guard was unreachable; zero applications did not mean alternatives were absent.",
-  "decision": "Reject E535 and do not train it. Require structural-mode decision evidence and non-zero reachability before another topology experiment.",
+  "decision": "Accept the bounded choice evidence as a harness improvement. Make no model claim; target structural-mode terminal-root planning next and require non-zero reach before training.",
   "version_stamp": {
     "stamp_schema": "version_stamp/v1",
-    "code_commit": "3874815e38b9eaad3044f0a29165d00843e6ee3a",
+    "code_commit": "acff961c4108eee4b41071887734c666441867d1",
     "code_dirty": false,
     "components": {
-      "harness.model_build.eval": "v6",
+      "harness.model_build.eval": "v7",
       "evals.meaningful_program": "2.0.0",
       "evals.scoring": "v9"
     },
-    "stamped_at": "2026-07-19T18:35:32.759586+00:00"
+    "stamped_at": "2026-07-19T18:48:29.182348+00:00"
   }
 }

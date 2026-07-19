@@ -291,6 +291,30 @@ def test_visible_reference_bias_prefers_each_unused_bound_element_once() -> None
     assert exhausted is None
 
 
+def test_choice_generation_evidence_preserves_reference_decisions() -> None:
+    model = _model(output_tokenizer="choice")
+    tokenizer = model.tokenizer
+    contract = [":hero.title"]
+    ids = tokenizer.encode(
+        'root = Card([title])\ntitle = TextContent(":hero.title")',
+        placeholders=contract,
+    )
+    canvas = torch.full(
+        (1, len(ids) + 2),
+        tokenizer.pad_id,
+        dtype=torch.long,
+    )
+    canvas[0, : len(ids)] = torch.tensor(ids)
+
+    evidence = model._choice_generation_evidence(canvas, [contract])
+
+    assert evidence[0]["schema"] == "choice_decision_trace/v1"
+    assert "&0" in evidence[0]["choice_tokens"]
+    decisions = evidence[0]["reference_decisions"]
+    assert any(row["chosen"] == "&0" for row in decisions)
+    assert any("&0" in row["legal_references"] for row in decisions)
+
+
 def test_projection_with_features_accepts_sliced_hidden() -> None:
     """Compiler/tree scorers project [D] and [N,D] slices; with one request's
     runtime symbol features active the projection must match the [B,T,D]

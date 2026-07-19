@@ -26,13 +26,14 @@ plus the pinned AgentV SDK bundle.
 | Strict binding-aware meaning | 0.0000 | 0.0000 | 0.0000 |
 | AgentV | 0 / 1 | 0 / 1 | unchanged |
 
-Telemetry is decisive: the reference bias had zero applications and changed
-zero choices. On these generated trajectories, the choice grammar did not
-expose an unused-reference alternative at a multi-candidate token decision.
-Therefore token-level root reranking is unreachable for the observed failure.
+Telemetry showed that the reference bias had zero applications and changed
+zero choices. E536's added choice-stream evidence later corrected the causal
+interpretation: all four streams used structural mode, while E535 guarded on a
+v0.5 `r=` root marker. Legal reference alternatives were present, but the E535
+hook was unreachable because it targeted the wrong choice-stream mode.
 
 Reject E535 as a quality lever and do not train it. Retain the fail-closed
-instrumentation for future reachability diagnostics, but the next intervention
-must operate at completion-path or declaration/reference-plan scope and first
-prove non-zero causal reach. Machine-readable evidence is in
+instrumentation for future reachability diagnostics, but require structural-
+mode decision evidence and non-zero causal reach before training. Machine-
+readable evidence is in
 [the E535 JSON](iter-e535-visible-reference-completeness-20260719.json).

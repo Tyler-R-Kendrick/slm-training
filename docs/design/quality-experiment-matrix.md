@@ -2334,14 +2334,32 @@ no gold graph and fails closed outside honest slot-constrained choice decode.
 Every aggregate is identical to E534, including meaningful 0.25, structure
 0.1959, component recall 0.5417, AST node/edge F1 0.1627/0.0417, strict meaning
 0.0, reference-graph exact 0.0, and AgentV 0/1. Telemetry reports zero
-applications and zero choice changes: no unused-reference alternative appeared
-at a multi-candidate token decision on these trajectories.
+applications and zero choice changes. E536 later showed that legal reference
+alternatives did exist: all streams used structural mode, so E535's v0.5 `r=`
+guard was unreachable.
 
 **Verdict:** reject E535 and do not train it. A future topology lever must act
 at completion-path or declaration/reference-plan scope and prove non-zero
-reachability before consuming a training run. Full evidence:
+structural-mode reachability before consuming a training run. Full evidence:
 [narrative](iter-e535-visible-reference-completeness-20260719.md) and
 [JSON](iter-e535-visible-reference-completeness-20260719.json).
+
+## E536 choice decision evidence
+
+E536 persists bounded `choice_decision_trace/v1` evidence—the actual generated
+choice tokens and legal reference decisions—without gold topology. It holds the
+E535 recipe fixed and reproduces every quality aggregate exactly.
+
+The four streams contain 212 choice tokens and 84 decision rows with legal
+references; 10 references are selected. All streams use structural mode. This
+corrects E535: its zero applications came from a v0.5 `r=` marker guard, not
+from absent alternatives.
+
+**Verdict:** accept E536 as a harness improvement with no model-quality claim.
+Use the evidence to test structural-mode terminal-root planning next, and
+require non-zero reach before training. Full evidence:
+[narrative](iter-e536-choice-decision-evidence-20260719.md) and
+[JSON](iter-e536-choice-decision-evidence-20260719.json).
 
 ## Verifier-guided repair (mixed status)
 
