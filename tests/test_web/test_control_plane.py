@@ -154,6 +154,16 @@ def test_e527_visible_component_types_data_is_persisted() -> None:
     )
 
 
+def test_e530_visible_semantic_roles_data_is_persisted() -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    version = "e530_visible_semantic_roles_r2_20260719"
+    records = readers.train_records(version, limit=300)
+    assert records["count"] == 244
+    assert all("Semantic roles: " in row["prompt"] for row in records["records"])
+    assert any(" -> " in row["prompt"] for row in records["records"])
+
+
 def test_e501_matched_runs_and_checkpoints_are_persisted() -> None:
     root = Path(__file__).parents[2]
     readers = Readers(root)
@@ -439,6 +449,36 @@ def test_e528_visible_component_types_checkpoint_and_run_are_persisted(
     assert run_id in checkpoint_ids
     assert run_id in readers.train_data(
         version="e527_visible_component_types_slot_contract_r1_20260719"
+    )["used_by_runs"]
+
+
+def test_e531_visible_semantic_roles_checkpoint_and_run_are_persisted(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    run_id = "e531-e396-e530-replay050-slotrole1-honest-context-r1-5k"
+    listed = next(
+        row for row in readers.runs()["runs"] if row.get("run_id") == run_id
+    )
+    assert set(listed["suites"]) == {"ood"}
+    assert listed["pass"] is False
+    monkeypatch.setattr(readers, "_run_dir", lambda *_: tmp_path / "missing")
+    detail = readers.run(run_id)
+    assert set(detail["scoreboard"]["suites"]) == {"ood"}
+    assert detail["train_summary"]["provenance"] == "committed"
+    assert detail["train_summary"]["steps"] == 99
+    assert detail["training_data"]["provenance"] == "committed"
+    assert detail["training_data"]["dataset"]["version"] == (
+        "e530_visible_semantic_roles_r2_20260719"
+    )
+    assert detail["training_data"]["dataset"]["fingerprint_matches_run"] is True
+    checkpoint_ids = {
+        row.get("run_id") for row in readers.checkpoints()["checkpoints"]
+    }
+    assert run_id in checkpoint_ids
+    assert run_id in readers.train_data(
+        version="e530_visible_semantic_roles_r2_20260719"
     )["used_by_runs"]
 
 

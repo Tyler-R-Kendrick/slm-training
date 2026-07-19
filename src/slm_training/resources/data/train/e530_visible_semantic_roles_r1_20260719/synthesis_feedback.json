@@ -1,0 +1,186 @@
+{
+  "schema_version": 1,
+  "version": "e530_visible_semantic_roles_r1_20260719",
+  "profile": "strict",
+  "built_at": "2026-07-19T17:05:10.802008+00:00",
+  "thresholds": {
+    "low_yield": 0.4,
+    "high_dup_share": 0.5,
+    "min_group_candidates": 8
+  },
+  "families": {
+    "corruption_repair": {
+      "admitted": 5,
+      "rejected": 76,
+      "by_stage": {
+        "dedup": 6,
+        "exposure": 70
+      },
+      "by_reason": {
+        "max_records_per_parent": 70,
+        "exact_pair_duplicate": 6
+      },
+      "candidates": 81,
+      "yield": 0.0617
+    },
+    "edit_trajectory": {
+      "admitted": 102,
+      "rejected": 102,
+      "by_stage": {
+        "exposure": 102
+      },
+      "by_reason": {
+        "max_records_per_parent": 102
+      },
+      "candidates": 204,
+      "yield": 0.5
+    },
+    "human_curated": {
+      "admitted": 15,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 15,
+      "yield": 1.0
+    },
+    "language_contract": {
+      "admitted": 1,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 1,
+      "yield": 1.0
+    },
+    "layout_augment": {
+      "admitted": 46,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 46,
+      "yield": 1.0
+    },
+    "programspec_generated": {
+      "admitted": 6,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 6,
+      "yield": 1.0
+    },
+    "renderer_visual": {
+      "admitted": 1,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 1,
+      "yield": 1.0
+    }
+  },
+  "synthesizers": {
+    "corruption_repair": {
+      "admitted": 5,
+      "rejected": 76,
+      "by_stage": {
+        "dedup": 6,
+        "exposure": 70
+      },
+      "by_reason": {
+        "max_records_per_parent": 70,
+        "exact_pair_duplicate": 6
+      },
+      "candidates": 81,
+      "yield": 0.0617
+    },
+    "layout_augment": {
+      "admitted": 46,
+      "rejected": 0,
+      "by_stage": {},
+      "by_reason": {},
+      "candidates": 46,
+      "yield": 1.0
+    }
+  },
+  "warnings": [
+    {
+      "code": "high_rejection_rate",
+      "value": 0.4972,
+      "message": "less than half of the candidates survived the gates; inspect rejected.jsonl before trusting this corpus"
+    }
+  ],
+  "recommendations": [
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "corruption_repair",
+      "evidence": {
+        "dup_share": 0.9383,
+        "candidates": 81
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "family",
+      "target": "edit_trajectory",
+      "evidence": {
+        "dup_share": 0.5,
+        "candidates": 204
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this family"
+    },
+    {
+      "code": "redundant_expansion",
+      "target_kind": "synthesizer",
+      "target": "corruption_repair",
+      "evidence": {
+        "dup_share": 0.9383,
+        "candidates": 81
+      },
+      "suggestion": "most output is deduplicated away \u2014 reduce expansion count or diversify templates/namespaces for this synthesizer"
+    }
+  ],
+  "experiment_candidates": [
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:corruption_repair raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build e530_visible_semantic_roles_r1_20260719: {'dup_share': 0.9383, 'candidates': 81}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer",
+        "namespace_augment"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for family:edit_trajectory raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build e530_visible_semantic_roles_r1_20260719: {'dup_share': 0.5, 'candidates': 204}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer",
+        "namespace_augment"
+      ]
+    },
+    {
+      "hypothesis": "Reducing expansion volume or widening template diversity for synthesizer:corruption_repair raises admitted-per-candidate yield without lowering admitted count",
+      "rationale": "build e530_visible_semantic_roles_r1_20260719: {'dup_share': 0.9383, 'candidates': 81}",
+      "expected_effect": "dup_share falls below 0.5; admitted holds",
+      "falsification_criteria": "admitted count drops >10% or dup_share stays >=0.5",
+      "knobs": [
+        "max_children",
+        "synthesizer",
+        "namespace_augment"
+      ]
+    }
+  ],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "a2fd764feb34f3f8320c14e4e637b572c1301303",
+    "code_dirty": false,
+    "components": {
+      "harness.train_data": "v7"
+    },
+    "stamped_at": "2026-07-19T17:05:10.815691+00:00"
+  }
+}

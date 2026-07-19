@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E531",
+  "evaluation_run_id": "e532-e531-ood160-semantic-roles-r1",
+  "run_id": "e531-e396-e530-replay050-slotrole1-honest-context-r1-5k",
+  "date_utc": "2026-07-19",
+  "run_class": "diagnostic",
+  "status": "completed_rejected",
+  "hypothesis": "Semantic-role candidates derived only from visible slots, visible component types, and schema compatibility improve hierarchy without leaking exact counts or the gold graph.",
+  "training": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "code_commit": "e74e27c4775fbc3e7ff7e56f29b0605e2d7116fd",
+    "code_dirty": false,
+    "parent_run_id": "e396-balanced-type-head-continuation-r1",
+    "primary_data_version": "e530_visible_semantic_roles_r2_20260719",
+    "primary_data_manifest_sha": "e65a6ac5a7c49499b638582c325eafd0b245cc4aa9d2650d1396a88230eccee2",
+    "replay_data_version": "e357_card_hierarchy_v1",
+    "replay_fraction_effective": 0.5050505050505051,
+    "steps": 99,
+    "seen_target_tokens": 5059,
+    "target_token_budget": 5000,
+    "elapsed_wall_seconds": 99.72051450000072,
+    "max_wall_minutes": 3.0,
+    "stopped_on": "token_budget",
+    "last_loss": 17.091821670532227,
+    "learning_rate": 0.0003,
+    "component_plan_loss_weight": 4.0,
+    "slot_component_loss_weight": 1.0,
+    "slot_component_decode_weight": 4.0,
+    "slot_component_prompt_context": true,
+    "slot_contract_in_context": true,
+    "honest_slot_contract": true,
+    "honesty_mode": "no-design-md-context",
+    "hard_process_cap_seconds": 170
+  },
+  "matched_runs": [
+    {
+      "label": "visible_semantic_roles",
+      "run_id": "e531-e396-e530-replay050-slotrole1-honest-context-r1-5k",
+      "evaluation_run_id": "e532-e531-ood160-semantic-roles-r1",
+      "checkpoint_sha256": "6b8c1abc56a36e8aa15acc373b61d5df033a753907330649e379d9ba374a6154",
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.0,
+          "placeholder_fidelity": 0.4666666666666667,
+          "placeholder_validity": 0.5800000000000001,
+          "structural_similarity": 0.143125,
+          "component_type_recall": 0.29166666666666663,
+          "reward_score": 0.36850000000000005,
+          "ast_node_f1": 0.25427350427350426,
+          "ast_edge_f1": 0.045454545454545456,
+          "binding_aware_meaningful_v2_rate_strict": 0.0,
+          "binding_aware_meaningful_v2_coverage": 1.0,
+          "contract_precision": 0.75,
+          "contract_recall": 0.4666666666666667,
+          "latency_ms_p50": 5086.66,
+          "latency_ms_p95": 8206.7
+        }
+      }
+    }
+  ],
+  "comparison_to_e529_e528_type_control": {
+    "meaningful_program_rate_delta": -0.25,
+    "placeholder_fidelity_delta": -0.08333333333333337,
+    "structural_similarity_delta": 0.029575,
+    "component_type_recall_delta": -0.0625,
+    "reward_score_delta": -0.20924999999999994,
+    "ast_node_f1_delta": 0.02728937728937728,
+    "ast_edge_f1_delta": -0.034673659673659665
+  },
+  "checkpoint": {
+    "sha256": "6b8c1abc56a36e8aa15acc373b61d5df033a753907330649e379d9ba374a6154",
+    "full_state_sha256": "3fd97277e1c10fe00cb178158bbcb232fff2a301a7b01ef0dda7b88c453cbcee",
+    "remote_uri": "hf://buckets/TKendrick/OpenUI/checkpoints/e531-e396-e530-replay050-slotrole1-honest-context-r1-5k",
+    "synced": true,
+    "verified": true,
+    "verification_method": "resync_dry_run",
+    "verified_at": "2026-07-19T17:25:03Z",
+    "independent_bucket_listing": true,
+    "file_count": 9,
+    "persistence_note": "Automatic sync failed only at the unnecessary bucket-create preflight; canonical direct rescue sync to the existing bucket succeeded and reconciled train_summary.json."
+  },
+  "failure_breakdown": {
+    "low_component_recall": 2,
+    "no_placeholders": 1,
+    "trivial_layout": 1
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Meaningful and strict binding-aware rates are zero, three outputs miss required prompt components/placeholders, component recall and reward regress, and AgentV remains red."
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "conclusion": "Visible semantic-role grouping weakly improves structure and AST node overlap but does not produce correct reference graphs.",
+  "decision": "Reject E531 for promotion. Retain E530/E531 as negative diagnostic evidence and test an explicit visible-contract reference-edge lever next without exposing gold topology or weakening gates.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "e74e27c4775fbc3e7ff7e56f29b0605e2d7116fd",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v7",
+      "harness.model_build.eval": "v2",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v2"
+    },
+    "stamped_at": "2026-07-19T17:27:13.125538+00:00"
+  }
+}

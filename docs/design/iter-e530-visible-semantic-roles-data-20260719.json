@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E530",
+  "run_id": "e530_visible_semantic_roles_r2_20260719",
+  "date": "2026-07-19",
+  "hypothesis": "Prompt-visible semantic roles derived only from already-visible slots, already-visible component types, and schema compatibility can add hierarchy-relevant conditioning without leaking exact output counts or the gold graph.",
+  "invalid_attempt": {
+    "version": "e530_visible_semantic_roles_r1_20260719",
+    "status": "invalid_recipe_drift",
+    "reason": "Default producer expansions changed corpus membership, so the build was not a matched projection.",
+    "collected": 354,
+    "records": 176,
+    "rejected": 239,
+    "content_fingerprint": "c9f7ee1da5ce85aee6b2297a491e702695242b06c472bc703b73b5ba2e72a3b5",
+    "warning": {
+      "code": "high_rejection_rate",
+      "value": 0.4972
+    },
+    "feedback_targets": [
+      "corruption_repair",
+      "edit_trajectory"
+    ],
+    "training_allowed": false
+  },
+  "recipe": {
+    "device": "CPU",
+    "source": "src/slm_training/resources/data/train/e521_visible_slot_contract_r2_20260719/records.jsonl",
+    "profile": "strict",
+    "synthesizer": "none",
+    "all_default_producers_disabled": true,
+    "prompt_slot_contract": true,
+    "prompt_component_contract": true,
+    "prompt_component_contract_mode": "types",
+    "prompt_semantic_role_contract": true,
+    "semantic_dedup": false,
+    "ngram_decontam": false,
+    "projection_only_reason": "The immutable E521 source already passed these gates; this matched projection must preserve its admitted membership.",
+    "hard_process_cap_seconds": 170,
+    "elapsed_seconds": 4.12
+  },
+  "result": {
+    "version": "e530_visible_semantic_roles_r2_20260719",
+    "published_path": "src/slm_training/resources/data/train/e530_visible_semantic_roles_r2_20260719",
+    "content_fingerprint": "e65a6ac5a7c49499b638582c325eafd0b245cc4aa9d2650d1396a88230eccee2",
+    "semantic_contract_sha256": "4c67b2c24da106f08807d179890eb9dabd8144a37863aeb4d6b0cdc3838d9768",
+    "records": 244,
+    "same_ids_as_e521": true,
+    "same_openui_as_e521": true,
+    "same_placeholders_as_e521": true,
+    "records_with_semantic_role_contract": 244,
+    "records_with_typed_candidates": 174,
+    "typed_candidate_mentions": 274,
+    "count_tokens_exposed": 0,
+    "mean_quality_score": 0.9643,
+    "quality_rejected": 0,
+    "warnings": [],
+    "synthesis_recommendations": 0,
+    "experiment_candidates": 0
+  },
+  "feedback_action": {
+    "invalid_r1": "Retain its emitted producer-yield candidates for a future synthesis experiment; do not use the snapshot for training.",
+    "valid_r2": "No producer or gate change; the exact projection emits no warnings, recommendations, or experiment candidates."
+  },
+  "decision": "Publish only E530 r2 for one matched bounded continuation against E528. This remains conditional-contract data evidence, not a ship claim.",
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "a2fd764feb34f3f8320c14e4e637b572c1301303",
+    "code_dirty": true,
+    "components": {
+      "harness.train_data": "v7"
+    },
+    "stamped_at": "2026-07-19T17:07:22.045582+00:00"
+  }
+}

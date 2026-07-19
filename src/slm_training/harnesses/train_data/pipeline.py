@@ -75,6 +75,9 @@ class TrainDataConfig:
     # opt-in because it is a stronger contract than ordinary user prompts.
     prompt_component_contract: bool = False
     prompt_component_contract_mode: str = "counts"
+    # Group visible placeholder namespaces into semantic roles and annotate
+    # schema-compatible owners from the already-visible component type set.
+    prompt_semantic_role_contract: bool = False
     # Exclude train records whose layout tree matches hand-authored test fixtures.
     test_seed_path: Path | None = Path("src/slm_training/resources/test_seeds.jsonl")
     # Exposure control: cap records per root parent (None = uncapped). One
@@ -1575,7 +1578,17 @@ def build_train_data(
     # Prompt contracts are training-only projections, not admission signals.
     # Apply them after every quality/decontamination/dedup gate so enabling a
     # contract cannot silently change which source examples are admitted.
-    if config.prompt_component_contract or config.prompt_slot_contract:
+    if config.prompt_semantic_role_contract and not (
+        config.prompt_component_contract and config.prompt_slot_contract
+    ):
+        raise ValueError(
+            "prompt_semantic_role_contract requires visible component and slot contracts"
+        )
+    if (
+        config.prompt_component_contract
+        or config.prompt_slot_contract
+        or config.prompt_semantic_role_contract
+    ):
         from slm_training.data.quality import component_counts
         from slm_training.models.template_fill import ensure_prompt_inventory
 
@@ -1587,10 +1600,10 @@ def build_train_data(
         contracted = []
         for record in deduped:
             prompt = record.prompt.rstrip()
+            counts = sorted(component_counts(record.openui).items())
             if config.prompt_component_contract and not any(
                 line.startswith("Components:") for line in prompt.splitlines()
             ):
-                counts = sorted(component_counts(record.openui).items())
                 inventory = ", ".join(
                     f"{name} x{count}" if component_mode == "counts" else name
                     for name, count in counts
@@ -1601,6 +1614,15 @@ def build_train_data(
                 prompt = ensure_prompt_inventory(
                     prompt, list(record.placeholders or [])
                 )
+            if config.prompt_semantic_role_contract and not any(
+                line.startswith("Semantic roles:") for line in prompt.splitlines()
+            ):
+                roles = _semantic_role_contract(
+                    list(record.placeholders or []),
+                    [name for name, _count in counts],
+                )
+                if roles:
+                    prompt = f"{prompt}\nSemantic roles: {roles}"
             contracted.append(replace(record, prompt=prompt))
         deduped = contracted
 
@@ -1759,6 +1781,9 @@ def build_train_data(
         "prompt_slot_contract": bool(config.prompt_slot_contract),
         "prompt_component_contract": bool(config.prompt_component_contract),
         "prompt_component_contract_mode": config.prompt_component_contract_mode,
+        "prompt_semantic_role_contract": bool(
+            config.prompt_semantic_role_contract
+        ),
         "structure_reserved_rejected": len(structure_reserved_rejected),
         "structure_reserved_rejected_samples": structure_reserved_rejected[:20],
         "max_records_per_parent": config.max_records_per_parent,
@@ -1895,6 +1920,35 @@ def _diffusion_config():
     from slm_training.data.diffusion import DiffusionConfig
 
     return DiffusionConfig()
+
+
+def _semantic_role_contract(
+    placeholders: list[str], component_names: list[str]
+) -> str:
+    """Describe prompt-visible slot roles without exposing the gold graph."""
+    from slm_training.dsl.lang_core import library_schema
+
+    definitions = library_schema().get("$defs", {})
+    groups: dict[str, dict[str, tuple[str, ...]]] = {}
+    for placeholder in sorted(set(placeholders)):
+        parts = placeholder.removeprefix(":").split(".")
+        namespace = ".".join(parts[:-1]) or parts[0]
+        role = parts[-1] if len(parts) > 1 else "value"
+        candidates = tuple(
+            name
+            for name in sorted(set(component_names))
+            if role in (definitions.get(name, {}).get("properties") or {})
+        )
+        groups.setdefault(namespace, {})[role] = candidates
+    return "; ".join(
+        f"{namespace}("
+        + ", ".join(
+            f"{role} -> {'|'.join(candidates)}" if candidates else role
+            for role, candidates in sorted(roles.items())
+        )
+        + ")"
+        for namespace, roles in sorted(groups.items())
+    )
 
 
 def _component_histogram(records: list[ExampleRecord]) -> dict[str, int]:
