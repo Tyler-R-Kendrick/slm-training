@@ -340,11 +340,35 @@ def test_choice_generation_evidence_preserves_reference_decisions() -> None:
 
     evidence = model._choice_generation_evidence(canvas, [contract])
 
-    assert evidence[0]["schema"] == "choice_decision_trace/v1"
+    assert evidence[0]["schema"] == "choice_decision_trace/v2"
     assert "&0" in evidence[0]["choice_tokens"]
     decisions = evidence[0]["reference_decisions"]
     assert any(row["chosen"] == "&0" for row in decisions)
     assert any("&0" in row["legal_references"] for row in decisions)
+    assert any(
+        row["aggregation_scope"] == "structural_nested_list" for row in decisions
+    )
+    assert all(row["frame_depth"] == len(row["frame_path"]) for row in decisions)
+
+
+def test_choice_phase_evidence_separates_root_and_nested_lists() -> None:
+    from slm_training.models.choice_tokenizer import ChoiceDecodeState
+
+    model = _model(output_tokenizer="choice")
+    tokenizer = model.tokenizer
+    root = ChoiceDecodeState(tokenizer)
+    assert root.advance_id(tokenizer.token_to_id["["])
+    nested = ChoiceDecodeState(tokenizer)
+    for token in ("+Stack", "["):
+        assert nested.advance_id(tokenizer.token_to_id[token])
+
+    root_evidence = model._choice_phase_evidence(root)
+    nested_evidence = model._choice_phase_evidence(nested)
+
+    assert root_evidence["aggregation_scope"] == "structural_root_list"
+    assert root_evidence["frame_depth"] == 1
+    assert nested_evidence["aggregation_scope"] == "structural_nested_list"
+    assert nested_evidence["frame_depth"] == 2
 
 
 def test_projection_with_features_accepts_sliced_hidden() -> None:

@@ -3795,6 +3795,41 @@ class TwoTowerModel(nn.Module):
                 applied = True
         return bias if applied else None
 
+    @staticmethod
+    def _choice_phase_evidence(state: Any) -> dict[str, object]:
+        """Describe the bounded generated-state phase around a choice."""
+        frames = list(getattr(state, "frames", ()))
+        structural_list = bool(
+            getattr(state, "mode", None) == "structural"
+            and frames
+            and frames[-1].kind == "variadic"
+            and frames[-1].expr_type == "array"
+        )
+        if getattr(state, "current_marker", None) == "r=":
+            aggregation_scope = "v05_root"
+        elif structural_list:
+            aggregation_scope = (
+                "structural_root_list"
+                if len(frames) == 1
+                else "structural_nested_list"
+            )
+        else:
+            aggregation_scope = "other"
+        return {
+            "aggregation_scope": aggregation_scope,
+            "frame_depth": len(frames),
+            "frame_path_truncated": len(frames) > 8,
+            "frame_path": [
+                {
+                    "kind": str(frame.kind),
+                    "expr_type": str(frame.expr_type),
+                    "phase": str(frame.phase),
+                    "arg_index": int(frame.arg_index),
+                }
+                for frame in frames[-8:]
+            ],
+        }
+
     def _binder_component_plan_bias(
         self,
         ctx: torch.Tensor,
@@ -5041,11 +5076,40 @@ class TwoTowerModel(nn.Module):
                     if reference_bias is not None:
                         before_reference = int(scores.argmax().item())
                         scores = scores + reference_bias
+                        after_reference = int(scores.argmax().item())
                         if stats is not None:
                             stats.visible_reference_applications += 1
                             stats.visible_reference_choice_changes += int(
-                                int(scores.argmax().item()) != before_reference
+                                after_reference != before_reference
                             )
+                            if len(stats.constrained_selection_traces) < 64:
+                                stats.constrained_selection_traces.append(
+                                    {
+                                        "phase": "visible_reference_completeness",
+                                        "position": position,
+                                        "before_token": str(
+                                            tok.id_to_token.get(
+                                                candidate_ids[before_reference], ""
+                                            )
+                                        ),
+                                        "chosen_token": str(
+                                            tok.id_to_token.get(
+                                                candidate_ids[after_reference], ""
+                                            )
+                                        ),
+                                        "choice_changed": (
+                                            after_reference != before_reference
+                                        ),
+                                        "legal_references": sorted(
+                                            str(tok.id_to_token.get(token_id, ""))
+                                            for token_id in candidate_ids
+                                            if str(
+                                                tok.id_to_token.get(token_id, "")
+                                            ).startswith("&")
+                                        ),
+                                        **self._choice_phase_evidence(states[row]),
+                                    }
+                                )
                     best = scores.argmax()
                     choice = int(legal_ids[int(best)].item())
                 ids[row, position] = choice
@@ -5778,6 +5842,7 @@ class TwoTowerModel(nn.Module):
                             "section_count": len(state.section_types),
                             "legal_candidate_count": len(legal),
                             "legal_references": legal_references,
+                            **self._choice_phase_evidence(state),
                         }
                     )
                 if token_id == tok.eos_id:
@@ -5786,7 +5851,7 @@ class TwoTowerModel(nn.Module):
                     break
             rows.append(
                 {
-                    "schema": "choice_decision_trace/v1",
+                    "schema": "choice_decision_trace/v2",
                     "choice_token_count": len(stream),
                     "choice_tokens": [
                         str(tok.id_to_token.get(token_id, ""))

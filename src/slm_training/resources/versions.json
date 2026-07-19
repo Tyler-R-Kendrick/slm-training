@@ -12,7 +12,7 @@
   ],
   "components": {
     "harness.model_build.eval": {
-      "version": "v8",
+      "version": "v9",
       "kind": "harness",
       "paths": [
         "src/slm_training/harnesses/model_build/eval_runner.py",
@@ -21,6 +21,7 @@
         "scripts/evaluate_model.py"
       ],
       "history": [
+        {"version": "v9", "date": "2026-07-19", "note": "persist bounded root-vs-nested choice-frame and reference-bias counterfactual telemetry"},
         {"version": "v8", "date": "2026-07-19", "note": "extend generated-reference completeness bias to reachable structural list aggregation while remaining fail-closed elsewhere"},
         {"version": "v7", "date": "2026-07-19", "note": "persist bounded choice-token and legal-reference decision evidence for per-record eval diagnosis"},
         {"version": "v6", "date": "2026-07-19", "note": "add a fail-closed choice-codec bias toward unused legal generated bound references in the root"},
