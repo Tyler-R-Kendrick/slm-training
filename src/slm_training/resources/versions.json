@@ -32,6 +32,8 @@
         "src/slm_training/harnesses/model_build/train_loop.py"
       ],
       "history": [
+        {"version": "v7", "date": "2026-07-19", "note": "no-bump: isolate the train.progress heartbeat behind a warn-only guard so telemetry write failures can never abort training"},
+        {"version": "v7", "date": "2026-07-19", "note": "no-bump: throttled OTLP train.progress heartbeat logs for live peer streaming; training math, metrics.jsonl rows, and summaries unchanged"},
         {"version": "v7", "date": "2026-07-19", "note": "expose honest prompt-derived slot-contract training and record contract provenance in train summaries"},
         {"version": "v6", "date": "2026-07-19", "note": "add bounded source-stratified masked-token loss proxy summaries for parent-replay attribution"},
         {"version": "v5", "date": "2026-07-19", "note": "add deterministic hash-pinned parent-corpus replay with fail-closed sampler composition and effective-exposure telemetry"},

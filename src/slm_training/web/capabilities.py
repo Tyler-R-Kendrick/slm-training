@@ -29,6 +29,11 @@ class Capabilities:
         }
 
 
+def is_serverless() -> bool:
+    """Known serverless hosts: read-only FS, per-request short-lived processes."""
+    return bool(os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"))
+
+
 def detect_execution(
     requested: bool, *, outputs_dir: Path | str = Path("outputs")
 ) -> bool:
@@ -40,8 +45,7 @@ def detect_execution(
     """
     if not requested:
         return False
-    # Known serverless hosts with read-only application filesystems.
-    if os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME"):
+    if is_serverless():
         return False
     outputs = Path(outputs_dir)
     try:

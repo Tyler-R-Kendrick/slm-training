@@ -35,3 +35,49 @@ def test_domain_trace_path_is_centralized(tmp_path: Path) -> None:
         path = trace.domain_path("synthesis")
         path.write_text("{}\n")
         assert path == tmp_path / trace.trace_id / "domain" / "synthesis" / "records.jsonl"
+
+
+def test_endpoint_precedence_includes_peer_fallback(monkeypatch) -> None:
+    from slm_training.runtime.telemetry.trace import _endpoint
+
+    for name in (
+        "OTEL_EXPORTER_OTLP_LOGS_ENDPOINT",
+        "OTEL_EXPORTER_OTLP_ENDPOINT",
+        "SLM_OTEL_PEERS",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    assert _endpoint("logs") is None
+
+    monkeypatch.setenv("SLM_OTEL_PEERS", " , http://peer-a:8765/ ,http://peer-b")
+    assert _endpoint("logs") == "http://peer-a:8765/v1/logs"
+
+    monkeypatch.setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://collector:4318")
+    assert _endpoint("logs") == "http://collector:4318/v1/logs"
+
+    monkeypatch.setenv("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT", "http://exact/ingest")
+    assert _endpoint("logs") == "http://exact/ingest"
+
+
+def test_mirror_headers_resolution(monkeypatch) -> None:
+    from slm_training.runtime.telemetry.trace import _headers
+
+    for name in (
+        "OTEL_EXPORTER_OTLP_HEADERS",
+        "SLM_OTEL_TOKEN",
+        "SLM_OTEL_AUTH",
+        "HF_TOKEN",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    assert _headers() == {}
+
+    monkeypatch.setenv("HF_TOKEN", "hf_secret")
+    assert _headers() == {}  # HF_TOKEN is never forwarded without opt-in
+
+    monkeypatch.setenv("SLM_OTEL_AUTH", "hf")
+    assert _headers() == {"Authorization": "Bearer hf_secret"}
+
+    monkeypatch.setenv("SLM_OTEL_TOKEN", "shared")
+    assert _headers() == {"Authorization": "Bearer shared"}
+
+    monkeypatch.setenv("OTEL_EXPORTER_OTLP_HEADERS", "x-api-key=abc, y = 1=2")
+    assert _headers() == {"x-api-key": "abc", "y": "1=2"}

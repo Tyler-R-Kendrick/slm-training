@@ -98,3 +98,122 @@ export function useJobStream(jobId: string | null) {
 }
 
 export const TERMINAL = new Set(["succeeded", "failed", "cancelled"]);
+
+export interface OtelEvent {
+  seq?: number;
+  ts?: number;
+  signal?: string;
+  body?: string;
+  severity?: string;
+  attrs?: Record<string, any>;
+  [k: string]: any;
+}
+
+export interface OtelStreamState {
+  events: OtelEvent[];
+  status: Record<string, any> | null;
+  dropped: number;
+  live: boolean;
+}
+
+const OTEL_TERMINAL = new Set(["completed", "failed"]);
+const OTEL_EVENT_CAP = 500;
+
+/**
+ * Subscribe to a run's OTEL SSE stream. Lazy by construction: the EventSource
+ * only exists while the consuming component is mounted AND the tab is visible;
+ * hiding the tab closes it and re-focusing resumes from the last seen seq.
+ * A hub_epoch change (hub restarted) resets the accumulated feed.
+ */
+export function useOtelStream(runId: string | null): OtelStreamState {
+  const [events, setEvents] = useState<OtelEvent[]>([]);
+  const [status, setStatus] = useState<Record<string, any> | null>(null);
+  const [dropped, setDropped] = useState(0);
+  const [live, setLive] = useState(false);
+  const lastSeq = useRef(0);
+  const epoch = useRef<string | null>(null);
+  const esRef = useRef<EventSource | null>(null);
+
+  useEffect(() => {
+    setEvents([]);
+    setStatus(null);
+    setDropped(0);
+    setLive(false);
+    lastSeq.current = 0;
+    epoch.current = null;
+    if (!runId) return;
+
+    const checkEpoch = (d: any) => {
+      if (d?.hub_epoch && epoch.current && d.hub_epoch !== epoch.current) {
+        setEvents([]);
+        lastSeq.current = 0;
+      }
+      if (d?.hub_epoch) epoch.current = d.hub_epoch;
+    };
+
+    const close = () => {
+      esRef.current?.close();
+      esRef.current = null;
+      setLive(false);
+    };
+
+    const open = () => {
+      if (esRef.current) return;
+      const es = new EventSource(
+        `/api/otel/runs/${encodeURIComponent(runId)}/stream?since=${lastSeq.current}`,
+      );
+      esRef.current = es;
+      setLive(true);
+      es.addEventListener("status", (e: MessageEvent) => {
+        try {
+          const d = JSON.parse(e.data);
+          checkEpoch(d);
+          setStatus(d);
+          if (OTEL_TERMINAL.has(d.status)) close();
+        } catch {
+          /* ignore malformed frame */
+        }
+      });
+      es.addEventListener("otel", (e: MessageEvent) => {
+        try {
+          const d = JSON.parse(e.data);
+          checkEpoch(d);
+          if (typeof d.seq === "number") {
+            lastSeq.current = Math.max(lastSeq.current, d.seq);
+          }
+          setEvents((prev) => [...prev.slice(-(OTEL_EVENT_CAP - 1)), d]);
+        } catch {
+          /* ignore */
+        }
+      });
+      es.addEventListener("dropped", (e: MessageEvent) => {
+        try {
+          setDropped((n) => n + (JSON.parse(e.data).count ?? 0));
+        } catch {
+          /* ignore */
+        }
+      });
+      // A server-sent `error` frame carries data (terminal: close for good).
+      // The built-in transport error event has none: EventSource reconnects
+      // on its own unless it gave up (readyState CLOSED — e.g. a 503 or a
+      // non-SSE response), where we must close or `live` sticks true.
+      es.addEventListener("error", (e: any) => {
+        if (e?.data || es.readyState === EventSource.CLOSED) close();
+      });
+    };
+
+    const onVisibility = () => {
+      if (document.hidden) close();
+      else open();
+    };
+
+    open();
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      close();
+    };
+  }, [runId]);
+
+  return { events, status, dropped, live };
+}

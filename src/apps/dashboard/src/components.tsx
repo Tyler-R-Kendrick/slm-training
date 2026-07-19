@@ -99,6 +99,12 @@ const STATUS_CLASS: Record<string, string> = {
   healthy: "passed",
   warning: "warning",
   unavailable: "idle",
+  // OTel hub run lifecycle (active runs card / live telemetry)
+  active: "running",
+  completed: "passed",
+  stale: "warning",
+  connecting: "idle",
+  unknown: "idle",
 };
 
 export function StatusPill({ value, label }: { value: any; label?: string }) {
@@ -664,5 +670,95 @@ export function DispatchLines({
         </div>
       ))}
     </>
+  );
+}
+
+// --- otel active runs ------------------------------------------------------
+// Shared by the compiled Overview card and the interpreted OtelRunList /
+// OtelBadges wrappers so both render modes match verbatim.
+function agoLabel(epochSeconds: number | null | undefined): string {
+  if (!epochSeconds) return "—";
+  const s = Math.max(0, Date.now() / 1000 - Number(epochSeconds));
+  if (s < 90) return `${Math.round(s)}s ago`;
+  if (s < 5400) return `${Math.round(s / 60)}m ago`;
+  return `${Math.round(s / 3600)}h ago`;
+}
+
+export function OtelBadgesView({ data }: { data: any }) {
+  const peers = data?.peers ?? [];
+  const up = peers.filter((p: any) => p.ok).length;
+  return (
+    <>
+      {peers.length > 0 && (
+        <span
+          className={`prov ${up === peers.length ? "prov-live" : "prov-committed"}`}
+          title={peers.map((p: any) => `${p.url}: ${p.ok ? "ok" : p.error}`).join("\n")}
+        >
+          peers {up}/{peers.length}
+        </span>
+      )}{" "}
+      <span className={`prov ${data?.enabled ? "prov-live" : "prov-committed"}`}>
+        {data?.enabled ? "hub on" : "hub off"}
+      </span>
+    </>
+  );
+}
+
+export function OtelRunLines({
+  data,
+  navigate,
+}: {
+  data: any;
+  navigate?: (to: string) => void;
+}) {
+  const runs = data?.runs ?? [];
+  if (!runs.length) {
+    return (
+      <p className="hint">
+        No active runs anywhere right now. Runs broadcast here automatically when a trainer has{" "}
+        <span className="mono">OTEL_EXPORTER_OTLP_ENDPOINT</span> or{" "}
+        <span className="mono">SLM_OTEL_PEERS</span> pointed at a telemetry peer; local runs under{" "}
+        <span className="mono">outputs/runs/</span> appear with no setup at all.
+      </p>
+    );
+  }
+  return (
+    <DataTable
+      columns={[
+        { key: "run_id", label: "Run" },
+        { key: "user", label: "User" },
+        { key: "operation", label: "Operation" },
+        { key: "status", label: "Status" },
+        { key: "step", label: "Step", align: "right" },
+        { key: "loss", label: "Loss", align: "right" },
+        { key: "source", label: "Source" },
+        { key: "last_seen", label: "Last event", align: "right" },
+      ]}
+      rows={runs.map((r: any) => ({
+        ...r,
+        user: r.user ?? "—",
+        step: r.latest?.step,
+        loss: r.latest?.loss,
+      }))}
+      render={{
+        run_id: (row) => (
+          <a
+            className="mono runlink"
+            onClick={() => navigate?.(`/runs/${encodeURIComponent(row.run_id)}`)}
+          >
+            {row.run_id}
+          </a>
+        ),
+        user: (row) => <span className="hint">{row.user}</span>,
+        operation: (row) => <span className="mono">{row.operation || "—"}</span>,
+        status: (row) => <StatusPill value={row.status} />,
+        source: (row) => (
+          <span className="prov prov-committed" title={row.peer ?? undefined}>
+            {row.source}
+          </span>
+        ),
+        last_seen: (row) => <span className="hint">{agoLabel(row.last_seen)}</span>,
+      }}
+    />
   );
 }
