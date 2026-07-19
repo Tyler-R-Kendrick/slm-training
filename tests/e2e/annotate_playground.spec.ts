@@ -151,28 +151,43 @@ test.describe("annotate playground", () => {
       "root = Missing([thing])",
       'root = Card([title])\ntitle = TextContent(":hero.title")',
     ];
+    // Concurrent prefetch interleaves samples, so the double keys on the TASK
+    // marker instead of call order: reviews (for warm-queue samples) pass,
+    // and only fallback GENERATE calls consume the scripted outputs.
     await page.addInitScript((outputs) => {
       let index = 0;
       // @ts-expect-error Test double for Chrome's built-in Prompt API.
       window.LanguageModel = {
         availability: async () => "available",
         create: async () => ({
-          prompt: async () => outputs[index++],
+          prompt: async (input: string) =>
+            String(input).startsWith("TASK: REVIEW")
+              ? JSON.stringify({ passed: true, score: 0.9, reasons: ["Useful layout"] })
+              : outputs[index++],
           destroy: () => {},
         }),
       };
     }, browserOutputs);
 
-    let serverCalls = 0;
+    const FALLBACK_PROMPT = "A browser fallback card";
+    let promptCalls = 0;
+    await page.route("**/api/prompt/next**", async (route) => {
+      promptCalls += 1;
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ prompt: promptCalls === 1 ? FALLBACK_PROMPT : `A server-success prefetch ${promptCalls}` }),
+      });
+    });
     await page.route("**/api/server-attempt", async (route) => {
-      serverCalls += 1;
       const body = route.request().postDataJSON();
-      if (serverCalls > 3) {
+      // Only the fallback sample fails; warm-queue samples succeed regardless
+      // of arrival order.
+      if (body.prompt !== FALLBACK_PROMPT) {
         const openui = 'root = Button(":cta.label")';
         await route.fulfill({
           contentType: "application/json",
           body: JSON.stringify({
-            prompt: "A server-success prefetch",
+            prompt: body.prompt,
             openui,
             serialized: openui,
             valid: true,
@@ -192,7 +207,7 @@ test.describe("annotate playground", () => {
       await route.fulfill({
         contentType: "application/json",
         body: JSON.stringify({
-          prompt: "A browser fallback card",
+          prompt: FALLBACK_PROMPT,
           openui: `bad server output ${body.attempt}`,
           valid: false,
           error: `server failure ${body.attempt}`,
@@ -253,27 +268,26 @@ test.describe("annotate playground", () => {
   });
 
   test("browser baseline rejects a lint-clean candidate before display", async ({ page }) => {
-    let grade = 0;
+    // Concurrent prefetch interleaves reviews across samples, so the double
+    // judges the candidate content itself: every attempt-1 card (title only)
+    // is rejected and every attempt-2 card (with :hero.body) passes.
     await page.addInitScript(() => {
-      let review = 0;
       // @ts-expect-error Test double for Chrome's built-in Prompt API.
       window.LanguageModel = {
         availability: async () => "available",
         create: async () => ({
-          prompt: async () => {
-            review += 1;
-            return review === 1
+          prompt: async (input: string) =>
+            String(input).includes(":hero.body")
               ? JSON.stringify({
-                  passed: false,
-                  score: 0.35,
-                  reasons: ["Missing requested body content"],
-                })
-              : JSON.stringify({
                   passed: true,
                   score: 0.91,
                   reasons: ["Complete request-aligned hierarchy"],
-                });
-          },
+                })
+              : JSON.stringify({
+                  passed: false,
+                  score: 0.35,
+                  reasons: ["Missing requested body content"],
+                }),
           destroy: () => {},
         }),
       };
@@ -306,22 +320,21 @@ test.describe("annotate playground", () => {
       });
     });
     const reviews: Array<{ attempt: number; passed: boolean; score: number }> = [];
+    let reviewCount = 0;
     await page.route("**/api/generation-review", async (route) => {
       const body = route.request().postDataJSON();
       reviews.push(body);
-      grade += 1;
-      const passed = grade === 2;
+      reviewCount += 1;
+      // Store echoes the client verdict, like the real endpoint.
       await route.fulfill({
         contentType: "application/json",
         body: JSON.stringify({
           ok: true,
-          id: `review_${grade}`,
-          passed,
-          score: passed ? 0.91 : 0.35,
-          reasons: passed
-            ? ["Complete request-aligned hierarchy"]
-            : ["Missing requested body content"],
-          error: passed ? null : "Missing requested body content",
+          id: `review_${reviewCount}`,
+          passed: body.passed === true,
+          score: body.score,
+          reasons: body.reasons,
+          error: body.passed === true ? null : (body.reasons || []).join("; "),
         }),
       });
     });
@@ -330,10 +343,15 @@ test.describe("annotate playground", () => {
     await expect(page.locator("#badge")).toHaveText("valid", { timeout: 15_000 });
     await expect(page.locator("#modelSource")).toContainText(/training model.*browser-approved/i);
     await expect(page.locator("#output")).toContainText(":hero.body");
-    expect(reviews.slice(0, 2).map((review) => review.passed)).toEqual([false, true]);
-    expect(serverBodies[1].prior_failures.join(" ")).toContain(
-      "Missing requested body content"
-    );
+    const attemptOne = reviews.filter((review) => review.attempt === 1);
+    const attemptTwo = reviews.filter((review) => review.attempt === 2);
+    expect(attemptOne.length).toBeGreaterThan(0);
+    expect(attemptTwo.length).toBeGreaterThan(0);
+    expect(attemptOne.every((review) => review.passed === false)).toBe(true);
+    expect(attemptTwo.every((review) => review.passed === true)).toBe(true);
+    const retries = serverBodies.filter((body) => body.attempt === 2);
+    expect(retries.length).toBeGreaterThan(0);
+    expect(retries.every((body) => body.prior_failures.join(" ").includes("Missing requested body content"))).toBe(true);
   });
 
   test("human edits preview at a stable height and persist correction identity", async ({ page }) => {

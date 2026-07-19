@@ -124,6 +124,44 @@ or ship-readiness claim; no checkpoint, suite, or ship gate changed. A native
 Windows ARM64 browser run per the steps in browser-inference-options.md is the
 remaining hardware verification.
 
+## Playground warm-queue pipeline (2026-07-19)
+
+Profiling the live fixture server put `/api/prompt/next` at ~3 ms and each
+`/api/server-attempt` at **7–17 s** (one grammar-constrained decode of the
+demo checkpoint per request; longer prior-failure context costs more). The
+SPA generated samples strictly one-at-a-time, only began after the editor and
+renderer bundles loaded, and permanently stopped the queue after one fully
+failed sample — so every wait a user felt was the whole pipeline, serial.
+
+`Playground.tsx` changes:
+
+1. **Eager start** — the queue driver starts on mount, before the editor /
+   renderer bundles load; per-slot updates flip the status when the first
+   sample is gradable.
+2. **Concurrent pipelines** — `PREFETCH_CONCURRENCY = 2` samples generate at
+   once (the health endpoint stays responsive during decodes, so attempts
+   parallelize server-side across cores). The browser session serializes its
+   prompts FIFO (`promptChain` in `browser_inference.js`) because the single
+   ORT session cannot run two generations at once.
+3. **Failure budget instead of a kill switch** — `PREFETCH_FAILURE_BUDGET = 2`
+   consecutive fully-failed samples pause the driver; browsing re-arms it, so
+   a recovered backend resumes automatically.
+4. **Multi-CDN runtime import** — transformers.js loads from the first CDN
+   that responds (jsdelivr, then unpkg): one blocked host no longer removes
+   the browser baseline entirely.
+
+Live no-stub probe on this container (worst-case environment: demo checkpoint
+produced 0/9 lint-valid attempts and the container proxy blocks both CDNs, so
+every sample honestly degrades to the labeled wiring fixture): first gradable
+card at **39.7 s**, full queue (current + 2 prefetched) at **65.8 s wall
+versus ~76.6 s of summed per-slot time**, samples 1 and 2 finishing
+simultaneously, and no queue stall after failures. Suites after the change:
+`pytest tests/test_web` 115 passed; Playwright desktop-chrome 16/16 and
+mobile-chrome 16/16 (two annotate specs were rewritten to key their stubs on
+request content because concurrent prefetch interleaves samples; one mobile
+run flaked under 2-project CPU contention and passed on rerun). Fixture-demo
+runtime evidence, not an eval; no checkpoint, suite, or ship gate changed.
+
 ## Kernel boundary (unchanged)
 
 ```

@@ -57,8 +57,13 @@ const OPENUI_REVIEW_SCHEMA = {
   },
 };
 
-const TRANSFORMERS_JS_URL =
-  "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.2.0";
+// One CDN outage (or a proxy that blocks one host) must not take down the
+// whole browser baseline: the runtime is imported from the first CDN that
+// responds, in this order.
+const TRANSFORMERS_JS_URLS = [
+  "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.2.0",
+  "https://unpkg.com/@huggingface/transformers@4.2.0/dist/transformers.min.js",
+];
 // Browser baseline model. SmolLM2-360M-Instruct is the same family this
 // repo's HF-context experiments freeze (docs/MODEL_CARD.md), and its official
 // repo ships ONNX exports sized for a one-time cached download: q4f16 ≈ 273MB
@@ -333,9 +338,23 @@ function fewshotFor(content) {
   return [];
 }
 
+async function importTransformers(onProgress) {
+  const failures = [];
+  for (const url of TRANSFORMERS_JS_URLS) {
+    try {
+      return await import(url);
+    } catch (error) {
+      const host = new URL(url).host;
+      failures.push(`${host}: ${error?.message || String(error)}`);
+      onProgress({ status: `failed runtime import from ${host} — trying next CDN`, progress: null });
+    }
+  }
+  throw new Error(`transformers.js runtime unreachable (${failures.join("; ")})`);
+}
+
 async function createTransformersSession(systemPrompt, onProgress) {
   const capabilities = browserAccelerationCapabilities();
-  const { env, pipeline } = await import(TRANSFORMERS_JS_URL);
+  const { env, pipeline } = await importTransformers(onProgress);
   // Cache API persistence: model files download once per browser profile and
   // every later visit (or backend retry) replays them from local storage.
   env.useBrowserCache = true;
@@ -394,56 +413,64 @@ async function createTransformersSession(systemPrompt, onProgress) {
     throw new Error(`No browser inference backend initialized (${failures.join("; ")})`);
   }
   await initializeFrom(0);
+  // The underlying ORT session cannot run two generations at once, so prompts
+  // from concurrent sample pipelines are serialized FIFO.
+  let promptChain = Promise.resolve();
+  async function runPrompt(content) {
+    if (disposed) throw new Error("Browser inference session has been disposed");
+    for (;;) {
+      try {
+        if (disposed) throw new Error("Browser inference session has been disposed");
+        const output = await generator(
+          [
+            { role: "system", content: systemPrompt },
+            ...fewshotFor(content),
+            { role: "user", content: String(content || "") },
+          ],
+          {
+            max_new_tokens: GENERATION_MAX_NEW_TOKENS,
+            do_sample: false,
+            repetition_penalty: 1.1,
+            return_full_text: false,
+          }
+        );
+        if (disposed) throw new Error("Browser inference session has been disposed");
+        return generatedText(output);
+      } catch (error) {
+        if (disposed) throw new Error("Browser inference session has been disposed");
+        const reason = error?.message || String(error);
+        failures.push(`${selected?.device} inference: ${reason}`);
+        onProgress({ status: `failed ${selected?.device} inference — ${reason}`, progress: null });
+        const failedProfile = selected;
+        await generator?.dispose?.();
+        generator = null;
+        selected = null;
+        const remembered = readInferenceProfile();
+        if (
+          remembered?.device === failedProfile?.device &&
+          remembered?.dtype === failedProfile?.dtype
+        ) {
+          writeInferenceProfile(null);
+        }
+        if (disposed) throw new Error("Browser inference session has been disposed");
+        await initializeFrom(selectedIndex + 1);
+        if (disposed) {
+          await generator?.dispose?.();
+          generator = null;
+          throw new Error("Browser inference session has been disposed");
+        }
+      }
+    }
+  }
   return {
     device: selected.device,
     dtype: selected.dtype,
     model: TRANSFORMERS_JS_MODEL,
     session: {
-      async prompt(content) {
-        if (disposed) throw new Error("Browser inference session has been disposed");
-        for (;;) {
-          try {
-            if (disposed) throw new Error("Browser inference session has been disposed");
-            const output = await generator(
-              [
-                { role: "system", content: systemPrompt },
-                ...fewshotFor(content),
-                { role: "user", content: String(content || "") },
-              ],
-              {
-                max_new_tokens: GENERATION_MAX_NEW_TOKENS,
-                do_sample: false,
-                repetition_penalty: 1.1,
-                return_full_text: false,
-              }
-            );
-            if (disposed) throw new Error("Browser inference session has been disposed");
-            return generatedText(output);
-          } catch (error) {
-            if (disposed) throw new Error("Browser inference session has been disposed");
-            const reason = error?.message || String(error);
-            failures.push(`${selected?.device} inference: ${reason}`);
-            onProgress({ status: `failed ${selected?.device} inference — ${reason}`, progress: null });
-            const failedProfile = selected;
-            await generator?.dispose?.();
-            generator = null;
-            selected = null;
-            const remembered = readInferenceProfile();
-            if (
-              remembered?.device === failedProfile?.device &&
-              remembered?.dtype === failedProfile?.dtype
-            ) {
-              writeInferenceProfile(null);
-            }
-            if (disposed) throw new Error("Browser inference session has been disposed");
-            await initializeFrom(selectedIndex + 1);
-            if (disposed) {
-              await generator?.dispose?.();
-              generator = null;
-              throw new Error("Browser inference session has been disposed");
-            }
-          }
-        }
+      prompt(content) {
+        const turn = promptChain.then(() => runPrompt(content));
+        promptChain = turn.catch(() => {});
+        return turn;
       },
       destroy() {
         disposed = true;

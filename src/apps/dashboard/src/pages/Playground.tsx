@@ -2,6 +2,13 @@ import React, { useEffect, useReducer, useRef, useState } from "react";
 import { useCaps } from "../caps";
 
 const PREFETCH = 2;
+// Sample pipelines running at once: the next sample's server decode overlaps
+// the current one's browser review, so swipes land on a warm queue. Browser
+// prompts stay safe under this — the session serializes them FIFO.
+const PREFETCH_CONCURRENCY = 2;
+// Consecutive fully-failed samples that stop the queue driver; browsing
+// re-triggers a fresh driver so a recovered backend resumes automatically.
+const PREFETCH_FAILURE_BUDGET = 2;
 const MAX_LOG_ENTRIES = 80;
 const SESSION_KEY = "twotower_annotate_session";
 const VIEW_KEY = "twotower_annotate_view";
@@ -136,7 +143,7 @@ function waitForPreviewApi(timeoutMs = 15_000): Promise<any> {
   });
 }
 
-const browserModuleUrl = "/static/browser_inference.js?v=20260718-1";
+const browserModuleUrl = "/static/browser_inference.js?v=20260719-1";
 const editorModuleUrl = "/static/openui_editor.js?v=20260713-1";
 let browserModulePromise: Promise<any> | null = null;
 let editorModulePromise: Promise<any> | null = null;
@@ -680,38 +687,54 @@ export function Playground() {
     if (prefetchingRef.current && prefetchOwnerRef.current && !prefetchOwnerRef.current.aborted) return;
     prefetchingRef.current = true;
     prefetchOwnerRef.current = signal;
-    try {
-      while (stackRef.current.length - indexRef.current - 1 < PREFETCH) {
+    let consecutiveFailures = 0;
+    const inFlight = new Set<Promise<void>>();
+    const runSlot = async (slot: number, placeholder: Sample) => {
+      appendLog(`Sample ${slot + 1}: training-model pipeline started; browser baseline gate required.`);
+      const started = performance.now();
+      let sample: Sample;
+      try {
+        sample = await trainingModelPipeline(placeholder, slot, signal);
         signal.throwIfAborted();
-        const placeholder: Sample = { prompt: "…", openui: "", valid: false, status: "loading", note: "" };
-        stackRef.current.push(placeholder);
-        const slot = stackRef.current.length - 1;
-        appendLog(`Sample ${slot + 1}: queued for generation.`);
-        forceRender();
-        appendLog(`Sample ${slot + 1}: training-model pipeline started; browser baseline gate required.`);
-        const started = performance.now();
-        let sample: Sample;
-        try {
-          sample = await trainingModelPipeline(placeholder, slot, signal);
-          signal.throwIfAborted();
-        } catch (error: any) {
-          if (isAbortError(error)) throw error;
-          sample = { prompt: placeholder.prompt || "Generation request failed", openui: "", valid: false, error: error?.message || String(error), status: "error", source: null, note: "" };
+      } catch (error: any) {
+        if (isAbortError(error)) return;
+        sample = { prompt: placeholder.prompt || "Generation request failed", openui: "", valid: false, error: error?.message || String(error), status: "error", source: null, note: "" };
+      }
+      stackRef.current[slot] = sample;
+      renderedItemRef.current = null;
+      forceRender();
+      if (slot === indexRef.current) setNote(sample.note || "");
+      if (sample.valid) {
+        consecutiveFailures = 0;
+        appendLog(`Sample ${slot + 1}: ${sample.source} output ready after ${((performance.now() - started) / 1000).toFixed(1)}s.`, "success");
+        if (slot === indexRef.current) setStatus("Ready · swipe or use thumbs · arrows browse · Tab changes view");
+      }
+      else {
+        consecutiveFailures += 1;
+        setStatus(`All generation attempts failed (${sample.error || "unknown error"})`);
+        setUiError(sample.error || "All generation attempts failed");
+        appendLog(`Sample ${slot + 1}: all server and browser attempts exhausted — ${sample.error || "unknown error"}`, "error");
+      }
+    };
+    try {
+      for (;;) {
+        signal.throwIfAborted();
+        const deficit = PREFETCH - (stackRef.current.length - indexRef.current - 1);
+        const halted = consecutiveFailures >= PREFETCH_FAILURE_BUDGET;
+        if ((deficit <= 0 || halted) && inFlight.size === 0) break;
+        if (deficit > 0 && !halted && inFlight.size < PREFETCH_CONCURRENCY) {
+          const placeholder: Sample = { prompt: "…", openui: "", valid: false, status: "loading", note: "" };
+          stackRef.current.push(placeholder);
+          const slot = stackRef.current.length - 1;
+          appendLog(`Sample ${slot + 1}: queued for generation.`);
+          forceRender();
+          const task: Promise<void> = runSlot(slot, placeholder).finally(() => {
+            inFlight.delete(task);
+          });
+          inFlight.add(task);
+          continue;
         }
-        stackRef.current[slot] = sample;
-        renderedItemRef.current = null;
-        forceRender();
-        if (slot === indexRef.current) setNote(sample.note || "");
-        if (sample.valid) {
-          appendLog(`Sample ${slot + 1}: ${sample.source} output ready after ${((performance.now() - started) / 1000).toFixed(1)}s.`, "success");
-          if (slot === indexRef.current) setStatus("Ready · swipe or use thumbs · arrows browse · Tab changes view");
-        }
-        else {
-          setStatus(`All generation attempts failed (${sample.error || "unknown error"})`);
-          setUiError(sample.error || "All generation attempts failed");
-          appendLog(`Sample ${slot + 1}: all server and browser attempts exhausted — ${sample.error || "unknown error"}`, "error");
-          break;
-        }
+        await Promise.race(inFlight);
       }
     } finally {
       if (prefetchOwnerRef.current === signal) {
@@ -1041,6 +1064,15 @@ export function Playground() {
     void preloadBrowserModel(signal).catch((error) => {
       if (!isAbortError(error) && !signal.aborted) appendLog(`Browser baseline initialization failed — ${error?.message || String(error)}`, "error");
     });
+    // Generation needs neither the editor nor the renderer bundle: start
+    // filling the queue immediately so the first server decode runs while
+    // they load. Per-slot updates flip the status to Ready.
+    setStatus("Generating first sample…");
+    void ensurePrefetch(signal).catch((error) => {
+      if (isAbortError(error) || signal.aborted || !alive) return;
+      setUiError(error?.message || String(error));
+      appendLog(`Generation queue failed — ${error?.message || String(error)}`, "error");
+    });
     (async () => {
       try {
         editorRef.current = await loadEditorModule();
@@ -1056,22 +1088,8 @@ export function Playground() {
           appendLog(`Renderer error — ${error?.message || String(error)}`, "error");
         }
       }
-      if (!alive) return;
-      setStatus("Prefetching samples…");
-      try {
-        await ensurePrefetch(signal);
-      } catch (error: any) {
-        if (isAbortError(error)) return;
-        if (alive) {
-          setUiError(error?.message || String(error));
-          appendLog(`Generation queue failed — ${error?.message || String(error)}`, "error");
-        }
-        return;
-      }
-      if (signal.aborted) return;
-      if (!alive) return;
+      if (!alive || signal.aborted) return;
       if (current()?.status === "ready" && current()?.valid) setStatus("Ready · swipe or use thumbs · arrows browse · Tab changes view");
-      else if (!current()) setStatus("Waiting for valid sample…");
       cardRef.current?.focus();
     })();
     return () => {
