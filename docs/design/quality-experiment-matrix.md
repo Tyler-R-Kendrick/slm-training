@@ -2200,6 +2200,23 @@ Full evidence:
 [narrative](iter-e524-visible-component-contract-data-20260719.md) and
 [JSON](iter-e524-visible-component-contract-data-20260719.json).
 
+## E525 visible component-contract continuation
+
+E525 holds the E522 parent, replay, token budget, objective weights, authority,
+and evaluator fixed while replacing E521 with membership-identical E524. The
+clean run completes 99 CPU HF-context steps / 5,059 target tokens in 76.7
+seconds and has a bucket-verified checkpoint.
+
+E526 raises component recall `0.2708→0.4167`, but fidelity regresses
+`0.8667→0.4667`, structure `0.1955→0.1452`, AST node F1
+`0.3437→0.3041`, and AST edge F1 `0.1007→0.0774`. Meaningful and strict
+meaning remain zero and AgentV remains 0/1.
+
+**Verdict:** reject E525. Exact component counts teach inventory recall but do
+not recover reference hierarchy and trade away slot fidelity. Full evidence:
+[narrative](iter-e525-visible-component-continuation-20260719.md) and
+[JSON](iter-e525-visible-component-continuation-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

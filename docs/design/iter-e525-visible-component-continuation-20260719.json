@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E525",
+  "run_id": "e525-e396-e524-replay050-slotrole1-honest-context-r2-5k",
+  "evaluation_run_id": "e526-e525-ood160-component-contract-r1",
+  "run_class": "scratch_matrix",
+  "date_utc": "2026-07-19",
+  "status": "complete",
+  "hypothesis": "Replacing E521 with the membership-identical E524 component-contract corpus restores OOD component hierarchy while preserving E522 slot fidelity under an otherwise matched continuation recipe.",
+  "conclusion": "Visible component counts raise component recall from 0.2708 to 0.4167, but fidelity, structure, reward, and AST overlap regress; meaningful and strict meaning remain zero and AgentV remains 0/1. The conditional component contract does not compose with the slot-fidelity gain, so the checkpoint is rejected.",
+  "invalid_attempts": [
+    {
+      "run_id": "e525-e396-e524-replay050-slotrole1-honest-context-r1-5k",
+      "status": "invalid_setup",
+      "reason": "The first invocation omitted E522's non-default choice output tokenizer, so parent tensor shapes failed closed before any training step or checkpoint."
+    }
+  ],
+  "persistence_incident": {
+    "status": "recovered",
+    "reason": "Training completed, but the sandboxed automatic HF Bucket call failed at the network boundary.",
+    "remediation": "Canonical rescue sync uploaded and independently verified the nine-file bundle. The rescue workflow was fixed to persist its verified report into train_summary.json and checkpoint_bucket.json.",
+    "fix_commit": "73f9e14e505c6fbb8f1e787bd128593b095bdcf7"
+  },
+  "training": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "code_commit": "f6d7695236bcfbde55e56e29acb20b16c70c6a3f",
+    "code_dirty": false,
+    "parent_run_id": "e396-balanced-type-head-continuation-r1",
+    "primary_data_version": "e524_visible_component_slot_contract_r4_20260719",
+    "primary_data_manifest_sha": "56c035c1a6386ef4f49fb7e9d68dcd89445f6c75dfff5686bb9bff5b1825d37a",
+    "replay_data_version": "e357_card_hierarchy_v1",
+    "replay_fraction_effective": 0.5050505050505051,
+    "steps": 99,
+    "seen_target_tokens": 5059,
+    "target_token_budget": 5000,
+    "elapsed_wall_seconds": 76.72029822499917,
+    "max_wall_minutes": 3.0,
+    "stopped_on": "token_budget",
+    "last_loss": 17.462305068969727,
+    "learning_rate": 0.0003,
+    "component_plan_loss_weight": 4.0,
+    "slot_component_loss_weight": 1.0,
+    "slot_component_focal_gamma": 0.0,
+    "slot_component_decode_weight": 4.0,
+    "slot_component_prompt_context": true,
+    "slot_contract_in_context": true,
+    "honest_slot_contract": true,
+    "honesty_mode": "no-design-md-context",
+    "hard_process_cap_seconds": 170
+  },
+  "checkpoint": {
+    "sha256": "dbd11811d826fdf7efd8b22557fb3bd48f879e84ec7484bc0a2680198e55e4b9",
+    "full_state_sha256": "dd588c80998315e6edf694610ae49f3e9e7115e3125f4a3175125d3aeea9ad63",
+    "remote_uri": "hf://buckets/TKendrick/OpenUI/checkpoints/e525-e396-e524-replay050-slotrole1-honest-context-r2-5k",
+    "synced": true,
+    "verified": true,
+    "verification_method": "resync_dry_run",
+    "verified_at": "2026-07-19T15:51:48Z",
+    "independent_bucket_listing": true
+  },
+  "matched_runs": [
+    {
+      "label": "visible_component_and_slot_contract",
+      "run_id": "e525-e396-e524-replay050-slotrole1-honest-context-r2-5k",
+      "evaluation_run_id": "e526-e525-ood160-component-contract-r1",
+      "checkpoint_sha256": "dbd11811d826fdf7efd8b22557fb3bd48f879e84ec7484bc0a2680198e55e4b9",
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.0,
+          "placeholder_fidelity": 0.4666666666666667,
+          "structural_similarity": 0.145175,
+          "component_type_recall": 0.41666666666666663,
+          "reward_score": 0.16675,
+          "ast_node_f1": 0.30406746031746035,
+          "ast_edge_f1": 0.07738095238095238,
+          "binding_aware_meaningful_v2_rate_strict": 0.0,
+          "binding_aware_meaningful_v2_coverage": 1.0,
+          "latency_ms_p50": 3856.83,
+          "latency_ms_p95": 5159.34
+        }
+      }
+    }
+  ],
+  "comparison_to_e523_e522_visible_slot_control": {
+    "meaningful_program_rate_delta": 0.0,
+    "placeholder_fidelity_delta": -0.4,
+    "structural_similarity_delta": -0.050325,
+    "component_type_recall_delta": 0.14583333333333331,
+    "reward_score_delta": -0.0425,
+    "ast_node_f1_delta": -0.0395833333333333,
+    "ast_edge_f1_delta": -0.02331349206349207,
+    "latency_interpretation": "Unreplicated runtime variance; not a performance claim."
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "Meaningful rate and strict binding-aware meaning are zero, structure and AST edges regress, and AgentV remains red."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "73f9e14e505c6fbb8f1e787bd128593b095bdcf7",
+    "code_dirty": false,
+    "components": {
+      "harness.model_build.train": "v7",
+      "harness.model_build.eval": "v2",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v1"
+    },
+    "stamped_at": "2026-07-19T15:52:59.477821+00:00"
+  },
+  "decision": "Reject E525 for promotion. Do not add stronger component-count prompting or repeat hidden topology losses; the next lever should target the observed prompt-to-reference-graph mismatch without supplying exact gold counts."
+}
