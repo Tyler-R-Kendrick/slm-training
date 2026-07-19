@@ -1,0 +1,110 @@
+{
+  "activation_gates": [
+    {
+      "available": false,
+      "depends_on_issue_id": "SLM-169",
+      "evidence": "canonical AST, codec round-trip, binding integrity, lineage, split-leakage gate",
+      "gate_id": "canonical_ast_codec_binding",
+      "required_status": "Done"
+    },
+    {
+      "available": false,
+      "depends_on_issue_id": "SLM-171",
+      "evidence": "prompt/template diversity identified as a plausible bottleneck at fixed roots",
+      "gate_id": "roottype_diversity_economics",
+      "required_status": "Done"
+    },
+    {
+      "available": false,
+      "depends_on_issue_id": "SLM-106",
+      "evidence": "cross-family judge or blinded human rubric available and disjoint from teacher generator",
+      "gate_id": "independent_judge_path",
+      "required_status": "Done"
+    }
+  ],
+  "activation_status": "blocked",
+  "activation_verdict": "activation_blocked",
+  "arms": [
+    {
+      "arm_id": "canonical_only",
+      "corpus_variant": "canonical_only",
+      "eligible": true
+    },
+    {
+      "arm_id": "deterministic_templates",
+      "corpus_variant": "deterministic_templates",
+      "eligible": true
+    },
+    {
+      "arm_id": "teacher_paraphrases",
+      "corpus_variant": "teacher_paraphrases",
+      "eligible": true,
+      "styles": [
+        "concise",
+        "detailed",
+        "business_user_story",
+        "imperative",
+        "multi_constraint"
+      ]
+    },
+    {
+      "arm_id": "mixed_50_50",
+      "corpus_variant": "mixed_50_50",
+      "eligible": true
+    },
+    {
+      "arm_id": "teacher_shuffled_target",
+      "corpus_variant": "teacher_shuffled_target",
+      "eligible": false,
+      "omission_reason": "diagnostic control only; never an eligible training corpus beyond a bounded specificity test"
+    },
+    {
+      "arm_id": "teacher_low_diversity",
+      "corpus_variant": "teacher_low_diversity",
+      "eligible": true,
+      "styles": [
+        "concise"
+      ]
+    }
+  ],
+  "budget": {
+    "max_dollars": 0.0,
+    "max_input_tokens": 0,
+    "max_output_tokens": 0
+  },
+  "campaign_verdict": "unrun",
+  "hypothesis_id": "H19",
+  "manifest_hash": "fc5908312d84e467",
+  "manifest_id": "sde4-03-v1",
+  "max_derivatives_per_root": 5,
+  "note": "SDE4-03 teacher-paraphrase activation/budget manifest (wiring slice).",
+  "primary_metric": "binding_aware_meaningful_program_rate",
+  "provider": {
+    "max_tokens": 4096,
+    "model": "unset",
+    "provider": "unset",
+    "retry_policy": {
+      "backoff": "exponential",
+      "max_retries": 3
+    },
+    "sampling_parameters": {
+      "temperature": 0.7,
+      "top_p": 0.95
+    }
+  },
+  "schema_version": "teacher_paraphrase_activation/v1",
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "version_stamp": {
+    "code_commit": "b400b89b5d8c5c719bdb1596710e22daf9a1c2a0",
+    "code_dirty": true,
+    "components": {
+      "harness.experiments": "v8"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-19T17:45:34.350319+00:00"
+  }
+}
