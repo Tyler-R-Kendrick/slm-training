@@ -116,8 +116,6 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--precision-formats",
-        "--formats",
-        dest="precision_formats",
         default="fp16,int8,int4,ternary,binary,learned4zero",
         help="Comma-separated precision format aliases for equal-byte-precision.",
     )
@@ -159,14 +157,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.family == "equal-byte-precision":
         from slm_training.harnesses.experiments.ladder import plan_equal_byte_ladder
-        from slm_training.versioning import build_version_stamp
 
         if not args.byte_budgets.strip():
             parser.error("--byte-budgets is required for the equal-byte-precision family")
-        if not args.plan_only:
-            parser.error(
-                "equal-byte low-bit training is not implemented; use --plan-only"
-            )
 
         byte_budgets = _parse_byte_budgets(args.byte_budgets)
         formats = _parse_formats(args.precision_formats)
@@ -186,12 +179,8 @@ def main(argv: list[str] | None = None) -> int:
         out = Path(args.out)
         out.mkdir(parents=True, exist_ok=True)
         manifest = {
-            "run_id": out.name,
             "family": "equal-byte-precision",
-            "status": "plan_only",
-            "claim_class": "diagnostic",
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "version_stamp": build_version_stamp("harness.experiments"),
             "byte_budgets": byte_budgets,
             "precision_formats": formats,
             "widths": widths,
@@ -218,8 +207,6 @@ def main(argv: list[str] | None = None) -> int:
                             "actual_bytes": p.actual_bytes,
                             "budget_delta": p.budget_delta,
                             "status": p.status,
-                            "matching_regime": p.matching_regime,
-                            "training_status": p.training_status,
                         }
                         for p in lad.points
                     ],
@@ -228,22 +215,8 @@ def main(argv: list[str] | None = None) -> int:
             ],
         }
         manifest_path = out / f"equal_byte_plan_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}.json"
-        payload = json.dumps(manifest, indent=2) + "\n"
-        manifest_path.write_text(payload, encoding="utf-8")
-        if args.docs_out is not None:
-            args.docs_out.parent.mkdir(parents=True, exist_ok=True)
-            args.docs_out.write_text(payload, encoding="utf-8")
-        print(
-            json.dumps(
-                {
-                    "out": str(out),
-                    "manifest": str(manifest_path),
-                    "docs_out": str(args.docs_out) if args.docs_out else None,
-                    "n_ladders": len(ladders),
-                },
-                indent=2,
-            )
-        )
+        manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+        print(json.dumps({"out": str(out), "manifest": str(manifest_path), "n_ladders": len(ladders)}, indent=2))
         return 0
 
     if args.train_dir is None or args.test_dir is None:
