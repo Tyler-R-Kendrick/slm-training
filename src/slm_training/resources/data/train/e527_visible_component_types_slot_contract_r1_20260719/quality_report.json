@@ -1,0 +1,218 @@
+{
+  "schema_version": 1,
+  "version": "e527_visible_component_types_slot_contract_r1_20260719",
+  "profile": "strict",
+  "built_at": "2026-07-19T16:07:21.030103+00:00",
+  "counts": {
+    "seeds": 244,
+    "candidates": 244,
+    "collected": 244,
+    "admitted": 244,
+    "rejected_total": 0,
+    "source_errors": 0,
+    "by_stage": {}
+  },
+  "constraint_fitness": {
+    "parse_failures": 0,
+    "parse_rate": 1.0,
+    "tier_histogram": {
+      "Bronze": 20,
+      "Gold": 1,
+      "Silver": 223
+    },
+    "judge_pass_rate": 1.0,
+    "quarantined": 0,
+    "placeholder_contract_violations": 0,
+    "judge_contract_violations": 0,
+    "runtime_verified_fraction": 1.0
+  },
+  "garbage": {
+    "quality_rejected": 0,
+    "reason_histogram": {},
+    "admitted_score_histogram": {
+      "<0.4": 0,
+      "0.4-0.55": 0,
+      "0.55-0.7": 0,
+      "0.7-0.85": 0,
+      ">=0.85": 244
+    },
+    "mean_quality_score": 0.9643,
+    "min_quality_score": 0.9
+  },
+  "redundancy": {
+    "dropped": {
+      "exact_pair": 0,
+      "fuzzy_minhash": 0,
+      "semantic_cluster_cap": 0,
+      "semantic_cosine": 0,
+      "cross_corpus": 0,
+      "max_records_per_parent": 0
+    },
+    "cluster_exposure": {
+      "unique_clusters": 244,
+      "records_per_cluster": {
+        "max": 1,
+        "p50": 1,
+        "p95": 1
+      }
+    },
+    "top_clusters": [
+      {
+        "cluster": "0129ac220f1921a8|02480ef7f13315a9a87a2cdb5e14345e083194261ecabfd4d3b18a04f59d2ff8|951232a5ca890f9f",
+        "count": 1,
+        "sample_ids": [
+          "program_812a9a868c6c9958_aug_dir"
+        ]
+      },
+      {
+        "cluster": "01a5d33b9737bd6b|205714f8e8a030ac255dc25ab51563c8495098831d262574284463fe02b02dfd|f8e95f6180dc6294",
+        "count": 1,
+        "sample_ids": [
+          "lc_component_RadioItem_as_document"
+        ]
+      },
+      {
+        "cluster": "01fe2971af3a7023|b6ebf4e69192105b68db05a65de25f32baa9cf5e5ab98af70223b2cdf6fa9fbf|b46dace652d48014",
+        "count": 1,
+        "sample_ids": [
+          "lc_component_Callout_as_document"
+        ]
+      },
+      {
+        "cluster": "028c77f584c2082c|f64b62a92939c263f12607d341bb1ffce7e22588d89acb29d0569b08216f9db6|f26bc6fe207878cb",
+        "count": 1,
+        "sample_ids": [
+          "program_16ad8c370e983178_aug_dir"
+        ]
+      },
+      {
+        "cluster": "044327f41b8a65de|e12f86ba8d65ab403b1e75c4f55dff6057616723d6b0fba8bc15e8bb8836b96f|a7a57e2fb2a9c7b4",
+        "count": 1,
+        "sample_ids": [
+          "lc_component_Callout_as_document_aug_cta"
+        ]
+      },
+      {
+        "cluster": "0478fb1d7879115c|bc276119154b29491d5c2c727280618bd8656898fc63d7a177c620c49aee5008|31f11a9ab2a01503",
+        "count": 1,
+        "sample_ids": [
+          "lc_component_SelectItem_as_document"
+        ]
+      },
+      {
+        "cluster": "05b32bc6c0e0a23f|009febce80bb4ee2beeb6eaf0463866eb946b224a8df702d07124ecf8939a17e|40a73908d346bd2f",
+        "count": 1,
+        "sample_ids": [
+          "train_button_row_01"
+        ]
+      },
+      {
+        "cluster": "06277805d9bb55a2|af6267912b308e8bc7feca31ff412b585d81d1108ff3f750392b3bdef8da2d5e|c99fdebc6db19d07",
+        "count": 1,
+        "sample_ids": [
+          "lc_component_Callout_as_document_aug_dir"
+        ]
+      },
+      {
+        "cluster": "072b515abcca97a1|adc7892d1d1e180897ac5fbbc3ee00fec9c6ea3c6670e30fc7e2e0a33d19a6ea|c64a06941f043e88",
+        "count": 1,
+        "sample_ids": [
+          "train_separator_01_aug_cta"
+        ]
+      },
+      {
+        "cluster": "07d9d0bb14c20278|89fb9046365121b390cc316c5453348a5b3e10ee3e8e68e519221fea15d2052f|76ca0f2446cf2093",
+        "count": 1,
+        "sample_ids": [
+          "lc_component_SelectItem_as_document_aug_cta"
+        ]
+      }
+    ]
+  },
+  "decontamination": {
+    "structure_reserved_rejected": 0
+  },
+  "per_family": [
+    {
+      "source_family": "corruption_repair",
+      "record_count": 13,
+      "root_parent_count": 13,
+      "mean_quality_score": 0.953846,
+      "min_quality_score": 0.95,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "repair": 13
+      }
+    },
+    {
+      "source_family": "human_curated",
+      "record_count": 15,
+      "root_parent_count": 15,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 15
+      }
+    },
+    {
+      "source_family": "language_contract",
+      "record_count": 53,
+      "root_parent_count": 53,
+      "mean_quality_score": 0.954717,
+      "min_quality_score": 0.9,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 53
+      }
+    },
+    {
+      "source_family": "layout_augment",
+      "record_count": 156,
+      "root_parent_count": 83,
+      "mean_quality_score": 0.965385,
+      "min_quality_score": 0.9,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "generation": 156
+      }
+    },
+    {
+      "source_family": "programspec_generated",
+      "record_count": 6,
+      "root_parent_count": 6,
+      "mean_quality_score": 0.95,
+      "min_quality_score": 0.95,
+      "max_quality_score": 0.95,
+      "task_counts": {
+        "generation": 6
+      }
+    },
+    {
+      "source_family": "renderer_visual",
+      "record_count": 1,
+      "root_parent_count": 1,
+      "mean_quality_score": 1.0,
+      "min_quality_score": 1.0,
+      "max_quality_score": 1.0,
+      "task_counts": {
+        "edit": 1
+      }
+    }
+  ],
+  "engines": {
+    "similarity": "minhash-char4gram",
+    "semantic_dedup": null,
+    "decontam": null
+  },
+  "warnings": [],
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "4e7f594e2d4fe8e51c73f9b487fc3e1d8f5162c8",
+    "code_dirty": false,
+    "components": {
+      "harness.train_data": "v5"
+    },
+    "stamped_at": "2026-07-19T16:07:21.040960+00:00"
+  }
+}

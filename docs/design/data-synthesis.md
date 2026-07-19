@@ -268,3 +268,11 @@ with E522’s slot grounding—fidelity falls from 0.8667 to 0.4667, structure t
 Keep E524 as conditional-contract data evidence, but reject stronger count
 prompting and the E525 checkpoint. See
 [E525](iter-e525-visible-component-continuation-20260719.md).
+
+### E527 visible component-types follow-up
+
+E527 weakens E524 from exact type/count inventory to unique component types
+only. It preserves all 244 E521 IDs and targets, exposes exact type inventories
+and all declared slots in 244/244 prompts, retains mean quality 0.9643, and
+emits zero rejects, warnings, recommendations, or experiment candidates. See
+[E527](iter-e527-visible-component-types-data-20260719.md).

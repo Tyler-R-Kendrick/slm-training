@@ -137,6 +137,23 @@ def test_e524_visible_component_contract_data_is_persisted() -> None:
     )
 
 
+def test_e527_visible_component_types_data_is_persisted() -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    version = "e527_visible_component_types_slot_contract_r1_20260719"
+    records = readers.train_records(version, limit=300)
+    assert records["count"] == 244
+    assert all("Components: " in row["prompt"] for row in records["records"])
+    assert all(
+        " x" not in next(
+            line
+            for line in row["prompt"].splitlines()
+            if line.startswith("Components: ")
+        )
+        for row in records["records"]
+    )
+
+
 def test_e501_matched_runs_and_checkpoints_are_persisted() -> None:
     root = Path(__file__).parents[2]
     readers = Readers(root)

@@ -2217,6 +2217,18 @@ not recover reference hierarchy and trade away slot fidelity. Full evidence:
 [narrative](iter-e525-visible-component-continuation-20260719.md) and
 [JSON](iter-e525-visible-component-continuation-20260719.json).
 
+## E527 visible component-types data
+
+E527 removes exact counts from E524 while retaining unique component types and
+slot inventory. The projection preserves all 244 E521 IDs/targets, passes every
+quality check, and emits zero feedback actions.
+
+**Verdict:** publish for one matched continuation testing whether a weaker
+conditional contract preserves recall without E525’s fidelity/hierarchy
+regression. Data evidence only. Full evidence:
+[narrative](iter-e527-visible-component-types-data-20260719.md) and
+[JSON](iter-e527-visible-component-types-data-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
