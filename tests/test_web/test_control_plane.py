@@ -118,6 +118,25 @@ def test_e521_visible_slot_contract_data_is_persisted() -> None:
     )
 
 
+def test_e524_visible_component_contract_data_is_persisted() -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    version = "e524_visible_component_slot_contract_r4_20260719"
+    assert version in readers.train_data()["versions"]
+
+    records = readers.train_records(version, limit=300)
+    assert records["count"] == 244
+    assert len(records["records"]) == 244
+    assert all(
+        any(line.startswith("Components: ") for line in row["prompt"].splitlines())
+        for row in records["records"]
+    )
+    assert all(
+        all(slot in row["prompt"] for slot in row["placeholders"])
+        for row in records["records"]
+    )
+
+
 def test_e501_matched_runs_and_checkpoints_are_persisted() -> None:
     root = Path(__file__).parents[2]
     readers = Readers(root)

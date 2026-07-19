@@ -2185,6 +2185,21 @@ preserving the fidelity gain. Full evidence:
 [narrative](iter-e522-visible-slot-continuation-20260719.md) and
 [JSON](iter-e522-visible-slot-continuation-20260719.json).
 
+## E524 visible component-contract data
+
+E524 appends exact component type/count inventories to the immutable E521
+prompts after all admission gates. The published r4 snapshot preserves all 244
+E521 IDs and OpenUI targets, exposes exact component contracts in 244/244 rows,
+retains full declared-slot visibility, and has zero quality rejects, warnings,
+or synthesis recommendations.
+
+**Verdict:** publish E524 for one matched bounded continuation against E522.
+This is conditional-contract data evidence, not an unconditional model or ship
+claim. Three membership-changing diagnostics remain local and are not evidence.
+Full evidence:
+[narrative](iter-e524-visible-component-contract-data-20260719.md) and
+[JSON](iter-e524-visible-component-contract-data-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
