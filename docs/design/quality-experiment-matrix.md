@@ -2745,6 +2745,21 @@ scratch checkpoints, and test a moderate multiplier. Full evidence:
 [narrative](iter-e546-root-reference-coverage-sampling-20260719.md) and
 [JSON](iter-e546-root-reference-coverage-sampling-20260719.json).
 
+## E547 moderate strict-subset exposure
+
+Multiplier 2 sees 15 negative-target rows, between control 7 and multiplier 5
+22. OOD `n=4` structure reaches 0.2248 and AST node F1 0.3270, the best values
+in the 1/2/5 ladder, while component recall matches control at 0.2083.
+Fidelity regresses to 0.2583. Root arity and identity each apply six times and
+change two choices. Meaningful-v1, strict-v2, AST edge F1, and AgentV remain
+zero.
+
+**Decision:** prefer multiplier 2 for subsequent bounded diagnostics but reject
+the checkpoint. Next address semantic-role fidelity rather than increasing
+exposure. Full evidence:
+[narrative](iter-e547-root-reference-coverage2-20260719.md) and
+[JSON](iter-e547-root-reference-coverage2-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
