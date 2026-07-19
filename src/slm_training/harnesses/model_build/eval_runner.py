@@ -368,6 +368,9 @@ def _effective_evaluation_policy(
         "slot_contract_constrained_decode": bool(
             value("slot_contract_constrained_decode")
         ),
+        "semantic_role_decode_weight": float(
+            value("semantic_role_decode_weight") or 0.0
+        ),
         "honest_slot_contract": bool(value("honest_slot_contract")),
         "grammar_skip_exact_stream_probe": optional_bool(
             "grammar_skip_exact_stream_probe"

@@ -100,6 +100,22 @@ def ensure_prompt_semantic_roles(
     return f"{base}\nSemantic roles: {roles}" if roles else base
 
 
+def prompt_semantic_role_candidates(
+    prompt: str, placeholders: list[str] | None
+) -> dict[str, tuple[str, ...]]:
+    """Return only schema-compatible candidates justified by visible prompt prose."""
+    slots = normalize_placeholders(placeholders)
+    if not slots:
+        return {}
+    from slm_training.data.quality import (
+        _prompt_component_mentions,
+        semantic_role_candidates,
+    )
+
+    components = sorted(_prompt_component_mentions(prompt))
+    return semantic_role_candidates(slots, components) if components else {}
+
+
 def inventory_from_prompt(
     prompt: str | None,
     design_md: str | None = None,

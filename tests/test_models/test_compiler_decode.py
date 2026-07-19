@@ -218,6 +218,45 @@ def test_slot_component_bias_uses_next_unfilled_visible_slot() -> None:
     assert submit_bias is not None and submit_bias[1] > submit_bias[0]
 
 
+def test_visible_semantic_role_bias_does_not_require_learned_slot_head() -> None:
+    model = _model(semantic_role_decode_weight=4.0)
+    assert model.slot_component_head is None
+    tokenizer = model.tokenizer
+    input_id = tokenizer.token_to_id["Input"]
+    button_id = tokenizer.token_to_id["Button"]
+    candidates = (input_id, button_id)
+    kinds = ("component_bound", "component_bound")
+    roles = {
+        ":form.email": ("Input",),
+        ":form.submit": ("Button",),
+    }
+    ctx, ctx_pad = model._encode_context(["email field and submit action"])
+
+    email_bias = model._slot_component_bias(
+        ctx,
+        ctx_pad,
+        [tokenizer.bos_id],
+        candidates,
+        kinds,
+        [":form.email", ":form.submit"],
+        roles,
+    )
+    submit_bias = model._slot_component_bias(
+        ctx,
+        ctx_pad,
+        [tokenizer.bos_id, tokenizer.sym_id(0)],
+        candidates,
+        kinds,
+        [":form.email", ":form.submit"],
+        roles,
+    )
+
+    assert email_bias is not None and email_bias[0] == 4.0
+    assert email_bias[1] == 0.0
+    assert submit_bias is not None and submit_bias[0] == 0.0
+    assert submit_bias[1] == 4.0
+
+
 def test_projection_with_features_accepts_sliced_hidden() -> None:
     """Compiler/tree scorers project [D] and [N,D] slices; with one request's
     runtime symbol features active the projection must match the [B,T,D]

@@ -110,24 +110,35 @@ def _prompt_component_mentions(prompt: str) -> frozenset[str]:
     return frozenset(found)
 
 
+def semantic_role_candidates(
+    placeholders: list[str], component_names: list[str]
+) -> dict[str, tuple[str, ...]]:
+    """Map visible slots to compatible visible component types."""
+    from slm_training.dsl.lang_core import library_schema
+
+    definitions = library_schema().get("$defs", {})
+    result: dict[str, tuple[str, ...]] = {}
+    for placeholder in sorted(set(placeholders)):
+        role = placeholder.removeprefix(":").split(".")[-1]
+        result[placeholder] = tuple(
+            name
+            for name in sorted(set(component_names))
+            if role in (definitions.get(name, {}).get("properties") or {})
+        )
+    return result
+
+
 def semantic_role_contract(
     placeholders: list[str], component_names: list[str]
 ) -> str:
     """Describe visible slot roles using only visible schema component mentions."""
-    from slm_training.dsl.lang_core import library_schema
-
-    definitions = library_schema().get("$defs", {})
+    candidates_by_slot = semantic_role_candidates(placeholders, component_names)
     groups: dict[str, dict[str, tuple[str, ...]]] = {}
     for placeholder in sorted(set(placeholders)):
         parts = placeholder.removeprefix(":").split(".")
         namespace = ".".join(parts[:-1]) or parts[0]
         role = parts[-1] if len(parts) > 1 else "value"
-        candidates = tuple(
-            name
-            for name in sorted(set(component_names))
-            if role in (definitions.get(name, {}).get("properties") or {})
-        )
-        groups.setdefault(namespace, {})[role] = candidates
+        groups.setdefault(namespace, {})[role] = candidates_by_slot[placeholder]
     return "; ".join(
         f"{namespace}("
         + ", ".join(

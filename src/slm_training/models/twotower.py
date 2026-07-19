@@ -69,6 +69,7 @@ from slm_training.models.template_fill import (
     ensure_prompt_inventory,
     ensure_prompt_semantic_roles,
     inventory_from_prompt,
+    prompt_semantic_role_candidates,
     template_mask_positions,
 )
 from slm_training.dsl.grammar.fastpath.gate import FastPathGate
@@ -223,6 +224,7 @@ class TwoTowerConfig:
     slot_component_class_balance_power: float = 0.0
     slot_component_class_weights: tuple[float, ...] = ()
     slot_component_decode_weight: float = 0.0
+    semantic_role_decode_weight: float = 0.0
     slot_component_prompt_context: bool = True
     slot_component_next_context: bool = False
     slot_component_pair_interaction: bool = False
@@ -775,6 +777,9 @@ class TwoTowerModel(nn.Module):
         self._binder_token_ids_cache: tuple[int, ...] | None = None
         self._component_edge_cache: dict[str, tuple[tuple[int, int], ...]] = {}
         self._slot_contracts: list[list[str] | None] | None = None
+        self._semantic_role_candidates: (
+            list[dict[str, tuple[str, ...]]] | None
+        ) = None
         # Per-example symbol tables for lexer-native encode/decode.
         self._symbol_tables: dict[str, object] = {}
         self._current_runtime_table: object | None = None
@@ -3583,13 +3588,17 @@ class TwoTowerModel(nn.Module):
         candidate_ids: tuple[int, ...],
         candidate_kinds: tuple[str, ...],
         slot_contract: list[str] | None,
+        semantic_role_candidates: dict[str, tuple[str, ...]] | None = None,
     ) -> torch.Tensor | None:
-        weight = float(
+        learned_weight = float(
             getattr(self.config, "slot_component_decode_weight", 0.0) or 0.0
         )
+        role_weight = float(
+            getattr(self.config, "semantic_role_decode_weight", 0.0) or 0.0
+        )
+        learned_enabled = learned_weight > 0.0 and self.slot_component_head is not None
         if (
-            weight <= 0.0
-            or self.slot_component_head is None
+            (not learned_enabled and role_weight <= 0.0)
             or not slot_contract
             or "component_bound" not in candidate_kinds
         ):
@@ -3604,28 +3613,30 @@ class TwoTowerModel(nn.Module):
                 remaining_slots.append(str(slot))
         if not remaining_slots:
             return None
-        slot_texts = self._slot_component_texts(remaining_slots)
-        slot_rows = torch.zeros(
-            len(remaining_slots), dtype=torch.long, device=ctx.device
-        )
-        logits = self._slot_component_logits(
-            slot_texts,
-            ctx,
-            ctx_pad,
-            slot_rows,
-            next_slots=(
-                [
-                    remaining_slots[index + 1]
-                    if index + 1 < len(remaining_slots)
+        logits = None
+        if learned_enabled:
+            slot_texts = self._slot_component_texts(remaining_slots)
+            slot_rows = torch.zeros(
+                len(remaining_slots), dtype=torch.long, device=ctx.device
+            )
+            logits = self._slot_component_logits(
+                slot_texts,
+                ctx,
+                ctx_pad,
+                slot_rows,
+                next_slots=(
+                    [
+                        remaining_slots[index + 1]
+                        if index + 1 < len(remaining_slots)
+                        else None
+                        for index in range(len(remaining_slots))
+                    ]
+                    if bool(
+                        getattr(self.config, "slot_component_pair_interaction", False)
+                    )
                     else None
-                    for index in range(len(remaining_slots))
-                ]
-                if bool(
-                    getattr(self.config, "slot_component_pair_interaction", False)
-                )
-                else None
-            ),
-        )
+                ),
+            )
         component_index = {
             token_id: index
             for index, token_id in enumerate(self._component_inventory_token_ids())
@@ -3639,7 +3650,7 @@ class TwoTowerModel(nn.Module):
         span_lookup = dict(
             getattr(self.config, "slot_component_span_priors", ()) or ()
         )
-        bias = logits.new_zeros(len(candidate_ids))
+        bias = ctx.new_zeros(len(candidate_ids))
         applied = False
         for position, (token_id, kind) in enumerate(
             zip(candidate_ids, candidate_kinds, strict=True)
@@ -3656,7 +3667,19 @@ class TwoTowerModel(nn.Module):
             if required <= 0:
                 continue
             consumed = min(required, len(remaining_slots))
-            bias[position] = weight * logits[:consumed, index].mean()
+            if logits is not None:
+                bias[position] = learned_weight * logits[:consumed, index].mean()
+            if role_weight > 0.0 and semantic_role_candidates:
+                token = str(self.tokenizer.id_to_token.get(token_id, ""))
+                for prefix in ("COMP:", "+"):
+                    if token.startswith(prefix):
+                        token = token[len(prefix) :]
+                        break
+                matches = sum(
+                    token in semantic_role_candidates.get(slot, ())
+                    for slot in remaining_slots[:consumed]
+                )
+                bias[position] += role_weight * matches / consumed
             if span_weight > 0.0 and consumed == required and required > 1:
                 key = "\x1f".join(
                     self._slot_role_token(slot)
@@ -3665,7 +3688,9 @@ class TwoTowerModel(nn.Module):
                 scores = span_lookup.get(key)
                 if scores is not None:
                     bias[position] += span_weight * float(scores[index])
-            applied = True
+            applied = logits is not None or bool(
+                role_weight > 0.0 and semantic_role_candidates
+            )
         return bias if applied else None
 
     def _component_edge_bias(
@@ -4936,6 +4961,12 @@ class TwoTowerModel(nn.Module):
                             and row < len(self._slot_contracts)
                             else None
                         ),
+                        (
+                            self._semantic_role_candidates[row]
+                            if self._semantic_role_candidates
+                            and row < len(self._semantic_role_candidates)
+                            else None
+                        ),
                     )
                     if slot_bias is not None:
                         before_slot = int(scores.argmax().item())
@@ -5706,6 +5737,29 @@ class TwoTowerModel(nn.Module):
                 )
                 for i, prompt in enumerate(prompts)
             ]
+        role_weight = float(
+            getattr(self.config, "semantic_role_decode_weight", 0.0) or 0.0
+        )
+        if role_weight > 0.0:
+            if not honest or not bool(
+                getattr(self.config, "semantic_role_contract_in_context", False)
+            ):
+                raise ValueError(
+                    "semantic_role_decode_weight requires honest visible role context"
+                )
+            self._semantic_role_candidates = [
+                prompt_semantic_role_candidates(
+                    prompt,
+                    (
+                        self._slot_contracts[i]
+                        if self._slot_contracts and i < len(self._slot_contracts)
+                        else None
+                    ),
+                )
+                for i, prompt in enumerate(prompts)
+            ]
+        else:
+            self._semantic_role_candidates = None
         ctx_prompts = self._context_prompts(
             prompts,
             golds=golds,
