@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "experiment_id": "E515",
+  "run_id": "e515-e396-e500-replay050-slotrole4-focal0-r1-5k",
+  "evaluation_run_id": "e516-e515-ood160-component-plan4-r1",
+  "run_class": "scratch_matrix",
+  "date_utc": "2026-07-19",
+  "status": "complete",
+  "hypothesis": "Resetting focal gamma from 2 to 0 while holding E513's slot-role loss 4 recipe fixed recovers the semantic quality lost by E513.",
+  "conclusion": "Removing focal weighting recovers much of E513's regression, proving focal gamma 2 was harmful in this recipe. The focal-zero checkpoint still trails E510 and fails strict semantic and AgentV gates, so slot-role loss 4 is also rejected for promotion.",
+  "training": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "parent_run_id": "e396-balanced-type-head-continuation-r1",
+    "primary_data_version": "e500_documentized_expression_candidate_r2_20260718",
+    "replay_data_version": "e357_card_hierarchy_v1",
+    "replay_fraction_requested": 0.5,
+    "replay_fraction_effective": 0.504950495049505,
+    "seen_primary_examples": 100,
+    "seen_replay_examples": 102,
+    "steps": 101,
+    "seen_target_tokens": 5000,
+    "target_token_budget": 5000,
+    "elapsed_wall_seconds": 105.82193351499996,
+    "max_wall_minutes": 3.0,
+    "stopped_on": "token_budget",
+    "last_loss": 11.30447769165039,
+    "learning_rate": 0.0003,
+    "component_plan_loss_weight": 4.0,
+    "slot_component_loss_weight": 4.0,
+    "slot_component_focal_gamma": 0.0,
+    "slot_component_class_balance_power": 0.5,
+    "slot_component_decode_weight": 4.0,
+    "slot_component_prompt_context": true,
+    "honesty_mode": "no-design-md-context",
+    "hard_process_cap_seconds": 170
+  },
+  "checkpoint": {
+    "sha256": "97f2e426604e3956f2791398a608b967937ebf548fa7cae0ef59dde324721c1b",
+    "full_state_sha256": "4f9818f87735df24b3fc21d9e06925d51ca3f2d8fef2fb4fa6737930778c2a06",
+    "remote_uri": "hf://buckets/TKendrick/OpenUI/checkpoints/e515-e396-e500-replay050-slotrole4-focal0-r1-5k",
+    "synced": true,
+    "verified": true,
+    "verification_method": "resync_dry_run",
+    "verified_at": "2026-07-19T14:32:15Z"
+  },
+  "evaluation": {
+    "device": "cpu",
+    "context_backend": "hf",
+    "local_files_only": true,
+    "suite": "ood",
+    "suite_n": 4,
+    "grammar_ltr_primary": true,
+    "component_plan_decode_weight": 4.0,
+    "slot_component_decode_weight": 4.0,
+    "gen_steps": 8,
+    "max_attempts": 4,
+    "grammar_ltr_max_tokens": 160,
+    "honest_slot_contract": true,
+    "slot_contract_in_context": true,
+    "slot_contract_constrained_decode": true,
+    "no_design_context": true,
+    "allow_unconstrained_fallback": false,
+    "hard_process_cap_seconds": 170
+  },
+  "matched_runs": [
+    {
+      "label": "slot_role_supervision4_focal0",
+      "run_id": "e515-e396-e500-replay050-slotrole4-focal0-r1-5k",
+      "evaluation_run_id": "e516-e515-ood160-component-plan4-r1",
+      "checkpoint_sha256": "97f2e426604e3956f2791398a608b967937ebf548fa7cae0ef59dde324721c1b",
+      "suites": {
+        "ood": {
+          "n": 4,
+          "syntax_parse_rate": 1.0,
+          "meaningful_program_rate": 0.25,
+          "placeholder_fidelity": 0.6583333333333333,
+          "structural_similarity": 0.32125000000000004,
+          "component_type_recall": 0.2708333333333333,
+          "reward_score": 0.827,
+          "ast_node_f1": 0.4291666666666667,
+          "ast_edge_f1": 0.0625,
+          "binding_aware_meaningful_v2_rate_strict": 0.0,
+          "binding_aware_meaningful_v2_coverage": 1.0,
+          "latency_ms_p50": 7426.85,
+          "latency_ms_p95": 11179.6
+        }
+      }
+    }
+  ],
+  "comparison_to_e513_focal2": {
+    "meaningful_program_rate_delta": 0.25,
+    "placeholder_fidelity_delta": 0.16666666666666669,
+    "structural_similarity_delta": 0.04625000000000001,
+    "component_type_recall_delta": 0.0625,
+    "reward_score_delta": 0.057499999999999996,
+    "ast_node_f1_delta": 0.07916666666666672,
+    "ast_edge_f1_delta": 0.0
+  },
+  "comparison_to_e510_slot_loss1": {
+    "meaningful_program_rate_delta": -0.25,
+    "placeholder_fidelity_delta": 0.0,
+    "structural_similarity_delta": -0.023324999999999985,
+    "component_type_recall_delta": -0.125,
+    "reward_score_delta": -0.013500000000000068,
+    "ast_node_f1_delta": -0.038690476190476164,
+    "ast_edge_f1_delta": -0.1
+  },
+  "agentv": {
+    "format": "AgentEvals JSONL",
+    "sdk": "@agentv/core",
+    "passed": 0,
+    "total": 1,
+    "execution_errors": 0
+  },
+  "ship_gates": {
+    "pass": false,
+    "agentv_pass": false,
+    "reason": "The focal-zero control remains below E510 on meaningfulness and component structure; strict binding-aware meaning and AgentV remain zero."
+  },
+  "version_stamp": {
+    "stamp_schema": "version_stamp/v1",
+    "code_commit": "9f5c10d83d556ce74aab67951b7fa22fc814da1d",
+    "code_dirty": true,
+    "components": {
+      "harness.model_build.train": "v6",
+      "harness.model_build.eval": "v2",
+      "evals.meaningful_program": "2.0.0",
+      "evals.scoring": "v1"
+    },
+    "stamped_at": "2026-07-19T14:33:05.212734+00:00"
+  },
+  "decision": "Reject focal gamma 2 and retain focal gamma 0 for future controls. Do not promote slot-component loss 4; next test should return to loss 1 and change the training data or role-label coverage rather than objective scale."
+}
