@@ -482,6 +482,20 @@ def test_e531_visible_semantic_roles_checkpoint_and_run_are_persisted(
     )["used_by_runs"]
 
 
+def test_e533_visible_role_inference_run_is_persisted() -> None:
+    root = Path(__file__).parents[2]
+    readers = Readers(root)
+    run_id = "e533-e531-ood160-visible-role-inference-r1"
+    listed = next(
+        row for row in readers.runs()["runs"] if row.get("run_id") == run_id
+    )
+    assert set(listed["suites"]) == {"ood"}
+    assert listed["pass"] is False
+    detail = readers.run(run_id)
+    assert set(detail["scoreboard"]["suites"]) == {"ood"}
+    assert detail["scoreboard"]["suites"]["ood"]["n"] == 4
+
+
 def test_spa_routes_and_retired_classic_redirect(ro_client: TestClient) -> None:
     """The SPA owns /playground and old classic bookmarks redirect to it."""
     root = ro_client.get("/")

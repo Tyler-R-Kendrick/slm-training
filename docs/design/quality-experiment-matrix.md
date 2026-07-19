@@ -2285,6 +2285,24 @@ Full evidence:
 [narrative](iter-e531-visible-semantic-roles-continuation-20260719.md) and
 [JSON](iter-e531-visible-semantic-roles-continuation-20260719.json).
 
+## E533 honest visible-role inference
+
+E533 closes E531's train/inference authority gap without gold leakage. It
+normalizes only official component names already present in prompt prose and
+the honest visible slot contract, then holds the E531 checkpoint and every
+E532 evaluator setting fixed.
+
+Matched OOD n=4 keeps syntax at 1.0 but regresses fidelity 0.4667→0.3833,
+structure 0.1431→0.1159, component recall 0.2917→0.2292, AST node F1
+0.2543→0.1627, and AST edge F1 0.0455→0.0417. Reward remains 0.3685;
+meaningful and strict meaning remain 0.0; AgentV remains 0/1.
+
+**Verdict:** reject E533 and do not retrain this prompt-conditioning lever.
+Keep the opt-in harness for honest matched evaluation, then target explicit
+grammar/reference construction without hidden gold inputs. Full evidence:
+[narrative](iter-e533-visible-role-inference-20260719.md) and
+[JSON](iter-e533-visible-role-inference-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
