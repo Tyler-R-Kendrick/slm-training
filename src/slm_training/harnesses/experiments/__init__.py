@@ -32,19 +32,6 @@ from slm_training.harnesses.experiments.external_ceiling_matrix import (
     run_fixture_matrix as run_external_ceiling_fixture_matrix,
     validate_external_ceiling_manifest,
 )
-from slm_training.harnesses.experiments.b3_capacity_v2 import (
-    B3_CAPACITY_V2_ID,
-    B3CapacityV2Arm,
-    B3CapacityV2Manifest,
-    B3CapacityV2Report,
-    B3CapacityV2Row,
-    MATRIX_SET as B3_CAPACITY_V2_MATRIX_SET,
-    MATRIX_VERSION as B3_CAPACITY_V2_MATRIX_VERSION,
-    build_b3_capacity_v2_manifest,
-    render_markdown as render_b3_capacity_v2_markdown,
-    run_fixture_ladder as run_b3_capacity_v2_fixture_ladder,
-    validate_manifest as validate_b3_capacity_v2_manifest,
-)
 from slm_training.harnesses.experiments.causal_peft_ftpo import (
     CAUSAL_PEFT_FTPO_ID,
     MATRIX_SET as CAUSAL_PEFT_FTPO_MATRIX_SET,
@@ -213,8 +200,28 @@ _LAZY_LADDER_EXPORTS = {
     "scratch_ladder_default",
 }
 
+_LAZY_B3_EXPORTS = {
+    "B3_CAPACITY_V2_ID": "B3_CAPACITY_V2_ID",
+    "B3_CAPACITY_V2_MATRIX_SET": "MATRIX_SET",
+    "B3_CAPACITY_V2_MATRIX_VERSION": "MATRIX_VERSION",
+    "B3CapacityV2Arm": "B3CapacityV2Arm",
+    "B3CapacityV2Manifest": "B3CapacityV2Manifest",
+    "B3CapacityV2Report": "B3CapacityV2Report",
+    "B3CapacityV2Row": "B3CapacityV2Row",
+    "build_b3_capacity_v2_manifest": "build_b3_capacity_v2_manifest",
+    "render_b3_capacity_v2_markdown": "render_markdown",
+    "run_b3_capacity_v2_fixture_ladder": "run_fixture_ladder",
+    "validate_b3_capacity_v2_manifest": "validate_manifest",
+}
+
 
 def __getattr__(name: str):
+    if name in _LAZY_B3_EXPORTS:
+        from slm_training.harnesses.experiments import b3_capacity_v2
+
+        value = getattr(b3_capacity_v2, _LAZY_B3_EXPORTS[name])
+        globals()[name] = value
+        return value
     if name in _LAZY_LADDER_EXPORTS:
         from slm_training.harnesses.experiments import ladder
 
