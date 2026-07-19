@@ -1908,6 +1908,25 @@ and every train records `max_wall_minutes=3.0`. Full evidence:
 [narrative](iter-e502-initialization-prior-retention-20260719.md) and
 [JSON](iter-e502-initialization-prior-retention-20260719.json).
 
+## E503 initialized-weight retention
+
+E503 adds an explicit per-step contraction toward the E396 initialization and
+records final RMS weight drift. Four matched 5k-token arms use the same CPU,
+frozen-HF, E500 uniform-sampling recipe and honest smoke `n=3` scoreboard.
+
+Retention reduces RMS drift monotonically from `0.003123` at 0% to `0.000811`
+at 5%. Structure rises from `0.0927` to `0.2029`, but component recall falls
+from `0.1667` to zero. The 3% midpoint reaches structure `0.1667` and recall
+`0.0833`. Meaningful rate, fidelity, reward, and AgentV remain zero throughout.
+
+**Verdict:** keep the measurable retention control, but reject all E503
+checkpoints. Strong anchoring exchanges duplicate-subtree spam for trivial
+empty layouts rather than improving semantics. Parent replay is the next
+matched lever. Every process was capped at 170 seconds and every train records
+`max_wall_minutes=3.0`. Full evidence:
+[narrative](iter-e503-initialized-weight-retention-20260719.md) and
+[JSON](iter-e503-initialized-weight-retention-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from

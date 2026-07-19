@@ -94,6 +94,10 @@ Leakage checks use exact + **structural** OpenUI fingerprints (placeholder/binde
   `--resume-from`, this is not bit-exact. `train_summary.json` records the
   restored prior fields so corpus-derived decode behavior cannot change
   silently.
+- `--initialization-weight-retention <0..1>` — after each warm-start optimizer
+  step, contract trainable weights toward the initialized checkpoint. The
+  summary records the coefficient, anchored parameter count, and final RMS
+  drift; nonzero retention fails closed without `--initialize-from`.
 - `scripts/train_preference.py` — build-pairs / train (reference-free)
 - `scripts/export_cactus.py` / `scripts/bench_cactus.py`
 - `scripts/remote_train.py` — SSH pod train + pull (trains the `v1` corpus it builds)

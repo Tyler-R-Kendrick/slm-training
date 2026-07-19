@@ -182,3 +182,13 @@ restores checkpoint lexeme/span priors; this raises E396→E500 1k structure
 from `0.2317` to `0.3169`, but the retained-prior 5k arm still collapses to
 `0.0927`. The corpus conclusion remains unchanged and no gate was relaxed.
 See [E502](iter-e502-initialization-prior-retention-20260719.md).
+
+### E503 weight-retention follow-up
+
+The committed E500 feedback remains clean: 260 admitted records, no warnings,
+recommendations, or experiment candidates. E503 therefore changes no producer
+or acceptance gate. Its matched 5k continuations show that stronger checkpoint
+anchoring recovers structure only by losing component recall; the data conclusion
+is unchanged. Future parent replay must retain source and parent provenance and
+report effective exposure separately from the E500 mixture policy. See
+[E503](iter-e503-initialized-weight-retention-20260719.md).
