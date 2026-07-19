@@ -503,16 +503,22 @@ def test_root_reference_identity_head_trains_and_prefers_uncovered_identity() ->
     for token in ("+TextContent", "@0", "-", "+TextContent", "@1", "-", "["):
         assert state.advance_id(tokenizer.token_to_id[token])
     ctx, ctx_pad = model._encode_context(["stack with title and body"])
-    candidates = (tokenizer.token_to_id["&0"], tokenizer.token_to_id["&1"])
+    candidates = (
+        tokenizer.token_to_id["&0"],
+        tokenizer.token_to_id["&1"],
+        tokenizer.token_to_id["]"],
+    )
     first = model._root_reference_identity_bias(
         ctx, ctx_pad, state, [], candidates
     )
     assert first is not None and first[1] > first[0]
+    assert first[1] == first[2] == 0
     prefix = [tokenizer.token_to_id["&1"]]
     second = model._root_reference_identity_bias(
         ctx, ctx_pad, state, prefix, candidates
     )
     assert second is not None and second[0] > second[1]
+    assert second[0] == second[2] == 0
 
 
 def test_projection_with_features_accepts_sliced_hidden() -> None:

@@ -4081,8 +4081,7 @@ class TwoTowerModel(nn.Module):
                     used.add(int(token[1:]))
                 except ValueError:
                     continue
-        bias = logits.new_zeros(len(candidate_ids))
-        applied = False
+        references: list[tuple[int, int]] = []
         for position, token_id in enumerate(candidate_ids):
             token = str(self.tokenizer.id_to_token.get(int(token_id), ""))
             if not token.startswith("&"):
@@ -4093,14 +4092,25 @@ class TwoTowerModel(nn.Module):
                 continue
             if not 0 <= reference < valid_count:
                 continue
-            log_probability = (
+            references.append((position, reference))
+        unused = [
+            (position, reference)
+            for position, reference in references
+            if reference not in used
+        ]
+        if not unused:
+            return None
+        best_unused = torch.stack(
+            [F.logsigmoid(logits[reference]) for _, reference in unused]
+        ).max()
+        bias = logits.new_zeros(len(candidate_ids))
+        for position, reference in references:
+            bias[position] = (
                 logits.new_tensor(-20.0)
                 if reference in used
-                else F.logsigmoid(logits[reference])
-            )
-            bias[position] = weight * log_probability
-            applied = True
-        return bias if applied else None
+                else F.logsigmoid(logits[reference]) - best_unused
+            ) * weight
+        return bias
 
     @staticmethod
     def _choice_phase_evidence(state: Any) -> dict[str, object]:

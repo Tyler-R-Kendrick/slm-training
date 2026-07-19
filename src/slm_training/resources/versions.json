@@ -249,7 +249,7 @@
       ]
     },
     "model.twotower": {
-      "version": "v3",
+      "version": "v4",
       "kind": "harness",
       "paths": [
         "src/slm_training/models/twotower.py",
@@ -259,6 +259,7 @@
         "scripts/train_model.py"
       ],
       "history": [
+        {"version": "v4", "date": "2026-07-19", "note": "center terminal-root identity bias over unused legal references so identity ranks references without changing the arity head's continue-versus-stop partition"},
         {"version": "v3", "date": "2026-07-19", "note": "add bounded terminal-root reference identity supervision and learned legal-reference inclusion bias"},
         {"version": "v2", "date": "2026-07-19", "note": "bound terminal-root reference-arity targets and auxiliary loss classes by each generated stream's available sections"},
         {"version": "v1", "date": "2026-07-19", "note": "initial registration; SLM-123 removable low-rank delta adapter backend, factory/config integration, and CLI wiring"}
