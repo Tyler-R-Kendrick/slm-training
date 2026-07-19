@@ -2303,6 +2303,27 @@ grammar/reference construction without hidden gold inputs. Full evidence:
 [narrative](iter-e533-visible-role-inference-20260719.md) and
 [JSON](iter-e533-visible-role-inference-20260719.json).
 
+## E534 honest visible-role decode bias
+
+E534 tests whether E533's visible semantic-role contract was uninformative or
+merely ignored by the model. It holds the E531 checkpoint and matched E533 OOD
+n=4 recipe fixed, adding a weight-4 bias only to legal bound-component choices
+that are schema-compatible with prompt-mentioned component names and honest
+visible slots.
+
+All 18 eligible decisions changed. Meaningful v1 improves 0.0→0.25,
+placeholder fidelity 0.3833→1.0, structure 0.1159→0.1959, component recall
+0.2292→0.5417, and reward 0.3685→0.7402. AST node/edge F1 remain
+0.1627/0.0417, strict meaning remains 0.0, reference graphs remain invalid,
+and AgentV remains 0/1.
+
+**Verdict:** retain the opt-in causal inference lever, but do not promote or
+claim ship readiness from the diagnostic subset. The contract contains useful
+signal; the next lever must construct valid references/topology from visible
+authority. Full evidence:
+[narrative](iter-e534-visible-role-decode-bias-20260719.md) and
+[JSON](iter-e534-visible-role-decode-bias-20260719.json).
+
 ## Verifier-guided repair (mixed status)
 
 Verifier-guided repair status from
