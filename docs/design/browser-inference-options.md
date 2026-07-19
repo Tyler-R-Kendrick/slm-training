@@ -82,7 +82,12 @@ with few-shot anchoring — 360M holds both (`model_quantized.onnx` 365 MB,
 - generation is capped at 192 new tokens and prompt budgets scale by runtime
   (240 s WASM-CPU, 90 s GPU/NPU-class, 30 s Prompt API) via
   `browserPromptTimeoutMs`; playground readiness waits on download *progress*
-  (stall detection) rather than a fixed 10 s.
+  (stall detection) rather than a fixed 10 s;
+- the runtime imports from the first CDN that responds (jsdelivr → unpkg) and
+  the session serializes prompts FIFO so the playground's concurrent sample
+  pipelines cannot interleave generations on the one ORT session
+  (2026-07-19, see
+  [runtime-performance.md](runtime-performance.md#playground-warm-queue-pipeline-2026-07-19)).
 
 Verified live in this container (headless Chromium, WASM rung): the module
 initialized `transformers-js:wasm:q8`, persisted the profile, and browser

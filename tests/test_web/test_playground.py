@@ -132,6 +132,12 @@ def test_react_playground_has_full_annotate_surface() -> None:
         "DiffusionCanvas",
         "AbortController",
         "activeControllerRef",
+        # Warm-queue contract: generation starts before the editor/renderer
+        # bundles load, pipelines overlap, and failed samples pause rather
+        # than kill the queue driver.
+        "PREFETCH_CONCURRENCY",
+        "PREFETCH_FAILURE_BUDGET",
+        "Generating first sample…",
     ):
         assert marker in source
     assert 'event.key === "Tab"' in source
@@ -185,6 +191,12 @@ def test_react_playground_has_full_annotate_surface() -> None:
     # device/dtype profile is remembered so a later visit initializes directly.
     assert "SmolLM2-360M-Instruct" in browser_js
     assert "twotower_browser_inference_profile_v1" in browser_js
+    # One blocked CDN must not take down the browser baseline, and concurrent
+    # sample pipelines must not interleave generations on the one ORT session.
+    assert "cdn.jsdelivr.net/npm/@huggingface/transformers" in browser_js
+    assert "unpkg.com/@huggingface/transformers" in browser_js
+    assert "importTransformers" in browser_js
+    assert "promptChain" in browser_js
     assert "wasm.numThreads = capabilities.wasmThreads" in browser_js
     assert "browserAccelerationCapabilities" in browser_js
     assert "RUN_INSIGHTS_SYSTEM_PROMPT" in browser_js
