@@ -1,0 +1,102 @@
+{
+  "beam_widths": [
+    1,
+    4,
+    16
+  ],
+  "fixture": "efs2-01-tree-edit-scaling",
+  "max_edit_depths": [
+    1,
+    2,
+    4
+  ],
+  "per_cell": {
+    "b16_d1": {
+      "duplicates": 36,
+      "frozen": 0,
+      "invalid": 0,
+      "runs": 9,
+      "steps": 18,
+      "visited": 36
+    },
+    "b16_d2": {
+      "duplicates": 170,
+      "frozen": 0,
+      "invalid": 0,
+      "runs": 9,
+      "steps": 27,
+      "visited": 180
+    },
+    "b16_d4": {
+      "duplicates": 383,
+      "frozen": 0,
+      "invalid": 0,
+      "runs": 9,
+      "steps": 45,
+      "visited": 1332
+    },
+    "b1_d1": {
+      "duplicates": 9,
+      "frozen": 0,
+      "invalid": 0,
+      "runs": 9,
+      "steps": 18,
+      "visited": 36
+    },
+    "b1_d2": {
+      "duplicates": 20,
+      "frozen": 0,
+      "invalid": 0,
+      "runs": 9,
+      "steps": 27,
+      "visited": 72
+    },
+    "b1_d4": {
+      "duplicates": 24,
+      "frozen": 0,
+      "invalid": 0,
+      "runs": 9,
+      "steps": 45,
+      "visited": 144
+    },
+    "b4_d1": {
+      "duplicates": 36,
+      "frozen": 0,
+      "invalid": 0,
+      "runs": 9,
+      "steps": 18,
+      "visited": 36
+    },
+    "b4_d2": {
+      "duplicates": 62,
+      "frozen": 0,
+      "invalid": 0,
+      "runs": 9,
+      "steps": 27,
+      "visited": 180
+    },
+    "b4_d4": {
+      "duplicates": 95,
+      "frozen": 0,
+      "invalid": 0,
+      "runs": 9,
+      "steps": 45,
+      "visited": 468
+    }
+  },
+  "run_id": "iter-efs2-01-20260719",
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "version_stamp": {
+    "code_commit": "982a991117ad4f5f0ef1bfcf37dedcfaac5be385",
+    "code_dirty": true,
+    "components": {
+      "evals.scoring": "v5"
+    },
+    "stamp_schema": "version_stamp/v1",
+    "stamped_at": "2026-07-19T04:12:20.883156+00:00"
+  }
+}
